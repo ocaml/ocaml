@@ -103,3 +103,40 @@ let print_opt ppf = function
 
 let compare_lists l1 l2 =
   Misc.Stdlib.List.compare compare l1 l2
+
+
+let predefined_exception_compilation_unit =
+  Compilation_unit.create (Ident.create_persistent "__dummy__")
+    (Linkage_name.create "__dummy__")
+
+let is_predefined_exception sym =
+  Compilation_unit.equal
+    predefined_exception_compilation_unit
+    (Symbol.compilation_unit sym)
+
+(* of_global *)
+let symbol_for_global' id =
+  let sym_label = Linkage_name.create (symbol_for_global id) in
+  if Ident.is_predef id then
+    Symbol.of_global_linkage predefined_exception_compilation_unit sym_label
+  else
+    Symbol.of_global_linkage (unit_for_global id) sym_label
+
+let current_unit_symbol () =
+  Symbol.of_global_linkage (current_unit ()) (current_unit_linkage_name ())
+
+(* this is the base name one
+let symbolname_for_pack pack name =
+  match pack with
+  | None -> name
+  | Some p ->
+      let b = Buffer.create 64 in
+      for i = 0 to String.length p - 1 do
+        match p.[i] with
+        | '.' -> Buffer.add_string b "__"
+        |  c  -> Buffer.add_char b c
+      done;
+      Buffer.add_string b "__";
+      Buffer.add_string b name;
+      Buffer.contents b
+*)

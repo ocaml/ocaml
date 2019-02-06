@@ -55,7 +55,7 @@ module Env : sig
       export descriptions with the given global environment. *)
   val empty_of_global : Global.t -> t
 end = struct
-  let fresh_id () = Export_id.create (Compilenv.current_unit ())
+  let fresh_id () = Export_id.create (Compilation_unit.get_current_exn ())
 
   module Global = struct
     type t =
@@ -518,8 +518,8 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
 let build_transient ~(backend : (module Backend_intf.S))
       (program : Flambda.program) : Export_info.transient =
   if !Clflags.opaque then
-    let compilation_unit = Compilenv.current_unit () in
-    let root_symbol = Compilenv.current_unit_symbol () in
+    let compilation_unit = Compilation_unit.get_current_exn () in
+    let root_symbol = Compilation_unit.get_current_exn_symbol () in
     Export_info.opaque_transient ~root_symbol ~compilation_unit
   else
     (* CR-soon pchambart: Should probably use that instead of the ident of
@@ -667,9 +667,9 @@ let build_transient ~(backend : (module Backend_intf.S))
         ~sets_of_closures_map
         ~closure_id_to_set_of_closures_id
         ~function_declarations_map
-        ~values:(Compilation_unit.Map.find (Compilenv.current_unit ()) values)
+        ~values:(Compilation_unit.Map.find (Compilation_unit.get_current_exn ()) values)
         ~symbol_id
-        ~root_symbol:(Compilenv.current_unit_symbol ())
+        ~root_symbol:(Compilation_unit.get_current_exn_symbol ())
     in
     let sets_of_closures =
       Set_of_closures_id.Map.filter_map

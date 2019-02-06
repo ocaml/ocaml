@@ -208,20 +208,23 @@ let force_linking_of_startup ~ppf_dump =
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 
 let make_startup_file ~ppf_dump units_list =
+  let module CU = Compilation_unit in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
-  Compilenv.reset "_startup";
+  Compilenv.reset CU.startup;
   (* set the name of the "current" compunit *)
   Emit.begin_assembly ();
-  let name_list =
-    List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
-  compile_phrase (Cmmgen.entry_point name_list);
+  let defined_units =
+    CU.Set.union_list (
+      List.map (fun (info, _, _) -> info.ui_defines) units_list)
+  in
+  compile_phrase (Cmmgen.entry_point defined_units);
   let units = List.map (fun (info,_,_) -> info) units_list in
   List.iter compile_phrase (Cmmgen.generic_functions false units);
   Array.iteri
     (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
     Runtimedef.builtin_exceptions;
-  compile_phrase (Cmmgen.global_table name_list);
+  compile_phrase (Cmmgen.global_table defined_units);
   compile_phrase
     (Cmmgen.globals_map
        (List.map
@@ -235,12 +238,17 @@ let make_startup_file ~ppf_dump units_list =
                in
                  (unit.ui_name, intf_crc, crc, unit.ui_defines))
           units_list));
-  compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
-  compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
-  let all_names = "_startup" :: "_system" :: name_list in
-  compile_phrase (Cmmgen.frame_table all_names);
+  compile_phrase (Cmmgen.data_segment_table (
+    CU.Set.add CU.startup defined_units));
+  compile_phrase (Cmmgen.code_segment_table (
+    CU.Set.add CU.startup defined_units));
+  let all_units =
+    CU.Set.add CU.startup
+      (CU.Set.add CU.runtime_and_external_libs defined_units)
+  in
+  compile_phrase (Cmmgen.frame_table all_units);
   if Config.spacetime then begin
-    compile_phrase (Cmmgen.spacetime_shapes all_names);
+    compile_phrase (Cmmgen.spacetime_shapes all_units);
   end;
   if !Clflags.output_complete_object then
     force_linking_of_startup ~ppf_dump;
@@ -249,7 +257,7 @@ let make_startup_file ~ppf_dump units_list =
 let make_shared_startup_file ~ppf_dump units =
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup";
-  Compilenv.reset "_shared_startup";
+  Compilenv.reset Compilation_unit.shared_startup;
   Emit.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));

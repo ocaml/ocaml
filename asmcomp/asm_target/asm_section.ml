@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2018 Jane Street Group LLC                           *)
+(*   Copyright 2016--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -50,30 +50,32 @@ let all_sections_in_order () =
     DWARF Debug_line;
   ] in
   let dwarf_version_dependent_sections =
-    match !Clflags.gdwarf_version with
-    | Four ->
-      [ DWARF Debug_loc;
-        DWARF Debug_ranges;
-      ]
-    | Five ->
-      [ DWARF Debug_addr;
-        DWARF Debug_loclists;
-        DWARF Debug_rnglists;
-      ]
+    (* This will be populated in a future patch like this:
+      match !Clflags.gdwarf_version with
+      | Four ->
+        [ DWARF Debug_loc;
+          DWARF Debug_ranges;
+        ]
+      | Five ->
+        [ DWARF Debug_addr;
+          DWARF Debug_loclists;
+          DWARF Debug_rnglists;
+        ]
+    *)
+    []
   in
   sections @ dwarf_version_dependent_sections
 
 let section_is_text = function
-  | Text -> true
+  | Text
+  | Jump_tables -> true
   | Data
   | Read_only_data
   | Eight_byte_literals
   | Sixteen_byte_literals
-  | Jump_tables
   | DWARF _ -> false
 
-(* Modified version of [TS.system] for easier matching in
-   [switch_to_section], below. *)
+(* Modified version of [TS.system] for easier matching in [flags], below. *)
 type derived_system =
   | Linux
   | MinGW_32
@@ -172,7 +174,7 @@ let flags t ~first_occurrence =
     | (Eight_byte_literals | Sixteen_byte_literals), _, Solaris ->
       rodata ()
     | Sixteen_byte_literals, _, MacOS_like ->
-      ["__TEXT";"__literal16"], None, ["16byte_literals"]
+      ["__TEXT"; "__literal16"], None, ["16byte_literals"]
     | Sixteen_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Sixteen_byte_literals, _, (MinGW_32 | Win32 | Win64) ->
@@ -180,7 +182,7 @@ let flags t ~first_occurrence =
     | Sixteen_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
     | Eight_byte_literals, _, MacOS_like ->
-      ["__TEXT";"__literal8"], None, ["8byte_literals"]
+      ["__TEXT"; "__literal8"], None, ["8byte_literals"]
     | Eight_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Eight_byte_literals, _, (MinGW_32 | Win32 | Win64) ->
@@ -208,30 +210,40 @@ let to_string t =
   let { names; flags = _; args = _; } = flags t ~first_occurrence:true in
   String.concat " " names
 
-let print ppf t =
-  let str =
-    match t with
-    | Text -> "Text"
-    | Data -> "Data"
-    | Read_only_data -> "Read_only_data"
-    | Eight_byte_literals -> "Eight_byte_literals"
-    | Sixteen_byte_literals -> "Sixteen_byte_literals"
-    | Jump_tables -> "Jump_tables"
-    | DWARF Debug_info -> "(DWARF Debug_info)"
-    | DWARF Debug_abbrev -> "(DWARF Debug_abbrev)"
-    | DWARF Debug_aranges -> "(DWARF Debug_aranges)"
-    | DWARF Debug_addr -> "(DWARF Debug_addr)"
-    | DWARF Debug_loc -> "(DWARF Debug_loc)"
-    | DWARF Debug_ranges -> "(DWARF Debug_ranges)"
-    | DWARF Debug_loclists -> "(DWARF Debug_loclists)"
-    | DWARF Debug_rnglists -> "(DWARF Debug_rnglists)"
-    | DWARF Debug_str -> "(DWARF Debug_str)"
-    | DWARF Debug_line -> "(DWARF Debug_line)"
-  in
-  Format.pp_print_string ppf str
+include Identifiable.Make (struct
+  type nonrec t = t
 
-let compare t1 t2 =
-  Stdlib.compare t1 t2
+  let print ppf t =
+    let str =
+      match t with
+      | Text -> "Text"
+      | Data -> "Data"
+      | Read_only_data -> "Read_only_data"
+      | Eight_byte_literals -> "Eight_byte_literals"
+      | Sixteen_byte_literals -> "Sixteen_byte_literals"
+      | Jump_tables -> "Jump_tables"
+      | DWARF Debug_info -> "(DWARF Debug_info)"
+      | DWARF Debug_abbrev -> "(DWARF Debug_abbrev)"
+      | DWARF Debug_aranges -> "(DWARF Debug_aranges)"
+      | DWARF Debug_addr -> "(DWARF Debug_addr)"
+      | DWARF Debug_loc -> "(DWARF Debug_loc)"
+      | DWARF Debug_ranges -> "(DWARF Debug_ranges)"
+      | DWARF Debug_loclists -> "(DWARF Debug_loclists)"
+      | DWARF Debug_rnglists -> "(DWARF Debug_rnglists)"
+      | DWARF Debug_str -> "(DWARF Debug_str)"
+      | DWARF Debug_line -> "(DWARF Debug_line)"
+    in
+    Format.pp_print_string ppf str
 
-let equal t1 t2 =
-  Stdlib.compare t1 t2 = 0
+  let output chan t =
+    Format.fprintf (Format.formatter_of_out_channel chan) "%a" print t
+
+  let compare t1 t2 =
+    Stdlib.compare t1 t2
+
+  let equal t1 t2 =
+    Stdlib.compare t1 t2 = 0
+
+  let hash t =
+    Hashtbl.hash t
+end)

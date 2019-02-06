@@ -91,14 +91,14 @@ and cmo_magic_number = "Caml1999O023"
 and cma_magic_number = "Caml1999A023"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y023"
+    "Caml1999y024"
   else
-    "Caml1999Y023"
+    "Caml1999Y024"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z023"
+    "Caml1999z024"
   else
-    "Caml1999Z023"
+    "Caml1999Z024"
 and ast_impl_magic_number = "Caml1999M023"
 and ast_intf_magic_number = "Caml1999N023"
 and cmxs_magic_number = "Caml1999D023"

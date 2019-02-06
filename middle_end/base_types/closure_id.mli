@@ -25,3 +25,12 @@
     (viz. [Project_closure]). *)
 
 include module type of Closure_element
+
+val closure_symbol : Closure_id.t -> Symbol.t
+        (* Symbol of a function if the function is
+           closed (statically allocated)
+           flambda-only *)
+
+val function_label : Closure_id.t -> Backend_sym.t
+        (* linkage name of the code of a function
+           flambda-only *)

@@ -7,7 +7,7 @@
 (*                                                                        *)
 (*   Copyright 2014 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2016--2018 Jane Street Group LLC                           *)
+(*   Copyright 2016--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -713,7 +713,7 @@ let initialize ~big_endian ~(emit : Directive.t -> unit) =
         | DWARF _ ->
           (* All of the other settings that require these DWARF sections
              imply [Debug_dwarf_functions]; see clflags.ml. *)
-          if Clflags.debug_thing Debug_dwarf_functions
+          if !Clflags.debug (* Clflags.debug_thing Debug_dwarf_functions *)
             && dwarf_supported ()
           then begin
             switch_to_section section
@@ -1002,8 +1002,9 @@ let offset_into_dwarf_section_symbol ?comment section upper
       Asm_section.print (Asm_section.DWARF section)
   end;
   (* The macOS assembler doesn't seem to allow "distance to undefined symbol
-     from start of given section".  As such we do not allow this function to
-     be used for undefined symbols on macOS at the moment.
+     from start of given section".  (Moreover, dsymutil wouldn't know what
+     to do with such a reference anyway.)  As such we do not allow this
+     function to be used for undefined symbols on macOS at the moment.
      Relevant link:
      <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82005>.
   *)

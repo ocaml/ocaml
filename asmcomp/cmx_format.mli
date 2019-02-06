@@ -35,8 +35,8 @@ type export_info =
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
-    mutable ui_symbol: string;            (* Prefix for symbols *)
-    mutable ui_defines: string list;      (* Unit and sub-units implemented *)
+    mutable ui_symbol: Symbol.t;                (* Base symbol for unit *)
+    mutable ui_defines: Compilation_unit.Set.t; (* (Sub-)units implemented *)
     mutable ui_imports_cmi:
               (string * Digest.t option) list; (* Interfaces imported *)
     mutable ui_imports_cmx:(string * Digest.t option) list; (* Infos imported *)

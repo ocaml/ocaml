@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2018 Jane Street Group LLC                                 *)
+(*   Copyright 2018--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -22,16 +22,20 @@ type backend_sym = t
 
 (** Whether a symbol points at executable code ("text") or data.
 
-    Unlike [Asm_symbols]s, [Backend_sym]s of kind [Data] always point at
+    Unlike [Asm_symbol]s, [Backend_sym]s of kind [Data] always point at
     correctly-structured OCaml values.
 *)
 type kind = Text | Data
+
+(** A dummy symbol, for "uninitialised" variables. *)
+val dummy : t
 
 (** Create a backend symbol from an Flambda-style [Symbol.t] that
     encapsulates information both about the containing compilation unit and
     the base name of the symbol. *)
 val of_symbol : Symbol.t -> t
 
+(* Try to remove this
 (** Create a backend symbol given the textual name of the symbol as found in
     an object file; and its enclosing compilation unit.
     (Any language-specific name mangling conventions must
@@ -39,10 +43,27 @@ val of_symbol : Symbol.t -> t
     assembler-specific conventions, such as escaping of special characters
     or prefixing, must *not* be applied by the caller. *)
 val of_external_name : Compilation_unit.t -> string -> kind -> t
+*)
 
-(** Create a backend symbol given a base name.  The [base_name] will be
-    subject to escaping by this function. *)
-val create : base_name:string -> kind -> t
+(** Create a backend symbol, in the current compilation unit unless
+    specified otherwise, given a base name.  The base name will be
+    subject to escaping by this function and prepended with the OCaml symbol
+    prefix. *)
+val create : ?compilation_unit:Compilation_unit.t -> string -> kind -> t
+
+(** Create a [Data] symbol to reference a constant in the current compilation
+    unit.  These symbols are just numbered, rather than having proper names. *)
+val create_for_constant_data : unit -> t
+
+val of_ident : Ident.t -> t
+
+val for_global : ... -> t
+
+(* as used now in Cmmgen *)
+val of_global_ident : Ident.t -> t
+
+(* Primitive.native_name *)
+val for_external_call : Primitive.t -> t
 
 (** Add the given suffix to the given symbol.  The suffix will be subject
     to escaping. *)

@@ -19,7 +19,7 @@
 open Asttypes
 open Lambda
 
-type function_label = string
+type function_label = Symbol.t
 
 type ustructured_constant =
   | Uconst_float of float
@@ -29,10 +29,10 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
+  | Uconst_closure of ufunction list * Symbol.t * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant option
+  | Uconst_ref of Symbol.t * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
@@ -93,23 +93,23 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_const of uconstant
-  | Value_global_field of string * int
+  | Value_global_field of Symbol.t * int
 
 (* Preallocated globals *)
 
 type uconstant_block_field =
-  | Uconst_field_ref of string
+  | Uconst_field_ref of Symbol.t
   | Uconst_field_int of int
 
 type preallocated_block = {
-  symbol : string;
+  symbol : Symbol.t;
   exported : bool;
   tag : int;
   fields : uconstant_block_field option list;
 }
 
 type preallocated_constant = {
-  symbol : string;
+  symbol : Symbol.t;
   exported : bool;
   definition : ustructured_constant;
 }
@@ -131,7 +131,8 @@ let rec compare_float_lists l1 l2 =
 
 let compare_constants c1 c2 =
   match c1, c2 with
-  | Uconst_ref(lbl1, _c1), Uconst_ref(lbl2, _c2) -> String.compare lbl1 lbl2
+  | Uconst_ref(lbl1, _c1), Uconst_ref(lbl2, _c2) ->
+      Symbol.compare lbl1 lbl2
       (* Same labels -> same constants.
          Different labels -> different constants, even if the contents
            match, because of string constants that must not be
@@ -175,7 +176,7 @@ let compare_structured_constants c1 c2 =
       compare_float_lists l1 l2
   | Uconst_string s1, Uconst_string s2 -> String.compare s1 s2
   | Uconst_closure (_,lbl1,_), Uconst_closure (_,lbl2,_) ->
-      String.compare lbl1 lbl2
+      Symbol.compare lbl1 lbl2
   | _, _ ->
     (* no overflow possible here *)
     rank_structured_constant c1 - rank_structured_constant c2

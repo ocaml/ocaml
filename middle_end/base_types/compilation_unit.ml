@@ -6,7 +6,7 @@
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2014--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -19,7 +19,7 @@ open! Int_replace_polymorphic_compare
 
 type t = {
   id : Ident.t;
-  linkage_name : Linkage_name.t;
+  linkage_name : Linkage_name.t;  (* Why is this here? XXX *)
   hash : int;
 }
 
@@ -61,8 +61,21 @@ let create (id : Ident.t) linkage_name =
   end;
   { id; linkage_name; hash = Hashtbl.hash (Ident.name id); }
 
+let current_unit_linkage_name () =
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
+
+let runtime_and_external_libs =
+  create (Ident.create_persistent "*runtime*")
+    (Linkage_name.create "*runtime_or_external*")
+
+let startup =
+  create (Ident.create_persistent "caml_startup")
+    (Linkage_name.create "caml_startup")
+
 let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name
+
+let name t = Ident.name cu.id
 
 let current = ref None
 let is_current arg =
@@ -76,3 +89,8 @@ let get_current_exn () =
   | Some current -> current
   | None -> Misc.fatal_error "Compilation_unit.get_current_exn"
 let get_current_id_exn () = get_persistent_ident (get_current_exn ())
+
+(* for_global *)
+let unit_for_global id =
+  let sym_label = Linkage_name.create (symbol_for_global id) in
+  Compilation_unit.create id sym_label

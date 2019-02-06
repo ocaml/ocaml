@@ -225,8 +225,11 @@ let rec is_pure_clambda = function
 
 let make_const c = (Uconst c, Value_const c)
 let make_const_ref c =
-  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
-    Some c))
+  let sym =
+    Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+      (Compilenv.new_structured_constant ~shared:true c) Backend_sym.Data
+  in
+  make_const (Uconst_ref (sym, Some c))
 let make_const_int n = make_const (Uconst_int n)
 let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
@@ -461,7 +464,11 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         let name =
           Compilenv.new_structured_constant cst ~shared:true
         in
-        make_const (Uconst_ref (name, Some cst))
+        let sym =
+          Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+            name Backend_sym.Data
+        in
+        make_const (Uconst_ref (sym, Some cst))
       with Exit ->
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
@@ -796,6 +803,7 @@ let check_constant_result lam ulam approx =
       begin match ulam with
       | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
       | _ ->
+          let id = Backend_sym.to_string id in
           let glb =
             Uprim(Pgetglobal (V.create_persistent id), [], Debuginfo.none)
           in
@@ -846,7 +854,11 @@ let rec close fenv cenv = function
         let name =
           Compilenv.new_structured_constant cst ~shared
         in
-        Uconst_ref (name, Some cst)
+        let sym =
+          Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+            name Backend_sym.Data
+        in
+        Uconst_ref (sym, Some cst)
       in
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
@@ -1422,8 +1434,9 @@ let intro size lam =
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, _approx) = close V.Map.empty V.Map.empty lam in
   let opaque =
+    let current_unit = Compilation_unit.get_current_exn () in
     !Clflags.opaque
-    || Env.is_imported_opaque (Compilenv.current_unit_name ())
+    || Env.is_imported_opaque (Compilation_unit.name current_unit)
   in
   if opaque
   then Compilenv.set_global_approx(Value_unknown)

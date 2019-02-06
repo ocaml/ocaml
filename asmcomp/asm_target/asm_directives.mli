@@ -7,7 +7,7 @@
 (*                                                                        *)
 (*   Copyright 2014 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2016--2018 Jane Street Group LLC                           *)
+(*   Copyright 2016--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -26,15 +26,16 @@
 (** Emit subsequent directives to the given section.  If this function
     has not been called before on the particular section, a label
     declaration will be emitted after declaring the section.
+
     Such labels may seem strange, but they are necessary so that
-    references (e.g. DW_FORM_ref_addr / DW_FORM_sec_offset when emitting
-    DWARF) to places that are currently at the start of these sections
-    get relocated correctly when those places become not at the start
-    (e.g. during linking). *)
+    references (e.g. [DW_FORM_ref_addr] / [DW_FORM_sec_offset] when emitting
+    DWARF on a Linux platform) to places that are currently at the start of
+    these sections get relocated correctly when those places become not at the
+    start (e.g. during linking). *)
 val switch_to_section : Asm_section.t -> unit
 
 (** Emit subsequent directives to the given section, where the section must
-    not be one of those in type [section] (see above).  The section is
+    _not_ be one of those in type [section] (see above).  The section is
     specified by the three components of a typical assembler section-switching
     command.  This function is only intended to be used for target-specific
     sections. *)
@@ -285,17 +286,37 @@ val offset_into_dwarf_section_symbol
   -> width:Target_system.machine_width
   -> unit
 
+(** Internal representation of directives.  The usual modus operandi is to
+    use the [print] function (below) to create the output as required for
+    the particular target assembler.  However other applications (for
+    example custom backends to write machine code) may require access to
+    the directives themselves.
+
+    Symbols that occur in values of type [Directive.t] are encoded as
+    [string]s and have had all necessary prefixing, mangling, escaping and
+    suffixing applied.
+*)
 module Directive : sig
+  (** An expression that is known to evaluate to either an assembly-time or
+      link-time constant. *)
   module Constant : sig
     type t = private
       | Signed_int of Int64.t
+      (** The given constant signed integer.  (The width is specified
+          separately; see below. *)
       | Unsigned_int of Numbers.Uint64.t
+      (** The given constant unsigned integer, likewise. *)
       | This
+      (** The current position in the assembly stream. *)
       | Named_thing of string
       (** [Named_thing] covers symbols, labels and variables. (Name mangling
           conventions have by now been applied to these entities.) *)
+      (* CR mshinwell: We should maybe be careful about claiming these are
+         signed. *)
       | Add of t * t
+      (** Signed integer addition. *)
       | Sub of t * t
+      (** Signed integer subtraction. *)
   end
 
   module Constant_with_width : sig
@@ -306,28 +327,32 @@ module Directive : sig
         [Named_thing] constructions are not known. *)
     type t
 
-    val constant : t -> Constant.t
-
+    (** The width of a particular constant. *)
     type width_in_bytes = private
       | Eight
       | Sixteen
       | Thirty_two
       | Sixty_four
 
+    (** The value of the given constant. *)
+    val constant : t -> Constant.t
+
+    (** The width of the given constant in bytes. *)
     val width_in_bytes : t -> width_in_bytes
   end
 
+  (** Whether a label is immediately followed by code or data. *)
   type thing_after_label = private
     | Code
     | Machine_width_data
 
+  (** The type of comments within an assembly file. *)
   type comment = private string
 
-  (** Internal representation of directives.  Only needed if writing a custom
-      assembler or printer instead of using [print], below.
-      Symbols that occur in values of type [t] are encoded as [string]s and
-      have had all necessary prefixing, mangling, escaping and suffixing
-      applied. *)
+  (** The type of directives.  Some of these are platform-specific.
+      They are not individually documented as the names are largely
+      self-explanatory, corresponding to the syntax of typical assemblers, and
+      most usage will be via [print]. *)
   type t = private
     | Align of { bytes : int; }
     | Bytes of { str : string; comment : string option; }
@@ -363,10 +388,13 @@ module Directive : sig
 end
 
 (** To be called by the emitter at the very start of code generation.
+
     [big_endian] should always be [Arch.big_endian].
+
     Calling the functions in this module will cause directives to be passed
     to the given [emit] function (a typical implementation of which will just
     call [Directive.print] on its parameter).
+
     This function switches to the text section. *)
 val initialize
    : big_endian:bool

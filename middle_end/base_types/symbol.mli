@@ -30,6 +30,17 @@ include Identifiable.S
 
 val of_variable : Variable.t -> t
 
+val of_global : Ident.t -> t
+
+(* used to be Compilenv.symbolname_for_pack, not make_symbol *)
+(* can't go in Compilation_unit.t due to dep *)
+val base_symbol_for_unit
+   : ?for_pack_prefix:string
+  -> Compilation_unit.t
+  -> t
+
+val to_string : t -> string
+
 (* Create the symbol without prefixing with the compilation unit.
    Used for global symbols like predefined exceptions *)
 val of_global_linkage : Compilation_unit.t -> Linkage_name.t -> t
@@ -42,3 +53,5 @@ val label : t -> Linkage_name.t
 val print_opt : Format.formatter -> t option -> unit
 
 val compare_lists : t list -> t list -> int
+
+val is_predefined_exception : t -> bool

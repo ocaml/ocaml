@@ -9,7 +9,7 @@
 (*   Copyright 2010 Institut National de Recherche en Informatique et     *)
 (*     en Automatique                                                     *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2014--2016, 2019 Jane Street Group LLC                     *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -17,7 +17,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compilation environments for compilation units *)
+(* Environments for compilation units *)
 
 open Cmx_format
 
@@ -29,52 +29,16 @@ val imported_sets_of_closures_table
   : Simple_value_approx.function_declarations option Set_of_closures_id.Tbl.t
         (* flambda-only *)
 
-val reset: ?packname:string -> string -> unit
-        (* Reset the environment and record the name of the unit being
-           compiled (arg).  Optional argument is [-for-pack] prefix. *)
-
-val unit_id_from_name: string -> Ident.t
-        (* flambda-only *)
+val reset
+   : ?for_pack_prefix:string
+  -> Compilation_unit.t
+  -> unit
+        (* Reset the environment, record the name of the unit being
+           compiled (arg) and set the current compilation unit. *)
 
 val current_unit_infos: unit -> unit_infos
         (* Return the infos for the unit being compiled *)
 
-val current_unit_name: unit -> string
-        (* Return the name of the unit being compiled
-           clambda-only *)
-
-val current_unit_linkage_name: unit -> Linkage_name.t
-        (* Return the linkage_name of the unit being compiled.
-           flambda-only *)
-
-val current_unit: unit -> Compilation_unit.t
-        (* flambda-only *)
-
-val current_unit_symbol: unit -> Symbol.t
-        (* flambda-only *)
-
-val make_symbol: ?unitname:string -> string option -> string
-        (* [make_symbol ~unitname:u None] returns the asm symbol that
-           corresponds to the compilation unit [u] (default: the current unit).
-           [make_symbol ~unitname:u (Some id)] returns the asm symbol that
-           corresponds to symbol [id] in the compilation unit [u]
-           (or the current unit). *)
-
-val symbol_in_current_unit: string -> bool
-        (* Return true if the given asm symbol belongs to the
-           current compilation unit, false otherwise. *)
-
-val is_predefined_exception: Symbol.t -> bool
-        (* flambda-only *)
-
-val unit_for_global: Ident.t -> Compilation_unit.t
-        (* flambda-only *)
-
-val symbol_for_global: Ident.t -> string
-        (* Return the asm symbol that refers to the given global identifier
-           flambda-only *)
-val symbol_for_global': Ident.t -> Symbol.t
-        (* flambda-only *)
 val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier
            clambda-only *)
@@ -101,23 +65,14 @@ val need_send_fun: int -> unit
         (* Record the need of a currying (resp. application,
            message sending) function with the given arity *)
 
-val new_const_symbol : unit -> string
-val closure_symbol : Closure_id.t -> Symbol.t
-        (* Symbol of a function if the function is
-           closed (statically allocated)
-           flambda-only *)
-val function_label : Closure_id.t -> string
-        (* linkage name of the code of a function
-           flambda-only *)
-
 val new_structured_constant:
   Clambda.ustructured_constant ->
   shared:bool -> (* can be shared with another structurally equal constant *)
-  string
+  Symbol.t
 val structured_constants:
   unit -> Clambda.preallocated_constant list
 val clear_structured_constants: unit -> unit
-val add_exported_constant: string -> unit
+val add_exported_constant: Symbol.t -> unit
         (* clambda-only *)
 type structured_constants
         (* clambda-only *)

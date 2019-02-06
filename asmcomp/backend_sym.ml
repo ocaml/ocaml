@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2018 Jane Street Group LLC                                 *)
+(*   Copyright 2018--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -29,6 +29,12 @@ type t = {
 
 type backend_sym = t
 
+let dummy =
+  { kind = Data;
+    compilation_unit = Compilation_unit.startup;
+    name = "*dummy*";
+  }
+
 let print ppf { name; _ } = Format.pp_print_string ppf name
 
 let to_string { name; _ } = name
@@ -45,6 +51,35 @@ let of_external_name compilation_unit name kind =
     name;
   }
 
+(* Return the symbol used to refer to a global identifier *)
+
+(* for_global *)
+let symbol_for_global id =
+  if Ident.is_predef id then
+    "caml_exn_" ^ Ident.name id
+  else begin
+    let unitname = Ident.name id in
+    match
+      try ignore (Hashtbl.find toplevel_approx unitname); None
+      with Not_found -> get_global_info id
+    with
+    | None -> make_symbol ~unitname:(Ident.name id) None
+    | Some ui -> make_symbol ~unitname:ui.ui_symbol None
+  end
+(*
+let concat_symbol unitname id =
+  unitname ^ "__" ^ id
+
+let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
+  let prefix = "caml" ^ unitname in
+  let name =
+    match idopt with
+    | None -> prefix
+    | Some id -> concat_symbol prefix id
+  in
+  Symbol.of_external_name ...
+*)
+
 let create ~base_name kind =
   let compilation_unit = Compilation_unit.get_current_exn () in
   let unit_name =
@@ -55,6 +90,16 @@ let create ~base_name kind =
     compilation_unit;
     name;
   }
+
+(*
+let const_label = ref 0
+
+let new_const_symbol () =
+  incr const_label;
+  make_symbol (Some (string_of_int !const_label))
+*)
+let create_for_constant_data () =
+  ...
 
 let compilation_unit t = t.compilation_unit
 

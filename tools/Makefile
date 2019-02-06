@@ -329,6 +329,7 @@ OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
         $(ROOTDIR)/asmcomp/backend_var.cmo \
+        $(ROOTDIR)/asmcomp/backend_sym.cmo \
         $(ROOTDIR)/asmcomp/printclambda.cmo \
         $(ROOTDIR)/asmcomp/export_info.cmo \
         objinfo.cmo
