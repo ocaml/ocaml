@@ -23,9 +23,9 @@ and the OCamlLabs folks (for OPAM testing).
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 export MAJOR=4
-export MINOR=07
-export BUGFIX=1
-export PLUSEXT=
+export MINOR=08
+export BUGFIX=0
+export PLUSEXT=+beta1
 
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
