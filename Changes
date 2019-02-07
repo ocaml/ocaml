@@ -415,7 +415,7 @@ Working version
 
 - GPR#2223: ocamltest: fix the "bsd" and "not-bsd" built-in actions to
   recognize all BSD variants
-  (Damien Doligez, review by Sébastien Hinderer)
+  (Damien Doligez, review by Sébastien Hinderer and David Allsopp)
 
 ### Manual and documentation:
 
