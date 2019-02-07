@@ -128,7 +128,7 @@ val blit : 'a array -> int -> 'a array -> int -> int -> unit
    [v1] and [v2] are the same array, and the source and
    destination chunks overlap.
 
-   Raise [Invalid_argument] if [o1] and [len] do not
+   Raises [Invalid_argument] if [o1] and [len] do not
    designate a valid subarray of [v1], or if [o2] and [len] do not
    designate a valid subarray of [v2]. *)
 
@@ -139,9 +139,23 @@ val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
    of [l].
 
-   Raise [Invalid_argument] if the length of [l] is greater than
+   Raises [Invalid_argument] if the length of [l] is greater than
    [Sys.max_array_length].*)
 
+val map_to_list : ('a -> 'b) -> 'a array -> 'b list
+(** [Array.map_to_list f a] is [Array.to_list (Array.map f a)], but
+    avoids the intermediate copy.
+
+    @since 4.09 *)
+
+val map_of_list : ('a -> 'b) -> 'a list -> 'b array
+(** [Array.map_of_list f l] is [Array.of_list (List.map f l)], but
+    avoids the intermediate copy.
+
+    Raises [Invalid_argument] if the length of [l] is greater than
+    [Sys.max_array_length].
+
+    @since 4.09 *)
 
 (** {1 Iterators} *)
 

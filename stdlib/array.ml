@@ -136,24 +136,28 @@ let mapi f a =
     r
   end
 
-let to_list a =
+let map_to_list f a =
   let rec tolist i res =
-    if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
+    if i < 0 then res else tolist (i - 1) (f (unsafe_get a i) :: res) in
   tolist (length a - 1) []
+
+let to_list a = map_to_list (fun x -> x) a
 
 (* Cannot use List.length here because the List module depends on Array. *)
 let rec list_length accu = function
   | [] -> accu
   | _::t -> list_length (succ accu) t
 
-let of_list = function
+let map_of_list f = function
     [] -> [||]
   | hd::tl as l ->
-      let a = create (list_length 0 l) hd in
+      let a = create (list_length 0 l) (f hd) in
       let rec fill i = function
           [] -> a
-        | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
+        | hd::tl -> unsafe_set a i (f hd); fill (i+1) tl in
       fill 1 tl
+
+let of_list a = map_of_list (fun x -> x) a
 
 let fold_left f x a =
   let r = ref x in
