@@ -53,3 +53,8 @@ and
 
 (There are two commits as one kind of magic number was forgotten,
 ideally there should be only one commit.)
+
+=== How to update magic numbers
+
+In order to update magic numbers, you must follow the boostrap procedure
+described in BOOTSTRAP.adoc
