@@ -424,6 +424,10 @@ OCaml 4.08.0
   on a new line, for more readable diffs of versioned dependencies.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- GPR#2223: ocamltest: fix the "bsd" and "not-bsd" built-in actions to
+  recognize all BSD variants
+  (Damien Doligez, review by Sébastien Hinderer and David Allsopp)
+
 ### Manual and documentation:
 
 - MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
