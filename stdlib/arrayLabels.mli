@@ -130,6 +130,18 @@ val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
    of [l]. *)
 
+val map_to_list : f:('a -> 'b) -> 'a array -> 'b list
+(** [Array.map_to_list f a] is [Array.to_list (Array.map f a)], but avoids the
+    intermediate copy.
+
+    @since 4.09 *)
+
+val map_of_list : f:('a -> 'b) -> 'a list -> 'b array
+(** [Array.map_of_list f l] is [Array.of_list (List.map f a)], but avoids the
+    intermediate copy.
+
+    @since 4.09 *)
+
 val iter : f:('a -> unit) -> 'a array -> unit
 (** [Array.iter f a] applies function [f] in turn to all
    the elements of [a].  It is equivalent to
