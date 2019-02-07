@@ -1346,8 +1346,9 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	boot/*.cm* boot/libcamlrun.$(A)
+	      boot/*.cm* boot/libcamlrun.$(A)
 	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
+	rm -f Makefile.common config.log config.status libtool
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log*
