@@ -108,17 +108,20 @@ let not_windows = make
     "not running on Windows"
     "running on Windows")
 
-let bsd_system = "bsd_elf"
+let is_bsd_system s =
+  match s with
+  | "bsd_elf" | "netbsd" | "freebsd" | "openbsd" -> true
+  | _ -> false
 
 let bsd = make
   "bsd"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.system = bsd_system)
+  (Actions_helpers.pass_or_skip (is_bsd_system Ocamltest_config.system)
     "on a BSD system"
     "not on a BSD system")
 
 let not_bsd = make
   "not-bsd"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.system <> bsd_system)
+  (Actions_helpers.pass_or_skip (not (is_bsd_system Ocamltest_config.system))
     "not on a BSD system"
     "on a BSD system")
 
