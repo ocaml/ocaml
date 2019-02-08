@@ -356,6 +356,9 @@ OCaml 4.08.0
 - MPR#6242, GPR#2143: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
+- GPR#2239: Fix match miscompilation with flambda
+  (Leo White, review by Alain Frisch)
+
 ### Runtime system:
 
 - MPR#7198, MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem)
