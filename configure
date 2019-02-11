@@ -16882,13 +16882,14 @@ else
   ocamldoc=ocamldoc
 fi
 
-if test x"$enable_flambda" = "xyes"
+if test x"$enable_flambda" = "xyes"; then :
   flambda=true
   if test x"$enable_flambda_invariants" = "xyes"; then :
   flambda_invariants=true
 else
   flambda_invariants=false
-fi; then :
+fi
+else
   flambda=false
   flambda_invariants=false
 fi
