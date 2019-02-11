@@ -263,13 +263,19 @@ static int handle_process_termination(
     if ( access(COREFILENAME, F_OK) == -1)
       fprintf(stderr, "Could not find core file.\n");
     else {
-      char corefile[strlen(corefilename_prefix) + 128];
-      snprintf(corefile, sizeof(corefile),
-        "%s.%d.core", corefilename_prefix, pid);
-      if ( rename(COREFILENAME, corefile) == -1)
-        fprintf(stderr, "The core file exists but could not be renamed.\n");
-      else
-        fprintf(stderr,"The core file has been renamed to %s\n", corefile);
+      size_t corefile_len = strlen(corefilename_prefix) + 128;
+      char * corefile = malloc(corefile_len);
+      if (corefile == NULL)
+        fprintf(stderr, "Out of memory while processing core file.\n");
+      else {
+        snprintf(corefile, corefile_len,
+          "%s.%d.core", corefilename_prefix, pid);
+        if ( rename(COREFILENAME, corefile) == -1)
+          fprintf(stderr, "The core file exists but could not be renamed.\n");
+        else
+          fprintf(stderr,"The core file has been renamed to %s\n", corefile);
+        free(corefile);
+      }
     }
   }
 
