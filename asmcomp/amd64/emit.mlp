@@ -224,7 +224,7 @@ let addressing addr typ i n =
       mem64 typ d (arg64 i n)
   | Iindexed2 d ->
       mem64 typ ~base:(arg64 i n) d (arg64 i (n+1))
-  | Iscaled(2, d) ->
+  | Iscaled(2, d) when not !Clflags.optimize_for_speed ->
       mem64 typ ~base:(arg64 i n) d (arg64 i n)
   | Iscaled(scale, d) ->
       mem64 typ ~scale d (arg64 i n)
