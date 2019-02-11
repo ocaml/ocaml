@@ -1637,7 +1637,7 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
 
-AS_IF([test x"$enable_flambda" = "xyes"]
+AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true
   AS_IF([test x"$enable_flambda_invariants" = "xyes"],
     [flambda_invariants=true],
