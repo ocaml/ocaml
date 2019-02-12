@@ -106,7 +106,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 
   sz = Wosize_val(arg);
   tg = (tag_t)Long_val(new_tag_v);
-  if (sz == 0) CAMLreturn (arg);
+  if (sz == 0) CAMLreturn (Atom(tg));
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));

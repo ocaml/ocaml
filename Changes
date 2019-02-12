@@ -8,6 +8,11 @@ Working version
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
+### Runtime system:
+
+- GPR#1725: Deprecate Obj.set_tag
+  (Stephen Dolan, review by Gabriel Scherer)
+
 OCaml 4.08.0
 ------------
 

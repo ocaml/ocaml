@@ -9,6 +9,8 @@ let () =
   assert (Obj.dup (Obj.repr (A ("hello", 10.))) = Obj.repr (A ("hello", 10.)));
   assert (Obj.with_tag 1 (Obj.repr (A ("hello", 10.))) = Obj.repr (B ("hello", 10.)))
 
+let () =
+  assert (Obj.tag (Obj.with_tag 42 (Obj.repr [| |])) = 42)
 
 (* check optimisations *)
 let raw_allocs f =
