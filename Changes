@@ -251,6 +251,9 @@ Working version
   destructive substitutions
   (Thomas Refis, review by Gabriel Radanne, report by Hugo Heuzard)
 
+- #2245: Improve error message for link order error in bytecode
+  (Pierre Chambart, review by Jérémie Dimino and Gabriel Scherer)
+
 - #8732, improved error messages for invalid private row type definitions.
   For instance, [ type t = private [< `A > `A ] ] .
   (Florian Angeletti, review by Jacques Garrigue, Thomas Refis,
