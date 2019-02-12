@@ -23,7 +23,7 @@ let remove_locs =
          let attrs = default_mapper.attributes mapper attrs in
          List.filter (fun a ->
            a.Parsetree.attr_name.Location.txt <> "#punning#")
-           attrs (* this is to accomodate a LexiFi custom extension *)
+           attrs (* this is to accommodate a LexiFi custom extension *)
       )
   }
 

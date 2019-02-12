@@ -2582,7 +2582,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       end;
     fmt_result
 
-  (* Parse formatting informations (after '@'). *)
+  (* Parse formatting information (after '@'). *)
   and parse_after_at : type e f . int -> int -> (_, _, e, f) fmt_ebb =
   fun str_ind end_ind ->
     if str_ind = end_ind then Fmt_EBB (Char_literal ('@', End_of_format))

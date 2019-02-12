@@ -124,7 +124,7 @@ val matched_string : string -> string
    - {!Str.global_substitute}
    - {!Str.substitute_first}
 
-   provided that none of the following functions was called inbetween:
+   provided that none of the following functions was called in between:
    - {!Str.global_replace}
    - {!Str.replace_first}
    - {!Str.split}

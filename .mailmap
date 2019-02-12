@@ -8,7 +8,7 @@
 # See the MAPPING AUTHORS section of 'man git-shortlog' for more details.
 
 # Such a remapping may be useful in particular for tracking authorship
-# of commits erroneously made under an obscure alias or email adress.
+# of commits erroneously made under an obscure alias or email address.
 # (Some Name <some@name.com>, pour ne pas le citer)
 
 

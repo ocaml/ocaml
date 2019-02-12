@@ -24,7 +24,7 @@ type op_class =
   | Op_other   (* anything else that does not allocate nor store in memory *)
 
 class cse_generic : object
-  (* The following methods can be overriden to handle processor-specific
+  (* The following methods can be overridden to handle processor-specific
      operations. *)
 
   method class_of_operation: Mach.operation -> op_class

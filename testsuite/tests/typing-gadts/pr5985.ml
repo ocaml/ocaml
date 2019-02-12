@@ -136,7 +136,7 @@ Error: In this definition, a type variable has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
 |}];;
-(* shoud fail: we do not know for sure the variance of Queue.t *)
+(* should fail: we do not know for sure the variance of Queue.t *)
 
 type +'a t = T of 'a;;
 type +'a s = 'b constraint 'a = 'b t;; (* ok *)

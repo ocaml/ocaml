@@ -112,7 +112,7 @@ val x : 'a option -> unit = <fun>
 val y : 'a list -> unit = <fun>
 |}];;
 
-(* this is accepted as all fields are overriden *)
+(* this is accepted as all fields are overridden *)
 let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 [%%expect{|
 val x : int ref = {contents = 3}

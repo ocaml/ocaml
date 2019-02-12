@@ -244,7 +244,7 @@ Error: This expression is packed module, but the expected type is int
 |}]
 
 
-(** Bultin [%extension_constructor *)
+(** Builtin [%extension_constructor *)
 type t = A
 let x = [%extension_constructor A]
 [%%expect {|

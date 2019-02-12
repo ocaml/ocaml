@@ -454,7 +454,7 @@ let rec scan_elems ib accu =
   bscanf ib " %c " (fun c ->
     match c with
     | '[' when accu = [] ->
-        (* begginning of list: could find either
+        (* beginning of list: could find either
            - an int, if the list is not empty,
            - the char ], if the list is empty. *)
         bscanf ib "%[]]"
@@ -931,7 +931,7 @@ let scan_string_list = scan_list (fun ib -> Scanf.bscanf ib "%S");;
 let scan_bool_list = scan_list (fun ib -> Scanf.bscanf ib "%B");;
 let scan_char_list = scan_list (fun ib -> Scanf.bscanf ib "%C");;
 
-(* [scan_list] is truely polymorphic: scanning a list of lists of items
+(* [scan_list] is truly polymorphic: scanning a list of lists of items
    is a one liner!
 
    Here we scan list of lists of floats. *)
@@ -983,7 +983,7 @@ let test35 () =
 test (test340 () && test35 ())
 ;;
 
-(* The prefered reader functionnals. *)
+(* The preferred reader functionnals. *)
 
 (* To read a list as in OCaml (elements are ``blank + semicolon + blank''
    separated, and the list is enclosed in brackets). *)

@@ -525,7 +525,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
 
    The rewriting occurs in an environment filled with:
    * The approximation of the free variables
-   * An explicitely unknown approximation for function parameters,
+   * An explicitly unknown approximation for function parameters,
      except for those where it is known to be safe: those present in the
      [specialised_args] set.
    * An approximation for the closures in the set. It contains the code of

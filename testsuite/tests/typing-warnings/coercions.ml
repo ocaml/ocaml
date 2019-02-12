@@ -53,7 +53,7 @@ module PR7135 :
   end
 |}]
 
-(* exemple of non-ground coercion *)
+(* example of non-ground coercion *)
 
 module Test1 = struct
   type t = private int

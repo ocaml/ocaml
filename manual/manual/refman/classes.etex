@@ -274,7 +274,7 @@ class-body:  ['(' pattern [':' typexpr] ')'] { class-field }
 The expression
 @'object' class-body 'end'@ denotes
 a class body. This is the prototype for an object : it lists the
-instance variables and methods of an objet of this class.
+instance variables and methods of an object of this class.
 
 A class body is a class value: it is not evaluated at once. Rather,
 its components are evaluated each time an object is created.

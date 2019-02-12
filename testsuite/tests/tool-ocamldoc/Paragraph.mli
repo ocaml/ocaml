@@ -30,7 +30,7 @@
     + An enumerated list first element
     + second element
 
-    {L Alignement test: left}
+    {L Alignment test: left}
     {R Right}
     {C Center}
 
