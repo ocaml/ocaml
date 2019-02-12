@@ -212,6 +212,10 @@ OCaml 4.08.0
 - GPR#1525: Make function set_max_indent respect documentation
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
 
+- GPR#2233: Unix: fix handling of Linux abstract socket paths when receiving a
+  Unix socket address from the operating system.
+  (Tim Cuthbertson, review by Jérémie Dimino)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
