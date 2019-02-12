@@ -117,11 +117,15 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       if (adr_len > struct_offset) {
         // adr_len is 0 when sent from an unbound socket
         path_length = adr_len - struct_offset;
-        if (adr->s_unix.sun_path[0] != '\0') {
-          /* paths _may_ be null-terminated, but abstract sockets
-           * start with a null, and may contain internal nulls. */
-          path_length = strnlen(adr->s_unix.sun_path, path_length);
-        }
+
+        /* paths _may_ be null-terminated, but Linux abstract sockets
+         * start with a null, and may contain internal nulls. */
+        path_length = (
+#ifdef __linux__
+          (adr->s_unix.sun_path[0] == '\0') ? path_length :
+#endif
+          strnlen(adr->s_unix.sun_path, path_length)
+        );
       }
 
       n = caml_alloc_initialized_string(path_length,
