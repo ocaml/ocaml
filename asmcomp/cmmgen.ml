@@ -1733,11 +1733,15 @@ let rec is_unboxed_number ~strict env e =
         | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
             Boxed (Boxed_integer (Pnativeint, dbg), false)
         | Pstring_load(Thirty_two,_)
-        | Pbytes_load(Thirty_two,_) -> Boxed (Boxed_integer (Pint32, dbg), false)
+        | Pbytes_load(Thirty_two,_) ->
+            Boxed (Boxed_integer (Pint32, dbg), false)
         | Pstring_load(Sixty_four,_)
-        | Pbytes_load(Sixty_four,_) -> Boxed (Boxed_integer (Pint64, dbg), false)
-        | Pbigstring_load(Thirty_two,_) -> Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pbigstring_load(Sixty_four,_) -> Boxed (Boxed_integer (Pint64, dbg), false)
+        | Pbytes_load(Sixty_four,_) ->
+            Boxed (Boxed_integer (Pint64, dbg), false)
+        | Pbigstring_load(Thirty_two,_) ->
+            Boxed (Boxed_integer (Pint32, dbg), false)
+        | Pbigstring_load(Sixty_four,_) ->
+            Boxed (Boxed_integer (Pint64, dbg), false)
         | Praise _ -> No_result
         | _ -> No_unboxing
       end

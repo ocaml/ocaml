@@ -148,5 +148,6 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pgetglobal _
   | Psetglobal _
     ->
-      Misc.fatal_errorf "lambda primitive %a can't be converted to clambda primitive"
+      Misc.fatal_errorf "lambda primitive %a can't be converted to \
+                         clambda primitive"
         Printlambda.primitive prim
