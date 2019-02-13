@@ -6,7 +6,7 @@ typechecker is overly complex and fragile.  A big rewriting "from
 scratch" might be possible or desirable at some point, or not, but
 incremental cleanup steps are certainly accessible and could bring the
 current implementation in a better shape at a relatively small cost
-and in a reasonnably distant future.
+and in a reasonably distant future.
 
 Goals of the cleanup:
 

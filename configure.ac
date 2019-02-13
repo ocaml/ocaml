@@ -192,7 +192,7 @@ AS_CASE([$host],
   outputexe='-o $(EMPTY)'
   syslib='-l$(1)'])
 
-# Environment variables that are taken into acocunt
+# Environment variables that are taken into account
 
 AC_ARG_VAR([AS], [which assembler to use])
 AC_ARG_VAR([ASPP], [which assembler (with preprocessor) to use])
@@ -665,7 +665,7 @@ AC_MSG_NOTICE([Target is a $bits bits architecture])
 AC_C_BIGENDIAN(
   [AC_DEFINE([ARCH_BIG_ENDIAN], [1])],
   [],
-  [AC_MSG_ERROR([could not determine endiannes.])],
+  [AC_MSG_ERROR([could not determine endianness.])],
   [AC_MSG_ERROR([unable to handle universal endianness])]
 )
 

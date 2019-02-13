@@ -19,7 +19,7 @@ open Asttypes
 open Types
 
 module Unification_trace: sig
-  (** Unification traces are used to explain unification errrors
+  (** Unification traces are used to explain unification errors
       when printing error messages *)
 
   type position = First | Second

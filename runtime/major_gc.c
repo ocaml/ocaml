@@ -231,7 +231,7 @@ static void init_sweep_phase(void)
   if (caml_major_gc_hook) (*caml_major_gc_hook)();
 }
 
-/* auxillary function of mark_slice */
+/* auxiliary function of mark_slice */
 static inline value* mark_slice_darken(value *gray_vals_ptr,
                                        value v, mlsize_t i,
                                        int in_ephemeron, int *slice_pointers)

@@ -541,7 +541,7 @@ class type my_class_type =
     (** The comment for variable x. *)
     val mutable x : int
 
-    (** The commend for method m. *)
+    (** The comment for method m. *)
     method m : int -> int
 end
 
@@ -637,7 +637,7 @@ class type my_class_type =
   object
     (** The comment for the instance variable x. *)
     val mutable x : int
-    (** The commend for method m. *)
+    (** The comment for method m. *)
     method m : int -> int
   end
 

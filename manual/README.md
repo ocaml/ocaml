@@ -8,7 +8,7 @@ Prerequisites
 
 - A LaTeX installation.
 
-- The HeVeA LaTeX-to-HTML convertor (available in OPAM):
+- The HeVeA LaTeX-to-HTML converter (available in OPAM):
   <http://hevea.inria.fr/>
 
 Note that you must make sure `hevea.sty` is installed into TeX properly. Your

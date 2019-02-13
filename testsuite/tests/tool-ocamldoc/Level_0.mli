@@ -9,7 +9,7 @@
    Standard heading levels start at 1.
 
   {0 Level 0}
-  A level 0 heading is guaranted to be at the same level that
+  A level 0 heading is guaranteed to be at the same level that
   the main heading of the module.
 
   This setup allows users to start their standard heading at level 1 rather

@@ -82,7 +82,7 @@ let pop_castable () =
     | [] -> raise Not_found
 ;;
 
-(* We can add foos and bars to this list, and retrive them *)
+(* We can add foos and bars to this list, and retrieve them *)
 
 push_castable (new foo);;
 push_castable (new bar);;
