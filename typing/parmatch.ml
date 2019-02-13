@@ -229,7 +229,7 @@ let first_column simplified_matrix =
 
   The second clause above will NOT (and cannot) be flagged as useless.
 
-  Finally, there are two compatibility function
+  Finally, there are two compatibility functions:
    compat p q      ---> 'syntactic compatibility, used for diagnostics.
    may_compat p q --->   a safe approximation of possible compat,
                          for compilation
