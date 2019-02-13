@@ -80,7 +80,7 @@ Release 3.08.0:
  - mod: one section per to module in latex output + improve latex output
  - mod: odoc_latex: use buffers instead of string concatenation
  - add: new ocamldoc man page, thanks to Samuel Mimram
- - fix: useless parenthesis around arguments of arguments of a type constructor in
+ - fix: useless parentheses around arguments of arguments of a type constructor in
      type definitions, and aournd arguments of exceptions in exception definitions.
  - fix: blank lines in verbatim, latex, code pre, code and ele ref modes
      are now accepted
