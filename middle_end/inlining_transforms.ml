@@ -191,7 +191,7 @@ type state = {
     (* List of functions that still need to be copied to the new set
        of closures *)
   new_funs : Flambda.function_declaration Variable.Map.t;
-    (* The function declerations for the new set of closures *)
+    (* The function declarations for the new set of closures *)
   new_free_vars_with_old_projections : Flambda.specialised_to Variable.Map.t;
     (* The free variables for the new set of closures, but the projection
        fields still point to old free variables. *)

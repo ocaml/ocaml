@@ -41,7 +41,7 @@
 <li>An enumerated list first element</li>
 <li>second element</li>
 </OL>
-<div align=left>Alignement test: left</div><div align=right>Right</div><center>Center</center>
+<div align=left>Alignment test: left</div><div align=right>Right</div><center>Center</center>
 <p>Other complex text<sub class="subscript">in subscript </sub><sup class="superscript">and superscript</sup></p>
 
 <p>There is also html specific  elements.</p>

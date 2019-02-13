@@ -118,7 +118,7 @@ In regular expressions that follow this declaration, the identifier
 
 The names of the entry points must be valid identifiers for OCaml
 values (starting with a lowercase letter).
-Similarily, the arguments \texttt{\var{arg$_1$}\ldots{}
+Similarly, the arguments \texttt{\var{arg$_1$}\ldots{}
 \var{arg$_n$}} must be valid identifiers for OCaml.
 Each entry point becomes an
 OCaml function that takes $n+1$ arguments,

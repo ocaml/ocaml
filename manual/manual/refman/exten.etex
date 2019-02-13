@@ -1550,7 +1550,7 @@ Some attributes are understood by the type-checker:
  (such as an expression, or a type expression)
  in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
- warning.  This is implementation dependant and can change between versions.
+ warning.  This is implementation dependent and can change between versions.
  Some warnings are even completely outside the control of ``ocaml.warning''
  (for instance, warnings 1, 2, 14, 29 and 50).
 
@@ -2347,7 +2347,7 @@ to the user when the alert is triggered (i.e. when the marked
 component is referenced).
 
 The "ocaml.alert" or "alert" attribute serves two purposes: (i) to
-mark component with an alert to be triggerred when the component is
+mark component with an alert to be triggered when the component is
 referenced, and (ii) to control which alert names are enabled.  In the
 first form, the attribute takes an identifier possibly
 followed by a message. Here is an example of a value declaration marked

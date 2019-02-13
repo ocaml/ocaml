@@ -108,9 +108,9 @@ let no_header = " Suppress header in generated documentation\n\t\t"^latex_texi_o
 let no_trailer = " Suppress trailer in generated documentation\n\t\t"^latex_texi_only
 let separate_files = " Generate one file per toplevel module "^latex_only
 let latex_title ref_titles =
-  "n,style Associate {n } to the given sectionning style\n"^
+  "n,style Associate {n } to the given sectioning style\n"^
   "\t\t(e.g. 'section') in the latex output "^latex_only^"\n"^
-  "\t\tDefault sectionning is:\n\t\t"^
+  "\t\tDefault sectioning is:\n\t\t"^
   (String.concat "\n\t\t"
      (List.map (fun (n,t) -> Printf.sprintf " %d -> %s" n t) !ref_titles))
 
@@ -204,9 +204,9 @@ let merge_all = ('A', "merge all")
 let no_index = " Do not build index for Info files "^texi_only
 let esc_8bits = " Escape accentuated characters in Info files "^texi_only
 let texinfo_title r=
-  "n,style Associate {n } to the given sectionning style\n"^
+  "n,style Associate {n } to the given sectioning style\n"^
   "\t\t(e.g. 'section') in the texInfo output "^texi_only^"\n"^
-  "\t\tDefault sectionning is:\n\t\t"^
+  "\t\tDefault sectioning is:\n\t\t"^
   (String.concat "\n\t\t"
      (List.map (fun (n,(t,h)) ->
           Printf.sprintf " %d -> %s, %s " n t h) !r))
