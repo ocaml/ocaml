@@ -16,12 +16,12 @@ let test_sender ~client_socket ~server_socket ~server_addr ~client_addr =
   let buf = Bytes.make 1024 '\x00' in
 
   let sender =
-    (* try *)
+    try
       let (recv_len, sender) = recvfrom server_socket buf 0 1024 [] in
       assert (Bytes.sub_string buf 0 recv_len = "t");
       assert (sender = client_addr);
       sender
-    (* with e -> ADDR_UNIX (Printexc.to_string e) *)
+    with e -> ADDR_UNIX (Printexc.to_string e)
   in
 
   Printf.printf " as %S: " (path_of_addr sender);
