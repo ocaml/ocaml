@@ -11,7 +11,7 @@ Working version
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
-  (Stephen Dolan, review by Gabriel Scherer)
+  (Stephen Dolan, review by Gabriel Scherer and Damien Doligez)
 
 OCaml 4.08.0
 ------------
