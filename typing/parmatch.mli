@@ -19,14 +19,14 @@ open Asttypes
 open Typedtree
 open Types
 
-val omega : Location.t -> pattern
+val omega : pattern
 (** aka. "Tpat_any" or "_"  *)
 
-val omegas : Location.t -> int -> pattern list
-(** [List.init (fun _ -> omega loc)] *)
+val omegas : int -> pattern list
+(** [List.init (fun _ -> omega)] *)
 
 val omega_list : pattern list -> pattern list
-(** [List.map (fun pat -> omega pat.pat_loc)] *)
+(** Transforms patterns to omegas, but keep the location *)
 
 val normalize_pat : pattern -> pattern
 (** Keep only the "head" of a pattern: all arguments are replaced by [omega], so
@@ -85,7 +85,7 @@ val complete_constrs :
 (** [ppat_of_type] builds an untyped or-pattern from its expected type.
      May raise [Empty] when [type_expr] is an empty variant *)
 val ppat_of_type :
-    Location.t -> Env.t -> type_expr ->
+    Env.t -> type_expr ->
     Parsetree.pattern *
     (string, constructor_description) Hashtbl.t *
     (string, label_description) Hashtbl.t
