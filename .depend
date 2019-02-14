@@ -1948,20 +1948,13 @@ bytecomp/printlambda.cmx : \
     parsing/asttypes.cmi \
     bytecomp/printlambda.cmi
 bytecomp/printlambda.cmi : \
+    typing/types.cmi \
     bytecomp/lambda.cmi
 bytecomp/runtimedef.cmo : \
     bytecomp/runtimedef.cmi
 bytecomp/runtimedef.cmx : \
     bytecomp/runtimedef.cmi
 bytecomp/runtimedef.cmi :
-bytecomp/semantics_of_primitives.cmo : \
-    bytecomp/lambda.cmi \
-    bytecomp/semantics_of_primitives.cmi
-bytecomp/semantics_of_primitives.cmx : \
-    bytecomp/lambda.cmx \
-    bytecomp/semantics_of_primitives.cmi
-bytecomp/semantics_of_primitives.cmi : \
-    bytecomp/lambda.cmi
 bytecomp/simplif.cmo : \
     utils/warnings.cmi \
     typing/stypes.cmi \
@@ -2627,6 +2620,7 @@ asmcomp/clambda.cmo : \
     bytecomp/lambda.cmi \
     typing/ident.cmi \
     middle_end/debuginfo.cmi \
+    asmcomp/clambda_primitives.cmi \
     asmcomp/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/clambda.cmi
@@ -2635,6 +2629,7 @@ asmcomp/clambda.cmx : \
     bytecomp/lambda.cmx \
     typing/ident.cmx \
     middle_end/debuginfo.cmx \
+    asmcomp/clambda_primitives.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/clambda.cmi
@@ -2643,13 +2638,31 @@ asmcomp/clambda.cmi : \
     bytecomp/lambda.cmi \
     typing/ident.cmi \
     middle_end/debuginfo.cmi \
+    asmcomp/clambda_primitives.cmi \
     asmcomp/backend_var.cmi \
+    parsing/asttypes.cmi
+asmcomp/clambda_primitives.cmo : \
+    typing/types.cmi \
+    typing/primitive.cmi \
+    bytecomp/lambda.cmi \
+    parsing/asttypes.cmi \
+    asmcomp/clambda_primitives.cmi
+asmcomp/clambda_primitives.cmx : \
+    typing/types.cmx \
+    typing/primitive.cmx \
+    bytecomp/lambda.cmx \
+    parsing/asttypes.cmi \
+    asmcomp/clambda_primitives.cmi
+asmcomp/clambda_primitives.cmi : \
+    typing/types.cmi \
+    typing/primitive.cmi \
+    bytecomp/lambda.cmi \
     parsing/asttypes.cmi
 asmcomp/closure.cmo : \
     utils/warnings.cmi \
     bytecomp/switch.cmi \
     bytecomp/simplif.cmi \
-    bytecomp/semantics_of_primitives.cmi \
+    asmcomp/semantics_of_primitives.cmi \
     typing/primitive.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -2658,9 +2671,11 @@ asmcomp/closure.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     middle_end/debuginfo.cmi \
+    asmcomp/convert_primitives.cmi \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     asmcomp/clambda.cmi \
     asmcomp/backend_var.cmi \
     parsing/asttypes.cmi \
@@ -2670,7 +2685,7 @@ asmcomp/closure.cmx : \
     utils/warnings.cmx \
     bytecomp/switch.cmx \
     bytecomp/simplif.cmx \
-    bytecomp/semantics_of_primitives.cmx \
+    asmcomp/semantics_of_primitives.cmx \
     typing/primitive.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \
@@ -2679,9 +2694,11 @@ asmcomp/closure.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     middle_end/debuginfo.cmx \
+    asmcomp/convert_primitives.cmx \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     asmcomp/clambda.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
@@ -2739,7 +2756,7 @@ asmcomp/cmmgen.cmo : \
     bytecomp/switch.cmi \
     asmcomp/strmatch.cmi \
     asmcomp/proc.cmi \
-    bytecomp/printlambda.cmi \
+    asmcomp/printclambda_primitives.cmi \
     typing/primitive.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -2750,6 +2767,7 @@ asmcomp/cmmgen.cmo : \
     asmcomp/cmx_format.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     asmcomp/clambda.cmi \
     asmcomp/backend_var.cmi \
     parsing/asttypes.cmi \
@@ -2763,7 +2781,7 @@ asmcomp/cmmgen.cmx : \
     bytecomp/switch.cmx \
     asmcomp/strmatch.cmx \
     asmcomp/proc.cmx \
-    bytecomp/printlambda.cmx \
+    asmcomp/printclambda_primitives.cmx \
     typing/primitive.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \
@@ -2774,6 +2792,7 @@ asmcomp/cmmgen.cmx : \
     asmcomp/cmx_format.cmi \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     asmcomp/clambda.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
@@ -2862,6 +2881,21 @@ asmcomp/compilenv.cmi : \
     asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmi \
     asmcomp/clambda.cmi
+asmcomp/convert_primitives.cmo : \
+    bytecomp/printlambda.cmi \
+    utils/misc.cmi \
+    bytecomp/lambda.cmi \
+    asmcomp/clambda_primitives.cmi \
+    asmcomp/convert_primitives.cmi
+asmcomp/convert_primitives.cmx : \
+    bytecomp/printlambda.cmx \
+    utils/misc.cmx \
+    bytecomp/lambda.cmx \
+    asmcomp/clambda_primitives.cmx \
+    asmcomp/convert_primitives.cmi
+asmcomp/convert_primitives.cmi : \
+    bytecomp/lambda.cmi \
+    asmcomp/clambda_primitives.cmi
 asmcomp/deadcode.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -3207,6 +3241,7 @@ asmcomp/mach.cmi : \
     asmcomp/arch.cmo
 asmcomp/printclambda.cmo : \
     bytecomp/printlambda.cmi \
+    asmcomp/printclambda_primitives.cmi \
     bytecomp/lambda.cmi \
     typing/ident.cmi \
     asmcomp/clambda.cmi \
@@ -3215,6 +3250,7 @@ asmcomp/printclambda.cmo : \
     asmcomp/printclambda.cmi
 asmcomp/printclambda.cmx : \
     bytecomp/printlambda.cmx \
+    asmcomp/printclambda_primitives.cmx \
     bytecomp/lambda.cmx \
     typing/ident.cmx \
     asmcomp/clambda.cmx \
@@ -3223,6 +3259,22 @@ asmcomp/printclambda.cmx : \
     asmcomp/printclambda.cmi
 asmcomp/printclambda.cmi : \
     asmcomp/clambda.cmi
+asmcomp/printclambda_primitives.cmo : \
+    bytecomp/printlambda.cmi \
+    typing/primitive.cmi \
+    bytecomp/lambda.cmi \
+    asmcomp/clambda_primitives.cmi \
+    parsing/asttypes.cmi \
+    asmcomp/printclambda_primitives.cmi
+asmcomp/printclambda_primitives.cmx : \
+    bytecomp/printlambda.cmx \
+    typing/primitive.cmx \
+    bytecomp/lambda.cmx \
+    asmcomp/clambda_primitives.cmx \
+    parsing/asttypes.cmi \
+    asmcomp/printclambda_primitives.cmi
+asmcomp/printclambda_primitives.cmi : \
+    asmcomp/clambda_primitives.cmi
 asmcomp/printcmm.cmo : \
     utils/targetint.cmi \
     bytecomp/lambda.cmi \
@@ -3439,6 +3491,14 @@ asmcomp/selection.cmx : \
 asmcomp/selection.cmi : \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi
+asmcomp/semantics_of_primitives.cmo : \
+    asmcomp/clambda_primitives.cmi \
+    asmcomp/semantics_of_primitives.cmi
+asmcomp/semantics_of_primitives.cmx : \
+    asmcomp/clambda_primitives.cmx \
+    asmcomp/semantics_of_primitives.cmi
+asmcomp/semantics_of_primitives.cmi : \
+    asmcomp/clambda_primitives.cmi
 asmcomp/spacetime_profiling.cmo : \
     asmcomp/selectgen.cmi \
     asmcomp/proc.cmi \
@@ -3557,23 +3617,25 @@ asmcomp/traverse_for_exported_symbols.cmi : \
     middle_end/base_types/export_id.cmi \
     middle_end/base_types/closure_id.cmi
 asmcomp/un_anf.cmo : \
-    bytecomp/semantics_of_primitives.cmi \
+    asmcomp/semantics_of_primitives.cmi \
     asmcomp/printclambda.cmi \
     utils/misc.cmi \
     bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     asmcomp/clambda.cmi \
     asmcomp/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/un_anf.cmi
 asmcomp/un_anf.cmx : \
-    bytecomp/semantics_of_primitives.cmx \
+    asmcomp/semantics_of_primitives.cmx \
     asmcomp/printclambda.cmx \
     utils/misc.cmx \
     bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     asmcomp/clambda.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
@@ -3736,12 +3798,14 @@ middle_end/closure_conversion.cmo : \
     middle_end/flambda_utils.cmi \
     middle_end/flambda.cmi \
     middle_end/debuginfo.cmi \
+    asmcomp/convert_primitives.cmi \
     utils/config.cmi \
     middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_origin.cmi \
     middle_end/base_types/closure_id.cmi \
     middle_end/closure_conversion_aux.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     middle_end/backend_intf.cmi \
     middle_end/closure_conversion.cmi
 middle_end/closure_conversion.cmx : \
@@ -3763,12 +3827,14 @@ middle_end/closure_conversion.cmx : \
     middle_end/flambda_utils.cmx \
     middle_end/flambda.cmx \
     middle_end/debuginfo.cmx \
+    asmcomp/convert_primitives.cmx \
     utils/config.cmx \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_origin.cmx \
     middle_end/base_types/closure_id.cmx \
     middle_end/closure_conversion_aux.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     middle_end/backend_intf.cmi \
     middle_end/closure_conversion.cmi
 middle_end/closure_conversion.cmi : \
@@ -3819,18 +3885,18 @@ middle_end/debuginfo.cmx : \
 middle_end/debuginfo.cmi : \
     parsing/location.cmi
 middle_end/effect_analysis.cmo : \
-    bytecomp/semantics_of_primitives.cmi \
+    asmcomp/semantics_of_primitives.cmi \
     utils/misc.cmi \
-    bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
     middle_end/flambda.cmi \
+    asmcomp/clambda_primitives.cmi \
     middle_end/effect_analysis.cmi
 middle_end/effect_analysis.cmx : \
-    bytecomp/semantics_of_primitives.cmx \
+    asmcomp/semantics_of_primitives.cmx \
     utils/misc.cmx \
-    bytecomp/lambda.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
     middle_end/flambda.cmx \
+    asmcomp/clambda_primitives.cmx \
     middle_end/effect_analysis.cmi
 middle_end/effect_analysis.cmi : \
     middle_end/flambda.cmi
@@ -3892,6 +3958,7 @@ middle_end/flambda.cmo : \
     middle_end/base_types/set_of_closures_id.cmi \
     middle_end/projection.cmi \
     bytecomp/printlambda.cmi \
+    asmcomp/printclambda_primitives.cmi \
     middle_end/parameter.cmi \
     utils/numbers.cmi \
     middle_end/base_types/mutable_variable.cmi \
@@ -3904,6 +3971,7 @@ middle_end/flambda.cmo : \
     middle_end/base_types/closure_origin.cmi \
     middle_end/base_types/closure_id.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmi \
     middle_end/flambda.cmi
@@ -3916,6 +3984,7 @@ middle_end/flambda.cmx : \
     middle_end/base_types/set_of_closures_id.cmx \
     middle_end/projection.cmx \
     bytecomp/printlambda.cmx \
+    asmcomp/printclambda_primitives.cmx \
     middle_end/parameter.cmx \
     utils/numbers.cmx \
     middle_end/base_types/mutable_variable.cmx \
@@ -3928,6 +3997,7 @@ middle_end/flambda.cmx : \
     middle_end/base_types/closure_origin.cmx \
     middle_end/base_types/closure_id.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmx \
     middle_end/flambda.cmi
@@ -3947,6 +4017,7 @@ middle_end/flambda.cmi : \
     middle_end/debuginfo.cmi \
     middle_end/base_types/closure_origin.cmi \
     middle_end/base_types/closure_id.cmi \
+    asmcomp/clambda_primitives.cmi \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmi
 middle_end/flambda_invariants.cmo : \
@@ -3958,19 +4029,19 @@ middle_end/flambda_invariants.cmo : \
     middle_end/base_types/set_of_closures_origin.cmi \
     middle_end/base_types/set_of_closures_id.cmi \
     middle_end/projection.cmi \
-    bytecomp/printlambda.cmi \
+    asmcomp/printclambda_primitives.cmi \
     middle_end/parameter.cmi \
     utils/numbers.cmi \
     middle_end/base_types/mutable_variable.cmi \
     utils/misc.cmi \
     bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
-    typing/ident.cmi \
     middle_end/flambda_iterators.cmi \
     middle_end/flambda.cmi \
     middle_end/debuginfo.cmi \
     middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi \
+    asmcomp/clambda_primitives.cmi \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmi \
     middle_end/flambda_invariants.cmi
@@ -3983,19 +4054,19 @@ middle_end/flambda_invariants.cmx : \
     middle_end/base_types/set_of_closures_origin.cmx \
     middle_end/base_types/set_of_closures_id.cmx \
     middle_end/projection.cmx \
-    bytecomp/printlambda.cmx \
+    asmcomp/printclambda_primitives.cmx \
     middle_end/parameter.cmx \
     utils/numbers.cmx \
     middle_end/base_types/mutable_variable.cmx \
     utils/misc.cmx \
     bytecomp/lambda.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
-    typing/ident.cmx \
     middle_end/flambda_iterators.cmx \
     middle_end/flambda.cmx \
     middle_end/debuginfo.cmx \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx \
+    asmcomp/clambda_primitives.cmx \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmx \
     middle_end/flambda_invariants.cmi
@@ -4038,6 +4109,7 @@ middle_end/flambda_utils.cmo : \
     middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_origin.cmi \
     middle_end/base_types/closure_id.cmi \
+    asmcomp/clambda_primitives.cmi \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmi \
     middle_end/flambda_utils.cmi
@@ -4062,6 +4134,7 @@ middle_end/flambda_utils.cmx : \
     middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_origin.cmx \
     middle_end/base_types/closure_id.cmx \
+    asmcomp/clambda_primitives.cmx \
     parsing/asttypes.cmi \
     middle_end/allocated_const.cmx \
     middle_end/flambda_utils.cmi
@@ -4125,7 +4198,6 @@ middle_end/inconstant_idents.cmo : \
     middle_end/parameter.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
-    bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
     utils/identifiable.cmi \
     middle_end/flambda_utils.cmi \
@@ -4142,7 +4214,6 @@ middle_end/inconstant_idents.cmx : \
     middle_end/parameter.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \
-    bytecomp/lambda.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
     utils/identifiable.cmx \
     middle_end/flambda_utils.cmx \
@@ -4211,6 +4282,7 @@ middle_end/inline_and_simplify.cmo : \
     middle_end/base_types/closure_origin.cmi \
     middle_end/base_types/closure_id.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     middle_end/backend_intf.cmi \
     middle_end/allocated_const.cmi \
     middle_end/inline_and_simplify.cmi
@@ -4253,6 +4325,7 @@ middle_end/inline_and_simplify.cmx : \
     middle_end/base_types/closure_origin.cmx \
     middle_end/base_types/closure_id.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     middle_end/backend_intf.cmi \
     middle_end/allocated_const.cmx \
     middle_end/inline_and_simplify.cmi
@@ -4330,22 +4403,22 @@ middle_end/inlining_cost.cmo : \
     middle_end/projection.cmi \
     typing/primitive.cmi \
     utils/misc.cmi \
-    bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
     middle_end/flambda_iterators.cmi \
     middle_end/flambda.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     middle_end/inlining_cost.cmi
 middle_end/inlining_cost.cmx : \
     middle_end/base_types/variable.cmx \
     middle_end/projection.cmx \
     typing/primitive.cmx \
     utils/misc.cmx \
-    bytecomp/lambda.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
     middle_end/flambda_iterators.cmx \
     middle_end/flambda.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     middle_end/inlining_cost.cmi
 middle_end/inlining_cost.cmi : \
     middle_end/projection.cmi \
@@ -4909,6 +4982,7 @@ middle_end/simplify_boxed_integer_ops.cmo : \
     bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
     middle_end/inlining_cost.cmi \
+    asmcomp/clambda_primitives.cmi \
     middle_end/simplify_boxed_integer_ops.cmi
 middle_end/simplify_boxed_integer_ops.cmx : \
     middle_end/simplify_common.cmx \
@@ -4917,14 +4991,15 @@ middle_end/simplify_boxed_integer_ops.cmx : \
     bytecomp/lambda.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
     middle_end/inlining_cost.cmx \
+    asmcomp/clambda_primitives.cmx \
     middle_end/simplify_boxed_integer_ops.cmi
 middle_end/simplify_boxed_integer_ops.cmi : \
     middle_end/simplify_boxed_integer_ops_intf.cmi
 middle_end/simplify_boxed_integer_ops_intf.cmi : \
     middle_end/simple_value_approx.cmi \
-    bytecomp/lambda.cmi \
     middle_end/inlining_cost.cmi \
-    middle_end/flambda.cmi
+    middle_end/flambda.cmi \
+    asmcomp/clambda_primitives.cmi
 middle_end/simplify_common.cmo : \
     middle_end/simple_value_approx.cmi \
     bytecomp/lambda.cmi \
@@ -4950,13 +5025,14 @@ middle_end/simplify_primitives.cmo : \
     middle_end/simplify_common.cmi \
     middle_end/simplify_boxed_integer_ops.cmi \
     middle_end/simple_value_approx.cmi \
-    bytecomp/semantics_of_primitives.cmi \
+    asmcomp/semantics_of_primitives.cmi \
     utils/misc.cmi \
     bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
     middle_end/inlining_cost.cmi \
     middle_end/flambda.cmi \
     utils/clflags.cmi \
+    asmcomp/clambda_primitives.cmi \
     parsing/asttypes.cmi \
     middle_end/simplify_primitives.cmi
 middle_end/simplify_primitives.cmx : \
@@ -4965,22 +5041,23 @@ middle_end/simplify_primitives.cmx : \
     middle_end/simplify_common.cmx \
     middle_end/simplify_boxed_integer_ops.cmx \
     middle_end/simple_value_approx.cmx \
-    bytecomp/semantics_of_primitives.cmx \
+    asmcomp/semantics_of_primitives.cmx \
     utils/misc.cmx \
     bytecomp/lambda.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
     middle_end/inlining_cost.cmx \
     middle_end/flambda.cmx \
     utils/clflags.cmx \
+    asmcomp/clambda_primitives.cmx \
     parsing/asttypes.cmi \
     middle_end/simplify_primitives.cmi
 middle_end/simplify_primitives.cmi : \
     middle_end/base_types/variable.cmi \
     middle_end/simple_value_approx.cmi \
-    bytecomp/lambda.cmi \
     middle_end/inlining_cost.cmi \
     middle_end/flambda.cmi \
-    middle_end/debuginfo.cmi
+    middle_end/debuginfo.cmi \
+    asmcomp/clambda_primitives.cmi
 middle_end/unbox_closures.cmo : \
     middle_end/base_types/variable.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \

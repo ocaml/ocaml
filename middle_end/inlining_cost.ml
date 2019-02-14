@@ -19,11 +19,8 @@ open! Int_replace_polymorphic_compare
 
 (* Simple approximation of the space cost of a primitive. *)
 
-let prim_size (prim : Lambda.primitive) args =
+let prim_size (prim : Clambda_primitives.primitive) args =
   match prim with
-  | Pidentity -> 0
-  | Pgetglobal _ -> 1
-  | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
   | Pfield _ -> 1
   | Psetfield (_, isptr, init) ->
