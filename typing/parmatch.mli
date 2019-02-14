@@ -25,8 +25,8 @@ val omega : pattern
 val omegas : int -> pattern list
 (** [List.init (fun _ -> omega)] *)
 
-val omega_list : 'a list -> pattern list
-(** [List.map (fun _ -> omega)] *)
+val omega_list : pattern list -> pattern list
+(** Transforms patterns to omegas, but keep the location *)
 
 val normalize_pat : pattern -> pattern
 (** Keep only the "head" of a pattern: all arguments are replaced by [omega], so

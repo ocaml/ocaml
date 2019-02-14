@@ -40,7 +40,7 @@ let extra_pat =
 let rec omegas i =
   if i <= 0 then [] else omega :: omegas (i-1)
 
-let omega_list l = List.map (fun _ -> omega) l
+let omega_list l = List.map (fun p -> { omega with pat_loc = p.pat_loc }) l
 
 let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 
@@ -409,7 +409,9 @@ let rec simple_match_args p1 p2 = match p2.pat_desc with
       Tpat_construct(_, _,args) -> omega_list args
     | Tpat_variant(_, Some _, _) -> [omega]
     | Tpat_tuple(args) -> omega_list args
-    | Tpat_record(args,_) ->  omega_list args
+    | Tpat_record(args,_) -> 
+      let args = List.map (fun (_, _, pat) -> pat) args in
+      omega_list args
     | Tpat_array(args) ->  omega_list args
     | Tpat_lazy _ -> [omega]
     | _ -> []
