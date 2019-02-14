@@ -64,6 +64,9 @@ let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam ;
   Format.flush_str_formatter ()
 
+let omega pat_loc = { omega with pat_loc }
+let omegas pat_loc n = List.map (fun o -> { o with pat_loc }) (omegas n)
+
 let all_record_args lbls = match lbls with
 | (_,{lbl_all=lbl_all},pat)::_ ->
     let loc = pat.pat_loc in
@@ -1381,7 +1384,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
     | Tpat_or (_,_,_) -> raise OrPat
     | Tpat_construct (_,cstr',args)
       when  Types.may_equal_constr cstr cstr' -> args @ rem
-    | Tpat_any -> Parmatch.omegas q.pat_loc cstr.cstr_arity @ rem
+    | Tpat_any -> omegas q.pat_loc cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 
 let make_constr_matching p def ctx = function
@@ -1795,7 +1798,7 @@ let get_args_array p rem = match p with
 let matcher_array len p rem = match p.pat_desc with
 | Tpat_or (_,_,_) -> raise OrPat
 | Tpat_array args when List.length args=len -> args @ rem
-| Tpat_any -> Parmatch.omegas p.pat_loc len @ rem
+| Tpat_any -> omegas p.pat_loc len @ rem
 | _ -> raise NoMatch
 
 let make_array_matching kind p def ctx = function
