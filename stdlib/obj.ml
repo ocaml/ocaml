@@ -38,6 +38,7 @@ external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
+external with_tag : int -> t -> t = "caml_obj_with_tag"
 
 let marshal (obj : t) =
   Marshal.to_bytes obj []

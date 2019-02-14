@@ -55,6 +55,7 @@ external field : t -> int -> t = "%obj_field"
 *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
+  [@@ocaml.deprecated "Use with_tag instead."]
 
 val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
 val [@inline always] set_double_field : t -> int -> float -> unit
@@ -64,6 +65,8 @@ external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
          (* @since 3.12.0 *)
+external with_tag : int -> t -> t = "caml_obj_with_tag"
+  (* @since 4.09.0 *)
 
 val first_non_constant_constructor_tag : int
 val last_non_constant_constructor_tag : int
