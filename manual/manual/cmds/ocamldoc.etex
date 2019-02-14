@@ -61,7 +61,7 @@ with the {\bf\tt -d} option.
 \item["-dot"]
 Generate a dependency graph for the toplevel modules, in a format suitable
 for displaying and processing by "dot". The "dot" tool is available from
-\url{http://www.research.att.com/sw/tools/graphviz/}.
+\url{https://graphviz.org/}.
 The textual representation of the graph is written to the file
 "ocamldoc.out", or to the file specified with the {\bf\tt -o} option.
 Use "dot ocamldoc.out" to display it.
