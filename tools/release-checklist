@@ -24,12 +24,12 @@ rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 
 export WORKTREE=~/o/4.08
-  # make this point to the git worktree for the branch you are releasing
+  # must be the git worktree for the branch you are releasing
 
 export MAJOR=4
-export MINOR=07
-export BUGFIX=1
-export PLUSEXT=
+export MINOR=08
+export BUGFIX=0
+export PLUSEXT=+beta2
 
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
@@ -190,7 +190,6 @@ TMPDIR=/tmp/ocaml-release
 git checkout $VERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
 cd $TMPDIR
-(cd ocaml-$VERSION && rm -rf experimental)
 gtar -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION
 gzip -9 <ocaml-$VERSION.tar >ocaml-$VERSION.tar.gz
 xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
