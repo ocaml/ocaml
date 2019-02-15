@@ -1035,3 +1035,27 @@ int caml_num_rows_fd(int fd)
 {
   return -1;
 }
+
+CAMLexport WCHAR* caml_get_full_path_name(const WCHAR* lpFileName)
+{
+  WCHAR *lpBuffer;
+  DWORD nBufferLength = wcslen(lpFileName) + 1;
+  DWORD retcode;
+
+  while (1) {
+    lpBuffer = caml_stat_alloc((nBufferLength + 4) * sizeof(WCHAR));
+    retcode = GetFullPathNameW(lpFileName, nBufferLength, lpBuffer + 4, NULL);
+
+    if (retcode == 0)
+      caml_win32_sys_error(GetLastError());
+
+    if (retcode < nBufferLength)
+      break;
+
+    caml_stat_free(lpBuffer);
+    nBufferLength = retcode;
+  }
+
+  lpBuffer[0] = '\\'; lpBuffer[1] = '\\'; lpBuffer[2] = '?'; lpBuffer[3] = '\\';
+  return lpBuffer;
+}

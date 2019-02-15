@@ -153,6 +153,9 @@ extern value caml_copy_string_of_utf16(const wchar_t *s);
 
 extern int caml_win32_isatty(int fd);
 
+/* Get the full path name */
+CAMLextern wchar_t * caml_get_full_path_name(const wchar_t * name);
+
 #endif /* _WIN32 */
 
 #endif /* CAML_INTERNALS */
