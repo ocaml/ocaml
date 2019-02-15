@@ -568,7 +568,7 @@ OCaml 4.08.0
   pull requests; see CONTRIBUTING.md for more details.
   (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
 
-- GPR#1610: Remove positions from paths
+- GPR#1610, GPR#2252: Remove positions from paths
   (Leo White, review by Frédéric Bour and Thomas Refis)
 
 - GPR#1703, GPR#1944, GPR#2213: Add the module Compile_common,
