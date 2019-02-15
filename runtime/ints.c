@@ -126,7 +126,9 @@ CAMLprim value caml_bswap16(value v)
 
 CAMLprim value caml_int_compare(value v1, value v2)
 {
-  int res = (v1 > v2) - (v1 < v2);
+  intnat greater = v1 > v2;
+  intnat less    = v1 < v2;
+  intnat res = greater - less;
   return Val_int(res);
 }
 
