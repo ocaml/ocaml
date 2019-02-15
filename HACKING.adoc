@@ -116,7 +116,7 @@ link:driver/pparse.ml[].
 ==== Typing -- link:typing/[]
 
 Type-checks the AST and produces a typed representation of the program
-(link:parsing/typedtree.mli[] has some helpful comments). See
+(link:typing/typedtree.mli[] has some helpful comments). See
 link:typing/HACKING.adoc[].
 
 ==== The bytecode compiler -- link:bytecomp/[]
