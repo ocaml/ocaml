@@ -14,7 +14,6 @@
 /**************************************************************************/
 
 #include <string.h>
-#include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -107,7 +106,14 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
                      socklen_param_type adr_len, int close_on_error)
 {
   value res;
-  /* fprintf(stderr, "address family: %d\n", adr->s_gen.sa_family); */
+#ifndef _WIN32
+  if (adr_len < offsetof(struct sockaddr, sa_data)) {
+    // Only possible for an unnamed AF_UNIX socket, in
+    // which case sa_family might be uninitialized.
+    adr->s_gen.sa_family = AF_UNIX;
+  }
+#endif
+
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
@@ -117,7 +123,6 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       mlsize_t struct_offset = offsetof(struct sockaddr_un, sun_path);
       mlsize_t path_length = 0;
       if (adr_len > struct_offset) {
-        // adr_len is 0 when sent from an unbound socket
         path_length = adr_len - struct_offset;
 
         /* paths _may_ be null-terminated, but Linux abstract sockets

@@ -14,7 +14,6 @@
 /**************************************************************************/
 
 #include <string.h>
-#include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
@@ -65,25 +64,11 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     addr_len = sizeof(addr);
-
-    // The sender must be in the same address family, but if the
-    // sender is an unnamed AF_UNIX socket, recvfrom writes nothing
-    // to `addr.s_gen` and sets addr_len to 0. alloc_sockaddr handles
-    // a zero-length path, but only if sa_family is set correctly.
-    //
-    // We could use getsockname here to copy the sa_family of the receiver,
-    // but since recvfrom only leaves the address uninitialized for an
-    // unnamed AF_UNIX sender, we can just set it blindly.
-#ifndef _WIN32
-    addr.s_gen.sa_family = AF_UNIX;
-#endif
-
     caml_enter_blocking_section();
     ret = recvfrom(Int_val(sock), iobuf, (int) numbytes, cv_flags,
                    &addr.s_gen, &addr_len);
     caml_leave_blocking_section();
     if (ret == -1) uerror("recvfrom", Nothing);
-    /* fprintf(stderr, "Address family %d, len = %d\n", addr.s_gen.sa_family, addr_len); */
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
     adr = alloc_sockaddr(&addr, addr_len, -1);
     res = caml_alloc_small(2, 0);

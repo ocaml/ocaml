@@ -8,26 +8,14 @@ let path_of_addr = function
 let test_sender ~client_socket ~server_socket ~server_addr ~client_addr =
   Printf.printf "%S" (path_of_addr client_addr);
   let byte = Bytes.make 1 't' in
-
-  (* Printf.printf "[sending]"; (* DEBUG *) *)
-
   let sent_len = sendto client_socket byte 0 1 [] server_addr in
   assert (sent_len = 1);
   let buf = Bytes.make 1024 '\x00' in
-
-  let sender =
-    try
-      let (recv_len, sender) = recvfrom server_socket buf 0 1024 [] in
-      assert (Bytes.sub_string buf 0 recv_len = "t");
-      assert (sender = client_addr);
-      sender
-    with e -> ADDR_UNIX (Printexc.to_string e)
-  in
+  let (recv_len, sender) = recvfrom server_socket buf 0 1024 [] in
 
   Printf.printf " as %S: " (path_of_addr sender);
-
-  (* Printf.printf "[receiving]"; (* DEBUG *) *)
-
+  assert (sender = client_addr);
+  assert (Bytes.sub_string buf 0 recv_len = "t");
   print_endline "OK";;
 
 let ensure_no_file path =
