@@ -108,9 +108,10 @@ release: all
 	cp htmlman/manual.html $(RELEASE)refman.html
 	rm -f htmlman/manual.{html,haux,hmanual*,htoc}
 	tar zcf $(RELEASE)refman-html.tar.gz \
-	  htmlman/*.* htmlman/libref htmlman/fonts
+	  htmlman/*.* htmlman/libref htmlman/compilerlibref htmlman/fonts
 	zip -8 $(RELEASE)refman-html.zip \
-	  htmlman/*.* htmlman/libref/*.* htmlman/fonts/*.*
+	  htmlman/*.* htmlman/libref/*.* htmlman/compilerlibref/*.* \
+	  htmlman/fonts/*.*
 	cp texstuff/manual.pdf $(RELEASE)refman.pdf
 	cp textman/manual.txt $(RELEASE)refman.txt
 	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
