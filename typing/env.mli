@@ -60,8 +60,8 @@ val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list
 val without_cmis: ('a -> 'b) -> 'a -> 'b
-        (* [without_cmis f arg] applies [f] to [arg], but does not
-           allow opening cmis during its execution *)
+(* [without_cmis f arg] applies [f] to [arg], but does not
+   allow opening cmis during its execution *)
 
 (* Lookup by paths *)
 
@@ -239,11 +239,10 @@ val set_unit_name: string -> unit
 val get_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
-
-val read_signature: string -> string -> signature
+val read_signature: modname -> filepath -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  alerts:alerts -> signature -> string -> string
+  alerts:alerts -> signature -> modname -> filepath
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
@@ -253,20 +252,16 @@ val save_signature_with_imports:
            imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)
-
 val crc_of_unit: modname -> Digest.t
 
 (* Return the set of compilation units imported, with their CRC *)
-
 val imports: unit -> crcs
 
+(* may raise Consistbl.Inconsistency *)
+val import_crcs: source:string -> crcs -> unit
+
 (* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
-val is_imported_opaque: string -> bool
-
-(* Direct access to the table of imported compilation units with their CRC *)
-
-val crc_units: Consistbl.t
-val add_import: string -> unit
+val is_imported_opaque: modname -> bool
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)
@@ -283,10 +278,6 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 (* Error report *)
 
 type error =
-  | Illegal_renaming of modname * modname * filepath
-  | Inconsistent_import of modname * filepath * filepath
-  | Need_recursive_types of modname * modname
-  | Depend_on_unsafe_string_unit of modname * modname
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
@@ -367,14 +358,3 @@ val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit
 
 val print_address : Format.formatter -> address -> unit
-
-module Persistent_signature : sig
-  type t =
-    { filename : string; (** Name of the file containing the signature. *)
-      cmi : Cmi_format.cmi_infos }
-
-  (** Function used to load a persistent signature. The default is to look for
-      the .cmi file in the load path. This function can be overridden to load
-      it from memory, for instance to build a self-contained toplevel. *)
-  val load : (unit_name:string -> t option) ref
-end

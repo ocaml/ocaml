@@ -539,6 +539,7 @@ typing/env.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
     typing/predef.cmi \
+    typing/persistent_env.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -546,7 +547,6 @@ typing/env.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/datarepr.cmi \
-    utils/consistbl.cmi \
     utils/config.cmi \
     typing/cmi_format.cmi \
     utils/clflags.cmi \
@@ -559,6 +559,7 @@ typing/env.cmx : \
     typing/types.cmx \
     typing/subst.cmx \
     typing/predef.cmx \
+    typing/persistent_env.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
@@ -566,7 +567,6 @@ typing/env.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/datarepr.cmx \
-    utils/consistbl.cmx \
     utils/config.cmx \
     typing/cmi_format.cmx \
     utils/clflags.cmx \
@@ -584,7 +584,6 @@ typing/env.cmi : \
     parsing/location.cmi \
     utils/load_path.cmi \
     typing/ident.cmi \
-    utils/consistbl.cmi \
     typing/cmi_format.cmi \
     parsing/asttypes.cmi
 typing/envaux.cmo : \
@@ -821,6 +820,29 @@ typing/path.cmx : \
     typing/path.cmi
 typing/path.cmi : \
     typing/ident.cmi
+typing/persistent_env.cmo : \
+    utils/warnings.cmi \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    utils/consistbl.cmi \
+    utils/config.cmi \
+    typing/cmi_format.cmi \
+    utils/clflags.cmi \
+    typing/persistent_env.cmi
+typing/persistent_env.cmx : \
+    utils/warnings.cmx \
+    utils/misc.cmx \
+    parsing/location.cmx \
+    utils/consistbl.cmx \
+    utils/config.cmx \
+    typing/cmi_format.cmx \
+    utils/clflags.cmx \
+    typing/persistent_env.cmi
+typing/persistent_env.cmi : \
+    typing/types.cmi \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    typing/cmi_format.cmi
 typing/predef.cmo : \
     typing/types.cmi \
     typing/path.cmi \
@@ -1118,6 +1140,7 @@ typing/typecore.cmo : \
     typing/printpat.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
+    typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/parmatch.cmi \
@@ -1150,6 +1173,7 @@ typing/typecore.cmx : \
     typing/printpat.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
+    typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/parmatch.cmx \
@@ -6071,7 +6095,6 @@ toplevel/toploop.cmo : \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
     bytecomp/dll.cmi \
-    utils/consistbl.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
@@ -6116,7 +6139,6 @@ toplevel/toploop.cmx : \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
     bytecomp/dll.cmx \
-    utils/consistbl.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \

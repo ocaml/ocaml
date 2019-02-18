@@ -57,105 +57,12 @@ let used_constructors :
   = Hashtbl.create 16
 
 type error =
-  | Illegal_renaming of modname * modname * filepath
-  | Inconsistent_import of modname * filepath * filepath
-  | Need_recursive_types of modname * modname
-  | Depend_on_unsafe_string_unit of modname * modname
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
 exception Error of error
 
 let error err = raise (Error err)
-
-module EnvLazy : sig
-  type ('a,'b) t
-
-  type log
-
-  val force : ('a -> 'b) -> ('a,'b) t -> 'b
-  val create : 'a -> ('a,'b) t
-  val get_arg : ('a,'b) t -> 'a option
-  val create_forced : 'b -> ('a, 'b) t
-  val create_failed : exn -> ('a, 'b) t
-
-  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns
-     [None] then [t] is recorded in [log]. [backtrack log] will then reset all
-     the recorded [t]s back to their original state. *)
-  val log : unit -> log
-  val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
-  val backtrack : log -> unit
-
-end  = struct
-
-  type ('a,'b) t = ('a,'b) eval ref
-
-  and ('a,'b) eval =
-    | Done of 'b
-    | Raise of exn
-    | Thunk of 'a
-
-  type undo =
-    | Nil
-    | Cons : ('a, 'b) t * 'a * undo -> undo
-
-  type log = undo ref
-
-  let force f x =
-    match !x with
-    | Done x -> x
-    | Raise e -> raise e
-    | Thunk e ->
-        match f e with
-        | y ->
-          x := Done y;
-          y
-        | exception e ->
-          x := Raise e;
-          raise e
-
-  let get_arg x =
-    match !x with Thunk a -> Some a | _ -> None
-
-  let create x =
-    ref (Thunk x)
-
-  let create_forced y =
-    ref (Done y)
-
-  let create_failed e =
-    ref (Raise e)
-
-  let log () =
-    ref Nil
-
-  let force_logged log f x =
-    match !x with
-    | Done x -> x
-    | Raise e -> raise e
-    | Thunk e ->
-      match f e with
-      | None ->
-          x := Done None;
-          log := Cons(x, e, !log);
-          None
-      | Some _ as y ->
-          x := Done y;
-          y
-      | exception e ->
-          x := Raise e;
-          raise e
-
-  let backtrack log =
-    let rec loop = function
-      | Nil -> ()
-      | Cons(x, e, rest) ->
-          x := Thunk e;
-          loop rest
-    in
-    loop !log
-
-end
 
 (** Map indexed by the name of module components. *)
 module NameMap = String.Map
@@ -533,6 +440,15 @@ and address_unforced =
 
 and address_lazy = (address_unforced, address) EnvLazy.t
 
+let empty_structure =
+  Structure_comps {
+    comp_values = NameMap.empty;
+    comp_constrs = NameMap.empty;
+    comp_labels = NameMap.empty;
+    comp_types = NameMap.empty;
+    comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
+    comp_components = NameMap.empty; comp_classes = NameMap.empty;
+    comp_cltypes = NameMap.empty }
 
 let copy_local ~from env =
   { env with
@@ -605,22 +521,6 @@ let diff env1 env2 =
   IdTbl.diff_keys env1.modules env2.modules @
   IdTbl.diff_keys env1.classes env2.classes
 
-type can_load_cmis =
-  | Can_load_cmis
-  | Cannot_load_cmis of EnvLazy.log
-
-let can_load_cmis = ref Can_load_cmis
-
-let without_cmis f x =
-  let log = EnvLazy.log () in
-  let res =
-    Misc.(protect_refs
-            [R (can_load_cmis, Cannot_load_cmis log)]
-            (fun () -> f x))
-  in
-  EnvLazy.backtrack log;
-  res
-
 (* Forward declarations *)
 
 let components_of_module' =
@@ -646,28 +546,6 @@ let strengthen =
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
 
-let get_components_opt c =
-  match !can_load_cmis with
-  | Can_load_cmis ->
-    EnvLazy.force !components_of_module_maker' c.comps
-  | Cannot_load_cmis log ->
-    EnvLazy.force_logged log !components_of_module_maker' c.comps
-
-let empty_structure =
-  Structure_comps {
-    comp_values = NameMap.empty;
-    comp_constrs = NameMap.empty;
-    comp_labels = NameMap.empty;
-    comp_types = NameMap.empty;
-    comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
-    comp_components = NameMap.empty; comp_classes = NameMap.empty;
-    comp_cltypes = NameMap.empty }
-
-let get_components c =
-  match get_components_opt c with
-  | None -> empty_structure
-  | Some c -> c
-
 (* Print addresses *)
 
 let rec print_address ppf = function
@@ -676,90 +554,44 @@ let rec print_address ppf = function
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)
+module Current_unit_name : sig
+  val get : unit -> modname
+  val set : modname -> unit
+  val is : modname -> bool
+  val is_name_of : Ident.t -> bool
+end = struct
+  let current_unit =
+    ref ""
+  let get () =
+    !current_unit
+  let set name =
+    current_unit := name
+  let is name =
+    !current_unit = name
+  let is_name_of id =
+    is (Ident.name id)
+end
+let _ = ignore Current_unit_name.is
 
-let current_unit = ref ""
+let set_unit_name = Current_unit_name.set
+let get_unit_name = Current_unit_name.get
 
 let find_same_module id tbl =
   match IdTbl.find_same id tbl with
   | x -> x
   | exception Not_found
-    when Ident.persistent id && not (Ident.name id = !current_unit) ->
+    when Ident.persistent id && not (Current_unit_name.is_name_of id) ->
       Persistent
 
-(* Persistent structure descriptions *)
-
-type pers_struct =
-  { ps_name: string;
-    ps_sig: signature Lazy.t;
-    ps_comps: module_components;
-    ps_crcs: (string * Digest.t option) list;
-    ps_filename: string;
-    ps_flags: pers_flags list }
-
-let persistent_structures =
-  (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
-
-(* Consistency between persistent structures *)
-
-let crc_units = Consistbl.create()
-
-let imported_units = ref String.Set.empty
-
-let add_import s =
-  imported_units := String.Set.add s !imported_units
-
-let imported_opaque_units = ref String.Set.empty
-
-let add_imported_opaque s =
-  imported_opaque_units := String.Set.add s !imported_opaque_units
-
-let clear_imports () =
-  Consistbl.clear crc_units;
-  imported_units := String.Set.empty;
-  imported_opaque_units := String.Set.empty
-
-let check_consistency ps =
-  try
-    List.iter
-      (fun (name, crco) ->
-         match crco with
-            None -> ()
-          | Some crc ->
-              add_import name;
-              Consistbl.check crc_units name crc ps.ps_filename)
-      ps.ps_crcs;
-  with Consistbl.Inconsistency(name, source, auth) ->
-    error (Inconsistent_import(name, auth, source))
-
-(* Reading persistent structures from .cmi files *)
-
-let save_pers_struct crc ps =
-  let modname = ps.ps_name in
-  Hashtbl.add persistent_structures modname (Some ps);
-  List.iter
-    (function
-        | Rectypes -> ()
-        | Alerts _ -> ()
-        | Unsafe_string -> ()
-        | Opaque -> add_imported_opaque modname)
-    ps.ps_flags;
-  Consistbl.set crc_units modname crc ps.ps_filename;
-  add_import modname
-
-module Persistent_signature = struct
-  type t =
-    { filename : string;
-      cmi : Cmi_format.cmi_infos }
-
-  let load = ref (fun ~unit_name ->
-      match Load_path.find_uncap (unit_name ^ ".cmi") with
-      | filename -> Some { filename; cmi = read_cmi filename }
-      | exception Not_found -> None)
-end
+(* signature of persistent compilation units *)
+type persistent_module = {
+  pm_signature: signature Lazy.t;
+  pm_components: module_components;
+}
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if Ident.name id <> !current_unit then
+  if not (Current_unit_name.is_name_of id) then
     { env with
       modules = IdTbl.add id Persistent env.modules;
       components = IdTbl.add id Persistent env.components;
@@ -768,154 +600,91 @@ let add_persistent_structure id env =
   else
     env
 
-let acknowledge_pers_struct check modname
-      { Persistent_signature.filename; cmi } =
+let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
-  let crcs = cmi.cmi_crcs in
   let flags = cmi.cmi_flags in
+  let id = Ident.create_persistent name in
+  let path = Pident id in
+  let addr = EnvLazy.create_forced (Aident id) in
   let alerts =
     List.fold_left (fun acc -> function Alerts s -> s | _ -> acc)
       Misc.Stdlib.String.Map.empty
       flags
   in
-  let id = Ident.create_persistent name in
-  let path = Pident id in
-  let addr = EnvLazy.create_forced (Aident id) in
-  let comps =
-      !components_of_module' ~alerts ~loc:Location.none
-        empty (Some Subst.identity) Subst.identity path addr
-        (Mty_signature sign)
-  in
-  let ps = { ps_name = name;
-             ps_sig = lazy (Subst.signature Subst.identity sign);
-             ps_comps = comps;
-             ps_crcs = crcs;
-             ps_filename = filename;
-             ps_flags = flags;
-           } in
-  if ps.ps_name <> modname then
-    error (Illegal_renaming(modname, ps.ps_name, filename));
+  let loc = Location.none in
+  let pm_signature = lazy (Subst.signature Subst.identity sign) in
+  let pm_components =
+    let freshening_subst =
+      if freshen then (Some Subst.identity) else None in
+    !components_of_module' ~alerts ~loc
+      empty freshening_subst Subst.identity path addr (Mty_signature sign) in
+  {
+    pm_signature;
+    pm_components;
+  }
 
-  List.iter
-    (function
-        | Rectypes ->
-            if not !Clflags.recursive_types then
-              error (Need_recursive_types(ps.ps_name, !current_unit))
-        | Unsafe_string ->
-            if Config.safe_string then
-              error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
-        | Alerts _ -> ()
-        | Opaque -> add_imported_opaque modname)
-    ps.ps_flags;
-  if check then check_consistency ps;
-  Hashtbl.add persistent_structures modname (Some ps);
-  ps
+let read_sign_of_cmi = sign_of_cmi ~freshen:true
 
-let read_pers_struct check modname filename =
-  add_import modname;
-  let cmi = read_cmi filename in
-  acknowledge_pers_struct check modname
-    { Persistent_signature.filename; cmi }
+let save_sign_of_cmi = sign_of_cmi ~freshen:false
 
-let find_pers_struct check name =
-  if name = "*predef*" then raise Not_found;
-  match Hashtbl.find persistent_structures name with
-  | Some ps -> ps
-  | None -> raise Not_found
-  | exception Not_found ->
-    match !can_load_cmis with
-    | Cannot_load_cmis _ -> raise Not_found
-    | Can_load_cmis ->
-        let ps =
-          match !Persistent_signature.load ~unit_name:name with
-          | Some ps -> ps
-          | None ->
-            Hashtbl.add persistent_structures name None;
-            raise Not_found
-        in
-        add_import name;
-        acknowledge_pers_struct check name ps
+let persistent_env : persistent_module Persistent_env.t =
+  Persistent_env.empty ()
 
-(* Emits a warning if there is no valid cmi for name *)
-let check_pers_struct ~loc name =
-  try
-    ignore (find_pers_struct false name)
-  with
-  | Not_found ->
-      let warn = Warnings.No_cmi_file(name, None) in
-        Location.prerr_warning loc warn
-  | Cmi_format.Error err ->
-      let msg = Format.asprintf "%a" Cmi_format.report_error err in
-      let warn = Warnings.No_cmi_file(name, Some msg) in
-        Location.prerr_warning loc warn
-  | Error err ->
-      let msg =
-        match err with
-        | Illegal_renaming(name, ps_name, filename) ->
-            Format.asprintf
-              " %a@ contains the compiled interface for @ \
-               %s when %s was expected"
-              Location.print_filename filename ps_name name
-        | Inconsistent_import _ -> assert false
-        | Need_recursive_types(name, _) ->
-            Format.sprintf
-              "%s uses recursive types"
-              name
-        | Depend_on_unsafe_string_unit (name, _) ->
-            Printf.sprintf "%s uses -unsafe-string"
-              name
-        | Missing_module _ -> assert false
-        | Illegal_value_name _ -> assert false
-      in
-      let warn = Warnings.No_cmi_file(name, Some msg) in
-        Location.prerr_warning loc warn
+let without_cmis f x =
+  Persistent_env.without_cmis persistent_env f x
 
-let read_pers_struct modname filename =
-  read_pers_struct true modname filename
+let imports () = Persistent_env.imports persistent_env
 
-let find_pers_struct name =
-  find_pers_struct true name
+let import_crcs ~source crcs =
+  Persistent_env.import_crcs persistent_env ~source crcs
 
-let check_pers_struct ~loc name =
-  if not (Hashtbl.mem persistent_structures name) then begin
-    (* PR#6843: record the weak dependency ([add_import]) regardless of
-       whether the check succeeds, to help make builds more
-       deterministic. *)
-    add_import name;
-    if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
-      !add_delayed_check_forward
-        (fun () -> check_pers_struct ~loc name)
-  end
+let read_pers_mod modname filename =
+  Persistent_env.read persistent_env read_sign_of_cmi modname filename
+
+let find_pers_mod name =
+  Persistent_env.find persistent_env read_sign_of_cmi name
+
+let check_pers_mod ~loc name =
+  Persistent_env.check persistent_env read_sign_of_cmi ~loc name
+
+let crc_of_unit name =
+  Persistent_env.crc_of_unit persistent_env read_sign_of_cmi name
+
+let is_imported_opaque modname =
+  Persistent_env.is_imported_opaque persistent_env modname
+
+let reset_declaration_caches () =
+  Hashtbl.clear value_declarations;
+  Hashtbl.clear type_declarations;
+  Hashtbl.clear module_declarations;
+  Hashtbl.clear used_constructors;
+  ()
 
 let reset_cache () =
-  current_unit := "";
-  Hashtbl.clear persistent_structures;
-  clear_imports ();
-  Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations;
-  Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors
+  Current_unit_name.set "";
+  Persistent_env.clear persistent_env;
+  reset_declaration_caches ();
+  ()
 
 let reset_cache_toplevel () =
-  (* Delete 'missing cmi' entries from the cache. *)
-  let l =
-    Hashtbl.fold
-      (fun name r acc -> if r = None then name :: acc else acc)
-      persistent_structures []
-  in
-  List.iter (Hashtbl.remove persistent_structures) l;
-  Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations;
-  Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors
+  Persistent_env.clear_missing persistent_env;
+  reset_declaration_caches ();
+  ()
 
+(* get_components *)
 
-let set_unit_name name =
-  current_unit := name
+let get_components_opt c =
+  match Persistent_env.can_load_cmis persistent_env with
+  | Persistent_env.Can_load_cmis ->
+    EnvLazy.force !components_of_module_maker' c.comps
+  | Persistent_env.Cannot_load_cmis log ->
+    EnvLazy.force_logged log !components_of_module_maker' c.comps
 
-let get_unit_name () =
-  !current_unit
+let get_components c =
+  match get_components_opt c with
+  | None -> empty_structure
+  | Some c -> c
 
 (* Lookup by identifier *)
 
@@ -924,7 +693,7 @@ let rec find_module_descr path env =
     Pident id ->
       begin match find_same_module id env.components with
       | Value x -> fst x
-      | Persistent -> (find_pers_struct (Ident.name id)).ps_comps
+      | Persistent -> (find_pers_mod (Ident.name id)).pm_components
       end
   | Pdot(p, s) ->
       begin match get_components (find_module_descr p env) with
@@ -1028,8 +797,8 @@ let find_module ~alias path env =
         match find_same_module id env.modules with
         | Value (data, _) -> EnvLazy.force subst_modtype_maker data
         | Persistent ->
-            let ps = find_pers_struct (Ident.name id) in
-            md (Mty_signature(Lazy.force ps.ps_sig))
+            let pm = find_pers_mod (Ident.name id) in
+            md (Mty_signature(Lazy.force pm.pm_signature))
       end
   | Pdot(p, s) ->
       begin match get_components (find_module_descr p env) with
@@ -1158,8 +927,8 @@ let normalize_module_path oloc env path =
   with Not_found ->
     match oloc with None -> assert false
     | Some loc ->
-        raise (Error(Missing_module(loc, path,
-                                    normalize_module_path true env path)))
+        error (Missing_module(loc, path,
+                              normalize_module_path true env path))
 
 let normalize_path_prefix oloc env path =
   match path with
@@ -1266,15 +1035,16 @@ let mark_module_used name loc =
 let rec lookup_module_descr_aux ?loc ~mark lid env =
   match lid with
     Lident s ->
+      let find_components s = (find_pers_mod s).pm_components in
       begin match IdTbl.find_name ~mark s env.components with
-      | exception Not_found when s <> !current_unit ->
+      | exception Not_found when not (Current_unit_name.is s) ->
         let p = Path.Pident (Ident.create_persistent s) in
-        (p, (find_pers_struct s).ps_comps)
+        (p, find_components s)
       | (p, data) ->
         (p,
          match data with
          | Value (comp, _) -> comp
-         | Persistent -> (find_pers_struct s).ps_comps)
+         | Persistent -> find_components s)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr ?loc ~mark l env in
@@ -1315,7 +1085,7 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
     Lident s ->
       begin match IdTbl.find_name ~mark s env.modules with
       | exception Not_found when !Clflags.transparent_modules && not load ->
-          check_pers_struct s
+          check_pers_mod s
             ~loc:(Option.value loc ~default:Location.none);
           Path.Pident (Ident.create_persistent s)
       | p, data ->
@@ -1335,11 +1105,11 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
                 (Builtin_attributes.alerts_of_attrs md_attributes)
           | Persistent ->
               if !Clflags.transparent_modules && not load then
-                check_pers_struct s
+                check_pers_mod s
                   ~loc:(Option.value loc ~default:Location.none)
               else begin
-                let ps = find_pers_struct s in
-                report_alerts ?loc p ps.ps_comps.alerts
+                let pm = find_pers_mod s in
+                report_alerts ?loc p pm.pm_components.alerts
               end
           end;
           p
@@ -1633,7 +1403,8 @@ let rec scrape_alias_for_visit env sub mty =
       begin match may_subst Subst.module_path sub path with
       | Pident id
         when Ident.persistent id
-          && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
+          && not (Persistent_env.looked_up persistent_env (Ident.name id)) ->
+          false
       | path -> (* PR#6600: find_module may raise Not_found *)
           try scrape_alias_for_visit env sub (find_module path env).md_type
           with Not_found -> false
@@ -1668,9 +1439,10 @@ let iter_env proj1 proj2 f env () =
        match comps with
        | Value (comps, _) -> iter_components (Pident id) path comps
        | Persistent ->
-           match Hashtbl.find persistent_structures (Ident.name id) with
-           | exception Not_found | None -> ()
-           | Some ps -> iter_components (Pident id) path ps.ps_comps)
+           let modname = Ident.name id in
+           match Persistent_env.find_in_cache persistent_env modname with
+           | None -> ()
+           | Some pm -> iter_components (Pident id) path pm.pm_components)
     env.components
 
 let run_iter_cont l =
@@ -1686,10 +1458,9 @@ let same_types env1 env2 =
   env1.types == env2.types && env1.components == env2.components
 
 let used_persistent () =
-  let r = ref Concr.empty in
-  Hashtbl.iter (fun s pso -> if pso != None then r := Concr.add s !r)
-    persistent_structures;
-  !r
+  Persistent_env.fold persistent_env
+    (fun s _m r -> Concr.add s r)
+    Concr.empty
 
 let find_all_comps proj s (p,(mcomps, _)) =
   match get_components mcomps with
@@ -2026,7 +1797,7 @@ and check_value_name name loc =
   if String.length name > 0 && (name.[0] = '#') then
     for i = 1 to String.length name - 1 do
       if name.[i] = '#' then
-        raise (Error(Illegal_value_name(loc, name)))
+        error (Illegal_value_name(loc, name))
     done
 
 
@@ -2462,10 +2233,9 @@ let open_signature
   else open_signature None root env
 
 (* Read a signature from a file *)
-
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in
-  Lazy.force ps.ps_sig
+  let pm = read_pers_mod modname filename in
+  Lazy.force pm.pm_signature
 
 let is_identchar_latin1 = function
   | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'
@@ -2491,80 +2261,28 @@ let persistent_structures_of_dir dir =
   |> Seq.filter_map unit_name_of_filename
   |> String.Set.of_seq
 
-(* Return the CRC of the interface of the given compilation unit *)
-
-let crc_of_unit name =
-  let ps = find_pers_struct name in
-  let crco =
-    try
-      List.assoc name ps.ps_crcs
-    with Not_found ->
-      assert false
-  in
-    match crco with
-      None -> assert false
-    | Some crc -> crc
-
-(* Return the list of imported interfaces with their CRCs *)
-
-let imports () =
-  Consistbl.extract (String.Set.elements !imported_units) crc_units
-
-(* Returns true if [s] is an opaque imported module  *)
-let is_imported_opaque s =
-  String.Set.mem s !imported_opaque_units
-
 (* Save a signature to a file *)
-
-let save_signature_with_imports ~alerts sg modname filename imports =
-  (*prerr_endline filename;
-  List.iter (fun (name, crc) -> prerr_endline name) imports;*)
+let save_signature_with_transform cmi_transform ~alerts sg modname filename =
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
-  let flags =
-    List.concat [
-      if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
-      if !Clflags.opaque then [Cmi_format.Opaque] else [];
-      (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
-      [Alerts alerts];
-    ]
-  in
-  Misc.try_finally (fun () ->
-      let cmi = {
-        cmi_name = modname;
-        cmi_sign = sg;
-        cmi_crcs = imports;
-        cmi_flags = flags;
-      } in
-      let crc =
-        output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
-          ~mode: [Open_binary] filename
-          (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
-      (* Enter signature in persistent table so that imported_unit()
-         will also return its crc *)
-      let id = Ident.create_persistent modname in
-      let path = Pident id in
-      let addr = EnvLazy.create_forced (Aident id) in
-      let comps =
-        components_of_module ~alerts ~loc:Location.none
-          empty None Subst.identity path addr (Mty_signature sg)
-      in
-      let ps =
-        { ps_name = modname;
-          ps_sig = lazy (Subst.signature Subst.identity sg);
-          ps_comps = comps;
-          ps_crcs = (cmi.cmi_name, Some crc) :: imports;
-          ps_filename = filename;
-          ps_flags = cmi.cmi_flags;
-        } in
-      save_pers_struct crc ps;
-      cmi
-    )
-    ~exceptionally:(fun () -> remove_file filename)
+  let cmi =
+    Persistent_env.make_cmi persistent_env modname sg alerts
+    |> cmi_transform in
+  let pm = save_sign_of_cmi
+      { Persistent_env.Persistent_signature.cmi; filename } in
+  Persistent_env.save_cmi persistent_env
+    { Persistent_env.Persistent_signature.filename; cmi } pm;
+  cmi
 
 let save_signature ~alerts sg modname filename =
-  save_signature_with_imports ~alerts sg modname filename (imports())
+  save_signature_with_transform (fun cmi -> cmi)
+    ~alerts sg modname filename
+
+let save_signature_with_imports ~alerts sg modname filename imports =
+  let with_imports cmi = { cmi with cmi_crcs = imports } in
+  save_signature_with_transform with_imports
+    ~alerts sg modname filename
 
 (* Folding on environments *)
 
@@ -2615,10 +2333,11 @@ let fold_modules f lid env acc =
                let data = EnvLazy.force subst_modtype_maker data in
                f name p data acc
            | Persistent ->
-               match Hashtbl.find persistent_structures name with
-               | exception Not_found | None -> acc
-               | Some ps ->
-                   f name p (md (Mty_signature (Lazy.force ps.ps_sig))) acc)
+               match Persistent_env.find_in_cache persistent_env name with
+               | None -> acc
+               | Some pm ->
+                   let data = md (Mty_signature (Lazy.force pm.pm_signature)) in
+                   f name p data acc)
         env.modules
         acc
   | Some l ->
@@ -2660,9 +2379,9 @@ let filter_non_loaded_persistent f env =
          match data with
          | Value _ -> acc
          | Persistent ->
-             match Hashtbl.find persistent_structures name with
+             match Persistent_env.find_in_cache persistent_env name with
              | Some _ -> acc
-             | exception Not_found | None ->
+             | None ->
                  if f (Ident.create_persistent name) then
                    acc
                  else
@@ -2761,23 +2480,6 @@ let env_of_only_summary env_from_summary env =
 open Format
 
 let report_error ppf = function
-  | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
-      "Wrong file naming: %a@ contains the compiled interface for @ \
-       %s when %s was expected"
-      Location.print_filename filename ps_name modname
-  | Inconsistent_import(name, source1, source2) -> fprintf ppf
-      "@[<hov>The files %a@ and %a@ \
-              make inconsistent assumptions@ over interface %s@]"
-      Location.print_filename source1 Location.print_filename source2 name
-  | Need_recursive_types(import, export) ->
-      fprintf ppf
-        "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
-        export import "The compilation flag -rectypes is required"
-  | Depend_on_unsafe_string_unit(import, export) ->
-      fprintf ppf
-        "@[<hov>Unit %s imports from %s, compiled with -unsafe-string.@ %s@]"
-        export import "This compiler has been configured in strict \
-                       safe-string mode (-force-safe-string)"
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then
@@ -2795,10 +2497,15 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error (Missing_module (loc, _, _)
-              | Illegal_value_name (loc, _)
-               as err) when loc <> Location.none ->
-          Some (Location.error_of_printer ~loc report_error err)
-      | Error err -> Some (Location.error_of_printer_file report_error err)
-      | _ -> None
+      | Error err ->
+          let loc = match err with
+              (Missing_module (loc, _, _) | Illegal_value_name (loc, _)) -> loc
+          in
+          let error_of_printer =
+            if loc = Location.none
+            then Location.error_of_printer_file
+            else Location.error_of_printer ~loc ?sub:None in
+          Some (error_of_printer report_error err)
+      | _ ->
+          None
     )
