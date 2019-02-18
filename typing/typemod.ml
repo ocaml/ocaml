@@ -191,14 +191,21 @@ let initial_env ~loc ~safe_string ~initially_opened_module
               else
                 loop (units :: before) after
         in
-        let env, units =
-          match loop [] units with
-          | None ->
-              (env, units)
-          | Some (units_containing_m, other_units) ->
-              (add_units env units_containing_m, other_units)
+        let units_containing_m, units =
+          Option.value (loop [] units)
+            ~default:(String.Set.empty, units)
         in
-        (open_module env m, units)
+        let env = add_units env units_containing_m in
+        let env = open_module env m in
+        (* The compiler installs many libraries in the same directory:
+           the stdlib, unix, bigarrays, .... As a result, opening
+           Stdlib might shadow modules coming from these libraries. To
+           workaround this issue, we re-add the units from the
+           directory containing [m] after opening [m] so that they
+           shadow the sub-modules of [m]. *)
+        let units_containing_m = String.Set.remove m units_containing_m in
+        let env = add_units env units_containing_m in
+        (env, units)
   in
   let env = List.fold_left add_units env units in
   List.fold_left open_module env open_implicit_modules
