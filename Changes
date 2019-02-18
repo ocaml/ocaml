@@ -32,6 +32,9 @@ Working version
 * GPR#2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
 
+- GPR#2250: Remove extra integer sign-extension in compare functions
+  (Stefan Muenzel, review by Xavier Leroy)
+
 ### Other libraries:
 
 - GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
