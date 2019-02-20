@@ -103,7 +103,7 @@ void get_sockaddr(value mladr,
 }
 
 value alloc_unix_sockaddr(value path) {
-￼ CAMLparam1(path);
+  CAMLparam1(path);
   CAMLlocal1(res);
   res = caml_alloc_small(1, 0);
   Field(res,0) = path;
