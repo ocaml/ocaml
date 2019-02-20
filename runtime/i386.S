@@ -44,7 +44,20 @@
 #define FUNCTION_ALIGN 2
 #endif
 
+#if defined(FUNCTION_SECTIONS)
+#if defined(SYS_macosx)
+#define TEXT_SECTION(name) .text
+#elif defined(SYS_mingw) || defined(SYS_cygwin)
+#define TEXT_SECTION(name) .section .text.##name
+#else
+#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#endif
+#else
+#define TEXT_SECTION(name)
+#endif
+
 #define FUNCTION(name) \
+        TEXT_SECTION(name); \
         .globl G(name); \
         .align FUNCTION_ALIGN; \
         G(name):
@@ -72,8 +85,17 @@
 #define ALIGN_STACK(amount) subl $ amount, %esp ; CFI_ADJUST(amount)
 #define UNDO_ALIGN_STACK(amount) addl $ amount, %esp ; CFI_ADJUST(-amount)
 
-/* Allocation */
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl  G(caml_hot__code_begin)
+G(caml_hot__code_begin):
 
+        TEXT_SECTION(caml_hot__code_end)
+        .globl  G(caml_hot__code_end)
+G(caml_hot__code_end):
+#endif
+
+/* Allocation */
         .text
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):

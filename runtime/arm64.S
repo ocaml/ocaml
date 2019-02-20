@@ -83,11 +83,27 @@
 
 #endif
 
-/* Allocation functions and GC interface */
+#if defined(FUNCTION_SECTIONS)
+#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#else
+#define TEXT_SECTION(name)
+#endif
 
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl  caml_hot__code_begin
+caml_hot__code_begin:
+
+        TEXT_SECTION(caml_hot__code_end)
+        .globl  caml_hot__code_end
+caml_hot__code_end:
+#endif
+
+/* Allocation functions and GC interface */
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
+        TEXT_SECTION(caml_call_gc)
         .align  2
         .globl  caml_call_gc
 caml_call_gc:
@@ -177,6 +193,7 @@ caml_call_gc:
         .type   caml_call_gc, %function
         .size   caml_call_gc, .-caml_call_gc
 
+        TEXT_SECTION(caml_alloc1)
         .align  2
         .globl  caml_alloc1
 caml_alloc1:
@@ -239,6 +256,7 @@ caml_alloc2:
         .type   caml_alloc2, %function
         .size   caml_alloc2, .-caml_alloc2
 
+        TEXT_SECTION(caml_alloc3)
         .align  2
         .globl  caml_alloc3
 caml_alloc3:
@@ -268,6 +286,7 @@ caml_alloc3:
         .type   caml_alloc3, %function
         .size   caml_alloc3, .-caml_alloc3
 
+        TEXT_SECTION(caml_allocN)
         .align  2
         .globl  caml_allocN
 caml_allocN:
@@ -300,6 +319,7 @@ caml_allocN:
 /* Call a C function from OCaml */
 /* Function to call is in ARG */
 
+        TEXT_SECTION(caml_c_call)
         .align  2
         .globl  caml_c_call
 caml_c_call:
@@ -327,6 +347,7 @@ caml_c_call:
 
 /* Start the OCaml program */
 
+        TEXT_SECTION(caml_start_program)
         .align  2
         .globl  caml_start_program
 caml_start_program:
@@ -423,6 +444,7 @@ caml_start_program:
 
 /* Raise an exception from OCaml */
 
+        TEXT_SECTION(caml_raise_exn)
         .align  2
         .globl  caml_raise_exn
 caml_raise_exn:
@@ -453,6 +475,7 @@ caml_raise_exn:
 
 /* Raise an exception from C */
 
+        TEXT_SECTION(caml_raise_exception)
         .align  2
         .globl  caml_raise_exception
 caml_raise_exception:
@@ -487,6 +510,7 @@ caml_raise_exception:
 
 /* Callback from C to OCaml */
 
+        TEXT_SECTION(caml_callback_exn)
         .align  2
         .globl  caml_callback_exn
 caml_callback_exn:
@@ -501,6 +525,7 @@ caml_callback_exn:
         .type   caml_callback_exn, %function
         .size   caml_callback_exn, .-caml_callback_exn
 
+        TEXT_SECTION(caml_callback2_exn)
         .align  2
         .globl  caml_callback2_exn
 caml_callback2_exn:
@@ -516,6 +541,7 @@ caml_callback2_exn:
         .type   caml_callback2_exn, %function
         .size   caml_callback2_exn, .-caml_callback2_exn
 
+        TEXT_SECTION(caml_callback3_exn)
         .align  2
         .globl  caml_callback3_exn
 caml_callback3_exn:
@@ -533,6 +559,7 @@ caml_callback3_exn:
         .type   caml_callback3_exn, %function
         .size   caml_callback3_exn, .-caml_callback3_exn
 
+        TEXT_SECTION(caml_ml_array_bound_error)
         .align  2
         .globl  caml_ml_array_bound_error
 caml_ml_array_bound_error:

@@ -156,6 +156,7 @@ AC_SUBST([flambda_invariants])
 AC_SUBST([max_testsuite_dir_retries])
 AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
+AC_SUBST([function_sections])
 AC_SUBST([afl])
 AC_SUBST([force_safe_string])
 AC_SUBST([default_safe_string])
@@ -351,6 +352,10 @@ AC_ARG_VAR([DEFAULT_STRING],
 AC_ARG_ENABLE([flat-float-array],
   [AS_HELP_STRING([--disable-flat-float-array],
     [do not use flat float arrays])])
+
+AC_ARG_ENABLE([function-sections],
+  [AS_HELP_STRING([--enable-function-sections],
+    [generate each function in a separate section if target supports it])])
 
 AC_ARG_WITH([afl],
   [AS_HELP_STRING([--with-afl],
@@ -1612,6 +1617,35 @@ AS_IF([test x"$enable_flat_float_array" = "xno"],
   [flat_float_array=false],
   [AC_DEFINE([FLAT_FLOAT_ARRAY])
   flat_float_array=true])
+
+AS_IF([test x"$enable_function_sections" = "xyes"],
+  [AS_CASE([$arch],
+    [amd64|i386|arm|arm64],
+     [AS_CASE([$target],
+        [*-*-cygwin*|*-*-mingw*|*-pc-windows],
+          [function_sections=false;
+           AC_MSG_WARN([Disabling function sections. No target support.])],
+        [*],
+          [AS_CASE([$ocaml_cv_cc_vendor],
+            [gcc-[0123]-*|gcc-4-[01234567]],
+              [function_sections=false;
+              AC_MSG_WARN([Disabling function sections.
+              Not supported in GCC prior to version 4.8.])],
+            [clang-[012]-*|clang-3-[01234]],
+              [function_sections=false;
+              AC_MSG_WARN([Disabling function sections.
+              Not supported in Clang prior to version 3.5.])],
+            [gcc-*|clang-*],
+              [function_sections=true;
+              common_cflags="$common_cflags -ffunction-sections";
+              AC_DEFINE([FUNCTION_SECTIONS])],
+            [*],
+              [function_sections=false;
+              AC_MSG_WARN([Disabling function sections.
+              Compiler not supported.])])])],
+    [function_sections=false
+      AC_MSG_WARN([Disabling function sections on this target.])])],
+  [function_sections=false])
 
 AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
