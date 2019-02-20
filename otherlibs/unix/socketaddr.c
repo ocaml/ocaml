@@ -103,12 +103,11 @@ void get_sockaddr(value mladr,
 }
 
 value alloc_unix_sockaddr(value path) {
-  value res;
-  Begin_root (path);
-    res = caml_alloc_small(1, 0);
-    Field(res,0) = path;
-  End_roots();
-  return res;
+￼ CAMLparam1(path);
+  CAMLlocal1(res);
+  res = caml_alloc_small(1, 0);
+  Field(res,0) = path;
+  CAMLreturn(res);
 }
 
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
