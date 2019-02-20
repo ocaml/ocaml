@@ -2069,7 +2069,7 @@ OCaml 4.06.0 (3 Nov 2017):
   -default-safe-string, while 4.05 and older had
   -default-unsafe-string).
 
-  (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
+  (Gabriel Scherer, review by Kate Deplaix and Damien Doligez)
 
 - GPR#1409: Fix to enable NetBSD/powerpc to work.
   (Håvard Eidnes)
@@ -2196,7 +2196,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 - MPR#7656, GPR#1423: false 'unused type/constructor/value' alarms
   in the 4.06 development version
-  (Alain Frisch, review by Jacques Garrigue, report by Jacques-Pascal Deplaix)
+  (Alain Frisch, review by Jacques Garrigue, report by Kate Deplaix)
 
 - MPR#7657, GPR#1424: ensures correct call-by-value semantics when
   eta-expanding functions to eliminate optional arguments
@@ -3708,7 +3708,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 * PR#6524, GPR#79: Filename: Optional ?perms argument to open_temp_file
   May break partial applications of the function (fix by passing ?perms:None)
-  (Daniel Bünzli, review by Jacques-Pascal Deplaix)
+  (Daniel Bünzli, review by Kate Deplaix)
 
 * PR#6525, GPR#80: Add Uchar module to the standard library
   May introduce module name conflicts with existing projects.
@@ -4663,7 +4663,7 @@ Bug Fixes:
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
   (whitequark)
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
-  (Xavier Leroy, Alain Frisch, relase-worthy report by Jacques-Pascal Deplaix)
+  (Xavier Leroy, Alain Frisch, relase-worthy report by Kate Deplaix)
 - PR#6530: Add stack overflow handling for native code (OpenBSD i386 and amd64)
   (Cristopher Zimmermann)
 - PR#6533: broken semantics of %(%) when substituted by a box
@@ -4900,7 +4900,7 @@ Bug fixes:
 - PR#6175: open! was not supported by camlp4
   (Hongbo Zhang)
 - PR#6184: ocamlbuild: `ocamlfind ocamldep` does not support -predicate
-  (Jacques-Pascal Deplaix)
+  (Kate Deplaix)
 - PR#6194: Incorrect unused warning with first-class modules in patterns
   (Jacques Garrigue, report by Markus Mottl and Leo White)
 - PR#6211: in toplevel interactive use, bad interaction between uncaught
@@ -5043,7 +5043,7 @@ Features wishes:
 - PR#6183: enhanced documentation for 'Unix.shutdown_connection'
   (Anil Madhavapeddy, report by Jun Furuse)
 - PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
-  (Jacques-Pascal Deplaix)
+  (Kate Deplaix)
 - PR#6246: allow wildcard _ as for-loop index
   (Alain Frisch, request by ygrek)
 - PR#6267: more information printed by "bt" command of ocamldebug
@@ -5433,7 +5433,7 @@ Bug fixes:
   with Netmulticore
   (Xavier Leroy, Gerd Stolpmann)
 - PR#6090: Module constraint + private type seems broken in ocaml 4.01.0
-  (Jacques Garrigue, report by Jacques-Pascal Deplaix)
+  (Jacques Garrigue, report by Kate Deplaix)
 - PR#6109: Typos in ocamlbuild error messages
   (Gabriel Kerneis)
 - PR#6123: Assert failure when self escapes its class
