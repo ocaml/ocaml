@@ -102,25 +102,49 @@ void get_sockaddr(value mladr,
   }
 }
 
+value alloc_unix_sockaddr(value path) {
+  CAMLparam1(path);
+  CAMLlocal1(res);
+  res = caml_alloc_small(1, 0);
+  Field(res,0) = path;
+  CAMLreturn(res);
+}
+
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
                      socklen_param_type adr_len, int close_on_error)
 {
   value res;
+#ifndef _WIN32
+  if (adr_len < offsetof(struct sockaddr, sa_data)) {
+    // Only possible for an unnamed AF_UNIX socket, in
+    // which case sa_family might be uninitialized.
+    return alloc_unix_sockaddr(caml_alloc_string(0));
+  }
+#endif
+
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
-    { value n;
-      /* Based on recommendation in section BUGS of Linux unix(7). See
-         http://man7.org/linux/man-pages/man7/unix.7.html */
-      mlsize_t path_length =
-        strnlen(adr->s_unix.sun_path,
-                adr_len - offsetof(struct sockaddr_un, sun_path));
-      n = caml_alloc_initialized_string(path_length,
-                                        (char *)adr->s_unix.sun_path);
-      Begin_root (n);
-        res = caml_alloc_small(1, 0);
-        Field(res,0) = n;
-      End_roots();
+    { /* Based on recommendation in section BUGS of Linux unix(7). See
+         http://man7.org/linux/man-pages/man7/unix.7.html. */
+      mlsize_t struct_offset = offsetof(struct sockaddr_un, sun_path);
+      mlsize_t path_length = 0;
+      if (adr_len > struct_offset) {
+        path_length = adr_len - struct_offset;
+
+        /* paths _may_ be null-terminated, but Linux abstract sockets
+         * start with a null, and may contain internal nulls. */
+        path_length = (
+#ifdef __linux__
+          (adr->s_unix.sun_path[0] == '\0') ? path_length :
+#endif
+          strnlen(adr->s_unix.sun_path, path_length)
+        );
+      }
+
+      res = alloc_unix_sockaddr(
+        caml_alloc_initialized_string(path_length, (char *)adr->s_unix.sun_path)
+      );
       break;
     }
 #endif
