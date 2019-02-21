@@ -298,13 +298,10 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD =
-  FLEXDLL_DIR =
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
-  FLEXDLL_DIR = $(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
 endif
 else
-  FLEXDLL_DIR =
 endif
 
 # The configuration file
