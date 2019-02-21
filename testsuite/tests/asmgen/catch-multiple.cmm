@@ -1,0 +1,20 @@
+(* TEST
+files = "main.c"
+arguments = "-DINT_INT -DFUN=catch_multiple main.c"
+* asmgen
+*)
+
+(*
+Expected output:
+catch_multiple(0) == -1
+catch_multiple(1) == 1
+*)
+
+(function "catch_multiple" (b:int)
+  (let x
+    (catch
+      (if (== b 0) (exit zero)
+          (exit other))
+     with (zero) -1
+     and (other) ( * b b))
+    x))
