@@ -480,28 +480,45 @@ let rec copy_type_desc ?(keep_names=false) f = function
 
 (* Utilities for copying *)
 
-let saved_desc = ref []
-  (* Saved association of generic nodes with their description. *)
+module For_copy : sig
+  type copy_scope
 
-let save_desc ty desc =
-  saved_desc := (ty, desc)::!saved_desc
+  val save_desc: copy_scope -> type_expr -> type_desc -> unit
 
-let saved_kinds = ref [] (* duplicated kind variables *)
-let new_kinds = ref []   (* new kind variables *)
-let dup_kind r =
-  (match !r with None -> () | Some _ -> assert false);
-  if not (List.memq r !new_kinds) then begin
-    saved_kinds := r :: !saved_kinds;
-    let r' = ref None in
-    new_kinds := r' :: !new_kinds;
-    r := Some (Fvar r')
-  end
+  val dup_kind: copy_scope -> field_kind option ref -> unit
 
-(* Restored type descriptions. *)
-let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  List.iter (fun r -> r := None) !saved_kinds;
-  saved_desc := []; saved_kinds := []; new_kinds := []
+  val with_scope: (copy_scope -> 'a) -> 'a
+end = struct
+  type copy_scope = unit
+
+  let saved_desc = ref []
+    (* Saved association of generic nodes with their description. *)
+
+  let save_desc () ty desc =
+    saved_desc := (ty, desc)::!saved_desc
+
+  let saved_kinds = ref [] (* duplicated kind variables *)
+  let new_kinds = ref []   (* new kind variables *)
+  let dup_kind () r =
+    (match !r with None -> () | Some _ -> assert false);
+    if not (List.memq r !new_kinds) then begin
+      saved_kinds := r :: !saved_kinds;
+      let r' = ref None in
+      new_kinds := r' :: !new_kinds;
+      r := Some (Fvar r')
+    end
+
+  (* Restored type descriptions. *)
+  let cleanup_types () =
+    List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
+    List.iter (fun r -> r := None) !saved_kinds;
+    saved_desc := []; saved_kinds := []; new_kinds := []
+
+  let with_scope f =
+    let res = f () in
+    cleanup_types ();
+    res
+end
 
 (* Mark a type. *)
 let rec mark_type ty =
