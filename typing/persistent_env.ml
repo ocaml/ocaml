@@ -107,7 +107,8 @@ let add_imported_opaque {imported_opaque_units; _} s =
 
 let find_in_cache {persistent_structures; _} s =
   match Hashtbl.find persistent_structures s with
-  | exception Not_found | Missing -> None
+  | exception Not_found -> None
+  | Missing -> None
   | Found (_ps, pm) -> Some pm
 
 let import_crcs penv ~source crcs =

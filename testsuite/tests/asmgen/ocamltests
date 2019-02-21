@@ -2,6 +2,7 @@ arith.cmm
 catch-rec.cmm
 catch-try.cmm
 catch-float.cmm
+catch-multiple.cmm
 catch-try-float.cmm
 checkbound.cmm
 even-odd-spill.cmm

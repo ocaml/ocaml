@@ -571,7 +571,6 @@ end = struct
   let is_name_of id =
     is (Ident.name id)
 end
-let _ = ignore Current_unit_name.is
 
 let set_unit_name = Current_unit_name.set
 let get_unit_name = Current_unit_name.get

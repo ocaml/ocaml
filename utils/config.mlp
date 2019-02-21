@@ -84,26 +84,26 @@ let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X023"
+let exec_magic_number = "Caml1999X025"
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I023"
-and cmo_magic_number = "Caml1999O023"
-and cma_magic_number = "Caml1999A023"
+and cmi_magic_number = "Caml1999I025"
+and cmo_magic_number = "Caml1999O025"
+and cma_magic_number = "Caml1999A025"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y023"
+    "Caml1999y025"
   else
-    "Caml1999Y023"
+    "Caml1999Y025"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z023"
+    "Caml1999z025"
   else
-    "Caml1999Z023"
-and ast_impl_magic_number = "Caml1999M023"
-and ast_intf_magic_number = "Caml1999N023"
-and cmxs_magic_number = "Caml1999D023"
+    "Caml1999Z025"
+and ast_impl_magic_number = "Caml1999M025"
+and ast_intf_magic_number = "Caml1999N025"
+and cmxs_magic_number = "Caml1999D025"
     (* cmxs_magic_number is duplicated in otherlibs/dynlink/natdynlink.ml *)
-and cmt_magic_number = "Caml1999T023"
+and cmt_magic_number = "Caml1999T025"
 
 let interface_suffix = ref ".mli"
 
