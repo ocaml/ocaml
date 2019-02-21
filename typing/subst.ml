@@ -276,35 +276,36 @@ let constructor_declaration s c =
     cd_attributes = attrs s c.cd_attributes;
   }
 
+let type_declaration' s decl =
+  { type_params = List.map (typexp s) decl.type_params;
+    type_arity = decl.type_arity;
+    type_kind =
+      begin match decl.type_kind with
+        Type_abstract -> Type_abstract
+      | Type_variant cstrs ->
+          Type_variant (List.map (constructor_declaration s) cstrs)
+      | Type_record(lbls, rep) ->
+          Type_record (List.map (label_declaration s) lbls, rep)
+      | Type_open -> Type_open
+      end;
+    type_manifest =
+      begin
+        match decl.type_manifest with
+          None -> None
+        | Some ty -> Some(typexp s ty)
+      end;
+    type_private = decl.type_private;
+    type_variance = decl.type_variance;
+    type_is_newtype = false;
+    type_expansion_scope = Btype.lowest_level;
+    type_loc = loc s decl.type_loc;
+    type_attributes = attrs s decl.type_attributes;
+    type_immediate = decl.type_immediate;
+    type_unboxed = decl.type_unboxed;
+  }
+
 let type_declaration s decl =
-  let decl =
-    { type_params = List.map (typexp s) decl.type_params;
-      type_arity = decl.type_arity;
-      type_kind =
-        begin match decl.type_kind with
-          Type_abstract -> Type_abstract
-        | Type_variant cstrs ->
-            Type_variant (List.map (constructor_declaration s) cstrs)
-        | Type_record(lbls, rep) ->
-            Type_record (List.map (label_declaration s) lbls, rep)
-        | Type_open -> Type_open
-        end;
-      type_manifest =
-        begin
-          match decl.type_manifest with
-            None -> None
-          | Some ty -> Some(typexp s ty)
-        end;
-      type_private = decl.type_private;
-      type_variance = decl.type_variance;
-      type_is_newtype = false;
-      type_expansion_scope = Btype.lowest_level;
-      type_loc = loc s decl.type_loc;
-      type_attributes = attrs s decl.type_attributes;
-      type_immediate = decl.type_immediate;
-      type_unboxed = decl.type_unboxed;
-    }
-  in
+  let decl = type_declaration' s decl in
   cleanup_types ();
   decl
 
@@ -327,35 +328,35 @@ let rec class_type s =
   | Cty_arrow (l, ty, cty) ->
       Cty_arrow (l, typexp s ty, class_type s cty)
 
+let class_declaration' s decl =
+  { cty_params = List.map (typexp s) decl.cty_params;
+    cty_variance = decl.cty_variance;
+    cty_type = class_type s decl.cty_type;
+    cty_path = type_path s decl.cty_path;
+    cty_new =
+      begin match decl.cty_new with
+        None    -> None
+      | Some ty -> Some (typexp s ty)
+      end;
+    cty_loc = loc s decl.cty_loc;
+    cty_attributes = attrs s decl.cty_attributes;
+  }
 let class_declaration s decl =
-  let decl =
-    { cty_params = List.map (typexp s) decl.cty_params;
-      cty_variance = decl.cty_variance;
-      cty_type = class_type s decl.cty_type;
-      cty_path = type_path s decl.cty_path;
-      cty_new =
-        begin match decl.cty_new with
-          None    -> None
-        | Some ty -> Some (typexp s ty)
-        end;
-      cty_loc = loc s decl.cty_loc;
-      cty_attributes = attrs s decl.cty_attributes;
-    }
-  in
-  (* Do not clean up if saving: next is cltype_declaration *)
-  if not s.for_saving then cleanup_types ();
+  let decl = class_declaration' s decl in
+  cleanup_types ();
   decl
 
+let cltype_declaration' s decl =
+  { clty_params = List.map (typexp s) decl.clty_params;
+    clty_variance = decl.clty_variance;
+    clty_type = class_type s decl.clty_type;
+    clty_path = type_path s decl.clty_path;
+    clty_loc = loc s decl.clty_loc;
+    clty_attributes = attrs s decl.clty_attributes;
+  }
+
 let cltype_declaration s decl =
-  let decl =
-    { clty_params = List.map (typexp s) decl.clty_params;
-      clty_variance = decl.clty_variance;
-      clty_type = class_type s decl.clty_type;
-      clty_path = type_path s decl.clty_path;
-      clty_loc = loc s decl.clty_loc;
-      clty_attributes = attrs s decl.clty_attributes;
-    }
-  in
+  let decl = cltype_declaration' s decl in
   (* Do clean up even if saving: type_declaration may be recursive *)
   cleanup_types ();
   decl
@@ -365,23 +366,29 @@ let class_type s cty =
   cleanup_types ();
   cty
 
-let value_description s descr =
-  { val_type = type_expr s descr.val_type;
+let value_description' s descr =
+  { val_type = typexp s descr.val_type;
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
     val_attributes = attrs s descr.val_attributes;
    }
 
+let value_description s descr =
+  let vd = value_description' s descr in
+  cleanup_types ();
+  vd
+
+let extension_constructor' s ext =
+  { ext_type_path = type_path s ext.ext_type_path;
+    ext_type_params = List.map (typexp s) ext.ext_type_params;
+    ext_args = constructor_arguments s ext.ext_args;
+    ext_ret_type = may_map (typexp s) ext.ext_ret_type;
+    ext_private = ext.ext_private;
+    ext_attributes = attrs s ext.ext_attributes;
+    ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
+
 let extension_constructor s ext =
-  let ext =
-    { ext_type_path = type_path s ext.ext_type_path;
-      ext_type_params = List.map (typexp s) ext.ext_type_params;
-      ext_args = constructor_arguments s ext.ext_args;
-      ext_ret_type = may_map (typexp s) ext.ext_ret_type;
-      ext_private = ext.ext_private;
-      ext_attributes = attrs s ext.ext_attributes;
-      ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
-  in
+  let ext = extension_constructor' s ext in
     cleanup_types ();
     ext
 
@@ -451,25 +458,32 @@ and signature s sg =
      substitution... *)
   let (sg', s') = rename_bound_idents s [] sg in
   (* ... then apply it to each signature component in turn *)
-  List.rev_map (signature_item s') sg'
+  let res = List.rev_map (signature_item' s') sg' in
+  cleanup_types ();
+  res
 
 
-and signature_item s comp =
+and signature_item' s comp =
   match comp with
     Sig_value(id, d, vis) ->
-      Sig_value(id, value_description s d, vis)
+      Sig_value(id, value_description' s d, vis)
   | Sig_type(id, d, rs, vis) ->
-      Sig_type(id, type_declaration s d, rs, vis)
+      Sig_type(id, type_declaration' s d, rs, vis)
   | Sig_typext(id, ext, es, vis) ->
-      Sig_typext(id, extension_constructor s ext, es, vis)
+      Sig_typext(id, extension_constructor' s ext, es, vis)
   | Sig_module(id, pres, d, rs, vis) ->
       Sig_module(id, pres, module_declaration s d, rs, vis)
   | Sig_modtype(id, d, vis) ->
       Sig_modtype(id, modtype_declaration s d, vis)
   | Sig_class(id, d, rs, vis) ->
-      Sig_class(id, class_declaration s d, rs, vis)
+      Sig_class(id, class_declaration' s d, rs, vis)
   | Sig_class_type(id, d, rs, vis) ->
-      Sig_class_type(id, cltype_declaration s d, rs, vis)
+      Sig_class_type(id, cltype_declaration' s d, rs, vis)
+
+and signature_item s comp =
+  let si = signature_item' s comp in
+  cleanup_types ();
+  si
 
 and module_declaration s decl =
   {
