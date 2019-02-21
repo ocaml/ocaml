@@ -317,6 +317,12 @@ let mk_not dbg cmm =
       Cop(Csubi, [Cconst_int 4; c], dbg)
 
 
+let create_loop body =
+  let cont = next_raise_count () in
+  let call_cont = Cexit (cont, []) in
+  let body = Csequence (body, call_cont) in
+  Ccatch (Recursive, [cont, [], body], call_cont)
+
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
    those target platforms that support this optimization. *)
@@ -2049,7 +2055,7 @@ let rec transl env e =
       return_unit
         (ccatch
            (raise_num, [],
-            Cloop(transl_if env cond dbg Unknown
+            create_loop(transl_if env cond dbg Unknown
                     (remove_unit(transl env body))
                     (Cexit (raise_num,[]))),
             Ctuple []))
@@ -2068,7 +2074,7 @@ let rec transl env e =
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar (VP.var id); high], dbg),
                     Cexit (raise_num, []),
-                    Cloop
+                    create_loop
                       (Csequence
                          (remove_unit(transl env body),
                          Clet(id_prev, Cvar (VP.var id),
@@ -3214,7 +3220,7 @@ let cache_public_method meths tag cache dbg =
   Csequence(
   ccatch
     (raise_num, [],
-     Cloop
+     create_loop
        (Clet(
         VP.create mi,
         Cop(Cor,

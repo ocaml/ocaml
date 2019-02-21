@@ -8,6 +8,9 @@ Working version
 - GPR#1579: Add a separate types for clambda primitives
   (Pierre Chambart, review by Vincent Laviron and Mark Shinwell)
 
+- GPR#1965: remove loop constructors in Cmm and Mach
+  (Vincent Laviron)
+
 - GPR#1973: fix compilation of catches with multiple handlers
   (Vincent Laviron)
 
