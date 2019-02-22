@@ -772,6 +772,10 @@ OCaml 4.08.0
 - GPR#2231: Env: always freshen persistent signatures before using them
   (Thomas Refis and Leo White, review by Gabriel Radanne)
 
+- MPR#7929, GPR#2261: Subst.signature: call cleanup_types exactly once
+  (Thomas Refis, review by Gabriel Scherer and Jacques Garrigue,
+  report by Daniel Bünzli and Jon Ludlam)
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
