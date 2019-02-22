@@ -1011,11 +1011,8 @@ intnat caml_float_compare_unboxed(double f, double g)
      Note that [f == f] if and only if f is not NaN.
      We expand each subresult of the expression to
      avoid sign-extension on 64bit. GPR#2250. */
-  intnat greater = f > g;
-  intnat less    = f < g;
-  intnat equal_f = f == f;
-  intnat equal_g = g == g;
-  intnat res = greater - less + equal_f - equal_g;
+  intnat res =
+    (intnat)(f > g) - (intnat)(f < g) + (intnat)(f == f) - (intnat)(g == g);
   return res;
 }
 

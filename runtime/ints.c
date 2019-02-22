@@ -26,12 +26,8 @@
 #include "caml/mlvalues.h"
 
 /* Comparison resulting in -1,0,1, without extra integer width conversion */
-#define COMPARE_INT(type, v1, v2, result) \
-  type __compare_v1 = v1; \
-  type __compare_v2 = v2; \
-  intnat __compare_greater = __compare_v1 > __compare_v2; \
-  intnat __compare_less    = __compare_v1 < __compare_v2; \
-  intnat result = __compare_greater - __compare_less
+#define COMPARE_INT(v1, v2) \
+  (intnat)(v1 > v2) - (intnat)(v1 < v2)
 
 static const char * parse_sign_and_base(const char * p,
                                         /*out*/ int * base,
@@ -134,8 +130,7 @@ CAMLprim value caml_bswap16(value v)
 
 CAMLprim value caml_int_compare(value v1, value v2)
 {
-  COMPARE_INT(value, v1, v2, res);
-  return Val_int(res);
+  return Val_long(COMPARE_INT(v1,v2));
 }
 
 CAMLprim value caml_int_of_string(value s)
@@ -322,8 +317,7 @@ CAMLprim value caml_int32_to_float(value v)
 
 intnat caml_int32_compare_unboxed(int32_t i1, int32_t i2)
 {
-  COMPARE_INT(int32_t, i1, i2, res);
-  return res;
+  return COMPARE_INT(i1, i2);
 }
 
 CAMLprim value caml_int32_compare(value v1, value v2)
@@ -571,8 +565,7 @@ CAMLprim value caml_int64_to_nativeint(value v)
 
 intnat caml_int64_compare_unboxed(int64_t i1, int64_t i2)
 {
-  COMPARE_INT(int64_t,i1,i2,res);
-  return res;
+  return COMPARE_INT(i1,i2);
 }
 
 CAMLprim value caml_int64_compare(value v1, value v2)
@@ -834,8 +827,7 @@ CAMLprim value caml_nativeint_to_int32(value v)
 
 intnat caml_nativeint_compare_unboxed(intnat i1, intnat i2)
 {
-  COMPARE_INT(intnat, i1, i2, res);
-  return res;
+  return COMPARE_INT(i1, i2);
 }
 
 CAMLprim value caml_nativeint_compare(value v1, value v2)
