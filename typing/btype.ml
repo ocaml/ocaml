@@ -489,34 +489,38 @@ module For_copy : sig
 
   val with_scope: (copy_scope -> 'a) -> 'a
 end = struct
-  type copy_scope = unit
+  type copy_scope = {
+    mutable saved_desc : (type_expr * type_desc) list;
+    (* Save association of generic nodes with their description. *)
 
-  let saved_desc = ref []
-    (* Saved association of generic nodes with their description. *)
+    mutable saved_kinds: field_kind option ref list;
+    (* duplicated kind variables *)
 
-  let save_desc () ty desc =
-    saved_desc := (ty, desc)::!saved_desc
+    mutable new_kinds  : field_kind option ref list;
+    (* new kind variables *)
+  }
 
-  let saved_kinds = ref [] (* duplicated kind variables *)
-  let new_kinds = ref []   (* new kind variables *)
-  let dup_kind () r =
-    (match !r with None -> () | Some _ -> assert false);
-    if not (List.memq r !new_kinds) then begin
-      saved_kinds := r :: !saved_kinds;
+  let save_desc copy_scope ty desc =
+    copy_scope.saved_desc <- (ty, desc) :: copy_scope.saved_desc
+
+  let dup_kind copy_scope r =
+    assert (Option.is_none !r);
+    if not (List.memq r copy_scope.new_kinds) then begin
+      copy_scope.saved_kinds <- r :: copy_scope.saved_kinds;
       let r' = ref None in
-      new_kinds := r' :: !new_kinds;
+      copy_scope.new_kinds <- r' :: copy_scope.new_kinds;
       r := Some (Fvar r')
     end
 
-  (* Restored type descriptions. *)
-  let cleanup_types () =
-    List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-    List.iter (fun r -> r := None) !saved_kinds;
-    saved_desc := []; saved_kinds := []; new_kinds := []
+  (* Restore type descriptions. *)
+  let cleanup { saved_desc; saved_kinds; _ } =
+    List.iter (fun (ty, desc) -> ty.desc <- desc) saved_desc;
+    List.iter (fun r -> r := None) saved_kinds
 
   let with_scope f =
-    let res = f () in
-    cleanup_types ();
+    let scope = { saved_desc = []; saved_kinds = []; new_kinds = [] } in
+    let res = f scope in
+    cleanup scope;
     res
 end
 

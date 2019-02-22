@@ -130,8 +130,8 @@ val copy_kind: field_kind -> field_kind
 module For_copy : sig
 
   type copy_scope
-        (* A token used to ensure that calls to [save_desc] or [dup_kind]
-           only happen from inside a call to [with_scope].
+        (* The private state that the primitives below are mutating, it should
+           remain scoped within a single [with_scope] call.
 
            While it is possible to circumvent that discipline in various
            ways, you should NOT do that. *)
