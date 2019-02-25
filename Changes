@@ -263,7 +263,7 @@ OCaml 4.08.0
 - GPR#1748: do not error when instantiating polymorphic fields in patterns.
   (Thomas Refis, review by Gabriel Scherer)
 
-- MPR#6913: new -match-context-rows option
+- MPR#6913, GPR#1786: new -match-context-rows option
   to control the degree of optimization in the pattern matching compiler.
   (Dwight Guth, review by Gabriel Scherer and Luc Maranget)
 
