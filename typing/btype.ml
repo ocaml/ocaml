@@ -480,28 +480,49 @@ let rec copy_type_desc ?(keep_names=false) f = function
 
 (* Utilities for copying *)
 
-let saved_desc = ref []
-  (* Saved association of generic nodes with their description. *)
+module For_copy : sig
+  type copy_scope
 
-let save_desc ty desc =
-  saved_desc := (ty, desc)::!saved_desc
+  val save_desc: copy_scope -> type_expr -> type_desc -> unit
 
-let saved_kinds = ref [] (* duplicated kind variables *)
-let new_kinds = ref []   (* new kind variables *)
-let dup_kind r =
-  (match !r with None -> () | Some _ -> assert false);
-  if not (List.memq r !new_kinds) then begin
-    saved_kinds := r :: !saved_kinds;
-    let r' = ref None in
-    new_kinds := r' :: !new_kinds;
-    r := Some (Fvar r')
-  end
+  val dup_kind: copy_scope -> field_kind option ref -> unit
 
-(* Restored type descriptions. *)
-let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  List.iter (fun r -> r := None) !saved_kinds;
-  saved_desc := []; saved_kinds := []; new_kinds := []
+  val with_scope: (copy_scope -> 'a) -> 'a
+end = struct
+  type copy_scope = {
+    mutable saved_desc : (type_expr * type_desc) list;
+    (* Save association of generic nodes with their description. *)
+
+    mutable saved_kinds: field_kind option ref list;
+    (* duplicated kind variables *)
+
+    mutable new_kinds  : field_kind option ref list;
+    (* new kind variables *)
+  }
+
+  let save_desc copy_scope ty desc =
+    copy_scope.saved_desc <- (ty, desc) :: copy_scope.saved_desc
+
+  let dup_kind copy_scope r =
+    assert (Option.is_none !r);
+    if not (List.memq r copy_scope.new_kinds) then begin
+      copy_scope.saved_kinds <- r :: copy_scope.saved_kinds;
+      let r' = ref None in
+      copy_scope.new_kinds <- r' :: copy_scope.new_kinds;
+      r := Some (Fvar r')
+    end
+
+  (* Restore type descriptions. *)
+  let cleanup { saved_desc; saved_kinds; _ } =
+    List.iter (fun (ty, desc) -> ty.desc <- desc) saved_desc;
+    List.iter (fun r -> r := None) saved_kinds
+
+  let with_scope f =
+    let scope = { saved_desc = []; saved_kinds = []; new_kinds = [] } in
+    let res = f scope in
+    cleanup scope;
+    res
+end
 
 (* Mark a type. *)
 let rec mark_type ty =
