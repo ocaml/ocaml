@@ -218,6 +218,11 @@ OCaml 4.08.0
   Make (nat)dynlink sound
   (Mark Shinwell, Leo White, Nicolás Ojeda Bär, Pierre Chambart)
 
+- GPR#2263: Delete the deprecated Bigarray.*.map_file functions in
+  favour of `*_of_genarray (Unix.map_file ...)` functions instead. The
+  `Unix.map_file` function was introduced in OCaml 4.06.0 onwards.
+  (Jérémie Dimino, reviewed by David Allsopp and Anil Madhavapeddy)
+
 ### Compiler user-interface and warnings:
 
 - GPR#2133: Warn on literal patterns found anywhere in a constructor's
