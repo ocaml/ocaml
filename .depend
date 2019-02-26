@@ -547,7 +547,6 @@ typing/env.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/datarepr.cmi \
-    utils/config.cmi \
     typing/cmi_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -567,7 +566,6 @@ typing/env.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/datarepr.cmx \
-    utils/config.cmx \
     typing/cmi_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
@@ -824,6 +822,7 @@ typing/persistent_env.cmo : \
     utils/warnings.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     utils/consistbl.cmi \
     utils/config.cmi \
     typing/cmi_format.cmi \
@@ -833,6 +832,7 @@ typing/persistent_env.cmx : \
     utils/warnings.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
+    utils/load_path.cmx \
     utils/consistbl.cmx \
     utils/config.cmx \
     typing/cmi_format.cmx \
@@ -1692,7 +1692,7 @@ bytecomp/bytelibrarian.cmi :
 bytecomp/bytelink.cmo : \
     utils/warnings.cmi \
     bytecomp/symtable.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
@@ -1793,7 +1793,7 @@ bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : \
     bytecomp/translmod.cmi \
     typing/primitive.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/lambda.cmi \
@@ -1935,8 +1935,11 @@ bytecomp/meta.cmx : \
     bytecomp/meta.cmi
 bytecomp/meta.cmi : \
     bytecomp/instruct.cmi
-bytecomp/opcodes.cmo :
-bytecomp/opcodes.cmx :
+bytecomp/opcodes.cmo : \
+    bytecomp/opcodes.cmi
+bytecomp/opcodes.cmx : \
+    bytecomp/opcodes.cmi
+bytecomp/opcodes.cmi :
 bytecomp/printinstr.cmo : \
     bytecomp/printlambda.cmi \
     parsing/location.cmi \
@@ -1982,6 +1985,7 @@ bytecomp/runtimedef.cmi :
 bytecomp/simplif.cmo : \
     utils/warnings.cmi \
     typing/stypes.cmi \
+    typing/primitive.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/lambda.cmi \
@@ -1993,6 +1997,7 @@ bytecomp/simplif.cmo : \
 bytecomp/simplif.cmx : \
     utils/warnings.cmx \
     typing/stypes.cmx \
+    typing/primitive.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     bytecomp/lambda.cmx \
@@ -6011,7 +6016,7 @@ toplevel/topdirs.cmo : \
     typing/predef.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     parsing/longident.cmi \
@@ -6222,7 +6227,7 @@ driver/compdynlink.cmx : \
     driver/compdynlink.cmi
 driver/compdynlink.cmo : \
     bytecomp/symtable.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     typing/ident.cmi \
