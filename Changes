@@ -40,6 +40,10 @@ Working version
 
 ### Compiler distribution build system:
 
+- #2267: merge generation of header programs, also fixing parallel build on
+  Cygwin.
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #8514: Use boot/ocamlc.opt for building, if available.
   (Stephen Dolan, review by Gabriel Scherer)
 
