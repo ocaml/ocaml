@@ -2791,6 +2791,7 @@ asmcomp/cmmgen.cmo : \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmi \
     asmcomp/cmm.cmi \
@@ -2817,6 +2818,7 @@ asmcomp/cmmgen.cmx : \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
     asmcomp/cmm.cmx \
@@ -2850,6 +2852,8 @@ asmcomp/cmx_format.cmi : \
     utils/misc.cmi \
     asmcomp/export_info.cmi \
     asmcomp/clambda.cmi
+asmcomp/cmxs_format.cmi : \
+    utils/misc.cmi
 asmcomp/coloring.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -5473,6 +5477,35 @@ asmcomp/debug/reg_with_debug_info.cmx : \
 asmcomp/debug/reg_with_debug_info.cmi : \
     asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
+<<<<<<< HEAD
+=======
+driver/compdynlink.cmi :
+driver/compdynlink_common.cmo : \
+    utils/misc.cmi \
+    driver/compdynlink_types.cmi \
+    driver/compdynlink_platform_intf.cmi \
+    driver/compdynlink_common.cmi
+driver/compdynlink_common.cmx : \
+    utils/misc.cmx \
+    driver/compdynlink_types.cmx \
+    driver/compdynlink_platform_intf.cmx \
+    driver/compdynlink_common.cmi
+driver/compdynlink_common.cmi : \
+    driver/compdynlink_platform_intf.cmi
+driver/compdynlink_platform_intf.cmo : \
+    driver/compdynlink_types.cmi \
+    driver/compdynlink_platform_intf.cmi
+driver/compdynlink_platform_intf.cmx : \
+    driver/compdynlink_types.cmx \
+    driver/compdynlink_platform_intf.cmi
+driver/compdynlink_platform_intf.cmi : \
+    driver/compdynlink_types.cmi
+driver/compdynlink_types.cmo : \
+    driver/compdynlink_types.cmi
+driver/compdynlink_types.cmx : \
+    driver/compdynlink_types.cmi
+driver/compdynlink_types.cmi :
+>>>>>>> 4075685ebd... Dynlink packing
 driver/compenv.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -6214,3 +6247,24 @@ toplevel/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
+<<<<<<< HEAD
+=======
+driver/compdynlink.cmx : \
+    utils/config.cmx \
+    driver/compdynlink_types.cmx \
+    driver/compdynlink_common.cmx \
+    asmcomp/cmxs_format.cmi \
+    driver/compdynlink.cmi
+driver/compdynlink.cmo : \
+    bytecomp/symtable.cmi \
+    bytecomp/opcodes.cmi \
+    utils/misc.cmi \
+    bytecomp/meta.cmi \
+    typing/ident.cmi \
+    bytecomp/dll.cmi \
+    utils/config.cmi \
+    driver/compdynlink_types.cmi \
+    driver/compdynlink_common.cmi \
+    bytecomp/cmo_format.cmi \
+    driver/compdynlink.cmi
+>>>>>>> 4075685ebd... Dynlink packing
