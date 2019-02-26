@@ -21,6 +21,9 @@ Working version
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
+- GPR#2265: Add bytecomp/opcodes.mli
+  (Mark Shinwell, review by Nicolas Ojeda Bar)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag

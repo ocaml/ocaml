@@ -1279,13 +1279,17 @@ toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 bytecomp/opcodes.ml: runtime/caml/instruct.h tools/make_opcodes
 	runtime/ocamlrun tools/make_opcodes -opcodes < $< > $@
 
+bytecomp/opcodes.mli: runtime/caml/instruct.h tools/make_opcodes
+	runtime/ocamlrun tools/make_opcodes -opcodes-mli < $< > $@
+
 tools/make_opcodes: tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
+	rm -f bytecomp/opcodes.mli
 
-beforedepend:: bytecomp/opcodes.ml
+beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
 # Testing the parser -- see parsing/HACKING.adoc
 
