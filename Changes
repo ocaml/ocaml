@@ -538,6 +538,13 @@ OCaml 4.08.0
 
 ### Internal/compiler-libs changes:
 
+- MPR#7918, GPR#1703, GPR#1944, GPR#2213, GPR#2257: Add the module
+  Compile_common, which factorizes the common part in Compile and
+  Optcompile. This also makes the pipeline more modular.
+  (Gabriel Radanne, help from Gabriel Scherer and Valentin
+   Gatien-Baron, review by Mark Shinwell and Gabriel Radanne,
+   regression spotted by Clément Franchini)
+
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
   Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934, GPR#2151,
   GPR#2174
@@ -559,12 +566,6 @@ OCaml 4.08.0
 
 - GPR#1610, GPR#2252: Remove positions from paths
   (Leo White, review by Frédéric Bour and Thomas Refis)
-
-- GPR#1703, GPR#1944, GPR#2213: Add the module Compile_common,
-  which factorizes the common part in Compile and Optcompile.
-  This also makes the pipeline more modular.
-  (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
-   review by Mark Shinwell and Gabriel Radanne)
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables.
   (Thomas Refis, review by Leo White)
