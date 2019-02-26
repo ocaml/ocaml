@@ -1279,8 +1279,8 @@ toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 bytecomp/opcodes.ml: runtime/caml/instruct.h tools/make_opcodes
 	runtime/ocamlrun tools/make_opcodes -opcodes < $< > $@
 
-bytecomp/opcodes.mli: runtime/caml/instruct.h tools/make_opcodes
-	runtime/ocamlrun tools/make_opcodes -opcodes-mli < $< > $@
+bytecomp/opcodes.mli: bytecomp/opcodes.ml
+	$(CAMLC) -i $< > $@
 
 tools/make_opcodes: tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
