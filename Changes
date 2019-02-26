@@ -662,8 +662,9 @@ OCaml 4.08.0
 * GPR#2041: add a cache for looking up files in the load path
   (Jérémie Dimino, review by Alain Frisch and David Allsopp)
 
-- GPR#2047: a new type for unification traces
-  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
+- GPR#2047, GPR#2269: a new type for unification traces
+  (Florian Angeletti, report by Leo White (GPR#2269),
+   review by Thomas Refis and Gabriel Scherer)
 
 - GPR#2055: Add [Linearize.Lprologue].
   (Mark Shinwell, review by Pierre Chambart)
