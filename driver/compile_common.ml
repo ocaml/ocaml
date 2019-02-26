@@ -113,15 +113,17 @@ let typecheck_impl i parsetree =
 
 let implementation info ~backend =
   Profile.record_call info.source_file @@ fun () ->
-  let sufs = if info.native then [ cmx; obj ] else [ cmo ] in
-  let parsed = parse_impl info in
-  if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
-    let typed = typecheck_impl info parsed in
-    if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
-      let exceptionally () =
-        List.iter (fun suf -> remove_file (suf info)) sufs;
-      in
-      Misc.try_finally ~exceptionally (fun () -> backend info typed)
+  let exceptionally () =
+    let sufs = if info.native then [ cmx; obj ] else [ cmo ] in
+    List.iter (fun suf -> remove_file (suf info)) sufs;
+  in
+  Misc.try_finally ?always:None ~exceptionally (fun () ->
+    let parsed = parse_impl info in
+    if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
+      let typed = typecheck_impl info parsed in
+      if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
+        backend info typed
+      end;
     end;
-  end;
-  Warnings.check_fatal ();
+    Warnings.check_fatal ();
+  )
