@@ -307,6 +307,9 @@ AC_ARG_WITH([reserved-header-bits],
   [AS_HELP_STRING([--with-reserved-header-bits=BITS],
     [reserve BITS bits in block headers for profiling info])])
 
+AC_ARG_VAR([WINDOWS_UNICODE_MODE],
+  [how to handle Unicode under Windows: ansi, compatible])
+
 # There are two configure-time string safety options,
 # --(enable|disable)-force-safe-string and
 # --with-default-string=safe|unsafe that
@@ -1680,7 +1683,12 @@ AS_IF([test x"$mandir" = x'${datarootdir}/man'],
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [max_testsuite_dir_retries=1
-    windows_unicode=1],
+    AS_CASE([$WINDOWS_UNICODE_MODE],
+      [ansi],
+        [windows_unicode=0],
+      [compatible|""],
+        [windows_unicode=1],
+      [AC_MSG_ERROR([unexpected windows unicode mode])])],
   [max_testsuite_dir_retries=0
   windows_unicode=0])
 
