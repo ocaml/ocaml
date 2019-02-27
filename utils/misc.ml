@@ -689,10 +689,17 @@ module Color = struct
 
   type setting = Auto | Always | Never
 
+  let default_setting = Auto
+
   let setup =
     let first = ref true in (* initialize only once *)
     let formatter_l =
       [Format.std_formatter; Format.err_formatter; Format.str_formatter]
+    in
+    let enable_color = function
+      | Auto -> should_enable_color ()
+      | Always -> true
+      | Never -> false
     in
     fun o ->
       if !first then (
@@ -700,10 +707,8 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-            | Some Always -> true
-            | Some Auto -> should_enable_color ()
-            | Some Never -> false
-            | None -> should_enable_color ())
+          | Some s -> enable_color s
+          | None -> enable_color default_setting)
       );
       ()
 end
@@ -712,6 +717,8 @@ module Error_style = struct
   type setting =
     | Contextual
     | Short
+
+  let default_setting = Contextual
 end
 
 let normalise_eol s =
