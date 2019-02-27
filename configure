@@ -673,6 +673,7 @@ CFLAGS
 LIBTOOL
 ac_ct_LD
 LD
+WINDOWS_UNICODE_MODE
 PARTIALLD
 target_os
 target_vendor
@@ -866,6 +867,7 @@ target_alias
 AS
 ASPP
 PARTIALLD
+WINDOWS_UNICODE_MODE
 CC
 CFLAGS
 LDFLAGS
@@ -1569,6 +1571,8 @@ Some influential environment variables:
   AS          which assembler to use
   ASPP        which assembler (with preprocessor) to use
   PARTIALLD   how to build partial (relocatable) object files
+  WINDOWS_UNICODE_MODE
+              how to handle Unicode under Windows: ansi, compatible
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3142,6 +3146,8 @@ fi
 if test "${with_reserved_header_bits+set}" = set; then :
   withval=$with_reserved_header_bits;
 fi
+
+
 
 
 # There are two configure-time string safety options,
@@ -16966,7 +16972,14 @@ fi
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     max_testsuite_dir_retries=1
+    case $WINDOWS_UNICODE_MODE in #(
+  ansi) :
+    windows_unicode=0 ;; #(
+  compatible|"") :
     windows_unicode=1 ;; #(
+  *) :
+    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
+esac ;; #(
   *) :
     max_testsuite_dir_retries=0
   windows_unicode=0 ;;
