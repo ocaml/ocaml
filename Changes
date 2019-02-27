@@ -3,15 +3,6 @@ OCaml 4.08.0
 
 (Changes that can break existing programs are marked with a "*")
 
-### Build system:
-
-- GPR#2264, MPR#7904: the configure script now sets the Unicode handling mode
-  under Windows according to the value of the variable WINDOWS_UNICODE_MODE. If
-  WINDOWS_UNICODE_MODE is "ansi" then it is assumed to be the current code page
-  encoding. If WINDOWS_UNICODE_MODE is "compatible" or empty or not set at all,
-  then encoding is UTF-8 with code page fallback.
-  (Nicolás Ojeda Bär, review by Sébastien Hinderer and David Allsopp)
-
 ### Language features:
 
 - MPR#6422, MPR#7083, GPR#305, GPR#1568: Allow "exception" under or-patterns
@@ -544,6 +535,13 @@ OCaml 4.08.0
 
 - GPR#2148: fix a parallel build bug involving CamlinternalLazy.
   (Stephen Dolan, review by Gabriel Scherer and Nicolas Ojeda Bar)
+
+- GPR#2264, MPR#7904: the configure script now sets the Unicode handling mode
+  under Windows according to the value of the variable WINDOWS_UNICODE_MODE. If
+  WINDOWS_UNICODE_MODE is "ansi" then it is assumed to be the current code page
+  encoding. If WINDOWS_UNICODE_MODE is "compatible" or empty or not set at all,
+  then encoding is UTF-8 with code page fallback.
+  (Nicolás Ojeda Bär, review by Sébastien Hinderer and David Allsopp)
 
 ### Internal/compiler-libs changes:
 
