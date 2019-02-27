@@ -660,10 +660,9 @@ let is_quotable_loc loc =
   && loc.loc_end.pos_fname = !input_name
 
 let error_style () =
-  let open Misc.Error_style in
   match !Clflags.error_style with
-  | Some Contextual | None -> Contextual
-  | Some Short -> Short
+  | Some setting -> setting
+  | None -> Misc.Error_style.default_setting
 
 let batch_mode_printer : report_printer =
   let pp_loc _self report ppf loc =

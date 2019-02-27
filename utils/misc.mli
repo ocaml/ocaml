@@ -350,6 +350,8 @@ module Color : sig
 
   type setting = Auto | Always | Never
 
+  val default_setting : setting
+
   val setup : setting option -> unit
   (* [setup opt] will enable or disable color handling on standard formatters
      according to the value of color setting [opt].
@@ -364,6 +366,8 @@ module Error_style : sig
   type setting =
     | Contextual
     | Short
+
+  val default_setting : setting
 end
 
 val normalise_eol : string -> string

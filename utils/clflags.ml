@@ -370,6 +370,7 @@ let dump_into_file = ref false (* -dump-into-file *)
 
 type 'a env_reader = {
   parse : string -> 'a option;
+  print : 'a -> string;
   usage : string;
   env_var : string;
 }
@@ -382,6 +383,10 @@ let color_reader = {
     | "always" -> Some Misc.Color.Always
     | "never" -> Some Misc.Color.Never
     | _ -> None);
+  print = (function
+    | Misc.Color.Auto -> "auto"
+    | Misc.Color.Always -> "always"
+    | Misc.Color.Never -> "never");
   usage = "expected \"auto\", \"always\" or \"never\"";
   env_var = "OCAML_COLOR";
 }
@@ -393,6 +398,9 @@ let error_style_reader = {
     | "contextual" -> Some Misc.Error_style.Contextual
     | "short" -> Some Misc.Error_style.Short
     | _ -> None);
+  print = (function
+    | Misc.Error_style.Contextual -> "contextual"
+    | Misc.Error_style.Short -> "short");
   usage = "expected \"contextual\" or \"short\"";
   env_var = "OCAML_ERROR_STYLE";
 }
