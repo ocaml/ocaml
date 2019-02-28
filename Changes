@@ -27,7 +27,7 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer and Damien Doligez)
 
 * GPR#2240: Constify "identifier" in struct custom_operations
-  (Cedric Cellier)
+  (Cedric Cellier, review by Xavier Leroy)
 
 ### Other libraries:
 
