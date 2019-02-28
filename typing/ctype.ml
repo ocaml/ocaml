@@ -81,6 +81,7 @@ module Unification_trace = struct
   type obj =
     | Missing_field of position * string
     | Abstract_row of position
+    | Self_cannot_be_closed
 
   type 'a elt =
     | Diff of 'a diff
@@ -2662,7 +2663,9 @@ and unify3 env t1 t1' t2 t2' =
               if d2 = Tnil then unify env rem t2'
               else unify env (newty2 rem.level Tnil) rem
           | _      ->
-              if d1 = Tnil then
+              if f = dummy_method then
+                raise (Unify Trace.[Obj Self_cannot_be_closed])
+              else if d1 = Tnil then
                 raise (Unify Trace.[Obj(Missing_field (First, f))])
               else
                 raise (Unify Trace.[Obj(Missing_field (Second, f))])
