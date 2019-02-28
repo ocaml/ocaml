@@ -41,13 +41,15 @@ let () =
                         fd_exit Unix.stdout Unix.stderr in
   Unix.close fd_exit;
   let (pid1, status1) = Unix.waitpid [WNOHANG] pid in
-  assert (pid1 = 0 && status1 = WEXITED 0);
+  assert (pid1 = 0);
+  assert (status1 = WEXITED 0);
   Unix.close fd_entrance;
   let rec busywait () =
     let (pid2, status2) = Unix.waitpid [WNOHANG] pid in
     if pid2 = 0 then begin
       Unix.sleepf 0.001; busywait()
     end else begin
-      assert (status2 = WEXITED 0); print_endline "OK"
+      assert (pid2 = pid);
+      assert (status2 = WEXITED 0)
     end
   in busywait()
