@@ -582,66 +582,77 @@ entire class of misbehaving functions.
 
 \section{Lazy expressions}
 
-OCaml allows to defer some computation, usually expensive one, until later when 
-we need that expression evaluated. The deferred expression has type "'a Lazy.t", 
-where "'a" is the type of the evaluated expression. 
+OCaml allows us to defer some computation, usually expensive one, until later when 
+we need the result of that computation. 
 
 We use "lazy (expr)" to delay the evaluation of some expression "expr". For 
 example, we can defer the computation of "1+1" until we need the result of that
-expression, i.e. "2". 
+expression, i.e. "2". Let us see how we initialize a lazy expression. 
 
 \begin{caml_example}{toplevel}
-let lazy_two = lazy (1+1);;
+  let lazy_two = lazy ( print_endline "lazy_two evaluation"; 1 + 1 );;
 \end{caml_example}
 
-Note: "'a lazy_t" is a type constructor for keyword "lazy" used by the compiler. 
-One should use type "'a Lazy.t" to work with lazy expressions. 
+We added "print_endline \"lazy_two evaluation\"" to see when the lazy
+ expression is being evaluated.
 
-Also note that the value of "lazy_two" is "<lazy>", which means 
-the expression is not evaluated yet and the result is unknown.
+There are several things to note about the result printed by the toplevel above. 
+First, "lazy_two" has type "int lazy_t". However, "'a lazy_t" is a type 
+constructor for keyword "lazy" used by the compiler. 
+One should use type "'a Lazy.t" to work with lazy expressions. Second, the value 
+of "lazy_two" is "<lazy>", which means the expression is not evaluated yet, and 
+the result is unknown.
 
-When we finally need the result of the expression, we can call "Lazy.force"  
-on the lazy expression to force the evaluation of the lazy expression. "force" 
-is a function from a standard-library  
-\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html}
-{module "Lazy"}.
+When we finally need the result of a lazy expression, we can call "Lazy.force"  
+on that expression to force its evaluation. "force" is a function from a 
+standard-library  
+\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html}{module "Lazy"}.
 
 \begin{caml_example}{toplevel}
   Lazy.force lazy_two;;
 \end{caml_example}
 
-Pay attention that our function call returns plain, unboxed value of the 
-expression. 
+Notice that our function call above prints ``lazy_two evaluation'' and then 
+returns the plain value of the computation. 
 
-We should also note that `Lazy.force` memoizes the result of forced computation. 
-In other words, every subsequent call of "Lazy.force" on the lazy expression is 
-constant time regardless how expensive the initial computation is.
-This can be seen by simply checking the value of the lazy expression that we 
-forced earlier:
+Now if we look at the 
+value of "lazy_two", we see that it is not "<lazy>" anymore but "lazy 2".
 
 \begin{caml_example}{toplevel}
   lazy_two;;
 \end{caml_example}
 
-We saw that the initial value of "lazy_two" was "<lazy>", but now it is 
-"lazy 2". Thus, forcing "lazy_two" we directly get the result avoiding 
-any computation.
-
-OCaml also provides pattern matching for lazy expressions 
-using "| lazy <pattern>". Lazy expression "v" is matched with 
-"| lazy <pattern>" only if the forced value of "v" matches with "<pattern>". 
-A pattern with keyword "lazy", even if it is a wildcard pattern, always forces 
-the evaluation of the deferred computation.
+This is because "Lazy.force" memoizes the result of the forced expression. In other 
+words, every subsequent call of "Lazy.force" on that expression returns the 
+result of the first computation without recomputing the lazy expression. Let us 
+force "lazy_two" once again. 
 
 \begin{caml_example}{toplevel}
-let lazy_match (lazy_expr: 'a Lazy.t) = 
-  match lazy_expr with
-  | lazy 0 -> "matches if (Lazy.force lazy_expr) = 0"
-  | lazy _ -> "despite being a lazy catch-all case, always forces the lazy expr";;
+  Lazy.force lazy_two;;
 \end{caml_example}
 
-Note: However, a simple wildcard pattern (not lazy) does not force the lazy
-expression's evaluation.
+The expression is not evaluated this time; notice that "print_endline" is not called. 
+The result of the initial computation is simply returned. 
+
+Lazy patterns provide another way to force a lazy expression. 
+
+\begin{caml_example}{toplevel}
+  let lazy_l = lazy ([1; 2] @ [3; 4]);;
+  let lazy l = lazy_l;;
+\end{caml_example}
+
+We can also use lazy patterns in pattern matching.
+
+\begin{caml_example}{toplevel}
+  let lazy_match lazy_expr = 
+    match lazy_expr with
+    | lazy 0 -> "matches if (Lazy.force lazy_expr) = 0"
+    | lazy _ -> "despite being a lazy wildcard pattern, always forces the lazy expr";;
+\end{caml_example}
+
+A pattern with keyword "lazy", even if it is a wildcard pattern, always forces 
+the evaluation of the deferred computation. However, a simple wildcard pattern 
+(not lazy) does not force the lazy expression's evaluation.
 
 \section{Symbolic processing of expressions}
 
