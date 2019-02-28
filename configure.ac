@@ -410,7 +410,6 @@ AS_CASE([$host],
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [unix_or_win32="win32"
-    exeext=".exe"
     unixlib="win32unix"
     graphlib="win32graph"
     cc_profile=''],
@@ -418,6 +417,10 @@ AS_CASE([$host],
   unixlib="unix"
   graphlib="graph"
   cc_profile='-pg'])
+AS_CASE([$host],
+  [*-*-cygwin*|*-*-mingw32|*-pc-windows],
+    [exeext=".exe"],
+  [exeext=''])
 
 otherlibraries="dynlink"
 AS_IF([test x"$enable_unix_lib" != "xno"],

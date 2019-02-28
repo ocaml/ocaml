@@ -543,6 +543,10 @@ OCaml 4.08.0
   then encoding is UTF-8 with code page fallback.
   (Nicolás Ojeda Bär, review by Sébastien Hinderer and David Allsopp)
 
+- GPR#2266: ensure Cygwin ports configure with `EXE=.exe`, or the compiler is
+  unable to find the camlheader files (subtle regression of GPR#2139/2041)
+  (David Allsopp, report and review by Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - MPR#7918, GPR#1703, GPR#1944, GPR#2213, GPR#2257: Add the module
