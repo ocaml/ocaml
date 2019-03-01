@@ -35,15 +35,12 @@ let refl =
   Filename.concat Filename.current_dir_name "reflector.exe"
 
 let () =
-  let (fd_exit, fd_entrance) = Unix.pipe ~cloexec:true () in
-  let pid =
-    Unix.create_process refl [|"refl"; "-i2o"|] 
-                        fd_exit Unix.stdout Unix.stderr in
-  Unix.close fd_exit;
+  let oc = Unix.open_process_out (refl ^ " -i2o") in
+  let pid = Unix.process_out_pid oc in
   let (pid1, status1) = Unix.waitpid [WNOHANG] pid in
   assert (pid1 = 0);
   assert (status1 = WEXITED 0);
-  Unix.close fd_entrance;
+  output_string oc "aa\n"; close_out oc;
   let rec busywait () =
     let (pid2, status2) = Unix.waitpid [WNOHANG] pid in
     if pid2 = 0 then begin
