@@ -692,6 +692,10 @@ OCaml 4.08.0
   intermediate language, as a preparation step for more future optimizations
   (Pierre Chambart and Alain Frisch, cross-reviewed by themselves)
 
+- GPR#2160: restore --disable-shared support and ensure testsuite runs correctly
+  when compiled without shared library support.
+  (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
+
 * GPR#2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
 

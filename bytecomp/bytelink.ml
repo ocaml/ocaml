@@ -292,7 +292,8 @@ let make_absolute file =
 
 (* Create a bytecode executable file *)
 
-let link_bytecode tolink exec_name standalone =
+let link_bytecode ?final_name tolink exec_name standalone =
+  let final_name = Option.value final_name ~default:exec_name in
   (* Avoid the case where the specified exec output file is the same as
      one of the objects to be linked *)
   List.iter (function
@@ -361,7 +362,7 @@ let link_bytecode tolink exec_name standalone =
        Bytesections.record outchan "PRIM";
        (* The table of global data *)
        Emitcode.marshal_to_channel_with_possibly_32bit_compat
-         ~filename:exec_name ~kind:"bytecode executable"
+         ~filename:final_name ~kind:"bytecode executable"
          outchan (Symtable.initial_global_table());
        Bytesections.record outchan "DATA";
        (* The map of global identifiers *)
@@ -586,7 +587,7 @@ let link objfiles output_name =
           remove_file bytecode_name;
           if not !Clflags.keep_camlprimc_file then remove_file prim_name)
       (fun () ->
-         link_bytecode tolink bytecode_name false;
+         link_bytecode ~final_name:output_name tolink bytecode_name false;
          let poc = open_out prim_name in
          (* note: builds will not be reproducible if the C code contains macros
             such as __FILE__. *)
