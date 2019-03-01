@@ -44,6 +44,7 @@ typedef int st_retcode;
 
 static int st_initialize(void)
 {
+  caml_sigmask_hook = pthread_sigmask;
   return 0;
 }
 

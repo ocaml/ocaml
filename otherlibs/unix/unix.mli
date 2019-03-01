@@ -1023,6 +1023,10 @@ val sigprocmask : sigprocmask_command -> int list -> int list
    from the set of blocked signals.
    [sigprocmask] returns the set of previously blocked signals.
 
+   When the systhreads version of the [Thread] module is loaded, this
+   function redirects to [Thread.sigmask]. I.e., [sigprocmask] only
+   changes the mask of the current thread.
+
    On Windows: not implemented (no inter-process signals on Windows). *)
 
 val sigpending : unit -> int list

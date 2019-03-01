@@ -166,7 +166,7 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
   { sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGTRAP);
-    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+    caml_sigmask_hook(SIG_UNBLOCK, &mask, NULL);
   }
 #endif
   caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
