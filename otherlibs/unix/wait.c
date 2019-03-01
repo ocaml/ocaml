@@ -43,6 +43,9 @@ static value alloc_process_status(int pid, int status)
 {
   value st, res;
 
+  // status is undefined when pid is zero so we set a default value.
+  if (pid == 0) status = 0;
+
   if (WIFEXITED(status)) {
     st = caml_alloc_small(1, TAG_WEXITED);
     Field(st, 0) = Val_int(WEXITSTATUS(status));
