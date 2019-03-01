@@ -48,9 +48,10 @@ OCaml 4.08.0
 - GPR#1909: unsharing pattern types
   (Thomas Refis, with help from Leo White, review by Jacques Garrigue)
 
-- GPR#1942: simplification of the static check for recursive definitions
+- GPR#1942, GPR#2244: simplification of the static check
+  for recursive definitions
   (Alban Reynaud and Gabriel Scherer,
-   review by Jeremy Yallop and Armaël Guéneau)
+   review by Jeremy Yallop, Armaël Guéneau and Damien Doligez)
 
 * MPR#7814, GPR#2041, GPR#2235: allow modules from include directories
   to shadow other ones, even in the toplevel
