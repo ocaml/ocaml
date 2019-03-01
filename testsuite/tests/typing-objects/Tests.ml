@@ -1051,11 +1051,6 @@ Error: The class type
 class c = (fun x -> object(_:'foo) end) 3;;
 [%%expect {|
 class c : object  end
-|}, Principal{|
-Line 1, characters 26-34:
-1 | class c = (fun x -> object(_:'foo) end) 3;;
-                              ^^^^^^^^
-Error: This pattern cannot match self: it only matches values of type 'foo
 |}];;
 
 class virtual c =
@@ -1063,11 +1058,6 @@ class virtual c =
    : object method virtual a : int end)
 [%%expect {|
 class virtual c : object method virtual a : int end
-|}, Principal{|
-Line 2, characters 37-46:
-2 |   ((fun (x : 'self -> unit) -> object(_:'self) end) (fun (_ : < a : int; .. >) -> ())
-                                         ^^^^^^^^^
-Error: This pattern cannot match self: it only matches values of type 'self
 |}];;
 
 class c = object

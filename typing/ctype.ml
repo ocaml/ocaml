@@ -232,6 +232,7 @@ let proper_abbrevs path tl abbrev =
 (* Re-export generic type creators *)
 
 let newty desc              = newty2 ~level:!current_level desc
+let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
 
 let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
 let newvar2 ?name level     = newty2 ~level:level (Tvar name)
@@ -836,8 +837,8 @@ let rec update_level env level expand ty =
         end;
         set_level ty level;
         iter_type_expr (update_level env level expand) ty
-    | Tfield (lab, _, ty1, _)
-      when lab = dummy_method && get_level ty1 > level ->
+    | Tfield(lab, _, ty1, _)
+      when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
     | _ ->
         set_level ty level;
