@@ -34,7 +34,7 @@ program = "${test_build_directory}/signal.opt"
 program = "sigint"
 all_modules = "sigint.c"
 
-***** ocamlc.byte
+***** ocamlopt.byte
 
 program = "${test_build_directory}/signal.opt"
 all_modules = "signal.ml"
