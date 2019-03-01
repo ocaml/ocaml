@@ -13965,6 +13965,13 @@ fi
   ac_fn_c_check_func "$LINENO" "fma" "ac_cv_func_fma"
 if test "x$ac_cv_func_fma" = xyes; then :
 
+      case $target in #(
+  x86_64-*-cygwin) :
+     ;; #(
+  *) :
+    $as_echo "#define HAS_WORKING_FMA 1" >>confdefs.h
+ ;;
+esac
 else
   has_c99_float_ops=false
 fi

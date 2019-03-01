@@ -1003,7 +1003,9 @@ AS_CASE([$host],
   AS_IF([$has_c99_float_ops],
     [AC_CHECK_FUNC([hypot], [], [has_c99_float_ops=false])])
   AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([fma], [], [has_c99_float_ops=false])])
+    [AC_CHECK_FUNC([fma], [
+      AS_CASE([$target],[x86_64-*-cygwin],[],[AC_DEFINE([HAS_WORKING_FMA])])],
+      [has_c99_float_ops=false])])
   AS_IF([$has_c99_float_ops],
     [AC_CHECK_FUNC([copysign], [AC_DEFINE([HAS_C99_FLOAT_OPS])])])])
 
