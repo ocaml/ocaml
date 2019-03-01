@@ -5,8 +5,9 @@
    -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
   * hasstr
   ** native-compiler
-  *** script with unix,str
-  **** check-program-output
+  *** shared-libraries
+  **** script with unix,str
+  ***** check-program-output
 *)
 
 \begin{caml_example*}{verbatim}

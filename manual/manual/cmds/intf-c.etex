@@ -478,7 +478,7 @@ floating-point numbers.}
 \entree{"Abstract_tag"}{A block representing an abstract datatype.}
 \entree{"Custom_tag"}{A block representing an abstract datatype
               with user-defined finalization, comparison, hashing,
-              serialization and deserialization functions atttached.}
+              serialization and deserialization functions attached.}
 \end{tableau}
 
 \subsection{Pointers outside the heap}
@@ -1366,7 +1366,7 @@ arguments as their non-"_exn" counterparts, but catch escaping
 exceptions and return them to the C code.  The return value \var{v} of the
 "caml_callback*_exn" functions must be tested with the macro
 "Is_exception_result("\var{v}")".  If the macro returns ``false'', no
-exception occured, and \var{v} is the value returned by the OCaml
+exception occurred, and \var{v} is the value returned by the OCaml
 function.  If "Is_exception_result("\var{v}")" returns ``true'',
 an exception escaped, and its value (the exception descriptor) can be
 recovered using "Extract_exception("\var{v}")".

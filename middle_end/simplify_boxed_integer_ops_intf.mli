@@ -20,14 +20,14 @@ module type S = sig
   type t
 
   val simplify_unop
-     : Lambda.primitive
+     : Clambda_primitives.primitive
     -> t Simple_value_approx.boxed_int
     -> Flambda.named
     -> t
     -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
   val simplify_binop
-     : Lambda.primitive
+     : Clambda_primitives.primitive
     -> t Simple_value_approx.boxed_int
     -> Flambda.named
     -> t
@@ -35,7 +35,7 @@ module type S = sig
     -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
   val simplify_binop_int
-     : Lambda.primitive
+     : Clambda_primitives.primitive
     -> t Simple_value_approx.boxed_int
     -> Flambda.named
     -> t

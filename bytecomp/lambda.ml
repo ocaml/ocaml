@@ -362,7 +362,7 @@ exception Not_simple
 let max_raw = 32
 
 let make_key e =
-  let count = ref 0   (* Used for controling size *)
+  let count = ref 0   (* Used for controlling size *)
   and make_key = Ident.make_key_generator () in
   (* make_key is used for normalizing let-bound variables *)
   let rec tr_rec env e =
@@ -638,6 +638,8 @@ let transl_path find loc env path =
       fatal_error ("Cannot find address for: " ^ (Path.name path))
   | addr -> transl_address loc addr
 
+(* Translation of identifiers *)
+
 let transl_module_path loc env path =
   transl_path Env.find_module_address loc env path
 
@@ -649,6 +651,15 @@ let transl_extension_path loc env path =
 
 let transl_class_path loc env path =
   transl_path Env.find_class_address loc env path
+
+let transl_prim mod_name name =
+  let pers = Ident.create_persistent mod_name in
+  let env = Env.add_persistent_structure pers Env.empty in
+  let lid = Longident.Ldot (Longident.Lident mod_name, name) in
+  match Env.lookup_value lid env with
+  | path, _ -> transl_value_path Location.none env path
+  | exception Not_found ->
+      fatal_error ("Primitive " ^ name ^ " not found.")
 
 (* Compile a sequence of expressions *)
 

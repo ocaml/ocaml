@@ -19,7 +19,7 @@ open Asttypes
 open Types
 
 module Unification_trace: sig
-  (** Unification traces are used to explain unification errrors
+  (** Unification traces are used to explain unification errors
       when printing error messages *)
 
   type position = First | Second
@@ -45,6 +45,7 @@ module Unification_trace: sig
   type obj =
     | Missing_field of position * string
     | Abstract_row of position
+    | Self_cannot_be_closed
 
   type 'a elt =
     | Diff of 'a diff

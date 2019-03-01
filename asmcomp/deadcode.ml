@@ -54,10 +54,6 @@ let rec deadcode i =
       let (s, _) = deadcode i.next in
       ({i with desc = Iswitch(index, cases'); next = s},
        Reg.add_set_array i.live arg)
-  | Iloop(body) ->
-      let (body', _) = deadcode body in
-      let (s, _) = deadcode i.next in
-      ({i with desc = Iloop body'; next = s}, i.live)
   | Icatch(rec_flag, handlers, body) ->
       let (body', _) = deadcode body in
       let handlers' =

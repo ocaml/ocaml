@@ -79,7 +79,7 @@ void caml_gr_handle_event(XEvent * event)
     if (caml_gr_window.w > caml_gr_bstore.w
         || caml_gr_window.h > caml_gr_bstore.h) {
 
-      /* Allocate a new backing store large enough to accomodate
+      /* Allocate a new backing store large enough to accommodate
          both the old backing store and the current window. */
       struct canvas newbstore;
       newbstore.w = max(caml_gr_window.w, caml_gr_bstore.w);

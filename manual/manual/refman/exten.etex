@@ -358,30 +358,6 @@ For example, @module-path'.['pattern']'@ is equivalent to
 @module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
-\section{Object copy short notations} \label{s:object-notations}
-\ikwd{with\@\texttt{with}}
-
-(Introduced in OCaml 4.03)
-
-\begin{syntax}
-expr:
-     ...
-  | '{' '<' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '>' '}'
-\end{syntax}
-
-In an object copy expression,
-a single identifier @id@ stands for @id '=' id@, and a qualified identifier
-@module-path '.' id@ stands for @module-path '.' id '=' id@.
-For example, all following methods are equivalent:
-\begin{caml_example*}{verbatim}
-object
-  val x=0. val y=0. val z=0.
-  method f_0 x y = {< x; y >}
-  method f_1 x y = {< x = x; y >}
-  method f_2 x y = {< x=x ; y = y >}
-end
-\end{caml_example*}
-
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}
@@ -1574,7 +1550,7 @@ Some attributes are understood by the type-checker:
  (such as an expression, or a type expression)
  in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
- warning.  This is implementation dependant and can change between versions.
+ warning.  This is implementation dependent and can change between versions.
  Some warnings are even completely outside the control of ``ocaml.warning''
  (for instance, warnings 1, 2, 14, 29 and 50).
 
@@ -2371,7 +2347,7 @@ to the user when the alert is triggered (i.e. when the marked
 component is referenced).
 
 The "ocaml.alert" or "alert" attribute serves two purposes: (i) to
-mark component with an alert to be triggerred when the component is
+mark component with an alert to be triggered when the component is
 referenced, and (ii) to control which alert names are enabled.  In the
 first form, the attribute takes an identifier possibly
 followed by a message. Here is an example of a value declaration marked

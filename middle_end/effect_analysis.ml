@@ -17,7 +17,7 @@
 [@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
 open! Int_replace_polymorphic_compare
 
-let no_effects_prim (prim : Lambda.primitive) =
+let no_effects_prim (prim : Clambda_primitives.primitive) =
   match Semantics_of_primitives.for_primitive prim with
   | (No_effects | Only_generative_effects), (No_coeffects | Has_coeffects) ->
     true

@@ -270,8 +270,8 @@ module Mode = struct
        a variable in an expression in which it does not occur. *)
 
     | Delay
-    (** A [Delay] context can be fully evaluated without evaluting its argument,
-        which will only be needed at a later point of program execution. For
+    (** A [Delay] context can be fully evaluated without evaluating its argument
+        , which will only be needed at a later point of program execution. For
         example, [fun x -> ?] or [lazy ?] are [Delay] contexts. *)
 
     | Guard

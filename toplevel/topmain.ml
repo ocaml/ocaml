@@ -48,7 +48,7 @@ let prepare ppf =
       in
       List.for_all (Topdirs.load_file ppf) objects
     in
-    !Toploop.toplevel_startup_hook ();
+    Toploop.run_hooks Toploop.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false

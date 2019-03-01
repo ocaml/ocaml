@@ -50,10 +50,10 @@ cmt2annot.cmo : \
     ../typing/path.cmi \
     ../typing/oprint.cmi \
     ../parsing/location.cmi \
+    ../utils/load_path.cmi \
     ../typing/ident.cmi \
     ../typing/envaux.cmi \
     ../typing/env.cmi \
-    ../utils/config.cmi \
     ../typing/cmt_format.cmi \
     ../parsing/asttypes.cmi \
     ../typing/annot.cmi
@@ -67,10 +67,10 @@ cmt2annot.cmx : \
     ../typing/path.cmx \
     ../typing/oprint.cmx \
     ../parsing/location.cmx \
+    ../utils/load_path.cmx \
     ../typing/ident.cmx \
     ../typing/envaux.cmx \
     ../typing/env.cmx \
-    ../utils/config.cmx \
     ../typing/cmt_format.cmx \
     ../parsing/asttypes.cmi \
     ../typing/annot.cmi

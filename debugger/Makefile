@@ -39,7 +39,7 @@ INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
 utils_modules := $(addprefix utils/,\
   config build_path_prefix_map misc identifiable numbers arg_helper clflags \
-  consistbl warnings terminfo)
+  consistbl warnings terminfo load_path)
 
 parsing_modules := $(addprefix parsing/,\
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
@@ -47,7 +47,7 @@ parsing_modules := $(addprefix parsing/,\
 
 typing_modules := $(addprefix typing/,\
   ident path types btype primitive typedtree subst predef datarepr \
-  cmi_format env oprint ctype printtyp mtype envaux)
+  cmi_format persistent_env env oprint ctype printtyp mtype envaux)
 
 bytecomp_modules := $(addprefix bytecomp/,\
   runtimedef bytesections dll meta symtable opcodes)

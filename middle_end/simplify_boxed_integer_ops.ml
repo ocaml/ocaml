@@ -47,8 +47,8 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
 
   let equal_kind = Lambda.equal_boxed_integer
 
-  let simplify_unop (p : Lambda.primitive) (kind : I.t A.boxed_int)
-        expr (n : I.t) =
+  let simplify_unop (p : Clambda_primitives.primitive)
+        (kind : I.t A.boxed_int) expr (n : I.t) =
     let eval op = S.const_boxed_int_expr expr kind (op n) in
     let eval_conv kind op = S.const_boxed_int_expr expr kind (op n) in
     let eval_unboxed op = S.const_int_expr expr (op n) in
@@ -62,8 +62,8 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Pbbswap kind when equal_kind kind I.kind -> eval I.swap
     | _ -> expr, A.value_unknown Other, C.Benefit.zero
 
-  let simplify_binop (p : Lambda.primitive) (kind : I.t A.boxed_int)
-        expr (n1 : I.t) (n2 : I.t) =
+  let simplify_binop (p : Clambda_primitives.primitive)
+        (kind : I.t A.boxed_int) expr (n1 : I.t) (n2 : I.t) =
     let eval op = S.const_boxed_int_expr expr kind (op n1 n2) in
     let non_zero n = (I.compare I.zero n) <> 0 in
     match p with
@@ -81,8 +81,8 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
       S.const_integer_comparison_expr expr c n1 n2
     | _ -> expr, A.value_unknown Other, C.Benefit.zero
 
-  let simplify_binop_int (p : Lambda.primitive) (kind : I.t A.boxed_int)
-        expr (n1 : I.t) (n2 : int) ~size_int =
+  let simplify_binop_int (p : Clambda_primitives.primitive)
+        (kind : I.t A.boxed_int) expr (n1 : I.t) (n2 : int) ~size_int =
     let eval op = S.const_boxed_int_expr expr kind (op n1 n2) in
     let precond = 0 <= n2 && n2 < 8 * size_int in
     match p with

@@ -249,11 +249,6 @@ let rec linear i n =
                    i !n2
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
-  | Iloop body ->
-      let lbl_head = Cmm.new_label() in
-      let n1 = linear i.Mach.next n in
-      let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
-      cons_instr (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
@@ -272,7 +267,8 @@ let rec linear i n =
       let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
+          | _ -> cons_instr (Llabel lbl_handler)
+                   (linear handler (add_branch lbl_end n)))
           n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in

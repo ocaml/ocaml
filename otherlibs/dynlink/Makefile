@@ -46,14 +46,16 @@ COMPILEROBJS = $(addprefix $(ROOTDIR)/,\
   utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
   utils/clflags.cmo utils/consistbl.cmo \
-  utils/terminfo.cmo utils/warnings.cmo \
+  utils/terminfo.cmo utils/warnings.cmo utils/load_path.cmo \
   parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
   parsing/ast_helper.cmo parsing/ast_mapper.cmo parsing/ast_iterator.cmo \
   parsing/attr_helper.cmo parsing/builtin_attributes.cmo \
   typing/ident.cmo typing/path.cmo typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
+  typing/datarepr.cmo typing/cmi_format.cmo \
+  typing/persistent_env.cmo \
+  typing/env.cmo \
   bytecomp/lambda.cmo bytecomp/instruct.cmo \
   bytecomp/opcodes.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo)

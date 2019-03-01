@@ -788,7 +788,7 @@ and class_field_aux self_loc cl_num self_type meths vars
 
 (* N.B. the self type of a final object type doesn't contain a dummy method in
    the beginning.
-   We only explicitely add a dummy method to class definitions (and class (type)
+   We only explicitly add a dummy method to class definitions (and class (type)
    declarations)), which are later removed (made absent) by [final_decl].
 
    If we ever find a dummy method in a final object self type, it means that

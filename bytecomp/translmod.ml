@@ -18,7 +18,6 @@
 
 open Misc
 open Asttypes
-open Longident
 open Path
 open Types
 open Typedtree
@@ -200,13 +199,7 @@ let record_primitive = function
 
 (* Utilities for compiling "module rec" definitions *)
 
-let mod_prim name =
-  let env = Env.empty in
-  let lid = Ldot (Lident "CamlinternalMod", name) in
-  match Env.lookup_value lid env with
-  | path, _ -> transl_value_path Location.none env path
-  | exception Not_found ->
-      fatal_error ("Primitive " ^ name ^ " not found.")
+let mod_prim = Lambda.transl_prim "CamlinternalMod"
 
 let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
@@ -899,6 +892,9 @@ let field_of_str loc str =
     match cc with
     | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
         Translprim.transl_primitive pc_loc pc_desc pc_env pc_type None
+    | Tcoerce_alias (env, path, cc) ->
+        let lam = transl_module_path loc env path in
+        apply_coercion loc Alias cc lam
     | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
 
 

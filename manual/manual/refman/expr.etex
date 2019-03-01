@@ -70,7 +70,7 @@ expr:
   | inst-var-name '<-' expr
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
-  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] ] '>}'
+  | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
   | 'assert' expr
   | 'lazy' expr
   | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
@@ -113,7 +113,6 @@ parameter:
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s:object-notations]{object notations},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
@@ -824,10 +823,11 @@ An object can be duplicated using the library function "Oo.copy"
 (see
 \ifouthtml \ahref{libref/Oo.html}{Module \texttt{Oo}}\else
 section~\ref{Oo}\fi). Inside a method, the expression
-@ '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
+@ '{<' [inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] }] '>}'@
 returns a copy of self with the given instance variables replaced by
-the values of the associated expressions; other instance variables
-have the same value in the returned object as in self.
+the values of the associated expressions. A single instance variable
+name @id@ stands for @id '=' id@. Other instance variables have the same
+value in the returned object as in self.
 
 \subsection{Coercions} \label{s:coercions}
 
