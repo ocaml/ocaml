@@ -677,33 +677,32 @@ print_expr e; print_newline ();;
 print_expr (deriv e "x"); print_newline ();;
 \end{caml_example}
 
-There is a "printf" function in "Printf" module that allows you to make
-formatted output more concisely. It models the behavior of the "printf"
-function from the C standard library.
+\section{Printf formats}
+
+There is a "printf" function in "Printf" module (see chapter~\ref{c:moduleexamples})
+that allows you to make formatted output more concisely.
+It follows the behavior of the "printf" function from the C standard library.
 The "printf" function takes a format string that describes the output values and
 their format, and arguments for output that correspond to the formatting
 directives in the format string.
-\begin{caml_eval}
-open Printf;;
-\end{caml_eval}
 \begin{caml_example}{toplevel}
-printf "%i + %i is an integer value, %F * %F is a float, \"%s\"\n"
+Printf.printf "%i + %i is an integer value, %F * %F is a float, %S\n"
 3 2 4.5 1. "this is a string";;
 \end{caml_example}
-The printf function in the OCaml language performs type checking of arguments.
-For example, if you pass it an argument of a type that does not correspond to
+OCaml type system checks that the type of the arguments and the specifiers are
+compatible. If you pass it an argument of a type that does not correspond to
 the format specifier, the compiler will display an error message:
 \begin{caml_example}{toplevel}[error]
-printf "Float value: %F" 42;;
+Printf.printf "Float value: %F" 42;;
 \end{caml_example}
 Associated with this feature is the need to explicitly indicate that the
 string is a format string in order to pass it to the "printf" function.
 \begin{caml_example*}{toplevel}
-let str : ('a, 'b, 'c) format =
-    "%i is an integer value, %F is a float, \"%s\"\n";;
+let str : _ format =
+    "%i is an integer value, %F is a float, %S\n";;
 \end{caml_example*}
 \begin{caml_example}{toplevel}
-printf str 3 4.5 "string value";;
+Printf.printf str 3 4.5 "string value";;
 \end{caml_example}
 
 
