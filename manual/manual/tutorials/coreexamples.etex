@@ -679,8 +679,10 @@ print_expr (deriv e "x"); print_newline ();;
 
 \section{Printf formats}
 
-There is a "printf" function in "Printf" module (see chapter~\ref{c:moduleexamples})
-that allows you to make formatted output more concisely.
+There is a "printf" function in
+\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Printf.html}{Printf}
+module (see chapter~\ref{c:moduleexamples}) that allows you to make formatted
+output more concisely.
 It follows the behavior of the "printf" function from the C standard library.
 The "printf" function takes a format string that describes the output values and
 their format, and arguments for output that correspond to the formatting
