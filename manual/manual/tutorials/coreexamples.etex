@@ -650,11 +650,9 @@ We can also use lazy patterns in pattern matching.
 \end{caml_example}
 
 The lazy expression "lazy_expr" is forced only if the "lazy_guard" value yields 
-"true" once computed. 
-
-A simple wildcard pattern (not lazy) never forces the lazy expression's 
-evaluation. However, a pattern with keyword "lazy", even if it is wildcard, 
-always forces the evaluation of the deferred computation.
+"true" once computed. Indeed, a simple wildcard pattern (not lazy) never forces 
+the lazy expression's evaluation. However, a pattern with keyword "lazy", even 
+if it is wildcard, always forces the evaluation of the deferred computation.
 
 \section{Symbolic processing of expressions}
 
