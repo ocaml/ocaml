@@ -594,8 +594,6 @@ let main () =
         " Output one line per file, regardless of the length";
      "-open", Arg.String (add_to_list Clflags.open_modules),
         "<module>  Opens the module <module> before typing";
-     "-plugin", Arg.String Compplugin.load,
-         "<plugin>  Load dynamic plugin <plugin>";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
      "-ppx", Arg.String (add_to_list first_ppx),

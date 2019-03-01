@@ -456,7 +456,7 @@ let add_arguments loc args =
     try
       let loc2 = String.Map.find arg_name !arg_names in
       Printf.eprintf
-        "Warning: plugin argument %s is already defined:\n" arg_name;
+        "Warning: compiler argument %s is already defined:\n" arg_name;
       Printf.eprintf "   First definition: %s\n" loc2;
       Printf.eprintf "   New definition: %s\n" loc;
     with Not_found ->

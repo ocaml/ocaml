@@ -533,15 +533,6 @@ See
 .IR "The OCaml user's manual" ,
 chapter "Native-code compilation" for more details.
 .TP
-.BI \-plugin \ plugin
-Dynamically load the code of the given
-.I plugin
-(a .cmo, .cma or .cmxs file) in the compiler. The plugin must exist in
-the same kind of code as the compiler (ocamlopt.byte must load bytecode
-plugins, while ocamlopt.opt must load native code plugins), and
-extension adaptation is done automatically for .cma files (to .cmxs files
-if the compiler is compiled in native code).
-.TP
 .BI \-pp \ command
 Cause the compiler to call the given
 .I command

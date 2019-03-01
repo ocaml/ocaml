@@ -429,41 +429,6 @@ val pp_two_columns :
     v}
 *)
 
-(** {1 Hook machinery}
-
-    Hooks machinery:
-   [add_hook name f] will register a function that will be called on the
-    argument of a later call to [apply_hooks]. Hooks are applied in the
-    lexicographical order of their names.
-*)
-
-type hook_info = {
-  sourcefile : string;
-}
-
-exception HookExnWrapper of
-    {
-      error: exn;
-      hook_name: string;
-      hook_info: hook_info;
-    }
-    (** An exception raised by a hook will be wrapped into a
-        [HookExnWrapper] constructor by the hook machinery.  *)
-
-
-val raise_direct_hook_exn: exn -> 'a
-  (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will
-      not be wrapped into a {!HookExnWrapper}. *)
-
-module type HookSig = sig
-  type t
-  val add_hook : string -> (hook_info -> t -> t) -> unit
-  val apply_hooks : hook_info -> t -> t
-end
-
-module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t
-
-
 (** configuration variables *)
 val show_config_and_exit : unit -> unit
 val show_config_variable_and_exit : string -> unit

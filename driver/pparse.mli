@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Driver for the parser, external preprocessors and ast plugin hooks
+(** Driver for the parser and external preprocessors.
 
   {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.
@@ -64,6 +64,3 @@ val parse_interface:
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string
 val open_and_check_magic : string -> string -> in_channel * bool
-
-module ImplementationHooks : Misc.HookSig with type t = Parsetree.structure
-module InterfaceHooks : Misc.HookSig with type t = Parsetree.signature

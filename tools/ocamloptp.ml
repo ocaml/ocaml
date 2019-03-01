@@ -97,7 +97,6 @@ module Options = Main_args.Make_optcomp_options (struct
   let _output_complete_obj = ignore
   let _p = ignore
   let _pack = ignore
-  let _plugin = ignore
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"
   let _principal = ignore

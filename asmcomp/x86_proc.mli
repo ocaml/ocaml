@@ -87,8 +87,3 @@ val use_plt : bool
 (** Support for plumbing a binary code emitter *)
 
 val register_internal_assembler: (asm_program -> string -> unit) -> unit
-
-
-(** Hooks for rewriting the assembly code *)
-
-val assembler_passes: (asm_program -> asm_program) list ref

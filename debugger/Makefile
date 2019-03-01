@@ -18,6 +18,7 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
+DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
 UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
@@ -25,15 +26,15 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats
-LINKFLAGS=-linkall -I $(UNIXDIR)
+LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 YACCFLAGS=
 CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 
-DIRECTORIES=$(UNIXDIR) $(addprefix $(ROOTDIR)/,\
-  utils parsing typing bytecomp toplevel driver)
+DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
+  utils parsing typing bytecomp toplevel)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
@@ -52,9 +53,7 @@ typing_modules := $(addprefix typing/,\
 bytecomp_modules := $(addprefix bytecomp/,\
   runtimedef bytesections dll meta symtable opcodes)
 
-other_compiler_modules := driver/compdynlink_types \
-  driver/compdynlink_platform_intf \
-  driver/compdynlink_common driver/compdynlink toplevel/genprintval
+other_compiler_modules := toplevel/genprintval
 
 compiler_modules := $(addprefix $(ROOTDIR)/,\
   $(utils_modules) $(parsing_modules) $(typing_modules) \
@@ -73,7 +72,7 @@ all_objects := $(addsuffix .cmo,$(all_modules))
 
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(all_objects)
+ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma $(all_objects)
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:

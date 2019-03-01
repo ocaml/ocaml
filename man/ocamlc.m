@@ -582,15 +582,6 @@ contents of the object files a.cmo, b.cmo and c.cmo.  These
 contents can be referenced as P.A, P.B and P.C in the remainder
 of the program.
 .TP
-.BI \-plugin \ plugin
-Dynamically load the code of the given
-.I plugin
-(a .cmo, .cma or .cmxs file) in the compiler. The plugin must exist in
-the same kind of code as the compiler (ocamlc.byte must load bytecode
-plugins, while ocamlc.opt must load native code plugins), and
-extension adaptation is done automatically for .cma files (to .cmxs files
-if the compiler is compiled in native code).
-.TP
 .BI \-pp \ command
 Cause the compiler to call the given
 .I command

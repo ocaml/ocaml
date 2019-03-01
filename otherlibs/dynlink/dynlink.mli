@@ -68,6 +68,15 @@ val loadfile_private : string -> unit
     "allowed units" list (see {!set_allowed_units}) since they cannot
     be referenced from other compilation units. *)
 
+val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
+(** Obtain the globally-visible value whose address is that of the given symbol.
+    The symbol name must be the mangled form as would occur in bytecode or
+    a native object file.  [None] is returned if the value is inaccessible.
+    The accessible values are those in the main program and those provided by
+    previous calls to [loadfile].
+
+    This function is deemed "unsafe" as there is no type safety provided. *)
+
 val adapt_filename : string -> string
 (** In bytecode, the identity function. In native code, replace the last
     extension with [.cmxs]. *)

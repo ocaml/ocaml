@@ -79,7 +79,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _output_obj = ignore
   let _output_complete_obj = ignore
   let _pack = ignore
-  let _plugin = ignore
   let _pp _ = incompatible "-pp"
   let _ppx _ = incompatible "-ppx"
   let _principal = ignore

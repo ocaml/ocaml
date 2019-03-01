@@ -248,8 +248,7 @@ val arg_spec : (string * Arg.spec * string) list ref
 val add_arguments : string -> (string * Arg.spec * string) list -> unit
 
 (* [parse_arguments anon_arg usage] will parse the arguments, using
-  the arguments provided in [Clflags.arg_spec]. It allows plugins to
-  provide their own arguments.
+  the arguments provided in [Clflags.arg_spec].
 *)
 val parse_arguments : Arg.anon_fun -> string -> unit
 

@@ -168,7 +168,6 @@ module Options = Main_args.Make_optcomp_options (struct
     set output_c_object (); set output_complete_object ()
   let _p = set gprofile
   let _pack = set make_package
-  let _plugin p = Compplugin.load p
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal

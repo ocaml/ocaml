@@ -9,6 +9,13 @@ Working version
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
+### Compiler user-interface and warnings:
+
+* GPR#2276: Remove support for compiler plugins and hooks (also adds
+  [Dynlink.unsafe_get_global_value])
+  (Mark Shinwell, Xavier Clerc, review by Nicolas Ojeda Bar and
+  Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives
