@@ -164,7 +164,7 @@ OCaml 4.08.0
   min_max_num to module Float.
   (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
 
-- GPR#1354: Add fma support to Float module.
+- GPR#1354, GPR#2177: Add fma support to Float module.
   (Laurent Thévenoux, review by Alain Frisch, Jacques-Henri Jourdan,
   Xavier Leroy)
 
