@@ -711,13 +711,13 @@ the first argument. Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
 let print_expr ppf expr =
   let open_paren prec op_prec output =
-    if prec > op_prec then Printf.fprintf output "%S" "(" in
+    if prec > op_prec then Printf.fprintf output "%s" "(" in
   let close_paren prec op_prec output =
-    if prec > op_prec then Printf.fprintf output "%S" ")" in
+    if prec > op_prec then Printf.fprintf output "%s" ")" in
   let rec print prec ppf expr =
       match expr with
         Const c -> Printf.fprintf ppf "%F" c
-      | Var v -> Printf.fprintf ppf "%S" v
+      | Var v -> Printf.fprintf ppf "%s" v
       | Sum(f, g) ->
           open_paren prec 0 ppf;
           Printf.fprintf ppf "%a + %a" (print 0) f (print 0) g;
