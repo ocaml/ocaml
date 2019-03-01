@@ -320,12 +320,11 @@ let expr sub x =
           dir,
           sub.expr sub exp3
         )
-    | Texp_send (exp, meth, expo) ->
+    | Texp_send (exp, meth) ->
         Texp_send
           (
             sub.expr sub exp,
-            meth,
-            Option.map (sub.expr sub) expo
+            meth
           )
     | Texp_new _
     | Texp_instvar _ as d -> d

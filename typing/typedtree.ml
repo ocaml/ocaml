@@ -124,7 +124,7 @@ and expression_desc =
   | Texp_for of
       Ident.t * Parsetree.pattern * expression * expression * direction_flag *
         expression
-  | Texp_send of expression * meth * expression option
+  | Texp_send of expression * meth
   | Texp_new of Path.t * Longident.t loc * Types.class_declaration
   | Texp_instvar of Path.t * Path.t * string loc
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
@@ -149,8 +149,9 @@ and expression_desc =
   | Texp_open of open_declaration * expression
 
 and meth =
-    Tmeth_name of string
+  | Tmeth_name of string
   | Tmeth_val of Ident.t
+  | Tmeth_ancestor of Ident.t * Path.t
 
 and 'k case =
     {

@@ -462,17 +462,26 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp ~scopes low, transl_exp ~scopes high, dir,
            event_before ~scopes body (transl_exp ~scopes body))
-  | Texp_send(_, _, Some exp) -> transl_exp ~scopes exp
-  | Texp_send(expr, met, None) ->
-      let obj = transl_exp ~scopes expr in
-      let loc = of_location ~scopes e.exp_loc in
+  | Texp_send(expr, met) ->
       let lam =
+        let loc = of_location ~scopes e.exp_loc in
         match met with
-          Tmeth_val id -> Lsend (Self, Lvar id, obj, [], loc)
+        | Tmeth_val id ->
+            let obj = transl_exp ~scopes expr in
+            Lsend (Self, Lvar id, obj, [], loc)
         | Tmeth_name nm ->
+            let obj = transl_exp ~scopes expr in
             let (tag, cache) = Translobj.meth obj nm in
             let kind = if cache = [] then Public else Cached in
             Lsend (kind, tag, obj, cache, loc)
+        | Tmeth_ancestor(meth, path_self) ->
+            let self = transl_value_path loc e.exp_env path_self in
+            Lapply {ap_loc = loc;
+                    ap_func = Lvar meth;
+                    ap_args = [self];
+                    ap_tailcall = Default_tailcall;
+                    ap_inlined = Default_inline;
+                    ap_specialised = Default_specialise}
       in
       event_after ~scopes e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
