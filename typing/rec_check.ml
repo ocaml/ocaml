@@ -693,15 +693,14 @@ let rec expression : Typedtree.expression -> term_judg =
         expression cond << Dereference;
         expression body << Guard;
       ]
-    | Texp_send (e1, _, eo) ->
+    | Texp_send (e1, _) ->
       (*
         G |- e: m[Dereference]
         ---------------------- (plus weird 'eo' option)
         G |- e#x: m
       *)
       join [
-        expression e1 << Dereference;
-        option expression eo << Dereference;
+        expression e1 << Dereference
       ]
     | Texp_field (e, _, _) ->
       (*

@@ -2219,12 +2219,9 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   in
   (pat, pv, val_env, met_env)
 
-let type_self_pattern cl_num env spat =
+let type_self_pattern env spat =
   let open Ast_helper in
-  let spat =
-    Pat.mk (Ppat_alias (Pat.mk(Ppat_alias (spat, mknoloc "selfpat-*")),
-                        mknoloc ("selfpat-" ^ cl_num)))
-  in
+  let spat = Pat.mk(Ppat_alias (spat, mknoloc "selfpat-*")) in
   reset_pattern false;
   let nv = newvar() in
   let pat =
@@ -3424,20 +3421,22 @@ and type_expect_
       let obj = type_exp env e in
       let obj_meths = ref None in
       begin try
-        let (meth, exp, typ) =
+        let (meth, typ) =
           match obj.exp_desc with
-          | Texp_ident(_, lid, vd) -> begin
+          | Texp_ident(_, _, vd) -> begin
               match vd.val_kind with
-              | Val_self(Self_concrete meths, _, _) -> begin
-                  match Meths.find met meths with
-                  | (id, _, _, ty) -> (Tmeth_val id, None, ty)
-                  | exception Not_found ->
-                      let valid_methods =
-                        Meths.fold (fun lab _ acc -> lab :: acc) meths []
-                      in
-                      raise (Error(e.pexp_loc, env,
-                                   Undefined_self_method (met, valid_methods)))
-                end
+              | Val_self(Self_concrete meths, _, _) ->
+                  let (id, typ) =
+                    match Meths.find met meths with
+                    | (id, _, _, ty) -> id, ty
+                    | exception Not_found ->
+                        let valid_methods =
+                          Meths.fold (fun lab _ acc -> lab :: acc) meths []
+                        in
+                        raise (Error(e.pexp_loc, env,
+                          Undefined_self_method (met, valid_methods)))
+                  in
+                  (Tmeth_val id, typ)
               | Val_self(Self_virtual(meths_ref, self_ty), _, _) ->
                   obj_meths := Some meths_ref;
                   let existing, new_meths, (id, _, _, typ) =
@@ -3448,82 +3447,28 @@ and type_expect_
                   if not existing then
                     Location.prerr_warning loc
                       (Warnings.Undeclared_virtual_method met);
-                  (Tmeth_val id, None, typ)
-              | Val_anc (methods, cl_num) ->
-                  let method_id =
-                    match List.assoc met methods with
-                    | id -> id
+                  (Tmeth_val id, typ)
+              | Val_anc (meths, cl_num) ->
+                  let (id, typ) =
+                    match Meths.find met meths with
+                    | res -> res
                     | exception Not_found ->
-                        let valid_methods = List.map fst methods in
+                        let valid_methods =
+                          Meths.fold (fun lab _ acc -> lab :: acc) meths []
+                        in
                         raise (Error(e.pexp_loc, env,
                           Undefined_self_method (met, valid_methods)))
                   in
-                  let (_, desc) =
-                    Env.find_value_by_name
-                      (Longident.Lident ("selfpat-" ^ cl_num)) env
-                  in
-                  let (path, _) =
+                  let (self_path, _) =
                     Env.find_value_by_name
                       (Longident.Lident ("self-" ^ cl_num)) env
                   in
-                  let typ =
-                    match desc.val_kind with
-                    | Val_self(Self_virtual(meths, self_ty), _, _) ->
-                        obj_meths := Some meths;
-                        let _, new_meths, (_, _, _, typ) =
-                          filter_self_method env met Private Virtual
-                            !meths self_ty
-                        in
-                        meths := new_meths;
-                        typ
-                    | Val_self(Self_concrete meths, _, _) -> begin
-                        match Meths.find met meths with
-                        | (_, _, _, ty) -> ty
-                        | exception Not_found -> assert false
-                      end
-                    | _ -> assert false
-                  in
-                  let method_type = newvar () in
-                  let (obj_ty, res_ty) = filter_arrow env method_type Nolabel in
-                  unify env obj_ty desc.val_type;
-                  unify env res_ty (instance typ);
-                  let method_desc =
-                    {val_type = method_type;
-                     val_kind = Val_reg;
-                     val_attributes = [];
-                     val_loc = Location.none;
-                     val_uid = Uid.internal_not_actually_unique;
-                    }
-                  in
-                  let exp_env = Env.add_value method_id method_desc env in
-                  let exp =
-                    Texp_apply({exp_desc =
-                                Texp_ident(Path.Pident method_id,
-                                           lid, method_desc);
-                                exp_loc = loc; exp_extra = [];
-                                exp_type = method_type;
-                                exp_attributes = []; (* check *)
-                                exp_env = exp_env},
-                          [ Nolabel,
-                            Some {exp_desc = Texp_ident(path, lid, desc);
-                                  exp_loc = obj.exp_loc; exp_extra = [];
-                                  exp_type = desc.val_type;
-                                  exp_attributes = []; (* check *)
-                                  exp_env = exp_env}
-                          ])
-                  in
-                  (Tmeth_name met, Some (re {exp_desc = exp;
-                                             exp_loc = loc; exp_extra = [];
-                                             exp_type = typ;
-                                             exp_attributes = []; (* check *)
-                                             exp_env = exp_env}), typ)
+                  (Tmeth_ancestor(id, self_path), typ)
               | _ ->
-                (Tmeth_name met, None,
-                 filter_method env met Public obj.exp_type)
+                (Tmeth_name met, filter_method env met Public obj.exp_type)
             end
           | _ ->
-            (Tmeth_name met, None,
-             filter_method env met Public obj.exp_type)
+            (Tmeth_name met, filter_method env met Public obj.exp_type)
         in
         if !Clflags.principal then begin
           end_def ();
@@ -3548,7 +3493,7 @@ and type_expect_
               assert false
         in
         rue {
-          exp_desc = Texp_send(obj, meth, exp);
+          exp_desc = Texp_send(obj, meth);
           exp_loc = loc; exp_extra = [];
           exp_type = typ;
           exp_attributes = sexp.pexp_attributes;

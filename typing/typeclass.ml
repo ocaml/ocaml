@@ -1072,7 +1072,13 @@ and class_field_second_pass cl_num self_type meths met_env field =
         match super with
         | None -> met_env
         | Some name ->
-            let meths = inherited_meths in
+            let meths =
+              List.fold_left
+                (fun acc (lab, id) ->
+                   let (_, _, _, typ) = Meths.find lab meths in
+                   Meths.add lab (id, typ) acc)
+                Meths.empty inherited_meths
+            in
             let ty = self_type in
             let attrs = [] in
             let _id, met_env =
@@ -1202,7 +1208,7 @@ and class_structure cl_num virt final val_env met_env loc
   in
 
   (* Self binder *)
-  let (self_pat, self_pat_vars) = type_self_pattern cl_num val_env spat in
+  let (self_pat, self_pat_vars) = type_self_pattern val_env spat in
   let val_env, par_env =
     List.fold_right
       (fun {pv_id; _} (val_env, par_env) ->

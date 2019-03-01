@@ -114,7 +114,7 @@ val type_class_arg_pattern:
         (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
-        string -> Env.t -> Parsetree.pattern ->
+        Env.t -> Parsetree.pattern ->
         Typedtree.pattern * pattern_variable list
 val check_partial:
         ?lev:int -> Env.t -> type_expr ->
