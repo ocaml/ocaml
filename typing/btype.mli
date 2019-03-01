@@ -34,6 +34,9 @@ val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: ?name:string -> unit -> type_expr
         (* Return a fresh generic variable *)
+val newty3: level:int -> scope:int -> type_desc -> type_expr
+        (* Create a type with a scope*)
+
 
 (* Use Tsubst instead
 val newmarkedvar: int -> type_expr

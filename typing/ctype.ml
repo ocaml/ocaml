@@ -215,6 +215,7 @@ let proper_abbrevs path tl abbrev =
 
 let newty2             = Btype.newty2
 let newty desc         = newty2 !current_level desc
+let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
 
 let newvar ?name ()         = newty2 !current_level (Tvar name)
 let newvar2 ?name level     = newty2 level (Tvar name)
@@ -840,7 +841,7 @@ let rec update_level env level expand ty =
         set_level ty level;
         iter_type_expr (update_level env level expand) ty
     | Tfield(lab, _, ty1, _)
-      when lab = dummy_method && (repr ty1).level > level ->
+      when lab = dummy_method && level < (repr ty1).scope ->
         raise_escape_exn Self
     | _ ->
         set_level ty level;
