@@ -3336,6 +3336,14 @@ let rec filter_method_field env name priv ty =
         ty1
       end else
         filter_method_field env name priv ty2
+  | Tnil ->
+      if name = Btype.dummy_method then begin
+        raise (Filter_method_failed Not_a_method)
+      end else begin
+        match priv with
+        | Public -> raise (Filter_method_failed Not_a_method)
+        | Private -> newvar2 (get_level ty)
+      end
   | _ ->
       raise (Filter_method_failed Not_a_method)
 

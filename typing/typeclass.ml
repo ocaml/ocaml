@@ -79,6 +79,7 @@ let kind_of_final = function
 type error =
   | Unconsistent_constraint of Errortrace.unification_error
   | Field_type_mismatch of string * string * Errortrace.unification_error
+  | Unexpected_field of type_expr * string
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of arg_label
@@ -386,8 +387,14 @@ let inheritance self_type env ovf meths warn_vals loc parent =
                    | (_, _, Virtual, _) -> over_meths
                    | exception Not_found -> over_meths
              in
-             let _, meths, (_, _, _, ty') =
-               Ctype.filter_self_method env lab priv virt meths self_type
+             let meths, ty' =
+               match
+                 Ctype.filter_self_method env lab priv virt meths self_type
+               with
+               | _, meths, (_, _, _, ty') -> meths, ty'
+               | exception Ctype.Filter_method_failed _ ->
+                 raise(Error(loc, env,
+                             Unexpected_field (self_type, lab)))
              in
              begin
                try Ctype.unify env ty ty' with Ctype.Unify trace ->
@@ -925,9 +932,15 @@ let rec class_field_first_pass self_loc cl_num self_type self_scope acc cf =
   | Pcf_method (label, priv, Cfk_virtual sty) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
-           let _, meths, (_, _, _, ty') =
-             Ctype.filter_self_method val_env label.txt
-               priv Virtual meths self_type
+           let meths, ty' =
+             match
+               Ctype.filter_self_method val_env label.txt
+                 priv Virtual meths self_type
+             with
+             | _, meths, (_, _, _, ty') -> meths, ty'
+             | exception Ctype.Filter_method_failed _ ->
+               raise(Error(loc, val_env,
+                           Unexpected_field (self_type, label.txt)))
            in
            let sty = Ast_helper.Typ.force_poly sty in
            let cty = transl_simple_type val_env false sty in
@@ -969,9 +982,15 @@ let rec class_field_first_pass self_loc cl_num self_type self_scope acc cf =
                raise(Error(loc, val_env, No_overriding("method", label.txt)))
              end
            end;
-           let _, meths, (_, _, _, ty) =
-             Ctype.filter_self_method val_env label.txt
-               priv Concrete meths self_type
+           let meths, ty =
+             match
+               Ctype.filter_self_method val_env label.txt
+                 priv Concrete meths self_type
+             with
+             | _, meths, (_, _, _, ty') -> meths, ty'
+             | exception Ctype.Filter_method_failed _ ->
+                 raise(Error(loc, val_env,
+                   Unexpected_field (self_type, label.txt)))
            in
            begin try match expr.pexp_desc with
              Pexp_poly (sbody, sty) ->
@@ -1196,19 +1215,11 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   let self_type = Ctype.newobj self_row in
 
   (* Adding a dummy method to the self type prevents it from being closed /
-     escaping.
-     That isn't needed for objects though. *)
+     escaping. That isn't needed for objects though. *)
   begin match final with
   | Not_final -> add_dummy_method val_env self_scope self_type;
   | Final -> ()
   end;
-
-  (* Private self is used for private method calls *)
-  let private_self =
-    match final with
-    | Final -> Ctype.newvar ()
-    | Not_final -> self_type
-  in
 
   (* Self binder *)
   let (self_pat, self_pat_vars) = type_self_pattern val_env spat in
@@ -1221,35 +1232,16 @@ and class_structure cl_num virt self_scope final val_env met_env loc
          val_env, par_env)
       self_pat_vars (val_env, par_env)
   in
-  let public_self = self_pat.pat_type in
 
   (* Check that the binder has a correct type *)
-  let ty =
-    match final with
-    | Final -> Ctype.newobj (Ctype.newvar())
-    | Not_final -> self_type
-  in
-  begin try Ctype.unify val_env public_self ty with
+  begin try Ctype.unify val_env self_pat.pat_type self_type with
     Ctype.Unify _ ->
-      raise(Error(spat.ppat_loc, val_env, Pattern_type_clash public_self))
+      raise(Error(spat.ppat_loc, val_env,
+        Pattern_type_clash self_pat.pat_type))
   end;
   let get_methods ty =
     (fst (Ctype.flatten_fields
             (Ctype.object_fields (Ctype.expand_head val_env ty)))) in
-
-  begin match final with
-  | Not_final -> ()
-  | Final ->
-      (* Copy known information to still empty self_type *)
-      List.iter
-        (fun (lab,kind,ty) ->
-          let k =
-            if Types.field_kind_repr kind = Fpresent then Public else Private in
-          try Ctype.unify val_env ty
-              (Ctype.filter_method val_env lab k self_type)
-          with _ -> assert false)
-        (get_methods public_self)
-  end;
 
   (* Typing of class fields *)
   let (fields, inher, vars, meths) =
@@ -1257,7 +1249,6 @@ and class_structure cl_num virt self_scope final val_env met_env loc
            val_env par_env str
   in
   let sig_vars = Vars.map (fun (_, mut, virt, ty) -> (mut, virt, ty)) vars in
-  Ctype.unify val_env self_type (Ctype.newvar ()); (* useless ? *)
   (* Check for unexpected virtual methods *)
   check_virtual loc val_env virt (kind_of_final final) meths sig_vars;
 
@@ -1266,24 +1257,13 @@ and class_structure cl_num virt self_scope final val_env met_env loc
     List.filter (fun (_,kind,_) -> Types.field_kind_repr kind <> Fpresent)
       methods
   in
+
+  (* Close the self type if it is final *)
   begin match final with
   | Not_final -> ()
   | Final ->
-      (* Unify private_self and a copy of self_type. self_type will not
-         be modified after this point *)
       if not (Ctype.close_object (Ctype.expand_head val_env self_type)) then
         raise(Error(loc, val_env, Closing_self_type self_type));
-      let self_methods =
-        List.fold_right
-          (fun (lab,kind,ty) rem ->
-             Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
-          methods (Ctype.newty Tnil) in
-      begin try
-        Ctype.unify val_env private_self
-          (Ctype.newty (Tobject(self_methods, ref None)));
-        Ctype.unify val_env public_self self_type
-      with Ctype.Unify err -> raise(Error(loc, val_env, Self_clash err))
-      end;
   end;
   (* Typing of method bodies *)
   (* Generalize the spine of methods accessed through self *)
@@ -1300,7 +1280,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
     meths;
   let self_var_kind =
     match virt with
-    | Virtual -> Self_virtual(ref self_meths, private_self)
+    | Virtual -> Self_virtual(ref self_meths, self_type)
     | Concrete -> Self_concrete self_meths
   in
   let met_env =
@@ -1317,7 +1297,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   (* Check for private methods made public *)
   let pub_meths' =
     List.filter (fun (_,kind,_) -> Types.field_kind_repr kind = Fpresent)
-      (get_methods public_self) in
+      (get_methods self_type) in
   let names = List.map (fun (x,_,_) -> x) in
   let l1 = names priv_meths and l2 = names pub_meths' in
   let added = List.filter (fun x -> List.mem x l1) l2 in
@@ -1333,7 +1313,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   in
   let str_meths = Meths.map (fun (id, _, _, _) -> id) meths in
   let sign =
-    { csig_self = public_self;
+    { csig_self = self_type;
       csig_self_row = self_row;
       csig_vars = sig_vars;
       csig_meths = sig_meths;
@@ -2284,6 +2264,12 @@ let report_error env ppf = function
            fprintf ppf "The %s %s@ has type" k m)
         (function ppf ->
            fprintf ppf "but is expected to have type")
+  | Unexpected_field (ty, lab) ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf
+        "@[@[<2>This object is expected to have type :@ %a@]\
+         @ This type does not have a method %s."
+        Printtyp.type_expr ty lab
   | Structure_expected clty ->
       fprintf ppf
         "@[This class expression is not a class structure; it has type@ %a@]"
