@@ -691,7 +691,7 @@ directives in the format string.
 Printf.printf "%i + %i is an integer value, %F * %F is a float, %S\n"
 3 2 4.5 1. "this is a string";;
 \end{caml_example}
-OCaml type system checks that the type of the arguments and the specifiers are
+The OCaml type system checks that the type of the arguments and the specifiers are
 compatible. If you pass it an argument of a type that does not correspond to
 the format specifier, the compiler will display an error message:
 \begin{caml_example}{toplevel}[error]
@@ -707,7 +707,18 @@ let str : _ format =
 Printf.printf str 3 4.5 "string value";;
 \end{caml_example}
 "fprintf" function is like "printf" except that it takes an output channel as
-the first argument. Here is how to rewrite the pretty-printer using "fprintf":
+the first argument.
+\begin{caml_example}{toplevel}
+let output_int ppf n = Printf.fprintf ppf "%d" n
+let output_option printer ppf = function
+  | None -> Printf.fprintf ppf "None"
+  | Some v -> Printf.fprintf ppf "Some(%a)" printer v
+let () = Printf.fprintf stdout
+  "The current setting is %a"
+  (output_option output_int) (Some 3);
+print_newline ();;
+\end{caml_example}
+Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
 let print_expr ppf expr =
   let open_paren prec op_prec output =
