@@ -1,0 +1,46 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*          Sébastien Hinderer, projet Gallium, INRIA Paris               *
+#*                                                                        *
+#*   Copyright 2019 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Check whether the repository contains files having an executable permission
+# whereas they should not
+
+# The files for which an executable permission is accepted are:
+# - The scripts, i.e. files starting with #!
+# - boot/ocaml{c,lex}
+# - testsuite/tests/lib-unix/unix-execvpe/subdir/script2, because the test
+#   this file belongs tto requires that it does _not_ start with #!.
+
+ok=true
+
+check_script()
+{
+  if ! head -n 1 "$1" | grep -q '^#!'; then
+    ok=false;
+    echo $1 does not seem to deserve its executable permission
+  fi
+}
+
+git ls-files -s | \
+grep ^100755 | \
+grep -v boot/ocamlc | \
+grep -v boot/ocamllex | \
+grep -v testsuite/tests/lib-unix/unix-execvpe/subdir/script2 | \
+while read perm hash status filename; do \
+  check_script $filename; \
+done
+$ok
+
+
