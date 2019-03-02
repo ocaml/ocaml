@@ -697,15 +697,6 @@ the format specifier, the compiler will display an error message:
 \begin{caml_example}{toplevel}[error]
 Printf.printf "Float value: %F" 42;;
 \end{caml_example}
-Associated with this feature is the need to explicitly indicate that the
-string is a format string in order to pass it to the "printf" function.
-\begin{caml_example*}{toplevel}
-let str : _ format =
-    "%i is an integer value, %F is a float, %S\n";;
-\end{caml_example*}
-\begin{caml_example}{toplevel}
-Printf.printf str 3 4.5 "string value";;
-\end{caml_example}
 "fprintf" function is like "printf" except that it takes an output channel as
 the first argument.
 \begin{caml_example}{toplevel}
@@ -758,6 +749,16 @@ let print_expr ppf expr =
   in print 0 ppf expr;;
 print_expr stdout e; print_newline ();;
 print_expr stdout (deriv e "x"); print_newline ();;
+\end{caml_example}
+
+Associated with typechecking feature is the need to explicitly indicate that the
+string is a format string in order to pass it to the "printf" function.
+\begin{caml_example*}{toplevel}
+let str : _ format =
+    "%i is an integer value, %F is a float, %S\n";;
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+Printf.printf str 3 4.5 "string value";;
 \end{caml_example}
 
 %%%%%%%%%%% Should be moved to the camlp4 documentation.
