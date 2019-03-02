@@ -3231,7 +3231,7 @@ and type_expect_
              (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
   | Pexp_newtype({txt=name}, sbody) ->
       let ty =
-        if name <> "" && name.[0] = '_' then (* Invalid variable name *)
+        if name <> "" && name.[0] = '_' then (* Invalid variable name. *)
           newvar ()
         else
           newvar ~name ()
