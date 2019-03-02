@@ -137,8 +137,6 @@ class Fields(gdb.Function):
         p = val.cast(val.type.pointer())
         header = (p - 1).dereference()
         length = int(header >> 10)
-        tag = int(header & 255)
-        tag = TAGS.get(tag, tag)
 
         return p.cast(val.type.array(length - 1).pointer()).dereference()
 
