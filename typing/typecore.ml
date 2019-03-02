@@ -3230,7 +3230,12 @@ and type_expect_
       re { exp with exp_extra =
              (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
   | Pexp_newtype({txt=name}, sbody) ->
-      let ty = newvar () in
+      let ty =
+        if name <> "" && name.[0] = '_' then (* Invalid variable name *)
+          newvar ()
+        else
+          newvar ~name ()
+      in
       (* remember original level *)
       begin_def ();
       (* Create a fake abstract type declaration for name. *)
