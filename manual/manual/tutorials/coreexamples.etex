@@ -718,6 +718,16 @@ let () = Printf.fprintf stdout
   (output_option output_int) (Some 3);
 print_newline ();;
 \end{caml_example}
+In the "output_int" we create a printing template that converts an integer
+argument to signed decimal.
+"output_option" is a function that processes the argument passed to it,
+depending on its value (displays the number if it is not None using a printer
+passed as an argument).
+This approach works for more complex types, for example options. In such case
+we need to provide a printer for any additional type that they wrap.
+In this way we coustruct the composable printer that can be used with the "%a"
+specifier, calling it in the last step of an example.
+
 Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
 let print_expr ppf expr =
