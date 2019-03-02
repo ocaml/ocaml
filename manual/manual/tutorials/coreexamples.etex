@@ -700,18 +700,18 @@ Printf.printf "Float value: %F" 42;;
 "fprintf" function is like "printf" except that it takes an output channel as
 the first argument.
 \begin{caml_example}{toplevel}
-let output_int ppf n = Printf.fprintf ppf "%d" n
-let output_option printer ppf = function
+let pp_int ppf n = Printf.fprintf ppf "%d" n
+let pp_option printer ppf = function
   | None -> Printf.fprintf ppf "None"
   | Some v -> Printf.fprintf ppf "Some(%a)" printer v
 let () = Printf.fprintf stdout
   "The current setting is %a"
-  (output_option output_int) (Some 3);
+  (pp_option pp_int) (Some 3);
 print_newline ();;
 \end{caml_example}
-In the "output_int" we create a printing template that converts an integer
+In the "pp_int" we create a printing template that converts an integer
 argument to signed decimal.
-"output_option" is a function that processes the argument passed to it,
+"pp_option" is a function that processes the argument passed to it,
 depending on its value (displays the number if it is not None using a printer
 passed as an argument).
 This approach works for more complex types, for example options. In such case
