@@ -716,12 +716,12 @@ depending on its value (displays the number if it is not None using a printer
 passed as an argument).
 This approach works for more complex types, for example options. In such case
 we need to provide a printer for any additional type that they wrap.
-In this way we coustruct the composable printer that can be used with the "%a"
+In this way we construct the composable printer that can be used with the "%a"
 specifier, calling it in the last step of an example.
 
 Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
-let print_expr ppf expr =
+let pp_expr ppf expr =
   let open_paren prec op_prec output =
     if prec > op_prec then Printf.fprintf output "%s" "(" in
   let close_paren prec op_prec output =
@@ -747,8 +747,8 @@ let print_expr ppf expr =
           Printf.fprintf ppf "%a / %a" (print 2) f (print 3) g;
           close_paren prec 2 ppf
   in print 0 ppf expr;;
-print_expr stdout e; print_newline ();;
-print_expr stdout (deriv e "x"); print_newline ();;
+pp_expr stdout e; print_newline ();;
+pp_expr stdout (deriv e "x"); print_newline ();;
 \end{caml_example}
 
 Associated with typechecking feature is the need to explicitly indicate that the
