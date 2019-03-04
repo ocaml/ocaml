@@ -70,7 +70,7 @@ COMPILERLIBS_INTFS=\
   parsing/asttypes.mli \
   parsing/parsetree.mli \
   typing/outcometree.mli \
-  bytecomp/cmo_format.mli \
+  file_formats/cmo_format.mli \
   asmcomp/cmxs_format.mli
 
 # .ml files from compilerlibs that have corresponding .mli files.

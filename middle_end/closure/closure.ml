@@ -36,6 +36,15 @@ module Storer =
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
+(* The current backend *)
+
+let backend = ref None
+
+let get_backend () =
+  match !backend with
+  | None -> Misc.fatal_error "Current backend not set"
+  | Some backend -> backend
+
 let no_phantom_lets () =
   Misc.fatal_error "Closure does not support phantom let generation"
 
@@ -272,6 +281,7 @@ let make_const_int64 n = make_const_ref (Uconst_int64 n)
    floating-point computations is allowed *)
 
 let simplif_arith_prim_pure fpc p (args, approxs) dbg =
+  let module B = (val (get_backend ()) : Backend_intf.S) in
   let open Clambda_primitives in
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
@@ -303,11 +313,11 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandint -> make_const_int (n1 land n2)
       | Porint -> make_const_int (n1 lor n2)
       | Pxorint -> make_const_int (n1 lxor n2)
-      | Plslint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plslint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_int (n1 lsl n2)
-      | Plsrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plsrint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_int (n1 lsr n2)
-      | Pasrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Pasrint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_int (n1 asr n2)
       | Pintcomp c -> make_integer_comparison c n1 n2
       | _ -> default
@@ -361,11 +371,11 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n1)));
      Value_const(Uconst_int n2)] ->
       begin match p with
-      | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_natint (Nativeint.shift_left n1 n2)
-      | Plsrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plsrbint Pnativeint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_natint (Nativeint.shift_right_logical n1 n2)
-      | Pasrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Pasrbint Pnativeint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_natint (Nativeint.shift_right n1 n2)
       | _ -> default
       end
@@ -829,8 +839,10 @@ let close_approx_var fenv cenv id =
 let close_var fenv cenv id =
   let (ulam, _app) = close_approx_var fenv cenv id in ulam
 
-let rec close fenv cenv = function
-    Lvar id ->
+let rec close fenv cenv lam =
+  let module B = (val (get_backend ()) : Backend_intf.S) in
+  match lam with
+  | Lvar id ->
       close_approx_var fenv cenv id
   | Lconst cst ->
       let str ?(shared = true) cst =
@@ -1007,10 +1019,10 @@ let rec close fenv cenv = function
   | Lprim(Pctconst c, [arg], _loc) ->
       let cst, approx =
         match c with
-        | Big_endian -> make_const_bool Arch.big_endian
-        | Word_size -> make_const_int (8*Arch.size_int)
-        | Int_size -> make_const_int (8*Arch.size_int - 1)
-        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
+        | Big_endian -> make_const_bool B.big_endian
+        | Word_size -> make_const_int (8*B.size_int)
+        | Int_size -> make_const_int (8*B.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*B.size_int) - 10)) - 1 )
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
@@ -1436,8 +1448,9 @@ let reset () =
 
 (* The entry point *)
 
-let intro size lam =
+let intro ~backend:backend' ~size lam =
   reset ();
+  backend := Some backend';
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);

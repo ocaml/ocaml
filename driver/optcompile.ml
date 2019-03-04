@@ -49,7 +49,7 @@ let flambda i backend typed =
     |>> Simplif.simplify_lambda
     |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
     |> (fun ((module_ident, size), lam) ->
-      Middle_end.middle_end
+      Flambda_middle_end.middle_end
         ~ppf_dump:i.ppf_dump
         ~prefixname:i.output_prefix
         ~size
@@ -61,7 +61,7 @@ let flambda i backend typed =
       i.output_prefix ~required_globals ~backend ~ppf_dump:i.ppf_dump;
     Compilenv.save_unit_info (cmx i))
 
-let clambda i typed =
+let clambda i backend typed =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
   typed
   |> Profile.(record transl)
@@ -73,7 +73,7 @@ let clambda i typed =
        { program with Lambda.code }
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
        |> Asmgen.compile_implementation_clambda
-         i.output_prefix ~ppf_dump:i.ppf_dump;
+         i.output_prefix ~backend ~ppf_dump:i.ppf_dump;
        Compilenv.save_unit_info (cmx i))
 
 let implementation ~backend ~source_file ~output_prefix =
@@ -81,7 +81,7 @@ let implementation ~backend ~source_file ~output_prefix =
     Compilenv.reset ?packname:!Clflags.for_package info.module_name;
     if Config.flambda
     then flambda info backend typed
-    else clambda info typed
+    else clambda info backend typed
   in
   with_info ~source_file ~output_prefix ~dump_ext:"cmx" @@ fun info ->
   Compile_common.implementation info ~backend
