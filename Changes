@@ -100,8 +100,8 @@ Working version
 
 ### Runtime system:
 
-- #1725: Deprecate Obj.set_tag
-  (Stephen Dolan, review by Gabriel Scherer and Damien Doligez)
+- #1725, #2279: Deprecate Obj.set_tag and Obj.truncate
+  (Stephen Dolan, review by Gabriel Scherer, Damien Doligez and Xavier Leroy)
 
 * #2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
