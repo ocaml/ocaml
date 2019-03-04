@@ -170,7 +170,9 @@ ASMCOMP=\
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
   asmcomp/afl_instrument.cmo \
-  asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
+  asmcomp/strmatch.cmo \
+  asmcomp/cmmgen_state.cmo \
+  asmcomp/cmmgen.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
   asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
