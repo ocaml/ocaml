@@ -136,6 +136,9 @@ type preallocated_constant = {
   provenance : usymbol_provenance option;
 }
 
+type with_constants =
+  ulambda * preallocated_block list * preallocated_constant list
+
 (* Comparison functions for constants.  We must not use Stdlib.compare
    because it compares "0.0" and "-0.0" equal.  (PR#6442) *)
 

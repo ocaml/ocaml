@@ -3225,13 +3225,8 @@ and transl_letrec env bindings cont =
 
 (* Translate a function definition *)
 
-let transl_function ~ppf_dump f =
-  let body =
-    if Config.flambda then
-      Un_anf.apply ~ppf_dump f.body ~what:f.label
-    else
-      f.body
-  in
+let transl_function f =
+  let body = f.body in
   let cmm_body =
     let env = create_env ~environment_param:f.env in
     if !Clflags.afl_instrument then
@@ -3252,17 +3247,17 @@ let transl_function ~ppf_dump f =
 
 (* Translate all function definitions *)
 
-let rec transl_all_functions ~ppf_dump already_translated cont =
+let rec transl_all_functions already_translated cont =
   match Cmmgen_state.next_function () with
   | None -> cont, already_translated
   | Some f ->
     let sym = f.label in
     if String.Set.mem sym already_translated then
-      transl_all_functions ~ppf_dump already_translated cont
+      transl_all_functions already_translated cont
     else begin
-      transl_all_functions ~ppf_dump
+      transl_all_functions
         (String.Set.add sym already_translated)
-        ((f.dbg, transl_function ~ppf_dump f) :: cont)
+        ((f.dbg, transl_function f) :: cont)
     end
 
 (* Emit constant closures *)
@@ -3352,13 +3347,13 @@ let emit_cmm_data_items_for_constants cont =
     (Cmmgen_state.constants ());
   Cdata (Cmmgen_state.data_items ()) :: !c
 
-let transl_all_functions ~ppf_dump cont =
+let transl_all_functions cont =
   let rec aux already_translated cont translated_functions =
     if Cmmgen_state.no_more_functions ()
     then cont, translated_functions
     else
       let translated_functions, already_translated =
-        transl_all_functions ~ppf_dump already_translated translated_functions
+        transl_all_functions already_translated translated_functions
       in
       aux already_translated cont translated_functions
   in
@@ -3422,7 +3417,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
 
 (* Translate a compilation unit *)
 
-let compunit ~ppf_dump (ulam, preallocated_blocks, constants) =
+let compunit (ulam, preallocated_blocks, constants) =
   let dbg = Debuginfo.none in
   let init_code =
     if !Clflags.afl_instrument then
@@ -3444,7 +3439,7 @@ let compunit ~ppf_dump (ulam, preallocated_blocks, constants) =
                          else [ Reduce_code_size ];
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_clambda_constants constants c1 in
-  let c3 = transl_all_functions ~ppf_dump c2 in
+  let c3 = transl_all_functions c2 in
   let c4 = emit_preallocated_blocks preallocated_blocks c3 in
   emit_cmm_data_items_for_constants c4
 

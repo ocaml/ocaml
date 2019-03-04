@@ -48,17 +48,22 @@ let flambda i backend typed =
     |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
     |>> Simplif.simplify_lambda
     |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
-    |> (fun ((module_ident, size), lam) ->
-      Flambda_middle_end.middle_end
-        ~ppf_dump:i.ppf_dump
-        ~prefixname:i.output_prefix
-        ~size
-        ~filename:i.source_file
-        ~module_ident
+    |> (fun ((module_ident, main_module_block_size), code) ->
+      let program : Lambda.program =
+        { Lambda.
+          module_ident;
+          main_module_block_size;
+          required_globals;
+          code;
+        }
+      in
+      Asmgen.compile_implementation
         ~backend
-        ~module_initializer:lam)
-    |> Asmgen.compile_implementation_flambda
-      i.output_prefix ~required_globals ~backend ~ppf_dump:i.ppf_dump;
+        ~filename:i.source_file
+        ~prefixname:i.output_prefix
+        ~middle_end:Flambda_middle_end.lambda_to_clambda
+        ~ppf_dump:i.ppf_dump
+        program);
     Compilenv.save_unit_info (cmx i))
 
 let clambda i backend typed =
@@ -72,8 +77,12 @@ let clambda i backend typed =
        let code = Simplif.simplify_lambda program.Lambda.code in
        { program with Lambda.code }
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
-       |> Asmgen.compile_implementation_clambda
-         i.output_prefix ~backend ~ppf_dump:i.ppf_dump;
+       |> Asmgen.compile_implementation
+            ~backend
+            ~filename:i.source_file
+            ~prefixname:i.output_prefix
+            ~middle_end:Closure_middle_end.lambda_to_clambda
+            ~ppf_dump:i.ppf_dump;
        Compilenv.save_unit_info (cmx i))
 
 let implementation ~backend ~source_file ~output_prefix =

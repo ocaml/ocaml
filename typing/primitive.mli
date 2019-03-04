@@ -63,6 +63,11 @@ val print
 val native_name: description -> string
 val byte_name: description -> string
 
+(** [native_name_is_externa] returns [true] iff the [native_name] for the
+    given primitive identifies that the primitive is not implemented in the
+    compiler itself. *)
+val native_name_is_external : description -> bool
+
 type error =
   | Old_style_float_with_native_repr_attribute
   | Old_style_noalloc_with_noalloc_attribute
