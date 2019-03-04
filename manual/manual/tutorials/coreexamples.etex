@@ -597,7 +597,7 @@ We added "print_endline \"lazy_two evaluation\"" to see when the lazy
  expression is being evaluated.
 
 The value of "lazy_two" is displayed as "<lazy>", which means the expression 
-has not been evaluated yet, and its actual value is unknown.
+has not been evaluated yet, and its final value is unknown.
 
 Note that "lazy_two" has type "int lazy_t". However, the type "'a lazy_t" is an 
 internal type name, so the type "'a Lazy.t" should be preferred when possible.
