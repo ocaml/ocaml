@@ -4164,24 +4164,6 @@ let ainsertion_1 cmp a =
   done;
 ;;
 
-(************************************************************************)
-(* merge sort on lists via arrays *)
-
-let array_to_list_in_place a =
-  let l = Array.length a in
-  let rec loop accu n p =
-    if p <= 0 then accu else begin
-      if p = n then begin
-        Obj.truncate (Obj.repr a) p;
-        loop (a.(p-1) :: accu) (n-1000) (p-1)
-      end else begin
-        loop (a.(p-1) :: accu) n (p-1)
-      end
-    end
-  in
-  loop [] l l
-;;
-
 let array_of_list l len =
   match l with
   | [] -> [| |]
@@ -4199,7 +4181,7 @@ let array_of_list l len =
 let lmerge_0a cmp l =
   let a = Array.of_list l in
   amerge_1e cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 let lmerge_0b cmp l =
@@ -4207,19 +4189,19 @@ let lmerge_0b cmp l =
   if len > 256 then Gc.minor ();
   let a = array_of_list l len in
   amerge_1e cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 let lshell_0 cmp l =
   let a = Array.of_list l in
   ashell_2 cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 let lquick_0 cmp l =
   let a = Array.of_list l in
   aquick_3f cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 (************************************************************************)
