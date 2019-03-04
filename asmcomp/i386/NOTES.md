@@ -7,7 +7,7 @@ The baseline is the 80486, also known as `i486`.
 Floating-point architecture: x87.
 (SSE2 not available in Debian's baseline.)
 
-Operating systems: Linux, BSD, MacOS X, MS Windows.
+Operating systems: Linux, BSD, MS Windows.
 
 Debian architecture name: `i386`
 
@@ -18,5 +18,3 @@ Debian architecture name: `i386`
 * ELF application binary interface:
   _System V Application Binary Interface,
    Intel386 Architecture Processor Supplement_
-* MacOS X application binary interface:
-  _OS X ABI Function Call Guide: IA-32 Function Calling Conventions_

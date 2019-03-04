@@ -3,6 +3,12 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Code generation and optimizations:
+
+- GPR#2278: Remove native code generation support for 32-bit Intel Darwin
+  targets.
+  (Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives
