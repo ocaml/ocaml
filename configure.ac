@@ -901,7 +901,6 @@ AS_CASE(["$arch,$system"],
   [i386,gnu], [profiling=true],
   [i386,bsd_elf], [profiling=true],
   [amd64,macosx], [profiling=true],
-  [i386,macosx], [profiling=true],
   [amd64,linux], [profiling=true],
   [amd64,openbsd], [profiling=true],
   [amd64,freebsd], [profiling=true],
@@ -1450,7 +1449,7 @@ AS_CASE([$enable_debug_runtime],
 AC_MSG_CHECKING([whether stack overflows can be detected])
 
 AS_CASE([$arch,$system],
-  [i386,linux_elf|amd64,linux|amd64,macosx|i386,macosx \
+  [i386,linux_elf|amd64,linux|amd64,macosx \
     |amd64,openbsd|i386,bsd_elf],
     [AC_DEFINE([HAS_STACK_OVERFLOW_DETECTION])
     AC_MSG_RESULT([yes])],
