@@ -596,8 +596,8 @@ expression, "2". Let us see how we initialize a lazy expression.
 We added "print_endline \"lazy_two evaluation\"" to see when the lazy
  expression is being evaluated.
 
-The value of "lazy_two" is "<lazy>", which means the expression is not evaluated 
-yet, and the result is unknown.
+The value of "lazy_two" is displayed as "<lazy>", which means the expression 
+has not been evaluated yet, and its actual value is unknown.
 
 Note that "lazy_two" has type "int lazy_t". However, the type "'a lazy_t" is an 
 internal type name, so the type "'a Lazy.t" should be preferred when possible.
@@ -614,8 +614,8 @@ standard-library module
 Notice that our function call above prints ``lazy_two evaluation'' and then 
 returns the plain value of the computation. 
 
-Now if we look at the 
-value of "lazy_two", we see that it is not "<lazy>" anymore but "lazy 2".
+Now if we look at the value of "lazy_two", we see that it is not displayed as 
+"<lazy>" anymore but as "lazy 2".
 
 \begin{caml_example}{toplevel}
   lazy_two;;
