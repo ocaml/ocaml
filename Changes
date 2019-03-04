@@ -7,7 +7,7 @@ Working version
 
 - GPR#2278: Remove native code generation support for 32-bit Intel Darwin
   targets.
-  (Mark Shinwell)
+  (Mark Shinwell, review by Nicolas Ojeda Bar)
 
 ### Internal/compiler-libs changes:
 
