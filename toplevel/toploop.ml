@@ -565,14 +565,14 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script.  If [name] is "", read the script from stdin. *)
+external caml_sys_modify_argv : string array -> unit =
+  "caml_sys_modify_argv"
 
-let override_sys_argv args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
+let override_sys_argv new_argv =
+  caml_sys_modify_argv new_argv;
   Arg.current := 0
+
+(* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
   override_sys_argv args;
