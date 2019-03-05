@@ -656,7 +656,8 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	    middle_end/flambda/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    middle_end/flambda/base_types/*.cmt middle_end/flambda/base_types/*.cmti \
+	    middle_end/flambda/base_types/*.cmt \
+            middle_end/flambda/base_types/*.cmti \
 	    middle_end/flambda/base_types/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
