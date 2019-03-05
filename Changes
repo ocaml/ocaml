@@ -477,7 +477,7 @@ OCaml 4.08.0
   (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
   and Gabriel Scherer)
 
-- MPR#7547: Tutorial on Lazy expressions and patterns in OCaml Manual
+- MPR#7547, GPR#2273: Tutorial on Lazy expressions and patterns in OCaml Manual
   (Ulugbek Abdullaev, review by Florian Angeletti and Gabriel Scherer)
 
 - MPR#7720, GPR#1596, precise the documentation
