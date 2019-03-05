@@ -1002,11 +1002,15 @@ let box_int_constant sym bi n =
       emit_block sym Local boxedint64_header
         (emit_boxed_int64_constant n [])
 
+let caml_nativeint_ops = "caml_nativeint_ops"
+let caml_int32_ops = "caml_int32_ops"
+let caml_int64_ops = "caml_int64_ops"
+
 let operations_boxed_int bi =
   match bi with
-    Pnativeint -> "caml_nativeint_ops"
-  | Pint32 -> "caml_int32_ops"
-  | Pint64 -> "caml_int64_ops"
+    Pnativeint -> caml_nativeint_ops
+  | Pint32 -> caml_int32_ops
+  | Pint64 -> caml_int64_ops
 
 let alloc_header_boxed_int bi =
   match bi with
@@ -1046,13 +1050,13 @@ let alloc_matches_boxed_int bi ~hdr ~ops =
   match bi, hdr, ops with
   | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
       Nativeint.equal hdr boxedintnat_header
-        && String.equal sym "caml_nativeint_ops"
+        && String.equal sym caml_nativeint_ops
   | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
       Nativeint.equal hdr boxedint32_header
-        && String.equal sym "caml_int32_ops"
+        && String.equal sym caml_int32_ops
   | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
       Nativeint.equal hdr boxedint64_header
-        && String.equal sym "caml_int64_ops"
+        && String.equal sym caml_int64_ops
   | (Pnativeint | Pint32 | Pint64), _, _ -> false
 
 let rec unbox_int bi arg dbg =
@@ -1992,12 +1996,7 @@ let rec transl env e =
           in
           transl_ccall env prim_obj_dup [arg] dbg
       | (Pmakearray _, []) ->
-          let sym = Compilenv.new_const_symbol () in
-          let tag = 0 in
-          let size = 0 in
-          let data_items = emit_block sym Local (block_header tag size) [] in
-          Cmmgen_state.add_data_items data_items;
-          Cconst_symbol sym
+          Misc.fatal_error "Pmakearray is not allowed for an empty array"
       | (Pmakearray (kind, _), args) -> transl_make_array dbg env kind args
       | (Pbigarrayref(unsafe, _num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =

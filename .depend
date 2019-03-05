@@ -2795,7 +2795,6 @@ asmcomp/cmmgen.cmo : \
     asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmi \
-    asmcomp/cmmgen.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/clambda_primitives.cmi \
@@ -2822,7 +2821,6 @@ asmcomp/cmmgen.cmx : \
     asmcomp/compilenv.cmx \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
-    asmcomp/cmmgen.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/clambda_primitives.cmx \
