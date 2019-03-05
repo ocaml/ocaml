@@ -285,6 +285,9 @@ let type_variable loc name =
   with Not_found ->
     raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
 
+let valid_tyvar_name name =
+  name <> "" && name.[0] <> '_'
+
 let transl_type_param env styp =
   let loc = styp.ptyp_loc in
   match styp.ptyp_desc with
@@ -295,7 +298,7 @@ let transl_type_param env styp =
   | Ptyp_var name ->
       let ty =
         try
-          if name <> "" && name.[0] = '_' then
+          if not (valid_tyvar_name name) then
             raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
           ignore (TyVarMap.find name !type_variables);
           raise Already_bound
@@ -341,7 +344,7 @@ and transl_type_aux env policy styp =
       ctyp Ttyp_any ty
   | Ptyp_var name ->
     let ty =
-      if name <> "" && name.[0] = '_' then
+      if not (valid_tyvar_name name) then
         raise (Error (styp.ptyp_loc, env, Invalid_variable_name ("'" ^ name)));
       begin try
         instance (List.assoc name !univars)
