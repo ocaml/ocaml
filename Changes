@@ -27,6 +27,10 @@ Working version
 - GPR#2280: Don't make more Clambda constants after starting Cmmgen
   (Mark Shinwell)
 
+- GPR#2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
+  [Misc.Stdlib.List]
+  (Mark Shinwell)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag

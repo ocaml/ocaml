@@ -150,6 +150,45 @@ module Stdlib = struct
           | t::q -> aux (n-1) (t::acc) q
       in
       aux n [] l
+
+    let rec is_prefix ~equal t ~of_ =
+      match t, of_ with
+      | [], [] -> true
+      | _::_, [] -> false
+      | [], _::_ -> true
+      | x1::t, x2::of_ ->
+        if equal x1 x2 then is_prefix ~equal t ~of_
+        else false
+
+    type 'a longest_common_prefix_result = {
+      longest_common_prefix : 'a list;
+      first_without_longest_common_prefix : 'a list;
+      second_without_longest_common_prefix : 'a list;
+    }
+
+    let find_and_chop_longest_common_prefix ~equal ~first ~second =
+      let rec find_prefix ~longest_common_prefix_rev l1 l2 =
+        match l1, l2 with
+        | [], []
+        | [], _::_
+        | _::_, [] ->
+          let longest_common_prefix = List.rev longest_common_prefix_rev in
+          { longest_common_prefix;
+            first_without_longest_common_prefix = l1;
+            second_without_longest_common_prefix = l2;
+          }
+        | elt1::l1_tail, elt2::l2_tail ->
+          if equal elt1 elt2 then
+            let longest_common_prefix_rev = elt1 :: longest_common_prefix_rev in
+            find_prefix ~longest_common_prefix_rev l1_tail l2_tail
+          else
+            let longest_common_prefix = List.rev longest_common_prefix_rev in
+            { longest_common_prefix;
+              first_without_longest_common_prefix = l1;
+              second_without_longest_common_prefix = l2;
+            }
+      in
+      find_prefix ~longest_common_prefix_rev:[] first second
   end
 
   module Option = struct
