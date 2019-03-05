@@ -24,8 +24,6 @@ open Compenv
 let init_path ?(dir="") native =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
-    else if !Clflags.use_vmthreads && not native then
-      "+vmthreads" :: !Clflags.include_dirs
     else
       !Clflags.include_dirs
   in

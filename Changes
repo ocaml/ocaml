@@ -66,6 +66,9 @@ Working version
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
 
+- GPR#2289: Delete the vmthreads library. This library was deprecated in 4.08.0.
+  (Jérémie Dimino)
+
 ### Compiler user-interface and warnings:
 
 - GPR#2301: Hint on type error on int literal

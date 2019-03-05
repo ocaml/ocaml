@@ -826,7 +826,6 @@ enable_debug_runtime
 enable_debugger
 with_dllibs
 enable_instrumented_runtime
-enable_vmthreads
 enable_systhreads
 with_libunwind
 with_libunwind_include_dir
@@ -1509,7 +1508,6 @@ Optional Features:
   --enable-debugger       build the debugger [default=auto]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
-  --disable-vmthreads     disable the bytecode threads library
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-graph-lib     do not build the graphics library
   --disable-str-lib       do not build the str library
@@ -3014,12 +3012,6 @@ if test "${enable_instrumented_runtime+set}" = set; then :
   enableval=$enable_instrumented_runtime;
 else
   enable_instrumented_runtime=auto
-fi
-
-
-# Check whether --enable-vmthreads was given.
-if test "${enable_vmthreads+set}" = set; then :
-  enableval=$enable_vmthreads;
 fi
 
 
@@ -16054,27 +16046,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
 esac
-fi
-
-## Determine if the bytecode thread library is supported
-
-if test x"$enable_vmthreads" = "xno"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is disabled" >&5
-$as_echo "$as_me: the bytecode threads library is disabled" >&6;}
-else
-  if $select && $setitimer && $gettimeofday && $wait; then :
-  otherlibraries="$otherlibraries threads"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is supported" >&5
-$as_echo "$as_me: the bytecode threads library is supported" >&6;}
-else
-  if test x"$enable_vmthreads" = "xyes"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not available" >&5
-$as_echo "$as_me: the bytecode threads library is not available" >&6;}
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not supported" >&5
-$as_echo "$as_me: the bytecode threads library is not supported" >&6;}
-fi
-fi
 fi
 
 ## XWindow

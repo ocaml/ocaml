@@ -102,7 +102,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _strict_formats = set strict_formats
   let _no_strict_formats = unset strict_formats
   let _thread = set use_threads
-  let _vmthread = set use_vmthreads
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = unset unboxed_types
   let _unsafe = set unsafe
@@ -140,12 +139,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let anonymous = anonymous
 end)
 
-let vmthread_deprecated_message = "\
-The -vmthread argument of ocamlc is deprecated\n\
-since OCaml 4.08.0.  Please switch to system threads, which have the\n\
-same API. Lightweight threads with VM-level scheduling are provided by\n\
-third-party libraries such as Lwt, but with a different API."
-
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
   Clflags.add_arguments __LOC__
@@ -155,8 +148,6 @@ let main () =
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_clflags_from_env ();
-    if !Clflags.use_vmthreads then
-      Location.deprecated Location.none vmthread_deprecated_message;
     begin try
       Compenv.process_deferred_actions
         (ppf,
