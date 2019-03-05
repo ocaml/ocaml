@@ -24,6 +24,9 @@ Working version
 - GPR#2265: Add bytecomp/opcodes.mli
   (Mark Shinwell, review by Nicolas Ojeda Bar)
 
+- GPR#2285: Add [Set.union_list] in [Identifiable]
+  (Mark Shinwell)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag

@@ -35,6 +35,7 @@ module type Set = sig
   val to_string : t -> string
   val of_list : elt list -> t
   val map : (elt -> elt) -> t -> t
+  val union_list : t list -> t
 end
 
 module type Map = sig
@@ -202,6 +203,11 @@ module Make_set (T : Thing) = struct
     | t :: q -> List.fold_left (fun acc e -> add e acc) (singleton t) q
 
   let map f s = of_list (List.map f (elements s))
+
+  let rec union_list ts =
+    match ts with
+    | [] -> empty
+    | t::ts -> union t (union_list ts)
 end
 
 module Make_tbl (T : Thing) = struct
