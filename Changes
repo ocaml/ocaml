@@ -40,6 +40,10 @@ Working version
   [Misc.Stdlib.List]
   (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
 
+- GPR#2284: Add various utility functions to [Misc] and remove functions
+  from [Misc.Stdlib.Option] that are now in [Stdlib.Option]
+  (Mark Shinwell, review by Thomas Refis)
+
 - GPR#2286: Functorise [Consistbl]
   (Mark Shinwell, review by Gabriel Radanne)
 

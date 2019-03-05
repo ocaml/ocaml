@@ -190,6 +190,13 @@ module Stdlib = struct
       | None -> false
       | Some _ -> true
 
+    let compare f t1 t2 =
+      match t1, t2 with
+      | None, None -> 0
+      | None, Some _ -> -1
+      | Some _, None -> 1
+      | Some contents1, Some contents2 -> f contents1 contents2
+
     let equal eq o1 o2 =
       match o1, o2 with
       | None, None -> true
@@ -213,6 +220,12 @@ module Stdlib = struct
       match a with
       | None -> default
       | Some a -> f a
+
+    let print print_contents ppf t =
+      match t with
+      | None -> Format.pp_print_string ppf "None"
+      | Some contents ->
+        Format.fprintf ppf "@[(Some@ %a)@]" print_contents contents
   end
 
   module Array = struct
@@ -241,6 +254,9 @@ module Stdlib = struct
         i = len || (f t.[i] && loop (i + 1))
       in
       loop 0
+
+    let print ppf t =
+      Format.pp_print_string ppf t
   end
 
   external compare : 'a -> 'a -> int = "%compare"
@@ -374,6 +390,12 @@ let output_to_file_via_temporary ?(mode = [Open_text]) filename fn =
       end
   | exception exn ->
       close_out oc; remove_file temp_filename; raise exn
+
+let protect_writing_to_file ~filename ~f =
+  let outchan = open_out_bin filename in
+  try_finally ~always:(fun () -> close_out outchan)
+    ~exceptionally:(fun () -> remove_file filename)
+    (fun () -> f outchan)
 
 (* Integer operations *)
 
