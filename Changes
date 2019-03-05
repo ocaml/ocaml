@@ -40,6 +40,9 @@ Working version
   [Misc.Stdlib.List]
   (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
 
+- GPR#2286: Functorise [Consistbl]
+  (Mark Shinwell, review by Gabriel Radanne)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
