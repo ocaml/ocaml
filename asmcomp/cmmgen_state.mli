@@ -3,9 +3,11 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                     Mark Shinwell, Jane Street Europe                  *)
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
+(*   Copyright 2019 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,30 +15,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Translation from closed lambda to C-- *)
+(** Mutable state used by [Cmmgen]. *)
 
-val compunit:
-  ppf_dump:Format.formatter
-  -> Clambda.ulambda
-    * Clambda.preallocated_block list
-    * Clambda.preallocated_constant list
-  -> Cmm.phrase list
-
-val apply_function: int -> Cmm.phrase
-val send_function: int -> Cmm.phrase
-val curry_function: int -> Cmm.phrase list
-val generic_functions: bool -> Cmx_format.unit_infos list -> Cmm.phrase list
-val entry_point: string list -> Cmm.phrase
-val global_table: string list -> Cmm.phrase
-val reference_symbols: string list -> Cmm.phrase
-val globals_map:
-  (string * Digest.t option * Digest.t option * string list) list -> Cmm.phrase
-val frame_table: string list -> Cmm.phrase
-val spacetime_shapes: string list -> Cmm.phrase
-val data_segment_table: string list -> Cmm.phrase
-val code_segment_table: string list -> Cmm.phrase
-val predef_exception: int -> string -> Cmm.phrase
-val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
-val black_block_header: (*tag:*)int -> (*size:*)int -> nativeint
+[@@@ocaml.warning "+a-4-30-40-41-42"]
 
 val reset : unit -> unit
+
+type is_global = Global | Local
+
+type constant =
+  | Const_closure of is_global * Clambda.ufunction list * Clambda.uconstant list
+  | Const_table of is_global * Cmm.data_item list
+
+val add_constant : Misc.Stdlib.String.t -> constant -> unit
+
+val add_data_items : Cmm.data_item list -> unit
+
+val add_function : Clambda.ufunction -> unit
+
+val constants : unit -> constant Misc.Stdlib.String.Map.t
+
+val data_items : unit -> Cmm.data_item list
+
+val next_function : unit -> Clambda.ufunction option
+
+val no_more_functions : unit -> bool
