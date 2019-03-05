@@ -180,7 +180,7 @@ let main () =
             (String.concat "|" P.pass_names)
     end;
     if !make_archive then begin
-      Compmisc.init_path false;
+      Compmisc.init_path ();
 
       Bytelibrarian.create_archive
         (Compenv.get_objfiles ~with_ocamlparam:false)
@@ -188,7 +188,7 @@ let main () =
       Warnings.check_fatal ();
     end
     else if !make_package then begin
-      Compmisc.init_path false;
+      Compmisc.init_path ();
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles ~with_ocamlparam:false in
       Compmisc.with_ppf_dump ~file_prefix:extracted_output (fun ppf_dump ->
@@ -213,7 +213,7 @@ let main () =
         else
           default_output !output_name
       in
-      Compmisc.init_path false;
+      Compmisc.init_path ();
       Bytelink.link (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;

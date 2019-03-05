@@ -286,14 +286,14 @@ let main () =
       fatal "Please specify at most one of -pack, -a, -shared, -c, \
              -output-obj";
     if !make_archive then begin
-      Compmisc.init_path true;
+      Compmisc.init_path ();
       let target = extract_output !output_name in
       Asmlibrarian.create_archive
         (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
-      Compmisc.init_path true;
+      Compmisc.init_path ();
       let target = extract_output !output_name in
       Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
@@ -301,7 +301,7 @@ let main () =
       Warnings.check_fatal ();
     end
     else if !shared then begin
-      Compmisc.init_path true;
+      Compmisc.init_path ();
       let target = extract_output !output_name in
       Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmlink.link_shared ~ppf_dump
@@ -324,7 +324,7 @@ let main () =
         else
           default_output !output_name
       in
-      Compmisc.init_path true;
+      Compmisc.init_path ();
       Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmlink.link ~ppf_dump (get_objfiles ~with_ocamlparam:true) target);
       Warnings.check_fatal ();

@@ -21,7 +21,7 @@ open Compenv
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path ?(dir="") native =
+let init_path ?(dir="") () =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else
