@@ -869,7 +869,6 @@ let emit_instr fallthrough i =
       ()
   | Lpushtrap {lbl_handler} ->
       let load_label_addr s arg =
-       (* CR mshinwell: this needs more testing *)
         if !Clflags.pic_code then
           I.lea (mem64_rip NONE (emit_label s)) arg
         else
