@@ -5,9 +5,9 @@ Working version
 
 ### Code generation and optimizations:
 
-- GPR#2278: Remove native code generation support for 32-bit Intel Darwin
-  targets.
-  (Mark Shinwell, review by Nicolas Ojeda Bar)
+- GPR#2278: Remove native code generation support for 32-bit Intel macOS,
+  iOS and other Darwin targets.
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
 ### Internal/compiler-libs changes:
 
