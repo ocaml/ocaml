@@ -21,6 +21,9 @@ Working version
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
+- GPR#2237: Reorder linearisation of Trywith to avoid a call instruction
+  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell)
+
 - GPR#2265: Add bytecomp/opcodes.mli
   (Mark Shinwell, review by Nicolas Ojeda Bar)
 
