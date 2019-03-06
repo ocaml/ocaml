@@ -20,4 +20,6 @@ type t
 
 val create : Dwarf_int.t -> t
 
+val to_dwarf_int : t -> Dwarf_int.t
+
 include Dwarf_emittable.S with type t := t

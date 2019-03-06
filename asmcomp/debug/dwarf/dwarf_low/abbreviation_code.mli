@@ -20,5 +20,14 @@ type t
 
 include Dwarf_emittable.S with type t := t
 
-val of_int : int -> t
-val null : unit -> t
+(** The tag is only used for generation of comments and is ignored for
+    [compare] and [hash]. *)
+val of_int : int -> Dwarf_tag.t -> t
+
+val null : t
+
+val is_null : t -> bool
+
+val compare : t -> t -> int
+
+val hash : t -> int

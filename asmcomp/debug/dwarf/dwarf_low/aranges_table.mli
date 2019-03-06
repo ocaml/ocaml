@@ -22,7 +22,7 @@ type t
 
 include Dwarf_emittable.S with type t := t
 
-val create : start_of_code_symbol:string
-  -> end_of_code_symbol:string
-  -> debug_info_label:Linearize.label
+val create : start_of_code_symbol:Asm_symbol.t
+  -> end_of_code_symbol:Asm_symbol.t
+  -> debug_info_label:Asm_label.t
   -> t

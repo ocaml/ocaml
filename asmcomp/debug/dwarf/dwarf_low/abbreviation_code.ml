@@ -14,19 +14,39 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t = Dwarf_value.t
+module Uint64 = Numbers.Uint64
+
+type t = {
+  code : int;
+  comment : string;
+}
 
 exception Bad_abbreviation_code of int
 
-let of_int i =
-  if i < 1 then raise (Bad_abbreviation_code i);
-  Dwarf_value.Uleb128 (Int64.of_int i)
+let of_int code tag =
+  if code < 1 then raise (Bad_abbreviation_code code);
+  let comment =
+    Printf.sprintf "abbrev. code (abbrev. has tag %s)" (Dwarf_tag.tag_name tag)
+  in
+  { code;
+    comment;
+  }
 
-let null () =
-  Dwarf_value.Uleb128 0L
+let null =
+  { code = 0;
+    comment = "null abbreviation code";
+  }
 
-let emit t =
-  Dwarf_value.emit t
+let is_null t =
+  t == null
 
-let size t =
-  Dwarf_value.size t
+let encode t =
+  Dwarf_value.uleb128 ~comment:t.comment (Uint64.of_int_exn t.code)
+
+let emit t = Dwarf_value.emit (encode t)
+
+let size t = Dwarf_value.size (encode t)
+
+let compare t1 t2 = Stdlib.compare t1.code t2.code
+
+let hash t = Hashtbl.hash t.code

@@ -21,6 +21,10 @@
 
 type user = private Numbers.Int16.t
 
+type dwarf_4 =
+  | GNU_call_site
+  | GNU_call_site_parameter
+
 (** We omit the "DW_TAG_" prefix. *)
 type t =
   | Array_type
@@ -83,8 +87,19 @@ type t =
   | Type_unit
   | Rvalue_reference_type
   | Template_alias
+  | Coarray_type
+  | Generic_subrange
+  | Dynamic_type
+  | Atomic_type
+  | Call_site
+  | Call_site_parameter
+  | Skeleton_unit
+  | Immutable_type
+  | Dwarf_4 of dwarf_4
   | User of user
 
 include Dwarf_emittable.S with type t := t
 
-val child_determination : t -> Child_determination.t
+val tag_name : t -> string
+
+val compare : t -> t -> int

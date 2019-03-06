@@ -17,3 +17,5 @@
 type t = Yes | No
 
 include Dwarf_emittable.S with type t := t
+
+val compare : t -> t -> int

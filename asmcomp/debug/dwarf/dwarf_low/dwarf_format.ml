@@ -26,3 +26,5 @@ let get () =
   match !current with
   | None -> failwith "Dwarf_format.get: [set] has not been called"
   | Some t -> t
+
+exception Too_large_for_thirty_two_bit_dwarf

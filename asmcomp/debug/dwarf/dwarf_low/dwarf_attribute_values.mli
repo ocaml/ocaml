@@ -19,38 +19,141 @@
 module Value : sig
   type 'form t
 
-  val flag_true : Dwarf_attributes.Form.flag_present t
-  val bool : bool -> Dwarf_attributes.Form.data1 t
-  val int8 : Numbers.Int8.t -> Dwarf_attributes.Form.data1 t
-  val int16 : Numbers.Int16.t -> Dwarf_attributes.Form.data2 t
-  val int32 : Int32.t -> Dwarf_attributes.Form.data4 t
-  val int64 : Int64.t -> Dwarf_attributes.Form.data8 t
-  val string : string -> Dwarf_attributes.Form.string t
-  val indirect_string : string -> Dwarf_attributes.Form.strp t
-  val code_address_from_label : Linearize.label -> Dwarf_attributes.Form.addr t
-  val code_address_from_symbol : string -> Dwarf_attributes.Form.addr t
+  val flag_true
+     : ?comment:string
+    -> unit
+    -> Dwarf_attributes.Form.flag_present t
 
-  val symbol_32 : string -> Dwarf_attributes.Form.data4 t
-  val symbol_64 : string -> Dwarf_attributes.Form.data8 t
+  val bool : ?comment:string -> bool -> Dwarf_attributes.Form.data1 t
+
+  val int8
+     : ?comment:string
+    -> Numbers.Int8.t
+    -> Dwarf_attributes.Form.data1 t
+
+  val int16
+     : ?comment:string
+    -> Numbers.Int16.t
+    -> Dwarf_attributes.Form.data2 t
+
+  val int32
+     : ?comment:string
+    -> Int32.t
+    -> Dwarf_attributes.Form.data4 t
+
+  val int64
+     : ?comment:string
+    -> Int64.t
+    -> Dwarf_attributes.Form.data8 t
+
+  val uleb128
+     : ?comment:string
+    -> Numbers.Uint64.t
+    -> Dwarf_attributes.Form.udata t
+
+  val string : ?comment:string -> string -> Dwarf_attributes.Form.string t
+
+  val indirect_string
+     : ?comment:string
+    -> string
+    -> Dwarf_attributes.Form.strp t
+
+  val distance_between_symbols_32_bit
+     : ?comment:string
+    -> upper:Asm_symbol.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data4 t
+
+  val distance_between_symbols_64_bit
+     : ?comment:string
+    -> upper:Asm_symbol.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data8 t
+
+  val distance_between_labels_32_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_label.t
+    -> unit
+    -> Dwarf_attributes.Form.data4 t
+
+  val distance_between_labels_64_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_label.t
+    -> unit
+    -> Dwarf_attributes.Form.data8 t
+
+  val distance_between_label_and_symbol_32_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data4 t
+
+  val distance_between_label_and_symbol_64_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data8 t
+
+  val code_address_from_label
+     : ?comment:string
+    -> Asm_label.t
+    -> Dwarf_attributes.Form.addr t
+
+  val code_address_from_symbol
+     : ?comment:string
+    -> Asm_symbol.t
+    -> Dwarf_attributes.Form.addr t
+
+  val symbol_32 : Asm_symbol.t -> Dwarf_attributes.Form.data4 t
+  val symbol_64 : Asm_symbol.t -> Dwarf_attributes.Form.data8 t
 
   val offset_into_debug_line
-     : Linearize.label
+     : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
 
   val offset_into_debug_line_from_symbol
-     : string
+     : Asm_symbol.t
     -> Dwarf_attributes.Form.sec_offset t
 
   val offset_into_debug_info
-     : Linearize.label
+     : ?comment:string
+    -> Asm_label.t
     -> Dwarf_attributes.Form.ref_addr t
 
   val offset_into_debug_info_from_symbol
-     : string
+     : ?comment:string
+    -> Asm_symbol.t
     -> Dwarf_attributes.Form.ref_addr t
 
+  (** Not for use for DWARF >= version 5. *)
   val offset_into_debug_loc
-     : Linearize.label
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+ 
+  (** Not for use for DWARF >= version 5. *)
+  val offset_into_debug_ranges
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+
+  (** Not for use for DWARF < version 5. *)
+  val offset_into_debug_addr
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+
+  (** Not for use for DWARF < version 5. *)
+  val offset_into_debug_loclists
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+
+  (** Not for use for DWARF < version 5. *)
+  val offset_into_debug_rnglists
+     : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
 
   val single_location_description
@@ -64,6 +167,16 @@ module Value : sig
   val encoding_attribute
      : Encoding_attribute.t
     -> Dwarf_attributes.Form.data1 t
+
+  (** Not for use for DWARF < version 5. *)
+  val loclistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.loclistx t
+
+  (** Not for use for DWARF < version 5. *)
+  val rnglistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.rnglistx t
+
+  val inline_code : Inline_code.t -> Dwarf_attributes.Form.data1 t
+
+  val language : Dwarf_language.t -> Dwarf_attributes.Form.data1 t
 end
 
 module Attribute_value : sig

@@ -17,12 +17,17 @@
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
+module Uint8 = Numbers.Uint8
+module Uint16 = Numbers.Uint16
+module Uint32 = Numbers.Uint32
+module Uint64 = Numbers.Uint64
+
 module I = Dwarf_int
 module V = Dwarf_value
 
 type implicit_value =
   | Int of Targetint.t
-  | Symbol of string
+  | Symbol of Asm_symbol.t
 
 type t =
   | DW_op_lit0
@@ -58,15 +63,15 @@ type t =
   | DW_op_lit30
   | DW_op_lit31
   | DW_op_addr of implicit_value
-  | DW_op_const1u of Int8.t
-  | DW_op_const2u of Int16.t
-  | DW_op_const4u of Int32.t
-  | DW_op_const8u of Int64.t
+  | DW_op_const1u of Uint8.t
+  | DW_op_const2u of Uint16.t
+  | DW_op_const4u of Uint32.t
+  | DW_op_const8u of Uint64.t
   | DW_op_const1s of Int8.t
   | DW_op_const2s of Int16.t
   | DW_op_const4s of Int32.t
   | DW_op_const8s of Int64.t
-  | DW_op_constu of Int64.t
+  | DW_op_constu of Uint64.t
   | DW_op_consts of Int64.t
   | DW_op_fbreg of { offset_in_bytes : Targetint.t; }
   | DW_op_breg0 of { offset_in_bytes : Targetint.t; }
@@ -109,9 +114,9 @@ type t =
   | DW_op_swap
   | DW_op_rot
   | DW_op_deref
-  | DW_op_deref_size of Int8.t
+  | DW_op_deref_size of Uint8.t
   | DW_op_xderef
-  | DW_op_xderef_size of Int8.t
+  | DW_op_xderef_size of Uint8.t
   | DW_op_push_object_address
   | DW_op_form_tls_address
   | DW_op_call_frame_cfa
@@ -125,7 +130,7 @@ type t =
   | DW_op_not
   | DW_op_or
   | DW_op_plus
-  | DW_op_plus_uconst of Int64.t
+  | DW_op_plus_uconst of Uint64.t
   | DW_op_shl
   | DW_op_shr
   | DW_op_shra
@@ -139,16 +144,16 @@ type t =
   | DW_op_skip of { num_bytes_forward : Int16.t; }
   | DW_op_bra of { num_bytes_forward : Int16.t; }
   | DW_op_call2 of {
-      label : Linearize.label;
-      compilation_unit_header_label : Linearize.label;
+      label : Asm_label.t;
+      compilation_unit_header_label : Asm_label.t;
     }
   | DW_op_call4 of {
-      label : Linearize.label;
-      compilation_unit_header_label : Linearize.label;
+      label : Asm_label.t;
+      compilation_unit_header_label : Asm_label.t;
     }
   | DW_op_call_ref of {
-      label : Linearize.label;
-      compilation_unit_header_label : Linearize.label;
+      label : Asm_label.t;
+      compilation_unit_header_label : Asm_label.t;
     }
   | DW_op_nop
   | DW_op_reg0
@@ -192,11 +197,11 @@ type t =
       offset_in_bits : Targetint.t;
     }
   | DW_op_implicit_pointer of {
-      label : Linearize.label;
+      label : Asm_label.t;
       offset_in_bytes : Targetint.t;
     }
   | DW_op_GNU_implicit_pointer of {
-      label : Linearize.label;
+      label : Asm_label.t;
       offset_in_bytes : Targetint.t;
     }
 
@@ -527,13 +532,13 @@ external caml_string_set64 : bytes -> index:int -> Int64.t -> unit
 module Make (M : sig
   type param
   type result
-  val unit_result : result
+  val unit_result : unit -> result
   val opcode : param -> t -> result
   val value : param -> V.t -> result
   val (>>>) : param -> result -> (unit -> result) -> result
 end) = struct
   let run param t =
-    let unit_result = M.unit_result in
+    let unit_result = M.unit_result () in
     let opcode = M.opcode param in
     let value = M.value param in
     let (>>>) = M.(>>>) param in
@@ -572,21 +577,21 @@ end) = struct
     | DW_op_lit29
     | DW_op_lit30
     | DW_op_lit31 -> unit_result
-    | DW_op_addr (Int addr) -> value (Absolute_code_address addr)
-    | DW_op_addr (Symbol sym) -> value (Code_address_from_symbol sym)
-    | DW_op_const1u n -> value (Int8 n)
-    | DW_op_const2u n -> value (Int16 n)
-    | DW_op_const4u n -> value (Int32 n)
-    | DW_op_const8u n -> value (Int64 n)
-    | DW_op_const1s n -> value (Int8 n)
-    | DW_op_const2s n -> value (Int16 n)
-    | DW_op_const4s n -> value (Int32 n)
-    | DW_op_const8s n -> value (Int64 n)
-    | DW_op_constu n -> value (Uleb128 n)
-    | DW_op_consts n -> value (Sleb128 n)
+    | DW_op_addr (Int addr) -> value (V.absolute_address addr)
+    | DW_op_addr (Symbol sym) -> value (V.code_address_from_symbol sym)
+    | DW_op_const1u n -> value (V.uint8 ~comment:"  arg of DW_OP_const1u" n)
+    | DW_op_const2u n -> value (V.uint16 ~comment:"  arg of DW_OP_const2u" n)
+    | DW_op_const4u n -> value (V.uint32 ~comment:"  arg of DW_OP_const4u" n)
+    | DW_op_const8u n -> value (V.uint64 ~comment:"  arg of DW_OP_const8u" n)
+    | DW_op_const1s n -> value (V.int8 ~comment:"  arg of DW_OP_const1s" n)
+    | DW_op_const2s n -> value (V.int16 ~comment:"  arg of DW_OP_const2s" n)
+    | DW_op_const4s n -> value (V.int32 ~comment:"  arg of DW_OP_const4s" n)
+    | DW_op_const8s n -> value (V.int64 ~comment:"  arg of DW_OP_const8s" n)
+    | DW_op_constu n -> value (V.uleb128 ~comment:"  arg of DW_OP_constu" n)
+    | DW_op_consts n -> value (V.sleb128 ~comment:"  arg of DW_OP_consts" n)
     | DW_op_fbreg { offset_in_bytes; } ->
       let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-      value (Sleb128 offset_in_bytes)
+      value (V.sleb128 ~comment:"offset in bytes" offset_in_bytes)
     | DW_op_breg0 { offset_in_bytes; }
     | DW_op_breg1 { offset_in_bytes; }
     | DW_op_breg2 { offset_in_bytes; }
@@ -620,12 +625,13 @@ end) = struct
     | DW_op_breg30 { offset_in_bytes; }
     | DW_op_breg31 { offset_in_bytes; } ->
       let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-      value (Sleb128 offset_in_bytes)
+      value (V.sleb128 ~comment:"offset in bytes" offset_in_bytes)
     | DW_op_bregx { reg_number; offset_in_bytes; } ->
       let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-      value (Uleb128 (Int64.of_int reg_number))
+      value (V.uleb128 ~comment:"DWARF reg number"
+        (Uint64.of_int_exn reg_number))
       >>> fun () ->
-      value (Sleb128 offset_in_bytes)
+      value (V.sleb128 ~comment:"offset in bytes" offset_in_bytes)
     | DW_op_dup
     | DW_op_drop
     | DW_op_pick
@@ -635,7 +641,7 @@ end) = struct
     | DW_op_deref
     | DW_op_deref_size _
     | DW_op_xderef -> unit_result
-    | DW_op_xderef_size n -> value (Int8 n)
+    | DW_op_xderef_size n -> value (V.uint8 ~comment:"size" n)
     | DW_op_push_object_address
     | DW_op_form_tls_address
     | DW_op_call_frame_cfa
@@ -649,7 +655,7 @@ end) = struct
     | DW_op_not
     | DW_op_or
     | DW_op_plus -> unit_result
-    | DW_op_plus_uconst const -> value (Uleb128 const)
+    | DW_op_plus_uconst const -> value (V.uleb128 const)
     | DW_op_shl
     | DW_op_shr
     | DW_op_shra
@@ -660,22 +666,26 @@ end) = struct
     | DW_op_lt
     | DW_op_gt
     | DW_op_ne -> unit_result
-    | DW_op_skip { num_bytes_forward; }
-    | DW_op_bra { num_bytes_forward; } -> value (Int16 num_bytes_forward)
+    | DW_op_skip { num_bytes_forward; } ->
+      value (V.int16 ~comment:"num bytes to jump forward/backward"
+        num_bytes_forward)
+    | DW_op_bra { num_bytes_forward; } ->
+      value (V.int16 ~comment:"num bytes forward/backward, if TOS non-zero"
+        num_bytes_forward)
     | DW_op_call2 { label; compilation_unit_header_label; } ->
-      value (Distance_between_labels_16bit
-        { upper = label; lower = compilation_unit_header_label; })
+      value (V.distance_between_labels_16_bit ~comment:"call2 target"
+        ~upper:label ~lower:compilation_unit_header_label ())
     | DW_op_call4 { label; compilation_unit_header_label; } ->
-      value (Distance_between_labels_32bit
-        { upper = label; lower = compilation_unit_header_label; })
+      value (V.distance_between_labels_32_bit ~comment:"call4 target"
+        ~upper:label ~lower:compilation_unit_header_label ())
     | DW_op_call_ref { label; compilation_unit_header_label; } ->
       begin match Dwarf_format.get () with
       | Thirty_two ->
-        value (Distance_between_labels_32bit
-          { upper = label; lower = compilation_unit_header_label; })
+        value (V.distance_between_labels_32_bit ~comment:"call_ref target"
+          ~upper:label ~lower:compilation_unit_header_label ())
       | Sixty_four ->
-        value (Distance_between_labels_64bit
-          { upper = label; lower = compilation_unit_header_label; })
+        value (V.distance_between_labels_64_bit ~comment:"call_ref target"
+          ~upper:label ~lower:compilation_unit_header_label ())
       end
     | DW_op_nop
     | DW_op_reg0
@@ -710,7 +720,9 @@ end) = struct
     | DW_op_reg29
     | DW_op_reg30
     | DW_op_reg31 -> unit_result
-    | DW_op_regx { reg_number; } -> value (Uleb128 (Int64.of_int reg_number))
+    | DW_op_regx { reg_number; } ->
+      value (V.uleb128 ~comment:"DWARF reg number"
+        (Uint64.of_int_exn reg_number))
     | DW_op_implicit_value (Int i) ->
       let buf =
         match Arch.size_int with
@@ -725,35 +737,42 @@ end) = struct
         | n ->
           Misc.fatal_errorf "Dwarf_operator: bad Arch.size_int = %d" n
       in
-      value (Sleb128 (Int64.of_int (Bytes.length buf)))
+      let comment =
+        if !Clflags.keep_asm_file then
+          Some (Format.asprintf "implicit value %a" Targetint.print i)
+        else
+          None
+      in
+      value (V.uleb128 ?comment (Uint64.of_int_exn (Bytes.length buf)))
       >>> fun () ->
-      value (String (Bytes.to_string buf))
+      value (V.string (Bytes.to_string buf))
     | DW_op_implicit_value (Symbol symbol) ->
-      value (Sleb128 (Int64.of_int Arch.size_addr))
+      value (V.uleb128 ~comment:"Arch.size_addr"
+        (Uint64.of_int_exn Arch.size_addr))
       >>> fun () ->
-      value (Code_address_from_symbol symbol)
+      value (V.code_address_from_symbol symbol)
     | DW_op_stack_value -> unit_result
     | DW_op_piece { size_in_bytes; } ->
-      let size_in_bytes = Targetint.to_int64 size_in_bytes in
-      value (Uleb128 size_in_bytes)
+      let size_in_bytes = Targetint.to_uint64_exn size_in_bytes in
+      value (V.uleb128 ~comment:"size in bytes" size_in_bytes)
     | DW_op_bit_piece { size_in_bits; offset_in_bits; } ->
-      let size_in_bits = Targetint.to_int64 size_in_bits in
-      let offset_in_bits = Targetint.to_int64 offset_in_bits in
-      value (Uleb128 size_in_bits)
+      let size_in_bits = Targetint.to_uint64_exn size_in_bits in
+      let offset_in_bits = Targetint.to_uint64_exn offset_in_bits in
+      value (V.uleb128 ~comment:"size in bits" size_in_bits)
       >>> fun () ->
-      value (Uleb128 offset_in_bits)
+      value (V.uleb128 ~comment:"offset in bits" offset_in_bits)
     | DW_op_implicit_pointer { offset_in_bytes; label; }
     | DW_op_GNU_implicit_pointer { offset_in_bytes; label; } ->
       let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-      value (Offset_into_debug_info label)
+      value (V.offset_into_debug_info label)
       >>> fun () ->
-      value (Sleb128 offset_in_bytes)
+      value (V.sleb128 ~comment:"offset in bytes" offset_in_bytes)
 end
 
 module Print = Make (struct
   type param = Format.formatter
   type result = unit
-  let unit_result = ()
+  let unit_result () = ()
 
   let opcode ppf t = Format.pp_print_string ppf (opcode_name t)
   let value ppf v = V.print ppf v
@@ -763,7 +782,7 @@ end)
 module Size = Make (struct
   type param = unit
   type result = I.t
-  let unit_result = I.zero ()
+  let unit_result () = I.zero ()
 
   let opcode () _ = I.one ()
   let value () v = V.size v
@@ -773,9 +792,11 @@ end)
 module Emit = Make (struct
   type param = unit
   type result = unit
-  let unit_result = ()
+  let unit_result () = ()
 
-  let opcode () t = V.emit (V.Int8 (Int8.of_int_exn (opcode t)))
+  let opcode () t =
+    let comment = opcode_name t in
+    V.emit (V.uint8 ~comment (Uint8.of_int_exn (opcode t)))
   let value () v = V.emit v
   let (>>>) () () f = f ()
 end)

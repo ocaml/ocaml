@@ -12,21 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** DWARF location list entries. *)
+(** DWARF location list entries (DWARF-5 spec section 2.6.2, pages 43--45). *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
-
-include Dwarf_emittable.S with type t := t
-
-val create_location_list_entry : start_of_code_symbol:string
-  -> first_address_when_in_scope:Linearize.label
-  -> first_address_when_not_in_scope:Linearize.label
-  -> first_address_when_not_in_scope_offset:int option
-  -> single_location_description:Single_location_description.t
-  -> t
-
-val create_base_address_selection_entry : base_address_symbol:string -> t
-
-val compare_ascending_vma : t -> t -> int
+include Location_or_range_list_entry.S
+  with type payload = Counted_location_description.t

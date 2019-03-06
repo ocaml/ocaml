@@ -45,12 +45,17 @@ val four : unit -> t
 val eight : unit -> t
 
 val of_host_int_exn : int -> t
+val of_int64_exn : Int64.t -> t
 val of_targetint_exn : Targetint.t -> t
 
 val to_int64 : t -> Int64.t
+val to_uint64_exn : t -> Numbers.Uint64.t
 
+val width_as_int64 : unit -> Int64.t
+
+(** [add] and [succ] both check for overflow. *)
 val add : t -> t -> t
 val succ : t -> t
 
 val size : t -> t
-val emit : t -> unit
+val emit : ?comment:string -> t -> unit

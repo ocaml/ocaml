@@ -26,16 +26,25 @@ module Class : sig
   *)
 
   type address = [ `address ]
+  type addrptr = [ `addrptr ]
   type block = [ `block ]
   type constant = [ `constant ]
   type exprloc = [ `exprloc ]
   type flag = [ `flag ]
   type lineptr = [ `lineptr ]
-  type loclistptr = [ `loclistptr ]
+  type loclist = [ `loclist ]
+  type loclistsptr = [ `loclistsptr ]
   type macptr = [ `macptr ]
-  type rangelistptr = [ `rangelistptr ]
+  type rnglist = [ `rnglist ]
+  type rnglistsptr = [ `rnglistsptr ]
   type reference = [ `reference ]
   type string = [ `string ]
+  type stroffsetsptr = [ `stroffsetsptr ]
+
+  module Dwarf_4 : sig
+    type loclistptr = [ `loclistptr ]
+    type rangelistptr = [ `rangelistptr ]
+  end
 end
 
 module Form : sig
@@ -63,11 +72,36 @@ module Form : sig
   type sec_offset = [ `sec_offset ]
   type exprloc = [ `exprloc ]
   type flag_present = [ `flag_present ]
+  type strx = [ `strx ]
+  type addrx = [ `addrx ]
+  type ref_sup4 = [ `ref_sup4 ]
+  type strp_sup = [ `strp_sup ]
+  type data16 = [ `data16 ]
+  type line_strp = [ `line_strp ]
   type ref_sig8 = [ `ref_sig8 ]
+  type implicit_const = [ `implicit_const ]
+  type loclistx = [ `loclistx ]
+  type rnglistx = [ `rnglistx ]
+  type ref_sup8 = [ `ref_sup8 ]
+  type strx1 = [ `strx1 ]
+  type strx2 = [ `strx2 ]
+  type strx3 = [ `strx3 ]
+  type strx4 = [ `strx4 ]
+  type addrx1 = [ `addrx1 ]
+  type addrx2 = [ `addrx2 ]
+  type addrx3 = [ `addrx3 ]
+  type addrx4 = [ `addrx4 ]
 
   (** We omit the "DW_FORM_" prefix.
       "Indirect" is not currently supported.
   *)
+
+  module Dwarf_4 : sig
+    type ('dwarf_classes, 'form) t =
+      | Sec_offset_loclistptr : (Class.Dwarf_4.loclistptr, sec_offset) t
+      | Sec_offset_rangelistptr : (Class.Dwarf_4.rangelistptr, sec_offset) t
+  end
+
   type ('dwarf_classes, 'form) t =
     | Addr : (Class.address, addr) t
     | Block : (Class.block, block) t
@@ -89,20 +123,78 @@ module Form : sig
     | Ref4 : (Class.reference, [< ref1 | ref2 | ref4 ]) t
     | Ref8 : (Class.reference, [< ref1 | ref2 | ref4 | ref8 ]) t
     | Ref_udata : (Class.reference, ref_udata) t
+    | Sec_offset_addrptr : (Class.addrptr, sec_offset) t
     | Sec_offset_lineptr : (Class.lineptr, sec_offset) t
-    | Sec_offset_loclistptr : (Class.loclistptr, sec_offset) t
+    | Sec_offset_loclist : (Class.loclist, sec_offset) t
+    | Sec_offset_loclistsptr : (Class.loclistsptr, sec_offset) t
     | Sec_offset_macptr : (Class.macptr, sec_offset) t
-    | Sec_offset_rangelistptr : (Class.rangelistptr, sec_offset) t
+    | Sec_offset_rnglist : (Class.rnglist, sec_offset) t
+    | Sec_offset_rnglistsptr : (Class.rnglistsptr, sec_offset) t
+    | Sec_offset_stroffsetsptr : (Class.stroffsetsptr, sec_offset) t
     | Exprloc : (Class.exprloc, exprloc) t
     | Flag_present : (Class.flag, flag_present) t
+    | Strx : (Class.string, strx) t
+    | Addrx : (Class.address, addrx) t
+    | Ref_sup4 : (Class.reference, ref_sup4) t
+    | Strp_sup : (Class.string, strp_sup) t
+    | Data16 : (Class.constant, data16) t
+    | Line_strp : (Class.string, line_strp) t
     | Ref_sig8 : (Class.reference, ref_sig8) t
+    | Implicit_const : (Class.constant, implicit_const) t
+    | Loclistx : (Class.loclist, loclistx) t
+    | Rnglistx : (Class.rnglist, rnglistx) t
+    | Ref_sup8 : (Class.reference, ref_sup8) t
+    | Strx1 : (Class.string, strx1) t
+    | Strx2 : (Class.string, strx2) t
+    | Strx3 : (Class.string, strx3) t
+    | Strx4 : (Class.string, strx4) t
+    | Addrx1 : (Class.string, addrx1) t
+    | Addrx2 : (Class.string, addrx2) t
+    | Addrx3 : (Class.string, addrx3) t
+    | Addrx4 : (Class.string, addrx4) t
+    | Dwarf_4 : ('dwarf_classes, 'form) Dwarf_4.t -> ('dwarf_classes, 'form) t
 end
 
 module Attribute : sig
   (** We omit the "DW_AT_" prefix. *)
+
+  module Dwarf_4 : sig
+    type 'dwarf_classes t =
+      | Location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | String_length : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Return_addr : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Start_scope : [< Class.constant | Class.Dwarf_4.rangelistptr ] t
+      | Data_member_location :
+          [< Class.constant | Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Frame_base : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Segment : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Static_link : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Use_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Vtable_elem_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Ranges : Class.Dwarf_4.rangelistptr t
+      | GNU_call_site_value : Class.exprloc t
+      | GNU_call_site_data_value : Class.exprloc t
+      | GNU_call_site_target : Class.exprloc t
+      | GNU_call_site_target_clobbered : Class.exprloc t
+      | GNU_tail_call : Class.flag t
+      | GNU_all_tail_call_sites : Class.flag t
+      | GNU_all_call_sites : Class.flag t
+      | GNU_all_source_call_sites : Class.flag t
+  end
+
+  module Ocaml_specific : sig
+    type 'dwarf_classes t =
+      | Compiler_version : Class.string t
+      | Unit_name : Class.string t
+      | Config_digest : Class.string t
+      | Prefix_name : Class.string t
+      | Linker_dirs : Class.string t
+      | Cmt_file_digest : Class.string t
+  end
+
   type 'dwarf_classes t =
     | Sibling : Class.reference t
-    | Location : [< Class.exprloc | Class.loclistptr ] t
+    | Location : [< Class.exprloc | Class.loclist ] t
     | Name : Class.string t
     | Ordering : Class.constant t
     | Byte_size : [< Class.constant | Class.exprloc | Class.reference ] t
@@ -116,7 +208,7 @@ module Attribute : sig
     | Discr_value : Class.constant t
     | Visibility : Class.constant t
     | Import : Class.reference t
-    | String_length : [< Class.exprloc | Class.loclistptr ] t
+    | String_length : [< Class.exprloc | Class.loclistsptr ] t
     | Common_reference : Class.reference t
     | Comp_dir : Class.string t
     | Const_value : [< Class.block | Class.constant | Class.string ] t
@@ -127,8 +219,8 @@ module Attribute : sig
     | Lower_bound : [< Class.constant | Class.exprloc | Class.reference ] t
     | Producer : Class.string t
     | Prototyped : Class.flag t
-    | Return_addr : [< Class.exprloc | Class.loclistptr ] t
-    | Start_scope : [< Class.constant | Class.rangelistptr ] t
+    | Return_addr : [< Class.exprloc | Class.loclistsptr ] t
+    | Start_scope : [< Class.constant | Class.rnglistsptr ] t
     | Bit_stride : [< Class.constant | Class.exprloc | Class.reference ] t
     | Upper_bound : [< Class.constant | Class.exprloc | Class.reference ] t
     | Abstract_origin : Class.reference t
@@ -139,7 +231,7 @@ module Attribute : sig
     | Calling_convention : Class.constant t
     | Count : [< Class.constant | Class.exprloc | Class.reference ] t
     | Data_member_location :
-        [< Class.constant | Class.exprloc | Class.loclistptr ] t
+        [< Class.constant | Class.exprloc | Class.loclistsptr ] t
     | Decl_column : Class.constant t
     | Decl_file : Class.constant t
     | Decl_line : Class.constant t
@@ -147,20 +239,20 @@ module Attribute : sig
     | Discr_list : Class.block t
     | Encoding : Class.constant t
     | External : Class.flag t
-    | Frame_base : [< Class.exprloc | Class.loclistptr ] t
+    | Frame_base : [< Class.exprloc | Class.loclistsptr ] t
     | Friend : Class.reference t
     | Identifier_case : Class.constant t
     | Macro_info : Class.macptr t
     | Namelist_item : Class.reference t
     | Priority : Class.reference t
-    | Segment : [< Class.exprloc | Class.loclistptr ] t
+    | Segment : [< Class.exprloc | Class.loclistsptr ] t
     | Specification : Class.reference t
-    | Static_link : [< Class.exprloc | Class.loclistptr ] t
+    | Static_link : [< Class.exprloc | Class.loclistsptr ] t
     | Type : Class.reference t
-    | Use_location : [< Class.exprloc | Class.loclistptr ] t
+    | Use_location : [< Class.exprloc | Class.loclistsptr ] t
     | Variable_parameter : Class.flag t
     | Virtuality : Class.constant t
-    | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
+    | Vtable_elem_location : [< Class.exprloc | Class.loclistsptr ] t
     | Allocated : [< Class.constant | Class.exprloc | Class.reference ] t
     | Associated : [< Class.constant | Class.exprloc | Class.reference ] t
     | Data_location : Class.exprloc t
@@ -168,7 +260,7 @@ module Attribute : sig
     | Entry_pc : Class.address t
     | Use_UTF8 : Class.flag t
     | Extension : Class.reference t
-    | Ranges : Class.rangelistptr t
+    | Ranges : Class.rnglist t
     | Trampoline :
         [< Class.address | Class.flag | Class.reference | Class.string ] t
     | Call_column : Class.constant t
@@ -195,6 +287,37 @@ module Attribute : sig
     | Const_expr : Class.flag t
     | Enum_class : Class.flag t
     | Linkage_name : Class.string t
+    | String_length_bit_size : Class.constant t
+    | String_length_byte_size : Class.constant t
+    | Rank : Class.exprloc t
+    | Str_offsets_base : Class.stroffsetsptr t
+    | Addr_base : Class.addrptr t
+    | Rnglists_base : Class.rnglistsptr t
+    | Dwo_name : Class.string t
+    | Reference : Class.flag t
+    | Rvalue_reference : Class.flag t
+    | Macros : Class.macptr t
+    | Call_all_calls : Class.flag t
+    | Call_all_source_calls : Class.flag t
+    | Call_all_tail_calls : Class.flag t
+    | Call_return_pc : Class.address t
+    | Call_value : Class.exprloc t
+    | Call_origin : Class.reference t
+    | Call_parameter : Class.reference t
+    | Call_pc : Class.address t
+    | Call_tail_call : Class.flag t
+    | Call_target : Class.exprloc t
+    | Call_target_clobbered : Class.exprloc t
+    | Call_data_location : Class.exprloc t
+    | Call_data_value : Class.exprloc t
+    | Noreturn : Class.flag t
+    | Alignment : Class.constant t
+    | Export_symbols : Class.flag t
+    | Deleted : Class.flag t
+    | Defaulted : Class.constant t
+    | Loclists_base : Class.loclistsptr t
+    | Dwarf_4 : 'dwarf_classes Dwarf_4.t -> 'dwarf_classes t
+    | Ocaml_specific : 'dwarf_classes Ocaml_specific.t -> 'dwarf_classes t
 
   module Sealed : sig
     type t

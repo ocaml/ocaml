@@ -25,4 +25,12 @@ let encode = function
 let size _t = Dwarf_int.one ()
 
 let emit t =
-  Dwarf_value.emit (Dwarf_value.Int8 (Numbers.Int8.of_int_exn (encode t)))
+  let comment =
+    match t with
+    | Yes -> "Has children"
+    | No -> "No children"
+  in
+  Dwarf_value.emit (Dwarf_value.int8 ~comment
+    (Numbers.Int8.of_int_exn (encode t)))
+
+let compare t1 t2 = Stdlib.compare t1 t2

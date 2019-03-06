@@ -16,6 +16,8 @@
 
 module A = Asm_directives
 
+module Uint64 = Numbers.Uint64
+
 type t =
   | Thirty_two of Int32.t
   | Sixty_four of Int64.t
@@ -47,10 +49,17 @@ let of_host_int_exn i =
     if i >= -0x8000_0000 && i <= 0x7fff_ffff then
       Thirty_two (Int32.of_int i)
     else
-      Misc.fatal_errorf "Cannot encode host integer %d in the requested \
-          DWARF format"
-        i
+      raise Dwarf_format.Too_large_for_thirty_two_bit_dwarf
   | size, _ -> Misc.fatal_errorf "Unknown [int] size %d" size
+
+let of_int64_exn i64 =
+  match Dwarf_format.get () with
+  | Sixty_four -> Sixty_four i64
+  | Thirty_two ->
+    if i64 >= -0x8000_0000L && i64 <= 0x7fff_ffffL then
+      Thirty_two (Int64.to_int32 i64)
+    else
+      raise Dwarf_format.Too_large_for_thirty_two_bit_dwarf
 
 let of_targetint_exn i =
   match Targetint.repr i, Dwarf_format.get () with
@@ -61,34 +70,43 @@ let of_targetint_exn i =
     if i64 >= -0x8000_0000L && i64 <= 0x7fff_ffffL then
       Thirty_two (Int64.to_int32 i64)
     else
-      Misc.fatal_errorf "Cannot encode target integer %a in the requested \
-          DWARF format"
-        Targetint.print i
+      raise Dwarf_format.Too_large_for_thirty_two_bit_dwarf
 
 let to_int64 t =
   match t with
   | Thirty_two t -> Int64.of_int32 t
   | Sixty_four t -> t
 
-(* CR-someday mshinwell: This should probably check for overflow. *)
+let to_uint64_exn t =
+  match t with
+  | Thirty_two t -> Uint64.of_int32_exn t
+  | Sixty_four t -> Uint64.of_int64_exn t
+
 let add t1 t2 =
-  match t1, t2 with
-  | Thirty_two i1, Thirty_two i2 ->
-    Thirty_two (Int32.add i1 i2)
-  | Sixty_four i1, Sixty_four i2 ->
-    Sixty_four (Int64.add i1 i2)
+  begin match t1, t2 with
+  | Thirty_two _, Thirty_two _
+  | Sixty_four _, Sixty_four _ -> ()
   | Thirty_two _, Sixty_four _
   | Sixty_four _, Thirty_two _ ->
     Misc.fatal_error "Cannot intermix sizes of [Dwarf_int]s"
+  end;
+  let t1 = to_int64 t1 in
+  let t2 = to_int64 t2 in
+  of_int64_exn (Int64.add t1 t2)
 
 let succ t = add t (one ())
+
+let width_as_int64 () =
+  match zero () with
+  | Thirty_two _ -> 4L
+  | Sixty_four _ -> 8L
 
 let size t =
   match t with
   | Thirty_two _ -> Thirty_two 4l
   | Sixty_four _ -> Sixty_four 8L
 
-let emit t =
+let emit ?comment t =
   match t with
-  | Thirty_two i -> A.int32 i
-  | Sixty_four i -> A.int64 i
+  | Thirty_two i -> A.int32 ?comment i
+  | Sixty_four i -> A.int64 ?comment i
