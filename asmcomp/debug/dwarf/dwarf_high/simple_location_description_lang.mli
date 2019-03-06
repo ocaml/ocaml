@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2014--2018 Jane Street Group LLC                           *)
+(*   Copyright 2014--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -16,17 +16,30 @@
     provided by the DWARF standard.  This representation is compiled down
     to [Simple_location_description.t] values.
 
-    Functions in this interface are used to build descriptions that enable
-    the debugger to know what value a particular variable has at runtime.
-    This is done by either giving the value itself ("rvalue" semantics) or
-    explaining how to compute the address in the target's memory where the
-    value may be found ("lvalue" semantics).  Which of these semantics is
-    appropriate depends on the context in which the simple location
-    description is being used.  (For example see the DWARF-4 standard
-    section 2.6.1.1.3 bullet point 2.)
+    Functions in this interface are used to build descriptions that enable the
+    debugger to know what value a particular variable has at runtime.  These
+    descriptions are categorised according to their surrounding context:
+
+    - [Lvalue] descriptions are used when the context needs to know the _place_
+    where a particular variable is stored.  Typically such a description is
+    some address in the target's memory or the name of some register in the
+    target's CPU.
+
+    - [Rvalue] descriptions are used when the context requires the _value_ of
+    a particular variable rather than a description of the place where it lives.
+    This is usually the case when the description is being used as some
+    sub-expression of a larger DWARF expression.
+
+    Sometimes the context requires that the address of a value has to be given,
+    but such address cannot be computed, for example because the value has been
+    entirely optimised out.  However we may well know what the value itself is
+    (or was).  In these cases we use [Lvalue_without_address] semantics
+    (corresponding to DWARF "implicit location descriptions").  These enable
+    rvalues to be converted into descriptions that may be used in lvalue
+    context; and to describe pointers that have been entirely optimised out.
 
     The descriptions of the functions are written in terms of some fictional
-    value V and time T.  The time is when the simple location description is
+    value V and time T. The time is when the simple location description is
     being evaluated in the debugger to inspect V.
 *)
 
@@ -35,10 +48,10 @@
 type t
 
 type lvalue
-
+type lvalue_without_address
 type normal
-type last
-type 'rvalue_kind rvalue
+type implicit
+type 'a rvalue
 
 (** "A piece or all of an object that is present in the source but not in
     the object code" (DWARF-4 standard 2.6.1.1.4). *)
@@ -50,20 +63,45 @@ module Lvalue : sig
   (** V will be in the given register at time T. *)
   val in_register : dwarf_reg_number:int -> t
 
-  (** V will be in the given stack slot at time T. *)
+  (** The address of V will be that of the given stack slot at time T. *)
   val in_stack_slot : offset_in_words:Targetint.t -> t
 
-  (** V will be at the address of the given symbol. *)
-  val const_symbol : symbol:string -> t
+  (** The address of V will be the address of the given field of the block
+      whose address (expressed as an rvalue) is given by the provided simple
+      location description at time T. *)
+  val read_field : block:normal rvalue -> field:Targetint.t -> t
 
-  (** V will be in the given field of the given symbol at time T. *)
-  val in_symbol_field : symbol:string -> field:Targetint.t -> t
+  (** The address of V will be the address of the given field of the given
+      symbol at time T. *)
+  val in_symbol_field : Asm_symbol.t -> field:Targetint.t -> t
 
-  (** V is found in the location given by evaluating the location description
-      (which must yield an lvalue) in the DIE at the given [die_label]. *)
+  (** The address of V will be the supplied address at time T plus the
+      [offset_in_words]. *)
+  val offset_pointer : t -> offset_in_words:Targetint.t -> t
+
+  (** The address (or register location) of V is found in the location given
+      by evaluating the location description (which must yield an lvalue) in
+      the DIE at the given [die_label].  (This is like a function call.) *)
   val location_from_another_die
-     : die_label:Linearize.label
-    -> compilation_unit_header_label:Linearize.label
+     : die_label:Asm_label.t
+    -> compilation_unit_header_label:Asm_label.t
+    -> t
+end
+
+module Lvalue_without_address : sig
+  type t = lvalue_without_address
+
+  (** The address of V cannot be described, but the value of V is known;
+      the supplied [rvalue] describes such value. *)
+  val of_rvalue : normal rvalue -> t
+
+  (** V is an optimized-out pointer to a value whose contents are given by
+      evaluating the location description (which must yield an rvalue) in the
+      DIE at the given [die_label]. *)
+  val implicit_pointer
+     : offset_in_bytes:Targetint.t
+    -> die_label:Asm_label.t
+    -> Dwarf_version.t
     -> t
 end
 
@@ -74,45 +112,55 @@ module Rvalue : sig
       to do with OCaml tagging.) *)
   val signed_int_const : Targetint.t -> normal t
 
-  (** V will be in the given register at time T. *)
+  (** V is the floating-point number whose bits are specified by the given
+      64-bit integer. *)
+  val float_const : Int64.t -> normal t
+
+  (** V is the address of the given symbol (not the contents of memory
+      pointed to by the given symbol). *)
+  val const_symbol : Asm_symbol.t -> normal t
+
+  (** V will be the contents of the given register at time T. *)
   val in_register : dwarf_reg_number:int -> normal t
 
-  (** V will be in the given stack slot at time T. *)
+  (** V will be the contents of the given stack slot at time T. *)
   val in_stack_slot : offset_in_words:Targetint.t -> normal t
 
-  (** V will be in the given field of the block whose location is given by
-      the provided simple location description at time T. *)
+  (** V will be the contents of the given field of the block whose location is
+      given by the provided simple location description at time T. *)
   val read_field : block:normal t -> field:Targetint.t -> normal t
 
-  (** V will be in the given field of the given symbol at time T. *)
-  val read_symbol_field : symbol:string -> field:Targetint.t -> normal t
+  (** V will be the contents of the given field of the given symbol at
+      time T. *)
+  val read_symbol_field : Asm_symbol.t -> field:Targetint.t -> normal t
 
-  (** V will be at the given offset added to the value of the given simple
-      location description at time T. *)
-  val offset_pointer : lvalue -> offset_in_words:Targetint.t -> normal t
+  (** V will be found in the location given by evaluating the location
+      description (which must yield an rvalue) in the DIE at the given
+      [die_label].  (This is like a function call.) *)
+  val location_from_another_die
+     : die_label:Asm_label.t
+    -> compilation_unit_header_label:Asm_label.t
+    -> normal t
 
   (** V is an optimized-out pointer to a value whose contents are given by
       evaluating the location description (which must yield an rvalue) in the
       DIE at the given [die_label].
 
-      The resulting rvalue cannot take part in any further location
+      The resulting description cannot take part in any further location
       computations.  The type parameter statically ensures this. *)
   val implicit_pointer
      : offset_in_bytes:Targetint.t
-    -> die_label:Linearize.label
+    -> die_label:Asm_label.t
     -> Dwarf_version.t
-    -> last t
-
-  (** V is found in the location given by evaluating the location description
-      (which must yield an rvalue) in the DIE at the given [die_label]. *)
-  val location_from_another_die
-     : die_label:Linearize.label
-    -> compilation_unit_header_label:Linearize.label
-    -> normal t
+    -> implicit t
 end
 
 (** Create a high-level location description from an lvalue description. *)
 val of_lvalue : Lvalue.t -> t
+
+(** Create a high-level location description from an lvalue-without-address
+    description. *)
+val of_lvalue_without_address : Lvalue_without_address.t -> t
 
 (** Create a high-level location description from an rvalue description. *)
 val of_rvalue : _ Rvalue.t -> t

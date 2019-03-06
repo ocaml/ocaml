@@ -29,26 +29,27 @@ val contents_of_stack_slot
    : offset_in_bytes:Targetint.t
   -> Dwarf_operator.t list
 
-val value_of_symbol : symbol:string -> Dwarf_operator.t
+val value_of_symbol : symbol:Asm_symbol.t -> Dwarf_operator.t
 
 val signed_int_const : Targetint.t -> Dwarf_operator.t
 
-val add_unsigned_const : Targetint.t -> Dwarf_operator.t
+val add_unsigned_const : Targetint.t -> Dwarf_operator.t list
+
+val float_const : Int64.t -> Dwarf_operator.t
 
 val implicit_pointer
    : offset_in_bytes:Targetint.t
-  -> die_label:Linearize.label
+  -> die_label:Asm_label.t
   -> Dwarf_version.t
   -> Dwarf_operator.t
 
 val call
-   : die_label:Linearize.label
-  -> compilation_unit_header_label:Linearize.label
+   : die_label:Asm_label.t
+  -> compilation_unit_header_label:Asm_label.t
   -> Dwarf_operator.t
 
 val conditional
-   : if_zero:Dwarf_operator.t list
+   : ?at_join:Dwarf_operator.t list
+  -> if_zero:Dwarf_operator.t list
   -> if_nonzero:Dwarf_operator.t list
   -> Dwarf_operator.t list
-
-val optimize_sequence : Dwarf_operator.t list -> Dwarf_operator.t list
