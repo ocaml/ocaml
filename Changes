@@ -25,7 +25,11 @@ Working version
   (Mark Shinwell, review by Nicolas Ojeda Bar)
 
 - GPR#2280: Don't make more Clambda constants after starting Cmmgen
-  (Mark Shinwell)
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
+  [Misc.Stdlib.List]
+  (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
 
 ### Runtime system:
 
