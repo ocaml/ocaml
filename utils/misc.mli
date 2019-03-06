@@ -117,13 +117,13 @@ module Stdlib : sig
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
 
-    (** Returns [true] iff the given list, with respect to the given equality
-        function on list members, is a prefix of the list [of_]. *)
     val is_prefix
        : equal:('a -> 'a -> bool)
       -> 'a list
       -> of_:'a list
       -> bool
+    (** Returns [true] iff the given list, with respect to the given equality
+        function on list members, is a prefix of the list [of_]. *)
 
     type 'a longest_common_prefix_result = private {
       longest_common_prefix : 'a list;
@@ -131,14 +131,14 @@ module Stdlib : sig
       second_without_longest_common_prefix : 'a list;
     }
 
-    (** Returns the longest list that, with respect to the provided equality
-        function, is a prefix of both of the given lists.  The input lists,
-        each with such longest common prefix removed, are also returned. *)
     val find_and_chop_longest_common_prefix
        : equal:('a -> 'a -> bool)
       -> first:'a list
       -> second:'a list
       -> 'a longest_common_prefix_result
+    (** Returns the longest list that, with respect to the provided equality
+        function, is a prefix of both of the given lists.  The input lists,
+        each with such longest common prefix removed, are also returned. *)
   end
 
   module Option : sig
