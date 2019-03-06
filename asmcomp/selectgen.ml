@@ -635,7 +635,7 @@ method about_to_emit_call _env _insn _arg = None
    register. *)
 
 method private maybe_emit_spacetime_move env ~spacetime_reg =
-  Misc.Stdlib.Option.iter (fun reg ->
+  Option.iter (fun reg ->
       self#insert_moves env reg [| Proc.loc_spacetime_node_hole |])
     spacetime_reg
 

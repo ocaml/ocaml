@@ -49,7 +49,7 @@ let prim_fresh_oo_id =
 let transl_extension_constructor env path ext =
   let path =
     Printtyp.wrap_printing_env env ~error:true (fun () ->
-      Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path)
+      Option.map (Printtyp.rewrite_double_underscore_paths env) path)
   in
   let name =
     match path, !Clflags.for_package with

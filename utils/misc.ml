@@ -182,40 +182,6 @@ module Stdlib = struct
   module Option = struct
     type 'a t = 'a option
 
-    let is_none = function
-      | None -> true
-      | Some _ -> false
-
-    let is_some = function
-      | None -> false
-      | Some _ -> true
-
-    let compare f t1 t2 =
-      match t1, t2 with
-      | None, None -> 0
-      | None, Some _ -> -1
-      | Some _, None -> 1
-      | Some contents1, Some contents2 -> f contents1 contents2
-
-    let equal eq o1 o2 =
-      match o1, o2 with
-      | None, None -> true
-      | Some e1, Some e2 -> eq e1 e2
-      | _, _ -> false
-
-    let iter f = function
-      | Some x -> f x
-      | None -> ()
-
-    let map f = function
-      | Some x -> Some (f x)
-      | None -> None
-
-    let fold f a b =
-      match a with
-      | None -> b
-      | Some a -> f a b
-
     let value_default f ~default a =
       match a with
       | None -> default
@@ -262,8 +228,8 @@ module Stdlib = struct
   external compare : 'a -> 'a -> int = "%compare"
 end
 
-let may = Stdlib.Option.iter
-let may_map = Stdlib.Option.map
+let may = Option.iter
+let may_map = Option.map
 
 (* File functions *)
 

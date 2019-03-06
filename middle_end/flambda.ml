@@ -535,9 +535,9 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
               defining_expr; body; _ } ->
         bound_variable var;
         if all_used_variables
-           || Misc.Stdlib.Option.is_some ignore_uses_as_callee
-           || Misc.Stdlib.Option.is_some ignore_uses_as_argument
-           || Misc.Stdlib.Option.is_some ignore_uses_in_project_var
+           || Option.is_some ignore_uses_as_callee
+           || Option.is_some ignore_uses_as_argument
+           || Option.is_some ignore_uses_in_project_var
         then begin
           (* In these cases we can't benefit from the pre-computed free
              variable sets. *)
