@@ -40,7 +40,7 @@ and instruction_desc =
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
   | Lentertrap
-  | Lpushtrap of {lbl_handler:label}
+  | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
 
@@ -285,7 +285,8 @@ let rec linear i n =
       let lbl_dummy = lbl in
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr (Lpushtrap {lbl_handler=lbl_dummy}) i) (tt - 1)
+        else
+          loop (cons_instr (Lpushtrap { lbl_handler = lbl_dummy; }) i) (tt - 1)
       in
       let n1 = loop (linear i.Mach.next n) !try_depth in
       let rec loop i tt =
@@ -300,12 +301,12 @@ let rec linear i n =
       in
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
-      let n3 = cons_instr (Lpushtrap { lbl_handler })
+      let n3 = cons_instr (Lpushtrap { lbl_handler; })
                  (linear body
                     (cons_instr
                        Lpoptrap
                        (add_branch lbl_join n2))) in
-      decr try_depth; (* does it need to come before the use of n2? *)
+      decr try_depth;
       n3
 
   | Iraise k ->

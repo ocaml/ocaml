@@ -867,7 +867,7 @@ let emit_instr fallthrough i =
       D.text ()
   | Lentertrap ->
       ()
-  | Lpushtrap {lbl_handler} ->
+  | Lpushtrap { lbl_handler; } ->
       let load_label_addr s arg =
         if !Clflags.pic_code then
           I.lea (mem64_rip NONE (emit_label s)) arg

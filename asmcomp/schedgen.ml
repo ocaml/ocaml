@@ -360,7 +360,7 @@ method schedule_fundecl f =
   let rec schedule i try_nesting =
     match i.desc with
     | Lend -> i
-    | Lpushtrap { lbl_handler=_ }
+    | Lpushtrap { lbl_handler = _; }
       -> { i with next = schedule i.next (try_nesting + 1) }
     | Lpoptrap -> { i with next = schedule i.next (try_nesting - 1) }
     | _ ->
