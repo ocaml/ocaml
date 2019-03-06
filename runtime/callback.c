@@ -239,7 +239,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   return Val_unit;
 }
 
-CAMLexport value * caml_named_value(char const *name)
+CAMLexport const value * caml_named_value(char const *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];

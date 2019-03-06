@@ -365,7 +365,7 @@ value caml_gr_sigio_handler(void)
 
 /* Processing of graphic errors */
 
-static value * graphic_failure_exn = NULL;
+static const value * graphic_failure_exn = NULL;
 
 void caml_gr_fail(const char *fmt, const char *arg)
 {
