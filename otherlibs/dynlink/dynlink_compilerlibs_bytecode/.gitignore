@@ -1,3 +1,0 @@
-# Hack to allow committing of an empty directory to git.
-*
-!.gitignore

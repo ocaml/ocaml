@@ -119,6 +119,8 @@ COMPILERLIBS_SOURCES=\
 
 dynlink_compilerlibs/Makefile.copy-sources:
 	mkdir -p dynlink_compilerlibs
+	mkdir -p dynlink_compilerlibs_bytecode
+	mkdir -p dynlink_compilerlibs_native
 	echo > $@
 	for ml in $(COMPILERLIBS_SOURCES); do \
           echo "dynlink_compilerlibs/$$(basename $$ml): $(ROOTDIR)/$$ml" \
@@ -168,7 +170,7 @@ COMPILERLIBS_COPIED_SOURCES_INTFS=\
 
 dynlink_compilerlibs/.depend: $(COMPILERLIBS_COPIED_SOURCES) \
   $(COMPILERLIBS_COPIED_SOURCES_INTFS)
-	$(CAMLRUN) $(ROOTDIR)/ocamlc -depend -I dynlink_compilerlibs \
+	$(CAMLRUN) $(ROOTDIR)/ocamlc -depend -slash -I dynlink_compilerlibs \
 	$(COMPILERLIBS_COPIED_SOURCES) \
 	$(COMPILERLIBS_COPIED_SOURCES_INTFS) \
         > dynlink_compilerlibs/.depend
