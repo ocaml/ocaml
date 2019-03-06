@@ -63,7 +63,7 @@ let keyword_table =
     "mulh", MULH;
     "or", OR;
     "proj", PROJ;
-    "raise_withtrace", RAISE Cmm.Raise_withtrace;
+    "raise_withtrace", RAISE (Cmm.Raise_withtrace Debuginfo.none);
     "raise_notrace", RAISE Cmm.Raise_notrace;
     "seq", SEQ;
     "signed", SIGNED;

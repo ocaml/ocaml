@@ -23,7 +23,12 @@ let in_file name =
   { loc_start = loc; loc_end = loc; loc_ghost = true }
 ;;
 
-let none = in_file "_none_";;
+let none_file = "_none_"
+
+let none = in_file none_file
+
+let is_none { loc_start = { pos_fname; _ }; _ } =
+  String.equal pos_fname none_file
 
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
@@ -312,6 +317,16 @@ struct
     if iset = [] then None
     else Some (fst (List.hd iset), snd (List.hd (List.rev iset)))
 end
+
+let print_for_debug ppf t =
+  if is_none t then
+    Format.fprintf ppf "<none>"
+  else
+    Format.fprintf ppf "%s:%d,%d--%d"
+      t.loc_start.pos_fname
+      t.loc_start.pos_lnum
+      (t.loc_start.pos_cnum - t.loc_start.pos_bol)
+      (t.loc_end.pos_cnum - t.loc_start.pos_bol)
 
 (******************************************************************************)
 (* Toplevel: highlighting and quoting locations *)

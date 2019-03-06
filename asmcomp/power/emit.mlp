@@ -1004,9 +1004,9 @@ let emit_instr i =
         adjust_stack_offset (-trap_size)
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Cmm.Raise_withtrace dbg ->
             emit_call "caml_raise_exn";
-            record_frame Reg.Set.empty true i.dbg;
+            record_frame Reg.Set.empty true dbg;
             emit_call_nop()
         | Cmm.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;

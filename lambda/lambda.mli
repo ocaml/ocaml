@@ -183,9 +183,13 @@ and bigarray_layout =
   | Pbigarray_c_layout
   | Pbigarray_fortran_layout
 
+(** The [Location.t] values in [raise_kind], if specified, are the locations
+    that will be used for generating backtraces.  Otherwise the location from
+    the surrounding [Lprim] will be used.  (See cmm.mli for why this is
+    useful.) *)
 and raise_kind =
-  | Raise_regular
-  | Raise_reraise
+  | Raise_regular of Location.t option
+  | Raise_reraise of Location.t option
   | Raise_notrace
 
 val equal_primitive : primitive -> primitive -> bool
@@ -252,9 +256,17 @@ type function_attribute = {
   stub: bool;
 }
 
+(** A [Location.t] value as the final argument to one of the [lambda]
+    constructors refers to the location of the whole construct.
+
+    Locations are provided:
+    - at jump targets;
+    - at operations (constants, primitives, etc.);
+    - at the start of conditional expressions.
+*)
 type lambda =
     Lvar of Ident.t
-  | Lconst of structured_constant
+  | Lconst of structured_constant * Location.t
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
@@ -263,19 +275,23 @@ type lambda =
   | Lswitch of lambda * lambda_switch * Location.t
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
-  | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+  | Lstringswitch of lambda * (string * block) list * block option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
-  | Ltrywith of lambda * Ident.t * lambda
-  | Lifthenelse of lambda * lambda * lambda
+  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * block
+  | Ltrywith of lambda * Ident.t * block
+  | Lifthenelse of lambda * block * block * Location.t
   | Lsequence of lambda * lambda
-  | Lwhile of lambda * lambda
-  | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
+  | Lwhile of lambda * block * Location.t
+  | Lfor of Ident.t * lambda * lambda * direction_flag * block * Location.t
   | Lassign of Ident.t * lambda
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+
+and block = private {
+  block_loc : Location.t;
+  expr : lambda;
+}
 
 and lfunction =
   { kind: function_kind;
@@ -294,11 +310,11 @@ and lambda_apply =
     ap_specialised : specialise_attribute; }
 
 and lambda_switch =
-  { sw_numconsts: int;                  (* Number of integer cases *)
-    sw_consts: (int * lambda) list;     (* Integer cases *)
-    sw_numblocks: int;                  (* Number of tag block cases *)
-    sw_blocks: (int * lambda) list;     (* Tag block cases *)
-    sw_failaction : lambda option}      (* Action to take if failure *)
+  { sw_numconsts: int;                           (* Number of integer cases *)
+    sw_consts: (int * block) list;               (* Integer cases *)
+    sw_numblocks: int;                           (* Number of tag block cases *)
+    sw_blocks: (int * block) list;               (* Tag block cases *)
+    sw_failaction : block option}                (* Action to take if failure *)
 and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
@@ -334,7 +350,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
-val lambda_unit: lambda
+val lambda_unit: Location.t -> lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
@@ -394,6 +410,10 @@ val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 val bind_with_value_kind:
   let_kind -> (Ident.t * value_kind) -> lambda -> lambda -> lambda
 
+(** Construct a block given a location for the top of the block and an
+    expression. *)
+val block : Location.t -> lambda -> block
+
 val negate_integer_comparison : integer_comparison -> integer_comparison
 val swap_integer_comparison : integer_comparison -> integer_comparison
 
@@ -411,10 +431,6 @@ val default_stub_attribute : function_attribute
 val next_raise_count : unit -> int
 
 val staticfail : lambda (* Anticipated static failure *)
-
-(* Check anticipated failure, substitute its final value *)
-val is_guarded: lambda -> bool
-val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
 

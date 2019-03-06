@@ -111,7 +111,7 @@ let label_counter = ref 99
 let new_label() = incr label_counter; !label_counter
 
 type raise_kind =
-  | Raise_withtrace
+  | Raise_withtrace of Debuginfo.t
   | Raise_notrace
 
 type rec_flag = Nonrecursive | Recursive
@@ -159,7 +159,7 @@ and operation =
   | Ccheckbound
 
 type expression =
-    Cconst_int of int * Debuginfo.t
+  | Cconst_int of int * Debuginfo.t
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
@@ -174,18 +174,19 @@ type expression =
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
-  | Cifthenelse of expression * Debuginfo.t * expression
-      * Debuginfo.t * expression * Debuginfo.t
-  | Cswitch of expression * int array * (expression * Debuginfo.t) array
-      * Debuginfo.t
+  | Cifthenelse of expression * block * block * Debuginfo.t
+  | Cswitch of expression * int array * block array * Debuginfo.t
   | Ccatch of
       rec_flag
-        * (int * (Backend_var.With_provenance.t * machtype) list
-          * expression * Debuginfo.t) list
+        * (int * (Backend_var.With_provenance.t * machtype) list * block) list
         * expression
   | Cexit of int * expression list
-  | Ctrywith of expression * Backend_var.With_provenance.t * expression
-      * Debuginfo.t
+  | Ctrywith of expression * Backend_var.With_provenance.t * block
+
+and block = {
+  block_dbg : Debuginfo.t;
+  expr : expression;
+}
 
 type codegen_option =
   | Reduce_code_size
@@ -217,8 +218,14 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
+let block block_dbg expr =
+  { block_dbg;
+    expr;
+  }
+
 let ccatch (i, ids, e1, e2, dbg) =
-  Ccatch(Nonrecursive, [i, ids, e2, dbg], e1)
+  let handler = block dbg e2 in
+  Ccatch(Nonrecursive, [i, ids, handler], e1)
 
 let reset () =
   label_counter := 99

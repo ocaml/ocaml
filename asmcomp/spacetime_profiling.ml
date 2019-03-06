@@ -105,29 +105,28 @@ let code_for_function_prologue ~function_name ~fun_dbg:dbg ~node_hole =
         Cop (Cand, [Cvar node; cconst_int 1], dbg),
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar must_allocate_node; cconst_int 1], dbg),
-          dbg,
-          Cvar node,
-          dbg,
-          Clet (VP.create is_new_node,
-            Clet (VP.create pc, cconst_symbol function_name,
-              Cop (Cextcall ("caml_spacetime_allocate_node",
-                  [| Int |], false, None),
-                [cconst_int (1 (* header *) + !index_within_node);
-                Cvar pc;
-                Cvar node_hole;
-                ],
-                dbg)),
-              Clet (VP.create new_node,
-                Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
-                if no_tail_calls then Cvar new_node
-                else
-                  Cifthenelse (
-                    Cop (Ccmpi Ceq, [Cvar is_new_node; cconst_int 0], dbg),
-                    dbg,
-                    Cvar new_node,
-                    dbg,
-                    initialize_direct_tail_call_points_and_return_node,
-                    dbg))),
+          Cmm.block dbg (Cvar node),
+          Cmm.block dbg
+            (Clet (VP.create is_new_node,
+              Clet (VP.create pc, cconst_symbol function_name,
+                Cop (Cextcall ("caml_spacetime_allocate_node",
+                    [| Int |], false, None),
+                  [cconst_int (1 (* header *) + !index_within_node);
+                  Cvar pc;
+                  Cvar node_hole;
+                  ],
+                  dbg)),
+                Clet (VP.create new_node,
+                  Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole],
+                    dbg),
+                  if no_tail_calls then Cvar new_node
+                  else
+                    Cifthenelse (
+                      Cop (Ccmpi Ceq, [Cvar is_new_node; cconst_int 0], dbg),
+                      Cmm.block dbg (Cvar new_node),
+                      Cmm.block dbg
+                        initialize_direct_tail_call_points_and_return_node,
+                      dbg)))),
           dbg)))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
@@ -171,10 +170,8 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Clet (VP.create profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; cconst_int 1 (* () *)], dbg),
-          dbg,
-          Cvar existing_profinfo,
-          dbg,
-          generate_new_profinfo,
+          Cmm.block dbg (Cvar existing_profinfo),
+          Cmm.block dbg generate_new_profinfo,
           dbg),
         Clet (VP.create existing_count,
           Cop (Cload (Word_int, Asttypes.Mutable), [

@@ -627,7 +627,7 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
       Ustringswitch
         (substitute loc st sb rn arg,
          List.map (fun (s,act) -> s,substitute loc st sb rn act) sw,
-         Misc.may_map (substitute loc st sb rn) d)
+         Option.map (substitute loc st sb rn) d)
   | Ustaticfail (nfail, args) ->
       let nfail =
         match rn with
@@ -844,7 +844,7 @@ let rec close ({ backend; fenv; cenv } as env) lam =
   match lam with
   | Lvar id ->
       close_approx_var env id
-  | Lconst cst ->
+  | Lconst (cst, _loc) ->
       let str ?(shared = true) cst =
         let name =
           Compilenv.new_structured_constant cst ~shared
@@ -1067,6 +1067,14 @@ let rec close ({ backend; fenv; cenv } as env) lam =
   | Lprim(Praise k, [arg], loc) ->
       let (ulam, _approx) = close env arg in
       let dbg = Debuginfo.from_location loc in
+      let k =
+        match k with
+        | Raise_regular loc ->
+          P.Raise_regular (Option.map Debuginfo.from_location loc)
+        | Raise_reraise loc ->
+          P.Raise_reraise (Option.map Debuginfo.from_location loc)
+        | Raise_notrace -> P.Raise_notrace
+      in
       (Uprim(P.Praise k, [ulam], dbg),
        Value_unknown)
   | Lprim (Pmakearray _, [], _loc) -> make_const_ref (Uconst_block (0, []))
@@ -1075,7 +1083,7 @@ let rec close ({ backend; fenv; cenv } as env) lam =
       let dbg = Debuginfo.from_location loc in
       simplif_prim ~backend !Clflags.float_const_prop
                    p (close_list_approx env args) dbg
-  | Lswitch(arg, sw, dbg) ->
+  | Lswitch(arg, sw, loc) ->
       let fn fail =
         let (uarg, _) = close env arg in
         let const_index, const_actions, fconst =
@@ -1089,14 +1097,15 @@ let rec close ({ backend; fenv; cenv } as env) lam =
               us_actions_consts = const_actions;
               us_index_blocks = block_index;
               us_actions_blocks = block_actions},
-             Debuginfo.from_location dbg)
+             Debuginfo.from_location loc)
         in
         (fconst (fblock ulam),Value_unknown) in
 (* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let fail = sw.sw_failaction in
       begin match fail with
-      | None|Some (Lstaticraise (_,_)) -> fn fail
-      | Some lamfail ->
+      | None -> fn None
+      | Some { expr = (Lstaticraise (_,_) as expr); } -> fn (Some expr)
+      | Some { expr = lamfail; } ->
           if
             (sw.sw_numconsts - List.length sw.sw_consts) +
             (sw.sw_numblocks - List.length sw.sw_blocks) > 1
@@ -1105,55 +1114,56 @@ let rec close ({ backend; fenv; cenv } as env) lam =
             let ubody,_ = fn (Some (Lstaticraise (i,[])))
             and uhandler,_ = close env lamfail in
             Ucatch (i,[],ubody,uhandler),Value_unknown
-          else fn fail
+          else
+            fn (Some lamfail)
       end
   | Lstringswitch(arg,sw,d,_) ->
       let uarg,_ = close env arg in
       let usw =
         List.map
           (fun (s,act) ->
-            let uact,_ = close env act in
+            let uact,_ = close env act.expr in
             s,uact)
           sw in
       let ud =
-        Misc.may_map
+        Option.map
           (fun d ->
-            let ud,_ = close env d in
+            let ud,_ = close env d.expr in
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list env args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close env body in
-      let (uhandler, _) = close env handler in
+      let (uhandler, _) = close env handler.expr in
       let vars = List.map (fun (var, k) -> VP.create var, k) vars in
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close env body in
-      let (uhandler, _) = close env handler in
+      let (uhandler, _) = close env handler.expr in
       (Utrywith(ubody, VP.create id, uhandler), Value_unknown)
-  | Lifthenelse(arg, ifso, ifnot) ->
+  | Lifthenelse(arg, ifso, ifnot, _loc) ->
       begin match close env arg with
         (uarg, Value_const (Uconst_ptr n)) ->
           sequence_constant_expr uarg
-            (close env (if n = 0 then ifnot else ifso))
+            (close env (if n = 0 then ifnot.expr else ifso.expr))
       | (uarg, _ ) ->
-          let (uifso, _) = close env ifso in
-          let (uifnot, _) = close env ifnot in
+          let (uifso, _) = close env ifso.expr in
+          let (uifnot, _) = close env ifnot.expr in
           (Uifthenelse(uarg, uifso, uifnot), Value_unknown)
       end
   | Lsequence(lam1, lam2) ->
       let (ulam1, _) = close env lam1 in
       let (ulam2, approx) = close env lam2 in
       (Usequence(ulam1, ulam2), approx)
-  | Lwhile(cond, body) ->
+  | Lwhile(cond, body, _loc) ->
       let (ucond, _) = close env cond in
-      let (ubody, _) = close env body in
+      let (ubody, _) = close env body.expr in
       (Uwhile(ucond, ubody), Value_unknown)
-  | Lfor(id, lo, hi, dir, body) ->
+  | Lfor(id, lo, hi, dir, body, _loc) ->
       let (ulo, _) = close env lo in
       let (uhi, _) = close env hi in
-      let (ubody, _) = close env body in
+      let (ubody, _) = close env body.expr in
       (Ufor(VP.create id, ulo, uhi, dir, ubody), Value_unknown)
   | Lassign(id, lam) ->
       let (ulam, _) = close env lam in
@@ -1206,7 +1216,9 @@ and close_functions { backend; fenv; cenv } fun_defs =
     !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
-    V.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+    V.Set.elements (free_variables (
+      Lletrec(fun_defs, lambda_unit Location.none)))
+  in
   (* Build the function descriptors for the functions.
      Initially all functions are assumed not to need their environment
      parameter. *)
@@ -1352,8 +1364,8 @@ and close_switch env cases num_keys default =
   end ;
   (* Then all other cases *)
   List.iter
-    (fun (key,lam) ->
-     index.(key) <- store.act_store () lam)
+    (fun (key,act) ->
+     index.(key) <- store.act_store () act.expr)
     cases ;
 
   (*  Explicit sharing with catch/exit, as switcher compilation may

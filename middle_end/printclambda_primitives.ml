@@ -101,7 +101,9 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pduprecord (rep, size) ->
       fprintf ppf "duprecord %a %i" Printlambda.record_rep rep size
   | Pccall p -> fprintf ppf "%s" p.Primitive.prim_name
-  | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
+  | Praise (Raise_regular _) -> fprintf ppf "Raise_regular"
+  | Praise (Raise_reraise _) -> fprintf ppf "Raise_reraise"
+  | Praise Raise_notrace -> fprintf ppf "Raise_notrace"
   | Psequand -> fprintf ppf "&&"
   | Psequor -> fprintf ppf "||"
   | Pnot -> fprintf ppf "not"

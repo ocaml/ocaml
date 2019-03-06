@@ -282,8 +282,8 @@ let emit_instr = function
   | Kboolnot -> out opBOOLNOT
   | Kpushtrap lbl -> out opPUSHTRAP; out_label lbl
   | Kpoptrap -> out opPOPTRAP
-  | Kraise Raise_regular -> out opRAISE
-  | Kraise Raise_reraise -> out opRERAISE
+  | Kraise (Raise_regular _) -> out opRAISE
+  | Kraise (Raise_reraise _) -> out opRERAISE
   | Kraise Raise_notrace -> out opRAISE_NOTRACE
   | Kcheck_signals -> out opCHECK_SIGNALS
   | Kccall(name, n) ->

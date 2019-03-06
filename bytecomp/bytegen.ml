@@ -474,7 +474,7 @@ let rec comp_expr env exp sz cont =
       with Not_found ->
         fatal_error ("Bytegen.comp_expr: var " ^ Ident.unique_name id)
       end
-  | Lconst cst ->
+  | Lconst (cst, _loc) ->
       Kconst cst :: cont
   | Lapply{ap_func = func; ap_args = args} ->
       let nargs = List.length args in
@@ -500,7 +500,7 @@ let rec comp_expr env exp sz cont =
       let getmethod, args' =
         if kind = Self then (Kgetmethod, met::obj::args) else
         match met with
-          Lconst(Const_base(Const_int n)) -> (Kgetpubmet n, obj::args)
+          Lconst(Const_base(Const_int n), _loc) -> (Kgetpubmet n, obj::args)
         | _ -> (Kgetdynmet, met::obj::args)
       in
       if is_tailcall cont then
@@ -535,7 +535,8 @@ let rec comp_expr env exp sz cont =
                       decl then begin
         (* let rec of functions *)
         let fv =
-          Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
+          Ident.Set.elements (free_variables (
+            Lletrec(decl, lambda_unit Location.none))) in
         let rec_idents = List.map (fun (id, _lam) -> id) decl in
         let rec comp_fun pos = function
             [] -> []
@@ -646,10 +647,10 @@ let rec comp_expr env exp sz cont =
       end
   | Lprim(Praise k, [arg], _) ->
       comp_expr env arg sz (Kraise k :: discard_dead_code cont)
-  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n), _loc)], _)
     when is_immed n ->
       comp_expr env arg sz (Koffsetint n :: cont)
-  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n), _loc)], _)
     when is_immed (-n) ->
       comp_expr env arg sz (Koffsetint (-n) :: cont)
   | Lprim (Poffsetint n, [arg], _)
@@ -704,7 +705,7 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz cont
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
-  | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, (i, vars), handler) ->
       let vars = List.map fst vars in
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
@@ -714,7 +715,7 @@ let rec comp_expr env exp sz cont =
             label_code
               (comp_expr
                 (add_vars vars (sz+1) env)
-                handler (sz+nvars) (add_pop nvars cont1)) in
+                handler.expr (sz+nvars) (add_pop nvars cont1)) in
           push_static_raise i lbl_handler (sz+nvars);
           push_dummies nvars
             (comp_expr env body (sz+nvars)
@@ -725,7 +726,7 @@ let rec comp_expr env exp sz cont =
             label_code
               (Kpush::comp_expr
                 (add_var var (sz+1) env)
-                handler (sz+1) (add_pop 1 cont1)) in
+                handler.expr (sz+1) (add_pop 1 cont1)) in
           push_static_raise i lbl_handler sz;
           comp_expr env body sz (branch1 :: cont2)
         end in
@@ -753,24 +754,24 @@ let rec comp_expr env exp sz cont =
       let body_cont =
         Kpoptrap :: branch1 ::
         Klabel lbl_handler :: Kpush ::
-        comp_expr (add_var id (sz+1) env) handler (sz+1) (add_pop 1 cont1)
+        comp_expr (add_var id (sz+1) env) handler.expr (sz+1) (add_pop 1 cont1)
       in
       try_blocks := sz :: !try_blocks;
       let l = comp_expr env body (sz+4) body_cont in
       try_blocks := List.tl !try_blocks;
       Kpushtrap lbl_handler :: l
-  | Lifthenelse(cond, ifso, ifnot) ->
-      comp_binary_test env cond ifso ifnot sz cont
+  | Lifthenelse(cond, ifso, ifnot, _loc) ->
+      comp_binary_test env cond ifso.expr ifnot.expr sz cont
   | Lsequence(exp1, exp2) ->
       comp_expr env exp1 sz (comp_expr env exp2 sz cont)
-  | Lwhile(cond, body) ->
+  | Lwhile(cond, body, _loc) ->
       let lbl_loop = new_label() in
       let lbl_test = new_label() in
       Kbranch lbl_test :: Klabel lbl_loop :: Kcheck_signals ::
-        comp_expr env body sz
+        comp_expr env body.expr sz
           (Klabel lbl_test ::
             comp_expr env cond sz (Kbranchif lbl_loop :: add_const_unit cont))
-  | Lfor(param, start, stop, dir, body) ->
+  | Lfor(param, start, stop, dir, body, _loc) ->
       let lbl_loop = new_label() in
       let lbl_exit = new_label() in
       let offset = match dir with Upto -> 1 | Downto -> -1 in
@@ -779,7 +780,7 @@ let rec comp_expr env exp sz cont =
         (Kpush :: comp_expr env stop (sz+1)
           (Kpush :: Kpush :: Kacc 2 :: Kintcomp comp :: Kbranchif lbl_exit ::
            Klabel lbl_loop :: Kcheck_signals ::
-           comp_expr (add_var param (sz+1) env) body (sz+2)
+           comp_expr (add_var param (sz+1) env) body.expr (sz+2)
              (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
               Kacc 1 :: Kintcomp Cne :: Kbranchif lbl_loop ::
               Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
@@ -792,13 +793,15 @@ let rec comp_expr env exp sz cont =
       let act_consts = Array.make sw.sw_numconsts 0
       and act_blocks = Array.make sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)
-      | Some fail -> ignore (store.act_store () fail)
-      | None      -> ()
+      | Some fail -> ignore (store.act_store () fail.expr)
+      | None -> ()
       end ;
-      List.iter
-        (fun (n, act) -> act_consts.(n) <- store.act_store () act) sw.sw_consts;
-      List.iter
-        (fun (n, act) -> act_blocks.(n) <- store.act_store () act) sw.sw_blocks;
+      List.iter (fun (n, act) ->
+          act_consts.(n) <- store.act_store () act.expr)
+        sw.sw_consts;
+      List.iter (fun (n, act) ->
+          act_blocks.(n) <- store.act_store () act.expr)
+        sw.sw_blocks;
 (* Compile and label actions *)
       let acts = store.act_get () in
 (*
@@ -829,8 +832,8 @@ let rec comp_expr env exp sz cont =
         lbl_consts.(i) <- lbls.(act_consts.(i))
       done;
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
-  | Lstringswitch (arg,sw,d,loc) ->
-      comp_expr env (Matching.expand_stringswitch loc arg sw d) sz cont
+  | Lstringswitch (arg,sw,default,_loc) ->
+      comp_expr env (Matching.expand_stringswitch arg sw ~default) sz cont
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
@@ -920,24 +923,25 @@ and comp_expr_list_assign env exprl sz pos cont = match exprl with
 
 and comp_binary_test env cond ifso ifnot sz cont =
   let cont_cond =
-    if ifnot = Lconst const_unit then begin
+    match ifnot with
+    | Lconst (Const_pointer 0, _loc) ->
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
-    end else
-    match code_as_jump ifso sz with
-    | Some label ->
-      let cont = comp_expr env ifnot sz cont in
-      Kbranchif label :: cont
     | _ ->
-        match code_as_jump ifnot sz with
-        | Some label ->
-            let cont = comp_expr env ifso sz cont in
-            Kbranchifnot label :: cont
-        | _ ->
-            let (branch_end, cont1) = make_branch cont in
-            let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
-            Kbranchifnot lbl_not ::
-            comp_expr env ifso sz (branch_end :: cont2) in
+      match code_as_jump ifso sz with
+      | Some label ->
+        let cont = comp_expr env ifnot sz cont in
+        Kbranchif label :: cont
+      | _ ->
+          match code_as_jump ifnot sz with
+          | Some label ->
+              let cont = comp_expr env ifso sz cont in
+              Kbranchifnot label :: cont
+          | _ ->
+              let (branch_end, cont1) = make_branch cont in
+              let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
+              Kbranchifnot lbl_not ::
+              comp_expr env ifso sz (branch_end :: cont2) in
 
   comp_expr env cond sz cont_cond
 

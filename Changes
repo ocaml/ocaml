@@ -176,6 +176,12 @@ OCaml 4.09.0
   [Lprologue] relative to [Iname_for_debugger] operations.
   (Mark Shinwell, review by Vincent Laviron)
 
+- #2294: Add more locations to [Lambda] code; produce accurate location
+  information in the pattern matching and switch compilers.  Reflect
+  "block" structure of [Lambda.lambda] in [Cmm.expression].
+  (Mark Shinwell, review by Thomas Refis, Alain Frisch, Gabriel Scherer
+  and Leo White)
+
 - #2308: More debugging information on [Cmm] terms
   (Mark Shinwell, review by Stephen Dolan)
 

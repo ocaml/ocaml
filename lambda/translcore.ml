@@ -61,8 +61,9 @@ let transl_extension_constructor env path ext =
   match ext.ext_kind with
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
-        [Lconst (Const_base (Const_string (name, None)));
-         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
+        [Lconst (Const_base (Const_string (name, None)), loc);
+         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0), loc)],
+           loc)],
         loc)
   | Text_rebind(path, _lid) ->
       transl_extension_path loc env path
@@ -72,7 +73,7 @@ let transl_extension_constructor env path ext =
 exception Not_constant
 
 let extract_constant = function
-    Lconst sc -> sc
+    Lconst (sc, _loc) -> sc
   | _ -> raise Not_constant
 
 let extract_float = function
@@ -126,7 +127,7 @@ let rec push_defaults loc bindings cases partial =
       let param = Typecore.name_cases "param" cases in
       let desc =
         {val_type = pat.pat_type; val_kind = Val_reg;
-         val_attributes = []; Types.val_loc = Location.none; }
+         val_attributes = []; Types.val_loc = loc; }
       in
       let env = Env.add_value param desc exp.exp_env in
       let name = Ident.name param in
@@ -173,13 +174,14 @@ let assert_failed exp =
   let (fname, line, char) =
     Location.get_pos_info exp.exp_loc.Location.loc_start
   in
-  Lprim(Praise Raise_regular, [event_after exp
+  Lprim(Praise (Raise_regular None), [event_after exp
     (Lprim(Pmakeblock(0, Immutable, None),
           [slot;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))], exp.exp_loc))], exp.exp_loc)
+               Const_base(Const_int char)]), exp.exp_loc)], exp.exp_loc))],
+          exp.exp_loc)
 ;;
 
 let rec cut n l =
@@ -223,7 +225,7 @@ and transl_exp0 e =
   | Texp_ident(path, _, desc) ->
       transl_ident e.exp_loc e.exp_env e.exp_type path desc
   | Texp_constant cst ->
-      Lconst(Const_base cst)
+      Lconst(Const_base cst, e.exp_loc)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
@@ -288,12 +290,14 @@ and transl_exp0 e =
       transl_match e arg pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = Typecore.name_cases "exn" pat_expr_list in
-      Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
+      let handler =
+        Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list)
+      in
+      Ltrywith(transl_exp body, id, handler)
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape el in
       begin try
-        Lconst(Const_block(0, List.map extract_constant ll))
+        Lconst(Const_block(0, List.map extract_constant ll), e.exp_loc)
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable, Some shape), ll, e.exp_loc)
       end
@@ -304,12 +308,12 @@ and transl_exp0 e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(Const_pointer n, e.exp_loc)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
+            Lconst(Const_block(n, List.map extract_constant ll), e.exp_loc)
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable, Some shape), ll, e.exp_loc)
           end
@@ -325,15 +329,16 @@ and transl_exp0 e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(Const_pointer tag, e.exp_loc)
       | Some arg ->
           let lam = transl_exp arg in
           try
             Lconst(Const_block(0, [Const_base(Const_int tag);
-                                   extract_constant lam]))
+                                   extract_constant lam]), e.exp_loc)
           with Not_constant ->
             Lprim(Pmakeblock(0, Immutable, None),
-                  [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
+                  [Lconst(Const_base(Const_int tag), e.exp_loc); lam],
+                  e.exp_loc)
       end
   | Texp_record {fields; representation; extended_expression} ->
       transl_record e.exp_loc e.exp_env fields representation
@@ -394,9 +399,10 @@ and transl_exp0 e =
             let imm_array =
               match kind with
               | Paddrarray | Pintarray ->
-                  Lconst(Const_block(0, cl))
+                  Lconst(Const_block(0, cl), e.exp_loc)
               | Pfloatarray ->
-                  Lconst(Const_float_array(List.map extract_float cl))
+                  Lconst(Const_float_array(List.map extract_float cl),
+                    e.exp_loc)
               | Pgenarray ->
                   raise Not_constant    (* can this really happen? *)
             in
@@ -406,20 +412,25 @@ and transl_exp0 e =
         Lprim(Pmakearray (kind, Mutable), ll, e.exp_loc)
       end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
-      Lifthenelse(transl_exp cond,
-                  event_before ifso (transl_exp ifso),
-                  event_before ifnot (transl_exp ifnot))
+      let ifso = Lambda.block ifso.exp_loc (transl_exp ifso) in
+      let ifnot = Lambda.block ifnot.exp_loc (transl_exp ifnot) in
+      Lifthenelse(transl_exp cond, ifso, ifnot, e.exp_loc)
   | Texp_ifthenelse(cond, ifso, None) ->
-      Lifthenelse(transl_exp cond,
-                  event_before ifso (transl_exp ifso),
-                  lambda_unit)
+      let ifso = Lambda.block ifso.exp_loc (transl_exp ifso) in
+      let ifnot = Lambda.block e.exp_loc (lambda_unit e.exp_loc) in
+      Lifthenelse(transl_exp cond, ifso, ifnot, e.exp_loc)
   | Texp_sequence(expr1, expr2) ->
       Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
-      Lwhile(transl_exp cond, event_before body (transl_exp body))
+      let body =
+        Lambda.block body.exp_loc (event_before body (transl_exp body))
+      in
+      Lwhile(transl_exp cond, body, e.exp_loc)
   | Texp_for(param, _, low, high, dir, body) ->
-      Lfor(param, transl_exp low, transl_exp high, dir,
-           event_before body (transl_exp body))
+      let body =
+        Lambda.block body.exp_loc (event_before body (transl_exp body))
+      in
+      Lfor(param, transl_exp low, transl_exp high, dir, body, e.exp_loc)
   | Texp_send(_, _, Some exp) -> transl_exp exp
   | Texp_send(expr, met, None) ->
       let obj = transl_exp expr in
@@ -437,7 +448,7 @@ and transl_exp0 e =
              ap_loc=loc;
              ap_func=
                Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
-             ap_args=[lambda_unit];
+             ap_args=[lambda_unit loc];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
   | Texp_instvar(path_self, path, _) ->
@@ -453,7 +464,7 @@ and transl_exp0 e =
       let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
            Lapply{ap_should_be_tailcall=false;
-                  ap_loc=Location.none;
+                  ap_loc=e.exp_loc;
                   ap_func=Translobj.oo_prim "copy";
                   ap_args=[self];
                   ap_inlined=Default_inline;
@@ -461,7 +472,7 @@ and transl_exp0 e =
            List.fold_right
              (fun (path, _, expr) rem ->
                let var = transl_value_path e.exp_loc e.exp_env path in
-                Lsequence(transl_setinstvar Location.none
+                Lsequence(transl_setinstvar e.exp_loc
                             (Lvar cpy) var expr, rem))
              modifs
              (Lvar cpy))
@@ -487,8 +498,11 @@ and transl_exp0 e =
       assert_failed e
   | Texp_assert (cond) ->
       if !Clflags.noassert
-      then lambda_unit
-      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e)
+      then lambda_unit e.exp_loc
+      else
+        let ifso = Lambda.block e.exp_loc (lambda_unit e.exp_loc) in
+        let ifnot = Lambda.block e.exp_loc (assert_failed e) in
+        Lifthenelse (transl_exp cond, ifso, ifnot, e.exp_loc)
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
@@ -579,15 +593,18 @@ and transl_list_with_shape expr_list =
   in
   List.split (List.map transl_with_shape expr_list)
 
-and transl_guard guard rhs =
+and transl_guard loc guard rhs rhs_loc =
   let expr = event_before rhs (transl_exp rhs) in
   match guard with
   | None -> expr
   | Some cond ->
-      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
+      let ifso = Lambda.block rhs_loc expr in
+      let ifnot = Lambda.block loc staticfail in
+      event_before cond (Lifthenelse (transl_exp cond, ifso, ifnot, loc))
 
 and transl_case {c_lhs; c_guard; c_rhs} =
-  c_lhs, transl_guard c_guard c_rhs
+  let case = transl_guard c_lhs.pat_loc c_guard c_rhs c_rhs.exp_loc in
+  c_lhs, Lambda.block c_rhs.exp_loc case
 
 and transl_cases cases =
   let cases =
@@ -597,7 +614,12 @@ and transl_cases cases =
 and transl_case_try {c_lhs; c_guard; c_rhs} =
   iter_exn_names Translprim.add_exception_ident c_lhs;
   Misc.try_finally
-    (fun () -> c_lhs, transl_guard c_guard c_rhs)
+    (fun () ->
+      let case =
+        Lambda.block c_rhs.exp_loc
+          (transl_guard c_lhs.pat_loc c_guard c_rhs c_rhs.exp_loc)
+      in
+      c_lhs, case)
     ~always:(fun () ->
         iter_exn_names Translprim.remove_exception_ident c_lhs)
 
@@ -606,12 +628,20 @@ and transl_cases_try cases =
     List.filter (fun c -> c.c_rhs.exp_desc <> Texp_unreachable) cases in
   List.map transl_case_try cases
 
-and transl_tupled_cases patl_expr_list =
-  let patl_expr_list =
-    List.filter (fun (_,_,e) -> e.exp_desc <> Texp_unreachable)
-      patl_expr_list in
-  List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
-    patl_expr_list
+and transl_tupled_cases pats_act_list =
+  let pats_act_list =
+    List.filter (fun (_, _, e, _act_loc) -> e.exp_desc <> Texp_unreachable)
+      pats_act_list
+  in
+  List.map (fun (patl, guard, act, act_loc) ->
+      let loc =
+        match patl with
+        | pat::_ -> pat.pat_loc
+        | [] -> act_loc
+      in
+      let guard = transl_guard loc guard act act_loc in
+      patl, Lambda.block act_loc guard)
+    pats_act_list
 
 and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
       ?(specialised = Default_specialise) lam sargs loc =
@@ -694,6 +724,7 @@ and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
       let ((_, params, return), body) =
         transl_function exp.exp_loc return_kind false repr partial' param' cases
       in
+      let body = Lambda.block exp.exp_loc body in
       ((Curried, (param, kind) :: params, return),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
@@ -702,19 +733,20 @@ and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
         let pats_expr_list =
           List.map
             (fun {c_lhs; c_guard; c_rhs} ->
-              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
+              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs,
+                c_rhs.exp_loc))
             cases in
         let kinds =
           (* All the patterns might not share the same types. We must take the
              union of the patterns types *)
           match pats_expr_list with
           | [] -> assert false
-          | (pats, _, _) :: cases ->
+          | (pats, _, _, _) :: cases ->
               let first_case_kinds =
                 List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
               in
               List.fold_left
-                (fun kinds (pats, _, _) ->
+                (fun kinds (pats, _, _, _) ->
                    List.map2 (fun kind pat ->
                        value_kind_union kind
                          (value_kind pat.pat_env pat.pat_type))
@@ -767,7 +799,8 @@ and transl_let rec_flag pat_expr_list =
           let lam = transl_exp expr in
           let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
-          fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
+          fun body ->
+            Matching.for_let pat.pat_loc lam pat (mk_body body) expr.exp_loc
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -828,11 +861,12 @@ and transl_record loc env fields repres opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
-        | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
+        | Record_regular -> Lconst(Const_block(0, cl), loc)
+        | Record_inlined tag -> Lconst(Const_block(tag, cl), loc)
+        | Record_unboxed _ ->
+            Lconst((match cl with [v] -> v | _ -> assert false), loc)
         | Record_float ->
-            Lconst(Const_float_array(List.map extract_float cl))
+            Lconst(Const_float_array(List.map extract_float cl), loc)
         | Record_extension _ ->
             raise Not_constant
       with Not_constant ->
@@ -916,13 +950,16 @@ and transl_match e arg pat_expr_list partial =
         (* Also register the names of the exception so Re-raise happens. *)
         iter_exn_names Translprim.add_exception_ident pe;
         let rhs =
-          Misc.try_finally
-            (fun () -> event_before c_rhs (transl_exp c_rhs))
-            ~always:(fun () ->
-                iter_exn_names Translprim.remove_exception_ident pe)
+          Lambda.block c_rhs.exp_loc
+            (Misc.try_finally
+              (fun () -> event_before c_rhs (transl_exp c_rhs))
+              ~always:(fun () ->
+                  iter_exn_names Translprim.remove_exception_ident pe))
         in
-        (pv, static_raise vids) :: val_cases,
-        (pe, static_raise ids) :: exn_cases,
+        let val_case = Lambda.block pv.pat_loc (static_raise vids) in
+        let exn_case = Lambda.block pe.pat_loc (static_raise ids) in
+        (pv, val_case) :: val_cases,
+        (pe, exn_case) :: exn_cases,
         (lbl, ids_kinds, rhs) :: static_handlers
   in
   let val_cases, exn_cases, static_handlers =
@@ -930,7 +967,9 @@ and transl_match e arg pat_expr_list partial =
     List.rev x, List.rev y, List.rev z
   in
   let static_catch body val_ids handler =
-    let id = Typecore.name_pattern "exn" (List.map fst exn_cases) in
+    let id =
+      Typecore.name_pattern "exn" (List.map (fun (pat, _) -> pat) exn_cases)
+    in
     let static_exception_id = next_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
@@ -938,11 +977,15 @@ and transl_match e arg pat_expr_list partial =
        (static_exception_id, val_ids),
        handler)
   in
-  let classic =
+  let classic : Lambda.lambda =
     match arg, exn_cases with
     | {exp_desc = Texp_tuple argl}, [] ->
-      assert (static_handlers = []);
-      Matching.for_multiple_match e.exp_loc (transl_list argl) val_cases partial
+        assert (static_handlers = []);
+        let matching =
+          Matching.for_multiple_match e.exp_loc (transl_list argl) val_cases
+            partial
+        in
+        matching.expr
     | {exp_desc = Texp_tuple argl}, _ :: _ ->
         let val_ids =
           List.map
@@ -956,17 +999,20 @@ and transl_match e arg pat_expr_list partial =
         static_catch (transl_list argl) val_ids
           (Matching.for_multiple_match e.exp_loc lvars val_cases partial)
     | arg, [] ->
-      assert (static_handlers = []);
-      Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
+        assert (static_handlers = []);
+        Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
     | arg, _ :: _ ->
         let val_id = Typecore.name_cases "val" pat_expr_list in
         let k = Typeopt.value_kind arg.exp_env arg.exp_type in
+        let handler =
+          Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial
+        in
         static_catch [transl_exp arg] [val_id, k]
-          (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)
+          (Lambda.block e.exp_loc handler)
   in
   List.fold_left (fun body (static_exception_id, val_ids, handler) ->
-    Lstaticcatch (body, (static_exception_id, val_ids), handler)
-  ) classic static_handlers
+      Lstaticcatch (body, (static_exception_id, val_ids), handler))
+    classic static_handlers
 
 and transl_letop loc env let_ ands param case partial =
   let rec loop prev_lam = function

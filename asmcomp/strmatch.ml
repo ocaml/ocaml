@@ -24,8 +24,8 @@ module VP = Backend_var.With_provenance
 module type I = sig
   val string_block_length : Cmm.expression -> Cmm.expression
   val transl_switch :
-      Location.t -> Cmm.expression -> int -> int ->
-        (int * Cmm.expression) list -> Cmm.expression ->
+      Debuginfo.t -> Cmm.expression -> int -> int ->
+        (int * Cmm.block) list -> default:Cmm.block ->
           Cmm.expression
 end
 
@@ -33,7 +33,7 @@ module Make(I:I) = struct
 
 (* Debug *)
 
-  let dbg = false
+  let debug_this_module = false
 
   let mask =
     let open Nativeint in
@@ -65,16 +65,15 @@ module Make(I:I) = struct
   let pp_match chan tag idxs cases =
     Printf.eprintf
       "%s: idx=[%s]\n" tag
-      (String.concat "; " (List.map Int.to_string idxs)) ;
+      (String.concat "; " (List.map string_of_int idxs)) ;
     do_pp_cases chan cases
 
 (* Utilities *)
 
-  let gen_cell_id () = V.create_local "cell"
-  let gen_size_id () = V.create_local "size"
+  let gen_cell_id () = V.create_local "*cell*"
+  let gen_size_id () = V.create_local "*size*"
 
-  let mk_let_cell id str ind body =
-    let dbg = Debuginfo.none in
+  let mk_let_cell dbg id str ind body =
     let cell =
       Cop(Cload (Word_int, Asttypes.Mutable),
         [Cop(Cadda,[str;Cconst_int(Arch.size_int*ind, dbg)], dbg)],
@@ -85,12 +84,13 @@ module Make(I:I) = struct
     let size = I.string_block_length str in
     Clet(id, size, body)
 
-  let mk_cmp_gen cmp_op id nat ifso ifnot =
-    let dbg = Debuginfo.none in
+  let mk_cmp_gen cmp_op dbg id nat ifso ifnot =
     let test =
       Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer (nat, dbg) ], dbg)
     in
-    Cifthenelse (test, dbg, ifso, dbg, ifnot, dbg)
+    let ifso = Cmm.block dbg ifso in
+    let ifnot = Cmm.block dbg ifnot in
+    Cifthenelse (test, ifso, ifnot, dbg)
 
   let mk_lt = mk_cmp_gen Clt
   let mk_eq = mk_cmp_gen Ceq
@@ -214,7 +214,7 @@ module Make(I:I) = struct
         List.map
           (fun (ps,act) -> swap_list k ps,act)
           cases in
-      if dbg then begin
+      if debug_this_module then begin
         pp_match stderr "SWAP" idxs cases
       end ;
       idxs,cases
@@ -282,21 +282,32 @@ module Make(I:I) = struct
   as match_on_cell can be called in two different contexts :
   from do_compile_pats and top_compile below.
  *)
-    let match_oncell compile_rec str default idx env =
+    let match_oncell compile_rec str default idx env : Cmm.block =
       let id = gen_cell_id () in
+      let dbg =
+        match env with
+        | (_key, (_, act) :: _)::_ -> act.block_dbg
+        | _ -> Debuginfo.none
+      in
       let rec comp_rec env =
         let len = List.length env in
         if len <= 3 then
           List.fold_right
             (fun (key,cases) ifnot ->
-              mk_eq id key
+              let dbg =
+                match cases with
+                | (_, act)::_ -> act.block_dbg
+                | _ -> Debuginfo.none
+              in
+              mk_eq dbg id key
                 (compile_rec str default cases)
               ifnot)
-            env default
+            env default.expr
         else
           let lt,midkey,ge = split_env len env in
-          mk_lt id midkey (comp_rec lt) (comp_rec ge) in
-      mk_let_cell (VP.create id) str idx (comp_rec env)
+          mk_lt dbg id midkey (comp_rec lt) (comp_rec ge)
+      in
+      Cmm.block dbg (mk_let_cell dbg (VP.create id) str idx (comp_rec env))
 
 (*
   Recursive 'list of cells' compile function:
@@ -304,15 +315,16 @@ module Make(I:I) = struct
   - notice: patterns (and idx) all have the same length
  *)
 
-    let rec do_compile_pats idxs str default cases =
-      if dbg then begin
+    let rec do_compile_pats idxs str (default : Cmm.block)
+          (cases : (Nativeint.t list * Cmm.block) list) : Cmm.block =
+      if debug_this_module then begin
         pp_match stderr "COMPILE" idxs cases
       end ;
       match idxs with
       | [] ->
           begin match cases with
           | [] -> default
-          | (_,e)::_ -> e
+          | (_, act)::_ -> act
           end
       | _::_ ->
           let idxs,cases = best_first idxs cases in
@@ -320,7 +332,9 @@ module Make(I:I) = struct
           | [] -> assert false
           | idx::idxs ->
               match_oncell
-                (do_compile_pats idxs) str default idx (by_cell cases)
+                (fun str default cases ->
+                  (do_compile_pats idxs str default cases).expr)
+                str default idx (by_cell cases)
           end
 
 
@@ -329,7 +343,8 @@ module Make(I:I) = struct
     module DivideInt = Divide(IntArg)
 
 
-    let by_size cases =
+    let by_size
+          (cases : (Nativeint.t list * Cmm.block) list) =
       DivideInt.divide
         (List.map
            (fun (ps,_ as case) -> List.length ps,case)
@@ -341,20 +356,23 @@ module Make(I:I) = struct
   In that latter case pattern len is string length-1 and is corrected.
  *)
 
-    let compile_by_size dbg from_ind str default cases =
+    let compile_by_size dbg from_ind str ~(default : Cmm.block)
+          (cases : (Nativeint.t list * Cmm.block) list) =
       let size_cases =
         List.map
           (fun (len,cases) ->
             let len = len+from_ind in
-            let act =
+            let act : Cmm.block =
               do_compile_pats
                 (interval from_ind len)
-                str default  cases in
-            (len,act))
+                str default cases
+            in
+            len, act)
           (by_size cases) in
       let id = gen_size_id () in
-      let loc = Debuginfo.to_location dbg in
-      let switch = I.transl_switch loc (Cvar id) 1 max_int size_cases default in
+      let switch =
+        I.transl_switch dbg (Cvar id) 1 max_int size_cases ~default
+      in
       mk_let_size (VP.create id) str switch
 
 (*
@@ -362,17 +380,18 @@ module Make(I:I) = struct
   either on size or on first cell, using the
   'least discriminant' heuristics.
  *)
-    let top_compile debuginfo str default cases =
+    let top_compile debuginfo str ~default
+          (cases : (Nativeint.t list * Cmm.block) list) =
       let a_len = count_arities_length cases
       and a_fst = count_arities_first cases in
       if a_len <= a_fst then begin
-        if dbg then pp_cases stderr "SIZE" cases ;
-        compile_by_size debuginfo 0 str default cases
+        if debug_this_module then pp_cases stderr "SIZE" cases ;
+        compile_by_size debuginfo 0 str ~default cases
       end else begin
-        if dbg then pp_cases stderr "FIRST COL" cases ;
+        if debug_this_module then pp_cases stderr "FIRST COL" cases ;
         let compile_size_rest str default cases =
-          compile_by_size debuginfo 1 str default cases in
-        match_oncell compile_size_rest str default 0 (by_cell cases)
+          compile_by_size debuginfo 1 str ~default cases in
+        (match_oncell compile_size_rest str default 0 (by_cell cases)).expr
       end
 
 (* Module entry point *)
@@ -383,16 +402,18 @@ module Make(I:I) = struct
         let e =  next_raise_count () in
         ccatch (e,[],k (Cexit (e,[])),arg,dbg)
 
-    let compile dbg str default cases =
+    let compile dbg str default cases : Cmm.expression =
 (* We do not attempt to really optimise default=None *)
       let cases,default = match cases,default with
       | (_,e)::cases,None
-      | cases,Some e -> cases,e
+      | cases,Some e -> cases, e.expr
       | [],None -> assert false in
       let cases =
         List.rev_map
-          (fun (s,act) -> pat_of_string s,act)
+          (fun (s,act) -> pat_of_string s, act)
           cases in
-      catch dbg default (fun default -> top_compile dbg str default cases)
+      catch dbg default (fun default ->
+        let default = Cmm.block dbg default in
+        top_compile dbg str ~default cases)
 
   end

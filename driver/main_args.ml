@@ -670,6 +670,11 @@ let mk_drawlambda f =
   "-drawlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_drawlambda_loc f =
+  "-drawlambda-loc", Arg.Unit f,
+    " As per `-drawlambda' except also prints locations"
+;;
+
 let mk_dno_unique_ids f =
   "-dno-unique-ids", Arg.Unit f, " (undocumented)"
 ;;
@@ -684,6 +689,10 @@ let mk_dsource f =
 
 let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dlambda_loc f =
+  "-dlambda-loc", Arg.Unit f, " As per `-dlambda' except also prints locations"
 ;;
 
 let mk_drawclambda f =
@@ -891,7 +900,9 @@ module type Common_options = sig
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
+  val _drawlambda_loc : unit -> unit
   val _dlambda : unit -> unit
+  val _dlambda_loc : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -1177,7 +1188,9 @@ struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_drawlambda_loc F._drawlambda_loc;
     mk_dlambda F._dlambda;
+    mk_dlambda_loc F._dlambda_loc;
     mk_dinstr F._dinstr;
     mk_dcamlprimc F._dcamlprimc;
     mk_dtimings F._dtimings;
@@ -1242,7 +1255,9 @@ struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_drawlambda_loc F._drawlambda_loc;
     mk_dlambda F._dlambda;
+    mk_dlambda_loc F._dlambda_loc;
     mk_dinstr F._dinstr;
 
     mk_args F._args;
@@ -1366,7 +1381,9 @@ struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_drawlambda_loc F._drawlambda_loc;
     mk_dlambda F._dlambda;
+    mk_dlambda_loc F._dlambda_loc;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;
@@ -1475,6 +1492,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
+    mk_drawlambda_loc F._drawlambda_loc;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
     mk_drawflambda F._drawflambda;

@@ -147,9 +147,9 @@ and bigarray_layout = Lambda.bigarray_layout =
   | Pbigarray_c_layout
   | Pbigarray_fortran_layout
 
-and raise_kind = Lambda.raise_kind =
-  | Raise_regular
-  | Raise_reraise
+and raise_kind =
+  | Raise_regular of Debuginfo.t option
+  | Raise_reraise of Debuginfo.t option
   | Raise_notrace
 
 let equal (x: primitive) (y: primitive) = x = y

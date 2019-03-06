@@ -624,9 +624,9 @@ let emit_instr i =
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Cmm.Raise_withtrace dbg ->
           emit_call "caml_raise_exn";
-          `{record_frame Reg.Set.empty true i.dbg}\n`
+          `{record_frame Reg.Set.empty true dbg}\n`
         | Cmm.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;

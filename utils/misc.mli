@@ -380,6 +380,7 @@ module Color : sig
     error: style list;
     warning: style list;
     loc: style list;
+    debug_loc: style list;
   }
 
   val default_styles: styles

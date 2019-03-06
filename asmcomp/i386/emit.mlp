@@ -861,9 +861,9 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Cmm.Raise_withtrace dbg ->
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
+          record_frame Reg.Set.empty true dbg
       | Cmm.Raise_notrace ->
           I.mov (sym32 "caml_exception_pointer") esp;
           I.pop (sym32 "caml_exception_pointer");

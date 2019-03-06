@@ -37,7 +37,11 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
       Psetfloatfield (field, init_or_assign)
   | Pduprecord (repr, size) -> Pduprecord (repr, size)
   | Pccall prim -> Pccall prim
-  | Praise kind -> Praise kind
+  | Praise (Raise_regular loc) ->
+      Praise (Raise_regular (Option.map Debuginfo.from_location loc))
+  | Praise (Raise_reraise loc) ->
+      Praise (Raise_reraise (Option.map Debuginfo.from_location loc))
+  | Praise Raise_notrace -> Praise Raise_notrace
   | Psequand -> Psequand
   | Psequor -> Psequor
   | Pnot -> Pnot

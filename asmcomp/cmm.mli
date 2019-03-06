@@ -88,7 +88,13 @@ type label = int
 val new_label: unit -> label
 
 type raise_kind =
-  | Raise_withtrace
+  | Raise_withtrace of Debuginfo.t
+    (** The frame descriptor, which is read by the backtrace code, associated
+        with a [Raise_withtrace] has location information taken from the
+        specified [Debuginfo.t]---not from the Linearize instruction's
+        debug info field.  This in particular allows backtrace frames to be
+        suppressed without disturbing DWARF debugging information.  This is
+        used when compiling pattern-matches that reraise uncaught exceptions. *)
   | Raise_notrace
 
 type rec_flag = Nonrecursive | Recursive
@@ -152,10 +158,10 @@ and operation =
   | Craise of raise_kind
   | Ccheckbound
 
-(** Every basic block should have a corresponding [Debuginfo.t] for its
-    beginning. *)
+(** The criteria for placement of [Debuginfo.t] are analogous to those
+    documented in lambda.mli. *)
 and expression =
-    Cconst_int of int * Debuginfo.t
+  | Cconst_int of int * Debuginfo.t
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
   | Cconst_symbol of string * Debuginfo.t
@@ -170,18 +176,19 @@ and expression =
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
-  | Cifthenelse of expression * Debuginfo.t * expression
-      * Debuginfo.t * expression * Debuginfo.t
-  | Cswitch of expression * int array * (expression * Debuginfo.t) array
-      * Debuginfo.t
+  | Cifthenelse of expression * block * block * Debuginfo.t
+  | Cswitch of expression * int array * block array * Debuginfo.t
   | Ccatch of
       rec_flag
-        * (int * (Backend_var.With_provenance.t * machtype) list
-          * expression * Debuginfo.t) list
+        * (int * (Backend_var.With_provenance.t * machtype) list * block) list
         * expression
   | Cexit of int * expression list
-  | Ctrywith of expression * Backend_var.With_provenance.t * expression
-      * Debuginfo.t
+  | Ctrywith of expression * Backend_var.With_provenance.t * block
+
+and block = {
+  block_dbg : Debuginfo.t;
+  expr : expression;
+}
 
 type codegen_option =
   | Reduce_code_size
@@ -217,5 +224,7 @@ val ccatch :
      int * (Backend_var.With_provenance.t * machtype) list
        * expression * expression * Debuginfo.t
   -> expression
+
+val block : Debuginfo.t -> expression -> block
 
 val reset : unit -> unit

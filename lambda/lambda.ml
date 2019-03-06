@@ -176,8 +176,8 @@ and bigarray_layout =
   | Pbigarray_fortran_layout
 
 and raise_kind =
-  | Raise_regular
-  | Raise_reraise
+  | Raise_regular of Location.t option
+  | Raise_reraise of Location.t option
   | Raise_notrace
 
 let equal_boxed_integer x y =
@@ -273,26 +273,32 @@ type function_attribute = {
 
 type lambda =
     Lvar of Ident.t
-  | Lconst of structured_constant
+  | Lconst of structured_constant * Location.t
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch * Location.t
-  | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+(* switch on strings, clauses are sorted by string order,
+   strings are pairwise distinct *)
+  | Lstringswitch of lambda * (string * block) list * block option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
-  | Ltrywith of lambda * Ident.t * lambda
-  | Lifthenelse of lambda * lambda * lambda
+  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * block
+  | Ltrywith of lambda * Ident.t * block
+  | Lifthenelse of lambda * block * block * Location.t
   | Lsequence of lambda * lambda
-  | Lwhile of lambda * lambda
-  | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
+  | Lwhile of lambda * block * Location.t
+  | Lfor of Ident.t * lambda * lambda * direction_flag * block * Location.t
   | Lassign of Ident.t * lambda
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+
+and block = {
+  block_loc : Location.t;
+  expr : lambda;
+}
 
 and lfunction =
   { kind: function_kind;
@@ -312,10 +318,10 @@ and lambda_apply =
 
 and lambda_switch =
   { sw_numconsts: int;
-    sw_consts: (int * lambda) list;
+    sw_consts: (int * block) list;
     sw_numblocks: int;
-    sw_blocks: (int * lambda) list;
-    sw_failaction : lambda option}
+    sw_blocks: (int * block) list;
+    sw_failaction : block option}
 
 and lambda_event =
   { lev_loc: Location.t;
@@ -338,7 +344,7 @@ type program =
 
 let const_unit = Const_pointer 0
 
-let lambda_unit = Lconst const_unit
+let lambda_unit loc = Lconst (const_unit, loc)
 
 let default_function_attribute = {
   inline = Default_inline;
@@ -351,6 +357,11 @@ let default_function_attribute = {
 let default_stub_attribute =
   { default_function_attribute with stub = true }
 
+let block block_loc expr =
+  { block_loc;
+    expr;
+  }
+
 (* Build sharing keys *)
 (*
    Those keys are later compared with Stdlib.compare.
@@ -361,6 +372,9 @@ exception Not_simple
 
 let max_raw = 32
 
+(* This function should erase location information.  If switch branches are
+   shared then the resulting location will be chosen arbitrarily from
+   the locations of the shared branches. *)
 let make_key e =
   let count = ref 0   (* Used for controlling size *)
   and make_key = Ident.make_key_generator () in
@@ -374,7 +388,7 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)) ->
+    | Lconst  (Const_base (Const_string _), _loc) ->
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e
@@ -393,23 +407,24 @@ let make_key e =
         let y = make_key x in
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es,_) ->
-        Lprim (p,tr_recs env es, Location.none)
+        Lprim (p,tr_recs env es,Location.none)
     | Lswitch (e,sw,loc) ->
         Lswitch (tr_rec env e,tr_sw env sw,loc)
-    | Lstringswitch (e,sw,d,_) ->
+    | Lstringswitch (e,sw,d,loc) ->
         Lstringswitch
           (tr_rec env e,
-           List.map (fun (s,e) -> s,tr_rec env e) sw,
-           tr_opt env d,
-          Location.none)
+           List.map (fun (s, act) -> s, tr_block env act) sw,
+           tr_default env d,
+           loc)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
     | Lstaticcatch (e1,xs,e2) ->
-        Lstaticcatch (tr_rec env e1,xs,tr_rec env e2)
+        Lstaticcatch (tr_rec env e1,xs, tr_block env e2)
     | Ltrywith (e1,x,e2) ->
-        Ltrywith (tr_rec env e1,x,tr_rec env e2)
-    | Lifthenelse (cond,ifso,ifnot) ->
-        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot)
+        Ltrywith (tr_rec env e1,x, tr_block env e2)
+    | Lifthenelse (cond,ifso,ifnot,loc) ->
+        Lifthenelse (tr_rec env cond, tr_block env ifso, tr_block env ifnot,
+          loc)
     | Lsequence (e1,e2) ->
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
@@ -426,16 +441,23 @@ let make_key e =
 
   and tr_recs env es = List.map (tr_rec env) es
 
+  and tr_switch_arm env (key, act) =
+    key, tr_block env act
+
   and tr_sw env sw =
     { sw with
-      sw_consts = List.map (fun (i,e) -> i,tr_rec env e) sw.sw_consts ;
-      sw_blocks = List.map (fun (i,e) -> i,tr_rec env e) sw.sw_blocks ;
-      sw_failaction = tr_opt env sw.sw_failaction ; }
+      sw_consts = List.map (fun act -> tr_switch_arm env act) sw.sw_consts;
+      sw_blocks = List.map (fun act -> tr_switch_arm env act) sw.sw_blocks;
+      sw_failaction = tr_default env sw.sw_failaction;
+    }
 
-  and tr_opt env = function
-    | None -> None
-    | Some e -> Some (tr_rec env e) in
+  and tr_default env = Option.map (tr_block env)
 
+  and tr_block env { block_loc = _; expr; } =
+    { block_loc = Location.none;
+      expr = tr_rec env expr;
+    }
+  in
   try
     Some (tr_rec Ident.empty e)
   with Not_simple -> None
@@ -459,11 +481,6 @@ let name_lambda_list args fn =
       Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
-
-let iter_opt f = function
-  | None -> ()
-  | Some e -> f e
-
 let shallow_iter ~tail ~non_tail:f = function
     Lvar _
   | Lconst _ -> ()
@@ -484,29 +501,29 @@ let shallow_iter ~tail ~non_tail:f = function
       tail l2
   | Lprim(_p, args, _loc) ->
       List.iter f args
-  | Lswitch(arg, sw,_) ->
+  | Lswitch (arg, sw, _loc) ->
       f arg;
-      List.iter (fun (_key, case) -> tail case) sw.sw_consts;
-      List.iter (fun (_key, case) -> tail case) sw.sw_blocks;
-      iter_opt tail sw.sw_failaction
-  | Lstringswitch (arg,cases,default,_) ->
-      f arg ;
-      List.iter (fun (_,act) -> tail act) cases ;
-      iter_opt tail default
+      List.iter (fun (_key, act) -> tail act.expr) sw.sw_consts;
+      List.iter (fun (_key, act) -> tail act.expr) sw.sw_blocks;
+      Option.iter (fun act -> tail act.expr) sw.sw_failaction
+  | Lstringswitch (arg, cases, default, _loc) ->
+      f arg;
+      List.iter (fun (_key, act) -> tail act.expr) cases;
+      Option.iter (fun act -> tail act.expr) default
   | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, _, e2) ->
-      tail e1; tail e2
+      tail e1; tail e2.expr
   | Ltrywith(e1, _, e2) ->
-      f e1; tail e2
-  | Lifthenelse(e1, e2, e3) ->
-      f e1; tail e2; tail e3
+      f e1; tail e2.expr
+  | Lifthenelse(e1, e2, e3, _loc) ->
+      f e1; tail e2.expr; tail e3.expr
   | Lsequence(e1, e2) ->
       f e1; tail e2
-  | Lwhile(e1, e2) ->
-      f e1; f e2
-  | Lfor(_v, e1, e2, _dir, e3) ->
-      f e1; f e2; f e3
+  | Lwhile(e1, e2, _loc) ->
+      f e1; f e2.expr
+  | Lfor(_v, e1, e2, _dir, e3, _loc) ->
+      f e1; f e2; f e3.expr
   | Lassign(_, e) ->
       f e
   | Lsend (_k, met, obj, args, _) ->
@@ -536,51 +553,52 @@ let rec free_variables = function
       Ident.Set.diff set (Ident.Set.of_list (List.map fst decl))
   | Lprim(_p, args, _loc) ->
       free_variables_list Ident.Set.empty args
-  | Lswitch(arg, sw,_) ->
+  | Lswitch(arg, sw, _loc) ->
       let set =
         free_variables_list
           (free_variables_list (free_variables arg)
-             (List.map snd sw.sw_consts))
-          (List.map snd sw.sw_blocks)
+             (List.map (fun (_, const) -> const.expr) sw.sw_consts))
+          (List.map (fun (_, block) -> block.expr) sw.sw_blocks)
       in
       begin match sw.sw_failaction with
       | None -> set
-      | Some failaction -> Ident.Set.union set (free_variables failaction)
+      | Some failaction ->
+        Ident.Set.union set (free_variables failaction.expr)
       end
-  | Lstringswitch (arg,cases,default,_) ->
+  | Lstringswitch (arg, cases, default, _loc) ->
       let set =
         free_variables_list (free_variables arg)
-          (List.map snd cases)
+          (List.map (fun (_, str) -> str.expr) cases)
       in
       begin match default with
       | None -> set
-      | Some default -> Ident.Set.union set (free_variables default)
+      | Some default -> Ident.Set.union set (free_variables default.expr)
       end
   | Lstaticraise (_,args) ->
       free_variables_list Ident.Set.empty args
   | Lstaticcatch(body, (_, params), handler) ->
       Ident.Set.union
         (Ident.Set.diff
-           (free_variables handler)
+           (free_variables handler.expr)
            (Ident.Set.of_list (List.map fst params)))
         (free_variables body)
   | Ltrywith(body, param, handler) ->
       Ident.Set.union
         (Ident.Set.remove
            param
-           (free_variables handler))
+           (free_variables handler.expr))
         (free_variables body)
-  | Lifthenelse(e1, e2, e3) ->
+  | Lifthenelse(e1, e2, e3, _loc) ->
       Ident.Set.union
-        (Ident.Set.union (free_variables e1) (free_variables e2))
-        (free_variables e3)
+        (Ident.Set.union (free_variables e1) (free_variables e2.expr))
+        (free_variables e3.expr)
   | Lsequence(e1, e2) ->
       Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lwhile(e1, e2) ->
-      Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lfor(v, lo, hi, _dir, body) ->
+  | Lwhile(e1, e2, _loc) ->
+      Ident.Set.union (free_variables e1) (free_variables e2.expr)
+  | Lfor(v, lo, hi, _dir, body, _loc) ->
       let set = Ident.Set.union (free_variables lo) (free_variables hi) in
-      Ident.Set.union set (Ident.Set.remove v (free_variables body))
+      Ident.Set.union set (Ident.Set.remove v (free_variables body.expr))
   | Lassign(id, e) ->
       Ident.Set.add id (free_variables e)
   | Lsend (_k, met, obj, args, _) ->
@@ -606,21 +624,6 @@ let next_raise_count () =
 
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
-
-let rec is_guarded = function
-  | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
-  | Llet(_str, _k, _id, _lam, body) -> is_guarded body
-  | Levent(lam, _ev) -> is_guarded lam
-  | _ -> false
-
-let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
-      Lifthenelse (cond, body, patch)
-  | Llet(str, k, id, lam, body) ->
-      Llet (str, k, id, lam, patch_guarded patch body)
-  | Levent(lam, ev) ->
-      Levent (patch_guarded patch lam, ev)
-  | _ -> fatal_error "Lambda.patch_guarded"
 
 (* Translate an access path *)
 
@@ -655,16 +658,17 @@ let transl_class_path loc env path =
 let transl_prim mod_name name =
   let pers = Ident.create_persistent mod_name in
   let env = Env.add_persistent_structure pers Env.empty in
+  let loc = Location.in_file !Location.input_name in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
   match Env.lookup_value lid env with
-  | path, _ -> transl_value_path Location.none env path
+  | path, _ -> transl_value_path loc env path
   | exception Not_found ->
       fatal_error ("Primitive " ^ name ^ " not found.")
 
 (* Compile a sequence of expressions *)
 
 let rec make_sequence fn = function
-    [] -> lambda_unit
+    [] -> lambda_unit Location.none
   | [x] -> fn x
   | x::rem ->
       let lam = fn x in Lsequence(lam, make_sequence fn rem)
@@ -706,23 +710,26 @@ let subst update_env s lam =
         Lswitch(subst s arg,
                 {sw with sw_consts = List.map (subst_case s) sw.sw_consts;
                         sw_blocks = List.map (subst_case s) sw.sw_blocks;
-                        sw_failaction = subst_opt s sw.sw_failaction; },
+                        sw_failaction = subst_default s sw.sw_failaction; },
                 loc)
-    | Lstringswitch (arg,cases,default,loc) ->
+    | Lstringswitch (arg, cases, default, loc) ->
         Lstringswitch
-          (subst s arg,List.map (subst_strcase s) cases,subst_opt s default,loc)
+          (subst s arg,List.map (subst_strcase s) cases,
+            subst_default s default, loc)
     | Lstaticraise (i,args) ->  Lstaticraise (i, subst_list s args)
     | Lstaticcatch(body, (id, params), handler) ->
         Lstaticcatch(subst s body, (id, params),
-                    subst (remove_list params s) handler)
+                    subst_block (remove_list params s) handler)
     | Ltrywith(body, exn, handler) ->
-        Ltrywith(subst s body, exn, subst (Ident.Map.remove exn s) handler)
-    | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst s e1, subst s e2, subst s e3)
+        Ltrywith(subst s body, exn,
+          subst_block (Ident.Map.remove exn s) handler)
+    | Lifthenelse(e1, e2, e3, loc) ->
+        Lifthenelse(subst s e1, subst_block s e2, subst_block s e3, loc)
     | Lsequence(e1, e2) -> Lsequence(subst s e1, subst s e2)
-    | Lwhile(e1, e2) -> Lwhile(subst s e1, subst s e2)
-    | Lfor(v, lo, hi, dir, body) ->
+    | Lwhile(e1, e2, loc) -> Lwhile(subst s e1, subst_block s e2, loc)
+    | Lfor(v, lo, hi, dir, body, loc) ->
         Lfor(v, subst s lo, subst s hi, dir,
-          subst (Ident.Map.remove v s) body)
+          subst_block (Ident.Map.remove v s) body, loc)
     | Lassign(id, e) ->
         assert(not (Ident.Map.mem id s));
         Lassign(id, subst s e)
@@ -738,13 +745,16 @@ let subst update_env s lam =
         in
         Levent (subst s lam, { evt with lev_env })
     | Lifused (v, e) -> Lifused (v, subst s e)
+  and subst_block s { block_loc; expr; } =
+    { block_loc;
+      expr = subst s expr;
+    }
   and subst_list s l = List.map (subst s) l
   and subst_decl s (id, exp) = (id, subst s exp)
-  and subst_case s (key, case) = (key, subst s case)
-  and subst_strcase s (key, case) = (key, subst s case)
-  and subst_opt s = function
-    | None -> None
-    | Some e -> Some (subst s e)
+  and subst_case s (key, act) = (key, subst_block s act)
+  and subst_strcase s (key, act) = (key, subst_block s act)
+  and subst_default s default =
+    Option.map (fun act -> subst_block s act) default
   in
   subst s lam
 
@@ -755,6 +765,11 @@ let rename idmap lam =
   in
   let s = Ident.Map.map (fun new_id -> Lvar new_id) idmap in
   subst update_env s lam
+
+let map_block f { block_loc; expr; } =
+  { block_loc;
+    expr = f expr;
+  }
 
 let shallow_map f = function
   | Lvar _
@@ -780,32 +795,34 @@ let shallow_map f = function
   | Lswitch (e, sw, loc) ->
       Lswitch (f e,
                { sw_numconsts = sw.sw_numconsts;
-                 sw_consts = List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
+                 sw_consts =
+                   List.map (fun (n, e) -> (n, map_block f e)) sw.sw_consts;
                  sw_numblocks = sw.sw_numblocks;
-                 sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
-                 sw_failaction = Misc.may_map f sw.sw_failaction;
+                 sw_blocks =
+                   List.map (fun (n, e) -> (n, map_block f e)) sw.sw_blocks;
+                 sw_failaction = Option.map (map_block f) sw.sw_failaction;
                },
                loc)
   | Lstringswitch (e, sw, default, loc) ->
       Lstringswitch (
         f e,
-        List.map (fun (s, e) -> (s, f e)) sw,
-        Misc.may_map f default,
+        List.map (fun (s, e) -> (s, map_block f e)) sw,
+        Option.map (map_block f) default,
         loc)
   | Lstaticraise (i, args) ->
       Lstaticraise (i, List.map f args)
   | Lstaticcatch (body, id, handler) ->
-      Lstaticcatch (f body, id, f handler)
+      Lstaticcatch (f body, id, map_block f handler)
   | Ltrywith (e1, v, e2) ->
-      Ltrywith (f e1, v, f e2)
-  | Lifthenelse (e1, e2, e3) ->
-      Lifthenelse (f e1, f e2, f e3)
+      Ltrywith (f e1, v, map_block f e2)
+  | Lifthenelse (e1, e2, e3, loc) ->
+      Lifthenelse (f e1, map_block f e2, map_block f e3, loc)
   | Lsequence (e1, e2) ->
       Lsequence (f e1, f e2)
-  | Lwhile (e1, e2) ->
-      Lwhile (f e1, f e2)
-  | Lfor (v, e1, e2, dir, e3) ->
-      Lfor (v, f e1, f e2, dir, f e3)
+  | Lwhile (e1, e2, loc) ->
+      Lwhile (f e1, map_block f e2, loc)
+  | Lfor (v, e1, e2, dir, e3, loc) ->
+      Lfor (v, f e1, f e2, dir, map_block f e3, loc)
   | Lassign (v, e) ->
       Lassign (v, f e)
   | Lsend (k, m, o, el, loc) ->
@@ -870,8 +887,8 @@ let swap_float_comparison = function
   | CFnge -> CFnle
 
 let raise_kind = function
-  | Raise_regular -> "raise"
-  | Raise_reraise -> "reraise"
+  | Raise_regular _loc -> "raise"
+  | Raise_reraise _loc -> "reraise"
   | Raise_notrace -> "raise_notrace"
 
 let merge_inline_attributes attr1 attr2 =

@@ -146,7 +146,9 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _drawlambda = set dump_rawlambda
+  let _drawlambda_loc = set dump_rawlambda_loc
   let _dlambda = set dump_lambda
+  let _dlambda_loc = set dump_lambda_loc
   let _dflambda = set dump_flambda
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns

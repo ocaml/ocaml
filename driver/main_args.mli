@@ -57,7 +57,9 @@ module type Common_options = sig
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
+  val _drawlambda_loc : unit -> unit
   val _dlambda : unit -> unit
+  val _dlambda_loc : unit -> unit
 
   val anonymous : string -> unit
 end;;

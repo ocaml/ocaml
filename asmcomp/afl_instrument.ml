@@ -55,20 +55,18 @@ let rec with_afl_logging b dbg =
           [afl_prev_loc dbg; Cconst_int (cur_location lsr 1, dbg)]))) in
   Csequence(instrumentation, instrument b)
 
+and with_afl_logging_block block =
+  Cmm.block block.block_dbg (with_afl_logging block.expr block.block_dbg)
+
 and instrument = function
   (* these cases add logging, as they may be targets of conditional branches *)
-  | Cifthenelse (cond, t_dbg, t, f_dbg, f, dbg) ->
-     Cifthenelse (instrument cond, t_dbg, with_afl_logging t t_dbg,
-       f_dbg, with_afl_logging f f_dbg, dbg)
-  | Ctrywith (e, ex, handler, dbg) ->
-     Ctrywith (instrument e, ex, with_afl_logging handler dbg, dbg)
+  | Cifthenelse (cond, t, f, dbg) ->
+     Cifthenelse (instrument cond, with_afl_logging_block t,
+       with_afl_logging_block f, dbg)
+  | Ctrywith (e, ex, handler) ->
+     Ctrywith (instrument e, ex, with_afl_logging_block handler)
   | Cswitch (e, cases, handlers, dbg) ->
-     let handlers =
-       Array.map (fun (handler, handler_dbg) ->
-           let handler = with_afl_logging handler handler_dbg in
-           handler, handler_dbg)
-         handlers
-     in
+     let handlers = Array.map with_afl_logging_block handlers in
      Cswitch (instrument e, cases, handlers, dbg)
 
   (* these cases add no logging, but instrument subexpressions *)
@@ -81,7 +79,7 @@ and instrument = function
   | Csequence (e1, e2) -> Csequence (instrument e1, instrument e2)
   | Ccatch (isrec, cases, body) ->
      let cases =
-       List.map (fun (nfail, ids, e, dbg) -> nfail, ids, instrument e, dbg)
+       List.map (fun (nfail, ids, e) -> nfail, ids, instrument_block e)
          cases
      in
      Ccatch (isrec, cases, instrument body)
@@ -91,6 +89,9 @@ and instrument = function
   | Cconst_int _ | Cconst_natint _ | Cconst_float _
   | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ | Cvar _ as c -> c
+
+and instrument_block block =
+  Cmm.block block.block_dbg (instrument block.expr)
 
 let instrument_function c dbg =
   with_afl_logging c dbg

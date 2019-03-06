@@ -182,7 +182,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id
     end
-  | Lconst cst ->
+  | Lconst (cst, _loc) ->
+    (* CR mshinwell: don't ignore location *)
     let cst, name = close_const t cst in
     name_expr cst ~name
   | Llet ((Strict | Alias | StrictOpt), _value_kind, id, defining_expr, body) ->
@@ -371,7 +372,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             (Flambda.create_let is_zero
               (Prim (comparison, [zero; denominator], dbg))
                 (If_then_else (is_zero,
-                  name_expr (Prim (Praise Raise_regular, [exn], dbg))
+                  name_expr (Prim (Praise (Raise_regular None), [exn], dbg))
                     ~name:Names.dummy,
                   (* CR-someday pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
@@ -431,11 +432,19 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Praise kind, [arg], loc) ->
     let arg_var = Variable.create Names.raise_arg in
     let dbg = Debuginfo.from_location loc in
+    let kind : Clambda_primitives.raise_kind =
+      match kind with
+      | Raise_regular loc ->
+        Raise_regular (Option.map Debuginfo.from_location loc)
+      | Raise_reraise loc ->
+        Raise_reraise (Option.map Debuginfo.from_location loc)
+      | Raise_notrace -> Raise_notrace
+    in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
         (Prim (Praise kind, [arg_var], dbg))
         ~name:Names.raise)
-  | Lprim (Pctconst c, [arg], _loc) ->
+  | Lprim (Pctconst c, [arg], loc) ->
       let module Backend = (val t.backend) in
       let const =
         begin match c with
@@ -453,7 +462,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       in
       close t env
         (Lambda.Llet(Strict, Pgenval, Ident.create_local "dummy",
-                     arg, Lconst const))
+                     arg, Lconst (const, loc)))
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [],_)], _)
       when Ident.same id t.current_unit_id ->
     Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \
@@ -487,14 +496,15 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           ~name:(Names.of_primitive lambda_p))
   | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create Names.switch in
-    let aux (i, lam) = i, close t env lam in
+    let aux (i, (act : Lambda.block)) = i, close t env act.expr in
     let nums sw_num cases default =
       let module I = Numbers.Int in
       match default with
       | Some _ ->
           I.zero_to_n (sw_num - 1)
       | None ->
-          List.fold_left (fun set (i, _) -> I.Set.add i set) I.Set.empty cases
+          List.fold_left (fun set (i, _) -> I.Set.add i set)
+            I.Set.empty cases
     in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (Switch (scrutinee,
@@ -502,14 +512,18 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           consts = List.map aux sw.sw_consts;
           numblocks = nums sw.sw_numblocks sw.sw_blocks sw.sw_failaction;
           blocks = List.map aux sw.sw_blocks;
-          failaction = Misc.may_map (close t env) sw.sw_failaction;
+          failaction =
+            Option.map (fun (default : Lambda.block) ->
+                close t env default.expr)
+              sw.sw_failaction;
         }))
   | Lstringswitch (arg, sw, def, _) ->
     let scrutinee = Variable.create Names.string_switch in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (String_switch (scrutinee,
-        List.map (fun (s, e) -> s, close t env e) sw,
-        Misc.may_map (close t env) def))
+        List.map (fun (s, (e : Lambda.block)) -> s, close t env e.expr) sw,
+        Option.map (fun (default : Lambda.block) ->
+          close t env default.expr) def))
   | Lstaticraise (i, args) ->
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
@@ -517,32 +531,34 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~create_body:(fun args ->
         let static_exn = Env.find_static_exception env i in
         Static_raise (static_exn, args))
+  (* CR mshinwell for pchambart: Propagate locations. *)
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
     let ids = List.map fst ids in
     let vars = List.map Variable.create_with_same_name_as_ident ids in
     Static_catch (st_exn, vars, close t env body,
-      close t (Env.add_vars env ids vars) handler)
+      close t (Env.add_vars env ids vars) handler.expr)
   | Ltrywith (body, id, handler) ->
     let var = Variable.create_with_same_name_as_ident id in
-    Try_with (close t env body, var, close t (Env.add_var env id var) handler)
-  | Lifthenelse (cond, ifso, ifnot) ->
+    Try_with (close t env body, var,
+      close t (Env.add_var env id var) handler.expr)
+  | Lifthenelse (cond, ifso, ifnot, _loc) ->
     let cond = close t env cond in
     let cond_var = Variable.create Names.cond in
     Flambda.create_let cond_var (Expr cond)
-      (If_then_else (cond_var, close t env ifso, close t env ifnot))
+      (If_then_else (cond_var, close t env ifso.expr, close t env ifnot.expr))
   | Lsequence (lam1, lam2) ->
     let var = Variable.create Names.sequence in
     let lam1 = Flambda.Expr (close t env lam1) in
     let lam2 = close t env lam2 in
     Flambda.create_let var lam1 lam2
-  | Lwhile (cond, body) -> While (close t env cond, close t env body)
-  | Lfor (id, lo, hi, direction, body) ->
+  | Lwhile (cond, body, _loc) -> While (close t env cond, close t env body.expr)
+  | Lfor (id, lo, hi, direction, body, _loc) ->
     let bound_var = Variable.create_with_same_name_as_ident id in
     let from_value = Variable.create Names.for_from in
     let to_value = Variable.create Names.for_to in
-    let body = close t (Env.add_var env id bound_var) body in
+    let body = close t (Env.add_var env id bound_var) body.expr in
     Flambda.create_let from_value (Expr (close t env lo))
       (Flambda.create_let to_value (Expr (close t env hi))
         (For { bound_var; from_value; to_value; direction; body; }))

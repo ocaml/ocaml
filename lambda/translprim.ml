@@ -125,8 +125,8 @@ let primitives_table =
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
     "%makeblock", Primitive ((Pmakeblock(0, Immutable, None)), 1);
     "%makemutable", Primitive ((Pmakeblock(0, Mutable, None)), 1);
-    "%raise", Raise Raise_regular;
-    "%reraise", Raise Raise_reraise;
+    "%raise", Raise (Raise_regular None);
+    "%reraise", Raise (Raise_reraise None);
     "%raise_notrace", Raise Raise_notrace;
     "%raise_with_backtrace", Raise_with_backtrace;
     "%sequand", Primitive (Psequand, 2);
@@ -606,7 +606,7 @@ let comparison_primitive comparison comparison_kind =
   | Compare, Compare_int32s -> Pccall caml_int32_compare
   | Compare, Compare_int64s -> Pccall caml_int64_compare
 
-let lambda_of_loc kind loc =
+let lambda_of_loc ~target_loc kind loc =
   let loc_start = loc.Location.loc_start in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
   let file =
@@ -623,18 +623,18 @@ let lambda_of_loc kind loc =
           Const_base (Const_int lnum);
           Const_base (Const_int cnum);
           Const_base (Const_int enum);
-        ]))
-  | Loc_FILE -> Lconst (Const_immstring file)
+        ]), target_loc)
+  | Loc_FILE -> Lconst (Const_immstring file, target_loc)
   | Loc_MODULE ->
     let filename = Filename.basename file in
     let name = Env.get_unit_name () in
     let module_name = if name = "" then "//"^filename^"//" else name in
-    Lconst (Const_immstring module_name)
+    Lconst (Const_immstring module_name, target_loc)
   | Loc_LOC ->
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in
-    Lconst (Const_immstring loc)
-  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+    Lconst (Const_immstring loc, target_loc)
+  | Loc_LINE -> Lconst (Const_base (Const_int lnum), target_loc)
 
 let caml_restore_raw_backtrace =
   Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
@@ -652,7 +652,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
   | External prim, args when prim = prim_sys_argv ->
-      Lprim(Pccall prim, Lconst (Const_pointer 0) :: args, loc)
+      Lprim(Pccall prim, Lconst (Const_pointer 0, loc) :: args, loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->
@@ -661,8 +661,8 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Raise kind, [arg] ->
       let kind =
         match kind, arg with
-        | Raise_regular, Lvar argv when Hashtbl.mem try_ids argv ->
-            Raise_reraise
+        | Raise_regular loc, Lvar argv when Hashtbl.mem try_ids argv ->
+            Raise_reraise loc
         | _, _ ->
             kind
       in
@@ -685,13 +685,13 @@ let lambda_of_prim prim_name prim loc args arg_exps =
            Lsequence(Lprim(Pccall caml_restore_raw_backtrace,
                            [Lvar vexn; bt],
                            loc),
-                     Lprim(Praise Raise_reraise, [raise_arg], loc)))
+                     Lprim(Praise (Raise_reraise None), [raise_arg], loc)))
   | Lazy_force, [arg] ->
       Matching.inline_lazy_force arg Location.none
   | Loc kind, [] ->
-      lambda_of_loc kind loc
+      lambda_of_loc ~target_loc:loc kind loc
   | Loc kind, [arg] ->
-      let lam = lambda_of_loc kind loc in
+      let lam = lambda_of_loc ~target_loc:loc kind loc in
       Lprim(Pmakeblock(0, Immutable, None), [lam; arg], loc)
   | Send, [obj; meth] ->
       Lsend(Public, meth, obj, [], loc)

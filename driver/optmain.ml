@@ -215,7 +215,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
+  let _drawlambda_loc () = dump_rawlambda := true; dump_lambda_loc := true
   let _dlambda = set dump_lambda
+  let _dlambda_loc () = dump_lambda := true; dump_lambda_loc := true
   let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
   let _drawflambda = set dump_rawflambda

@@ -73,7 +73,7 @@ let chunk = function
   | Double_u -> "float64u"
 
 let raise_kind fmt = function
-  | Raise_withtrace -> Format.fprintf fmt "raise_withtrace"
+  | Raise_withtrace _ -> Format.fprintf fmt "raise_withtrace"
   | Raise_notrace -> Format.fprintf fmt "raise_notrace"
 
 let phantom_defining_expr ppf defining_expr =
@@ -211,20 +211,21 @@ let rec expr ppf = function
       fprintf ppf ")@]"
   | Csequence(e1, e2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" sequence e1 sequence e2
-  | Cifthenelse(e1, _e2_dbg, e2, _e3_dbg, e3, _dbg) ->
-      fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" expr e1 expr e2 expr e3
+  | Cifthenelse(e1, e2, e3, _dbg) ->
+      fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" expr e1 block e2 block e3
   | Cswitch(e1, index, cases, _dbg) ->
       let print_case i ppf =
         for j = 0 to Array.length index - 1 do
           if index.(j) = i then fprintf ppf "case %i:" j
         done in
       let print_cases ppf =
-       for i = 0 to Array.length cases - 1 do
-        fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence (fst cases.(i))
-       done in
+        for i = 0 to Array.length cases - 1 do
+          fprintf ppf "@ @[<2>%t@ %a@]" (print_case i)
+            block_sequence cases.(i)
+        done in
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Ccatch(flag, handlers, e1) ->
-      let print_handler ppf (i, ids, e2, _dbg) =
+      let print_handler ppf (i, ids, e2) =
         fprintf ppf "(%d%a)@ %a"
           i
           (fun ppf ids ->
@@ -233,7 +234,7 @@ let rec expr ppf = function
                  fprintf ppf "@ %a: %a"
                    VP.print id machtype ty)
                ids) ids
-          sequence e2
+          block_sequence e2
       in
       let print_handlers ppf l =
         List.iter (print_handler ppf) l
@@ -247,13 +248,19 @@ let rec expr ppf = function
       fprintf ppf "@[<2>(exit %d" i;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       fprintf ppf ")@]"
-  | Ctrywith(e1, id, e2, _dbg) ->
+  | Ctrywith(e1, id, e2) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"
-             sequence e1 VP.print id sequence e2
+             sequence e1 VP.print id block_sequence e2
+
+and block ppf block =
+  expr ppf block.expr
 
 and sequence ppf = function
   | Csequence(e1, e2) -> fprintf ppf "%a@ %a" sequence e1 sequence e2
   | e -> expression ppf e
+
+and block_sequence ppf block =
+  sequence ppf block.expr
 
 and expression ppf e = fprintf ppf "%a" expr e
 

@@ -25,6 +25,7 @@ let oo_prim = Lambda.transl_prim "CamlinternalOO"
 let consts : (structured_constant, Ident.t) Hashtbl.t = Hashtbl.create 17
 
 let share c =
+  let loc = Location.none in
   match c with
     Const_block (_n, l) when l <> [] ->
       begin try
@@ -34,21 +35,24 @@ let share c =
         Hashtbl.add consts c id;
         Lvar id
       end
-  | _ -> Lconst c
+  | _ -> Lconst (c, loc)
 
 (* Collect labels *)
 
 let cache_required = ref false
-let method_cache = ref lambda_unit
+let method_cache = ref (lambda_unit Location.none)
 let method_count = ref 0
 let method_table = ref []
 
-let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
+let meth_tag s =
+  let loc = Location.none in
+  Lconst(Const_base(Const_int(Btype.hash_variant s)), loc)
 
 let next_cache tag =
+  let loc = Location.none in
   let n = !method_count in
   incr method_count;
-  (tag, [!method_cache; Lconst(Const_base(Const_int n))])
+  (tag, [!method_cache; Lconst(Const_base(Const_int n), loc)])
 
 let rec is_path = function
     Lvar _ | Lprim (Pgetglobal _, [], _) | Lconst _ -> true
@@ -81,17 +85,19 @@ let reset_labels () =
 
 (* Insert labels *)
 
-let int n = Lconst (Const_base (Const_int n))
+let int n =
+  Lconst (Const_base (Const_int n), Location.none)
 
 let prim_makearray =
   Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
 
 (* Also use it for required globals *)
 let transl_label_init_general f =
+  let loc = Location.none in
   let expr, size = f () in
   let expr =
     Hashtbl.fold
-      (fun c id expr -> Llet(Alias, Pgenval, id, Lconst c, expr))
+      (fun c id expr -> Llet(Alias, Pgenval, id, Lconst (c, loc), expr))
       consts expr
   in
   (*let expr =
@@ -177,6 +183,7 @@ let oo_wrap env req f x =
          let lambda =
            List.fold_left
              (fun lambda id ->
+                let lambda_unit = lambda_unit Location.none in
                 Llet(StrictOpt, Pgenval, id,
                      Lprim(Pmakeblock(0, Mutable, None),
                            [lambda_unit; lambda_unit; lambda_unit],
@@ -190,7 +197,7 @@ let oo_wrap env req f x =
 let reset () =
   Hashtbl.clear consts;
   cache_required := false;
-  method_cache := lambda_unit;
+  method_cache := lambda_unit Location.none;
   method_count := 0;
   method_table := [];
   wrapping := false;
