@@ -31,6 +31,11 @@ Working version
   [Misc.Stdlib.List]
   (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
 
+- GPR#2292: Add [Proc.frame_required] and [Proc.prologue_required].
+  Move tail recursion label creation to [Linearize].  Correctly position
+  [Lprologue] relative to [Iname_for_debugger] operations.
+  (Mark Shinwell)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
