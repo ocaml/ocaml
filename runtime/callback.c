@@ -225,7 +225,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
 
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
-      nv->val = val;
+      caml_modify_generational_global_root(&nv->val, val);
       return Val_unit;
     }
   }
@@ -235,7 +235,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   nv->val = val;
   nv->next = named_value_table[h];
   named_value_table[h] = nv;
-  caml_register_global_root(&nv->val);
+  caml_register_generational_global_root(&nv->val);
   return Val_unit;
 }
 
