@@ -44,11 +44,11 @@ P=stdlib__
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
 OTHERS= $(P)pervasives.cmo $(P)seq.cmo $(P)option.cmo $(P)result.cmo \
   $(P)bool.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
-  $(P)bytes.cmo $(P)string.cmo $(P)unit.cmo \
+  $(P)set.cmo $(P)map.cmo $(P)bytes.cmo $(P)string.cmo $(P)unit.cmo \
   $(P)marshal.cmo $(P)obj.cmo $(P)array.cmo $(P)float.cmo \
   $(P)int.cmo $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
-  $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
+  $(P)stack.cmo $(P)queue.cmo \
   camlinternalLazy.cmo $(P)lazy.cmo $(P)stream.cmo \
   $(P)buffer.cmo camlinternalFormat.cmo $(P)printf.cmo \
   $(P)arg.cmo $(P)printexc.cmo $(P)fun.cmo $(P)gc.cmo \

@@ -333,6 +333,11 @@ val split_on_char: char -> string -> string list
     @since 4.04.0
 *)
 
+(** {1 Sets and maps} *)
+
+module Set : Set.S with type elt = t
+module Map : Map.S with type key = t
+
 (** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t

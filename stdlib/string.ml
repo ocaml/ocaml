@@ -224,6 +224,11 @@ let capitalize s =
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
 
+(** {1 Sets and maps} *)
+
+module Set = Set.Make (struct type t = string let compare = compare end)
+module Map = Map.Make (struct type t = string let compare = compare end)
+
 (** {1 Iterators} *)
 
 let to_seq s = bos s |> B.to_seq

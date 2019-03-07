@@ -164,8 +164,6 @@ module Stdlib : sig
 
   module String : sig
     include module type of String
-    module Set : Set.S with type elt = string
-    module Map : Map.S with type key = string
     module Tbl : Hashtbl.S with type key = string
 
     val for_all : (char -> bool) -> t -> bool
