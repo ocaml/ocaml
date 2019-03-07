@@ -15,7 +15,7 @@
 
 # Bump this on any changes. It's vital that HOOK_VERSION followed by equals
 # appears nowhere else in these sources!
-HOOK_VERSION=3
+HOOK_VERSION=4
 
 # For what it's worth, allow for empty trees!
 if git rev-parse --verify HEAD >/dev/null 2>&1
@@ -66,7 +66,7 @@ not_pruned () {
       ;;
       *)
 
-      not_pruned $DIR
+      not_pruned "$DIR"
       return $?
     esac
   fi
@@ -79,7 +79,7 @@ export OCAML_CT_CAT="git cat-file --textconv"
 export OCAML_CT_CA_FLAG=--cached
 git diff --diff-filter=d --staged --name-only | (while IFS= read -r path
 do
-  if not_pruned $path && ! tools/check-typo ./$path ; then
+  if not_pruned "$path" && ! tools/check-typo "./$path" ; then
     ERRORS=1
   fi
 done; exit $ERRORS)
