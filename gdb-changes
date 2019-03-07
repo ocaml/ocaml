@@ -1,0 +1,31 @@
+asmcomp/amd64/emit.mlp
+======================
+
+cfi_startproc/endproc/adjust_cfa_offset removed
+
+frame_required, slot_offset --> Proc
+
+New functions push/pop/add_to_rsp to ensure CFI offsets are correct.
+Various other CFI fixes.
+
+Changes to interface of Asm_symbol + Asm_label
+
+Use of Insn_debuginfo
+
+Extra members in gc_call and bound_error_call (for call site tracking)
+The remainder of the call site tracking support
+
+Use of Clflags.debug_thing
+
+Mach call instructions now use [call_labels]
+
+Delete PR#4690 hack, probably no longer needed
+
+Calling of Dwarf.emit
+
+Other backends
+==============
+
+Proc needs updating.
+
+These need to have the equivalent changes to amd64/emit.mlp.
