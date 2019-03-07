@@ -39,6 +39,9 @@ else
 OPTCOMPFLAGS=
 endif
 
+COMPFLAGS += -I $(LOCAL_SRC)_bytecode
+OPTCOMPFLAGS += -I $(LOCAL_SRC)_native
+
 LOCAL_SRC=dynlink_compilerlibs
 
 OBJS=dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmo \
@@ -211,13 +214,6 @@ dynlink_compilerlibs_native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 # files for the dynlink-specific compilerlibs packs generated here---and in
 # particular the corresponding .cmi files -- are kept in separate directories.
 
-dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmi: \
-  dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmo
-
-dynlink_compilerlibs.cmi: \
-  dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmi
-	cp -a $< $@
-
 # The main dynlink rules start here.
 
 all: dynlink.cma extract_crc
@@ -238,69 +234,6 @@ dynlink.cmxa: $(NATOBJS)
 # to be to copy the .ml file, which is a valid .mli, to the .mli.
 dynlink_platform_intf.mli: dynlink_platform_intf.ml
 	cp $< $@
-dynlink_platform_intf.cmi: dynlink_platform_intf.mli \
-    dynlink_types.cmi
-	$(OCAMLC) $(COMPFLAGS) -I dynlink_compilerlibs_bytecode -c $<
-
-dynlink_platform_intf.cmo: dynlink_platform_intf.ml \
-    dynlink_platform_intf.cmi \
-    dynlink_types.cmo
-	$(OCAMLC) $(COMPFLAGS) -c dynlink_platform_intf.ml
-
-dynlink_platform_intf.cmx: dynlink_platform_intf.ml \
-    dynlink_platform_intf.cmi \
-    dynlink_types.cmx
-	$(OCAMLOPT) $(COMPFLAGS) -c dynlink_platform_intf.ml
-
-dynlink_types.cmi: dynlink_types.mli
-	$(OCAMLC) $(COMPFLAGS) -c dynlink_types.mli
-
-dynlink_types.cmo: dynlink_types.ml dynlink_types.cmi
-	$(OCAMLC) $(COMPFLAGS) -c dynlink_types.ml
-
-dynlink_types.cmx: dynlink_types.ml dynlink_types.cmi
-	$(OCAMLOPT) $(COMPFLAGS) -c dynlink_types.ml
-
-dynlink_common.cmi: dynlink_common.mli \
-    dynlink_platform_intf.cmi \
-    dynlink_types.cmi
-	$(OCAMLC) $(COMPFLAGS) -c dynlink_common.mli
-
-dynlink_common.cmo: dynlink_common.ml \
-    dynlink_common.cmi \
-    dynlink_compilerlibs.cmi \
-    dynlink_platform_intf.cmo
-	$(OCAMLC) $(COMPFLAGS) -c dynlink_common.ml
-
-dynlink_common.cmx: dynlink_common.ml \
-    dynlink_common.cmi \
-    dynlink_compilerlibs.cmi \
-    dynlink_platform_intf.cmx \
-    dynlink_compilerlibs_native/dynlink_compilerlibs.cmx
-	$(OCAMLOPT) $(COMPFLAGS) -I dynlink_compilerlibs_native/ \
-          -c dynlink_common.ml
-
-dynlink.cmi: dynlink.mli dynlink_compilerlibs.cmi
-	$(OCAMLC) -c $(COMPFLAGS) dynlink.mli
-
-dynlink.cmo: dynlink.cmi dynlink_common.cmi \
-      dynlink_types.cmo dynlink_common.cmo dynlink.ml \
-      dynlink_compilerlibs.cmi
-	$(OCAMLC) -c $(COMPFLAGS) dynlink.ml
-
-dynlink.cmx: dynlink.cmi dynlink_common.cmi \
-      dynlink_types.cmx dynlink_common.cmx dynlink.mlopt \
-      dynlink_compilerlibs.cmi \
-      dynlink_compilerlibs_native/dynlink_compilerlibs.cmx
-	$(OCAMLOPT) -c $(COMPFLAGS) -I dynlink_compilerlibs_native/ \
-          -impl dynlink.mlopt
-
-extract_crc.cmo: extract_crc.ml dynlink.cmi dynlink_compilerlibs.cmi
-	$(OCAMLC) -c $(COMPFLAGS) -I ../utils extract_crc.ml
-
-extract_crc: $(COMPILEROBJS) dynlink.cma \
-  dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmo \
-  extract_crc.cmo
 
 dynlink.cmx: dynlink.mlopt
 	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) -impl dynlink.mlopt
@@ -334,5 +267,42 @@ partialclean:
 
 clean: partialclean
 	rm -f *.$(A) *.$(O) *.so *.dll dynlink_platform_intf.mli
+	rm -rf $(LOCAL_SRC) $(LOCAL_SRC)_native $(LOCAL_SRC)_bytecode
 
+.INTERMEDIATE: $(LOCAL_SRC)_native/dynlink_compilerlibs.ml
+$(LOCAL_SRC)_native/dynlink_compilerlibs.ml:
+	mkdir -p $(LOCAL_SRC)_native
+	touch $@
+
+.INTERMEDIATE: $(LOCAL_SRC)_bytecode/dynlink_compilerlibs.mli
+$(LOCAL_SRC)_bytecode/dynlink_compilerlibs.mli:
+	mkdir -p $(LOCAL_SRC)_bytecode
+	touch $@
+
+.PHONY: depend
+ifeq "$(TOOLCHAIN)" "msvc"
 depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+DEPENDENCY_FILES=$(filter-out dynlink_compilerlibs.mli,$(wildcard *.mli)) \
+      $(filter-out dynlink_compilerlibs.ml nodynlink.ml,$(wildcard *.ml))
+depend: $(LOCAL_SRC)_native/dynlink_compilerlibs.ml \
+        $(LOCAL_SRC)_bytecode/dynlink_compilerlibs.mli
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+    -I $(LOCAL_SRC)_bytecode -bytecode $(DEPENDENCY_FILES) > .depend
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+    -I $(LOCAL_SRC)_native -native $(DEPENDENCY_FILES) >> .depend
+endif
+
+include .depend
+
+.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
+
+.mli.cmi:
+	$(OCAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(OCAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
