@@ -44,11 +44,11 @@ OPTCOMPFLAGS += -I $(LOCAL_SRC)_native
 
 LOCAL_SRC=dynlink_compilerlibs
 
-OBJS=dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmo \
-  dynlink_types.cmo dynlink_platform_intf.cmo dynlink_common.cmo dynlink.cmo
+OBJS=$(LOCAL_SRC)_bytecode/dynlink_compilerlibs.cmo dynlink_types.cmo \
+  dynlink_platform_intf.cmo dynlink_common.cmo dynlink.cmo
 
-NATOBJS=dynlink_compilerlibs_native/dynlink_compilerlibs.cmx \
-  dynlink_types.cmx dynlink_platform_intf.cmx dynlink_common.cmx dynlink.cmx
+NATOBJS=$(LOCAL_SRC)_native/dynlink_compilerlibs.cmx dynlink_types.cmx \
+  dynlink_platform_intf.cmx dynlink_common.cmx dynlink.cmx
 
 # We need/desire access to compilerlibs for various reasons:
 # - The bytecode dynamic linker is in compilerlibs and has many dependencies
@@ -120,31 +120,31 @@ COMPILERLIBS_SOURCES=\
 # provide .ml files for .mli-only modules---without this, such modules do
 # not seem to be located by the type checker inside bytecode packs.
 
-dynlink_compilerlibs/Makefile.copy-sources:
-	mkdir -p dynlink_compilerlibs
-	mkdir -p dynlink_compilerlibs_bytecode
-	mkdir -p dynlink_compilerlibs_native
-	echo > $@
+$(LOCAL_SRC)/Makefile.copy-sources:
+	mkdir -p $(LOCAL_SRC)
+	mkdir -p $(LOCAL_SRC)_bytecode
+	mkdir -p $(LOCAL_SRC)_native
+	rm -f $@
 	for ml in $(COMPILERLIBS_SOURCES); do \
-          echo "dynlink_compilerlibs/$$(basename $$ml): $(ROOTDIR)/$$ml" \
+          echo "$(LOCAL_SRC)/$$(basename $$ml): $(ROOTDIR)/$$ml" \
             >> $@; \
-          echo "dynlink_compilerlibs/$$(basename $$ml)i: $(ROOTDIR)/$${ml}i" \
+          echo "$(LOCAL_SRC)/$$(basename $$ml)i: $(ROOTDIR)/$${ml}i" \
             >> $@; \
         done;
 	for mli in $(COMPILERLIBS_INTFS); do \
-          echo "dynlink_compilerlibs/$$(basename $$mli): $(ROOTDIR)/$$mli" \
+          echo "$(LOCAL_SRC)/$$(basename $$mli): $(ROOTDIR)/$$mli" \
             >> $@; \
           echo \
-            "dynlink_compilerlibs/$$(basename $$mli .mli).ml: $(ROOTDIR)/$$mli"\
+            "$(LOCAL_SRC)/$$(basename $$mli .mli).ml: $(ROOTDIR)/$$mli"\
             >> $@; \
         done
 
--include dynlink_compilerlibs/Makefile.copy-sources
+-include $(LOCAL_SRC)/Makefile.copy-sources
 
-dynlink_compilerlibs/%.ml:
+$(LOCAL_SRC)/%.ml:
 	cp $< $@
 
-dynlink_compilerlibs/%.mli:
+$(LOCAL_SRC)/%.mli:
 	cp $< $@
 
 # Rules to automatically generate dependencies for the local copy of the
@@ -159,10 +159,10 @@ COMPILERLIBS_INTFS_BASE_NAMES=$(basename $(COMPILERLIBS_INTFS_NO_DIRS))
 COMPILERLIBS_INTFS_ML_NO_DIRS=$(addsuffix .ml, $(COMPILERLIBS_INTFS_BASE_NAMES))
 
 COMPILERLIBS_COPIED_INTFS=\
-  $(addprefix dynlink_compilerlibs/, $(COMPILERLIBS_INTFS_ML_NO_DIRS))
+  $(addprefix $(LOCAL_SRC)/, $(COMPILERLIBS_INTFS_ML_NO_DIRS))
 
 COMPILERLIBS_COPIED_SOURCES=\
-  $(addprefix dynlink_compilerlibs/, $(COMPILERLIBS_SOURCES_NO_DIRS)) \
+  $(addprefix $(LOCAL_SRC)/, $(COMPILERLIBS_SOURCES_NO_DIRS)) \
   $(COMPILERLIBS_COPIED_INTFS)
 
 COMPILERLIBS_SOURCES_INTFS=\
@@ -171,14 +171,14 @@ COMPILERLIBS_SOURCES_INTFS=\
 COMPILERLIBS_COPIED_SOURCES_INTFS=\
   $(addsuffix i, $(COMPILERLIBS_COPIED_SOURCES))
 
-dynlink_compilerlibs/.depend: $(COMPILERLIBS_COPIED_SOURCES) \
+$(LOCAL_SRC)/.depend: $(COMPILERLIBS_COPIED_SOURCES) \
   $(COMPILERLIBS_COPIED_SOURCES_INTFS)
-	$(CAMLRUN) $(ROOTDIR)/ocamlc -depend -slash -I dynlink_compilerlibs \
+	$(CAMLRUN) $(ROOTDIR)/ocamlc -depend -slash -I $(LOCAL_SRC) \
 	$(COMPILERLIBS_COPIED_SOURCES) \
 	$(COMPILERLIBS_COPIED_SOURCES_INTFS) \
-        > dynlink_compilerlibs/.depend
+        > $(LOCAL_SRC)/.depend
 
--include dynlink_compilerlibs/.depend
+-include $(LOCAL_SRC)/.depend
 
 # Rules to build the local copy of the compilerlibs sources in such a way
 # that the resulting .cm{o,x} files can be packed.
@@ -186,27 +186,27 @@ dynlink_compilerlibs/.depend: $(COMPILERLIBS_COPIED_SOURCES) \
 COMPILERLIBS_CMO=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmo)
 COMPILERLIBS_CMX=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmx)
 
-dynlink_compilerlibs/%.cmi: dynlink_compilerlibs/%.mli
+$(LOCAL_SRC)/%.cmi: $(LOCAL_SRC)/%.mli
 	$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
-          -I dynlink_compilerlibs -o $@ $<
+          -I $(LOCAL_SRC) -o $@ $<
 
-dynlink_compilerlibs/%.cmo: dynlink_compilerlibs/%.ml \
-  dynlink_compilerlibs/%.cmi
+$(LOCAL_SRC)/%.cmo: $(LOCAL_SRC)/%.ml \
+  $(LOCAL_SRC)/%.cmi
 	$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
-          -I dynlink_compilerlibs -o $@ $<
+          -I $(LOCAL_SRC) -o $@ $<
 
-dynlink_compilerlibs/%.cmx: dynlink_compilerlibs/%.ml \
-  dynlink_compilerlibs/%.cmi
+$(LOCAL_SRC)/%.cmx: $(LOCAL_SRC)/%.ml \
+  $(LOCAL_SRC)/%.cmi
 	$(OCAMLOPT) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
-          $(OPTCOMPFLAGS) -I dynlink_compilerlibs -o $@ $<
+          $(OPTCOMPFLAGS) -I $(LOCAL_SRC) -o $@ $<
 
 # Rules for building the [Dynlink_compilerlibs] bytecode and native packs
 # from their components.
 
-dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmo: $(COMPILERLIBS_CMO)
+$(LOCAL_SRC)_bytecode/dynlink_compilerlibs.cmo: $(COMPILERLIBS_CMO)
 	$(OCAMLC) $(COMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMO)
 
-dynlink_compilerlibs_native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
+$(LOCAL_SRC)_native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 	$(OCAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMX)
 
 # Rules for building the interface of the [Dynlink_compilerlibs] packs.
@@ -222,11 +222,11 @@ allopt: dynlink.cmxa
 
 dynlink.cma: $(OBJS)
 	$(OCAMLC) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a \
-          -I dynlink_compilerlibs_bytecode -o $@ $^
+          -I $(LOCAL_SRC)_bytecode -o $@ $^
 
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a \
-          -I dynlink_compilerlibs_native -o $@ $^
+          -I $(LOCAL_SRC)_native -o $@ $^
 
 # Since there is no .mli for [Dynlink_platform_intf], we need to be
 # careful that compilation of the .cmx file does not write the .cmi file again,
