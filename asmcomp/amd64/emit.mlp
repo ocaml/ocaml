@@ -59,8 +59,11 @@ let cfi_startproc () =
 let cfi_endproc () =
   if Config.asm_cfi_supported then D.cfi_endproc ()
 
-let cfi_adjust_cfa_offset n =
-  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
+let cfi_adjust_cfa_offset ~bytes =
+  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset bytes
+
+let cfi_def_cfa_offset ~bytes =
+  if Config.asm_cfi_supported then D.cfi_def_cfa_offset bytes
 
 let cfi_remember_state () =
   if Config.asm_cfi_supported then D.cfi_remember_state ()
@@ -98,6 +101,24 @@ let slot_offset env loc cl =
       else env.stack_offset + (env.f.fun_num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
   | Domainstate _ -> assert false  (* not a stack slot *)
+
+let push reg =
+  I.push reg;
+  cfi_adjust_cfa_offset ~bytes:8
+
+let pop reg =
+  I.pop reg;
+  cfi_adjust_cfa_offset ~bytes:(-8)
+
+let add_to_rsp n =
+  if n <> 0 then begin
+    if n > 0 then begin
+      I.add (int n) rsp
+    end else begin
+      I.sub (int (-n)) rsp
+    end;
+    cfi_adjust_cfa_offset ~bytes:(-n)
+  end
 
 (* Symbols *)
 
@@ -390,17 +411,16 @@ let emit_float_test env cmp i lbl =
 
 let output_epilogue env f =
   if env.f.fun_frame_required then begin
-    let n = (frame_size env) - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      I.add (int n) rsp;
-      cfi_adjust_cfa_offset (-n);
-    end;
-    if fp then I.pop rbp;
+    let frame_size = (frame_size env) in
+    let n = frame_size - 8 - (if fp then 8 else 0) in
+    add_to_rsp n;
+    if fp then pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
-    if n <> 0
-    then cfi_adjust_cfa_offset n
+    cfi_adjust_cfa_offset ~bytes:n;
+    if fp then begin
+      cfi_adjust_cfa_offset ~bytes:8
+    end
   end
   else
     f ()
@@ -465,17 +485,12 @@ let emit_instr env fallthrough i =
   | Lprologue ->
     assert (env.f.fun_prologue_required);
     if fp then begin
-      I.push rbp;
-      cfi_adjust_cfa_offset 8;
+      push rbp;
       I.mov rsp rbp;
     end;
     if env.f.fun_frame_required then begin
       let n = (frame_size env) - 8 - (if fp then 8 else 0) in
-      if n <> 0
-      then begin
-        I.sub (int n) rsp;
-        cfi_adjust_cfa_offset n;
-      end;
+      add_to_rsp (-n)
     end
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
@@ -566,12 +581,7 @@ let emit_instr env fallthrough i =
         cfi_restore_state ();
       end
   | Lop(Istackoffset n) ->
-      if n < 0
-      then I.add (int (-n)) rsp
-      else if n > 0
-      then I.sub (int n) rsp;
-      if n <> 0
-      then cfi_adjust_cfa_offset n;
+      add_to_rsp (-n);
       env.stack_offset <- env.stack_offset + n
   | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
       let dest = res i 0 in
@@ -838,7 +848,7 @@ let emit_instr env fallthrough i =
   | Ladjust_trap_depth { delta_traps; } ->
       (* each trap occupies 16 bytes on the stack *)
       let delta = 16 * delta_traps in
-      cfi_adjust_cfa_offset delta;
+      cfi_adjust_cfa_offset ~bytes:delta;
       env.stack_offset <- env.stack_offset + delta
   | Lpushtrap { lbl_handler; } ->
       let load_label_addr s arg =
@@ -848,17 +858,14 @@ let emit_instr env fallthrough i =
           I.mov (sym (emit_label s)) arg
       in
       load_label_addr lbl_handler r11;
-      I.push r11;
-      cfi_adjust_cfa_offset 8;
-      I.push (domain_field Domainstate.Domain_exn_handler);
-      cfi_adjust_cfa_offset 8;
+      push r11;
+      push (domain_field Domainstate.Domain_exn_handler);
       I.mov rsp (domain_field Domainstate.Domain_exn_handler);
       env.stack_offset <- env.stack_offset + 16;
   | Lpoptrap ->
-      I.pop (domain_field Domainstate.Domain_exn_handler);
-      cfi_adjust_cfa_offset (-8);
-      I.add (int 8) rsp;
-      cfi_adjust_cfa_offset (-8);
+      pop (domain_field Domainstate.Domain_exn_handler);
+      add_to_rsp 8;
+
       env.stack_offset <- env.stack_offset - 16
   | Lraise k ->
       begin match k with
@@ -870,8 +877,12 @@ let emit_instr env fallthrough i =
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
-          I.pop (domain_field Domainstate.Domain_exn_handler);
-          I.pop r11;
+          (* CR-someday mshinwell: At this point we should mark the CFA
+             as unavailable, to avoid garbage variable values being seen when
+             stopped at exactly this point in the debugger, but it isn't clear
+             how to do that (using CFI directives at least). *)
+          pop (domain_field Domainstate.Domain_exn_handler);
+          pop r11;
           I.jmp r11
       end
 
@@ -903,6 +914,10 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+    (* Set the initial CFA offset so as to cope with the CPU having pushed the
+     return address. (The CFA points at the first address above the return
+     address slot.) *)
+  cfi_def_cfa_offset ~bytes:8;
   if !Clflags.runtime_variant = "d" then
     emit_call "caml_assert_stack_invariants";
   let { max_frame_size; contains_nontail_calls} =
@@ -930,21 +945,12 @@ let fundecl fundecl =
       (* Pass the desired frame size on the stack, since all of the
         argument-passing registers may be in use.
         Also serves to align the stack properly before the call *)
-      I.push (int (Config.stack_threshold + max_frame_size / 8));
-      cfi_adjust_cfa_offset 8;
+      push (int (Config.stack_threshold + max_frame_size / 8));
         (* measured in words *)
       emit_call "caml_call_realloc_stack";
-      I.pop r10; (* ignored *)
-      cfi_adjust_cfa_offset (-8);
+      pop r10; (* ignored *)
       I.jmp (label ret)
     end
-  end;
-  if fundecl.fun_frame_required then begin
-    let n = (frame_size env) - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      cfi_adjust_cfa_offset (-n);
-    end;
   end;
   cfi_endproc ();
   begin match system with

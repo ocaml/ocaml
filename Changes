@@ -123,6 +123,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #2299: Fix DWARF CFA directives in the x86-64 backend
+  (Mark Shinwell)
+
 - #11967: Remove traces of Obj.truncate, which allows some mutable
   loads to become immutable.
   (Nick Barnes, review by Vincent Laviron and KC Sivaramakrishnan)
