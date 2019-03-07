@@ -285,6 +285,14 @@ let symbol_literals = ref ([] : (string * label) list)
 (* Total space (in words) occupied by pending literals *)
 let size_literals = ref 0
 
+(* Pending offset computations : {lbl; dst; src;} --> lbl: .word dst-(src+N) *)
+type offset_computation =
+  { lbl : label;
+    dst : label;
+    src : label;
+  }
+let offset_literals = ref ([] : offset_computation list)
+
 (* Label a floating-point literal *)
 let float_literal f =
   try
@@ -312,6 +320,13 @@ let symbol_literal s =
     symbol_literals := (s, lbl) :: !symbol_literals;
     lbl
 
+(* Add an offset computation *)
+let offset_literal dst src =
+  let lbl = new_label() in
+  size_literals := !size_literals + 1;
+  offset_literals := { lbl; dst; src; } :: !offset_literals;
+  lbl
+
 (* Emit all pending literals *)
 let emit_literals() =
   if !float_literals <> [] then begin
@@ -336,6 +351,17 @@ let emit_literals() =
       !symbol_literals;
     gotrel_literals := [];
     symbol_literals := []
+  end;
+  if !offset_literals <> [] then begin
+    (* Additions using the pc register read a value 4 or 8 bytes greater than
+       the instruction's address, depending on the thumb setting *)
+    let offset = if !thumb then 4 else 8 in
+    `	.align	2\n`;
+    List.iter
+      (fun { lbl; dst; src; } ->
+         `{emit_label lbl}:	.word	{emit_label dst}-({emit_label src}+{emit_int offset})\n`)
+      !offset_literals;
+    offset_literals := []
   end;
   size_literals := 0
 
@@ -405,6 +431,17 @@ let emit_profile() =
       `	{emit_call "__gnu_mcount_nc"}\n`;
       2
   | _ -> 0
+
+
+(* Emit code to load the address of a label in the lr register *)
+let emit_load_handler_address handler =
+  (* PIC code *)
+  let lbl_src = new_label() in
+  let lbl_offset = offset_literal handler lbl_src in
+  `	ldr	lr, {emit_label lbl_offset}\n`;
+  `{emit_label lbl_src}:\n`;
+  `	add	lr, pc, lr\n`;
+  2
 
 (* Output the assembly code for an instruction *)
 
@@ -838,13 +875,14 @@ let emit_instr i =
           done;
           2 + Array.length jumptbl
         end
-    | Lsetuptrap lbl ->
-        `	bl	{emit_label lbl}\n`; 1
-    | Lpushtrap ->
+    | Lentertrap ->
+        0
+    | Lpushtrap { lbl_handler; } ->
+        let s = emit_load_handler_address lbl_handler in
         stack_offset := !stack_offset + 8;
         `	push	\{trap_ptr, lr}\n`;
         cfi_adjust_cfa_offset 8;
-        `	mov	trap_ptr, sp\n`; 2
+        `	mov	trap_ptr, sp\n`; s + 2
     | Lpoptrap ->
         `	pop	\{trap_ptr, lr}\n`;
         cfi_adjust_cfa_offset (-8);
