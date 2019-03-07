@@ -627,66 +627,84 @@ CAMLprim value caml_ba_get_generic(value vb, value vind)
 
 CAMLprim value caml_ba_uint8_get16(value vb, value vind)
 {
+  void *addr;
   intnat res;
   unsigned char b1, b2;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 1) caml_array_bound_error();
-  b1 = ((unsigned char*) b->data)[idx];
-  b2 = ((unsigned char*) b->data)[idx+1];
+  addr = &((unsigned char *) b->data)[idx];
+  if (!((size_t) addr & 0x1)) { /* aligned access */
+    res = *((uint16_t *) addr);
+  } else { /* unaligned access */
+    b1 = ((unsigned char*) b->data)[idx];
+    b2 = ((unsigned char*) b->data)[idx+1];
 #ifdef ARCH_BIG_ENDIAN
-  res = b1 << 8 | b2;
+    res = b1 << 8 | b2;
 #else
-  res = b2 << 8 | b1;
+    res = b2 << 8 | b1;
 #endif
+  }
   return Val_int(res);
 }
 
 CAMLprim value caml_ba_uint8_get32(value vb, value vind)
 {
+  void *addr;
   uint32_t res;
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 3) caml_array_bound_error();
-  b1 = ((unsigned char*) b->data)[idx];
-  b2 = ((unsigned char*) b->data)[idx+1];
-  b3 = ((unsigned char*) b->data)[idx+2];
-  b4 = ((unsigned char*) b->data)[idx+3];
+  addr = &((unsigned char *) b->data)[idx];
+  if (!((size_t) addr & 0x3)) { /* aligned access */
+    res = *((uint32_t *) addr);
+  } else { /* unaligned access */
+    b1 = ((unsigned char*) b->data)[idx];
+    b2 = ((unsigned char*) b->data)[idx+1];
+    b3 = ((unsigned char*) b->data)[idx+2];
+    b4 = ((unsigned char*) b->data)[idx+3];
 #ifdef ARCH_BIG_ENDIAN
-  res = b1 << 24 | b2 << 16 | b3 << 8 | b4;
+    res = b1 << 24 | b2 << 16 | b3 << 8 | b4;
 #else
-  res = b4 << 24 | b3 << 16 | b2 << 8 | b1;
+    res = b4 << 24 | b3 << 16 | b2 << 8 | b1;
 #endif
+  }
   return caml_copy_int32(res);
 }
 
 CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 {
+  void *addr;
   uint64_t res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
-  b1 = ((unsigned char*) b->data)[idx];
-  b2 = ((unsigned char*) b->data)[idx+1];
-  b3 = ((unsigned char*) b->data)[idx+2];
-  b4 = ((unsigned char*) b->data)[idx+3];
-  b5 = ((unsigned char*) b->data)[idx+4];
-  b6 = ((unsigned char*) b->data)[idx+5];
-  b7 = ((unsigned char*) b->data)[idx+6];
-  b8 = ((unsigned char*) b->data)[idx+7];
+  addr = &((unsigned char *) b->data)[idx];
+  if (!((size_t) addr & 0x7)) { /* aligned access */
+    res = *((uint64_t *) addr);
+  } else { /* unaligned access */
+    b1 = ((unsigned char*) b->data)[idx];
+    b2 = ((unsigned char*) b->data)[idx+1];
+    b3 = ((unsigned char*) b->data)[idx+2];
+    b4 = ((unsigned char*) b->data)[idx+3];
+    b5 = ((unsigned char*) b->data)[idx+4];
+    b6 = ((unsigned char*) b->data)[idx+5];
+    b7 = ((unsigned char*) b->data)[idx+6];
+    b8 = ((unsigned char*) b->data)[idx+7];
 #ifdef ARCH_BIG_ENDIAN
-  res = (uint64_t) b1 << 56 | (uint64_t) b2 << 48
-        | (uint64_t) b3 << 40 | (uint64_t) b4 << 32
-        | (uint64_t) b5 << 24 | (uint64_t) b6 << 16
-        | (uint64_t) b7 << 8 | (uint64_t) b8;
+    res = (uint64_t) b1 << 56 | (uint64_t) b2 << 48
+          | (uint64_t) b3 << 40 | (uint64_t) b4 << 32
+          | (uint64_t) b5 << 24 | (uint64_t) b6 << 16
+          | (uint64_t) b7 << 8 | (uint64_t) b8;
 #else
-  res = (uint64_t) b8 << 56 | (uint64_t) b7 << 48
-        | (uint64_t) b6 << 40 | (uint64_t) b5 << 32
-        | (uint64_t) b4 << 24 | (uint64_t) b3 << 16
-        | (uint64_t) b2 << 8 | (uint64_t) b1;
+    res = (uint64_t) b8 << 56 | (uint64_t) b7 << 48
+          | (uint64_t) b6 << 40 | (uint64_t) b5 << 32
+          | (uint64_t) b4 << 24 | (uint64_t) b3 << 16
+          | (uint64_t) b2 << 8 | (uint64_t) b1;
 #endif
+  }
   return caml_copy_int64(res);
 }
 
@@ -775,85 +793,103 @@ CAMLprim value caml_ba_set_generic(value vb, value vind, value newval)
 
 CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)
 {
+  void *addr;
   unsigned char b1, b2;
   intnat val;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 1) caml_array_bound_error();
   val = Long_val(newval);
+  addr = &((unsigned char *) b->data)[idx];
+  if (!((size_t) addr & 0x1)) { /* aligned access */
+    *((uint16_t *) addr) = val;
+  } else { /* unaligned access */
 #ifdef ARCH_BIG_ENDIAN
-  b1 = 0xFF & val >> 8;
-  b2 = 0xFF & val;
+    b1 = 0xFF & val >> 8;
+    b2 = 0xFF & val;
 #else
-  b2 = 0xFF & val >> 8;
-  b1 = 0xFF & val;
+    b2 = 0xFF & val >> 8;
+    b1 = 0xFF & val;
 #endif
-  ((unsigned char*) b->data)[idx] = b1;
-  ((unsigned char*) b->data)[idx+1] = b2;
+    ((unsigned char*) b->data)[idx] = b1;
+    ((unsigned char*) b->data)[idx+1] = b2;
+  }
   return Val_unit;
 }
 
 CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
 {
+  void *addr;
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(vind);
   intnat val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 3) caml_array_bound_error();
   val = Int32_val(newval);
+  addr = &((unsigned char *) b->data)[idx];
+  if (!((size_t) addr & 0x3)) { /* aligned access */
+    *((uint32_t *) addr) = val;
+  } else { /* unaligned access */
 #ifdef ARCH_BIG_ENDIAN
-  b1 = 0xFF & val >> 24;
-  b2 = 0xFF & val >> 16;
-  b3 = 0xFF & val >> 8;
-  b4 = 0xFF & val;
+    b1 = 0xFF & val >> 24;
+    b2 = 0xFF & val >> 16;
+    b3 = 0xFF & val >> 8;
+    b4 = 0xFF & val;
 #else
-  b4 = 0xFF & val >> 24;
-  b3 = 0xFF & val >> 16;
-  b2 = 0xFF & val >> 8;
-  b1 = 0xFF & val;
+    b4 = 0xFF & val >> 24;
+    b3 = 0xFF & val >> 16;
+    b2 = 0xFF & val >> 8;
+    b1 = 0xFF & val;
 #endif
-  ((unsigned char*) b->data)[idx] = b1;
-  ((unsigned char*) b->data)[idx+1] = b2;
-  ((unsigned char*) b->data)[idx+2] = b3;
-  ((unsigned char*) b->data)[idx+3] = b4;
+    ((unsigned char*) b->data)[idx] = b1;
+    ((unsigned char*) b->data)[idx+1] = b2;
+    ((unsigned char*) b->data)[idx+2] = b3;
+    ((unsigned char*) b->data)[idx+3] = b4;
+  }
   return Val_unit;
 }
 
 CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
 {
+  void *addr;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
   int64_t val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
+  addr = &((unsigned char *) b->data)[idx];
   val = Int64_val(newval);
+  if (!((size_t) addr & 0x7)) { /* aligned access */
+    *((uint64_t *) addr) = val;
+  } else { /* unaligned access */
 #ifdef ARCH_BIG_ENDIAN
-  b1 = 0xFF & val >> 56;
-  b2 = 0xFF & val >> 48;
-  b3 = 0xFF & val >> 40;
-  b4 = 0xFF & val >> 32;
-  b5 = 0xFF & val >> 24;
-  b6 = 0xFF & val >> 16;
-  b7 = 0xFF & val >> 8;
-  b8 = 0xFF & val;
+    b1 = 0xFF & val >> 56;
+    b2 = 0xFF & val >> 48;
+    b3 = 0xFF & val >> 40;
+    b4 = 0xFF & val >> 32;
+    b5 = 0xFF & val >> 24;
+    b6 = 0xFF & val >> 16;
+    b7 = 0xFF & val >> 8;
+    b8 = 0xFF & val;
 #else
-  b8 = 0xFF & val >> 56;
-  b7 = 0xFF & val >> 48;
-  b6 = 0xFF & val >> 40;
-  b5 = 0xFF & val >> 32;
-  b4 = 0xFF & val >> 24;
-  b3 = 0xFF & val >> 16;
-  b2 = 0xFF & val >> 8;
-  b1 = 0xFF & val;
+    b8 = 0xFF & val >> 56;
+    b7 = 0xFF & val >> 48;
+    b6 = 0xFF & val >> 40;
+    b5 = 0xFF & val >> 32;
+    b4 = 0xFF & val >> 24;
+    b3 = 0xFF & val >> 16;
+    b2 = 0xFF & val >> 8;
+    b1 = 0xFF & val;
 #endif
-  ((unsigned char*) b->data)[idx] = b1;
-  ((unsigned char*) b->data)[idx+1] = b2;
-  ((unsigned char*) b->data)[idx+2] = b3;
-  ((unsigned char*) b->data)[idx+3] = b4;
-  ((unsigned char*) b->data)[idx+4] = b5;
-  ((unsigned char*) b->data)[idx+5] = b6;
-  ((unsigned char*) b->data)[idx+6] = b7;
-  ((unsigned char*) b->data)[idx+7] = b8;
+    ((unsigned char*) b->data)[idx] = b1;
+    ((unsigned char*) b->data)[idx+1] = b2;
+    ((unsigned char*) b->data)[idx+2] = b3;
+    ((unsigned char*) b->data)[idx+3] = b4;
+    ((unsigned char*) b->data)[idx+4] = b5;
+    ((unsigned char*) b->data)[idx+5] = b6;
+    ((unsigned char*) b->data)[idx+6] = b7;
+    ((unsigned char*) b->data)[idx+7] = b8;
+  }
   return Val_unit;
 }
 
