@@ -89,6 +89,8 @@ module Bytecode = struct
       init
       !default_crcs
 
+  let run_shared_startup _ = ()
+
   let run (ic, file_name, file_digest) ~unit_header ~priv =
     let open Misc in
     let old_state = Symtable.current_state () in
