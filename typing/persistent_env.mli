@@ -16,6 +16,10 @@
 
 open Misc
 
+module Consistbl : module type of struct
+  include Consistbl.Make (Misc.Stdlib.String)
+end
+
 type error =
   | Illegal_renaming of modname * modname * filepath
   | Inconsistent_import of modname * filepath * filepath
