@@ -76,8 +76,10 @@ module Native = struct
       init
       (ndl_getmap ())
 
+  let run_shared_startup handle =
+    ndl_run handle "_shared_startup"
+
   let run handle ~unit_header ~priv:_ =
-    ndl_run handle "_shared_startup";
     List.iter (fun cu ->
         try ndl_run handle cu
         with exn -> raise (DT.Error (Library's_module_initializers_failed exn)))
