@@ -171,6 +171,7 @@ EXIT_CODE=0
 ) | (
   while read f; do
     if test -n "$(check_prune "$f")"; then continue; fi
+    if $(git check-ignore -q "$f"); then continue; fi
     case `$OCAML_CT_LS_FILES "$f" 2>&1` in
       "") path_in_index=false;;
       *) path_in_index=true;;
