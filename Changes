@@ -3,6 +3,12 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Code generation and optimizations:
+
+- GPR#2278: Remove native code generation support for 32-bit Intel macOS,
+  iOS and other Darwin targets.
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives
