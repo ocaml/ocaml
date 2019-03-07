@@ -289,13 +289,11 @@ dynlink.cmo: dynlink.cmi dynlink_common.cmi \
 	$(OCAMLC) -c $(COMPFLAGS) dynlink.ml
 
 dynlink.cmx: dynlink.cmi dynlink_common.cmi \
-      dynlink_types.cmx dynlink_common.cmx natdynlink.ml \
+      dynlink_types.cmx dynlink_common.cmx dynlink.mlopt \
       dynlink_compilerlibs.cmi \
       dynlink_compilerlibs_native/dynlink_compilerlibs.cmx
-	cp natdynlink.ml dynlink.mlopt
 	$(OCAMLOPT) -c $(COMPFLAGS) -I dynlink_compilerlibs_native/ \
           -impl dynlink.mlopt
-	rm -f dynlink.mlopt
 
 extract_crc.cmo: extract_crc.ml dynlink.cmi dynlink_compilerlibs.cmi
 	$(OCAMLC) -c $(COMPFLAGS) -I ../utils extract_crc.ml
@@ -303,6 +301,12 @@ extract_crc.cmo: extract_crc.ml dynlink.cmi dynlink_compilerlibs.cmi
 extract_crc: $(COMPILEROBJS) dynlink.cma \
   dynlink_compilerlibs_bytecode/dynlink_compilerlibs.cmo \
   extract_crc.cmo
+
+dynlink.cmx: dynlink.mlopt
+	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) -impl dynlink.mlopt
+
+extract_crc: dynlink.cma \
+  $(LOCAL_SRC)_bytecode/dynlink_compilerlibs.cmo extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
 install:
@@ -329,7 +333,6 @@ partialclean:
 	rm -f extract_crc *.cm[ioaxt] *.cmti *.cmxa
 
 clean: partialclean
-	rm -f *.$(A) *.$(O) *.so *.dll dynlink.mlopt \
-	      dynlink_platform_intf.mli
+	rm -f *.$(A) *.$(O) *.so *.dll dynlink_platform_intf.mli
 
 depend:
