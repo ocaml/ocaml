@@ -51,6 +51,9 @@ Working version
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
 
+- GPR#2296: Fix parsing of hexadecimal floats with underscores in the exponent.
+  (Hugo Heuzard, review by ????)
+
 OCaml 4.08.0
 ------------
 

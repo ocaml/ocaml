@@ -310,7 +310,10 @@ static int caml_float_of_hex(const char * s, double * res)
       if (*s == 0) return -1;   /* nothing after exponent mark */
       /* Remove '_' characters before calling strtol () */
       len = strlen(s);
-      buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
+      buf =
+        len < sizeof(parse_buffer)
+        ? parse_buffer
+        : caml_stat_alloc(len + 1);
       dst = buf;
       while (len--) {
         char c = *s++;
