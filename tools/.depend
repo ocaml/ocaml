@@ -79,7 +79,7 @@ cvt_emit.cmx :
 dumpobj.cmo : \
     ../bytecomp/symtable.cmi \
     opnames.cmo \
-    ../bytecomp/opcodes.cmi \
+    ../bytecomp/opcodes.cmo \
     ../parsing/location.cmi \
     ../bytecomp/lambda.cmi \
     ../bytecomp/instruct.cmi \

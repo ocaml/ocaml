@@ -37,6 +37,7 @@ odoc_analyse.cmo : \
     odoc_ast.cmi \
     ../parsing/location.cmi \
     ../parsing/lexer.cmi \
+    ../typing/persistent_env.cmi \
     ../typing/env.cmi \
     ../utils/config.cmi \
     ../driver/compmisc.cmi \
@@ -65,6 +66,7 @@ odoc_analyse.cmx : \
     odoc_ast.cmx \
     ../parsing/location.cmx \
     ../parsing/lexer.cmx \
+    ../typing/persistent_env.cmx \
     ../typing/env.cmx \
     ../utils/config.cmx \
     ../driver/compmisc.cmx \
