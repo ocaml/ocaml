@@ -52,7 +52,7 @@ type existential_restriction =
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Ctype.Unification_trace.t
-  | Pattern_type_clash of Ctype.Unification_trace.t
+  | Pattern_type_clash of Ctype.Unification_trace.t * pattern_desc option
   | Or_pattern_type_clash of Ident.t * Ctype.Unification_trace.t
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
@@ -383,7 +383,7 @@ let unify_pat_types loc env ty ty' =
     unify env ty ty'
   with
     Unify trace ->
-      raise(Error(loc, env, Pattern_type_clash(trace)))
+      raise(Error(loc, env, Pattern_type_clash(trace, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
@@ -410,14 +410,16 @@ let unify_pat_types_gadt loc env ty ty' =
   try unify_gadt ~equations_level:(get_gadt_equations_level ()) env ty ty'
   with
   | Unify trace ->
-      raise(Error(loc, !env, Pattern_type_clash(trace)))
+      raise(Error(loc, !env, Pattern_type_clash(trace, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 
 let unify_pat env pat expected_ty =
-  unify_pat_types pat.pat_loc env pat.pat_type expected_ty
+  try unify_pat_types pat.pat_loc env pat.pat_type expected_ty
+  with Error (loc, env, Pattern_type_clash(trace, None)) ->
+    raise(Error(loc, env, Pattern_type_clash(trace, Some pat.pat_desc)))
 
 (* make all Reither present in open variants *)
 let finalize_variant pat =
@@ -1117,7 +1119,7 @@ exception Need_backtrack
 let check_scope_escape loc env level ty =
   try Ctype.check_scope_escape env level ty
   with Unify trace ->
-    raise(Error(loc, env, Pattern_type_clash(trace)))
+    raise(Error(loc, env, Pattern_type_clash(trace, None)))
 
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
@@ -1419,7 +1421,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         let (_, ty_arg, ty_res) = instance_label false label in
         begin try
           unify_pat_types loc !env ty_res (instance record_ty)
-        with Error(_loc, _env, Pattern_type_clash(trace)) ->
+        with Error(_loc, _env, Pattern_type_clash(trace, _)) ->
           raise(Error(label_lid.loc, !env,
                       Label_mismatch(label_lid.txt, trace)))
         end;
@@ -4822,6 +4824,11 @@ let report_expr_type_clash_hints ppf exp trace =
   | Some (Texp_constant const) -> report_literal_type_constraint ppf const trace
   | _ -> ()
 
+let report_pattern_type_clash_hints ppf pat trace =
+  match pat with
+  | Some (Tpat_constant const) -> report_literal_type_constraint ppf const trace
+  | _ -> ()
+
 let report_type_expected_explanation expl ppf =
   match expl with
   | If_conditional ->
@@ -4865,12 +4872,14 @@ let report_error env ppf = function
                    longident lid)
         (function ppf ->
            fprintf ppf "but is mixed here with fields of type")
-  | Pattern_type_clash trace ->
+  | Pattern_type_clash (trace, pat) ->
       report_unification_error ppf env trace
         (function ppf ->
           fprintf ppf "This pattern matches values of type")
         (function ppf ->
-          fprintf ppf "but a pattern was expected which matches values of type")
+          fprintf ppf "but a pattern was expected which matches values of \
+                       type");
+      report_pattern_type_clash_hints ppf pat trace
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ppf env trace
         (function ppf ->

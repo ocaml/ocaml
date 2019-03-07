@@ -64,7 +64,7 @@ Error: This expression has type int but an expression was expected of type
          int32
 |}]
 
-(* not implemented *)
+(* pattern *)
 let _ : int32 -> int32 = function
   | 0 -> 0l
   | x -> x
@@ -74,6 +74,25 @@ Line 2, characters 4-5:
         ^
 Error: This pattern matches values of type int
        but a pattern was expected which matches values of type int32
+       Hint: Did you mean `0l'?
+|}, Principal{|
+Line 2, characters 4-5:
+2 |   | 0 -> 0l
+        ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type int32
+|}]
+
+let _ : int64 -> int64 = function
+  | 1L | 2 -> 3L
+  | x -> x;;
+[%%expect{|
+Line 2, characters 9-10:
+2 |   | 1L | 2 -> 3L
+             ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type int64
+       Hint: Did you mean `2L'?
 |}]
 
 (* symmetric *)
