@@ -58,6 +58,7 @@ type error =
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
       Ctype.Unification_trace.t * type_forcing_context option
+      * expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
@@ -394,7 +395,7 @@ let unify_exp_types loc env ty expected_ty =
     unify env ty expected_ty
   with
     Unify trace ->
-      raise(Error(loc, env, Expr_type_clash(trace, None)))
+      raise(Error(loc, env, Expr_type_clash(trace, None, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
@@ -1956,7 +1957,7 @@ let rec type_approx env sexp =
       let ty = type_approx env e in
       let ty1 = approx_type env sty in
       begin try unify env ty ty1 with Unify trace ->
-        raise(Error(sexp.pexp_loc, env, Expr_type_clash (trace, None)))
+        raise(Error(sexp.pexp_loc, env, Expr_type_clash (trace, None, None)))
       end;
       ty1
   | Pexp_coerce (e, sty1, sty2) ->
@@ -1968,7 +1969,7 @@ let rec type_approx env sexp =
       and ty1 = approx_ty_opt sty1
       and ty2 = approx_type env sty2 in
       begin try unify env ty ty1 with Unify trace ->
-        raise(Error(sexp.pexp_loc, env, Expr_type_clash (trace, None)))
+        raise(Error(sexp.pexp_loc, env, Expr_type_clash (trace, None, None)))
       end;
       ty2
   | _ -> newvar ()
@@ -2250,7 +2251,10 @@ let name_cases default lst =
 
 let unify_exp env exp expected_ty =
   let loc = proper_exp_loc exp in
-  unify_exp_types loc env exp.exp_type expected_ty
+  try
+    unify_exp_types loc env exp.exp_type expected_ty
+  with Error(loc, env, Expr_type_clash(trace, tfc, None)) ->
+    raise (Error(loc, env, Expr_type_clash(trace, tfc, Some exp.exp_desc)))
 
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
@@ -2279,9 +2283,10 @@ and with_explanation explanation f =
   | None -> f ()
   | Some explanation ->
       try f ()
-      with Error (loc', env', Expr_type_clash(trace', None))
+      with Error (loc', env', Expr_type_clash(trace', None, exp'))
         when not loc'.Location.loc_ghost ->
-        raise (Error (loc', env', Expr_type_clash(trace', Some explanation)))
+        let err = Expr_type_clash(trace', Some explanation, exp') in
+        raise (Error (loc', env', err))
 
 and type_expect_
     ?in_function ?(recarg=Rejected)
@@ -4771,6 +4776,52 @@ let spellcheck_idents ppf unbound valid_idents =
 open Format
 open Printtyp
 
+(* Hint on type error on integer literals
+   To avoid confusion, it is disabled on float literals
+   and when the expected type is `int` *)
+let report_literal_type_constraint h const =
+  let hint_const typ str_val =
+    let hint_suffix c =
+      Some (fun ppf ->
+        fprintf ppf "@\n@[Hint: Did you mean `%s%c'?@]" str_val c)
+    in
+    if Path.same typ Predef.path_int32 then
+      hint_suffix 'l'
+    else if Path.same typ Predef.path_int64 then
+      hint_suffix 'L'
+    else if Path.same typ Predef.path_nativeint then
+      hint_suffix 'n'
+    else if Path.same typ Predef.path_float then
+      hint_suffix '.'
+    else
+      None
+  in
+  let hint str_val =
+    match h with
+    | Ctype.Unification_trace.(Diff
+      { expected = { t = { desc = Tconstr (typ, [], _); _ }; _ }; _ }) ->
+        hint_const typ str_val
+    | _ -> None
+  in
+  match const with
+  | Const_int n -> hint (Int.to_string n)
+  | Const_int32 n -> hint (Int32.to_string n)
+  | Const_int64 n -> hint (Int64.to_string n)
+  | Const_nativeint n -> hint (Nativeint.to_string n)
+  | _ -> None
+
+let report_literal_type_constraint ppf const trace =
+  let hints ~prev:_ h = report_literal_type_constraint h const in
+  begin match Ctype.Unification_trace.explain trace hints with
+  | Some hint -> hint ppf
+  | None -> ()
+  end
+
+let report_expr_type_clash_hints ppf exp trace =
+  match exp with
+  | Some (Texp_constant const) -> report_literal_type_constraint ppf const trace
+  | _ -> ()
+
 let report_type_expected_explanation expl ppf =
   match expl with
   | If_conditional ->
@@ -4833,14 +4884,15 @@ let report_error env ppf = function
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
         (Ident.name id);
       spellcheck_idents ppf id valid_idents
-  | Expr_type_clash (trace, explanation) ->
+  | Expr_type_clash (trace, explanation, exp) ->
       report_unification_error ppf env trace
         ~type_expected_explanation:
           (report_type_expected_explanation_opt explanation)
         (function ppf ->
            fprintf ppf "This expression has type")
         (function ppf ->
-           fprintf ppf "but an expression was expected of type")
+           fprintf ppf "but an expression was expected of type");
+      report_expr_type_clash_hints ppf exp trace
   | Apply_non_function typ ->
       reset_and_mark_loops typ;
       begin match (repr typ).desc with

@@ -125,6 +125,7 @@ type error =
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
       Ctype.Unification_trace.t * type_forcing_context option
+      * Typedtree.expression_desc option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
