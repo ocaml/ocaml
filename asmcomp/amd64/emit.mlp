@@ -232,6 +232,7 @@ let addressing addr typ i n =
 (* Record live pointers at call points -- see Emitaux *)
 
 let record_frame_label ?label live raise_ dbg =
+  let dbg = Insn_debuginfo.dbg dbg in
   let lbl =
     match label with
     | None -> new_label()
@@ -480,7 +481,7 @@ let tailrec_entry_point = ref 0
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
-  emit_debug_info i.dbg;
+  emit_debug_info (Insn_debuginfo.dbg i.dbg);
   match i.desc with
   | Lend -> ()
   | Lprologue ->
@@ -647,7 +648,7 @@ let emit_instr fallthrough i =
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
         let lbl_call_gc = new_label() in
         let dbg =
-          if not Config.spacetime then Debuginfo.none
+          if not Config.spacetime then Insn_debuginfo.none
           else i.dbg
         in
         let lbl_frame =
@@ -679,7 +680,7 @@ let emit_instr fallthrough i =
         end;
         let label =
           record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+            Insn_debuginfo.none
         in
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)

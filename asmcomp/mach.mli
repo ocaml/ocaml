@@ -46,6 +46,8 @@ type test =
   | Ioddtest
   | Ieventest
 
+type phantom_defining_expr = unit  (* To be filled in later. *)
+
 type operation =
     Imove
   | Ispill
@@ -85,10 +87,8 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    dbg: Debuginfo.t;
     mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    mutable dbg: Insn_debuginfo.t;
   }
 
 and instruction_desc =
@@ -122,16 +122,47 @@ type fundecl =
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
+    fun_phantom_lets :
+      (Backend_var.Provenance.t option * phantom_defining_expr)
+        Backend_var.Map.t;
   }
 
 val dummy_instr: instruction
 val end_instr: unit -> instruction
-val instr_cons:
-      instruction_desc -> Reg.t array -> Reg.t array -> instruction ->
-        instruction
-val instr_cons_debug:
-      instruction_desc -> Reg.t array -> Reg.t array -> Debuginfo.t ->
-        instruction -> instruction
+
+(** How the new instruction created by [instr_cons_debug] obtains its
+    phantom let available-before information. *)
+type phantom_available_before =
+  | Take_from of instruction
+    (** Copy the phantom let available-before information from the given
+        instruction onto the new instruction. *)
+  | Exactly of Backend_var.Set.t
+    (** Give the new instruction the given phantom let available-before set. *)
+
+(** Cons an instruction, with the supplied description, arguments, results
+    and so forth (and an empty live set) onto the given next instruction. *)
+val instr_cons_debug
+   : phantom_available_before:phantom_available_before
+  -> instruction_desc
+  -> Reg.t array
+  -> Reg.t array
+  -> Debuginfo.t
+  -> instruction
+  -> instruction
+
+(** Cons an instruction onto the given [next] instruction.  The new instruction
+    has the specified [instruction_desc] and an empty [live] field.  The
+    [arg], [res] and [dbg] fields of the new instruction are those of [from]
+    except where overridden by one or more of the optional arguments. *)
+val instr_cons_from
+   : ?arg:Reg.t array
+  -> ?res:Reg.t array
+  -> ?dbg:Insn_debuginfo.t
+  -> instruction
+  -> instruction_desc
+  -> next:instruction
+  -> instruction
+
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
 val spacetime_node_hole_pointer_is_live_before : instruction -> bool

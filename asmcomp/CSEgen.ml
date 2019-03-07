@@ -201,17 +201,18 @@ let kill_addr_regs n =
 
 (* Prepend a set of moves before [i] to assign [srcs] to [dsts].  *)
 
-let insert_single_move i src dst = instr_cons (Iop Imove) [|src|] [|dst|] i
+let insert_single_move dbg i src dst =
+  instr_cons_from i (Iop Imove) ~arg:[|src|] ~res:[|dst|] ~dbg ~next:i
 
-let insert_move srcs dsts i =
+let insert_move dbg srcs dsts i =
   match Array.length srcs with
   | 0 -> i
-  | 1 -> instr_cons (Iop Imove) srcs dsts i
+  | 1 -> instr_cons_from i (Iop Imove) ~arg:srcs ~res:dsts ~dbg ~next:i
   | _ -> (* Parallel move: first copy srcs into tmps one by one,
             then copy tmps into dsts one by one *)
          let tmps = Reg.createv_like srcs in
-         let i1 = array_fold2 insert_single_move i tmps dsts in
-         array_fold2 insert_single_move i1 srcs tmps
+         let i1 = array_fold2 (insert_single_move dbg) i tmps dsts in
+         array_fold2 (insert_single_move dbg) i1 srcs tmps
 
 class cse_generic = object (self)
 
@@ -310,7 +311,7 @@ method private cse n i =
                   let n3 = set_known_regs n1 i.res vres in
                   (* This is n1 above and not n2 because the move
                      does not destroy any regs *)
-                  insert_move res i.res (self#cse n3 i.next)
+                  insert_move i.dbg res i.res (self#cse n3 i.next)
               | _ ->
                   (* We already computed the operation but lost its
                      results.  Associate the result registers to

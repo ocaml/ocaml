@@ -22,7 +22,7 @@ open Mach
 let insert_move src dst next =
   if src.loc = dst.loc
   then next
-  else instr_cons (Iop Imove) [|src|] [|dst|] next
+  else instr_cons_from next (Iop Imove) ~arg:[|src|] ~res:[|dst|] ~next
 
 let insert_moves src dst next =
   let rec insmoves i =
@@ -102,32 +102,38 @@ method private reload i =
   | Iifthenelse(tst, ifso, ifnot) ->
       let newarg = self#reload_test tst i.arg in
       insert_moves i.arg newarg
-        (instr_cons
-          (Iifthenelse(tst, self#reload ifso, self#reload ifnot)) newarg [||]
-          (self#reload i.next))
+        (instr_cons_from i
+          (Iifthenelse(tst, self#reload ifso, self#reload ifnot))
+          ~arg:newarg ~res:[||]
+          ~next:(self#reload i.next))
   | Iswitch(index, cases) ->
       let newarg = self#makeregs i.arg in
       insert_moves i.arg newarg
-        (instr_cons (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
-          (self#reload i.next))
+        (instr_cons_from i
+          (Iswitch(index, Array.map (self#reload) cases))
+          ~arg:newarg ~res:[||]
+          ~next:(self#reload i.next))
   | Icatch(rec_flag, handlers, body) ->
       let new_handlers = List.map
           (fun (nfail, handler) -> nfail, self#reload handler)
           handlers in
-      instr_cons
-        (Icatch(rec_flag, new_handlers, self#reload body)) [||] [||]
-        (self#reload i.next)
-  | Iexit i ->
-      instr_cons (Iexit i) [||] [||] dummy_instr
+      instr_cons_from i
+        (Icatch(rec_flag, new_handlers, self#reload body)) ~arg:[||] ~res:[||]
+        ~next:(self#reload i.next)
+  | Iexit k ->
+      instr_cons_from i (Iexit k) ~arg:[||] ~res:[||] ~next:dummy_instr
   | Itrywith(body, handler) ->
-      instr_cons (Itrywith(self#reload body, self#reload handler)) [||] [||]
-        (self#reload i.next)
+      instr_cons_from i
+        (Itrywith(self#reload body, self#reload handler)) ~arg:[||] ~res:[||]
+        ~next:(self#reload i.next)
 
 method fundecl f =
   redo_regalloc <- false;
   let new_body = self#reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_codegen_options = f.fun_codegen_options;
-    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape},
+    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape;
+    fun_phantom_lets = f.fun_phantom_lets;
+   },
    redo_regalloc)
 end

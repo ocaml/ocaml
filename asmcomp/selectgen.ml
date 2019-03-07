@@ -556,10 +556,14 @@ method regs_for tys = Reg.createv tys
 val mutable instr_seq = dummy_instr
 
 method insert_debug _env desc dbg arg res =
-  instr_seq <- instr_cons_debug desc arg res dbg instr_seq
+  instr_seq <-
+    instr_cons_debug ~phantom_available_before:(Exactly Backend_var.Set.empty)
+      desc arg res dbg instr_seq
 
-method insert _env desc arg res =
-  instr_seq <- instr_cons desc arg res instr_seq
+method insert desc _env arg res =
+  instr_seq <-
+    instr_cons_debug ~phantom_available_before:(Exactly Backend_var.Set.empty)
+      desc arg res Debuginfo.none instr_seq
 
 method extract_core ~end_instr =
   let rec extract res i =
@@ -869,8 +873,10 @@ method emit_expr (env:environment) exp =
       let r = join env r1 s1 r2 s2 in
       self#insert env
         (Itrywith(s1#extract,
-                  instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv
-                             (s2#extract)))
+                  instr_cons_debug
+                    ~phantom_available_before:(Exactly Backend_var.Set.empty)
+                    (Iop Imove) [|Proc.loc_exn_bucket|] rv
+                    Debuginfo.none (s2#extract)))
         [||] [||];
       r
 
@@ -1175,7 +1181,10 @@ method emit_tail (env:environment) exp =
       let s2 = self#emit_tail_sequence (env_add v rv env) e2 in
       self#insert env
         (Itrywith(s1#extract,
-                  instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2))
+                  instr_cons_debug
+                    ~phantom_available_before:(Exactly Backend_var.Set.empty)
+                    (Iop Imove) [|Proc.loc_exn_bucket|] rv
+                    Debuginfo.none s2))
         [||] [||];
       begin match opt_r1 with
         None -> ()
@@ -1242,6 +1251,7 @@ method emit_fundecl f =
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
+    fun_phantom_lets = Backend_var.Map.empty;
   }
 
 end

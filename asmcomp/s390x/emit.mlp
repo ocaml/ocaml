@@ -163,6 +163,7 @@ let emit_set_comp cmp res =
 (* Record live pointers at call points *)
 
 let record_frame_label ?label live raise_ dbg =
+  let dbg = Insn_debuginfo.dbg dbg in
   let lbl =
     match label with
     | None -> new_label()
@@ -304,7 +305,7 @@ let tailrec_entry_point = ref 0
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
-    emit_debug_info i.dbg;
+    emit_debug_info (Insn_debuginfo.dbg i.dbg);
     match i.desc with
       Lend -> ()
     | Lprologue ->

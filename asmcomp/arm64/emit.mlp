@@ -120,6 +120,7 @@ let emit_addressing addr r =
 (* Record live pointers at call points *)
 
 let record_frame_label ?label live raise_ dbg =
+  let dbg = Insn_debuginfo.dbg dbg in
   let lbl =
     match label with
     | None -> new_label()
@@ -562,7 +563,7 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
-    emit_debug_info i.dbg;
+    emit_debug_info (Insn_debuginfo.dbg i.dbg);
     match i.desc with
     | Lend -> ()
     | Lprologue ->

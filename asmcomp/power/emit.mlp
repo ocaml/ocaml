@@ -304,6 +304,7 @@ let adjust_stack_offset delta =
 (* Record live pointers at call points *)
 
 let record_frame ?label live raise_ dbg =
+  let dbg = Insn_debuginfo.dbg dbg in
   let lbl =
     match label with
     | None -> new_label()
@@ -523,7 +524,7 @@ end)
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
-    emit_debug_info i.dbg;
+    emit_debug_info (Insn_debuginfo.dbg i.dbg);
     match i.desc with
     | Lend -> ()
     | Lprologue ->
@@ -761,7 +762,7 @@ let emit_instr i =
         `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none
+        record_frame i.live false Insn_debuginfo.none
     | Lop(Ispecific(Ialloc_far { bytes = n; label_after_call_gc; })) ->
         if !call_gc_label = 0 then begin
           match label_after_call_gc with
@@ -774,7 +775,7 @@ let emit_instr i =
         `	bge	{emit_label lbl}\n`;
         `	bl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
-        record_frame i.live false Debuginfo.none;
+        record_frame i.live false Insn_debuginfo.none;
         `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`

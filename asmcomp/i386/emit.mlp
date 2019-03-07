@@ -192,6 +192,7 @@ let addressing addr typ i n =
 (* Record live pointers at call points *)
 
 let record_frame_label ?label live raise_ dbg =
+  let dbg = Insn_debuginfo.dbg dbg in
   let lbl =
     match label with
     | None -> new_label()
@@ -469,7 +470,7 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 
 let emit_instr fallthrough i =
-  emit_debug_info i.dbg;
+  emit_debug_info (Insn_debuginfo.dbg i.dbg);
   match i.desc with
   | Lend -> ()
   | Lprologue ->
@@ -603,7 +604,7 @@ let emit_instr fallthrough i =
         I.mov eax (sym32 "caml_young_ptr");
         I.cmp (sym32 "caml_young_limit") eax;
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame_label i.live false Debuginfo.none in
+        let lbl_frame = record_frame_label i.live false Insn_debuginfo.none in
         I.jb (label lbl_call_gc);
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
@@ -621,7 +622,7 @@ let emit_instr fallthrough i =
         end;
         let label =
           record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+            Insn_debuginfo.none
         in
         def_label label;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0))

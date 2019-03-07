@@ -39,6 +39,8 @@ type test =
   | Ioddtest
   | Ieventest
 
+type phantom_defining_expr = unit  (* To be filled in later. *)
+
 type operation =
     Imove
   | Ispill
@@ -69,10 +71,8 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    dbg: Debuginfo.t;
     mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    mutable dbg: Insn_debuginfo.t;
   }
 
 and instruction_desc =
@@ -100,6 +100,9 @@ type fundecl =
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
+    fun_phantom_lets :
+      (Backend_var.Provenance.t option * phantom_defining_expr)
+        Backend_var.Map.t;
   }
 
 let rec dummy_instr =
@@ -107,10 +110,8 @@ let rec dummy_instr =
     next = dummy_instr;
     arg = [||];
     res = [||];
-    dbg = Debuginfo.none;
+    dbg = Insn_debuginfo.none;
     live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
   }
 
 let end_instr () =
@@ -118,23 +119,46 @@ let end_instr () =
     next = dummy_instr;
     arg = [||];
     res = [||];
-    dbg = Debuginfo.none;
+    dbg = Insn_debuginfo.none;
     live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
   }
 
-let instr_cons d a r n =
-  { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+type phantom_available_before =
+  | Take_from of instruction
+  | Exactly of Backend_var.Set.t
+
+let instr_cons_debug ~phantom_available_before d a r dbg n =
+  let phantom_available_before =
+    match phantom_available_before with
+    | Take_from insn -> Insn_debuginfo.phantom_available_before insn.dbg
+    | Exactly avail -> avail
+  in
+  let dbg = Insn_debuginfo.create dbg ~phantom_available_before in
+  { desc = d; next = n; arg = a; res = r; dbg; live = Reg.Set.empty;
   }
 
-let instr_cons_debug d a r dbg n =
-  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+let instr_cons_from ?arg ?res ?dbg from desc ~next =
+  let arg =
+    match arg with
+    | None -> from.arg
+    | Some arg -> arg
+  in
+  let res =
+    match res with
+    | None -> from.res
+    | Some res -> res
+  in
+  let dbg =
+    match dbg with
+    | None -> from.dbg
+    | Some dbg -> dbg
+  in
+  { desc;
+    next;
+    arg;
+    res;
+    dbg;
+    live = Reg.Set.empty;
   }
 
 let rec instr_iter f i =

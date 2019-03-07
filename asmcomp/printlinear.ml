@@ -68,8 +68,9 @@ let instr ppf i =
   | Lraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
-  if not (Debuginfo.is_none i.dbg) then
-    fprintf ppf " %s" (Debuginfo.to_string i.dbg)
+  let dbg = Insn_debuginfo.dbg i.dbg in
+  if not (Debuginfo.is_none dbg) then
+    fprintf ppf " %s" (Debuginfo.to_string dbg)
 
 let rec all_instr ppf i =
   match i.desc with

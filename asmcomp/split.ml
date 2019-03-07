@@ -126,7 +126,8 @@ let rec rename i sub =
     Iend ->
       (i, sub)
   | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
-      (instr_cons_debug i.desc (subst_regs i.arg sub) [||] i.dbg i.next,
+      (instr_cons_from i i.desc ~arg:(subst_regs i.arg sub) ~res:[||]
+         ~next:i.next,
        None)
   | Iop Ireload when i.res.(0).loc = Unknown ->
       begin match sub with
@@ -136,29 +137,31 @@ let rec rename i sub =
           let newr = Reg.clone i.res.(0) in
           let (new_next, sub_next) =
             rename i.next (Some(Reg.Map.add oldr newr s)) in
-          (instr_cons i.desc i.arg [|newr|] new_next,
+          (instr_cons_from i i.desc ~res:[|newr|] ~next:new_next,
            sub_next)
       end
   | Iop _ ->
       let (new_next, sub_next) = rename i.next sub in
-      (instr_cons_debug i.desc (subst_regs i.arg sub) (subst_regs i.res sub)
-                        i.dbg new_next,
+      (instr_cons_from i i.desc
+        ~arg:(subst_regs i.arg sub) ~res:(subst_regs i.res sub)
+        ~next:new_next,
        sub_next)
   | Iifthenelse(tst, ifso, ifnot) ->
       let (new_ifso, sub_ifso) = rename ifso sub in
       let (new_ifnot, sub_ifnot) = rename ifnot sub in
       let (new_next, sub_next) =
         rename i.next (merge_substs sub_ifso sub_ifnot i.next) in
-      (instr_cons (Iifthenelse(tst, new_ifso, new_ifnot))
-                  (subst_regs i.arg sub) [||] new_next,
+      (instr_cons_from i (Iifthenelse(tst, new_ifso, new_ifnot))
+         ~arg:(subst_regs i.arg sub) ~res:[||] ~next:new_next,
        sub_next)
   | Iswitch(index, cases) ->
       let new_sub_cases = Array.map (fun c -> rename c sub) cases in
       let sub_merge =
         merge_subst_array (Array.map (fun (_n, s) -> s) new_sub_cases) i.next in
       let (new_next, sub_next) = rename i.next sub_merge in
-      (instr_cons (Iswitch(index, Array.map (fun (n, _s) -> n) new_sub_cases))
-                  (subst_regs i.arg sub) [||] new_next,
+      (instr_cons_from i
+         (Iswitch(index, Array.map (fun (n, _s) -> n) new_sub_cases))
+         ~arg:(subst_regs i.arg sub) ~res:[||] ~next:new_next,
        sub_next)
   | Icatch(rec_flag, handlers, body) ->
       let new_subst = List.map (fun (nfail, _) -> nfail, ref None)
@@ -177,8 +180,8 @@ let rec rename i sub =
       let (new_next, sub_next) = rename i.next merged_subst in
       let new_handlers = List.map2 (fun (nfail, _) (handler, _) ->
           (nfail, handler)) handlers res in
-      (instr_cons
-         (Icatch(rec_flag, new_handlers, new_body)) [||] [||] new_next,
+      (instr_cons_from i (Icatch(rec_flag, new_handlers, new_body))
+         ~arg:[||] ~res:[||] ~next:new_next,
        sub_next)
   | Iexit nfail ->
       let r = find_exit_subst nfail in
@@ -189,10 +192,12 @@ let rec rename i sub =
       let (new_handler, sub_handler) = rename handler sub in
       let (new_next, sub_next) =
         rename i.next (merge_substs sub_body sub_handler i.next) in
-      (instr_cons (Itrywith(new_body, new_handler)) [||] [||] new_next,
+      (instr_cons_from i (Itrywith(new_body, new_handler))
+         ~arg:[||] ~res:[||] ~next:new_next,
        sub_next)
   | Iraise k ->
-      (instr_cons_debug (Iraise k) (subst_regs i.arg sub) [||] i.dbg i.next,
+      (instr_cons_from i (Iraise k)
+         ~arg:(subst_regs i.arg sub) ~res:[||] ~next:i.next,
        None)
 
 (* Second pass: replace registers by their final representatives *)
@@ -220,4 +225,5 @@ let fundecl f =
     fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
     fun_spacetime_shape = f.fun_spacetime_shape;
+    fun_phantom_lets = f.fun_phantom_lets;
   }

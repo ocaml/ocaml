@@ -85,7 +85,7 @@ let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
 let rec available_regs (instr : M.instruction)
       ~(avail_before : RAS.t) : RAS.t =
   check_invariants instr ~avail_before;
-  instr.available_before <- avail_before;
+  instr.dbg <- Insn_debuginfo.with_available_before instr.dbg avail_before;
   let avail_across, avail_after =
     let ok set = RAS.Ok set in
     let unreachable = RAS.Unreachable in
@@ -325,7 +325,7 @@ let rec available_regs (instr : M.instruction)
         augment_availability_at_raise avail_before;
         None, unreachable
   in
-  instr.available_across <- avail_across;
+  instr.dbg <- Insn_debuginfo.with_available_across instr.dbg avail_across;
   match instr.desc with
   | Iend -> avail_after
   | _ -> available_regs instr.next ~avail_before:avail_after

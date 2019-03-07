@@ -174,9 +174,11 @@ let rec instr ppf i =
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";
     if !Clflags.dump_avail then begin
+      let available_before = Insn_debuginfo.available_before i.dbg in
+      let available_across = Insn_debuginfo.available_across i.dbg in
       let module RAS = Reg_availability_set in
-      fprintf ppf "@[<1>AB={%a}" (RAS.print ~print_reg:reg) i.available_before;
-      begin match i.available_across with
+      fprintf ppf "@[<1>AB={%a}" (RAS.print ~print_reg:reg) available_before;
+      begin match available_across with
       | None -> ()
       | Some available_across ->
         fprintf ppf ",AA={%a}" (RAS.print ~print_reg:reg) available_across
@@ -229,8 +231,9 @@ let rec instr ppf i =
   | Iraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
-  if not (Debuginfo.is_none i.dbg) then
-    fprintf ppf "%s" (Debuginfo.to_string i.dbg);
+  let dbg = Insn_debuginfo.dbg i.dbg in
+  if not (Debuginfo.is_none dbg) then
+    fprintf ppf "%s" (Debuginfo.to_string dbg);
   begin match i.next.desc with
     Iend -> ()
   | _ -> fprintf ppf "@,%a" instr i.next
