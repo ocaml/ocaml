@@ -1584,7 +1584,10 @@ let expand_head env ty =
 let _ = forward_try_expand_once := try_expand_safe
 
 
-(* Expand until we find a non-abstract type declaration *)
+(* Expand until we find a non-abstract type declaration,
+   use try_expand_safe to avoid raising "Unify _" when
+   called on recursive types
+ *)
 
 let rec extract_concrete_typedecl env ty =
   let ty = repr ty in
@@ -1593,7 +1596,7 @@ let rec extract_concrete_typedecl env ty =
       let decl = Env.find_type p env in
       if decl.type_kind <> Type_abstract then (p, p, decl) else
       let ty =
-        try try_expand_once env ty with Cannot_expand -> raise Not_found
+        try try_expand_safe env ty with Cannot_expand -> raise Not_found
       in
       let (_, p', decl) = extract_concrete_typedecl env ty in
         (p, p', decl)
