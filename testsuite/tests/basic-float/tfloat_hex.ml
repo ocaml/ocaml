@@ -20,3 +20,28 @@ let () =
   try_float_of_string "0x1.0p-2147483648";
   try_float_of_string "0x123456789ABCDEF0p2147483647";
   try_float_of_string "0x1p2147483648";
+
+  (* Allow underscore in exponents *)
+  try_float_of_string "0x1_._1p1_1";
+  try_float_of_string "0x1_._1p1_";
+  try_float_of_string "0x1_._1p-1_1";
+  try_float_of_string "0x1_._1p-1_";
+  try_float_of_string "0x1_._1p+1_1";
+  try_float_of_string "0x1_._1p+1_"
+
+let () =
+  (* check that the compiler can also parse tokens *)
+  let _ = 0x1A in
+  let _ = 0x1Ap3 in
+
+  let _ = 0x1.0p-2147483648 in
+  let _ = 0x123456789ABCDEF0p2147483647 in
+  let _ = 0x1p2147483648 in
+
+  let _ = 0x1_._1p1_1 in
+  let _ = 0x1_._1p1_ in
+  let _ = 0x1_._1p-1_1 in
+  let _ = 0x1_._1p-1_ in
+  let _ = 0x1_._1p+1_1 in
+  let _ = 0x1_._1p+1_ in
+  ()
