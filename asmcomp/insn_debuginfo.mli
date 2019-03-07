@@ -45,10 +45,14 @@ val phantom_available_before : t -> Backend_var.Set.t
 val available_before : t -> Reg_availability_set.t
 
 (** Which registers are available (in the sense of [Available_regs])
-    during execution of the instruction. *)
-(* CR mshinwell: We need to note here that [available_across] may not be a
-   subset of [available_before], in the case where e.g. %rax and %rbx hold
-   the value of x before the instruction but %rax is not available across. *)
+    during execution of the instruction.
+
+    Note that [available_across] may not be a subset of [available_before],
+    because [Reg_availability_set.canonicalise] does not preserve this
+    property.  (Example: if %rax and %rbx both hold the value of some variable
+    [x] before the instruction but %rax is not available across the instruction,
+    then the canonicalised sets for [available_before] and [available_after]
+    may not name the same register for [x].) *)
 val available_across : t -> Reg_availability_set.t option
 
 (** Set which registers are available (in the sense of [Available_regs])
