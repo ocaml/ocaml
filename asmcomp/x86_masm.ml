@@ -237,6 +237,7 @@ let print_line b = function
 
   (* gas only *)
   | Cfi_adjust_cfa_offset _
+  | Cfi_def_cfa_offset _
   | Cfi_endproc
   | Cfi_startproc
   | File _

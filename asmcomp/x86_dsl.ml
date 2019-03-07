@@ -82,6 +82,7 @@ module D = struct
   let byte n = directive (Byte n)
   let bytes s = directive (Bytes s)
   let cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)
+  let cfi_def_cfa_offset n = directive (Cfi_def_cfa_offset n)
   let cfi_endproc () = directive Cfi_endproc
   let cfi_startproc () = directive Cfi_startproc
   let comment s = directive (Comment s)

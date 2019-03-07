@@ -206,6 +206,7 @@ type asm_line =
 
   (* gas only (the masm emitter will fail on them) *)
   | Cfi_adjust_cfa_offset of int
+  | Cfi_def_cfa_offset of int
   | Cfi_endproc
   | Cfi_startproc
   | File of int * string (* (file_num, file_name) *)

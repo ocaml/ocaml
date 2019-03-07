@@ -57,8 +57,11 @@ let cfi_startproc () =
 let cfi_endproc () =
   if Config.asm_cfi_supported then D.cfi_endproc ()
 
-let cfi_adjust_cfa_offset n =
-  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
+let cfi_adjust_cfa_offset ~bytes =
+  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset bytes
+
+let cfi_def_cfa_offset ~bytes =
+  if Config.asm_cfi_supported then D.cfi_def_cfa_offset bytes
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
@@ -93,6 +96,24 @@ let slot_offset loc cl =
       then !stack_offset + n * 8
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
+
+let push reg =
+  I.push reg;
+  cfi_adjust_cfa_offset ~bytes:8
+
+let pop reg =
+  I.pop reg;
+  cfi_adjust_cfa_offset ~bytes:(-8)
+
+let add_to_rsp n =
+  if n <> 0 then begin
+    if n > 0 then begin
+      I.add (int n) rsp
+    end else begin
+      I.sub (int (-n)) rsp
+    end;
+    cfi_adjust_cfa_offset ~bytes:(-n)
+  end
 
 (* Symbols *)
 
@@ -435,17 +456,18 @@ let emit_float_test cmp i lbl =
 
 let output_epilogue f =
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      I.add (int n) rsp;
-      cfi_adjust_cfa_offset (-n);
+    let frame_size = frame_size () in
+    let n = frame_size - 8 - (if fp then 8 else 0) in
+    add_to_rsp n;
+    if fp then begin
+      pop rbp
     end;
-    if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
-    if n <> 0
-    then cfi_adjust_cfa_offset n
+    cfi_adjust_cfa_offset ~bytes:n;
+    if fp then begin
+      cfi_adjust_cfa_offset ~bytes:8
+    end
   end
   else
     f ()
@@ -482,12 +504,12 @@ let emit_profile () =
        all the registers used for argument passing, so we don't
        need to preserve other regs.  We do need to initialize rbp
        like mcount expects it, though. *)
-    I.push r10;
+    push r10;
     if not fp then I.mov rsp rbp;
     (* No Spacetime instrumentation needed: [mcount] cannot call anything
        OCaml-related. *)
     emit_call "mcount";
-    I.pop r10
+    pop r10
   end
 
 (* Output the assembly code for an instruction *)
@@ -504,18 +526,13 @@ let emit_instr fallthrough i =
   | Lend -> ()
   | Lprologue ->
     if fp then begin
-      I.push rbp;
-      cfi_adjust_cfa_offset 8;
+      push rbp;
       I.mov rsp rbp;
     end;
     if !Clflags.gprofile then emit_profile();
     if frame_required() then begin
-      let n = frame_size() - 8 - (if fp then 8 else 0) in
-      if n <> 0
-      then begin
-        I.sub (int n) rsp;
-        cfi_adjust_cfa_offset n;
-      end;
+      let n = frame_size () - 8 - (if fp then 8 else 0) in
+      add_to_rsp (-n)
     end;
     def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
@@ -597,12 +614,7 @@ let emit_instr fallthrough i =
         end
       end
   | Lop(Istackoffset n) ->
-      if n < 0
-      then I.add (int (-n)) rsp
-      else if n > 0
-      then I.sub (int n) rsp;
-      if n <> 0
-      then cfi_adjust_cfa_offset n;
+      add_to_rsp (-n);
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
@@ -656,12 +668,12 @@ let emit_instr fallthrough i =
              register allocator that %rax is destroyed by Ialloc, we can't
              force that the argument (the node pointer) is not in %rax.) *)
           if spacetime_node_hole_ptr_is_in_rax then begin
-            I.push rax
+            push rax
           end;
           load_symbol_addr "caml_young_limit" rax;
           I.cmp (mem64 QWORD 0 RAX) r15;
           if spacetime_node_hole_ptr_is_in_rax then begin
-            I.pop rax  (* this does not affect the flags *)
+            pop rax  (* this does not affect the flags *)
           end
         end else
           I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
@@ -874,18 +886,15 @@ let emit_instr fallthrough i =
         else
           I.mov (sym (emit_label s)) arg
       in
-      cfi_adjust_cfa_offset 16;
-      I.sub (int 16) rsp;
+      add_to_rsp (-16);
       stack_offset := !stack_offset + 16;
       I.mov r14 (mem64 QWORD 0 RSP);
       load_label_addr lbl_handler r14;
       I.mov r14 (mem64 QWORD 8 RSP);
       I.mov rsp r14
   | Lpoptrap ->
-      I.pop r14;
-      cfi_adjust_cfa_offset (-8);
-      I.add (int 8) rsp;
-      cfi_adjust_cfa_offset (-8);
+      pop r14;
+      add_to_rsp 8;
       stack_offset := !stack_offset - 16
   | Lraise k ->
       (* No Spacetime instrumentation is required for [caml_raise_exn] and
@@ -897,8 +906,12 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty true i.dbg
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
-          I.pop r14;
-          I.pop r11;
+          (* CR-someday mshinwell: At this point we should mark the CFA
+             as unavailable, to avoid garbage variable values being seen when
+             stopped at exactly this point in the debugger, but it isn't clear
+             how to do that (using CFI directives at least). *)
+          pop r14;
+          pop r11;
           I.jmp r11
       end
 
@@ -935,16 +948,13 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+  (* Set the initial CFA offset so as to cope with the CPU having pushed the
+     return address. (The CFA points at the first address above the return
+     address slot.) *)
+  cfi_def_cfa_offset ~bytes:8;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
-  if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      cfi_adjust_cfa_offset (-n);
-    end;
-  end;
   cfi_endproc ();
   begin match system with
   | S_gnu | S_linux ->
