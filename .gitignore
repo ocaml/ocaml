@@ -123,6 +123,7 @@ _build
 /otherlibs/dynlink/dynlink_compilerlibs/Makefile.copy-sources
 /otherlibs/dynlink/dynlink_compilerlibs/*.ml
 /otherlibs/dynlink/dynlink_compilerlibs/*.mli
+/otherlibs/dynlink/dynlink_compilerlibs/.depend
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli
