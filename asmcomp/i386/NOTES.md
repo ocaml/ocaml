@@ -4,6 +4,9 @@ Intel and AMD x86 processors in 32-bit mode.
 The baseline is the 80486, also known as `i486`.
 (Debian's baseline is now the Pentium 1.)
 
+In OCaml versions 3.09.2 to 4.08, MacOS was supported by this port.  Support
+was removed in OCaml 4.09.
+
 Floating-point architecture: x87.
 (SSE2 not available in Debian's baseline.)
 
