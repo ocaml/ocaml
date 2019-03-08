@@ -192,8 +192,8 @@ byte/dynlink_compilerlibs.cmi: byte/dynlink_compilerlibs.cmo
 native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 	$(OCAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMX)
 
-%/dynlink.cmi: dynlink.cmi
-	cp $< $@
+%/dynlink.cmi: dynlink.cmi dynlink.mli
+	cp $^ $*/
 
 # Rules for building the interface of the [Dynlink_compilerlibs] packs.
 # To avoid falling foul of the problem described below, the .cmo and .cmx
@@ -255,7 +255,7 @@ partialclean:
 clean: partialclean
 	rm -f *.$(A) *.$(O) *.so *.dll dynlink_platform_intf.mli \
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
-	      $(LOCAL_SRC)/.depend
+	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli
 
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"
