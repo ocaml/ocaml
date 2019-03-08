@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ -z "$@" ]; then
+   echo "Usage: $0 file.c" 1>&2
+   exit 1
+fi
+
+sed -i.bak '
+# Field(x, i) = y ==> Init_field_small(x, i, y)
+s/^\(\s*\)Field(\([^;]*\),\s*\([^;]*\))\s*=\s*\([^;]*\);\s*$/\1Init_field_small(\2, \3, \4);/
+
+# caml_initialize(&Field(x, i), y) ==> caml_initialize_field(x, i, y)
+#     caml_modify(&Field(x, i), y) ==>     caml_modify_field(x, i, y)
+s/^\(\s*\)caml_\(initialize\|modify\)\s*(\s*&\s*Field(\s*\([^,]*\),\s*\([^,()]*\)\s*)\s*,/\1caml_\2_field(\3, \4,/
+' "$@"
