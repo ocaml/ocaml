@@ -1016,7 +1016,7 @@ method emit_stores env data regs_addr =
               for i = 0 to Array.length regs - 1 do
                 let r = regs.(i) in
                 let kind = if r.typ = Float then Double_u else Word_val in
-                self#insert env 
+                self#insert env
                             (Iop(Istore(kind, !a, false)))
                             (Array.append [|r|] regs_addr) [||];
                 a := Arch.offset_addressing !a (size_component r.typ)
