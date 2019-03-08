@@ -13,8 +13,8 @@ Working version
 
 * GPR#2276: Remove support for compiler plugins and hooks (also adds
   [Dynlink.unsafe_get_global_value])
-  (Mark Shinwell, Xavier Clerc, review by Nicolas Ojeda Bar and
-  Florian Angeletti)
+  (Mark Shinwell, Xavier Clerc, review by Nicolás Ojeda Bär,
+  Florian Angeletti and David Allsopp)
 
 ### Internal/compiler-libs changes:
 
