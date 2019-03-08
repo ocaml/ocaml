@@ -204,6 +204,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          position being the first machine instruction of [insn] and the ending
          position being the next machine address after that.
 
+         (* CR vlaviron: rewrite case description *)
      (d) [key] is in [S.available_across insn], which means (as for (b) above)
          it is in [S.available_before insn]. A new range is created with the
          starting position being the first machine instruction of [insn] and
@@ -232,6 +233,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          terminate the range one byte beyond the first machine instruction of
          [insn].
 
+         (* CR vlaviron: rewrite case description *)
      (d) [key] is in [S.available_across insn], which means (as for (b) above)
          it is in [S.available_before insn].  The existing range remains open.
   *)
@@ -313,6 +315,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       |> handle case_2c Close_subrange_one_byte_after
     in
     let must_restart =
+      (* CR vlaviron: maybe test that the actions list is non-empty ? *)
       if S.must_restart_ranges_upon_any_change () then
         KS.inter opt_available_across_prev_insn available_before
       else
@@ -325,6 +328,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         ~(prev_insn : L.instruction option)
         ~open_subranges ~subrange_state =
     let first_insn = ref first_insn in
+    (* CR vlaviron: The [prev_insn] reference is not meaningfully used:
+       it is only read once and written to at most once, *after* the read. *)
     let prev_insn = ref prev_insn in
     let insert_insn ~(new_insn : L.instruction) =
       assert (new_insn.next == insn);
@@ -340,23 +345,32 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     (* Note that we can't reuse an existing label in the code since we rely on
        the ordering of range-related labels. *)
+    (* CR vlaviron: would it be better to only generate new labels when they
+       are actually used ? *)
     let label = Cmm.new_label () in
     let label_insn : L.instruction =
       { desc = Llabel label;
         next = insn;
         arg = [| |];
         res = [| |];
-        dbg = Debuginfo.none;
+        dbg = Debuginfo.none; (* CR vlaviron: is it temporary ? *)
         live = insn.live;
       }
     in
     let used_label = ref false in
+    (* CR vlaviron: the notation [open_subrange] for the function
+       and [open_subranges] for the current map is confusing.
+       It might help to use a different name for one of them, like
+       [subranges_opened] for the map. *)
     let open_subrange key ~start_pos_offset ~open_subranges =
+      (* CR vlaviron: if the range is later discarded, the inserted label
+         may actually be useless. It should not pose any problem, though. *)
       used_label := true;
       KM.add key (label, start_pos_offset, label_insn) open_subranges
     in
     let close_subrange key ~end_pos_offset ~open_subranges =
       match KM.find key open_subranges with
+      (* CR vlaviron: is it not an error if the key is not there ? *)
       | exception Not_found -> open_subranges
       | start_pos, start_pos_offset, start_insn ->
         let open_subranges = KM.remove key open_subranges in
@@ -385,6 +399,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let actions, must_restart =
       actions_at_instruction ~insn ~prev_insn:!prev_insn
     in
+    (* Restart ranges if needed *)
     let open_subranges =
       KS.fold (fun key open_subranges ->
           let open_subranges =
@@ -394,6 +409,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         must_restart
         open_subranges
     in
+    (* Apply actions *)
     let open_subranges =
       List.fold_left (fun open_subranges (key, (action : action)) ->
           match action with
@@ -413,6 +429,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         open_subranges
         actions
     in
+    (* Close all subranges if at last instruction *)
     let open_subranges =
       match insn.desc with
       | Lend ->
@@ -495,6 +512,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   let find t index = S.Index.Tbl.find t.ranges index
 
   let rewrite_labels_and_remove_empty_subranges_and_ranges t ~env =
+    (* CR vlaviron: This code is just confusing.
+       Tbl.mapi does not update in place, so there's no need to
+       actually remove the empty ranges from the old table,
+       and this could actually be a simple fold instead. *)
     let empty_ranges = ref S.Index.Set.empty in
     let ranges =
       S.Index.Tbl.mapi t.ranges (fun index range ->
