@@ -168,6 +168,7 @@ module Options = Main_args.Make_optcomp_options (struct
     set output_c_object (); set output_complete_object ()
   let _p = set gprofile
   let _pack = set make_package
+  let _plugin _p = plugin := true
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
@@ -262,6 +263,8 @@ let main () =
     Compmisc.read_clflags_from_env ();
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
+    if !Clflags.plugin then
+      fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
       Compenv.process_deferred_actions
         (ppf,

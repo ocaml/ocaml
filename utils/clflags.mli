@@ -105,6 +105,7 @@ val noinit : bool ref
 val noversion : bool ref
 val use_prims : string ref
 val use_runtime : string ref
+val plugin : bool ref
 val principal : bool ref
 val real_paths : bool ref
 val recursive_types : bool ref
