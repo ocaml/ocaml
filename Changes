@@ -45,6 +45,12 @@ Working version
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
 
+### Compiler user-interface and warnings:
+
+- GPR#2301: Hint on type error on int literal
+  (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
+  Gabriel Scherer and Armaël Guéneau)
+
 ### Bug fixes:
 
 - MPR#7937, GPR#2287: fix uncaught Unify exception when looking for type
