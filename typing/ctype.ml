@@ -135,6 +135,16 @@ module Unification_trace = struct
   let incompatible_fields name got expected =
     Incompatible_fields {name; diff={got; expected} }
 
+  let explain trace f =
+    let rec explain = function
+      | [] -> None
+      | [h] -> f ~prev:None h
+      | h :: (prev :: _ as rem) ->
+        match f ~prev:(Some prev) h with
+        | Some _ as m -> m
+        | None -> explain rem in
+    explain (List.rev trace)
+
 end
 module Trace = Unification_trace
 
