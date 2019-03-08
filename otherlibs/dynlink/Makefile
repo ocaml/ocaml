@@ -95,7 +95,6 @@ COMPILERLIBS_SOURCES=\
   parsing/ast_mapper.ml \
   parsing/attr_helper.ml \
   parsing/builtin_attributes.ml \
-  parsing/pprintast.ml \
   typing/ident.ml \
   typing/path.ml \
   typing/primitive.ml \
