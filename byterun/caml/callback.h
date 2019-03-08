@@ -46,8 +46,8 @@ CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
-CAMLextern caml_root caml_named_root (char const * name);
-typedef void (*caml_named_action) (caml_root, char *);
+CAMLextern const value * caml_named_value (char const * name);
+typedef void (*caml_named_action) (const value*, char *);
 CAMLextern void caml_iterate_named_values(caml_named_action f);
 
 CAMLextern void caml_main (char_os ** argv);

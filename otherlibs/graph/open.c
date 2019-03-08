@@ -368,14 +368,14 @@ value caml_gr_sigio_handler(void)
 void caml_gr_fail(const char *fmt, const char *arg)
 {
   char buffer[1024];
-  caml_root graphic_failure_exn;
+  const value* graphic_failure_exn;
 
-  graphic_failure_exn = caml_named_root("Graphics.Graphic_failure");
+  graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
   if (!graphic_failure_exn)
     caml_invalid_argument("Exception Graphics.Graphic_failure not initialized,"
                      " must link graphics.cma");
   sprintf(buffer, fmt, arg);
-  caml_raise_with_string(caml_read_root(graphic_failure_exn), buffer);
+  caml_raise_with_string(*graphic_failure_exn, buffer);
 }
 
 void caml_gr_check_open(void)

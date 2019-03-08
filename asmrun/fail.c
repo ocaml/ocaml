@@ -176,16 +176,16 @@ void caml_raise_sys_blocked_io(void)
 
 void caml_array_bound_error(void)
 {
-  caml_root array_bound_error_exn;
+  const value* array_bound_error_exn;
 
   array_bound_error_exn =
-    caml_named_root("Pervasives.array_bound_error");
+    caml_named_value("Pervasives.array_bound_error");
   if (!array_bound_error_exn) {
     fprintf(stderr, "Fatal error: exception "
                     "Invalid_argument(\"index out of bounds\")\n");
     exit(2);
   }
-  caml_raise(caml_read_root(array_bound_error_exn));
+  caml_raise(*array_bound_error_exn);
 }
 
 int caml_is_special_exception(value exn) {

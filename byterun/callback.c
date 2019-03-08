@@ -251,7 +251,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   return Val_unit;
 }
 
-CAMLexport caml_root caml_named_root(char const *name)
+CAMLexport const value* caml_named_value(char const *name)
 {
   struct named_value * nv;
   caml_root ret = NULL;
@@ -265,8 +265,9 @@ CAMLexport caml_root caml_named_root(char const *name)
     }
   }
   caml_plat_unlock(&named_value_lock);
-
-  return ret;
+  /* *ret should never be a minor object, since caml_create_root promotes */
+  CAMLassert (!(ret && Is_minor(caml_read_root(ret))));
+  return Op_val(ret);
 }
 
 CAMLexport int caml_get_callback_depth ()
@@ -290,7 +291,7 @@ CAMLexport void caml_iterate_named_values(caml_named_action f)
   for(i = 0; i < Named_value_size; i++){
     struct named_value * nv;
     for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
-      f( nv->val, nv->name );
+      f( Op_val(nv->val), nv->name );
     }
   }
 }
