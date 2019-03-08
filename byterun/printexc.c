@@ -126,7 +126,7 @@ CAMLexport char * caml_format_exception(value exn)
 static void default_fatal_uncaught_exception(value exn)
 {
   char * msg;
-  caml_root at_exit;
+  const value * at_exit;
   int saved_backtrace_active;
   intnat saved_backtrace_pos;
   caml_domain_state* domain_state = Caml_state;
@@ -138,8 +138,8 @@ static void default_fatal_uncaught_exception(value exn)
   saved_backtrace_active = domain_state->backtrace_active;
   saved_backtrace_pos = domain_state->backtrace_pos;
   domain_state->backtrace_active = 0;
-  at_exit = caml_named_root("Pervasives.do_at_exit");
-  if (at_exit) caml_callback_exn(caml_read_root(at_exit), Val_unit);
+  at_exit = caml_named_value("Pervasives.do_at_exit");
+  if (at_exit) caml_callback_exn(*at_exit, Val_unit);
   domain_state->backtrace_active = saved_backtrace_active;
   domain_state->backtrace_pos = saved_backtrace_pos;
   /* Display the uncaught exception */
@@ -154,11 +154,11 @@ int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
 void caml_fatal_uncaught_exception(value exn)
 {
-  caml_root handle_uncaught_exception =
-    caml_named_root("Printexc.handle_uncaught_exception");
+  const value* handle_uncaught_exception =
+    caml_named_value("Printexc.handle_uncaught_exception");
   if (handle_uncaught_exception)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */
-    caml_callback2(caml_read_root(handle_uncaught_exception), exn, Val_bool(DEBUGGER_IN_USE));
+    caml_callback2(*handle_uncaught_exception, exn, Val_bool(DEBUGGER_IN_USE));
   else
     default_fatal_uncaught_exception(exn);
   /* Terminate the process */

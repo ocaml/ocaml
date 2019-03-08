@@ -354,12 +354,12 @@ CAMLprim value caml_gr_sigio_handler(value unit)
 void gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
-  caml_root graphic_failure_exn = caml_named_root("Graphics.Graphic_failure");
+  const value* graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
   if (!graphic_failure_exn)
       invalid_argument("Exception Graphics.Graphic_failure not initialized, "
                        "must link graphics.cma");
   sprintf(buffer, fmt, arg);
-  caml_raise_with_string(caml_read_root(graphic_failure_exn), buffer);
+  caml_raise_with_string(*graphic_failure_exn, buffer);
 }
 
 void gr_check_open(void)

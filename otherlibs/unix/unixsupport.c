@@ -286,19 +286,18 @@ void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   value res;
   value name = Val_unit, err = Val_unit, arg = Val_unit;
-  caml_root unix_error_exn;
-  int unix_error_found;
+  const value* unix_error_exn;
 
   Begin_roots3 (name, err, arg);
     arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
     name = caml_copy_string(cmdname);
     err = unix_error_of_code (errcode);
-    unix_error_exn = caml_named_root("Unix.Unix_error");
+    unix_error_exn = caml_named_value("Unix.Unix_error");
     if (!unix_error_exn)
       caml_invalid_argument("Exception Unix.Unix_error not initialized,"
                             " please link unix.cma");
     res = caml_alloc_4(0,
-      caml_read_root(unix_error_exn),
+      *unix_error_exn,
       err,
       name,
       arg);
