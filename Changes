@@ -100,8 +100,12 @@ Working version
   [Lprologue] relative to [Iname_for_debugger] operations.
   (Mark Shinwell, review by Vincent Laviron)
 
+- #2303: Add [Insn_debuginfo] module.  Change the interface for
+  creating [Mach] instructions.  Do not generate empty debuginfo when
+  copying [Mach] instructions, etc.
+  (Mark Shinwell, review by Vincent Laviron)
+
 - #2308: More debugging information on [Cmm] terms
-  (Mark Shinwell, review by Stephen Dolan)
 
 - #7878, #8542: Replaced TypedtreeIter with tast_iterator
   (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
