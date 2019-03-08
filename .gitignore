@@ -120,7 +120,7 @@ _build
 
 /otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
-/otherlibs/dynlink/dynlink_compilerlibs/Makefile.copy-sources
+/otherlibs/dynlink/dynlink_compilerlibs/Makefile
 /otherlibs/dynlink/dynlink_compilerlibs/*.ml
 /otherlibs/dynlink/dynlink_compilerlibs/*.mli
 /otherlibs/dynlink/dynlink_compilerlibs/.depend

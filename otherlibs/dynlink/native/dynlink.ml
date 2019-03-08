@@ -1,4 +1,4 @@
-#3 "otherlibs/dynlink/dynlink.mlopt"
+#3 "otherlibs/dynlink/native/dynlink.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
