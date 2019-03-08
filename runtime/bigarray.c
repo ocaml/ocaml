@@ -629,7 +629,9 @@ CAMLprim value caml_ba_uint8_get16(value vb, value vind)
 {
   void *addr;
   intnat res;
+#ifdef ARCH_ALIGN_INT16
   unsigned char b1, b2;
+#endif
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 1) caml_array_bound_error();
@@ -656,7 +658,9 @@ CAMLprim value caml_ba_uint8_get32(value vb, value vind)
 {
   void *addr;
   uint32_t res;
+#ifdef ARCH_ALIGN_INT32
   unsigned char b1, b2, b3, b4;
+#endif
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 3) caml_array_bound_error();
@@ -685,7 +689,9 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 {
   void *addr;
   uint64_t res;
+#ifdef ARCH_ALIGN_INT64
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
+#endif
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
@@ -806,7 +812,9 @@ CAMLprim value caml_ba_set_generic(value vb, value vind, value newval)
 CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)
 {
   void *addr;
+#ifdef ARCH_ALIGN_INT16
   unsigned char b1, b2;
+#endif
   intnat val;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
@@ -836,7 +844,9 @@ CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)
 CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
 {
   void *addr;
+#ifdef ARCH_ALIGN_INT32
   unsigned char b1, b2, b3, b4;
+#endif
   intnat idx = Long_val(vind);
   intnat val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
@@ -872,7 +882,9 @@ CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
 CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
 {
   void *addr;
+#ifdef ARCH_ALIGN_INT64
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
+#endif
   intnat idx = Long_val(vind);
   int64_t val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
