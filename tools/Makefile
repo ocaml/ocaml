@@ -372,6 +372,9 @@ install::
 	cp ocaml-instr-graph ocaml-instr-report "$(INSTALL_BINDIR)/"
 endif
 
+install::
+	cp ocaml-update-c "$(INSTALL_BINDIR)/"
+
 # Common stuff
 
 .SUFFIXES:
