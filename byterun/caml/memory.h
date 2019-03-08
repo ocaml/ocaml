@@ -52,9 +52,11 @@ CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify_field (value, int, value);
+#define caml_modify_field caml_modify_field
 CAMLextern int caml_atomic_cas_field (value, int, value, value);
 CAMLextern value caml_read_barrier (value, int);
 CAMLextern void caml_initialize_field (value, int, value);
+#define caml_initialize_field caml_initialize_field
 CAMLextern void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
