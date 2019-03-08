@@ -169,19 +169,17 @@ include $(LOCAL_SRC)/Makefile
 COMPILERLIBS_CMO=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmo)
 COMPILERLIBS_CMX=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmx)
 
-$(LOCAL_SRC)/%.cmi: $(LOCAL_SRC)/%.mli
+$(LOCAL_SRC)/%.cmi:
 	$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
-          -I $(LOCAL_SRC) -o $@ $<
+          -I $(LOCAL_SRC) -o $@ $(LOCAL_SRC)/$*.mli
 
-$(LOCAL_SRC)/%.cmo: $(LOCAL_SRC)/%.ml \
-  $(LOCAL_SRC)/%.cmi
+$(LOCAL_SRC)/%.cmo:
 	$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
-          -I $(LOCAL_SRC) -o $@ $<
+          -I $(LOCAL_SRC) -o $@ $(LOCAL_SRC)/$*.ml
 
-$(LOCAL_SRC)/%.cmx: $(LOCAL_SRC)/%.ml \
-  $(LOCAL_SRC)/%.cmi
+$(LOCAL_SRC)/%.cmx:
 	$(OCAMLOPT) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
-          $(OPTCOMPFLAGS) -I $(LOCAL_SRC) -o $@ $<
+          $(OPTCOMPFLAGS) -I $(LOCAL_SRC) -o $@ $(LOCAL_SRC)/$*.ml
 
 # Rules for building the [Dynlink_compilerlibs] bytecode and native packs
 # from their components.
@@ -193,6 +191,9 @@ byte/dynlink_compilerlibs.cmi: byte/dynlink_compilerlibs.cmo
 
 native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 	$(OCAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -pack -o $@ $(COMPILERLIBS_CMX)
+
+%/dynlink.cmi: dynlink.cmi
+	cp $< $@
 
 # Rules for building the interface of the [Dynlink_compilerlibs] packs.
 # To avoid falling foul of the problem described below, the .cmo and .cmx
@@ -263,14 +264,17 @@ depend:
 else
 DEPEND_DUMMY_FILES=\
   native/dynlink_compilerlibs.ml \
-  byte/dynlink_compilerlibs.mli
+  byte/dynlink_compilerlibs.mli \
+  byte/dynlink.mli \
+  native/dynlink.mli \
+  dynlink_platform_intf.mli
 
 depend:
 	touch $(DEPEND_DUMMY_FILES)
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
     -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
-    -I native -native *.mli *.ml native/dynlink.ml >> .depend
+    -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
 endif
 
