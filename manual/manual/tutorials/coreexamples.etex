@@ -712,17 +712,15 @@ to create a more complex printer, for example for the optional types:
 let pp_option printer ppf = function
   | None -> Printf.fprintf ppf "None"
   | Some v -> Printf.fprintf ppf "Some(%a)" printer v;;
-Printf.fprintf stdout "The current setting is %a"
-  (pp_option pp_int) (Some 3);
-print_newline();;
-Printf.fprintf stdout "There is only %a"
-  (pp_option pp_int) (None);
-print_newline();;
+Printf.fprintf stdout
+  "The current setting is %a. \nThere is only %a\n"
+  (pp_option pp_int) (Some 3)
+  (pp_option pp_int) None
+;;
 \end{caml_example}
-We need to also provide a printer as argument. "pp_option" processes the
-argument depending on its value by printing "None" or using the provided printer.
-This approach works for more complex types like options. In such case
-we need to provide a printer for any additional type that they wrap.
+We need to also provide a printer as argument. The function "pp_option"
+processes the argument depending on its value by printing "None" or using
+the provided printer.
 
 Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
