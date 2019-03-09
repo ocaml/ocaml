@@ -699,26 +699,30 @@ Printf.printf "Float value: %F" 42;;
 \end{caml_example}
 "fprintf" function is like "printf" except that it takes an output channel as
 the first argument. The "%a" specifier can be useful to define custom printer
-(for custom types). For instance, a custom printer for ints:
+(for custom types). For instance, we can create a printing template that converts
+an integer argument to signed decimal:
 \begin{caml_example}{toplevel}
 let pp_int ppf n = Printf.fprintf ppf "%d" n;;
 Printf.printf "Outputting an integer using a custom printer: %a " pp_int 42;;
 \end{caml_example}
-We can create a combinator that transforms a printer for
+The printing template is itself a composable printer. It is also possible
+to create a more complex printer, for example for the optional types:
 "'a" type into a printer for "'a option":
 \begin{caml_example}{toplevel}
 let pp_option printer ppf = function
   | None -> Printf.fprintf ppf "None"
-  | Some v -> Printf.fprintf ppf "Some(%a)" printer v
-let () = Printf.fprintf stdout
-  "The current setting is %a"
+  | Some v -> Printf.fprintf ppf "Some(%a)" printer v;;
+Printf.fprintf stdout "The current setting is %a"
   (pp_option pp_int) (Some 3);
 print_newline();;
+Printf.fprintf stdout "There is only %a"
+  (pp_option pp_int) (None);
+print_newline();;
 \end{caml_example}
+We need to also provide a printer as argument. "pp_option" processes the
+argument depending on its value by printing "None" or using the provided printer.
 This approach works for more complex types like options. In such case
 we need to provide a printer for any additional type that they wrap.
-In this way we construct the composable printer that can be used with the "%a"
-specifier, calling it in the last step of an example.
 
 Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
