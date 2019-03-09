@@ -51,6 +51,12 @@ Working version
 * GPR#2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
 
+### Standard library:
+
+- GPR#2262: take precision (.<n>) and flags ('+' and ' ') into account
+  in printf %F
+  (Pierre Roux, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
