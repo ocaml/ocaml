@@ -49,6 +49,7 @@ module Not_available = struct
 
   let fold_initial_units ~init ~f:_ = not_available init
 
+  let run_shared_startup _ = not_available ()
   let run _ ~unit_header:_ ~priv:_ = not_available ()
   let load ~filename:_ ~priv:_ = not_available ()
   let finish = not_available
