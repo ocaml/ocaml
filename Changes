@@ -466,7 +466,7 @@ OCaml 4.08.0
 ### Manual and documentation:
 
 - MPR#7548: printf example in the tutorial part of the manual
- (Kostikova Oxana, rewiew by Gabriel Scherer, Florian Angeletti, 
+ (Kostikova Oxana, rewiew by Gabriel Scherer, Florian Angeletti,
  Marcello Seri and Armaël Guéneau)
 
 - MPR#7546, GPR#2020: preambles and introduction for compiler-libs.

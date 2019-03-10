@@ -697,7 +697,7 @@ the format specifier, the compiler will display an error message:
 \begin{caml_example}{toplevel}[error]
 Printf.printf "Float value: %F" 42;;
 \end{caml_example}
-"fprintf" function is like "printf" except that it takes an output channel as
+The "fprintf" function is like "printf" except that it takes an output channel as
 the first argument. The "%a" specifier can be useful to define custom printer
 (for custom types). For instance, we can create a printing template that converts
 an integer argument to signed decimal:
@@ -705,9 +705,10 @@ an integer argument to signed decimal:
 let pp_int ppf n = Printf.fprintf ppf "%d" n;;
 Printf.printf "Outputting an integer using a custom printer: %a " pp_int 42;;
 \end{caml_example}
-The printing template is itself a composable printer. It is also possible
-to create a more complex printer, for example for the optional types:
-"'a" type into a printer for "'a option":
+The advantage of those printers based on the "%a" specifier is that they can be
+composed together to create more complex printers step by step.
+We can define a combinator that can turn a printer for "'a" type into a printer
+for "'a optional":
 \begin{caml_example}{toplevel}
 let pp_option printer ppf = function
   | None -> Printf.fprintf ppf "None"
@@ -718,9 +719,8 @@ Printf.fprintf stdout
   (pp_option pp_int) None
 ;;
 \end{caml_example}
-We need to also provide a printer as argument. The function "pp_option"
-processes the argument depending on its value by printing "None" or using
-the provided printer.
+If the value of its argument its "None", the printer returned by pp_option
+printer prints "None" otherwise it uses the provided printer to print "Some ".
 
 Here is how to rewrite the pretty-printer using "fprintf":
 \begin{caml_example}{toplevel}
@@ -731,7 +731,7 @@ let pp_expr ppf expr =
     if prec > op_prec then Printf.fprintf output "%s" ")" in
   let rec print prec ppf expr =
       match expr with
-        Const c -> Printf.fprintf ppf "%F" c
+      | Const c -> Printf.fprintf ppf "%F" c
       | Var v -> Printf.fprintf ppf "%s" v
       | Sum(f, g) ->
           open_paren prec 0 ppf;
@@ -754,8 +754,8 @@ pp_expr stdout e; print_newline ();;
 pp_expr stdout (deriv e "x"); print_newline ();;
 \end{caml_example}
 
-Associated with typechecking feature is the need to explicitly indicate that the
-string is a format string in order to pass it to the "printf" function.
+Due to the way that format string are build, storing a format string requires
+an explicit type annotation:
 \begin{caml_example*}{toplevel}
 let str : _ format =
     "%i is an integer value, %F is a float, %S\n";;
