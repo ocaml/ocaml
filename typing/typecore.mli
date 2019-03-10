@@ -17,7 +17,6 @@
 
 open Asttypes
 open Types
-open Format
 
 (* This variant is used to print improved error messages, and does not affect
    the behavior of the typechecker itself.
@@ -183,7 +182,7 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-val report_error: Env.t -> formatter -> error -> unit
+val report_error: loc:Location.t -> Env.t -> error -> Location.error
  (** @deprecated.  Use {!Location.error_of_exn}, {!Location.print_report}. *)
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
