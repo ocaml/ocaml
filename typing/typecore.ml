@@ -34,6 +34,7 @@ type type_forcing_context =
   | Assert_condition
   | Sequence_left_hand_side
   | When_guard
+  | Application of expression
 
 type type_expected = {
   ty: type_expr;
@@ -3839,7 +3840,7 @@ and type_label_exp create env loc ty_expected
   in
   (lid, label, {arg with exp_type = instance arg.exp_type})
 
-and type_argument ?recarg env sarg ty_expected' ty_expected =
+and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
@@ -3931,7 +3932,8 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
                      func let_var) }
       end
   | _ ->
-      let texp = type_expect ?recarg env sarg (mk_expected ty_expected') in
+      let texp = type_expect ?recarg env sarg
+        (mk_expected ?explanation ty_expected') in
       unify_exp env texp ty_expected;
       texp
 
@@ -3947,6 +3949,7 @@ and type_application env funct sargs =
     tvar || List.mem l ls
   in
   let ignored = ref [] in
+  let explanation = Application funct in
   let rec type_unknown_args
       (args :
       (Asttypes.arg_label * (unit -> Typedtree.expression) option) list)
@@ -3993,7 +3996,7 @@ and type_application env funct sargs =
         in
         let optional = is_optional l1 in
         let arg1 () =
-          let arg1 = type_expect env sarg1 (mk_expected ty1) in
+          let arg1 = type_expect env sarg1 (mk_expected ~explanation ty1) in
           if optional then
             unify_exp env arg1 (type_option(newvar()));
           arg1
@@ -4045,7 +4048,7 @@ and type_application env funct sargs =
                               Apply_wrong_label(l', ty_fun')))
                 else
                   ([], more_sargs,
-                   Some (fun () -> type_argument env sarg0 ty ty0))
+                   Some (fun () -> type_argument ~explanation env sarg0 ty ty0))
             | _ ->
                 assert false
           end else try
@@ -4069,11 +4072,11 @@ and type_application env funct sargs =
                 (Warnings.Nonoptional_label (Printtyp.string_of_label l));
             sargs, more_sargs,
             if not optional || is_optional l' then
-              Some (fun () -> type_argument env sarg0 ty ty0)
+              Some (fun () -> type_argument ~explanation env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc
                 (Warnings.Not_principal "using an optional argument here");
-              Some (fun () -> option_some (type_argument env sarg0
+              Some (fun () -> option_some (type_argument ~explanation env sarg0
                                              (extract_option_type env ty)
                                              (extract_option_type env ty0)))
             end
@@ -4770,90 +4773,142 @@ let spellcheck_idents ppf unbound valid_idents =
 open Format
 open Printtyp
 
+(* Returns the first diff of the trace *)
+let type_clash_of_trace trace =
+  Ctype.Unification_trace.(explain trace (fun ~prev:_ -> function
+    | Diff diff -> Some diff
+    | _ -> None
+  ))
+
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
-let report_literal_type_constraint h const =
-  let hint_const typ str_val =
+let report_literal_type_constraint ppf expected_type const =
+  let hint str_val =
     let hint_suffix c =
-      Some (fun ppf ->
-        fprintf ppf "@\n@[Hint: Did you mean `%s%c'?@]" str_val c)
+      fprintf ppf "@\n@[Hint: Did you mean `%s%c'?@]" str_val c
     in
-    if Path.same typ Predef.path_int32 then
+    if Path.same expected_type Predef.path_int32 then
       hint_suffix 'l'
-    else if Path.same typ Predef.path_int64 then
+    else if Path.same expected_type Predef.path_int64 then
       hint_suffix 'L'
-    else if Path.same typ Predef.path_nativeint then
+    else if Path.same expected_type Predef.path_nativeint then
       hint_suffix 'n'
-    else if Path.same typ Predef.path_float then
+    else if Path.same expected_type Predef.path_float then
       hint_suffix '.'
     else
-      None
-  in
-  let hint str_val =
-    match h with
-    | Ctype.Unification_trace.(Diff
-      { expected = { t = { desc = Tconstr (typ, [], _); _ }; _ }; _ }) ->
-        hint_const typ str_val
-    | _ -> None
+      ()
   in
   match const with
   | Const_int n -> hint (Int.to_string n)
   | Const_int32 n -> hint (Int32.to_string n)
   | Const_int64 n -> hint (Int64.to_string n)
   | Const_nativeint n -> hint (Nativeint.to_string n)
-  | _ -> None
+  | _ -> ()
 
-let report_literal_type_constraint ppf const trace =
-  let hints ~prev:_ h = report_literal_type_constraint h const in
-  begin match Ctype.Unification_trace.explain trace hints with
-  | Some hint -> hint ppf
-  | None -> ()
-  end
+let report_literal_type_constraint ppf const = function
+  | Some Unification_trace.
+    { expected = { t = { desc = Tconstr (typ, [], _) } } } ->
+      report_literal_type_constraint ppf typ const
+  | Some _ | None -> ()
 
-let report_expr_type_clash_hints ppf exp trace =
+let report_expr_type_clash_hints ppf exp diff =
   match exp with
-  | Some (Texp_constant const) -> report_literal_type_constraint ppf const trace
+  | Some (Texp_constant const) -> report_literal_type_constraint ppf const diff
   | _ -> ()
 
-let report_pattern_type_clash_hints ppf pat trace =
+let report_pattern_type_clash_hints ppf pat diff =
   match pat with
-  | Some (Tpat_constant const) -> report_literal_type_constraint ppf const trace
+  | Some (Tpat_constant const) -> report_literal_type_constraint ppf const diff
   | _ -> ()
+
+(* Hint when using int operators (eg. `+`)
+   on other kind of integer and floats *)
+let report_numeric_operator_clash_hints actual_type operator =
+  let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
+  let stdlib_qualified mod_ val_ = Path.Pdot (Path.Pdot (stdlib, mod_), val_) in
+  let hint expected_op =
+    Some (fun ppf ->
+      fprintf ppf "@[Hint:@ Did you mean to use `%a'?@]"
+        Printtyp.path expected_op
+    )
+  in
+  let hint ~add ~sub ~mul ~div ~mod_ () =
+    let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
+    if is_op "+" then hint add
+    else if is_op "-" then hint sub
+    else if is_op "*" then hint mul
+    else if is_op "/" then hint div
+    else if is_op "mod" then hint mod_
+    else None
+  in
+  let hint_qualified name =
+    let qualified = stdlib_qualified name in
+    hint ~add:(qualified "add") ~sub:(qualified "sub") ~mul:(qualified "mul")
+      ~div:(qualified "div") ~mod_:(qualified "rem") ()
+  in
+  let hint_std () =
+    let qualified id = Path.Pdot (stdlib, id) in
+    hint ~add:(qualified "+.") ~sub:(qualified "-.") ~mul:(qualified "*.")
+      ~div:(qualified "/.") ~mod_:(stdlib_qualified "Float" "rem") ()
+  in
+  let expecting = Path.same actual_type in
+  if expecting Predef.path_int32 then
+    hint_qualified "Int32"
+  else if expecting Predef.path_int64 then
+    hint_qualified "Int64"
+  else if expecting Predef.path_nativeint then
+    hint_qualified "Nativeint"
+  else if expecting Predef.path_float then
+    hint_std ()
+  else None
+
+(* Returns a list of `Location.msg` *)
+let report_application_clash_hints diff expl =
+  match expl, diff with
+  | Some (Application { exp_desc = Texp_ident (p, _, _); exp_loc = loc; _ }),
+    Some Unification_trace.{ got = { t = { desc = Tconstr (typ, [], _) } } } ->
+      begin match report_numeric_operator_clash_hints typ p with
+        | Some txt -> [ { txt; loc } ]
+        | None -> []
+      end
+  | _ -> []
 
 let report_type_expected_explanation expl ppf =
+  let because expl_str = fprintf ppf "@ because it is in %s" expl_str in
   match expl with
   | If_conditional ->
-      fprintf ppf "the condition of an if-statement"
+      because "the condition of an if-statement"
   | If_no_else_branch ->
-      fprintf ppf "the result of a conditional with no else branch"
+      because "the result of a conditional with no else branch"
   | While_loop_conditional ->
-      fprintf ppf "the condition of a while-loop"
+      because "the condition of a while-loop"
   | While_loop_body ->
-      fprintf ppf "the body of a while-loop"
+      because "the body of a while-loop"
   | For_loop_start_index ->
-      fprintf ppf "a for-loop start index"
+      because "a for-loop start index"
   | For_loop_stop_index ->
-      fprintf ppf "a for-loop stop index"
+      because "a for-loop stop index"
   | For_loop_body ->
-      fprintf ppf "the body of a for-loop"
+      because "the body of a for-loop"
   | Assert_condition ->
-      fprintf ppf "the condition of an assertion"
+      because "the condition of an assertion"
   | Sequence_left_hand_side ->
-      fprintf ppf "the left-hand side of a sequence"
+      because "the left-hand side of a sequence"
   | When_guard ->
-      fprintf ppf "a when-guard"
+      because "a when-guard"
+  | Application _ -> ()
 
 let report_type_expected_explanation_opt expl ppf =
   match expl with
   | None -> ()
-  | Some expl ->
-      fprintf ppf "@ because it is in %t"
-        (report_type_expected_explanation expl)
+  | Some expl -> report_type_expected_explanation expl ppf
 
-let report_unification_error ~loc ?sub env trace ?type_expected_explanation txt1 txt2 =
+let report_unification_error ~loc ?sub env trace
+    ?type_expected_explanation txt1 txt2 =
   Location.error_of_printer ~loc ?sub (fun ppf () ->
-    Printtyp.report_unification_error ppf env trace ?type_expected_explanation txt1 txt2
+    Printtyp.report_unification_error ppf env trace
+      ?type_expected_explanation txt1 txt2
   ) ()
 
 let report_error ~loc env = function
@@ -4870,6 +4925,7 @@ let report_error ~loc env = function
         (function ppf ->
            fprintf ppf "but is mixed here with fields of type")
   | Pattern_type_clash (trace, pat) ->
+      let diff = type_clash_of_trace trace in
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
@@ -4877,7 +4933,7 @@ let report_error ~loc env = function
           (function ppf ->
             fprintf ppf "but a pattern was expected which matches values of \
                          type");
-        report_pattern_type_clash_hints ppf pat trace
+        report_pattern_type_clash_hints ppf pat diff
       ) ()
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
@@ -4898,7 +4954,9 @@ let report_error ~loc env = function
         spellcheck_idents ppf id valid_idents
       ) ()
   | Expr_type_clash (trace, explanation, exp) ->
-      Location.error_of_printer ~loc (fun ppf () ->
+      let diff = type_clash_of_trace trace in
+      let sub = report_application_clash_hints diff explanation in
+      Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           ~type_expected_explanation:
             (report_type_expected_explanation_opt explanation)
@@ -4906,7 +4964,7 @@ let report_error ~loc env = function
              fprintf ppf "This expression has type")
           (function ppf ->
              fprintf ppf "but an expression was expected of type");
-        report_expr_type_clash_hints ppf exp trace
+        report_expr_type_clash_hints ppf exp diff
       ) ()
   | Apply_non_function typ ->
       reset_and_mark_loops typ;
@@ -5015,14 +5073,16 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
-      Location.errorf ~loc "The instance variable %s is overridden several times" v
+      Location.errorf ~loc
+        "The instance variable %s is overridden several times"
+        v
   | Coercion_failure (ty, ty', trace, b) ->
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
              let ty, ty' = prepare_expansion (ty, ty') in
-             fprintf ppf
-               "This expression cannot be coerced to type@;<1 2>%a;@ it has type"
+             fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \
+                          it has type"
              (type_expansion ty) ty')
           (function ppf ->
              fprintf ppf "but is here used with type");
