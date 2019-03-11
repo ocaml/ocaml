@@ -456,7 +456,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Lend -> first_insn
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
-    | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
+    | Lentertrap | Lpushtrap _ | Lpoptrap | Lraise _ ->
       let subrange_state =
         Subrange_state.advance_over_instruction subrange_state insn
       in
