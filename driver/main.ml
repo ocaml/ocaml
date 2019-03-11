@@ -101,6 +101,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _rectypes = set recursive_types
   let _no_rectypes = unset recursive_types
   let _runtime_variant s = runtime_variant := s
+  let _with_runtime = set with_runtime
+  let _without_runtime = unset with_runtime
   let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
