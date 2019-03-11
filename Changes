@@ -72,6 +72,10 @@ Working version
   (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
   Gabriel Scherer and Armaël Guéneau)
 
+- GPR#2307: Hint on type error on int's operators
+  (Jules Aguillon, with help from Armaël Guéneau,
+   review by Gabriel Scherer and Florian Angeletti)
+
 ### Bug fixes:
 
 - MPR#7937, GPR#2287: fix uncaught Unify exception when looking for type
