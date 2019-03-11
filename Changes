@@ -59,6 +59,9 @@ Working version
 
 ### Other libraries:
 
+- MPR#7903, GPR#2306: Make Thread.delay interruptible by signals again
+  (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
+
 - GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
