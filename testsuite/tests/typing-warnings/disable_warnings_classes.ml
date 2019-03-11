@@ -148,10 +148,5 @@ Line 3, characters 10-13:
               ^^^
 Alert deprecated: dep
 deprecated
-Line 7, characters 10-13:
-7 |   val x : dep
-              ^^^
-Alert deprecated: dep
-deprecated
 class type c = object val a : dep val x : dep end
 |}];;
