@@ -9,7 +9,7 @@ Line 1, characters 19-20:
                        ^
 Error: This expression has type int but an expression was expected of type
          int32
-       Hint: Did you mean `1l'?
+  Hint: Did you mean `1l'?
 |}]
 
 let _ : int32 * int32 = 42l, 43;;
@@ -19,7 +19,7 @@ Line 1, characters 29-31:
                                  ^^
 Error: This expression has type int but an expression was expected of type
          int32
-       Hint: Did you mean `43l'?
+  Hint: Did you mean `43l'?
 |}]
 
 let _ : int32 * nativeint = 42l, 43;;
@@ -29,7 +29,7 @@ Line 1, characters 33-35:
                                      ^^
 Error: This expression has type int but an expression was expected of type
          nativeint
-       Hint: Did you mean `43n'?
+  Hint: Did you mean `43n'?
 |}]
 
 let _ = min 6L 7;;
@@ -39,7 +39,7 @@ Line 1, characters 15-16:
                    ^
 Error: This expression has type int but an expression was expected of type
          int64
-       Hint: Did you mean `7L'?
+  Hint: Did you mean `7L'?
 |}]
 
 let _ : float = 123;;
@@ -49,7 +49,7 @@ Line 1, characters 16-19:
                     ^^^
 Error: This expression has type int but an expression was expected of type
          float
-       Hint: Did you mean `123.'?
+  Hint: Did you mean `123.'?
 |}]
 
 (* no hint *)
@@ -74,7 +74,7 @@ Line 2, characters 4-5:
         ^
 Error: This pattern matches values of type int
        but a pattern was expected which matches values of type int32
-       Hint: Did you mean `0l'?
+  Hint: Did you mean `0l'?
 |}, Principal{|
 Line 2, characters 4-5:
 2 |   | 0 -> 0l
@@ -92,7 +92,7 @@ Line 2, characters 9-10:
              ^
 Error: This pattern matches values of type int
        but a pattern was expected which matches values of type int64
-       Hint: Did you mean `2L'?
+  Hint: Did you mean `2L'?
 |}]
 
 (* symmetric *)
@@ -103,7 +103,7 @@ Line 1, characters 16-18:
                     ^^
 Error: This expression has type int64 but an expression was expected of type
          int32
-       Hint: Did you mean `1l'?
+  Hint: Did you mean `1l'?
 |}]
 let _ : float = 1L;;
 [%%expect{|
@@ -112,7 +112,7 @@ Line 1, characters 16-18:
                     ^^
 Error: This expression has type int64 but an expression was expected of type
          float
-       Hint: Did you mean `1.'?
+  Hint: Did you mean `1.'?
 |}]
 let _ : int64 = 1n;;
 [%%expect{|
@@ -121,7 +121,7 @@ Line 1, characters 16-18:
                     ^^
 Error: This expression has type nativeint
        but an expression was expected of type int64
-       Hint: Did you mean `1L'?
+  Hint: Did you mean `1L'?
 |}]
 let _ : nativeint = 1l;;
 [%%expect{|
@@ -130,7 +130,7 @@ Line 1, characters 20-22:
                         ^^
 Error: This expression has type int32 but an expression was expected of type
          nativeint
-       Hint: Did you mean `1n'?
+  Hint: Did you mean `1n'?
 |}]
 
 (* not implemented *)
