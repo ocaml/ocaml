@@ -79,15 +79,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   module Range = struct
     type t = {
       mutable subranges : Subrange.t list;
-      mutable min_pos : L.label option;
-      mutable max_pos : L.label option;
+      mutable min_pos_and_offset : (L.label * int) option;
       range_info : Range_info.t;
     }
 
     let create range_info =
       { subranges = [];
-        min_pos = None;
-        max_pos = None;
+        min_pos_and_offset = None;
         range_info;
       }
 
@@ -95,42 +93,30 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
     let add_subrange t ~subrange =
       let start_pos = Subrange.start_pos subrange in
-      let end_pos = Subrange.end_pos subrange in
-      (* This may seem dubious, but is correct by virtue of the way label
-         counters are allocated sequentially and the fact that, below,
-         we go through the code from lowest (code) address to highest.  As
-         such the label with the highest integer value should be the one with
-         the highest address, and vice-versa.  (Note that we also exploit the
-         ordering when constructing DWARF-4 location lists, to ensure that
-         they are sorted in increasing program counter order by start
-         address.) *)
-      assert (compare start_pos end_pos <= 0);
-      begin match t.min_pos with
-      | None -> t.min_pos <- Some start_pos
-      | Some min_pos ->
-        if compare start_pos min_pos < 0 then begin
-          t.min_pos <- Some start_pos
+      let start_pos_offset = Subrange.start_pos_offset subrange in
+      begin match t.min_pos_and_offset with
+      | None -> t.min_pos_and_offset <- Some (start_pos, start_pos_offset)
+      | Some (min_pos, min_pos_offset) ->
+        (* This may seem dubious, but is correct by virtue of the way label
+           counters are allocated sequentially and the fact that, below,
+           we go through the code from lowest (code) address to highest.  As
+           such the label with the highest integer value should be the one with
+           the highest address, and vice-versa.  (Note that we also exploit the
+           ordering when constructing DWARF-4 location lists, to ensure that
+           they are sorted in increasing program counter order by start
+           address.) *)
+        let c = compare start_pos min_pos in
+        if c < 0
+          || (c = 0 && start_pos_offset < min_pos_offset)
+        then begin
+          t.min_pos_and_offset <- Some (start_pos, start_pos_offset)
         end
-      end;
-      begin
-        match t.max_pos with
-        | None -> t.max_pos <- Some end_pos
-        | Some max_pos ->
-          if compare end_pos max_pos > 0 then begin
-            t.max_pos <- Some end_pos
-          end
       end;
       t.subranges <- subrange::t.subranges
 
-    let extremities t =
-      (* We ignore any [end_pos_offset]s here; should be ok. *)
-      match t.min_pos, t.max_pos with
-      | Some min, Some max -> min, max
-      | Some _, None | None, Some _ -> assert false
-      | None, None ->
-        Misc.fatal_error "Ranges.extremities on empty range"
-
-    let lowest_address t = t.min_pos
+    let estimate_lowest_address t =
+      (* See assumption described in compute_ranges_intf.ml. *)
+      t.min_pos_and_offset
 
     let fold t ~init ~f =
       List.fold_left f init t.subranges
@@ -150,16 +136,17 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | [] ->
         { t with
           subranges;
-          min_pos = None;
-          max_pos = None;
+          min_pos_and_offset = None;
         }
       | subranges ->
-        let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
-        let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
+        let min_pos_and_offset =
+          Misc.Stdlib.Option.map
+            (fun (label, offset) -> rewrite_label env label, offset)
+            t.min_pos_and_offset
+        in
         { t with
           subranges;
-          min_pos;
-          max_pos;
+          min_pos_and_offset;
         }
   end
 
@@ -204,11 +191,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          position being the first machine instruction of [insn] and the ending
          position being the next machine address after that.
 
-         (* CR vlaviron: rewrite case description *)
-     (d) [key] is in [S.available_across insn], which means (as for (b) above)
-         it is in [S.available_before insn]. A new range is created with the
-         starting position being the first machine instruction of [insn] and
-         left open.
+     (d) [key] is in [S.available_before insn] and it is also in
+         [S.available_across insn]. A new range is created with the starting
+         position being the first machine instruction of [insn] and left open.
 
      2. Second four cases: [key] is already available, i.e. a member of
      [S.available_across prev_insn].
@@ -233,9 +218,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          terminate the range one byte beyond the first machine instruction of
          [insn].
 
-         (* CR vlaviron: rewrite case description *)
-     (d) [key] is in [S.available_across insn], which means (as for (b) above)
-         it is in [S.available_before insn].  The existing range remains open.
+     (d) [key] is in [S.available_before insn] and it is also in
+         it is in [S.available_across insn].  The existing range remains open.
   *)
 
   type action =
