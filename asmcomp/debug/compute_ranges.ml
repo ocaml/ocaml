@@ -310,7 +310,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   let rec process_instruction t (fundecl : L.fundecl)
         ~(first_insn : L.instruction) ~(insn : L.instruction)
         ~(prev_insn : L.instruction option)
-        ~open_subranges ~subrange_state =
+        ~currently_open_subranges ~subrange_state =
     let first_insn = ref first_insn in
     (* CR vlaviron: The [prev_insn] reference is not meaningfully used:
        it is only read once and written to at most once, *after* the read. *)
@@ -342,24 +342,20 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       }
     in
     let used_label = ref false in
-    (* CR vlaviron: the notation [open_subrange] for the function
-       and [open_subranges] for the current map is confusing.
-       It might help to use a different name for one of them, like
-       [subranges_opened] for the map. *)
-    let open_subrange key ~start_pos_offset ~open_subranges =
+    let open_subrange key ~start_pos_offset ~currently_open_subranges =
       (* CR vlaviron: if the range is later discarded, the inserted label
          may actually be useless. It should not pose any problem, though. *)
       used_label := true;
-      KM.add key (label, start_pos_offset, label_insn) open_subranges
+      KM.add key (label, start_pos_offset, label_insn) currently_open_subranges
     in
-    let close_subrange key ~end_pos_offset ~open_subranges =
-      match KM.find key open_subranges with
+    let close_subrange key ~end_pos_offset ~currently_open_subranges =
+      match KM.find key currently_open_subranges with
       (* CR vlaviron: is it not an error if the key is not there ? *)
-      | exception Not_found -> open_subranges
+      | exception Not_found -> currently_open_subranges
       | start_pos, start_pos_offset, start_insn ->
-        let open_subranges = KM.remove key open_subranges in
+        let currently_open_subranges = KM.remove key currently_open_subranges in
         match Range_info.create fundecl key ~start_insn with
-        | None -> open_subranges
+        | None -> currently_open_subranges
         | Some (index, range_info) ->
           let range =
             match S.Index.Tbl.find t.ranges index with
@@ -378,73 +374,77 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
               ~subrange_info
           in
           Range.add_subrange range ~subrange;
-          open_subranges
+          currently_open_subranges
     in
     let actions, must_restart =
       actions_at_instruction ~insn ~prev_insn:!prev_insn
     in
     (* Restart ranges if needed *)
-    let open_subranges =
-      KS.fold (fun key open_subranges ->
-          let open_subranges =
-            close_subrange key ~end_pos_offset:0 ~open_subranges
+    let currently_open_subranges =
+      KS.fold (fun key currently_open_subranges ->
+          let currently_open_subranges =
+            close_subrange key ~end_pos_offset:0 ~currently_open_subranges
           in
-          open_subrange key ~start_pos_offset:0 ~open_subranges)
+          open_subrange key ~start_pos_offset:0 ~currently_open_subranges)
         must_restart
-        open_subranges
+        currently_open_subranges
     in
     (* Apply actions *)
-    let open_subranges =
-      List.fold_left (fun open_subranges (key, (action : action)) ->
+    let currently_open_subranges =
+      List.fold_left (fun currently_open_subranges (key, (action : action)) ->
           match action with
           | Open_one_byte_subrange ->
-            let open_subranges =
-              open_subrange key ~start_pos_offset:0 ~open_subranges
+            let currently_open_subranges =
+              open_subrange key ~start_pos_offset:0 ~currently_open_subranges
             in
-            close_subrange key ~end_pos_offset:1 ~open_subranges
+            close_subrange key ~end_pos_offset:1 ~currently_open_subranges
           | Open_subrange ->
-            open_subrange key ~start_pos_offset:0 ~open_subranges
+            open_subrange key ~start_pos_offset:0 ~currently_open_subranges
           | Open_subrange_one_byte_after ->
-            open_subrange key ~start_pos_offset:1 ~open_subranges
+            open_subrange key ~start_pos_offset:1 ~currently_open_subranges
           | Close_subrange ->
-            close_subrange key ~end_pos_offset:0 ~open_subranges
+            close_subrange key ~end_pos_offset:0 ~currently_open_subranges
           | Close_subrange_one_byte_after ->
-            close_subrange key ~end_pos_offset:1 ~open_subranges)
-        open_subranges
+            close_subrange key ~end_pos_offset:1 ~currently_open_subranges)
+        currently_open_subranges
         actions
     in
     (* Close all subranges if at last instruction *)
-    let open_subranges =
+    let currently_open_subranges =
       match insn.desc with
       | Lend ->
-        let open_subranges =
-          KM.fold (fun key _ open_subranges ->
-              close_subrange key ~end_pos_offset:0 ~open_subranges)
-            open_subranges
-            open_subranges
+        let currently_open_subranges =
+          KM.fold (fun key _ currently_open_subranges ->
+              close_subrange key ~end_pos_offset:0 ~currently_open_subranges)
+            currently_open_subranges
+            currently_open_subranges
         in
-        assert (KM.is_empty open_subranges);
-        open_subranges
-      | _ -> open_subranges
+        assert (KM.is_empty currently_open_subranges);
+        currently_open_subranges
+      | _ -> currently_open_subranges
     in
     begin if !used_label then
       insert_insn ~new_insn:label_insn
     end;
     if !check_invariants then begin
-      let open_subranges =
+      let currently_open_subranges =
         KS.of_list (
-          List.map (fun (key, _datum) -> key) (KM.bindings open_subranges))
+          List.map (fun (key, _datum) -> key)
+            (KM.bindings currently_open_subranges))
       in
       let should_be_open = S.available_across insn in
-      let not_open_but_should_be = KS.diff should_be_open open_subranges in
+      let not_open_but_should_be =
+        KS.diff should_be_open currently_open_subranges
+      in
       if not (KS.is_empty not_open_but_should_be) then begin
         Misc.fatal_errorf "%s: ranges for %a are not open across the following \
-            instruction:\n%a\navailable_across:@ %a\nopen_subranges: %a"
+            instruction:\n%a\navailable_across:@ %a\n\
+            currently_open_subranges: %a"
           fundecl.fun_name
           KS.print not_open_but_should_be
           Printlinear.instr { insn with L.next = L.end_instr; }
           KS.print should_be_open
-          KS.print open_subranges
+          KS.print currently_open_subranges
       end
     end;
     let first_insn = !first_insn in
@@ -457,12 +457,12 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         Subrange_state.advance_over_instruction subrange_state insn
       in
       process_instruction t fundecl ~first_insn ~insn:insn.next
-        ~prev_insn:(Some insn) ~open_subranges ~subrange_state
+        ~prev_insn:(Some insn) ~currently_open_subranges ~subrange_state
 
   let process_instructions t fundecl ~first_insn =
     let subrange_state = Subrange_state.create () in
     process_instruction t fundecl ~first_insn ~insn:first_insn
-      ~prev_insn:None ~open_subranges:KM.empty ~subrange_state
+      ~prev_insn:None ~currently_open_subranges:KM.empty ~subrange_state
 
   let all_indexes t =
     S.Index.Set.of_list (List.map fst (S.Index.Tbl.to_list t.ranges))
