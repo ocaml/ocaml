@@ -337,7 +337,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         next = insn;
         arg = [| |];
         res = [| |];
-        dbg = Debuginfo.none; (* CR vlaviron: is it temporary ? *)
+        dbg = insn.dbg;
         live = insn.live;
       }
     in
