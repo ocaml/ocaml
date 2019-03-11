@@ -491,7 +491,7 @@ let _ =
                  cannot be loaded inside the OCaml toplevel";
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
-  Compmisc.init_path false;
+  Compmisc.init_path ();
   Env.import_crcs ~source:Sys.executable_name crc_intfs;
   ()
 
@@ -579,7 +579,7 @@ let override_sys_argv args =
 
 let run_script ppf name args =
   override_sys_argv args;
-  Compmisc.init_path ~dir:(Filename.dirname name) true;
+  Compmisc.init_path ~dir:(Filename.dirname name) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   begin
     try toplevel_env := Compmisc.initial_env()

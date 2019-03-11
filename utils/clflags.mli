@@ -96,7 +96,6 @@ val absname : bool ref
 val annotations : bool ref
 val binary_annotations : bool ref
 val use_threads : bool ref
-val use_vmthreads : bool ref
 val noassert : bool ref
 val verbose : bool ref
 val noprompt : bool ref

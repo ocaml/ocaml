@@ -222,9 +222,10 @@ AC_ARG_ENABLE([instrumented-runtime],
   [],
   [enable_instrumented_runtime=auto])
 
-AC_ARG_ENABLE([vmthreads],
-  [AS_HELP_STRING([--disable-vmthreads],
-    [disable the bytecode threads library])])
+AC_ARG_ENABLE([vmthreads], [],
+  [AC_MSG_ERROR([The vmthreads library is no longer available. \
+It was deleted in OCaml 4.09.])],
+  [])
 
 AC_ARG_ENABLE([systhreads],
   [AS_HELP_STRING([--disable-systhreads],
@@ -1485,17 +1486,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
-
-## Determine if the bytecode thread library is supported
-
-AS_IF([test x"$enable_vmthreads" = "xno"],
-  [AC_MSG_NOTICE([the bytecode threads library is disabled])],
-  [AS_IF([$select && $setitimer && $gettimeofday && $wait],
-    [otherlibraries="$otherlibraries threads"
-    AC_MSG_NOTICE([the bytecode threads library is supported])],
-    [AS_IF([test x"$enable_vmthreads" = "xyes"],
-      [AC_MSG_NOTICE([the bytecode threads library is not available])],
-      [AC_MSG_NOTICE([the bytecode threads library is not supported])])])])
 
 ## XWindow
 

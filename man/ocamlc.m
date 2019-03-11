@@ -703,11 +703,6 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.B \-vmthread
-Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
-in combination with the VM-level threads library described in
-.IR The\ OCaml\ user's\ manual .
-.TP
 .BR \-vnum \ or\  \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.

@@ -28,8 +28,6 @@ let () =
         !Clflags.debug;
       Printf.eprintf "use_threads: %B\n"
         !Clflags.use_threads;
-      Printf.eprintf "use_vmthreads: %B\n"
-        !Clflags.use_vmthreads;
       Printf.eprintf "recursive_types: %B\n"
         !Clflags.recursive_types;
       Printf.eprintf "principal: %B\n"

@@ -723,13 +723,6 @@ Print all external commands before they are executed,
 \comp{in particular invocations of the C compiler and linker in "-custom" mode.}
 Useful to debug C library problems.
 
-\comp{%
-\item["-vmthread"]
-Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
-in combination with the VM-level "threads" library described in
-chapter~\ref{c:threads}.
-}%comp
-
 \notop{%
 \item["-version" or "-vnum"]
 Print the version number of the compiler in short form (e.g. "3.11.0"),

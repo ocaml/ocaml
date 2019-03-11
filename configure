@@ -799,7 +799,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -914,7 +913,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1167,15 +1165,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1313,7 +1302,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1466,7 +1455,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1509,7 +1497,7 @@ Optional Features:
   --enable-debugger       build the debugger [default=auto]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
-  --disable-vmthreads     disable the bytecode threads library
+
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-graph-lib     do not build the graphics library
   --disable-str-lib       do not build the str library
@@ -3019,7 +3007,8 @@ fi
 
 # Check whether --enable-vmthreads was given.
 if test "${enable_vmthreads+set}" = set; then :
-  enableval=$enable_vmthreads;
+  enableval=$enable_vmthreads; as_fn_error $? "The vmthreads library is no longer available. \
+It was deleted in OCaml 4.09." "$LINENO" 5
 fi
 
 
@@ -16054,27 +16043,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
 esac
-fi
-
-## Determine if the bytecode thread library is supported
-
-if test x"$enable_vmthreads" = "xno"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is disabled" >&5
-$as_echo "$as_me: the bytecode threads library is disabled" >&6;}
-else
-  if $select && $setitimer && $gettimeofday && $wait; then :
-  otherlibraries="$otherlibraries threads"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is supported" >&5
-$as_echo "$as_me: the bytecode threads library is supported" >&6;}
-else
-  if test x"$enable_vmthreads" = "xyes"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not available" >&5
-$as_echo "$as_me: the bytecode threads library is not available" >&6;}
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not supported" >&5
-$as_echo "$as_me: the bytecode threads library is not supported" >&6;}
-fi
-fi
 fi
 
 ## XWindow

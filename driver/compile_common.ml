@@ -32,7 +32,7 @@ let cmo i = i.output_prefix ^ ".cmo"
 let annot i = i.output_prefix ^ ".annot"
 
 let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
-  Compmisc.init_path native;
+  Compmisc.init_path ();
   let module_name = module_of_filename source_file output_prefix in
   Env.set_unit_name module_name;
   let env = Compmisc.initial_env() in
