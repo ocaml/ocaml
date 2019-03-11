@@ -500,23 +500,15 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   let find t index = S.Index.Tbl.find t.ranges index
 
   let rewrite_labels_and_remove_empty_subranges_and_ranges t ~env =
-    (* CR vlaviron: This code is just confusing.
-       Tbl.mapi does not update in place, so there's no need to
-       actually remove the empty ranges from the old table,
-       and this could actually be a simple fold instead. *)
-    let empty_ranges = ref S.Index.Set.empty in
-    let ranges =
-      S.Index.Tbl.mapi t.ranges (fun index range ->
-          let range =
-            Range.rewrite_labels_and_remove_empty_subranges range ~env
-          in
-          if Range.no_subranges range then begin
-            empty_ranges := S.Index.Set.add index !empty_ranges
-          end;
-          range)
-    in
-    S.Index.Set.iter (fun index -> S.Index.Tbl.remove t.ranges index)
-      !empty_ranges;
+    let ranges = S.Index.Tbl.create 42 in
+    S.Index.Tbl.iter (fun index range ->
+        let range =
+          Range.rewrite_labels_and_remove_empty_subranges range ~env
+        in
+        if not (Range.no_subranges range) then begin
+          S.Index.Tbl.add ranges index range
+        end)
+      t.ranges;
     { ranges;
     }
 end
