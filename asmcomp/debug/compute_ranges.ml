@@ -311,22 +311,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         ~(first_insn : L.instruction) ~(insn : L.instruction)
         ~(prev_insn : L.instruction option)
         ~currently_open_subranges ~subrange_state =
-    let first_insn = ref first_insn in
-    (* CR vlaviron: The [prev_insn] reference is not meaningfully used:
-       it is only read once and written to at most once, *after* the read. *)
-    let prev_insn = ref prev_insn in
-    let insert_insn ~(new_insn : L.instruction) =
-      assert (new_insn.next == insn);
-      (* (Note that by virtue of [Lprologue], we can insert labels prior to the
-         first assembly instruction of the function.) *)
-      begin match !prev_insn with
-      | None -> first_insn := new_insn
-      | Some prev_insn ->
-        assert (prev_insn.L.next == insn);
-        prev_insn.next <- new_insn
-      end;
-      prev_insn := Some new_insn
-    in
     let used_label = ref None in
     let get_label () =
       match !used_label with
@@ -348,8 +332,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         label, label_insn
     in
     let open_subrange key ~start_pos_offset ~currently_open_subranges =
-      (* CR vlaviron: if the range is later discarded, the inserted label
-         may actually be useless. It should not pose any problem, though. *)
+      (* If the range is later discarded, the inserted label may actually be
+         useless, but this doesn't matter.  It does not generate any code. *)
       let label, label_insn = get_label () in
       KM.add key (label, start_pos_offset, label_insn) currently_open_subranges
     in
@@ -382,9 +366,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           Range.add_subrange range ~subrange;
           currently_open_subranges
     in
-    let actions, must_restart =
-      actions_at_instruction ~insn ~prev_insn:!prev_insn
-    in
+    let actions, must_restart = actions_at_instruction ~insn ~prev_insn in
     (* Restart ranges if needed *)
     let currently_open_subranges =
       KS.fold (fun key currently_open_subranges ->
@@ -429,11 +411,23 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         currently_open_subranges
       | _ -> currently_open_subranges
     in
-    begin match !used_label with
-    | None -> ()
-    | Some (_label, label_insn) ->
-      insert_insn ~new_insn:label_insn
-    end;
+    let first_insn =
+      match !used_label with
+      | None -> first_insn
+      | Some (_label, label_insn) ->
+        assert (label_insn.L.next == insn);
+        (* (Note that by virtue of [Lprologue], we can insert labels prior to the
+           first assembly instruction of the function.) *)
+        begin match prev_insn with
+        | None ->
+          (* The label becomes the new first instruction. *)
+          label_insn
+        | Some prev_insn ->
+          assert (prev_insn.L.next == insn);
+          prev_insn.next <- label_insn;
+          first_insn
+        end
+    in
     if !check_invariants then begin
       let currently_open_subranges =
         KS.of_list (
@@ -455,7 +449,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           KS.print currently_open_subranges
       end
     end;
-    let first_insn = !first_insn in
     match insn.desc with
     | Lend -> first_insn
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
