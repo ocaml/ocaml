@@ -276,54 +276,56 @@ let make_method loc cl_num expr =
 let delayed_meth_specs = ref []
 
 let rec class_type_field env sign self_scope ctf =
-  Builtin_attributes.warning_scope ctf.pctf_attributes
-    (fun () -> class_type_field_aux env sign self_scope ctf)
-
-and class_type_field_aux env sign self_scope ctf =
   let loc = ctf.pctf_loc in
   let mkctf desc =
     { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
   in
   match ctf.pctf_desc with
   | Pctf_inherit sparent ->
-      let parent = class_type env Virtual self_scope sparent in
-      complete_class_type parent.cltyp_loc
-        env Virtual Class_type parent.cltyp_type;
-      inherit_class_type ~strict:false loc env sign parent.cltyp_type;
-      mkctf (Tctf_inherit parent)
-
+      Builtin_attributes.warning_scope ctf.pctf_attributes
+        (fun () ->
+          let parent = class_type env Virtual self_scope sparent in
+          complete_class_type parent.cltyp_loc
+            env Virtual Class_type parent.cltyp_type;
+          inherit_class_type ~strict:false loc env sign parent.cltyp_type;
+          mkctf (Tctf_inherit parent))
   | Pctf_val ({txt=lab}, mut, virt, sty) ->
-      let cty = transl_simple_type env false sty in
-      let ty = cty.ctyp_type in
-      add_instance_variable ~strict:false loc env lab mut virt ty sign;
-      mkctf (Tctf_val (lab, mut, virt, cty))
-
-  | Pctf_method ({txt=lab}, priv, virt, sty)  -> begin
-      let sty = Ast_helper.Typ.force_poly sty in
-      match sty.ptyp_desc, priv with
-      | Ptyp_poly ([],sty'), Public ->
-          let expected_ty = Ctype.newvar () in
-          add_method loc env lab priv virt expected_ty sign;
-          let returned_cty = ctyp Ttyp_any (Ctype.newty Tnil) env loc in
-          delayed_meth_specs :=
-            Warnings.mk_lazy (fun () ->
-              let cty = transl_simple_type_univars env sty' in
-              let ty = cty.ctyp_type in
-              unify_delayed_method_type loc env lab ty expected_ty;
-              returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
-              returned_cty.ctyp_type <- ty;
-            ) :: !delayed_meth_specs;
-          mkctf (Tctf_method (lab, priv, virt, returned_cty))
-      | _ ->
+      Builtin_attributes.warning_scope ctf.pctf_attributes
+        (fun () ->
           let cty = transl_simple_type env false sty in
           let ty = cty.ctyp_type in
-          add_method loc env lab priv virt ty sign;
-          mkctf (Tctf_method (lab, priv, virt, cty))
-    end
+          add_instance_variable ~strict:false loc env lab mut virt ty sign;
+          mkctf (Tctf_val (lab, mut, virt, cty)))
+
+  | Pctf_method ({txt=lab}, priv, virt, sty)  ->
+      Builtin_attributes.warning_scope ctf.pctf_attributes
+        (fun () ->
+           let sty = Ast_helper.Typ.force_poly sty in
+           match sty.ptyp_desc, priv with
+           | Ptyp_poly ([],sty'), Public ->
+               let expected_ty = Ctype.newvar () in
+               add_method loc env lab priv virt expected_ty sign;
+               let returned_cty = ctyp Ttyp_any (Ctype.newty Tnil) env loc in
+               delayed_meth_specs :=
+                 Warnings.mk_lazy (fun () ->
+                   let cty = transl_simple_type_univars env sty' in
+                   let ty = cty.ctyp_type in
+                   unify_delayed_method_type loc env lab ty expected_ty;
+                   returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
+                   returned_cty.ctyp_type <- ty;
+                 ) :: !delayed_meth_specs;
+               mkctf (Tctf_method (lab, priv, virt, returned_cty))
+           | _ ->
+               let cty = transl_simple_type env false sty in
+               let ty = cty.ctyp_type in
+               add_method loc env lab priv virt ty sign;
+               mkctf (Tctf_method (lab, priv, virt, cty)))
 
   | Pctf_constraint (sty, sty') ->
-      let (cty, cty') = type_constraint env sty sty' ctf.pctf_loc in
-      mkctf (Tctf_constraint (cty, cty'))
+      Builtin_attributes.warning_scope ctf.pctf_attributes
+        (fun () ->
+           let (cty, cty') = type_constraint env sty sty' ctf.pctf_loc in
+           mkctf (Tctf_constraint (cty, cty')))
 
   | Pctf_attribute x ->
       Builtin_attributes.warning_attribute x;
