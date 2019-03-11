@@ -327,25 +327,30 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       end;
       prev_insn := Some new_insn
     in
-    (* Note that we can't reuse an existing label in the code since we rely on
-       the ordering of range-related labels. *)
-    (* CR vlaviron: would it be better to only generate new labels when they
-       are actually used ? *)
-    let label = Cmm.new_label () in
-    let label_insn : L.instruction =
-      { desc = Llabel label;
-        next = insn;
-        arg = [| |];
-        res = [| |];
-        dbg = insn.dbg;
-        live = insn.live;
-      }
+    let used_label = ref None in
+    let get_label () =
+      match !used_label with
+      | Some label_and_insn -> label_and_insn
+      | None ->
+        (* Note that we can't reuse an existing label in the code since we rely
+           on the ordering of range-related labels. *)
+        let label = Cmm.new_label () in
+        let label_insn : L.instruction =
+          { desc = Llabel label;
+            next = insn;
+            arg = [| |];
+            res = [| |];
+            dbg = insn.dbg;
+            live = insn.live;
+          }
+        in
+        used_label := Some (label, label_insn);
+        label, label_insn
     in
-    let used_label = ref false in
     let open_subrange key ~start_pos_offset ~currently_open_subranges =
       (* CR vlaviron: if the range is later discarded, the inserted label
          may actually be useless. It should not pose any problem, though. *)
-      used_label := true;
+      let label, label_insn = get_label () in
       KM.add key (label, start_pos_offset, label_insn) currently_open_subranges
     in
     let close_subrange key ~end_pos_offset ~currently_open_subranges =
@@ -366,7 +371,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
               S.Index.Tbl.add t.ranges index range;
               range
           in
-          used_label := true;
+          let label, _label_insn = get_label () in
           let subrange_info = Subrange_info.create key subrange_state in
           let subrange =
             Subrange.create ~start_insn
@@ -424,7 +429,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         currently_open_subranges
       | _ -> currently_open_subranges
     in
-    begin if !used_label then
+    begin match !used_label with
+    | None -> ()
+    | Some (_label, label_insn) ->
       insert_insn ~new_insn:label_insn
     end;
     if !check_invariants then begin
