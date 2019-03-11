@@ -3519,7 +3519,6 @@ let update_class_signature env sign =
 
 let hide_private_methods env sign =
   let self = expand_head env sign.Types.csig_self in
-  remove_object_name self;
   let fields, _ = flatten_fields (object_fields self) in
   List.iter
     (fun (_, k, _) ->

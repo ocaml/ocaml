@@ -1583,11 +1583,12 @@ let class_infos define_class kind
     end
   end;
 
+  Ctype.set_object_name obj_id params (Btype.self_type typ);
+
   (* Check the other temporary abbreviation (#-type) *)
   begin
     let (cl_params', cl_type) = Ctype.instance_class params typ in
     let ty = Btype.self_type cl_type in
-    Ctype.set_object_name obj_id cl_params ty;
     begin try
       List.iter2 (Ctype.unify env) cl_params cl_params'
     with Ctype.Unify _ ->
@@ -1930,31 +1931,6 @@ let class_type_declarations env cls =
      decls,
    env)
 
-let rec unify_parents env ty cl =
-  match cl.cl_desc with
-    Tcl_ident (p, _, _) ->
-      begin try
-        let decl = Env.find_class p env in
-        let _, body = Ctype.find_cltype_for_path env decl.cty_path in
-        Ctype.unify env ty (Ctype.instance body)
-      with
-        Not_found -> ()
-      | _exn -> assert false
-      end
-  | Tcl_structure st -> unify_parents_struct env ty st
-  | Tcl_open (_, cl)
-  | Tcl_fun (_, _, _, cl, _)
-  | Tcl_apply (cl, _)
-  | Tcl_let (_, _, _, cl)
-  | Tcl_constraint (cl, _, _, _, _) -> unify_parents env ty cl
-and unify_parents_struct env ty st =
-  List.iter
-    (function
-      | {cf_desc = Tcf_inherit (_, cl, _, _, _)} ->
-          unify_parents env ty cl
-      | _ -> ())
-    st.cstr_fields
-
 let type_object env loc s =
   incr class_num;
   let desc =
@@ -1963,7 +1939,6 @@ let type_object env loc s =
   in
   complete_class_signature loc env Concrete Object desc.cstr_type;
   let meths = Btype.public_methods desc.cstr_type in
-  unify_parents_struct env desc.cstr_type.csig_self desc;
   (desc, meths)
 
 let () =
