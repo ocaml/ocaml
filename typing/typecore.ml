@@ -4780,6 +4780,32 @@ let type_clash_of_trace trace =
     | _ -> None
   ))
 
+(* Hint when the expected type is wrapped in a `ref` *)
+let report_ref_type_constraint env exp diff =
+  let is_ref p =
+    let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
+    Path.same p Path.(Pdot (stdlib, "ref"))
+  in
+  let hint pp ident =
+    let txt ppf =
+      fprintf ppf "@[Hint: This is a `ref', did you mean `!%a'?@]" pp ident
+    in
+    [ Location.{ txt; loc = none } ]
+  in
+  let hint = function
+    | Some (Texp_ident (ident, _, _)) -> hint Printtyp.path ident
+    | Some _ -> hint pp_print_string "( .. )"
+    | None -> []
+  in
+  match diff with
+  | Some Unification_trace.{
+        expected = { t = expected };
+        got = { t = { desc = Tconstr (ref, [ in_ref ], _) } }
+    } when is_ref ref
+      && Ctype.equal env true [ expected ] [ in_ref ] ->
+      hint exp
+  | Some _ | None -> []
+
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
@@ -4961,6 +4987,7 @@ let report_error ~loc env = function
       let sub = List.concat [
           report_application_clash_hints diff explanation;
           report_expr_type_clash_hints exp diff;
+          report_ref_type_constraint env exp diff;
         ]
       in
       Location.error_of_printer ~loc ~sub (fun ppf () ->
