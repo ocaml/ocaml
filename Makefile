@@ -927,7 +927,7 @@ clean::
 	rm -f stdlib/libcamlrun.$(A)
 
 otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
-  str systhreads threads unix win32graph win32unix
+  str systhreads unix win32graph win32unix
 subdirs := debugger lex ocamldoc ocamltest runtime stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
 
