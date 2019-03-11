@@ -222,6 +222,11 @@ AC_ARG_ENABLE([instrumented-runtime],
   [],
   [enable_instrumented_runtime=auto])
 
+AC_ARG_ENABLE([vmthreads], [],
+  [AC_MSG_ERROR([The vmthreads library is no longer available. \
+It was deleted in OCaml 4.09.])],
+  [])
+
 AC_ARG_ENABLE([systhreads],
   [AS_HELP_STRING([--disable-systhreads],
     [disable the Win32/POSIX threads library])])

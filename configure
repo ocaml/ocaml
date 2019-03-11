@@ -799,7 +799,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -826,6 +825,7 @@ enable_debug_runtime
 enable_debugger
 with_dllibs
 enable_instrumented_runtime
+enable_vmthreads
 enable_systhreads
 with_libunwind
 with_libunwind_include_dir
@@ -913,7 +913,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1166,15 +1165,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1312,7 +1302,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1465,7 +1455,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1508,6 +1497,7 @@ Optional Features:
   --enable-debugger       build the debugger [default=auto]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
+
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-graph-lib     do not build the graphics library
   --disable-str-lib       do not build the str library
@@ -3012,6 +3002,13 @@ if test "${enable_instrumented_runtime+set}" = set; then :
   enableval=$enable_instrumented_runtime;
 else
   enable_instrumented_runtime=auto
+fi
+
+
+# Check whether --enable-vmthreads was given.
+if test "${enable_vmthreads+set}" = set; then :
+  enableval=$enable_vmthreads; as_fn_error $? "The vmthreads library is no longer available. \
+It was deleted in OCaml 4.09." "$LINENO" 5
 fi
 
 
