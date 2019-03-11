@@ -161,7 +161,6 @@ CC_PROFILE=@cc_profile@
 # Currently available:
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
-#       threads         Lightweight concurrent processes
 #       systhreads      Same as threads, requires POSIX threads
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
