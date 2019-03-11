@@ -299,8 +299,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       |> handle case_2c Close_subrange_one_byte_after
     in
     let must_restart =
-      (* CR vlaviron: maybe test that the actions list is non-empty ? *)
-      if S.must_restart_ranges_upon_any_change () then
+      if S.must_restart_ranges_upon_any_change ()
+         && match actions with
+            | [] -> false
+            | _::_ -> true
+      then
         KS.inter opt_available_across_prev_insn available_before
       else
         KS.empty
