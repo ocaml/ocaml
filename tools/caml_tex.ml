@@ -132,10 +132,12 @@ module Toplevel = struct
     if startchar >= 0 then
       locs := (startchar, endchar) :: !locs
 
-  (** Record the main location instead of printing it *)
+  (** Record locations in the main error and suberrors without printing them *)
   let printer_register_locs =
     { Location.batch_mode_printer with
-      pp_main_loc = (fun _ _ _ loc -> register_loc loc) }
+      pp_main_loc = (fun _ _ _ loc -> register_loc loc);
+      pp_submsg_loc = (fun _ _ _ loc -> register_loc loc);
+    }
 
   (** Capture warnings and keep them in a list *)
   let warnings = ref []
