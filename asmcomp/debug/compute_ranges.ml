@@ -350,8 +350,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     let close_subrange key ~end_pos_offset ~currently_open_subranges =
       match KM.find key currently_open_subranges with
-      (* CR vlaviron: is it not an error if the key is not there ? *)
-      | exception Not_found -> currently_open_subranges
+      | exception Not_found ->
+        Misc.fatal_errorf "No subrange is open for key %a"
+          S.Key.print key
       | start_pos, start_pos_offset, start_insn ->
         let currently_open_subranges = KM.remove key currently_open_subranges in
         match Range_info.create fundecl key ~start_insn with
