@@ -565,8 +565,8 @@ static intnat mark(intnat budget) {
 void caml_darken_cont(value cont)
 {
   CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
-  header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
   SPIN_WAIT {
+    header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
     CAMLassert(!Has_status_hd(hd, global.GARBAGE));
     if (Has_status_hd(hd, global.MARKED))
       break;
