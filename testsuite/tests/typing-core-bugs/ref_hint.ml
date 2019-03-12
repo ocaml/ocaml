@@ -52,6 +52,17 @@ Error: The record field contents belongs to the type 'a ref
        but is mixed here with fields of type t
 |}]
 
+type 'a ref = Not_ref of 'a
+let _ = (Not_ref 0) + 0
+[%%expect{|
+type 'a ref = Not_ref of 'a
+Line 2, characters 8-19:
+2 | let _ = (Not_ref 0) + 0
+            ^^^^^^^^^^^
+Error: This expression has type 'a ref but an expression was expected of type
+         int
+|}]
+
 (* limitation *)
 let f r =
   ignore !r;
@@ -60,6 +71,6 @@ let f r =
 Line 3, characters 2-3:
 3 |   r + 1
       ^
-Error: This expression has type 'a ref but an expression was expected of type
-         int
+Error: This expression has type 'a Stdlib.ref
+       but an expression was expected of type int
 |}]
