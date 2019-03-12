@@ -212,6 +212,7 @@ dynlink.cma: $(OBJS)
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -I native \
 	            -o $@ $^
+	cp native/dynlink.cmx dynlink.cmx
 
 # Since there is no .mli for [Dynlink_platform_intf], we need to be
 # careful that compilation of the .cmx file does not write the .cmi file again,
