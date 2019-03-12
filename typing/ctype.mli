@@ -95,8 +95,6 @@ val associate_fields:
         (string * field_kind * type_expr) list *
         (string * field_kind * type_expr) list
 val opened_object: type_expr -> bool
-val close_object: type_expr -> bool
-        (* Return the row variable of an open object type *)
 val set_object_name:
         Ident.t -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
@@ -233,7 +231,7 @@ val unify_var: Env.t -> type_expr -> type_expr -> unit
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification with [l:'a -> 'b].  Raises
            [Filter_arrow_failed] instead of [Unify]. *)
-val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
+val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
 val occur_in: Env.t -> type_expr -> type_expr -> bool
@@ -359,6 +357,8 @@ val update_class_signature :
   Env.t -> class_signature -> label list * label list
 
 val hide_private_methods : Env.t -> class_signature -> unit
+
+val close_class_signature : Env.t -> class_signature -> bool
 
 exception Nondep_cannot_erase of Ident.t
 
