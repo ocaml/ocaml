@@ -150,15 +150,6 @@ ASPP=@ASPP@
 ### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
 INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 
-### Extra flags to use for assembling .S files in profiling mode
-ASPPPROFFLAGS=@asppprofflags@
-
-### true if profiling with gprof is supported, false otherwise
-PROFILING=@profiling@
-
-### Option to give to the C compiler for profiling
-CC_PROFILE=@cc_profile@
-
 ############# Configuration for the contributed libraries
 
 ### Which libraries to compile and install

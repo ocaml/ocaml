@@ -16,6 +16,9 @@ Working version
   (Mark Shinwell, Xavier Clerc, review by Nicolás Ojeda Bär,
   Florian Angeletti, David Allsopp and Xavier Leroy)
 
+- GPR#2314: Remove support for gprof profiling.
+  (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives

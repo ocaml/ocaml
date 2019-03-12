@@ -132,7 +132,6 @@ AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
 AC_SUBST([libbfd_include])
 AC_SUBST([libbfd_link])
-AC_SUBST([asppprofflags])
 AC_SUBST([ASPP])
 AC_SUBST([AS])
 AC_SUBST([asm_cfi_supported])
@@ -143,10 +142,8 @@ AC_SUBST([mkmaindll])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
 AC_SUBST([install_source_artifacts])
-AC_SUBST([profiling])
 AC_SUBST([profinfo])
 AC_SUBST([profinfo_width])
-AC_SUBST([cc_profile])
 AC_SUBST([frame_pointers])
 AC_SUBST([spacetime])
 AC_SUBST([call_counts])
@@ -428,11 +425,11 @@ AS_CASE([$host],
     [unix_or_win32="win32"
     unixlib="win32unix"
     graphlib="win32graph"
-    cc_profile=''],
+    ],
   [unix_or_win32="unix"
   unixlib="unix"
   graphlib="graph"
-  cc_profile='-pg'])
+  ])
 AS_CASE([$host],
   [*-*-cygwin*|*-*-mingw32|*-pc-windows],
     [exeext=".exe"],
@@ -906,30 +903,7 @@ AS_IF([test -z "$PARTIALLD"],
 AS_IF([test $arch != "none" && $arch64 ],
   [otherlibraries="$otherlibraries raw_spacetime_lib"])
 
-# Profiling
-
-AS_CASE(["$arch,$system"],
-  [i386,linux_elf], [profiling=true],
-  [i386,gnu], [profiling=true],
-  [i386,bsd_elf], [profiling=true],
-  [amd64,macosx], [profiling=true],
-  [amd64,linux], [profiling=true],
-  [amd64,openbsd], [profiling=true],
-  [amd64,freebsd], [profiling=true],
-  [amd64,netbsd], [profiling=true],
-  [arm,netbsd], [profiling=true],
-  [amd64,gnu], [profiling=true],
-  [arm,linux*], [profiling=true],
-  [power,elf], [profiling=true],
-  [power,bsd*], [profiling=true],
-  [power,netbsd], [profiling=true],
-  [profiling=false])
-
 # Assembler
-
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [asppprofflags=''],
-  [asppprofflags='-DPROFILING'])
 
 AS_IF([test -n "$host_alias"], [toolpref="${host}-"], [toolpref=""])
 
