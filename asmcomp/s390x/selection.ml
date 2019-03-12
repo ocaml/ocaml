@@ -30,9 +30,9 @@ type addressing_expr =
   | Aadd of expression * expression
 
 let rec select_addr = function
-  | Cop((Caddi | Cadda | Caddv), [arg; Cconst_int m], _) ->
+  | Cop((Caddi | Cadda | Caddv), [arg; Cconst_int (m, _)], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda | Caddv), [Cconst_int m; arg], _) ->
+  | Cop((Caddi | Cadda | Caddv), [Cconst_int (m, _); arg], _) ->
       let (a, n) = select_addr arg in (a, n + m)
   | Cop((Caddi | Cadda | Caddv), [arg1; arg2], _) ->
       begin match (select_addr arg1, select_addr arg2) with
@@ -97,9 +97,9 @@ method! select_operation op args dbg =
       super#select_operation op args dbg
 
 method select_logical op lo hi = function
-    [arg; Cconst_int n] when n >= lo && n <= hi ->
+    [arg; Cconst_int (n, _)] when n >= lo && n <= hi ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int n; arg] when n >= lo && n <= hi ->
+  | [Cconst_int (n, _); arg] when n >= lo && n <= hi ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
