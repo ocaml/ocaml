@@ -101,14 +101,14 @@ module type S_functor = sig
         formatter. *)
     val print : Format.formatter -> t -> unit
 
-    (** In some situations, situations for performance reasons, an "available"
-        set may only contain a subset of all keys that need to be tracked. For
-        example, when using a notion of availability that describes which
-        lexical block a given instruction lies in, using a standard notion of
-        nested lexical blocks, the innermost lexical block uniquely determines
-        the chain of its parents. (This is exploited in [Lexical_block_ranges].)
-        The [all_parents] function must return, given an "available" [key],
-        all those other keys that are also available and uniquely determined by
+    (** In some situations, for performance reasons, an "available" set may only
+        contain a subset of all keys that need to be tracked. For example, when
+        using a notion of availability that describes which lexical block a
+        given instruction lies in, using a standard notion of nested lexical
+        blocks, the innermost lexical block uniquely determines the chain of its
+        parents. (This is exploited in [Lexical_block_ranges].) The
+        [all_parents] function must return, given an "available" [key], all
+        those other keys that are also available and uniquely determined by
         [key]. *)
     val all_parents : t -> t list
   end
