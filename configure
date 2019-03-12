@@ -13818,7 +13818,7 @@ case "$arch,$system" in #(
   amd64,win64) :
     default_as="ml64 -nologo -Cp -c -Fo" ;; #(
   amd64,macosx) :
-    case $ccfamily in #(
+    case $ocaml_cv_cc_vendor in #(
   clang-*) :
     default_as='clang -arch x86_64 -Wno-trigraphs -c'
         default_aspp='clang -arch x86_64 -Wno-trigraphs -c' ;; #(
@@ -13860,7 +13860,7 @@ esac ;; #(
     default_aspp="${toolpref}cc -c" ;; #(
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd) :
     default_as="${toolpref}as"
-    case $ccfamily in #(
+    case $ocaml_cv_cc_vendor in #(
   clang-*) :
     default_aspp="${toolpref}clang -c -Wno-trigraphs" ;; #(
   *) :
