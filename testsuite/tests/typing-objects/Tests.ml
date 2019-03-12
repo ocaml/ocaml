@@ -475,23 +475,19 @@ Line 3, characters 2-13:
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class c :
   x
-The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Line 4, characters 6-7:
 4 |   val y = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable y is overridden.
-The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Line 6, characters 2-13:
 6 |   inherit d 7
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class d :
   t z
-The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Line 7, characters 6-7:
 7 |   val u = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable u is overridden.
-The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class e :
   unit ->
   object
