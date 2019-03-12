@@ -38,7 +38,7 @@ Line 4, characters 2-3:
       ^
 Error: This expression has type int ref
        but an expression was expected of type int
-Hint: This is a `ref', did you mean `!b'?
+Hint: This is a `ref', did you mean `Stdlib.(!) b'?
 |}]
 
 type t = { x : int }

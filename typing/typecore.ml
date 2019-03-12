@@ -4782,13 +4782,18 @@ let type_clash_of_trace trace =
 
 (* Hint when the expected type is wrapped in a `ref` *)
 let report_ref_type_constraint env exp diff =
-  let is_ref p =
-    let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
-    Path.same p Path.(Pdot (stdlib, "ref"))
+  let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
+  let is_ref p = Path.same p Path.(Pdot (stdlib, "ref")) in
+  let bang_shadowed =
+    match Env.lookup_value (Longident.Lident "!") env with
+    | exception Not_found -> false
+    | Path.Pdot (prefix, "!"), _ when Path.same prefix stdlib -> false
+    | _, _ -> true
   in
   let hint pp ident =
     let txt ppf =
-      fprintf ppf "@[Hint: This is a `ref', did you mean `!%a'?@]" pp ident
+      let op = if bang_shadowed then "Stdlib.(!) " else "!" in
+      fprintf ppf "@[Hint: This is a `ref', did you mean `%s%a'?@]" op pp ident
     in
     [ Location.{ txt; loc = none } ]
   in
