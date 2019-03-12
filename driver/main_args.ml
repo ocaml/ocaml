@@ -564,8 +564,7 @@ let mk_no_version f =
 
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
-  " (deprecated) Generate code that supports the threads library\n\
-  \     with VM-level scheduling"
+  "  (no longer supported)"
 ;;
 
 let mk_vnum f =
