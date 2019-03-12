@@ -23,24 +23,7 @@ open Interval
 
 module V = Backend_var
 
-let reg ppf r =
-  if not (Reg.anonymous r) then
-    fprintf ppf "%s" (Reg.name r)
-  else
-    fprintf ppf "%s"
-      (match r.typ with Val -> "V" | Addr -> "A" | Int -> "I" | Float -> "F");
-  fprintf ppf "/%i" r.stamp;
-  begin match r.loc with
-  | Unknown -> ()
-  | Reg r ->
-      fprintf ppf "[%s]" (Proc.register_name r)
-  | Stack(Local s) ->
-      fprintf ppf "[s%i]" s
-  | Stack(Incoming s) ->
-      fprintf ppf "[si%i]" s
-  | Stack(Outgoing s) ->
-      fprintf ppf "[so%i]" s
-  end
+let reg = Reg.print ~register_name:Proc.register_name
 
 let regs ppf v =
   match Array.length v with
@@ -158,12 +141,10 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
-  | Iname_for_debugger { ident; which_parameter; } ->
-    fprintf ppf "name_for_debugger %a%s=%a"
+  | Iname_for_debugger { ident; is_parameter; } ->
+    fprintf ppf "name_for_debugger %a(%a)=%a"
       V.print ident
-      (match which_parameter with
-        | None -> ""
-        | Some index -> sprintf "[P%d]" index)
+      Is_parameter.print is_parameter
       reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg

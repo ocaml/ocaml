@@ -71,8 +71,12 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
+  | Iname_for_debugger of {
+      ident : Backend_var.t;
+      is_parameter : Is_parameter.t;
+      provenance : Backend_var.Provenance.t option;
+      is_assignment : bool;
+    }
     (** [Iname_for_debugger] has the following semantics:
         (a) The argument register(s) is/are deemed to contain the value of the
             given identifier.

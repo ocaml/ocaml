@@ -242,29 +242,31 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | Some prev_insn -> S.available_across prev_insn
     in
     let case_1b =
-      KS.diff available_across
-        (KS.union opt_available_across_prev_insn available_before)
+      KS.diff
+        (KS.diff available_across available_before)
+        opt_available_across_prev_insn
     in
     let case_1c =
-      KS.diff available_before
-        (KS.union opt_available_across_prev_insn available_across)
+      KS.diff
+        (KS.diff available_before available_across)
+        opt_available_across_prev_insn
     in
     let case_1d =
       KS.diff (KS.inter available_before available_across)
         opt_available_across_prev_insn
     in
     let case_2a =
-      KS.diff opt_available_across_prev_insn
-        (KS.union available_before available_across)
+      KS.inter
+        (KS.diff opt_available_across_prev_insn available_before)
+        (KS.diff opt_available_across_prev_insn available_across)
     in
     let case_2b =
       KS.inter opt_available_across_prev_insn
         (KS.diff available_across available_before)
     in
     let case_2c =
-      KS.diff
-        (KS.inter opt_available_across_prev_insn available_before)
-        available_across
+      KS.inter opt_available_across_prev_insn
+        (KS.diff available_before available_across)
     in
     let handle case action result =
       (* We use [K.all_parents] here to circumvent a potential performance
@@ -443,12 +445,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       in
       if not (KS.is_empty not_open_but_should_be) then begin
         Misc.fatal_errorf "%s: ranges for %a are not open across the following \
-            instruction:\n%a\navailable_across:@ %a\n\
+            instruction:\n%a\navailable_across:@ %a\navailable_before:@ %a\n\
             currently_open_subranges: %a"
           fundecl.fun_name
           KS.print not_open_but_should_be
           Printlinear.instr { insn with L.next = L.end_instr; }
           KS.print should_be_open
+          KS.print (S.available_before insn)
           KS.print currently_open_subranges
       end
     end;
@@ -464,6 +467,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         ~prev_insn:(Some insn) ~currently_open_subranges ~subrange_state
 
   let process_instructions t fundecl ~first_insn =
+(*
+Format.eprintf "Function: %a\n%!" Backend_sym.print fundecl.L.fun_name;
+*)
     let subrange_state = Subrange_state.create () in
     process_instruction t fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~currently_open_subranges:KM.empty ~subrange_state

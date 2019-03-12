@@ -61,8 +61,12 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
+  | Iname_for_debugger of {
+      ident : Backend_var.t;
+      is_parameter : Is_parameter.t;
+      provenance : Backend_var.Provenance.t option;
+      is_assignment : bool;
+    }
 
 type instruction =
   { desc: instruction_desc;
@@ -109,7 +113,7 @@ let rec dummy_instr =
     res = [||];
     dbg = Debuginfo.none;
     live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_before = Reg_availability_set.empty;
     available_across = None;
   }
 
@@ -120,20 +124,20 @@ let end_instr () =
     res = [||];
     dbg = Debuginfo.none;
     live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_before = Reg_availability_set.empty;
     available_across = None;
   }
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
     dbg = Debuginfo.none; live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_before = Reg_availability_set.empty;
     available_across = None;
   }
 
 let instr_cons_debug d a r dbg n =
   { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_before = Reg_availability_set.empty;
     available_across = None;
   }
 

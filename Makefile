@@ -252,6 +252,7 @@ MIDDLE_END=\
   middle_end/flambda/base_types/id_types.cmo \
   middle_end/flambda/base_types/export_id.cmo \
   middle_end/flambda/base_types/tag.cmo \
+  middle_end/flambda/base_types/is_parameter.cmo \
   middle_end/flambda/base_types/mutable_variable.cmo \
   middle_end/flambda/base_types/set_of_closures_id.cmo \
   middle_end/flambda/base_types/set_of_closures_origin.cmo \

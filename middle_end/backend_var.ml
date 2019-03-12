@@ -44,6 +44,19 @@ module Provenance = struct
   let module_path t = t.module_path
   let location t = t.location
   let original_ident t = t.original_ident
+
+  let compare
+        { module_path = module_path1; location = location1;
+          original_ident = original_ident1; }
+        { module_path = module_path2; location = location2;
+          original_ident = original_ident2; } =
+    let c = Path.compare module_path1 module_path2 in
+    if c <> 0 then c
+    else
+      let c = Debuginfo.compare location1 location2 in
+      if c <> 0 then c
+      else
+        Ident.compare original_ident1 original_ident2
 end
 
 module With_provenance = struct

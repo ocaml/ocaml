@@ -132,6 +132,10 @@ Working version
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)
 
+- #8614: [Available_regs] constant propagation, new implementations of
+  [Reg_with_debug_info] and [Reg_availability_set]
+  (Mark Shinwell, Greta Yorsh)
+
 ### Runtime system:
 
 - #1725, #2279: Deprecate Obj.set_tag and Obj.truncate

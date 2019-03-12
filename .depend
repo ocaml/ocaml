@@ -2425,18 +2425,18 @@ asmcomp/liveness.cmx : \
 asmcomp/liveness.cmi : \
     asmcomp/mach.cmi
 asmcomp/mach.cmo : \
-    asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     asmcomp/arch.cmo \
     asmcomp/mach.cmi
 asmcomp/mach.cmx : \
-    asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx \
     asmcomp/reg.cmx \
+    middle_end/flambda/base_types/is_parameter.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
     middle_end/backend_var.cmx \
@@ -2445,6 +2445,7 @@ asmcomp/mach.cmx : \
 asmcomp/mach.cmi : \
     asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
@@ -2490,6 +2491,7 @@ asmcomp/printmach.cmo : \
     asmcomp/proc.cmi \
     asmcomp/printcmm.cmi \
     asmcomp/mach.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi \
     asmcomp/interval.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
@@ -2504,6 +2506,7 @@ asmcomp/printmach.cmx : \
     asmcomp/proc.cmx \
     asmcomp/printcmm.cmx \
     asmcomp/mach.cmx \
+    middle_end/flambda/base_types/is_parameter.cmx \
     asmcomp/interval.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
@@ -5328,6 +5331,16 @@ middle_end/flambda/base_types/id_types.cmx : \
     middle_end/flambda/base_types/id_types.cmi
 middle_end/flambda/base_types/id_types.cmi : \
     utils/identifiable.cmi
+middle_end/flambda/base_types/is_parameter.cmo : \
+    utils/misc.cmi \
+    utils/identifiable.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi
+middle_end/flambda/base_types/is_parameter.cmx : \
+    utils/misc.cmx \
+    utils/identifiable.cmx \
+    middle_end/flambda/base_types/is_parameter.cmi
+middle_end/flambda/base_types/is_parameter.cmi : \
+    utils/identifiable.cmi
 middle_end/flambda/base_types/mutable_variable.cmo : \
     middle_end/variable.cmi \
     utils/int_replace_polymorphic_compare.cmi \
@@ -5406,6 +5419,7 @@ middle_end/flambda/base_types/var_within_closure.cmx : \
 middle_end/flambda/base_types/var_within_closure.cmi : \
     middle_end/flambda/base_types/closure_element.cmi
 asmcomp/debug/available_regs.cmo : \
+    utils/targetint.cmi \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
@@ -5413,10 +5427,12 @@ asmcomp/debug/available_regs.cmo : \
     asmcomp/printmach.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi \
     utils/clflags.cmi \
     middle_end/backend_var.cmi \
     asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmx : \
+    utils/targetint.cmx \
     asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx \
     asmcomp/reg.cmx \
@@ -5424,6 +5440,7 @@ asmcomp/debug/available_regs.cmx : \
     asmcomp/printmach.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    middle_end/flambda/base_types/is_parameter.cmx \
     utils/clflags.cmx \
     middle_end/backend_var.cmx \
     asmcomp/debug/available_regs.cmi
@@ -5459,25 +5476,34 @@ asmcomp/debug/compute_ranges_intf.cmx : \
     utils/identifiable.cmx
 asmcomp/debug/reg_availability_set.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi \
-    middle_end/backend_var.cmi \
     asmcomp/debug/reg_availability_set.cmi
 asmcomp/debug/reg_availability_set.cmx : \
     asmcomp/debug/reg_with_debug_info.cmx \
-    middle_end/backend_var.cmx \
     asmcomp/debug/reg_availability_set.cmi
 asmcomp/debug/reg_availability_set.cmi : \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/reg.cmi
 asmcomp/debug/reg_with_debug_info.cmo : \
+    utils/targetint.cmi \
     asmcomp/reg.cmi \
+    utils/misc.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi \
+    utils/identifiable.cmi \
     middle_end/backend_var.cmi \
     asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmx : \
+    utils/targetint.cmx \
     asmcomp/reg.cmx \
+    utils/misc.cmx \
+    middle_end/flambda/base_types/is_parameter.cmx \
+    utils/identifiable.cmx \
     middle_end/backend_var.cmx \
     asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmi : \
+    utils/targetint.cmi \
     asmcomp/reg.cmi \
+    middle_end/flambda/base_types/is_parameter.cmi \
+    utils/identifiable.cmi \
     middle_end/backend_var.cmi
 driver/compenv.cmo : \
     utils/warnings.cmi \

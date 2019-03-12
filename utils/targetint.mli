@@ -171,6 +171,9 @@ val to_int64 : t -> int64
 (** Convert the given target integer to a
     64-bit integer (type [int64]). *)
 
+val of_nativeint : Nativeint.t -> t
+(** Convert the given native integer to a target integer. *)
+
 val of_string : string -> t
 (** Convert the given string to a target integer.
     The string is read in decimal (by default) or in hexadecimal,
