@@ -846,6 +846,10 @@ let emit_instr fallthrough i =
       D.text ()
   | Lentertrap ->
       ()
+  | Ladjust_trap_depth { delta_traps } ->
+      let delta = trap_frame_size * delta_traps in
+      cfi_adjust_cfa_offset delta;
+      stack_offset := !stack_offset + delta
   | Lpushtrap { lbl_handler; } ->
       I.push (label lbl_handler);
       if trap_frame_size > 8 then

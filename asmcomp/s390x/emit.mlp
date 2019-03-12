@@ -611,6 +611,11 @@ let emit_instr i =
         emit_string code_space
     | Lentertrap ->
         ()
+    | Ladjust_trap_depth { delta_traps } ->
+        (* each trap occupies 16 bytes on the stack *)
+        let delta = 16 * delta_traps in
+        emit_stack_adjust delta;
+        stack_offset := !stack_offset + delta
     | Lpushtrap { lbl_handler; } ->
         stack_offset := !stack_offset + 16;
         emit_stack_adjust 16;

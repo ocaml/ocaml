@@ -40,6 +40,7 @@ and instruction_desc =
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
   | Lentertrap
+  | Ladjust_trap_depth of { delta_traps : int; }
   | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
@@ -129,9 +130,9 @@ let rec discard_dead_code n =
   match n.desc with
     Lend -> n
   | Llabel _ -> n
-(* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
+  (* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
    as this may cause a stack imbalance later during assembler generation. *)
-  | Lpoptrap | Lpushtrap _ -> n
+  | Lpoptrap | Lpushtrap _ | Ladjust_trap_depth _ -> n
   | Lop(Istackoffset _) -> n
   | _ -> discard_dead_code n.next
 
@@ -277,19 +278,9 @@ let rec linear i n =
       n3
   | Iexit nfail ->
       let lbl, t = find_exit_label_try_depth nfail in
-      (* We need to re-insert dummy pushtrap (which won't be executed),
-         so as to preserve stack offset during assembler generation.
-         It would make sense to have a special pseudo-instruction
-         only to inform the later pass about this stack offset
-         (corresponding to N traps).
-       *)
-      let lbl_dummy = lbl in
-      let rec loop i tt =
-        if t = tt then i
-        else
-          loop (cons_instr (Lpushtrap { lbl_handler = lbl_dummy; }) i) (tt - 1)
-      in
-      let n1 = loop (linear i.Mach.next n) !try_depth in
+      assert (i.Mach.next.desc = Iend);
+      let delta_traps = !try_depth - t in
+      let n1 = cons_instr (Ladjust_trap_depth { delta_traps }) n in
       let rec loop i tt =
         if t = tt then i
         else loop (cons_instr Lpoptrap i) (tt - 1)
