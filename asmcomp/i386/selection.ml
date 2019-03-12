@@ -289,7 +289,8 @@ method select_push exp =
   match exp with
     Cconst_int (n, _) -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natint (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
-  | Cconst_pointer (n, _) -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
+  | Cconst_pointer (n, _) ->
+      (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natpointer (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol (s, _) -> (Ispecific(Ipush_symbol s), Ctuple [])
   | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->

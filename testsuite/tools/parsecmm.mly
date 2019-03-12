@@ -228,7 +228,8 @@ expr:
           | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (), (Cexit(0,[])),
                              debuginfo ()) in
         Ccatch(Nonrecursive, [0, [],
-          Ccatch(Recursive, [1, [], Csequence(body, Cexit(1, [])), debuginfo ()],
+          Ccatch(Recursive,
+            [1, [], Csequence(body, Cexit(1, [])), debuginfo ()],
             Cexit(1, [])), debuginfo ()], Ctuple []) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
