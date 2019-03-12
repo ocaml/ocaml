@@ -166,7 +166,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _output_obj = set output_c_object
   let _output_complete_obj () =
     set output_c_object (); set output_complete_object ()
-  let _p = set gprofile
+  let _p () =
+    fatal "The `-p' option, for gprof profiling, is no longer supported"
   let _pack = set make_package
   let _plugin p = Compplugin.load p
   let _pp s = preprocessor := Some s
@@ -261,8 +262,6 @@ let main () =
         (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_clflags_from_env ();
-    if !gprofile && not Config.profiling then
-      fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try
       Compenv.process_deferred_actions
         (ppf,

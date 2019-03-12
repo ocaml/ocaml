@@ -450,12 +450,8 @@ let emit_instr i =
     match i.desc with
     | Lend -> 0
     | Lprologue ->
-      let num_instrs0 =
-        if !Clflags.gprofile then emit_profile()
-        else 0
-      in
       let n = frame_size() in
-      let num_instrs1 =
+      let num_instrs =
         if n > 0 then begin
           let num_instrs = emit_stack_adjustment (-n) in
           if !contains_calls then begin
@@ -470,7 +466,7 @@ let emit_instr i =
         end
       in
       `{emit_label !tailrec_entry_point}:\n`;
-      num_instrs0 + num_instrs1
+      num_instrs
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc = dst.loc then 0 else begin

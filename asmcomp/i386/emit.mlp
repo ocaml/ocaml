@@ -491,7 +491,6 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    if !Clflags.gprofile then emit_profile();
     let n = frame_size() - 4 in
     if n > 0 then  begin
       I.sub (int n) esp;

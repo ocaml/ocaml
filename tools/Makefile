@@ -31,7 +31,7 @@ DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
 # the shell.
-override installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
+override installed_tools := ocamldep ocamlprof \
                    ocamlmktop ocamlmklib ocamlobjinfo
 
 install_files :=
@@ -119,13 +119,6 @@ CSLPROF_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   lexer.cmo parse.cmo
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
-
-ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
-               warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-               clflags.cmo main_args.cmo
-
-$(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
-$(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 
 opt:: profiling.cmx
 

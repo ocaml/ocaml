@@ -704,10 +704,8 @@ libunwind_available
 call_counts
 spacetime
 frame_pointers
-cc_profile
 profinfo_width
 profinfo
-profiling
 install_source_artifacts
 install_bytecode_programs
 mksharedlibrpath
@@ -718,7 +716,6 @@ sharedlib_cflags
 asm_cfi_supported
 AS
 ASPP
-asppprofflags
 libbfd_link
 libbfd_include
 x_libraries
@@ -2785,9 +2782,6 @@ VERSION=4.09.0+dev0-2019-01-18
 
 
  # TODO: rename this variable
-
-
-
 
 
 
@@ -12307,12 +12301,12 @@ case $host in #(
     unix_or_win32="win32"
     unixlib="win32unix"
     graphlib="win32graph"
-    cc_profile='' ;; #(
+     ;; #(
   *) :
     unix_or_win32="unix"
   unixlib="unix"
   graphlib="graph"
-  cc_profile='-pg' ;;
+   ;;
 esac
 case $host in #(
   *-*-cygwin*|*-*-mingw32|*-pc-windows) :
@@ -13734,49 +13728,7 @@ if test $arch != "none" && $arch64 ; then :
   otherlibraries="$otherlibraries raw_spacetime_lib"
 fi
 
-# Profiling
-
-case "$arch,$system" in #(
-  i386,linux_elf) :
-    profiling=true ;; #(
-  i386,gnu) :
-    profiling=true ;; #(
-  i386,bsd_elf) :
-    profiling=true ;; #(
-  amd64,macosx) :
-    profiling=true ;; #(
-  amd64,linux) :
-    profiling=true ;; #(
-  amd64,openbsd) :
-    profiling=true ;; #(
-  amd64,freebsd) :
-    profiling=true ;; #(
-  amd64,netbsd) :
-    profiling=true ;; #(
-  arm,netbsd) :
-    profiling=true ;; #(
-  amd64,gnu) :
-    profiling=true ;; #(
-  arm,linux*) :
-    profiling=true ;; #(
-  power,elf) :
-    profiling=true ;; #(
-  power,bsd*) :
-    profiling=true ;; #(
-  power,netbsd) :
-    profiling=true ;; #(
-  *) :
-    profiling=false ;;
-esac
-
 # Assembler
-
-case $host in #(
-  *-*-mingw32|*-pc-windows) :
-    asppprofflags='' ;; #(
-  *) :
-    asppprofflags='-DPROFILING' ;;
-esac
 
 if test -n "$host_alias"; then :
   toolpref="${host}-"

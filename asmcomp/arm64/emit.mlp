@@ -577,7 +577,6 @@ let emit_instr i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      if !Clflags.gprofile then emit_profile();
       let n = frame_size() in
       if n > 0 then
         emit_stack_adjustment (-n);
