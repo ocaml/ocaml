@@ -443,6 +443,23 @@ let emit_load_handler_address handler =
   `	add	lr, pc, lr\n`;
   2
 
+(* Emission of labels immediately prior to and after calls, used for DWARF
+   call site support. *)
+
+let supports_dwarf_call_sites () = false  (* To be filled in by a later GPR. *)
+
+let maybe_add_label_before_call ~call_labels =
+  if supports_dwarf_call_sites () then begin
+    `{emit_label call_labels.before}:\n`
+  end
+
+(* This function should not be called if [record_frame] is going to be used,
+   since the latter defines the same label as this function. *)
+let maybe_add_label_after_call ~call_labels =
+  if supports_dwarf_call_sites () then begin
+    `{emit_label call_labels.after}:\n`
+  end
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -534,40 +551,58 @@ let emit_instr i =
         end; 1
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Icall_ind { label_after; }) ->
+    | Lop(Icall_ind { call_labels; }) ->
         if !arch >= ARMv5 then begin
+          maybe_add_label_before_call ~call_labels;
           `	blx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame i.live false i.dbg ~label:label_after}\n`; 1
+          `{record_frame i.live false i.dbg ~label:call_labels.after}\n`; 1
         end else begin
           `	mov	lr, pc\n`;
+          maybe_add_label_before_call ~call_labels;
           `	bx	{emit_reg i.arg.(0)}\n`;
-          `{record_frame i.live false i.dbg ~label:label_after}\n`; 2
+          `{record_frame i.live false i.dbg ~label:call_labels.after}\n`; 2
         end
-    | Lop(Icall_imm { func; label_after; }) ->
+    | Lop(Icall_imm { func; call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
         `	{emit_call func}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`; 1
-    | Lop(Itailcall_ind { label_after = _; }) ->
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`; 1
+    | Lop(Itailcall_ind { call_labels; }) ->
         output_epilogue begin fun () ->
-          if !contains_calls then
-            `	ldr	lr, [sp, #{emit_int (-4)}]\n`;
-          `	bx	{emit_reg i.arg.(0)}\n`; 2
+          if !contains_calls then begin
+            `	ldr	lr, [sp, #{emit_int (-4)}]\n`
+          end;
+          maybe_add_label_before_call ~call_labels;
+          `	bx	{emit_reg i.arg.(0)}\n`;
+          maybe_add_label_after_call ~call_labels;
+          2
         end
-    | Lop(Itailcall_imm { func; label_after = _; }) ->
+    | Lop(Itailcall_imm { func; call_labels; }) ->
         if func = !function_name then begin
-          `	b	{emit_label !tailrec_entry_point}\n`; 1
+          maybe_add_label_before_call ~call_labels;
+          `	b	{emit_label !tailrec_entry_point}\n`;
+          maybe_add_label_after_call ~call_labels;
+          1
         end else begin
           output_epilogue begin fun () ->
-            if !contains_calls then
-              `	ldr	lr, [sp, #{emit_int (-4)}]\n`;
-            `	{emit_jump func}\n`; 2
+            if !contains_calls then begin
+              `	ldr	lr, [sp, #{emit_int (-4)}]\n`
+            end;
+            maybe_add_label_before_call ~call_labels;
+            `	{emit_jump func}\n`;
+            maybe_add_label_after_call ~call_labels;
+            2
           end
         end
-    | Lop(Iextcall { func; alloc = false; }) ->
-        `	{emit_call func}\n`; 1
-    | Lop(Iextcall { func; alloc = true; label_after; }) ->
+    | Lop(Iextcall { func; alloc = false; call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
+        `	{emit_call func}\n`;
+        maybe_add_label_after_call ~call_labels;
+        1
+    | Lop(Iextcall { func; alloc = true; call_labels; }) ->
         let ninstr = emit_load_symbol_addr (phys_reg 7 (* r7 *)) func in
+        maybe_add_label_before_call ~call_labels;
         `	{emit_call "caml_c_call"}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`;
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`;
         1 + ninstr
     | Lop(Istackoffset n) ->
         assert (n mod 8 = 0);

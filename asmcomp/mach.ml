@@ -39,6 +39,11 @@ type test =
   | Ioddtest
   | Ieventest
 
+type call_labels = {
+  before : label;
+  after : label;
+}
+
 type operation =
     Imove
   | Ispill
@@ -46,11 +51,11 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
-  | Itailcall_ind of { label_after : label; }
-  | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Icall_ind of { call_labels : call_labels; }
+  | Icall_imm of { func : string; call_labels : call_labels; }
+  | Itailcall_ind of { call_labels : call_labels; }
+  | Itailcall_imm of { func : string; call_labels : call_labels; }
+  | Iextcall of { func : string; alloc : bool; call_labels : call_labels; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool

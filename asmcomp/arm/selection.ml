@@ -179,7 +179,12 @@ method select_shift_arith op dbg arithop arithrevop args =
       end
 
 method private iextcall (func, alloc) =
-  Iextcall { func; alloc; label_after = Cmm.new_label (); }
+  let call_labels =
+    { before = Cmm.new_label ();
+      after = Cmm.new_label ();
+    }
+  in
+  Iextcall { func; alloc; call_labels; }
 
 method! select_operation op args dbg =
   match (op, args) with

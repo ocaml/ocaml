@@ -301,6 +301,23 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 
+(* Emission of labels immediately prior to and after calls, used for DWARF
+   call site support. *)
+
+let supports_dwarf_call_sites () = false  (* To be filled in by a later GPR. *)
+
+let maybe_add_label_before_call ~call_labels =
+  if supports_dwarf_call_sites () then begin
+    `{emit_label call_labels.before}:\n`
+  end
+
+(* This function should not be called if [record_frame] is going to be used,
+   since the latter defines the same label as this function. *)
+let maybe_add_label_after_call ~call_labels =
+  if supports_dwarf_call_sites () then begin
+    `{emit_label call_labels.after}:\n`
+  end
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -349,39 +366,54 @@ let emit_instr i =
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Icall_ind { label_after; }) ->
+    | Lop(Icall_ind { call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`
 
-    | Lop(Icall_imm { func; label_after; }) ->
+    | Lop(Icall_imm { func; call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
         emit_call func;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
-    | Lop(Itailcall_ind { label_after = _; }) ->
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`
+    | Lop(Itailcall_ind { call_labels; }) ->
         let n = frame_size() in
-        if !contains_calls then
-          `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+        if !contains_calls then begin
+          `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`
+        end;
         emit_stack_adjust (-n);
-        `	br	{emit_reg i.arg.(0)}\n`
-    | Lop(Itailcall_imm { func; label_after = _; }) ->
-        if func = !function_name then
-          `	brcl	15, {emit_label !tailrec_entry_point}\n`
-        else begin
+        maybe_add_label_before_call ~call_labels;
+        `	br	{emit_reg i.arg.(0)}\n`;
+        maybe_add_label_after_call ~call_labels
+    | Lop(Itailcall_imm { func; call_labels; }) ->
+        if func = !function_name then begin
+          maybe_add_label_before_call ~call_labels;
+          `	brcl	15, {emit_label !tailrec_entry_point}\n`;
+          maybe_add_label_after_call ~call_labels
+        end else begin
           let n = frame_size() in
-          if !contains_calls then
-            `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+          if !contains_calls then begin
+            `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`
+          end;
           emit_stack_adjust (-n);
-          if !pic_code then
+          maybe_add_label_before_call ~call_labels;
+          if !pic_code then begin
             `	brcl	15, {emit_symbol func}@PLT\n`
-          else
+          end else begin
             `	brcl	15, {emit_symbol func}\n`
+          end;
+          maybe_add_label_after_call ~call_labels
         end
 
-     | Lop(Iextcall { func; alloc; label_after; }) ->
-        if not alloc then emit_call func
-        else begin
+     | Lop(Iextcall { func; alloc; call_labels; }) ->
+        if not alloc then begin
+          maybe_add_label_before_call ~call_labels;
+          emit_call func;
+          maybe_add_label_after_call ~call_labels
+        end else begin
           emit_load_symbol_addr reg_r7 func;
+          maybe_add_label_before_call ~call_labels;
           emit_call "caml_c_call";
-          `{record_frame i.live false i.dbg ~label:label_after}\n`
+          `{record_frame i.live false i.dbg ~label:call_labels.after}\n`
         end
 
      | Lop(Istackoffset n) ->

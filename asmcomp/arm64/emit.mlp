@@ -570,6 +570,23 @@ let emit_profile() = ()   (* TODO *)
   | _ -> ()
 *)
 
+(* Emission of labels immediately prior to and after calls, used for DWARF
+   call site support. *)
+
+let supports_dwarf_call_sites () = false  (* To be filled in by a later GPR. *)
+
+let maybe_add_label_before_call ~call_labels =
+  if supports_dwarf_call_sites () then begin
+    `{emit_label call_labels.before}:\n`
+  end
+
+(* This function should not be called if [record_frame] is going to be used,
+   since the latter defines the same label as this function. *)
+let maybe_add_label_after_call ~call_labels =
+  if supports_dwarf_call_sites () then begin
+    `{emit_label call_labels.after}:\n`
+  end
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -615,25 +632,39 @@ let emit_instr i =
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Icall_ind { label_after; }) ->
+    | Lop(Icall_ind { call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
         `	blr	{emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
-    | Lop(Icall_imm { func; label_after; }) ->
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`
+    | Lop(Icall_imm { func; call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
         `	bl	{emit_symbol func}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
-    | Lop(Itailcall_ind { label_after = _; }) ->
-        output_epilogue (fun () -> `	br	{emit_reg i.arg.(0)}\n`)
-    | Lop(Itailcall_imm { func; label_after = _; }) ->
-        if func = !function_name then
-          `	b	{emit_label !tailrec_entry_point}\n`
-        else
-          output_epilogue (fun () -> `	b	{emit_symbol func}\n`)
-    | Lop(Iextcall { func; alloc = false; label_after = _; }) ->
-        `	bl	{emit_symbol func}\n`
-    | Lop(Iextcall { func; alloc = true; label_after; }) ->
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`
+    | Lop(Itailcall_ind { call_labels; }) ->
+        output_epilogue (fun () ->
+          maybe_add_label_before_call ~call_labels;
+          `	br	{emit_reg i.arg.(0)}\n`;
+          maybe_add_label_after_call ~call_labels)
+    | Lop(Itailcall_imm { func; call_labels; }) ->
+        if func = !function_name then begin
+          maybe_add_label_before_call ~call_labels;
+          `	b	{emit_label !tailrec_entry_point}\n`;
+          maybe_add_label_after_call ~call_labels
+        end else begin
+          output_epilogue (fun () ->
+            maybe_add_label_before_call ~call_labels;
+            `	b	{emit_symbol func}\n`;
+            maybe_add_label_after_call ~call_labels)
+        end
+    | Lop(Iextcall { func; alloc = false; call_labels; }) ->
+        maybe_add_label_before_call ~call_labels;
+        `	bl	{emit_symbol func}\n`;
+        maybe_add_label_after_call ~call_labels
+    | Lop(Iextcall { func; alloc = true; call_labels; }) ->
         emit_load_symbol_addr reg_x15 func;
+        maybe_add_label_before_call ~call_labels;
         `	bl	{emit_symbol "caml_c_call"}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame i.live false i.dbg ~label:call_labels.after}\n`
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
