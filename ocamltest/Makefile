@@ -52,7 +52,7 @@ else
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
-CPP := $(CPP) 2> nul
+DIRECT_CPP := $(DIRECT_CPP) 2> nul
 CSC := csc
 ifeq "$(HOST)" "i686-pc-windows"
 CSCFLAGS := /platform:x86
@@ -232,7 +232,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	  -e 's|@@SYSTHREADS@@|$(systhreads)|' \
 	  -e 's|@@STR@@|$(str)|' \
 	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
-	  -e 's|@@CPP@@|$(CPP)|' \
+	  -e 's|@@CPP@@|$(DIRECT_CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
