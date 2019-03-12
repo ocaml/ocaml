@@ -220,9 +220,6 @@ dynlink.cmxa: $(NATOBJS)
 dynlink_platform_intf.mli: dynlink_platform_intf.ml
 	cp $< $@
 
-dynlink.cmx: dynlink.mlopt
-	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) -impl dynlink.mlopt
-
 extract_crc: dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
