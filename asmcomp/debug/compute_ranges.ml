@@ -419,8 +419,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | None -> first_insn
       | Some (_label, label_insn) ->
         assert (label_insn.L.next == insn);
-        (* (Note that by virtue of [Lprologue], we can insert labels prior to the
-           first assembly instruction of the function.) *)
+        (* (Note that by virtue of [Lprologue], we can insert labels prior to
+           the first assembly instruction of the function.) *)
         begin match prev_insn with
         | None ->
           (* The label becomes the new first instruction. *)
