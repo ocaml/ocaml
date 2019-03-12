@@ -643,7 +643,6 @@ DIRECT_LD
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
-DIRECT_CPP
 CPP
 LT_SYS_LIBRARY_PATH
 OTOOL64
@@ -777,6 +776,7 @@ libext
 OBJEXT
 exeext
 ac_tool_prefix
+DIRECT_CPP
 CC
 VERSION
 CONFIGURE_ARGS
@@ -2746,6 +2746,7 @@ VERSION=4.08.0+dev2-2019-01-18
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -12210,9 +12211,23 @@ fi
    ;;
 esac
 
-# C preprocessor: we do not rely on AC_PROG_CPP because it returns
-# 'fcc -E' while we really need cpp
-if test -n "$ac_tool_prefix"; then
+# Determine how to call the C preprocessor directly.
+# Most of the time, calling the C preprocessor through the C compiler is
+# desirable and even important.
+# In some cases, though, we want to use the C preprocessor only to
+# expand macros. In such cases, it is much more convenient to be able
+# to invoke it directly rather than through the C compiler, for instance
+# because, when invoked directly, the C preprocessor does not require
+# to be invoked on a file with a '.c' extension
+# We thus figure out how to invoke the C preprocessor directly but
+# let the CPP variable untouched, except for the MSVC port where we set it
+# manually to make sure the backward compatibility is preserved
+case $host in #(
+  *-pc-windows) :
+    DIRECT_CPP="$CC -nologo -EP";
+    CPP="$DIRECT_CPP" ;; #(
+  *) :
+    if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}cpp", so it can be a program name with args.
 set dummy ${ac_tool_prefix}cpp; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -12303,12 +12318,7 @@ esac
 else
   DIRECT_CPP="$ac_cv_prog_DIRECT_CPP"
 fi
-
-case $host in #(
-  *-pc-windows) :
-    CPP="$CC -nologo -EP" ;; #(
-  *) :
-    CPP=$DIRECT_CPP ;;
+ ;;
 esac
 
 # Libraries to build depending on the host
