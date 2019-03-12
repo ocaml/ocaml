@@ -130,10 +130,13 @@ let rec discard_dead_code n =
   match n.desc with
     Lend -> n
   | Llabel _ -> n
-  (* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
-   as this may cause a stack imbalance later during assembler generation. *)
-  | Lpoptrap | Lpushtrap _ | Ladjust_trap_depth _ -> n
-  | Lop(Istackoffset _) -> n
+    (* Do not discard Lpoptrap/Lpushtrap/Ladjust_trap_depth
+       or Istackoffset instructions, as this may cause a stack imbalance
+       later during assembler generation.
+       However, it's ok to eliminate dead instructions after them.*)
+  | Lpoptrap | Lpushtrap _ | Ladjust_trap_depth _
+  | Lop(Istackoffset _) ->
+    { n with next = discard_dead_code n.next; }
   | _ -> discard_dead_code n.next
 
 (*
