@@ -3117,7 +3117,7 @@ and type_expect_
         type_expansion_scope = Btype.lowest_level;
         type_loc = loc;
         type_attributes = [];
-        type_immediate = false;
+        type_immediate = Unknown;
         type_unboxed = unboxed_false_default_false;
       }
       in
