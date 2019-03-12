@@ -122,20 +122,48 @@ let check_label n = match n.desc with
   | Llabel lbl -> lbl
   | _ -> -1
 
+
+(* Add pseudo-instruction Ladjust_trap_depth in front of a continuation
+   to notify assembler generation about updates to the stack as a result
+   of differences in exception trap depths.
+   The argument the delta in the number of trap frames (not bytes). *)
+
+let adjust_trap_depth delta_traps next =
+  (* Simplify by merging and liminate Ladjust_trap_depth instructions
+     whenever possible. *)
+  let delta_traps, next  =
+    match next.desc with
+    | Ladjust_trap_depth { delta_traps = k } -> delta_traps + k, next.next
+    | _ -> delta_traps, next
+  in
+  if delta_traps = 0 then next
+  else cons_instr (Ladjust_trap_depth { delta_traps }) next
+
 (* Discard all instructions up to the next label.
    This function is to be called before adding a non-terminating
    instruction. *)
 
 let rec discard_dead_code n =
+  let adjust trap_depth =
+    adjust_trap_depth trap_depth (discard_dead_code n.next)
+  in
   match n.desc with
     Lend -> n
   | Llabel _ -> n
     (* Do not discard Lpoptrap/Lpushtrap/Ladjust_trap_depth
        or Istackoffset instructions, as this may cause a stack imbalance
-       later during assembler generation.
-       However, it's ok to eliminate dead instructions after them.*)
-  | Lpoptrap | Lpushtrap _ | Ladjust_trap_depth _
+       later during assembler generation. Replace them
+       with pseudo-instruction Ladjust_trap_depth with the corresponding
+       stack offset and eliminate dead instructions after them. *)
+  | Lpoptrap -> adjust (-1)
+  | Lpushtrap _ -> adjust (+1)
+  | Ladjust_trap_depth { delta_traps } -> adjust delta_traps
   | Lop(Istackoffset _) ->
+    (* This dead instruction cannot be replaced by Ladjust_trap_depth,
+       because the units don't match: the argument of Istackoffset is in bytes,
+       whereas the argument of Ladjust_trap_depth is in trap frames,
+       and the size of trap frames is machine-dependant and therefore not
+       available here.  *)
     { n with next = discard_dead_code n.next; }
   | _ -> discard_dead_code n.next
 
@@ -283,7 +311,7 @@ let rec linear i n =
       let lbl, t = find_exit_label_try_depth nfail in
       assert (i.Mach.next.desc = Iend);
       let delta_traps = !try_depth - t in
-      let n1 = cons_instr (Ladjust_trap_depth { delta_traps }) n in
+      let n1 = adjust_trap_depth delta_traps n in
       let rec loop i tt =
         if t = tt then i
         else loop (cons_instr Lpoptrap i) (tt - 1)
