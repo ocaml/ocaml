@@ -550,10 +550,10 @@ type first_pass_accummulater =
   { rev_fields : intermediate_class_field list;
     val_env : Env.t;
     par_env : Env.t;
-    concrete_meths : Concr.t;
-    concrete_vals : Concr.t;
-    local_meths : Concr.t;
-    local_vals : Concr.t;
+    concrete_meths : MethSet.t;
+    concrete_vals : VarSet.t;
+    local_meths : MethSet.t;
+    local_vals : VarSet.t;
     vars : Ident.t Vars.t;
     meths : Ident.t Meths.t; }
 
@@ -577,8 +577,8 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            let parent_sign = Btype.signature_of_class_type parent.cl_type in
            let new_concrete_meths = Btype.concrete_methods parent_sign in
            let new_concrete_vals = Btype.concrete_instance_vars parent_sign in
-           let over_meths = Concr.inter new_concrete_meths concrete_meths in
-           let over_vals = Concr.inter new_concrete_vals concrete_vals in
+           let over_meths = MethSet.inter new_concrete_meths concrete_meths in
+           let over_vals = VarSet.inter new_concrete_vals concrete_vals in
            begin match override with
            | Fresh ->
                let cname =
@@ -586,21 +586,21 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                  | Cty_constr (p, _, _) -> Path.name p
                  | _ -> "inherited"
                in
-               if not (Concr.is_empty over_meths) then
+               if not (MethSet.is_empty over_meths) then
                  Location.prerr_warning loc
                    (Warnings.Method_override
-                      (cname :: Concr.elements over_meths));
-               if not (Concr.is_empty over_vals) then
+                      (cname :: MethSet.elements over_meths));
+               if not (VarSet.is_empty over_vals) then
                  Location.prerr_warning loc
                    (Warnings.Instance_variable_override
-                      (cname :: Concr.elements over_vals));
+                      (cname :: VarSet.elements over_vals));
            | Override ->
-               if Concr.is_empty over_meths && Concr.is_empty over_vals then
+               if MethSet.is_empty over_meths && VarSet.is_empty over_vals then
                  raise (Error(loc, val_env, No_overriding ("","")))
            end;
-           let concrete_vals = Concr.union new_concrete_vals concrete_vals in
+           let concrete_vals = VarSet.union new_concrete_vals concrete_vals in
            let concrete_meths =
-             Concr.union new_concrete_meths concrete_meths
+             MethSet.union new_concrete_meths concrete_meths
            in
            let val_env, par_env, inherited_vars, vars =
              Vars.fold
@@ -622,7 +622,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            in
            (* Methods available through super *)
            let super_meths =
-             Concr.fold
+             MethSet.fold
                (fun label acc -> (label, Ident.create_local label) :: acc)
                new_concrete_meths []
            in
@@ -675,10 +675,10 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
   | Pcf_val (label, mut, Cfk_concrete (override, sdefinition)) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
-           if Concr.mem label.txt local_vals then
+           if VarSet.mem label.txt local_vals then
              raise(Error(loc, val_env,
                          Duplicate ("instance variable", label.txt)));
-           if Concr.mem label.txt concrete_vals then begin
+           if VarSet.mem label.txt concrete_vals then begin
              if override = Fresh then
                Location.prerr_warning label.loc
                  (Warnings.Instance_variable_override[label.txt])
@@ -712,8 +712,8 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                  already_declared; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
-           let concrete_vals = Concr.add label.txt concrete_vals in
-           let local_vals = Concr.add label.txt local_vals in
+           let concrete_vals = VarSet.add label.txt concrete_vals in
+           let local_vals = VarSet.add label.txt local_vals in
            { acc with rev_fields; val_env; par_env;
                       concrete_vals; local_vals; vars })
 
@@ -737,9 +737,9 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
   | Pcf_method (label, priv, Cfk_concrete (override, expr)) ->
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
-           if Concr.mem label.txt local_meths then
+           if MethSet.mem label.txt local_meths then
              raise(Error(loc, val_env, Duplicate ("method", label.txt)));
-           if Concr.mem label.txt concrete_meths then begin
+           if MethSet.mem label.txt concrete_meths then begin
              if override = Fresh then begin
                  Location.prerr_warning loc
                    (Warnings.Method_override [label.txt])
@@ -798,8 +798,8 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                  warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
-           let concrete_meths = Concr.add label.txt concrete_meths in
-           let local_meths = Concr.add label.txt local_meths in
+           let concrete_meths = MethSet.add label.txt concrete_meths in
+           let local_meths = MethSet.add label.txt local_meths in
            { acc with rev_fields; concrete_meths; local_meths; meths })
 
   | Pcf_constraint (sty1, sty2) ->
@@ -833,10 +833,10 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
 and class_fields_first_pass self_loc cl_num sign self_scope
       val_env par_env cfs =
   let rev_fields = [] in
-  let concrete_meths = Concr.empty in
-  let concrete_vals = Concr.empty in
-  let local_meths = Concr.empty in
-  let local_vals = Concr.empty in
+  let concrete_meths = MethSet.empty in
+  let concrete_vals = VarSet.empty in
+  let local_meths = MethSet.empty in
+  let local_vals = VarSet.empty in
   let vars = Vars.empty in
   let meths = Meths.empty in
   let init_acc =

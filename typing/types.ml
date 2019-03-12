@@ -139,8 +139,11 @@ end
 
 (* Maps of methods and instance variables *)
 
+module MethSet = Misc.Stdlib.String.Set
+module VarSet = Misc.Stdlib.String.Set
+
 module Meths = Misc.Stdlib.String.Map
-module Vars = Meths
+module Vars = Misc.Stdlib.String.Map
 
 
 (* Value descriptions *)
@@ -313,8 +316,6 @@ and type_transparence =
   | Type_private     (* private type *)
 
 (* Type expressions for the class language *)
-
-module Concr = Misc.Stdlib.String.Set
 
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type

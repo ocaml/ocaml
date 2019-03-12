@@ -329,7 +329,8 @@ and class_expr_desc =
   | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * expression) list * class_expr
   | Tcl_constraint of
-      class_expr * class_type option * string list * string list * Types.Concr.t
+      class_expr * class_type option * string list * string list
+      * Types.MethSet.t
   (* Visible instance variables, methods and concrete methods *)
   | Tcl_open of open_description * class_expr
 
