@@ -3417,7 +3417,7 @@ and type_expect_
             Tmeth_ancestor(id, self_path), typ
         | _ ->
             let ty =
-              match filter_method env met Public obj.exp_type with
+              match filter_method env met obj.exp_type with
               | ty -> ty
               | exception Unify _ ->
                   let valid_methods =

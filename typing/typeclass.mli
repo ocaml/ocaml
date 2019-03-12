@@ -122,7 +122,7 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
-  | Closing_self_type of type_expr
+  | Closing_self_type of class_signature
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
