@@ -3,19 +3,6 @@ and standard library.
 
 It is used on Inria's CI to make sure the bootstrap procedure works.
 
-diff --git a/otherlibs/threads/stdlib.ml b/otherlibs/threads/stdlib.ml
-index 27cb01e54..eea32ee94 100644
---- a/otherlibs/threads/stdlib.ml
-+++ b/otherlibs/threads/stdlib.ml
-@@ -152,8 +152,6 @@ external log10 : float -> float = "caml_log10_float" "log10"
- external log1p : float -> float = "caml_log1p_float" "caml_log1p"
-   [@@unboxed] [@@noalloc]
- external sin : float -> float = "caml_sin_float" "sin" [@@unboxed] [@@noalloc]
--external sinh : float -> float = "caml_sinh_float" "sinh"
--  [@@unboxed] [@@noalloc]
- external sqrt : float -> float = "caml_sqrt_float" "sqrt"
-   [@@unboxed] [@@noalloc]
- external tan : float -> float = "caml_tan_float" "tan" [@@unboxed] [@@noalloc]
 diff --git a/runtime/floats.c b/runtime/floats.c
 index b93f6a409..6edbed9c6 100644
 --- a/runtime/floats.c
