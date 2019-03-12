@@ -657,6 +657,9 @@ OCaml 4.08.0
   unable to find the camlheader files (subtle regression of GPR#2139/2041)
   (David Allsopp, report and review by Sébastien Hinderer)
 
+- MPR#7919, GPR#2311: Fix assembler detection in configure
+  (Sébastien Hinderer, review by David Allsopp)
+
 ### Internal/compiler-libs changes:
 
 - MPR#7918, GPR#1703, GPR#1944, GPR#2213, GPR#2257: Add the module
