@@ -27,6 +27,15 @@ type pty = { pv : 'a. 'a list; }
 |}];;
 
 
+type id = { id : 'a. 'a -> 'a };;
+let id x = x;;
+let {id} = id { id };;
+[%%expect {|
+type id = { id : 'a. 'a -> 'a; }
+val id : 'a -> 'a = <fun>
+val id : '_weak1 -> '_weak1 = <fun>
+|}];;
+
 let px = {pv = []};;
 [%%expect {|
 val px : pty = {pv = []}
@@ -1545,7 +1554,7 @@ let x = f 3;;
 [%%expect{|
 type (+'a, -'b) foo = private int
 val f : int -> ('a, 'a) foo = <fun>
-val x : ('_weak1, '_weak1) foo = 3
+val x : ('_weak2, '_weak2) foo = 3
 |}]
 
 
