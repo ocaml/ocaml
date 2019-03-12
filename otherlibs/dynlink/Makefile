@@ -212,6 +212,11 @@ dynlink.cma: $(OBJS)
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -I native \
 	            -o $@ $^
+# As for all other .cmxa files, ensure that the .cmx files are in the same
+# directory. If this were omitted, ocamldoc in particular will fail to build
+# with a -opaque warning. Note that installopt refers to $(NATOBJS) so doesn't
+# require this file to exist, hence its inclusion in the recipe for dynlink.cmxa
+# rather than as a dependency elsewhere.
 	cp native/dynlink.cmx dynlink.cmx
 
 # Since there is no .mli for [Dynlink_platform_intf], we need to be
