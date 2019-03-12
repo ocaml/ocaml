@@ -300,7 +300,7 @@ val methods : class_signature -> string list
 val virtual_methods : class_signature -> string list
 
 (* Return the concrete methods of a class signature *)
-val concrete_methods : class_signature -> Concr.t
+val concrete_methods : class_signature -> MethSet.t
 
 (* Return the public methods of a class signature *)
 val public_methods : class_signature -> string list
@@ -312,7 +312,7 @@ val instance_vars : class_signature -> string list
 val virtual_instance_vars : class_signature -> string list
 
 (* Return the concrete instance variables of a class signature *)
-val concrete_instance_vars : class_signature -> Concr.t
+val concrete_instance_vars : class_signature -> VarSet.t
 
 (* Return the type of a method.
    @raises [Assert_failure] if the class has no such method. *)

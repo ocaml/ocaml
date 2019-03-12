@@ -351,8 +351,8 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tcl_constraint (cl, _, vals, meths, concr_meths) ->
       let virt_meths =
-        List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
-      let concr_meths = Concr.elements concr_meths in
+        List.filter (fun lab -> not (MethSet.mem lab concr_meths)) meths in
+      let concr_meths = MethSet.elements concr_meths in
       let narrow_args =
         [Lvar cla;
          transl_meth_list vals;

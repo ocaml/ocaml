@@ -706,8 +706,8 @@ let concrete_methods sign =
     (fun name (_priv, vr, _ty) s ->
        match vr with
        | Virtual -> s
-       | Concrete -> Concr.add name s)
-    sign.csig_meths Concr.empty
+       | Concrete -> MethSet.add name s)
+    sign.csig_meths MethSet.empty
 
 (* Return the public methods of a class signature *)
 let public_methods sign =
@@ -739,8 +739,8 @@ let concrete_instance_vars sign =
     (fun name (_mut, vr, _ty) s ->
        match vr with
        | Virtual -> s
-       | Concrete -> Concr.add name s)
-    sign.csig_vars Concr.empty
+       | Concrete -> VarSet.add name s)
+    sign.csig_vars VarSet.empty
 
 let method_type label sign =
   match Meths.find label sign.csig_meths with
