@@ -686,8 +686,8 @@ output more concisely.
 It follows the behavior of the "printf" function from the C standard library.
 The "printf" function takes a format string that describes the desired output
 as a text interspered with specifiers (for instance "%d", "%f").
-Next, the specifiers are substituted by the corresponding arguments in the
-format string:
+Next, the specifiers are substituted by the following arguments in their order
+of apparition in the format string:
 \begin{caml_example}{toplevel}
 Printf.printf "%i + %i is an integer value, %F * %F is a float, %S\n"
 3 2 4.5 1. "this is a string";;
