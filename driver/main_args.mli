@@ -140,6 +140,7 @@ module type Bytecomp_options = sig
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
+  val _vmthread : unit -> unit
   val _use_runtime : string -> unit
 
   val _dinstr : unit -> unit
@@ -241,6 +242,7 @@ module type Ocamldoc_options = sig
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
+  val _vmthread : unit -> unit
 end;;
 
 module type Arg_list = sig
