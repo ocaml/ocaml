@@ -73,6 +73,7 @@ AC_SUBST([CC])
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+AC_SUBST([DIRECT_CPP])
 AC_SUBST([ac_tool_prefix])
 AC_SUBST([exeext])
 AC_SUBST([OBJEXT])
@@ -403,12 +404,22 @@ AS_CASE([$host],
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2) && ${RANLIB} \$(1)"
   ])
 
-# C preprocessor: we do not rely on AC_PROG_CPP because it returns
-# 'fcc -E' while we really need cpp
-AC_CHECK_TOOL([DIRECT_CPP],[cpp])
+# Determine how to call the C preprocessor directly.
+# Most of the time, calling the C preprocessor through the C compiler is
+# desirable and even important.
+# In some cases, though, we want to use the C preprocessor only to
+# expand macros. In such cases, it is much more convenient to be able
+# to invoke it directly rather than through the C compiler, for instance
+# because, when invoked directly, the C preprocessor does not require
+# to be invoked on a file with a '.c' extension
+# We thus figure out how to invoke the C preprocessor directly but
+# let the CPP variable untouched, except for the MSVC port where we set it
+# manually to make sure the backward compatibility is preserved
 AS_CASE([$host],
-  [*-pc-windows], [CPP="$CC -nologo -EP"],
-  [CPP=$DIRECT_CPP])
+  [*-pc-windows],
+    [DIRECT_CPP="$CC -nologo -EP";
+    CPP="$DIRECT_CPP"],
+  [AC_CHECK_TOOL([DIRECT_CPP],[cpp])])
 
 # Libraries to build depending on the host
 
