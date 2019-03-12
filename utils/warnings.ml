@@ -730,13 +730,11 @@ let message = function
   | Redundant_case -> "this match case is unused."
   | Redundant_subpat -> "this sub-pattern is unused."
   | Instance_variable_override [lab] ->
-      "the instance variable " ^ lab ^ " is overridden.\n" ^
-      "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
+      "the instance variable " ^ lab ^ " is overridden."
   | Instance_variable_override (cname :: slist) ->
       String.concat " "
         ("the following instance variables are overridden by the class"
-         :: cname  :: ":\n " :: slist) ^
-      "\nThe behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
+         :: cname  :: ":\n " :: slist)
   | Instance_variable_override [] -> assert false
   | Illegal_backslash -> "illegal backslash escape in string."
   | Implicit_public_methods l ->
