@@ -948,7 +948,7 @@ AS_CASE(["$arch,$system"],
   [amd64,win64],
     [default_as="ml64 -nologo -Cp -c -Fo"],
   [amd64,macosx],
-    [AS_CASE([$ccfamily],
+    [AS_CASE([$ocaml_cv_cc_vendor],
       [clang-*],
         [default_as='clang -arch x86_64 -Wno-trigraphs -c'
         default_aspp='clang -arch x86_64 -Wno-trigraphs -c'],
@@ -985,7 +985,7 @@ AS_CASE(["$arch,$system"],
     default_aspp="${toolpref}cc -c"],
   [amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd],
     [default_as="${toolpref}as"
-    AS_CASE([$ccfamily],
+    AS_CASE([$ocaml_cv_cc_vendor],
       [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
       [default_aspp="${toolpref}gcc -c"])])
 
