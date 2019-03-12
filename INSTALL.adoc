@@ -125,9 +125,6 @@ The `configure` script accepts the following options:
         Deprecated since 4.03.0, as `ocamlbuild` is now distributed separately
         from the compiler distribution.
 
-`-no-graph`::
-        Do not compile the Graphics library.
-
 `-partialld <linker and options>`:: (default: determined automatically)
         The linker and options to use for producing an object file (rather than
         an executable) from several other object files.

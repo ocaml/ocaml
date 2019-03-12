@@ -97,8 +97,7 @@ INCLUDES_NODEP=\
   -I $(ROOTDIR)/compilerlibs \
   -I $(ROOTDIR)/otherlibs/str \
   -I $(ROOTDIR)/otherlibs/dynlink \
-  -I $(ROOTDIR)/otherlibs/$(UNIXLIB) \
-  -I $(ROOTDIR)/otherlibs/$(GRAPHLIB)
+  -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)

@@ -123,8 +123,6 @@ _build
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli
-/otherlibs/win32graph/graphics.ml
-/otherlibs/win32graph/graphics.mli
 /otherlibs/win32unix/unixLabels.ml*
 /otherlibs/win32unix/unix.mli
 /otherlibs/win32unix/access.c

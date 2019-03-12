@@ -92,6 +92,12 @@ Working version
 - GPR#2289: Delete the vmthreads library. This library was deprecated in 4.08.0.
   (Jérémie Dimino)
 
+- GPR#2318: Delete the graphics library. This library is now available
+  as a separate "graphics" package in opam. Its new home is:
+  https://github.com/ocaml/graphics
+  (Jérémie Dimino, review by Nicolas Ojeda Bar, Xavier Leroy and
+   Sébastien Hinderer)
+
 ### Compiler user-interface and warnings:
 
 - GPR#2301: Hint on type error on int literal
