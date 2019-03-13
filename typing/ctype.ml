@@ -3561,6 +3561,21 @@ let close_class_signature env sign =
   let self = expand_head env sign.csig_self in
   close env (object_fields self)
 
+let generalize_class_signature_spine env sign =
+  (* Generalize the spine of methods *)
+  let meths = sign.csig_meths in
+  Meths.iter (fun _ (_, _, ty) -> generalize_spine ty) meths;
+  let new_meths =
+    Meths.map
+      (fun (priv, virt, ty) -> (priv, virt, generic_instance ty))
+      meths
+  in
+  (* But keep levels correct on the type of self *)
+  Meths.iter
+    (fun _ (_, _, ty) -> unify_var env (newvar ()) ty)
+    meths;
+  sign.csig_meths <- new_meths
+
                         (***********************************)
                         (*  Matching between type schemes  *)
                         (***********************************)

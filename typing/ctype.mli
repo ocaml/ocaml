@@ -120,8 +120,8 @@ val generalize_class_type : class_type -> unit
         (* Generalize the components of a class type *)
 val generalize_class_type_structure : class_type -> unit
        (* Generalize the structure of the components of a class type *)
-val generalize_spine: type_expr -> unit
-        (* Special function to generalize a method during inference *)
+val generalize_class_signature_spine : Env.t -> class_signature -> unit
+       (* Special function to generalize methods during inference *)
 val correct_levels: type_expr -> type_expr
         (* Returns a copy with decreasing levels *)
 val limited_generalize: type_expr -> type_expr -> unit
