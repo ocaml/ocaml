@@ -1234,7 +1234,11 @@ class type c = object
   val x : float
 end;;
 [%%expect {|
-class type c = object val x : float end
+Line 3, characters 2-15:
+3 |   val x : float
+      ^^^^^^^^^^^^^
+Error: The instance variable x has type float but is expected to have type
+         int
 |}];;
 
 class type c = object
@@ -1242,7 +1246,10 @@ class type c = object
   val mutable x : int
 end;;
 [%%expect {|
-class type c = object val mutable x : int end
+Line 3, characters 2-21:
+3 |   val mutable x : int
+      ^^^^^^^^^^^^^^^^^^^
+Error: The instance variable is immutable; it cannot be redefined as mutable
 |}];;
 
 class type c = object
@@ -1250,7 +1257,10 @@ class type c = object
   val x : int
 end;;
 [%%expect {|
-class type c = object val x : int end
+Line 3, characters 2-13:
+3 |   val x : int
+      ^^^^^^^^^^^
+Error: The instance variable is mutable; it cannot be redefined as immutable
 |}];;
 
 class type virtual c = object
@@ -1274,7 +1284,11 @@ class type virtual c = object
   val virtual x : float
 end;;
 [%%expect {|
-class type c = object val x : float end
+Line 3, characters 2-23:
+3 |   val virtual x : float
+      ^^^^^^^^^^^^^^^^^^^^^
+Error: The instance variable x has type float but is expected to have type
+         int
 |}];;
 
 class c = object

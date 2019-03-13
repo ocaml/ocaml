@@ -3441,7 +3441,7 @@ let check_mutability mut mut' =
   | Mutable, Immutable | Immutable, Mutable ->
       raise (Add_instance_variable_failed (Mutability_mismatch mut))
 
-let add_instance_variable ~strict env label mut virt ty sign =
+let add_instance_variable env label mut virt ty sign =
   let vars = sign.csig_vars in
   let virt =
     match Vars.find label vars with
@@ -3451,12 +3451,11 @@ let add_instance_variable ~strict env label mut virt ty sign =
           | Concrete -> Concrete
           | Virtual -> virt
         in
-        if strict then begin
-          check_mutability mut mut';
-          match unify env ty ty' with
-          | () -> ()
-          | exception Unify trace ->
-              raise (Add_instance_variable_failed (Type_mismatch trace))
+        check_mutability mut mut';
+        begin match unify env ty ty' with
+        | () -> ()
+        | exception Unify trace ->
+          raise (Add_instance_variable_failed (Type_mismatch trace))
         end;
         virt
     | exception Not_found -> virt
@@ -3487,7 +3486,7 @@ let unify_self_types env sign1 sign2 =
     end
 
 (* Unify components of sign2 into sign1 *)
-let inherit_class_signature ~strict env sign1 sign2 =
+let inherit_class_signature env sign1 sign2 =
   unify_self_types env sign1 sign2;
   Meths.iter
     (fun label (priv, virt, ty) ->
@@ -3506,7 +3505,7 @@ let inherit_class_signature ~strict env sign1 sign2 =
     sign2.csig_meths;
   Vars.iter
     (fun label (mut, virt, ty) ->
-       match add_instance_variable ~strict env label mut virt ty sign1 with
+       match add_instance_variable env label mut virt ty sign1 with
        | () -> ()
        | exception Add_instance_variable_failed failure ->
            let failure = Instance_variable(label, failure) in

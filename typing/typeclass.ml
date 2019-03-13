@@ -220,26 +220,26 @@ let add_method loc env label priv virt ty sign =
   | exception Ctype.Add_method_failed failure ->
       raise_add_method_failure loc env label sign failure
 
-let add_instance_variable ~strict loc env label mut virt ty sign =
-  match Ctype.add_instance_variable ~strict env label mut virt ty sign with
+let add_instance_variable loc env label mut virt ty sign =
+  match Ctype.add_instance_variable env label mut virt ty sign with
   | () -> ()
   | exception Ctype.Add_instance_variable_failed failure ->
       raise_add_instance_variable_failure loc env label failure
 
-let inherit_class_signature ~strict loc env sign1 sign2 =
-  match Ctype.inherit_class_signature ~strict env sign1 sign2 with
+let inherit_class_signature loc env sign1 sign2 =
+  match Ctype.inherit_class_signature env sign1 sign2 with
   | () -> ()
   | exception Ctype.Inherit_class_signature_failed failure ->
       raise_inherit_class_signature_failure loc env sign1 failure
 
-let inherit_class_type ~strict loc env sign1 cty2 =
+let inherit_class_type loc env sign1 cty2 =
   let sign2 =
     match Btype.scrape_class_type cty2 with
     | Cty_signature sign2 -> sign2
     | _ ->
       raise(Error(loc, env, Structure_expected cty2))
   in
-  inherit_class_signature ~strict loc env sign1 sign2
+  inherit_class_signature loc env sign1 sign2
 
 let unify_delayed_method_type loc env label ty expected_ty=
   match Ctype.unify env ty expected_ty with
@@ -285,14 +285,14 @@ let rec class_type_field env sign self_scope ctf =
           let parent = class_type env Virtual self_scope sparent in
           complete_class_type parent.cltyp_loc
             env Virtual Class_type parent.cltyp_type;
-          inherit_class_type ~strict:false loc env sign parent.cltyp_type;
+          inherit_class_type loc env sign parent.cltyp_type;
           Tctf_inherit parent)
   | Pctf_val ({txt=lab}, mut, virt, sty) ->
       mkctf_with_attrs
         (fun () ->
           let cty = transl_simple_type env false sty in
           let ty = cty.ctyp_type in
-          add_instance_variable ~strict:false loc env lab mut virt ty sign;
+          add_instance_variable loc env lab mut virt ty sign;
           Tctf_val (lab, mut, virt, cty))
 
   | Pctf_method ({txt=lab}, priv, virt, sty)  ->
@@ -571,7 +571,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            in
            complete_class_type parent.cl_loc
              par_env Virtual Class parent.cl_type;
-           inherit_class_type ~strict:true loc val_env sign parent.cl_type;
+           inherit_class_type loc val_env sign parent.cl_type;
            let parent_sign = Btype.signature_of_class_type parent.cl_type in
            let new_concrete_meths = Btype.concrete_methods parent_sign in
            let new_concrete_vals = Btype.concrete_instance_vars parent_sign in
@@ -644,7 +644,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
              Ctype.end_def ();
              Ctype.generalize_structure ty
            end;
-           add_instance_variable ~strict:true loc val_env
+           add_instance_variable loc val_env
              label.txt mut Virtual ty sign;
            let already_declared, val_env, par_env, id, vars =
              match Vars.find label.txt vars with
@@ -684,7 +684,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
              Ctype.end_def ();
              Ctype.generalize_structure definition.exp_type
            end;
-           add_instance_variable ~strict:true loc val_env
+           add_instance_variable loc val_env
              label.txt mut Concrete definition.exp_type sign;
            let already_declared, val_env, par_env, id, vars =
              match Vars.find label.txt vars with
