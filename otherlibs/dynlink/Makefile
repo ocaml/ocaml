@@ -161,7 +161,7 @@ COMPILERLIBS_COPIED_SOURCES_INTFS=\
 
 # $(LOCAL_SRC)/Makefile uses the variables above in dependencies, so must be
 # include'd after they've been defined.
-include $(LOCAL_SRC)/Makefile
+-include $(LOCAL_SRC)/Makefile
 
 # Rules to build the local copy of the compilerlibs sources in such a way
 # that the resulting .cm{o,x} files can be packed.
