@@ -43,6 +43,9 @@ Working version
 - GPR#2286: Functorise [Consistbl]
   (Mark Shinwell, review by Gabriel Radanne)
 
+- GPR#2308: More debugging information on [Cmm] terms
+  (Mark Shinwell, review by Stephen Dolan)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
