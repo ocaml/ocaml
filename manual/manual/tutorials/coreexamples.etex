@@ -751,6 +751,94 @@ print_expr e; print_newline ();;
 print_expr (deriv e "x"); print_newline ();;
 \end{caml_example}
 
+\section{Printf formats}
+
+There is a "printf" function in
+\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Printf.html}{Printf}
+module (see chapter~\ref{c:moduleexamples}) that allows you to make formatted
+output more concisely.
+It follows the behavior of the "printf" function from the C standard library.
+The "printf" function takes a format string that describes the desired output
+as a text interspered with specifiers (for instance "%d", "%f").
+Next, the specifiers are substituted by the following arguments in their order
+of apparition in the format string:
+\begin{caml_example}{toplevel}
+Printf.printf "%i + %i is an integer value, %F * %F is a float, %S\n"
+3 2 4.5 1. "this is a string";;
+\end{caml_example}
+The OCaml type system checks that the type of the arguments and the specifiers are
+compatible. If you pass it an argument of a type that does not correspond to
+the format specifier, the compiler will display an error message:
+\begin{caml_example}{toplevel}[error]
+Printf.printf "Float value: %F" 42;;
+\end{caml_example}
+The "fprintf" function is like "printf" except that it takes an output channel as
+the first argument. The "%a" specifier can be useful to define custom printer
+(for custom types). For instance, we can create a printing template that converts
+an integer argument to signed decimal:
+\begin{caml_example}{toplevel}
+let pp_int ppf n = Printf.fprintf ppf "%d" n;;
+Printf.printf "Outputting an integer using a custom printer: %a " pp_int 42;;
+\end{caml_example}
+The advantage of those printers based on the "%a" specifier is that they can be
+composed together to create more complex printers step by step.
+We can define a combinator that can turn a printer for "'a" type into a printer
+for "'a optional":
+\begin{caml_example}{toplevel}
+let pp_option printer ppf = function
+  | None -> Printf.fprintf ppf "None"
+  | Some v -> Printf.fprintf ppf "Some(%a)" printer v;;
+Printf.fprintf stdout
+  "The current setting is %a. \nThere is only %a\n"
+  (pp_option pp_int) (Some 3)
+  (pp_option pp_int) None
+;;
+\end{caml_example}
+If the value of its argument its "None", the printer returned by pp_option
+printer prints "None" otherwise it uses the provided printer to print "Some ".
+
+Here is how to rewrite the pretty-printer using "fprintf":
+\begin{caml_example}{toplevel}
+let pp_expr ppf expr =
+  let open_paren prec op_prec output =
+    if prec > op_prec then Printf.fprintf output "%s" "(" in
+  let close_paren prec op_prec output =
+    if prec > op_prec then Printf.fprintf output "%s" ")" in
+  let rec print prec ppf expr =
+      match expr with
+      | Const c -> Printf.fprintf ppf "%F" c
+      | Var v -> Printf.fprintf ppf "%s" v
+      | Sum(f, g) ->
+          open_paren prec 0 ppf;
+          Printf.fprintf ppf "%a + %a" (print 0) f (print 0) g;
+          close_paren prec 0 ppf
+      | Diff(f, g) ->
+          open_paren prec 0 ppf;
+          Printf.fprintf ppf "%a - %a" (print 0) f (print 1) g;
+          close_paren prec 0 ppf
+      | Prod(f, g) ->
+          open_paren prec 2 ppf;
+          Printf.fprintf ppf "%a * %a" (print 2) f (print 2) g;
+          close_paren prec 2 ppf
+      | Quot(f, g) ->
+          open_paren prec 2 ppf;
+          Printf.fprintf ppf "%a / %a" (print 2) f (print 3) g;
+          close_paren prec 2 ppf
+  in print 0 ppf expr;;
+pp_expr stdout e; print_newline ();;
+pp_expr stdout (deriv e "x"); print_newline ();;
+\end{caml_example}
+
+Due to the way that format string are build, storing a format string requires
+an explicit type annotation:
+\begin{caml_example*}{toplevel}
+let str : _ format =
+    "%i is an integer value, %F is a float, %S\n";;
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+Printf.printf str 3 4.5 "string value";;
+\end{caml_example}
+
 %%%%%%%%%%% Should be moved to the camlp4 documentation.
 %% Parsing (transforming concrete syntax into abstract syntax) is usually
 %% more delicate. OCaml offers several tools to help write parsers:
