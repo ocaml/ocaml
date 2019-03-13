@@ -126,10 +126,10 @@ let check_label n = match n.desc with
 (* Add pseudo-instruction Ladjust_trap_depth in front of a continuation
    to notify assembler generation about updates to the stack as a result
    of differences in exception trap depths.
-   The argument the delta in the number of trap frames (not bytes). *)
+   The argument delta is the number of trap frames (not bytes). *)
 
 let adjust_trap_depth delta_traps next =
-  (* Simplify by merging and liminate Ladjust_trap_depth instructions
+  (* Simplify by merging and eliminating Ladjust_trap_depth instructions
      whenever possible. *)
   let delta_traps, next  =
     match next.desc with
