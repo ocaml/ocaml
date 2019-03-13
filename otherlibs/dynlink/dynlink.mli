@@ -159,4 +159,15 @@ val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
     The accessible values are those in the main program and those provided by
     previous calls to [loadfile].
 
-    This function is deemed "unsafe" as there is no type safety provided. *)
+    This function is deemed "unsafe" as there is no type safety provided.
+
+    When executing in bytecode, this function uses [Symtable]. As a cautionary
+    note for programs such as the debugger: even though the linking of a packed
+    (subset of) compilerlibs into [Dynlink] hides the copy of [Symtable] that
+    [Dynlink] uses from its clients, there is still only one table of global
+    values in the bytecode VM. Changes to this table are NOT synchronized
+    between [Dynlink] and the functions that change the global value table
+    ([update_global_table] and [assign_global_value], accessed through a
+    client's version of [Symtable]). This is why we can't use [Dynlink] from the
+    toplevel interactive loop, in particular.
+*)
