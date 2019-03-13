@@ -18,7 +18,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-open! Dynlink_compilerlibs  (* REMOVE_ME for use in the compiler etc. *)
+open! Dynlink_compilerlibs
 
 module String = struct
   include Misc.Stdlib.String
