@@ -281,7 +281,7 @@ CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
   return res;
 }
 
-static int caml_float_of_hex(const char * s, double * res)
+static int caml_float_of_hex(const char * s, const char * last, double * res)
 {
   int64_t m = 0;                /* the mantissa - top 60 bits at most */
   int n_bits = 0;               /* total number of bits read */
@@ -293,7 +293,7 @@ static int caml_float_of_hex(const char * s, double * res)
   char * p;                     /* for converting the exponent */
   double f;
 
-  while (*s != 0) {
+  while (s != last) {
     char c = *s++;
     switch (c) {
     case '.':
@@ -370,14 +370,15 @@ static int caml_float_of_hex(const char * s, double * res)
   return 0;
 }
 
-static int caml_float_of_string_no_underscore(const char * src, double * res)
+static int caml_float_of_string_no_underscore(const char * src, const char * last, double * res)
 {
   /* Check for hexadecimal FP constant */
+  const char * cur = src;
   int sign = 1;
-  if (*src == '-') { sign = -1; src++; }
-  else if (*src == '+') { src++; };
-  if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
-    if (caml_float_of_hex(src + 2, res) == -1)
+  if (*cur == '-') { sign = -1; cur++; }
+  else if (*cur == '+') { cur++; };
+  if (cur[0] == '0' && (cur[1] == 'x' || cur[1] == 'X')) {
+    if (caml_float_of_hex(cur + 2, last, res) == -1)
       return -1;
     if (sign < 0) *res = - (* res);
     return 0;
@@ -392,7 +393,7 @@ static int caml_float_of_string_no_underscore(const char * src, double * res)
     *res = strtod(src, &end);
     RESTORE_LOCALE;
 #endif /* HAS_STRTOD_L */
-    if (end == src)
+    if (end != last)
       return -1;
     return 0;
   }
@@ -417,13 +418,13 @@ CAMLprim value caml_float_of_string(value vs)
     buf = (len - count) < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len - count + 1);
     src = String_val(vs);
     dst = buf;
-    while (len--) {
-      char c = *src++;
+    for (i=0; i<len;i++){
+      char c = src[i];
       if (c != '_') *dst++ = c;
     }
     *dst = 0;
   }
-  i = caml_float_of_string_no_underscore(buf, &d);
+  i = caml_float_of_string_no_underscore(buf, buf + len - count, &d);
   if(buf != src && buf != parse_buffer) caml_stat_free(buf);
   if(i == -1) caml_failwith("float_of_string");
   return caml_copy_double(d);
