@@ -283,7 +283,6 @@ CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
 
 static int caml_float_of_hex(const char * s, double * res)
 {
-  char parse_buffer[64];
   int64_t m = 0;                /* the mantissa - top 60 bits at most */
   int n_bits = 0;               /* total number of bits read */
   int m_bits = 0;               /* number of bits in mantissa */
@@ -297,35 +296,14 @@ static int caml_float_of_hex(const char * s, double * res)
   while (*s != 0) {
     char c = *s++;
     switch (c) {
-    case '_':
-      break;
     case '.':
       if (dec_point >= 0) return -1; /* multiple decimal points */
       dec_point = n_bits;
       break;
     case 'p': case 'P': {
       long e;
-      mlsize_t len;
-      char * dst, * buf;
       if (*s == 0) return -1;   /* nothing after exponent mark */
-      /* Remove '_' characters before calling strtol () */
-      len = strlen(s);
-      buf =
-        len < sizeof(parse_buffer)
-        ? parse_buffer
-        : caml_stat_alloc(len + 1);
-      dst = buf;
-      while (len--) {
-        char c = *s++;
-        if (c != '_') *dst++ = c;
-      }
-      *dst = 0;
-      if (dst == buf) {
-        if (buf != parse_buffer) caml_stat_free(buf);
-        return -1;
-      }
-      e = strtol(buf, &p, 10);
-      if (buf != parse_buffer) caml_stat_free(buf);
+      e = strtol(s, &p, 10);
       if (*p != 0) return -1;   /* ill-formed exponent */
       /* Handle exponents larger than int by returning 0/infinity directly.
          Mind that INT_MIN/INT_MAX are included in the test so as to capture
@@ -392,51 +370,63 @@ static int caml_float_of_hex(const char * s, double * res)
   return 0;
 }
 
-CAMLprim value caml_float_of_string(value vs)
+static int caml_float_of_string_no_underscore(const char * src, double * res)
 {
-  char parse_buffer[64];
-  char * buf, * dst, * end;
-  const char *src;
-  mlsize_t len;
-  int sign;
-  double d;
-
   /* Check for hexadecimal FP constant */
-  src = String_val(vs);
-  sign = 1;
+  int sign = 1;
   if (*src == '-') { sign = -1; src++; }
   else if (*src == '+') { src++; };
   if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
-    if (caml_float_of_hex(src + 2, &d) == -1)
-      caml_failwith("float_of_string");
-    return caml_copy_double(sign < 0 ? -d : d);
+    if (caml_float_of_hex(src + 2, res) == -1)
+      return -1;
+    if (sign < 0) *res = - (* res);
+    return 0;
   }
-  /* Remove '_' characters before calling strtod () */
-  len = caml_string_length(vs);
-  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
-  src = String_val(vs);
-  dst = buf;
-  while (len--) {
-    char c = *src++;
-    if (c != '_') *dst++ = c;
-  }
-  *dst = 0;
-  if (dst == buf) goto error;
+  else {
+    char * end;
 #if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
-  d = strtod_l((const char *) buf, &end, caml_locale);
+    *res = strtod_l(src, &end, caml_locale);
 #else
-  USE_LOCALE;
-  /* Convert using strtod */
-  d = strtod((const char *) buf, &end);
-  RESTORE_LOCALE;
+    USE_LOCALE;
+    /* Convert using strtod */
+    *res = strtod(src, &end);
+    RESTORE_LOCALE;
 #endif /* HAS_STRTOD_L */
-  if (end != dst) goto error;
-  if (buf != parse_buffer) caml_stat_free(buf);
+    if (end == src)
+      return -1;
+    return 0;
+  }
+}
+
+CAMLprim value caml_float_of_string(value vs)
+{
+  char parse_buffer[64];
+  double d;
+  int i, count;
+  mlsize_t len;
+  char * dst, * buf;
+  const char * src;
+  src = String_val(vs);
+  buf = (char *) src;
+  len = caml_string_length(vs);
+  for (i=0, count=0; i<len;i++){
+    if(src[i]=='_') count++;
+  }
+  if(count!=0){
+    /* Remove underscores */
+    buf = (len - count) < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len - count + 1);
+    src = String_val(vs);
+    dst = buf;
+    while (len--) {
+      char c = *src++;
+      if (c != '_') *dst++ = c;
+    }
+    *dst = 0;
+  }
+  i = caml_float_of_string_no_underscore(buf, &d);
+  if(buf != src && buf != parse_buffer) caml_stat_free(buf);
+  if(i == -1) caml_failwith("float_of_string");
   return caml_copy_double(d);
- error:
-  if (buf != parse_buffer) caml_stat_free(buf);
-  caml_failwith("float_of_string");
-  return Val_unit; /* not reached */
 }
 
 CAMLprim value caml_int_of_float(value f)
