@@ -913,7 +913,6 @@ and class_field_second_pass cl_num sign met_env field =
                       sdefinition; warning_state; loc; attributes } ->
       Warnings.with_state warning_state
         (fun () ->
-           (* Read the generalized type *)
            let ty = Btype.method_type label.txt sign in
            let self_type = sign.Types.csig_self in
            let meth_type =
@@ -1026,19 +1025,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
         raise(Error(loc, val_env, Closing_self_type sign));
   end;
   (* Typing of method bodies *)
-  (* Generalize the spine of methods accessed through self *)
-  let old_meths = sign.csig_meths in
-  Meths.iter (fun _ (_, _, ty) -> Ctype.generalize_spine ty)
-    old_meths;
-  sign.csig_meths <-
-    Meths.map
-      (fun (priv, virt, ty) ->
-         (priv, virt, Ctype.generic_instance ty))
-      old_meths;
-  (* But keep levels correct on the type of self *)
-  Meths.iter
-    (fun _ (_, _, ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
-    old_meths;
+  Ctype.generalize_class_signature_spine val_env sign;
   let self_var_kind =
     match virt with
     | Virtual -> Self_virtual(ref meths)
@@ -1474,8 +1461,12 @@ let initial_env define_class approx
   let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity uid in
 
   (* Temporary type for the class constructor *)
+  if !Clflags.principal then Ctype.begin_def ();
   let constr_type = approx cl.pci_expr in
-  if !Clflags.principal then Ctype.generalize_spine constr_type;
+  if !Clflags.principal then begin
+    Ctype.end_def ();
+    Ctype.generalize_structure constr_type;
+  end;
   let dummy_cty = Cty_signature (Ctype.new_class_signature ()) in
   let dummy_class =
     {Types.cty_params = [];             (* Dummy value *)
