@@ -11,7 +11,7 @@ Line 2, characters 8-9:
             ^
 Error: This expression has type int ref
        but an expression was expected of type int
-Hint: This is a `ref', did you mean `!a'?
+  Hint: This is a `ref', did you mean `!a'?
 |}]
 
 let b () = ref 0
@@ -23,7 +23,7 @@ Line 2, characters 8-12:
             ^^^^
 Error: This expression has type int ref
        but an expression was expected of type int
-Hint: This is a `ref', did you mean `!( .. )'?
+  Hint: This is a `ref', did you mean `!( .. )'?
 |}]
 
 (* corner cases *)
@@ -38,7 +38,7 @@ Line 4, characters 2-3:
       ^
 Error: This expression has type int ref
        but an expression was expected of type int
-Hint: This is a `ref', did you mean `Stdlib.(!) b'?
+  Hint: This is a `ref', did you mean `Stdlib.(!) b'?
 |}]
 
 type t = { x : int }
