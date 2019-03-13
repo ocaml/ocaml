@@ -277,6 +277,7 @@ let print_line b = function
 
   (* gas only *)
   | Cfi_adjust_cfa_offset n -> bprintf b "\t.cfi_adjust_cfa_offset %d" n
+  | Cfi_def_cfa_offset n -> bprintf b "\t.cfi_def_cfa_offset %d" n
   | Cfi_endproc -> bprintf b "\t.cfi_endproc"
   | Cfi_startproc -> bprintf b "\t.cfi_startproc"
   | File (file_num, file_name) ->

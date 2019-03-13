@@ -9,6 +9,9 @@ Working version
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
+- GPR#2299: Fix DWARF CFA directives in the x86-64 backend
+  (Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives

@@ -72,6 +72,7 @@ module D : sig
   val byte: constant -> unit
   val bytes: string -> unit
   val cfi_adjust_cfa_offset: int -> unit
+  val cfi_def_cfa_offset: int -> unit
   val cfi_endproc: unit -> unit
   val cfi_startproc: unit -> unit
   val comment: string -> unit
