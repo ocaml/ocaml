@@ -582,23 +582,20 @@ let emit_instr fallthrough i =
         end
       end
   | Lop(Itailcall_imm { func; call_labels; }) ->
-      begin
-        if func = !function_name then
+      if func = !function_name then begin
+        maybe_add_label_before_call ~call_labels;
+        I.jmp (label !tailrec_entry_point);
+        if not Config.spacetime then begin
+          maybe_add_label_after_call ~call_labels
+        end
+      end else begin
+        output_epilogue (fun () ->
+          add_used_symbol func;
           maybe_add_label_before_call ~call_labels;
-          I.jmp (label !tailrec_entry_point);
+          emit_jump func;
           if not Config.spacetime then begin
             maybe_add_label_after_call ~call_labels
-          end
-        else begin
-          output_epilogue begin fun () ->
-            add_used_symbol func;
-            maybe_add_label_before_call ~call_labels;
-            emit_jump func;
-            if not Config.spacetime then begin
-              maybe_add_label_after_call ~call_labels
-            end
-          end
-        end
+          end)
       end;
       if Config.spacetime then begin
         record_frame Reg.Set.empty false i.dbg ~label:call_labels.after
