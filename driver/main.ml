@@ -21,6 +21,12 @@ let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 (* Error messages to standard error formatter *)
 let ppf = Format.err_formatter
 
+let vmthread_removed_message = "\
+The -vmthread argument of ocamlc is no longer supported\n\
+since OCaml 4.09.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
+
 module Options = Main_args.Make_bytecomp_options (struct
   let set r () = r := true
   let unset r () = r := false
@@ -102,6 +108,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _strict_formats = set strict_formats
   let _no_strict_formats = unset strict_formats
   let _thread = set use_threads
+  let _vmthread = fun () -> fatal vmthread_removed_message
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = unset unboxed_types
   let _unsafe = set unsafe

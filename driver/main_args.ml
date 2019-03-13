@@ -562,6 +562,11 @@ let mk_no_version f =
   "-no-version", Arg.Unit f, " Do not print version at startup"
 ;;
 
+let mk_vmthread f =
+  "-vmthread", Arg.Unit f,
+  "  (no longer supported)"
+;;
+
 let mk_vnum f =
   "-vnum", Arg.Unit f, " Print version number and exit"
 ;;
@@ -958,6 +963,7 @@ module type Bytecomp_options = sig
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
+  val _vmthread : unit -> unit
   val _use_runtime : string -> unit
 
   val _dinstr : unit -> unit
@@ -1060,6 +1066,7 @@ module type Ocamldoc_options = sig
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
+  val _vmthread : unit -> unit
 end
 
 module type Arg_list = sig
@@ -1146,6 +1153,7 @@ struct
     mk_verbose F._verbose;
     mk_version F._version;
     mk__version F._version;
+    mk_vmthread F._vmthread;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
@@ -1521,6 +1529,7 @@ struct
     mk_verbose F._verbose;
     mk_version F._version;
     mk__version F._version;
+    mk_vmthread F._vmthread;
     mk_vnum F._vnum;
     mk_w F._w;
     mk__ F.anonymous;

@@ -803,6 +803,7 @@ module PpxContext = struct
         lid "for_package",  make_option make_string !Clflags.for_package;
         lid "debug",        make_bool !Clflags.debug;
         lid "use_threads",  make_bool !Clflags.use_threads;
+        lid "use_vmthreads", make_bool false;
         lid "recursive_types", make_bool !Clflags.recursive_types;
         lid "principal", make_bool !Clflags.principal;
         lid "transparent_modules", make_bool !Clflags.transparent_modules;
@@ -876,6 +877,9 @@ module PpxContext = struct
           Clflags.debug := get_bool payload
       | "use_threads" ->
           Clflags.use_threads := get_bool payload
+      | "use_vmthreads" ->
+          if get_bool payload then
+            raise_errorf "Internal error: vmthreads not supported after 4.09.0"
       | "recursive_types" ->
           Clflags.recursive_types := get_bool payload
       | "principal" ->
