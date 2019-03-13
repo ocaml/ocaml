@@ -719,10 +719,6 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
   with Exit ->
     [(fun_id, Lfunction{kind; params; return; body; attr; loc})]
 
-module Hooks = Misc.MakeHooks(struct
-    type t = lambda
-  end)
-
 (* Simplify local let-bound functions: if all occurrences are
    fully-applied function calls in the same "tail scope", replace the
    function by a staticcatch handler (on that scope).
@@ -844,7 +840,7 @@ let simplify_local_functions lam =
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
-let simplify_lambda sourcefile lam =
+let simplify_lambda lam =
   let lam =
     lam
     |> (if !Clflags.native_code || not !Clflags.debug
@@ -852,7 +848,6 @@ let simplify_lambda sourcefile lam =
        )
     |> simplify_exits
     |> simplify_lets
-    |> Hooks.apply_hooks { Misc.sourcefile }
   in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true lam;

@@ -95,7 +95,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
-  let _plugin p = Compplugin.load p
+  let _plugin _p = plugin := true
   let _principal = set principal
   let _no_principal = unset principal
   let _rectypes = set recursive_types
@@ -155,6 +155,8 @@ let main () =
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_clflags_from_env ();
+    if !Clflags.plugin then
+      fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
       Compenv.process_deferred_actions
         (ppf,

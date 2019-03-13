@@ -413,7 +413,7 @@ let mk_ppx f =
 
 let mk_plugin f =
   "-plugin", Arg.String f,
-  "<plugin>  Load dynamic plugin <plugin>"
+  "<plugin>  (no longer supported)"
 ;;
 
 let mk_principal f =

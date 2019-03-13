@@ -63,5 +63,7 @@ module type S = sig
   val run_shared_startup : handle -> unit
   val run : handle -> unit_header:Unit_header.t -> priv:bool -> unit
 
+  val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
+
   val finish : handle -> unit
 end

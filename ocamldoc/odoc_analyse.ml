@@ -113,7 +113,7 @@ let process_interface_file sourcefile =
     Pparse.file ~tool_name inputfile
       (no_docstring Parse.interface) Pparse.Signature
   in
-  let sg = Typemod.type_interface sourcefile (initial_env()) ast in
+  let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();
   (ast, sg, inputfile)
 

@@ -76,15 +76,6 @@ _build
 /debugger/parser.ml
 /debugger/parser.mli
 /debugger/ocamldebug
-/driver/compdynlink.mlopt
-/driver/compdynlink.mlbyte
-/driver/compdynlink.mli
-/driver/compdynlink_common.ml
-/driver/compdynlink_common.mli
-/driver/compdynlink_platform_intf.ml
-/driver/compdynlink_platform_intf.mli
-/driver/compdynlink_types.ml
-/driver/compdynlink_types.mli
 
 /emacs/ocamltags
 /emacs/*.elc

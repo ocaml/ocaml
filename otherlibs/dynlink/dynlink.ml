@@ -18,7 +18,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-open! Dynlink_compilerlibs  (* REMOVE_ME for ../../debugger/dynlink.ml *)
+open! Dynlink_compilerlibs
 
 module DC = Dynlink_common
 module DT = Dynlink_types
@@ -165,6 +165,12 @@ module Bytecode = struct
     with exc ->
       close_in ic;
       raise exc
+
+  let unsafe_get_global_value ~bytecode_or_asm_symbol =
+    let id = Ident.create_persistent bytecode_or_asm_symbol in
+    match Symtable.get_global_value id with
+    | exception _ -> None
+    | obj -> Some obj
 
   let finish (ic, _filename, _digest) =
     close_in ic
