@@ -393,7 +393,7 @@ static int caml_float_of_string_no_underscore(const char * src, const char * las
     *res = strtod(src, &end);
     RESTORE_LOCALE;
 #endif /* HAS_STRTOD_L */
-    if (end != last)
+    if (src == last || end != last)
       return -1;
     return 0;
   }
