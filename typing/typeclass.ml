@@ -549,13 +549,19 @@ and class_type_aux env scty =
     }
   in
   match scty.pcty_desc with
-    Pcty_constr (lid, styl) ->
+  | Pcty_constr (lid, styl) ->
       let (path, decl) = Env.lookup_cltype ~loc:scty.pcty_loc lid.txt env in
       if Path.same decl.clty_path unbound_class then
         raise(Error(scty.pcty_loc, env, Unbound_class_type_2 lid.txt));
       let (params, clty) =
         Ctype.instance_class decl.clty_params decl.clty_type
       in
+      (* Adding a dummy method to the self type prevents it from being closed /
+         escaping. *)
+      Ctype.unify env
+        (Ctype.filter_method env dummy_method Private
+           (Ctype.self_type clty))
+        (Ctype.newty (Ttuple []));
       if List.length params <> List.length styl then
         raise(Error(scty.pcty_loc, env,
                     Parameter_arity_mismatch (lid.txt, List.length params,
@@ -1284,6 +1290,12 @@ and class_expr_aux cl_num val_env met_env scl =
         Ctype.instance_class decl.cty_params decl.cty_type
       in
       let clty' = abbreviate_class_type path params clty in
+      (* Adding a dummy method to the self type prevents it from being closed /
+         escaping. *)
+      Ctype.unify val_env
+        (Ctype.filter_method val_env dummy_method Private
+           (Ctype.self_type clty'))
+        (Ctype.newty (Ttuple []));
       if List.length params <> List.length tyl then
         raise(Error(scl.pcl_loc, val_env,
                     Parameter_arity_mismatch (lid.txt, List.length params,
@@ -1573,9 +1585,16 @@ and class_expr_aux cl_num val_env met_env scl =
       | error -> raise(Error(cl.cl_loc, val_env, Class_match_failure error))
       end;
       let (vals, meths, concrs) = extract_constraints clty.cltyp_type in
+      let ty = snd (Ctype.instance_class [] clty.cltyp_type) in
+      (* Adding a dummy method to the self type prevents it from being closed /
+         escaping. *)
+      Ctype.unify val_env
+        (Ctype.filter_method val_env dummy_method Private
+           (Ctype.self_type ty))
+        (Ctype.newty (Ttuple []));
       rc {cl_desc = Tcl_constraint (cl, Some clty, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
-          cl_type = snd (Ctype.instance_class [] clty.cltyp_type);
+          cl_type = ty;
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }

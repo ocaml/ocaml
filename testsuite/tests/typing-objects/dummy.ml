@@ -192,11 +192,15 @@ class closes_via_inheritance param =
     inherit parameter_contains_self param
   end;;
 [%%expect{|
-Line 3, characters 12-41:
+Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This object is expected to have type < .. > but actually has type
-         parameter_contains_self
+                                        ^^^^^
+Error: This expression has type
+         < redrawWidget : parameter_contains_self -> unit; .. >
+       but an expression was expected of type
+         < redrawWidget : (< invalidate : unit; .. > as 'a) -> unit; .. >
+       Type parameter_contains_self = < invalidate : unit >
+       is not compatible with type < invalidate : unit; .. > as 'a
        Self type cannot be unified with a closed object type
 |}]
 
@@ -204,9 +208,16 @@ class closes_via_application param =
   let _ = new parameter_contains_self param in
   parameter_contains_self param;;
 [%%expect{|
-class closes_via_application :
-  < redrawWidget : parameter_contains_self -> unit; .. > ->
-  parameter_contains_self
+Line 3, characters 26-31:
+3 |   parameter_contains_self param;;
+                              ^^^^^
+Error: This expression has type
+         < redrawWidget : parameter_contains_self -> unit; .. >
+       but an expression was expected of type
+         < redrawWidget : (< invalidate : unit; .. > as 'a) -> unit; .. >
+       Type parameter_contains_self = < invalidate : unit >
+       is not compatible with type < invalidate : unit; .. > as 'a
+       Self type cannot be unified with a closed object type
 |}]
 
 let escapes_via_inheritance param =
@@ -217,11 +228,11 @@ let escapes_via_inheritance param =
   end in
   ();;
 [%%expect{|
-Line 4, characters 14-43:
+Line 4, characters 38-43:
 4 |       inherit parameter_contains_self param
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This object is expected to have type < .. > but actually has type
-         < invalidate : unit; .. >
+                                          ^^^^^
+Error: This expression has type 'a but an expression was expected of type
+         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
        Self type cannot escape its class
 |}]
 
@@ -231,8 +242,12 @@ let escapes_via_application param =
   end in
   ();;
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 382, characters 28-34: Assertion failed
-
+Line 3, characters 38-43:
+3 |     class c = parameter_contains_self param
+                                          ^^^^^
+Error: This expression has type 'a but an expression was expected of type
+         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
+       Self type cannot escape its class
 |}]
 
 let can_close_object_via_inheritance param =
@@ -240,9 +255,16 @@ let can_close_object_via_inheritance param =
     inherit parameter_contains_self param
   end;;
 [%%expect{|
-val can_close_object_via_inheritance :
-  < redrawWidget : parameter_contains_self -> unit; .. > ->
-  parameter_contains_self = <fun>
+Line 3, characters 36-41:
+3 |     inherit parameter_contains_self param
+                                        ^^^^^
+Error: This expression has type
+         < redrawWidget : parameter_contains_self -> unit; .. >
+       but an expression was expected of type
+         < redrawWidget : (< invalidate : unit; .. > as 'a) -> unit; .. >
+       Type parameter_contains_self = < invalidate : unit >
+       is not compatible with type < invalidate : unit; .. > as 'a
+       Self type cannot be unified with a closed object type
 |}]
 
 let can_escape_object_via_inheritance param = object
@@ -277,14 +299,22 @@ Error: This pattern cannot match self: it only matches values of type
 class closes_after_constraint =
   ((fun (x : 'a) -> object (_:'a) end) : 'a -> object('a) end) (object end);;
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 382, characters 28-34: Assertion failed
-
+Line 2, characters 63-75:
+2 |   ((fun (x : 'a) -> object (_:'a) end) : 'a -> object('a) end) (object end);;
+                                                                   ^^^^^^^^^^^^
+Error: This expression has type <  > but an expression was expected of type
+         < .. >
+       Self type cannot be unified with a closed object type
 |}];;
 
 class type ['a] ct = object ('a) end
 class type closes_via_application = [ <m : int> ] ct;;
 [%%expect{|
 class type ['a] ct = object ('a) constraint 'a = < .. > end
-Uncaught exception: File "typing/ctype.ml", line 382, characters 28-34: Assertion failed
-
+Line 2, characters 38-47:
+2 | class type closes_via_application = [ <m : int> ] ct;;
+                                          ^^^^^^^^^
+Error: The type parameter < m : int >
+       does not meet its constraint: it should be < .. >
+       Self type cannot be unified with a closed object type
 |}];;

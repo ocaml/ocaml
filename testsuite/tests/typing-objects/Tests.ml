@@ -966,7 +966,12 @@ let o = object
   end;;
 [%%expect {|
 class ['a] c : object ('a) constraint 'a = < .. > end
-val o : < m : int > = <obj>
+Line 4, characters 14-25:
+4 |     inherit [ < m : int > ] c
+                  ^^^^^^^^^^^
+Error: The type parameter < m : int >
+       does not meet its constraint: it should be < .. >
+       Self type cannot be unified with a closed object type
 |}];;
 
 class type [ 'a ] d = object method a : 'a method b : 'a end
