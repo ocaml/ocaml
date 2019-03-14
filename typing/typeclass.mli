@@ -72,8 +72,6 @@ and class_type_declaration =
 val approx_class_declarations:
   Env.t -> Parsetree.class_description list -> class_type_info list
 
-val virtual_methods: Types.class_signature -> label list
-
 (*
 val type_classes :
            bool ->
@@ -89,6 +87,11 @@ val type_classes :
            list * Env.t
 *)
 
+type kind =
+  | Object
+  | Class
+  | Class_type
+
 type error =
   | Unconsistent_constraint of Errortrace.unification_error
   | Field_type_mismatch of string * string * Errortrace.unification_error
@@ -101,7 +104,8 @@ type error =
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Constructor_type_mismatch of string * Errortrace.unification_error
-  | Virtual_class of bool * bool * string list * string list
+  | Virtual_class of kind * string list * string list
+  | Undeclared_methods of kind * string list
   | Parameter_arity_mismatch of Longident.t * int * int
   | Parameter_mismatch of Errortrace.unification_error
   | Bad_parameters of Ident.t * type_expr * type_expr

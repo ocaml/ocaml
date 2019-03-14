@@ -115,7 +115,7 @@ type error =
   | Invalid_format of string
   | Not_an_object of type_expr * type_forcing_context option
   | Undefined_method of type_expr * string * string list option
-  | Undefined_inherited_method of string * string list
+  | Undefined_self_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
@@ -2813,7 +2813,7 @@ and type_expect_
                          match lid.txt with
                              Longident.Lident txt -> { txt; loc = lid.loc }
                            | _ -> assert false)
-        | Val_self (_, _, cl_num, _) ->
+        | Val_self (_, _, cl_num) ->
             let (path, _) =
               Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
             in
@@ -3426,40 +3426,63 @@ and type_expect_
       begin try
         let (meth, exp, typ) =
           match obj.exp_desc with
-            Texp_ident(_path, _,
-                       {val_kind = Val_self(meths, _, _, self_ty) }) ->
-              obj_meths := Some meths;
-              let existing, new_meths, (id, _, _, typ) =
-                filter_self_method env met Private Virtual
-                  !meths self_ty
-              in
-              meths := new_meths;
-              if not existing then
-                Location.prerr_warning loc
-                  (Warnings.Undeclared_virtual_method met);
-              (Tmeth_val id, None, typ)
-          | Texp_ident(_path, lid, {val_kind = Val_anc (methods, cl_num)}) ->
-              let method_id =
-                begin try List.assoc met methods with Not_found ->
-                  let valid_methods = List.map fst methods in
-                  raise(Error(e.pexp_loc, env,
-                              Undefined_inherited_method (met, valid_methods)))
+          | Texp_ident(_, lid, vd) -> begin
+              match vd.val_kind with
+              | Val_self(Self_concrete meths, _, _) -> begin
+                  match Meths.find met meths with
+                  | (id, _, _, ty) -> (Tmeth_val id, None, ty)
+                  | exception Not_found ->
+                      let valid_methods =
+                        Meths.fold (fun lab _ acc -> lab :: acc) meths []
+                      in
+                      raise (Error(e.pexp_loc, env,
+                                   Undefined_self_method (met, valid_methods)))
                 end
-              in
-              begin match
-                Env.find_value_by_name
-                  (Longident.Lident ("selfpat-" ^ cl_num)) env,
-                Env.find_value_by_name
-                  (Longident.Lident ("self-" ^cl_num)) env
-              with
-              | (_, ({val_kind = Val_self(meths, _, _, self_ty)} as desc)),
-                (path, _) ->
-                  obj_meths := Some meths;
-                  let _, new_meths, (_, _, _, typ) =
+              | Val_self(Self_virtual(meths_ref, self_ty), _, _) ->
+                  obj_meths := Some meths_ref;
+                  let existing, new_meths, (id, _, _, typ) =
                     filter_self_method env met Private Virtual
-                      !meths self_ty
+                      !meths_ref self_ty
                   in
-                  meths := new_meths;
+                  meths_ref := new_meths;
+                  if not existing then
+                    Location.prerr_warning loc
+                      (Warnings.Undeclared_virtual_method met);
+                  (Tmeth_val id, None, typ)
+              | Val_anc (methods, cl_num) ->
+                  let method_id =
+                    match List.assoc met methods with
+                    | id -> id
+                    | exception Not_found ->
+                        let valid_methods = List.map fst methods in
+                        raise (Error(e.pexp_loc, env,
+                          Undefined_self_method (met, valid_methods)))
+                  in
+                  let (_, desc) =
+                    Env.find_value_by_name
+                      (Longident.Lident ("selfpat-" ^ cl_num)) env
+                  in
+                  let (path, _) =
+                    Env.find_value_by_name
+                      (Longident.Lident ("self-" ^ cl_num)) env
+                  in
+                  let typ =
+                    match desc.val_kind with
+                    | Val_self(Self_virtual(meths, self_ty), _, _) ->
+                        obj_meths := Some meths;
+                        let _, new_meths, (_, _, _, typ) =
+                          filter_self_method env met Private Virtual
+                            !meths self_ty
+                        in
+                        meths := new_meths;
+                        typ
+                    | Val_self(Self_concrete meths, _, _) -> begin
+                        match Meths.find met meths with
+                        | (_, _, _, ty) -> ty
+                        | exception Not_found -> assert false
+                      end
+                    | _ -> assert false
+                  in
                   let method_type = newvar () in
                   let (obj_ty, res_ty) = filter_arrow env method_type Nolabel in
                   unify env obj_ty desc.val_type;
@@ -3494,12 +3517,13 @@ and type_expect_
                                              exp_type = typ;
                                              exp_attributes = []; (* check *)
                                              exp_env = exp_env}), typ)
-              |  _ ->
-                  assert false
-              end
+              | _ ->
+                (Tmeth_name met, None,
+                 filter_method env met Public obj.exp_type)
+            end
           | _ ->
-              (Tmeth_name met, None,
-               filter_method env met Public obj.exp_type)
+            (Tmeth_name met, None,
+             filter_method env met Public obj.exp_type)
         in
         if !Clflags.principal then begin
           end_def ();
@@ -3606,7 +3630,7 @@ and type_expect_
         with Not_found ->
           raise(Error(loc, env, Outside_class))
       with
-        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _, _)}),
+        (_, {val_type = self_ty; val_kind = Val_self (_, vars, _)}),
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
@@ -3963,7 +3987,7 @@ and type_binding_op_ident env s =
     match desc.val_kind with
     | Val_ivar _ ->
         fatal_error "Illegal name for instance variable"
-    | Val_self (_, _, cl_num, _) ->
+    | Val_self (_, _, cl_num) ->
         let path, _ =
           Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
         in
@@ -5648,7 +5672,7 @@ let report_error ~loc env = function
             | Some valid_methods -> spellcheck ppf me valid_methods
           end
       )) ()
-  | Undefined_inherited_method (me, valid_methods) ->
+  | Undefined_self_method (me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
         fprintf ppf "This expression has no method %s" me;
         spellcheck ppf me valid_methods;
