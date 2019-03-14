@@ -21,13 +21,22 @@ let () =
   try_float_of_string "0x123456789ABCDEF0p2147483647";
   try_float_of_string "0x1p2147483648";
 
-  (* Allow underscore in exponents *)
-  try_float_of_string "0x1_._1p1_1";
-  try_float_of_string "0x1_._1p1_";
-  try_float_of_string "0x1_._1p-1_1";
-  try_float_of_string "0x1_._1p-1_";
-  try_float_of_string "0x1_._1p+1_1";
-  try_float_of_string "0x1_._1p+1_"
+  (* Allow underscore almost everywhere *)
+  try_float_of_string "_0x1.1";
+  try_float_of_string "0_x1.1";
+  try_float_of_string "0x_1.1";
+  try_float_of_string "0x1_.1";
+  try_float_of_string "0x1._";
+  try_float_of_string "0x1.1_";
+  try_float_of_string "0x1_p1";
+  try_float_of_string "0x1p_1";
+  try_float_of_string "0x1p1_";
+  try_float_of_string "0x1p-1_1";
+  try_float_of_string "0x1p-1_";
+  try_float_of_string "0x1p+1_1";
+  try_float_of_string "0x1p+1_";
+
+  try_float_of_string "0x1p1\000suffix"
 
 let () =
   (* check that the compiler can also parse tokens *)
