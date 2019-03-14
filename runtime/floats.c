@@ -370,7 +370,9 @@ static int caml_float_of_hex(const char * s, const char * last, double * res)
   return 0;
 }
 
-static int caml_float_of_string_no_underscore(const char * src, const char * last, double * res)
+static int caml_float_of_string_no_underscore(const char * src,
+                                              const char * last,
+                                              double * res)
 {
   /* Check for hexadecimal FP constant */
   const char * cur = src;
@@ -415,7 +417,10 @@ CAMLprim value caml_float_of_string(value vs)
   }
   if(count!=0){
     /* Remove underscores */
-    buf = (len - count) < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len - count + 1);
+    buf =
+      (len - count) < sizeof(parse_buffer)
+      ? parse_buffer
+      : caml_stat_alloc(len - count + 1);
     src = String_val(vs);
     dst = buf;
     for (i=0; i<len;i++){
