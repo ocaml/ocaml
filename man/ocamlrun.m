@@ -150,9 +150,9 @@ The initial size of the major heap (in words).
 .TP
 .BR a \ (allocation_policy)
 The policy used for allocating in the OCaml heap.  Possible values
-are 0 for the next-fit policy, and 1 for the first-fit
-policy.  Next-fit is usually faster, but first-fit is better for
-avoiding fragmentation and the associated heap compactions.
+are 0 for the next-fit policy, 1 for the first-fit
+policy, and 2 for the best-fit policy. Best-fit is still experimental,
+but probably the best of the three. The default is 0.
 .TP
 .BR s \ (minor_heap_size)
 The size of the minor heap (in words).

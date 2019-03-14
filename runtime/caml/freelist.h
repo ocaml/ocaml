@@ -28,10 +28,14 @@ extern asize_t caml_fl_cur_wsz;
 header_t *caml_fl_allocate (mlsize_t wo_sz);
 void caml_fl_init_merge (void);
 void caml_fl_reset (void);
-header_t *caml_fl_merge_block (value);
+header_t *caml_fl_merge_block (value, char *limit);
 void caml_fl_add_blocks (value);
 void caml_make_free_blocks (value *, mlsize_t wsz, int, int);
-void caml_set_allocation_policy (uintnat);
+void caml_set_allocation_policy (intnat);
+
+#ifdef DEBUG
+void caml_fl_check (void);
+#endif
 
 #endif /* CAML_INTERNALS */
 

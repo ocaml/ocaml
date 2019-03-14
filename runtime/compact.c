@@ -158,7 +158,7 @@ static char *compact_allocate (mlsize_t size)
   return adr;
 }
 
-static void do_compaction (void)
+static void do_compaction (intnat new_allocation_policy)
 {
   char *ch, *chend;
   CAMLassert (caml_gc_phase == Phase_idle);
@@ -405,9 +405,14 @@ static void do_compaction (void)
     }
   }
 
-  /* Rebuild the free list. */
+  /* Rebuild the free list. This is the right time for a change of
+     allocation policy, since we are rebuilding the allocator's data
+     structures from scratch. */
   {
     ch = caml_heap_start;
+    if (new_allocation_policy != -1){
+      caml_set_allocation_policy (new_allocation_policy);
+    }
     caml_fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
@@ -424,7 +429,7 @@ static void do_compaction (void)
 
 uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
-void caml_compact_heap (void)
+void caml_compact_heap (intnat new_allocation_policy)
 {
   uintnat target_wsz, live;
   CAML_INSTR_SETUP(tmr, "compact");
@@ -437,7 +442,7 @@ void caml_compact_heap (void)
   CAMLassert (Caml_state->custom_table->ptr ==
               Caml_state->custom_table->base);
 
-  do_compaction ();
+  do_compaction (new_allocation_policy);
   CAML_INSTR_TIME (tmr, "compact/main");
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
@@ -500,7 +505,7 @@ void caml_compact_heap (void)
     if (Caml_state->stat_heap_wsz > Caml_state->stat_top_heap_wsz){
       Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
     }
-    do_compaction ();
+    do_compaction (-1);
     CAMLassert (Caml_state->stat_heap_chunks == 1);
     CAMLassert (Chunk_next (caml_heap_start) == NULL);
     CAMLassert (Caml_state->stat_heap_wsz == Wsize_bsize (Chunk_size (chunk)));
@@ -559,7 +564,7 @@ void caml_compact_heap_maybe (void)
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                      (uintnat) fp);
     if (fp >= caml_percent_max)
-         caml_compact_heap ();
+         caml_compact_heap (-1);
     else
          caml_gc_message (0x200, "Automatic compaction aborted.\n");
 

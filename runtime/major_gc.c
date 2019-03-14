@@ -562,11 +562,7 @@ static void sweep_slice (intnat work)
       caml_gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case Caml_white:
-        if (Tag_hd (hd) == Custom_tag){
-          void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
-          if (final_fun != NULL) final_fun(Val_hp(hp));
-        }
-        caml_gc_sweep_hp = (char *) caml_fl_merge_block (Val_hp (hp));
+        caml_gc_sweep_hp = (char *) caml_fl_merge_block (Val_hp (hp), limit);
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
