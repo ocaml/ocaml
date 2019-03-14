@@ -402,11 +402,11 @@ static int caml_float_of_string_no_underscore(const char * src, const char * las
 CAMLprim value caml_float_of_string(value vs)
 {
   char parse_buffer[64];
-  double d;
   int i, count;
   mlsize_t len;
   char * dst, * buf;
   const char * src;
+  double d = 0;
   src = String_val(vs);
   buf = (char *) src;
   len = caml_string_length(vs);
