@@ -104,8 +104,8 @@ module Signature_search =
       type_expr
 
     let search_method_type name class_sig =
-      let fields = Odoc_misc.get_fields class_sig.Types.csig_self in
-      List.assoc name fields
+      let (_, _, type_expr) = Types.Meths.find name class_sig.Types.csig_meths in
+      type_expr
   end
 
 module type Info_retriever =

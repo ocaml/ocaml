@@ -29,10 +29,6 @@ val split_with_blanks : string -> string list
 (** This function creates a string from a Longident.t .*)
 val string_of_longident : Longident.t -> string
 
-(** This function returns the list of (label, type_expr) describing
-   the methods of a type_expr in a Tobject.*)
-val get_fields : Types.type_expr -> (string * Types.type_expr) list
-
 (** get a string from a text *)
 val string_of_text : Odoc_types.text -> string
 

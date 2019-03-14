@@ -87,22 +87,6 @@ let rec string_of_longident li =
   | Longident.Lapply(l1, l2) ->
       string_of_longident l1 ^ "(" ^ string_of_longident l2 ^ ")"
 
-let get_fields type_expr =
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields type_expr) in
-  List.fold_left
-    (fun acc -> fun (label, field_kind, typ) ->
-      match field_kind with
-        Types.Fabsent ->
-          acc
-      | _ ->
-          if label = "*dummy method*" then
-            acc
-          else
-            acc @ [label, typ]
-    )
-    []
-    fields
-
 let rec string_of_text t =
   let rec iter t_ele =
     match t_ele with
