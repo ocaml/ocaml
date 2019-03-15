@@ -38,7 +38,7 @@ let init_path ?(dir="") () =
 (* Return the initial environment in which compilation proceeds. *)
 
 (* Note: do not do init_path() in initial_env, this breaks
-   toplevel initialization (PR#1775) *)
+   toplevel initialization (PR#8227) *)
 
 let initial_env () =
   Ident.reinit();
