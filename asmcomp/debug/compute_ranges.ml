@@ -140,7 +140,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         }
       | subranges ->
         let min_pos_and_offset =
-          Misc.Stdlib.Option.map
+          Option.map
             (fun (label, offset) -> rewrite_label env label, offset)
             t.min_pos_and_offset
         in
