@@ -58,6 +58,15 @@ type comparison =
   | Greater_than
   | Compare
 
+let string_of_comparison = function
+  | Equal -> "="
+  | Not_equal -> "<>"
+  | Less_equal -> "<="
+  | Less_than -> "<"
+  | Greater_equal -> ">="
+  | Greater_than -> ">"
+  | Compare -> "compare"
+
 type comparison_kind =
   | Compare_generic
   | Compare_ints
@@ -400,7 +409,7 @@ let glb_array_type t1 t2 =
 
 (* Specialize a primitive from available type information. *)
 
-let specialize_primitive env ty ~has_constant_constructor prim =
+let specialize_primitive loc env ty ~has_constant_constructor prim =
   let param_tys =
     match is_function_type env ty with
     | None -> []
@@ -481,6 +490,8 @@ let specialize_primitive env ty ~has_constant_constructor prim =
     end else if is_base_type env p1 Predef.path_int64 then begin
       Some (Comparison(comp, Compare_int64s))
     end else begin
+      Location.prerr_warning loc
+        (Warnings.Generic_comparison (string_of_comparison comp));
       None
     end
   | _ -> None
@@ -720,7 +731,7 @@ let transl_primitive loc p env ty path =
   let prim = lookup_primitive_and_mark_used loc p env path in
   let has_constant_constructor = false in
   let prim =
-    match specialize_primitive env ty ~has_constant_constructor prim with
+    match specialize_primitive loc env ty ~has_constant_constructor prim with
     | None -> prim
     | Some prim -> prim
   in
@@ -769,7 +780,7 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
     | _ -> false
   in
   let prim =
-    match specialize_primitive env ty ~has_constant_constructor prim with
+    match specialize_primitive loc env ty ~has_constant_constructor prim with
     | None -> prim
     | Some prim -> prim
   in

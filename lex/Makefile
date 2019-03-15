@@ -26,7 +26,7 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-67 -warn-error A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
 YACCFLAGS = -v

@@ -24,7 +24,7 @@ CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -g -nostdlib -I $(ROOTDIR)/stdlib
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-67 -warn-error A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 YACCFLAGS=

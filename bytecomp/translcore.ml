@@ -208,6 +208,8 @@ let transl_ident loc env ty path desc =
   |  _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
 
 let rec transl_exp e =
+  Builtin_attributes.warning_scope ~ppwarning:false e.exp_attributes
+  @@ fun () ->
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
@@ -764,10 +766,16 @@ and transl_let rec_flag pat_expr_list =
         [] ->
           fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
-          let lam = transl_exp expr in
+          let lam =
+            Builtin_attributes.warning_scope ~ppwarning:false attr
+              (fun () -> transl_exp expr)
+          in
           let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
-          fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
+          fun body ->
+            let body = mk_body body in
+            Builtin_attributes.warning_scope ~ppwarning:false attr
+              (fun () -> Matching.for_let pat.pat_loc lam pat body)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -777,10 +785,13 @@ and transl_let rec_flag pat_expr_list =
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> assert false)
         pat_expr_list in
-      let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
-        let lam = transl_exp expr in
+      let transl_case {vb_expr=expr; vb_attributes=attr; vb_loc} id =
         let lam =
-          Translattribute.add_function_attributes lam vb_loc vb_attributes
+          Builtin_attributes.warning_scope ~ppwarning:false attr
+            (fun () -> transl_exp expr)
+        in
+        let lam =
+          Translattribute.add_function_attributes lam vb_loc attr
         in
         (id, lam) in
       let lam_bds = List.map2 transl_case pat_expr_list idlist in
