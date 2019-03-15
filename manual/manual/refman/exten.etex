@@ -1313,8 +1313,7 @@ expr:
 \end{syntax}
 
 This extension provides syntactic sugar for getting and setting
-elements in the arrays provided by the
-"Bigarray"[\moduleref{Bigarray}] library.
+elements in the arrays provided by the \stdmoduleref{Bigarray} module.
 
 The short expressions are translated into calls to functions of the
 "Bigarray" module as described in the following table.
