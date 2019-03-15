@@ -198,7 +198,12 @@ let emit_toctable () =
       `{emit_label lbl}:	.quad	{emit_tocentry entry}\n`)
     tocref_entries
 
-(* Emit a load from a TOC entry *)
+(* Emit a load from a TOC entry.
+
+   This function must not be called with any destination that resolves to
+   register r0.  A zero operand between the brackets of an "ld"
+   instruction, which this situation would cause, does not mean register
+   r0.  It means zero! *)
 
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
@@ -969,9 +974,9 @@ let emit_instr i =
         | ELF64v1 | ELF64v2 ->
           `	addi	1, 1, {emit_int (-trap_size)}\n`;
           adjust_stack_offset trap_size;
-          emit_tocload emit_gpr 0 (TocLabel lbl_handler);
-          `	std     0, {emit_int trap_handler_offset}(1)\n`;
           `	std	29, {emit_int trap_previous_offset}(1)\n`;
+          emit_tocload emit_gpr 29 (TocLabel lbl_handler);
+          `	std     29, {emit_int trap_handler_offset}(1)\n`;
           `	mr	29, 1\n`
           end
     | Lpoptrap ->
