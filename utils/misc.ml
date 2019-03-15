@@ -182,37 +182,16 @@ module Stdlib = struct
   module Option = struct
     type 'a t = 'a option
 
-    let is_none = function
-      | None -> true
-      | Some _ -> false
-
-    let is_some = function
-      | None -> false
-      | Some _ -> true
-
-    let equal eq o1 o2 =
-      match o1, o2 with
-      | None, None -> true
-      | Some e1, Some e2 -> eq e1 e2
-      | _, _ -> false
-
-    let iter f = function
-      | Some x -> f x
-      | None -> ()
-
-    let map f = function
-      | Some x -> Some (f x)
-      | None -> None
-
-    let fold f a b =
-      match a with
-      | None -> b
-      | Some a -> f a b
-
     let value_default f ~default a =
       match a with
       | None -> default
       | Some a -> f a
+
+    let print print_contents ppf t =
+      match t with
+      | None -> Format.pp_print_string ppf "None"
+      | Some contents ->
+        Format.fprintf ppf "@[(Some@ %a)@]" print_contents contents
   end
 
   module Array = struct
@@ -241,13 +220,16 @@ module Stdlib = struct
         i = len || (f t.[i] && loop (i + 1))
       in
       loop 0
+
+    let print ppf t =
+      Format.pp_print_string ppf t
   end
 
   external compare : 'a -> 'a -> int = "%compare"
 end
 
-let may = Stdlib.Option.iter
-let may_map = Stdlib.Option.map
+let may = Option.iter
+let may_map = Option.map
 
 (* File functions *)
 
@@ -374,6 +356,12 @@ let output_to_file_via_temporary ?(mode = [Open_text]) filename fn =
       end
   | exception exn ->
       close_out oc; remove_file temp_filename; raise exn
+
+let protect_writing_to_file ~filename ~f =
+  let outchan = open_out_bin filename in
+  try_finally ~always:(fun () -> close_out outchan)
+    ~exceptionally:(fun () -> remove_file filename)
+    (fun () -> f outchan)
 
 (* Integer operations *)
 
