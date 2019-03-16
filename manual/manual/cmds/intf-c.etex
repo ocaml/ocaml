@@ -1797,7 +1797,7 @@ default comparison function simply raises "Failure".
 
 \item "intnat (*hash)(value v)" \\
 The "hash" field contains a pointer to a C function that is called
-whenever OCaml's generic hash operator (see module "Hashtbl") is
+whenever OCaml's generic hash operator (see module \stdmoduleref{Hashtbl}) is
 applied to a custom block.  The C function can return an arbitrary
 integer representing the hash value of the data contained in the
 given custom block.  The hash value must be compatible with the
