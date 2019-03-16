@@ -820,9 +820,7 @@ variable @inst-var-name@, which must be mutable.  The whole expression
 \subsubsection*{Object duplication}
 
 An object can be duplicated using the library function "Oo.copy"
-(see
-\ifouthtml \ahref{libref/Oo.html}{Module \texttt{Oo}}\else
-section~\ref{Oo}\fi). Inside a method, the expression
+(see module \stdmoduleref{Oo}). Inside a method, the expression
 @ '{<' [inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] }] '>}'@
 returns a copy of self with the given instance variables replaced by
 the values of the associated expressions. A single instance variable

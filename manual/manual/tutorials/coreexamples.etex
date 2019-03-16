@@ -604,8 +604,7 @@ internal type name, so the type "'a Lazy.t" should be preferred when possible.
 
 When we finally need the result of a lazy expression, we can call "Lazy.force"  
 on that expression to force its evaluation. The function "force" comes from 
-standard-library module 
-\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html}{"Lazy"}.
+standard-library module \stdmoduleref{Lazy}.
 
 \begin{caml_example}{toplevel}
   Lazy.force lazy_two;;
@@ -753,9 +752,8 @@ print_expr (deriv e "x"); print_newline ();;
 
 \section{Printf formats}
 
-There is a "printf" function in
-\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Printf.html}{Printf}
-module (see chapter~\ref{c:moduleexamples}) that allows you to make formatted
+There is a "printf" function in the \stdmoduleref{Printf} module
+(see chapter~\ref{c:moduleexamples}) that allows you to make formatted
 output more concisely.
 It follows the behavior of the "printf" function from the C standard library.
 The "printf" function takes a format string that describes the desired output
