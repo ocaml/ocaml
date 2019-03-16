@@ -401,9 +401,7 @@ let mk_output_complete_obj f =
 ;;
 
 let mk_p f =
-  "-p", Arg.Unit f,
-  " Compile and link with profiling support for \"gprof\"\n\
-  \     (not supported on all platforms)"
+  "-p", Arg.Unit f, " (no longer supported)"
 ;;
 
 let mk_pack_byt f =

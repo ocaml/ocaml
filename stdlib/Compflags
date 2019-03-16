@@ -15,21 +15,21 @@
 #**************************************************************************
 
 case $1 in
-  stdlib.cm[iox]|stdlib.p.cmx)
+  stdlib.cm[iox])
       echo ' -nopervasives -no-alias-deps -w -49' \
            ' -pp "$AWK -f expand_module_aliases.awk"';;
-  camlinternalOO.cmx|camlinternalOO.p.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
-  camlinternalLazy.cmx|camlinternalLazy.p.cmx) echo ' -afl-inst-ratio 0';;
+  camlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
+  camlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)
-  stdlib__buffer.cmx|stdlib__buffer.p.cmx) echo ' -inline 3';;
+  stdlib__buffer.cmx) echo ' -inline 3';;
                            # make sure add_char is inlined (PR#5872)
   stdlib__buffer.cm[io]) echo ' -w A';;
   camlinternalFormat.cm[io]) echo ' -w Ae';;
   camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
   stdlib__printf.cm[io]|stdlib__format.cm[io]|stdlib__scanf.cm[io])
       echo ' -w Ae';;
-  stdlib__scanf.cmx|stdlib__scanf.p.cmx) echo ' -inline 9';;
-  *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -no-alias-deps';;
-  stdlib__float.cm[ox]|stdlib__float.p.cmx) echo ' -nolabels -no-alias-deps';;
+  stdlib__scanf.cmx) echo ' -inline 9';;
+  *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
+  stdlib__float.cm[ox]) echo ' -nolabels -no-alias-deps';;
   *) echo ' ';;
 esac
