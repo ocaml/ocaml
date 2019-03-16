@@ -1,6 +1,8 @@
 (* TEST
 * hasunix
 include unix
+** bytecode
+** native
 *)
 
 let () =
@@ -9,5 +11,5 @@ let () =
   in
   assert
     (Unix.process_pid process = Unix.process_pid process);
-  Unix.close_process process;
+  ignore (Unix.close_process process);
   print_endline "OK"
