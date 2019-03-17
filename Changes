@@ -98,6 +98,8 @@ Working version
 
 ### Bug fixes:
 
+- MPR#3249: ocamlmklib should reject .cmxa files
+  (Xavier Leroy)
 - MPR#7937, GPR#2287: fix uncaught Unify exception when looking for type
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
