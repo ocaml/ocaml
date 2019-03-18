@@ -7,7 +7,7 @@ package. Its new home is:
 \url{https://github.com/ocaml/graphics}
 
 If you are using the opam package manager, you should install the
-corresponding the "graphics" package:
+corresponding "graphics" package:
 
 \begin{alltt}
         opam install graphics
