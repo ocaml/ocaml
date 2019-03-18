@@ -27,6 +27,10 @@
 *.png binary
 *.tfm binary
 
+# configure is declared as binary so that it doesn't get included in diffs.
+# This also means it will have the correct Unix line-endings, even on Windows.
+/configure binary
+
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
 /.mailmap                merge=union
@@ -136,7 +140,6 @@ menhir-bench.bash typo.missing-header typo.utf8
 
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
-configure text eol=lf
 configure.ac text eol=lf
 autogen text eol=lf
 build-aux/compile text eol=lf
