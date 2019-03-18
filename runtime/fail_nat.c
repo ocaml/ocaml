@@ -169,7 +169,7 @@ void caml_raise_sys_blocked_io(void)
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
 
-static value * caml_array_bound_error_exn = NULL;
+static const value * caml_array_bound_error_exn = NULL;
 
 void caml_array_bound_error(void)
 {

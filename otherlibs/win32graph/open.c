@@ -351,7 +351,7 @@ CAMLprim value caml_gr_sigio_handler(value unit)
 
 /* Processing of graphic errors */
 
-static value * graphic_failure_exn = NULL;
+static const value * graphic_failure_exn = NULL;
 void gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
