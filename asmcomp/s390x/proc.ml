@@ -234,7 +234,6 @@ let frame_required () =
     || num_stack_slots.(1) > 0
 
 let prologue_required () =
-  (* There appears to be no gprof support on this platform. *)
   frame_required ()
 
 (* Calling the assembler *)

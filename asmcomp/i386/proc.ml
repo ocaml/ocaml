@@ -250,7 +250,7 @@ let frame_required () =
   frame_size_at_top_of_function > 4
 
 let prologue_required () =
-  !Clflags.gprofile || frame_required ()
+  frame_required ()
 
 (* Calling the assembler *)
 

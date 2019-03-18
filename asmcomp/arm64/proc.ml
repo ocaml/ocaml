@@ -260,7 +260,7 @@ let frame_required () =
     || num_stack_slots.(1) > 0
 
 let prologue_required () =
-  !Clflags.gprofile || frame_required ()
+  frame_required ()
 
 (* Calling the assembler *)
 

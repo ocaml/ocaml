@@ -359,7 +359,7 @@ let frame_required () =
     || (!contains_calls && is_elf32)
 
 let prologue_required () =
-  !Clflags.gprofile || frame_required ()
+  frame_required ()
 
 (* Calling the assembler *)
 
