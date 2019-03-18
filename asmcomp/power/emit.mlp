@@ -200,11 +200,9 @@ let emit_toctable () =
 
 (* Emit a load from a TOC entry.
 
-   This function must not be called with any destination that resolves to
-   register r0.  A zero operand between the brackets of an "ld"
-   instruction, which this situation would cause, does not mean register
-   r0.  It means zero! *)
-
+   The [dest] should not be r0, since [dest] is used as the index register for a
+   ld instruction, but r0 reads as zero when used as an index register.
+*)
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
   if !big_toc || !Clflags.for_package <> None then begin
