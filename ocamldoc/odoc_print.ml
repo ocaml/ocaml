@@ -98,9 +98,8 @@ let simpl_class_type t =
       in
         Types.Cty_signature { Types.csig_self = tself;
                               csig_self_row = self_row;
-                              csig_vars = Types.Vars.empty ;
-                              csig_meths = Types.Meths.empty ;
-                              csig_inher = []; }
+                              csig_vars = Types.Vars.empty;
+                              csig_meths = Types.Meths.empty; }
     | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in
         Types.Cty_arrow (l, texp, new_ct)
