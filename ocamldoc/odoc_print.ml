@@ -100,8 +100,7 @@ let simpl_class_type t =
         Types.Cty_signature { csig_self = Transient_expr.type_expr tself;
                               csig_self_row = Transient_expr.type_expr self_row;
                               csig_vars = Vars.empty ;
-                              csig_meths = Meths.empty ;
-                              csig_inher = []; }
+                              csig_meths = Meths.empty ; }
     | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in
         Cty_arrow (l, texp, new_ct)

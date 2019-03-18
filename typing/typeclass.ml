@@ -239,13 +239,7 @@ let inherit_class_type ~strict loc env sign1 cty2 =
     | _ ->
       raise(Error(loc, env, Structure_expected cty2))
   in
-  inherit_class_signature ~strict loc env sign1 sign2;
-  let inher1 =
-    match cty2 with
-    | Cty_constr (p, tl, _) -> (p, tl) :: sign1.csig_inher
-    | _ -> sign1.csig_inher
-  in
-  sign1.csig_inher <- inher1
+  inherit_class_signature ~strict loc env sign1 sign2
 
 let unify_delayed_method_type loc env label ty expected_ty=
   match Ctype.unify env ty expected_ty with

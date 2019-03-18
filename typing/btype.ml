@@ -413,10 +413,7 @@ let type_iterators =
         it.it_type_expr it cs.csig_self;
         it.it_type_expr it cs.csig_self_row;
         Vars.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_vars;
-        Meths.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_meths;
-        List.iter
-          (fun (p, tl) -> it.it_path p; List.iter (it.it_type_expr it) tl)
-          cs.csig_inher
+        Meths.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_meths
     | Cty_arrow  (_, ty, cty) ->
         it.it_type_expr it ty;
         it.it_class_type it cty

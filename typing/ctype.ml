@@ -867,8 +867,7 @@ let rec generalize_class_type' gen =
       gen csig.csig_self;
       gen csig.csig_self_row;
       Vars.iter (fun _ (_, _, ty) -> gen ty) csig.csig_vars;
-      Meths.iter (fun _ (_, _, ty) -> gen ty) csig.csig_meths;
-      List.iter (fun (_,tl) -> List.iter gen tl) csig.csig_inher
+      Meths.iter (fun _ (_, _, ty) -> gen ty) csig.csig_meths
   | Cty_arrow (_, ty, cty) ->
       gen ty;
       generalize_class_type' gen cty
@@ -1290,10 +1289,7 @@ let instance_class params cty =
            csig_meths =
              Meths.map
                (function (p, v, ty) -> (p, v, copy scope ty))
-               sign.csig_meths;
-           csig_inher =
-             List.map (fun (p,tl) -> (p, List.map (copy scope) tl))
-               sign.csig_inher}
+               sign.csig_meths}
     | Cty_arrow (l, ty, cty) ->
         Cty_arrow (l, copy scope ty, copy_class_type scope cty)
   in
@@ -3360,8 +3356,7 @@ let new_class_signature () =
   { csig_self = self;
     csig_self_row = row;
     csig_vars = Vars.empty;
-    csig_meths = Meths.empty;
-    csig_inher = []; }
+    csig_meths = Meths.empty; }
 
 let add_dummy_method env ~scope sign =
   let ty, row =
@@ -5312,10 +5307,7 @@ let nondep_class_signature env id sign =
         sign.csig_vars;
     csig_meths =
       Meths.map (function (p, v, t) -> (p, v, nondep_type_rec env id t))
-        sign.csig_meths;
-    csig_inher =
-      List.map (fun (p,tl) -> (p, List.map (nondep_type_rec env id) tl))
-        sign.csig_inher }
+        sign.csig_meths }
 
 let rec nondep_class_type env ids =
   function
