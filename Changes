@@ -9,6 +9,10 @@ Working version
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
+- GPR#8507: Shorten symbol names of anonymous functions in Flambda mode
+  (the directory portions are now hidden)
+  (Mark Shinwell, review by Nicolás Ojeda Bär)
+
 ### Compiler user-interface and warnings:
 
 * GPR#2276: Remove support for compiler plugins and hooks (also adds
