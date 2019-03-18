@@ -1680,7 +1680,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 ### Type system
 
-- MPR#248, GPR#1225: unique names for weak type variables
+- MPR#2642, GPR#1225: unique names for weak type variables
     # ref [];;
     - : '_weak1 list ref = {contents = []}
   (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
@@ -1697,7 +1697,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 ### Standard library:
 
-- MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
+- MPR#8223, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
   (Sébastien Briais, review by Daniel Bünzli, Alain Frisch and
@@ -1953,7 +1953,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 ### Tools:
 
-- MPR#1956, GPR#973: tools/check-symbol-names checks for globally
+- MPR#8395, GPR#973: tools/check-symbol-names checks for globally
   linked names not namespaced with caml_
   (Stephen Dolan)
 
@@ -2413,7 +2413,7 @@ OCaml 4.05.0 (13 Jul 2017):
 
 ### Runtime system:
 
-- MPR#385, GPR#953: Add caml_startup_exn
+- MPR#2784, GPR#953: Add caml_startup_exn
   (Mark Shinwell)
 
 - MPR#7423, GPR#946: expose new exception-raising functions
@@ -3765,7 +3765,7 @@ OCaml 4.03.0 (25 Apr 2016):
   caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
-- PR#3612, PR#92: allow allocating custom block with finalizers
+- PR#3612, PR#2429: allow allocating custom block with finalizers
   in the minor heap.
   (Pierre Chambart)
 
@@ -3815,7 +3815,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Standard library:
 
-- PR#1460, GPR#230: Array.map2, Array.iter2
+- PR#7848, GPR#230: Array.map2, Array.iter2
   (John Christopher McAlpine)
 
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
@@ -5773,7 +5773,7 @@ Installation procedure:
       ocamlbytecomp.cma/.cmxa   modules for ocamlc and ocaml
       ocamloptcomp.cma/.cmxa    modules specific to ocamlopt
       ocamltoplevel.cma         modules specific to ocaml
-   (PR#1804, PR#4653, frequently-asked feature).
+   (PR#8255, PR#4653, frequently-asked feature).
 * Some .cmi for toplevel internals that used to be installed in
   `ocamlc -where` are now to be found in  `ocamlc -where`/compiler-libs.
   Add "-I +compiler-libs" where needed.
@@ -5785,7 +5785,7 @@ Installation procedure:
 
 Bug Fixes:
 
-- PR#1643: functions of the Lazy module whose named started with 'lazy_' have
+- PR#8109: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
 - PR#4292: various documentation problems
@@ -5934,12 +5934,12 @@ Bug Fixes:
 - crash when using OCAMLRUNPARAM=a=X with invalid X (reported in private)
 
 Feature wishes:
-- PR#352: new option "-stdin" to make ocaml read stdin as a script
-- PR#1164: better error message when mixing -a and .cmxa
-- PR#1284: documentation: remove restriction on mixed streams
-- PR#1496: allow configuring LIBDIR, BINDIR, and MANDIR relative to $(PREFIX)
-- PR#1835: add Digest.from_hex
-- PR#1898: toplevel: add option to suppress continuation prompts
+- PR#2757: new option "-stdin" to make ocaml read stdin as a script
+- PR#3358: better error message when mixing -a and .cmxa
+- PR#3492: documentation: remove restriction on mixed streams
+- PR#7971: allow configuring LIBDIR, BINDIR, and MANDIR relative to $(PREFIX)
+- PR#8285: add Digest.from_hex
+- PR#8341: toplevel: add option to suppress continuation prompts
 - PR#4278: configure: option to disable "graph" library
 - PR#4444: new String.trim function, removing leading and trailing whistespace
 - PR#4549: make Filename.dirname/basename POSIX compliant
@@ -6273,8 +6273,8 @@ Bug fixes:
 - Various build problems with ocamlbuild under Windows with msvc
 
 Feature wishes:
-- PR#9: (tentative implementation) make ocamldebug use #linenum annotations
-- PR#123, PR#4477: custom exception printers
+- PR#2337: (tentative implementation) make ocamldebug use #linenum annotations
+- PR#2464, PR#4477: custom exception printers
 - PR#3456: Obj.double_field and Obj.set_double_field functions
 - PR#4003: destination directory can be given to Filename.[open_]temp_file
 - PR#4647: Buffer.blit function
@@ -6474,7 +6474,7 @@ Objective Caml 3.10.2 (29 Feb 2008):
 ------------------------------------
 
 Bug fixes:
-- PR#1217 (partial) Typo in ocamldep man page
+- PR#3410 (partial) Typo in ocamldep man page
 - PR#3952 (partial) ocamlopt: allocation problems on ARM
 - PR#4339 (continued) ocamlopt: problems on HPPA
 - PR#4455 str.mli not installed under Windows

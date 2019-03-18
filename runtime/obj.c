@@ -153,13 +153,13 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
   mlsize_t wosize = Wosize_hd (hd);
   mlsize_t i;
 
-  if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#156 */
+  if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#2520 */
 
   if (new_wosize <= 0 || new_wosize > wosize){
     caml_invalid_argument ("Obj.truncate");
   }
   if (new_wosize == wosize) return Val_unit;
-  /* PR#61: since we're about to lose our references to the elements
+  /* PR#2400: since we're about to lose our references to the elements
      beyond new_wosize in v, erase them explicitly so that the GC
      can darken them as appropriate. */
   if (tag < No_scan_tag) {

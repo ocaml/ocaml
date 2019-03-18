@@ -100,7 +100,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   res = caml_interprete(local_callback_code, sizeof(local_callback_code));
   caml_release_bytecode(local_callback_code, sizeof(local_callback_code));
 #endif /*LOCAL_CALLBACK_BYTECODE*/
-  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
+  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#3419 */
   return res;
 }
 
