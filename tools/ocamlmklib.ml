@@ -37,7 +37,7 @@ let compiler_path name =
   if Sys.os_type = "Win32" then name else Filename.concat bindir name
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
-and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
+and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)
 and c_objs = ref []         (* .o, .a, .obj, .lib, .dll, .dylib, .so files to
                                pass to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
@@ -99,7 +99,7 @@ let parse_arguments argv =
       push_args ~first:0 (Arg.read_arg0 (next_arg s))
     else if ends_with s ".cmo" || ends_with s ".cma" then
       bytecode_objs := s :: !bytecode_objs
-    else if ends_with s ".cmx" || ends_with s ".cmxa" then
+    else if ends_with s ".cmx" then
       native_objs := s :: !native_objs
     else if ends_with s ".ml" || ends_with s ".mli" then
      (bytecode_objs := s :: !bytecode_objs;
@@ -188,7 +188,7 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|\
+Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.ml|.mli|.o|.a|.obj|.lib|\
                              .dll|.dylib files>\
 \nOptions are:\
 \n  -args <file>   Read additional newline-terminated command line arguments\
