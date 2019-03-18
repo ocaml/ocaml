@@ -274,25 +274,29 @@ let rec class_type_field env sign self_scope ctf =
   let mkctf desc =
     { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
   in
+  let mkctf_with_attrs f =
+    Builtin_attributes.warning_scope ctf.pctf_attributes
+      (fun () -> mkctf (f ()))
+  in
   match ctf.pctf_desc with
   | Pctf_inherit sparent ->
-      Builtin_attributes.warning_scope ctf.pctf_attributes
+      mkctf_with_attrs
         (fun () ->
           let parent = class_type env Virtual self_scope sparent in
           complete_class_type parent.cltyp_loc
             env Virtual Class_type parent.cltyp_type;
           inherit_class_type ~strict:false loc env sign parent.cltyp_type;
-          mkctf (Tctf_inherit parent))
+          Tctf_inherit parent)
   | Pctf_val ({txt=lab}, mut, virt, sty) ->
-      Builtin_attributes.warning_scope ctf.pctf_attributes
+      mkctf_with_attrs
         (fun () ->
           let cty = transl_simple_type env false sty in
           let ty = cty.ctyp_type in
           add_instance_variable ~strict:false loc env lab mut virt ty sign;
-          mkctf (Tctf_val (lab, mut, virt, cty)))
+          Tctf_val (lab, mut, virt, cty))
 
   | Pctf_method ({txt=lab}, priv, virt, sty)  ->
-      Builtin_attributes.warning_scope ctf.pctf_attributes
+      mkctf_with_attrs
         (fun () ->
            let sty = Ast_helper.Typ.force_poly sty in
            match sty.ptyp_desc, priv with
@@ -308,18 +312,18 @@ let rec class_type_field env sign self_scope ctf =
                    returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
                    returned_cty.ctyp_type <- ty;
                  ) :: !delayed_meth_specs;
-               mkctf (Tctf_method (lab, priv, virt, returned_cty))
+               Tctf_method (lab, priv, virt, returned_cty)
            | _ ->
                let cty = transl_simple_type env false sty in
                let ty = cty.ctyp_type in
                add_method loc env lab priv virt ty sign;
-               mkctf (Tctf_method (lab, priv, virt, cty)))
+               Tctf_method (lab, priv, virt, cty))
 
   | Pctf_constraint (sty, sty') ->
-      Builtin_attributes.warning_scope ctf.pctf_attributes
+      mkctf_with_attrs
         (fun () ->
            let (cty, cty') = type_constraint env sty sty' ctf.pctf_loc in
-           mkctf (Tctf_constraint (cty, cty')))
+           Tctf_constraint (cty, cty'))
 
   | Pctf_attribute x ->
       Builtin_attributes.warning_attribute x;
@@ -557,9 +561,10 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
   in
   let loc = cf.pcf_loc in
   let attributes = cf.pcf_attributes in
+  let with_attrs f = Builtin_attributes.warning_scope attributes f in
   match cf.pcf_desc with
   | Pcf_inherit (override, sparent, super) ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            let parent =
              class_expr cl_num val_env par_env
@@ -638,7 +643,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            { acc with rev_fields; val_env; par_env;
                       concrete_meths; concrete_vals; vars; meths })
   | Pcf_val (label, mut, Cfk_virtual styp) ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            if !Clflags.principal then Ctype.begin_def ();
            let cty = Typetexp.transl_simple_type val_env false styp in
@@ -667,7 +672,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            let rev_fields = field :: rev_fields in
            { acc with rev_fields; val_env; par_env; vars })
   | Pcf_val (label, mut, Cfk_concrete (override, sdefinition)) ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            if VarSet.mem label.txt local_vals then
              raise(Error(loc, val_env,
@@ -712,7 +717,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                       concrete_vals; local_vals; vars })
 
   | Pcf_method (label, priv, Cfk_virtual sty) ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            let sty = Ast_helper.Typ.force_poly sty in
            let cty = transl_simple_type val_env false sty in
@@ -729,7 +734,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            { acc with rev_fields; meths })
 
   | Pcf_method (label, priv, Cfk_concrete (override, expr)) ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            if MethSet.mem label.txt local_meths then
              raise(Error(loc, val_env, Duplicate ("method", label.txt)));
@@ -797,7 +802,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            { acc with rev_fields; concrete_meths; local_meths; meths })
 
   | Pcf_constraint (sty1, sty2) ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            let (cty1, cty2) = type_constraint val_env sty1 sty2 loc in
            let field =
@@ -807,7 +812,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
            { acc with rev_fields })
 
   | Pcf_initializer sexpr ->
-      Builtin_attributes.warning_scope cf.pcf_attributes
+      with_attrs
         (fun () ->
            let sexpr = make_method self_loc cl_num sexpr in
            let warning_state = Warnings.backup () in
