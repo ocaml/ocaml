@@ -87,7 +87,6 @@ AC_SUBST([system])
 AC_SUBST([systhread_support])
 AC_SUBST([unix_or_win32])
 AC_SUBST([unixlib])
-AC_SUBST([graphlib])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
@@ -237,9 +236,11 @@ AC_ARG_WITH([libunwind-include-dir],
   [AS_HELP_STRING([--with-libunwind-include-dir],
     [location of header files for libunwind])])
 
-AC_ARG_ENABLE([graph-lib],
-  [AS_HELP_STRING([--disable-graph-lib],
-    [do not build the graphics library])])
+AC_ARG_ENABLE([graph-lib], [],
+  [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
+since version 4.09. It is now distributed as a separate "graphics" package: \
+https://github.com/ocaml/graphics])],
+  [])
 
 AC_ARG_ENABLE([str-lib],
   [AS_HELP_STRING([--disable-str-lib],
@@ -424,12 +425,9 @@ AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [unix_or_win32="win32"
     unixlib="win32unix"
-    graphlib="win32graph"
     ],
   [unix_or_win32="unix"
-  unixlib="unix"
-  graphlib="graph"
-  ])
+  unixlib="unix"])
 AS_CASE([$host],
   [*-*-cygwin*|*-*-mingw32|*-pc-windows],
     [exeext=".exe"],
@@ -1471,25 +1469,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
-
-## XWindow
-
-AS_IF([test x"$enable_graph_lib" = "xno" ],
-  [AC_MSG_NOTICE([the graph library has been disabled])],
-  [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows], [otherlibraries="$otherlibraries win32graph"],
-    [AC_PATH_X
-    AS_IF([test -z "$no_x"],
-      [AS_IF([test -z $x_libraries],
-        [x_libraries="-lX11"],
-        [x_libraries="-L$x_libraries -lX11"])
-      AC_MSG_NOTICE([X has been found])
-      otherlibraries="$otherlibraries graph"
-      AC_MSG_NOTICE([the graph library will be built])],
-      [AC_MSG_NOTICE([X has not been found])
-      AS_IF([test x"$enable_graph_lib" = "xyes" ],
-        [AC_MSG_ERROR([can not build the graph library which was requested])],
-        [AC_MSG_NOTICE([the graph library will not be built])])])])])
 
 ## libbfd
 

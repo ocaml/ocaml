@@ -157,7 +157,6 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
 #       systhreads      Same as threads, requires POSIX threads
-#       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
 #       bigarray        Large, multidimensional numerical arrays
 OTHERLIBRARIES=@otherlibraries@
@@ -167,18 +166,8 @@ OTHERLIBRARIES=@otherlibraries@
 PTHREAD_LINK=@pthread_link@
 PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
 
-### -I options for finding the X11/*.h includes
-# Needed for the "graph" package
-X11_INCDDIR=@x_includes@
-X11_INCLUDES=$(addprefix -I,$(X11_INCDDIR))
-
-### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
-# Needed for the "graph" package
-X11_LINK=@x_libraries@
-
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
-GRAPHLIB=@graphlib@
 LIBBFD_LINK=@libbfd_link@
 LIBBFD_INCLUDE=@libbfd_include@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
