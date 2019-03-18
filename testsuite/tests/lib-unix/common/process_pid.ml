@@ -5,16 +5,20 @@ include unix
 ** native
 *)
 
+let null =
+  if Sys.win32 then
+    "NUL"
+  else
+    "/dev/null"
+
 let () =
   let ic, _ as process =
-    Unix.open_process "echo toto"
+    (* Redirect to null to avoid
+       "The process tried to write to a nonexistent pipe." on Windows *)
+    Printf.ksprintf Unix.open_process "echo toto > %s" null
   in
   assert
     (Unix.process_pid process = Unix.process_pid process);
-
-  (* read everything to avoid
-     "The process tried to write to a nonexistent pipe." on Windows *)
-  ignore (input_line ic);
 
   ignore (Unix.close_process process);
   print_endline "OK"
