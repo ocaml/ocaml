@@ -23,6 +23,11 @@ Working version
 - GPR#2314: Remove support for gprof profiling.
   (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
 
+### Compiler distribution build system:
+
+- GPR#8514: Use boot/ocamlc.opt for building, if available.
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives
