@@ -5423,6 +5423,34 @@ asmcomp/debug/available_regs.cmx : \
     asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : \
     asmcomp/mach.cmi
+asmcomp/debug/compute_ranges.cmo : \
+    asmcomp/printlinear.cmi \
+    utils/numbers.cmi \
+    utils/misc.cmi \
+    asmcomp/linearize.cmi \
+    middle_end/int_replace_polymorphic_compare.cmi \
+    asmcomp/debug/compute_ranges_intf.cmo \
+    asmcomp/cmm.cmi \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmx : \
+    asmcomp/printlinear.cmx \
+    utils/numbers.cmx \
+    utils/misc.cmx \
+    asmcomp/linearize.cmx \
+    middle_end/int_replace_polymorphic_compare.cmx \
+    asmcomp/debug/compute_ranges_intf.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmi : \
+    asmcomp/debug/compute_ranges_intf.cmo
+asmcomp/debug/compute_ranges_intf.cmo : \
+    utils/numbers.cmi \
+    asmcomp/linearize.cmi \
+    utils/identifiable.cmi
+asmcomp/debug/compute_ranges_intf.cmx : \
+    utils/numbers.cmx \
+    asmcomp/linearize.cmx \
+    utils/identifiable.cmx
 asmcomp/debug/reg_availability_set.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/backend_var.cmi \
