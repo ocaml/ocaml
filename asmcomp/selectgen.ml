@@ -560,7 +560,7 @@ method insert_debug _env desc dbg arg res =
     instr_cons_debug ~phantom_available_before:(Exactly Backend_var.Set.empty)
       desc arg res dbg instr_seq
 
-method insert desc _env arg res =
+method insert _env desc arg res =
   instr_seq <-
     instr_cons_debug ~phantom_available_before:(Exactly Backend_var.Set.empty)
       desc arg res Debuginfo.none instr_seq
