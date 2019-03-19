@@ -288,7 +288,6 @@ and inside_arm = ref false
 and inside_catch = ref false
 
 let add_spills regset i =
-  let regset = Reg.Set.elements regset in
   (* Skip over any [Iname_for_debugger] operations so that we don't put a
      spill between a move into a register and the operation naming that
      register.  (Such a situation would cause the spilled register to be
@@ -299,10 +298,11 @@ let add_spills regset i =
       let next = add_spills i.next in
       { i with next; }
     | _ ->
-      List.fold_left (fun i r ->
+      Reg.Set.fold
+        (fun r i ->
           instr_cons_from i (Iop Ispill) ~arg:[|r|] ~res:[|spill_reg r|]
             ~next:i)
-        i regset
+        regset i
   in
   add_spills i
 
