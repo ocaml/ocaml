@@ -100,7 +100,6 @@ and cmxa_magic_number =
 and ast_impl_magic_number = "Caml1999M025"
 and ast_intf_magic_number = "Caml1999N025"
 and cmxs_magic_number = "Caml1999D025"
-    (* cmxs_magic_number is duplicated in otherlibs/dynlink/natdynlink.ml *)
 and cmt_magic_number = "Caml1999T025"
 
 let interface_suffix = ref ".mli"

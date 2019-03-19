@@ -27,6 +27,7 @@ open Clambda
 open Clambda_primitives
 open Cmm
 open Cmx_format
+open Cmxs_format
 
 module String = Misc.Stdlib.String
 module V = Backend_var

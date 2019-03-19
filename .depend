@@ -2791,6 +2791,7 @@ asmcomp/cmmgen.cmo : \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmi \
     asmcomp/cmm.cmi \
@@ -2817,6 +2818,7 @@ asmcomp/cmmgen.cmx : \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
     asmcomp/cmm.cmx \
@@ -2850,6 +2852,8 @@ asmcomp/cmx_format.cmi : \
     utils/misc.cmi \
     asmcomp/export_info.cmi \
     asmcomp/clambda.cmi
+asmcomp/cmxs_format.cmi : \
+    utils/misc.cmi
 asmcomp/coloring.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \

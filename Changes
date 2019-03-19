@@ -47,6 +47,10 @@ Working version
 - GPR#2265: Add bytecomp/opcodes.mli
   (Mark Shinwell, review by Nicolas Ojeda Bar)
 
+- GPR#2268: Improve packing mechanism used for building compilerlibs modules
+  into the Dynlink libraries
+  (Mark Shinwell, Stephen Dolan, review by David Allsopp)
+
 - GPR#2280: Don't make more Clambda constants after starting Cmmgen
   (Mark Shinwell, review by Vincent Laviron)
 
