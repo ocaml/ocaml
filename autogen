@@ -1,2 +1,8 @@
 #!/bin/sh
-autoconf -W all,error
+version=$(autoconf --version | sed -ne 's/^autoconf .* \([0-9][^ ]*\)$/\1/p')
+if [ "$version" != '2.69' ] ; then
+  echo "autoconf 2.69 is required" >&2
+  exit 1
+else
+  autoconf -W all,error
+fi
