@@ -707,6 +707,9 @@ OCaml 4.08.0
 - GPR#2295: Restore support for bytecode target XLC/AIX/Power
   (Konstantin Romanov, review by Sébastien Hinderer and David Allsopp)
 
+* GPR#8533: Remove some unused configure tests
+  (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - MPR#7918, GPR#1703, GPR#1944, GPR#2213, GPR#2257: Add the module
