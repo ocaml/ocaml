@@ -404,7 +404,7 @@ module E = struct
     | Pexp_pack me -> sub.module_expr sub me
     | Pexp_open (o, e) ->
         sub.open_declaration sub o; sub.expr sub e
-    | Pexp_binding_op {let_; ands; body} ->
+    | Pexp_letop {let_; ands; body} ->
         sub.binding_op sub let_;
         List.iter (sub.binding_op sub) ands;
         sub.expr sub body

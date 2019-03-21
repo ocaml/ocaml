@@ -591,7 +591,7 @@ and expression ctxt f x =
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
         paren true (expression reset_ctxt) f x
     | Pexp_let _ | Pexp_letmodule _ | Pexp_open _
-      | Pexp_letexception _ | Pexp_binding_op _
+      | Pexp_letexception _ | Pexp_letop _
         when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_fun (l, e0, p, e) ->
@@ -717,7 +717,7 @@ and expression ctxt f x =
           (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
-    | Pexp_binding_op {let_; ands; body} ->
+    | Pexp_letop {let_; ands; body} ->
         pp f "@[<2>@[<v>%a@,%a@] in@;<1 -2>%a@]"
           (binding_op ctxt) let_
           (list ~sep:"@," (binding_op ctxt)) ands

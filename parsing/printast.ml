@@ -377,8 +377,8 @@ and expression i ppf x =
       line i ppf "Pexp_open %a\n" fmt_override_flag o.popen_override;
       module_expr i ppf o.popen_expr;
       expression i ppf e
-  | Pexp_binding_op {let_; ands; body} ->
-      line i ppf "Pexp_binding_op\n";
+  | Pexp_letop {let_; ands; body} ->
+      line i ppf "Pexp_letop\n";
       binding_op i ppf let_;
       list i binding_op ppf ands;
       expression i ppf body

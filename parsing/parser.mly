@@ -2075,7 +2075,7 @@ expr:
         let ands = List.rev rev_ands in
         let pbop_loc = make_loc $sloc in
         let let_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
-        mkexp ~loc:$sloc (Pexp_binding_op{ let_; ands; body}) }
+        mkexp ~loc:$sloc (Pexp_letop{ let_; ands; body}) }
   | expr COLONCOLON expr
       { mkexp_cons ~loc:$sloc $loc($2) (ghexp ~loc:$sloc (Pexp_tuple[$1;$3])) }
   | mkrhs(label) LESSMINUS expr

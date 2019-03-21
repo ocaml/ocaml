@@ -11238,7 +11238,7 @@ module Tables = struct
         let ands = List.rev rev_ands in
         let pbop_loc = make_loc _sloc in
         let let_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
-        mkexp ~loc:_sloc (Pexp_binding_op{ let_; ands; body}) )
+        mkexp ~loc:_sloc (Pexp_letop{ let_; ands; body}) )
 # 11243 "parsing/parser.ml"
          in
         {

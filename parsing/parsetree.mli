@@ -372,7 +372,7 @@ and expression_desc =
         (* M.(E)
            let open M in E
            let! open M in E *)
-  | Pexp_binding_op of binding_expr
+  | Pexp_letop of letop
         (* let* P = E in E
            let* P = E and* P = E in E *)
   | Pexp_extension of extension
@@ -387,7 +387,7 @@ and case =   (* (P -> E) or (P when E0 -> E) *)
      pc_rhs: expression;
    }
 
-and binding_expr =
+and letop =
   {
     let_ : binding_op;
     ands : binding_op list;
