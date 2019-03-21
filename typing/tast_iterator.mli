@@ -17,8 +17,8 @@
 Allows the implementation of typed tree inspection using open recursion
 *)
 
-open Asttypes;
-open TypedTree;
+open Asttypes
+open TypedTree
 
 type iterator =
   {
@@ -65,3 +65,5 @@ type iterator =
     value_description: iterator -> value_description -> unit;
     with_constraint: iterator -> with_constraint -> unit;
   }
+
+val default_iterator: iterator
