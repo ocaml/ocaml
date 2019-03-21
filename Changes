@@ -573,6 +573,12 @@ OCaml 4.08.0
 - GPR#8528: get rid of the direct call to the C preprocessor in the testsuite
   (Sébastien Hinderer, review by David Allsopp)
 
+- Issue #7938, GPR #8532: Fix alignment detection for ints on 32-bits platforms
+  (Sébastien Hinderer, review by Xavier Leroy)
+
+* GPR#8533: Remove some unused configure tests
+  (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - MPR#7918, GPR#1703, GPR#1944, GPR#2213, GPR#2257: Add the module

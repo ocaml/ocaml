@@ -709,14 +709,13 @@ AC_CHECK_ALIGNOF([double])
 AC_CHECK_ALIGNOF([long])
 
 AS_IF([! $arch64],
-  [AS_IF([test x"$ac_cv_alignof_double" = "x8" ],
-    [AS_IF([test "$target_cpu" != "i686" ],
-      [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])])
-  AS_IF([test x"$ac_cv_alignof_long" = "x8" ],
-    [AC_DEFINE([ARCH_ALIGN_INT64], [1])]
-  )
-  ]
-)
+  [AS_CASE([$target_cpu],
+    [i686], [],
+    [AS_IF([test "$ac_cv_alignof_double" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
+    AS_IF([test "$ac_cv_alignof_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_LONG], [1])])
+    ])])
 
 # Shared library support
 
