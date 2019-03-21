@@ -13267,19 +13267,20 @@ _ACEOF
 
 
 if ! $arch64; then :
-  if test x"$ac_cv_alignof_double" = "x8" ; then :
-  if test "$target_cpu" != "i686" ; then :
+  case $target_cpu in #(
+  i686) :
+     ;; #(
+  *) :
+    if test "$ac_cv_alignof_double" -gt 4; then :
   $as_echo "#define ARCH_ALIGN_DOUBLE 1" >>confdefs.h
 
 fi
-fi
-  if test x"$ac_cv_alignof_long" = "x8" ; then :
-  $as_echo "#define ARCH_ALIGN_INT64 1" >>confdefs.h
-
+    if test "$ac_cv_alignof_long" -gt 4; then :
+  $as_echo "#define ARCH_ALIGN_LONG 1" >>confdefs.h
 
 fi
-
-
+     ;;
+esac
 fi
 
 # Shared library support
