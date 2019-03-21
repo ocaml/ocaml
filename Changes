@@ -707,6 +707,9 @@ OCaml 4.08.0
 - GPR#2295: Restore support for bytecode target XLC/AIX/Power
   (Konstantin Romanov, review by Sébastien Hinderer and David Allsopp)
 
+- GPR#8528: get rid of the direct call to the C preprocessor in the testsuite
+  (Sébastien Hinderer, review by David Allsopp)
+
 * GPR#8533: Remove some unused configure tests
   (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
 

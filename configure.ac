@@ -415,9 +415,7 @@ AS_CASE([$host],
 # manually to make sure the backward compatibility is preserved
 AS_CASE([$host],
   [*-pc-windows],
-    [DIRECT_CPP="$CC -nologo -EP";
-    CPP="$DIRECT_CPP"],
-  [AC_CHECK_TOOL([DIRECT_CPP],[cpp])])
+    [CPP="$CC -nologo -EP"])
 
 # Libraries to build depending on the host
 
