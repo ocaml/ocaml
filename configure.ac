@@ -1114,10 +1114,6 @@ AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
 
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
-AC_CHECK_FUNC([getpriority],
-  [AC_CHECK_FUNC([setpriority],
-    [AC_DEFINE([HAS_GETPRIORITY])])])
-
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition
@@ -1129,8 +1125,6 @@ AS_CASE([$host],
       [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME])])])])])
 
 AC_CHECK_FUNC([utimes], [AC_DEFINE([HAS_UTIMES])])
-
-AC_CHECK_FUNC([dup2], [AC_DEFINE([HAS_DUP2])])
 
 AC_CHECK_FUNC([fchmod],
   [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
@@ -1186,64 +1180,6 @@ AC_CHECK_HEADER([termios.h],
       [AC_CHECK_FUNC([tcsendbreak],
         [AC_CHECK_FUNC([tcflush],
           [AC_CHECK_FUNC([tcflow], [AC_DEFINE([HAS_TERMIOS])])])])])])])
-
-## Asynchronous I/O
-
-AC_MSG_CHECKING([for asynchronous I/O])
-AC_RUN_IFELSE(
-  [AC_LANG_SOURCE([[
-#include <stdio.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-int signalled;
-
-void sigio_handler(int arg)
-{
-  signalled = 1;
-}
-
-int main(void)
-{
-#if defined(SIGIO) && defined(FASYNC) && defined(F_SETFL) && defined(F_SETOWN)
-  int p[2];
-  int ret;
-#define OUT 0
-#define IN 1
-  if (socketpair(PF_UNIX, SOCK_STREAM, 0, p) == -1) return 1;
-  signalled = 0;
-  signal(SIGIO, sigio_handler);
-  ret = fcntl(p[OUT], F_GETFL, 0);
-  fcntl(p[OUT], F_SETFL, ret | FASYNC);
-  fcntl(p[OUT], F_SETOWN, getpid());
-  switch(fork()) {
-  case -1:
-    return 1;
-  case 0:
-    close(p[OUT]);
-    write(p[IN], "x", 1);
-    sleep(1);
-    exit(0);
-  default:
-    close(p[IN]);
-    while(wait(NULL) == -1 && errno == EINTR) /*nothing*/;
-  }
-  if (signalled) return 0; else return 1;
-#else
-  return 1;
-#endif
-}
-  ]])],
-  [
-    AC_DEFINE([HAS_ASYNC_IO])
-    AC_MSG_RESULT([yes])
-  ],
-  [AC_MSG_RESULT([no])],
-  [AC_MSG_RESULT([no])]
-)
 
 ## setitimer
 

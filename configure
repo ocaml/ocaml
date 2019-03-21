@@ -13863,18 +13863,6 @@ $as_echo "$as_me: POSIX signal handling found." >&6;}
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: assuming signals have the System V semantics." >&5
 $as_echo "$as_me: assuming signals have the System V semantics." >&6;}
-    for ac_func in sigsetmask
-do :
-  ac_fn_c_check_func "$LINENO" "sigsetmask" "ac_cv_func_sigsetmask"
-if test "x$ac_cv_func_sigsetmask" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_SIGSETMASK 1
-_ACEOF
- $as_echo "#define HAS_SIGSETMASK 1" >>confdefs.h
-
-fi
-done
-
 
 
 fi
@@ -14233,17 +14221,6 @@ if test "x$ac_cv_func_getcwd" = xyes; then :
 fi
 
 
-ac_fn_c_check_func "$LINENO" "getpriority" "ac_cv_func_getpriority"
-if test "x$ac_cv_func_getpriority" = xyes; then :
-  ac_fn_c_check_func "$LINENO" "setpriority" "ac_cv_func_setpriority"
-if test "x$ac_cv_func_setpriority" = xyes; then :
-  $as_echo "#define HAS_GETPRIORITY 1" >>confdefs.h
-
-fi
-
-fi
-
-
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition
@@ -14274,13 +14251,6 @@ esac
 ac_fn_c_check_func "$LINENO" "utimes" "ac_cv_func_utimes"
 if test "x$ac_cv_func_utimes" = xyes; then :
   $as_echo "#define HAS_UTIMES 1" >>confdefs.h
-
-fi
-
-
-ac_fn_c_check_func "$LINENO" "dup2" "ac_cv_func_dup2"
-if test "x$ac_cv_func_dup2" = xyes; then :
-  $as_echo "#define HAS_DUP2 1" >>confdefs.h
 
 fi
 
@@ -14423,80 +14393,6 @@ fi
 
 fi
 
-
-
-## Asynchronous I/O
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for asynchronous I/O" >&5
-$as_echo_n "checking for asynchronous I/O... " >&6; }
-if test "$cross_compiling" = yes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-int signalled;
-
-void sigio_handler(int arg)
-{
-  signalled = 1;
-}
-
-int main(void)
-{
-#if defined(SIGIO) && defined(FASYNC) && defined(F_SETFL) && defined(F_SETOWN)
-  int p[2];
-  int ret;
-#define OUT 0
-#define IN 1
-  if (socketpair(PF_UNIX, SOCK_STREAM, 0, p) == -1) return 1;
-  signalled = 0;
-  signal(SIGIO, sigio_handler);
-  ret = fcntl(p[OUT], F_GETFL, 0);
-  fcntl(p[OUT], F_SETFL, ret | FASYNC);
-  fcntl(p[OUT], F_SETOWN, getpid());
-  switch(fork()) {
-  case -1:
-    return 1;
-  case 0:
-    close(p[OUT]);
-    write(p[IN], "x", 1);
-    sleep(1);
-    exit(0);
-  default:
-    close(p[IN]);
-    while(wait(NULL) == -1 && errno == EINTR) /*nothing*/;
-  }
-  if (signalled) return 0; else return 1;
-#else
-  return 1;
-#endif
-}
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-
-    $as_echo "#define HAS_ASYNC_IO 1" >>confdefs.h
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
 
 
 ## setitimer
