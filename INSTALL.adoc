@@ -186,6 +186,14 @@ On a 64-bit POWER architecture host running Linux, OCaml only operates in a
 * For AIX 4.3 with the IBM compiler `xlc`:
 
     ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
+
+* For AIX 7.x with the IBM compiler `xlc`:
+
+    ./configure CC=xlc
++
+By default, build is 32-bit. For 64-bit build, please set environment variable `OBJECT_MODE=64`
+  for _both_ `configure` and `make world` phases. Note, if this variable is set for only one phase,
+  your build will break (`ocamlrun` segfaults).
 +
 If something goes wrong during the automatic configuration, or if the generated
 files cause errors later on, then look at the template files:

@@ -482,6 +482,8 @@ OCAML_CC_VENDOR
 ## Determine which flags to use for the C compiler
 
 AS_CASE([$ocaml_cv_cc_vendor],
+  [xlc-*],
+    [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
   [msvc-*],
     [outputobj=-Fo; CPP="cl -nologo -EP"; gcc_warnings=""],
   [outputobj='-o $(EMPTY)'; AS_CASE([AC_PACKAGE_VERSION],
@@ -544,6 +546,9 @@ AS_CASE([$host],
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    [xlc-*],
+      [common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
+      internal_cflags="$gcc_warnings"],
     [common_cflags="-O"])])
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
@@ -624,7 +629,11 @@ AS_CASE([$CC,$host],
       iflexdir="-I\"$flexdir\""
       mkexedebugflag="-link -g"])],
   [*,x86_64-*-linux*],
-    AC_DEFINE([HAS_ARCH_CODE32], [1])
+    AC_DEFINE([HAS_ARCH_CODE32], [1]),
+  [xlc*,powerpc-ibm-aix*],
+    [mkexe="$mkexe "
+     oc_ldflags="-brtl -bexpfull"
+    AC_DEFINE([HAS_ARCH_CODE32], [1])],
 )
 
 
@@ -738,6 +747,11 @@ AS_IF([test x"$enable_shared" != "xno"],
       [mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true],
+    [powerpc-ibm-aix*],
+      [AS_CASE([$CC],
+               [xlc*],
+               [mksharedlib="$CC -qmkshrobj -G"
+                shared_libraries_supported=true])],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
@@ -1356,8 +1370,10 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [cc_has_debug_prefix_map=false],
+AS_CASE([$CC,$host],
+  [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
+  [*,*-pc-windows], [cc_has_debug_prefix_map=false],
+  [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
   [OCAML_CC_HAS_DEBUG_PREFIX_MAP])
 
 ## Does stat support nanosecond precision
