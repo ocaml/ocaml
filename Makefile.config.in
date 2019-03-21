@@ -76,10 +76,6 @@ OC_LDFLAGS=@oc_ldflags@
 ### How to invoke the C preprocessor through the C compiler
 CPP=@CPP@
 
-### How to invoke the C preprocessor directly, just to expand macros
-### (at the moment this is used only in one test in the testsuite)
-DIRECT_CPP=@DIRECT_CPP@
-
 ### How to invoke ranlib
 RANLIB=@RANLIB@
 RANLIBCMD=@RANLIBCMD@
