@@ -497,7 +497,7 @@ let expression sub exp =
         let let_ = sub.binding_op sub let_ pat in
         let ands = List.map2 (sub.binding_op sub) ands and_pats in
         let body = sub.expr sub body.c_rhs in
-        Pexp_letop {let_; ands; body }
+        Pexp_binding_op {let_; ands; body }
     | Texp_unreachable ->
         Pexp_unreachable
     | Texp_extension_constructor (lid, _) ->

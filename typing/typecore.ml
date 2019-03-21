@@ -218,7 +218,7 @@ let iter_expression f e =
     | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
     | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
-    | Pexp_letop { let_; ands; body; _ } ->
+    | Pexp_binding_op { let_; ands; body; _ } ->
         binding_op let_; List.iter binding_op ands; expr body
     | Pexp_pack me -> module_expr me
     | Pexp_unreachable -> ()
@@ -1072,7 +1072,7 @@ let all_idents_cases half_typed_cases =
   let f = function
     | {pexp_desc=Pexp_ident { txt = Longident.Lident id; _ }; _} ->
         Hashtbl.replace idents id ()
-    | {pexp_desc=Pexp_letop{ let_; ands; _ }; _ } ->
+    | {pexp_desc=Pexp_binding_op{ let_; ands; _ }; _ } ->
         Hashtbl.replace idents let_.pbop_op.txt ();
         List.iter
           (fun { pbop_op; _ } -> Hashtbl.replace idents pbop_op.txt ())
@@ -3318,7 +3318,7 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-  | Pexp_letop{ let_ = slet; ands = sands; body = sbody } ->
+  | Pexp_binding_op{ let_ = slet; ands = sands; body = sbody } ->
       let rec loop spat_acc ty_acc sands =
         match sands with
         | [] -> spat_acc, ty_acc

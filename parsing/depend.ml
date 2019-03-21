@@ -246,7 +246,7 @@ let rec add_expr bv exp =
   | Pexp_open (o, e) ->
       let bv = open_declaration bv o in
       add_expr bv e
-  | Pexp_letop {let_; ands; body} ->
+  | Pexp_binding_op {let_; ands; body} ->
       let bv' = add_binding_op bv bv let_ in
       let bv' = List.fold_left (add_binding_op bv) bv' ands in
       add_expr bv' body
