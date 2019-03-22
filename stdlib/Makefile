@@ -18,7 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc
@@ -33,7 +32,7 @@ OPTCOMPFLAGS=
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
@@ -241,7 +240,7 @@ stdlib__%.cmx: %.ml
 	           -o $@ -c $<
 
 # Dependencies on the compiler
-COMPILER_DEPS=$(filter-out -use-prims, $(COMPILER))
+COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
 $(OBJS) std_exit.cmo: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
