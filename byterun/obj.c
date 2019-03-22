@@ -150,13 +150,28 @@ CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value ne
   return Val_int(res);
 }
 
-/* caml_promote_to(obj, upto) promotes obj to be as least as shared as upto */
+/* caml_promote_to(obj, upto) may promote obj to be as least as shared as upto.
+   Skips promotion if there is only a single domain. This should only be used in
+   situations where there is a performance need to 'front-load' the promotion
+   across domains, such as for queues. If you need to guarantee promotion to the
+   major heap for correctness, use caml_obj_force_promote_to*/
 CAMLprim value caml_obj_promote_to (value obj, value upto)
+{
+  if (Is_block(upto) && (Is_minor(upto) || caml_domain_alone())) {
+    /* upto is local, obj is already as shared as upto is */
+    return obj;
+  }else{
+    return caml_promote(caml_domain_self(), obj);
+  }
+}
+
+/* caml_force_promote_to(obj, upto) force promotes obj to be as least as shared as upto */
+CAMLprim value caml_obj_force_promote_to (value obj, value upto)
 {
   if (Is_block(upto) && Is_minor(upto)) {
     /* upto is local, obj is already as shared as upto is */
     return obj;
-  } else {
+  }else{
     return caml_promote(caml_domain_self(), obj);
   }
 }
