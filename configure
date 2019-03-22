@@ -13390,6 +13390,8 @@ if test x"$enable_shared" != "xno"; then :
     natdynlink=true ;; #(
   aarch64-*-linux*) :
     natdynlink=true ;; #(
+  aarch64-*-freebsd*) :
+    natdynlink=true ;; #(
   *) :
      ;;
 esac
@@ -13511,6 +13513,8 @@ fi; system=elf ;; #(
     arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
     arch=arm64; system=linux ;; #(
+  aarch64-*-freebsd*) :
+    arch=arm64; system=freebsd ;; #(
   x86_64-*-cygwin*) :
     arch=amd64; system=cygwin
  ;; #(
@@ -13715,7 +13719,7 @@ esac ;; #(
   s390x,elf) :
     default_as="${toolpref}as -m 64 -march=$model"
     default_aspp="${toolpref}gcc -c -Wa,-march=$model" ;; #(
-  arm,freebsd) :
+  arm,freebsd|arm64,freebsd) :
     default_as="${toolpref}cc -c"
     default_aspp="${toolpref}cc -c" ;; #(
   *,dragonfly) :
