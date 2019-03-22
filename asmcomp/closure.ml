@@ -791,7 +791,7 @@ let function_nesting_depth = ref 0
 let excessive_function_nesting_depth = 5
 
 let prim_promote =
-  Pccall (Primitive.simple ~name:"caml_obj_promote_to" ~arity:2 ~alloc:true)
+  Pccall (Primitive.simple ~name:"caml_obj_force_promote_to" ~arity:2 ~alloc:true)
 
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
