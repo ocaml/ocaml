@@ -88,8 +88,11 @@ Working version
 * GPR#2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
 
+- GPR#2250: Remove extra integer sign-extension in compare functions
+  (Stefan Muenzel, review by Xavier Leroy)
+
 * GPR#2293: Constify "caml_named_value"
-  (Stephen Dolan, review by ??)
+  (Stephen Dolan, review by Xavier Leroy)
 
 ### Standard library:
 
