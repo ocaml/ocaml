@@ -25,7 +25,8 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 
-/* Comparison resulting in -1,0,1, without extra integer width conversion */
+/* Comparison resulting in -1,0,1, with type intnat,
+   without extra integer width conversion (GPR#2250). */
 #define COMPARE_INT(v1, v2) \
   (intnat)(v1 > v2) - (intnat)(v1 < v2)
 
