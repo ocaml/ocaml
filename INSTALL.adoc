@@ -180,10 +180,6 @@ On a 64-bit POWER architecture host running Linux, OCaml only operates in a
 
     ./configure -cc "acc -fast" -libs "-lucb"
 
-* For AIX 4.3 with the IBM compiler `xlc`:
-
-    ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
-
 * For AIX 7.x with the IBM compiler `xlc`:
 
     ./configure CC=xlc
