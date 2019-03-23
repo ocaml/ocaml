@@ -131,7 +131,7 @@ CAMLprim value caml_bswap16(value v)
 
 CAMLprim value caml_int_compare(value v1, value v2)
 {
-  return Val_long(COMPARE_INT(v1,v2));
+  return Val_long(COMPARE_INT(v1, v2));
 }
 
 CAMLprim value caml_int_of_string(value s)
@@ -566,7 +566,7 @@ CAMLprim value caml_int64_to_nativeint(value v)
 
 intnat caml_int64_compare_unboxed(int64_t i1, int64_t i2)
 {
-  return COMPARE_INT(i1,i2);
+  return COMPARE_INT(i1, i2);
 }
 
 CAMLprim value caml_int64_compare(value v1, value v2)
