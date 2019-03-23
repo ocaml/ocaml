@@ -4,25 +4,18 @@ open_modules: ["List"]
 for_package: "None"
 use_debug: false
 use_threads: true
-use_vmthreads: false
 recursive_types: true
 principal: true
 transparent_modules: false
 unboxed_types: true
 unsafe_string: false
 </ppx-context>
-File "_none_", line 1:
-Alert deprecated: The -vmthread argument of ocamlc is deprecated
-since OCaml 4.08.0.  Please switch to system threads, which have the
-same API. Lightweight threads with VM-level scheduling are provided by
-third-party libraries such as Lwt, but with a different API.
 <ppx-context>
 tool_name: "ocamlc"
 open_modules: []
 for_package: "None"
 use_debug: true
 use_threads: false
-use_vmthreads: true
 recursive_types: false
 principal: false
 transparent_modules: true

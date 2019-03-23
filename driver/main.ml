@@ -21,6 +21,12 @@ let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 (* Error messages to standard error formatter *)
 let ppf = Format.err_formatter
 
+let vmthread_removed_message = "\
+The -vmthread argument of ocamlc is no longer supported\n\
+since OCaml 4.09.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
+
 module Options = Main_args.Make_bytecomp_options (struct
   let set r () = r := true
   let unset r () = r := false
@@ -89,7 +95,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
-  let _plugin p = Compplugin.load p
+  let _plugin _p = plugin := true
   let _principal = set principal
   let _no_principal = unset principal
   let _rectypes = set recursive_types
@@ -102,7 +108,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _strict_formats = set strict_formats
   let _no_strict_formats = unset strict_formats
   let _thread = set use_threads
-  let _vmthread = set use_vmthreads
+  let _vmthread = fun () -> fatal vmthread_removed_message
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = unset unboxed_types
   let _unsafe = set unsafe
@@ -140,12 +146,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let anonymous = anonymous
 end)
 
-let vmthread_deprecated_message = "\
-The -vmthread argument of ocamlc is deprecated\n\
-since OCaml 4.08.0.  Please switch to system threads, which have the\n\
-same API. Lightweight threads with VM-level scheduling are provided by\n\
-third-party libraries such as Lwt, but with a different API."
-
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
   Clflags.add_arguments __LOC__
@@ -155,8 +155,8 @@ let main () =
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_clflags_from_env ();
-    if !Clflags.use_vmthreads then
-      Location.deprecated Location.none vmthread_deprecated_message;
+    if !Clflags.plugin then
+      fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
       Compenv.process_deferred_actions
         (ppf,
@@ -189,7 +189,7 @@ let main () =
             (String.concat "|" P.pass_names)
     end;
     if !make_archive then begin
-      Compmisc.init_path false;
+      Compmisc.init_path ();
 
       Bytelibrarian.create_archive
         (Compenv.get_objfiles ~with_ocamlparam:false)
@@ -197,7 +197,7 @@ let main () =
       Warnings.check_fatal ();
     end
     else if !make_package then begin
-      Compmisc.init_path false;
+      Compmisc.init_path ();
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles ~with_ocamlparam:false in
       Compmisc.with_ppf_dump ~file_prefix:extracted_output (fun ppf_dump ->
@@ -222,7 +222,7 @@ let main () =
         else
           default_output !output_name
       in
-      Compmisc.init_path false;
+      Compmisc.init_path ();
       Bytelink.link (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;

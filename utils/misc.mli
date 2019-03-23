@@ -116,20 +116,41 @@ module Stdlib : sig
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
+
+    val is_prefix
+       : equal:('a -> 'a -> bool)
+      -> 'a list
+      -> of_:'a list
+      -> bool
+    (** Returns [true] iff the given list, with respect to the given equality
+        function on list members, is a prefix of the list [of_]. *)
+
+    type 'a longest_common_prefix_result = private {
+      longest_common_prefix : 'a list;
+      first_without_longest_common_prefix : 'a list;
+      second_without_longest_common_prefix : 'a list;
+    }
+
+    val find_and_chop_longest_common_prefix
+       : equal:('a -> 'a -> bool)
+      -> first:'a list
+      -> second:'a list
+      -> 'a longest_common_prefix_result
+    (** Returns the longest list that, with respect to the provided equality
+        function, is a prefix of both of the given lists.  The input lists,
+        each with such longest common prefix removed, are also returned. *)
   end
 
   module Option : sig
     type 'a t = 'a option
 
-    val is_none : 'a t -> bool
-    val is_some : 'a t -> bool
-
-    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-
-    val iter : ('a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
+
+    val print
+       : (Format.formatter -> 'a -> unit)
+      -> Format.formatter
+      -> 'a t
+      -> unit
   end
 
   module Array : sig
@@ -144,6 +165,8 @@ module Stdlib : sig
     module Set : Set.S with type elt = string
     module Map : Map.S with type key = string
     module Tbl : Hashtbl.S with type key = string
+
+    val print : Format.formatter -> t -> unit
 
     val for_all : (char -> bool) -> t -> bool
   end
@@ -194,6 +217,14 @@ val output_to_file_via_temporary:
            which is passed to [fn] (name + output channel).  When [fn] returns,
            the channel is closed and the temporary file is renamed to
            [filename]. *)
+
+(** Open the given [filename] for writing (in binary mode), pass the
+    [out_channel] to the given function, then close the channel. If the function
+    raises an exception then [filename] will be removed. *)
+val protect_writing_to_file
+   : filename:string
+  -> f:(out_channel -> 'a)
+  -> 'a
 
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
@@ -405,41 +436,6 @@ val pp_two_columns :
     bb  | dddddd
     v}
 *)
-
-(** {1 Hook machinery}
-
-    Hooks machinery:
-   [add_hook name f] will register a function that will be called on the
-    argument of a later call to [apply_hooks]. Hooks are applied in the
-    lexicographical order of their names.
-*)
-
-type hook_info = {
-  sourcefile : string;
-}
-
-exception HookExnWrapper of
-    {
-      error: exn;
-      hook_name: string;
-      hook_info: hook_info;
-    }
-    (** An exception raised by a hook will be wrapped into a
-        [HookExnWrapper] constructor by the hook machinery.  *)
-
-
-val raise_direct_hook_exn: exn -> 'a
-  (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will
-      not be wrapped into a {!HookExnWrapper}. *)
-
-module type HookSig = sig
-  type t
-  val add_hook : string -> (hook_info -> t -> t) -> unit
-  val apply_hooks : hook_info -> t -> t
-end
-
-module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t
-
 
 (** configuration variables *)
 val show_config_and_exit : unit -> unit

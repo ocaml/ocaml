@@ -21,7 +21,6 @@ Here is a summary of the main differences between these ports:
 | Replay debugger                        | yes <<tb2,(**)>>       | yes <<tb2,(**)>> | yes
 | The Unix library                       | partial                | partial          | full
 | The Threads library                    | yes                    | yes              | yes
-| The Graphics library                   | yes                    | yes              | no
 | Restrictions on generated executables? | none                   | none             | yes <<tb1,(*)>>
 |=====
 
@@ -226,7 +225,7 @@ your `~/.bashrc` file.
   the performance of bytecode programs is about 2/3 of that obtained under
   Unix/GCC,  Cygwin or Mingw-w64 on similar hardware.
 
-* Libraries available in this port: `bigarray`, `dynlink`, `graphics`, `num`,
+* Libraries available in this port: `bigarray`, `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
@@ -282,7 +281,7 @@ After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
 bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
 
-* Libraries available in this port: `bigarray`, `dynlink`, `graphics`, `num`,
+* Libraries available in this port: `bigarray`, `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).

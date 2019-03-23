@@ -18,8 +18,7 @@ flags = "-thread \
          -ppx ${program}"
 **** ocamlc.byte
 module = "test.ml"
-flags = "-vmthread \
-         -g \
+flags = "-g \
          -no-alias-deps \
          -no-unboxed-types \
          -unsafe-string \

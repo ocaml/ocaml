@@ -102,6 +102,26 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.regs[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
 
+/****************** ARM64, FreeBSD */
+
+#elif defined(TARGET_arm64) && defined(SYS_freebsd)
+
+  #include <sys/ucontext.h>
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+     sigact.sa_flags = SA_SIGINFO
+
+  typedef unsigned long context_reg;
+  #define CONTEXT_PC (context->uc_mcontext.mc_gpregs.gp_elr)
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.mc_gpregs.gp_x[26])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.mc_gpregs.gp_x[27])
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+
 /****************** AMD64, Solaris x86 */
 
 #elif defined(TARGET_amd64) && defined (SYS_solaris)

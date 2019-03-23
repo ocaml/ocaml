@@ -102,6 +102,7 @@ let (++) x f = f x
 
 let compile_fundecl ~ppf_dump fd_cmm =
   Proc.init ();
+  Cmmgen.reset ();
   Reg.reset();
   fd_cmm
   ++ Profile.record ~accumulate:true "selection" Selection.fundecl
@@ -239,8 +240,9 @@ let lambda_gen_implementation ?toplevel ~ppf_dump
     }
   in
   let clambda_and_constants =
-    clambda, [preallocated_block], []
+    clambda, [preallocated_block], Compilenv.structured_constants ()
   in
+  Compilenv.clear_structured_constants ();
   raw_clambda_dump_if ppf_dump clambda_and_constants;
   end_gen_implementation ?toplevel ~ppf_dump clambda_and_constants
 

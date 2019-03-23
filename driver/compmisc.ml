@@ -21,11 +21,9 @@ open Compenv
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path ?(dir="") native =
+let init_path ?(dir="") () =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
-    else if !Clflags.use_vmthreads && not native then
-      "+vmthreads" :: !Clflags.include_dirs
     else
       !Clflags.include_dirs
   in
@@ -40,7 +38,7 @@ let init_path ?(dir="") native =
 (* Return the initial environment in which compilation proceeds. *)
 
 (* Note: do not do init_path() in initial_env, this breaks
-   toplevel initialization (PR#1775) *)
+   toplevel initialization (PR#8227) *)
 
 let initial_env () =
   Ident.reinit();

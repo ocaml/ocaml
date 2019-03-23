@@ -1022,7 +1022,7 @@ test "maf" maf (`TConstr []) 5 ;
 test "maf" maf (`TVariant []) 6
 ;;
 
-(* PR#1310
+(* PR#3517
   Using ``get_args'' in place or an ad-hoc ``matcher'' function for tuples.
   Has made the compiler [3.05] to fail.
 *)

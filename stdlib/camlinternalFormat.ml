@@ -95,7 +95,8 @@ fun ign fmt -> match ign with
       (Int64 (iconv, pad_of_pad_opt pad_opt, No_precision, fmt))
   | Ignored_float (pad_opt, prec_opt) ->
     Param_format_EBB
-      (Float (Float_f, pad_of_pad_opt pad_opt, prec_of_prec_opt prec_opt, fmt))
+      (Float ((Float_flag_, Float_f),
+              pad_of_pad_opt pad_opt, prec_of_prec_opt prec_opt, fmt))
   | Ignored_bool pad_opt ->
     Param_format_EBB (Bool (pad_of_pad_opt pad_opt, fmt))
   | Ignored_format_arg (pad_opt, fmtty) ->
@@ -216,10 +217,14 @@ type precision_ebb = Precision_EBB : ('a, 'b) precision -> precision_ebb
                                (* Constants *)
 
 (* Default precision for float printing. *)
-let default_float_precision = -6
+let default_float_precision fconv =
+  match snd fconv with
+  | Float_f | Float_e | Float_E | Float_g | Float_G | Float_h | Float_H -> -6
   (* For %h and %H formats, a negative precision means "as many digits as
      necessary".  For the other FP formats, we take the absolute value
      of the precision, hence 6 digits by default. *)
+  | Float_F -> 12
+  (* Default precision for OCaml float printing (%F). *)
 
 (******************************************************************************)
                                (* Externals *)
@@ -286,11 +291,12 @@ let char_of_iconv iconv = match iconv with
   | Int_Co -> 'o' | Int_u | Int_Cu -> 'u'
 
 (* Convert a float conversion to char. *)
-let char_of_fconv fconv = match fconv with
-  | Float_f | Float_pf | Float_sf -> 'f' | Float_e | Float_pe | Float_se -> 'e'
-  | Float_E | Float_pE | Float_sE -> 'E' | Float_g | Float_pg | Float_sg -> 'g'
-  | Float_G | Float_pG | Float_sG -> 'G' | Float_F -> 'F'
-  | Float_h | Float_ph | Float_sh -> 'h' | Float_H | Float_pH | Float_sH -> 'H'
+(* `cF' will be 'F' for displaying format and 'g' to call libc printf *)
+let char_of_fconv ?(cF='F') fconv = match snd fconv with
+  | Float_f -> 'f' | Float_e -> 'e'
+  | Float_E -> 'E' | Float_g -> 'g'
+  | Float_G -> 'G' | Float_F -> cF
+  | Float_h -> 'h' | Float_H -> 'H'
 
 
 (* Convert a scanning counter to char. *)
@@ -433,16 +439,10 @@ let bprint_altint_fmt buf ign_flag iconv pad prec c =
 (***)
 
 (* Print the optional '+' associated to a float conversion. *)
-let bprint_fconv_flag buf fconv = match fconv with
-  | Float_pf | Float_pe | Float_pE
-  | Float_pg | Float_pG | Float_ph | Float_pH ->
-    buffer_add_char buf '+'
-  | Float_sf | Float_se | Float_sE
-  | Float_sg | Float_sG | Float_sh | Float_sH ->
-    buffer_add_char buf ' '
-  | Float_f | Float_e | Float_E
-  | Float_g | Float_G | Float_F | Float_h | Float_H ->
-    ()
+let bprint_fconv_flag buf fconv = match fst fconv with
+  | Float_flag_p -> buffer_add_char buf '+'
+  | Float_flag_s -> buffer_add_char buf ' '
+  | Float_flag_ -> ()
 
 (* Print a complete float format in a buffer (ex: "%+*.3f"). *)
 let bprint_float_fmt buf ign_flag fconv pad prec =
@@ -1406,11 +1406,10 @@ let format_of_iconvn = function
   | Int_o -> "%no" | Int_Co -> "%#no"
   | Int_u | Int_Cu -> "%nu"
 
-(* Generate the format_float first argument form a float_conv. *)
+(* Generate the format_float first argument from a float_conv. *)
 let format_of_fconv fconv prec =
-  if fconv = Float_F then "%.12g" else
     let prec = abs prec in
-    let symb = char_of_fconv fconv in
+    let symb = char_of_fconv ~cF:'g' fconv in
     let buf = buffer_create 16 in
     buffer_add_char buf '%';
     bprint_fconv_flag buf fconv;
@@ -1457,21 +1456,21 @@ let convert_int64 iconv n =
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)
 let convert_float fconv prec x =
-  match fconv with
-  | Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH ->
+  match snd fconv with
+  | Float_h | Float_H ->
     let sign =
-      match fconv with
-      | Float_ph | Float_pH -> '+'
-      | Float_sh | Float_sH -> ' '
+      match fst fconv with
+      | Float_flag_p -> '+'
+      | Float_flag_s -> ' '
       | _ -> '-' in
     let str = hexstring_of_float x prec sign in
-    begin match fconv with
-    | Float_H | Float_pH | Float_sH -> String.uppercase_ascii str
+    begin match snd fconv with
+    | Float_H -> String.uppercase_ascii str
     | _ -> str
     end
   | _ ->
     let str = format_float (format_of_fconv fconv prec) x in
-    if fconv <> Float_F then str else
+    if snd fconv <> Float_F then str else
       let len = String.length str in
       let rec is_valid i =
         if i = len then false else
@@ -1733,7 +1732,7 @@ and make_float_padding_precision : type x y a b c d e f .
   fun k acc fmt pad prec fconv -> match pad, prec with
   | No_padding, No_precision ->
     fun x ->
-      let str = convert_float fconv default_float_precision x in
+      let str = convert_float fconv (default_float_precision fconv) x in
       make_printf k (Acc_data_string (acc, str)) fmt
   | No_padding, Lit_precision p ->
     fun x ->
@@ -1745,7 +1744,7 @@ and make_float_padding_precision : type x y a b c d e f .
       make_printf k (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), No_precision ->
     fun x ->
-      let str = convert_float fconv default_float_precision x in
+      let str = convert_float fconv (default_float_precision fconv) x in
       let str' = fix_padding padty w str in
       make_printf k (Acc_data_string (acc, str')) fmt
   | Lit_padding (padty, w), Lit_precision p ->
@@ -1758,7 +1757,7 @@ and make_float_padding_precision : type x y a b c d e f .
       make_printf k (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, No_precision ->
     fun w x ->
-      let str = convert_float fconv default_float_precision x in
+      let str = convert_float fconv (default_float_precision fconv) x in
       let str' = fix_padding padty w str in
       make_printf k (Acc_data_string (acc, str')) fmt
   | Arg_padding padty, Lit_precision p ->
@@ -2940,39 +2939,27 @@ let fmt_ebb_of_string ?legacy_behavior str =
       else incompatible_flag pct_ind str_ind symb "'+'"
     | false, _, false, _ -> assert false
 
-  (* Convert (plus, symb) to its associated float_conv. *)
+  (* Convert (plus, space, symb) to its associated float_conv. *)
   and compute_float_conv pct_ind str_ind plus space symb =
-  match plus, space, symb with
-    | false, false, 'f' -> Float_f  | false, false, 'e' -> Float_e
-    | false,  true, 'f' -> Float_sf | false,  true, 'e' -> Float_se
-    |  true, false, 'f' -> Float_pf |  true, false, 'e' -> Float_pe
-    | false, false, 'E' -> Float_E  | false, false, 'g' -> Float_g
-    | false,  true, 'E' -> Float_sE | false,  true, 'g' -> Float_sg
-    |  true, false, 'E' -> Float_pE |  true, false, 'g' -> Float_pg
-    | false, false, 'G' -> Float_G
-    | false,  true, 'G' -> Float_sG
-    |  true, false, 'G' -> Float_pG
-    | false, false, 'h' -> Float_h
-    | false,  true, 'h' -> Float_sh
-    |  true, false, 'h' -> Float_ph
-    | false, false, 'H' -> Float_H
-    | false,  true, 'H' -> Float_sH
-    |  true, false, 'H' -> Float_pH
-    | false, false, 'F' -> Float_F
-    |  true,  true, _ ->
-      if legacy_behavior then
-        (* plus and space: legacy implementation prefers plus *)
-        compute_float_conv pct_ind str_ind plus false symb
-      else incompatible_flag pct_ind str_ind ' ' "'+'"
-    | false,  true, _ ->
-      if legacy_behavior then (* ignore *)
-        compute_float_conv pct_ind str_ind plus false symb
-      else incompatible_flag pct_ind str_ind symb "' '"
-    |  true, false, _ ->
-      if legacy_behavior then (* ignore *)
-        compute_float_conv pct_ind str_ind false space symb
-      else incompatible_flag pct_ind str_ind symb "'+'"
-    | false, false, _ -> assert false
+    let flag = match plus, space with
+    | false, false -> Float_flag_
+    | false,  true -> Float_flag_s
+    |  true, false -> Float_flag_p
+    |  true,  true ->
+      (* plus and space: legacy implementation prefers plus *)
+      if legacy_behavior then Float_flag_p
+      else incompatible_flag pct_ind str_ind ' ' "'+'" in
+    let kind = match symb with
+    | 'f' -> Float_f
+    | 'e' -> Float_e
+    | 'E' -> Float_E
+    | 'g' -> Float_g
+    | 'G' -> Float_G
+    | 'h' -> Float_h
+    | 'H' -> Float_H
+    | 'F' -> Float_F
+    | _ -> assert false in
+    flag, kind
 
   (* Raise [Failure] with a friendly error message about incompatible options.*)
   and incompatible_flag : type a . int -> int -> char -> string -> a =

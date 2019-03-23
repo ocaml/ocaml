@@ -100,7 +100,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   res = caml_interprete(local_callback_code, sizeof(local_callback_code));
   caml_release_bytecode(local_callback_code, sizeof(local_callback_code));
 #endif /*LOCAL_CALLBACK_BYTECODE*/
-  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
+  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#3419 */
   return res;
 }
 
@@ -225,7 +225,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
 
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
-      nv->val = val;
+      caml_modify_generational_global_root(&nv->val, val);
       return Val_unit;
     }
   }
@@ -235,11 +235,11 @@ CAMLprim value caml_register_named_value(value vname, value val)
   nv->val = val;
   nv->next = named_value_table[h];
   named_value_table[h] = nv;
-  caml_register_global_root(&nv->val);
+  caml_register_generational_global_root(&nv->val);
   return Val_unit;
 }
 
-CAMLexport value * caml_named_value(char const *name)
+CAMLexport const value * caml_named_value(char const *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];
