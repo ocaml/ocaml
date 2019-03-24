@@ -47,11 +47,6 @@ type iterator =
     with_constraint: iterator -> with_constraint -> unit;
   }
 
-(** Helper function that applies a function over an option. 
- * Taken from ast_iterator.ml*)
-let opt f = function None -> () | Some x -> f x
-
-
 let structure sub {str_items; str_final_env; _} =
   List.iter (sub.structure_item sub) str_items;
   sub.env sub str_final_env
@@ -61,7 +56,7 @@ let class_infos sub f x =
   f x.ci_expr
 
 let module_type_declaration sub {mtd_type; _} =
-  opt (sub.module_type sub) mtd_type
+  Option.iter (sub.module_type sub) mtd_type
 
 let module_declaration sub {md_type; _} =
   sub.module_type sub md_type
@@ -107,7 +102,7 @@ let constructor_args sub = function
 
 let constructor_decl sub {cd_args; cd_res; _} =
   constructor_args sub cd_args;
-  opt (sub.typ sub) cd_res
+  Option.iter (sub.typ sub) cd_res
 
 let type_kind sub = function
   | Ttype_abstract -> ()
@@ -122,7 +117,7 @@ let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; typ_params; _} =
       sub.typ sub c2)
     typ_cstrs;
   sub.type_kind sub typ_kind;
-  opt (sub.typ sub) typ_manifest;
+  Option.iter (sub.typ sub) typ_manifest;
   List.iter (fun (c, _) -> sub.typ sub c) typ_params
 
 let type_declarations sub (_, list) = List.iter (sub.type_declaration sub) list
@@ -138,7 +133,7 @@ let extension_constructor sub {ext_kind; _} =
     match ext_kind with
     | Text_decl (ctl, cto) ->
         constructor_args sub ctl;
-      opt (sub.typ sub) cto
+      Option.iter (sub.typ sub) cto
     | Text_rebind _ -> ()
 
 let pat sub {pat_extra; pat_desc; pat_env; _} =
@@ -156,7 +151,7 @@ let pat sub {pat_extra; pat_desc; pat_env; _} =
   | Tpat_constant _ -> ()
   | Tpat_tuple l -> List.iter (sub.pat sub) l
   | Tpat_construct (_, _, l) -> List.iter (sub.pat sub) l
-  | Tpat_variant (_, po, _) -> opt (sub.pat sub) po
+  | Tpat_variant (_, po, _) -> Option.iter (sub.pat sub) po
   | Tpat_record (l, _) -> List.iter (fun (_, _, i) -> sub.pat sub i) l
   | Tpat_array l -> List.iter (sub.pat sub) l
   | Tpat_or (p1, p2, _) ->
@@ -170,10 +165,10 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   let extra = function
     | Texp_constraint cty -> sub.typ sub cty
     | Texp_coerce (cty1, cty2) ->
-        opt (sub.typ sub) cty1;
+        Option.iter (sub.typ sub) cty1;
         sub.typ sub cty2
     | Texp_newtype _ -> ()
-    | Texp_poly cto -> opt (sub.typ sub) cto
+    | Texp_poly cto -> Option.iter (sub.typ sub) cto
   in
   List.iter (fun (e, _, _) -> extra e) exp_extra;
   sub.env sub exp_env;
@@ -186,7 +181,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_function {cases; _} -> sub.cases sub cases
   | Texp_apply (exp, list) ->
         sub.expr sub exp;
-        List.iter (fun (_, o) -> opt (sub.expr sub) o) list
+        List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
   | Texp_match (exp, cases, _) ->
         sub.expr sub exp;
         sub.cases sub cases
@@ -195,13 +190,13 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
         sub.cases sub cases
   | Texp_tuple list -> List.iter (sub.expr sub) list
   | Texp_construct (_, _, args) -> List.iter (sub.expr sub) args
-  | Texp_variant (_, expo) -> opt (sub.expr sub) expo
+  | Texp_variant (_, expo) -> Option.iter (sub.expr sub) expo
   | Texp_record { fields; extended_expression; _} ->
       Array.iter (function
           | _, Kept _ -> ()
           | _, Overridden (_, exp) -> sub.expr sub exp)
           fields;
-      opt (sub.expr sub) extended_expression;
+      Option.iter (sub.expr sub) extended_expression;
   | Texp_field (exp, _, _) -> sub.expr sub exp
   | Texp_setfield (exp1, _, _, exp2) ->
       sub.expr sub exp1;
@@ -210,7 +205,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_ifthenelse (exp1, exp2, expo) ->
       sub.expr sub exp1;
       sub.expr sub exp2;
-      opt (sub.expr sub) expo
+      Option.iter (sub.expr sub) expo
   | Texp_sequence (exp1, exp2) ->
       sub.expr sub exp1;
       sub.expr sub exp2
@@ -223,7 +218,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
       sub.expr sub exp3
   | Texp_send (exp, _, expo) ->
       sub.expr sub exp;
-      opt (sub.expr sub) expo
+      Option.iter (sub.expr sub) expo
   | Texp_new _ -> ()
   | Texp_instvar _ -> ()
   | Texp_setinstvar (_, _, _, exp) ->sub.expr sub exp
@@ -287,7 +282,7 @@ let module_type sub {mty_desc; mty_env; _} =
   | Tmty_alias _      -> ()
   | Tmty_signature sg -> sub.signature sub sg
   | Tmty_functor (_, _, mtype1, mtype2) ->
-        opt (sub.module_type sub) mtype1;
+        Option.iter (sub.module_type sub) mtype1;
         sub.module_type sub mtype2
   | Tmty_with (mtype, list) ->
         sub.module_type sub mtype;
@@ -325,7 +320,7 @@ let module_expr sub {mod_desc; mod_env; _} =
   | Tmod_ident _      -> ()
   | Tmod_structure st -> sub.structure sub st
   | Tmod_functor (_, _, mtype, mexpr) ->
-      opt (sub.module_type sub) mtype;
+      Option.iter (sub.module_type sub) mtype;
       sub.module_expr sub mexpr
   | Tmod_apply (mexp1, mexp2, c) ->
       sub.module_expr sub mexp1;
@@ -347,7 +342,7 @@ let class_expr sub {cl_desc; cl_env; _} =
   match cl_desc with
   | Tcl_constraint (cl, clty, _, _, _) ->
         sub.class_expr sub cl;
-        opt (sub.class_type sub) clty
+        Option.iter (sub.class_type sub) clty
   | Tcl_structure clstr -> sub.class_structure sub clstr
   | Tcl_fun (_, pat, priv, cl, _) ->
         sub.pat sub pat;
@@ -355,7 +350,7 @@ let class_expr sub {cl_desc; cl_env; _} =
         sub.class_expr sub cl
   | Tcl_apply (cl, args) ->
         sub.class_expr sub cl;
-        List.iter (fun (_, e) -> opt (sub.expr sub) e) args
+        List.iter (fun (_, e) -> Option.iter (sub.expr sub) e) args
   | Tcl_let (rec_flag, value_bindings, ivars, cl) ->
       sub.value_bindings sub (rec_flag, value_bindings);
       List.iter (fun (_, e) -> sub.expr sub e) ivars;
@@ -439,7 +434,7 @@ let cases sub l = List.iter (sub.case sub) l
 
 let case sub {c_lhs; c_guard; c_rhs} =
   sub.pat sub c_lhs;
-  opt (sub.expr sub) c_guard;
+  Option.iter (sub.expr sub) c_guard;
   sub.expr sub c_rhs
 
 let value_binding sub {vb_pat; vb_expr; _} =
