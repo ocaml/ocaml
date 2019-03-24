@@ -131,7 +131,7 @@ module D : sig type t [@@immediate] end = struct
   type t = string
 end;;
 [%%expect{|
-Line 1, characters 42-70:
+Lines 1-3, characters 42-3:
 1 | ..........................................struct
 2 |   type t = string
 3 | end..

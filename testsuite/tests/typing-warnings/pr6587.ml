@@ -23,7 +23,7 @@ module B: sig val f: fpclass -> fpclass end =
   end
     ;;
 [%%expect {|
-Line 2, characters 2-38:
+Lines 2-4, characters 2-5:
 2 | ..struct
 3 |     let f A = FP_normal
 4 |   end
