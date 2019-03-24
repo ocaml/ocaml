@@ -2438,6 +2438,8 @@ let pattern_stable_vars ns p =
   let module M_mod = unpack M .. in true
 *)
 
+open Tast_iterator
+
 let all_rhs_idents exp =
   let ids = ref Ident.Set.empty in
 (* Very hackish, detect unpack pattern  compilation
@@ -2467,7 +2469,7 @@ let all_rhs_idents exp =
     end 
   in
   let iterator = {Tast_iterator.default_iterator with expr = expr_iter} in
-  iterator iterator exp
+  iterator.expr iterator exp;
   !ids
 
 let check_ambiguous_bindings =
