@@ -2438,8 +2438,6 @@ let pattern_stable_vars ns p =
   let module M_mod = unpack M .. in true
 *)
 
-open Tast_iterator
-
 let all_rhs_idents exp =
   let ids = ref Ident.Set.empty in
 (* Very hackish, detect unpack pattern  compilation
@@ -2448,6 +2446,7 @@ let all_rhs_idents exp =
       List.exists
         (fun attr -> attr.Parsetree.attr_name.txt = "#modulepat")
         exp.exp_attributes in
+  let open Tast_iterator in
   let expr_iter iter exp =
     (match exp.exp_desc with
       | Texp_ident (path, _lid, _descr) ->
