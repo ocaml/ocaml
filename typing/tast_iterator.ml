@@ -47,7 +47,8 @@ type iterator =
     with_constraint: iterator -> with_constraint -> unit;
   }
 
-(** Helper function that applies a function over an option. Taken from ast_iterator.ml*)
+(** Helper function that applies a function over an option. 
+ * Taken from ast_iterator.ml*)
 let opt f = function None -> () | Some x -> f x
 
 
@@ -60,7 +61,7 @@ let class_infos sub f x =
   f x.ci_expr
 
 let module_type_declaration sub {mtd_type; _} =
-  opt (sub.module_type sub) mtd_type 
+  opt (sub.module_type sub) mtd_type
 
 let module_declaration sub {md_type; _} =
   sub.module_type sub md_type
@@ -84,8 +85,10 @@ let iter_str_desc sub str_desc = match str_desc with
   | Tstr_module mb -> sub.module_binding sub mb
   | Tstr_recmodule list -> List.iter (sub.module_binding sub) list
   | Tstr_modtype x -> sub.module_type_declaration sub x
-  | Tstr_class list -> List.iter (fun (cls,_) -> sub.class_declaration sub cls) list
-  | Tstr_class_type list -> List.iter (fun (_, _, cltd) -> sub.class_type_declaration sub cltd) list
+  | Tstr_class list ->
+      List.iter (fun (cls,_) -> sub.class_declaration sub cls) list
+  | Tstr_class_type list ->
+      List.iter (fun (_, _, cltd) -> sub.class_type_declaration sub cltd) list
   | Tstr_include incl -> include_infos (sub.module_expr sub) incl
   | Tstr_open od -> sub.open_declaration sub od
   | Tstr_attribute _ -> ()
@@ -114,7 +117,7 @@ let type_kind sub = function
 
 let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; typ_params; _} =
   List.iter
-    (fun (c1, c2, _) -> 
+    (fun (c1, c2, _) ->
       sub.typ sub c1;
       sub.typ sub c2)
     typ_cstrs;
@@ -133,7 +136,7 @@ let type_exception sub {tyexn_constructor; _} =
 
 let extension_constructor sub {ext_kind; _} =
     match ext_kind with
-      | Text_decl (ctl, cto) -> 
+      | Text_decl (ctl, cto) ->
           constructor_args sub ctl;
         opt (sub.typ sub) cto
       | Text_rebind _ -> ()
@@ -166,7 +169,7 @@ let pat sub {pat_extra; pat_desc; pat_env; _} =
 let expr sub {exp_extra; exp_desc; exp_env; _} =
   let extra = function
     | Texp_constraint cty -> sub.typ sub cty
-    | Texp_coerce (cty1, cty2) -> 
+    | Texp_coerce (cty1, cty2) ->
         opt (sub.typ sub) cty1;
         sub.typ sub cty2
     | Texp_newtype _ -> ()
@@ -242,7 +245,7 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
         sub.case sub body
     | Texp_unreachable -> ()
     | Texp_extension_constructor _ -> ()
-    | Texp_open (od, e) -> 
+    | Texp_open (od, e) ->
         sub.open_declaration sub od;
         sub.expr sub e
 
@@ -281,7 +284,7 @@ let module_type sub {mty_desc; mty_env; _} =
   sub.env sub mty_env;
   match mty_desc with
     | Tmty_ident _      -> ()
-    | Tmty_alias _      -> () 
+    | Tmty_alias _      -> ()
     | Tmty_signature sg -> sub.signature sub sg
     | Tmty_functor (_, _, mtype1, mtype2) ->
           opt (sub.module_type sub) mtype1;
@@ -289,7 +292,7 @@ let module_type sub {mty_desc; mty_env; _} =
     | Tmty_with (mtype, list) ->
           sub.module_type sub mtype;
           List.iter (fun (_, _, e) -> sub.with_constraint sub e) list
-    | Tmty_typeof mexpr -> sub.module_expr sub mexpr 
+    | Tmty_typeof mexpr -> sub.module_expr sub mexpr
 
 let with_constraint sub = function
   | Twith_type      decl -> sub.type_declaration sub decl
@@ -358,7 +361,7 @@ let class_expr sub {cl_desc; cl_env; _} =
         List.iter (fun (_, e) -> sub.expr sub e) ivars;
         sub.class_expr sub cl
     | Tcl_ident (_, _, tyl) -> List.iter (sub.typ sub) tyl
-    | Tcl_open (od, e) -> 
+    | Tcl_open (od, e) ->
         sub.open_description sub od;
         sub.class_expr sub e
 
@@ -407,7 +410,7 @@ let typ sub {ctyp_desc; ctyp_env; _} =
 let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;
   List.iter (sub.class_field sub) cstr_fields
-  
+
 let row_field sub {rf_desc; _} = match rf_desc with
     | Ttag (_, _, list) -> List.iter (sub.typ sub) list
     | Tinherit ct -> sub.typ sub ct
