@@ -763,8 +763,8 @@ typing/parmatch.cmo : \
     utils/warnings.cmi \
     typing/untypeast.cmi \
     typing/types.cmi \
-    typing/typedtreeIter.cmi \
     typing/typedtree.cmi \
+    typing/tast_iterator.cmi \
     typing/subst.cmi \
     typing/printpat.cmi \
     typing/predef.cmi \
@@ -785,8 +785,8 @@ typing/parmatch.cmx : \
     utils/warnings.cmx \
     typing/untypeast.cmx \
     typing/types.cmx \
-    typing/typedtreeIter.cmx \
     typing/typedtree.cmx \
+    typing/tast_iterator.cmx \
     typing/subst.cmx \
     typing/printpat.cmx \
     typing/predef.cmx \
@@ -842,6 +842,7 @@ typing/persistent_env.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/consistbl.cmi \
     typing/cmi_format.cmi
 typing/predef.cmo : \
     typing/types.cmi \
@@ -1045,6 +1046,20 @@ typing/subst.cmi : \
     typing/types.cmi \
     typing/path.cmi \
     typing/ident.cmi
+typing/tast_iterator.cmo : \
+    typing/typedtree.cmi \
+    typing/env.cmi \
+    parsing/asttypes.cmi \
+    typing/tast_iterator.cmi
+typing/tast_iterator.cmx : \
+    typing/typedtree.cmx \
+    typing/env.cmx \
+    parsing/asttypes.cmi \
+    typing/tast_iterator.cmi
+typing/tast_iterator.cmi : \
+    typing/typedtree.cmi \
+    typing/env.cmi \
+    parsing/asttypes.cmi
 typing/tast_mapper.cmo : \
     typing/typedtree.cmi \
     typing/env.cmi \
@@ -1402,19 +1417,6 @@ typing/typedtree.cmi : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    parsing/asttypes.cmi
-typing/typedtreeIter.cmo : \
-    typing/typedtree.cmi \
-    utils/misc.cmi \
-    parsing/asttypes.cmi \
-    typing/typedtreeIter.cmi
-typing/typedtreeIter.cmx : \
-    typing/typedtree.cmx \
-    utils/misc.cmx \
-    parsing/asttypes.cmi \
-    typing/typedtreeIter.cmi
-typing/typedtreeIter.cmi : \
-    typing/typedtree.cmi \
     parsing/asttypes.cmi
 typing/typemod.cmo : \
     utils/warnings.cmi \
@@ -2318,7 +2320,6 @@ asmcomp/CSEgen.cmi : \
     asmcomp/mach.cmi
 asmcomp/afl_instrument.cmo : \
     bytecomp/lambda.cmi \
-    middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/backend_var.cmi \
@@ -2326,13 +2327,13 @@ asmcomp/afl_instrument.cmo : \
     asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmx : \
     bytecomp/lambda.cmx \
-    middle_end/debuginfo.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmi : \
+    middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/arch.cmo : \
     utils/config.cmi \
@@ -3453,6 +3454,7 @@ asmcomp/schedgen.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
     asmcomp/cmm.cmi \
+    utils/clflags.cmi \
     asmcomp/arch.cmo \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmx : \
@@ -3461,6 +3463,7 @@ asmcomp/schedgen.cmx : \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
     asmcomp/cmm.cmx \
+    utils/clflags.cmx \
     asmcomp/arch.cmx \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmi : \
@@ -5978,6 +5981,7 @@ toplevel/topdirs.cmo : \
     bytecomp/symtable.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
+    typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     bytecomp/opcodes.cmi \
@@ -5990,7 +5994,6 @@ toplevel/topdirs.cmo : \
     typing/env.cmi \
     bytecomp/dll.cmi \
     typing/ctype.cmi \
-    utils/consistbl.cmi \
     utils/config.cmi \
     bytecomp/cmo_format.cmi \
     utils/clflags.cmi \
@@ -6007,6 +6010,7 @@ toplevel/topdirs.cmx : \
     bytecomp/symtable.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
+    typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     bytecomp/opcodes.cmx \
@@ -6019,7 +6023,6 @@ toplevel/topdirs.cmx : \
     typing/env.cmx \
     bytecomp/dll.cmx \
     typing/ctype.cmx \
-    utils/consistbl.cmx \
     utils/config.cmx \
     bytecomp/cmo_format.cmi \
     utils/clflags.cmx \
