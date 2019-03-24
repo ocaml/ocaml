@@ -64,7 +64,7 @@ type symptom =
         * extension_constructor * Includecore.type_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
-  | Modtype_permutation
+  | Modtype_permutation of Types.module_type * Typedtree.module_coercion
   | Interface_mismatch of string * string
   | Class_type_declarations of
       Ident.t * class_type_declaration * class_type_declaration *

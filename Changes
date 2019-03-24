@@ -27,6 +27,9 @@ Working version
 - #2314: Remove support for gprof profiling.
   (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
 
+- #3819, more explanations and tests for illegal permutation
+  (Florian Angeletti)
+
 ### Compiler distribution build system:
 
 - #8514: Use boot/ocamlc.opt for building, if available.

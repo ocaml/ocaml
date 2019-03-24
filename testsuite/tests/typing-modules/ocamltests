@@ -2,6 +2,7 @@ aliases.ml
 applicative_functor_type.ml
 firstclass.ml
 generative.ml
+illegal_permutation.ml
 nondep.ml
 nondep_private_abbrev.ml
 normalize_path.ml
