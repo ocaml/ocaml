@@ -57,6 +57,9 @@ Working version
 - GPR#2308: More debugging information on [Cmm] terms
   (Mark Shinwell, review by Stephen Dolan)
 
+- GPR#7878: Replaced TypedtreeIter with tast_iterator
+  (Isaac "Izzy" Avram)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
