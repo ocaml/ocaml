@@ -1,11 +1,11 @@
 open Asttypes
-open TypedTree
+open Typedtree
 
 type iterator =
   {
     binding_op: iterator -> binding_op -> unit;
     case: iterator -> case -> unit;
-    cases: iterator -> case list -> case list;
+    cases: iterator -> case list -> unit;
     class_declaration: iterator -> class_declaration -> unit;
     class_description: iterator -> class_description -> unit;
     class_expr: iterator -> class_expr -> unit;
@@ -48,24 +48,23 @@ type iterator =
   }
 
 (** Helper function that applies a function over an option. Taken from ast_iterator.ml*)
-let opt f = function None -> () | Some x -> Some (f x)
+let opt f = function None -> () | Some x -> f x
 
 
-let structure this {str_items; str_final_env; _} =
-    List.iter (this.structure_item sub) str_items
-    sub.env this str_final_env
+let structure sub {str_items; str_final_env; _} =
+  List.iter (sub.structure_item sub) str_items;
+  sub.env sub str_final_env
 
 let class_infos sub f x =
-   ci_params = List.iter (fun (ct, _) -> sub.typ sub ct) x.ci_params
-   ci_expr = f x.ci_expr
+  List.iter (fun (ct, _) -> sub.typ sub ct) x.ci_params;
+  f x.ci_expr
 
 let module_type_declaration sub {mtd_type; _} =
   opt (sub.module_type sub) mtd_type 
 
 let module_declaration sub {md_type; _} =
   sub.module_type sub md_type
-
-let module_substitution _ x = ()
+let module_substitution _ _ = ()
 
 let include_infos f {incl_mod; _} = f incl_mod
 
@@ -91,8 +90,8 @@ let iter_str_desc sub str_desc = match str_desc with
   | Tstr_open od -> sub.open_declaration sub od
   | Tstr_attribute _ -> ()
 
-let structure_item sub {str_desc; str_loc; str_env} =
-  sub.env sub str_env
+let structure_item sub {str_desc; str_env; _} =
+  sub.env sub str_env;
   iter_str_desc sub str_desc
 
 let value_description sub x = sub.typ sub x.val_desc
@@ -103,9 +102,9 @@ let constructor_args sub = function
   | Cstr_tuple l -> List.iter (sub.typ sub) l
   | Cstr_record l -> List.iter (label_decl sub) l
 
-let constructor_decl sub {cd_args; cs_res; _} =
-  constructor_args sub cd.cd_args
-  opt (sub.typ sub) cd.cd_res
+let constructor_decl sub {cd_args; cd_res; _} =
+  constructor_args sub cd_args;
+  opt (sub.typ sub) cd_res
 
 let type_kind sub = function
   | Ttype_abstract -> ()
@@ -116,17 +115,17 @@ let type_kind sub = function
 let type_declaration sub {typ_cstrs; typ_kind; typ_manifest; typ_params; _} =
   List.iter
     (fun (c1, c2, _) -> 
-      sub.typ sub c1
+      sub.typ sub c1;
       sub.typ sub c2)
-    typ_cstrs
-  sub.type_kind sub typ_kind
-  opt (sub.typ sub) typ_manifest
+    typ_cstrs;
+  sub.type_kind sub typ_kind;
+  opt (sub.typ sub) typ_manifest;
   List.iter (fun (c, _) -> sub.typ sub c) typ_params
 
 let type_declarations sub (_, list) = List.iter (sub.type_declaration sub) list
 
 let type_extension sub {tyext_constructors; tyext_params; _} =
-  List.iter (fun (c, _) -> sub.typ sub c) tyext_params
+  List.iter (fun (c, _) -> sub.typ sub c) tyext_params;
   List.iter (sub.extension_constructor sub) tyext_constructors
 
 let type_exception sub {tyexn_constructor; _} =
@@ -135,14 +134,14 @@ let type_exception sub {tyexn_constructor; _} =
 let extension_constructor sub {ext_kind; _} =
     match ext_kind with
       | Text_decl (ctl, cto) -> 
-        constructor_args sub ctl
+          constructor_args sub ctl;
         opt (sub.typ sub) cto
       | Text_rebind _ -> ()
 
 let pat sub {pat_extra; pat_desc; pat_env; _} =
   let extra = function
     | Tpat_type _ -> ()
-    | Tpat_unpack _ -> ()
+    | Tpat_unpack -> ()
     | Tpat_open (_, _, env) -> sub.env sub env
     | Tpat_constraint ct -> sub.typ sub ct
   in
@@ -150,15 +149,15 @@ let pat sub {pat_extra; pat_desc; pat_env; _} =
   List.iter (fun (e, _, _) -> extra e) pat_extra;
   match pat_desc with
   | Tpat_any  -> ()
-  | Tpat_var  -> ()
-  | Tpat_constant -> ()
+  | Tpat_var _ -> ()
+  | Tpat_constant _ -> ()
   | Tpat_tuple l -> List.iter (sub.pat sub) l
   | Tpat_construct (_, _, l) -> List.iter (sub.pat sub) l
   | Tpat_variant (_, po, _) -> opt (sub.pat sub) po
   | Tpat_record (l, _) -> List.iter (fun (_, _, i) -> sub.pat sub i) l
   | Tpat_array l -> List.iter (sub.pat sub) l
   | Tpat_or (p1, p2, _) ->
-      sub.pat sub p1
+      sub.pat sub p1;
       sub.pat sub p2
   | Tpat_alias (p, _, _) -> sub.pat sub p
   | Tpat_lazy p -> sub.pat sub p
@@ -173,11 +172,11 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
     | Texp_newtype _ -> ()
     | Texp_poly cto -> opt (sub.typ sub) cto
   in
-  List.iter (tuple3 extra id id) exp_extra;
-  sub.env sub x.exp_env;
-  match x.exp_desc with
+  List.iter (fun (e, _, _) -> extra e) exp_extra;
+  sub.env sub exp_env;
+  match exp_desc with
     | Texp_ident _  -> ()
-    | Texp_constant _ -> d
+    | Texp_constant _ -> ()
     | Texp_let (rec_flag, list, exp) ->
         sub.value_bindings sub (rec_flag, list);
         sub.expr sub exp
@@ -195,12 +194,12 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
     | Texp_construct (_, _, args) -> List.iter (sub.expr sub) args
     | Texp_variant (_, expo) -> opt (sub.expr sub) expo
     | Texp_record { fields; extended_expression; _} ->
-        Array.list (function
-            | label, Kept t -> ()
-            | label, Overridden (_, exp) -> sub.expr sub exp)
+        Array.iter (function
+            | _, Kept _ -> ()
+            | _, Overridden (_, exp) -> sub.expr sub exp)
             fields;
         opt (sub.expr sub) extended_expression;
-    | Texp_field (exp, _, _) -> sub.expr sub exp, lid, ld
+    | Texp_field (exp, _, _) -> sub.expr sub exp
     | Texp_setfield (exp1, _, _, exp2) ->
         sub.expr sub exp1;
         sub.expr sub exp2
@@ -216,11 +215,11 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
         sub.expr sub exp1;
         sub.expr sub exp2
     | Texp_for (_, _, exp1, exp2, _, exp3) ->
-        sub.expr sub exp1,
-        sub.expr sub exp2,
+        sub.expr sub exp1;
+        sub.expr sub exp2;
         sub.expr sub exp3
     | Texp_send (exp, _, expo) ->
-        sub.expr sub exp,
+        sub.expr sub exp;
         opt (sub.expr sub) expo
     | Texp_new _ -> ()
     | Texp_instvar _ -> ()
@@ -261,7 +260,7 @@ let signature_item sub {sig_desc; sig_env; _} =
   sub.env sub sig_env;
   match sig_desc with
     | Tsig_value v -> sub.value_description sub v
-    | Tsig_type  x -> sub.type_declarations sub x
+    | Tsig_type (rf, tdl)  -> sub.type_declarations sub (rf, tdl)
     | Tsig_typesubst list -> sub.type_declarations sub (Nonrecursive, list)
     | Tsig_typext te -> sub.type_extension sub te
     | Tsig_exception ext -> sub.type_exception sub ext
@@ -280,9 +279,9 @@ let class_description sub x =
 
 let module_type sub {mty_desc; mty_env; _} =
   sub.env sub mty_env;
-  match x.mty_desc with
+  match mty_desc with
     | Tmty_ident _      -> ()
-    | Tmty_alias _      -> d
+    | Tmty_alias _      -> () 
     | Tmty_signature sg -> sub.signature sub sg
     | Tmty_functor (_, _, mtype1, mtype2) ->
           opt (sub.module_type sub) mtype1;
@@ -298,7 +297,7 @@ let with_constraint sub = function
   | Twith_module    _    -> ()
   | Twith_modsubst  _    -> ()
 
-let open_description sub {open_env; _} = sub.env sub od.open_env
+let open_description sub {open_env; _} = sub.env sub open_env
 
 let open_declaration sub {open_expr; open_env; _} =
   sub.module_expr sub open_expr;
@@ -313,9 +312,9 @@ let module_coercion sub = function
       sub.env sub env;
       sub.module_coercion sub c1
   | Tcoerce_structure (l1, l2) ->
-      List.iter (fun (_, c) -> sub.module_coercion sub c) l1
+      List.iter (fun (_, c) -> sub.module_coercion sub c) l1;
       List.iter (fun (_, _ ,c) -> sub.module_coercion sub c) l2
-  | Tcoerce_primitive {pc_env; _} -> sub.env sub pc.pc_env
+  | Tcoerce_primitive {pc_env; _} -> sub.env sub pc_env
 
 let module_expr sub {mod_desc; mod_env; _} =
   sub.env sub mod_env;
@@ -338,7 +337,7 @@ let module_expr sub {mod_desc; mod_env; _} =
         sub.module_coercion sub c
     | Tmod_unpack (exp, _) -> sub.expr sub exp
 
-let module_binding sub {mb_expr; _} = sub.module_expr sub x.mb_expr
+let module_binding sub {mb_expr; _} = sub.module_expr sub mb_expr
 
 let class_expr sub {cl_desc; cl_env; _} =
   sub.env sub cl_env;
@@ -353,7 +352,7 @@ let class_expr sub {cl_desc; cl_env; _} =
           sub.class_expr sub cl
     | Tcl_apply (cl, args) ->
           sub.class_expr sub cl;
-          List.map (fun (_, e) -> opt (sub.expr sub) e) args
+          List.iter (fun (_, e) -> opt (sub.expr sub) e) args
     | Tcl_let (rec_flag, value_bindings, ivars, cl) ->
         sub.value_bindings sub (rec_flag, value_bindings);
         List.iter (fun (_, e) -> sub.expr sub e) ivars;
@@ -379,7 +378,7 @@ let class_signature sub {csig_self; csig_fields; _} =
   sub.typ sub csig_self;
   List.iter (sub.class_type_field sub) csig_fields
 
-let class_type_field sub {ctf_desc; _} =  match x.ctf_desc with
+let class_type_field sub {ctf_desc; _} =  match ctf_desc with
     | Tctf_inherit ct -> sub.class_type sub ct
     | Tctf_val (_, _, _, ct) ->  sub.typ sub ct
     | Tctf_method (_, _, _, ct) -> sub.typ sub ct
@@ -399,10 +398,10 @@ let typ sub {ctyp_desc; ctyp_env; _} =
     | Ttyp_tuple list -> List.iter (sub.typ sub) list
     | Ttyp_constr (_, _, list) ->  List.iter (sub.typ sub) list
     | Ttyp_object (list, _) -> List.iter (sub.object_field sub) list
-    | Ttyp_class (_, _, list) -> List.map (sub.typ sub) list
+    | Ttyp_class (_, _, list) -> List.iter (sub.typ sub) list
     | Ttyp_alias (ct, _) -> sub.typ sub ct
     | Ttyp_variant (list, _, _) -> List.iter (sub.row_field sub) list
-    | Ttyp_poly (_, ct) -> sl, sub.typ sub ct
+    | Ttyp_poly (_, ct) -> sub.typ sub ct
     | Ttyp_package pack -> sub.package_type sub pack
 
 let class_structure sub {cstr_self; cstr_fields; _} =
@@ -441,12 +440,12 @@ let case sub {c_lhs; c_guard; c_rhs} =
   sub.expr sub c_rhs
 
 let value_binding sub {vb_pat; vb_expr; _} =
-  sub.pat sub x.vb_pat;
-  sub.expr sub x.vb_expr
+  sub.pat sub vb_pat;
+  sub.expr sub vb_expr
 
-let env _sub x = ()
+let env _sub _ = ()
 
-let default =
+let default_iterator =
   {
     binding_op;
     case;

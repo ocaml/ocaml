@@ -18,13 +18,13 @@ Allows the implementation of typed tree inspection using open recursion
 *)
 
 open Asttypes
-open TypedTree
+open Typedtree
 
 type iterator =
   {
     binding_op: iterator -> binding_op -> unit;
     case: iterator -> case -> unit;
-    cases: iterator -> case list -> case list;
+    cases: iterator -> case list -> unit;
     class_declaration: iterator -> class_declaration -> unit;
     class_description: iterator -> class_description -> unit;
     class_expr: iterator -> class_expr -> unit;
