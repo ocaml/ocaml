@@ -16,39 +16,6 @@ in those languages.  OCaml has alternatives that are often more appropriate,
 such as modules and functors.  Indeed, many OCaml programs do not use objects
 at all.
 
-
-\begin{htmlonly}
-
-\ref{ss:classes-and-objects} Classes and objects \\
-\ref{ss:immediate-objects} Immediate objects \\
-\ref{ss:reference-to-self} Reference to self \\
-\ref{ss:initializers} Initializers \\
-\ref{ss:virtual-methods} Virtual methods \\
-\ref{ss:private-methods} Private methods \\
-\ref{ss:class-interfaces} Class interfaces \\
-\ref{ss:inheritance} Inheritance \\
-\ref{ss:multiple-inheritance} Multiple inheritance \\
-\ref{ss:parameterized-classes} Parameterized classes \\
-\ref{ss:polymorphic-methods} Polymorphic methods \\
-\ref{ss:using-coercions} Using coercions \\
-\ref{ss:functional-objects} Functional objects \\
-\ref{ss:cloning-objects} Cloning objects \\
-\ref{ss:recursive-classes} Recursive classes \\
-\ref{ss:binary-methods} Binary methods \\
-\ref{ss:friends} Friends \\
-
-%%\ref{s:advanced-examples} {\bf Advanced examples}
-%%
-%%\ref{ss:bank-accounts} An extended example of bank accounts \\
-%%\ref{ss:modules-as-classes} Simple modules as classes:
-%%  \ref{module:string} Strings
-%%  \ref{module:stack} Stacks
-%%  \ref{module:hashtbl} Hash tables
-%%  \ref{module:set} Sets \\
-%%\ref{ss:subject-observer} The subject/observer pattern \\
-
-\end{htmlonly}
-
 \section{Classes and objects}
 \label{ss:classes-and-objects}
 

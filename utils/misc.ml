@@ -150,42 +150,48 @@ module Stdlib = struct
           | t::q -> aux (n-1) (t::acc) q
       in
       aux n [] l
+
+    let rec is_prefix ~equal t ~of_ =
+      match t, of_ with
+      | [], [] -> true
+      | _::_, [] -> false
+      | [], _::_ -> true
+      | x1::t, x2::of_ -> equal x1 x2 && is_prefix ~equal t ~of_
+
+    type 'a longest_common_prefix_result = {
+      longest_common_prefix : 'a list;
+      first_without_longest_common_prefix : 'a list;
+      second_without_longest_common_prefix : 'a list;
+    }
+
+    let find_and_chop_longest_common_prefix ~equal ~first ~second =
+      let rec find_prefix ~longest_common_prefix_rev l1 l2 =
+        match l1, l2 with
+        | elt1 :: l1, elt2 :: l2 when equal elt1 elt2 ->
+          let longest_common_prefix_rev = elt1 :: longest_common_prefix_rev in
+          find_prefix ~longest_common_prefix_rev l1 l2
+        | l1, l2 ->
+          { longest_common_prefix = List.rev longest_common_prefix_rev;
+            first_without_longest_common_prefix = l1;
+            second_without_longest_common_prefix = l2;
+          }
+      in
+      find_prefix ~longest_common_prefix_rev:[] first second
   end
 
   module Option = struct
     type 'a t = 'a option
 
-    let is_none = function
-      | None -> true
-      | Some _ -> false
-
-    let is_some = function
-      | None -> false
-      | Some _ -> true
-
-    let equal eq o1 o2 =
-      match o1, o2 with
-      | None, None -> true
-      | Some e1, Some e2 -> eq e1 e2
-      | _, _ -> false
-
-    let iter f = function
-      | Some x -> f x
-      | None -> ()
-
-    let map f = function
-      | Some x -> Some (f x)
-      | None -> None
-
-    let fold f a b =
-      match a with
-      | None -> b
-      | Some a -> f a b
-
     let value_default f ~default a =
       match a with
       | None -> default
       | Some a -> f a
+
+    let print print_contents ppf t =
+      match t with
+      | None -> Format.pp_print_string ppf "None"
+      | Some contents ->
+        Format.fprintf ppf "@[(Some@ %a)@]" print_contents contents
   end
 
   module Array = struct
@@ -214,13 +220,16 @@ module Stdlib = struct
         i = len || (f t.[i] && loop (i + 1))
       in
       loop 0
+
+    let print ppf t =
+      Format.pp_print_string ppf t
   end
 
   external compare : 'a -> 'a -> int = "%compare"
 end
 
-let may = Stdlib.Option.iter
-let may_map = Stdlib.Option.map
+let may = Option.iter
+let may_map = Option.map
 
 (* File functions *)
 
@@ -347,6 +356,12 @@ let output_to_file_via_temporary ?(mode = [Open_text]) filename fn =
       end
   | exception exn ->
       close_out oc; remove_file temp_filename; raise exn
+
+let protect_writing_to_file ~filename ~f =
+  let outchan = open_out_bin filename in
+  try_finally ~always:(fun () -> close_out outchan)
+    ~exceptionally:(fun () -> remove_file filename)
+    (fun () -> f outchan)
 
 (* Integer operations *)
 
@@ -780,53 +795,6 @@ let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
     else Format.fprintf ppf "%*s %s %s@," left_column_size line_l sep line_r
   ) lines;
   Format.fprintf ppf "@]"
-
-type hook_info = {
-  sourcefile : string;
-}
-
-exception HookExnWrapper of
-    {
-      error: exn;
-      hook_name: string;
-      hook_info: hook_info;
-    }
-
-exception HookExn of exn
-
-let raise_direct_hook_exn e = raise (HookExn e)
-
-let fold_hooks list hook_info ast =
-  List.fold_left (fun ast (hook_name,f) ->
-    try
-      f hook_info ast
-    with
-    | HookExn e -> raise e
-    | error -> raise (HookExnWrapper {error; hook_name; hook_info})
-       (* when explicit reraise with backtrace will be available,
-          it should be used here *)
-
-  ) ast (List.sort compare list)
-
-module type HookSig = sig
-  type t
-
-  val add_hook : string -> (hook_info -> t -> t) -> unit
-  val apply_hooks : hook_info -> t -> t
-end
-
-module MakeHooks(M: sig
-    type t
-  end) : HookSig with type t = M.t
-= struct
-
-  type t = M.t
-
-  let hooks = ref []
-  let add_hook name f = hooks := (name, f) :: !hooks
-  let apply_hooks sourcefile intf =
-    fold_hooks !hooks sourcefile intf
-end
 
 (* showing configuration and configuration variables *)
 let show_config_and_exit () =

@@ -3,6 +3,35 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Code generation and optimizations:
+
+- GPR#2278: Remove native code generation support for 32-bit Intel macOS,
+  iOS and other Darwin targets.
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
+
+- GPR#8507: Shorten symbol names of anonymous functions in Flambda mode
+  (the directory portions are now hidden)
+  (Mark Shinwell, review by Nicolás Ojeda Bär)
+
+- GPR#7931, GPR#1904: Add FreeBSD/aarch64 support
+  (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
+   and Xavier Leroy)
+
+### Compiler user-interface and warnings:
+
+* GPR#2276: Remove support for compiler plugins and hooks (also adds
+  [Dynlink.unsafe_get_global_value])
+  (Mark Shinwell, Xavier Clerc, review by Nicolás Ojeda Bär,
+  Florian Angeletti, David Allsopp and Xavier Leroy)
+
+- GPR#2314: Remove support for gprof profiling.
+  (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
+
+### Compiler distribution build system:
+
+- GPR#8514: Use boot/ocamlc.opt for building, if available.
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#2277: Use newtype names as type variable names
@@ -24,8 +53,35 @@ Working version
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
+- GPR#2237: Reorder linearisation of Trywith to avoid a call instruction
+  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell)
+
 - GPR#2265: Add bytecomp/opcodes.mli
   (Mark Shinwell, review by Nicolas Ojeda Bar)
+
+- GPR#2268: Improve packing mechanism used for building compilerlibs modules
+  into the Dynlink libraries
+  (Mark Shinwell, Stephen Dolan, review by David Allsopp)
+
+- GPR#2280: Don't make more Clambda constants after starting Cmmgen
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
+  [Misc.Stdlib.List]
+  (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
+
+- GPR#2284: Add various utility functions to [Misc] and remove functions
+  from [Misc.Stdlib.Option] that are now in [Stdlib.Option]
+  (Mark Shinwell, review by Thomas Refis)
+
+- GPR#2286: Functorise [Consistbl]
+  (Mark Shinwell, review by Gabriel Radanne)
+
+- GPR#2291: Add [Compute_ranges] pass
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2308: More debugging information on [Cmm] terms
+  (Mark Shinwell, review by Stephen Dolan)
 
 ### Runtime system:
 
@@ -35,11 +91,58 @@ Working version
 * GPR#2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
 
+- GPR#2250: Remove extra integer sign-extension in compare functions
+  (Stefan Muenzel, review by Xavier Leroy)
+
+* GPR#2293: Constify "caml_named_value"
+  (Stephen Dolan, review by Xavier Leroy)
+
+### Standard library:
+
+- GPR#2262: take precision (.<n>) and flags ('+' and ' ') into account
+  in printf %F
+  (Pierre Roux, review by Gabriel Scherer)
+
 ### Other libraries:
+
+- MPR#7903, GPR#2306: Make Thread.delay interruptible by signals again
+  (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
 
 - GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
+
+- GPR#2289: Delete the vmthreads library. This library was deprecated in 4.08.0.
+  (Jérémie Dimino)
+
+- GPR#2318: Delete the graphics library. This library is now available
+  as a separate "graphics" package in opam. Its new home is:
+  https://github.com/ocaml/graphics
+  (Jérémie Dimino, review by Nicolas Ojeda Bar, Xavier Leroy and
+   Sébastien Hinderer)
+
+### Compiler user-interface and warnings:
+
+- GPR#2301: Hint on type error on int literal
+  (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
+  Gabriel Scherer and Armaël Guéneau)
+
+- GPR#2307: Hint on type error on int's operators
+  (Jules Aguillon, with help from Armaël Guéneau,
+   review by Gabriel Scherer and Florian Angeletti)
+
+### Manual and documentation:
+
+- PR#8515: manual, precise constraints on reexported types
+  (Florian Angeletti, review by Gabriel Scherer)
+
+### Bug fixes:
+
+- MPR#3249: ocamlmklib should reject .cmxa files
+  (Xavier Leroy)
+- MPR#7937, GPR#2287: fix uncaught Unify exception when looking for type
+  declaration
+  (Florian Angeletti, review by Jacques Garrigue)
 
 OCaml 4.08.0
 ------------
@@ -266,8 +369,8 @@ OCaml 4.08.0
 - GPR#2038: Deprecate vm threads
   (Jérémie Dimino)
 
-* PR#4208, PR#4229, PR#4839, PR#6462, PR#6957, PR#6950, GPR#1063, GPR#2176:
-  Make (nat)dynlink sound
+* PR#4208, PR#4229, PR#4839, PR#6462, PR#6957, PR#6950, GPR#1063, GPR#2176,
+  GPR#2297: Make (nat)dynlink sound.
   (Mark Shinwell, Leo White, Nicolás Ojeda Bär, Pierre Chambart)
 
 - GPR#2263: Delete the deprecated Bigarray.*.map_file functions in
@@ -413,6 +516,10 @@ OCaml 4.08.0
 - MPR#6242, GPR#2143: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
+- GPR#2082: New options [-insn-sched] and [-no-insn-sched] to control
+  instruction scheduling.
+  (Mark Shinwell, review by Damien Doligez)
+
 - GPR#2239: Fix match miscompilation with flambda
   (Leo White, review by Alain Frisch)
 
@@ -490,9 +597,16 @@ OCaml 4.08.0
 
 ### Manual and documentation:
 
+- MPR#7548: printf example in the tutorial part of the manual
+ (Kostikova Oxana, rewiew by Gabriel Scherer, Florian Angeletti,
+ Marcello Seri and Armaël Guéneau)
+
 - MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
   (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
   and Gabriel Scherer)
+
+- MPR#7547, GPR#2273: Tutorial on Lazy expressions and patterns in OCaml Manual
+  (Ulugbek Abdullaev, review by Florian Angeletti and Gabriel Scherer)
 
 - MPR#7720, GPR#1596, precise the documentation
   of the maximum indentation limit in Format.
@@ -534,6 +648,9 @@ OCaml 4.08.0
 
 - GPR#2187: document "exception A | pat" patterns
   (Florian Angeletti, review by Perry E. Metzger and Jeremy Yallop)
+
+- GPR#8508: refresh \moduleref macro
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler distribution build system:
 
@@ -598,6 +715,21 @@ OCaml 4.08.0
 - GPR#2266: ensure Cygwin ports configure with `EXE=.exe`, or the compiler is
   unable to find the camlheader files (subtle regression of GPR#2139/2041)
   (David Allsopp, report and review by Sébastien Hinderer)
+
+- MPR#7919, GPR#2311: Fix assembler detection in configure
+  (Sébastien Hinderer, review by David Allsopp)
+
+- GPR#2295: Restore support for bytecode target XLC/AIX/Power
+  (Konstantin Romanov, review by Sébastien Hinderer and David Allsopp)
+
+- GPR#8528: get rid of the direct call to the C preprocessor in the testsuite
+  (Sébastien Hinderer, review by David Allsopp)
+
+- Issue #7938, PR #8532: Fix alignment detection for ints on 32-bits platforms
+  (Sébastien Hinderer, review by Xavier Leroy)
+
+* GPR#8533: Remove some unused configure tests
+  (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
 
 ### Internal/compiler-libs changes:
 
@@ -1597,7 +1729,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 ### Type system
 
-- MPR#248, GPR#1225: unique names for weak type variables
+- MPR#2642, GPR#1225: unique names for weak type variables
     # ref [];;
     - : '_weak1 list ref = {contents = []}
   (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
@@ -1614,7 +1746,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 ### Standard library:
 
-- MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
+- MPR#8223, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
   (Sébastien Briais, review by Daniel Bünzli, Alain Frisch and
@@ -1870,7 +2002,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 ### Tools:
 
-- MPR#1956, GPR#973: tools/check-symbol-names checks for globally
+- MPR#8395, GPR#973: tools/check-symbol-names checks for globally
   linked names not namespaced with caml_
   (Stephen Dolan)
 
@@ -2330,7 +2462,7 @@ OCaml 4.05.0 (13 Jul 2017):
 
 ### Runtime system:
 
-- MPR#385, GPR#953: Add caml_startup_exn
+- MPR#2784, GPR#953: Add caml_startup_exn
   (Mark Shinwell)
 
 - MPR#7423, GPR#946: expose new exception-raising functions
@@ -3682,7 +3814,7 @@ OCaml 4.03.0 (25 Apr 2016):
   caml_fill_bytes and caml_create_bytes for migration
   (Hongbo Zhang, review by Damien Doligez, Alain Frisch, and Hugo Heuzard)
 
-- PR#3612, PR#92: allow allocating custom block with finalizers
+- PR#3612, PR#2429: allow allocating custom block with finalizers
   in the minor heap.
   (Pierre Chambart)
 
@@ -3732,7 +3864,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 ### Standard library:
 
-- PR#1460, GPR#230: Array.map2, Array.iter2
+- PR#7848, GPR#230: Array.map2, Array.iter2
   (John Christopher McAlpine)
 
 - PR#5197, GPR#63: Arg: allow flags such as --flag=arg as well as --flag arg
@@ -5690,7 +5822,7 @@ Installation procedure:
       ocamlbytecomp.cma/.cmxa   modules for ocamlc and ocaml
       ocamloptcomp.cma/.cmxa    modules specific to ocamlopt
       ocamltoplevel.cma         modules specific to ocaml
-   (PR#1804, PR#4653, frequently-asked feature).
+   (PR#8255, PR#4653, frequently-asked feature).
 * Some .cmi for toplevel internals that used to be installed in
   `ocamlc -where` are now to be found in  `ocamlc -where`/compiler-libs.
   Add "-I +compiler-libs" where needed.
@@ -5702,7 +5834,7 @@ Installation procedure:
 
 Bug Fixes:
 
-- PR#1643: functions of the Lazy module whose named started with 'lazy_' have
+- PR#8109: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
 - PR#4292: various documentation problems
@@ -5851,12 +5983,12 @@ Bug Fixes:
 - crash when using OCAMLRUNPARAM=a=X with invalid X (reported in private)
 
 Feature wishes:
-- PR#352: new option "-stdin" to make ocaml read stdin as a script
-- PR#1164: better error message when mixing -a and .cmxa
-- PR#1284: documentation: remove restriction on mixed streams
-- PR#1496: allow configuring LIBDIR, BINDIR, and MANDIR relative to $(PREFIX)
-- PR#1835: add Digest.from_hex
-- PR#1898: toplevel: add option to suppress continuation prompts
+- PR#2757: new option "-stdin" to make ocaml read stdin as a script
+- PR#3358: better error message when mixing -a and .cmxa
+- PR#3492: documentation: remove restriction on mixed streams
+- PR#7971: allow configuring LIBDIR, BINDIR, and MANDIR relative to $(PREFIX)
+- PR#8285: add Digest.from_hex
+- PR#8341: toplevel: add option to suppress continuation prompts
 - PR#4278: configure: option to disable "graph" library
 - PR#4444: new String.trim function, removing leading and trailing whistespace
 - PR#4549: make Filename.dirname/basename POSIX compliant
@@ -6190,8 +6322,8 @@ Bug fixes:
 - Various build problems with ocamlbuild under Windows with msvc
 
 Feature wishes:
-- PR#9: (tentative implementation) make ocamldebug use #linenum annotations
-- PR#123, PR#4477: custom exception printers
+- PR#2337: (tentative implementation) make ocamldebug use #linenum annotations
+- PR#2464, PR#4477: custom exception printers
 - PR#3456: Obj.double_field and Obj.set_double_field functions
 - PR#4003: destination directory can be given to Filename.[open_]temp_file
 - PR#4647: Buffer.blit function
@@ -6391,7 +6523,7 @@ Objective Caml 3.10.2 (29 Feb 2008):
 ------------------------------------
 
 Bug fixes:
-- PR#1217 (partial) Typo in ocamldep man page
+- PR#3410 (partial) Typo in ocamldep man page
 - PR#3952 (partial) ocamlopt: allocation problems on ARM
 - PR#4339 (continued) ocamlopt: problems on HPPA
 - PR#4455 str.mli not installed under Windows

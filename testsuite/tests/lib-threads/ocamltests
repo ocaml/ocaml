@@ -3,6 +3,7 @@ bank.ml
 beat.ml
 bufchan.ml
 close.ml
+delayintr.ml
 fileio.ml
 pr4466.ml
 pr5325.ml

@@ -69,7 +69,6 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
     [AC_DEFINE([POSIX_SIGNALS])
       AC_MSG_NOTICE([POSIX signal handling found.])],
     [AC_MSG_NOTICE([assuming signals have the System V semantics.])
-    AC_CHECK_FUNCS([sigsetmask], [AC_DEFINE([HAS_SIGSETMASK])])
     ]
   )
 ])

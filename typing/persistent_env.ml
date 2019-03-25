@@ -19,6 +19,8 @@
 open Misc
 open Cmi_format
 
+module Consistbl = Consistbl.Make (Misc.Stdlib.String)
+
 let add_delayed_check_forward = ref (fun _ -> assert false)
 
 type error =

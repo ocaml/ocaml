@@ -46,7 +46,7 @@ let flambda i backend typed =
           required_globals; code } ->
     ((module_ident, main_module_block_size), code)
     |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
-    |>> Simplif.simplify_lambda i.source_file
+    |>> Simplif.simplify_lambda
     |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
     |> (fun ((module_ident, size), lam) ->
       Middle_end.middle_end
@@ -69,7 +69,7 @@ let clambda i typed =
   |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program
   |> Profile.(record generate)
     (fun program ->
-       let code = Simplif.simplify_lambda i.source_file program.Lambda.code in
+       let code = Simplif.simplify_lambda program.Lambda.code in
        { program with Lambda.code }
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
        |> Asmgen.compile_implementation_clambda

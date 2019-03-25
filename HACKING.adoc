@@ -231,6 +231,19 @@ bytecode runtime (which is written in C) has been built to compile the
 standard library and then to build a fresh compiler. Details can be
 found in link:BOOTSTRAP.adoc[].
 
+=== Speeding up builds
+
+Once you've built a natively-compiled `ocamlc.opt`, you can use it to
+speed up future builds by copying it to `boot`:
+
+----
+cp ocamlc.opt boot/
+----
+
+If `boot/ocamlc` changes (e.g. because you ran `make bootstrap`), then
+the build will revert to the slower bytecode-compiled `ocamlc` until
+you do the above step again.
+
 === Continuous integration
 
 ==== Github's CI: Travis and AppVeyor

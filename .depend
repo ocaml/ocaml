@@ -842,6 +842,7 @@ typing/persistent_env.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/consistbl.cmi \
     typing/cmi_format.cmi
 typing/predef.cmo : \
     typing/types.cmi \
@@ -1486,7 +1487,6 @@ typing/typemod.cmi : \
     typing/typedecl.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
-    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/includemod.cmi \
@@ -2007,7 +2007,6 @@ bytecomp/simplif.cmx : \
     typing/annot.cmi \
     bytecomp/simplif.cmi
 bytecomp/simplif.cmi : \
-    utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/lambda.cmi \
     typing/ident.cmi
@@ -2320,7 +2319,6 @@ asmcomp/CSEgen.cmi : \
     asmcomp/mach.cmi
 asmcomp/afl_instrument.cmo : \
     bytecomp/lambda.cmi \
-    middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/backend_var.cmi \
@@ -2328,13 +2326,13 @@ asmcomp/afl_instrument.cmo : \
     asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmx : \
     bytecomp/lambda.cmx \
-    middle_end/debuginfo.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmi : \
+    middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/arch.cmo : \
     utils/config.cmi \
@@ -2793,7 +2791,9 @@ asmcomp/cmmgen.cmo : \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/clambda_primitives.cmi \
@@ -2818,7 +2818,9 @@ asmcomp/cmmgen.cmx : \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/clambda_primitives.cmx \
@@ -2832,10 +2834,26 @@ asmcomp/cmmgen.cmi : \
     asmcomp/cmx_format.cmi \
     asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
+asmcomp/cmmgen_state.cmo : \
+    utils/misc.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/clambda.cmi \
+    asmcomp/cmmgen_state.cmi
+asmcomp/cmmgen_state.cmx : \
+    utils/misc.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/clambda.cmx \
+    asmcomp/cmmgen_state.cmi
+asmcomp/cmmgen_state.cmi : \
+    utils/misc.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : \
     utils/misc.cmi \
     asmcomp/export_info.cmi \
     asmcomp/clambda.cmi
+asmcomp/cmxs_format.cmi : \
+    utils/misc.cmi
 asmcomp/coloring.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -3439,6 +3457,7 @@ asmcomp/schedgen.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
     asmcomp/cmm.cmi \
+    utils/clflags.cmi \
     asmcomp/arch.cmo \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmx : \
@@ -3447,6 +3466,7 @@ asmcomp/schedgen.cmx : \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
     asmcomp/cmm.cmx \
+    utils/clflags.cmx \
     asmcomp/arch.cmx \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmi : \
@@ -5407,6 +5427,34 @@ asmcomp/debug/available_regs.cmx : \
     asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : \
     asmcomp/mach.cmi
+asmcomp/debug/compute_ranges.cmo : \
+    asmcomp/printlinear.cmi \
+    utils/numbers.cmi \
+    utils/misc.cmi \
+    asmcomp/linearize.cmi \
+    middle_end/int_replace_polymorphic_compare.cmi \
+    asmcomp/debug/compute_ranges_intf.cmo \
+    asmcomp/cmm.cmi \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmx : \
+    asmcomp/printlinear.cmx \
+    utils/numbers.cmx \
+    utils/misc.cmx \
+    asmcomp/linearize.cmx \
+    middle_end/int_replace_polymorphic_compare.cmx \
+    asmcomp/debug/compute_ranges_intf.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmi : \
+    asmcomp/debug/compute_ranges_intf.cmo
+asmcomp/debug/compute_ranges_intf.cmo : \
+    utils/numbers.cmi \
+    asmcomp/linearize.cmi \
+    utils/identifiable.cmi
+asmcomp/debug/compute_ranges_intf.cmx : \
+    utils/numbers.cmx \
+    asmcomp/linearize.cmx \
+    utils/identifiable.cmx
 asmcomp/debug/reg_availability_set.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/backend_var.cmi \
@@ -5429,30 +5477,6 @@ asmcomp/debug/reg_with_debug_info.cmx : \
 asmcomp/debug/reg_with_debug_info.cmi : \
     asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
-driver/compdynlink.cmi :
-driver/compdynlink_common.cmo : \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_platform_intf.cmi \
-    driver/compdynlink_common.cmi
-driver/compdynlink_common.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmx \
-    driver/compdynlink_common.cmi
-driver/compdynlink_common.cmi : \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmo : \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmi
-driver/compdynlink_platform_intf.cmi : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmo : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmx : \
-    driver/compdynlink_types.cmi
-driver/compdynlink_types.cmi :
 driver/compenv.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -5576,23 +5600,6 @@ driver/compmisc.cmx : \
 driver/compmisc.cmi : \
     typing/env.cmi \
     utils/clflags.cmi
-driver/compplugin.cmo : \
-    parsing/location.cmi \
-    utils/load_path.cmi \
-    driver/compmisc.cmi \
-    driver/compenv.cmi \
-    driver/compdynlink.cmi \
-    utils/clflags.cmi \
-    driver/compplugin.cmi
-driver/compplugin.cmx : \
-    parsing/location.cmx \
-    utils/load_path.cmx \
-    driver/compmisc.cmx \
-    driver/compenv.cmx \
-    driver/compdynlink.cmi \
-    utils/clflags.cmx \
-    driver/compplugin.cmi
-driver/compplugin.cmi :
 driver/errors.cmo : \
     parsing/location.cmi \
     driver/errors.cmi
@@ -5608,7 +5615,6 @@ driver/main.cmo : \
     driver/main_args.cmi \
     parsing/location.cmi \
     utils/config.cmi \
-    driver/compplugin.cmi \
     driver/compmisc.cmi \
     driver/compile.cmi \
     driver/compenv.cmi \
@@ -5625,7 +5631,6 @@ driver/main.cmx : \
     driver/main_args.cmx \
     parsing/location.cmx \
     utils/config.cmx \
-    driver/compplugin.cmx \
     driver/compmisc.cmx \
     driver/compile.cmx \
     driver/compenv.cmx \
@@ -5659,7 +5664,6 @@ driver/makedepend.cmo : \
     parsing/lexer.cmi \
     parsing/depend.cmi \
     utils/config.cmi \
-    driver/compplugin.cmi \
     driver/compenv.cmi \
     utils/clflags.cmi \
     driver/makedepend.cmi
@@ -5674,7 +5678,6 @@ driver/makedepend.cmx : \
     parsing/lexer.cmx \
     parsing/depend.cmx \
     utils/config.cmx \
-    driver/compplugin.cmx \
     driver/compenv.cmx \
     utils/clflags.cmx \
     driver/makedepend.cmi
@@ -5730,7 +5733,6 @@ driver/optmain.cmo : \
     parsing/location.cmi \
     asmcomp/import_approx.cmi \
     utils/config.cmi \
-    driver/compplugin.cmi \
     driver/compmisc.cmi \
     asmcomp/compilenv.cmi \
     driver/compenv.cmi \
@@ -5753,7 +5755,6 @@ driver/optmain.cmx : \
     parsing/location.cmx \
     asmcomp/import_approx.cmx \
     utils/config.cmx \
-    driver/compplugin.cmx \
     driver/compmisc.cmx \
     asmcomp/compilenv.cmx \
     driver/compenv.cmx \
@@ -5792,8 +5793,7 @@ driver/pparse.cmx : \
     parsing/ast_invariants.cmx \
     driver/pparse.cmi
 driver/pparse.cmi : \
-    parsing/parsetree.cmi \
-    utils/misc.cmi
+    parsing/parsetree.cmi
 toplevel/expunge.cmo : \
     bytecomp/symtable.cmi \
     bytecomp/runtimedef.cmi \
@@ -5853,7 +5853,6 @@ toplevel/opttopdirs.cmo : \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
-    driver/compdynlink.cmi \
     utils/clflags.cmi \
     asmcomp/asmlink.cmi \
     toplevel/opttopdirs.cmi
@@ -5869,7 +5868,6 @@ toplevel/opttopdirs.cmx : \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
-    driver/compdynlink.cmi \
     utils/clflags.cmx \
     asmcomp/asmlink.cmx \
     toplevel/opttopdirs.cmi
@@ -6014,6 +6012,7 @@ toplevel/topdirs.cmo : \
     bytecomp/symtable.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
+    typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     bytecomp/opcodes.cmi \
@@ -6026,7 +6025,6 @@ toplevel/topdirs.cmo : \
     typing/env.cmi \
     bytecomp/dll.cmi \
     typing/ctype.cmi \
-    utils/consistbl.cmi \
     utils/config.cmi \
     bytecomp/cmo_format.cmi \
     utils/clflags.cmi \
@@ -6043,6 +6041,7 @@ toplevel/topdirs.cmx : \
     bytecomp/symtable.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
+    typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     bytecomp/opcodes.cmx \
@@ -6055,7 +6054,6 @@ toplevel/topdirs.cmx : \
     typing/env.cmx \
     bytecomp/dll.cmx \
     typing/ctype.cmx \
-    utils/consistbl.cmx \
     utils/config.cmx \
     bytecomp/cmo_format.cmi \
     utils/clflags.cmx \
@@ -6220,20 +6218,3 @@ toplevel/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
-driver/compdynlink.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_common.cmx \
-    asmcomp/cmx_format.cmi \
-    driver/compdynlink.cmi
-driver/compdynlink.cmo : \
-    bytecomp/symtable.cmi \
-    bytecomp/opcodes.cmi \
-    utils/misc.cmi \
-    bytecomp/meta.cmi \
-    typing/ident.cmi \
-    bytecomp/dll.cmi \
-    utils/config.cmi \
-    driver/compdynlink_types.cmi \
-    driver/compdynlink_common.cmi \
-    bytecomp/cmo_format.cmi \
-    driver/compdynlink.cmi

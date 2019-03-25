@@ -118,6 +118,10 @@ echo "======== clang 6.0, address sanitizer, UB sanitizer =========="
 
 $make -s distclean || :
 
+# `make distclean` does not clean the files from previous versions that
+# are not produced by the current version, so use `git clean` in addition.
+git clean -f -d -x
+
 # Use clang 6.0
 # We cannot give the sanitizer options as part of -cc because
 # then various autoconfiguration tests fail.

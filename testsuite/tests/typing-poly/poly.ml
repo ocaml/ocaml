@@ -836,7 +836,7 @@ val f :
   (< p : int * 'c > as 'c) -> unit = <fun>
 |}];;
 
-(* PR#1374 *)
+(* PR#3643 *)
 
 type 'a t= [`A of 'a];;
 class c = object (self)
@@ -884,7 +884,7 @@ type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
 type 'b alist = < visit : 'a. ('a, 'b) list_visitor -> 'a >
 |}];;
 
-(* PR#1607 *)
+(* PR#8074 *)
 class type ct = object ('s)
   method fold : ('b -> 's -> 'b) -> 'b -> 'b
 end
@@ -894,7 +894,7 @@ class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
 type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 |}];;
 
-(* PR#1663 *)
+(* PR#8124 *)
 type t = u and u = t;;
 [%%expect {|
 Line 1, characters 0-10:
@@ -904,7 +904,7 @@ Error: The definition of t contains a cycle:
        u
 |}];;
 
-(* PR#1731 *)
+(* PR#8188 *)
 class ['t] a = object constraint 't = [> `A of 't a] end
 type t = [ `A of t a ];;
 [%%expect {|
@@ -966,7 +966,7 @@ Line 1, characters 0-24:
 Error: In the definition of v, type 'a list u should be 'a u
 |}];;
 
-(* PR#1744: Ctype.matches *)
+(* PR#8198: Ctype.matches *)
 type 'a t = 'a
 type 'a u = A of 'a t;;
 [%%expect {|
@@ -999,7 +999,7 @@ Error: The definition of a contains a cycle:
        [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
 
-(* PR#1917: expanding may change original in Ctype.unify2 *)
+(* PR#8359: expanding may change original in Ctype.unify2 *)
 (* Note: since 3.11, the abbreviations are not used when printing
    a type where they occur recursively inside. *)
 class type ['a, 'b] a = object
