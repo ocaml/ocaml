@@ -60,6 +60,9 @@ Working version
   into the Dynlink libraries
   (Mark Shinwell, Stephen Dolan, review by David Allsopp)
 
+- #2277: Use newtype names as type variable names
+  (Matthew Ryan)
+
 - #2280: Don't make more Clambda constants after starting Cmmgen
   (Mark Shinwell, review by Vincent Laviron)
 
