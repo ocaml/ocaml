@@ -349,6 +349,9 @@ OCaml 4.08.0
   already existed, but used to be triggered even when e was not an application.)
   (Nicolás Ojeda Bär, review by Alain Frisch and Jacques Garrigue)
 
+- GPR#2317: type_let: be more careful generalizing parts of the pattern
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.

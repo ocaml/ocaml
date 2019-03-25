@@ -27,6 +27,15 @@ type pty = { pv : 'a. 'a list; }
 |}];;
 
 
+type id = { id : 'a. 'a -> 'a };;
+let id x = x;;
+let {id} = id { id };;
+[%%expect {|
+type id = { id : 'a. 'a -> 'a; }
+val id : 'a -> 'a = <fun>
+val id : 'a -> 'a = <fun>
+|}];;
+
 let px = {pv = []};;
 [%%expect {|
 val px : pty = {pv = []}
