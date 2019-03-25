@@ -87,7 +87,6 @@ AC_SUBST([system])
 AC_SUBST([systhread_support])
 AC_SUBST([unix_or_win32])
 AC_SUBST([unixlib])
-AC_SUBST([graphlib])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
@@ -132,7 +131,6 @@ AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
 AC_SUBST([libbfd_include])
 AC_SUBST([libbfd_link])
-AC_SUBST([asppprofflags])
 AC_SUBST([ASPP])
 AC_SUBST([AS])
 AC_SUBST([asm_cfi_supported])
@@ -143,10 +141,8 @@ AC_SUBST([mkmaindll])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
 AC_SUBST([install_source_artifacts])
-AC_SUBST([profiling])
 AC_SUBST([profinfo])
 AC_SUBST([profinfo_width])
-AC_SUBST([cc_profile])
 AC_SUBST([frame_pointers])
 AC_SUBST([spacetime])
 AC_SUBST([call_counts])
@@ -240,9 +236,11 @@ AC_ARG_WITH([libunwind-include-dir],
   [AS_HELP_STRING([--with-libunwind-include-dir],
     [location of header files for libunwind])])
 
-AC_ARG_ENABLE([graph-lib],
-  [AS_HELP_STRING([--disable-graph-lib],
-    [do not build the graphics library])])
+AC_ARG_ENABLE([graph-lib], [],
+  [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
+since version 4.09. It is now distributed as a separate "graphics" package: \
+https://github.com/ocaml/graphics])],
+  [])
 
 AC_ARG_ENABLE([str-lib],
   [AS_HELP_STRING([--disable-str-lib],
@@ -417,9 +415,7 @@ AS_CASE([$host],
 # manually to make sure the backward compatibility is preserved
 AS_CASE([$host],
   [*-pc-windows],
-    [DIRECT_CPP="$CC -nologo -EP";
-    CPP="$DIRECT_CPP"],
-  [AC_CHECK_TOOL([DIRECT_CPP],[cpp])])
+    [CPP="$CC -nologo -EP"])
 
 # Libraries to build depending on the host
 
@@ -427,12 +423,9 @@ AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [unix_or_win32="win32"
     unixlib="win32unix"
-    graphlib="win32graph"
-    cc_profile=''],
+    ],
   [unix_or_win32="unix"
-  unixlib="unix"
-  graphlib="graph"
-  cc_profile='-pg'])
+  unixlib="unix"])
 AS_CASE([$host],
   [*-*-cygwin*|*-*-mingw32|*-pc-windows],
     [exeext=".exe"],
@@ -483,6 +476,8 @@ OCAML_CC_VENDOR
 ## Determine which flags to use for the C compiler
 
 AS_CASE([$ocaml_cv_cc_vendor],
+  [xlc-*],
+    [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
   [msvc-*],
     [outputobj=-Fo; CPP="cl -nologo -EP"; gcc_warnings=""],
   [outputobj='-o $(EMPTY)'; AS_CASE([AC_PACKAGE_VERSION],
@@ -545,6 +540,9 @@ AS_CASE([$host],
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    [xlc-*],
+      [common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
+      internal_cflags="$gcc_warnings"],
     [common_cflags="-O"])])
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
@@ -625,7 +623,11 @@ AS_CASE([$CC,$host],
       iflexdir="-I\"$flexdir\""
       mkexedebugflag="-link -g"])],
   [*,x86_64-*-linux*],
-    AC_DEFINE([HAS_ARCH_CODE32], [1])
+    AC_DEFINE([HAS_ARCH_CODE32], [1]),
+  [xlc*,powerpc-ibm-aix*],
+    [mkexe="$mkexe "
+     oc_ldflags="-brtl -bexpfull"
+    AC_DEFINE([HAS_ARCH_CODE32], [1])],
 )
 
 
@@ -703,14 +705,13 @@ AC_CHECK_ALIGNOF([double])
 AC_CHECK_ALIGNOF([long])
 
 AS_IF([! $arch64],
-  [AS_IF([test x"$ac_cv_alignof_double" = "x8" ],
-    [AS_IF([test "$target_cpu" != "i686" ],
-      [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])])
-  AS_IF([test x"$ac_cv_alignof_long" = "x8" ],
-    [AC_DEFINE([ARCH_ALIGN_INT64], [1])]
-  )
-  ]
-)
+  [AS_CASE([$target_cpu],
+    [i686], [],
+    [AS_IF([test "$ac_cv_alignof_double" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
+    AS_IF([test "$ac_cv_alignof_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_LONG], [1])])
+    ])])
 
 # Shared library support
 
@@ -739,6 +740,11 @@ AS_IF([test x"$enable_shared" != "xno"],
       [mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true],
+    [powerpc-ibm-aix*],
+      [AS_CASE([$CC],
+               [xlc*],
+               [mksharedlib="$CC -qmkshrobj -G"
+                shared_libraries_supported=true])],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
@@ -780,7 +786,8 @@ AS_IF([test x"$enable_shared" != "xno"],
     [arm*-*-linux*], [natdynlink=true],
     [arm*-*-freebsd*], [natdynlink=true],
     [earm*-*-netbsd*], [natdynlink=true],
-    [aarch64-*-linux*], [natdynlink=true])])
+    [aarch64-*-linux*], [natdynlink=true],
+    [aarch64-*-freebsd*], [natdynlink=true])])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
 AS_CASE(["$CC,$host"],
@@ -870,6 +877,8 @@ AS_CASE([$host],
     [arch=amd64; system=mingw64],
   [aarch64-*-linux*],
     [arch=arm64; system=linux],
+  [aarch64-*-freebsd*],
+    [arch=arm64; system=freebsd],
   [x86_64-*-cygwin*],
     [arch=amd64; system=cygwin]
 )
@@ -906,30 +915,7 @@ AS_IF([test -z "$PARTIALLD"],
 AS_IF([test $arch != "none" && $arch64 ],
   [otherlibraries="$otherlibraries raw_spacetime_lib"])
 
-# Profiling
-
-AS_CASE(["$arch,$system"],
-  [i386,linux_elf], [profiling=true],
-  [i386,gnu], [profiling=true],
-  [i386,bsd_elf], [profiling=true],
-  [amd64,macosx], [profiling=true],
-  [amd64,linux], [profiling=true],
-  [amd64,openbsd], [profiling=true],
-  [amd64,freebsd], [profiling=true],
-  [amd64,netbsd], [profiling=true],
-  [arm,netbsd], [profiling=true],
-  [amd64,gnu], [profiling=true],
-  [arm,linux*], [profiling=true],
-  [power,elf], [profiling=true],
-  [power,bsd*], [profiling=true],
-  [power,netbsd], [profiling=true],
-  [profiling=false])
-
 # Assembler
-
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [asppprofflags=''],
-  [asppprofflags='-DPROFILING'])
 
 AS_IF([test -n "$host_alias"], [toolpref="${host}-"], [toolpref=""])
 
@@ -971,7 +957,7 @@ AS_CASE(["$arch,$system"],
   [s390x,elf],
     [default_as="${toolpref}as -m 64 -march=$model"
     default_aspp="${toolpref}gcc -c -Wa,-march=$model"],
-  [arm,freebsd],
+  [arm,freebsd|arm64,freebsd],
     [default_as="${toolpref}cc -c"
     default_aspp="${toolpref}cc -c"],
   [*,dragonfly],
@@ -1128,10 +1114,6 @@ AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
 
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
-AC_CHECK_FUNC([getpriority],
-  [AC_CHECK_FUNC([setpriority],
-    [AC_DEFINE([HAS_GETPRIORITY])])])
-
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition
@@ -1143,8 +1125,6 @@ AS_CASE([$host],
       [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME])])])])])
 
 AC_CHECK_FUNC([utimes], [AC_DEFINE([HAS_UTIMES])])
-
-AC_CHECK_FUNC([dup2], [AC_DEFINE([HAS_DUP2])])
 
 AC_CHECK_FUNC([fchmod],
   [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
@@ -1200,64 +1180,6 @@ AC_CHECK_HEADER([termios.h],
       [AC_CHECK_FUNC([tcsendbreak],
         [AC_CHECK_FUNC([tcflush],
           [AC_CHECK_FUNC([tcflow], [AC_DEFINE([HAS_TERMIOS])])])])])])])
-
-## Asynchronous I/O
-
-AC_MSG_CHECKING([for asynchronous I/O])
-AC_RUN_IFELSE(
-  [AC_LANG_SOURCE([[
-#include <stdio.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-int signalled;
-
-void sigio_handler(int arg)
-{
-  signalled = 1;
-}
-
-int main(void)
-{
-#if defined(SIGIO) && defined(FASYNC) && defined(F_SETFL) && defined(F_SETOWN)
-  int p[2];
-  int ret;
-#define OUT 0
-#define IN 1
-  if (socketpair(PF_UNIX, SOCK_STREAM, 0, p) == -1) return 1;
-  signalled = 0;
-  signal(SIGIO, sigio_handler);
-  ret = fcntl(p[OUT], F_GETFL, 0);
-  fcntl(p[OUT], F_SETFL, ret | FASYNC);
-  fcntl(p[OUT], F_SETOWN, getpid());
-  switch(fork()) {
-  case -1:
-    return 1;
-  case 0:
-    close(p[OUT]);
-    write(p[IN], "x", 1);
-    sleep(1);
-    exit(0);
-  default:
-    close(p[IN]);
-    while(wait(NULL) == -1 && errno == EINTR) /*nothing*/;
-  }
-  if (signalled) return 0; else return 1;
-#else
-  return 1;
-#endif
-}
-  ]])],
-  [
-    AC_DEFINE([HAS_ASYNC_IO])
-    AC_MSG_RESULT([yes])
-  ],
-  [AC_MSG_RESULT([no])],
-  [AC_MSG_RESULT([no])]
-)
 
 ## setitimer
 
@@ -1353,8 +1275,10 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [cc_has_debug_prefix_map=false],
+AS_CASE([$CC,$host],
+  [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
+  [*,*-pc-windows], [cc_has_debug_prefix_map=false],
+  [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
   [OCAML_CC_HAS_DEBUG_PREFIX_MAP])
 
 ## Does stat support nanosecond precision
@@ -1497,25 +1421,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
-
-## XWindow
-
-AS_IF([test x"$enable_graph_lib" = "xno" ],
-  [AC_MSG_NOTICE([the graph library has been disabled])],
-  [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows], [otherlibraries="$otherlibraries win32graph"],
-    [AC_PATH_X
-    AS_IF([test -z "$no_x"],
-      [AS_IF([test -z $x_libraries],
-        [x_libraries="-lX11"],
-        [x_libraries="-L$x_libraries -lX11"])
-      AC_MSG_NOTICE([X has been found])
-      otherlibraries="$otherlibraries graph"
-      AC_MSG_NOTICE([the graph library will be built])],
-      [AC_MSG_NOTICE([X has not been found])
-      AS_IF([test x"$enable_graph_lib" = "xyes" ],
-        [AC_MSG_ERROR([can not build the graph library which was requested])],
-        [AC_MSG_NOTICE([the graph library will not be built])])])])])
 
 ## libbfd
 

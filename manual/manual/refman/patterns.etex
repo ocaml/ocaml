@@ -197,9 +197,7 @@ contain @"lazy"@ sub-patterns may imply forcing parts of the value,
 even when the pattern selected in the end has no @"lazy"@ sub-pattern.
 
 For more information, see the description of module "Lazy" in the
-standard library (
-\ifouthtml
-\ahref{libref/Lazy.html}{Module \texttt{Lazy}}\else section~\ref{Lazy}\fi).
+standard library (module \stdmoduleref{Lazy}).
 %
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%

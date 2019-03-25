@@ -255,7 +255,9 @@ loadprinter.cmo : \
     ../utils/misc.cmi \
     ../parsing/longident.cmi \
     ../utils/load_path.cmi \
+    ../typing/ident.cmi \
     ../typing/env.cmi \
+    ../otherlibs/dynlink/dynlink.cmi \
     ../typing/ctype.cmi \
     loadprinter.cmi
 loadprinter.cmx : \
@@ -268,11 +270,14 @@ loadprinter.cmx : \
     ../utils/misc.cmx \
     ../parsing/longident.cmx \
     ../utils/load_path.cmx \
+    ../typing/ident.cmx \
     ../typing/env.cmx \
+    ../otherlibs/dynlink/dynlink.cmi \
     ../typing/ctype.cmx \
     loadprinter.cmi
 loadprinter.cmi : \
-    ../parsing/longident.cmi
+    ../parsing/longident.cmi \
+    ../otherlibs/dynlink/dynlink.cmi
 main.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \

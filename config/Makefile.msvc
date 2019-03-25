@@ -69,10 +69,7 @@ SUPPORTS_SHARED_LIBRARIES=true
 SHAREDLIB_CFLAGS=
 ASM=ml -nologo -coff -Cp -c -Fo
 ASPP=
-ASPPPROFFLAGS=
-PROFILING=false
 DYNLINKOPTS=
-CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 CMXS=cmxs
@@ -83,7 +80,6 @@ ASM_CFI_SUPPORTED=false
 WITH_FRAME_POINTERS=false
 UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
-GRAPHLIB=win32graph
 FLAMBDA=false
 WITH_FLAMBDA_INVARIANTS=false
 WITH_PROFINFO=false
@@ -193,7 +189,7 @@ WITH_OCAMLDOC=ocamldoc
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str win32graph dynlink bigarray
+OTHERLIBRARIES=win32unix systhreads str dynlink bigarray
 
 ############# for the testsuite makefiles
 OTOPDIR=$(WINTOPDIR)

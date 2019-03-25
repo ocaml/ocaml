@@ -198,8 +198,11 @@ let emit_toctable () =
       `{emit_label lbl}:	.quad	{emit_tocentry entry}\n`)
     tocref_entries
 
-(* Emit a load from a TOC entry *)
+(* Emit a load from a TOC entry.
 
+   The [dest] should not be r0, since [dest] is used as the index register for a
+   ld instruction, but r0 reads as zero when used as an index register.
+*)
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
   if !big_toc || !Clflags.for_package <> None then begin
@@ -517,28 +520,6 @@ module BR = Branch_relaxation.Make (struct
   let relax_intop_imm_checkbound ~bound:_ ~label_after_error:_ = assert false
 end)
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  match abi with
-  | ELF32 ->
-      `	mflr    0\n`;
-      `	addi	1, 1, -16\n`;
-      `	stw	0, 4(1)\n`;
-      (* _mcount preserves the registers used for parameter passing *)
-      (* when it returns, lr contains the original return address *)
-      `	bl	{emit_symbol "_mcount"}\n`;
-      `	addi	1, 1, 16\n`
-  | ELF64v1 | ELF64v2 ->
-      `	mflr	0\n`;
-      (* save the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_before_mcount"}\n`;
-      `	bl	{emit_symbol "_mcount"}\n`;
-      `	nop\n`;
-      (* restore the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_after_mcount"}\n`;
-      `	mtlr	0\n`
-
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -546,7 +527,6 @@ let emit_instr i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      if !Clflags.gprofile then emit_profile();
       let n = frame_size() in
       if n > 0 then begin
         `	addi	1, 1, {emit_int(-n)}\n`;
@@ -992,9 +972,9 @@ let emit_instr i =
         | ELF64v1 | ELF64v2 ->
           `	addi	1, 1, {emit_int (-trap_size)}\n`;
           adjust_stack_offset trap_size;
-          emit_tocload emit_gpr 0 (TocLabel lbl_handler);
-          `	std     0, {emit_int trap_handler_offset}(1)\n`;
           `	std	29, {emit_int trap_previous_offset}(1)\n`;
+          emit_tocload emit_gpr 29 (TocLabel lbl_handler);
+          `	std     29, {emit_int trap_handler_offset}(1)\n`;
           `	mr	29, 1\n`
           end
     | Lpoptrap ->
@@ -1183,31 +1163,6 @@ let begin_assembly() =
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
-  (* In profiling mode, for ELF64, emit the helper functions
-     for register saving and restoring.  We put one copy of these
-     functions in every generated file, instead of defining
-     them once in runtime/power.S, so that we can call them
-     without risking to save r2 in the wrong place. *)
-  if ppc64 && !Clflags.gprofile then begin
-    let save_area = reserved_stack_space + (if abi = ELF64v1 then 8*8 else 0) in
-    let stacksize = save_area + 8*8 in
-    emit_string code_space;
-    `	.align	2\n`;
-    `{emit_symbol "caml_before_mcount"}:\n`;
-    `	stdu	1, {emit_int (-stacksize)}(1)\n`;
-    `	std	0, {emit_int (16 + stacksize)}(1)\n`;
-    for i = 3 to 10 do
-    `	std	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
-    done;
-    `	blr\n`;
-    `{emit_symbol "caml_after_mcount"}:\n`;
-    `	ld	0, {emit_int (16 + stacksize)}(1)\n`;
-    for i = 3 to 10 do
-    `	ld	{emit_gpr i}, {emit_int (save_area + (i - 3) * 8)}(1)\n`
-    done;
-    `	addi	1, 1, {emit_int stacksize}\n`;
-    `	blr\n`
-  end;
   (* Emit the end of the segments *)
   emit_string function_descr_space;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in

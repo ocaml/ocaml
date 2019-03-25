@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*     Pierre Weis and Jun Furuse, projet Cristal, INRIA Rocquencourt     *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2014--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,18 +12,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Additional graphics primitives for the X Windows system. *)
+(** Coalescing of per-instruction information into possibly-discontiguous
+    regions of code delimited by labels.  This is used for collating
+    register availability and lexical block scoping information into a
+    concise form. *)
 
-type window_id = string
+[@@@ocaml.warning "+a-4-30-40-41-42"]
 
-val window_id : unit -> window_id
-(** Return the unique identifier of the OCaml graphics window.
-   The returned string is an unsigned 32 bits integer
-   in decimal form. *)
-
-val open_subwindow : x:int -> y:int -> width:int -> height:int -> window_id
-(** Create a sub-window of the current OCaml graphics window
-   and return its identifier. *)
-
-val close_subwindow : window_id -> unit
-(** Close the sub-window having the given identifier. *)
+module Make (S : Compute_ranges_intf.S_functor)
+  : Compute_ranges_intf.S
+      with module Index := S.Index
+      with module Key := S.Key
+      with module Subrange_state := S.Subrange_state
+      with module Subrange_info := S.Subrange_info
+      with module Range_info := S.Range_info

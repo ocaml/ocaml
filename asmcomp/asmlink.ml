@@ -109,10 +109,7 @@ let add_ccobjs origin l =
   end
 
 let runtime_lib () =
-  let libname =
-    if !Clflags.gprofile
-    then "libasmrunp" ^ ext_lib
-    else "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
+  let libname = "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
   try
     if !Clflags.nopervasives then []
     else [ Load_path.find libname ]
@@ -331,10 +328,8 @@ let call_linker file_list startup_file output_name =
 
 let link ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
-    let stdlib =
-      if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
-    let stdexit =
-      if !Clflags.gprofile then "std_exit.p.cmx" else "std_exit.cmx" in
+    let stdlib = "stdlib.cmxa" in
+    let stdexit = "std_exit.cmx" in
     let objfiles =
       if !Clflags.nopervasives then objfiles
       else if !Clflags.output_c_object then stdlib :: objfiles

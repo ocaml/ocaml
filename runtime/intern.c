@@ -505,7 +505,7 @@ static void intern_rec(value *dest)
         if (codeptr != NULL) {
           v = (value) codeptr;
         } else {
-          value * function_placeholder =
+          const value * function_placeholder =
             caml_named_value ("Debugger.function_placeholder");
           if (function_placeholder != NULL) {
             v = *function_placeholder;

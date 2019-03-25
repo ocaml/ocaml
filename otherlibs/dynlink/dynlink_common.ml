@@ -8,7 +8,7 @@
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2017--2018 Jane Street Group LLC                           *)
+(*   Copyright 2017--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -18,14 +18,13 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-(* This compilation unit cannot depend on compilerlibs. *)
-module String = struct
-  include String
+open! Dynlink_compilerlibs
 
-  module Set = Set.Make (String)
+module String = struct
+  include Misc.Stdlib.String
 
   module Map = struct
-    include Map.Make (String)
+    include Map
 
     let keys t =
       fold (fun key _data keys -> Set.add key keys) t Set.empty

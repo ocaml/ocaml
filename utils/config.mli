@@ -81,9 +81,6 @@ val ranlib: string
 val ar: string
 (** Name of the ar command, or "" if not needed  (MSVC) *)
 
-val cc_profile : string
-(** The command line option to the C compiler to enable profiling. *)
-
 val interface_suffix: string ref
 (** Suffix for interface file names *)
 
@@ -184,9 +181,6 @@ val host : string
 
 val target : string
 (** Whether the compiler is a cross-compiler *)
-
-val profiling : bool
-(** Whether profiling with gprof is supported on this platform *)
 
 val flambda : bool
 (** Whether the compiler was configured for flambda *)
