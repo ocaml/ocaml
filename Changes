@@ -80,7 +80,7 @@ Working version
 - #2308: More debugging information on [Cmm] terms
   (Mark Shinwell, review by Stephen Dolan)
 
-- GPR#7878: Replaced TypedtreeIter with tast_iterator
+- #7878, #8542: Replaced TypedtreeIter with tast_iterator
   (Isaac "Izzy" Avram)
 
 ### Runtime system:
