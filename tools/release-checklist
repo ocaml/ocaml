@@ -377,7 +377,7 @@ The source code is available at this address:
 and the compiler is also available as a set of OPAM switches.
 
 We want to know about all bugs. Please report them here:
-  http://caml.inria.fr/mantis/bug_report_page.php
+  https://github.com/ocaml/ocaml/issues
 
 Happy hacking,
 
