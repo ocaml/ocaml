@@ -2465,7 +2465,7 @@ let all_rhs_idents exp =
              ids := Ident.Set.remove id_exp !ids
            end
     | _ -> assert false
-    end 
+    end
   in
   let iterator = {Tast_iterator.default_iterator with expr = expr_iter} in
   iterator.expr iterator exp;
