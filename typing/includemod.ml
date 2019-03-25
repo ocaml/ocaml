@@ -722,11 +722,12 @@ module Illegal_permutation = struct
       let p, k, l = transposition c in
       let ctx, mt = find env p mty in
       fprintf ppf
-        "@[<hv 2>Illegal permutation of structure fields:@ %a@[the %a@ \
-         and the %a are swapped@]@]."
+        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
+         @[For example,@ %a@[the %a@ and the %a are not in the same order@ \
+         in the expected and actual module types.@]@]"
         alt_context ctx pp_item (item mt k) pp_item (item mt l)
     with Not_found -> (* this should not happen *)
-      fprintf ppf "Illegal permutation of structure fields."
+      fprintf ppf "Illegal permutation of runtime components in a module type."
 
 end
 

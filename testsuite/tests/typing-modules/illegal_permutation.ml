@@ -55,8 +55,10 @@ Error: Signature mismatch:
        does not match
          module type x = s
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         the class "two" and the value "one" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the class "two" and the value "one" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module B: expected = struct module type x = c123 end
@@ -74,8 +76,11 @@ Error: Signature mismatch:
        does not match
          module type x = s
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         the extension constructor "Three" and the value "one" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the extension constructor "Three"
+         and the value "one" are not in the same order
+         in the expected and actual module types.
 |}]
 
 
@@ -149,8 +154,10 @@ Error: Signature mismatch:
              val e : int
            end
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         the value "e" and the value "c" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the value "e" and the value "c" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module Confusing: sig
@@ -182,8 +189,10 @@ Error: Signature mismatch:
        does not match
          module type x = sig class x : ct val x : int end
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         the value "x" and the class "x" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the value "x" and the class "x" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module MT: sig
@@ -239,8 +248,10 @@ Error: Signature mismatch:
        does not match
          module type b = sig val x : int val y : int end
        At position module type a = sig module type b = <here> end
-       Illegal permutation of structure fields:
-         the value "y" and the value "x" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the value "y" and the value "x" are not in the same order
+         in the expected and actual module types.
 |}]
 
 class type ct = object end
@@ -274,8 +285,10 @@ Error: Signature mismatch:
        does not match
          module type x = sig class a : ct class b : ct end
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         the class "b" and the class "a" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the class "b" and the class "a" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module Ext: sig
@@ -307,9 +320,11 @@ Error: Signature mismatch:
        does not match
          module type x = sig type exn += A type exn += B end
        At position module type x = <here>
-       Illegal permutation of structure fields:
+       Illegal permutation of runtime components in a module type.
+         For example,
          the extension constructor "B"
-         and the extension constructor "A" are swapped.
+         and the extension constructor "A" are not in the same order
+         in the expected and actual module types.
 |}]
 
 
@@ -346,8 +361,10 @@ Error: Signature mismatch:
        does not match
          module type x = w
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         the module "Two" and the module "One" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example,
+         the module "Two" and the module "One" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module D: sig module type x = w end = struct module type x = wOne21 end
@@ -365,9 +382,10 @@ Error: Signature mismatch:
        does not match
          module type x = w
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         in module One,
-         the class "two" and the value "one" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example, in module One,
+         the class "two" and the value "one" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module F1: sig module type x = functor(X:s) -> s end =
@@ -389,9 +407,10 @@ Error: Signature mismatch:
        does not match
          module type x = functor (X : s) -> s
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         at position functor (X : <here>) -> ...,
-         the class "two" and the value "one" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example, at position functor (X : <here>) -> ...,
+         the class "two" and the value "one" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module F2: sig module type x = functor(X:s) -> s end =
@@ -413,9 +432,10 @@ Error: Signature mismatch:
        does not match
          module type x = functor (X : s) -> s
        At position module type x = <here>
-       Illegal permutation of structure fields:
-         at position functor (X) -> <here>,
-         the class "two" and the value "one" are swapped.
+       Illegal permutation of runtime components in a module type.
+         For example, at position functor (X) -> <here>,
+         the class "two" and the value "one" are not in the same order
+         in the expected and actual module types.
 |}]
 
 module Nested: sig
@@ -615,7 +635,8 @@ Error: Signature mismatch:
                end
            end
        At position module type x = <here>
-       Illegal permutation of structure fields:
+       Illegal permutation of runtime components in a module type.
+         For example,
          at position
            module A :
              sig
@@ -630,6 +651,6 @@ Error: Signature mismatch:
                      end) : ...
                  end
              end,
-         the value "two" and the value "one" are swapped.
+         the value "two" and the value "one" are not in the same order
+         in the expected and actual module types.
 |}]
-

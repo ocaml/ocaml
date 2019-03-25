@@ -27,8 +27,8 @@ Working version
 - #2314: Remove support for gprof profiling.
   (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
 
-- #3819, more explanations and tests for illegal permutation
-  (Florian Angeletti)
+- #3819, #8546 more explanations and tests for illegal permutation
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler distribution build system:
 
