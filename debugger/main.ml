@@ -239,6 +239,11 @@ let main () =
       Env.report_error err_formatter e;
       eprintf "@]@.";
       exit 2
+  | Persistent_env.Error e ->
+      eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
+      Persistent_env.report_error err_formatter e;
+      eprintf "@]@.";
+      exit 2
   | Cmi_format.Error e ->
       eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
       Cmi_format.report_error err_formatter e;

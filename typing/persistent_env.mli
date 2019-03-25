@@ -26,6 +26,10 @@ type error =
   | Need_recursive_types of modname
   | Depend_on_unsafe_string_unit of modname
 
+exception Error of error
+
+val report_error: Format.formatter -> error -> unit
+
 module Persistent_signature : sig
   type t =
     { filename : string; (** Name of the file containing the signature. *)
