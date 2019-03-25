@@ -3240,9 +3240,9 @@ and type_expect_
   | Pexp_newtype({txt=name}, sbody) ->
       let ty =
         if Typetexp.valid_tyvar_name name then
-          newvar ()
-        else
           newvar ~name ()
+        else
+          newvar ()
       in
       (* remember original level *)
       begin_def ();
