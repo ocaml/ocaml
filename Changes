@@ -17,8 +17,7 @@ Working version
   (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
    and Xavier Leroy)
 
-- GPR#????: Optimize matches that add a constant offset to the input to
-  additions.
+- GPR#????: Optimize matches that are a linear function of the input.
   (Stefan Muenzel, review by ????)
 
 ### Compiler user-interface and warnings:

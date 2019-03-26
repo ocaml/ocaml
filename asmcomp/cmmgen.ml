@@ -1660,32 +1660,48 @@ let make_switch arg cases actions dbg =
       | Cconst_symbol (s, _) -> Csymbol_address s
       | _ -> assert false in
     let const_actions = Array.map to_data_item actions in
-    let results_with_constant_offset =
-      (* In case the resulting integers have a constant offset to the index, we can
-         optimize the cases to an addition. *)
-      let to_int_diff index = function
-        | Cint value -> 
-          Some Nativeint.(sub value (of_int ((index lsl 1) + 1)))
-        | _ -> None in
-      let v = ref (to_int_diff 0 const_actions.(0)) in
-      for i = 1 to pred (Array.length const_actions) do
-        let as_int_diff = to_int_diff i const_actions.(i) in
-        if !v <> as_int_diff
-        then v := None
-      done;
-      !v
+    let linear_function_result =
+      (* In case the resulting integers are a linear function of the index, we
+         don't emit a table, and just compute the result directly *)
+      let length = Array.length const_actions in
+      if length >= 2
+      then begin
+        match const_actions.(0), const_actions.(1) with
+        | Cint v0, Cint v1 ->
+          let offset = v0 in
+          let slope  = Nativeint.sub v1 v0 in
+          let v = ref (Some (offset, slope)) in
+          for i = 2 to pred length do
+            match const_actions.(i) with
+            | Cint value ->
+              if value <> Nativeint.(add offset (mul (of_int i) slope))
+              then v := None
+            | _ -> v:= None
+          done;
+          !v
+        | _, _ ->
+          None
+      end
+      else None
     in
-    match results_with_constant_offset with
+    match linear_function_result with
     | None ->
       let table = Compilenv.new_const_symbol () in
       Cmmgen_state.add_constant table (Const_table (Local,
           Array.to_list (Array.map (fun act ->
             const_actions.(act)) cases)));
       addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
-    | Some results_with_constant_offset ->
-      Cop ( Caddi
-          , [tag_int arg dbg; Cconst_natint (results_with_constant_offset, dbg)]
-          , dbg)
+    | Some (offset, slope) ->
+      let const_natint x dbg =
+        if x > Nativeint.of_int max_int
+        || x < Nativeint.of_int min_int
+        then Cconst_natint (x,dbg)
+        else Cconst_int (Nativeint.to_int x, dbg)
+      in
+      add_int
+        (mul_int arg (const_natint slope dbg) dbg)
+        (const_natint offset dbg)
+        dbg
   else
     Cswitch (arg,cases,actions,dbg)
 
