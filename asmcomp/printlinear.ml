@@ -22,10 +22,21 @@ open Linearize
 
 module S = Backend_sym
 
+include Ir_debug.Make_mark_functions (struct
+  include Insn_debuginfo
+  let position t = linear_position t
+end)
+
+module Mark_fun_dbg = Ir_debug.Make_mark_functions (struct
+  include Debuginfo.Function
+  let position t = Some (position t)
+end)
+
 let label ppf l =
   Format.fprintf ppf "L%i" l
 
 let instr ?no_debuginfo ppf i =
+  mark_start_location ppf i.dbg;
   begin match i.desc with
   | Lend -> ()
   | Lprologue ->
@@ -70,6 +81,7 @@ let instr ?no_debuginfo ppf i =
   | Lraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
+  mark_end_location ppf i.dbg;
   match no_debuginfo with
   | Some () -> ()
   | None ->
@@ -110,8 +122,10 @@ let rec all_instr ?no_debuginfo ppf i =
         (all_instr ?no_debuginfo) i.next
 
 let fundecl ?no_debuginfo ppf f =
+  Mark_fun_dbg.mark_start_location ppf f.fun_dbg;
   let dbg =
     if not !Clflags.dump_linear_dbg then ""
     else Format.asprintf " %a" Debuginfo.Function.print f.fun_dbg in
   fprintf ppf "@[<v 2>%a:%s@,%a@]" S.print f.fun_name dbg
-    (all_instr ?no_debuginfo) f.fun_body
+    (all_instr ?no_debuginfo) f.fun_body;
+  Mark_fun_dbg.mark_end_location ppf f.fun_dbg
