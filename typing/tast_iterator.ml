@@ -145,11 +145,11 @@ let type_exception sub {tyexn_constructor; _} =
     sub.extension_constructor sub tyexn_constructor
 
 let extension_constructor sub {ext_kind; _} =
-    match ext_kind with
-    | Text_decl (ctl, cto) ->
-        constructor_args sub ctl;
+  match ext_kind with
+  | Text_decl (ctl, cto) ->
+      constructor_args sub ctl;
       Option.iter (sub.typ sub) cto
-    | Text_rebind _ -> ()
+  | Text_rebind _ -> ()
 
 let pat sub {pat_extra; pat_desc; pat_env; _} =
   let extra = function
@@ -356,16 +356,16 @@ let class_expr sub {cl_desc; cl_env; _} =
   sub.env sub cl_env;
   match cl_desc with
   | Tcl_constraint (cl, clty, _, _, _) ->
-        sub.class_expr sub cl;
-        Option.iter (sub.class_type sub) clty
+      sub.class_expr sub cl;
+      Option.iter (sub.class_type sub) clty
   | Tcl_structure clstr -> sub.class_structure sub clstr
   | Tcl_fun (_, pat, priv, cl, _) ->
-        sub.pat sub pat;
-        List.iter (fun (_, e) -> sub.expr sub e) priv;
-        sub.class_expr sub cl
+      sub.pat sub pat;
+      List.iter (fun (_, e) -> sub.expr sub e) priv;
+      sub.class_expr sub cl
   | Tcl_apply (cl, args) ->
-        sub.class_expr sub cl;
-        List.iter (fun (_, e) -> Option.iter (sub.expr sub) e) args
+      sub.class_expr sub cl;
+      List.iter (fun (_, e) -> Option.iter (sub.expr sub) e) args
   | Tcl_let (rec_flag, value_bindings, ivars, cl) ->
       sub.value_bindings sub (rec_flag, value_bindings);
       List.iter (fun (_, e) -> sub.expr sub e) ivars;
@@ -391,14 +391,15 @@ let class_signature sub {csig_self; csig_fields; _} =
   sub.typ sub csig_self;
   List.iter (sub.class_type_field sub) csig_fields
 
-let class_type_field sub {ctf_desc; _} =  match ctf_desc with
-    | Tctf_inherit ct -> sub.class_type sub ct
-    | Tctf_val (_, _, _, ct) ->  sub.typ sub ct
-    | Tctf_method (_, _, _, ct) -> sub.typ sub ct
-    | Tctf_constraint  (ct1, ct2) ->
-        sub.typ sub ct1;
-        sub.typ sub ct2
-    | Tctf_attribute _ -> ()
+let class_type_field sub {ctf_desc; _} =  
+  match ctf_desc with
+  | Tctf_inherit ct -> sub.class_type sub ct
+  | Tctf_val (_, _, _, ct) ->  sub.typ sub ct
+  | Tctf_method (_, _, _, ct) -> sub.typ sub ct
+  | Tctf_constraint  (ct1, ct2) ->
+      sub.typ sub ct1;
+      sub.typ sub ct2
+  | Tctf_attribute _ -> ()
 
 let typ sub {ctyp_desc; ctyp_env; _} =
   sub.env sub ctyp_env;
@@ -421,27 +422,29 @@ let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;
   List.iter (sub.class_field sub) cstr_fields
 
-let row_field sub {rf_desc; _} = match rf_desc with
-    | Ttag (_, _, list) -> List.iter (sub.typ sub) list
-    | Tinherit ct -> sub.typ sub ct
+let row_field sub {rf_desc; _} = 
+  match rf_desc with
+  | Ttag (_, _, list) -> List.iter (sub.typ sub) list
+  | Tinherit ct -> sub.typ sub ct
 
-let object_field sub {of_desc; _} = match of_desc with
-    | OTtag (_, ct) -> sub.typ sub ct
-    | OTinherit ct -> sub.typ sub ct
+let object_field sub {of_desc; _} = 
+  match of_desc with
+  | OTtag (_, ct) -> sub.typ sub ct
+  | OTinherit ct -> sub.typ sub ct
 
 let class_field_kind sub = function
   | Tcfk_virtual ct -> sub.typ sub ct
   | Tcfk_concrete (_, e) -> sub.expr sub e
 
 let class_field sub {cf_desc; _} = match cf_desc with
-    | Tcf_inherit (_, cl, _, _, _) -> sub.class_expr sub cl
-    | Tcf_constraint (cty1, cty2) ->
-          sub.typ sub cty1;
-          sub.typ sub cty2
-    | Tcf_val (_, _, _, k, _) -> class_field_kind sub k
-    | Tcf_method (_, _, k) -> class_field_kind sub k
-    | Tcf_initializer exp -> sub.expr sub exp
-    | Tcf_attribute _ -> ()
+  | Tcf_inherit (_, cl, _, _, _) -> sub.class_expr sub cl
+  | Tcf_constraint (cty1, cty2) ->
+        sub.typ sub cty1;
+        sub.typ sub cty2
+  | Tcf_val (_, _, _, k, _) -> class_field_kind sub k
+  | Tcf_method (_, _, k) -> class_field_kind sub k
+  | Tcf_initializer exp -> sub.expr sub exp
+  | Tcf_attribute _ -> ()
 
 let value_bindings sub (_, list) = List.iter (sub.value_binding sub) list
 
