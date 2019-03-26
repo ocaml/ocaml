@@ -1660,11 +1660,32 @@ let make_switch arg cases actions dbg =
       | Cconst_symbol (s, _) -> Csymbol_address s
       | _ -> assert false in
     let const_actions = Array.map to_data_item actions in
-    let table = Compilenv.new_const_symbol () in
-    Cmmgen_state.add_constant table (Const_table (Local,
-        Array.to_list (Array.map (fun act ->
-          const_actions.(act)) cases)));
-    addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
+    let results_with_constant_offset =
+      (* In case the resulting integers have a constant offset to the index, we can
+         optimize the cases to an addition. *)
+      let to_int_diff index = function
+        | Cint value -> 
+          Some Nativeint.(sub value (of_int ((index lsl 1) + 1)))
+        | _ -> None in
+      let v = ref (to_int_diff 0 const_actions.(0)) in
+      for i = 1 to pred (Array.length const_actions) do
+        let as_int_diff = to_int_diff i const_actions.(i) in
+        if !v <> as_int_diff
+        then v := None
+      done;
+      !v
+    in
+    match results_with_constant_offset with
+    | None ->
+      let table = Compilenv.new_const_symbol () in
+      Cmmgen_state.add_constant table (Const_table (Local,
+          Array.to_list (Array.map (fun act ->
+            const_actions.(act)) cases)));
+      addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
+    | Some results_with_constant_offset ->
+      Cop ( Caddi
+          , [tag_int arg dbg; Cconst_natint (results_with_constant_offset, dbg)]
+          , dbg)
   else
     Cswitch (arg,cases,actions,dbg)
 
