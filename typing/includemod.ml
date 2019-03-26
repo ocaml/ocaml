@@ -576,6 +576,107 @@ let modtypes env m1 m2 =
 
 (* Error report *)
 
+module Illegal_permutation = struct
+  (** Extraction of information in case of illegal permutation
+      in a module type *)
+
+  (** When examining coercions, we only have runtime component indices,
+      we use thus a limited version of {!pos}. *)
+  type coerce_pos =
+    | Item of int
+    | InArg
+    | InBody
+
+  let either f x g y = match f x with
+    | None -> g y
+    | Some _ as v -> v
+
+  (** We extract a lone transposition from a full tree of permutations. *)
+  let rec transposition_under path = function
+    | Tcoerce_structure(c,_) ->
+        either
+          (not_fixpoint path 0) c
+          (first_non_id path 0) c
+    | Tcoerce_functor(arg,res) ->
+        either
+          (transposition_under (InArg::path)) arg
+          (transposition_under (InBody::path)) res
+    | Tcoerce_none -> None
+    | Tcoerce_alias _ | Tcoerce_primitive _ ->
+        (* these coercions are not inversible, and raise an error earlier when
+           checking for module type equivalence *)
+        assert false
+  (* we search the first point which is not invariant at the current level *)
+  and not_fixpoint path pos = function
+    | [] -> None
+    | (n, _) :: q ->
+        if n = pos then
+          not_fixpoint path (pos+1) q
+        else
+          Some(List.rev path, pos, n)
+  (* we search the first item with a non-identity inner coercion *)
+  and first_non_id path pos = function
+    | [] -> None
+    | (_,Tcoerce_none) :: q -> first_non_id path (pos + 1) q
+    | (_,c) :: q ->
+        either
+          (transposition_under (Item pos :: path)) c
+          (first_non_id path (pos + 1)) q
+
+  let transposition c =
+    match transposition_under [] c with
+    | None -> raise Not_found
+    | Some x -> x
+
+  let rec runtime_item k = function
+    | [] -> raise Not_found
+    | item :: q ->
+        if not(is_runtime_component item) then
+          runtime_item k q
+        else if k = 0 then
+          item
+        else
+          runtime_item (k-1) q
+
+  (* Find module type at position [path] and convert the [coerce_pos] path to
+     a [pos] path *)
+  let rec find env ctx path mt = match mt, path with
+    | (Mty_ident p | Mty_alias p), _ ->
+        begin match (Env.find_modtype p env).mtd_type with
+        | None -> raise Not_found
+        | Some mt -> find env ctx path mt
+        end
+    | Mty_signature s , [] -> List.rev ctx, s
+    | Mty_signature s, Item k :: q ->
+        begin match runtime_item k s with
+        | Sig_module (id, _, md,_,_) -> find env (Module id :: ctx) q md.md_type
+        | _ -> raise Not_found
+        end
+    | Mty_functor(x,Some mt,_), InArg :: q -> find env (Arg x :: ctx) q mt
+    | Mty_functor(x,_,mt), InBody :: q -> find env (Body x :: ctx) q mt
+    | _ -> raise Not_found
+
+  let find env path mt = find env [] path mt
+  let item mt k = item_ident_name (runtime_item k mt)
+
+  let pp_item ppf (id,_,kind) =
+    Format.fprintf ppf "%s %S" (kind_of_field_desc kind) (Ident.name id)
+
+  let pp ctx_printer env ppf (mty,c) =
+    try
+      let p, k, l = transposition c in
+      let ctx, mt = find env p mty in
+      Format.fprintf ppf
+        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
+         @[For example,@ %a@[the %a@ and the %a are not in the same order@ \
+         in the expected and actual module types.@]@]"
+        ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
+    with Not_found -> (* this should not happen *)
+      Format.fprintf ppf
+        "Illegal permutation of runtime components in a module type."
+
+end
+
 open Format
 
 let show_loc msg ppf loc =
@@ -638,100 +739,6 @@ let context ppf cxt =
   else
     fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
 
-
-module Illegal_permutation = struct
-  (** Extraction of information in case of illegal permutation
-      in a module type *)
-
-  (** When examining coercions, we only have runtime component indices,
-      we use thus a limited version of {!pos}. *)
-  type coerce_pos =
-    | Item of int
-    | InArg
-    | InBody
-
-  let either f x g y = match f x with
-    | None -> g y
-    | Some _ as x -> x
-
-  (** We extract a lone transposition from a full tree of permutations. *)
-  let rec transposition path = function
-    | Tcoerce_structure(c,_) ->
-        either
-          (not_fixpoint path 0) c
-          (first_non_id path 0) c
-    | Tcoerce_functor(arg,res) ->
-        either
-          (transposition (InArg::path)) arg
-          (transposition (InBody::path)) res
-    | Tcoerce_none -> None
-    | Tcoerce_alias _ | Tcoerce_primitive _ ->
-        (* these coercions are not inversible, and raise an error earlier when
-           checking for module type equivalence *)
-        assert false
-  (* we search the first point which is not invariant at the current level *)
-  and not_fixpoint path pos = function
-    | [] -> None
-    | (n, _) :: q when n = pos -> not_fixpoint path (pos+1) q
-    | (n,_) :: _ -> Some(List.rev path, pos, n)
-  (* we search the first item with a non-identity inner coercion *)
-  and first_non_id path pos = function
-    | [] -> None
-    | (_,Tcoerce_none) :: q -> first_non_id path (pos + 1) q
-    | (_,c) :: q ->
-        either
-          (transposition (Item pos :: path)) c
-          (first_non_id path (pos + 1)) q
-
-  let transposition c = match transposition [] c with
-    | None -> raise Not_found
-    | Some x -> x
-
-  let rec runtime_item k = function
-    | [] -> raise Not_found
-    | item :: q when is_runtime_component item ->
-        if k = 0 then item else runtime_item (k-1) q
-    | _ :: q -> runtime_item k q
-
-  (* Find module type at position [path] and convert the [coerce_pos] path to
-     a [pos] path *)
-  let rec find env ctx path mt = match mt, path with
-    | (Mty_ident p | Mty_alias p), _ ->
-        begin match (Env.find_modtype p env).mtd_type with
-        | None -> raise Not_found
-        | Some mt -> find env ctx path mt
-        end
-    | Mty_signature s , [] -> List.rev ctx, s
-    | Mty_signature s, Item k :: q ->
-        begin match runtime_item k s with
-        | Sig_module (id, _, md,_,_) -> find env (Module id :: ctx) q md.md_type
-        | _ -> raise Not_found
-        end
-    | Mty_functor(x,Some mt,_), InArg :: q -> find env (Arg x :: ctx) q mt
-    | Mty_functor(x,_,mt), InBody :: q -> find env (Body x :: ctx) q mt
-    | _ -> raise Not_found
-
-  let find env path mt = find env [] path mt
-  let item mt k = item_ident_name (runtime_item k mt)
-
-  let pp_item ppf (id,_,kind) =
-    Format.fprintf ppf "%s %S" (kind_of_field_desc kind) (Ident.name id)
-
-  let pp env ppf (mty,c) =
-    try
-      let p, k, l = transposition c in
-      let ctx, mt = find env p mty in
-      fprintf ppf
-        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
-         @[For example,@ %a@[the %a@ and the %a are not in the same order@ \
-         in the expected and actual module types.@]@]"
-        alt_context ctx pp_item (item mt k) pp_item (item mt l)
-    with Not_found -> (* this should not happen *)
-      fprintf ppf "Illegal permutation of runtime components in a module type."
-
-end
-
-
 let include_err env ppf = function
   | Missing_field (id, loc, kind) ->
       fprintf ppf "The %s `%a' is required but not provided"
@@ -777,7 +784,8 @@ let include_err env ppf = function
         %a@;<1 -2>does not match@ %a@]"
       !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
       !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
-  | Modtype_permutation (mty,c) -> Illegal_permutation.pp env ppf (mty,c)
+  | Modtype_permutation (mty,c) ->
+      Illegal_permutation.pp alt_context env ppf (mty,c)
   | Interface_mismatch(impl_name, intf_name) ->
       fprintf ppf "@[The implementation %s@ does not match the interface %s:"
        impl_name intf_name
