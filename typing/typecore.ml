@@ -4664,17 +4664,12 @@ and type_let
          generalize_expansive env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
-  (* The next line changes the toplevel experience from:
-     {[
-       let _ = Array.get;;
-       - : '_weak1 array -> int -> '_weak1 = <fun>
-     ]}
-     to:
-     {[
+  (* We also generalize expressions that are not bound to a variable.
+     This does not matter in general, but those types are shown by the
+     interactive toplevel, for example: {[
        let _ = Array.get;;
        - : 'a array -> int -> 'a = <fun>
-     ]}
-  *)
+     ]} *)
   List.iter (fun exp -> generalize exp.exp_type) exp_list;
   let l = List.combine pat_list exp_list in
   let l =
