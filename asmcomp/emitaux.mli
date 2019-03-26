@@ -32,15 +32,19 @@ val emit_float32_directive: string -> int32 -> unit
 
 val reset : unit -> unit
 val reset_debug_info: unit -> unit
-val emit_debug_info: Debuginfo.t -> unit
+val emit_debug_info: Insn_debuginfo.t -> unit
 val emit_debug_info_gen :
-  Debuginfo.t ->
+  Insn_debuginfo.t ->
   (file_num:int -> file_name:string -> unit) ->
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
+type file_kind =
+  | Ocaml
+  | Linear
+
 (** Assignment of file numberings for assembly output.  Note that this
     function may write to the assembly file. *)
-val file_num_for : file_name:string -> int
+val file_num_for : file_kind -> file_name:string -> int
 
 val record_frame_descr :
   label:int ->              (* Return address *)

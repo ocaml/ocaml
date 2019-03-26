@@ -26,6 +26,7 @@ let next_linear_dbg_id = ref 0
 
 let create_linear_dbg () =
   let id = !next_linear_dbg_id in
+  incr next_linear_dbg_id;
   Debuginfo.of_line ~file:"" ~line:id ~scope:Debuginfo.Current_block.toplevel
 
 let create dbg ~phantom_available_before =
@@ -45,6 +46,7 @@ let none =
   }
 
 let dbg t = t.dbg
+let position t = Debuginfo.position t.dbg
 let linear_dbg t = t.linear_dbg
 let linear_position t = Debuginfo.position t.linear_dbg
 let phantom_available_before t = t.phantom_available_before

@@ -259,9 +259,13 @@ let cfi_offset ~reg ~offset =
 
 (* Emit source location (e.g. DWARF .debug_line) information *)
 
+type file_kind =
+  | Ocaml
+  | Linear
+
 (* This assoc list is expected to be very short *)
 let file_pos_nums =
-  (ref [] : (string * int) list ref)
+  (ref [] : ((string * file_kind) * int) list ref)
 
 (* This value must be greater than the value used for the "none" file in
    [Asm_directives.initialize]. *)
@@ -272,19 +276,22 @@ let file_pos_num_cnt = ref init_file_pos_num_cnt
 
 (* Most recent position emitted, to avoid duplicate ".loc" directives. *)
 let prev_code_range = ref Debuginfo.Code_range.none
+let prev_linear_code_range = ref Debuginfo.Code_range.none
 
 (* Reset debug state at beginning of asm file *)
 let reset_debug_info () =
   file_pos_nums := [];
-  file_pos_num_cnt := init_file_pos_num_cnt
+  file_pos_num_cnt := init_file_pos_num_cnt;
+  prev_code_range := Debuginfo.Code_range.none;
+  prev_linear_code_range := Debuginfo.Code_range.none
 
-let file_num_for0 ~file_emitter ~file_name =
-  try List.assoc file_name !file_pos_nums
+let file_num_for0 file_kind ~file_emitter ~file_name =
+  try List.assoc (file_name, file_kind) !file_pos_nums
   with Not_found ->
     let file_num = !file_pos_num_cnt in
     incr file_pos_num_cnt;
     file_emitter ~file_num ~file_name;
-    file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+    file_pos_nums := ((file_name, file_kind), file_num) :: !file_pos_nums;
     file_num
 
 (* We only emit .file if the file has not been seen before. We
@@ -293,7 +300,7 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
   (* CR mshinwell: Why was this predicated on [Config.with_frame_pointers]
      before? *)
   if is_cfi_enabled () && Clflags.debug_thing Clflags.Debug_dwarf_loc then begin
-    match Debuginfo.position dbg with
+    begin match Insn_debuginfo.position dbg with
     | None -> ()
     | Some code_range ->
       let module R = Debuginfo.Code_range in
@@ -302,11 +309,28 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
         let line = R.line code_range in
         let col = R.char_start code_range in
         if line > 0 then begin (* PR#6243 *)
-          let file_num = file_num_for0 ~file_emitter ~file_name in
+          let file_num = file_num_for0 Ocaml ~file_emitter ~file_name in
           loc_emitter ~file_num ~line ~col;
           prev_code_range := code_range
         end
       end
+    end;
+    (* CR mshinwell: deduplicate code *)
+    begin match Insn_debuginfo.linear_position dbg with
+    | None -> ()
+    | Some code_range ->
+      let module R = Debuginfo.Code_range in
+      if not (R.equal code_range !prev_linear_code_range) then begin
+        let file_name = R.file code_range in
+        let line = R.line code_range in
+        let col = R.char_start code_range in
+        if line > 0 then begin (* PR#6243 *)
+          let file_num = file_num_for0 Linear ~file_emitter ~file_name in
+          loc_emitter ~file_num ~line ~col;
+          prev_linear_code_range := code_range
+        end
+      end
+    end
   end
 
 let default_file_emitter ~file_num ~file_name =
@@ -318,8 +342,8 @@ let default_file_emitter ~file_num ~file_name =
   emit_int file_num; emit_char '\t';
   emit_string_literal file_name; emit_char '\n'
 
-let file_num_for ~file_name =
-  file_num_for0 ~file_emitter:default_file_emitter ~file_name
+let file_num_for kind ~file_name =
+  file_num_for0 kind ~file_emitter:default_file_emitter ~file_name
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg

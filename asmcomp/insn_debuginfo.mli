@@ -40,6 +40,9 @@ val dbg : t -> Debuginfo.t
     is located in [Linearize] code. *)
 val linear_dbg : t -> Debuginfo.t
 
+(** The source location component of [dbg]. *)
+val position : t -> Debuginfo.Code_range.t option
+
 (** The source location component of [linear_dbg]. *)
 val linear_position : t -> Debuginfo.Code_range.t option
 

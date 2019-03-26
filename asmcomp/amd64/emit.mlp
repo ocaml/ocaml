@@ -542,7 +542,7 @@ let tailrec_entry_point = ref 0
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
-  emit_debug_info (Insn_debuginfo.dbg i.dbg);
+  emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
   | Lprologue ->
@@ -1029,7 +1029,9 @@ let fundecl fundecl ~end_of_function_label =
   else
     D.global fun_name;
   D.define_function_symbol fun_name;
-  emit_debug_info (Debuginfo.of_function fundecl.fun_dbg);
+  emit_debug_info (Insn_debuginfo.create
+    (Debuginfo.of_function fundecl.fun_dbg)
+    ~phantom_available_before:Backend_var.Set.empty);
   D.cfi_startproc ();
   (* Set the initial CFA offset so as to cope with the CPU having pushed the
      return address. (The CFA points at the first address above the return
