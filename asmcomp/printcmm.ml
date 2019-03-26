@@ -21,45 +21,12 @@ open Cmm
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
-type Format.stag += Start_pos_tag of { placeholder_line : int; }
-type Format.stag += End_pos_tag of { placeholder_line : int; }
+include Ir_debug.Make_mark_functions (Debuginfo)
 
-module Make_mark_functions (P : sig
-  type t
-
-  val position : t -> Debuginfo.Code_range.t option
-end) = struct
-  let mark_start_location ppf dbg =
-    match P.position dbg with
-    | None -> ()
-    | Some pos ->
-      let placeholder_line = Debuginfo.Code_range.line pos in
-      Format.pp_open_stag ppf (Start_pos_tag { placeholder_line; })
-
-  let mark_end_location ppf dbg =
-    match P.position dbg with
-    | None -> ()
-    | Some pos ->
-      let placeholder_line = Debuginfo.Code_range.line pos in
-      Format.pp_open_stag ppf (End_pos_tag { placeholder_line; })
-end
-
-include Make_mark_functions (Debuginfo)
-
-module Mark_fun_dbg = Make_mark_functions (struct
+module Mark_fun_dbg = Ir_debug.Make_mark_functions (struct
   include Debuginfo.Function
   let position t = Some (position t)
 end)
-
-let parse_placeholder_line_start_tag (stag : Format.stag) =
-  match stag with
-  | Start_pos_tag { placeholder_line; } -> Some placeholder_line
-  | _ -> None
-
-let parse_placeholder_line_end_tag (stag : Format.stag) =
-  match stag with
-  | End_pos_tag { placeholder_line; } -> Some placeholder_line
-  | _ -> None
 
 let rec_flag ppf = function
   | Nonrecursive -> ()

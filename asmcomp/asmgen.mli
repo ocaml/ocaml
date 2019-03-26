@@ -37,8 +37,12 @@ val compile_implementation_clambda :
     Lambda.program ->
     unit
 
-val compile_phrase :
-    ppf_dump:Format.formatter -> dwarf:Dwarf.t option -> Cmm.phrase -> unit
+val compile_phrase
+   : ppf_dump:Format.formatter
+  -> dwarf:Dwarf.t option
+  -> linear_debug:(Linear_debug.t * out_channel) option
+  -> Cmm.phrase
+  -> unit
 
 type error = Assembler_error of string
 exception Error of error

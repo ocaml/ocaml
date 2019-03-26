@@ -25,7 +25,7 @@ module S = Backend_sym
 let label ppf l =
   Format.fprintf ppf "L%i" l
 
-let instr ppf i =
+let instr ?no_debuginfo ppf i =
   begin match i.desc with
   | Lend -> ()
   | Lprologue ->
@@ -70,41 +70,48 @@ let instr ppf i =
   | Lraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
-  let phantom_available_before =
-    Insn_debuginfo.phantom_available_before i.dbg 
-  in
-  let available_before = Insn_debuginfo.available_before i.dbg in
-  let available_across = Insn_debuginfo.available_across i.dbg in
-  let dbg = Insn_debuginfo.dbg i.dbg in
-  (* CR mshinwell: Use a printer in [Insn_debuginfo] *)
-  if !Clflags.dump_avail && !Clflags.dump_linear_dbg then begin
-    let print_reg = Printmach.reg in
-    if not (Backend_var.Set.is_empty phantom_available_before) then
-      fprintf ppf "@;@{<debug_avail>@[<hov 4>^---(available_before@ %a)@ \
-          (phantom_available_before@ %a)@ \
-          (available_across@ %a)@]@}"
-        (Reg_availability_set.print ~print_reg) available_before
-        Backend_var.Set.print phantom_available_before
-        (Misc.Stdlib.Option.print (Reg_availability_set.print ~print_reg))
-        available_across
-    else
-      fprintf ppf "@;@{<debug_avail>@[<hov 4>^---(available_before@ %a)@ \
-          (available_across@ %a)@]@}"
-        (Reg_availability_set.print ~print_reg) available_before
-        (Misc.Stdlib.Option.print (Reg_availability_set.print ~print_reg))
-        available_across
-  end;
-  if (not (Debuginfo.is_none dbg)) && !Clflags.dump_linear_dbg then
-    fprintf ppf "@ @[<hov 4>@{<debug_loc>    %a@}@]" Debuginfo.print dbg
+  match no_debuginfo with
+  | Some () -> ()
+  | None ->
+      let phantom_available_before =
+        Insn_debuginfo.phantom_available_before i.dbg 
+      in
+      let available_before = Insn_debuginfo.available_before i.dbg in
+      let available_across = Insn_debuginfo.available_across i.dbg in
+      let dbg = Insn_debuginfo.dbg i.dbg in
+      (* CR mshinwell: Use a printer in [Insn_debuginfo] *)
+      if !Clflags.dump_avail && !Clflags.dump_linear_dbg then begin
+        let print_reg = Printmach.reg in
+        if not (Backend_var.Set.is_empty phantom_available_before) then
+          fprintf ppf "@;@{<debug_avail>@[<hov 4>^---(available_before@ %a)@ \
+              (phantom_available_before@ %a)@ \
+              (available_across@ %a)@]@}"
+            (Reg_availability_set.print ~print_reg) available_before
+            Backend_var.Set.print phantom_available_before
+            (Misc.Stdlib.Option.print (Reg_availability_set.print ~print_reg))
+            available_across
+        else
+          fprintf ppf "@;@{<debug_avail>@[<hov 4>^---(available_before@ %a)@ \
+              (available_across@ %a)@]@}"
+            (Reg_availability_set.print ~print_reg) available_before
+            (Misc.Stdlib.Option.print (Reg_availability_set.print ~print_reg))
+            available_across
+      end;
+      if (not (Debuginfo.is_none dbg)) && !Clflags.dump_linear_dbg then begin
+        fprintf ppf "@ @[<hov 4>@{<debug_loc>    %a@}@]" Debuginfo.print dbg
+      end
 
-let rec all_instr ppf i =
+let rec all_instr ?no_debuginfo ppf i =
   match i.desc with
   | Lend -> ()
-  | _ -> fprintf ppf "%a@,%a" instr i all_instr i.next
+  | _ ->
+      fprintf ppf "%a@,%a"
+        (instr ?no_debuginfo) i
+        (all_instr ?no_debuginfo) i.next
 
-let fundecl ppf f =
+let fundecl ?no_debuginfo ppf f =
   let dbg =
     if not !Clflags.dump_linear_dbg then ""
     else Format.asprintf " %a" Debuginfo.Function.print f.fun_dbg in
   fprintf ppf "@[<v 2>%a:%s@,%a@]" S.print f.fun_name dbg
-    all_instr f.fun_body
+    (all_instr ?no_debuginfo) f.fun_body

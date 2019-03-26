@@ -36,6 +36,13 @@ val none : t
     is located. *)
 val dbg : t -> Debuginfo.t
 
+(** Information about the source location and the block where the instruction
+    is located in [Linearize] code. *)
+val linear_dbg : t -> Debuginfo.t
+
+(** The source location component of [linear_dbg]. *)
+val linear_position : t -> Debuginfo.Code_range.t option
+
 (** Which variables bound by phantom lets are available immediately prior to
     commencement of execution of the instruction. *)
 val phantom_available_before : t -> Backend_var.Set.t
@@ -62,6 +69,9 @@ val with_available_before : t -> Reg_availability_set.t -> t
 (** Set which registers are available (in the sense of [Available_regs])
     during execution of the instruction. *)
 val with_available_across : t -> Reg_availability_set.t option -> t
+
+(** Change the source location component of [linear_dbg]. *)
+val with_linear_position : t -> Debuginfo.Code_range.t -> t
 
 (** Change the [available_before] field according to the given function. *)
 val map_available_before

@@ -12,10 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Functionality for augmenting Cmm code that does not correspond to
-    OCaml source code, such as that generated for the startup file, with
-    debugging information. *)
+(** Functionality for augmenting Linear code with debugging information. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-include Ir_debug.S with type ir := Cmm.phrase
+include Ir_debug.S with type ir := Linearize.fundecl

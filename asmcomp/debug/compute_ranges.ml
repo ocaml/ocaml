@@ -53,7 +53,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         }
       | _ ->
         Misc.fatal_errorf "Subrange.create: bad [start_insn]: %a"
-          Printlinear.instr start_insn
+          (Printlinear.instr ?no_debuginfo:None) start_insn
 
     let start_pos t = t.start_pos
     let start_pos_offset t = t.start_pos_offset
@@ -442,7 +442,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
             instruction:\n%a\navailable_across:@ %a\nopen_subranges: %a"
           Backend_sym.print fundecl.fun_name
           KS.print not_open_but_should_be
-          Printlinear.instr { insn with L.next = L.end_instr; }
+          (Printlinear.instr ?no_debuginfo:None)
+          { insn with L.next = L.end_instr; }
           KS.print should_be_open
           KS.print open_subranges
       end

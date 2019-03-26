@@ -221,7 +221,10 @@ ASMCOMP=\
   asmcomp/asm_target/asm_directives.cmo \
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
-  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
+  asmcomp/debug/ir_debug.cmo \
+  asmcomp/cmm.cmo \
+  asmcomp/printcmm.cmo \
+  asmcomp/debug/cmm_debug.cmo \
   asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
   asmcomp/debug/reg_availability_set.cmo \
   asmcomp/insn_debuginfo.cmo \
@@ -250,7 +253,9 @@ ASMCOMP=\
   asmcomp/linscan.cmo \
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
-  asmcomp/printlinear.cmo asmcomp/linearize.cmo \
+  asmcomp/linearize.cmo \
+  asmcomp/printlinear.cmo \
+  asmcomp/debug/linear_debug.cmo \
   asmcomp/debug/available_regs.cmo \
   asmcomp/debug/dwarf/dwarf_name_laundry.cmo \
   $(DWARF_LOW) \
@@ -265,7 +270,6 @@ ASMCOMP=\
   asmcomp/emitaux.cmo \
   $(DWARF) \
   asmcomp/debug/debug_passes.cmo \
-  asmcomp/debug/cmm_debug.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \

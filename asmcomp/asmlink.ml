@@ -205,7 +205,7 @@ let scan_file obj_name tolink = match read_file obj_name with
 (* Second pass: generate the startup file and link it with everything else *)
 
 let force_linking_of_startup ~ppf_dump =
-  Asmgen.compile_phrase ~ppf_dump ~dwarf:None
+  Asmgen.compile_phrase ~ppf_dump ~dwarf:None ~linear_debug:None
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 
 let compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase =
@@ -213,9 +213,10 @@ let compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase =
     match cmm_debug with
     | None -> phrase
     | Some (cmm_debug, _startup_cmm_file, _startup_cmm_chan) ->
-      Cmm_debug.write_cmm_to_channel_and_fix_up_debuginfo cmm_debug phrase
+      Cmm_debug.write_ir_to_channel_and_fix_up_debuginfo cmm_debug phrase
   in
-  Asmgen.compile_phrase ~ppf_dump ~dwarf phrase
+  (* CR mshinwell: create a [Linear_debug] for the startup file *)
+  Asmgen.compile_phrase ~ppf_dump ~dwarf ~linear_debug:None phrase
 
 let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
       ~objfiles units_list =
@@ -230,7 +231,7 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
       let sourcefile =
         match cmm_debug with
         | None -> ""
-        | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
+        | Some (cmm_debug, _, _) -> Cmm_debug.ir_file cmm_debug
       in
       Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
         ~cmt_file_digest:None ~objfiles)
@@ -287,7 +288,7 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
       let sourcefile =
         match cmm_debug with
         | None -> ""
-        | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
+        | Some (cmm_debug, _, _) -> Cmm_debug.ir_file cmm_debug
       in
       Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
         ~cmt_file_digest:None ~objfiles)
@@ -314,7 +315,9 @@ let create_cmm_debug ~dwarf_prefix_name =
   else
     let startup_cmm_file = dwarf_prefix_name ^ ".cmm" in
     let startup_cmm_chan = open_out startup_cmm_file in
-    let cmm_debug = Cmm_debug.create ~startup_cmm_file ~startup_cmm_chan in
+    let cmm_debug =
+      Cmm_debug.create ~ir_file:startup_cmm_file ~ir_chan:startup_cmm_chan
+    in
     Some (cmm_debug, startup_cmm_file, startup_cmm_chan)
 
 let remove_startup_obj ~startup_obj =

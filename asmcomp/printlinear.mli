@@ -18,5 +18,5 @@
 open Format
 open Linearize
 
-val instr: formatter -> instruction -> unit
-val fundecl: formatter -> fundecl -> unit
+val instr: ?no_debuginfo:unit -> formatter -> instruction -> unit
+val fundecl: ?no_debuginfo:unit -> formatter -> fundecl -> unit

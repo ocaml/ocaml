@@ -47,7 +47,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
   in
   let arg_location, type_attribute =
     (* The reason we call [Reg_availability_set.canonicalise] from
-       [Available_ranges] vars, rather than traversing each function's
+       [Available_ranges_vars], rather than traversing each function's
        code and rewriting all of the availability sets first, is so that
        we don't lose information (in particular that a particular hard
        register before a call contains the value of a certain variable)

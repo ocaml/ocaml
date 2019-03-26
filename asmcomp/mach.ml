@@ -155,7 +155,6 @@ let end_instr () =
     dbg = Insn_debuginfo.none;
   }
 
-(* CR mshinwell: May be able to ditch this type now *)
 type phantom_available_before =
   | Take_from of instruction
   | Exactly of Backend_var.Set.t

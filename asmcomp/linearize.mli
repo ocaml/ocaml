@@ -84,4 +84,10 @@ type fundecl =
     fun_tailrec_entry_point_label : label;
   }
 
+val map_debuginfo_fundecl
+   : fundecl
+  -> f:(Insn_debuginfo.t -> Insn_debuginfo.t)
+  -> f_function:(Debuginfo.Function.t -> Debuginfo.Function.t)
+  -> fundecl
+
 val fundecl: Mach.fundecl -> fundecl

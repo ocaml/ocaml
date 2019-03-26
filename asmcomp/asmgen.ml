@@ -36,7 +36,10 @@ let pass_dump_if ppf flag message phrase =
   dump_if ppf flag message phrase; phrase
 
 let pass_dump_linear_if ppf flag message phrase =
-  if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
+  if !flag then begin
+    fprintf ppf "*** %s@.%a@." message
+      (Printlinear.fundecl ?no_debuginfo:None) phrase
+  end;
   phrase
 
 let flambda_raw_clambda_dump_if ppf
@@ -98,6 +101,26 @@ let rec regalloc ~ppf_dump round fd =
     Reg.reinit(); Liveness.fundecl newfd; regalloc ~ppf_dump (round + 1) newfd
   end else newfd
 
+let create_linear_debug ~prefix_name =
+(*
+  if not (Clflags.debug_thing Clflags.Debug_dwarf_cmm) then begin
+    None
+  end else begin
+*)
+    let linear_file = prefix_name ^ ".linear" in
+    let linear_chan = open_out linear_file in
+    let linear_debug =
+      Linear_debug.create ~ir_file:linear_file ~ir_chan:linear_chan
+    in
+    Some (linear_debug, linear_chan)
+
+let linearize ~linear_debug fundecl =
+  let linear = Linearize.fundecl fundecl in
+  match linear_debug with
+  | None -> linear
+  | Some (linear_debug, _) ->
+    Linear_debug.write_ir_to_channel_and_fix_up_debuginfo linear_debug linear
+
 let emit ~ppf_dump:_ dwarf fundecl =
   let end_of_function_label = Cmm.new_label () in
   match dwarf with
@@ -113,7 +136,7 @@ let emit ~ppf_dump:_ dwarf fundecl =
 
 let (++) x f = f x
 
-let compile_fundecl ~ppf_dump dwarf fd_cmm =
+let compile_fundecl ~ppf_dump ~dwarf ~linear_debug fd_cmm =
   Proc.init ();
   Reg.reset();
   fd_cmm
@@ -135,16 +158,16 @@ let compile_fundecl ~ppf_dump dwarf fd_cmm =
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ~ppf_dump 1)
   ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
   ++ pass_dump_if ppf_dump dump_avail "After availability analysis"
-  ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
+  ++ Profile.record ~accumulate:true "linearize" (linearize ~linear_debug)
   ++ pass_dump_linear_if ppf_dump dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
   ++ pass_dump_linear_if ppf_dump dump_scheduling "After instruction scheduling"
   ++ Profile.record ~accumulate:true "emit" (emit ~ppf_dump dwarf)
 
-let compile_phrase ~ppf_dump ~dwarf p =
+let compile_phrase ~ppf_dump ~dwarf ~linear_debug p =
   if !dump_cmm then fprintf ppf_dump "%a@." Printcmm.phrase p;
   match p with
-  | Cfunction fd -> compile_fundecl ~ppf_dump dwarf fd
+  | Cfunction fd -> compile_fundecl ~ppf_dump ~dwarf ~linear_debug fd
   | Cdata dl -> Emit.data dl
 
 
@@ -154,7 +177,7 @@ let compile_genfuns ~ppf_dump dwarf f =
   List.iter
     (function
        | (Cfunction {fun_name = name}) as ph when f name ->
-           compile_phrase ~ppf_dump ~dwarf ph
+           compile_phrase ~ppf_dump ~dwarf ~linear_debug:None ph
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
@@ -223,11 +246,12 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
             Some dwarf)
           ()
     in
+    let linear_debug = create_linear_debug ~prefix_name in
     clambda
     ++ Profile.record "cmm"
          (Cmmgen.compunit ~ppf_dump ~unit_name ~source_file:sourcefile)
     ++ Profile.record "compile_phrases"
-         (List.iter (compile_phrase ~ppf_dump ~dwarf))
+         (List.iter (compile_phrase ~ppf_dump ~dwarf ~linear_debug))
     ++ (fun () -> ());
     (match toplevel with
     | None -> ()
@@ -237,11 +261,15 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
        when part of a C library, won't be discarded by the linker.
        This is important if a module that uses such a symbol is later
        dynlinked. *)
-    compile_phrase ~ppf_dump ~dwarf
+    compile_phrase ~ppf_dump ~dwarf ~linear_debug
       (Cmmgen.reference_symbols
          (List.filter (fun s -> s <> "" && s.[0] <> '%')
             (List.map Primitive.native_name !Translmod.primitive_declarations))
       );
+    begin match linear_debug with
+    | None -> ()
+    | Some (_linear_debug, linear_chan) -> close_out linear_chan
+    end;
     Emit.end_assembly dwarf
   with
   | Dwarf_format.Too_large_for_thirty_two_bit_dwarf ->

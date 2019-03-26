@@ -227,6 +227,23 @@ let copy_instr desc (to_copy : Mach.instruction) next =
   in
   { proto_insn with next; }
 
+let to_list_rev insn =
+  let rec to_list_rev insn acc =
+    match insn.desc with
+    | Lend -> acc
+    | _ -> to_list_rev insn.next (insn :: acc)
+  in
+  to_list_rev insn []
+
+let map_debuginfo insn ~f =
+  List.fold_left (fun next insn ->
+      { insn with
+        dbg = f insn.dbg;
+        next;
+      })
+    end_instr
+    (to_list_rev insn)
+
 (*
    Label the beginning of the given instruction sequence.
    - If the sequence starts with a branch, jump over it.
@@ -539,4 +556,10 @@ let fundecl f =
     fun_arity = Array.length f.Mach.fun_args;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
     fun_tailrec_entry_point_label;
+  }
+
+let map_debuginfo_fundecl fundecl ~f ~f_function =
+  { fundecl with
+    fun_body = map_debuginfo fundecl.fun_body ~f;
+    fun_dbg = f_function fundecl.fun_dbg;
   }
