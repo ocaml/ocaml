@@ -498,8 +498,9 @@ flexdll: flexdll/Makefile flexlink
 flexlink: flexdll/Makefile
 	$(MAKE) -C runtime BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
-	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
+	$(MAKE) -C stdlib COMPILER=../boot/ocamlc \
+	                  $(filter-out *.cmi,$(LIBFILES))
+	cd stdlib && cp $(LIBFILES) ../boot/
 	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
 	  CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot" \
@@ -524,8 +525,7 @@ INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 .PHONY: install-flexdll
 install-flexdll:
-	cat stdlib/camlheader flexdll/flexlink.exe > \
-	  "$(INSTALL_BINDIR)/flexlink.exe"
+	$(INSTALL_PROG) flexdll/flexlink.exe "$(INSTALL_BINDIR)/flexlink$(EXE)"
 ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
 	$(INSTALL_DATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
     "$(INSTALL_BINDIR)/"
