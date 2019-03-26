@@ -391,7 +391,7 @@ let class_signature sub {csig_self; csig_fields; _} =
   sub.typ sub csig_self;
   List.iter (sub.class_type_field sub) csig_fields
 
-let class_type_field sub {ctf_desc; _} =  
+let class_type_field sub {ctf_desc; _} =
   match ctf_desc with
   | Tctf_inherit ct -> sub.class_type sub ct
   | Tctf_val (_, _, _, ct) ->  sub.typ sub ct
@@ -422,12 +422,12 @@ let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;
   List.iter (sub.class_field sub) cstr_fields
 
-let row_field sub {rf_desc; _} = 
+let row_field sub {rf_desc; _} =
   match rf_desc with
   | Ttag (_, _, list) -> List.iter (sub.typ sub) list
   | Tinherit ct -> sub.typ sub ct
 
-let object_field sub {of_desc; _} = 
+let object_field sub {of_desc; _} =
   match of_desc with
   | OTtag (_, ct) -> sub.typ sub ct
   | OTinherit ct -> sub.typ sub ct
