@@ -13459,10 +13459,6 @@ case $host in #(
 else
   model=ppc
 fi; system=elf ;; #(
-  powerpc-*-netbsd*) :
-    arch=power; model=ppc; system=netbsd ;; #(
-  powerpc-*-openbsd*) :
-    arch=power; model=ppc; system=bsd_elf ;; #(
   s390x*-*-linux*) :
     arch=s390x; model=z10; system=elf ;; #(
   armv6*-*-linux-gnueabihf) :
@@ -13728,7 +13724,7 @@ esac ;; #(
   *,freebsd) :
     default_as="${toolpref}as"
     default_aspp="${toolpref}cc -c" ;; #(
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd) :
+  amd64,*|arm,*|arm64,*|i386,*) :
     default_as="${toolpref}as"
     case $ocaml_cv_cc_vendor in #(
   clang-*) :
