@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*                      Nicolas Ojeda Bar, LexiFi                         *)
+(*            Nicolas Ojeda Bar, LexiFi, Isaac "Izzy" Avram               *)
 (*                                                                        *)
 (*   Copyright 2012 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
