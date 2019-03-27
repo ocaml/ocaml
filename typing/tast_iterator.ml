@@ -85,7 +85,9 @@ let class_type_declaration sub x =
 let class_declaration sub x =
   class_infos sub (sub.class_expr sub) x
 
-let iter_str_desc sub str_desc = match str_desc with
+let structure_item sub {str_desc; str_env; _} =
+  sub.env sub str_env;
+  match str_desc with
   | Tstr_eval   (exp, _) -> sub.expr sub exp
   | Tstr_value  (rec_flag, list) -> sub.value_bindings sub (rec_flag, list)
   | Tstr_primitive v -> sub.value_description sub v
@@ -102,10 +104,6 @@ let iter_str_desc sub str_desc = match str_desc with
   | Tstr_include incl -> include_infos (sub.module_expr sub) incl
   | Tstr_open od -> sub.open_declaration sub od
   | Tstr_attribute _ -> ()
-
-let structure_item sub {str_desc; str_env; _} =
-  sub.env sub str_env;
-  iter_str_desc sub str_desc
 
 let value_description sub x = sub.typ sub x.val_desc
 
