@@ -44,7 +44,7 @@
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
-   targetint load_path
+   targetint load_path int_replace_polymorphic_compare
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -65,7 +65,7 @@
    annot outcometree
 
    ;; COMP
-   lambda printlambda semantics_of_primitives switch matching translobj
+   lambda printlambda switch matching translobj debuginfo
    translattribute translprim translcore translclass translmod simplif
    runtimedef meta opcodes bytesections dll symtable pparse main_args compenv
    compmisc makedepend compile_common
@@ -143,6 +143,13 @@
    printcmm printlinear printmach proc reg reload reloadgen schedgen scheduling
    selectgen selection spacetime_profiling spill split strmatch x86_ast
    x86_dsl x86_gas x86_masm x86_proc
+
+   ;; asmcomp/debug/
+   reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
+   compute_ranges
+
+   ;; driver/
+   optcompile opterrors
  )
 )
 

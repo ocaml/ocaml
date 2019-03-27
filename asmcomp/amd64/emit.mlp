@@ -33,6 +33,7 @@ module String = Misc.Stdlib.String
    emit.mlp files for certain other targets; the reference here ensures
    that when releases are being prepared the .depend files are correct
    for all targets. *)
+[@@@ocaml.warning "-66"]
 open! Branch_relaxation
 
 let _label s = D.label ~typ:QWORD s
