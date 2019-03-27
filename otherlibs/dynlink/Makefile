@@ -103,7 +103,7 @@ COMPILERLIBS_SOURCES=\
   typing/subst.ml \
   typing/predef.ml \
   typing/datarepr.ml \
-  typing/cmi_format.ml \
+  file_formats/cmi_format.ml \
   typing/persistent_env.ml \
   typing/env.ml \
   bytecomp/lambda.ml \
