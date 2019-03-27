@@ -30,6 +30,7 @@ codegen_INCLUDES=\
   -I $(OTOPDIR)/typing \
   -I $(OTOPDIR)/middle_end \
   -I $(OTOPDIR)/bytecomp \
+  -I $(OTOPDIR)/lambda \
   -I $(OTOPDIR)/asmcomp
 
 codegen_OTHEROBJECTS=\
