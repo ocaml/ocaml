@@ -81,7 +81,7 @@ Working version
   (Mark Shinwell, review by Stephen Dolan)
 
 - #7878, #8542: Replaced TypedtreeIter with tast_iterator
-  (Isaac "Izzy" Avram)
+  (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 ### Runtime system:
 
