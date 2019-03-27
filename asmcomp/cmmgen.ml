@@ -1663,18 +1663,20 @@ let make_switch arg cases actions dbg =
     let linear_function_result =
       (* In case the resulting integers are a linear function of the index, we
          don't emit a table, and just compute the result directly *)
-      let length = Array.length const_actions in
+      let length = Array.length cases in
       if length >= 2
       then begin
-        match const_actions.(0), const_actions.(1) with
+        match const_actions.(cases.(0)), const_actions.(cases.(1)) with
         | Cint v0, Cint v1 ->
           let offset = v0 in
           let slope  = Nativeint.sub v1 v0 in
           let v = ref (Some (offset, slope)) in
           for i = 2 to pred length do
-            match const_actions.(i) with
+            let action_index = cases.(i) in
+            match const_actions.(action_index) with
             | Cint value ->
-              if value <> Nativeint.(add offset (mul (of_int i) slope))
+              if value
+                 <> Nativeint.(add offset (mul (of_int i) slope))
               then v := None
             | _ -> v:= None
           done;

@@ -15,18 +15,19 @@ type t = A | B | C
 
 let passes = ref 0
 
-let full_test ~f ~results () =
+let full_test line ~f ~results () =
   let f = Sys.opaque_identity f in
   List.iter
     (fun (input, output) ->
        let result = f input in
-       assert (result = output)
+       if result <> output
+       then raise (Assert_failure (__FILE__,line,0))
     )
     results;
   incr passes
 
 let test_int_match =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> 1
       | 2 -> 2
@@ -37,7 +38,7 @@ let test_int_match =
       [ 1,1; 2,2; 3,3; 4,0; 0,0 ]
 
 let test_int_match_reverse =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> 3
       | 2 -> 2
@@ -48,7 +49,7 @@ let test_int_match_reverse =
       [ 1,3; 2,2; 3,1; 4,0; 0,0 ]
 
 let test_int_match_negative =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> -1
       | 2 -> -2
@@ -59,7 +60,7 @@ let test_int_match_negative =
       [ 1,-1; 2,-2; 3,-3; 4,0; 0,0 ]
 
 let test_int_match_negative_reverse =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> -3
       | 2 -> -2
@@ -70,7 +71,7 @@ let test_int_match_negative_reverse =
       [ 1,-3; 2,-2; 3,-1; 4,0; 0,0 ]
 
 let test_int_min_int =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> 1
       | 2 -> 2
@@ -81,7 +82,7 @@ let test_int_min_int =
       [ 1,1; 2,2; 3,min_int; 4,0; 0,0 ]
 
 let test_int_max_int =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> 1
       | 2 -> 2
@@ -92,7 +93,7 @@ let test_int_max_int =
       [ 1,1; 2,2; 3,max_int; 4,0; 0,0 ]
 
 let test_float =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> 1.0
       | 2 -> 2.0
@@ -103,7 +104,7 @@ let test_float =
       [ 1,1.0; 2,2.0; 3,3.0; 4,0.0; 0,0.0 ]
 
 let test_string =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> "a"
       | 2 -> "b"
@@ -115,7 +116,7 @@ let test_string =
       ; 3, Sys.opaque_identity "c" ^ Sys.opaque_identity "c"; 4, ""; 0, "" ]
 
 let test_list =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> []
       | 2 -> [ 42 ]
@@ -126,7 +127,7 @@ let test_list =
       [ 1, []; 2, [ 42 ]; 3, List.rev [3;2;1]; 4, [ 415 ]; 0, [ 415 ] ]
 
 let test_abc =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> 1
       | B -> 2
@@ -135,8 +136,18 @@ let test_abc =
     ~results:
       [ A, 1; B, 2; C, 3]
 
+let test_abc_unsorted =
+  full_test __LINE__
+    ~f:(function
+      | C -> 3
+      | A -> 1
+      | B -> 2
+    )
+    ~results:
+      [ A, 1; B, 2; C, 3]
+
 let test_abc_neg3 =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> 1
       | B -> 2
@@ -146,7 +157,7 @@ let test_abc_neg3 =
       [ A, 1; B, 2; C, -3]
 
 let test_abc_min_int =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> 1
       | B -> 2
@@ -156,7 +167,7 @@ let test_abc_min_int =
       [ A, 1; B, 2; C, min_int ]
 
 let test_abc_max_int =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> 1
       | B -> 2
@@ -166,7 +177,7 @@ let test_abc_max_int =
       [ A, 1; B, 2; C, max_int ]
 
 let test_abc_float =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> 1.
       | B -> 2.
@@ -176,7 +187,7 @@ let test_abc_float =
       [ A, 1.; B, 2.; C, 3. ]
 
 let test_abc_string =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> "a"
       | B -> "b"
@@ -186,7 +197,7 @@ let test_abc_string =
       [ A, "a"; B, "b"; C, "c" ]
 
 let test_abc_list =
-  full_test
+  full_test __LINE__
     ~f:(function
       | A -> []
       | B -> [42]
@@ -196,7 +207,7 @@ let test_abc_list =
       [ A, []; B, [42]; C, List.rev [3;2;1] ]
 
 let test_f99 =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> 1 | 2 -> 2 | 3 -> 3 | 4 -> 4 | 5 -> 5 | 6 -> 6 | 7 -> 7 | 8 -> 8
       | 9 -> 9 | 10 -> 10 | 11 -> 11 | 12 -> 12 | 13 -> 13 | 14 -> 14 | 15 -> 15
@@ -218,7 +229,7 @@ let test_f99 =
       [ 1,1; 42,42; 98, 98; 99,99; 100, 0 ]
 
 let test_poly =
-  full_test
+  full_test __LINE__
     ~f:(function
       | 1 -> `Primary
       | 2 -> `Secondary
@@ -227,6 +238,47 @@ let test_poly =
     )
     ~results:
       [ 1, `Primary; 2, `Secondary; 3, `Tertiary ]
+
+let test_or =
+  full_test __LINE__
+    ~f:(function
+      | 1 | 2 | 3 -> 0
+      | 4 | 5 | 6 -> 1
+      | 7 -> 2
+      | _ -> 0
+    )
+    ~results:
+      [ 1,0; 2,0; 3,0; 4,1; 5,1; 6,1; 7,2; 8,0; 0,0 ]
+
+type t' = E | F | G | H
+
+let test_or_efgh =
+  full_test __LINE__
+    ~f:(function
+      | E | H -> 0
+      | F -> 1
+      | G -> 2
+    )
+    ~results:
+      [ E,0; H,0; F,1; G,2 ]
+
+type 'a gadt =
+  | Ag : int gadt
+  | Bg : string gadt
+  | Cg : int gadt
+  | Dg : int gadt
+  | Eg : int gadt
+
+let test_gadt =
+  full_test __LINE__
+    ~f:(function
+      | Ag -> 1
+      | Cg -> 2
+      | Dg -> 3
+      | Eg -> 4
+    )
+    ~results:
+      [ Ag,1; Cg,2; Dg,3; Eg,4 ]
 
 let () =
   test_int_match ();
@@ -239,6 +291,7 @@ let () =
   test_string ();
   test_list ();
   test_abc ();
+  test_abc_unsorted ();
   test_abc_neg3 ();
   test_abc_min_int ();
   test_abc_max_int ();
@@ -247,6 +300,9 @@ let () =
   test_abc_list ();
   test_f99 ();
   test_poly ();
+  test_or ();
+  test_or_efgh ();
+  test_gadt ();
   ()
 
 let () =
