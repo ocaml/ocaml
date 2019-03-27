@@ -623,7 +623,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
-       Subst.signature sub sg
+       let scope = Ctype.create_scope () in
+       Subst.signature ~scope sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
        let sub =
          List.fold_left
@@ -631,7 +632,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
            Subst.identity
            !real_ids
        in
-       Subst.signature sub sg
+       let scope = Ctype.create_scope () in
+       Subst.signature ~scope sub sg
     | _ ->
        sg
     in
@@ -989,6 +991,7 @@ end = struct
   *)
 
   let simplify env t sg =
+    let scope = Ctype.create_scope () in
     let to_remove = t.to_be_removed in
     let ids_to_remove =
       Ident.Map.fold (fun id (kind,  _, _) lst ->
@@ -1017,7 +1020,7 @@ end = struct
           if to_remove.subst == Subst.identity then
             component
           else
-            Subst.signature_item to_remove.subst component
+            Subst.signature_item ~scope to_remove.subst component
         in
         let component =
           match ids_to_remove with
@@ -1858,8 +1861,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           let mty_appl =
             match path with
               Some path ->
-                Subst.modtype (Subst.add_module param path Subst.identity)
-                              mty_res
+                let scope = Ctype.create_scope () in
+                Subst.modtype ~scope
+                  (Subst.add_module param path Subst.identity)
+                  mty_res
             | None ->
                 if generative then mty_res else
                 let env =

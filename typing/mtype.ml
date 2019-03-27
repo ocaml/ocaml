@@ -31,7 +31,8 @@ let rec scrape env mty =
   | _ -> mty
 
 let freshen mty =
-  Subst.modtype Subst.identity mty
+  let scope = Ctype.create_scope () in
+  Subst.modtype ~scope Subst.identity mty
 
 let rec strengthen ~aliasable env mty p =
   match scrape env mty with

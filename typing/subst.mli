@@ -54,15 +54,17 @@ val extension_constructor:
         t -> extension_constructor -> extension_constructor
 val class_declaration: t -> class_declaration -> class_declaration
 val cltype_declaration: t -> class_type_declaration -> class_type_declaration
-val modtype: t -> module_type -> module_type
-val signature: t -> signature -> signature
-val signature_item: t -> signature_item -> signature_item
-val modtype_declaration: t -> modtype_declaration -> modtype_declaration
-val module_declaration: t -> module_declaration -> module_declaration
+val modtype: ?scope:int -> t -> module_type -> module_type
+val signature: ?scope:int -> t -> signature -> signature
+val signature_item: ?scope:int -> t -> signature_item -> signature_item
+val modtype_declaration:
+  ?scope:int -> t -> modtype_declaration -> modtype_declaration
+val module_declaration:
+  ?scope:int -> t -> module_declaration -> module_declaration
 
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
-val compose: t -> t -> t
+val compose: ?scope:int -> t -> t -> t
 
 (* A forward reference to be filled in ctype.ml. *)
 val ctype_apply_env_empty:
