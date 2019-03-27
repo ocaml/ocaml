@@ -140,7 +140,7 @@ let type_extension sub {tyext_constructors; tyext_params; _} =
   List.iter (sub.extension_constructor sub) tyext_constructors
 
 let type_exception sub {tyexn_constructor; _} =
-    sub.extension_constructor sub tyexn_constructor
+  sub.extension_constructor sub tyexn_constructor
 
 let extension_constructor sub {ext_kind; _} =
   match ext_kind with
