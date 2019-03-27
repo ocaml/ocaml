@@ -106,10 +106,10 @@ COMPILERLIBS_SOURCES=\
   file_formats/cmi_format.ml \
   typing/persistent_env.ml \
   typing/env.ml \
-  bytecomp/lambda.ml \
+  lambda/lambda.ml \
+  lambda/runtimedef.ml \
   bytecomp/instruct.ml \
   bytecomp/opcodes.ml \
-  bytecomp/runtimedef.ml \
   bytecomp/bytesections.ml \
   bytecomp/dll.ml \
   bytecomp/meta.ml \

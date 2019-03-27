@@ -28,6 +28,7 @@
 (copy_files# asmcomp/*.ml{,i})
 (copy_files# asmcomp/debug/*.ml{,i})
 (copy_files# file_formats/*.ml{,i})
+(copy_files# lambda/*.ml{,i})
 (copy_files# middle_end/*.ml{,i})
 (copy_files# middle_end/closure/*.ml{,i})
 (copy_files# middle_end/flambda/*.ml{,i})
@@ -64,16 +65,20 @@
    ; manual update: mli only files
    annot outcometree
 
-   ;; COMP
-   lambda printlambda switch matching translobj debuginfo
-   translattribute translprim translcore translclass translmod simplif
-   runtimedef meta opcodes bytesections dll symtable pparse main_args compenv
-   compmisc makedepend compile_common
+   ;; lambda/
+   debuginfo lambda matching printlambda runtimedef simplif switch
+   translattribute translclass translcore translmod translobj translprim
+
+   ;; bytecomp/
+   meta opcodes bytesections dll symtable
+
+   ;; some of COMP
+   pparse main_args compenv compmisc makedepend compile_common
    ; manual update: mli only files
    cmo_format
    ; manual update: this is required.
    instruct
-   ))
+ ))
 
 (library
  (name ocamlbytecomp)
@@ -81,8 +86,12 @@
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon)
  (modules
-   bytegen printinstr emitcode bytelink bytelibrarian bytepackager errors
-   compile))
+    ;; bytecomp/
+    bytegen bytelibrarian bytelink bytepackager emitcode printinstr
+
+    ;; driver/
+    errors compile
+ ))
 
 (library
  (name ocamlmiddleend)

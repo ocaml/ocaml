@@ -81,7 +81,7 @@ dumpobj.cmo : \
     opnames.cmo \
     ../bytecomp/opcodes.cmi \
     ../parsing/location.cmi \
-    ../bytecomp/lambda.cmi \
+    ../lambda/lambda.cmi \
     ../bytecomp/instruct.cmi \
     ../typing/ident.cmi \
     ../utils/config.cmi \
@@ -93,7 +93,7 @@ dumpobj.cmx : \
     opnames.cmx \
     ../bytecomp/opcodes.cmx \
     ../parsing/location.cmx \
-    ../bytecomp/lambda.cmx \
+    ../lambda/lambda.cmx \
     ../bytecomp/instruct.cmx \
     ../typing/ident.cmx \
     ../utils/config.cmx \

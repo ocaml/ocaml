@@ -47,7 +47,7 @@ CAMLC=$(BOOT_OCAMLC) -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
-        -I middle_end -I middle_end/closure \
+        -I lambda -I middle_end -I middle_end/closure \
         -I middle_end/flambda -I middle_end/flambda/base_types \
         -I asmcomp -I asmcomp/debug \
         -I driver -I toplevel
@@ -109,13 +109,15 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/rec_check.cmo typing/typecore.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 
-COMP=bytecomp/debuginfo.cmo \
-  bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/translobj.cmo bytecomp/translattribute.cmo \
-  bytecomp/translprim.cmo bytecomp/translcore.cmo \
-  bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
+LAMBDA=lambda/debuginfo.cmo \
+  lambda/lambda.cmo lambda/printlambda.cmo \
+  lambda/switch.cmo lambda/matching.cmo \
+  lambda/translobj.cmo lambda/translattribute.cmo \
+  lambda/translprim.cmo lambda/translcore.cmo \
+  lambda/translclass.cmo lambda/translmod.cmo \
+  lambda/simplif.cmo lambda/runtimedef.cmo
+
+COMP=\
   bytecomp/meta.cmo bytecomp/opcodes.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo \
   bytecomp/symtable.cmo \
@@ -124,8 +126,7 @@ COMP=bytecomp/debuginfo.cmo \
   driver/makedepend.cmo \
   driver/compile_common.cmo
 
-
-COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
+COMMON=$(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
 
 BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/emitcode.cmo \
@@ -557,6 +558,7 @@ endif
 	   typing/*.cmi \
 	   bytecomp/*.cmi \
 	   file_formats/*.cmi \
+	   lambda/*.cmi \
 	   driver/*.cmi \
 	   toplevel/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
@@ -566,6 +568,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
 	   typing/*.cmt typing/*.cmti typing/*.mli \
 	   file_formats/*.cmt file_formats/*.cmti file_formats/*.mli \
+	   lambda/*.cmt lambda/*.cmti lambda/*.mli \
 	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
 	   driver/*.cmt driver/*.cmti driver/*.mli \
 	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
@@ -703,6 +706,7 @@ installoptopt:
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
 	   file_formats/*.cmx \
+	   lambda/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
            middle_end/closure/*.cmx \
            middle_end/flambda/*.cmx \
@@ -737,6 +741,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
            file_formats/*.ml \
+           lambda/*.ml \
 	   toplevel/*.ml middle_end/*.ml middle_end/closure/*.ml \
      middle_end/flambda/*.ml middle_end/flambda/base_types/*.ml \
 	   asmcomp/*.ml \
@@ -895,14 +900,14 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
 runtime/primitives:
 	$(MAKE) -C runtime primitives
 
-bytecomp/runtimedef.ml: bytecomp/generate_runtimedef.sh runtime/caml/fail.h \
+lambda/runtimedef.ml: lambda/generate_runtimedef.sh runtime/caml/fail.h \
     runtime/primitives
 	$^ > $@
 
 partialclean::
-	rm -f bytecomp/runtimedef.ml
+	rm -f lambda/runtimedef.ml
 
-beforedepend:: bytecomp/runtimedef.ml
+beforedepend:: lambda/runtimedef.ml
 
 # Choose the right machine-dependent files
 
@@ -1293,7 +1298,7 @@ partialclean::
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
-           middle_end/closure middle_end/flambda \
+           lambda middle_end/closure middle_end/flambda \
            middle_end/flambda/base_types asmcomp/debug \
            driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
@@ -1304,7 +1309,7 @@ partialclean::
 .PHONY: depend
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-         file_formats middle_end/closure middle_end/flambda \
+         lambda file_formats middle_end/closure middle_end/flambda \
 	 middle_end/flambda/base_types asmcomp/debug \
    driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
