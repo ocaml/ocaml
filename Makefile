@@ -1310,10 +1310,10 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
-	 middle_end/flambda/base_types asmcomp/debug \
-   driver toplevel; \
-	 do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
-	 done) > .depend
+         middle_end/flambda/base_types asmcomp/debug \
+         driver toplevel; \
+         do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
+         done) > .depend
 
 .PHONY: distclean
 distclean: clean
