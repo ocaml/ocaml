@@ -195,22 +195,22 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
       sub.expr sub exp
   | Texp_function {cases; _} -> sub.cases sub cases
   | Texp_apply (exp, list) ->
-        sub.expr sub exp;
-        List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
+      sub.expr sub exp;
+      List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
   | Texp_match (exp, cases, _) ->
-        sub.expr sub exp;
-        sub.cases sub cases
+      sub.expr sub exp;
+      sub.cases sub cases
   | Texp_try (exp, cases) ->
-        sub.expr sub exp;
-        sub.cases sub cases
+      sub.expr sub exp;
+      sub.cases sub cases
   | Texp_tuple list -> List.iter (sub.expr sub) list
   | Texp_construct (_, _, args) -> List.iter (sub.expr sub) args
   | Texp_variant (_, expo) -> Option.iter (sub.expr sub) expo
   | Texp_record { fields; extended_expression; _} ->
       Array.iter (function
-          | _, Kept _ -> ()
-          | _, Overridden (_, exp) -> sub.expr sub exp)
-          fields;
+        | _, Kept _ -> ()
+        | _, Overridden (_, exp) -> sub.expr sub exp)
+        fields;
       Option.iter (sub.expr sub) extended_expression;
   | Texp_field (exp, _, _) -> sub.expr sub exp
   | Texp_setfield (exp1, _, _, exp2) ->
@@ -297,11 +297,11 @@ let module_type sub {mty_desc; mty_env; _} =
   | Tmty_alias _      -> ()
   | Tmty_signature sg -> sub.signature sub sg
   | Tmty_functor (_, _, mtype1, mtype2) ->
-        Option.iter (sub.module_type sub) mtype1;
-        sub.module_type sub mtype2
+      Option.iter (sub.module_type sub) mtype1;
+      sub.module_type sub mtype2
   | Tmty_with (mtype, list) ->
-        sub.module_type sub mtype;
-        List.iter (fun (_, _, e) -> sub.with_constraint sub e) list
+      sub.module_type sub mtype;
+      List.iter (fun (_, _, e) -> sub.with_constraint sub e) list
   | Tmty_typeof mexpr -> sub.module_expr sub mexpr
 
 let with_constraint sub = function
@@ -439,8 +439,8 @@ let class_field_kind sub = function
 let class_field sub {cf_desc; _} = match cf_desc with
   | Tcf_inherit (_, cl, _, _, _) -> sub.class_expr sub cl
   | Tcf_constraint (cty1, cty2) ->
-        sub.typ sub cty1;
-        sub.typ sub cty2
+      sub.typ sub cty1;
+      sub.typ sub cty2
   | Tcf_val (_, _, _, k, _) -> class_field_kind sub k
   | Tcf_method (_, _, k) -> class_field_kind sub k
   | Tcf_initializer exp -> sub.expr sub exp
