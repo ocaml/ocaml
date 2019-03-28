@@ -138,7 +138,7 @@ let int_const dbg n =
   else Cconst_natint
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n, dbg)
 
-let natint_const dbg n =
+let natint_const_untagged dbg n =
   if n > Nativeint.of_int max_int
   || n < Nativeint.of_int min_int
   then Cconst_natint (n,dbg)
@@ -1693,8 +1693,8 @@ let make_switch arg cases actions dbg =
     (* In case the resulting integers are an affine function of the index, we
        don't emit a table, and just compute the result directly *)
     add_int
-      (mul_int arg (natint_const dbg slope) dbg)
-      (natint_const dbg offset)
+      (mul_int arg (natint_const_untagged dbg slope) dbg)
+      (natint_const_untagged dbg offset)
       dbg
   in
   match Misc.Stdlib.Array.all_somes (Array.map extract_uconstant actions) with
