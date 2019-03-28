@@ -83,11 +83,11 @@ NATIVE_STATIC_LIBRARIES += libasmrunp.$(A)
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-ifeq "$(SUPPORTS_BYTECODE_SHARED_LIBRARIES)" "true"
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 BYTECODE_STATIC_LIBRARIES += libcamlrun_pic.$(A)
 BYTECODE_SHARED_LIBRARIES += libcamlrun_shared.$(SO)
 endif
-ifeq "$(SUPPORTS_NATIVE_SHARED_LIBRARIES)" "true"
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 NATIVE_STATIC_LIBRARIES += libasmrun_pic.$(A)
 NATIVE_SHARED_LIBRARIES += libasmrun_shared.$(SO)
 endif
