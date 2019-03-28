@@ -127,12 +127,25 @@ val copy_row:
     bool -> row_desc -> bool -> type_expr -> row_desc
 val copy_kind: field_kind -> field_kind
 
-val save_desc: type_expr -> type_desc -> unit
+module For_copy : sig
+
+  type copy_scope
+        (* The private state that the primitives below are mutating, it should
+           remain scoped within a single [with_scope] call.
+
+           While it is possible to circumvent that discipline in various
+           ways, you should NOT do that. *)
+
+  val save_desc: copy_scope -> type_expr -> type_desc -> unit
         (* Save a type description *)
-val dup_kind: field_kind option ref -> unit
+
+  val dup_kind: copy_scope -> field_kind option ref -> unit
         (* Save a None field_kind, and make it point to a fresh Fvar *)
-val cleanup_types: unit -> unit
-        (* Restore type descriptions *)
+
+  val with_scope: (copy_scope -> 'a) -> 'a
+        (* [with_scope f] calls [f] and restores saved type descriptions
+           before returning its result. *)
+end
 
 val lowest_level: int
         (* Marked type: ty.level < lowest_level *)

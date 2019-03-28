@@ -473,23 +473,6 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  if system = S_gnu || system = S_linux then begin
-    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-       and rbx, rbp, r12-r15 like all C functions.  This includes
-       all the registers used for argument passing, so we don't
-       need to preserve other regs.  We do need to initialize rbp
-       like mcount expects it, though. *)
-    I.push r10;
-    if not fp then I.mov rsp rbp;
-    (* No Spacetime instrumentation needed: [mcount] cannot call anything
-       OCaml-related. *)
-    emit_call "mcount";
-    I.pop r10
-  end
-
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -508,7 +491,6 @@ let emit_instr fallthrough i =
       cfi_adjust_cfa_offset 8;
       I.mov rsp rbp;
     end;
-    if !Clflags.gprofile then emit_profile();
     if frame_required() then begin
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0
@@ -865,14 +847,22 @@ let emit_instr fallthrough i =
                          ConstLabel lbl))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
-      cfi_adjust_cfa_offset 8;
-      I.push r14;
-      cfi_adjust_cfa_offset 8;
-      I.mov rsp r14;
-      stack_offset := !stack_offset + 16
+  | Lentertrap ->
+      ()
+  | Lpushtrap { lbl_handler; } ->
+      let load_label_addr s arg =
+        if !Clflags.pic_code then
+          I.lea (mem64_rip NONE (emit_label s)) arg
+        else
+          I.mov (sym (emit_label s)) arg
+      in
+      cfi_adjust_cfa_offset 16;
+      I.sub (int 16) rsp;
+      stack_offset := !stack_offset + 16;
+      I.mov r14 (mem64 QWORD 0 RSP);
+      load_label_addr lbl_handler r14;
+      I.mov r14 (mem64 QWORD 8 RSP);
+      I.mov rsp r14
   | Lpoptrap ->
       I.pop r14;
       cfi_adjust_cfa_offset (-8);
@@ -890,7 +880,8 @@ let emit_instr fallthrough i =
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
-          I.ret ()
+          I.pop r11;
+          I.jmp r11
       end
 
 let rec emit_all fallthrough i =

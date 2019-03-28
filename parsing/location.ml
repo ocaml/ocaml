@@ -660,10 +660,9 @@ let is_quotable_loc loc =
   && loc.loc_end.pos_fname = !input_name
 
 let error_style () =
-  let open Misc.Error_style in
   match !Clflags.error_style with
-  | Some Contextual | None -> Contextual
-  | Some Short -> Short
+  | Some setting -> setting
+  | None -> Misc.Error_style.default_setting
 
 let batch_mode_printer : report_printer =
   let pp_loc _self report ppf loc =
@@ -882,17 +881,6 @@ let () =
     (function
       | Sys_error msg ->
           Some (errorf ~loc:(in_file !input_name) "I/O error: %s" msg)
-
-      | Misc.HookExnWrapper {error = e; hook_name;
-                             hook_info={Misc.sourcefile}} ->
-          let sub = match error_of_exn e with
-            | None | Some `Already_displayed ->
-                [msg "%s" (Printexc.to_string e)]
-            | Some (`Ok err) ->
-                (msg ~loc:err.main.loc "%t" err.main.txt) :: err.sub
-          in
-          Some
-            (errorf ~loc:(in_file sourcefile) ~sub "In hook %S:" hook_name)
       | _ -> None
     )
 

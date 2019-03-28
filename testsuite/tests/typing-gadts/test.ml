@@ -1101,7 +1101,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
   (x:<foo:int;bar:int;..>)
 ;;
 [%%expect{|
-val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
+val g : 't -> 't int_foo -> 't int_bar -> 't = <fun>
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1109,7 +1109,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   x, x#foo, x#bar
 ;;
 [%%expect{|
-val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
+val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
 |}];;
 
 (* PR#5554 *)

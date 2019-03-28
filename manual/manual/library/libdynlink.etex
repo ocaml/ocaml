@@ -15,7 +15,12 @@ that they remain independent of the implementation of modules in the
 main program.
 
 Programs that use the "dynlink" library simply need to link
-"dynlink.cma" or "dynlink.cmxa" with their object files and other libraries. 
+"dynlink.cma" or "dynlink.cmxa" with their object files and other libraries.
+
+\textbf{Note:} in order to insure that the dynamically-loaded modules have
+access to all the libraries that are visible to the main program (and not just
+to the parts of those libraries that are actually used in the main program),
+programs using the "dynlink" library should be linked with "-linkall".
 
 \ifouthtml
 \begin{links}
@@ -25,4 +30,3 @@ Programs that use the "dynlink" library simply need to link
 \else
 \input{Dynlink.tex}
 \fi
-

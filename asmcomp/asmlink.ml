@@ -37,9 +37,12 @@ exception Error of error
 
 (* Consistency check between interfaces and implementations *)
 
-let crc_interfaces = Consistbl.create ()
+module Cmi_consistbl = Consistbl.Make (Misc.Stdlib.String)
+let crc_interfaces = Cmi_consistbl.create ()
 let interfaces = ref ([] : string list)
-let crc_implementations = Consistbl.create ()
+
+module Cmx_consistbl = Consistbl.Make (Misc.Stdlib.String)
+let crc_implementations = Cmx_consistbl.create ()
 let implementations = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
 let cmx_required = ref ([] : string list)
@@ -53,10 +56,10 @@ let check_consistency file_name unit crc =
           None -> ()
         | Some crc ->
             if name = unit.ui_name
-            then Consistbl.set crc_interfaces name crc file_name
-            else Consistbl.check crc_interfaces name crc file_name)
+            then Cmi_consistbl.set crc_interfaces name crc file_name
+            else Cmi_consistbl.check crc_interfaces name crc file_name)
       unit.ui_imports_cmi
-  with Consistbl.Inconsistency(name, user, auth) ->
+  with Cmi_consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_interface(name, user, auth)))
   end;
   begin try
@@ -68,9 +71,9 @@ let check_consistency file_name unit crc =
               if List.mem name !cmx_required then
                 raise(Error(Missing_cmx(file_name, name)))
           | Some crc ->
-              Consistbl.check crc_implementations name crc file_name)
+              Cmx_consistbl.check crc_implementations name crc file_name)
       unit.ui_imports_cmx
-  with Consistbl.Inconsistency(name, user, auth) ->
+  with Cmx_consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_implementation(name, user, auth)))
   end;
   begin try
@@ -79,16 +82,16 @@ let check_consistency file_name unit crc =
   with Not_found -> ()
   end;
   implementations := unit.ui_name :: !implementations;
-  Consistbl.set crc_implementations unit.ui_name crc file_name;
+  Cmx_consistbl.set crc_implementations unit.ui_name crc file_name;
   implementations_defined :=
     (unit.ui_name, file_name) :: !implementations_defined;
   if unit.ui_symbol <> unit.ui_name then
     cmx_required := unit.ui_name :: !cmx_required
 
 let extract_crc_interfaces () =
-  Consistbl.extract !interfaces crc_interfaces
+  Cmi_consistbl.extract !interfaces crc_interfaces
 let extract_crc_implementations () =
-  Consistbl.extract !implementations crc_implementations
+  Cmx_consistbl.extract !implementations crc_implementations
 
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
@@ -106,10 +109,7 @@ let add_ccobjs origin l =
   end
 
 let runtime_lib () =
-  let libname =
-    if !Clflags.gprofile
-    then "libasmrunp" ^ ext_lib
-    else "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
+  let libname = "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
   try
     if !Clflags.nopervasives then []
     else [ Load_path.find libname ]
@@ -328,10 +328,8 @@ let call_linker file_list startup_file output_name =
 
 let link ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
-    let stdlib =
-      if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
-    let stdexit =
-      if !Clflags.gprofile then "std_exit.p.cmx" else "std_exit.cmx" in
+    let stdlib = "stdlib.cmxa" in
+    let stdexit = "std_exit.cmx" in
     let objfiles =
       if !Clflags.nopervasives then objfiles
       else if !Clflags.output_c_object then stdlib :: objfiles
@@ -431,8 +429,8 @@ let () =
     )
 
 let reset () =
-  Consistbl.clear crc_interfaces;
-  Consistbl.clear crc_implementations;
+  Cmi_consistbl.clear crc_interfaces;
+  Cmx_consistbl.clear crc_implementations;
   implementations_defined := [];
   cmx_required := [];
   interfaces := [];

@@ -41,10 +41,9 @@ else
 LN = ln -sf
 endif
 
-CAMLRUN ?= boot/ocamlrun
 include stdlib/StdlibModules
 
-CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
+CAMLC=$(BOOT_OCAMLC) -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
@@ -119,9 +118,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/symtable.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo \
-  driver/compdynlink_types.cmo driver/compdynlink_platform_intf.cmo \
-  driver/compdynlink_common.cmo driver/compdynlink.cmo \
-  driver/compplugin.cmo driver/makedepend.cmo \
+  driver/makedepend.cmo \
   driver/compile_common.cmo
 
 
@@ -170,7 +167,9 @@ ASMCOMP=\
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
   asmcomp/afl_instrument.cmo \
-  asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
+  asmcomp/strmatch.cmo \
+  asmcomp/cmmgen_state.cmo \
+  asmcomp/cmmgen.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
   asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
@@ -184,6 +183,8 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
+  asmcomp/debug/compute_ranges_intf.cmo \
+  asmcomp/debug/compute_ranges.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
@@ -298,13 +299,10 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD =
-  FLEXDLL_DIR =
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
-  FLEXDLL_DIR = $(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
 endif
 else
-  FLEXDLL_DIR =
 endif
 
 # The configuration file
@@ -331,7 +329,7 @@ coldstart:
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) \
-	  COMPILER="../boot/ocamlc -use-prims ../runtime/primitives" all
+	  CAMLC='$$(BOOT_OCAMLC) -use-prims ../runtime/primitives' all
 	cd stdlib; cp $(LIBFILES) ../boot
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
 
@@ -804,7 +802,7 @@ natruntop:
 
 # Native dynlink
 
-otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
+otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/native/dynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
 
 # The lexer
@@ -927,8 +925,8 @@ clean::
 	$(MAKE) -C runtime clean
 	rm -f stdlib/libcamlrun.$(A)
 
-otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
-  str systhreads threads unix win32graph win32unix
+otherlibs_all := bigarray dynlink raw_spacetime_lib \
+  str systhreads unix win32unix
 subdirs := debugger lex ocamldoc ocamltest runtime stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
 
@@ -1176,78 +1174,6 @@ else
 	 @echo "Architecture tests are disabled on 32-bit platforms."
 endif
 
-# Compiler Plugins
-
-DYNLINK_DIR=otherlibs/dynlink
-
-driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli \
-    driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $< $@
-
-driver/compdynlink_common.ml: $(DYNLINK_DIR)/dynlink_common.ml \
-    driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $< $@
-
-driver/compdynlink_common.mli: $(DYNLINK_DIR)/dynlink_common.mli \
-    driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $< $@
-
-driver/compdynlink_types.mli: $(DYNLINK_DIR)/dynlink_types.mli
-	cp $(DYNLINK_DIR)/dynlink_types.mli driver/compdynlink_types.mli
-
-driver/compdynlink_types.ml: $(DYNLINK_DIR)/dynlink_types.ml
-	cp $(DYNLINK_DIR)/dynlink_types.ml driver/compdynlink_types.ml
-
-driver/compdynlink_platform_intf.ml: $(DYNLINK_DIR)/dynlink_platform_intf.ml \
-    driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $< $@
-
-ifeq ($(NATDYNLINK),true)
-driver/compdynlink.mlopt: $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mli
-	cat $(DYNLINK_DIR)/natdynlink.ml | \
-	  sed 's/Dynlink_/Compdynlink_/g' \
-	  > driver/compdynlink.mlopt
-else
-driver/compdynlink.mlopt: $(DYNLINK_DIR)/nodynlink.ml driver/compdynlink.mli
-	cat $(DYNLINK_DIR)/nodynlink.ml | \
-	  sed 's/Dynlink_/Compdynlink_/g' \
-	  > driver/compdynlink.mlopt
-endif
-
-driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli \
-    driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $< $@
-
-# See comment in otherlibs/dynlink/Makefile about these two rules.
-driver/compdynlink_platform_intf.mli: driver/compdynlink_platform_intf.ml
-	cp $< $@
-
-driver/compdynlink.cmo: driver/compdynlink.mlbyte
-	$(CAMLC) $(COMPFLAGS) -c -impl $<
-
-driver/compdynlink.cmx: driver/compdynlink.mlopt
-	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
-
-beforedepend:: driver/compdynlink.mlbyte \
-               driver/compdynlink.mlopt \
-               driver/compdynlink_platform_intf.ml \
-               driver/compdynlink_platform_intf.mli \
-               driver/compdynlink_types.ml \
-               driver/compdynlink_types.mli \
-               driver/compdynlink.mli \
-               driver/compdynlink_common.ml \
-               driver/compdynlink_common.mli
-partialclean::
-	rm -f driver/compdynlink.mlbyte
-	rm -f driver/compdynlink.mlopt
-	rm -f driver/compdynlink.mli
-	rm -f driver/compdynlink_platform_intf.ml
-	rm -f driver/compdynlink_platform_intf.mli
-	rm -f driver/compdynlink_common.ml
-	rm -f driver/compdynlink_common.mli
-	rm -f driver/compdynlink_types.mli
-	rm -f driver/compdynlink_types.ml
-
 # The native toplevel
 
 compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL:.cmo=.cmx)
@@ -1265,6 +1191,7 @@ endif
 
 ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
+    otherlibs/dynlink/dynlink.cmxa \
     compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -o $@ $^
@@ -1279,13 +1206,17 @@ toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 bytecomp/opcodes.ml: runtime/caml/instruct.h tools/make_opcodes
 	runtime/ocamlrun tools/make_opcodes -opcodes < $< > $@
 
+bytecomp/opcodes.mli: bytecomp/opcodes.ml
+	$(CAMLC) -i $< > $@
+
 tools/make_opcodes: tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
+	rm -f bytecomp/opcodes.mli
 
-beforedepend:: bytecomp/opcodes.ml
+beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
 # Testing the parser -- see parsing/HACKING.adoc
 
@@ -1343,15 +1274,11 @@ depend: beforedepend
 	 middle_end/base_types asmcomp/debug driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
-		-impl driver/compdynlink.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
-		-impl driver/compdynlink.mlbyte >> .depend
 
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	boot/*.cm* boot/libcamlrun.$(A)
+	boot/*.cm* boot/libcamlrun.$(A) boot/ocamlc.opt
 	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc

@@ -131,10 +131,11 @@ method! effects_of e =
   | e -> super#effects_of e
 
 method select_addressing chunk = function
-  | Cop((Cadda | Caddv), [arg; Cconst_int n], _)
+  | Cop((Cadda | Caddv), [arg; Cconst_int (n, _)], _)
     when is_offset chunk n ->
       (Iindexed n, arg)
-  | Cop((Cadda | Caddv as op), [arg1; Cop(Caddi, [arg2; Cconst_int n], _)], dbg)
+  | Cop((Cadda | Caddv as op),
+      [arg1; Cop(Caddi, [arg2; Cconst_int (n, _)], _)], dbg)
     when is_offset chunk n ->
       (Iindexed n, Cop(op, [arg1; arg2], dbg))
   | arg ->
@@ -142,10 +143,10 @@ method select_addressing chunk = function
 
 method select_shift_arith op dbg arithop arithrevop args =
   match args with
-    [arg1; Cop(Clsl | Clsr | Casr as op, [arg2; Cconst_int n], _)]
+    [arg1; Cop(Clsl | Clsr | Casr as op, [arg2; Cconst_int (n, _)], _)]
     when n > 0 && n < 32 ->
       (Ispecific(Ishiftarith(arithop, select_shiftop op, n)), [arg1; arg2])
-  | [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int n], _); arg2]
+  | [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int (n, _)], _); arg2]
     when n > 0 && n < 32 ->
       (Ispecific(Ishiftarith(arithrevop, select_shiftop op, n)), [arg2; arg1])
   | args ->
@@ -184,15 +185,15 @@ method private iextcall (func, alloc) =
 method! select_operation op args dbg =
   match (op, args) with
   (* Recognize special shift arithmetic *)
-    ((Caddv | Cadda | Caddi), [arg; Cconst_int n])
+    ((Caddv | Cadda | Caddi), [arg; Cconst_int (n, _)])
     when n < 0 && self#is_immediate (-n) ->
       (Iintop_imm(Isub, -n), [arg])
   | ((Caddv | Cadda | Caddi as op), args) ->
       self#select_shift_arith op dbg Ishiftadd Ishiftadd args
-  | (Csubi, [arg; Cconst_int n])
+  | (Csubi, [arg; Cconst_int (n, _)])
     when n < 0 && self#is_immediate (-n) ->
       (Iintop_imm(Iadd, -n), [arg])
-  | (Csubi, [Cconst_int n; arg])
+  | (Csubi, [Cconst_int (n, _); arg])
     when self#is_immediate n ->
       (Ispecific(Irevsubimm n), [arg])
   | (Csubi as op, args) ->
@@ -204,7 +205,7 @@ method! select_operation op args dbg =
   | (Cxor as op, args) ->
       self#select_shift_arith op dbg Ishiftxor Ishiftxor args
   | (Ccheckbound,
-      [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int n], _); arg2])
+      [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int (n, _)], _); arg2])
     when n > 0 && n < 32 ->
       (Ispecific(Ishiftcheckbound(select_shiftop op, n)), [arg1; arg2])
   (* ARM does not support immediate operands for multiplication *)
@@ -304,15 +305,15 @@ method! select_condition = function
 
 (* Deal with some register constraints *)
 
-method! insert_op_debug op dbg rs rd =
+method! insert_op_debug env op dbg rs rd =
   try
     let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
-    self#insert_moves rs rsrc;
-    self#insert_debug (Iop op) dbg rsrc rdst;
-    self#insert_moves rdst rd;
+    self#insert_moves env rs rsrc;
+    self#insert_debug env (Iop op) dbg rsrc rdst;
+    self#insert_moves env rdst rd;
     rd
   with Use_default ->
-    super#insert_op_debug op dbg rs rd
+    super#insert_op_debug env op dbg rs rd
 
 end
 

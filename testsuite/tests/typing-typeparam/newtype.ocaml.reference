@@ -1,9 +1,9 @@
-val property : unit -> ('a -> exn) * (exn -> 'a option) = <fun>
+val property : unit -> ('t -> exn) * (exn -> 't option) = <fun>
 false
 true
 true
 false
-val sort_uniq : ('a -> 'a -> int) -> 'a list -> 'a list = <fun>
+val sort_uniq : ('s -> 's -> int) -> 's list -> 's list = <fun>
 abc,xyz
 Line 2, characters 32-33:
 2 | let f x (type a) (y : a) = (x = y);; (* Fails *)

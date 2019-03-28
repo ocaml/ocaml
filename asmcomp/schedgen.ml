@@ -360,7 +360,8 @@ method schedule_fundecl f =
   let rec schedule i try_nesting =
     match i.desc with
     | Lend -> i
-    | Lpushtrap -> { i with next = schedule i.next (try_nesting + 1) }
+    | Lpushtrap { lbl_handler = _; }
+      -> { i with next = schedule i.next (try_nesting + 1) }
     | Lpoptrap -> { i with next = schedule i.next (try_nesting - 1) }
     | _ ->
         if self#instr_in_basic_block i try_nesting then begin
@@ -383,7 +384,7 @@ method schedule_fundecl f =
       self#reschedule ready_queue 0 (schedule i try_nesting)
     end in
 
-  if f.fun_fast then begin
+  if f.fun_fast && !Clflags.insn_sched then begin
     let new_body = schedule f.fun_body 0 in
     clear_code_dag();
     { fun_name = f.fun_name;

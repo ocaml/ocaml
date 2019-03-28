@@ -234,7 +234,6 @@ CheckTypo () {
   export OCAML_CT_CA_FLAG="--cached"
   # Work around an apparent bug in Ubuntu 12.4.5
   # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
-  export OCAML_CT_AWK="awk --re-interval"
   rm -f check-typo-failed
   if test -z "$TRAVIS_COMMIT_RANGE"
   then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT

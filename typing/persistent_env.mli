@@ -16,11 +16,19 @@
 
 open Misc
 
+module Consistbl : module type of struct
+  include Consistbl.Make (Misc.Stdlib.String)
+end
+
 type error =
   | Illegal_renaming of modname * modname * filepath
   | Inconsistent_import of modname * filepath * filepath
   | Need_recursive_types of modname
   | Depend_on_unsafe_string_unit of modname
+
+exception Error of error
+
+val report_error: Format.formatter -> error -> unit
 
 module Persistent_signature : sig
   type t =

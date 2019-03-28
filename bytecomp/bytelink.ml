@@ -159,6 +159,8 @@ let scan_file obj_name tolink =
 
 (* Consistency check between interfaces *)
 
+module Consistbl = Consistbl.Make (Misc.Stdlib.String)
+
 let crc_interfaces = Consistbl.create ()
 let interfaces = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
@@ -300,7 +302,7 @@ let link_bytecode ?final_name tolink exec_name standalone =
     | Link_object(file_name, _) when file_name = exec_name ->
       raise (Error (Wrong_object_name exec_name));
     | _ -> ()) tolink;
-  Misc.remove_file exec_name; (* avoid permission problems, cf PR#1911 *)
+  Misc.remove_file exec_name; (* avoid permission problems, cf PR#8354 *)
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
                  0o777 exec_name in

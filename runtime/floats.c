@@ -523,7 +523,7 @@ CAMLprim value caml_nextafter_float(value x, value y)
   return caml_copy_double(caml_nextafter(Double_val(x), Double_val(y)));
 }
 
-#ifndef HAS_C99_FLOAT_OPS
+#ifndef HAS_WORKING_FMA
 union double_as_int64 { double d; uint64_t i; };
 #define IEEE754_DOUBLE_BIAS 0x3ff
 #define IEEE_EXPONENT(N) (((N) >> 52) & 0x7ff)
@@ -540,7 +540,7 @@ union double_as_int64 { double d; uint64_t i; };
 
 CAMLexport double caml_fma(double x, double y, double z)
 {
-#ifdef HAS_C99_FLOAT_OPS
+#ifdef HAS_WORKING_FMA
   return fma(x, y, z);
 #else // Emulation of FMA, from S. Boldo and G. Melquiond, "Emulation
       // of a FMA and Correctly Rounded Sums: Proved Algorithms Using
@@ -1008,8 +1008,12 @@ intnat caml_float_compare_unboxed(double f, double g)
   /* If one or both of f and g is NaN, order according to the convention
      NaN = NaN and NaN < x for all other floats x. */
   /* This branchless implementation is from GPR#164.
-     Note that [f == f] if and only if f is not NaN. */
-  return (f > g) - (f < g) + (f == f) - (g == g);
+     Note that [f == f] if and only if f is not NaN.
+     We expand each subresult of the expression to
+     avoid sign-extension on 64bit. GPR#2250. */
+  intnat res =
+    (intnat)(f > g) - (intnat)(f < g) + (intnat)(f == f) - (intnat)(g == g);
+  return res;
 }
 
 #endif

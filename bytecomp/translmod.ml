@@ -892,6 +892,9 @@ let field_of_str loc str =
     match cc with
     | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
         Translprim.transl_primitive pc_loc pc_desc pc_env pc_type None
+    | Tcoerce_alias (env, path, cc) ->
+        let lam = transl_module_path loc env path in
+        apply_coercion loc Alias cc lam
     | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
 
 
@@ -1343,7 +1346,7 @@ let transl_toplevel_item item =
         (transl_extension_constructor item.str_env None ext.tyexn_constructor)
   | Tstr_module {mb_id=id; mb_presence=Mp_present; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
-         with "open" (PR#1672) *)
+         with "open" (PR#8133) *)
       set_toplevel_unique_name id;
       let lam = transl_module Tcoerce_none (Some(Pident id)) modl in
       toploop_setvalue id lam

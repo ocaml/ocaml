@@ -1,6 +1,7 @@
 (* TEST
    * hasunix
    include unix
+   ** native
 *)
 
 open Bigarray

@@ -1054,6 +1054,7 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       (Uprim(P.Praise k, [ulam], dbg),
        Value_unknown)
+  | Lprim (Pmakearray _, [], _loc) -> make_const_ref (Uconst_block (0, []))
   | Lprim(p, args, loc) ->
       let p = Convert_primitives.convert p in
       let dbg = Debuginfo.from_location loc in

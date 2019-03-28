@@ -580,6 +580,79 @@ let fixpoint f x =
 the function "f" cannot raise a "Done" exception, which removes an
 entire class of misbehaving functions.
 
+\section{Lazy expressions}
+
+OCaml allows us to defer some computation until later when we need the result of
+ that computation. 
+
+We use "lazy (expr)" to delay the evaluation of some expression "expr". For 
+example, we can defer the computation of "1+1" until we need the result of that
+expression, "2". Let us see how we initialize a lazy expression. 
+
+\begin{caml_example}{toplevel}
+  let lazy_two = lazy ( print_endline "lazy_two evaluation"; 1 + 1 );;
+\end{caml_example}
+
+We added "print_endline \"lazy_two evaluation\"" to see when the lazy
+ expression is being evaluated.
+
+The value of "lazy_two" is displayed as "<lazy>", which means the expression 
+has not been evaluated yet, and its final value is unknown.
+
+Note that "lazy_two" has type "int lazy_t". However, the type "'a lazy_t" is an 
+internal type name, so the type "'a Lazy.t" should be preferred when possible.
+
+When we finally need the result of a lazy expression, we can call "Lazy.force"  
+on that expression to force its evaluation. The function "force" comes from 
+standard-library module \stdmoduleref{Lazy}.
+
+\begin{caml_example}{toplevel}
+  Lazy.force lazy_two;;
+\end{caml_example}
+
+Notice that our function call above prints ``lazy_two evaluation'' and then 
+returns the plain value of the computation. 
+
+Now if we look at the value of "lazy_two", we see that it is not displayed as 
+"<lazy>" anymore but as "lazy 2".
+
+\begin{caml_example}{toplevel}
+  lazy_two;;
+\end{caml_example}
+
+This is because "Lazy.force" memoizes the result of the forced expression. In other 
+words, every subsequent call of "Lazy.force" on that expression returns the 
+result of the first computation without recomputing the lazy expression. Let us 
+force "lazy_two" once again. 
+
+\begin{caml_example}{toplevel}
+  Lazy.force lazy_two;;
+\end{caml_example}
+
+The expression is not evaluated this time; notice that ``lazy_two evaluation'' is
+not printed. The result of the initial computation is simply returned. 
+
+Lazy patterns provide another way to force a lazy expression. 
+
+\begin{caml_example}{toplevel}
+  let lazy_l = lazy ([1; 2] @ [3; 4]);;
+  let lazy l = lazy_l;;
+\end{caml_example}
+
+We can also use lazy patterns in pattern matching.
+
+\begin{caml_example}{toplevel}
+  let maybe_eval lazy_guard lazy_expr = 
+    match lazy_guard, lazy_expr with
+    | lazy false, _ -> "matches if (Lazy.force lazy_guard = false); lazy_expr not forced"
+    | lazy true, lazy _ -> "matches if (Lazy.force lazy_guard = true); lazy_expr forced";;
+\end{caml_example}
+
+The lazy expression "lazy_expr" is forced only if the "lazy_guard" value yields 
+"true" once computed. Indeed, a simple wildcard pattern (not lazy) never forces 
+the lazy expression's evaluation. However, a pattern with keyword "lazy", even 
+if it is wildcard, always forces the evaluation of the deferred computation.
+
 \section{Symbolic processing of expressions}
 
 We finish this introduction with a more complete example
@@ -675,6 +748,93 @@ let print_expr exp =
 let e = Sum(Prod(Const 2.0, Var "x"), Const 1.0);;
 print_expr e; print_newline ();;
 print_expr (deriv e "x"); print_newline ();;
+\end{caml_example}
+
+\section{Printf formats}
+
+There is a "printf" function in the \stdmoduleref{Printf} module
+(see chapter~\ref{c:moduleexamples}) that allows you to make formatted
+output more concisely.
+It follows the behavior of the "printf" function from the C standard library.
+The "printf" function takes a format string that describes the desired output
+as a text interspered with specifiers (for instance "%d", "%f").
+Next, the specifiers are substituted by the following arguments in their order
+of apparition in the format string:
+\begin{caml_example}{toplevel}
+Printf.printf "%i + %i is an integer value, %F * %F is a float, %S\n"
+3 2 4.5 1. "this is a string";;
+\end{caml_example}
+The OCaml type system checks that the type of the arguments and the specifiers are
+compatible. If you pass it an argument of a type that does not correspond to
+the format specifier, the compiler will display an error message:
+\begin{caml_example}{toplevel}[error]
+Printf.printf "Float value: %F" 42;;
+\end{caml_example}
+The "fprintf" function is like "printf" except that it takes an output channel as
+the first argument. The "%a" specifier can be useful to define custom printer
+(for custom types). For instance, we can create a printing template that converts
+an integer argument to signed decimal:
+\begin{caml_example}{toplevel}
+let pp_int ppf n = Printf.fprintf ppf "%d" n;;
+Printf.printf "Outputting an integer using a custom printer: %a " pp_int 42;;
+\end{caml_example}
+The advantage of those printers based on the "%a" specifier is that they can be
+composed together to create more complex printers step by step.
+We can define a combinator that can turn a printer for "'a" type into a printer
+for "'a optional":
+\begin{caml_example}{toplevel}
+let pp_option printer ppf = function
+  | None -> Printf.fprintf ppf "None"
+  | Some v -> Printf.fprintf ppf "Some(%a)" printer v;;
+Printf.fprintf stdout
+  "The current setting is %a. \nThere is only %a\n"
+  (pp_option pp_int) (Some 3)
+  (pp_option pp_int) None
+;;
+\end{caml_example}
+If the value of its argument its "None", the printer returned by pp_option
+printer prints "None" otherwise it uses the provided printer to print "Some ".
+
+Here is how to rewrite the pretty-printer using "fprintf":
+\begin{caml_example}{toplevel}
+let pp_expr ppf expr =
+  let open_paren prec op_prec output =
+    if prec > op_prec then Printf.fprintf output "%s" "(" in
+  let close_paren prec op_prec output =
+    if prec > op_prec then Printf.fprintf output "%s" ")" in
+  let rec print prec ppf expr =
+      match expr with
+      | Const c -> Printf.fprintf ppf "%F" c
+      | Var v -> Printf.fprintf ppf "%s" v
+      | Sum(f, g) ->
+          open_paren prec 0 ppf;
+          Printf.fprintf ppf "%a + %a" (print 0) f (print 0) g;
+          close_paren prec 0 ppf
+      | Diff(f, g) ->
+          open_paren prec 0 ppf;
+          Printf.fprintf ppf "%a - %a" (print 0) f (print 1) g;
+          close_paren prec 0 ppf
+      | Prod(f, g) ->
+          open_paren prec 2 ppf;
+          Printf.fprintf ppf "%a * %a" (print 2) f (print 2) g;
+          close_paren prec 2 ppf
+      | Quot(f, g) ->
+          open_paren prec 2 ppf;
+          Printf.fprintf ppf "%a / %a" (print 2) f (print 3) g;
+          close_paren prec 2 ppf
+  in print 0 ppf expr;;
+pp_expr stdout e; print_newline ();;
+pp_expr stdout (deriv e "x"); print_newline ();;
+\end{caml_example}
+
+Due to the way that format string are build, storing a format string requires
+an explicit type annotation:
+\begin{caml_example*}{toplevel}
+let str : _ format =
+    "%i is an integer value, %F is a float, %S\n";;
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+Printf.printf str 3 4.5 "string value";;
 \end{caml_example}
 
 %%%%%%%%%%% Should be moved to the camlp4 documentation.

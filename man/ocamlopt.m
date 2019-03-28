@@ -349,6 +349,9 @@ in a slight expansion in code size. Higher values for the
 option cause larger and larger functions to become candidate for
 inlining, but can result in a serious increase in code size.
 .TP
+.B \-insn\-sched
+Enables the instruction scheduling pass in the compiler backend.
+.TP
 .BI \-intf \ filename
 Compile the file
 .I filename
@@ -426,6 +429,9 @@ and pass the correct C libraries and options on the command line.
 Allow the compiler to use some optimizations that are valid only for code
 that is never dynlinked.
 .TP
+.B \-no\-insn\-sched
+Disables the instruction scheduling pass in the compiler backend.
+.TP
 .B -nostdlib
 Do not automatically add the standard library directory to the list of
 directories searched for compiled interface files (.cmi), compiled
@@ -478,31 +484,6 @@ option.
 This option can also be used to produce a compiled shared/dynamic
 library (.so extension).
 .TP
-.B \-p
-Generate extra code to write profile information when the program is
-executed.  The profile information can then be examined with the
-analysis program
-.BR gprof (1).
-The
-.B \-p
-option must be given both at
-compile-time and at link-time.  Linking object files not compiled with
-.B \-p
-is possible, but results in less precise profiling.
-
-See the
-.BR gprof (1)
-man page for more information about the profiles.
-
-Full support for
-.BR gprof (1)
-is only available for certain platforms
-(currently: Intel x86/Linux and Alpha/Digital Unix).
-On other platforms, the
-.B \-p
-option will result in a less precise
-profile (no call graph information, only a time profile).
-.TP
 .B \-pack
 Build an object file (.cmx and .o files) and its associated compiled
 interface (.cmi) that combines the .cmx object
@@ -532,15 +513,6 @@ with
 See
 .IR "The OCaml user's manual" ,
 chapter "Native-code compilation" for more details.
-.TP
-.BI \-plugin \ plugin
-Dynamically load the code of the given
-.I plugin
-(a .cmo, .cma or .cmxs file) in the compiler. The plugin must exist in
-the same kind of code as the compiler (ocamlopt.byte must load bytecode
-plugins, while ocamlopt.opt must load native code plugins), and
-extension adaptation is done automatically for .cma files (to .cmxs files
-if the compiler is compiled in native code).
 .TP
 .BI \-pp \ command
 Cause the compiler to call the given

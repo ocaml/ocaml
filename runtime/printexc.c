@@ -110,7 +110,7 @@ CAMLexport char * caml_format_exception(value exn)
 static void default_fatal_uncaught_exception(value exn)
 {
   char * msg;
-  value * at_exit;
+  const value * at_exit;
   int saved_backtrace_active, saved_backtrace_pos;
 
   /* Build a string representation of the exception */
@@ -136,7 +136,7 @@ int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
 void caml_fatal_uncaught_exception(value exn)
 {
-  value *handle_uncaught_exception;
+  const value *handle_uncaught_exception;
 
   handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");
