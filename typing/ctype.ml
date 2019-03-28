@@ -878,7 +878,7 @@ let update_level env level ty =
       update_level env level true ty
   end
 
-(* Generalize and lower levels of contravariant branches simultaneously *)
+(* Lowe level of type variables inside contravariant branches *)
 
 let rec generalize_expansive env var_level visited contra ty =
   let ty = repr ty in
