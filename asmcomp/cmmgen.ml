@@ -1669,7 +1669,7 @@ let make_switch =
           | Cint v -> v = Nativeint.(add v0 (mul (of_int i) slope))
           | _ -> false
         in
-        if Array.for_alli (fun i idx -> check i const_actions.(idx)) cases 
+        if Array.for_alli (fun i idx -> check i const_actions.(idx)) cases
         then Some (v0, slope)
         else None
       | _, _ ->
