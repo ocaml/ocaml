@@ -177,16 +177,13 @@ let exists p a =
     else loop (succ i) in
   loop 0
 
-let for_alli p a =
+let for_all p a =
   let n = length a in
   let rec loop i =
     if i = n then true
-    else if p i (unsafe_get a i) then loop (succ i)
+    else if p (unsafe_get a i) then loop (succ i)
     else false in
   loop 0
-
-let for_all p a =
-  for_alli (fun _i v -> p v) a
 
 let mem x a =
   let n = length a in

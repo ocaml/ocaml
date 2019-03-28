@@ -1669,7 +1669,8 @@ let make_switch =
           | Cint v -> v = Nativeint.(add v0 (mul (of_int i) slope))
           | _ -> false
         in
-        if Array.for_alli (fun i idx -> check i const_actions.(idx)) cases
+        if Misc.Stdlib.Array.for_alli 
+             (fun i idx -> check i const_actions.(idx)) cases
         then Some (v0, slope)
         else None
       | _, _ ->
@@ -1706,9 +1707,9 @@ let make_switch =
       Cswitch (arg,cases,actions,dbg)
     | Some const_actions ->
       match extract_affine ~cases ~const_actions with
-      | None -> make_table_lookup ~cases ~const_actions arg dbg
-      | Some (offset, slope) ->
+      | Some (offset, slope) when false ->
         make_affine_computation ~offset ~slope arg dbg
+      | None | _ -> make_table_lookup ~cases ~const_actions arg dbg
 
 module SArgBlocks =
 struct

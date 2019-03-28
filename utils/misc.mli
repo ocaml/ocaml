@@ -158,6 +158,11 @@ module Stdlib : sig
     (* Same as [Array.exists], but for a two-argument predicate. Raise
        Invalid_argument if the two arrays are determined to have
        different lengths. *)
+
+    val for_alli : (int -> 'a -> bool) -> 'a array -> bool
+    (** Same as {!Array.for_all}, but the
+        function is applied with the index of the element as first argument,
+        and the element itself as second argument. *)
   end
 
   module String : sig

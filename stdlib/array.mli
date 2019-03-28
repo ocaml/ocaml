@@ -203,11 +203,6 @@ val for_all : ('a -> bool) -> 'a array -> bool
    [(p a1) && (p a2) && ... && (p an)].
    @since 4.03.0 *)
 
-val for_alli : (int -> 'a -> bool) -> 'a array -> bool
-(** Same as {!Array.for_all}, but the
-   function is applied with the index of the element as first argument,
-   and the element itself as second argument. *)
-
 val exists : ('a -> bool) -> 'a array -> bool
 (** [Array.exists p [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [p]. That is, it returns
