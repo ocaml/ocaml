@@ -869,13 +869,15 @@ let update_level env level ty =
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
 
-let rec generalize_expansive env var_level visited ty =
+let rec generalize_expansive env var_level visited contra ty =
   let ty = repr ty in
   if ty.level = generic_level || ty.level <= var_level then () else
-  if not (Hashtbl.mem visited ty.id) then begin
-    Hashtbl.add visited ty.id ();
+  if try Hashtbl.find visited ty.id < contra with Not_found -> true then begin
+    Hashtbl.add visited ty.id contra;
+    let generalize_rec = generalize_expansive env var_level visited in
     match ty.desc with
-      Tconstr (path, tyl, abbrev) ->
+      Tvar _ -> if contra then set_level ty var_level
+    | Tconstr (path, tyl, abbrev) ->
         let variance =
           try (Env.find_type path env).type_variance
           with Not_found ->
@@ -886,21 +888,21 @@ let rec generalize_expansive env var_level visited ty =
         List.iter2
           (fun v t ->
             if Variance.(mem May_weak v)
-            then generalize_structure var_level t
-            else generalize_expansive env var_level visited t)
+            then generalize_rec true t
+            else generalize_rec contra t)
           variance tyl
     | Tpackage (_, _, tyl) ->
-        List.iter (generalize_structure var_level) tyl
+        List.iter (generalize_rec true) tyl
     | Tarrow (_, t1, t2, _) ->
-        generalize_structure var_level t1;
-        generalize_expansive env var_level visited t2
+        generalize_rec true t1;
+        generalize_rec contra t2
     | _ ->
-        iter_type_expr (generalize_expansive env var_level visited) ty
+        iter_type_expr (generalize_rec contra) ty
   end
 
 let generalize_expansive env ty =
   simple_abbrevs := Mnil;
-  generalize_expansive env !nongen_level (Hashtbl.create 7) ty
+  generalize_expansive env !nongen_level (Hashtbl.create 7) false ty
 
 let generalize_structure ty = generalize_structure !current_level ty
 

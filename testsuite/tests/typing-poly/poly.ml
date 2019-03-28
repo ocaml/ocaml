@@ -1713,3 +1713,15 @@ module M :
       val i : 'a -> 'a
     end
 |}]
+
+(* #8550 *)
+class ['a] r = let r : 'a = ref [] in object method get = r end;;
+[%%expect{|
+Line 1, characters 0-63:
+1 | class ['a] r = let r : 'a = ref [] in object method get = r end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type of this class,
+       class ['a] r :
+         object constraint 'a = '_weak2 list ref method get : 'a end,
+       contains type variables that cannot be generalized
+|}]

@@ -804,6 +804,10 @@ OCaml 4.08.0
 - GPR#2231: Env: always freshen persistent signatures before using them
   (Thomas Refis and Leo White, review by Gabriel Radanne)
 
+- #8550: Soundness issue with class generalization
+  (Jacques Garrigue, report by Jeremy Yallop)
+
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
