@@ -1707,9 +1707,9 @@ let make_switch =
       Cswitch (arg,cases,actions,dbg)
     | Some const_actions ->
       match extract_affine ~cases ~const_actions with
-      | Some (offset, slope) when false ->
+      | Some (offset, slope) ->
         make_affine_computation ~offset ~slope arg dbg
-      | None | _ -> make_table_lookup ~cases ~const_actions arg dbg
+      | None -> make_table_lookup ~cases ~const_actions arg dbg
 
 module SArgBlocks =
 struct
