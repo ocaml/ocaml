@@ -883,7 +883,11 @@ let update_level env level ty =
 let rec generalize_expansive env var_level visited contra ty =
   let ty = repr ty in
   if ty.level = generic_level || ty.level <= var_level then () else
-  if try Hashtbl.find visited ty.id < contra with Not_found -> true then begin
+  let must_visit =
+    match Hashtbl.find visited ty.id with
+    | done_contra -> not done_contra && contra
+    | exception Not_found -> true
+  in if must_visit then begin
     Hashtbl.add visited ty.id contra;
     let generalize_rec = generalize_expansive env var_level visited in
     match ty.desc with
