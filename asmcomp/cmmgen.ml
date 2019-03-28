@@ -138,6 +138,12 @@ let int_const dbg n =
   else Cconst_natint
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n, dbg)
 
+let natint_const dbg n =
+  if n > Nativeint.of_int max_int
+  || n < Nativeint.of_int min_int
+  then Cconst_natint (n,dbg)
+  else Cconst_int (Nativeint.to_int n, dbg)
+
 let cint_const n =
   Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
@@ -1640,23 +1646,21 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
 (* Build an actual switch (ie jump table) *)
 
-let make_switch =
+let make_switch arg cases actions dbg =
   let extract_uconstant =
     function
     (* Constant integers loaded from a table should end in 1,
        so that Cload never produces untagged integers *)
     | Cconst_int     (n, _), _dbg
     | Cconst_pointer (n, _), _dbg when (n land 1) = 1 ->
-      Some (Cint (Nativeint.of_int n))
+        Some (Cint (Nativeint.of_int n))
     | Cconst_natint     (n, _), _dbg
-    | Cconst_natpointer (n, _), _dbg when Nativeint.(to_int (logand n one) = 1) ->
-      Some (Cint n)
+    | Cconst_natpointer (n, _), _dbg
+      when Nativeint.(to_int (logand n one) = 1) ->
+        Some (Cint n)
     | Cconst_symbol (s,_), _dbg ->
-      Some (Csymbol_address s)
+        Some (Csymbol_address s)
     | _ -> None
-  in
-  let array_option_get array =
-    try Some (Array.map Option.get array) with | _ -> None
   in
   let extract_affine ~cases ~const_actions =
     let length = Array.length cases in
@@ -1664,51 +1668,42 @@ let make_switch =
     then begin
       match const_actions.(cases.(0)), const_actions.(cases.(1)) with
       | Cint v0, Cint v1 ->
-        let slope = Nativeint.sub v1 v0 in
-        let check i = function
-          | Cint v -> v = Nativeint.(add v0 (mul (of_int i) slope))
-          | _ -> false
-        in
-        if Misc.Stdlib.Array.for_alli 
-             (fun i idx -> check i const_actions.(idx)) cases
-        then Some (v0, slope)
-        else None
+          let slope = Nativeint.sub v1 v0 in
+          let check i = function
+            | Cint v -> v = Nativeint.(add (mul (of_int i) slope) v0)
+            | _ -> false
+          in
+          if Misc.Stdlib.Array.for_alli
+              (fun i idx -> check i const_actions.(idx)) cases
+          then Some (v0, slope)
+          else None
       | _, _ ->
-        None
+          None
     end
     else None
   in
   let make_table_lookup ~cases ~const_actions arg dbg =
     let table = Compilenv.new_const_symbol () in
-    Cmmgen_state.add_constant
-      table
-      (Const_table ( Local
-                   , Array.to_list (Array.map (fun act ->
-                       const_actions.(act)) cases)));
+    Cmmgen_state.add_constant table (Const_table (Local,
+        Array.to_list (Array.map (fun act ->
+          const_actions.(act)) cases)));
     addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
   in
   let make_affine_computation ~offset ~slope arg dbg =
     (* In case the resulting integers are an affine function of the index, we
        don't emit a table, and just compute the result directly *)
-    let const_natint x dbg =
-      if x > Nativeint.of_int max_int
-      || x < Nativeint.of_int min_int
-      then Cconst_natint (x,dbg)
-      else Cconst_int (Nativeint.to_int x, dbg)
-    in
     add_int
-      (mul_int arg (const_natint slope dbg) dbg)
-      (const_natint offset dbg)
+      (mul_int arg (natint_const dbg slope) dbg)
+      (natint_const dbg offset)
       dbg
   in
-  fun arg cases actions dbg ->
-    match array_option_get (Array.map extract_uconstant actions) with
-    | None ->
+  match Misc.Stdlib.Array.all_somes (Array.map extract_uconstant actions) with
+  | None ->
       Cswitch (arg,cases,actions,dbg)
-    | Some const_actions ->
+  | Some const_actions ->
       match extract_affine ~cases ~const_actions with
       | Some (offset, slope) ->
-        make_affine_computation ~offset ~slope arg dbg
+          make_affine_computation ~offset ~slope arg dbg
       | None -> make_table_lookup ~cases ~const_actions arg dbg
 
 module SArgBlocks =

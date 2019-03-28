@@ -163,6 +163,8 @@ module Stdlib : sig
     (** Same as {!Array.for_all}, but the
         function is applied with the index of the element as first argument,
         and the element itself as second argument. *)
+
+    val all_somes : 'a option array -> 'a array option
   end
 
   module String : sig

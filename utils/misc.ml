@@ -211,6 +211,13 @@ module Stdlib = struct
         else if p i (Array.unsafe_get a i) then loop (succ i)
         else false in
       loop 0
+
+    let all_somes a =
+      let exception Contains_none in
+      try
+        Some (Array.map (function None -> raise Contains_none | Some x -> x) a)
+      with
+      | Contains_none -> None
   end
 
   module String = struct
