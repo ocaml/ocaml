@@ -213,11 +213,10 @@ module Stdlib = struct
       loop 0
 
     let all_somes a =
-      let exception Contains_none in
       try
-        Some (Array.map (function None -> raise Contains_none | Some x -> x) a)
+        Some (Array.map (function None -> raise_notrace Exit | Some x -> x) a)
       with
-      | Contains_none -> None
+      | Exit -> None
   end
 
   module String = struct
