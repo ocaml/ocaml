@@ -347,6 +347,12 @@ val cut_at : string -> char -> string * string
    @since 4.01
 *)
 
+val camlOfSnake : string -> string
+
+val snake_of_caml : string -> string
+
+val compare_nocase : string -> string -> int
+
 (* Color handling *)
 module Color : sig
   type color =

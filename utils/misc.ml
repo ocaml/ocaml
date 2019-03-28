@@ -512,6 +512,67 @@ module LongString = struct
 end
 
 
+let is_underscore = function '_' -> true | _ -> false
+let camlOfSnake s =
+  if Stdlib.String.for_all (fun x -> not @@ is_underscore x) s
+  then s
+  else
+    let len = String.length s in
+    let b = Buffer.create len in
+    let rec loop i =
+      if i >= len then
+        Buffer.contents b
+      else if is_underscore s.[i] && 0 < i && i + 1 < len then begin
+        Buffer.add_char b (Char.uppercase_ascii s.[i+1]) ;
+        loop (i+2)
+      end
+      else begin
+        Buffer.add_char b s.[i];
+        loop (i+1)
+      end
+    in
+    loop 0
+
+let is_uppercase_ascii = function 'A'..'Z' -> true | _ -> false
+let is_lowercase_ascii = function 'a'..'z' -> true | _ -> false
+let isCamlCase s =
+  let len = String.length s in
+  let rec loop i =
+    i >= len - 2
+    || (is_lowercase_ascii s.[i] && is_uppercase_ascii s.[i+1])
+    || loop (i+1)
+  in
+  loop 0
+  
+let snake_of_caml s = 
+  if not (isCamlCase s) then s
+  else
+    let len = String.length s in
+    let b = Buffer.create (len * 2) in
+    let rec loop i =
+      if i >= len then
+        Buffer.contents b
+      else if
+        i + 1 < len &&
+        is_lowercase_ascii s.[i] &&
+        is_uppercase_ascii s.[i+1]
+      then begin
+        Buffer.add_char b s.[i];
+        Buffer.add_char b '_' ;
+        Buffer.add_char b (Char.lowercase_ascii s.[i+1]) ;
+        loop (i+2)
+      end
+      else begin
+        Buffer.add_char b s.[i];
+        loop (i+1)
+      end
+    in
+    loop 0
+
+
+let compare_nocase s1 s2 =
+  String.compare (camlOfSnake s1) (camlOfSnake s2)
+
 let edit_distance a b cutoff =
   let la, lb = String.length a, String.length b in
   let cutoff =
