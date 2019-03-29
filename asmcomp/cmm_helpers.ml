@@ -554,8 +554,12 @@ let safe_mod_bi is_safe =
 
 (* Bool *)
 
-let test_bool dbg cmm =
+let rec test_bool dbg cmm =
   match cmm with
+  | Clet (id, exp, body) ->
+      Clet (id, exp, test_bool dbg body)
+  | Cphantom_let (var, defining_expr, body) ->
+      Cphantom_let (var, defining_expr, test_bool dbg body)
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
       c
   | Cconst_int (n, dbg) ->
