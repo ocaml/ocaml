@@ -10,7 +10,8 @@ Working version
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
 - #7887: ensure frame table is 8-aligned on ARM64 and PPC64
-  (Xavier Leroy, report by Mark Hayden)
+  (Xavier Leroy, report by Mark Hayden, review by Mark Shinwell
+   and Gabriel Scherer)
 
 - #8507: Shorten symbol names of anonymous functions in Flambda mode
   (the directory portions are now hidden)
