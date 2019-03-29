@@ -222,6 +222,17 @@ let char_of_int n =
 
 external ignore : 'a -> unit = "%ignore"
 
+external make_nulls : unit -> < .. > * < .. > * < .. > =
+  "caml_make_nulls"
+let (null, undefined, nothing) = make_nulls ()
+
+let (//) a b =
+  if a == null then b
+  else if a == undefined then
+    raise (Failure "Object is undefined")
+  else if a == nothing then nothing
+  else a
+
 (* Pair operations *)
 
 external fst : 'a * 'b -> 'a = "%field0"

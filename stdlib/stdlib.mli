@@ -687,6 +687,10 @@ external ignore : 'a -> unit = "%ignore"
    compiler warning; writing [ignore(f x)] instead
    avoids the warning. *)
 
+val null : < .. >
+val undefined : < .. >
+val nothing : < .. >
+val (//) : (< .. > as 'a) -> 'a -> 'a
 
 (** {1 String conversion functions} *)
 

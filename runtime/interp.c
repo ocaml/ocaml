@@ -219,6 +219,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   struct caml__roots_block * volatile initial_local_roots;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
+  extern void caml_null_access(value);
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
@@ -1058,6 +1059,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
          caml_cache_public_method2 in obj.c */
 
     Instruct(GETMETHOD):
+      if (Tag_val(sp[0]) == Custom_tag) {
+        Setup_for_c_call;
+        caml_null_access(sp[0]);
+      }
       accu = Lookup(sp[0], accu);
       Next;
 
@@ -1065,8 +1070,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef CAML_METHOD_CACHE
     Instruct(GETPUBMET): {
       /* accu == object, pc[0] == tag, pc[1] == cache */
-      value meths = Field (accu, 0);
+      value meths;
       value ofs;
+      if (Tag_val(accu) == Custom_tag) {
+        Setup_for_c_call;
+        caml_null_access(accu);
+      }
+      meths = Field (accu, 0);
 #ifdef CAML_TEST_CACHE
       static int calls = 0, hits = 0;
       if (calls >= 10000000) {
@@ -1107,7 +1117,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
     Instruct(GETDYNMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
-      value meths = Field (sp[0], 0);
+      value meths;
+      if (Tag_val(sp[0]) == Custom_tag) {
+        Setup_for_c_call;
+        caml_null_access(sp[0]);
+      }
+      meths = Field (sp[0], 0);
       int li = 3, hi = Field(meths,0), mi;
       while (li < hi) {
         mi = ((li+hi) >> 1) | 1;

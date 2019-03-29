@@ -2030,7 +2030,10 @@ let rec transl env e =
           Cop(Capply typ_val, cargs, dbg)
       in
       bind "obj" (transl env obj) (fun obj ->
-        match kind, args with
+        Cifthenelse(
+        Cop(Ccmpi Ceq, [get_tag obj dbg; Cconst_int (Obj.custom_tag, dbg)], dbg),
+        dbg, Cop(Cextcall("caml_null_access", typ_val, true, None), [obj], dbg),
+        dbg, (match kind, args with
           Self, _ ->
             bind "met" (lookup_label obj (transl env met) dbg)
               (call_met obj args)
@@ -2040,7 +2043,7 @@ let rec transl env e =
               (List.map (transl env) args) dbg
         | _ ->
             bind "met" (lookup_tag obj (transl env met) dbg)
-              (call_met obj args))
+              (call_met obj args)),dbg))
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
   | Uphantom_let (var, defining_expr, body) ->

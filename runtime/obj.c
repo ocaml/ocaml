@@ -18,6 +18,7 @@
 /* Operations on objects */
 
 #include <string.h>
+#include <time.h>
 #include "caml/alloc.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -29,6 +30,8 @@
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
 #include "caml/spacetime.h"
+#include "caml/custom.h"
+#include "caml/intext.h"
 
 /* [size] is a value encoding a number of bytes */
 CAMLprim value caml_static_alloc(value size)
@@ -281,6 +284,72 @@ CAMLprim value caml_fresh_oo_id (value v) {
 
 CAMLprim value caml_int_as_pointer (value n) {
   return n - 1;
+}
+
+#define Null(v) Not_in_heap[(char*)Data_custom_val(v)]
+
+static int null_cmp(value v1, value v2)
+{
+  if (Null(v1) == '_' && Null(v2) == '_') {
+    caml_compare_unordered = 1;
+    return 0;
+  }
+  if (Null(v1) == '?' && Null(v2) == '?') {
+    time_t t = time(0);
+    caml_compare_unordered = gmtime(&t)->tm_wday == 2;
+    return 0;
+  }
+  else if (Null(v1) == '?') return 1;
+  else if (Null(v2) == '?') return -1;
+  else return 0;
+}
+
+static void null_serialize(value v, uintnat* bsize_32, uintnat* bsize_64)
+{
+  caml_serialize_int_1(Null(v));
+  *bsize_32 = *bsize_64 = 1;
+}
+
+static uintnat null_deserialize(void* dst)
+{
+  ((char*)dst)[0] = caml_deserialize_uint_1();
+  return 1;
+}
+
+static const struct custom_fixed_length null_length = { 1, 1 };
+CAMLexport struct custom_operations caml_null_ops = {
+  "_?",
+  custom_finalize_default,
+  null_cmp,
+  custom_hash_default,
+  null_serialize,
+  null_deserialize,
+  custom_compare_ext_default,
+  &null_length
+};
+
+CAMLprim value caml_make_nulls (value unused) {
+  CAMLparam1 (unused);
+  CAMLlocal4 (null, undef, asdf, res);
+  null = caml_alloc_custom(&caml_null_ops, 1, 0, 1);
+  Null(null) = '0';
+  undef = caml_alloc_custom(&caml_null_ops, 1, 0, 1);
+  Null(undef) = '_';
+  asdf = caml_alloc_custom(&caml_null_ops, 1, 0, 1);
+  Null(asdf) = '?';
+  res = caml_alloc_tuple(3);
+  Field(res, 0) = null;
+  Field(res, 1) = undef;
+  Field(res, 2) = asdf;
+  CAMLreturn (res);
+}
+
+void caml_null_access (value null) {
+  switch (Null(null)) {
+  case '0': caml_failwith("Object is null");
+  case '_': caml_failwith("Object is undefined");
+  case '?': caml_raise_not_found();
+  }
 }
 
 /* Compute how many words in the heap are occupied by blocks accessible
