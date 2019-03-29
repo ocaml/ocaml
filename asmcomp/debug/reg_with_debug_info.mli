@@ -26,7 +26,7 @@ module Holds_value_of : sig
       (** The given integer constant. *)
     | Const_naked_float of Int64.t
       (** The floating-point constant with the given bit pattern. *)
-    | Const_symbol of string
+    | Const_symbol of Backend_sym.t
       (** The given statically-allocated constant. *)
 
   include Identifiable.S with type t := t
@@ -145,11 +145,7 @@ module type Set_intf = sig
   type reg_with_debug_info
 
   (** Print a value of type [t] to a formatter. *)
-  val print
-     : ?print_reg:(Format.formatter -> Reg.t -> unit)
-    -> Format.formatter
-    -> t
-    -> unit
+  val print : Format.formatter -> t -> unit
 
   (** Test for equality. *)
   val equal : t -> t -> bool
@@ -180,10 +176,10 @@ module type Set_intf = sig
 
   (** Retain only those elements of the given set for which the supplied
       predicate returns [true]. *)
-  val filter : t -> f:(reg_with_debug_info -> bool) -> t
+  val filter : (reg_with_debug_info -> bool) -> t -> t
 
   (** Fold over all elements of the given set. *)
-  val fold : t -> init:'a -> f:(reg_with_debug_info -> 'a -> 'a) -> 'a
+  val fold : (reg_with_debug_info -> 'a -> 'a) -> t -> 'a -> 'a
 
   (** Test membership of the set given the underlying [Reg.t]. *)
   val mem_reg : t -> Reg.t -> bool
@@ -231,7 +227,7 @@ module Set : sig
   val union : t -> t -> t
 
   (** Map over elements of the given set. *)
-  val map : t -> f:(reg_with_debug_info -> reg_with_debug_info) -> t
+  val map : (reg_with_debug_info -> reg_with_debug_info) -> t -> t
 
   (** Non-strict subset inclusion.  (This could be provided for [Canonical_set]
       but it seems like it would be a mistake to use it on such a set.) *)
@@ -266,4 +262,14 @@ module Canonical_set : sig
      : t
     -> Backend_var.t
     -> reg_with_debug_info option
+end
+
+(** Convenience module for use with [Compute_ranges_intf]. *)
+module With_canonical_set : sig
+  type nonrec t = t
+
+  val print : Format.formatter -> t -> unit
+
+  module Set = Canonical_set
+  module Map : Map.S with type key = t
 end

@@ -34,9 +34,9 @@ let canonicalise t =
   | Unreachable -> RD.Canonical_set.empty
   | Ok rd_set -> RD.Canonical_set.of_set rd_set
 
-let print ~print_reg ppf = function
+let print ~print_reg:_ ppf = function
   | Unreachable -> Format.fprintf ppf "<unreachable>"
-  | Ok rd_set -> RD.Set.print ~print_reg ppf rd_set
+  | Ok rd_set -> RD.Set.print ppf rd_set
 
 let equal t1 t2 =
   match t1, t2 with

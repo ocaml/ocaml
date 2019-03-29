@@ -95,17 +95,32 @@ module Provenance = struct
     { t with is_parameter; }
 
   let compare
-        { module_path = module_path1; location = location1;
-          original_ident = original_ident1; }
-        { module_path = module_path2; location = location2;
-          original_ident = original_ident2; } =
+        { module_path = module_path1; debuginfo = debuginfo1;
+          ident_for_type = ident_for_type1; is_parameter = is_parameter1;
+          is_static = is_static1;
+        }
+        { module_path = module_path2; debuginfo = debuginfo2;
+          ident_for_type = ident_for_type2; is_parameter = is_parameter2;
+          is_static = is_static2;
+        } =
     let c = Path.compare module_path1 module_path2 in
     if c <> 0 then c
     else
-      let c = Debuginfo.compare location1 location2 in
+      let c = Debuginfo.compare debuginfo1 debuginfo2 in
       if c <> 0 then c
       else
-        Ident.compare original_ident1 original_ident2
+        let comp_unit1, ident_for_type1 = ident_for_type1 in
+        let comp_unit2, ident_for_type2 = ident_for_type2 in
+        let c = Compilation_unit.compare comp_unit1 comp_unit2 in
+        if c <> 0 then c
+        else
+          let c = Ident.compare ident_for_type1 ident_for_type2 in
+          if c <> 0 then c
+          else
+            let c = Is_parameter.compare is_parameter1 is_parameter2 in
+            if c <> 0 then c
+            else
+              Stdlib.compare is_static1 is_static2
 end
 
 module With_provenance = struct

@@ -26,17 +26,9 @@ module Vars = struct
      relation that identifies two registers iff they have the same name and
      location. *)
   module Key = struct
-    include RD.Distinguishing_names_and_locations
-
-    module Set = struct
-      include Set
-
-      let print ppf t = print ~print_reg:Printmach.reg ppf t
-    end
+    include RD.With_canonical_set
 
     let all_parents _t = []
-
-    let print ppf t = RD.print ~print_reg:Printmach.reg ppf t
   end
 
   module Index = V
@@ -156,13 +148,7 @@ module Vars = struct
      this. *)
 
   let availability_set_to_key_set (avail : Reg_availability_set.t) =
-    let avail = Reg_availability_set.canonicalise avail in
-    match avail with
-    | Unreachable -> Key.Set.empty
-    | Ok avail ->
-      RD.Set.fold (fun reg result -> Key.Set.add reg result)
-        avail
-        Key.Set.empty
+    Reg_availability_set.canonicalise avail
 
   let available_before (insn : L.instruction) =
     availability_set_to_key_set (Insn_debuginfo.available_before insn.dbg)

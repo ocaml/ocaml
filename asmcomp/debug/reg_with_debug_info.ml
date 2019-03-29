@@ -30,7 +30,7 @@ module Holds_value_of = struct
     | Var of Backend_var.t
     | Const_int of Targetint.t
     | Const_naked_float of Int64.t
-    | Const_symbol of string
+    | Const_symbol of Backend_sym.t
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -40,7 +40,7 @@ module Holds_value_of = struct
       | Var var1, Var var2 -> Backend_var.compare var1 var2
       | Const_int i1, Const_int i2 -> Targetint.compare i1 i2
       | Const_naked_float f1, Const_naked_float f2 -> Int64.compare f1 f2
-      | Const_symbol sym1, Const_symbol sym2 -> String.compare sym1 sym2
+      | Const_symbol sym1, Const_symbol sym2 -> Backend_sym.compare sym1 sym2
       | Var _, _ -> -1
       | Const_int _, Var _ -> 1
       | Const_int _, _ -> -1
@@ -56,7 +56,7 @@ module Holds_value_of = struct
       | Var var -> Hashtbl.hash (0, Backend_var.hash var)
       | Const_int i -> Hashtbl.hash (1, i)
       | Const_naked_float f -> Hashtbl.hash (2, f)
-      | Const_symbol sym -> Hashtbl.hash (3, sym)
+      | Const_symbol sym -> Hashtbl.hash (3, Backend_sym.hash sym)
 
     let print ppf t =
       match t with
@@ -68,7 +68,7 @@ module Holds_value_of = struct
       | Const_naked_float f ->
         Format.fprintf ppf "@[(Const_naked_float@ 0x%Lx)@]" f
       | Const_symbol sym ->
-        Format.fprintf ppf "@[(Const_symbol@ %s)@]" sym
+        Format.fprintf ppf "@[(Const_symbol@ %a)@]" Backend_sym.print sym
 
     let output _ _ = Misc.fatal_error "Not yet implemented"
   end)
@@ -224,11 +224,7 @@ let clear_debug_info t =
 module type Set_intf = sig
   type t
   type reg_with_debug_info
-  val print
-     : ?print_reg:(Format.formatter -> Reg.t -> unit)
-    -> Format.formatter
-    -> t
-    -> unit
+  val print : Format.formatter -> t -> unit
   val equal : t -> t -> bool
   val empty : t
   val is_empty : t -> bool
@@ -237,8 +233,8 @@ module type Set_intf = sig
   val without_debug_info : Reg.Set.t -> t
   val inter : t -> t -> t
   val diff : t -> t -> t
-  val filter : t -> f:(reg_with_debug_info -> bool) -> t
-  val fold : t -> init:'a -> f:(reg_with_debug_info -> 'a -> 'a) -> 'a
+  val filter : (reg_with_debug_info -> bool) -> t -> t
+  val fold : (reg_with_debug_info -> 'a -> 'a) -> t -> 'a -> 'a
   val mem_reg : t -> Reg.t -> bool
   val find_reg : t -> Reg.t -> reg_with_debug_info option
   val filter_reg : t -> Reg.t -> t
@@ -273,7 +269,10 @@ end) = struct
 
   let canonicalise = C.canonicalise
 
-  let print ?print_reg ppf t =
+  let print ppf t =
+    (* CR-someday mshinwell: Try to pass a proper [print_reg] here, or break
+       the circular dependency so [print_reg] isn't needed. *)
+    let print_reg = None in
     let elts ppf t =
       Set0.iter (fun rd -> Format.fprintf ppf "@ %a" (print ?print_reg) rd) t
     in
@@ -282,7 +281,7 @@ end) = struct
   let invariant t =
     (* if !Clflags.ddebug_invariants then begin *)
     if not (Set0.equal t (canonicalise t)) then begin
-      Misc.fatal_errorf "Invariant broken:@ %a" (print ?print_reg:None) t
+      Misc.fatal_errorf "Invariant broken:@ %a" print t
     end
     (* end *)
 
@@ -310,12 +309,9 @@ end) = struct
     invariant t;
     t
 
-  let map t ~f = Set0.map f t
-
-  let fold t ~init ~f = Set0.fold f t init
-
-  let filter t ~f = Set0.filter f t
-
+  let map = Set0.map
+  let fold = Set0.fold
+  let filter = Set0.filter
   let subset = Set0.subset
 
   let mem_reg t (reg : Reg.t) =
@@ -445,4 +441,17 @@ module Canonical_set = struct
     | _ ->
       invariant t;
       assert false  (* The invariant must have been broken. *)
+end
+
+module With_canonical_set = struct
+  type nonrec t = t
+
+  let print ppf t : unit = print ?print_reg:None ppf t
+
+  module Set = Canonical_set
+
+  module Map = Map.Make (struct
+    type nonrec t = t
+    let compare = compare
+  end)
 end

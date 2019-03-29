@@ -43,17 +43,32 @@ module type S_range_info = sig
     -> (index * t) option
 end
 
+module type S_key_set = sig
+  type key
+  type t
+
+  val empty : t
+
+  val is_empty : t -> bool
+
+  val of_list : key list -> t
+
+  val diff : t -> t -> t
+
+  val inter : t -> t -> t
+
+  val fold : (key -> 'a -> 'a) -> t -> 'a -> 'a
+
+  val print : Format.formatter -> t -> unit
+end
+
 module type S_functor = sig
   module Index : Identifiable.S
 
   module Key : sig
     type t
 
-    module Set : sig
-      include Set.S with type elt = t
-      val print : Format.formatter -> t -> unit
-    end
-
+    module Set : S_key_set with type key := t
     module Map : Map.S with type key = t
 
     val print : Format.formatter -> t -> unit
@@ -83,7 +98,7 @@ module type S = sig
 
   module Key : sig
     type t
-    module Set : Set.S with type elt = t
+    module Set : S_key_set with type key := t
     module Map : Map.S with type key = t
   end
 
