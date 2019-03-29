@@ -760,7 +760,8 @@ let direct_apply ~backend fundesc ufunct uargs ~loc ~attribute =
           "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
-        bind_params loc (backend, fundesc.fun_float_const_prop) params app_args body
+        bind_params loc (backend, fundesc.fun_float_const_prop) params app_args
+          body
   in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
@@ -1002,7 +1003,8 @@ let rec close ({ backend; fenv; cenv } as env) lam =
               V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos V.Map.empty in
         (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
-              substitute Location.none (backend, !Clflags.float_const_prop) sb None ubody),
+              substitute Location.none (backend, !Clflags.float_const_prop) sb
+                None ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
