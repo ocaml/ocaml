@@ -308,11 +308,11 @@ let emit_instr i =
     match i.desc with
       Lend -> ()
     | Lprologue ->
+      assert (Proc.prologue_required ());
       let n = frame_size() in
       emit_stack_adjust n;
       if !contains_calls then
-        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-      `{emit_label !tailrec_entry_point}:\n`;
+        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -648,7 +648,7 @@ let rec emit_all i =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];

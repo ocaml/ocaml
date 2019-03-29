@@ -83,6 +83,11 @@ Working version
 - #2291: Add [Compute_ranges] pass
   (Mark Shinwell, review by Vincent Laviron)
 
+- #2292: Add [Proc.frame_required] and [Proc.prologue_required].
+  Move tail recursion label creation to [Linearize].  Correctly position
+  [Lprologue] relative to [Iname_for_debugger] operations.
+  (Mark Shinwell, review by Vincent Laviron)
+
 - #2308: More debugging information on [Cmm] terms
   (Mark Shinwell, review by Stephen Dolan)
 
