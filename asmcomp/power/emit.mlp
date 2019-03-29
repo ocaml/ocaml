@@ -1222,6 +1222,7 @@ let end_assembly() =
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
   emit_string data_space;  (* not rodata_space because it contains relocations *)
+  if ppc64 then `	.align  3\n`;   (* #7887 *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;
