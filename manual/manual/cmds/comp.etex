@@ -100,16 +100,17 @@ phase can be run directly, as in:
 The produced file has the executable bit set, and it manages to launch
 the bytecode interpreter by itself.
 
+The compiler is able to emit some information on its internal stages.
 Upon successful completion of the type checking procedure, type information is
-used to create an abstract typed syntax tree (AST). It contains complete
-information about the location and the specific type of each token in the
-source file.
-The compiler can output this tree as compiled ".cmt"/".cmti" files for the
-implementation/signature of the compilation unit. This operation is activated
-by passing the key "–bin-annot" to the compiler (see the descriprion of
-"-bin-annot" below).
-Files of this format are useful for various tools that inspect code without
-parsing it and working with types.
+used to create an typed abstract syntax tree (AST). It contains complete
+information about the location and the specific type of each term in the
+source file. In case of unsuccessful type checking, a partial typed tree
+is created.
+The compiler can output this trees as compiled ".cmt" files for the
+implementation of the compilation unit and ".cmti" for signatures. This
+operation is activated by passing the key "-bin-annot" to the compiler (see
+the description of "-bin-annot" below).
+Those files are useful for code inspection tools.
 
 \section{Options}\label{s:comp-options}
 
