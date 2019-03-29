@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2017 Jane Street Group LLC                           *)
+(*   Copyright 2016--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,43 +12,67 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Register availability sets. *)
+(** Register availability sets. This module is just a version of
+    [Reg_with_debug_info.Set] whose type is lifted to have an additional top
+    element. This element corresponds to availability information known at any
+    unreachable point in the generated code. *)
 
-type t =
-  | Ok of Reg_with_debug_info.Set.t
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
+(** The type of register availability sets. *)
+type t = private
   | Unreachable
+  | Ok of Reg_with_debug_info.Set.t
 
-val map : t -> f:(Reg_with_debug_info.Set.t -> Reg_with_debug_info.Set.t) -> t
+(** The top element. *)
+val unreachable : t
 
-(** Intersection of availabilities. *)
-val inter : t -> t -> t
+(** Create a register availability set (that is not the top element). *)
+val create : Reg_with_debug_info.Set.t -> t
 
-(** Return a subset of the given availability set which contains no registers
-    that are not associated with debug info; and where no two registers
-    share the same location. *)
-val canonicalise : t -> t
+(** Canonicalise the given register availability set.  The result can be
+    used for [Compute_ranges], etc.  See the documentation for
+    [Reg_with_debug_info.Canonical_set] with regard to the definition of
+    "canonical". *)
+val canonicalise : t -> Reg_with_debug_info.Canonical_set.t
 
-(** Like [Reg_with_debug_info.made_unavailable_by_clobber]. *)
-val made_unavailable_by_clobber
-   : t
-  -> regs_clobbered:Reg.t array
-  -> register_class:(Reg.t -> int)
-  -> t
+(** The functions below are lifted versions of the corresponding ones in
+    [Reg_with_debug_info.Set]. *)
 
-val equal : t -> t -> bool
-
-val subset : t -> t -> bool
-
-val find_reg_opt : t -> Reg.t -> Reg_with_debug_info.t option
-
-val find_all_holding_value_of
-   : t
-  -> Reg_with_debug_info.Holds_value_of.t
-  -> Reg_with_debug_info.t list
-
+(** Print a value of type [t] to a formatter.
+    [print_reg] should be [Printmach.reg]. *)
 val print
    : print_reg:(Format.formatter -> Reg.t -> unit)
   -> Format.formatter
   -> t
   -> unit
-(** For debugging purposes only. *)
+
+(** Test for equality. *)
+val equal : t -> t -> bool
+
+(** The empty set. *)
+val empty : t
+
+(** Set union. *)
+val union : t -> t -> t
+
+(** Set intersection. *)
+val inter : t -> t -> t
+
+(** Non-strict subset inclusion. *)
+val subset : t -> t -> bool
+
+(** Map the [Reg_with_debug_info.Set.t] value contained within some values
+    of type [t]. *)
+val map : t -> f:(Reg_with_debug_info.Set.t -> Reg_with_debug_info.Set.t) -> t
+
+(** [made_unavailable_by_clobber t ~regs_clobbered ~register_class] returns
+    the largest subset of [t] whose locations do not overlap with any
+    registers in [regs_clobbered].  (Think of [t] as a set of available
+    registers.)
+    [register_class] should always be [Proc.register_class]. *)
+val made_unavailable_by_clobber
+   : t
+  -> regs_clobbered:Reg.t array
+  -> register_class:(Reg.t -> int)
+  -> t

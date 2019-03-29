@@ -200,3 +200,23 @@ let set_of_array v =
   | n -> let rec add_all i =
            if i >= n then Set.empty else Set.add v.(i) (add_all(i+1))
          in add_all 0
+
+let print ~register_name ppf r =
+  let fprintf = Format.fprintf in
+  if not (anonymous r) then
+    fprintf ppf "%s" (name r)
+  else
+    fprintf ppf "%s"
+      (match r.typ with Val -> "V" | Addr -> "A" | Int -> "I" | Float -> "F");
+  fprintf ppf "/%i" r.stamp;
+  begin match r.loc with
+  | Unknown -> ()
+  | Reg r ->
+      fprintf ppf "[%s]" (register_name r)
+  | Stack(Local s) ->
+      fprintf ppf "[s%i]" s
+  | Stack(Incoming s) ->
+      fprintf ppf "[si%i]" s
+  | Stack(Outgoing s) ->
+      fprintf ppf "[so%i]" s
+  end

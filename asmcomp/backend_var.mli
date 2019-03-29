@@ -58,6 +58,8 @@ module Provenance : sig
   val replace_is_parameter : t -> Is_parameter.t -> t
 
   val print : Format.formatter -> t -> unit
+
+  val compare : t -> t -> int
 end
 
 module With_provenance : sig

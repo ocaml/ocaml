@@ -33,7 +33,7 @@ let create dbg ~phantom_available_before =
   { dbg;
     linear_dbg = create_linear_dbg ();
     phantom_available_before;
-    available_before = Reg_availability_set.Unreachable;
+    available_before = Reg_availability_set.empty;
     available_across = None;
   }
 
@@ -41,7 +41,7 @@ let none =
   { dbg = Debuginfo.none;
     linear_dbg = create_linear_dbg ();
     phantom_available_before = Backend_var.Set.empty;
-    available_before = Reg_availability_set.Unreachable;
+    available_before = Reg_availability_set.empty;
     available_across = None;
   }
 

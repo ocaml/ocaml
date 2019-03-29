@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*            Mark Shinwell and Thomas Refis, Jane Street Europe          *)
 (*                                                                        *)
-(*   Copyright 2013--2017 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module M = Mach
 module R = Reg
@@ -25,42 +25,39 @@ module V = Backend_var
    to be careful not to throw away information about further-out catch
    handlers collected in [avail_at_exit].) *)
 let avail_at_exit = Hashtbl.create 42
-let avail_at_raise = ref RAS.Unreachable
+let avail_at_raise = ref RAS.unreachable
 
 let augment_availability_at_raise avail =
   avail_at_raise := RAS.inter avail !avail_at_raise
 
 let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
-  if !Clflags.ddebug_invariants then begin
-    match avail_before with
-    | Unreachable -> ()
-    | Ok avail_before ->
-      (* Every register that is live across an instruction should also be
-         available before the instruction. *)
-      if not (R.Set.subset instr.live (RD.Set.forget_debug_info avail_before))
-      then begin
-        Misc.fatal_errorf "Live registers not a subset of available registers: \
-            live={%a} avail_before=%a missing={%a} insn=%a"
-          Printmach.regset instr.live
-          (RAS.print ~print_reg:Printmach.reg)
-          (RAS.Ok avail_before)
-          Printmach.regset (R.Set.diff instr.live
-            (RD.Set.forget_debug_info avail_before))
-          Printmach.instr ({ instr with M. next = M.end_instr (); })
-      end;
-      (* Every register that is an input to an instruction should be
-         available. *)
-      let args = R.set_of_array instr.arg in
-      let avail_before_fdi = RD.Set.forget_debug_info avail_before in
-      if not (R.Set.subset args avail_before_fdi) then begin
-        Misc.fatal_errorf "Instruction has unavailable input register(s): \
-            avail_before=%a avail_before_fdi={%a} inputs={%a} insn=%a"
-          (RAS.print ~print_reg:Printmach.reg) (RAS.Ok avail_before)
-          Printmach.regset avail_before_fdi
-          Printmach.regset args
-          Printmach.instr ({ instr with M. next = M.end_instr (); })
-      end
-  end
+  match avail_before with
+  | Unreachable -> ()
+  | Ok avail_before ->
+    (* Every register that is live across an instruction should also be
+       available before the instruction. *)
+    if not (R.Set.subset instr.live (RD.Set.forget_debug_info avail_before))
+    then begin
+      Misc.fatal_errorf "Live registers not a subset of available registers: \
+          live={%a} avail_before=%a missing={%a} insn=%a"
+        Printmach.regset instr.live
+        (RAS.print ~print_reg:Printmach.reg) (RAS.create avail_before)
+        Printmach.regset (R.Set.diff instr.live
+          (RD.Set.forget_debug_info avail_before))
+        Printmach.instr ({ instr with M. next = M.end_instr (); })
+    end;
+    (* Every register that is an input to an instruction should be
+       available. *)
+    let args = R.set_of_array instr.arg in
+    let avail_before_fdi = RD.Set.forget_debug_info avail_before in
+    if not (R.Set.subset args avail_before_fdi) then begin
+      Misc.fatal_errorf "Instruction has unavailable input register(s): \
+          avail_before=%a avail_before_fdi={%a} inputs={%a} insn=%a"
+        (RAS.print ~print_reg:Printmach.reg) (RAS.create avail_before)
+        Printmach.regset avail_before_fdi
+        Printmach.regset args
+        Printmach.instr ({ instr with M. next = M.end_instr (); })
+    end
 
 (* [available_regs ~instr ~avail_before] calculates, given the registers
    "available before" an instruction [instr], the registers that are available
@@ -87,10 +84,10 @@ let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
 let rec available_regs (instr : M.instruction)
       ~(avail_before : RAS.t) : RAS.t =
   check_invariants instr ~avail_before;
-  instr.dbg <- Insn_debuginfo.with_available_before instr.dbg avail_before;
+  instr.available_before <- avail_before;
   let avail_across, avail_after =
-    let ok set = RAS.Ok set in
-    let unreachable = RAS.Unreachable in
+    let ok set = RAS.create set in
+    let unreachable = RAS.unreachable in
     match avail_before with
     | Unreachable -> None, unreachable
     | Ok avail_before ->
@@ -107,18 +104,17 @@ let rec available_regs (instr : M.instruction)
           if not is_assignment then
             avail_before
           else
-            RD.Set.map (fun reg ->
-                match RD.debug_info reg with
-                | None -> reg
-                | Some debug_info ->
-                  match RD.Debug_info.holds_value_of debug_info with
-                  | Var in_debug_info ->
-                    if V.same in_debug_info ident
-                    then RD.clear_debug_info reg
-                    else reg
-                  | Const_int _ | Const_naked_float _ | Const_symbol _ ->
-                    reg)
-              avail_before
+            RD.Set.map avail_before ~f:(fun reg ->
+              match RD.debug_info reg with
+              | None -> reg
+              | Some debug_info ->
+                match RD.Debug_info.holds_value_of debug_info with
+                | Var in_debug_info ->
+                  if V.same in_debug_info ident
+                  then RD.clear_debug_info reg
+                  else reg
+                | Const_int _ | Const_naked_float _ | Const_symbol _ ->
+                  reg)
         in
         let avail_after = ref forgetting_ident in
         let num_parts_of_value = Array.length instr.arg in
@@ -135,7 +131,7 @@ let rec available_regs (instr : M.instruction)
                 is_parameter
                 ~provenance
             in
-            avail_after := RD.Set.add regd (RD.Set.filter_reg !avail_after reg)
+            avail_after := RD.Set.add (RD.Set.filter_reg !avail_after reg) regd
           end
         done;
         Some (ok avail_before), ok !avail_after
@@ -169,10 +165,10 @@ let rec available_regs (instr : M.instruction)
         in
         let results =
           Array.map2 (fun arg_reg result_reg ->
-              match RD.Set.find_reg_exn avail_before arg_reg with
-              | exception Not_found ->
+              match RD.Set.find_reg avail_before arg_reg with
+              | None ->
                 assert false  (* see second invariant in [check_invariants] *)
-              | arg_reg ->
+              | Some arg_reg ->
                 RD.create_copying_debug_info ~reg:result_reg
                   ~debug_info_from:arg_reg)
             instr.arg instr.res
@@ -204,16 +200,15 @@ let rec available_regs (instr : M.instruction)
         let made_unavailable_2 =
           match op with
           | Icall_ind _ | Icall_imm _ | Ialloc _ ->
-            RD.Set.filter (fun reg ->
-                let holds_immediate = RD.holds_non_pointer reg in
-                let on_stack = RD.assigned_to_stack reg in
-                let live_across = Reg.Set.mem (RD.reg reg) instr.live in
-                let remains_available =
-                  live_across
-                    || (holds_immediate && on_stack)
-                in
-                not remains_available)
-              avail_before
+            RD.Set.filter avail_before ~f:(fun reg ->
+              let holds_immediate = RD.always_holds_non_pointer reg in
+              let on_stack = RD.assigned_to_stack reg in
+              let live_across = Reg.Set.mem (RD.reg reg) instr.live in
+              let remains_available =
+                live_across
+                  || (holds_immediate && on_stack)
+              in
+              not remains_available)
           | _ -> RD.Set.empty
         in
         let made_unavailable =
@@ -259,22 +254,6 @@ let rec available_regs (instr : M.instruction)
         Some (ok avail_across), ok avail_after
       | Iifthenelse (_, ifso, ifnot) -> join [ifso; ifnot] ~avail_before
       | Iswitch (_, cases) -> join (Array.to_list cases) ~avail_before
-      | Iloop body ->
-        let avail_after = ref (ok avail_before) in
-        begin try
-          while true do
-            let avail_after' =
-              RAS.inter !avail_after
-                (available_regs body ~avail_before:!avail_after)
-            in
-            if RAS.equal !avail_after avail_after' then begin
-              raise Exit
-              end;
-            avail_after := avail_after'
-          done
-        with Exit -> ()
-        end;
-        None, unreachable
       | Icatch (recursive, handlers, body) ->
         List.iter (fun (nfail, _handler) ->
             (* In case there are nested [Icatch] expressions with the same
@@ -359,8 +338,8 @@ let rec available_regs (instr : M.instruction)
               RD.Set.filter_reg avail_at_raise Proc.loc_exn_bucket
             in
             let with_anonymous_exn_bucket =
-              RD.Set.add (RD.create_without_debug_info ~reg:Proc.loc_exn_bucket)
-                without_exn_bucket
+              RD.Set.add without_exn_bucket
+               (RD.create_without_debug_info ~reg:Proc.loc_exn_bucket)
             in
             ok with_anonymous_exn_bucket
         in
@@ -375,27 +354,13 @@ let rec available_regs (instr : M.instruction)
         augment_availability_at_raise avail_before;
         None, unreachable
   in
-  instr.dbg <- Insn_debuginfo.with_available_across instr.dbg avail_across;
-  begin match avail_across with
-  | None -> ()
-  | Some available_across ->
-    let instr_available_before = Insn_debuginfo.available_before instr.dbg in
-    if !Clflags.ddebug_invariants
-      && not (RAS.subset available_across instr_available_before)
-    then begin
-      Misc.fatal_errorf "[available_across] %a not a subset of \
-         [available_before] %a:@ %a"
-        (RAS.print ~print_reg:Printmach.reg) available_across
-        (RAS.print ~print_reg:Printmach.reg) instr_available_before
-        Printmach.instr ({ instr with M. next = M.end_instr (); })
-    end
-  end;
+  instr.available_across <- avail_across;
   match instr.desc with
   | Iend -> avail_after
   | _ -> available_regs instr.next ~avail_before:avail_after
 
 and join branches ~avail_before =
-  let avail_before = RAS.Ok avail_before in
+  let avail_before = RAS.create avail_before in
   let avails = List.map (available_regs ~avail_before) branches in
   let avail_after =
     match avails with
@@ -405,13 +370,11 @@ and join branches ~avail_before =
   None, avail_after
 
 let fundecl (f : M.fundecl) =
-  if not (Clflags.debug_thing Debug_dwarf_vars) then begin
-    f
-  end else begin
+  if !Clflags.debug && !Clflags.debug_runavail then begin
     assert (Hashtbl.length avail_at_exit = 0);
-    avail_at_raise := RAS.Unreachable;
+    avail_at_raise := RAS.unreachable;
     let fun_args = R.set_of_array f.fun_args in
-    let avail_before = RAS.Ok (RD.Set.without_debug_info fun_args) in
-    ignore ((available_regs f.fun_body ~avail_before) : RAS.t);
-    f
-  end
+    let avail_before = RAS.create (RD.Set.without_debug_info fun_args) in
+    ignore ((available_regs f.fun_body ~avail_before) : RAS.t)
+  end;
+  f
