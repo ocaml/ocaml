@@ -314,7 +314,7 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
           prev_code_range := code_range
         end
       end
-    end;
+    end (*;
     (* CR mshinwell: deduplicate code *)
     begin match Insn_debuginfo.linear_position dbg with
     | None -> ()
@@ -330,7 +330,7 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
           prev_linear_code_range := code_range
         end
       end
-    end
+    end *)
   end
 
 let default_file_emitter ~file_num ~file_name =
