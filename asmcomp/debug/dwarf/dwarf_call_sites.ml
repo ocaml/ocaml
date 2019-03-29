@@ -54,7 +54,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
        that we may need here.  (Specifically for the call to
        [Reg_availability_set.find_all_holding_value_of].) *)
     let available_before = Insn_debuginfo.available_before insn.dbg in
-    match Reg_availability_set.find_reg_opt available_before arg with
+    match Reg_availability_set.find_reg available_before arg with
     | None -> [], []
     | Some rd ->
       match Reg_with_debug_info.debug_info rd with

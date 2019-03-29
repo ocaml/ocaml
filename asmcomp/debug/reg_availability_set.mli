@@ -66,6 +66,10 @@ val subset : t -> t -> bool
     of type [t]. *)
 val map : t -> f:(Reg_with_debug_info.Set.t -> Reg_with_debug_info.Set.t) -> t
 
+(** Find an element of the set given the underlying [Reg.t].  This function
+    always returns [None] if the supplied [t] is [Unreachable]. *)
+val find_reg : t -> Reg.t -> Reg_with_debug_info.t option
+
 (** [made_unavailable_by_clobber t ~regs_clobbered ~register_class] returns
     the largest subset of [t] whose locations do not overlap with any
     registers in [regs_clobbered].  (Think of [t] as a set of available

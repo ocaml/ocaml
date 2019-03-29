@@ -61,6 +61,11 @@ let inter regs1 regs2 =
   | _, Unreachable -> regs1
   | Ok avail1, Ok avail2 -> Ok (RD.Set.inter avail1 avail2)
 
+let find_reg t reg =
+  match t with
+  | Unreachable -> None
+  | Ok avail -> RD.Set.find_reg avail reg
+
 let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
   match t with
   | Unreachable -> Unreachable

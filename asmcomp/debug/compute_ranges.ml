@@ -256,20 +256,23 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | Some prev_insn -> S.available_across prev_insn
     in
     let case_1b =
-      KS.diff available_across
-        (KS.union opt_available_across_prev_insn available_before)
+      KS.diff
+        (KS.diff available_across opt_available_across_prev_insn)
+        available_before
     in
     let case_1c =
-      KS.diff available_before
-        (KS.union opt_available_across_prev_insn available_across)
+      KS.diff
+        (KS.diff available_before opt_available_across_prev_insn)
+        available_across
     in
     let case_1d =
       KS.diff (KS.inter available_before available_across)
         opt_available_across_prev_insn
     in
     let case_2a =
-      KS.diff opt_available_across_prev_insn
-        (KS.union available_before available_across)
+      KS.diff
+        (KS.diff opt_available_across_prev_insn available_before)
+        available_across
     in
     let case_2b =
       KS.inter opt_available_across_prev_insn
