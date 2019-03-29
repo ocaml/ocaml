@@ -835,7 +835,8 @@ let simplify_local_functions lam =
 let simplify_lambda sourcefile lam =
   let lam =
     lam
-    |> (if !Clflags.native_code || not !Clflags.debug
+    |> (if false && (!Clflags.native_code || not !Clflags.debug)
+    (* Optimization disabled in 4.08 because of #8558. *)
         then simplify_local_functions else Fun.id
        )
     |> simplify_exits
