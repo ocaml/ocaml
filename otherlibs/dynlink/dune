@@ -19,6 +19,7 @@
      dynlink_platform_intf)
   ; the -33 is specific to the hackery done with dune.
   (flags (:standard -nostdlib -w -33))
+  (modules_without_implementation dynlink)
   (libraries ocamlcommon stdlib))
 
 (rule
