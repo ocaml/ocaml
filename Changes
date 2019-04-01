@@ -373,7 +373,7 @@ OCaml 4.08.0
 - GPR#1917: comballoc: ensure object allocation order is preserved
   (Stephen Dolan)
 
-- MPR#6242, GPR#2143: optimize some local functions
+- MPR#6242, GPR#2143, MPR#8558, GPR#8559: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
 - GPR#2239: Fix match miscompilation with flambda
