@@ -23,6 +23,8 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+* Improved user-friendliness
+
 * #2276: Remove support for compiler plugins and hooks (also adds
   [Dynlink.unsafe_get_global_value])
   (Mark Shinwell, Xavier Clerc, review by Nicolás Ojeda Bär,

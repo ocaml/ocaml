@@ -4825,10 +4825,12 @@ let report_literal_type_constraint ppf const = function
       report_literal_type_constraint ppf typ const
   | Some _ | None -> ()
 
-let report_expr_type_clash_hints ppf exp diff =
+let help_the_user ppf =
+  fprintf ppf "@\n@[Hint:@ Did you mean to use `Obj.magic' ?@]"
+
+let report_expr_type_clash_hints ppf exp _ =
   match exp with
-  | Some (Texp_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | _ -> help_the_user ppf
 
 let report_pattern_type_clash_hints ppf pat diff =
   match pat with
