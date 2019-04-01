@@ -16,3 +16,5 @@
 (* Interface to the Tsl_lexer module *)
 
 val token : Lexing.lexbuf -> Tsl_parser.token
+val modifier :
+    Lexing.lexbuf -> string * [`Remove | `Add of string | `Append of string]
