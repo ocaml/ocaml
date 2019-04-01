@@ -70,8 +70,8 @@ COMPILERLIBS_INTFS=\
   parsing/asttypes.mli \
   parsing/parsetree.mli \
   typing/outcometree.mli \
-  bytecomp/cmo_format.mli \
-  asmcomp/cmxs_format.mli
+  file_formats/cmo_format.mli \
+  file_formats/cmxs_format.mli
 
 # .ml files from compilerlibs that have corresponding .mli files.
 COMPILERLIBS_SOURCES=\
@@ -103,13 +103,13 @@ COMPILERLIBS_SOURCES=\
   typing/subst.ml \
   typing/predef.ml \
   typing/datarepr.ml \
-  typing/cmi_format.ml \
+  file_formats/cmi_format.ml \
   typing/persistent_env.ml \
   typing/env.ml \
-  bytecomp/lambda.ml \
+  lambda/lambda.ml \
+  lambda/runtimedef.ml \
   bytecomp/instruct.ml \
   bytecomp/opcodes.ml \
-  bytecomp/runtimedef.ml \
   bytecomp/bytesections.ml \
   bytecomp/dll.ml \
   bytecomp/meta.ml \
