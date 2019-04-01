@@ -536,7 +536,7 @@ OCaml 4.08.0
 - #1917: comballoc: ensure object allocation order is preserved
   (Stephen Dolan)
 
-- #6242, #2143: optimize some local functions
+- #6242, #2143, #8558, #8559: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
 - #2082: New options [-insn-sched] and [-no-insn-sched] to control
