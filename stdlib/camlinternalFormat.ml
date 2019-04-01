@@ -219,11 +219,11 @@ type precision_ebb = Precision_EBB : ('a, 'b) precision -> precision_ebb
 (* Default precision for float printing. *)
 let default_float_precision fconv =
   match snd fconv with
-  | Float_f | Float_e | Float_E | Float_g | Float_G | Float_h | Float_H -> -6
+  | Float_f | Float_e | Float_EE | Float_g | Float_GG | Float_h | Float_HH -> -6
   (* For %h and %H formats, a negative precision means "as many digits as
      necessary".  For the other FP formats, we take the absolute value
      of the precision, hence 6 digits by default. *)
-  | Float_F -> 12
+  | Float_FF -> 12
   (* Default precision for OCaml float printing (%F). *)
 
 (******************************************************************************)
@@ -287,16 +287,16 @@ let buffer_contents buf =
 (* Convert an integer conversion to char. *)
 let char_of_iconv iconv = match iconv with
   | Int_d | Int_pd | Int_sd | Int_Cd -> 'd' | Int_i | Int_pi | Int_si
-  | Int_Ci -> 'i' | Int_x | Int_Cx -> 'x' | Int_X | Int_CX -> 'X' | Int_o
+  | Int_Ci -> 'i' | Int_x | Int_Cx -> 'x' | Int_XX | Int_CX -> 'X' | Int_o
   | Int_Co -> 'o' | Int_u | Int_Cu -> 'u'
 
 (* Convert a float conversion to char. *)
 (* `cF' will be 'F' for displaying format and 'g' to call libc printf *)
 let char_of_fconv ?(cF='F') fconv = match snd fconv with
   | Float_f -> 'f' | Float_e -> 'e'
-  | Float_E -> 'E' | Float_g -> 'g'
-  | Float_G -> 'G' | Float_F -> cF
-  | Float_h -> 'h' | Float_H -> 'H'
+  | Float_EE -> 'E' | Float_g -> 'g'
+  | Float_GG -> 'G' | Float_FF -> cF
+  | Float_h -> 'h' | Float_HH -> 'H'
 
 
 (* Convert a scanning counter to char. *)
@@ -415,7 +415,7 @@ let bprint_iconv_flag buf iconv = match iconv with
   | Int_sd | Int_si -> buffer_add_char buf ' '
   | Int_Cx | Int_CX | Int_Co | Int_Cd | Int_Ci | Int_Cu ->
       buffer_add_char buf '#'
-  | Int_d | Int_i | Int_x | Int_X | Int_o | Int_u -> ()
+  | Int_d | Int_i | Int_x | Int_XX | Int_o | Int_u -> ()
 
 (* Print an complete int format in a buffer (ex: "%3.*d"). *)
 let bprint_int_fmt buf ign_flag iconv pad prec =
@@ -1378,7 +1378,7 @@ let format_of_iconv = function
   | Int_d | Int_Cd -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
   | Int_i | Int_Ci -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
   | Int_x -> "%x" | Int_Cx -> "%#x"
-  | Int_X -> "%X" | Int_CX -> "%#X"
+  | Int_XX -> "%X" | Int_CX -> "%#X"
   | Int_o -> "%o" | Int_Co -> "%#o"
   | Int_u | Int_Cu -> "%u"
 
@@ -1386,7 +1386,7 @@ let format_of_iconvL = function
   | Int_d | Int_Cd -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
   | Int_i | Int_Ci -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
   | Int_x -> "%Lx" | Int_Cx -> "%#Lx"
-  | Int_X -> "%LX" | Int_CX -> "%#LX"
+  | Int_XX -> "%LX" | Int_CX -> "%#LX"
   | Int_o -> "%Lo" | Int_Co -> "%#Lo"
   | Int_u | Int_Cu -> "%Lu"
 
@@ -1394,7 +1394,7 @@ let format_of_iconvl = function
   | Int_d | Int_Cd -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
   | Int_i | Int_Ci -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
   | Int_x -> "%lx" | Int_Cx -> "%#lx"
-  | Int_X -> "%lX" | Int_CX -> "%#lX"
+  | Int_XX -> "%lX" | Int_CX -> "%#lX"
   | Int_o -> "%lo" | Int_Co -> "%#lo"
   | Int_u | Int_Cu -> "%lu"
 
@@ -1402,7 +1402,7 @@ let format_of_iconvn = function
   | Int_d | Int_Cd -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
   | Int_i | Int_Ci -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
   | Int_x -> "%nx" | Int_Cx -> "%#nx"
-  | Int_X -> "%nX" | Int_CX -> "%#nX"
+  | Int_XX -> "%nX" | Int_CX -> "%#nX"
   | Int_o -> "%no" | Int_Co -> "%#no"
   | Int_u | Int_Cu -> "%nu"
 
@@ -1457,7 +1457,7 @@ let convert_int64 iconv n =
 (* Fix special case of "OCaml float format". *)
 let convert_float fconv prec x =
   match snd fconv with
-  | Float_h | Float_H ->
+  | Float_h | Float_HH ->
     let sign =
       match fst fconv with
       | Float_flag_p -> '+'
@@ -1465,12 +1465,12 @@ let convert_float fconv prec x =
       | _ -> '-' in
     let str = hexstring_of_float x prec sign in
     begin match snd fconv with
-    | Float_H -> String.uppercase_ascii str
+    | Float_HH -> String.uppercase_ascii str
     | _ -> str
     end
   | _ ->
     let str = format_float (format_of_fconv fconv prec) x in
-    if snd fconv <> Float_F then str else
+    if snd fconv <> Float_FF then str else
       let len = String.length str in
       let rec is_valid i =
         if i = len then false else
@@ -2909,7 +2909,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | false, false, false, 'd' -> Int_d  | false, false, false, 'i' -> Int_i
     | false, false,  true, 'd' -> Int_sd | false, false,  true, 'i' -> Int_si
     |  true, false, false, 'd' -> Int_pd |  true, false, false, 'i' -> Int_pi
-    | false, false, false, 'x' -> Int_x  | false, false, false, 'X' -> Int_X
+    | false, false, false, 'x' -> Int_x  | false, false, false, 'X' -> Int_XX
     | false,  true, false, 'x' -> Int_Cx | false,  true, false, 'X' -> Int_CX
     | false, false, false, 'o' -> Int_o
     | false,  true, false, 'o' -> Int_Co
@@ -2952,12 +2952,12 @@ let fmt_ebb_of_string ?legacy_behavior str =
     let kind = match symb with
     | 'f' -> Float_f
     | 'e' -> Float_e
-    | 'E' -> Float_E
+    | 'E' -> Float_EE
     | 'g' -> Float_g
-    | 'G' -> Float_G
+    | 'G' -> Float_GG
     | 'h' -> Float_h
-    | 'H' -> Float_H
-    | 'F' -> Float_F
+    | 'H' -> Float_HH
+    | 'F' -> Float_FF
     | _ -> assert false in
     flag, kind
 

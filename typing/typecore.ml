@@ -3617,7 +3617,7 @@ and type_format loc str env =
         | Int_sd -> mk_constr "Int_sd" [] | Int_i  -> mk_constr "Int_i"  []
         | Int_pi -> mk_constr "Int_pi" [] | Int_si -> mk_constr "Int_si" []
         | Int_x  -> mk_constr "Int_x"  [] | Int_Cx -> mk_constr "Int_Cx" []
-        | Int_X  -> mk_constr "Int_X"  [] | Int_CX -> mk_constr "Int_CX" []
+        | Int_XX  -> mk_constr "Int_XX"  [] | Int_CX -> mk_constr "Int_CX" []
         | Int_o  -> mk_constr "Int_o"  [] | Int_Co -> mk_constr "Int_Co" []
         | Int_u  -> mk_constr "Int_u"  [] | Int_Cd -> mk_constr "Int_Cd" []
         | Int_Ci -> mk_constr "Int_Ci" [] | Int_Cu -> mk_constr "Int_Cu" []
@@ -3629,12 +3629,12 @@ and type_format loc str env =
         let kind = match snd fconv with
         | Float_f  -> mk_constr "Float_f"  []
         | Float_e  -> mk_constr "Float_e"  []
-        | Float_E  -> mk_constr "Float_E"  []
+        | Float_EE  -> mk_constr "Float_EE"  []
         | Float_g  -> mk_constr "Float_g"  []
-        | Float_G  -> mk_constr "Float_G"  []
+        | Float_GG  -> mk_constr "Float_GG"  []
         | Float_h  -> mk_constr "Float_h"  []
-        | Float_H  -> mk_constr "Float_H"  []
-        | Float_F  -> mk_constr "Float_F"  [] in
+        | Float_HH  -> mk_constr "Float_HH"  []
+        | Float_FF  -> mk_constr "Float_FF"  [] in
         mk_exp_loc (Pexp_tuple [flag; kind])
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []

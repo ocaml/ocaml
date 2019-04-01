@@ -19,14 +19,14 @@ type padty = Left | Right | Zeros
 
 type int_conv =
   | Int_d | Int_pd | Int_sd | Int_i | Int_pi | Int_si
-  | Int_x | Int_Cx | Int_X | Int_CX | Int_o | Int_Co | Int_u
+  | Int_x | Int_Cx | Int_XX | Int_CX | Int_o | Int_Co | Int_u
   | Int_Cd | Int_Ci | Int_Cu
 
 type float_flag_conv =
   | Float_flag_ | Float_flag_p | Float_flag_s
 type float_kind_conv =
-  | Float_f | Float_e | Float_E | Float_g | Float_G
-  | Float_F | Float_h | Float_H
+  | Float_f | Float_e | Float_EE | Float_g | Float_GG
+  | Float_FF | Float_h | Float_HH
 type float_conv = float_flag_conv * float_kind_conv
 
 type char_set = string

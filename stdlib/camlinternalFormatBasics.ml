@@ -26,7 +26,7 @@ type int_conv =
   | Int_d | Int_pd | Int_sd        (*  %d | %+d | % d  *)
   | Int_i | Int_pi | Int_si        (*  %i | %+i | % i  *)
   | Int_x | Int_Cx                 (*  %x | %#x        *)
-  | Int_X | Int_CX                 (*  %X | %#X        *)
+  | Int_XX | Int_CX                 (*  %X | %#X        *)
   | Int_o | Int_Co                 (*  %o | %#o        *)
   | Int_u                          (*  %u              *)
   | Int_Cd | Int_Ci | Int_Cu       (*  %#d | %#i | %#u *)
@@ -39,12 +39,12 @@ type float_flag_conv =
 type float_kind_conv =
   | Float_f                        (*  %f | %+f | % f  *)
   | Float_e                        (*  %e | %+e | % e  *)
-  | Float_E                        (*  %E | %+E | % E  *)
+  | Float_EE                       (*  %E | %+E | % E  *)
   | Float_g                        (*  %g | %+g | % g  *)
-  | Float_G                        (*  %G | %+G | % G  *)
-  | Float_F                        (*  %F | %+F | % F  *)
+  | Float_GG                       (*  %G | %+G | % G  *)
+  | Float_FF                       (*  %F | %+F | % F  *)
   | Float_h                        (*  %h | %+h | % h  *)
-  | Float_H                        (*  %H | %+H | % H  *)
+  | Float_HH                       (*  %H | %+H | % H  *)
 type float_conv = float_flag_conv * float_kind_conv
 
 (***)
