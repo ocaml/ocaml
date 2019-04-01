@@ -22,9 +22,14 @@ let cautious f ppf arg =
   try f ppf arg with
     Ellipsis -> fprintf ppf "..."
 
+let fixCase s =
+  if !Clflags.outputCamel
+  then Misc.camlOfSnake s
+  else Misc.snake_of_caml s
+
 let print_lident ppf = function
   | "::" -> pp_print_string ppf "(::)"
-  | s -> pp_print_string ppf s
+  | s -> pp_print_string ppf (fixCase s)
 
 let rec print_ident ppf =
   function
@@ -63,7 +68,7 @@ let value_ident ppf name =
   if parenthesized_ident name then
     fprintf ppf "( %s )" name
   else
-    pp_print_string ppf name
+    pp_print_string ppf (fix_case name)
 
 (* Values *)
 
@@ -253,7 +258,7 @@ let rec print_list pr sep ppf =
 let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 
-let pr_var = Pprintast.tyvar
+let pr_var fmt s = Pprintast.tyvar fmt (fix_case s)
 
 let pr_vars =
   print_list pr_var (fun ppf -> fprintf ppf "@ ")
@@ -334,7 +339,7 @@ and print_simple_out_type ppf =
       List.iter2
         (fun s t ->
           let sep = if !first then (first := false; "with") else "and" in
-          fprintf ppf " %s type %s = %a" sep s print_out_type t
+          fprintf ppf " %s type %s = %a" sep (fixCase s) print_out_type t
         )
         n tyl;
       fprintf ppf ")@]"
@@ -351,14 +356,14 @@ and print_fields rest ppf =
       | None -> ()
       end
   | [s, t] ->
-      fprintf ppf "%s : %a" s print_out_type t;
+      fprintf ppf "%s : %a" (fixCase s) print_out_type t;
       begin match rest with
         Some _ -> fprintf ppf ";@ "
       | None -> ()
       end;
       print_fields rest ppf []
   | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields rest) l
+      fprintf ppf "%s : %a;@ %a" (fixCase s) print_out_type t (print_fields rest) l
 and print_row_field ppf (l, opt_amp, tyl) =
   let pr_of ppf =
     if opt_amp then fprintf ppf " of@ &@ "
@@ -388,7 +393,7 @@ and print_typargs ppf =
       pp_close_box ppf ();
       pp_print_space ppf ()
 and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
+  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") (fixCase name)
     print_out_type arg
 
 let out_type = ref print_out_type
@@ -524,29 +529,29 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s%s@ %a%s@ :@ %a@]"
         (if rs = Orec_next then "and" else "class")
         (if vir_flag then " virtual" else "") print_out_class_params params
-        name !out_class_type clt
+        (fix_case name) !out_class_type clt
   | Osig_class_type (vir_flag, name, params, clt, rs) ->
       fprintf ppf "@[<2>%s%s@ %a%s@ =@ %a@]"
         (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
-        name !out_class_type clt
+        (fix_case name) !out_class_type clt
   | Osig_typext (ext, Oext_exception) ->
       fprintf ppf "@[<2>exception %a@]"
         print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
   | Osig_typext (ext, _es) ->
       print_out_extension_constructor ppf ext
   | Osig_modtype (name, Omty_abstract) ->
-      fprintf ppf "@[<2>module type %s@]" name
+      fprintf ppf "@[<2>module type %s@]" (fix_case name)
   | Osig_modtype (name, mty) ->
-      fprintf ppf "@[<2>module type %s =@ %a@]" name !out_module_type mty
+      fprintf ppf "@[<2>module type %s =@ %a@]" (fix_case name) !out_module_type mty
   | Osig_module (name, Omty_alias id, _) ->
-      fprintf ppf "@[<2>module %s =@ %a@]" name print_ident id
+      fprintf ppf "@[<2>module %s =@ %a@]" (fix_case name) print_ident id
   | Osig_module (name, mty, rs) ->
       fprintf ppf "@[<2>%s %s :@ %a@]"
         (match rs with Orec_not -> "module"
                      | Orec_first -> "module rec"
                      | Orec_next -> "and")
-        name !out_module_type mty
+        (fix_case name) !out_module_type mty
   | Osig_type(td, rs) ->
         print_out_type_decl
           (match rs with
@@ -580,13 +585,14 @@ and print_out_type_decl kwd ppf td =
   in
   let type_defined ppf =
     match td.otype_params with
-      [] -> pp_print_string ppf td.otype_name
-    | [param] -> fprintf ppf "@[%a@ %s@]" type_parameter param td.otype_name
+      [] -> pp_print_string ppf (fixCase td.otype_name)
+    | [param] -> fprintf ppf "@[%a@ %s@]"
+                   type_parameter param (fixCase td.otype_name)
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %s@]"
           (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
           td.otype_params
-          td.otype_name
+          (fixCase td.otype_name)
   in
   let print_manifest ppf =
     function
@@ -643,7 +649,7 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
   let name =
     match name with
     | "::" -> "(::)"   (* #7200 *)
-    | s -> s
+    | s -> fixCase s
   in
   match ret_type_opt with
   | None ->
@@ -667,7 +673,7 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
 and print_out_extension_constructor ppf ext =
   let print_extended_type ppf =
       match ext.oext_type_params with
-        [] -> fprintf ppf "%s" ext.oext_type_name
+        [] -> fprintf ppf "%s" (fix_case ext.oext_type_name)
       | [ty_param] ->
         fprintf ppf "@[%a@ %s@]"
           print_type_parameter
@@ -677,7 +683,7 @@ and print_out_extension_constructor ppf ext =
         fprintf ppf "@[(@[%a)@]@ %s@]"
           (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
           ext.oext_type_params
-          ext.oext_type_name
+          (fixCase ext.oext_type_name)
   in
   fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
     print_extended_type
@@ -687,16 +693,16 @@ and print_out_extension_constructor ppf ext =
 and print_out_type_extension ppf te =
   let print_extended_type ppf =
     match te.otyext_params with
-      [] -> fprintf ppf "%s" te.otyext_name
+      [] -> fprintf ppf "%s" (fixCase te.otyext_name)
     | [param] ->
       fprintf ppf "@[%a@ %s@]"
         print_type_parameter param
-        te.otyext_name
+        (fix_case te.otyext_name)
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %s@]"
           (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
           te.otyext_params
-          te.otyext_name
+          (fixCase te.otyext_name)
   in
   fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
     print_extended_type
