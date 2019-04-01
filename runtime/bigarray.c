@@ -937,7 +937,7 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
 CAMLprim value caml_ba_slice(value vb, value vind)
 {
   CAMLparam2 (vb, vind);
-  #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+  #define b (Caml_ba_array_val(vb))
   CAMLlocal1 (res);
   intnat index[CAML_BA_MAX_NUM_DIMS];
   int num_inds, i;
@@ -983,7 +983,7 @@ CAMLprim value caml_ba_change_layout(value vb, value vlayout)
 {
   CAMLparam2 (vb, vlayout);
   CAMLlocal1 (res);
-  #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+  #define b (Caml_ba_array_val(vb))
   /* if the layout is different, change the flags and reverse the dimensions */
   if (Caml_ba_layout_val(vlayout) != (b->flags & CAML_BA_LAYOUT_MASK)) {
     /* change the flags to reflect the new layout */
@@ -1010,7 +1010,7 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
 {
   CAMLparam3 (vb, vofs, vlen);
   CAMLlocal1 (res);
-  #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+  #define b (Caml_ba_array_val(vb))
   intnat ofs = Long_val(vofs);
   intnat len = Long_val(vlen);
   int i, changed_dim;
@@ -1190,7 +1190,7 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
 {
   CAMLparam2 (vb, vdim);
   CAMLlocal1 (res);
-#define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+#define b (Caml_ba_array_val(vb))
   intnat dim[CAML_BA_MAX_NUM_DIMS];
   mlsize_t num_dims;
   uintnat num_elts;
