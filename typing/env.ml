@@ -15,6 +15,13 @@
 
 (* Environment handling *)
 
+
+(** Map indexed by the name of module components. *)
+module NameMap = Map.Make(struct
+    type t = string
+    let compare = Misc.compare_nocase
+  end)
+
 open Cmi_format
 open Misc
 open Asttypes
@@ -63,9 +70,6 @@ type error =
 exception Error of error
 
 let error err = raise (Error err)
-
-(** Map indexed by the name of module components. *)
-module NameMap = String.Map
 
 type summary =
     Env_empty
