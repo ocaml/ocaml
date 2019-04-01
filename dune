@@ -194,12 +194,14 @@
 ;;; aliases ;;;
 ;;;;;;;;;;;;;;;
 
+; mshinwell: The debugger and ocamldoc are currently disabled as Dynlink is
+; not built correctly.
 (alias
  (name world)
  (deps ocamlc.byte
        ocamlopt.byte
-       debugger/ocamldebug.byte
-       ocamldoc/ocamldoc.byte
+;       debugger/ocamldebug.byte
+;       ocamldoc/ocamldoc.byte
        ocamltest/ocamltest.byte
        toplevel/ocaml.byte
        toplevel/expunge.exe
