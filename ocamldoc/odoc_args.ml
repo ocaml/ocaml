@@ -201,7 +201,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let unset r () = r := false
   let _absname = set Clflags.absname
   let _alert = Warnings.parse_alert_option
-  let _I s = Odoc_global.include_dirs := s :: !Odoc_global.include_dirs
+  let _II s = Odoc_global.include_dirs := s :: !Odoc_global.include_dirs
   let _impl s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Impl_file s]
   let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
   let _intf_suffix s = Config.interface_suffix := s

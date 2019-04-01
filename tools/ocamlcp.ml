@@ -53,7 +53,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _g = ignore
   let _stop_after = ignore
   let _i = ignore
-  let _I = ignore
+  let _II = ignore
   let _impl _ = with_impl := true
   let _intf _ = with_intf := true
   let _intf_suffix = ignore

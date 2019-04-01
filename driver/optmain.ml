@@ -73,7 +73,7 @@ module Options = Main_args.Make_optcomp_options (struct
             compile_only := true
         end;
     end
-  let _I dir = include_dirs := dir :: !include_dirs
+  let _II dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =
     Float_arg_helper.parse spec

@@ -64,7 +64,7 @@ module Options = Main_args.Make_bytecomp_options (struct
             compile_only := true
         end;
     end
-  let _I s = include_dirs := s :: !include_dirs
+  let _II s = include_dirs := s :: !include_dirs
   let _impl = impl
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
