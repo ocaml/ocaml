@@ -40,7 +40,7 @@ CAMLextern void UNMAP_FILE_FUNCTION(void * addr, uintnat len);
 static void caml_ba_mapped_finalize(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
-  CAMLassert(b->flags & CAML_BA_MANAGED_MASK == CAML_BA_MAPPED_FILE);
+  CAMLassert((b->flags & CAML_BA_MANAGED_MASK) == CAML_BA_MAPPED_FILE);
   if (b->proxy == NULL) {
     UNMAP_FILE_FUNCTION(b->data, caml_ba_byte_size(b));
   } else {
