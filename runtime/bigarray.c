@@ -162,6 +162,7 @@ CAMLexport void caml_ba_finalize(value v)
     break;
   case CAML_BA_MAPPED_FILE:
     /* Bigarrays for mapped files use a different finalization method */
+    /* fallthrough */
   default:
     CAMLassert(0);
   }
