@@ -246,6 +246,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
   let _opaque = set opaque
+  let _snake = clear outputCamel 
+  let _camel = set outputCamel
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

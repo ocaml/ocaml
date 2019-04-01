@@ -435,6 +435,13 @@ let mk_no_principal f =
   " Do not check principality of type inference (default)"
 ;;
 
+let mk_out_snake f =
+  "-snake", Arg.Unit f," Output in snake_case"
+;;
+let mk_outCamel f =
+  "-camel", Arg.Unit f," Output in camelCase"
+;;
+
 let mk_rectypes f =
   "-rectypes", Arg.Unit f, " Allow arbitrary recursive types"
 ;;
@@ -884,6 +891,8 @@ module type Common_options = sig
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
+  val _snake : unit -> unit
+  val _camel : unit -> unit
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
@@ -1168,6 +1177,8 @@ struct
     mk_warn_help F._warn_help;
     mk_where F._where;
     mk__ F.anonymous;
+    mk_out_snake F._snake;
+    mk_outCamel F._camel;
 
     mk_match_context_rows F._match_context_rows;
     mk_use_prims F._use_prims;
@@ -1235,6 +1246,8 @@ struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_out_snake F._snake;
+    mk_outCamel F._camel;
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1358,6 +1371,8 @@ struct
     mk_warn_help F._warn_help;
     mk_where F._where;
     mk__ F.anonymous;
+    mk_out_snake F._snake;
+    mk_outCamel F._camel;
 
     mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
@@ -1470,6 +1485,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_out_snake F._snake;
+    mk_outCamel F._camel;
 
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
@@ -1543,6 +1560,8 @@ struct
     mk_vnum F._vnum;
     mk_w F._w;
     mk__ F.anonymous;
+    mk_out_snake F._snake;
+    mk_outCamel F._camel;
   ]
 end;;
 

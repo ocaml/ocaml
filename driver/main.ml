@@ -139,6 +139,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dcamlprimc = set keep_camlprimc_file
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
+  let _snake = unset outputCamel 
+  let _camel = set outputCamel
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

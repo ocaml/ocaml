@@ -153,6 +153,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dinstr = set dump_instr
   let _color = Misc.set_or_ignore color_reader.parse color
   let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
+  let _snake = clear outputCamel 
+  let _camel = set outputCamel
 
   let _args = wrap_expand Arg.read_arg
   let _args0 = wrap_expand Arg.read_arg0

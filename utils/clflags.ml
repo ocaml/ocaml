@@ -217,6 +217,8 @@ let inline_max_unroll =
 let inline_max_depth =
   ref (Int_arg_helper.default default_inline_max_depth)
 
+let outputCamel =
+  ref false
 
 let unbox_specialised_args = ref true   (* -no-unbox-specialised-args *)
 let unbox_free_vars_of_closures = ref true

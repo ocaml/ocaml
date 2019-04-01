@@ -223,6 +223,8 @@ type 'a env_reader = {
 val color : Misc.Color.setting option ref
 val color_reader : Misc.Color.setting env_reader
 
+val outputCamel : bool ref
+
 val error_style : Misc.Error_style.setting option ref
 val error_style_reader : Misc.Error_style.setting env_reader
 

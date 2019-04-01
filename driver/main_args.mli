@@ -50,6 +50,8 @@ module type Common_options = sig
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
+  val _snake : unit -> unit
+  val _camel : unit -> unit
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit

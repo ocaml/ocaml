@@ -680,6 +680,13 @@ let _ = add_directive "principal"
       doc = "Make sure that all types are derived in a principal way.";
     }
 
+let _ = add_directive "camelCase"
+    (Directive_bool(fun b -> Clflags.outputCamel := b))
+    {
+      section = section_options;
+      doc = "Output identifiers in camelCase.";
+    }
+
 let _ = add_directive "rectypes"
     (Directive_none(fun () -> Clflags.recursive_types := true))
     {

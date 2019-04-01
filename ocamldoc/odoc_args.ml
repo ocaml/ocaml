@@ -252,6 +252,8 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _dinstr = set Clflags.dump_instr
   let _dcamlprimc = set Clflags.keep_camlprimc_file
   let anonymous = anonymous
+  let _snake = unset Clflags.outputCamel 
+  let _camel = set Clflags.outputCamel
 end)
 
 (** The default option list *)
