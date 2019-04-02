@@ -25,6 +25,7 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+INCLUDES =
 COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
@@ -32,7 +33,7 @@ YACCFLAGS = -v
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CAMLDEP = $(BOOT_OCAMLC) -depend
 DEPFLAGS = -slash
-DEPINCLUDES =
+DEPINCLUDES = $(INCLUDES)
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
