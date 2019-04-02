@@ -34,6 +34,10 @@ Working version
 - #3819, #8546 more explanations and tests for illegal permutation
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #8579: Better error message for private constructors
+  of an extensible variant type
+  (Guillaume Bury, review by many fine eyes)
+
 ### Compiler distribution build system:
 
 - #8514: Use boot/ocamlc.opt for building, if available.
