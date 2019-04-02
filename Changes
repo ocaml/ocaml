@@ -584,6 +584,9 @@ OCaml 4.08.0
 - #8567, #8569: on ARM64, use 32-bit loads to access caml_backtrace_active
   (Xavier Leroy, review by Mark Shinwell and Greta Yorsh)
 
+- #8568: Fix a memory leak in mmapped bigarrays
+  (Damien Doligez, review by Xavier Leroy and Jérémie Dimino)
+
 ### Tools
 
 - #2182: Split Emacs caml-mode as an independent project.
