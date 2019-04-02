@@ -412,7 +412,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
   caml_exe_name = exe_name;
   main_argv = caml_alloc_array((void *)caml_copy_string_of_os,
-			       (char const **) argv);
+                               (char const **) argv);
   caml_register_generational_global_root(&main_argv);
 }
 
