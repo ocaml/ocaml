@@ -87,7 +87,7 @@ default:
 all:
 	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) legacy-without-report
-	@$(MAKE) $(NO_PRINT) new-without-report
+	-@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy
