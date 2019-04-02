@@ -59,6 +59,10 @@
         ADDRGLOBAL(TMP2,symb); \
         str     reg, [TMP2]
 
+#define LOADGLOBAL32(reg,symb) \
+        ADDRGLOBAL(TMP2,symb); \
+        ldrsw   reg, [TMP2]
+
 #else
 
 #define ADDRGLOBAL(reg,symb) \
@@ -72,6 +76,10 @@
 #define STOREGLOBAL(reg,symb) \
         adrp    TMP2, symb; \
         str     reg, [TMP2, #:lo12:symb]
+
+#define LOADGLOBAL32(reg,symb) \
+        adrp    TMP2, symb; \
+        ldrsw   reg, [TMP2, #:lo12:symb]
 
 #endif
 
@@ -416,7 +424,7 @@ caml_start_program:
 caml_raise_exn:
         CFI_STARTPROC
     /* Test if backtrace is active */
-        LOADGLOBAL(TMP, caml_backtrace_active)
+        LOADGLOBAL32(TMP, caml_backtrace_active)
         cbnz     TMP, 2f
 1:  /* Cut stack at current trap handler */
         mov     sp, TRAP_PTR
@@ -450,7 +458,7 @@ caml_raise_exception:
         LOADGLOBAL(ALLOC_PTR, caml_young_ptr)
         LOADGLOBAL(ALLOC_LIMIT, caml_young_limit)
     /* Test if backtrace is active */
-        LOADGLOBAL(TMP, caml_backtrace_active)
+        LOADGLOBAL32(TMP, caml_backtrace_active)
         cbnz    TMP, 2f
 1:  /* Cut stack at current trap handler */
         mov     sp, TRAP_PTR
