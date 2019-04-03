@@ -176,6 +176,9 @@ module Stdlib : sig
     val print : Format.formatter -> t -> unit
 
     val for_all : (char -> bool) -> t -> bool
+
+    (** Returns [true] iff the given string starts with [prefix]. *)
+    val is_prefix : t -> prefix:t -> bool
   end
 
   external compare : 'a -> 'a -> int = "%compare"

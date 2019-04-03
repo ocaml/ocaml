@@ -26,7 +26,7 @@ let command_line_options =
 open Format
 
 type addressing_mode =
-    Ibased of string * int              (* symbol + displ *)
+    Ibased of Backend_sym.t * int       (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
   | Iindexed2 of int                    (* reg + reg + displ *)
   | Iscaled of int * int                (* reg * scale + displ *)
@@ -36,18 +36,18 @@ type specific_operation =
     Ilea of addressing_mode             (* Lea gives scaled adds *)
   | Istore_int of nativeint * addressing_mode * bool
                                         (* Store an integer constant *)
-  | Istore_symbol of string * addressing_mode * bool (* Store a symbol *)
+  | Istore_symbol of Backend_sym.t * addressing_mode * bool (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ipush                               (* Push regs on stack *)
   | Ipush_int of nativeint              (* Push an integer constant *)
-  | Ipush_symbol of string              (* Push a symbol *)
+  | Ipush_symbol of Backend_sym.t       (* Push a symbol *)
   | Ipush_load of addressing_mode       (* Load a scalar and push *)
   | Ipush_load_float of addressing_mode (* Load a float and push *)
   | Isubfrev | Idivfrev                 (* Reversed float sub and div *)
   | Ifloatarithmem of bool * float_operation * addressing_mode
                                         (* Float arith operation with memory *)
                                         (* bool: true=64 bits, false=32 *)
-  | Ifloatspecial of string
+  | Ifloatspecial of Backend_sym.t
 
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatsubrev | Ifloatmul | Ifloatdiv | Ifloatdivrev
@@ -92,9 +92,9 @@ let num_args_addressing = function
 let print_addressing printreg addr ppf arg =
   match addr with
   | Ibased(s, 0) ->
-      fprintf ppf "\"%s\"" s
+      fprintf ppf "\"%a\"" Backend_sym.print s
   | Ibased(s, n) ->
-      fprintf ppf "\"%s\" + %i" s n
+      fprintf ppf "\"%a\" + %i" Backend_sym.print s n
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx
@@ -116,8 +116,9 @@ let print_specific_operation printreg op ppf arg =
          (print_addressing printreg addr) arg n
          (if is_assign then "(assign)" else "(init)")
   | Istore_symbol(lbl, addr, is_assign) ->
-      fprintf ppf "[%a] := \"%s\" %s"
-         (print_addressing printreg addr) arg lbl
+      fprintf ppf "[%a] := \"%a\" %s"
+         (print_addressing printreg addr) arg
+         Backend_sym.print lbl
          (if is_assign then "(assign)" else "(init)")
   | Ioffset_loc(n, addr) ->
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n
@@ -130,7 +131,7 @@ let print_specific_operation printreg op ppf arg =
   | Ipush_int n ->
       fprintf ppf "push %s" (Nativeint.to_string n)
   | Ipush_symbol s ->
-      fprintf ppf "push \"%s\"" s
+      fprintf ppf "push \"%a\"" Backend_sym.print s
   | Ipush_load addr ->
       fprintf ppf "push [%a]" (print_addressing printreg addr) arg
   | Ipush_load_float addr ->
@@ -151,7 +152,7 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "%a %s %s[%a]" printreg arg.(0) (op_name op) long
        (print_addressing printreg addr) (Array.sub arg 1 (Array.length arg - 1))
   | Ifloatspecial name ->
-      fprintf ppf "%s " name;
+      fprintf ppf "%a " Backend_sym.print name;
       for i = 0 to Array.length arg - 1 do
         if i > 0 then fprintf ppf ", ";
         printreg ppf arg.(i)

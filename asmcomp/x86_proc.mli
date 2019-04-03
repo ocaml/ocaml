@@ -28,7 +28,6 @@ val string_of_reg64: reg64 -> string
 val string_of_registerf: registerf -> string
 val string_of_string_literal: string -> string
 val string_of_condition: condition -> string
-val string_of_symbol: (*prefix*) string -> string -> string
 val string_of_rounding: rounding -> string
 val buf_bytes_directive:
   Buffer.t -> (*directive*) string -> (*data*)string -> unit

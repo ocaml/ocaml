@@ -21,6 +21,9 @@ open Arch
 open Cmm
 open Mach
 
+module S = Backend_sym
+open Backend_sym.Names
+
 let is_offset chunk n =
    (n >= -256 && n <= 255)               (* 9 bits signed unscaled *)
 || (n >= 0 &&
@@ -79,8 +82,9 @@ let is_logical_immediate n =
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
-    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
+  S.Set.of_list
+    [ sqrt; caml_bswap16_direct; caml_direct_bswap Int32;
+      caml_direct_bswap Int64; caml_direct_bswap Nativeint ]
 
 let use_direct_addressing _symb =
   not !Clflags.dlcode
@@ -98,13 +102,13 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _), args, _) when S.Set.mem fn inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
 method! effects_of e =
   match e with
-  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _), args, _) when S.Set.mem fn inline_ops ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | e -> super#effects_of e
 
@@ -228,15 +232,16 @@ method! select_operation op args dbg =
           super#select_operation op args dbg
       end
   (* Recognize floating-point square root *)
-  | Cextcall("sqrt", _, _, _) ->
+  | Cextcall(func, _, _, _) when S.equal func sqrt ->
       (Ispecific Isqrtf, args)
   (* Recognize bswap instructions *)
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall(func, _, _, _) when S.equal func caml_bswap16_direct ->
       (Ispecific(Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall(func, _, _, _) when S.equal func (caml_direct_bswap Int32) ->
       (Ispecific(Ibswap 32), args)
-  | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
-              _, _, _) ->
+  | Cextcall(func, _, _, _)
+      when S.equal func (caml_direct_bswap Int64)
+        || S.equal func (caml_direct_bswap Nativeint) ->
       (Ispecific (Ibswap 64), args)
   (* Other operations are regular *)
   | _ ->

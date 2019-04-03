@@ -173,7 +173,11 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
 
 let end_gen_implementation ?toplevel ~ppf_dump
     (clambda:clambda_and_constants) =
-  Emit.begin_assembly ();
+  let comp_unit =
+    Backend_compilation_unit.compilation_unit
+      (Compilation_unit.get_current_exn ())
+  in
+  Emit.begin_assembly comp_unit;
   clambda
   ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump)
   ++ Profile.record "compile_phrases" (List.iter (compile_phrase ~ppf_dump))
@@ -191,7 +195,7 @@ let end_gen_implementation ?toplevel ~ppf_dump
        (List.filter (fun s -> s <> "" && s.[0] <> '%')
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
-  Emit.end_assembly ()
+  Emit.end_assembly comp_unit
 
 let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
     (program:Flambda.program) =

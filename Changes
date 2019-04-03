@@ -131,6 +131,10 @@ Working version
 - #7878, #8542: Replaced TypedtreeIter with tast_iterator
   (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #8581: Add Asm_section, Asm_symbol, Target_system, Backend_compilation_unit
+  and placeholder version of Backend_sym
+  (Mark Shinwell)
+
 - #8598: Replace "not is_nonexpansive" by "maybe_expansive".
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)

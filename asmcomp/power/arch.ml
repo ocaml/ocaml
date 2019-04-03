@@ -59,7 +59,7 @@ let spacetime_node_hole_pointer_is_live_before = function
 (* Addressing modes *)
 
 type addressing_mode =
-    Ibased of string * int              (* symbol + displ *)
+    Ibased of Backend_sym.t * int       (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
   | Iindexed2                           (* reg + reg *)
 
@@ -103,7 +103,7 @@ let print_addressing printreg addr ppf arg =
   match addr with
   | Ibased(s, n) ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "\"%s\"%s" s idx
+      fprintf ppf "\"%a\"%s" Backend_sym.print s idx
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx

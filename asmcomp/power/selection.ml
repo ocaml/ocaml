@@ -22,7 +22,7 @@ open Mach
 (* Recognition of addressing modes *)
 
 type addressing_expr =
-    Asymbol of string
+    Asymbol of Backend_sym.t
   | Alinear of expression
   | Aadd of expression * expression
 

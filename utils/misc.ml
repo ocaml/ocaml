@@ -237,6 +237,10 @@ module Stdlib = struct
 
     let print ppf t =
       Format.pp_print_string ppf t
+
+    let is_prefix t ~prefix =
+      length prefix <= length t
+        && equal (sub t 0 (length prefix)) prefix
   end
 
   external compare : 'a -> 'a -> int = "%compare"
