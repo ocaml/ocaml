@@ -144,36 +144,17 @@ and apply_modifiers environment modifiers =
   List.fold_left apply_modifier environment modifiers
 
 let modifier_of_string str =
-  let invalid_argument = (Invalid_argument "modifier_of_string") in
-  if str="" then raise invalid_argument else begin
-    let l = String.length str in
-    if str.[0] = '-' then begin
-      let variable_name = String.sub str 1 (l-1) in
-      match Variables.find_variable variable_name with
-        | None -> raise (Variables.No_such_variable variable_name)
-        | Some variable -> Remove variable
-    end else begin match String.index_opt str '=' with
-      | None -> raise invalid_argument
-      | Some pos_eq -> if pos_eq <= 0 then raise invalid_argument else
-        let (append, varname_length) =
-        (match String.index_opt str '+' with
-        | None -> (false, pos_eq)
-        | Some pos_plus ->
-          if pos_plus = pos_eq-1
-          then (true, pos_plus)
-          else raise invalid_argument) in
-        let variable_name = String.sub str 0 varname_length in
-        match Variables.find_variable variable_name with
-          | None -> raise (Variables.No_such_variable variable_name)
-          | Some variable ->
-            if pos_eq >= l-2 || str.[pos_eq+1]<>'"' || str.[l-1]<>'"'
-            then raise invalid_argument
-            else let value_length = l - pos_eq - 3 in
-            let value = String.sub str (pos_eq+2) value_length in
-            if append then Append (variable, value)
-            else Add (variable, value)
-    end
-  end
+  let lexbuf = Lexing.from_string str in
+  let variable_name, result = Tsl_lexer.modifier lexbuf in
+  let variable =
+    match Variables.find_variable variable_name with
+    | None -> raise (Variables.No_such_variable variable_name)
+    | Some variable -> variable
+  in
+  match result with
+  | `Remove -> Remove variable
+  | `Add value -> Add (variable, value)
+  | `Append value -> Append (variable, value)
 
 let modifiers_of_file filename =
   let ic = open_in filename in
