@@ -129,10 +129,20 @@ module Genarray = struct
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+
+  external overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> int array -> int array -> int = "caml_ba_overlap" [@@noalloc]
+
+  let overlap a b =
+    let a_dims = Array.make (num_dims a) 0 in
+    let b_dims = Array.make (num_dims b) 0 in
+    let len = overlap a b a_dims b_dims in
+
+    if len = 0 then None else Some (len, a_dims, b_dims)
 end
 
 module Array0 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
+
   let create kind layout =
     Genarray.create kind layout [||]
   let get arr = Genarray.get arr [||]
@@ -152,6 +162,10 @@ module Array0 = struct
     let a = create kind layout in
     set a v;
     a
+  let overlap a b = match Genarray.overlap a b with
+    | Some (1, [||], [||]) -> true
+    | Some _ -> assert false
+    | None -> false
 end
 
 module Array1 = struct
@@ -189,6 +203,10 @@ module Array1 = struct
     in
     for i = 0 to Array.length data - 1 do unsafe_set ba (i + ofs) data.(i) done;
     ba
+  let overlap a b = match Genarray.overlap a b with
+    | Some (len, [| x |], [| y |]) -> Some (len, x, y)
+    | Some _ -> assert false
+    | None -> None
 end
 
 module Array2 = struct
@@ -239,6 +257,10 @@ module Array2 = struct
       done
     done;
     ba
+  let overlap a b = match Genarray.overlap a b with
+    | Some (len, [| xa; ya |], [| xb; yb |]) -> Some (len, (xa, ya), (xb, yb))
+    | Some _ -> assert false
+    | None -> None
 end
 
 module Array3 = struct
@@ -299,6 +321,10 @@ module Array3 = struct
       done
     done;
     ba
+  let overlap a b = match Genarray.overlap a b with
+    | Some (len, [| xa; ya; za |], [| xb; yb; zb |]) -> Some (len, (xa, ya, za), (xb, yb, zb))
+    | Some _ -> assert false
+    | None -> None
 end
 
 external genarray_of_array0: ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t

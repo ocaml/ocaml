@@ -1218,3 +1218,62 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
 
 #undef b
 }
+
+CAMLprim value caml_ba_overlap(value va, value vb, value vadims, value vbdims)
+{
+  CAMLparam4(va, vb, vadims, vbdims);
+
+  struct caml_ba_array * a = Caml_ba_array_val(va);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+
+  void *src_a = a->data;
+  void *src_b = b->data;
+
+  intnat i;
+  intnat len;
+  intnat a_bytes;
+  intnat b_bytes;
+  uintptr_t offset;
+
+  if (a->num_dims != b->num_dims)
+    caml_invalid_argument("Bigarray.overlap: dimensions mistmatch");
+  if (Wosize_val(vadims) != Wosize_val(vbdims)
+      || Wosize_val(vadims) != a->num_dims
+      || Wosize_val(vbdims) != b->num_dims)
+    caml_invalid_argument("Bigarray.overlap: dims mistmatch");
+
+  a_bytes = caml_ba_num_elts(a) * caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
+  b_bytes = caml_ba_num_elts(b) * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
+
+#define MAX(X, Y) (((X) < (Y)) ? (Y) : (X))
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+
+  len = MAX(0, (MIN(src_a + a_bytes, src_b + b_bytes) - MAX(src_a, src_b)));
+  len = len / caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
+
+  if (src_a >= src_b && src_a < src_b + b_bytes)
+    {
+      offset = (uintptr_t) (src_a - src_b) / caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
+      for (i = b->num_dims - 1; i >= 0; i--)
+        {
+          Modify(&Field(vadims, i), Val_long(0));
+          Modify(&Field(vbdims, i), Val_long(offset % b->dim[i]));
+          offset = offset / b->dim[i];
+        }
+    }
+  else if (src_b >= src_a && src_b < src_a + a_bytes)
+    {
+      offset = (uintptr_t) (src_b - src_a) / caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
+      for (i = a->num_dims - 1; i >= 0; i--)
+        {
+          Modify(&Field(vbdims, i), Val_long(0));
+          Modify(&Field(vadims, i), Val_long(offset % a->dim[i]));
+          offset = offset / a->dim[i];
+        }
+    }
+
+#undef MAX
+#undef MIN
+
+  CAMLreturn(Val_long(len));
+}

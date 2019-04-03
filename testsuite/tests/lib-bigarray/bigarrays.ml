@@ -979,6 +979,35 @@ let tests () =
   test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
                                      makecomplex);
 
+(* Overlap *)
+
+  let a = Array0.create Int C_layout in
+  let b = Array0.create Int C_layout in
+
+  testing_function "overlap" ;
+  test 1 (Array0.overlap a b) false ;
+  test 1 (Array0.overlap b a) false ;
+  test 2 (Array0.overlap a a) true ;
+  test 3 (Array0.overlap b b) true ;
+
+  let c = Array1.create Int C_layout 20 in
+  let a = Array1.sub c 0 10 in
+  let b = Array1.sub c 5 10 in
+
+  test 4 (Array1.overlap a b) (Some (5, 5, 0)) ;
+  test 5 (Array1.overlap b a) (Some (5, 0, 5)) ;
+  test 6 (Array1.overlap a a) (Some (10, 0, 0)) ;
+  test 7 (Array1.overlap b b) (Some (10, 0, 0)) ;
+
+  let b = Array1.sub c 10 10 in
+
+  test 8 (Array1.overlap a b) None ;
+  test 9 (Array1.overlap b a) None ;
+  test 10 (Array1.overlap c a) (Some (10, 0, 0)) ;
+  test 11 (Array1.overlap c b) (Some (10, 10, 0)) ;
+  test 12 (Array1.overlap a c) (Some (10, 0, 0)) ;
+  test 13 (Array1.overlap b c) (Some (10, 0, 10)) ;
+
   ()
   [@@inline never]
 
