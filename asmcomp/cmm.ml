@@ -308,6 +308,19 @@ let rec map_tail f = function
   | Cop _ as c ->
       f c
 
+let rec map_single_tail f = function
+  | Clet (id, exp, body) ->
+      let result = map_single_tail f body in
+      Clet (id, exp, result)
+  | Cphantom_let (var, defining_expr, body) ->
+      let result = map_single_tail f body in
+      Cphantom_let (var, defining_expr, result)
+  | Csequence (s1, s2) ->
+      let result = map_single_tail f s2 in
+      Csequence (s1, result)
+  | body ->
+      f body
+
 let map_shallow f = function
   | Clet (id, e1, e2) ->
       Clet (id, f e1, f e2)
@@ -342,3 +355,4 @@ let map_shallow f = function
   | Creturn_addr
     as c ->
       c
+

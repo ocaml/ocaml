@@ -254,5 +254,12 @@ val map_tail: (expression -> expression) -> expression -> expression
       Same disclaimer as for [iter_shallow_tail] about the notion
       of "tail" sub-expression. *)
 
+val map_single_tail : (expression -> expression) -> expression -> expression
+(** Apply the transformation to an expression, trying to push it
+    to the innermost sub-expression that can produce the final result.
+    This function will not recurse into any expression that contain
+    more than one result expression, meaning the transformation will be
+    applied exactly once *)
+
 val map_shallow: (expression -> expression) -> expression -> expression
   (** Apply the transformation to each immediate sub-expression. *)
