@@ -128,7 +128,7 @@ let rec add_const_aux c n dbg =
 and add_const c n dbg =
   if n = 0 then c
   else
-    map_single_tail (fun c -> add_const_aux c n dbg) c
+    c |> map_single_tail (fun c -> add_const_aux c n dbg)
 
 let incr_int c dbg = add_const c 1 dbg
 let decr_int c dbg = add_const c (-1) dbg
@@ -144,8 +144,9 @@ let rec add_int_aux c1 c2 dbg =
   | (_, _) ->
       Cop(Caddi, [c1; c2], dbg)
 and add_int c1 c2 dbg =
-  map_single_tail
-    (fun c1 -> map_single_tail (fun c2 -> add_int_aux c1 c2 dbg) c2) c1
+  c1 |> map_single_tail @@ fun c1 ->
+  c2 |> map_single_tail @@ fun c2 ->
+  add_int_aux c1 c2 dbg
 
 let rec sub_int_aux c1 c2 dbg =
   match (c1, c2) with
@@ -158,8 +159,9 @@ let rec sub_int_aux c1 c2 dbg =
   | (c1, c2) ->
       Cop(Csubi, [c1; c2], dbg)
 and sub_int c1 c2 dbg =
-  map_single_tail
-    (fun c1 -> map_single_tail (fun c2 -> sub_int_aux c1 c2 dbg) c2) c1
+  c1 |> map_single_tail @@ fun c1 ->
+  c2 |> map_single_tail @@ fun c2 ->
+  sub_int_aux c1 c2 dbg
 
 let rec lsl_int_aux c1 c2 dbg =
   match (c1, c2) with
@@ -172,8 +174,9 @@ let rec lsl_int_aux c1 c2 dbg =
   | (_, _) ->
       Cop(Clsl, [c1; c2], dbg)
 and lsl_int c1 c2 dbg =
-  map_single_tail
-    (fun c1 -> map_single_tail (fun c2 -> lsl_int_aux c1 c2 dbg) c2) c1
+  c1 |> map_single_tail @@ fun c1 ->
+  c2 |> map_single_tail @@ fun c2 ->
+  lsl_int_aux c1 c2 dbg
 
 let is_power2 n = n = 1 lsl Misc.log2 n
 
@@ -196,12 +199,12 @@ let rec mul_int_aux c1 c2 dbg =
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2], dbg)
 and mul_int c1 c2 dbg =
-  map_single_tail
-    (fun c1 -> map_single_tail (fun c2 -> mul_int_aux c1 c2 dbg) c2) c1
+  c1 |> map_single_tail @@ fun c1 ->
+  c2 |> map_single_tail @@ fun c2 ->
+  mul_int_aux c1 c2 dbg
 
 let ignore_low_bit_int =
-  map_single_tail
-    (function
+  map_single_tail (function
       | Cop(Caddi,
             [(Cop(Clsl, [_; Cconst_int (n, _)], _) as c); Cconst_int (1, _)], _)
           when n > 0
@@ -217,30 +220,27 @@ let ignore_high_bit_int = function
   | c -> c
 
 let lsr_int c1 c2 dbg =
-  map_single_tail
-    (function
+  c2 |> map_single_tail (function
       | Cconst_int (0, _) ->
           c1
       | Cconst_int (n, _) when n > 0 ->
           Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
       | c2 ->
           Cop(Clsr, [c1; c2], dbg)
-    ) c2
+    )
 
 let asr_int c1 c2 dbg =
-  map_single_tail
-    (function
+  c2 |> map_single_tail (function
       | Cconst_int (0, _) ->
           c1
       | Cconst_int (n, _) when n > 0 ->
           Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
       | c2 ->
           Cop(Casr, [c1; c2], dbg)
-    ) c2
+    )
 
 let tag_int i dbg =
-  map_single_tail
-    (function
+  i |>  map_single_tail (function
       | Cconst_int (n, _) ->
           int_const dbg n
       | Cop(Casr, [c; Cconst_int (n, _)], _) when n > 0 ->
@@ -249,11 +249,10 @@ let tag_int i dbg =
             dbg)
       | c ->
           incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
-    ) i
+    )
 
 let untag_int i dbg =
-  map_single_tail
-    (function
+  i |> map_single_tail (function
       | Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
       | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1,_)], _); Cconst_int (1,_)],_) ->
           c
@@ -266,45 +265,42 @@ let untag_int i dbg =
       | Cop(Cor, [c; Cconst_int (1, _)], _) ->
           Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
       | c -> Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
-    ) i
+    )
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
-  map_single_tail
-    (function
+  cond |> map_single_tail (function
       | Cconst_int (0, _) -> ifnot
       | Cconst_int (1, _) -> ifso
       | cond ->
           Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
-    ) cond
+    )
 
 let mk_not dbg cmm =
-  map_single_tail
-    (function
+  cmm |> map_single_tail (function
       | Cop(Caddi,
             [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], dbg') ->
         begin
           match c with
           | Cop(Ccmpi cmp, [c1; c2], dbg'') ->
               tag_int
-                (Cop(Ccmpi (negate_integer_comparison cmp), [c1; c2], dbg'')) dbg'
+                (Cop(Ccmpi(negate_integer_comparison cmp), [c1;c2], dbg'')) dbg'
           | Cop(Ccmpa cmp, [c1; c2], dbg'') ->
               tag_int
-                (Cop(Ccmpa (negate_integer_comparison cmp), [c1; c2], dbg'')) dbg'
+                (Cop(Ccmpa(negate_integer_comparison cmp), [c1;c2], dbg'')) dbg'
           | Cop(Ccmpf cmp, [c1; c2], dbg'') ->
               tag_int
-                (Cop(Ccmpf (negate_float_comparison cmp), [c1; c2], dbg'')) dbg'
+                (Cop(Ccmpf(negate_float_comparison cmp), [c1;c2], dbg'')) dbg'
           | _ ->
             (* 0 -> 3, 1 -> 1 *)
             Cop(Csubi,
-              [Cconst_int (3, dbg); Cop(Clsl, [c; Cconst_int (1, dbg)], dbg)], dbg)
+              [Cconst_int(3,dbg); Cop(Clsl,[c; Cconst_int (1,dbg)], dbg)], dbg)
         end
       | Cconst_int (3, _) -> Cconst_int (1, dbg)
       | Cconst_int (1, _) -> Cconst_int (3, dbg)
       | c ->
           (* 1 -> 3, 3 -> 1 *)
           Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
-    ) cmm
-
+    )
 
 let create_loop body dbg =
   let cont = Lambda.next_raise_count () in
@@ -460,8 +456,9 @@ let rec div_int_aux c1 c2 is_safe dbg =
                       raise_symbol dbg "caml_exn_Division_by_zero",
                       dbg)))
 and div_int c1 c2 is_safe dbg =
-  map_single_tail
-    (fun c1 -> map_single_tail (fun c2 -> div_int_aux c1 c2 is_safe dbg) c2) c1
+  c1 |> map_single_tail @@ fun c1 ->
+  c2 |> map_single_tail @@ fun c2 ->
+  div_int_aux c1 c2 is_safe dbg
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -504,8 +501,9 @@ let mod_int c1 c2 is_safe dbg =
                       dbg)))
 
 let mod_int c1 c2 is_safe dbg =
-  map_single_tail
-    (fun c1 -> map_single_tail (fun c2 -> mod_int c1 c2 is_safe dbg) c2) c1
+  c1 |> map_single_tail @@ fun c1 ->
+  c2 |> map_single_tail @@ fun c2 ->
+  mod_int c1 c2 is_safe dbg
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
@@ -542,7 +540,7 @@ let safe_mod_bi is_safe =
 let test_bool dbg cmm =
   map_single_tail
     (function
-      | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
+      | Cop(Caddi,[Cop(Clsl,[c; Cconst_int (1,_)], _); Cconst_int (1,_)], _) ->
           c
       | Cconst_int (n, dbg) ->
           if n = 1 then
