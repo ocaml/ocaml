@@ -21,6 +21,9 @@ Working version
   (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
    and Xavier Leroy)
 
+- #8583: Simplify nested comparisons in if conditions
+  (Stefan Muenzel, review by ????)
+
 ### Compiler user-interface and warnings:
 
 * #2276: Remove support for compiler plugins and hooks (also adds

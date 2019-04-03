@@ -142,6 +142,7 @@ and operation =
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of integer_comparison
+  (** [Ccmpi] results in an untagged int: 1 (true) or 0 (false) *)
   | Caddv (* pointer addition that produces a [Val] (well-formed Caml value) *)
   | Cadda (* pointer addition that produces a [Addr] (derived heap pointer) *)
   | Ccmpa of integer_comparison
@@ -172,6 +173,8 @@ and expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * Debuginfo.t * expression
       * Debuginfo.t * expression * Debuginfo.t
+  (** The [Cifthenelse] condition is an expression that results in an integer
+      that can be 0 (false) or 1 (true). It is not tagged. *)
   | Cswitch of expression * int array * (expression * Debuginfo.t) array
       * Debuginfo.t
   | Ccatch of
