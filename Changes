@@ -57,8 +57,9 @@ Working version
 - #2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
-- #2237: Reorder linearisation of Trywith to avoid a call instruction
-  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell)
+- #2237, #8582: Reorder linearisation of Trywith to avoid a call instruction
+  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell;
+  fix in #8582 by Mark Shinwell, Xavier Leroy and Anil Madhavapeddy)
 
 - #2265: Add bytecomp/opcodes.mli
   (Mark Shinwell, review by Nicolas Ojeda Bar)
