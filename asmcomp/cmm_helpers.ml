@@ -130,8 +130,7 @@ let add_no_overflow n x c dbg =
   if d = 0 then c else Cop(Caddi, [c; Cconst_int (d, dbg)], dbg)
 
 let rec add_const_aux c n dbg =
-  if n = 0 then c
-  else match c with
+  match c with
   | Cconst_int (x, _) when Misc.no_overflow_add x n -> Cconst_int (x + n, dbg)
   | Cop(Caddi, [Cconst_int (x, _); c], _)
     when Misc.no_overflow_add n x ->
@@ -242,7 +241,7 @@ let lsr_int c1 c2 dbg =
           c1
       | Cconst_int (n, _) when n > 0 ->
           Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
-      | _ ->
+      | c2 ->
           Cop(Clsr, [c1; c2], dbg)
     ) c2
 
@@ -253,7 +252,7 @@ let asr_int c1 c2 dbg =
           c1
       | Cconst_int (n, _) when n > 0 ->
           Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
-      | _ ->
+      | c2 ->
           Cop(Casr, [c1; c2], dbg)
     ) c2
 
@@ -292,7 +291,7 @@ let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
     (function
       | Cconst_int (0, _) -> ifnot
       | Cconst_int (1, _) -> ifso
-      | _ ->
+      | cond ->
           Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
     ) cond
 
