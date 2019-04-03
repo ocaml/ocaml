@@ -794,7 +794,7 @@ OCaml 4.09.0 (19 September 2019):
 - #8735: unbox across static handlers
   (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
 
-- #8554: Optimize boolean tests that are hidden behind lets
+- #8554: Apply Cmm peephole optimizations to the final results of expressions.
   (Stefan Muenzel, review by ????)
 
 ### Compiler user-interface and warnings:
