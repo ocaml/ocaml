@@ -87,7 +87,7 @@ default:
 all:
 	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) legacy-without-report
-	-@$(MAKE) $(NO_PRINT) new-without-report
+	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy
@@ -117,8 +117,17 @@ new-without-report: lib tools
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV="" OCAMLTESTFLAGS=""; \
-	done || touch $(failstamp)) 2>&1 | tee -a $(TESTLOG)
-	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
+	done || echo outer loop >> $(failstamp)) 2>&1 | tee -a $(TESTLOG)
+	@$(MAKE) check-failstamp
+
+.PHONY: check-failstamp
+check-failstamp:
+	@if [ -f $(failstamp) ]; then \
+	  echo 'Unexpected error in the test infrastructure:'; \
+	  cat $(failstamp); \
+	  rm $(failstamp); \
+	  exit 1; \
+	fi
 
 .PHONY: all-%
 all-%: lib tools
@@ -128,7 +137,7 @@ all-%: lib tools
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
-# The targets below use GNU parallel to paralellize tests
+# The targets below use GNU parallel to parallelize tests
 # 'make all' and 'make parallel' should be equivalent
 #
 # parallel uses specific logic to make sure the output of the commands
@@ -195,7 +204,7 @@ one: lib tools
 	  exit 1; \
 	fi
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
-	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
+	@$(MAKE) check-failstamp
 
 .PHONY: exec-one
 exec-one:
@@ -224,8 +233,8 @@ exec-ocamltest:
 	(IFS=$$(printf "\r\n"); while read testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
-	   touch $(failstamp); \
-	done < $$file) || touch $(failstamp)
+	   echo " ... testing '$$testfile' => unexpected error"; \
+	done < $$file) || echo directory "$(DIR)" >>$(failstamp)
 
 .PHONY: clean-one
 clean-one:
