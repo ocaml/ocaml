@@ -396,19 +396,20 @@ CAMLprim value caml_float_of_string(value vs)
   if (*src == '-') { sign = -1; src++; }
   else if (*src == '+') { src++; };
   if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
+    /* Convert using our hexadecimal FP parser */
     if (caml_float_of_hex(src + 2, dst, &d) == -1) goto error;
-    if (buf != parse_buffer) caml_stat_free(buf);
-    return caml_copy_double(sign < 0 ? -d : d);
-  }
-  /* Convert using strtod */
+    if (sign < 0) d = -d;
+  } else {
+    /* Convert using strtod */
 #if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
-  d = strtod_l((const char *) buf, &end, caml_locale);
+    d = strtod_l((const char *) buf, &end, caml_locale);
 #else
-  USE_LOCALE;
-  d = strtod((const char *) buf, &end);
-  RESTORE_LOCALE;
+    USE_LOCALE;
+    d = strtod((const char *) buf, &end);
+    RESTORE_LOCALE;
 #endif /* HAS_STRTOD_L */
-  if (end != dst) goto error;
+    if (end != dst) goto error;
+  }
   if (buf != parse_buffer) caml_stat_free(buf);
   return caml_copy_double(d);
  error:
