@@ -47,7 +47,7 @@ compiler currently runs on the following platforms:
 
 Tier 1 (actively used and maintained by the core OCaml team):
 
-x86 64 bits (AMD64)::    Linux, FreeBSD, MS Windows
+x86 64 bits (AMD64)::    Linux, macOS, MS Windows, FreeBSD
 x86 32 bits (IA32)::     Linux, MS Windows
 POWER and PowerPC::      Linux
 ARM 32 bits::            Linux
