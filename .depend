@@ -2295,8 +2295,8 @@ asmcomp/emit.cmo : \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
+    asmcomp/insn_debuginfo.cmi \
     asmcomp/emitaux.cmi \
-    lambda/debuginfo.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
     asmcomp/cmm.cmi \
@@ -2315,8 +2315,8 @@ asmcomp/emit.cmx : \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
+    asmcomp/insn_debuginfo.cmx \
     asmcomp/emitaux.cmx \
-    lambda/debuginfo.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     asmcomp/cmm.cmx \
@@ -2343,6 +2343,20 @@ asmcomp/emitaux.cmx : \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmi : \
     lambda/debuginfo.cmi
+asmcomp/insn_debuginfo.cmo : \
+    asmcomp/debug/reg_availability_set.cmi \
+    lambda/debuginfo.cmi \
+    middle_end/backend_var.cmi \
+    asmcomp/insn_debuginfo.cmi
+asmcomp/insn_debuginfo.cmx : \
+    asmcomp/debug/reg_availability_set.cmx \
+    lambda/debuginfo.cmx \
+    middle_end/backend_var.cmx \
+    asmcomp/insn_debuginfo.cmi
+asmcomp/insn_debuginfo.cmi : \
+    asmcomp/debug/reg_availability_set.cmi \
+    lambda/debuginfo.cmi \
+    middle_end/backend_var.cmi
 asmcomp/interf.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -2375,6 +2389,7 @@ asmcomp/linearize.cmo : \
     asmcomp/proc.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    asmcomp/insn_debuginfo.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/cmm.cmi \
@@ -2384,6 +2399,7 @@ asmcomp/linearize.cmx : \
     asmcomp/proc.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    asmcomp/insn_debuginfo.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/cmm.cmx \
@@ -2391,6 +2407,7 @@ asmcomp/linearize.cmx : \
 asmcomp/linearize.cmi : \
     asmcomp/reg.cmi \
     asmcomp/mach.cmi \
+    asmcomp/insn_debuginfo.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/linscan.cmo : \
@@ -2425,26 +2442,24 @@ asmcomp/liveness.cmx : \
 asmcomp/liveness.cmi : \
     asmcomp/mach.cmi
 asmcomp/mach.cmo : \
-    asmcomp/debug/reg_with_debug_info.cmi \
-    asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
+    asmcomp/insn_debuginfo.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
     asmcomp/arch.cmo \
     asmcomp/mach.cmi
 asmcomp/mach.cmx : \
-    asmcomp/debug/reg_with_debug_info.cmx \
-    asmcomp/debug/reg_availability_set.cmx \
     asmcomp/reg.cmx \
+    asmcomp/insn_debuginfo.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
     middle_end/backend_var.cmx \
     asmcomp/arch.cmx \
     asmcomp/mach.cmi
 asmcomp/mach.cmi : \
-    asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
+    asmcomp/insn_debuginfo.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi \
@@ -2473,6 +2488,7 @@ asmcomp/printlinear.cmo : \
     asmcomp/printcmm.cmi \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
+    asmcomp/insn_debuginfo.cmi \
     lambda/debuginfo.cmi \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmx : \
@@ -2480,6 +2496,7 @@ asmcomp/printlinear.cmx : \
     asmcomp/printcmm.cmx \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
+    asmcomp/insn_debuginfo.cmx \
     lambda/debuginfo.cmx \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmi : \
@@ -2491,6 +2508,7 @@ asmcomp/printmach.cmo : \
     asmcomp/printcmm.cmi \
     asmcomp/mach.cmi \
     asmcomp/interval.cmi \
+    asmcomp/insn_debuginfo.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/cmm.cmi \
@@ -2505,6 +2523,7 @@ asmcomp/printmach.cmx : \
     asmcomp/printcmm.cmx \
     asmcomp/mach.cmx \
     asmcomp/interval.cmx \
+    asmcomp/insn_debuginfo.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/cmm.cmx \
@@ -5413,6 +5432,7 @@ asmcomp/debug/available_regs.cmo : \
     asmcomp/printmach.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    asmcomp/insn_debuginfo.cmi \
     utils/clflags.cmi \
     middle_end/backend_var.cmi \
     asmcomp/debug/available_regs.cmi
@@ -5424,6 +5444,7 @@ asmcomp/debug/available_regs.cmx : \
     asmcomp/printmach.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    asmcomp/insn_debuginfo.cmx \
     utils/clflags.cmx \
     middle_end/backend_var.cmx \
     asmcomp/debug/available_regs.cmi
