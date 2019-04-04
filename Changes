@@ -595,6 +595,9 @@ OCaml 4.08.0
   no-naked-pointers
   (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
 
+- #7829, #8585: Fix assertions in debug mode for 32-bit platforms
+  (Damien Doligez, review by David Allsopp)
+
 - #8567, #8569: on ARM64, use 32-bit loads to access caml_backtrace_active
   (Xavier Leroy, review by Mark Shinwell and Greta Yorsh)
 
