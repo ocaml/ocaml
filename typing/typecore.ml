@@ -75,6 +75,7 @@ type error =
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
+  | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
@@ -4212,7 +4213,12 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
-    raise(Error(loc, env, Private_type ty_res));
+    begin match constr.cstr_tag with
+    | Cstr_extension _ ->
+        raise(Error(loc, env, Private_constructor (constr, ty_res)))
+    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
+        raise (Error(loc, env, Private_type ty_res));
+    end;
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
   { texp with
     exp_desc = Texp_construct(lid, constr, args) }
@@ -5148,6 +5154,10 @@ let report_error ~loc env = function
   | Private_label (lid, ty) ->
       Location.errorf ~loc "Cannot assign field %a of the private type %a"
         longident lid type_expr ty
+  | Private_constructor (constr, ty) ->
+      Location.errorf ~loc
+        "Cannot use private constructor %s to create values of type %a"
+        constr.cstr_name type_expr ty
   | Not_a_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->
