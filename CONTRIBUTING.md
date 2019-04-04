@@ -383,6 +383,44 @@ why the change is desirable and why it should go into stdlib.
 So: be prepared for some serious review process!  But yes, yes,
 contributions are welcome and appreciated.  Promised.
 
+## Contributing optimizations
+
+Contributions to improve the compiler's optimization capabilities are
+welcome. However, due to the potential risks involved with such
+changes, we ask the following of contributors when submitting pull
+requests:
+
+ - Explain the benefits of the optimization (faster code, smaller
+   code, improved cache behaviour, lower power consumption, increased
+   compilation speed).
+
+ - Explain when the optimization does and does not apply.
+
+ - Explain when, if ever, the optimization may be detrimental.
+
+ - Provide benchmark measurements to justify the expected
+   benefits. Measurements should ideally include experiments with
+   full-scale applications as well as with microbenchmarks.  Which
+   kinds of measurements are appropriate will vary depending on the
+   optimization; some optimizations may have to be measured indirectly
+   (for example, by measuring cache misses for a code size
+   optimization). Measurements showing clear benefits when combined
+   with some other optimization/change are acceptable.
+
+ - At least some of the measurements provided should be from
+   experiments on open source code.
+
+ - If assistance is sought with benchmarking then this should be made
+   clear on the initial pull request submission.
+
+ - Justify the correctness of the optimization, and discuss a testing
+   strategy to ensure that it does not introduce bugs. The use of
+   formal methods to increase confidence is encouraged.
+
+A major criterion in assessing whether to include an optimisation in
+the compiler is the balance between the increased complexity of the
+compiler code and the expected benefits of the benchmark. Contributors
+are asked to bear this in mind when making submissions.
 
 ## Contributor License Agreement
 
