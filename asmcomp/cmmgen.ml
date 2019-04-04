@@ -145,6 +145,115 @@ let targetint_const n =
   Targetint.add (Targetint.shift_left (Targetint.of_int n) 1)
     Targetint.one
 
+(* Lifting of phantom lets, on both Clambda and Cmm terms, so they don't
+   obstruct pattern matches such as those used for arithmetic simplification. *)
+
+(* CR-someday mshinwell: A more satisfactory solution would be to change the Cmm
+   language to be in ANF form and then perform such simplifications based on
+   approximations calculated in [Selectgen]. This would require changing the
+   [Selectgen] logic to perform an [Un_anf]-style analysis to know which
+   variables may be substituted for their defining expressions when compiling a
+   [Cop]. *)
+
+let transl_defining_expr_of_phantom_let defining_expr =
+  match defining_expr with
+  | None -> None
+  | Some defining_expr ->
+    let defining_expr =
+      match defining_expr with
+      | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
+        Cphantom_const_symbol sym
+      | Uphantom_read_symbol_field { sym; field; } ->
+        Cphantom_read_symbol_field { sym; field; }
+      | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
+        Cphantom_const_int (targetint_const i)
+      | Uphantom_var var -> Cphantom_var var
+      | Uphantom_read_field { var; field; } ->
+        Cphantom_read_field { var; field; }
+      | Uphantom_offset_var { var; offset_in_words; } ->
+        Cphantom_offset_var { var; offset_in_words; }
+      | Uphantom_block { tag; fields; } ->
+        Cphantom_block { tag; fields; }
+    in
+    Some defining_expr
+
+let rec discard_phantom_lets exp =
+  match exp with
+  | Cphantom_let (_var, _defining_expr, body) ->
+      discard_phantom_lets body
+  | exp -> exp
+
+let lift_phantom_lets exp f =
+  let rec lift exp lifted_rev depth =
+    let next_depth = depth + 1 in
+    match exp with
+    | Cop (op, args, dbg) when depth < 4 ->
+      let lifted_rev, args =
+        List.fold_left (fun (lifted_rev, args) arg ->
+            let lifted_rev, arg = lift arg lifted_rev next_depth in
+            lifted_rev, arg :: args)
+          ([], [])
+          (List.rev args)
+      in
+      lifted_rev, Cop (op, args, dbg)
+    | Cphantom_let (var, defining_expr, body) ->
+      lift body ((var, defining_expr) :: lifted_rev) depth
+    | _ -> lifted_rev, exp
+  in
+  let lifted_rev, exp = lift exp [] 0 in
+  let exp = f exp in
+  List.fold_left (fun exp (var, defining_expr) ->
+      Cphantom_let (var, defining_expr, exp))
+    exp
+    lifted_rev
+
+let lift_phantom_lets2 exp1 exp2 f =
+  lift_phantom_lets exp1 (fun exp1 ->
+    lift_phantom_lets exp2 (fun exp2 ->
+      f exp1 exp2))
+
+let lift_phantom_lets_clambda0 exp f =
+  let rec lift exp lifted_rev depth =
+    let next_depth = depth + 1 in
+    match exp with
+    | Uprim (prim, args, dbg) when depth < 4 ->
+      let lifted_rev, args =
+        List.fold_left (fun (lifted_rev, args) arg ->
+            let lifted_rev, arg = lift arg lifted_rev next_depth in
+            lifted_rev, arg :: args)
+          ([], [])
+          (List.rev args)
+      in
+      lifted_rev, Uprim (prim, args, dbg)
+    | Uifthenelse (cond, ifso, ifnot) ->
+      let lifted_rev, cond = lift cond lifted_rev next_depth in
+      let lifted_rev, ifso = lift ifso lifted_rev next_depth in
+      let lifted_rev, ifnot = lift ifnot lifted_rev next_depth in
+      lifted_rev, Uifthenelse (cond, ifso, ifnot)
+    | Uphantom_let (var, defining_expr, body) ->
+      lift body ((var, defining_expr) :: lifted_rev) depth
+    | _ -> lifted_rev, exp
+  in
+  let lifted_rev, exp = lift exp [] 0 in
+  let exp = f exp in
+  lifted_rev, exp
+
+let lift_phantom_lets_clambda_to_cmm exp f =
+  let lifted_rev, exp = lift_phantom_lets_clambda0 exp f in
+  List.fold_left (fun exp (var, defining_expr) ->
+      let defining_expr = transl_defining_expr_of_phantom_let defining_expr in
+      Cphantom_let (var, defining_expr, exp))
+    exp
+    lifted_rev
+
+let lift_phantom_lets3_clambda_to_cmm exp1 exp2 exp3 f =
+  lift_phantom_lets_clambda_to_cmm exp1 (fun exp1 ->
+    lift_phantom_lets_clambda_to_cmm exp2 (fun exp2 ->
+      lift_phantom_lets_clambda_to_cmm exp3 (fun exp3 ->
+        f exp1 exp2 exp3)))
+
+(* Arithmetic simplification on integers *)
+
 let add_no_overflow n x c dbg =
   let d = n + x in
   if d = 0 then c else Cop(Caddi, [c; Cconst_int (d, dbg)], dbg)
@@ -165,6 +274,9 @@ let rec add_const c n dbg =
       add_const c (n - x) dbg
   | c -> Cop(Caddi, [c; Cconst_int (n, dbg)], dbg)
 
+let add_const c n dbg =
+  lift_phantom_lets c (fun c -> add_const c n dbg)
+
 let incr_int c dbg = add_const c 1 dbg
 let decr_int c dbg = add_const c (-1) dbg
 
@@ -179,6 +291,9 @@ let rec add_int c1 c2 dbg =
   | (_, _) ->
       Cop(Caddi, [c1; c2], dbg)
 
+let add_int c1 c2 dbg =
+  lift_phantom_lets2 c1 c2 (fun c1 c2 -> add_int c1 c2 dbg)
+
 let rec sub_int c1 c2 dbg =
   match (c1, c2) with
   | (c1, Cconst_int (n2, _)) when n2 <> min_int ->
@@ -190,6 +305,9 @@ let rec sub_int c1 c2 dbg =
   | (c1, c2) ->
       Cop(Csubi, [c1; c2], dbg)
 
+let sub_int c1 c2 dbg =
+  lift_phantom_lets2 c1 c2 (fun c1 c2 -> sub_int c1 c2 dbg)
+
 let rec lsl_int c1 c2 dbg =
   match (c1, c2) with
   | (Cop(Clsl, [c; Cconst_int (n1, _)], _), Cconst_int (n2, _))
@@ -200,6 +318,9 @@ let rec lsl_int c1 c2 dbg =
       add_const (lsl_int c1 c2 dbg) (n1 lsl n2) dbg
   | (_, _) ->
       Cop(Clsl, [c1; c2], dbg)
+
+let lsl_int c1 c2 dbg =
+  lift_phantom_lets2 c1 c2 (fun c1 c2 -> lsl_int c1 c2 dbg)
 
 let is_power2 n = n = 1 lsl Misc.log2 n
 
@@ -222,6 +343,9 @@ let rec mul_int c1 c2 dbg =
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2], dbg)
 
+let mul_int c1 c2 dbg =
+  lift_phantom_lets2 c1 c2 (fun c1 c2 -> mul_int c1 c2 dbg)
+
 
 let ignore_low_bit_int = function
     Cop(Caddi,
@@ -230,6 +354,9 @@ let ignore_low_bit_int = function
       -> c
   | Cop(Cor, [c; Cconst_int (1, _)], _) -> c
   | c -> c
+
+let ignore_low_bit_int c =
+  lift_phantom_lets c ignore_low_bit_int
 
 let lsr_int c1 c2 dbg =
   match c2 with
@@ -240,6 +367,9 @@ let lsr_int c1 c2 dbg =
   | _ ->
       Cop(Clsr, [c1; c2], dbg)
 
+let lsr_int c1 c2 dbg =
+  lift_phantom_lets c2 (fun c2 -> lsr_int c1 c2 dbg)
+
 let asr_int c1 c2 dbg =
   match c2 with
     Cconst_int (0, _) ->
@@ -248,6 +378,9 @@ let asr_int c1 c2 dbg =
       Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
   | _ ->
       Cop(Casr, [c1; c2], dbg)
+
+let asr_int c1 c2 dbg =
+  lift_phantom_lets c2 (fun c2 -> asr_int c1 c2 dbg)
 
 let tag_int i dbg =
   match i with
@@ -260,6 +393,9 @@ let tag_int i dbg =
   | c ->
       incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
 
+let tag_int i dbg =
+  lift_phantom_lets i (fun i -> tag_int i dbg)
+
 let force_tag_int i dbg =
   match i with
     Cconst_int (n, _) ->
@@ -269,6 +405,9 @@ let force_tag_int i dbg =
         dbg)
   | c ->
       Cop(Cor, [lsl_int c (Cconst_int (1, dbg)) dbg; Cconst_int (1, dbg)], dbg)
+
+let force_tag_int i dbg =
+  lift_phantom_lets i (fun i -> force_tag_int i dbg)
 
 let untag_int i dbg =
   match i with
@@ -284,6 +423,9 @@ let untag_int i dbg =
   | Cop(Cor, [c; Cconst_int (1, _)], _) ->
       Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
   | c -> Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
+
+let untag_int i dbg =
+  lift_phantom_lets i (fun i -> untag_int i dbg)
 
 (* Description of the "then" and "else" continuations in [transl_if]. If
    the "then" continuation is true and the "else" continuation is false then
@@ -495,6 +637,9 @@ let rec div_int c1 c2 is_safe dbg =
                       raise_symbol dbg "caml_exn_Division_by_zero",
                       dbg)))
 
+let div_int c1 c2 is_safe dbg =
+  lift_phantom_lets2 c1 c2 (fun c1 c2 -> div_int c1 c2 is_safe dbg)
+
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
     (c1, Cconst_int (0, _)) ->
@@ -535,6 +680,9 @@ let mod_int c1 c2 is_safe dbg =
                       raise_symbol dbg "caml_exn_Division_by_zero",
                       dbg)))
 
+let mod_int c1 c2 is_safe dbg =
+  lift_phantom_lets2 c1 c2 (fun c1 c2 -> mod_int c1 c2 is_safe dbg)
+
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
 
@@ -542,6 +690,9 @@ let is_different_from x = function
     Cconst_int (n, _) -> n <> x
   | Cconst_natint (n, _) -> n <> Nativeint.of_int x
   | _ -> false
+
+let is_different_from x cmm =
+  is_different_from x (discard_phantom_lets cmm)
 
 let safe_divmod_bi mkop is_safe mkm1 c1 c2 bi dbg =
   bind "dividend" c1 (fun c1 ->
@@ -578,6 +729,9 @@ let test_bool dbg cmm =
         Cconst_int (1, dbg)
   | c -> Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg)
 
+let test_bool dbg cmm =
+  lift_phantom_lets cmm (fun cmm -> test_bool dbg cmm)
+
 (* Float *)
 
 let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
@@ -607,6 +761,9 @@ let rec unbox_float dbg cmm =
   | Ctrywith(e1, id, e2, dbg) ->
       Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
   | c -> Cop(Cload (Double_u, Immutable), [c], dbg)
+
+let unbox_float dbg cmm =
+  lift_phantom_lets cmm (fun cmm -> unbox_float dbg cmm)
 
 (* Complex *)
 
@@ -649,6 +806,9 @@ let rec remove_unit = function
   | Cexit (_,_) as c -> c
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
+
+let remove_unit cmm =
+  lift_phantom_lets cmm remove_unit
 
 (* Access to block fields *)
 
@@ -763,6 +923,9 @@ let array_indexing ?typ log2size ptr ofs dbg =
   | _ ->
       Cop(add, [Cop(add, [ptr; lsl_const ofs (log2size - 1) dbg], dbg);
                     Cconst_int((-1) lsl (log2size - 1), dbg)], dbg)
+
+let array_indexing ?typ log2size ptr ofs dbg =
+  lift_phantom_lets ofs (fun ofs -> array_indexing ?typ log2size ptr ofs dbg)
 
 let addr_array_ref arr ofs dbg =
   Cop(Cload (Word_val, Mutable),
@@ -1150,6 +1313,9 @@ let rec unbox_int bi arg dbg =
         Cop(
           Cload((if bi = Pint32 then Thirtytwo_signed else Word_int), Mutable),
           [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+
+let unbox_int bi arg dbg =
+  lift_phantom_lets arg (fun arg -> unbox_int bi arg dbg)
 
 let make_unsigned_int bi arg dbg =
   if bi = Pint32 && size_int = 8
@@ -1698,7 +1864,7 @@ struct
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler =
-  match handler with
+  match discard_phantom_lets handler with
   | Cexit (i,[]) -> i,fun e -> e
   | _ ->
       let dbg = Debuginfo.none in
@@ -1709,7 +1875,7 @@ struct
       Printf.eprintf "%s\n" (Format.flush_str_formatter ()) ;
 *)
       i,
-      (fun body -> match body with
+      (fun body -> match discard_phantom_lets body with
       | Cexit (j,_) ->
           if i=j then handler
           else body
@@ -2044,28 +2210,7 @@ let rec transl env e =
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
   | Uphantom_let (var, defining_expr, body) ->
-      let defining_expr =
-        match defining_expr with
-        | None -> None
-        | Some defining_expr ->
-          let defining_expr =
-            match defining_expr with
-            | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
-              Cphantom_const_symbol sym
-            | Uphantom_read_symbol_field { sym; field; } ->
-              Cphantom_read_symbol_field { sym; field; }
-            | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
-              Cphantom_const_int (targetint_const i)
-            | Uphantom_var var -> Cphantom_var var
-            | Uphantom_read_field { var; field; } ->
-              Cphantom_read_field { var; field; }
-            | Uphantom_offset_var { var; offset_in_words; } ->
-              Cphantom_offset_var { var; offset_in_words; }
-            | Uphantom_block { tag; fields; } ->
-              Cphantom_block { tag; fields; }
-          in
-          Some defining_expr
-      in
+      let defining_expr = transl_defining_expr_of_phantom_let defining_expr in
       Cphantom_let (var, defining_expr, transl env body)
   | Uletrec(bindings, body) ->
       transl_letrec env bindings (transl env body)
@@ -2081,7 +2226,9 @@ let rec transl env e =
           make_alloc dbg tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
-      | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
+      | (Pduparray (kind, _), [arg]) ->
+          let make_duparray = function
+            | Uprim (Pmakearray (kind', _), args, dbg) ->
           (* We arrive here in two cases:
              1. When using Closure, all the time.
              2. When using Flambda, if a float array longer than
@@ -2094,11 +2241,13 @@ let rec transl env e =
              [Pfloatarray]s. *)
           assert (kind = kind');
           transl_make_array dbg env kind args
-      | (Pduparray _, [arg]) ->
+            | arg ->
           let prim_obj_dup =
             Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
           in
           transl_ccall env prim_obj_dup [arg] dbg
+          in
+          lift_phantom_lets_clambda_to_cmm arg make_duparray
       | (Pmakearray _, []) ->
           Misc.fatal_error "Pmakearray is not allowed for an empty array"
       | (Pmakearray (kind, _), args) -> transl_make_array dbg env kind args
@@ -2222,8 +2371,10 @@ let rec transl env e =
       let ifso_dbg = Debuginfo.none in
       let ifnot_dbg = Debuginfo.none in
       let dbg = Debuginfo.none in
+      lift_phantom_lets3_clambda_to_cmm cond ifso ifnot (fun cond ifso ifnot ->
       transl_if env Unknown dbg cond
         ifso_dbg (transl env ifso) ifnot_dbg (transl env ifnot)
+      )
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -2526,11 +2677,14 @@ and transl_prim_2 env p arg1 arg2 dbg =
           rather than
             (+ ( * 200 (>>s a 1)) 15)
         *)
-       match transl env arg1, transl env arg2 with
+       let make_mul arg1 arg2 =
+         match arg1, arg2 with
        | Cconst_int _ as c1, c2 ->
          incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
        | c1, c2 ->
          incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
+       in
+       lift_phantom_lets2 (transl env arg1) (transl env arg2) make_mul
      end
   | Pdivint is_safe ->
       tag_int(div_int (untag_int(transl env arg1) dbg)
@@ -2900,11 +3054,16 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
 
-and transl_unbox_float dbg env = function
+and transl_unbox_float dbg env ulam =
+  lift_phantom_lets_clambda_to_cmm ulam
+    (function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float (f, dbg)
   | exp -> unbox_float dbg (transl env exp)
+)
 
-and transl_unbox_int dbg env bi = function
+and transl_unbox_int dbg env bi ulam =
+  lift_phantom_lets_clambda_to_cmm ulam
+    (function
     Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
       Cconst_natint (Nativeint.of_int32 n, dbg)
   | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
@@ -2923,6 +3082,7 @@ and transl_unbox_int dbg env bi = function
   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int (i, dbg)
   | exp -> unbox_int bi (transl env exp) dbg
+)
 
 and transl_unbox_number dbg env bn arg =
   match bn with
@@ -2973,9 +3133,12 @@ and transl_let env str kind id exp body =
       Clet(VP.create unboxed_id, transl_unbox_number dbg env boxed_number exp,
            transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
 
-and make_catch ncatch body handler dbg = match body with
+and make_catch ncatch body handler dbg =
+  lift_phantom_lets body
+    (function
 | Cexit (nexit,[]) when nexit=ncatch -> handler
 | _ ->  ccatch (ncatch, [], body, handler, dbg)
+)
 
 and is_shareable_cont exp =
   match exp with
@@ -2997,7 +3160,7 @@ and transl_if env (approx : then_else)
       (dbg : Debuginfo.t) cond
       (then_dbg : Debuginfo.t) then_
       (else_dbg : Debuginfo.t) else_ =
-  match cond with
+  lift_phantom_lets_clambda_to_cmm cond (function
   | Uconst (Uconst_ptr 0) -> else_
   | Uconst (Uconst_ptr 1) -> then_
   | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
@@ -3077,7 +3240,7 @@ and transl_if env (approx : then_else)
             dbg (test_bool dbg (transl env cond))
             then_dbg then_
             else_dbg else_
-    end
+    end)
 
 and transl_sequand env (approx : then_else)
       (arg1_dbg : Debuginfo.t) arg1
