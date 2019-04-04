@@ -2229,23 +2229,23 @@ let rec transl env e =
       | (Pduparray (kind, _), [arg]) ->
           let make_duparray = function
             | Uprim (Pmakearray (kind', _), args, dbg) ->
-          (* We arrive here in two cases:
-             1. When using Closure, all the time.
-             2. When using Flambda, if a float array longer than
-             [Translcore.use_dup_for_constant_arrays_bigger_than] turns out
-             to be non-constant.
-             If for some reason Flambda fails to lift a constant array we
-             could in theory also end up here.
-             Note that [kind] above is unconstrained, but with the current
-             state of [Translcore], we will in fact only get here with
-             [Pfloatarray]s. *)
-          assert (kind = kind');
-          transl_make_array dbg env kind args
+                (* We arrive here in two cases:
+                   1. When using Closure, all the time.
+                   2. When using Flambda, if a float array longer than
+                   [Translcore.use_dup_for_constant_arrays_bigger_than] turns out
+                   to be non-constant.
+                   If for some reason Flambda fails to lift a constant array we
+                   could in theory also end up here.
+                   Note that [kind] above is unconstrained, but with the current
+                   state of [Translcore], we will in fact only get here with
+                   [Pfloatarray]s. *)
+                assert (kind = kind');
+                transl_make_array dbg env kind args
             | arg ->
-          let prim_obj_dup =
-            Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
-          in
-          transl_ccall env prim_obj_dup [arg] dbg
+                let prim_obj_dup =
+                  Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+                in
+                transl_ccall env prim_obj_dup [arg] dbg
           in
           lift_phantom_lets_clambda_to_cmm arg make_duparray
       | (Pmakearray _, []) ->
@@ -2372,9 +2372,8 @@ let rec transl env e =
       let ifnot_dbg = Debuginfo.none in
       let dbg = Debuginfo.none in
       lift_phantom_lets3_clambda_to_cmm cond ifso ifnot (fun cond ifso ifnot ->
-      transl_if env Unknown dbg cond
-        ifso_dbg (transl env ifso) ifnot_dbg (transl env ifnot)
-      )
+          transl_if env Unknown dbg cond
+            ifso_dbg (transl env ifso) ifnot_dbg (transl env ifnot))
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -2679,10 +2678,10 @@ and transl_prim_2 env p arg1 arg2 dbg =
         *)
        let make_mul arg1 arg2 =
          match arg1, arg2 with
-       | Cconst_int _ as c1, c2 ->
-         incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
-       | c1, c2 ->
-         incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
+         | Cconst_int _ as c1, c2 ->
+             incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
+         | c1, c2 ->
+             incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
        in
        lift_phantom_lets2 (transl env arg1) (transl env arg2) make_mul
      end
@@ -3057,32 +3056,30 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
 and transl_unbox_float dbg env ulam =
   lift_phantom_lets_clambda_to_cmm ulam
     (function
-    Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float (f, dbg)
-  | exp -> unbox_float dbg (transl env exp)
-)
+      | Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float (f, dbg)
+      | exp -> unbox_float dbg (transl env exp))
 
 and transl_unbox_int dbg env bi ulam =
   lift_phantom_lets_clambda_to_cmm ulam
     (function
-    Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
-      Cconst_natint (Nativeint.of_int32 n, dbg)
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
-      Cconst_natint (n, dbg)
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
-      if size_int = 8 then
-        Cconst_natint (Int64.to_nativeint n, dbg)
-      else begin
-        let low = Int64.to_nativeint n in
-        let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
-        if big_endian then
-          Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
-        else
-          Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
-      end
-  | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
-      Cconst_int (i, dbg)
-  | exp -> unbox_int bi (transl env exp) dbg
-)
+      | Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
+          Cconst_natint (Nativeint.of_int32 n, dbg)
+      | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
+          Cconst_natint (n, dbg)
+      | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
+          if size_int = 8 then
+            Cconst_natint (Int64.to_nativeint n, dbg)
+          else begin
+            let low = Int64.to_nativeint n in
+            let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
+            if big_endian then
+              Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
+            else
+              Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
+          end
+      | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
+          Cconst_int (i, dbg)
+      | exp -> unbox_int bi (transl env exp) dbg)
 
 and transl_unbox_number dbg env bn arg =
   match bn with
@@ -3136,9 +3133,8 @@ and transl_let env str kind id exp body =
 and make_catch ncatch body handler dbg =
   lift_phantom_lets body
     (function
-| Cexit (nexit,[]) when nexit=ncatch -> handler
-| _ ->  ccatch (ncatch, [], body, handler, dbg)
-)
+      | Cexit (nexit,[]) when nexit=ncatch -> handler
+      | _ ->  ccatch (ncatch, [], body, handler, dbg))
 
 and is_shareable_cont exp =
   match exp with
@@ -3157,90 +3153,90 @@ and make_shareable_cont dbg mk exp =
   end
 
 and transl_if env (approx : then_else)
-      (dbg : Debuginfo.t) cond
-      (then_dbg : Debuginfo.t) then_
-      (else_dbg : Debuginfo.t) else_ =
+    (dbg : Debuginfo.t) cond
+    (then_dbg : Debuginfo.t) then_
+    (else_dbg : Debuginfo.t) else_ =
   lift_phantom_lets_clambda_to_cmm cond (function
-  | Uconst (Uconst_ptr 0) -> else_
-  | Uconst (Uconst_ptr 1) -> then_
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
-      (* CR mshinwell: These Debuginfos will flow through from Clambda *)
-      let inner_dbg = Debuginfo.none in
-      let ifso_dbg = Debuginfo.none in
-      transl_sequand env approx
-        inner_dbg arg1
-        ifso_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
-      transl_sequand env approx
-        inner_dbg arg1
-        inner_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
-      let inner_dbg = Debuginfo.none in
-      let ifnot_dbg = Debuginfo.none in
-      transl_sequor env approx
-        inner_dbg arg1
-        ifnot_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uprim (Psequor, [arg1; arg2], inner_dbg) ->
-      transl_sequor env approx
-        inner_dbg arg1
-        inner_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uprim (Pnot, [arg], _dbg) ->
-      transl_if env (invert_then_else approx)
-        dbg arg
-        else_dbg else_
-        then_dbg then_
-  | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
-      let ifso_dbg = Debuginfo.none in
-      transl_if env approx
-        ifso_dbg ifso
-        then_dbg then_
-        else_dbg else_
-  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
-      let ifnot_dbg = Debuginfo.none in
-      transl_if env approx
-        ifnot_dbg ifnot
-        then_dbg then_
-        else_dbg else_
-  | Uifthenelse (cond, ifso, ifnot) ->
-      let inner_dbg = Debuginfo.none in
-      let ifso_dbg = Debuginfo.none in
-      let ifnot_dbg = Debuginfo.none in
-      make_shareable_cont then_dbg
-        (fun shareable_then ->
-           make_shareable_cont else_dbg
-             (fun shareable_else ->
-                mk_if_then_else
-                  inner_dbg (test_bool inner_dbg (transl env cond))
-                  ifso_dbg (transl_if env approx
-                    ifso_dbg ifso
-                    then_dbg shareable_then
-                    else_dbg shareable_else)
-                  ifnot_dbg (transl_if env approx
-                    ifnot_dbg ifnot
-                    then_dbg shareable_then
-                    else_dbg shareable_else))
-             else_)
-        then_
-  | _ -> begin
-      match approx with
-      | Then_true_else_false ->
-          transl env cond
-      | Then_false_else_true ->
-          mk_not dbg (transl env cond)
-      | Unknown ->
-          mk_if_then_else
-            dbg (test_bool dbg (transl env cond))
+      | Uconst (Uconst_ptr 0) -> else_
+      | Uconst (Uconst_ptr 1) -> then_
+      | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
+          (* CR mshinwell: These Debuginfos will flow through from Clambda *)
+          let inner_dbg = Debuginfo.none in
+          let ifso_dbg = Debuginfo.none in
+          transl_sequand env approx
+            inner_dbg arg1
+            ifso_dbg arg2
             then_dbg then_
             else_dbg else_
-    end)
+      | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
+          transl_sequand env approx
+            inner_dbg arg1
+            inner_dbg arg2
+            then_dbg then_
+            else_dbg else_
+      | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
+          let inner_dbg = Debuginfo.none in
+          let ifnot_dbg = Debuginfo.none in
+          transl_sequor env approx
+            inner_dbg arg1
+            ifnot_dbg arg2
+            then_dbg then_
+            else_dbg else_
+      | Uprim (Psequor, [arg1; arg2], inner_dbg) ->
+          transl_sequor env approx
+            inner_dbg arg1
+            inner_dbg arg2
+            then_dbg then_
+            else_dbg else_
+      | Uprim (Pnot, [arg], _dbg) ->
+          transl_if env (invert_then_else approx)
+            dbg arg
+            else_dbg else_
+            then_dbg then_
+      | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
+          let ifso_dbg = Debuginfo.none in
+          transl_if env approx
+            ifso_dbg ifso
+            then_dbg then_
+            else_dbg else_
+      | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
+          let ifnot_dbg = Debuginfo.none in
+          transl_if env approx
+            ifnot_dbg ifnot
+            then_dbg then_
+            else_dbg else_
+      | Uifthenelse (cond, ifso, ifnot) ->
+          let inner_dbg = Debuginfo.none in
+          let ifso_dbg = Debuginfo.none in
+          let ifnot_dbg = Debuginfo.none in
+          make_shareable_cont then_dbg
+            (fun shareable_then ->
+               make_shareable_cont else_dbg
+                 (fun shareable_else ->
+                    mk_if_then_else
+                      inner_dbg (test_bool inner_dbg (transl env cond))
+                      ifso_dbg (transl_if env approx
+                                  ifso_dbg ifso
+                                  then_dbg shareable_then
+                                  else_dbg shareable_else)
+                      ifnot_dbg (transl_if env approx
+                                   ifnot_dbg ifnot
+                                   then_dbg shareable_then
+                                   else_dbg shareable_else))
+                 else_)
+            then_
+      | _ -> begin
+          match approx with
+          | Then_true_else_false ->
+              transl env cond
+          | Then_false_else_true ->
+              mk_not dbg (transl env cond)
+          | Unknown ->
+              mk_if_then_else
+                dbg (test_bool dbg (transl env cond))
+                then_dbg then_
+                else_dbg else_
+        end)
 
 and transl_sequand env (approx : then_else)
       (arg1_dbg : Debuginfo.t) arg1
