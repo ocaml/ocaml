@@ -90,7 +90,8 @@ static void fl_check (void)
         CAMLassert (Next (flp[flp_found]) == cur);
         ++ flp_found;
       }else{
-        CAMLassert (beyond == Val_NULL || cur >= Next (beyond));
+        CAMLassert (beyond == Val_NULL
+                    || Bp_val (cur) >= Bp_val (Next (beyond)));
       }
     }
     if (cur == caml_fl_merge) merge_found = 1;
@@ -460,13 +461,13 @@ header_t *caml_fl_merge_block (value bp)
   cur = Next (prev);
   /* The sweep code makes sure that this is the right place to insert
      this block: */
-  CAMLassert (prev < bp || prev == Fl_head);
-  CAMLassert (cur > bp || cur == Val_NULL);
+  CAMLassert (Bp_val (prev) < Bp_val (bp) || prev == Fl_head);
+  CAMLassert (Bp_val (cur) > Bp_val (bp) || cur == Val_NULL);
 
   if (policy == Policy_first_fit) truncate_flp (prev);
 
   /* If [last_fragment] and [bp] are adjacent, merge them. */
-  if (last_fragment == Hp_bp (bp)){
+  if (last_fragment == Hp_val (bp)){
     mlsize_t bp_whsz = Whsize_val (bp);
     if (bp_whsz <= Max_wosize){
       hd = Make_header (bp_whsz, 0, Caml_white);
@@ -556,13 +557,13 @@ void caml_fl_add_blocks (value bp)
     prev = Fl_head;
     cur = Next (prev);
     while (cur != Val_NULL && cur < bp){
-      CAMLassert (prev < bp || prev == Fl_head);
+      CAMLassert (Bp_val (prev) < Bp_val (bp) || prev == Fl_head);
       /* XXX TODO: extend flp on the fly */
       prev = cur;
       cur = Next (prev);
     }
-    CAMLassert (prev < bp || prev == Fl_head);
-    CAMLassert (cur > bp || cur == Val_NULL);
+    CAMLassert (Bp_val (prev) < Bp_val (bp) || prev == Fl_head);
+    CAMLassert (Bp_val (cur) > Bp_val (bp) || cur == Val_NULL);
     Next (Field (bp, 1)) = cur;
     Next (prev) = bp;
     /* When inserting blocks between [caml_fl_merge] and [caml_gc_sweep_hp],
