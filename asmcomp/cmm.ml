@@ -308,6 +308,30 @@ let rec map_tail f = function
   | Cop _ as c ->
       f c
 
+let lift_phantom_lets f exp =
+  let rec lift exp lifted_rev depth =
+    let next_depth = depth + 1 in
+    match exp with
+    | Cop (op, args, dbg) when depth < 4 ->
+      let lifted_rev, args =
+        List.fold_left (fun (lifted_rev, args) arg ->
+            let lifted_rev, arg = lift arg lifted_rev next_depth in
+            lifted_rev, arg :: args)
+          ([], [])
+          (List.rev args)
+      in
+      lifted_rev, Cop (op, args, dbg)
+    | Cphantom_let (var, defining_expr, body) ->
+      lift body ((var, defining_expr) :: lifted_rev) depth
+    | _ -> lifted_rev, exp
+  in
+  let lifted_rev, exp = lift exp [] 0 in
+  let exp = f exp in
+  List.fold_left (fun exp (var, defining_expr) ->
+      Cphantom_let (var, defining_expr, exp))
+    exp
+    lifted_rev
+
 let rec map_single_tail f = function
   | Clet (id, exp, body) ->
       let result = map_single_tail f body in
@@ -319,7 +343,12 @@ let rec map_single_tail f = function
       let result = map_single_tail f s2 in
       Csequence (s1, result)
   | body ->
-      f body
+      lift_phantom_lets f body
+
+let map_single_tail2 f exp1 exp2 =
+  map_single_tail (fun exp2 ->
+      map_single_tail (fun exp1 -> f exp1 exp2) exp1)
+    exp2
 
 let map_shallow f = function
   | Clet (id, e1, e2) ->
@@ -355,4 +384,3 @@ let map_shallow f = function
   | Creturn_addr
     as c ->
       c
-

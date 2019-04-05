@@ -162,9 +162,7 @@ let rec add_int_aux c1 c2 dbg =
   | (_, _) ->
       Cop(Caddi, [c1; c2], dbg)
 and add_int c1 c2 dbg =
-  c1 |> map_single_tail @@ fun c1 ->
-  c2 |> map_single_tail @@ fun c2 ->
-  add_int_aux c1 c2 dbg
+  map_single_tail2 (fun c1 c2 -> add_int_aux c1 c2 dbg) c1 c2
 
 let rec sub_int_aux c1 c2 dbg =
   match (c1, c2) with
@@ -177,9 +175,7 @@ let rec sub_int_aux c1 c2 dbg =
   | (c1, c2) ->
       Cop(Csubi, [c1; c2], dbg)
 and sub_int c1 c2 dbg =
-  c1 |> map_single_tail @@ fun c1 ->
-  c2 |> map_single_tail @@ fun c2 ->
-  sub_int_aux c1 c2 dbg
+  map_single_tail2 (fun c1 c2 -> sub_int_aux c1 c2 dbg) c1 c2
 
 let rec lsl_int_aux c1 c2 dbg =
   match (c1, c2) with
@@ -192,9 +188,7 @@ let rec lsl_int_aux c1 c2 dbg =
   | (_, _) ->
       Cop(Clsl, [c1; c2], dbg)
 and lsl_int c1 c2 dbg =
-  c1 |> map_single_tail @@ fun c1 ->
-  c2 |> map_single_tail @@ fun c2 ->
-  lsl_int_aux c1 c2 dbg
+  map_single_tail2 (fun c1 c2 -> lsl_int_aux c1 c2 dbg) c1 c2
 
 let is_power2 n = n = 1 lsl Misc.log2 n
 
@@ -217,9 +211,7 @@ let rec mul_int_aux c1 c2 dbg =
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2], dbg)
 and mul_int c1 c2 dbg =
-  c1 |> map_single_tail @@ fun c1 ->
-  c2 |> map_single_tail @@ fun c2 ->
-  mul_int_aux c1 c2 dbg
+  map_single_tail2 (fun c1 c2 -> mul_int_aux c1 c2 dbg) c1 c2
 
 let ignore_low_bit_int =
   map_single_tail (function
@@ -511,9 +503,7 @@ let rec div_int_aux c1 c2 is_safe dbg =
                       raise_symbol dbg "caml_exn_Division_by_zero",
                       dbg)))
 and div_int c1 c2 is_safe dbg =
-  c1 |> map_single_tail @@ fun c1 ->
-  c2 |> map_single_tail @@ fun c2 ->
-  div_int_aux c1 c2 is_safe dbg
+  map_single_tail2 (fun c1 c2 -> div_int_aux c1 c2 is_safe dbg) c1 c2
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -556,9 +546,7 @@ let mod_int c1 c2 is_safe dbg =
                       dbg)))
 
 let mod_int c1 c2 is_safe dbg =
-  c1 |> map_single_tail @@ fun c1 ->
-  c2 |> map_single_tail @@ fun c2 ->
-  mod_int c1 c2 is_safe dbg
+  map_single_tail2 (fun c1 c2 -> mod_int c1 c2 is_safe dbg) c1 c2
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)

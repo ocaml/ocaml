@@ -261,5 +261,12 @@ val map_single_tail : (expression -> expression) -> expression -> expression
     more than one result expression, meaning the transformation will be
     applied exactly once *)
 
+val map_single_tail2 :
+  (expression -> expression -> expression) ->
+  expression -> expression -> expression
+(** Analog of [map_single_tail] for binary functions.
+    Assumes that the second argument is meant to be evaluated before
+    the first one, and preserves this evaluation order. *)
+
 val map_shallow: (expression -> expression) -> expression -> expression
   (** Apply the transformation to each immediate sub-expression. *)
