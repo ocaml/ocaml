@@ -418,9 +418,10 @@ static void truncate_flp (value changed)
     flp_size = 0;
     beyond = Val_NULL;
   }else{
-    while (flp_size > 0 && Next (flp[flp_size - 1]) >= changed)
+    while (flp_size > 0
+           && Bp_val (Next (flp[flp_size - 1])) >= Bp_val (changed))
       -- flp_size;
-    if (beyond >= changed) beyond = Val_NULL;
+    if (Bp_val (beyond) >= Bp_val (changed)) beyond = Val_NULL;
   }
 }
 
@@ -543,7 +544,7 @@ void caml_fl_add_blocks (value bp)
     cur = Field(cur, 0);
   } while (cur != Val_NULL);
 
-  if (bp > fl_last){
+  if (Bp_val (bp) > Bp_val (fl_last)){
     Next (fl_last) = bp;
     if (fl_last == caml_fl_merge && (char *) bp < caml_gc_sweep_hp){
       caml_fl_merge = Field (bp, 1);
@@ -556,7 +557,7 @@ void caml_fl_add_blocks (value bp)
 
     prev = Fl_head;
     cur = Next (prev);
-    while (cur != Val_NULL && cur < bp){
+    while (cur != Val_NULL && Bp_val (cur) < Bp_val (bp)){
       CAMLassert (Bp_val (prev) < Bp_val (bp) || prev == Fl_head);
       /* XXX TODO: extend flp on the fly */
       prev = cur;
