@@ -102,7 +102,7 @@ the bytecode interpreter by itself.
 
 The compiler is able to emit some information on its internal stages.
 It can output ".cmt" files for the implementation of the compilation unit
-and ".cmti" for signatures if an option "-bin-annot" is passed to it (see the
+and ".cmti" for signatures if the option "-bin-annot" is passed to it (see the
 description of "-bin-annot" below).
 Each such file contains a typed abstract syntax tree (AST), that is produced
 during the type checking procedure. This tree contains all available information
