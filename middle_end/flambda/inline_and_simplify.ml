@@ -190,9 +190,22 @@ let approx_for_allocated_const (const : Allocated_const.t) =
       A.value_immutable_float_array
         (Array.map A.value_float (Array.of_list a))
 
-type filtered_switch_branches =
+type 'key filtered_switch_branches =
   | Must_be_taken of Flambda.t
-  | Can_be_taken of (int * Flambda.t) list
+  | Can_be_taken of ('key * Flambda.t) list
+
+let rec filter_branches arg_approx filter branches compatible_branches =
+  match branches with
+  | [] -> Can_be_taken compatible_branches
+  | (c, lam) as branch :: branches ->
+      match filter arg_approx c with
+      | A.Cannot_be_taken ->
+          filter_branches arg_approx filter branches compatible_branches
+      | A.Can_be_taken ->
+          filter_branches arg_approx filter branches
+            (branch :: compatible_branches)
+      | A.Must_be_taken ->
+          Must_be_taken lam
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
@@ -1266,23 +1279,14 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
        [Switch].  (This should also make the [Let] that binds [arg] redundant,
        meaning that it too can be eliminated.) *)
     simplify_free_variable env arg ~f:(fun env arg arg_approx ->
-      let rec filter_branches filter branches compatible_branches =
-        match branches with
-        | [] -> Can_be_taken compatible_branches
-        | (c, lam) as branch :: branches ->
-          match filter arg_approx c with
-          | A.Cannot_be_taken ->
-            filter_branches filter branches compatible_branches
-          | A.Can_be_taken ->
-            filter_branches filter branches (branch :: compatible_branches)
-          | A.Must_be_taken ->
-            Must_be_taken lam
-      in
       let filtered_consts =
-        filter_branches A.potentially_taken_const_switch_branch sw.consts []
+        filter_branches arg_approx
+          A.potentially_taken_const_switch_branch sw.consts []
       in
       let filtered_blocks =
-        filter_branches A.potentially_taken_block_switch_branch sw.blocks []
+        filter_branches arg_approx
+          (fun c k -> A.potentially_taken_block_switch_branch c k.Flambda.tag)
+          sw.blocks []
       in
       begin match filtered_consts, filtered_blocks with
       | Must_be_taken _, Must_be_taken _ ->
@@ -1314,7 +1318,10 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           lam, R.map_benefit r B.remove_branch
         | _ ->
           let env = E.inside_branch env in
-          let f (i, v) (acc, r) =
+          let f:
+            'k. ('k * Flambda.t) -> (('k * Flambda.t) list * R.t) ->
+            (('k * Flambda.t) list * R.t) =
+            fun (i, v) (acc, r) ->
             let approx = R.approx r in
             let lam, r = simplify env r v in
             (i, lam)::acc,

@@ -336,8 +336,14 @@ and switch = {
   numconsts : Numbers.Int.Set.t; (** Integer cases *)
   consts : (int * t) list; (** Integer cases *)
   numblocks : Numbers.Int.Set.t; (** Number of tag block cases *)
-  blocks : (int * t) list; (** Tag block cases *)
+  blocks : (switch_block_key * t) list; (** Tag block cases *)
   failaction : t option; (** Action to take if none matched *)
+}
+
+(** Equivalent to the similar type in [Lambda]. *)
+and switch_block_key = {
+  tag: int;
+  size: int;
 }
 
 (** Equivalent to the similar type in [Lambda]. *)

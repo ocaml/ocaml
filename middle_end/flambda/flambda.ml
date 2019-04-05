@@ -134,8 +134,13 @@ and switch = {
   numconsts : Numbers.Int.Set.t;
   consts : (int * t) list;
   numblocks : Numbers.Int.Set.t;
-  blocks : (int * t) list;
+  blocks : (switch_block_key * t) list;
   failaction : t option;
+}
+
+and switch_block_key = {
+  tag: int;
+  size: int;
 }
 
 and for_loop = {
@@ -271,7 +276,7 @@ let rec lam ppf (flam : t) =
         List.iter
           (fun (n, l) ->
              if !spc then fprintf ppf "@ " else spc := true;
-             fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
+             fprintf ppf "@[<hv 1>case tag %i (%i):@ %a@]" n.tag n.size lam l)
           sw.blocks ;
         begin match sw.failaction with
         | None  -> ()
