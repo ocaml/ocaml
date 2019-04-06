@@ -184,6 +184,23 @@ int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 }
 
 /* Read and return the contents of the section having the given name.
+   Also return then length.  Abort if no such section. */
+
+static char * load_section(int fd, struct exec_trailer *trail, char *name,
+                           /*out*/ asize_t *size)
+{
+  int32_t len;
+  char * data;
+
+  len = caml_seek_section(fd, trail, name);
+  data = caml_stat_alloc(len);
+  if (read(fd, data, len) != len)
+    caml_fatal_error("truncated section %s", name);
+  *size = len;
+  return data;
+}
+
+/* Read and return the contents of the section having the given name.
    Add a terminating 0.  Return NULL if no such section. */
 
 static char * read_section(int fd, struct exec_trailer *trail, char *name)
@@ -325,7 +342,9 @@ CAMLexport void caml_main(char_os **argv)
 {
   int fd, pos;
   struct exec_trailer trail;
-  struct channel * chan;
+  code_t code;
+  char * data;
+  asize_t code_size, data_size;
   value res;
   char * req_prims;
   char_os * shared_lib_path, * shared_libs;
@@ -414,9 +433,13 @@ CAMLexport void caml_main(char_os **argv)
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
   caml_debugger_init();
-  /* Load the code */
-  caml_code_size = caml_seek_section(fd, &trail, "CODE");
-  caml_load_code(fd, caml_code_size);
+  /* Read the bytecode and the data image */
+  code = (code_t) load_section(fd, &trail, "CODE", &code_size);
+  data = load_section(fd, &trail, "DATA", &data_size);
+  /* Record the code fragment */
+  caml_init_code_fragments(code, code_size, data, data_size);
+  /* Prepare the bytecode for interpretation */
+  caml_prepare_code(code, code_size);
   caml_init_debug_info();
   /* Build the table of primitives */
   shared_lib_path = read_section_to_os(fd, &trail, "DLPT");
@@ -427,11 +450,11 @@ CAMLexport void caml_main(char_os **argv)
   caml_stat_free(shared_lib_path);
   caml_stat_free(shared_libs);
   caml_stat_free(req_prims);
-  /* Load the globals */
-  caml_seek_section(fd, &trail, "DATA");
-  chan = caml_open_descriptor_in(fd);
-  caml_global_data = caml_input_val(chan);
-  caml_close_channel(chan); /* this also closes fd */
+  /* Initialize the table of globals */
+  caml_global_data = caml_input_value_from_block(data, data_size);
+  caml_stat_free(data);
+  /* We are done reading the bytecode executable file */
+  close(fd);
   caml_stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
   caml_oldify_one (caml_global_data, &caml_global_data);
@@ -508,20 +531,10 @@ CAMLexport value caml_startup_code_exn(
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
   caml_debugger_init();
-  /* Load the code */
-  caml_start_code = code;
-  caml_code_size = code_size;
-  caml_init_code_fragments();
-  caml_init_debug_info();
-  if (caml_debugger_in_use) {
-    uintnat len, i;
-    len = code_size / sizeof(opcode_t);
-    caml_saved_code = (unsigned char *) caml_stat_alloc(len);
-    for (i = 0; i < len; i++) caml_saved_code[i] = caml_start_code[i];
-  }
-#ifdef THREADED_CODE
-  caml_thread_code(caml_start_code, code_size);
-#endif
+  /* Record the code fragment */
+  caml_init_code_fragments(code, code_size, data, data_size);
+  /* Prepare the bytecode for interpretation */
+  caml_prepare_code(code, code_size);
   /* Use the builtin table of primitives */
   caml_build_primitive_table_builtin();
   /* Load the globals */

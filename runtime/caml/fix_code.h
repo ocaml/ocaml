@@ -28,8 +28,9 @@ extern code_t caml_start_code;
 extern asize_t caml_code_size;
 extern unsigned char * caml_saved_code;
 
-void caml_init_code_fragments(void);
-void caml_load_code (int fd, asize_t len);
+void caml_init_code_fragments(code_t code, asize_t code_size,
+                              char * data, asize_t data_size);
+void caml_prepare_code (code_t code, asize_t len);
 void caml_fixup_endianness (code_t code, asize_t len);
 void caml_set_instruction (code_t pos, opcode_t instr);
 int caml_is_instruction (opcode_t instr1, opcode_t instr2);

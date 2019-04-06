@@ -40,30 +40,40 @@ asize_t caml_code_size;
 unsigned char * caml_saved_code;
 struct ext_table caml_code_fragments_table;
 
-/* Read the main bytecode block from a file */
+/* Initialize the table of code fragments
+   and record the main bytecode block as a code fragment */
 
-void caml_init_code_fragments(void) {
+void caml_init_code_fragments(code_t code, asize_t code_size,
+                              char * data, asize_t data_size)
+{
   struct code_fragment * cf;
-  /* Register the code in the table of code fragments */
+  struct MD5Context ctx;
   cf = caml_stat_alloc(sizeof(struct code_fragment));
-  cf->code_start = (char *) caml_start_code;
-  cf->code_end = (char *) caml_start_code + caml_code_size;
-  caml_md5_block(cf->digest, caml_start_code, caml_code_size);
+  cf->code_start = (char *) code;
+  cf->code_end = (char *) code + code_size;
+  /* Hash the code but also the data (issue #5942) */
+  caml_MD5Init(&ctx);
+  caml_MD5Update(&ctx, (unsigned char *) code, code_size);
+  caml_MD5Update(&ctx, (unsigned char *) data, data_size);
+  caml_MD5Final(cf->digest, &ctx);
   cf->digest_computed = 1;
+  /* Register the code in the table of code fragments */
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);
 }
 
-void caml_load_code(int fd, asize_t len)
+/* Prepare the bytecode for execution:
+   - convert to native endianness
+   - convert to threaded code
+   - save a copy of the initial bytecode for the debugger
+*/
+
+void caml_prepare_code(code_t code, asize_t len)
 {
   int i;
 
+  caml_start_code = code;
   caml_code_size = len;
-  caml_start_code = (code_t) caml_stat_alloc(caml_code_size);
-  if (read(fd, (char *) caml_start_code, caml_code_size) != caml_code_size)
-    caml_fatal_error("truncated bytecode file");
-  caml_init_code_fragments();
-  /* Prepare the code for execution */
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness(caml_start_code, caml_code_size);
 #endif
