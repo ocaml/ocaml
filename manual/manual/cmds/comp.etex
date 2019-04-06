@@ -361,7 +361,7 @@ This section describes and explains in detail some warnings:
   after the addition of new fields to a record type.
 
 \begin{verbatim}
-type 'a point = {x='a ;y='a}
+type 'a point = {x : 'a; y : 'a}
 let dx { x } = x (* implicit field elision: trigger warning 9 *)
 let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
 \end{verbatim}
