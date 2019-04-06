@@ -527,6 +527,7 @@ let emit_instr i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
+      assert (Proc.prologue_required ());
       let n = frame_size() in
       if n > 0 then begin
         `	addi	1, 1, {emit_int(-n)}\n`;
@@ -541,8 +542,7 @@ let emit_instr i =
         | ELF32 -> ()
         | ELF64v1 | ELF64v2 ->
           `	std	2, {emit_int(toc_save_offset())}(1)\n`
-      end;
-      `{emit_label !tailrec_entry_point}:\n`
+      end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -1007,7 +1007,7 @@ let rec emit_all i =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_label := 0;
   float_literals := [];
@@ -1177,6 +1177,7 @@ let end_assembly() =
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
   emit_string data_space;  (* not rodata_space because it contains relocations *)
+  if ppc64 then `	.align  3\n`;   (* #7887 *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;

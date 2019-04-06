@@ -251,13 +251,13 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
     Asmgen.compile_implementation_clambda
-      ~toplevel:need_symbol fn ~ppf_dump:ppf
+      ~toplevel:need_symbol fn ~backend ~ppf_dump:ppf
       { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda
       ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
-      (Middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
+      (Flambda_middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
@@ -607,21 +607,17 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script.  If [name] is "", read the script from stdin. *)
+external caml_sys_modify_argv : string array -> unit =
+  "caml_sys_modify_argv"
 
-let override_sys_argv args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
+let override_sys_argv new_argv =
+  caml_sys_modify_argv new_argv;
   Arg.current := 0
 
+(* Execute a script.  If [name] is "", read the script from stdin. *)
+
 let run_script ppf name args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
-  Arg.current := 0;
+  override_sys_argv args;
   Compmisc.init_path ~dir:(Filename.dirname name) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();

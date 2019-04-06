@@ -80,5 +80,6 @@ let vexpr (type result) (type visit_action)
   | Global -> fun _ -> raise Exit
 ;;
 [%%expect{|
-val vexpr : (unit, 'a, 'b) context -> unit -> 'b = <fun>
+val vexpr : (unit, 'result, 'visit_action) context -> unit -> 'visit_action =
+  <fun>
 |}];;

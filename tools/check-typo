@@ -130,6 +130,25 @@ usage () {
   exit 2
 }
 
+check_script () {
+  if [ "$($OCAML_CT_CAT "$OCAML_CT_PREFIX$1" \
+            | sed -ne '1s/^#!.*/#!/p')" != '#!' ] ; then
+    # These files are listed manually, rather than via gitattributes,
+    # because the list should never expand, and it should not be trivial to
+    # expand (the unix-execvpe test is an ultra-special-case!)
+    f=${1#./}
+    if [ "$f" != "boot/ocamlc" ] && [ "$f" != "boot/ocamllex" ] && \
+       [ "$f" != "testsuite/tests/lib-unix/unix-execvpe/subdir/script2" ] ; then
+      echo "$1 shouldn't be executable; either:"
+      echo " - Add a #! line"
+      echo " - Run chmod -x $1 (on Unix)"
+      echo " - Run git update-index --chmod=-x $1 (on Windows)"
+      echo "You may wish to check your core.fileMode setting"
+      EXIT_CODE=1
+    fi
+  fi
+}
+
 userrules=''
 
 while : ; do
@@ -151,6 +170,18 @@ IGNORE_DIRS="
 # is faster to optimistically run check-typo on them (and maybe get
 # out in the middle) than to first check then run.
 
+TEST_AWK='BEGIN {if ("a{1}" ~ /a{1}/) exit 0}'
+if $OCAML_CT_AWK "$TEST_AWK" ; then
+  TEST_AWK='BEGIN {if ("a" ~ /a{1}/) exit 0}'
+  if $OCAML_CT_AWK --re-interval "$TEST_AWK" 2>/dev/null ; then
+    OCAML_CT_AWK="$OCAML_CT_AWK --re-interval"
+  else
+    echo "This script requires interval support in regexes ({m} notation)">&2
+    echo "Please install a version of awk (e.g. gawk) which supports this">&2
+    exit 2
+  fi
+fi
+
 EXIT_CODE=0
 ( case $# in
     0) find . $IGNORE_DIRS -type f -print;;
@@ -159,6 +190,7 @@ EXIT_CODE=0
 ) | (
   while read f; do
     if test -n "$(check_prune "$f")"; then continue; fi
+    if $(git check-ignore -q "$f"); then continue; fi
     case `$OCAML_CT_LS_FILES "$f" 2>&1` in
       "") path_in_index=false;;
       *) path_in_index=true;;
@@ -167,6 +199,15 @@ EXIT_CODE=0
       *$f*) is_cmd_line=true;;
       *) is_cmd_line=false;;
     esac
+    if [ -z "$OCAML_CT_PREFIX" ] ; then
+      if [ -x "$f" ] ; then
+        check_script "$f"
+      fi
+    else
+      if git ls-files -s "$f" | grep -q "^100755" ; then
+        check_script "$f"
+      fi
+    fi
     if $path_in_index || $is_cmd_line; then :; else continue; fi
     attr_rules=''
     if $path_in_index; then

@@ -17,6 +17,8 @@
 
 open Types
 
+val valid_tyvar_name : string -> bool
+
 val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_univars:

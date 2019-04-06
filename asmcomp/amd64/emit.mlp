@@ -33,6 +33,7 @@ module String = Misc.Stdlib.String
    emit.mlp files for certain other targets; the reference here ensures
    that when releases are being prepared the .depend files are correct
    for all targets. *)
+[@@@ocaml.warning "-66"]
 open! Branch_relaxation
 
 let _label s = D.label ~typ:QWORD s
@@ -72,9 +73,6 @@ let fastcode_flag = ref true
 let stack_offset = ref 0
 
 (* Layout of the stack frame *)
-
-let frame_required () =
-  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
@@ -486,6 +484,7 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
+    assert (Proc.prologue_required ());
     if fp then begin
       I.push rbp;
       cfi_adjust_cfa_offset 8;
@@ -498,8 +497,7 @@ let emit_instr fallthrough i =
         I.sub (int n) rsp;
         cfi_adjust_cfa_offset n;
       end;
-    end;
-    def_label !tailrec_entry_point
+    end
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -898,7 +896,7 @@ let all_functions = ref []
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];

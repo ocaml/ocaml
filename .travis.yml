@@ -13,6 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
+dist: xenial
 sudo: false
 language: c
 git:
@@ -35,9 +36,9 @@ matrix:
   - env: CI_KIND=changes
   - env: CI_KIND=manual
   - env: CI_KIND=check-typo
-  - env: CI_KIND=tests
-  allow_failures:
-  - env: CI_KIND=tests
+#  - env: CI_KIND=tests
+#  allow_failures:
+#  - env: CI_KIND=tests
 addons:
   apt:
     packages:

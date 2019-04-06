@@ -75,6 +75,7 @@ type error =
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
+  | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
@@ -3238,7 +3239,12 @@ and type_expect_
       re { exp with exp_extra =
              (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
   | Pexp_newtype({txt=name}, sbody) ->
-      let ty = newvar () in
+      let ty =
+        if Typetexp.valid_tyvar_name name then
+          newvar ~name ()
+        else
+          newvar ()
+      in
       (* remember original level *)
       begin_def ();
       (* Create a fake abstract type declaration for name. *)
@@ -4207,7 +4213,12 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
-    raise(Error(loc, env, Private_type ty_res));
+    begin match constr.cstr_tag with
+    | Cstr_extension _ ->
+        raise(Error(loc, env, Private_constructor (constr, ty_res)))
+    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
+        raise (Error(loc, env, Private_type ty_res));
+    end;
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
   { texp with
     exp_desc = Texp_construct(lid, constr, args) }
@@ -4502,12 +4513,14 @@ and type_let
   let pat_list =
     if !Clflags.principal then begin
       end_def ();
-      List.map
-        (fun pat ->
-          iter_pattern (fun pat -> generalize_structure pat.pat_type) pat;
-          {pat with pat_type = instance pat.pat_type})
-        pat_list
-    end else pat_list in
+      iter_pattern_variables_type generalize_structure pvs;
+      List.map (fun pat ->
+        generalize_structure pat.pat_type;
+        {pat with pat_type = instance pat.pat_type}
+      ) pat_list
+    end else
+      pat_list
+  in
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
   let sexp_is_fun { pvb_expr = sexp; _ } =
@@ -4649,15 +4662,21 @@ and type_let
     )
     pat_list
     (List.map2 (fun (attrs, _) e -> attrs, e) spatl exp_list);
+  let pvs = List.map (fun pv -> { pv with pv_type = instance pv.pv_type}) pvs in
   end_def();
   List.iter2
     (fun pat exp ->
        if not (is_nonexpansive exp) then
-         iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
+         generalize_expansive env pat.pat_type)
     pat_list exp_list;
-  List.iter
-    (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
-    pat_list;
+  iter_pattern_variables_type generalize pvs;
+  (* We also generalize expressions that are not bound to a variable.
+     This does not matter in general, but those types are shown by the
+     interactive toplevel, for example: {[
+       let _ = Array.get;;
+       - : 'a array -> int -> 'a = <fun>
+     ]} *)
+  List.iter (fun exp -> generalize exp.exp_type) exp_list;
   let l = List.combine pat_list exp_list in
   let l =
     List.map2
@@ -5135,6 +5154,10 @@ let report_error ~loc env = function
   | Private_label (lid, ty) ->
       Location.errorf ~loc "Cannot assign field %a of the private type %a"
         longident lid type_expr ty
+  | Private_constructor (constr, ty) ->
+      Location.errorf ~loc
+        "Cannot use private constructor %s to create values of type %a"
+        constr.cstr_name type_expr ty
   | Not_a_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->

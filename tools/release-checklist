@@ -407,7 +407,7 @@ opam switch create ocaml-variants.4.08.0+beta1+<VARIANT> --repositories=default,
    fp+flambda
 
 We want to know about all bugs. Please report them here:
- http://caml.inria.fr/mantis/bug_report_page.php
+ https://github.com/ocaml/ocaml/issues
 
 Happy hacking,
 

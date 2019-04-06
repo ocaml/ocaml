@@ -18,11 +18,3 @@
  (deps    (:instr (file ../runtime/caml/instruct.h)))
  (action
   (bash "%{dep:../tools/make_opcodes.exe} -opcodes < %{instr} > %{targets}")))
-
-(rule
- (targets runtimedef.ml)
- (mode    fallback)
- (deps    (:fail (file ../runtime/caml/fail.h))
-          (:prim (file ../runtime/primitives)))
- (action  (with-stdout-to %{targets}
-            (run ./generate_runtimedef.sh %{fail} %{prim}))))

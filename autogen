@@ -1,2 +1,27 @@
 #!/bin/sh
-autoconf -W all,error
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                David Allsopp, MetaStack Solutions Ltd.                 *
+#*                                                                        *
+#*   Copyright 2019 MetaStack Solutions Ltd.                              *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+version=$(autoconf --version | sed -ne 's/^autoconf .* \([0-9][^ ]*\)$/\1/p')
+if [ "$version" != '2.69' ] ; then
+  echo "autoconf 2.69 is required" >&2
+  exit 1
+else
+  autoconf -W all,error
+  # Some distros have this 2013 patch to autoconf, some don't...
+  sed -i -e '/^runstatedir/d' \
+         -e '/-runstatedir /,+8d' \
+         -e '/--runstatedir=DIR/d' \
+         -e 's/ runstatedir//' configure
+fi

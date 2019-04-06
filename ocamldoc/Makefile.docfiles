@@ -32,7 +32,7 @@ DOC_STDLIB_DIRS = stdlib \
 	otherlibs/$(UNIXLIB) otherlibs/dynlink \
 	otherlibs/systhreads
 
-DOC_COMPILERLIBS_DIRS= parsing utils typing bytecomp driver
+DOC_COMPILERLIBS_DIRS= parsing utils typing bytecomp driver file_formats lambda
 
 DOC_ALL_DIRS = $(DOC_COMPILERLIBS) $(DOC_STDLIB_DIRS)
 

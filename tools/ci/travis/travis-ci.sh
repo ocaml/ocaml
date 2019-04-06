@@ -223,8 +223,24 @@ CheckTypoTree () {
     else
       echo "NOT checking $1: $path (typo.prune)"
     fi
+    if [[ $path = 'configure' || $path = 'configure.ac' ]] ; then
+      touch CHECK_CONFIGURE
+    fi
   done)
   rm -f tmp-index
+  if [ -e CHECK_CONFIGURE ] ; then
+    rm -f CHECK_CONFIGURE
+    echo "configure or configure.ac altered in $1"
+    echo "Verifying that configure.ac generates configure"
+    git checkout "$1"
+    mv configure configure.ref
+    ./autogen
+    if ! diff -q configure configure.ref >/dev/null ; then
+      echo "configure.ac no longer generates configure, \
+please run ./autogen and commit"
+      exit 1
+    fi
+  fi
 }
 
 CHECK_ALL_COMMITS=0
@@ -234,7 +250,6 @@ CheckTypo () {
   export OCAML_CT_CA_FLAG="--cached"
   # Work around an apparent bug in Ubuntu 12.4.5
   # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
-  export OCAML_CT_AWK="awk --re-interval"
   rm -f check-typo-failed
   if test -z "$TRAVIS_COMMIT_RANGE"
   then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT

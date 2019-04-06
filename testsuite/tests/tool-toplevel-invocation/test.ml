@@ -40,6 +40,12 @@ compiler_reference = "${test_source_directory}/working_arg.txt.reference"
 compiler_output = "${test_build_directory}/working_arg.output"
 *** check-ocaml-output
 
+** ocaml
+flags = "${test_source_directory}/print_args.ml foo bar"
+compiler_reference = "${test_source_directory}/print_args.reference"
+compiler_output = "${test_build_directory}/print_args.output"
+*** check-ocaml-output
+
 *)
 
 printf "Test succeeds\n";;

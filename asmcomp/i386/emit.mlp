@@ -473,12 +473,12 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
+    assert (Proc.prologue_required ());
     let n = frame_size() - 4 in
     if n > 0 then  begin
       I.sub (int n) esp;
       cfi_adjust_cfa_offset n;
     end;
-    def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then begin
@@ -887,7 +887,7 @@ let rec emit_all fallthrough i =
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];

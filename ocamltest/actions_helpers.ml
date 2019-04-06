@@ -205,9 +205,17 @@ let run_script log env =
     log scriptenv in
   let final_value =
     if Result.is_pass result then begin
-      let modifiers = Environments.modifiers_of_file response_file in
-      let modified_env = Environments.apply_modifiers newenv modifiers in
-      (result, modified_env)
+      match Environments.modifiers_of_file response_file with
+      | modifiers ->
+        let modified_env = Environments.apply_modifiers newenv modifiers in
+        (result, modified_env)
+      | exception Failure reason ->
+        (Result.fail_with_reason reason, newenv)
+      | exception Variables.No_such_variable name ->
+        let reason =
+          Printf.sprintf "error in script response: unknown variable %s" name
+        in
+        (Result.fail_with_reason reason, newenv)
     end else begin
       let reason = String.trim (Sys.string_of_file response_file) in
       let newresult = { result with Result.reason = Some reason } in
@@ -240,9 +248,18 @@ let run_hook hook_name log input_env =
   } in let exit_status = run settings in
   let final_value = match exit_status with
     | 0 ->
-      let modifiers = Environments.modifiers_of_file response_file in
-      let modified_env = Environments.apply_modifiers hookenv modifiers in
-      (Result.pass, modified_env)
+      begin match Environments.modifiers_of_file response_file with
+      | modifiers ->
+        let modified_env = Environments.apply_modifiers hookenv modifiers in
+        (Result.pass, modified_env)
+      | exception Failure reason ->
+        (Result.fail_with_reason reason, hookenv)
+      | exception Variables.No_such_variable name ->
+        let reason =
+          Printf.sprintf "error in script response: unknown variable %s" name
+        in
+        (Result.fail_with_reason reason, hookenv)
+      end
     | _ ->
       Printf.fprintf log "Hook returned %d" exit_status;
       let reason = String.trim (Sys.string_of_file response_file) in

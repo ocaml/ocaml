@@ -570,6 +570,17 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           H.equal k key || mem_in_bucket next in
       mem_in_bucket h.data.(key_index h key)
 
+    let add_seq tbl i =
+      Seq.iter (fun (k,v) -> add tbl k v) i
+
+    let replace_seq tbl i =
+      Seq.iter (fun (k,v) -> replace tbl k v) i
+
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
+
     let iter = iter
     let filter_map_inplace = filter_map_inplace
     let fold = fold
@@ -578,9 +589,6 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let to_seq = to_seq
     let to_seq_keys = to_seq_keys
     let to_seq_values = to_seq_values
-    let add_seq = add_seq
-    let replace_seq = replace_seq
-    let of_seq = of_seq
   end
 
 module Make(H: HashedType): (S with type key = H.t) =
@@ -591,4 +599,8 @@ module Make(H: HashedType): (S with type key = H.t) =
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
