@@ -59,11 +59,12 @@ let reset b =
   b.length <- Bytes.length b.buffer
 
 let resize b more =
-  let len = b.length in
-  let new_len = ref len in
-  while b.position + more > !new_len do new_len := 2 * !new_len done;
+  let old_pos = b.position in
+  let old_len = b.length in
+  let new_len = ref old_len in
+  while old_pos + more > !new_len do new_len := 2 * !new_len done;
   if !new_len > Sys.max_string_length then begin
-    if b.position + more <= Sys.max_string_length
+    if old_pos + more <= Sys.max_string_length
     then new_len := Sys.max_string_length
     else failwith "Buffer.add: cannot grow buffer"
   end;
@@ -73,7 +74,12 @@ let resize b more =
   Bytes.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
   b.length <- !new_len;
-  assert (b.position + more <= b.length)
+  assert (b.position + more <= b.length);
+  (* In some strange threaded/finalization cases
+     [old_pos] may differ from [b.position] here;
+     we use either assertions to guard [unsafe_set] calls,
+     so better be memory-safe than sorry *)
+  assert (old_pos + more <= b.length)
 
 let add_char b c =
   let pos = b.position in
