@@ -309,6 +309,11 @@ let rec map_tail f = function
       f c
 
 let lift_phantom_lets f exp =
+  (* Unbounded exploration would be linear in the size of the expression,
+     which can lead to a translation pass that becomes quadratic in the size
+     of the original program. Limiting to a fixed depth prevents this problem,
+     and it happens that no existing optimisation looks deeper than 4 nested
+     operations, so no optimisation is lost because of this restriction. *)
   let rec lift exp lifted_rev depth =
     let next_depth = depth + 1 in
     match exp with
