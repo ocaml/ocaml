@@ -1060,16 +1060,19 @@ val input : in_channel -> bytes -> int -> int -> int
    [input] must be called again to read the remaining characters,
    if desired.  (See also {!Stdlib.really_input} for reading
    exactly [len] characters.)
-   Exception [Invalid_argument "input"] is raised if [pos] and [len]
+
+   @raise [Invalid_argument] if [pos] and [len]
    do not designate a valid range of [buf]. *)
 
 val really_input : in_channel -> bytes -> int -> int -> unit
 (** [really_input ic buf pos len] reads [len] characters from channel [ic],
    storing them in byte sequence [buf], starting at character number [pos].
-   Raise [End_of_file] if the end of file is reached before [len]
+
+   @raise [End_of_file] if the end of file is reached before [len]
    characters have been read.
-   Raise [Invalid_argument "really_input"] if
-   [pos] and [len] do not designate a valid range of [buf]. *)
+
+   @raise [Invalid_argument] if [pos] and [len]
+   do not designate a valid range of [buf]. *)
 
 val really_input_string : in_channel -> int -> string
 (** [really_input_string ic len] reads [len] characters from channel [ic]
@@ -1077,6 +1080,25 @@ val really_input_string : in_channel -> int -> string
    Raise [End_of_file] if the end of file is reached before [len]
    characters have been read.
    @since 4.02.0 *)
+
+val input_up_to : in_channel -> bytes -> pos:int -> len:int -> int
+(** [input_up_to ic buf pos len] reads at most [len] characters
+   from the given channel [ic], storing them in byte sequence [buf], starting at
+   character number [pos].
+   Compared to [input], this function only stops when no more characters
+   are available -- the end of file is reached.
+   The return value indicates the number of characters that were available.
+
+   @raise [Invalid_argument] if [pos] and [len]
+   do not designate a valid range of [buf].
+
+   @since 4.09 *)
+
+val input_string_up_to : in_channel -> int -> string
+(** [really_input_string ic len] reads up to [len] characters from channel [ic]
+   and returns them in a new string.
+
+   @since 4.09 *)
 
 val input_byte : in_channel -> int
 (** Same as {!Stdlib.input_char}, but return the 8-bit integer representing

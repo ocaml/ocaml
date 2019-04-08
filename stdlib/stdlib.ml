@@ -415,23 +415,52 @@ let input ic s ofs len =
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
-let rec unsafe_really_input ic s ofs len =
-  if len <= 0 then () else begin
-    let r = unsafe_input ic s ofs len in
-    if r = 0
-    then raise End_of_file
-    else unsafe_really_input ic s (ofs + r) (len - r)
-  end
+let unsafe_input_up_to ic buf ~pos ~len =
+  let rec loop ic buf ~already_read ~pos ~len =
+    if len <= 0 then already_read else begin
+      let r = unsafe_input ic buf pos len in
+      if r = 0
+      then already_read
+      else begin
+        let already_read = already_read + r in
+        let pos = pos + r in
+        let len = len - r in
+        loop ic buf ~already_read ~pos ~len
+      end
+    end
+  in loop ic buf ~already_read:0 ~pos ~len
 
-let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs > bytes_length s - len
+let input_up_to ic s ~pos ~len =
+  if pos < 0 || len < 0 || pos > bytes_length s - len
+  then invalid_arg "input_up_to"
+  else unsafe_input_up_to ic s ~pos ~len
+
+let unsafe_really_input ic buf pos len =
+  let read = unsafe_input_up_to ic buf ~pos ~len in
+  if read < len then raise End_of_file else ()
+
+let really_input ic s pos len =
+  if pos < 0 || len < 0 || pos > bytes_length s - len
   then invalid_arg "really_input"
-  else unsafe_really_input ic s ofs len
+  else unsafe_really_input ic s pos len
 
 let really_input_string ic len =
   let s = bytes_create len in
   really_input ic s 0 len;
   bytes_unsafe_to_string s
+
+let input_string_up_to ic len =
+  let s = bytes_create len in
+  let n = input_up_to ic s ~pos:0 ~len in
+  if n = len then begin
+    (* give up ownership of s *)
+    bytes_unsafe_to_string s
+  end else begin
+    let sub = bytes_create n in
+    bytes_blit s 0 sub 0 n;
+    (* give up ownership of sub, drop s *)
+    bytes_unsafe_to_string sub
+  end
 
 external input_scan_line : in_channel -> int = "caml_ml_input_scan_line"
 
