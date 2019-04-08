@@ -88,40 +88,22 @@ let compare_text_files dropped_lines file1 file2 =
   else
     Different
 
-(* Version of Stdlib.really_input which stops at EOF, rather than raising
-   an exception. *)
-let really_input_up_to ic =
-  let block_size = 8192 in
-  let buf = Bytes.create block_size in
-  let rec read pos =
-    let bytes_read = input ic buf pos (block_size - pos) in
-    let new_pos = pos + bytes_read in
-    if bytes_read = 0 || new_pos = block_size then
-      new_pos
-    else
-      read new_pos
-  in
-  let bytes_read = read 0 in
-  if bytes_read = block_size then
-    buf
-  else
-    Bytes.sub buf 0 bytes_read
-
 let compare_binary_files bytes_to_ignore file1 file2 =
   let ic1 = open_in_bin file1 in
   let ic2 = open_in_bin file2 in
   seek_in ic1 bytes_to_ignore;
   seek_in ic2 bytes_to_ignore;
+  let block_size = 8192 in
+  let buf1 = Bytes.create block_size in
+  let buf2 = Bytes.create block_size in
+  let sub buf read = if read = block_size then buf else Bytes.sub buf 0 read in
   let rec compare () =
-    let block1 = really_input_up_to ic1 in
-    let block2 = really_input_up_to ic2 in
-    if block1 = block2 then
-      if Bytes.length block1 > 0 then
-        compare ()
-      else
-        Same
-    else
-      Different
+    let read1 = input_up_to ic1 buf1 ~pos:0 ~len:block_size in
+    let read2 = input_up_to ic2 buf2 ~pos:0 ~len:block_size in
+    let sub1, sub2 = sub buf1 read1, sub buf2 read2 in
+    if read1 <> read2 || not (Bytes.equal sub1 sub2) then Different
+    else if read1 < block_size then Same
+    else compare ()
   in
   let result = compare () in
   close_in ic1;
