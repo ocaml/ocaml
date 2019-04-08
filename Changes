@@ -161,8 +161,7 @@ Working version
 
 ### Bug fixes:
 
-- #7156: Create Mechanism so that OCaml Top Level uses custom printers 
-  if they are available
+- #7156: make top level use custom printers if they are available
   (Andrew Litteken, report by Martin Jambon, review by )
 - #3249: ocamlmklib should reject .cmxa files
   (Xavier Leroy)
