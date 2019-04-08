@@ -22,10 +22,9 @@ val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
    the exception [e]. *)
 
-val to_string_opt: exn -> string option
-(** [Printexc.to_string_opt e] returns a string option containing None if
-  there are no registered printers and Some s for a representation if there
-  are registered printers. *)
+val to_string_default: exn -> string
+(** [Printexc.to_string_opt e] returns a string that would be generated
+    without registered printers of exception [e] *)
 
 val print: ('a -> 'b) -> 'a -> 'b
 (** [Printexc.print fn x] applies [fn] to [x] and returns the result.
@@ -99,6 +98,10 @@ val register_printer: (exn -> string option) -> unit
     the backtrace if it has itself raised an exception before.
     @since 3.11.2
 *)
+
+val use_printers: exn -> string option
+(** [Printexc.use_printers e] returns [None] if there are no registered 
+    printers and [Some (to_string e)] otherwise.*)
 
 (** {1 Raw backtraces} *)
 
