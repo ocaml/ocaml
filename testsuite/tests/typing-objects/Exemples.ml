@@ -95,7 +95,7 @@ class ref x_init = object
   method set y = x <- y
 end;;
 [%%expect{|
-Line 1, characters 0-95:
+Lines 1-5, characters 0-3:
 1 | class ref x_init = object
 2 |   val mutable x = x_init
 3 |   method get = x

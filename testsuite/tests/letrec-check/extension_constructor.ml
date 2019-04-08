@@ -18,7 +18,7 @@ let rec x =
 and (m : (module T)) =
   (module (struct exception A of int end) : T);;
 [%%expect{|
-Line 2, characters 2-36:
+Lines 2-3, characters 2-8:
 2 | ..let module M = (val m) in
 3 |   M.A 42
 Error: This kind of expression is not allowed as right-hand side of `let rec'
