@@ -182,20 +182,37 @@ let add_bytes b s = add_string b (Bytes.unsafe_to_string s)
 let add_buffer b bs =
   add_subbytes b bs.buffer 0 bs.position
 
-(* read up to [len] bytes from [ic] into [b]. *)
-let rec add_channel_rec b ic len =
-  if len > 0 then (
-    let n = input ic b.buffer b.position len in
-    b.position <- b.position + n;
-    if n = 0 then raise End_of_file
-    else add_channel_rec b ic (len-n)   (* n <= len *)
-  )
+(* this (private) function could move into the standard library *)
+let really_input_up_to ic buf ofs len =
+  let rec loop ic buf ~already_read ~ofs ~to_read =
+    if to_read = 0 then already_read
+    else begin
+      let r = input ic buf ofs to_read in
+      if r = 0 then already_read
+      else begin
+        let already_read = already_read + r in
+        let ofs = ofs + r in
+        let to_read = to_read - r in
+        loop ic buf ~already_read ~ofs ~to_read
+      end
+    end
+  in loop ic buf ~already_read:0 ~ofs ~to_read:len
+
+
+let unsafe_add_channel_up_to b ic len =
+  if b.position + len > b.length then resize b len;
+  let n = really_input_up_to ic b.buffer b.position len in
+  b.position <- b.position + n;
+  n
 
 let add_channel b ic len =
   if len < 0 || len > Sys.max_string_length then   (* PR#5004 *)
     invalid_arg "Buffer.add_channel";
-  if b.position + len > b.length then resize b len;
-  add_channel_rec b ic len
+  let n = unsafe_add_channel_up_to b ic len in
+  (* It is intentional that a consumer catching End_of_file
+     will see the data written (see #6719, #7136). *)
+  if n < len then raise End_of_file;
+  ()
 
 let output_buffer oc b =
   output oc b.buffer 0 b.position
