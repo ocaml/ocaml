@@ -126,6 +126,10 @@ Working version
   in printf %F
   (Pierre Roux, review by Gabriel Scherer)
 
+- #6148, #8596: optimize some buffer operations
+  (Damien Doligez, reports by John Whitington and Alain Frisch,
+   review by Jeremy Yallop and Gabriel Scherer)
+
 ### Other libraries:
 
 - #7903, #2306: Make Thread.delay interruptible by signals again
