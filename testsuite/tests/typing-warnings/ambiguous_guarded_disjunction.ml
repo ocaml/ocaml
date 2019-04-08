@@ -197,7 +197,7 @@ let ambiguous__first_orpat = function
   | _ -> ()
 ;;
 [%%expect {|
-Line 2, characters 4-101:
+Lines 2-3, characters 4-58:
 2 | ....`A ((`B (Some x, _) | `B (_, Some x)),
 3 |         (`C (Some y, Some _, _) | `C (Some y, _, Some _))).................
 Warning 57: Ambiguous or-pattern variables under guard;
@@ -215,7 +215,7 @@ let ambiguous__second_orpat = function
   | _ -> ()
 ;;
 [%%expect {|
-Line 2, characters 4-101:
+Lines 2-3, characters 4-42:
 2 | ....`A ((`B (Some x, Some _, _) | `B (Some x, _, Some _)),
 3 |         (`C (Some y, _) | `C (_, Some y))).................
 Warning 57: Ambiguous or-pattern variables under guard;
@@ -308,7 +308,7 @@ let ambiguous__amoi a = match a with
 | X _|Y _|Z _ -> 1
 ;;
 [%%expect {|
-Line 2, characters 2-35:
+Lines 2-3, characters 2-17:
 2 | ..X (Z x,Y (y,0))
 3 | | X (Z y,Y (x,_))
 Warning 57: Ambiguous or-pattern variables under guard;
@@ -328,7 +328,7 @@ let ambiguous__module_variable x b =  match x with
   | _ -> 2
 ;;
 [%%expect {|
-Line 2, characters 4-49:
+Lines 2-3, characters 4-24:
 2 | ....(module M:S),_,(1,_)
 3 |   | _,(module M:S),(_,1)...................
 Warning 57: Ambiguous or-pattern variables under guard;
@@ -365,7 +365,7 @@ Line 2, characters 4-5:
         ^
 Warning 41: A belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
-Line 1, characters 41-137:
+Lines 1-3, characters 41-10:
 1 | .........................................function
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
 3 |   | _ -> 2

@@ -10,7 +10,7 @@ end;;
 
 [%%expect{|
 type t = int
-Line 3, characters 0-31:
+Lines 3-5, characters 0-3:
 3 | struct
 4 |   type t = [`T of t]
 5 | end..

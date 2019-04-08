@@ -102,7 +102,7 @@ end = struct
   end
 end
 [%%expect {|
-Line 9, characters 6-114:
+Lines 9-17, characters 6-3:
  9 | ......struct
 10 |   module type x = sig
 11 |     val a:int
@@ -172,7 +172,7 @@ end = struct
   end
 end
 [%%expect {|
-Line 6, characters 6-72:
+Lines 6-11, characters 6-3:
  6 | ......struct
  7 |   module type x= sig
  8 |     val x:int
@@ -211,7 +211,7 @@ end = struct
   end
 end
 [%%expect {|
-Line 8, characters 6-108:
+Lines 8-15, characters 6-3:
  8 | ......struct
  9 |   module type a = sig
 10 |     module type b = sig
@@ -268,7 +268,7 @@ end = struct
 end
 [%%expect{|
 class type ct = object  end
-Line 7, characters 6-76:
+Lines 7-12, characters 6-3:
  7 | ......struct
  8 |   module type x = sig
  9 |     class b: ct
@@ -303,7 +303,7 @@ end = struct
   end
 end
 [%%expect{|
-Line 6, characters 6-76:
+Lines 6-11, characters 6-3:
  6 | ......struct
  7 |   module type x = sig
  8 |     type exn+=B
@@ -393,7 +393,7 @@ struct
   module type x = functor(X:c12) -> s
 end
 [%%expect {|
-Line 2, characters 0-48:
+Lines 2-4, characters 0-3:
 2 | struct
 3 |   module type x = functor(X:c12) -> s
 4 | end
@@ -418,7 +418,7 @@ struct
   module type x = functor(X:s) -> c12
 end
 [%%expect {|
-Line 2, characters 0-48:
+Lines 2-4, characters 0-3:
 2 | struct
 3 |   module type x = functor(X:s) -> c12
 4 | end
@@ -482,7 +482,7 @@ end=struct
   end
 end
 [%%expect {|
-Line 22, characters 4-481:
+Lines 22-43, characters 4-3:
 22 | ....struct
 23 |   module type x = sig
 24 |     module A: sig

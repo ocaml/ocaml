@@ -59,7 +59,7 @@ let rec a =
 [%%expect{|
 type a = { a : b; } [@@unboxed]
 and b = X of a | Y
-Line 5, characters 2-75:
+Lines 5-9, characters 2-10:
 5 | ..{a=
 6 |     (if Sys.opaque_identity true then
 7 |        X a
@@ -99,7 +99,7 @@ let rec d =
 [%%expect{|
 type d = D of e [@@unboxed]
 and e = V of d | W
-Line 5, characters 2-72:
+Lines 5-9, characters 2-9:
 5 | ..D
 6 |     (if Sys.opaque_identity true then
 7 |        V d

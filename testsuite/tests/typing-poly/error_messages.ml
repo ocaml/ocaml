@@ -54,7 +54,7 @@ let _ = f (object
 [%%expect {|
 class type t_a = object method f : 'a -> int end
 val f : t_a -> int = <fun>
-Line 5, characters 10-42:
+Lines 5-7, characters 10-5:
 5 | ..........(object
 6 |     method f _ = 0
 7 |  end)..
