@@ -46,7 +46,7 @@ File "w32.ml", line 59, characters 22-23:
 59 |   and[@warning "+32"] k x = x
                            ^
 Warning 32: unused value k.
-File "w32.ml", line 52, characters 0-174:
+File "w32.ml", lines 52-60, characters 0-3:
 52 | module M = struct
 53 |   [@@@warning "-32"]
 54 |   let f x = x
