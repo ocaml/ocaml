@@ -21,9 +21,13 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
+#include "caml/config.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/callback.h"
-#include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -928,9 +932,8 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
   int i;
   for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
     struct code_fragment * cf = caml_code_fragments_table.contents[i];
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
+    if (cf->digest_status != COMPUTED) {
+      if (caml_digest_code_fragment(cf) == -1) continue;
     }
     if (memcmp(digest, cf->digest, 16) == 0) {
       if (cf->code_start + offset < cf->code_end)
@@ -954,6 +957,52 @@ static void intern_bad_code_pointer(unsigned char digest[16])
           digest[8], digest[9], digest[10], digest[11],
           digest[12], digest[13], digest[14], digest[15]);
   caml_failwith(msg);
+}
+
+/* Compute the digest of a code fragment, if it hasn't been computed yet.
+   Return 0 on success, -1 on error. */
+
+int caml_digest_code_fragment(struct code_fragment * cf)
+{
+  struct MD5Context ctx;
+  char buf[16384];
+  int n;
+
+  switch (cf->digest_status) {
+  case COMPUTED:
+    return 0;
+  case FROM_CODE_AREA:
+    caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+    cf->digest_status = COMPUTED;
+    return 0;
+  case FROM_FILE: case FROM_FILE_AND_CODE_AREA:
+    caml_MD5Init(&ctx);
+    while (1) {
+      n = read(cf->filedescr, buf, sizeof(buf));
+      if (n == 0) break;
+      if (n == -1) goto error;
+      caml_MD5Update(&ctx, (unsigned char *) buf, n);
+    }
+    if (cf->digest_status == FROM_FILE_AND_CODE_AREA) {
+      caml_MD5Update(&ctx, (unsigned char *) cf->code_start,
+                     cf->code_end - cf->code_start);
+    }
+    caml_MD5Final(cf->digest, &ctx);
+    close(cf->filedescr);
+    cf->digest_status = COMPUTED;
+    return 0;
+  error:
+    if (caml_runtime_warnings_active()) {
+      fprintf(stderr, "[ocaml] cannot compute digest of executable file: %s\n",
+              strerror(errno));
+    }
+    close(cf->filedescr);
+    cf->digest_status = DIGEST_ERROR;
+    return -1;
+  case DIGEST_ERROR:
+  default:
+    return -1;
+  }
 }
 
 /* Functions for writing user-defined marshallers */

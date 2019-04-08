@@ -131,7 +131,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
     cf = caml_stat_alloc(sizeof(struct code_fragment));
     cf->code_start = (char *) sym;
     cf->code_end = (char *) sym2;
-    cf->digest_computed = 0;
+    cf->digest_status = FROM_CODE_AREA;
     caml_ext_table_add(&caml_code_fragments_table, cf);
   }
 

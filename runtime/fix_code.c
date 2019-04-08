@@ -56,7 +56,7 @@ void caml_init_code_fragments(code_t code, asize_t code_size,
   caml_MD5Update(&ctx, (unsigned char *) code, code_size);
   caml_MD5Update(&ctx, (unsigned char *) data, data_size);
   caml_MD5Final(cf->digest, &ctx);
-  cf->digest_computed = 1;
+  cf->digest_status = COMPUTED;
   /* Register the code in the table of code fragments */
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);

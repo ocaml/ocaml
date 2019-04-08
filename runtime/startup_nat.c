@@ -19,6 +19,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include "caml/config.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 #include "caml/callback.h"
 #include "caml/backtrace.h"
 #include "caml/custom.h"
@@ -43,6 +50,10 @@
 #include "caml/ui.h"
 #endif
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
@@ -56,7 +67,6 @@ static void init_static(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
   int i;
-  struct code_fragment * cf;
 
   caml_init_atom_table ();
 
@@ -77,11 +87,45 @@ static void init_static(void)
     if (caml_code_segments[i].end > caml_code_area_end)
       caml_code_area_end = caml_code_segments[i].end;
   }
-  /* Register the code in the table of code fragments */
+}
+
+/* Initialize the table of code fragments and add the code of the executable
+   as first fragment. */
+
+static void init_code_fragments(char_os * exe_name)
+{
+  struct code_fragment * cf;
+  int fd;
+
   cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = caml_code_area_start;
   cf->code_end = caml_code_area_end;
-  cf->digest_computed = 0;
+  /* Issue #5942: it is not enough to hash the code, global data
+     must also be included in the digest.  However, global data,
+     once loaded into main memory, varies from run to run of a
+     given executable, owing to ASLR.  Hence, we use a digest of
+     the whole executable file as digest for the main code fragment.
+     This digest is computed on-demand from a file descriptor
+     opened on the executable file. */
+  /* Discussion #8615: sometimes the main executable file is not in OCaml
+     and dynamically loads the OCaml compiled code from a shared library.  
+     In this case, hashing the main executable file does not give us
+     enough guarantees.  So, we also hash the bytes in the code
+     section, like in the previous hashing schema.
+     Issue #5942 still remains in this unlikely case. */
+  fd = caml_open_file(exe_name, 0);
+  if (fd != -1) {
+    cf->digest_status = FROM_FILE_AND_CODE_AREA;
+    cf->filedescr = fd;
+  } else {
+    cf->digest_status = DIGEST_ERROR;
+    if (caml_runtime_warnings_active()) {
+      char * name = caml_stat_strdup_of_os(exe_name);
+      fprintf(stderr, "[ocaml] cannot open executable file %s: %s\n",
+              name, strerror(errno));
+      caml_stat_free(name);
+    }
+  }
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);
 }
@@ -152,6 +196,7 @@ value caml_startup_common(char_os **argv, int pooling)
     exe_name = proc_self_exe;
   else
     exe_name = caml_search_exe_in_path(exe_name);
+  init_code_fragments(exe_name);
   caml_sys_init(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);

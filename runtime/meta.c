@@ -103,10 +103,10 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   if (Is_block(digest_opt)) {
     /* | Some digest -> */
     memcpy(cf->digest, String_val(Field(digest_opt, 0)), 16);
-    cf->digest_computed = 1;
+    cf->digest_status = COMPUTED;
   } else {
     /* | None -> */
-    cf->digest_computed = 0;
+    cf->digest_status = FROM_CODE_AREA;
   }
   caml_ext_table_add(&caml_code_fragments_table, cf);
 
@@ -172,7 +172,7 @@ CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
   cf->code_start = (char *) prog;
   cf->code_end = (char *) prog + Long_val(len);
   memcpy(cf->digest, String_val(digest), 16);
-  cf->digest_computed = 1;
+  cf->digest_status = COMPUTED;
   caml_ext_table_add(&caml_code_fragments_table, cf);
   return Val_unit;
 }

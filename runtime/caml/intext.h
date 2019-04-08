@@ -197,10 +197,23 @@ struct code_fragment {
   char * code_start;
   char * code_end;
   unsigned char digest[16];
-  char digest_computed;
+  enum { COMPUTED,        /* digest was computed already */
+         FROM_CODE_AREA,  /* digest can be obtained by hashing
+                             the bytes between code_start and code_end */
+         FROM_FILE,       /* digest can be obtained by hashing
+                             the contents of the file descriptor */
+         FROM_FILE_AND_CODE_AREA,
+                          /* digest can be obtained by hashing both
+                             the contents of the file descriptor
+                             and the bytes between code_start and code_end */
+         DIGEST_ERROR     /* an error occured during computation of digest */
+  } digest_status;
+  int filedescr;          /* descriptor opened on file to be hashed
+                             (if digest_status == FROM_FILE) */
 };
 
 CAMLextern struct code_fragment * caml_extern_find_code(char *addr);
+extern int caml_digest_code_fragment(struct code_fragment * cf);
 
 extern struct ext_table caml_code_fragments_table;
 
