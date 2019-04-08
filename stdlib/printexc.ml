@@ -69,6 +69,11 @@ let to_string x =
               constructor ^ (fields x) in
   conv !printers
 
+let to_string_opt x =
+  match !printers with
+      [] -> None
+    | _ -> Some (to_string x)
+
 let print fct arg =
   try
     fct arg

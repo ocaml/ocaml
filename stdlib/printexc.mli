@@ -22,6 +22,11 @@ val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
    the exception [e]. *)
 
+val to_string_opt: exn -> string option
+(** [Printexc.to_string_opt e] returns a string option containing None if
+  there are no registered printers and Some s for a representation if there
+  are registered printers. *)
+
 val print: ('a -> 'b) -> 'a -> 'b
 (** [Printexc.print fn x] applies [fn] to [x] and returns the result.
    If the evaluation of [fn x] raises any exception, the

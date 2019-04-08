@@ -717,7 +717,9 @@ let print_out_exception ppf exn outv =
   | Out_of_memory -> fprintf ppf "Out of memory during evaluation.@."
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
-  | _ -> fprintf ppf "@[Exception:@ %a.@]@." !out_value outv
+  | _ -> match Printexc.to_string_opt exn with
+        None -> fprintf ppf "@[Exception:@ %a.@]@." !out_value outv
+      | Some s -> fprintf ppf "@[Exception:@ %s.@]@." s
 
 let rec print_items ppf =
   function
