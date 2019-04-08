@@ -163,7 +163,7 @@ let add_substring b s offset len =
   then invalid_arg "Buffer.add_substring/add_subbytes";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  Bytes.blit_string s offset b.buffer b.position len;
+  Bytes.unsafe_blit_string s offset b.buffer b.position len;
   b.position <- new_position
 
 let add_subbytes b s offset len =
@@ -173,7 +173,7 @@ let add_string b s =
   let len = String.length s in
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  Bytes.blit_string s 0 b.buffer b.position len;
+  Bytes.unsafe_blit_string s 0 b.buffer b.position len;
   b.position <- new_position
 
 let add_bytes b s = add_string b (Bytes.unsafe_to_string s)
