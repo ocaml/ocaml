@@ -148,6 +148,14 @@ val add_channel : t -> in_channel -> int -> unit
    characters. In this case, the characters are still added to
    the buffer, so as to avoid loss of data. *)
 
+val add_channel_full : t -> in_channel -> int
+(** [add_channel_full b ic] reads all the available characters from
+   the input channel [ic] and stores them at the end of buffer [b].
+   Returns the number of characters read.
+
+   @since 4.09
+*)
+
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]
    on the output channel [oc]. *)

@@ -130,6 +130,9 @@ Working version
   (Damien Doligez, reports by John Whitington and Alain Frisch,
    review by Jeremy Yallop and Gabriel Scherer)
 
+- #8600: `Buffer.add_channel_full : Buffer.t -> input_channel -> int`
+  (Gabriel Scherer, review by David Allsopp)
+
 ### Other libraries:
 
 - #7903, #2306: Make Thread.delay interruptible by signals again

@@ -7,3 +7,4 @@ Buffer reset: zero passed
 Buffer add_utf_8_uchar: test against spec passed
 Buffer add_utf_16be_uchar: test against spec passed
 Buffer add_utf_16le_uchar: test against spec passed
+testing Buffer.add_channel_full with 0 < buffer_size<= 13, 0 <= offset <= 13, 0 <= data_size <= 13

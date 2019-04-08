@@ -256,3 +256,59 @@ let () =
     assert(Buffer.length b = 800);
   done
 ;;
+
+
+let () =
+  let random_data =
+    let rand = Random.State.make [|42|] in
+    String.init (1 lsl 12) (fun _i -> char_of_int (Random.State.int rand 256)) in
+  let open_chan size =
+    assert (size >= 0);
+    let file = Printf.sprintf "channel%015d.dat" size in
+    let oc = open_out_bin file in
+    for i = 0 to size / String.length random_data - 1 do
+      output_string oc random_data;
+    done;
+    output_substring oc random_data 0 (size mod String.length random_data);
+    close_out oc;
+    open_in_bin file
+  in
+  let check_data data =
+    let size = String.length data in
+    let chunk_size = String.length random_data in
+    for i = 0 to size / chunk_size - 1 do
+      let chunk = String.sub data (i * chunk_size) chunk_size in
+      assert (String.equal random_data chunk);
+    done;
+    let last_chunk_size = size mod chunk_size in
+    let last_chunk = String.sub data (size - last_chunk_size) last_chunk_size in
+    assert (String.equal last_chunk (String.sub random_data 0 last_chunk_size))
+  in
+  let test ~buffer_size ~offset ~data_size =
+    let buf = Buffer.create buffer_size in
+    Buffer.add_string buf (String.make offset 'a');
+    let ic = open_chan data_size in
+    let read = Buffer.add_channel_full buf ic in
+    close_in ic;
+    assert (read = data_size);
+    let read_data = Buffer.sub buf offset data_size in
+    check_data read_data
+  in
+  let arbitrary_limit = 13 in
+  Printf.printf "testing Buffer.add_channel_full \
+     with 0 < buffer_size<= %d, \
+          0 <= offset <= %d, \
+          0 <= data_size <= %d\n%!"
+      arbitrary_limit arbitrary_limit arbitrary_limit;
+  for buffer_size = 1 to arbitrary_limit do
+    for offset = 0 to arbitrary_limit do
+      for data_size = 0 to arbitrary_limit do
+        test ~buffer_size ~offset ~data_size
+      done;
+    done;
+  done;
+  (* OCaml's I/O buffer are of size 2^16, so test data sizes
+     about that to get partial-read events as well. *)
+  test ~buffer_size:42 ~offset:0 ~data_size:(1 lsl 18);
+  test ~buffer_size:42 ~offset:3 ~data_size:(1 lsl 18 + 5);
+  ()

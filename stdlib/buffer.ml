@@ -197,6 +197,26 @@ let add_channel b ic len =
   if b.position + len > b.length then resize b len;
   add_channel_rec b ic len
 
+let add_channel_full b ic =
+  let rec loop b ic already_read =
+    if b.position >= b.length then
+      (* Exponential resizing means that the buffer length is going to
+         be double in most cases, the specific resizing value does not
+         matter much. *)
+      resize b 42;
+    let max_len = b.length - b.position in
+    let n = input ic b.buffer b.position max_len in
+    (* The assertion below may fail in weird scenario where
+       threaded/finalizer code races on the buffer; we don't
+       support these use-cases, but we want to at least
+       preserve the invariant. *)
+    assert (b.position + n <= b.length);
+    b.position <- b.position + n;
+    let already_read = already_read + n in
+    if n = 0 then already_read
+    else loop b ic already_read
+  in loop b ic 0
+
 let output_buffer oc b =
   output oc b.buffer 0 b.position
 
