@@ -72,7 +72,8 @@ let resize b more =
      this tricky function that is slow anyway. *)
   Bytes.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
-  b.length <- !new_len
+  b.length <- !new_len;
+  assert (b.position + more <= b.length)
 
 let add_char b c =
   let pos = b.position in
@@ -277,6 +278,7 @@ let truncate b len =
 
 let to_seq b =
   let rec aux i () =
+    (* Note that b.position is not a constant and cannot be lifted out of aux *)
     if i >= b.position then Seq.Nil
     else
       let x = Bytes.unsafe_get b.buffer i in
@@ -286,6 +288,7 @@ let to_seq b =
 
 let to_seqi b =
   let rec aux i () =
+    (* Note that b.position is not a constant and cannot be lifted out of aux *)
     if i >= b.position then Seq.Nil
     else
       let x = Bytes.unsafe_get b.buffer i in
