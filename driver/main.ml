@@ -60,7 +60,7 @@ module Options = Main_args.Make_bytecomp_options (struct
     | Some pass ->
         stop_after := Some pass;
         begin match pass with
-        | P.Parsing | P.Typing ->
+        | P.Parsing | P.Typing | P.Lambda ->
             compile_only := true
         end;
     end
@@ -182,7 +182,7 @@ let main () =
       match !stop_after with
       | None ->
         fatal "Please specify at most one of -pack, -a, -c, -output-obj";
-      | Some (P.Parsing | P.Typing) ->
+      | Some (P.Parsing | P.Typing | P.Lambda ) ->
           Printf.ksprintf fatal
             "Options -i and -stop-after (%s)\
              are  incompatible with -pack, -a, -output-obj"

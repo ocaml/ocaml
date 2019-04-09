@@ -416,24 +416,28 @@ module Compiler_pass = struct
      - the manpages in man/ocaml{c,opt}.m
      - the manual manual/manual/cmds/unified-options.etex
   *)
-  type t = Parsing | Typing
+  type t = Parsing | Typing | Lambda
 
   let to_string = function
     | Parsing -> "parsing"
     | Typing -> "typing"
+    | Lambda -> "lambda"
 
   let of_string = function
     | "parsing" -> Some Parsing
     | "typing" -> Some Typing
+    | "lambda" -> Some Lambda
     | _ -> None
 
   let rank = function
     | Parsing -> 0
     | Typing -> 1
+    | Lambda -> 2
 
   let passes = [
     Parsing;
     Typing;
+    Lambda;
   ]
   let pass_names = List.map to_string passes
 end

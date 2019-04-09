@@ -49,9 +49,12 @@ let emit_bytecode i (bytecode, required_globals) =
     ~always:(fun () -> close_out oc)
     ~exceptionally:(fun () -> Misc.remove_file cmofile)
     (fun () ->
-       bytecode
-       |> Profile.(record ~accumulate:true generate)
-         (Emitcode.to_file oc i.module_name cmofile ~required_globals);
+       if Clflags.(should_stop_after Compiler_pass.Lambda) then () else
+       begin
+         bytecode
+         |> Profile.(record ~accumulate:true generate)
+            (Emitcode.to_file oc i.module_name cmofile ~required_globals);
+       end
     )
 
 let implementation ~source_file ~output_prefix =
