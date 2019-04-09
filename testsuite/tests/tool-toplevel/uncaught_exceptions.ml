@@ -3,12 +3,12 @@
 *)
 
 (* PR#8594 *)
-Printexc.register_printer (fun e -> 
-  match e with 
+Printexc.register_printer (fun e ->
+  match e with
     | Division_by_zero -> Some "A division by zero is undefined"
     | _ -> None);;
-Printexc.register_printer (fun e -> 
-  match e with 
+Printexc.register_printer (fun e ->
+  match e with
     | Exit -> Some "Catching an exit"
     | _ -> None);;
 raise Not_found;;
