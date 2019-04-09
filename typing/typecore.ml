@@ -1782,13 +1782,14 @@ let rec final_subexpression sexp =
 
 let rec is_nonexpansive exp =
   match exp.exp_desc with
-    Texp_ident(_,_,_) -> true
-  | Texp_constant _ -> true
-  | Texp_unreachable -> true
+  | Texp_ident _
+  | Texp_constant _
+  | Texp_unreachable
+  | Texp_function _
+  | Texp_array [] -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
-  | Texp_function _ -> true
   | Texp_apply(e, (_,None)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd el)
   | Texp_match(e, cases, _) ->
@@ -1825,7 +1826,6 @@ let rec is_nonexpansive exp =
         fields
       && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
-  | Texp_array [] -> true
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
@@ -1885,7 +1885,7 @@ let rec is_nonexpansive exp =
 
 and is_nonexpansive_mod mexp =
   match mexp.mod_desc with
-  | Tmod_ident _ -> true
+  | Tmod_ident _
   | Tmod_functor _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
   | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
@@ -1918,7 +1918,7 @@ and is_nonexpansive_mod mexp =
   | Tmod_apply _ -> false
 
 and is_nonexpansive_opt = function
-    None -> true
+  | None -> true
   | Some e -> is_nonexpansive e
 
 let maybe_expansive e = not (is_nonexpansive e)
