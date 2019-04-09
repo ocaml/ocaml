@@ -2,6 +2,7 @@ constraints.ml
 disambiguate_principality.ml
 exotic_unifications.ml
 inside_out.ml
+is_expansive.ml
 labels.ml
 occur_check.ml
 pat_type_sharing.ml
