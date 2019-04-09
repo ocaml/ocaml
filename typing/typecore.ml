@@ -1866,7 +1866,22 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Some e]) ->
      is_nonexpansive e
-  | _ -> false
+  | Texp_array (_ :: _)
+  | Texp_apply _
+  | Texp_unreachable
+  | Texp_try _
+  | Texp_setfield _
+  | Texp_while _
+  | Texp_for _
+  | Texp_send _
+  | Texp_new _
+  | Texp_instvar _
+  | Texp_setinstvar _
+  | Texp_override _
+  | Texp_letexception _
+  | Texp_letop _
+  | Texp_extension_constructor _ ->
+    false
 
 and is_nonexpansive_mod mexp =
   match mexp.mod_desc with
