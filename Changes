@@ -182,7 +182,7 @@ Working version
   (Xavier Clerc, Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
 
 - #8554: Apply Cmm peephole optimizations to the final results of expressions.
-  (Stefan Muenzel, review by Olivier Nicole, Vincent Laviron and Alain Frisch)
+  (Stefan Muenzel, Vincent Laviron, review by Olivier Nicole and Alain Frisch)
 
 ### Standard library:
 

@@ -145,8 +145,7 @@ let rec add_const_aux c n dbg =
   | c -> Cop(Caddi, [c; Cconst_int (n, dbg)], dbg)
 and add_const c n dbg =
   if n = 0 then c
-  else
-    c |> map_single_tail (fun c -> add_const_aux c n dbg)
+  else map_single_tail (fun c -> add_const_aux c n dbg) c
 
 let incr_int c dbg = add_const c 1 dbg
 let decr_int c dbg = add_const c (-1) dbg
@@ -230,27 +229,27 @@ let ignore_high_bit_int = function
   | c -> c
 
 let lsr_int c1 c2 dbg =
-  c2 |> map_single_tail (function
+  map_single_tail (function
       | Cconst_int (0, _) ->
           c1
       | Cconst_int (n, _) when n > 0 ->
           Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
       | c2 ->
           Cop(Clsr, [c1; c2], dbg)
-    )
+    ) c2
 
 let asr_int c1 c2 dbg =
-  c2 |> map_single_tail (function
+  map_single_tail (function
       | Cconst_int (0, _) ->
           c1
       | Cconst_int (n, _) when n > 0 ->
           Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
       | c2 ->
           Cop(Casr, [c1; c2], dbg)
-    )
+    ) c2
 
 let tag_int i dbg =
-  i |>  map_single_tail (function
+  map_single_tail (function
       | Cconst_int (n, _) ->
           int_const dbg n
       | Cop(Casr, [c; Cconst_int (n, _)], _) when n > 0 ->
@@ -259,10 +258,10 @@ let tag_int i dbg =
             dbg)
       | c ->
           incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
-    )
+    ) i
 
 let untag_int i dbg =
-  i |> map_single_tail (function
+  map_single_tail (function
       | Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
       | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1,_)], _); Cconst_int (1,_)],_) ->
           c
@@ -275,18 +274,18 @@ let untag_int i dbg =
       | Cop(Cor, [c; Cconst_int (1, _)], _) ->
           Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
       | c -> Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
-    )
+    ) i
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
-  cond |> map_single_tail (function
+  map_single_tail (function
       | Cconst_int (0, _) -> ifnot
       | Cconst_int (1, _) -> ifso
       | cond ->
           Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
-    )
+    ) cond
 
 let mk_not dbg cmm =
-  cmm |> map_single_tail (function
+  map_single_tail (function
       | Cop(Caddi,
             [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], dbg') ->
         begin
@@ -310,7 +309,7 @@ let mk_not dbg cmm =
       | c ->
           (* 1 -> 3, 3 -> 1 *)
           Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
-    )
+    ) cmm
 
 let mk_compare_ints dbg a1 a2 =
   match (a1,a2) with
