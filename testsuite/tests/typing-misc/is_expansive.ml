@@ -8,5 +8,5 @@ match [] with x -> (fun x -> x);;
 
 match [] with x -> (fun x -> x) | _ -> .;;
 [%%expect{|
-- : '_weak1 -> '_weak1 = <fun>
+- : 'a -> 'a = <fun>
 |}];;

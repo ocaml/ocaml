@@ -1784,6 +1784,7 @@ let rec is_nonexpansive exp =
   match exp.exp_desc with
     Texp_ident(_,_,_) -> true
   | Texp_constant _ -> true
+  | Texp_unreachable -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
@@ -1868,7 +1869,6 @@ let rec is_nonexpansive exp =
      is_nonexpansive e
   | Texp_array (_ :: _)
   | Texp_apply _
-  | Texp_unreachable
   | Texp_try _
   | Texp_setfield _
   | Texp_while _
