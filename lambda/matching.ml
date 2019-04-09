@@ -2584,11 +2584,11 @@ let mk_failaction_pos loc partial seen ctx defs =
     fail,[],jumps
   end
 
-type combined = Lambda.block * Jumps.t
 type 'a combine_cases = ((Location.t * 'a) * Lambda.block) list
 
 let combine_constant loc (arg : Lambda.lambda) cst partial ctx def
-    ((cases : Asttypes.constant combine_cases), total, _pats) : combined =
+    ((cases : Asttypes.constant combine_cases), total, _pats)
+    : Lambda.block * Jumps.t =
   let default, local_jumps = mk_failaction_neg loc partial ctx def in
   let lambda1 =
     match cst with
@@ -2678,7 +2678,8 @@ let split_extension_cases (cases : Types.constructor_tag combine_cases) =
   split_rec cases
 
 let combine_constructor loc arg ex_pat cstr partial ctx def
-      ((cases : Types.constructor_tag combine_cases), total1, pats) : combined =
+      ((cases : Types.constructor_tag combine_cases), total1, pats)
+      : Lambda.block * Jumps.t =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for extensions *)
     let fail, local_jumps =
@@ -2820,7 +2821,7 @@ let call_switcher_variant_constr loc ~default (arg : Lambda.lambda)
   Lambda.block loc expr
 
 let combine_variant loc row arg partial ctx def
-                    (tag_lambda_list, total1, _pats) : combined =
+                    (tag_lambda_list, total1, _pats) : Lambda.block * Jumps.t =
   let row = Btype.row_repr row in
   let num_constr = ref 0 in
   if row.row_closed then
@@ -2878,7 +2879,7 @@ let combine_variant loc row arg partial ctx def
   block, Jumps.union local_jumps total1
 
 let combine_array loc arg kind partial ctx def
-    (len_lambda_list, total1, _pats) : combined =
+    (len_lambda_list, total1, _pats) : Lambda.block * Jumps.t =
   let default, local_jumps = mk_failaction_neg loc partial ctx def in
   let block : Lambda.block =
     let newvar = Ident.create_local "*len*" in
