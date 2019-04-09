@@ -721,9 +721,9 @@ let rec generalize_structure var_level ty =
     end
   end
 
-let generalize_structure var_level ty =
+let generalize_structure ty =
   simple_abbrevs := Mnil;
-  generalize_structure var_level ty
+  generalize_structure !current_level ty
 
 (* Generalize the spine of a function, if the level >= !current_level *)
 
@@ -880,16 +880,17 @@ let update_level env level ty =
 
 (* Lower level of type variables inside contravariant branches *)
 
-let rec generalize_expansive env var_level visited contra ty =
+let rec lower_contravariant env var_level visited contra ty =
   let ty = repr ty in
   let must_visit =
     ty.level > var_level &&
     match Hashtbl.find visited ty.id with
     | done_contra -> contra && not done_contra
     | exception Not_found -> true
-  in if must_visit then begin
+  in
+  if must_visit then begin
     Hashtbl.add visited ty.id contra;
-    let generalize_rec = generalize_expansive env var_level visited in
+    let generalize_rec = lower_contravariant env var_level visited in
     match ty.desc with
       Tvar _ -> if contra then set_level ty var_level
     | Tconstr (path, tyl, abbrev) ->
@@ -915,11 +916,9 @@ let rec generalize_expansive env var_level visited contra ty =
         iter_type_expr (generalize_rec contra) ty
   end
 
-let generalize_expansive env ty =
+let lower_contravariant env ty =
   simple_abbrevs := Mnil;
-  generalize_expansive env !nongen_level (Hashtbl.create 7) false ty
-
-let generalize_structure ty = generalize_structure !current_level ty
+  lower_contravariant env !nongen_level (Hashtbl.create 7) false ty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
