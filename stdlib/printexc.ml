@@ -46,14 +46,12 @@ let fields x =
 let use_printers x =
   let rec conv = function
     | hd :: tl ->
-        (match try hd x with _ -> None with
-        | Some s -> Some s
-        | None -> conv tl)
+        let result = (try hd x with _ -> None) in
+        if result <> None then result else conv tl
     | [] -> None in
   conv !printers
 
-let to_string_default x =
-  match x with
+let to_string_default = function
   | Out_of_memory -> "Out of memory"
   | Stack_overflow -> "Stack overflow"
   | Match_failure(file, line, char) ->
@@ -62,7 +60,7 @@ let to_string_default x =
       sprintf locfmt file line char (char+6) "Assertion failed"
   | Undefined_recursive_module(file, line, char) ->
       sprintf locfmt file line char (char+6) "Undefined recursive module"
-  | _ ->
+  | x ->
       let x = Obj.repr x in
       if Obj.tag x <> 0 then
         (Obj.magic (Obj.field x 0) : string)
