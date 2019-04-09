@@ -106,6 +106,10 @@ Working version
 - #7878, #8542: Replaced TypedtreeIter with tast_iterator
   (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #8598: Replace "not is_nonexpansive" by "maybe_expansive".
+  (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
+   Gabriel Scherer and Xavier Leroy)
+
 ### Runtime system:
 
 - #1725, #2279: Deprecate Obj.set_tag and Obj.truncate
