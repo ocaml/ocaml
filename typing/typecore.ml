@@ -1906,6 +1906,8 @@ and is_nonexpansive_opt = function
     None -> true
   | Some e -> is_nonexpansive e
 
+let maybe_expansive e = not (is_nonexpansive e)
+
 let check_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in
   List.iter
@@ -1994,7 +1996,7 @@ let list_labels env ty =
 
 (* Check that all univars are safe in a type *)
 let check_univars env expans kind exp ty_expected vars =
-  if expans && not (is_nonexpansive exp) then
+  if expans && maybe_expansive exp then
     lower_contravariant env exp.exp_type;
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
@@ -2490,7 +2492,7 @@ and type_expect_
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      if not (is_nonexpansive arg) then lower_contravariant env arg.exp_type;
+      if maybe_expansive arg then lower_contravariant env arg.exp_type;
       generalize arg.exp_type;
       let cases, partial =
         type_cases ~exception_allowed:true env arg.exp_type ty_expected true loc
@@ -3831,7 +3833,7 @@ and type_label_exp create env loc ty_expected
     try
       check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
       arg
-    with exn when not (is_nonexpansive arg) -> try
+    with exn when maybe_expansive arg -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
       may Btype.backtrack snap;
       begin_def ();
@@ -4666,7 +4668,7 @@ and type_let
   end_def();
   List.iter2
     (fun pat exp ->
-       if not (is_nonexpansive exp) then
+       if maybe_expansive exp then
          lower_contravariant env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
@@ -4770,7 +4772,7 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if not (is_nonexpansive exp) then lower_contravariant env exp.exp_type;
+  if maybe_expansive exp then lower_contravariant env exp.exp_type;
   generalize exp.exp_type;
   match sexp.pexp_desc with
     Pexp_ident lid ->
