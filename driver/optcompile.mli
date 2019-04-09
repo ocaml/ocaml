@@ -21,7 +21,12 @@ val implementation:
    backend:(module Backend_intf.S)
    -> source_file:string -> output_prefix:string -> unit
 
-(** {2 Internal functions} **)
+(** {4 Internal functions} **)
+
+val clambda_bytecode:
+  (module Backend_intf.S) ->
+  Compile_common.info ->
+  Lambda.program -> unit
 
 val clambda :
   Compile_common.info ->
@@ -30,6 +35,12 @@ val clambda :
 (** [clambda info typed] applies the regular compilation pipeline to the
     given typechecked implementation and outputs the resulting files.
 *)
+
+val flambda_bytecode:
+  Compile_common.info ->
+  (module Backend_intf.S) ->
+  Ident.Set.t ->
+  (Ident.t * int) * Lambda.lambda -> unit
 
 val flambda :
   Compile_common.info ->

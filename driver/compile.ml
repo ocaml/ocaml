@@ -25,9 +25,9 @@ let interface ~source_file ~output_prefix =
   with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
   Compile_common.interface info
 
-(** Bytecode compilation backend for .ml files. *)
+(** Lambda conversion for .ml files. *)
 
-let to_bytecode i (typedtree, coercion) =
+let to_lambda i (typedtree, coercion) =
   (typedtree, coercion)
   |> Profile.(record transl)
     (Translmod.transl_implementation i.module_name)
@@ -37,10 +37,17 @@ let to_bytecode i (typedtree, coercion) =
        |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
        |> Simplif.simplify_lambda
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
-       |> Bytegen.compile_implementation i.module_name
-       |> print_if i.ppf_dump Clflags.dump_instr Printinstr.instrlist
-       |> fun bytecode -> bytecode, required_globals
+       |> fun lambda -> lambda, required_globals
     )
+
+(** Bytecode compilation backend for .ml files. *)
+
+let to_bytecode i (lambda, required_globals) =
+  lambda
+  |> Bytegen.compile_implementation i.module_name
+  |> print_if i.ppf_dump Clflags.dump_instr Printinstr.instrlist
+  |> fun bytecode -> bytecode, required_globals
+
 
 let emit_bytecode i (bytecode, required_globals) =
   let cmofile = cmo i in
@@ -51,9 +58,20 @@ let emit_bytecode i (bytecode, required_globals) =
     (fun () ->
        bytecode
        |> Profile.(record ~accumulate:true generate)
-         (Emitcode.to_file oc i.module_name cmofile ~required_globals);
+          (Emitcode.to_file oc i.module_name cmofile ~required_globals);
     )
-
+let implementation ~source_file ~output_prefix =
+  let backend info typed =
+    let lambda = to_lambda info typed in
+    if Clflags.(should_stop_after Compiler_pass.Lambda) then () else
+    begin
+      let bytecode = to_bytecode info lambda in
+      emit_bytecode info bytecode
+    end
+  in
+  with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
+  Compile_common.implementation info ~backend
+(*
 let implementation ~source_file ~output_prefix =
   let backend info typed =
     let bytecode = to_bytecode info typed in
@@ -61,3 +79,4 @@ let implementation ~source_file ~output_prefix =
   in
   with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
   Compile_common.implementation info ~backend
+  *)
