@@ -669,5 +669,8 @@ external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
   bytes -> int -> bytes -> int -> int -> unit
   = "caml_blit_bytes" [@@noalloc]
+external unsafe_blit_string :
+  string -> int -> bytes -> int -> int -> unit
+  = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]
