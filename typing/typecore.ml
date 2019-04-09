@@ -1995,7 +1995,7 @@ let list_labels env ty =
 (* Check that all univars are safe in a type *)
 let check_univars env expans kind exp ty_expected vars =
   if expans && not (is_nonexpansive exp) then
-    generalize_expansive env exp.exp_type;
+    lower_contravariant env exp.exp_type;
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
   let vars = List.map (expand_head env) vars in
@@ -2490,7 +2490,7 @@ and type_expect_
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      if not (is_nonexpansive arg) then generalize_expansive env arg.exp_type;
+      if not (is_nonexpansive arg) then lower_contravariant env arg.exp_type;
       generalize arg.exp_type;
       let cases, partial =
         type_cases ~exception_allowed:true env arg.exp_type ty_expected true loc
@@ -3837,7 +3837,7 @@ and type_label_exp create env loc ty_expected
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      generalize_expansive env arg.exp_type;
+      lower_contravariant env arg.exp_type;
       unify_exp env arg ty_arg;
       check_univars env false "field value" arg label.lbl_arg vars;
       arg
@@ -4667,7 +4667,7 @@ and type_let
   List.iter2
     (fun pat exp ->
        if not (is_nonexpansive exp) then
-         generalize_expansive env pat.pat_type)
+         lower_contravariant env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
   (* We also generalize expressions that are not bound to a variable.
@@ -4770,7 +4770,7 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if not (is_nonexpansive exp) then generalize_expansive env exp.exp_type;
+  if not (is_nonexpansive exp) then lower_contravariant env exp.exp_type;
   generalize exp.exp_type;
   match sexp.pexp_desc with
     Pexp_ident lid ->
