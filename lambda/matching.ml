@@ -1945,8 +1945,7 @@ let three_way_test loc arg lt eq gt =
 
 (* Dichotomic tree *)
 
-let rec do_make_string_test_tree arg
-      (sw : (string * Lambda.block) list) delta
+let rec do_make_string_test_tree arg (sw : string cases) delta
       ~(default : Lambda.block option) =
   let len = List.length sw in
   if len <= strings_test_threshold+delta then
@@ -2030,7 +2029,7 @@ let first_location_in rem =
 type const_with_loc = Location.t * Asttypes.constant
 
 module Tests = struct
-  type t = (const_with_loc * Lambda.block) list
+  type t = const_with_loc cases
 
   (* Note: dichotomic search requires sorted input with no duplicates *)
   let rec uniq_lambda_list sw = match sw with
@@ -2600,12 +2599,10 @@ let mk_failaction_pos loc partial seen ctx defs =
   end
 
 type combined = Lambda.block * Jumps.t
-
-type constant_cases =
-  ((Location.t * Asttypes.constant) * Lambda.block) list
+type 'a combine_cases = ((Location.t * 'a) * Lambda.block) list
 
 let combine_constant loc (arg : Lambda.lambda) cst partial ctx def
-    ((cases : constant_cases), total, _pats) : combined =
+    ((cases : Asttypes.constant combine_cases), total, _pats) : combined =
   let default, local_jumps = mk_failaction_neg loc partial ctx def in
   let lambda1 =
     match cst with
@@ -2680,10 +2677,7 @@ let split_cases tag_lambda_list =
   sort_cases_by_int const,
   sort_cases_by_int nonconst
 
-type extension_cases =
-  ((Location.t * Types.constructor_tag) * Lambda.block) list
-
-let split_extension_cases (cases : extension_cases) =
+let split_extension_cases (cases : Types.constructor_tag combine_cases) =
   let rec split_rec = function
       [] -> ([], [])
     | ((_pat_loc, cstr), (act : Lambda.block)) :: rem ->
@@ -2698,7 +2692,7 @@ let split_extension_cases (cases : extension_cases) =
   split_rec cases
 
 let combine_constructor loc arg ex_pat cstr partial ctx def
-      ((cases : extension_cases), total1, pats) : combined =
+      ((cases : Types.constructor_tag combine_cases), total1, pats) : combined =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for extensions *)
     let fail, local_jumps =
@@ -3458,9 +3452,8 @@ let for_trywith param (cases : pattern cases) =
   in
   Lambda.block loc handler
 
-let simple_for_let loc param pat body body_loc =
-  let act = Lambda.block body_loc body in
-  compile_matching loc None (partial_function loc) param [pat, act] Partial
+let simple_for_let loc param pat body =
+  compile_matching loc None (partial_function loc) param [pat, body] Partial
 
 
 (* Optimize binding of immediate tuples
@@ -3511,22 +3504,24 @@ let simple_for_let loc param pat body body_loc =
    catch/exit.
 *)
 
-let rec map_return f = function
-  | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
-  | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
+let rec map_return loc (f : Lambda.block -> Lambda.block) = function
+  | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return loc f l2)
+  | Lletrec (l1, l2) -> Lletrec (l1, map_return loc f l2)
   | Lifthenelse (lcond, lthen, lelse, loc) ->
       Lifthenelse (lcond, map_return_block f lthen, map_return_block f lelse,
         loc)
-  | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
-  | Levent (l, ev) -> Levent (map_return f l, ev)
+  | Lsequence (l1, l2) -> Lsequence (l1, map_return loc f l2)
+  | Levent (l, ev) -> Levent (map_return loc f l, ev)
   | Ltrywith (l1, id, l2) ->
-      Ltrywith (map_return f l1, id, map_return_block f l2)
+      Ltrywith (map_return loc f l1, id, map_return_block f l2)
   | Lstaticcatch (l1, b, l2) ->
-      Lstaticcatch (map_return f l1, b, map_return_block f l2)
+      Lstaticcatch (map_return loc f l1, b, map_return_block f l2)
   | Lstaticraise _ | Lprim(Praise _, _, _) as l -> l
-  | l -> f l
+  | l -> (f (Lambda.block loc l)).expr
+
 and map_return_block f (block : Lambda.block) : Lambda.block =
-  Lambda.block block.block_loc (map_return f block.expr)
+  let loc = block.block_loc in
+  Lambda.block loc (map_return loc f block.expr)
 
 (* The 'opt' reference indicates if the optimization is worthy.
 
@@ -3543,61 +3538,66 @@ and map_return_block f (block : Lambda.block) : Lambda.block =
    can be costly (one unnecessary tuple allocation).
 *)
 
-let assign_pat opt nraise catch_ids loc pat action_loc lam =
-  let rec collect acc pat lam action_loc = match pat.pat_desc, lam with
-  | Tpat_tuple patl, Lprim(Pmakeblock _, lams, makeblock_loc) ->
-      opt := true;
-      List.fold_left2 (fun acc pat action ->
-          (* CR-someday mshinwell: Each component of the tuple should have
-             its own location, not [makeblock_loc]. *)
-          collect acc pat action makeblock_loc)
-        acc
-        patl lams
-  | Tpat_tuple patl, Lconst(Const_block(_, scl), _loc) ->
-      opt := true;
-      List.fold_left2 (fun acc pat sc ->
-          collect acc pat (Lconst (sc, loc)) loc)
-        acc
-        patl scl
-  | _ ->
-    (* pattern idents will be bound in staticcatch (let body), so we
-       refresh them here to guarantee binders  uniqueness *)
-    let pat_ids = pat_bound_idents pat in
-    let fresh_ids = List.map (fun id -> id, Ident.rename id) pat_ids in
-    (fresh_ids, alpha_pat fresh_ids pat, lam, action_loc) :: acc
+(* CR mshinwell: I'm unsure whether the flow of locations from [for_let] through
+   here (including [push_sublet], etc.) is right. *)
+let assign_pat opt nraise catch_ids pat block =
+  let rec collect acc pat block =
+    match pat.pat_desc, block.expr with
+    | Tpat_tuple patl, Lprim(Pmakeblock _, lams, makeblock_loc) ->
+        opt := true;
+        List.fold_left2 (fun acc pat action ->
+            (* CR-someday mshinwell: Each component of the tuple should have
+               its own location, not [makeblock_loc]. *)
+            collect acc pat (Lambda.block makeblock_loc action))
+          acc
+          patl lams
+    | Tpat_tuple patl, Lconst(Const_block(_, scl), loc) ->
+        opt := true;
+        List.fold_left2 (fun acc pat sc ->
+            collect acc pat (Lambda.block loc (Lconst (sc, loc))))
+          acc
+          patl scl
+    | _ ->
+        (* pattern idents will be bound in staticcatch (let body), so we
+           refresh them here to guarantee binders  uniqueness *)
+        let pat_ids = pat_bound_idents pat in
+        let fresh_ids = List.map (fun id -> id, Ident.rename id) pat_ids in
+        (fresh_ids, alpha_pat fresh_ids pat, block) :: acc
   in
-
   (* sublets were accumulated by 'collect' with the leftmost tuple
      pattern at the bottom of the list; to respect right-to-left
      evaluation order for tuples, we must evaluate sublets
      top-to-bottom. To preserve tail-rec, we will fold_left the
      reversed list. *)
-  let rev_sublets = List.rev (collect [] pat lam action_loc) in
+  let rev_sublets = List.rev (collect [] pat block) in
   let exit =
     (* build an Ident.tbl to avoid quadratic refreshing costs *)
     let add t (id, fresh_id) = Ident.add id fresh_id t in
-    let add_ids acc (ids, _pat, _action, _action_loc) =
-      List.fold_left add acc ids
-    in
+    let add_ids acc (ids, _pat, _action) = List.fold_left add acc ids in
     let tbl = List.fold_left add_ids Ident.empty rev_sublets in
     let fresh_var id = Lvar (Ident.find_same id tbl) in
-    Lstaticraise(nraise, List.map fresh_var catch_ids)
+    let expr = Lstaticraise (nraise, List.map fresh_var catch_ids) in
+    Lambda.block pat.pat_loc expr
   in
-  let push_sublet code (_ids, pat, action, action_loc) =
-    simple_for_let loc action pat code action_loc
+  let push_sublet (result : Lambda.block) (_ids, pat, action) =
+    let expr =
+      simple_for_let pat.pat_loc action.expr pat
+        (Lambda.block action.block_loc result.expr)
+    in
+    Lambda.block pat.pat_loc expr
   in
   List.fold_left push_sublet exit rev_sublets
 
-let for_let loc param pat body body_loc : Lambda.lambda =
+let for_let ~param pat ~body : Lambda.lambda =
   match pat.pat_desc with
   | Tpat_any ->
       (* This eliminates a useless variable (and stack slot in bytecode)
          for "let _ = ...". See #6865. *)
-      Lsequence(param, body)
+      Lsequence(param, body.expr)
   | Tpat_var (id, _) ->
       (* fast path, and keep track of simple bindings to unboxable numbers *)
       let k = Typeopt.value_kind pat.pat_env pat.pat_type in
-      Llet(Strict, k, id, param, body)
+      Llet(Strict, k, id, param, body.expr)
   | _ ->
       let opt = ref false in
       let nraise = next_raise_count () in
@@ -3607,10 +3607,10 @@ let for_let loc param pat body body_loc : Lambda.lambda =
           catch_ids
       in
       let ids = List.map (fun (id, _, _) -> id) catch_ids in
-      let bind = map_return (assign_pat opt nraise ids loc pat loc) param in
-      let body = Lambda.block body_loc body in
+      let loc = pat.pat_loc in
+      let bind = map_return loc (assign_pat opt nraise ids pat) param in
       if !opt then Lstaticcatch(bind, (nraise, ids_with_kinds), body)
-      else simple_for_let loc param pat body.expr body_loc
+      else simple_for_let loc param pat body
 
 (* Handling of tupled functions and matchings *)
 

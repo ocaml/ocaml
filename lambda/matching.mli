@@ -27,7 +27,7 @@ val for_function:
 val for_trywith:
         lambda -> (pattern * block) list -> block
 val for_let:
-        Location.t -> lambda -> pattern -> lambda -> Location.t -> lambda
+        param:lambda -> pattern -> body:block -> lambda
 val for_multiple_match:
         Location.t -> lambda list -> (pattern * block) list
         -> partial -> block

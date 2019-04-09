@@ -796,11 +796,14 @@ and transl_let rec_flag pat_expr_list =
         [] ->
           fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
-          let lam = transl_exp expr in
-          let lam = Translattribute.add_function_attributes lam vb_loc attr in
+          let param =
+            Translattribute.add_function_attributes (transl_exp expr)
+              vb_loc attr
+          in
           let mk_body = transl rem in
           fun body ->
-            Matching.for_let pat.pat_loc lam pat (mk_body body) expr.exp_loc
+            let body = Lambda.block expr.exp_loc (mk_body body) in
+            Matching.for_let ~param pat ~body
       in transl pat_expr_list
   | Recursive ->
       let idlist =
