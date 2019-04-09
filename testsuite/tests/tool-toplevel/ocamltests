@@ -5,3 +5,4 @@ pr7751.ml
 strings.ml
 tracing.ml
 error_highlighting.ml
+uncaught_exceptions.ml
