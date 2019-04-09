@@ -854,6 +854,10 @@ OCaml 4.08.0
   (Thomas Refis, review by Gabriel Scherer and Jacques Garrigue,
   report by Daniel Bünzli and Jon Ludlam)
 
+- #8550, #8552: Soundness issue with class generalization
+  (Jacques Garrigue, review by Leo White and Thomas Refis,
+  report by Jeremy Yallop)
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
