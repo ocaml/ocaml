@@ -167,8 +167,9 @@ Working version
 
 ### Bug fixes:
 
-- #7156: make top level use custom printers if they are available
-  (Andrew Litteken, report by Martin Jambon, review by )
+- #7156, #8594: make top level use custom printers if they are available
+  (Andrew Litteken, report by Martin Jambon, review by Nicolás Ojeda Bär,
+   Thomas Refis, Armaël Guéneau, Gabriel Scherer, David Allsopp)
 - #3249: ocamlmklib should reject .cmxa files
   (Xavier Leroy)
 - #7937, #2287: fix uncaught Unify exception when looking for type
