@@ -42,6 +42,7 @@ type t = {
   descr : descr;
   var : Variable.t option;
   symbol : (Symbol.t * int option) option;
+  projection : Projection.t option;
 }
 
 and descr =
@@ -231,7 +232,7 @@ and print ppf { descr; var; symbol; } =
     Variable.print_opt var
     print symbol
 
-let approx descr = { descr; var = None; symbol = None }
+let approx descr = { descr; var = None; symbol = None; projection = None }
 
 let augment_with_variable t var = { t with var = Some var }
 let augment_with_symbol t symbol = { t with symbol = Some (symbol, None) }
@@ -239,6 +240,8 @@ let augment_with_symbol_field t symbol field =
   match t.symbol with
   | None -> { t with symbol = Some (symbol, Some field) }
   | Some _ -> t
+let augment_with_projection t proj = { t with projection = Some proj }
+
 let replace_description t descr = { t with descr }
 
 let augment_with_kind t (kind:Lambda.value_kind) =
@@ -291,6 +294,7 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
     { descr = Value_set_of_closures value_set_of_closures;
       var = set_of_closures_var;
       symbol = Option.map (fun s -> s, None) set_of_closures_symbol;
+      projection = None;
     }
   in
   let value_closure =
@@ -301,6 +305,7 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
   { descr = Value_closure value_closure;
     var = closure_var;
     symbol = None;
+    projection = None;
   }
 
 let create_value_set_of_closures
@@ -353,6 +358,7 @@ let value_set_of_closures ?set_of_closures_var value_set_of_closures =
   { descr = Value_set_of_closures value_set_of_closures;
     var = set_of_closures_var;
     symbol = None;
+    projection = None;
   }
 
 let value_block t b = approx (Value_block (t, b))
@@ -735,9 +741,15 @@ and meet ~really_import_approx a1 a2 =
               | _ -> None
             else None
       in
+      let projection =
+        match a1.projection, a2.projection with
+        | Some p1, Some p2 when Projection.equal p1 p2 -> Some p1
+        | _ -> None
+      in
       { descr = meet_descr ~really_import_approx a1.descr a2.descr;
         var;
-        symbol }
+        symbol;
+        projection }
 
 (* Given a set-of-closures approximation and a closure ID, apply any
    freshening specified in the approximation to the closure ID, and return

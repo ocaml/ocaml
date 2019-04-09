@@ -44,6 +44,8 @@ module Env = struct
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
     inlined_debuginfo : Debuginfo.t;
+    constructed_blocks : Flambda.switch_block_key Variable.Map.t;
+    (* immutable blocks that we shouldn't need to allocate again *)
   }
 
   let create ~never_inline ~backend ~round ~ppf_dump =
@@ -68,6 +70,7 @@ module Env = struct
       inlining_stats_closure_stack =
         Inlining_stats.Closure_stack.create ();
       inlined_debuginfo = Debuginfo.none;
+      constructed_blocks = Variable.Map.empty;
     }
 
   let backend t = t.backend
@@ -408,6 +411,39 @@ module Env = struct
 
   let add_inlined_debuginfo t ~dbg =
     Debuginfo.concat t.inlined_debuginfo dbg
+
+  let add_constructed_block t key var =
+    assert (match key.Flambda.mutability with Immutable -> true | _ -> false);
+    { t with constructed_blocks =
+               Variable.Map.add var key t.constructed_blocks;
+    }
+
+  let is_constructed_block t var =
+    Variable.Map.mem var t.constructed_blocks
+
+  let find_constructed_block t ~tag args =
+    let size = List.length args in
+    let shape_match block_key =
+      block_key.Flambda.size = size && block_key.Flambda.tag = tag
+    in
+    let rec fields_match i args constructed_var =
+      match args with
+      | [] -> true
+      | var :: args ->
+          let projection = Projection.Field (i, constructed_var) in
+          match find_projection t ~projection with
+          | Some v ->
+              Variable.equal v var && fields_match (i + 1) args constructed_var
+          (* FIXME LG: compare the approxs ?*)
+          | _ -> false
+    in
+    let matching_blocks =
+      Variable.Map.filter (fun _ -> shape_match) t.constructed_blocks
+    in
+    match Variable.Map.find_first_opt (fields_match 0 args) matching_blocks with
+    | None -> None
+    | Some (var, _) -> Some var
+
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =

@@ -191,7 +191,7 @@ let approx_for_allocated_const (const : Allocated_const.t) =
         (Array.map A.value_float (Array.of_list a))
 
 type 'key filtered_switch_branches =
-  | Must_be_taken of Flambda.t
+  | Must_be_taken of ('key * Flambda.t)
   | Can_be_taken of ('key * Flambda.t) list
 
 let rec filter_branches arg_approx filter branches compatible_branches =
@@ -205,7 +205,7 @@ let rec filter_branches arg_approx filter branches compatible_branches =
           filter_branches arg_approx filter branches
             (branch :: compatible_branches)
       | A.Must_be_taken ->
-          Must_be_taken lam
+          Must_be_taken (c, lam)
 
 (* Determine whether a given closure ID corresponds directly to a variable
    (bound to a closure) in the given environment.  This happens when the body
@@ -1003,6 +1003,20 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     let dbg = E.add_inlined_debuginfo env ~dbg in
     simplify_free_variables_named env args ~f:(fun env args args_approxs ->
       let tree = Flambda.Prim (prim, args, dbg) in
+      let default p args args_approxs =
+        let expr, approx, benefit =
+          let module Backend = (val (E.backend env) : Backend_intf.S) in
+          Simplify_primitives.primitive p (args, args_approxs) tree dbg
+            ~size_int:Backend.size_int
+        in
+        let r = R.map_benefit r (B.(+) benefit) in
+        let approx =
+          match p with
+          | Clambda_primitives.Popaque -> A.value_unknown Other
+          | _ -> approx
+        in
+        expr, ret r approx
+      in
       begin match prim, args, args_approxs with
       (* CR-someday mshinwell: Optimise [Pfield_computed]. *)
       | Pfield field_index, [arg], [arg_approx] ->
@@ -1030,6 +1044,11 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
                    or it is the projection of a projection from a symbol. *)
                 let approx' = E.really_import_approx env approx in
                 tree, approx'
+            in
+            let approx =
+              if E.is_constructed_block env arg then
+                A.augment_with_projection approx projection
+              else approx
             in
             simplify_named_using_approx_and_env env r tree approx
           end
@@ -1077,19 +1096,16 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | (Psequand | Psequor), _, _ ->
         Misc.fatal_error "Psequand and Psequor must be expanded (see handling \
             in closure_conversion.ml)"
+      | Pmakeblock (tag, Immutable, _) as p, args, args_approxs ->
+        begin match E.find_constructed_block env ~tag args with
+        | Some constructed_var ->
+            let approx = E.find_exn env constructed_var in
+            Flambda.Expr (Var constructed_var),
+            ret (R.map_benefit r B.remove_prim) approx
+        | _ -> default p args args_approxs
+        end
       | p, args, args_approxs ->
-        let expr, approx, benefit =
-          let module Backend = (val (E.backend env) : Backend_intf.S) in
-          Simplify_primitives.primitive p (args, args_approxs) tree dbg
-            ~size_int:Backend.size_int
-        in
-        let r = R.map_benefit r (B.(+) benefit) in
-        let approx =
-          match p with
-          | Popaque -> A.value_unknown Other
-          | _ -> approx
-        in
-        expr, ret r approx
+        default p args args_approxs
       end)
   | Expr expr ->
     let expr, r = simplify env r expr in
@@ -1112,7 +1128,12 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
       let defining_expr, r = simplify_named env r defining_expr in
       let var, sb = Freshening.add_variable (E.freshening env) var in
       let env = E.set_freshening env sb in
-      let env = E.add env var (R.approx r) in
+      let approx = R.approx r in
+      let env = E.add env var approx in
+      let env = match approx.projection with
+        | Some p -> E.add_projection env ~projection:p ~bound_to:var
+        | None -> env
+      in
       (env, r), var, defining_expr
     in
     let for_last_body (env, r) body =
@@ -1288,12 +1309,22 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           (fun c k -> A.potentially_taken_block_switch_branch c k.Flambda.tag)
           sw.blocks []
       in
+      let simplify_block_branch env r (key, lam) =
+        let env = match key.Flambda.mutability with
+          | Immutable -> E.add_constructed_block env key arg
+          | Mutable -> env
+        in
+        let lam, r = simplify env r lam in
+        lam, r
+      in
       begin match filtered_consts, filtered_blocks with
       | Must_be_taken _, Must_be_taken _ ->
         assert false
-      | Must_be_taken branch, _
-      | _, Must_be_taken branch ->
+      | Must_be_taken (_, branch), _ ->
         let lam, r = simplify env r branch in
+        lam, R.map_benefit r B.remove_branch
+      | _, Must_be_taken branch ->
+        let lam, r = simplify_block_branch env r branch in
         lam, R.map_benefit r B.remove_branch
       | Can_be_taken consts, Can_be_taken blocks ->
         match consts, blocks, sw.failaction with
@@ -1318,18 +1349,23 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           lam, R.map_benefit r B.remove_branch
         | _ ->
           let env = E.inside_branch env in
-          let f:
-            'k. ('k * Flambda.t) -> (('k * Flambda.t) list * R.t) ->
-            (('k * Flambda.t) list * R.t) =
-            fun (i, v) (acc, r) ->
-            let approx = R.approx r in
-            let lam, r = simplify env r v in
-            (i, lam)::acc,
-            R.meet_approx r env approx
-          in
           let r = R.set_approx r A.value_bottom in
-          let consts, r = List.fold_right f consts ([], r) in
-          let blocks, r = List.fold_right f blocks ([], r) in
+          let consts, r =
+            List.fold_right (fun (i, v) (acc, r) ->
+                let approx = R.approx r in
+                let lam, r = simplify env r v in
+                (i, lam)::acc,
+                R.meet_approx r env approx)
+              consts ([], r)
+          in
+          let blocks, r =
+            List.fold_right (fun (i, v) (acc, r) ->
+                let approx = R.approx r in
+                let lam, r = simplify_block_branch env r (i, v) in
+                (i, lam)::acc,
+                R.meet_approx r env approx)
+              blocks ([], r)
+          in
           let failaction, r =
             match sw.failaction with
             | None -> None, r

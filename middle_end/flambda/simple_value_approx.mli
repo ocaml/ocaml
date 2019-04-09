@@ -44,12 +44,16 @@ type unknown_because_of =
     The simplification pass exploits this information to partially evaluate
     computations.
 
-    At a high level, an approximation for a value [v] has three parts:
+    At a high level, an approximation for a value [v] has four parts:
     - the "description" (for example, "the constant integer 42");
     - an optional variable;
-    - an optional symbol or symbol field.
+    - an optional symbol or symbol field;
+    - an optional projection.
     If the variable (resp. symbol) is present then that variable (resp.
     symbol) may be used to obtain the value [v].
+
+    The projection, if present, indicates that the value is the result of the
+    given projection.
 
     The exact semantics of the variable and symbol fields follows.
 
@@ -118,6 +122,7 @@ type t = private {
   descr : descr;
   var : Variable.t option;
   symbol : (Symbol.t * int option) option;
+  projection : Projection.t option;
 }
 
 and descr = private
@@ -302,6 +307,9 @@ val augment_with_symbol : t -> Symbol.t -> t
 
 (** Like [augment_with_symbol], but for symbol field information. *)
 val augment_with_symbol_field : t -> Symbol.t -> int -> t
+
+(** Note that [t] is the result of the given [projection]. *)
+val augment_with_projection : t -> Projection.t -> t
 
 (** Replace the description within an approximation. *)
 val replace_description : t -> descr -> t
