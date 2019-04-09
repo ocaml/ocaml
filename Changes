@@ -795,7 +795,7 @@ OCaml 4.09.0 (19 September 2019):
   (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
 
 - #8554: Apply Cmm peephole optimizations to the final results of expressions.
-  (Stefan Muenzel, review by ????)
+  (Stefan Muenzel, Vincent Laviron, review by ????)
 
 ### Compiler user-interface and warnings:
 
