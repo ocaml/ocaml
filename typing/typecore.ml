@@ -1782,12 +1782,14 @@ let rec final_subexpression sexp =
 
 let rec is_nonexpansive exp =
   match exp.exp_desc with
-    Texp_ident(_,_,_) -> true
-  | Texp_constant _ -> true
+  | Texp_ident _
+  | Texp_constant _
+  | Texp_unreachable
+  | Texp_function _
+  | Texp_array [] -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
-  | Texp_function _ -> true
   | Texp_apply(e, (_,None)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd el)
   | Texp_match(e, cases, _) ->
@@ -1824,12 +1826,10 @@ let rec is_nonexpansive exp =
         fields
       && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
-  | Texp_array [] -> true
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
-  | Texp_new (_, _, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
-      true
+  | Texp_new (_, _, cl_decl) -> Ctype.class_type_arity cl_decl.cty_type > 0
   (* Note: nonexpansive only means no _observable_ side effects *)
   | Texp_lazy e -> is_nonexpansive e
   | Texp_object ({cstr_fields=fields; cstr_type = { csig_vars=vars}}, _) ->
@@ -1866,11 +1866,24 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Some e]) ->
      is_nonexpansive e
-  | _ -> false
+  | Texp_array (_ :: _)
+  | Texp_apply _
+  | Texp_try _
+  | Texp_setfield _
+  | Texp_while _
+  | Texp_for _
+  | Texp_send _
+  | Texp_instvar _
+  | Texp_setinstvar _
+  | Texp_override _
+  | Texp_letexception _
+  | Texp_letop _
+  | Texp_extension_constructor _ ->
+    false
 
 and is_nonexpansive_mod mexp =
   match mexp.mod_desc with
-  | Tmod_ident _ -> true
+  | Tmod_ident _
   | Tmod_functor _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
   | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
@@ -1903,8 +1916,10 @@ and is_nonexpansive_mod mexp =
   | Tmod_apply _ -> false
 
 and is_nonexpansive_opt = function
-    None -> true
+  | None -> true
   | Some e -> is_nonexpansive e
+
+let maybe_expansive e = not (is_nonexpansive e)
 
 let check_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in
@@ -1994,7 +2009,7 @@ let list_labels env ty =
 
 (* Check that all univars are safe in a type *)
 let check_univars env expans kind exp ty_expected vars =
-  if expans && not (is_nonexpansive exp) then
+  if expans && maybe_expansive exp then
     lower_contravariant env exp.exp_type;
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
@@ -2490,7 +2505,7 @@ and type_expect_
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      if not (is_nonexpansive arg) then lower_contravariant env arg.exp_type;
+      if maybe_expansive arg then lower_contravariant env arg.exp_type;
       generalize arg.exp_type;
       let cases, partial =
         type_cases ~exception_allowed:true env arg.exp_type ty_expected true loc
@@ -3831,7 +3846,7 @@ and type_label_exp create env loc ty_expected
     try
       check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
       arg
-    with exn when not (is_nonexpansive arg) -> try
+    with exn when maybe_expansive arg -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
       may Btype.backtrack snap;
       begin_def ();
@@ -4666,7 +4681,7 @@ and type_let
   end_def();
   List.iter2
     (fun pat exp ->
-       if not (is_nonexpansive exp) then
+       if maybe_expansive exp then
          lower_contravariant env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
@@ -4770,7 +4785,7 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if not (is_nonexpansive exp) then lower_contravariant env exp.exp_type;
+  if maybe_expansive exp then lower_contravariant env exp.exp_type;
   generalize exp.exp_type;
   match sexp.pexp_desc with
     Pexp_ident lid ->
