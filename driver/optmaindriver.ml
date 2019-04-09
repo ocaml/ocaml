@@ -75,7 +75,7 @@ let main argv ppf =
       | None ->
           Compenv.fatal "Please specify at most one of -pack, -a, -shared, -c, \
                          -output-obj";
-      | Some ((P.Parsing | P.Typing | P.Scheduling | P.Emit) as p) ->
+      | Some ((P.Parsing | P.Typing | P.Lambda | P.Scheduling | P.Emit) as p) ->
         assert (P.is_compilation_pass p);
         Printf.ksprintf Compenv.fatal
           "Options -i and -stop-after (%s) \
