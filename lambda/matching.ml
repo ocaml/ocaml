@@ -1358,17 +1358,11 @@ let divide_constant ctx m =
 (* Matching against a constructor *)
 
 
-let make_field_args binding_kind arg first_pos last_pos field_pat_locs
-      (argl : args) =
-  let field_pat_locs = Array.of_list field_pat_locs in
-  assert (Array.length field_pat_locs = 1 + last_pos - first_pos);
-  let rec make_args pos =
-    if pos > last_pos
-    then argl
-    else
-      let loc = field_pat_locs.(pos - first_pos) in
-      (Lprim(Pfield pos, [arg], loc), binding_kind, loc) :: make_args (pos + 1)
-  in make_args first_pos
+let make_field_args binding_kind arg ~first_pos field_pat_locs (argl : args) =
+  let field_arg ofs loc =
+    Lprim (Pfield (first_pos + ofs), [arg], loc), binding_kind, loc
+  in
+  (List.mapi field_arg field_pat_locs) @ argl
 
 let get_key_constr = function
   | {pat_desc=Tpat_construct (_, cstr,_); pat_loc; _} -> pat_loc, cstr.cstr_tag
@@ -1445,12 +1439,11 @@ let make_constr_matching p def ctx = function
           (arg, Alias, arg_loc) :: argl
         else match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
-            make_field_args Alias arg 0 (cstr.cstr_arity - 1)
-              field_pat_locs argl
+            make_field_args Alias arg ~first_pos:0 field_pat_locs argl
         | Cstr_unboxed -> (arg, Alias, arg_loc) :: argl
         | Cstr_extension _ ->
-            make_field_args Alias arg 1 cstr.cstr_arity
-              field_pat_locs argl in
+            make_field_args Alias arg ~first_pos:1 field_pat_locs argl
+      in
       {pm=
         {cases = []; args = newargs;
           default = make_default (matcher_constr cstr) def} ;
@@ -1725,22 +1718,15 @@ let matcher_tuple arity p rem = match p.pat_desc with
 | Tpat_tuple args when List.length args = arity -> args @ rem
 | _ ->  raise NoMatch
 
-let make_tuple_matching arity field_pat_locs def = function
-    [] -> fatal_error "Matching.make_tuple_matching"
+let make_tuple_matching arity field_pat_locs default = function
+  | [] -> fatal_error "Matching.make_tuple_matching"
   | (arg, _mut, _arg_loc) :: argl ->
-      let rec make_args pos =
-        if pos >= arity
-        then argl
-        else begin
-          assert (pos >= 0 && pos < Array.length field_pat_locs);
-          let arg_loc = field_pat_locs.(pos) in
-          (Lprim(Pfield pos, [arg], arg_loc), Alias, arg_loc)
-            :: make_args (pos + 1)
-        end
-      in
-      {cases = []; args = make_args 0 ;
-        default=make_default (matcher_tuple arity) def}
-
+      let make_arg pos loc = Lprim (Pfield pos, [arg], loc), Alias, loc in
+      let args = (List.mapi make_arg field_pat_locs) @ argl in
+      { cases = [];
+        args;
+        default = make_default (matcher_tuple arity) default;
+      }
 
 let divide_tuple arity p ctx pm =
   let field_pat_locs =
@@ -1750,7 +1736,7 @@ let divide_tuple arity p ctx pm =
   in
   divide_line
     (filter_ctx p)
-    (make_tuple_matching arity field_pat_locs)
+    (make_tuple_matching arity (Array.to_list field_pat_locs))
     (get_args_tuple arity) p ctx pm
 
 (* Matching against a record pattern *)
