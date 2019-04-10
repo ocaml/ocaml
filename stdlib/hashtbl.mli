@@ -219,7 +219,10 @@ val stats : ('a, 'b) t -> statistics
 (** {1 Iterators} *)
 
 val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
-(** Iterate on the whole table, in unspecified order.
+(** Iterate on the whole table.  The order in which the bindings
+    appear in the sequence is unspecified. However, if the table contains
+    several bindings for the same key, they appear in reversed order of
+    introduction, that is, the most recent binding appears first.
 
     The behavior is not defined if the hash table is modified
     during the iteration.
