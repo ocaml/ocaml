@@ -60,6 +60,7 @@ let emit_bytecode i (bytecode, required_globals) =
        |> Profile.(record ~accumulate:true generate)
           (Emitcode.to_file oc i.module_name cmofile ~required_globals);
     )
+
 let implementation ~source_file ~output_prefix =
   let backend info typed =
     let lambda = to_lambda info typed in
@@ -71,12 +72,3 @@ let implementation ~source_file ~output_prefix =
   in
   with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
   Compile_common.implementation info ~backend
-(*
-let implementation ~source_file ~output_prefix =
-  let backend info typed =
-    let bytecode = to_bytecode info typed in
-    emit_bytecode info bytecode
-  in
-  with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
-  Compile_common.implementation info ~backend
-  *)

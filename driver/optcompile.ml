@@ -53,6 +53,7 @@ let flambda i backend typed =
     Clflags.unbox_free_vars_of_closures := false;
     Clflags.unbox_specialised_args := false
   end;
+<<<<<<< HEAD
   typed
   |> Profile.(record transl)
       (Translmod.transl_implementation_flambda i.module_name)
