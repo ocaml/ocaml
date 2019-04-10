@@ -211,7 +211,6 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -r *~
 
 # Generated non-object files
 

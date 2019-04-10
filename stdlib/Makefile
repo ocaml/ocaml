@@ -296,7 +296,6 @@ $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A) *.odoc
-	rm -f *~
 	rm -f camlheader*
 
 include .depend
