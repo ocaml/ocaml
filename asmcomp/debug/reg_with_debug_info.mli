@@ -224,7 +224,8 @@ module Availability_set : sig
   (** Add a register to the given set. *)
   val add : t -> reg_with_debug_info -> t
 
-  (** Set disjoint union. *)
+  (** Set disjoint union.  "Disjoint" refers to the sets of [Reg.t] values
+      rather than the associated debugging information. *)
   val disjoint_union : t -> t -> t
 
   (** Map over elements of the given set. *)
@@ -253,7 +254,7 @@ module Canonical_set : sig
   include Set_intf with type reg_with_debug_info := t
 
   (** Canonicalise an existing set. *)
-  val of_set : Set.t -> t
+  val of_set : Availability_set.t -> t
 
   (** Find the element of the set that holds the value of the given variable,
       if such exists, otherwise returning [None].  (Note that by virtue of the

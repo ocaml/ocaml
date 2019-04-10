@@ -13,22 +13,22 @@
 (**************************************************************************)
 
 (** Register availability sets. This module is just a version of
-    [Reg_with_debug_info.Set] whose type is lifted to have an additional top
-    element. This element corresponds to availability information known at any
-    unreachable point in the generated code. *)
+    [Reg_with_debug_info.Availability_set] whose type is lifted to have an
+    additional top element. This element corresponds to availability information
+    known at any unreachable point in the generated code. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 (** The type of register availability sets. *)
 type t = private
   | Unreachable
-  | Ok of Reg_with_debug_info.Set.t
+  | Ok of Reg_with_debug_info.Availability_set.t
 
 (** The top element. *)
 val unreachable : t
 
 (** Create a register availability set (that is not the top element). *)
-val create : Reg_with_debug_info.Set.t -> t
+val create : Reg_with_debug_info.Availability_set.t -> t
 
 (** Canonicalise the given register availability set.  The result can be
     used for [Compute_ranges], etc.  See the documentation for
@@ -37,7 +37,7 @@ val create : Reg_with_debug_info.Set.t -> t
 val canonicalise : t -> Reg_with_debug_info.Canonical_set.t
 
 (** The functions below are lifted versions of the corresponding ones in
-    [Reg_with_debug_info.Set]. *)
+    [Reg_with_debug_info.Availability_set]. *)
 
 (** Print a value of type [t] to a formatter.
     [print_reg] should be [Printmach.reg]. *)
@@ -53,8 +53,9 @@ val equal : t -> t -> bool
 (** The empty set. *)
 val empty : t
 
-(** Set union. *)
-val union : t -> t -> t
+(** Set disjoint union.  "Disjoint" refers to the sets of [Reg.t] values
+    rather than the associated debugging information. *)
+val disjoint_union : t -> t -> t
 
 (** Set intersection. *)
 val inter : t -> t -> t
@@ -62,9 +63,13 @@ val inter : t -> t -> t
 (** Non-strict subset inclusion. *)
 val subset : t -> t -> bool
 
-(** Map the [Reg_with_debug_info.Set.t] value contained within some values
-    of type [t]. *)
-val map : t -> f:(Reg_with_debug_info.Set.t -> Reg_with_debug_info.Set.t) -> t
+(** Map the [Reg_with_debug_info.Availability_set.t] value contained within some
+    values of type [t]. *)
+val map
+   : t
+  -> f:(Reg_with_debug_info.Availability_set.t
+    -> Reg_with_debug_info.Availability_set.t)
+  -> t
 
 (** Find an element of the set given the underlying [Reg.t].  This function
     always returns [None] if the supplied [t] is [Unreachable]. *)
