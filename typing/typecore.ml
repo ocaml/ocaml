@@ -4784,30 +4784,27 @@ let type_clash_of_trace trace =
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
 let report_literal_type_constraint expected_type const =
-  let hint str_val =
-    let hint_suffix c =
-      let txt ppf =
-        fprintf ppf "@[Hint: Did you mean `%s%c'?@]" str_val c
-      in
-      [ Location.{ txt; loc = none } ]
-    in
-    if Path.same expected_type Predef.path_int32 then
-      hint_suffix 'l'
-    else if Path.same expected_type Predef.path_int64 then
-      hint_suffix 'L'
-    else if Path.same expected_type Predef.path_nativeint then
-      hint_suffix 'n'
-    else if Path.same expected_type Predef.path_float then
-      hint_suffix '.'
-    else
-      []
+  let const_str = match const with
+    | Const_int n -> Some (Int.to_string n)
+    | Const_int32 n -> Some (Int32.to_string n)
+    | Const_int64 n -> Some (Int64.to_string n)
+    | Const_nativeint n -> Some (Nativeint.to_string n)
+    | _ -> None
   in
-  match const with
-  | Const_int n -> hint (Int.to_string n)
-  | Const_int32 n -> hint (Int32.to_string n)
-  | Const_int64 n -> hint (Int64.to_string n)
-  | Const_nativeint n -> hint (Nativeint.to_string n)
-  | _ -> []
+  let suffix =
+    if Path.same expected_type Predef.path_int32 then
+      Some 'l'
+    else if Path.same expected_type Predef.path_int64 then
+      Some 'L'
+    else if Path.same expected_type Predef.path_nativeint then
+      Some 'n'
+    else if Path.same expected_type Predef.path_float then
+      Some '.'
+    else None
+  in
+  match const_str, suffix with
+  | Some c, Some s -> [ Location.msg "@[Hint: Did you mean `%s%c'?@]" c s ]
+  | _, _ -> []
 
 let report_literal_type_constraint const = function
   | Some Unification_trace.
@@ -4830,41 +4827,43 @@ let report_pattern_type_clash_hints pat diff =
 let report_numeric_operator_clash_hints actual_type operator =
   let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
   let stdlib_qualified mod_ val_ = Path.Pdot (Path.Pdot (stdlib, mod_), val_) in
-  let hint expected_op =
-    Some (fun ppf ->
-      fprintf ppf "@[Hint:@ Did you mean to use `%a'?@]"
-        Printtyp.path expected_op
-    )
-  in
-  let hint ~add ~sub ~mul ~div ~mod_ () =
-    let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
-    if is_op "+" then hint add
-    else if is_op "-" then hint sub
-    else if is_op "*" then hint mul
-    else if is_op "/" then hint div
-    else if is_op "mod" then hint mod_
+  let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
+  let expecting_qualified name =
+    let qualified = stdlib_qualified name in
+    if is_op "+" then Some (qualified "add")
+    else if is_op "-" then Some (qualified "sub")
+    else if is_op "*" then Some (qualified "mul")
+    else if is_op "/" then Some (qualified "div")
+    else if is_op "mod" then Some (qualified "rem")
     else None
   in
-  let hint_qualified name =
-    let qualified = stdlib_qualified name in
-    hint ~add:(qualified "add") ~sub:(qualified "sub") ~mul:(qualified "mul")
-      ~div:(qualified "div") ~mod_:(qualified "rem") ()
-  in
-  let hint_std () =
+  let expecting_float () =
     let qualified id = Path.Pdot (stdlib, id) in
-    hint ~add:(qualified "+.") ~sub:(qualified "-.") ~mul:(qualified "*.")
-      ~div:(qualified "/.") ~mod_:(stdlib_qualified "Float" "rem") ()
+    if is_op "+" then Some (qualified "+.")
+    else if is_op "-" then Some (qualified "-.")
+    else if is_op "*" then Some (qualified "*.")
+    else if is_op "/" then Some (qualified "/.")
+    else if is_op "mod" then Some (stdlib_qualified "Float" "rem")
+    else None
   in
-  let expecting = Path.same actual_type in
-  if expecting Predef.path_int32 then
-    hint_qualified "Int32"
-  else if expecting Predef.path_int64 then
-    hint_qualified "Int64"
-  else if expecting Predef.path_nativeint then
-    hint_qualified "Nativeint"
-  else if expecting Predef.path_float then
-    hint_std ()
-  else None
+  let expecting_op =
+    if Path.same actual_type Predef.path_int32 then
+      expecting_qualified "Int32"
+    else if Path.same actual_type Predef.path_int64 then
+      expecting_qualified "Int64"
+    else if Path.same actual_type Predef.path_nativeint then
+      expecting_qualified "Nativeint"
+    else if Path.same actual_type Predef.path_float then
+      expecting_float ()
+    else None
+  in
+  match expecting_op with
+  | Some op ->
+      Some (fun ppf ->
+        fprintf ppf "@[Hint:@ Did you mean to use `%a'?@]"
+          Printtyp.path op
+      )
+  | None -> None
 
 (* Returns a list of `Location.msg` *)
 let report_application_clash_hints diff expl =
