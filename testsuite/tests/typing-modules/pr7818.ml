@@ -108,7 +108,7 @@ module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
   module Id2 = Id
 end;;
 [%%expect{|
-Line 2, characters 57-107:
+Lines 2-5, characters 57-3:
 2 | .........................................................struct
 3 |   module Id = T'.T.Id
 4 |   module Id2 = Id

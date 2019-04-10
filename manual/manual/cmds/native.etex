@@ -86,6 +86,19 @@ libraries. They are linked with the program.
 The output of the linking phase is a regular Unix or Windows
 executable file. It does not need "ocamlrun" to run.
 
+%  The following two paragraphs are a duplicate from the description of the batch compiler.
+
+The compiler is able to emit some information on its internal stages.
+It can output ".cmt" files for the implementation of the compilation unit
+and ".cmti" for signatures if the option "-bin-annot" is passed to it (see the
+description of "-bin-annot" below).
+Each such file contains a typed abstract syntax tree (AST), that is produced
+during the type checking procedure. This tree contains all available information
+about the location and the specific type of each term in the source file.
+The AST is partial if type checking was unsuccessful.
+
+These ".cmt" and ".cmti" files are typically useful for code inspection tools.
+
 \section{Options}
 
 The following command-line options are recognized by "ocamlopt".
@@ -227,4 +240,3 @@ not referenced.  See also the "Sys.opaque_identity" function from the
 "Sys" standard library module.
 
 \end{itemize}
-

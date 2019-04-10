@@ -72,7 +72,8 @@ let resize b more =
      this tricky function that is slow anyway. *)
   Bytes.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
-  b.length <- !new_len
+  b.length <- !new_len;
+  assert (b.position + more <= b.length)
 
 let add_char b c =
   let pos = b.position in
@@ -163,7 +164,7 @@ let add_substring b s offset len =
   then invalid_arg "Buffer.add_substring/add_subbytes";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  Bytes.blit_string s offset b.buffer b.position len;
+  Bytes.unsafe_blit_string s offset b.buffer b.position len;
   b.position <- new_position
 
 let add_subbytes b s offset len =
@@ -173,7 +174,7 @@ let add_string b s =
   let len = String.length s in
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  Bytes.blit_string s 0 b.buffer b.position len;
+  Bytes.unsafe_blit_string s 0 b.buffer b.position len;
   b.position <- new_position
 
 let add_bytes b s = add_string b (Bytes.unsafe_to_string s)
@@ -277,18 +278,20 @@ let truncate b len =
 
 let to_seq b =
   let rec aux i () =
+    (* Note that b.position is not a constant and cannot be lifted out of aux *)
     if i >= b.position then Seq.Nil
     else
-      let x = Bytes.get b.buffer i in
+      let x = Bytes.unsafe_get b.buffer i in
       Seq.Cons (x, aux (i+1))
   in
   aux 0
 
 let to_seqi b =
   let rec aux i () =
+    (* Note that b.position is not a constant and cannot be lifted out of aux *)
     if i >= b.position then Seq.Nil
     else
-      let x = Bytes.get b.buffer i in
+      let x = Bytes.unsafe_get b.buffer i in
       Seq.Cons ((i,x), aux (i+1))
   in
   aux 0

@@ -180,7 +180,7 @@ end = struct
   type t += E of int
 end;;
 [%%expect{|
-Line 3, characters 6-37:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t += E of int
 5 | end..

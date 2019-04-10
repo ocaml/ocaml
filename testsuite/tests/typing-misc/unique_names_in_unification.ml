@@ -39,7 +39,7 @@ Line 7, characters 34-35:
                                       ^
 Error: This expression has type M/2.t but an expression was expected of type
          M/1.t
-       Line 4, characters 2-41:
+       Lines 4-6, characters 2-5:
          Definition of module M/1
        Line 1, characters 0-32:
          Definition of module M/2
