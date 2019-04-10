@@ -255,6 +255,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | None -> KS.empty
       | Some prev_insn -> S.available_across prev_insn
     in
+(* XXX It seems here that KS needs to not behave like a map -- or just write
+custom diff.  Move inter + diff into the canonical module? *)
     let case_1b =
       KS.diff
         (KS.diff available_across opt_available_across_prev_insn)
@@ -283,6 +285,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         (KS.inter opt_available_across_prev_insn available_before)
         available_across
     in
+Format.eprintf "-------------\n";
+Format.eprintf "case_1b: %a\n%!" KS.print case_1b;
+Format.eprintf "case_1c: %a\n%!" KS.print case_1c;
+Format.eprintf "case_1d: %a\n%!" KS.print case_1d;
+Format.eprintf "case_2a: %a\n%!" KS.print case_2a;
+Format.eprintf "case_2b: %a\n%!" KS.print case_2b;
+Format.eprintf "case_2c: %a\n%!" KS.print case_2c;
     let handle case action result =
       (* We use [K.all_parents] here to circumvent a potential performance
          problem.  In the case of lexical blocks, there may be long chains
@@ -442,12 +451,14 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       let not_open_but_should_be = KS.diff should_be_open open_subranges in
       if not (KS.is_empty not_open_but_should_be) then begin
         Misc.fatal_errorf "%a: ranges for %a are not open across the following \
-            instruction:\n%a\navailable_across:@ %a\nopen_subranges: %a"
+            instruction:\n%a\navailable_across:@ %a\navailable_before:@ %a\n\
+            open_subranges: %a"
           Backend_sym.print fundecl.fun_name
           KS.print not_open_but_should_be
           (Printlinear.instr ?no_debuginfo:None)
           { insn with L.next = L.end_instr; }
           KS.print should_be_open
+          KS.print (S.available_before insn)
           KS.print open_subranges
       end
     end;
