@@ -47,18 +47,18 @@ AWKPP = $(quote)$(AWK) -f expand_module_aliases.awk$(quote)
 
 MODCOMPFLAGS =
 
-# The definitions of MODCOMPFLAGS take one of the two foollowing forms:
-# 1. target: MODCOMPFLAGS = flags means that MODCOMPFLAGS will have the
-# value "flags" when target is compiled and also when its prerequisites
-# are compiled as prerequisites of this target (if they are compiled
-# as prerequisites of another target, then the definition won't be taken
-# into account)
-# 2. target: private MODCOMPFLAGS = flags defines MODCOMPFLAGS to be
-# "flags" but only for the target itself, not for its prerequisites
-
-# Here, "private" is used when a flag should be used to compile a
-# .cmo file but should not be passed when compiling the prerequisite
-# .cmi file.
+# Note: the syntax
+# target: MODCOMPFLAGS = flags
+# means that MODCOMPFLAGS will have the value "flags" when
+# target is compiled and also when its prerequisites are compiled
+# as prerequisites of this target (if they are compiled as prerequisites
+# of another target, then the definition won't be taken into account)
+# That's why one has to explicitly set COMPFLAGS to an empty value for .cmi
+# files below, otherwise the value defined for .cmo and .cmx files
+# would be used to compile the .cmi files, too, which would not be correct.
+# The same effect could be achieved thanks to the "private" keyword
+# introduced in version 3.82 of GNU make but we don't use it because
+# it is not supported by GNU make 3.81 which is still used on MacOS
 
 stdlib.cmo stdlib.cmx: MODCOMPFLAGS = \
   -nopervasives -no-alias-deps -w -49 -pp $(AWKPP)
@@ -81,10 +81,11 @@ stdlib__scanf.cmo: MODCOMPFLAGS = -w Ae
 
 stdlib__scanf.cmx: MODCOMPFLAGS = -inline 9
 
-%Labels.cmo %Labels.cmx: private MODCOMPFLAGS = -nolabels -no-alias-deps
+%Labels.cmo %Labels.cmx: MODCOMPFLAGS = -nolabels -no-alias-deps
+%Labels.cmi: MODCOMPFLAGS =
 
-stdlib__float.cmo stdlib__float.cmx: \
-  private MODCOMPFLAGS = -nolabels -no-alias-deps
+stdlib__float.cmo stdlib__float.cmx: MODCOMPFLAGS = -nolabels -no-alias-deps
+stdlib__float.cmi: MODCOMPFLAGS =
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
