@@ -350,7 +350,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Lconst(const_int n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
-      | Cstr_block { tag; size; } ->
+      | Cstr_block { tag; size; mutability = _; } ->
           assert (size = List.length ll);
           begin try
             Lconst(Const_block(tag, List.map extract_constant ll))

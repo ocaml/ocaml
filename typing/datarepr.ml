@@ -110,11 +110,12 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | None -> ty_res
         in
         let (tag, descr_rem) =
-          let cstr_block ~size =
+          let cstr_block ~size ~mutability =
             let tag =
               Cstr_block {
                 tag = idx_nonconst;
                 size;
+                mutability;
               }
             in
             tag, describe_constructors idx_const (idx_nonconst+1) rem
@@ -126,8 +127,15 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | Cstr_tuple [], Variant_regular ->
              (Cstr_constant idx_const,
               describe_constructors (idx_const+1) idx_nonconst rem)
-          | Cstr_tuple args, Variant_regular -> cstr_block ~size:(List.length args)
-          | Cstr_record args, Variant_regular -> cstr_block ~size:(List.length args)
+          | Cstr_tuple args, Variant_regular ->
+              cstr_block ~size:(List.length args) ~mutability:Immutable
+          | Cstr_record args, Variant_regular ->
+              let mutability =
+                if List.for_all (fun a -> a.ld_mutable = Immutable) args
+                then Immutable
+                else Mutable
+              in
+              cstr_block ~size:(List.length args) ~mutability
         in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =

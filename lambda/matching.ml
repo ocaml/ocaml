@@ -1993,9 +1993,11 @@ let inline_lazy_force_switch arg loc =
                 sw_blocks =
                   [ ({ sw_tag = Obj.forward_tag;
                        sw_size = 1;
+                       sw_mutability = Mutable;
                       }, Lprim (lazy_forward_field, [ varg ], loc));
                     ({ sw_tag = Obj.lazy_tag;
                        sw_size = 1;
+                       sw_mutability = Mutable;
                      }, Lapply
                         { ap_tailcall = Default_tailcall;
                           ap_loc = loc;
@@ -2810,12 +2812,14 @@ let split_cases tag_lambda_list =
         let consts, nonconsts = split_rec rem in
         match cstr_tag with
         | Cstr_constant n -> ((n, act) :: consts, nonconsts)
-        | Cstr_block { tag; size; } ->
-          let desc = { sw_tag = tag; sw_size = size; } in
+        | Cstr_block { tag; size; mutability; } ->
+          let desc =
+            { sw_tag = tag; sw_size = size; sw_mutability = mutability; }
+          in
           (consts, (desc, act) :: nonconsts)
         | Cstr_unboxed ->
           (* The [sw_size] will never make it through to a [Lswitch]. *)
-          let desc = { sw_tag = 0; sw_size = 0; } in
+          let desc = { sw_tag = 0; sw_size = 0; sw_mutability = Immutable } in
           (consts, (desc, act) :: nonconsts)
         | Cstr_extension _ -> assert false
       )
@@ -2917,9 +2921,10 @@ let combine_constructor loc arg pat_env cstr partial ctx def
             match
               (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
             with
-          | 1, 1, [(0, act1)], [{ sw_tag = 0; sw_size = _; }, act2] ->
+          | 1, 1, [(0, act1)],
+            [{ sw_tag = 0; sw_size = _; sw_mutability = _; }, act2] ->
                 (* Typically, match on lists, will avoid isint primitive in that
-              case *)
+                   case *)
                 Lifthenelse (arg, act2, act1)
             | n, 0, _, [] ->
                 (* The type defines constant constructors only *)
