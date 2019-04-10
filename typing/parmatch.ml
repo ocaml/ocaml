@@ -963,7 +963,8 @@ let complete_tags nconsts nconstrs tags =
   List.iter
     (function
       | Cstr_constant i -> seen_const.(i) <- true
-      | Cstr_block { tag; size = _; } -> seen_constr.(tag) <- true
+      | Cstr_block { tag; size = _; mutability = _ } ->
+          seen_constr.(tag) <- true
       | _  -> assert false)
     tags ;
   let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
@@ -1046,7 +1047,7 @@ let complete_constrs p all_tags =
         match cnstr.cstr_tag with
         | Cstr_constant i ->
           ConstructorTagHashtbl.mem not_tags (Constant i)
-        | Cstr_block { tag; size = _; } ->
+        | Cstr_block { tag; size = _; mutability = _; } ->
           ConstructorTagHashtbl.mem not_tags (Block tag)
         | Cstr_unboxed
         | Cstr_extension _ -> false)

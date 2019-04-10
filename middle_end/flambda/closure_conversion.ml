@@ -498,7 +498,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     let convert_key k =
       { Flambda.tag = k.Lambda.sw_tag;
-        Flambda.size = k.Lambda.sw_size
+        Flambda.size = k.Lambda.sw_size;
+        Flambda.mutability = k.Lambda.sw_mutability;
       }
     in
     Flambda.create_let scrutinee (Expr (close t env arg))

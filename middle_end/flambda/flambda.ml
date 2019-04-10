@@ -139,8 +139,9 @@ and switch = {
 }
 
 and switch_block_key = {
-  tag: int;
-  size: int;
+  tag : int;
+  size : int;
+  mutability : Asttypes.mutable_flag;
 }
 
 and for_loop = {

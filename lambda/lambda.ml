@@ -320,6 +320,7 @@ and lambda_switch =
 and lambda_switch_block_key =
   { sw_tag : int;
     sw_size : int;
+    sw_mutability : Asttypes.mutable_flag;
   }
 
 and lambda_event =

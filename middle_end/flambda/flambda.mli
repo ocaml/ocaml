@@ -342,8 +342,9 @@ and switch = {
 
 (** Equivalent to the similar type in [Lambda]. *)
 and switch_block_key = {
-  tag: int;
-  size: int;
+  tag : int;
+  size : int;
+  mutability : Asttypes.mutable_flag;
 }
 
 (** Equivalent to the similar type in [Lambda]. *)

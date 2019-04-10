@@ -481,6 +481,7 @@ and constructor_tag =
   | Cstr_block of {                     (* Regular constructor (a block) *)
       tag : int;
       size : int;
+      mutability : Asttypes.mutable_flag;
     }
   | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
