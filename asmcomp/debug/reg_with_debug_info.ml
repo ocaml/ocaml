@@ -154,7 +154,7 @@ let print ?print_reg ppf t =
 
 let compare { reg = reg1; debug_info = debug_info1; }
             { reg = reg2; debug_info = debug_info2; } =
-  let c = reg1.stamp - reg2.stamp in
+  let c = Stdlib.compare reg1.stamp reg2.stamp in
   if c <> 0 then c
   else Option.compare Debug_info.compare debug_info1 debug_info2
 
