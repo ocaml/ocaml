@@ -207,14 +207,15 @@ module type Set_intf = sig
 end
 
 (** Sets of registers with debug info.  Unlike [Canonical_set], below, there
-    is no canonicalisation.
+    is no canonicalisation.  However there is never more than one element
+    in a given register availability set for some particular [Reg.t].
 
     Some functions in [Set] are not provided in [Canonical_set]---see the
     [Canonical_set] documentation below for why.
 
     The comparison function for the sets is [compare], from above.
 *)
-module Set : sig
+module Availability_set : sig
   include Set_intf with type reg_with_debug_info := t
 
   (** The set containing only the given element. *)
@@ -223,8 +224,8 @@ module Set : sig
   (** Add a register to the given set. *)
   val add : t -> reg_with_debug_info -> t
 
-  (** Set union. *)
-  val union : t -> t -> t
+  (** Set disjoint union. *)
+  val disjoint_union : t -> t -> t
 
   (** Map over elements of the given set. *)
   val map : (reg_with_debug_info -> reg_with_debug_info) -> t -> t
