@@ -1731,12 +1731,12 @@ let make_tuple_matching arity field_pat_locs default = function
 let divide_tuple arity p ctx pm =
   let field_pat_locs =
     match p.pat_desc with
-    | Tpat_tuple args -> Array.of_list (List.map (fun pat -> pat.pat_loc) args)
+    | Tpat_tuple args -> List.map (fun pat -> pat.pat_loc) args
     | _ -> Misc.fatal_error "Only [Tpat_any] or [Tpat_tuple] expected"
   in
   divide_line
     (filter_ctx p)
-    (make_tuple_matching arity (Array.to_list field_pat_locs))
+    (make_tuple_matching arity field_pat_locs)
     (get_args_tuple arity) p ctx pm
 
 (* Matching against a record pattern *)
