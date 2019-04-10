@@ -227,11 +227,11 @@ val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
     @since 4.07 *)
 
 val to_seq_keys : ('a,_) t -> 'a Seq.t
-(** Iterate on 'as, in ascending order
+(** Same as [Seq.map fst (to_seq m)]
     @since 4.07 *)
 
 val to_seq_values : (_,'b) t -> 'b Seq.t
-(** Iterate on values, in ascending order of their corresponding 'a
+(** Same as [Seq.map snd (to_seq m)]
     @since 4.07 *)
 
 val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
