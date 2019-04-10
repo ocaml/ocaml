@@ -158,7 +158,6 @@ config/gnu/config.guess text eol=lf
 config/gnu/config.sub text eol=lf
 ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
-stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
 tools/ci/inria/remove-sinh-primitive.patch text eol=lf
 tools/check-typo text eol=lf
