@@ -342,13 +342,17 @@ let execute_phrase print_outcome ppf phr =
         if Config.flambda then
           let { Lambda.module_ident; main_module_block_size = size;
                 required_globals; code = res } =
-            Translmod.transl_implementation_flambda !phrase_name
+            Translmod.transl_implementation_flambda ~module_name:!phrase_name
+              ~source_file:!phrase_name
               (str, Tcoerce_none)
           in
           remember module_ident 0 sg';
           module_ident, close_phrase res, required_globals, size
         else
-          let size, res = Translmod.transl_store_phrases !phrase_name str in
+          let size, res =
+            Translmod.transl_store_phrases ~module_name:!phrase_name
+              ~source_file:!phrase_name str
+          in
           Ident.create_persistent !phrase_name, res, Ident.Set.empty, size
       in
       Warnings.check_fatal ();

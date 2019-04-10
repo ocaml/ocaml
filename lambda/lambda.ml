@@ -655,10 +655,9 @@ let transl_extension_path loc env path =
 let transl_class_path loc env path =
   transl_path Env.find_class_address loc env path
 
-let transl_prim mod_name name =
+let transl_prim loc mod_name name =
   let pers = Ident.create_persistent mod_name in
   let env = Env.add_persistent_structure pers Env.empty in
-  let loc = Location.in_file !Location.input_name in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
   match Env.lookup_value lid env with
   | path, _ -> transl_value_path loc env path

@@ -103,7 +103,7 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
     let program, middle_end =
       if Config.flambda then
         let main_module_block_size, code =
-          Translmod.transl_package_flambda components coercion
+          Translmod.transl_package_flambda components module_ident coercion
         in
         let program =
           { Lambda.

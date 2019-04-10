@@ -40,7 +40,8 @@ let flambda i backend typed =
   end;
   typed
   |> Profile.(record transl)
-      (Translmod.transl_implementation_flambda i.module_name)
+      (Translmod.transl_implementation_flambda ~module_name:i.module_name
+        ~source_file:i.source_file)
   |> Profile.(record generate)
     (fun {Lambda.module_ident; main_module_block_size;
           required_globals; code } ->
@@ -70,7 +71,8 @@ let clambda i backend typed =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
   typed
   |> Profile.(record transl)
-    (Translmod.transl_store_implementation i.module_name)
+    (Translmod.transl_store_implementation ~module_name:i.module_name
+      ~source_file:i.source_file)
   |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program
   |> Profile.(record generate)
     (fun program ->

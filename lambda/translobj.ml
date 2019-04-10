@@ -18,7 +18,7 @@ open Lambda
 
 (* Get oo primitives identifiers *)
 
-let oo_prim = Lambda.transl_prim "CamlinternalOO"
+let oo_prim loc = Lambda.transl_prim loc "CamlinternalOO"
 
 (* Share blocks *)
 

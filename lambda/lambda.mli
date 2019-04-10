@@ -367,11 +367,11 @@ val shallow_iter:
 (** Same as [iter_head_constructor], but use a different callback for
     sub-terms which are in tail position or not. *)
 
-val transl_prim: string -> string -> lambda
+val transl_prim: Location.t -> string -> string -> lambda
 (** Translate a value from a persistent module. For instance:
 
     {[
-      transl_internal_value "CamlinternalLazy" "force"
+      transl_internal_value loc "CamlinternalLazy" "force"
     ]}
 *)
 

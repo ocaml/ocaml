@@ -168,7 +168,7 @@ let event_function exp lam =
 
 let assert_failed exp =
   let slot =
-    transl_extension_path Location.none
+    transl_extension_path exp.exp_loc
       Env.initial_safe_string Predef.path_assert_failure
   in
   let (fname, line, char) =
@@ -465,7 +465,7 @@ and transl_exp0 e =
       Llet(Strict, Pgenval, cpy,
            Lapply{ap_should_be_tailcall=false;
                   ap_loc=e.exp_loc;
-                  ap_func=Translobj.oo_prim "copy";
+                  ap_func=Translobj.oo_prim e.exp_loc "copy";
                   ap_args=[self];
                   ap_inlined=Default_inline;
                   ap_specialised=Default_specialise},

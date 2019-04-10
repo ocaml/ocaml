@@ -26,6 +26,8 @@ type error = Tags of label * label
 
 exception Error of Location.t * error
 
+let oo_prim name = oo_prim Location.none name
+
 let lfunction params body =
   if params = [] then body else
   match body with

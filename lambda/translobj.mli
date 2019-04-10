@@ -15,7 +15,7 @@
 
 open Lambda
 
-val oo_prim: string -> lambda
+val oo_prim: Location.t -> string -> lambda
 
 val share: structured_constant -> lambda
 val meth: lambda -> string -> lambda * lambda list
