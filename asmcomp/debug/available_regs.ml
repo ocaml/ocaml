@@ -174,7 +174,10 @@ let rec available_regs (instr : M.instruction)
           Array.map2 (fun arg_reg result_reg ->
               match RD.Availability_set.find_reg avail_before arg_reg with
               | None ->
-                assert false  (* see second invariant in [check_invariants] *)
+                Misc.fatal_errorf "Second invariant broken: avail_before %a, \
+                    reg %a"
+                  RD.Availability_set.print avail_before
+                  Printmach.reg arg_reg
               | Some arg_reg ->
                 RD.create_copying_debug_info ~reg:result_reg
                   ~debug_info_from:arg_reg)
