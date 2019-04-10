@@ -107,6 +107,8 @@ module Debug_info = struct
             Option.compare Backend_var.Provenance.compare
               provenance1 provenance2
 
+  let equal t1 t2 = (compare t1 t2 = 0)
+
   let holds_value_of t = t.holds_value_of
   let part_of_value t = t.part_of_value
   let num_parts_of_value t = t.num_parts_of_value
@@ -271,7 +273,7 @@ end) = struct
 
   let invariant t =
     if !Clflags.ddebug_invariants then begin
-      if not (Reg.Map.equal t (canonicalise t)) then begin
+      if not (Reg.Map.equal Debug_info.equal t (canonicalise t)) then begin
         Misc.fatal_errorf "Invariant broken:@ %a" print t
       end
     end
