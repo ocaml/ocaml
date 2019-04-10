@@ -77,6 +77,7 @@ let clambda_bytecode backend i program =
   end
 
 let clambda i backend typed =
+  Clflags.use_inlining_arguments_set Clflags.classic_arguments;
       typed
       |> Profile.(record transl)
         (Translmod.transl_store_implementation i.module_name)
