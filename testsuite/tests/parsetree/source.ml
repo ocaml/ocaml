@@ -7364,3 +7364,11 @@ let x = ` (* wait for it *) Bar
 type (+' a, -' a', ' a'b', 'ab', ' abcd', ' (* ! *) x) t =
   ' a * ' a' * ' a'b' * 'ab' * ' abcd' * ' (* !! *) x
   as ' a'
+
+(* #2190 *)
+
+let f = function
+  | lazy (A foo) -> foo
+
+let () =
+  f (fun (type t) -> x)
