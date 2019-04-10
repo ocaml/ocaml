@@ -655,6 +655,11 @@ OCaml 4.08.0
   on a new line, for more readable diffs of versioned dependencies.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #2221: ocamldep will now correctly allow a .ml file in an include directory
+  that appears first in the search order to shadow a .mli appearing in a later
+  include directory.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
 - #2223: ocamltest: fix the "bsd" and "not-bsd" built-in actions to
   recognize all BSD variants
   (Damien Doligez, review by Sébastien Hinderer and David Allsopp)
