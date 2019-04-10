@@ -115,11 +115,10 @@ module Debug_info = struct
 
   let print ppf t =
     Format.fprintf ppf "%a" Holds_value_of.print t.holds_value_of;
-    (* To be enabled once new [Debuginfo] is merged.
     begin match t.provenance with
     | None -> ()
     | Some provenance ->
-      let dbg = Backend_var.Provenance.location provenance in
+      let dbg = Backend_var.Provenance.debuginfo provenance in
       let block =
         Debuginfo.Current_block.to_block (Debuginfo.innermost_block dbg)
       in
@@ -127,7 +126,6 @@ module Debug_info = struct
       | Toplevel -> Format.fprintf ppf "[toplevel]"
       | Block block -> Format.fprintf ppf "[%a]" Debuginfo.Block.print_id block
     end;
-    *)
     if not (t.part_of_value = 0 && t.num_parts_of_value = 1) then begin
       Format.fprintf ppf "(%d/%d)" t.part_of_value t.num_parts_of_value
     end;
@@ -279,11 +277,11 @@ end) = struct
     Format.fprintf ppf "@[<1>{@[%a@ @]}@]" elts t
 
   let invariant t =
-    (* if !Clflags.ddebug_invariants then begin *)
-    if not (Set0.equal t (canonicalise t)) then begin
-      Misc.fatal_errorf "Invariant broken:@ %a" print t
+    if !Clflags.ddebug_invariants then begin
+      if not (Set0.equal t (canonicalise t)) then begin
+        Misc.fatal_errorf "Invariant broken:@ %a" print t
+      end
     end
-    (* end *)
 
   let equal = Set0.equal
 
@@ -411,12 +409,9 @@ module Canonical_set = struct
         regs_by_var
         Set0.empty
     in
-    (* To be enabled once Clflags pull request is presented
     if !Clflags.ddebug_invariants then begin
-    *)
       assert (Set0.subset result set)
-    (*
-    end *);
+    end;
     result
 
   include Make_set (struct

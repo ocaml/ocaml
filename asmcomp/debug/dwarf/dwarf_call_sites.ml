@@ -46,13 +46,6 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
       [DAH.create_single_location_description param_location]
   in
   let arg_location, type_attribute =
-    (* The reason we call [Reg_availability_set.canonicalise] from
-       [Available_ranges_vars], rather than traversing each function's
-       code and rewriting all of the availability sets first, is so that
-       we don't lose information (in particular that a particular hard
-       register before a call contains the value of a certain variable)
-       that we may need here.  (Specifically for the call to
-       [Reg_availability_set.find_all_holding_value_of].) *)
     let available_before = Insn_debuginfo.available_before insn.dbg in
     match Reg_availability_set.find_reg available_before arg with
     | None -> [], []
@@ -99,38 +92,38 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
                  time such argument is queried in the debugger. *)
               []
             end else begin
-              let everywhere_holding_var =
-                Reg_availability_set.find_all_holding_value_of
-                  available_before (Var holds_value_of)
-              in
               (* Only registers spilled at the time of the call will be
                  available with certainty (in the caller's frame) during the
-                 execution of the callee. *)
-              let on_stack =
-                Misc.Stdlib.List.filter_map (fun rd ->
-                    let reg = Reg_with_debug_info.reg rd in
-                    match reg.loc with
-                    | Stack stack_loc ->
-                      Some (reg,
-                        Dwarf_reg_locations.offset_from_cfa_in_bytes reg
-                          stack_loc ~stack_offset)
-                    | Reg _ -> None
-                    | Unknown ->
-                      Misc.fatal_errorf "Register without location: %a"
-                        Printmach.reg reg)
-                  everywhere_holding_var
+                 execution of the callee.  Canonicalising the availability set
+                 will always prefer spilled registers---but members of
+                 canonicalised sets are not guaranteed to be spilled. *)
+              let holding_var =
+                Reg_with_debug_info.Canonical_set.find_holding_value_of_variable
+                  (Reg_availability_set.canonicalise available_before)
+                  holds_value_of
               in
-              match on_stack with
-              | [] -> []
-              | (reg, offset_from_cfa_in_bytes) :: _ ->
-                let arg_location_rvalue =
-                  Dwarf_reg_locations.reg_location_description reg
-                    ~offset_from_cfa_in_bytes ~need_rvalue:true
-                in
-                match arg_location_rvalue with
-                | None -> []
-                | Some arg_location_rvalue ->
-                  create_location_description arg_location_rvalue
+              match holding_var with
+              | None -> []
+              | Some rd ->
+                let reg = Reg_with_debug_info.reg rd in
+                match reg.loc with
+                | Reg _ -> []
+                | Unknown ->
+                  Misc.fatal_errorf "Register without location: %a"
+                    Printmach.reg reg
+                | Stack stack_loc ->
+                  let offset_from_cfa_in_bytes =
+                    Dwarf_reg_locations.offset_from_cfa_in_bytes reg
+                      stack_loc ~stack_offset
+                  in
+                  let arg_location_rvalue =
+                    Dwarf_reg_locations.reg_location_description reg
+                      ~offset_from_cfa_in_bytes ~need_rvalue:true
+                  in
+                  match arg_location_rvalue with
+                  | None -> []
+                  | Some arg_location_rvalue ->
+                    create_location_description arg_location_rvalue
             end
           in
           arg_location, type_attribute

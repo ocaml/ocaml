@@ -36,7 +36,7 @@ let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
     | Unreachable -> ()
     | Ok avail_before ->
       (* Every register that is live across an instruction should also be
-        available before the instruction. *)
+         available before the instruction. *)
       if not (R.Set.subset instr.live (RD.Set.forget_debug_info avail_before))
       then begin
         Misc.fatal_errorf "Live registers not a subset of available registers: \
@@ -48,7 +48,7 @@ let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
           Printmach.instr ({ instr with M. next = M.end_instr (); })
       end;
       (* Every register that is an input to an instruction should be
-        available. *)
+         available. *)
       let args = R.set_of_array instr.arg in
       let avail_before_fdi = RD.Set.forget_debug_info avail_before in
       if not (R.Set.subset args avail_before_fdi) then begin
@@ -151,7 +151,7 @@ let rec available_regs (instr : M.instruction)
             let arg = instr.arg.(i) in
             let res = instr.res.(i) in
             (* Note that the register classes must be the same, so we don't
-                need to check that. *)
+               need to check that. *)
             if arg.loc <> res.loc then begin
               move_to_same_location := false
             end
