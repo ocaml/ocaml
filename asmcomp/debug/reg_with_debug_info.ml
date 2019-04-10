@@ -378,8 +378,8 @@ end) = struct
     let regs_clobbered = Reg.set_of_array regs_clobbered in
     let t =
       Reg.Map.filter (fun reg _debug_info ->
-          Reg.Set.for_all (fun reg' ->
-              not (regs_at_same_location reg' reg ~register_class))
+          Reg.Set.exists (fun reg' ->
+              regs_at_same_location reg' reg ~register_class)
             regs_clobbered)
         t
     in

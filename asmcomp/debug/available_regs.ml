@@ -90,6 +90,8 @@ let rec available_regs (instr : M.instruction)
       ~(avail_before : RAS.t) : RAS.t =
   check_invariants instr ~avail_before;
   instr.dbg <- Insn_debuginfo.with_available_before instr.dbg avail_before;
+  Format.eprintf "avail_before %a\n%!"
+    (RAS.print ~print_reg:Printmach.reg) avail_before;
   let avail_across, avail_after =
     let ok set = RAS.create set in
     let unreachable = RAS.unreachable in
@@ -103,6 +105,7 @@ let rec available_regs (instr : M.instruction)
         Some (ok Reg_with_debug_info.Availability_set.empty), unreachable
       | Iop (Iname_for_debugger { ident; is_parameter; provenance;
           is_assignment; }) ->
+Format.eprintf "Iname_for_debugger\n%!";
         (* First forget about any existing debug info to do with [ident]
            if the naming corresponds to an assignment operation. *)
         let forgetting_ident =
@@ -143,6 +146,7 @@ let rec available_regs (instr : M.instruction)
         done;
         Some (ok avail_before), ok !avail_after
       | Iop (Imove | Ireload | Ispill) ->
+Format.eprintf "Imove/reload/spill\n%!";
         (* Moves are special: they enable us to propagate "holds value of"
            information, such as names.
            No-op moves need to be handled specially---in this case, we may
@@ -192,6 +196,7 @@ let rec available_regs (instr : M.instruction)
         in
         Some (ok avail_across), ok avail_after
       | Iop op ->
+Format.eprintf "Iop %a\n%!" (Printmach.operation op instr.arg) instr.res;
         (* We split the calculation of registers that become unavailable after
            a call into two parts.  First: anything that the target marks as
            destroyed by the operation, combined with any registers that will
@@ -200,6 +205,8 @@ let rec available_regs (instr : M.instruction)
           let regs_clobbered =
             Array.append (Proc.destroyed_at_oper instr.desc) instr.res
           in
+Format.eprintf "made_unavailable_by_clobber: {%a}\n%!"
+  Printmach.regset (Reg.set_of_array regs_clobbered);
           RD.Availability_set.made_unavailable_by_clobber avail_before
             ~regs_clobbered
             ~register_class:Proc.register_class
@@ -228,12 +235,20 @@ let rec available_regs (instr : M.instruction)
               avail_before
           | _ -> RD.Availability_set.empty
         in
+Format.eprintf "made_unavailable_1: %a\n%!" RD.Availability_set.print made_unavailable_1;
+Format.eprintf "made_unavailable_2: %a\n%!" RD.Availability_set.print made_unavailable_2;
+(*
         let made_unavailable =
           RD.Availability_set.disjoint_union made_unavailable_1
             made_unavailable_2
         in
+Format.eprintf "made_unavailable: %a\n%!" RD.Availability_set.print made_unavailable;
+*)
         let avail_across =
-          RD.Availability_set.diff avail_before made_unavailable
+          RD.Availability_set.diff avail_before made_unavailable_1
+        in
+        let avail_across =
+          RD.Availability_set.diff avail_across made_unavailable_2
         in
         if M.operation_can_raise op then begin
           augment_availability_at_raise (ok avail_across)
@@ -274,9 +289,14 @@ let rec available_regs (instr : M.instruction)
           RD.Availability_set.disjoint_union result_regs avail_across
         in
         Some (ok avail_across), ok avail_after
-      | Iifthenelse (_, ifso, ifnot) -> join [ifso; ifnot] ~avail_before
-      | Iswitch (_, cases) -> join (Array.to_list cases) ~avail_before
+      | Iifthenelse (_, ifso, ifnot) ->
+Format.eprintf "Iifthenelse\n%!";
+join [ifso; ifnot] ~avail_before
+      | Iswitch (_, cases) ->
+Format.eprintf "Iswitch\n%!";
+join (Array.to_list cases) ~avail_before
       | Iloop body ->
+Format.eprintf "Iloop\n%!";
         let avail_after = ref (ok avail_before) in
         begin try
           while true do
@@ -426,6 +446,7 @@ let fundecl (f : M.fundecl) =
   if not (Clflags.debug_thing Debug_dwarf_vars) then begin
     f
   end else begin
+Format.eprintf "fundecl: %a\n%!" Printmach.fundecl f;
     assert (Hashtbl.length avail_at_exit = 0);
     avail_at_raise := RAS.unreachable;
     let fun_args = R.set_of_array f.fun_args in
