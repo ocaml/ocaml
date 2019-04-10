@@ -471,7 +471,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_constraint (p, ct) ->
         pp f "@[<2>(%a@;:@;%a)@]" (pattern1 ctxt) p (core_type ctxt) ct
     | Ppat_lazy p ->
-        pp f "@[<2>(lazy@;%a)@]" (pattern1 ctxt) p
+        pp f "@[<2>(lazy@;%a)@]" (simple_pattern ctxt) p
     | Ppat_exception p ->
         pp f "@[<2>exception@;%a@]" (pattern1 ctxt) p
     | Ppat_extension e -> extension ctxt f e
@@ -586,6 +586,7 @@ and expression ctxt f x =
       (attributes ctxt) x.pexp_attributes
   else match x.pexp_desc with
     | Pexp_function _ | Pexp_fun _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
+    | Pexp_newtype _
       when ctxt.pipe || ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
@@ -597,6 +598,9 @@ and expression ctxt f x =
     | Pexp_fun (l, e0, p, e) ->
         pp f "@[<2>fun@;%a->@;%a@]"
           (label_exp ctxt) (l, e0, p)
+          (expression ctxt) e
+    | Pexp_newtype (lid, e) ->
+        pp f "@[<2>fun@;(type@;%s)@;->@;%a@]" lid.txt
           (expression ctxt) e
     | Pexp_function l ->
         pp f "@[<hv>function%a@]" (case_list ctxt) l
@@ -762,8 +766,6 @@ and simple_expr ctxt f x =
     | Pexp_constant c -> constant f c;
     | Pexp_pack me ->
         pp f "(module@;%a)" (module_expr ctxt) me
-    | Pexp_newtype (lid, e) ->
-        pp f "fun@;(type@;%s)@;->@;%a" lid.txt (expression ctxt) e
     | Pexp_tuple l ->
         pp f "@[<hov2>(%a)@]" (list (simple_expr ctxt) ~sep:",@;") l
     | Pexp_constraint (e, ct) ->

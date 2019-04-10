@@ -61,6 +61,10 @@ Working version
 - #1973: fix compilation of catches with multiple handlers
   (Vincent Laviron)
 
+- #2190: fix pretty printing (using Pprintast) of "lazy ..." patterns and
+  "fun (type t) -> ..." expressions.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 - #2228, #8545: refactoring the handling of .cmi files
   by moving the logic from Env to a new module Persistent_env
   (Gabriel Scherer, review by Jérémie Dimino and Thomas Refis)
