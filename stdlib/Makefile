@@ -35,6 +35,57 @@ CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 
+quote := '
+AWKPP = $(quote)$(AWK) -f expand_module_aliases.awk$(quote)
+
+# Module-specific compiler flags
+
+# A few files in this directory need to be compiled with module-specific
+# compiler flags, which are defined in the MODCOMPFLAGS make variable.
+# This variable is defined to be empty by default and receives the
+# module-specific flags when appropriate.
+
+MODCOMPFLAGS =
+
+# The definitions of MODCOMPFLAGS take one of the two foollowing forms:
+# 1. target: MODCOMPFLAGS = flags means that MODCOMPFLAGS will have the
+# value "flags" when target is compiled and also when its prerequisites
+# are compiled as prerequisites of this target (if they are compiled
+# as prerequisites of another target, then the definition won't be taken
+# into account) 
+# 2. target: private MODCOMPFLAGS = flags defines MODCOMPFLAGS to be
+# "flags" but only for the target itself, not for its prerequisites
+
+# Here, "private" is used when a flag should be used to compile a
+# .cmo file but should not be passed when compiling the prerequisite
+# .cmi file.
+
+stdlib.cmo stdlib.cmx: MODCOMPFLAGS = \
+  -nopervasives -no-alias-deps -w -49 -pp $(AWKPP)
+
+# never instrument camlinternalOO or camlinternalLazy (PR#7725)
+camlinternalOO.cmx: MODCOMPFLAGS = -inline 0 -afl-inst-ratio 0
+camlinternalLazy.cmx: MODCOMPFLAGS = -afl-inst-ratio 0
+
+stdlib__buffer.cmx: MODCOMPFLAGS = -inline 3
+
+stdlib__buffer.cmo: MODCOMPFLAGS = -w A
+
+camlinternalFormat.cmo: MODCOMPFLAGS = -w Ae
+
+camlinternalFormatBasics.cmo camlinternalFormatBasics.cmx: \
+  MODCOMPFLAGS = -nopervasives
+
+stdlib__printf.cmo stdlib__format.cmo \
+stdlib__scanf.cmo: MODCOMPFLAGS = -w Ae
+
+stdlib__scanf.cmx: MODCOMPFLAGS = -inline 9
+
+%Labels.cmo %Labels.cmx: private MODCOMPFLAGS = -nolabels -no-alias-deps
+
+stdlib__float.cmo stdlib__float.cmx: \
+  private MODCOMPFLAGS = -nolabels -no-alias-deps
+
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
 # Object file prefix
@@ -213,23 +264,22 @@ clean::
 export AWK
 
 %.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(CAMLC) $(COMPFLAGS) $(MODCOMPFLAGS) -c $<
 
 stdlib__%.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -o $@ -c $<
+	$(CAMLC) $(COMPFLAGS) $(MODCOMPFLAGS) -o $@ -c $<
 
 %.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(CAMLC) $(COMPFLAGS) $(MODCOMPFLAGS) -c $<
 
 stdlib__%.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -o $@ -c $<
+	$(CAMLC) $(COMPFLAGS) $(MODCOMPFLAGS) -o $@ -c $<
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(MODCOMPFLAGS) -c $<
 
 stdlib__%.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
-	           -o $@ -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(MODCOMPFLAGS) -o $@ -c $<
 
 # Dependencies on the compiler
 COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
