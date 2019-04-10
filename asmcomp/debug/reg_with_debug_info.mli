@@ -137,6 +137,9 @@ val assigned_to_stack : t -> bool
     otherwise like the supplied register with debug info. *)
 val clear_debug_info : t -> t
 
+(* CR mshinwell: A pass over these comments is needed once the map
+   representation has settled down. *)
+
 (** Shared interfaces for non-canonical and canonical register sets
     (see below). *)
 module type Set_intf = sig
@@ -187,7 +190,7 @@ module type Set_intf = sig
   (** Find an element of the set given the underlying [Reg.t]. *)
   val find_reg : t -> Reg.t -> reg_with_debug_info option
 
-  (** Preserve only those members of the given set whose underlying [Reg.t]
+  (** Preserve only that member of the given set whose underlying [Reg.t]
       is that supplied. *)
   val filter_reg : t -> Reg.t -> t
 

@@ -273,7 +273,8 @@ end) = struct
 
   let invariant t =
     if !Clflags.ddebug_invariants then begin
-      if not (Reg.Map.equal Debug_info.equal t (canonicalise t)) then begin
+      if not (Reg.Map.equal (Option.equal Debug_info.equal) t (canonicalise t))
+      then begin
         Misc.fatal_errorf "Invariant broken:@ %a" print t
       end
     end
@@ -283,12 +284,14 @@ end) = struct
   let empty = Reg.Map.empty
   let is_empty = Reg.Map.is_empty
 
-  let of_list xs =
-    let xs = List.map (fun rd -> rd.reg, rd.debug_info) xs in
-    let map = Reg.Map.of_list xs in
-    if Reg.Map.cardinal map <> List.length xs then begin
-      Misc.fatal_error "Cannot have multiple bindings for any given [Reg.t]: %a"
-        (Reg.Map.print Debug_info.print) map
+  let of_list rds =
+    let map =
+      List.fold_left (fun map rd -> Reg.Map.add rd.reg rd.debug_info map)
+        empty
+        rds
+    in
+    if Reg.Map.cardinal map <> List.length rds then begin
+      Misc.fatal_error "Cannot have multiple bindings for any given [Reg.t]"
     end;
     canonicalise map
 
@@ -303,7 +306,8 @@ end) = struct
      in [Canonical_set] below. *)
   let inter t1 t2 =
     let t =
-      Map.merge (function
+      Reg.Map.merge (fun _reg debug_info_opt1 debug_info_opt2 ->
+          match debug_info_opt1, debug_info_opt2 with
           | Some debug_info, None
           | None, Some debug_info -> Some debug_info
           | Some debug_info1, Some debug_info2 ->
@@ -318,8 +322,10 @@ end) = struct
                means that on the former branch we have forgotten about y holding
                the value of x; but we have not on the latter. At the join point
                we must have forgotten the information. *)
-            if Debug_info.equal debug_info1 debug_info2 then Some debug_info
-            else None
+            if Option.equal Debug_info.equal debug_info1 debug_info2 then
+              Some debug_info1
+            else
+              None
           | None, None -> Misc.fatal_error "Bug in [Map.merge]")
         t1 t2
     in
@@ -327,40 +333,45 @@ end) = struct
     t
 
   let diff t1 t2 =
-    let t = Reg.Map.diff t1 t2 in
+    let t = Reg.Map.filter (fun reg _ -> not (Reg.Map.mem reg t2)) t1 in
     invariant t;
     t
 
   let map = Reg.Map.map
   let fold = Reg.Map.fold
   let filter = Reg.Map.filter
-  let subset = Reg.Map.subset
+
+  let subset t1 t2 =
+    let regs1 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t1)) in
+    let regs2 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t2)) in
+    Reg.Set.subset regs1 regs2
 
   let mem_reg t (reg : Reg.t) =
-    Reg.Map.exists (fun t -> t.reg.stamp = reg.stamp) t
+    Reg.Map.exists (fun reg' _debug_info -> reg.stamp = reg'.stamp) t
 
   let find_reg t (reg : Reg.t) =
     match Reg.Map.find reg t with
     | exception Not_found -> None
-    | debug_info -> create_with_debug_info ~reg ~debug_info
+    | debug_info -> Some (create_with_debug_info ~reg ~debug_info)
 
   let filter_reg t (reg : Reg.t) =
-    Reg.Map.filter (fun t -> t.reg.stamp <> reg.stamp) t
+    match find_reg t reg with
+    | None -> empty
+    | Some debug_info -> Reg.Map.singleton reg debug_info
 
   let forget_debug_info t =
-    Reg.Map.fold (fun t acc -> Reg.Set.add (reg t) acc) t Reg.Set.empty
+    Reg.Map.fold (fun reg _debug_info acc -> Reg.Set.add reg acc)
+      t
+      Reg.Set.empty
 
   let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
+    let regs_clobbered = Reg.set_of_array regs_clobbered in
     let t =
-      Reg.Set.fold (fun reg acc ->
-          let made_unavailable =
-            Reg.Map.filter (fun reg' ->
-                regs_at_same_location reg'.reg reg ~register_class)
-              t
-          in
-          Reg.Map.union made_unavailable acc)
-        (Reg.set_of_array regs_clobbered)
-        (* ~init:*)empty
+      Reg.Map.filter (fun reg _debug_info ->
+          Reg.Set.for_all (fun reg' ->
+              not (regs_at_same_location reg' reg ~register_class))
+            regs_clobbered)
+        t
     in
     invariant t;
     t

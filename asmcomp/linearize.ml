@@ -123,7 +123,8 @@ let available_before_new_insn ~arg_of_new_insn ~res_of_new_insn
     Array.map (fun reg -> RD.create_without_debug_info ~reg) arg_of_new_insn
   in
   RAS.map without_args_of_new_insn ~f:(fun regs ->
-    RD.Availability_set.union (RD.Availability_set.of_array args_of_new_insn) regs)
+    RD.Availability_set.disjoint_union
+      (RD.Availability_set.of_array args_of_new_insn) regs)
 
 let available_after0 ~available_before (insn : instruction) =
   RAS.made_unavailable_by_clobber available_before
@@ -349,7 +350,9 @@ let rec linear i n =
             ~f:(fun available_before ->
               RAS.map available_before
                 ~f:(fun set ->
-                  Reg_with_debug_info.Set.made_unavailable_by_clobber set
+                  Reg_with_debug_info.Availability_set.
+                    made_unavailable_by_clobber
+                    set
                     ~regs_clobbered:Proc.destroyed_at_reloadretaddr
                     ~register_class:Proc.register_class));
         cons_instr Next Lreloadretaddr n1
