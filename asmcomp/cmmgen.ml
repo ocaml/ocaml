@@ -1644,18 +1644,18 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 (* Build an actual switch (ie jump table) *)
 
 let make_switch arg cases actions dbg =
-  let extract_uconstant =
-    function
+  let extract_uconstant action =
+    match action.expr with
     (* Constant integers loaded from a table should end in 1,
        so that Cload never produces untagged integers *)
-    | Cconst_int     (n, _), _dbg
-    | Cconst_pointer (n, _), _dbg when (n land 1) = 1 ->
+    | Cconst_int     (n, _)
+    | Cconst_pointer (n, _) when (n land 1) = 1 ->
         Some (Cint (Nativeint.of_int n))
-    | Cconst_natint     (n, _), _dbg
-    | Cconst_natpointer (n, _), _dbg
+    | Cconst_natint     (n, _)
+    | Cconst_natpointer (n, _)
       when Nativeint.(to_int (logand n one) = 1) ->
         Some (Cint n)
-    | Cconst_symbol (s,_), _dbg ->
+    | Cconst_symbol (s,_) ->
         Some (Csymbol_address s)
     | _ -> None
   in
