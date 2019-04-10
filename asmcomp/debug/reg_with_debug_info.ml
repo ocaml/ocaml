@@ -237,7 +237,7 @@ module type Set_intf = sig
   val fold : (reg_with_debug_info -> 'a -> 'a) -> t -> 'a -> 'a
   val mem_reg : t -> Reg.t -> bool
   val find_reg : t -> Reg.t -> reg_with_debug_info option
-  val filter_reg : t -> Reg.t -> t
+  val filter_out_reg : t -> Reg.t -> t
   val forget_debug_info : t -> Reg.Set.t
   val made_unavailable_by_clobber
      : t
@@ -251,6 +251,11 @@ end
    [Debug_info.t option] values being associated with any given [Reg.t]
    value. *)
 type avail_map = Debug_info.t option Reg.Map.t
+
+let avail_map_subset t1 t2 =
+  let regs1 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t1)) in
+  let regs2 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t2)) in
+  Reg.Set.subset regs1 regs2
 
 module Make_set (C : sig
   val canonicalise : avail_map -> avail_map
@@ -279,7 +284,7 @@ end) = struct
       end
     end
 
-  let equal = Reg.Map.equal
+  let equal t1 t2 = Reg.Map.equal (Option.equal Debug_info.equal) t1 t2
 
   let empty = Reg.Map.empty
   let is_empty = Reg.Map.is_empty
@@ -337,14 +342,21 @@ end) = struct
     invariant t;
     t
 
-  let map = Reg.Map.map
-  let fold = Reg.Map.fold
-  let filter = Reg.Map.filter
+  let map_debug_info f t =
+    Reg.Map.map f t
 
-  let subset t1 t2 =
-    let regs1 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t1)) in
-    let regs2 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t2)) in
-    Reg.Set.subset regs1 regs2
+  let fold f t init =
+    Reg.Map.fold (fun reg debug_info acc ->
+        f (create_with_debug_info ~reg ~debug_info) acc)
+      t
+      init
+
+  let filter f t =
+    Reg.Map.filter (fun reg debug_info ->
+        f (create_with_debug_info ~reg ~debug_info))
+      t
+
+  let subset t1 t2 = avail_map_subset t1 t2
 
   let mem_reg t (reg : Reg.t) =
     Reg.Map.exists (fun reg' _debug_info -> reg.stamp = reg'.stamp) t
@@ -354,10 +366,8 @@ end) = struct
     | exception Not_found -> None
     | debug_info -> Some (create_with_debug_info ~reg ~debug_info)
 
-  let filter_reg t (reg : Reg.t) =
-    match find_reg t reg with
-    | None -> empty
-    | Some debug_info -> Reg.Map.singleton reg debug_info
+  let filter_out_reg t (reg : Reg.t) =
+    Reg.Map.filter (fun reg' _debug_info -> reg.stamp <> reg'.stamp) t
 
   let forget_debug_info t =
     Reg.Map.fold (fun reg _debug_info acc -> Reg.Set.add reg acc)
@@ -382,8 +392,8 @@ module Availability_set = struct
     let canonicalise t = t
   end)
 
-  let singleton rd = Reg.Map.singleton rd
-  let add t rd = Reg.Map.add rd t
+  let singleton rd = Reg.Map.singleton rd.reg rd.debug_info
+  let add t rd = Reg.Map.add rd.reg rd.debug_info t
 
   let disjoint_union t1 t2 =
     Reg.Map.union (fun _reg _debug_info1 _debug_info2 ->
@@ -395,8 +405,9 @@ end
 module Canonical_set = struct
   let canonicalise set =
     let regs_by_var = V.Tbl.create 42 in
-    Reg.Map.iter (fun reg ->
-        match debug_info reg with
+    Reg.Map.iter (fun reg debug_info ->
+        let reg = create_with_debug_info ~reg ~debug_info in
+        match debug_info with
         | None -> ()
         | Some debug_info ->
           match Debug_info.holds_value_of debug_info with
@@ -440,12 +451,12 @@ module Canonical_set = struct
       set;
     let result =
       V.Tbl.fold (fun _var reg result ->
-          Reg.Map.add reg result)
+          Reg.Map.add reg.reg reg.debug_info result)
         regs_by_var
         Reg.Map.empty
     in
     if !Clflags.ddebug_invariants then begin
-      assert (Reg.Map.subset result set)
+      assert (avail_map_subset result set)
     end;
     result
 
@@ -457,17 +468,17 @@ module Canonical_set = struct
 
   let find_holding_value_of_variable t var =
     let t =
-      Reg.Map.filter (fun rd ->
-          match debug_info rd with
+      Reg.Map.filter (fun _reg debug_info ->
+          match debug_info with
           | None -> false
           | Some debug_info ->
             Holds_value_of.equal (Debug_info.holds_value_of debug_info)
               (Var var))
         t
     in
-    match Reg.Map.elements t with
+    match Reg.Map.bindings t with
     | [] -> None
-    | [rd] -> Some rd
+    | [reg, debug_info] -> Some (create_with_debug_info ~reg ~debug_info)
     | _ ->
       invariant t;
       assert false  (* The invariant must have been broken. *)

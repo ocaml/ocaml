@@ -190,9 +190,9 @@ module type Set_intf = sig
   (** Find an element of the set given the underlying [Reg.t]. *)
   val find_reg : t -> Reg.t -> reg_with_debug_info option
 
-  (** Preserve only that member of the given set whose underlying [Reg.t]
-      is that supplied. *)
-  val filter_reg : t -> Reg.t -> t
+  (** Preserve only those member(s) of the given set whose underlying [Reg.t]
+      differs from that supplied. *)
+  val filter_out_reg : t -> Reg.t -> t
 
   (** Return a set of the underlying [Reg.t] values. *)
   val forget_debug_info : t -> Reg.Set.t
@@ -231,8 +231,9 @@ module Availability_set : sig
       rather than the associated debugging information. *)
   val disjoint_union : t -> t -> t
 
-  (** Map over elements of the given set. *)
-  val map : (reg_with_debug_info -> reg_with_debug_info) -> t -> t
+  (** Map over elements of the given set, affecting just the [Debug_info.t]
+      values. *)
+  val map_debug_info : (Debug_info.t option -> Debug_info.t option) -> t -> t
 
   (** Non-strict subset inclusion.  (This could be provided for [Canonical_set]
       but it seems like it would be a mistake to use it on such a set.) *)

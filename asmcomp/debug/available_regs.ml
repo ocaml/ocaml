@@ -109,17 +109,17 @@ let rec available_regs (instr : M.instruction)
           if not is_assignment then
             avail_before
           else
-            RD.Availability_set.map (fun reg ->
-                match RD.debug_info reg with
-                | None -> reg
+            RD.Availability_set.map_debug_info (fun debug_info ->
+                match debug_info with
+                | None -> None
                 | Some debug_info ->
                   match RD.Debug_info.holds_value_of debug_info with
                   | Var in_debug_info ->
                     if V.same in_debug_info ident
-                    then RD.clear_debug_info reg
-                    else reg
+                    then None
+                    else Some debug_info
                   | Const_int _ | Const_naked_float _ | Const_symbol _ ->
-                    reg)
+                    Some debug_info)
               avail_before
         in
         let avail_after = ref forgetting_ident in
@@ -138,7 +138,7 @@ let rec available_regs (instr : M.instruction)
                 ~provenance
             in
             avail_after := RD.Availability_set.add
-              (RD.Availability_set.filter_reg !avail_after reg) regd
+              (RD.Availability_set.filter_out_reg !avail_after reg) regd
           end
         done;
         Some (ok avail_before), ok !avail_after
@@ -370,7 +370,8 @@ let rec available_regs (instr : M.instruction)
           | Unreachable -> unreachable
           | Ok avail_at_raise ->
             let without_exn_bucket =
-              RD.Availability_set.filter_reg avail_at_raise Proc.loc_exn_bucket
+              RD.Availability_set.filter_out_reg avail_at_raise
+                Proc.loc_exn_bucket
             in
             let with_anonymous_exn_bucket =
               RD.Availability_set.add without_exn_bucket
