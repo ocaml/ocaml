@@ -1572,25 +1572,22 @@ let matcher_lazy p rem = match p.pat_desc with
 let prim_obj_tag =
   Primitive.simple ~name:"caml_obj_tag" ~arity:1 ~alloc:false
 
-let get_mod_field modname field =
-  lazy (
-    let mod_ident = Ident.create_persistent modname in
-    let env = Env.add_persistent_structure mod_ident Env.initial_safe_string in
-    let loc = Location.in_file !Location.input_name in
-    match Env.open_pers_signature modname env with
-    | exception Not_found -> fatal_error ("Module "^modname^" unavailable.")
-    | env -> begin
-        match Env.lookup_value (Longident.Lident field) env with
-        | exception Not_found ->
-            fatal_error ("Primitive "^modname^"."^field^" not found.")
-        | (path, _) -> transl_value_path loc env path
-      end
-  )
+let get_mod_field loc modname field =
+  let mod_ident = Ident.create_persistent modname in
+  let env = Env.add_persistent_structure mod_ident Env.initial_safe_string in
+  match Env.open_pers_signature modname env with
+  | exception Not_found -> fatal_error ("Module "^modname^" unavailable.")
+  | env -> begin
+      match Env.lookup_value (Longident.Lident field) env with
+      | exception Not_found ->
+          fatal_error ("Primitive "^modname^"."^field^" not found.")
+      | (path, _) -> transl_value_path loc env path
+    end
 
-let code_force_lazy_block =
-  get_mod_field "CamlinternalLazy" "force_lazy_block"
-let code_force_lazy =
-  get_mod_field "CamlinternalLazy" "force"
+let code_force_lazy_block loc =
+  get_mod_field loc "CamlinternalLazy" "force_lazy_block"
+let code_force_lazy loc =
+  get_mod_field loc "CamlinternalLazy" "force"
 ;;
 
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
@@ -1607,7 +1604,7 @@ let inline_lazy_force_cond arg loc =
   let idarg = Ident.create_local "*lzarg*" in
   let varg = Lvar idarg in
   let tag = Ident.create_local "*tag*" in
-  let force_fun = Lazy.force code_force_lazy_block in
+  let force_fun = code_force_lazy_block loc in
   let make_block expr = Lambda.block loc expr in
   Llet(Strict, Pgenval, idarg, arg,
        Llet(Alias, Pgenval, tag, Lprim(Pccall prim_obj_tag, [varg], loc),
@@ -1639,7 +1636,7 @@ let inline_lazy_force_cond arg loc =
 let inline_lazy_force_switch arg loc =
   let idarg = Ident.create_local "*lzarg*" in
   let varg = Lvar idarg in
-  let force_fun = Lazy.force code_force_lazy_block in
+  let force_fun = code_force_lazy_block loc in
   let make_block expr = Lambda.block loc expr in
   Llet(Strict, Pgenval, idarg, arg,
        Lifthenelse(
@@ -1673,7 +1670,7 @@ let inline_lazy_force arg loc =
        (see https://github.com/stedolan/crowbar/issues/14) *)
     Lapply{ap_should_be_tailcall = false;
            ap_loc=loc;
-           ap_func=Lazy.force code_force_lazy;
+           ap_func=code_force_lazy loc;
            ap_args=[arg];
            ap_inlined=Default_inline;
            ap_specialised=Default_specialise;
