@@ -754,7 +754,7 @@ let rec explode_or_pat arg patl mk_action rem vars aliases pat : row cases =
       explode_or_pat arg patl mk_action rem vars (id::aliases) p
   | {pat_desc = Tpat_var (x, _); pat_loc; _} ->
       let env = mk_alpha_env arg (x::aliases) vars in
-      (omega pat.pat_loc::patl, mk_action pat_loc (List.map snd env)) :: rem
+      (omega pat_loc::patl, mk_action pat_loc (List.map snd env)) :: rem
   | p ->
       let env = mk_alpha_env arg aliases vars in
       (alpha_pat env p::patl, mk_action p.pat_loc (List.map snd env)) :: rem
