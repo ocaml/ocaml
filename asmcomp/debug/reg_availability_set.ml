@@ -24,19 +24,19 @@ let unreachable = Unreachable
 
 let empty = Ok RD.Availability_map.empty
 
-let create rd_set = Ok rd_set
+let create map = Ok map
 
 let canonicalise t =
   (* Users of canonicalised sets aren't interested in what the set contains
      for portions of dead code, so for [Unreachable], we can just return the
      empty set. *)
   match t with
-  | Unreachable -> RD.Canonical_set.empty
-  | Ok rd_set -> RD.Canonical_set.of_set rd_set
+  | Unreachable -> RD.Canonical_availability_map.empty
+  | Ok map -> RD.Canonical_availability_map.create map
 
 let print ~print_reg:_ ppf = function
   | Unreachable -> Format.fprintf ppf "<unreachable>"
-  | Ok rd_set -> RD.Availability_map.print ppf rd_set
+  | Ok map -> RD.Availability_map.print ppf map
 
 let equal t1 t2 =
   match t1, t2 with
@@ -62,16 +62,19 @@ let inter regs1 regs2 =
   | _, Unreachable -> regs1
   | Ok avail1, Ok avail2 -> Ok (RD.Availability_map.inter avail1 avail2)
 
-let find_reg t reg =
+let find_debug_info t reg =
   match t with
   | Unreachable -> None
-  | Ok avail -> RD.Availability_map.find_reg avail reg
+  | Ok avail ->
+    match RD.Availability_map.find avail reg with
+    | None | Some None -> None
+    | Some debug_info -> debug_info
 
 let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
   match t with
   | Unreachable -> Unreachable
-  | Ok rd_set ->
-    Ok (RD.Availability_map.made_unavailable_by_clobber rd_set ~regs_clobbered
+  | Ok map ->
+    Ok (RD.Availability_map.made_unavailable_by_clobber map ~regs_clobbered
       ~register_class)
 
 let subset t1 t2 =

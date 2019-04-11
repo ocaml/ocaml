@@ -135,7 +135,8 @@ Format.eprintf "Iname_for_debugger\n%!";
                 is_parameter
                 ~provenance
             in
-            avail_after := RDM.add_or_replace !avail_after reg debug_info
+            avail_after :=
+              RDM.add_or_replace !avail_after reg (Some debug_info)
           end
         done;
         Some (ok avail_before), ok !avail_after
@@ -173,13 +174,13 @@ Format.eprintf "Imove/reload/spill\n%!";
               | None ->
                 Misc.fatal_errorf "Second invariant broken: avail_before %a, \
                     reg %a"
-                  RD.Availability_set.print avail_before
+                  RDM.print avail_before
                   Printmach.reg arg_reg
               | Some arg_reg_debug_info -> result_reg, arg_reg_debug_info)
             instr.arg instr.res
         in
         let avail_across =
-          RD.Availability_set.diff_domain avail_before made_unavailable
+          RDM.diff_domain avail_before made_unavailable
         in
         let avail_after =
           RDM.disjoint_union avail_across (RDM.of_assoc_array results)
@@ -228,10 +229,10 @@ Format.eprintf "made_unavailable_1: %a\n%!" RDM.print made_unavailable_1;
 Format.eprintf "made_unavailable_2: %a\n%!" RDM.print made_unavailable_2;
 (*
         let made_unavailable =
-          RD.Availability_set.disjoint_union made_unavailable_1
+          RDM.disjoint_union made_unavailable_1
             made_unavailable_2
         in
-Format.eprintf "made_unavailable: %a\n%!" RD.Availability_set.print made_unavailable;
+Format.eprintf "made_unavailable: %a\n%!" RDM.print made_unavailable;
 *)
         let avail_across = RDM.diff_domain avail_before made_unavailable_1 in
         let avail_across = RDM.diff_domain avail_across made_unavailable_2 in
@@ -426,10 +427,8 @@ let fundecl (f : M.fundecl) =
 Format.eprintf "fundecl: %a\n%!" Printmach.fundecl f;
     assert (Hashtbl.length avail_at_exit = 0);
     avail_at_raise := RAS.unreachable;
-    let fun_args = R.set_of_array f.fun_args in
-    let avail_before =
-      RAS.create (RD.Availability_set.without_debug_info fun_args)
-    in
+    let fun_args = Array.map (fun arg -> arg, None) f.fun_args in
+    let avail_before = RAS.create (RDM.of_assoc_array fun_args) in
     ignore ((available_regs f.fun_body ~avail_before) : RAS.t);
     f
   end

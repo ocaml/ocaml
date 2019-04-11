@@ -232,3 +232,15 @@ let assigned_to_stack t =
   match t.loc with
   | Stack _ -> true
   | Reg _ | Unknown -> false
+
+let regs_at_same_location t1 t2 ~register_class =
+  (* We need to check the register classes too: two locations both saying
+     "stack offset N" might actually be different physical locations, for
+     example if one is of class "Int" and another "Float" on amd64.
+     [register_class] will be [Proc.register_class], but cannot be here,
+     due to a circular dependency. *)
+  t1.loc = t2.loc
+    && register_class t1 = register_class t2
+
+let at_same_location t1 t2 ~register_class =
+  regs_at_same_location t1 t2 ~register_class

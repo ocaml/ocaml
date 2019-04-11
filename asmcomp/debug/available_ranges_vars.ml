@@ -26,7 +26,7 @@ module Vars = struct
      relation that identifies two registers iff they have the same name and
      location. *)
   module Key = struct
-    include RD.With_canonical_set
+    include RD.For_compute_ranges
 
     let all_parents _t = []
   end
@@ -141,6 +141,8 @@ module Vars = struct
     let is_parameter t = t.is_parameter
   end
 
+  (* CR mshinwell: update comment to explain what "subset inclusion" means
+     here *)
   (* Important note: [Reg_availability_set.canonicalise] does not preserve
      subset inclusion.  This means in particular that a canonicalised
      [available_across] set may not be a subset of the corresponding

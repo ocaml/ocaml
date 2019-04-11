@@ -74,6 +74,13 @@ val always_holds_non_pointer : t -> bool
     slot. *)
 val assigned_to_stack : t -> bool
 
+(** [at_same_location t reg] holds iff the register [t] corresponds to
+    the same (physical or pseudoregister) location as the register [reg],
+    which is not equipped with debugging information.
+    [register_class] should be [Proc.register_class].
+*)
+val at_same_location : t -> t -> register_class:(t -> int) -> bool
+
 val reset: unit -> unit
 val all_registers: unit -> t list
 val num_registers: unit -> int

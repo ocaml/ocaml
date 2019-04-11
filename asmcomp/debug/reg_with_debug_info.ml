@@ -178,20 +178,6 @@ let reg t = t.reg
 let location t = t.reg.loc
 let debug_info t = t.debug_info
 
-(*
-let regs_at_same_location (reg1 : Reg.t) (reg2 : Reg.t) ~register_class =
-  (* We need to check the register classes too: two locations both saying
-     "stack offset N" might actually be different physical locations, for
-     example if one is of class "Int" and another "Float" on amd64.
-     [register_class] will be [Proc.register_class], but cannot be here,
-     due to a circular dependency. *)
-  reg1.loc = reg2.loc
-    && register_class reg1 = register_class reg2
-
-let at_same_location t (reg : Reg.t) ~register_class =
-  regs_at_same_location t.reg reg ~register_class
-*)
-
 (* We use maps to allow lookup by [Reg.t] to be fast, and to statically forbid
    multiple [Debug_info.t option] values being associated with any given [Reg.t]
    value.  Using maps rather than sets also simplifies the code in
@@ -210,6 +196,8 @@ module Availability_map = struct
         t
     in
     Format.fprintf ppf "@[<1>{@[%a@ @]}@]" elts t
+
+  let equal t1 t2 = Reg.Map.equal (Option.equal Debug_info.equal) t1 t2
 
   let empty = Reg.Map.empty
 
@@ -238,39 +226,33 @@ module Availability_map = struct
   let filter t ~f = Reg.Map.filter (fun reg _debug_info -> f reg) t
 
   let diff_domain t1 t2 =
-    let t = Reg.Map.filter (fun reg _ -> not (Reg.Map.mem reg t2)) t1 in
-    invariant t;
-    t
+    Reg.Map.filter (fun reg _ -> not (Reg.Map.mem reg t2)) t1
 
   let inter t1 t2 =
-    let t =
-      Reg.Map.merge (fun _reg debug_info_opt1 debug_info_opt2 ->
-          match debug_info_opt1, debug_info_opt2 with
-          | Some debug_info1, Some debug_info2 ->
-            (* This check ensures that, for example, when we intersect two sets
-               together (for example to handle a join point in a function's
-               code) then we correctly lose debugging information when it is not
-               valid on all paths.
+    Reg.Map.merge (fun _reg debug_info_opt1 debug_info_opt2 ->
+        match debug_info_opt1, debug_info_opt2 with
+        | Some debug_info1, Some debug_info2 ->
+          (* This check ensures that, for example, when we intersect two sets
+             together (for example to handle a join point in a function's
+             code) then we correctly lose debugging information when it is not
+             valid on all paths.
 
-               For example, suppose the value of a mutable variable x is copied
-               into another variable y; then there is a conditional where on one
-               branch x is assigned and on the other branch it is not. This
-               means that on the former branch we have forgotten about y holding
-               the value of x; but we have not on the latter. At the join point
-               we must have forgotten the information. *)
-            if Option.equal Debug_info.equal debug_info1 debug_info2 then
-              Some debug_info1
-            else
-              None
-          | Some debug_info, None
-          | None, Some debug_info ->
-            (* The register only occurred in one of [t1] and [t2]. *)
-            debug_info
-          | None, None -> Misc.fatal_error "Bug in [Map.merge]")
-        t1 t2
-    in
-    invariant t;
-    t
+             For example, suppose the value of a mutable variable x is copied
+             into another variable y; then there is a conditional where on one
+             branch x is assigned and on the other branch it is not. This
+             means that on the former branch we have forgotten about y holding
+             the value of x; but we have not on the latter. At the join point
+             we must have forgotten the information. *)
+          if Option.equal Debug_info.equal debug_info1 debug_info2 then
+            Some debug_info1
+          else
+            None
+        | Some debug_info, None
+        | None, Some debug_info ->
+          (* The register only occurred in one of [t1] and [t2]. *)
+          Some debug_info
+        | None, None -> Misc.fatal_error "Bug in [Map.merge]")
+      t1 t2
 
   let disjoint_union t1 t2 =
     Reg.Map.union (fun _reg _debug_info1 _debug_info2 ->
@@ -280,15 +262,16 @@ module Availability_map = struct
 
   let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
     let regs_clobbered = Reg.set_of_array regs_clobbered in
-    let t =
-      Reg.Map.filter (fun reg _debug_info ->
-          Reg.Set.exists (fun reg' ->
-              regs_at_same_location reg' reg ~register_class)
-            regs_clobbered)
-        t
-    in
-    invariant t;
-    t
+    Reg.Map.filter (fun reg _debug_info ->
+        Reg.Set.exists (fun reg' ->
+            Reg.at_same_location reg' reg ~register_class)
+          regs_clobbered)
+      t
+
+  let subset t1 t2 =
+    let regs1 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t1)) in
+    let regs2 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t2)) in
+    Reg.Set.subset regs1 regs2
 end
 
 module Canonical_availability_map = struct
@@ -299,7 +282,7 @@ module Canonical_availability_map = struct
   let empty = Reg.Map.empty
 
   let create (map : Availability_map.t) =
-    let regs_by_var = V.Tbl.create 42 in
+    let regs_by_var : reg_with_debug_info V.Tbl.t = V.Tbl.create 42 in
     Reg.Map.iter (fun reg debug_info ->
         let reg = create_with_debug_info reg debug_info in
         match debug_info with
@@ -309,7 +292,7 @@ module Canonical_availability_map = struct
           | Var name ->
             begin match V.Tbl.find regs_by_var name with
             | exception Not_found -> V.Tbl.add regs_by_var name reg
-            | (reg' : t) ->
+            | (reg' : reg_with_debug_info) ->
               let loc = location reg in
               let loc' = location reg' in
               match loc, loc' with
@@ -351,9 +334,22 @@ module Canonical_availability_map = struct
         Reg.Map.empty
     in
     if !Clflags.ddebug_invariants then begin
-      assert (avail_map_subset result set)
+      assert (Availability_map.subset result map)
     end;
     result
+
+  let of_list rds =
+    let regs = Reg.Set.of_list (List.map reg rds) in
+    if Reg.Set.cardinal regs <> List.length rds then begin
+      Misc.fatal_error "More than one binding with the same [Reg.t]"
+    end;
+    let avail_map =
+      List.fold_left (fun t rd ->
+          Availability_map.add_or_replace t (reg rd) (debug_info rd))
+        Availability_map.empty
+        rds
+    in
+    create avail_map
 
   let is_empty = Reg.Map.is_empty
 
@@ -373,7 +369,8 @@ module Canonical_availability_map = struct
           let occurs_in_t2 =
             match Reg.Map.find reg t2 with
             | exception Not_found -> false
-            | debug_info_t2 -> Debug_info.equal debug_info_t1 debug_info_t2
+            | debug_info_t2 ->
+              Option.equal Debug_info.equal debug_info_t1 debug_info_t2
           in
           not occurs_in_t2)
         t1
@@ -416,7 +413,7 @@ module For_compute_ranges = struct
 
   let print ppf t : unit = print ?print_reg:None ppf t
 
-  module Set = Canonical_set
+  module Set = Canonical_availability_map
 
   module Map = Map.Make (struct
     type nonrec t = t

@@ -47,134 +47,132 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
   in
   let arg_location, type_attribute =
     let available_before = Insn_debuginfo.available_before insn.dbg in
-    match Reg_availability_set.find_reg available_before arg with
+    match Reg_availability_set.find_debug_info available_before arg with
     | None -> [], []
-    | Some rd ->
-      match Reg_with_debug_info.debug_info rd with
-      | None -> [], []
-      | Some debug_info ->
-        let holds_value_of =
-          Reg_with_debug_info.Debug_info.holds_value_of debug_info
+    | Some debug_info ->
+      let holds_value_of =
+        Reg_with_debug_info.Debug_info.holds_value_of debug_info
+      in
+      let create_location_description arg_location =
+        let arg_location =
+          Single_location_description.of_simple_location_description
+            arg_location
         in
-        let create_location_description arg_location =
-          let arg_location =
-            Single_location_description.of_simple_location_description
-              arg_location
-          in
-          [DAH.create_single_call_value_location_description arg_location;
+        [DAH.create_single_call_value_location_description arg_location;
+        ]
+      in
+      match holds_value_of with
+      | Var holds_value_of ->
+        let type_attribute =
+          match Reg_with_debug_info.Debug_info.provenance debug_info with
+          | None -> []
+          | Some provenance ->
+            let type_die =
+              (* CR mshinwell: This should reuse DIEs which were created
+                 previously to describe these vars.  Also, shouldn't these
+                 DIEs be parented higher up? *)
+              Dwarf_variables_and_parameters.normal_type_for_var
+                ~parent:(Some call_site_die)
+                (Some (Backend_var.Provenance.ident_for_type provenance))
+                (Backend_var.Provenance.is_parameter provenance)
+            in
+            [DAH.create_type_from_reference
+              ~proto_die_reference:(Proto_die.reference type_die)
+            ]
+        in
+        let arg_location =
+          if is_tail then begin
+            (* If this is a tail call site, no arguments of the call will be
+               available with certainty in the callee, since any argument we
+               describe in DWARF (see comment below) will be on the
+               stack---and our stack frame may have been overwritten by the
+               time such argument is queried in the debugger. *)
+            []
+          end else begin
+            (* Only registers spilled at the time of the call will be
+               available with certainty (in the caller's frame) during the
+               execution of the callee.  Canonicalising the availability set
+               will always prefer spilled registers---but members of
+               canonicalised sets are not guaranteed to be spilled. *)
+            let holding_var =
+              Reg_with_debug_info.Canonical_availability_map.
+                find_holding_value_of_variable
+                (Reg_availability_set.canonicalise available_before)
+                holds_value_of
+            in
+            match holding_var with
+            | None -> []
+            | Some rd ->
+              let reg = Reg_with_debug_info.reg rd in
+              match reg.loc with
+              | Reg _ -> []
+              | Unknown ->
+                Misc.fatal_errorf "Register without location: %a"
+                  Printmach.reg reg
+              | Stack stack_loc ->
+                let offset_from_cfa_in_bytes =
+                  Dwarf_reg_locations.offset_from_cfa_in_bytes reg
+                    stack_loc ~stack_offset
+                in
+                let arg_location_rvalue =
+                  Dwarf_reg_locations.reg_location_description reg
+                    ~offset_from_cfa_in_bytes ~need_rvalue:true
+                in
+                match arg_location_rvalue with
+                | None -> []
+                | Some arg_location_rvalue ->
+                  create_location_description arg_location_rvalue
+          end
+        in
+        arg_location, type_attribute
+      | Const_int i ->
+        let arg_location =
+          create_location_description
+            (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.signed_int_const i)))
+        in
+        let type_attribute =
+          [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
           ]
         in
-        match holds_value_of with
-        | Var holds_value_of ->
-          let type_attribute =
-            match Reg_with_debug_info.Debug_info.provenance debug_info with
-            | None -> []
-            | Some provenance ->
-              let type_die =
-                (* CR mshinwell: This should reuse DIEs which were created
-                   previously to describe these vars.  Also, shouldn't these
-                   DIEs be parented higher up? *)
-                Dwarf_variables_and_parameters.normal_type_for_var
-                  ~parent:(Some call_site_die)
-                  (Some (Backend_var.Provenance.ident_for_type provenance))
-                  (Backend_var.Provenance.is_parameter provenance)
-              in
-              [DAH.create_type_from_reference
-                ~proto_die_reference:(Proto_die.reference type_die)
-              ]
-          in
-          let arg_location =
-            if is_tail then begin
-              (* If this is a tail call site, no arguments of the call will be
-                 available with certainty in the callee, since any argument we
-                 describe in DWARF (see comment below) will be on the
-                 stack---and our stack frame may have been overwritten by the
-                 time such argument is queried in the debugger. *)
-              []
-            end else begin
-              (* Only registers spilled at the time of the call will be
-                 available with certainty (in the caller's frame) during the
-                 execution of the callee.  Canonicalising the availability set
-                 will always prefer spilled registers---but members of
-                 canonicalised sets are not guaranteed to be spilled. *)
-              let holding_var =
-                Reg_with_debug_info.Canonical_set.find_holding_value_of_variable
-                  (Reg_availability_set.canonicalise available_before)
-                  holds_value_of
-              in
-              match holding_var with
-              | None -> []
-              | Some rd ->
-                let reg = Reg_with_debug_info.reg rd in
-                match reg.loc with
-                | Reg _ -> []
-                | Unknown ->
-                  Misc.fatal_errorf "Register without location: %a"
-                    Printmach.reg reg
-                | Stack stack_loc ->
-                  let offset_from_cfa_in_bytes =
-                    Dwarf_reg_locations.offset_from_cfa_in_bytes reg
-                      stack_loc ~stack_offset
-                  in
-                  let arg_location_rvalue =
-                    Dwarf_reg_locations.reg_location_description reg
-                      ~offset_from_cfa_in_bytes ~need_rvalue:true
-                  in
-                  match arg_location_rvalue with
-                  | None -> []
-                  | Some arg_location_rvalue ->
-                    create_location_description arg_location_rvalue
-            end
-          in
-          arg_location, type_attribute
-        | Const_int i ->
-          let arg_location =
-            create_location_description
-              (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.signed_int_const i)))
-          in
-          let type_attribute =
+        arg_location, type_attribute
+      | Const_naked_float f ->
+        (* CR mshinwell: This shouldn't happen at the moment *)
+        let arg_location =
+          create_location_description
+            (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.float_const f)))
+        in
+        let type_attribute =
+          [ DAH.create_type ~proto_die:(DS.naked_float_type_proto_die state)
+          ]
+        in
+        arg_location, type_attribute
+      | Const_symbol symbol ->
+        let symbol = Asm_symbol.create symbol in
+        let arg_location =
+          create_location_description
+            (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.const_symbol symbol)))
+        in
+        let type_attribute =
+          (* CR-someday mshinwell: Work out what we need to do in order to
+             know whether a given symbol, in another compilation unit, has
+             a DWARF DIE. *)
+          match DS.type_die_for_lifted_constant state symbol with
+          | None ->
+            (* In this case the debugger will have to print the value using
+               only the contents of the heap, and not the OCaml type. *)
+            (* CR mshinwell: Except that it seems to use the type from the
+               parameter -- see above *)
             [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
             ]
-          in
-          arg_location, type_attribute
-        | Const_naked_float f ->
-          (* CR mshinwell: This shouldn't happen at the moment *)
-          let arg_location =
-            create_location_description
-              (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.float_const f)))
-          in
-          let type_attribute =
-            [ DAH.create_type ~proto_die:(DS.naked_float_type_proto_die state)
+          | Some type_die ->
+            (* This case may arise where the defining expression of a
+               variable was lifted, but an occurrence of the variable as one
+               of the call site arguments was substituted out.  Despite the
+               substitution, we can still retrieve the OCaml type. *)
+            [ DAH.create_type ~proto_die:type_die
             ]
-          in
-          arg_location, type_attribute
-        | Const_symbol symbol ->
-          let symbol = Asm_symbol.create symbol in
-          let arg_location =
-            create_location_description
-              (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.const_symbol symbol)))
-          in
-          let type_attribute =
-            (* CR-someday mshinwell: Work out what we need to do in order to
-               know whether a given symbol, in another compilation unit, has
-               a DWARF DIE. *)
-            match DS.type_die_for_lifted_constant state symbol with
-            | None ->
-              (* In this case the debugger will have to print the value using
-                 only the contents of the heap, and not the OCaml type. *)
-              (* CR mshinwell: Except that it seems to use the type from the
-                 parameter -- see above *)
-              [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
-              ]
-            | Some type_die ->
-              (* This case may arise where the defining expression of a
-                 variable was lifted, but an occurrence of the variable as one
-                 of the call site arguments was substituted out.  Despite the
-                 substitution, we can still retrieve the OCaml type. *)
-              [ DAH.create_type ~proto_die:type_die
-              ]
-          in
-          arg_location, type_attribute
+        in
+        arg_location, type_attribute
   in
   let tag : Dwarf_tag.t =
     match !Clflags.gdwarf_version with

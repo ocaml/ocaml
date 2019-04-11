@@ -128,12 +128,6 @@ val location : t -> Reg.location
 val debug_info : t -> Debug_info.t option
 
 (*
-(** [at_same_location t reg] holds iff the register [t] corresponds to
-    the same (physical or pseudoregister) location as the register [reg],
-    which is not equipped with debugging information.
-    [register_class] should be [Proc.register_class].
-*)
-val at_same_location : t -> Reg.t -> register_class:(Reg.t -> int) -> bool
 
 (** Return a new register that has empty debugging information but is
     otherwise like the supplied register with debug info. *)
@@ -205,6 +199,8 @@ module Availability_map : sig
 
   val print : Format.formatter -> t -> unit
 
+  val equal : t -> t -> bool
+
   val empty : t
 
   val singleton : Reg.t -> Debug_info.t option -> t
@@ -258,6 +254,10 @@ module Canonical_availability_map : sig
   val empty : t
 
   val create : Availability_map.t -> t
+
+  (** [of_list] will raise an exception if more than one entry in the
+      supplied list contains the same [Reg.t]. *)
+  val of_list : reg_with_debug_info list -> t
 
   val is_empty : t -> bool
 
