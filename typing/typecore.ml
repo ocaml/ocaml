@@ -4824,7 +4824,7 @@ let report_pattern_type_clash_hints pat diff =
 
 (* Hint when using int operators (eg. `+`)
    on other kind of integer and floats *)
-let report_numeric_operator_clash_hints actual_type operator =
+let report_numeric_operator_clash_hints ~loc actual_type operator =
   let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
   let stdlib_qualified mod_ val_ = Path.Pdot (Path.Pdot (stdlib, mod_), val_) in
   let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
@@ -4859,21 +4859,16 @@ let report_numeric_operator_clash_hints actual_type operator =
   in
   match expecting_op with
   | Some op ->
-      Some (fun ppf ->
-        fprintf ppf "@[Hint:@ Did you mean to use `%a'?@]"
-          Printtyp.path op
-      )
-  | None -> None
+      [ Location.msg ~loc "@[Hint:@ Did you mean to use `%a'?@]"
+          Printtyp.path op ]
+  | None -> []
 
 (* Returns a list of `Location.msg` *)
 let report_application_clash_hints diff expl =
   match expl, diff with
   | Some (Application { exp_desc = Texp_ident (p, _, _); exp_loc = loc; _ }),
     Some Unification_trace.{ got = { t = { desc = Tconstr (typ, [], _) } } } ->
-      begin match report_numeric_operator_clash_hints typ p with
-        | Some txt -> [ { txt; loc } ]
-        | None -> []
-      end
+      report_numeric_operator_clash_hints ~loc typ p
   | _ -> []
 
 let report_type_expected_explanation expl ppf =
