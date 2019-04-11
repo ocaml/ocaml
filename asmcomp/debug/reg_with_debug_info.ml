@@ -247,10 +247,11 @@ module Availability_map = struct
             Some debug_info1
           else
             None
-        | Some debug_info, None
-        | None, Some debug_info ->
-          (* The register only occurred in one of [t1] and [t2]. *)
-          Some debug_info
+        | Some _debug_info, None
+        | None, Some _debug_info ->
+          (* The register only occurred in one of [t1] and [t2].  Since
+             this is intersection, we always return [None]. *)
+          None
         | None, None -> Misc.fatal_error "Bug in [Map.merge]")
       t1 t2
 

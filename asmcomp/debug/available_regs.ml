@@ -87,8 +87,10 @@ let rec available_regs (instr : M.instruction)
       ~(avail_before : RAS.t) : RAS.t =
   check_invariants instr ~avail_before;
   instr.dbg <- Insn_debuginfo.with_available_before instr.dbg avail_before;
+(*
   Format.eprintf "avail_before %a\n%!"
     (RAS.print ~print_reg:Printmach.reg) avail_before;
+*)
   let avail_across, avail_after =
     let ok set = RAS.create set in
     let unreachable = RAS.unreachable in
@@ -102,7 +104,9 @@ let rec available_regs (instr : M.instruction)
         Some (ok RDM.empty), unreachable
       | Iop (Iname_for_debugger { ident; is_parameter; provenance;
           is_assignment; }) ->
+(*
 Format.eprintf "Iname_for_debugger\n%!";
+*)
         (* First forget about any existing debug info to do with [ident]
            if the naming corresponds to an assignment operation. *)
         let forgetting_ident =
@@ -141,7 +145,9 @@ Format.eprintf "Iname_for_debugger\n%!";
         done;
         Some (ok avail_before), ok !avail_after
       | Iop (Imove | Ireload | Ispill) ->
+(*
 Format.eprintf "Imove/reload/spill\n%!";
+*)
         (* Moves are special: they enable us to propagate "holds value of"
            information, such as names.
            No-op moves need to be handled specially---in this case, we may
@@ -182,12 +188,17 @@ Format.eprintf "Imove/reload/spill\n%!";
         let avail_across =
           RDM.diff_domain avail_before made_unavailable
         in
+        let results = RDM.of_assoc_array results in
         let avail_after =
-          RDM.disjoint_union avail_across (RDM.of_assoc_array results)
+          (* Replace any existing bindings for the registers in [results] with
+             new bindings. *)
+          RDM.disjoint_union (RDM.diff_domain avail_across results) results
         in
         Some (ok avail_across), ok avail_after
       | Iop op ->
+(*
 Format.eprintf "Iop %a\n%!" (Printmach.operation op instr.arg) instr.res;
+*)
         (* We split the calculation of registers that become unavailable after
            a call into two parts.  First: anything that the target marks as
            destroyed by the operation, combined with any registers that will
@@ -196,8 +207,10 @@ Format.eprintf "Iop %a\n%!" (Printmach.operation op instr.arg) instr.res;
           let regs_clobbered =
             Array.append (Proc.destroyed_at_oper instr.desc) instr.res
           in
+(*
 Format.eprintf "made_unavailable_by_clobber: {%a}\n%!"
   Printmach.regset (Reg.set_of_array regs_clobbered);
+*)
           RDM.made_unavailable_by_clobber avail_before
             ~regs_clobbered
             ~register_class:Proc.register_class
@@ -225,9 +238,9 @@ Format.eprintf "made_unavailable_by_clobber: {%a}\n%!"
               not remains_available)
           | _ -> RDM.empty
         in
+(*
 Format.eprintf "made_unavailable_1: %a\n%!" RDM.print made_unavailable_1;
 Format.eprintf "made_unavailable_2: %a\n%!" RDM.print made_unavailable_2;
-(*
         let made_unavailable =
           RDM.disjoint_union made_unavailable_1
             made_unavailable_2
@@ -273,13 +286,13 @@ Format.eprintf "made_unavailable: %a\n%!" RDM.print made_unavailable;
         let avail_after = RDM.disjoint_union result_regs avail_across in
         Some (ok avail_across), ok avail_after
       | Iifthenelse (_, ifso, ifnot) ->
-Format.eprintf "Iifthenelse\n%!";
+(* Format.eprintf "Iifthenelse\n%!"; *)
 join [ifso; ifnot] ~avail_before
       | Iswitch (_, cases) ->
-Format.eprintf "Iswitch\n%!";
+(* Format.eprintf "Iswitch\n%!"; *)
 join (Array.to_list cases) ~avail_before
       | Iloop body ->
-Format.eprintf "Iloop\n%!";
+(* Format.eprintf "Iloop\n%!"; *)
         let avail_after = ref (ok avail_before) in
         begin try
           while true do
@@ -424,7 +437,9 @@ let fundecl (f : M.fundecl) =
   if not (Clflags.debug_thing Debug_dwarf_vars) then begin
     f
   end else begin
+(*
 Format.eprintf "fundecl: %a\n%!" Printmach.fundecl f;
+*)
     assert (Hashtbl.length avail_at_exit = 0);
     avail_at_raise := RAS.unreachable;
     let fun_args = Array.map (fun arg -> arg, None) f.fun_args in
