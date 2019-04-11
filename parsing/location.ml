@@ -82,6 +82,7 @@ let mknoloc txt = mkloc txt none
 
 let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
+let input_phrase_buffer = ref (None : Buffer.t option)
 
 (******************************************************************************)
 (* Terminal info *)
@@ -546,6 +547,22 @@ let lines_around_from_lexbuf
     lines_around ~start_pos ~end_pos ~seek ~read_char
   end
 
+(* Try to get lines from a phrase buffer fix error #7925 *)
+let lines_around_from_phrasebuf
+    ~(start_pos: position) ~(end_pos: position)
+    (pb: Buffer.t):
+  input_line list
+  =
+  let pos = ref 0 in (* relative position (always starts at 0)*)
+  let seek n = pos := n in
+  let read_char () =
+    if !pos >= Buffer.length pb then (* end of buffer *) None
+    else
+      let c = Buffer.nth pb !pos in
+      incr pos; Some c
+  in
+  lines_around ~start_pos ~end_pos ~seek ~read_char
+
 (* Get lines from a file *)
 let lines_around_from_file
     ~(start_pos: position) ~(end_pos: position)
@@ -583,15 +600,23 @@ let lines_around_from_current_input ~start_pos ~end_pos =
     else
       []
   in
-  match !input_lexbuf with
-  | Some lb ->
+  (*Fix error #7925 added matches for //toplevel// to be able to use the phrase buffer instead of the lexbuffer*)
+  match !input_lexbuf, !input_phrase_buffer, !input_name with
+  | _, Some pb, "//toplevel//" ->
+      begin match lines_around_from_phrasebuf pb ~start_pos ~end_pos with
+      | [] -> (* Couldn't get input from phrase buffer fall back to file *)
+          from_file ()
+      | lines ->
+          lines
+      end
+  | Some lb, _, _ ->
       begin match lines_around_from_lexbuf lb ~start_pos ~end_pos with
       | [] -> (* The input is likely not in the lexbuf anymore *)
           from_file ()
       | lines ->
           lines
       end
-  | None ->
+  | None, _, _ ->
       from_file ()
 
 (******************************************************************************)
