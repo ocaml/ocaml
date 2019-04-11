@@ -4817,95 +4817,92 @@ let type_clash_of_trace trace =
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
-let report_literal_type_constraint ppf expected_type const =
-  let hint str_val =
-    let hint_suffix c =
-      fprintf ppf "@\n@[Hint: Did you mean `%s%c'?@]" str_val c
-    in
-    if Path.same expected_type Predef.path_int32 then
-      hint_suffix 'l'
-    else if Path.same expected_type Predef.path_int64 then
-      hint_suffix 'L'
-    else if Path.same expected_type Predef.path_nativeint then
-      hint_suffix 'n'
-    else if Path.same expected_type Predef.path_float then
-      hint_suffix '.'
-    else
-      ()
+let report_literal_type_constraint expected_type const =
+  let const_str = match const with
+    | Const_int n -> Some (Int.to_string n)
+    | Const_int32 n -> Some (Int32.to_string n)
+    | Const_int64 n -> Some (Int64.to_string n)
+    | Const_nativeint n -> Some (Nativeint.to_string n)
+    | _ -> None
   in
-  match const with
-  | Const_int n -> hint (Int.to_string n)
-  | Const_int32 n -> hint (Int32.to_string n)
-  | Const_int64 n -> hint (Int64.to_string n)
-  | Const_nativeint n -> hint (Nativeint.to_string n)
-  | _ -> ()
+  let suffix =
+    if Path.same expected_type Predef.path_int32 then
+      Some 'l'
+    else if Path.same expected_type Predef.path_int64 then
+      Some 'L'
+    else if Path.same expected_type Predef.path_nativeint then
+      Some 'n'
+    else if Path.same expected_type Predef.path_float then
+      Some '.'
+    else None
+  in
+  match const_str, suffix with
+  | Some c, Some s -> [ Location.msg "@[Hint: Did you mean `%s%c'?@]" c s ]
+  | _, _ -> []
 
-let report_literal_type_constraint ppf const = function
+let report_literal_type_constraint const = function
   | Some Unification_trace.
     { expected = { t = { desc = Tconstr (typ, [], _) } } } ->
-      report_literal_type_constraint ppf typ const
-  | Some _ | None -> ()
+      report_literal_type_constraint typ const
+  | Some _ | None -> []
 
-let report_expr_type_clash_hints ppf exp diff =
+let report_expr_type_clash_hints exp diff =
   match exp with
-  | Some (Texp_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | Some (Texp_constant const) -> report_literal_type_constraint const diff
+  | _ -> []
 
-let report_pattern_type_clash_hints ppf pat diff =
+let report_pattern_type_clash_hints pat diff =
   match pat with
-  | Some (Tpat_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | Some (Tpat_constant const) -> report_literal_type_constraint const diff
+  | _ -> []
 
 (* Hint when using int operators (eg. `+`)
    on other kind of integer and floats *)
-let report_numeric_operator_clash_hints actual_type operator =
+let report_numeric_operator_clash_hints ~loc actual_type operator =
   let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
   let stdlib_qualified mod_ val_ = Path.Pdot (Path.Pdot (stdlib, mod_), val_) in
-  let hint expected_op =
-    Some (fun ppf ->
-      fprintf ppf "@[Hint:@ Did you mean to use `%a'?@]"
-        Printtyp.path expected_op
-    )
-  in
-  let hint ~add ~sub ~mul ~div ~mod_ () =
-    let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
-    if is_op "+" then hint add
-    else if is_op "-" then hint sub
-    else if is_op "*" then hint mul
-    else if is_op "/" then hint div
-    else if is_op "mod" then hint mod_
+  let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
+  let expecting_qualified name =
+    let qualified = stdlib_qualified name in
+    if is_op "+" then Some (qualified "add")
+    else if is_op "-" then Some (qualified "sub")
+    else if is_op "*" then Some (qualified "mul")
+    else if is_op "/" then Some (qualified "div")
+    else if is_op "mod" then Some (qualified "rem")
     else None
   in
-  let hint_qualified name =
-    let qualified = stdlib_qualified name in
-    hint ~add:(qualified "add") ~sub:(qualified "sub") ~mul:(qualified "mul")
-      ~div:(qualified "div") ~mod_:(qualified "rem") ()
-  in
-  let hint_std () =
+  let expecting_float () =
     let qualified id = Path.Pdot (stdlib, id) in
-    hint ~add:(qualified "+.") ~sub:(qualified "-.") ~mul:(qualified "*.")
-      ~div:(qualified "/.") ~mod_:(stdlib_qualified "Float" "rem") ()
+    if is_op "+" then Some (qualified "+.")
+    else if is_op "-" then Some (qualified "-.")
+    else if is_op "*" then Some (qualified "*.")
+    else if is_op "/" then Some (qualified "/.")
+    else if is_op "mod" then Some (stdlib_qualified "Float" "rem")
+    else None
   in
-  let expecting = Path.same actual_type in
-  if expecting Predef.path_int32 then
-    hint_qualified "Int32"
-  else if expecting Predef.path_int64 then
-    hint_qualified "Int64"
-  else if expecting Predef.path_nativeint then
-    hint_qualified "Nativeint"
-  else if expecting Predef.path_float then
-    hint_std ()
-  else None
+  let expecting_op =
+    if Path.same actual_type Predef.path_int32 then
+      expecting_qualified "Int32"
+    else if Path.same actual_type Predef.path_int64 then
+      expecting_qualified "Int64"
+    else if Path.same actual_type Predef.path_nativeint then
+      expecting_qualified "Nativeint"
+    else if Path.same actual_type Predef.path_float then
+      expecting_float ()
+    else None
+  in
+  match expecting_op with
+  | Some op ->
+      [ Location.msg ~loc "@[Hint:@ Did you mean to use `%a'?@]"
+          Printtyp.path op ]
+  | None -> []
 
 (* Returns a list of `Location.msg` *)
 let report_application_clash_hints diff expl =
   match expl, diff with
   | Some (Application { exp_desc = Texp_ident (p, _, _); exp_loc = loc; _ }),
     Some Unification_trace.{ got = { t = { desc = Tconstr (typ, [], _) } } } ->
-      begin match report_numeric_operator_clash_hints typ p with
-        | Some txt -> [ { txt; loc } ]
-        | None -> []
-      end
+      report_numeric_operator_clash_hints ~loc typ p
   | _ -> []
 
 let report_type_expected_explanation expl ppf =
@@ -4960,14 +4957,14 @@ let report_error ~loc env = function
            fprintf ppf "but is mixed here with fields of type")
   | Pattern_type_clash (trace, pat) ->
       let diff = type_clash_of_trace trace in
-      Location.error_of_printer ~loc (fun ppf () ->
+      let sub = report_pattern_type_clash_hints pat diff in
+      Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
             fprintf ppf "This pattern matches values of type")
           (function ppf ->
             fprintf ppf "but a pattern was expected which matches values of \
                          type");
-        report_pattern_type_clash_hints ppf pat diff
       ) ()
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
@@ -4989,7 +4986,11 @@ let report_error ~loc env = function
       ) ()
   | Expr_type_clash (trace, explanation, exp) ->
       let diff = type_clash_of_trace trace in
-      let sub = report_application_clash_hints diff explanation in
+      let sub = List.concat [
+          report_application_clash_hints diff explanation;
+          report_expr_type_clash_hints exp diff;
+        ]
+      in
       Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           ~type_expected_explanation:
@@ -4998,7 +4999,6 @@ let report_error ~loc env = function
              fprintf ppf "This expression has type")
           (function ppf ->
              fprintf ppf "but an expression was expected of type");
-        report_expr_type_clash_hints ppf exp diff
       ) ()
   | Apply_non_function typ ->
       reset_and_mark_loops typ;
