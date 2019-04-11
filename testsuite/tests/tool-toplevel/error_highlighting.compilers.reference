@@ -39,6 +39,11 @@ Lines 2-4, characters 8-2:
 4 | 2)...
 Error: This expression has type int but an expression was expected of type
          float
+Line 2, characters 12-17:
+2 | let x = 1 + "abc" in
+                ^^^^^
+Error: This expression has type string but an expression was expected of type
+         int
 File "error_highlighting_use1.ml", line 1, characters 8-15:
 1 | let x = (1 + 2) +. 3. in ();;
             ^^^^^^^
