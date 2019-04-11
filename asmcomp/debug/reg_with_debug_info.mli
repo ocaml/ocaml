@@ -36,6 +36,15 @@ module Debug_info : sig
   (** The type of debugging information attached to a register. *)
   type t
 
+  (** Create a value of type [t]. *)
+  val create
+     : holds_value_of:Holds_value_of.t
+    -> part_of_value:int
+    -> num_parts_of_value:int
+    -> Is_parameter.t
+    -> provenance:Backend_var.Provenance.t option
+    -> t
+
   (** Total order on values of type [t]. *)
   val compare : t -> t -> int
 
@@ -83,6 +92,7 @@ val print
   -> t
   -> unit
 
+(*
 (** Create a value of type [t] giving full details of the associated
     debugging information. *)
 val create
@@ -105,6 +115,7 @@ val create_without_debug_info : reg:Reg.t -> t
 (** Create a value of type [t] whose debug info is that from [debug_info_from]
     but whose associated [Reg.t] is that specified by [reg]. *)
 val create_copying_debug_info : reg:Reg.t -> debug_info_from:t -> t
+*)
 
 (** Return the normal [Reg.t] value described by the given register with
     debug info. *)
@@ -116,6 +127,7 @@ val location : t -> Reg.location
 (** The debugging information associated with the register. *)
 val debug_info : t -> Debug_info.t option
 
+(*
 (** [at_same_location t reg] holds iff the register [t] corresponds to
     the same (physical or pseudoregister) location as the register [reg],
     which is not equipped with debugging information.
@@ -123,25 +135,13 @@ val debug_info : t -> Debug_info.t option
 *)
 val at_same_location : t -> Reg.t -> register_class:(Reg.t -> int) -> bool
 
-(** Whether the register may hold a pointer value. *)
-val maybe_holds_pointer : t -> bool
-
-(** Whether the register always holds an immediate value. *)
-val always_holds_non_pointer : t -> bool
-
-(** [assigned_to_stack t] holds iff the location of [t] is a hard stack
-    slot. *)
-val assigned_to_stack : t -> bool
-
 (** Return a new register that has empty debugging information but is
     otherwise like the supplied register with debug info. *)
 val clear_debug_info : t -> t
-
-(* CR mshinwell: A pass over these comments is needed once the map
-   representation has settled down. *)
+*)
 
 (** Shared interfaces for non-canonical and canonical register sets
-    (see below). *)
+    (see below).
 module type Set_intf = sig
   type t
 
@@ -197,6 +197,38 @@ module type Set_intf = sig
   (** Return a set of the underlying [Reg.t] values. *)
   val forget_debug_info : t -> Reg.Set.t
 
+end
+*)
+
+module Availability_map : sig
+  type t
+
+  val print : Format.formatter -> t -> unit
+
+  val empty : t
+
+  val singleton : Reg.t -> Debug_info.t option -> t
+
+  val add_or_replace : t -> Reg.t -> Debug_info.t option -> t
+
+  val of_assoc_array : (Reg.t * (Debug_info.t option)) array -> t
+
+  val mem : t -> Reg.t -> bool
+
+  val find : t -> Reg.t -> Debug_info.t option option
+
+  val keys : t -> Reg.Set.t
+
+  val map : t -> f:(Debug_info.t option -> Debug_info.t option) -> t
+
+  val filter : t -> f:(Reg.t -> bool) -> t
+
+  val diff_domain : t -> t -> t
+
+  val inter : t -> t -> t
+
+  val disjoint_union : t -> t -> t
+
   (** [made_unavailable_by_clobber t ~regs_clobbered ~register_class] returns
       the largest subset of [t] whose locations do not overlap with any
       registers in [regs_clobbered].  (Think of [t] as a set of available
@@ -208,6 +240,61 @@ module type Set_intf = sig
     -> register_class:(Reg.t -> int)
     -> t
 end
+
+(** Maps from registers to debug info, kept in a canonical form, guaranteeing
+    for each map that it:
+    (a) contains only registers that are associated with debug info; and
+    (b) contains at most one register that holds the value of any given
+        variable.
+
+    Registers assigned to the stack are preferred if a choice has to be
+    made to satisfy (b).
+*)
+module Canonical_availability_map : sig
+  type t
+
+  val print : Format.formatter -> t -> unit
+
+  val empty : t
+
+  val create : Availability_map.t -> t
+
+  val is_empty : t -> bool
+
+  (** Note that no "union" operations are provided.  Values of type [t]
+      form a semilattice with respect to [inter], but not a lattice also
+      with respect to [union], since the canonical form might not be
+      preserved. *)
+
+  (** [diff t1 t2] returns those bindings in [t1] that do not occur in [t2].
+      Note that both the [Reg.t] and the [Debug_info.t] components are
+      taken into account.  (This means, for example, that if [t1] contains
+      a mapping of register [r] to debug info [di1] and if [t2] contains a
+      mapping of register [r] to debug info [di2] with
+      [not (Debug_info.equal di1 di2)] then [diff t1 t2] returns [t1]
+      unchanged.) *)
+  val diff : t -> t -> t
+
+  (** [inter t1 t2] returns those bindings that occur in both [t1] and [t2].
+      As for [diff], both the [Reg.t] and the [Debug_info.t] components of
+      each binding are considered, and must match for a binding to be
+      returned in the intersection. *)
+  val inter : t -> t -> t
+
+  val fold : (reg_with_debug_info -> 'a -> 'a) -> t -> 'a -> 'a
+
+  (** Find the element of the set that holds the value of the given variable,
+      if such exists, otherwise returning [None].  (Note that by virtue of the
+      canonical form criterion, there can never be more than one variable
+      eligible to be returned from any one call to this function.) *)
+  val find_holding_value_of_variable
+     : t
+    -> Backend_var.t
+    -> reg_with_debug_info option
+end
+
+(*
+
 
 (** Sets of registers with debug info.  Unlike [Canonical_set], below, there
     is no canonicalisation.  However there is never more than one element
@@ -240,20 +327,6 @@ module Availability_set : sig
   val subset : t -> t -> bool
 end
 
-(** Sets of registers with debug info, kept in a canonical form, guaranteeing
-    for each set that it:
-    (a) contains only registers that are associated with debug info; and
-    (b) contains at most one register that holds the value of any given
-        variable.
-
-    Registers assigned to the stack are preferred if a choice has to be
-    made to satisfy (b).
-
-    Operations provided on these sets preserve the canonical form.
-    In particular, there is no [union], since this might not.
-
-    The comparison function for the sets is [compare], from above.
-*)
 module Canonical_set : sig
   include Set_intf with type reg_with_debug_info := t
 
@@ -269,13 +342,14 @@ module Canonical_set : sig
     -> Backend_var.t
     -> reg_with_debug_info option
 end
+*)
 
 (** Convenience module for use with [Compute_ranges_intf]. *)
-module With_canonical_set : sig
+module For_compute_ranges : sig
   type nonrec t = t
 
   val print : Format.formatter -> t -> unit
 
-  module Set = Canonical_set
+  module Set = Canonical_availability_map
   module Map : Map.S with type key = t
 end

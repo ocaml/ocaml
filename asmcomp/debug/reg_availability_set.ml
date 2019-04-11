@@ -18,11 +18,11 @@ module RD = Reg_with_debug_info
 
 type t =
   | Unreachable
-  | Ok of RD.Availability_set.t
+  | Ok of RD.Availability_map.t
 
 let unreachable = Unreachable
 
-let empty = Ok RD.Availability_set.empty
+let empty = Ok RD.Availability_map.empty
 
 let create rd_set = Ok rd_set
 
@@ -36,13 +36,13 @@ let canonicalise t =
 
 let print ~print_reg:_ ppf = function
   | Unreachable -> Format.fprintf ppf "<unreachable>"
-  | Ok rd_set -> RD.Availability_set.print ppf rd_set
+  | Ok rd_set -> RD.Availability_map.print ppf rd_set
 
 let equal t1 t2 =
   match t1, t2 with
   | Unreachable, Unreachable -> true
   | Unreachable, Ok _ | Ok _, Unreachable -> false
-  | Ok regs1, Ok regs2 -> RD.Availability_set.equal regs1 regs2
+  | Ok regs1, Ok regs2 -> RD.Availability_map.equal regs1 regs2
 
 let map t ~f =
   match t with
@@ -54,24 +54,24 @@ let disjoint_union regs1 regs2 =
   | Unreachable, _ -> regs1
   | _, Unreachable -> regs2
   | Ok avail1, Ok avail2 -> 
-    Ok (RD.Availability_set.disjoint_union avail1 avail2)
+    Ok (RD.Availability_map.disjoint_union avail1 avail2)
 
 let inter regs1 regs2 =
   match regs1, regs2 with
   | Unreachable, _ -> regs2
   | _, Unreachable -> regs1
-  | Ok avail1, Ok avail2 -> Ok (RD.Availability_set.inter avail1 avail2)
+  | Ok avail1, Ok avail2 -> Ok (RD.Availability_map.inter avail1 avail2)
 
 let find_reg t reg =
   match t with
   | Unreachable -> None
-  | Ok avail -> RD.Availability_set.find_reg avail reg
+  | Ok avail -> RD.Availability_map.find_reg avail reg
 
 let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
   match t with
   | Unreachable -> Unreachable
   | Ok rd_set ->
-    Ok (RD.Availability_set.made_unavailable_by_clobber rd_set ~regs_clobbered
+    Ok (RD.Availability_map.made_unavailable_by_clobber rd_set ~regs_clobbered
       ~register_class)
 
 let subset t1 t2 =

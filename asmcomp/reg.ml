@@ -220,3 +220,15 @@ let print ~register_name ppf r =
   | Stack(Outgoing s) ->
       fprintf ppf "[so%i]" s
   end
+
+let maybe_holds_pointer t =
+  match t.typ with
+  | Addr | Val -> true
+  | Int | Float -> false
+
+let always_holds_non_pointer t = not (maybe_holds_pointer t)
+
+let assigned_to_stack t =
+  match t.loc with
+  | Stack _ -> true
+  | Reg _ | Unknown -> false

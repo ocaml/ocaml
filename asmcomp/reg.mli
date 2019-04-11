@@ -64,6 +64,16 @@ val inter_set_array: Set.t -> t array -> Set.t
 val disjoint_set_array: Set.t -> t array -> bool
 val set_of_array: t array -> Set.t
 
+(** Whether the register may hold a pointer value. *)
+val maybe_holds_pointer : t -> bool
+
+(** Whether the register always holds an immediate value. *)
+val always_holds_non_pointer : t -> bool
+
+(** [assigned_to_stack t] holds iff the location of [t] is a hard stack
+    slot. *)
+val assigned_to_stack : t -> bool
+
 val reset: unit -> unit
 val all_registers: unit -> t list
 val num_registers: unit -> int

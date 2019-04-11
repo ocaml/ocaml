@@ -83,6 +83,17 @@ module Debug_info = struct
     provenance : Backend_var.Provenance.t option;
   }
 
+  let create ~holds_value_of ~part_of_value ~num_parts_of_value
+        is_parameter ~provenance =
+    assert (num_parts_of_value >= 1);
+    assert (part_of_value >= 0 && part_of_value < num_parts_of_value);
+    { holds_value_of;
+      part_of_value;
+      num_parts_of_value;
+      is_parameter;
+      provenance;
+    }
+
   let compare
         { holds_value_of = holds_value_of1; part_of_value = part_of_value1;
           num_parts_of_value = num_parts_of_value1;
@@ -158,52 +169,16 @@ let compare { reg = reg1; debug_info = debug_info1; }
   if c <> 0 then c
   else Option.compare Debug_info.compare debug_info1 debug_info2
 
-let create ~reg ~holds_value_of ~part_of_value ~num_parts_of_value
-      is_parameter ~provenance =
-  assert (num_parts_of_value >= 1);
-  assert (part_of_value >= 0 && part_of_value < num_parts_of_value);
-  let debug_info : Debug_info.t =
-    { holds_value_of;
-      part_of_value;
-      num_parts_of_value;
-      is_parameter;
-      provenance;
-    }
-  in
-  { reg;
-    debug_info = Some debug_info;
-  }
-
-let create_with_debug_info ~reg ~debug_info =
+let create_with_debug_info reg debug_info =
   { reg;
     debug_info;
   }
 
-let create_without_debug_info ~reg =
-  { reg;
-    debug_info = None;
-  }
-
-let create_copying_debug_info ~reg ~debug_info_from =
-  { reg;
-    debug_info = debug_info_from.debug_info;
-  }
-
 let reg t = t.reg
 let location t = t.reg.loc
+let debug_info t = t.debug_info
 
-let maybe_holds_pointer t =
-  match t.reg.typ with
-  | Addr | Val -> true
-  | Int | Float -> false
-
-let always_holds_non_pointer t = not (maybe_holds_pointer t)
-
-let assigned_to_stack t =
-  match t.reg.loc with
-  | Stack _ -> true
-  | Reg _ | Unknown -> false
-
+(*
 let regs_at_same_location (reg1 : Reg.t) (reg2 : Reg.t) ~register_class =
   (* We need to check the register classes too: two locations both saying
      "stack offset N" might actually be different physical locations, for
@@ -215,54 +190,14 @@ let regs_at_same_location (reg1 : Reg.t) (reg2 : Reg.t) ~register_class =
 
 let at_same_location t (reg : Reg.t) ~register_class =
   regs_at_same_location t.reg reg ~register_class
+*)
 
-let debug_info t = t.debug_info
-
-let clear_debug_info t =
-  { t with debug_info = None; }
-
-module type Set_intf = sig
-  type t
-  type reg_with_debug_info
-  val print : Format.formatter -> t -> unit
-  val equal : t -> t -> bool
-  val empty : t
-  val is_empty : t -> bool
-  val of_list : reg_with_debug_info list -> t
-  val of_array : reg_with_debug_info array -> t
-  val without_debug_info : Reg.Set.t -> t
-  val inter : t -> t -> t
-  val diff : t -> t -> t
-  val filter : (reg_with_debug_info -> bool) -> t -> t
-  val fold : (reg_with_debug_info -> 'a -> 'a) -> t -> 'a -> 'a
-  val mem_reg : t -> Reg.t -> bool
-  val find_reg : t -> Reg.t -> reg_with_debug_info option
-  val filter_out_reg : t -> Reg.t -> t
-  val forget_debug_info : t -> Reg.Set.t
-  val made_unavailable_by_clobber
-     : t
-    -> regs_clobbered:Reg.t array
-    -> register_class:(Reg.t -> int)
-    -> t
-end
-
-(* Register availability sets are actually represented as maps, to allow
-   lookup by [Reg.t] to be fast, and to statically forbid multiple
-   [Debug_info.t option] values being associated with any given [Reg.t]
-   value. *)
-type avail_map = Debug_info.t option Reg.Map.t
-
-let avail_map_subset t1 t2 =
-  let regs1 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t1)) in
-  let regs2 = Reg.Set.of_list (List.map fst (Reg.Map.bindings t2)) in
-  Reg.Set.subset regs1 regs2
-
-module Make_set (C : sig
-  val canonicalise : avail_map -> avail_map
-end) = struct
-  type t = avail_map
-
-  let canonicalise = C.canonicalise
+(* We use maps to allow lookup by [Reg.t] to be fast, and to statically forbid
+   multiple [Debug_info.t option] values being associated with any given [Reg.t]
+   value.  Using maps rather than sets also simplifies the code in
+   [Available_regs]. *)
+module Availability_map = struct
+  type t = Debug_info.t option Reg.Map.t
 
   let print ppf t =
     (* CR-someday mshinwell: Try to pass a proper [print_reg] here, or break
@@ -270,57 +205,53 @@ end) = struct
     let print_reg = None in
     let elts ppf t =
       Reg.Map.iter (fun reg debug_info ->
-          let rd = create_with_debug_info ~reg ~debug_info in
+          let rd = create_with_debug_info reg debug_info in
           Format.fprintf ppf "@ %a" (print ?print_reg) rd)
         t
     in
     Format.fprintf ppf "@[<1>{@[%a@ @]}@]" elts t
 
-  let invariant t =
-    if !Clflags.ddebug_invariants then begin
-      if not (Reg.Map.equal (Option.equal Debug_info.equal) t (canonicalise t))
-      then begin
-        Misc.fatal_errorf "Invariant broken:@ %a" print t
-      end
-    end
-
-  let equal t1 t2 = Reg.Map.equal (Option.equal Debug_info.equal) t1 t2
-
   let empty = Reg.Map.empty
-  let is_empty = Reg.Map.is_empty
 
-  let of_list rds =
-    let map =
-      List.fold_left (fun map rd -> Reg.Map.add rd.reg rd.debug_info map)
-        empty
-        rds
-    in
-    if Reg.Map.cardinal map <> List.length rds then begin
-      Misc.fatal_error "Cannot have multiple bindings for any given [Reg.t]"
-    end;
-    canonicalise map
+  let singleton reg debug_info = Reg.Map.singleton reg debug_info
 
-  let of_array arr = of_list (Array.to_list arr)
+  let add_or_replace t reg debug_info = Reg.Map.add reg debug_info t
 
-  let without_debug_info regs =
-    Reg.Set.fold (fun reg acc -> Reg.Map.add reg None acc)
-      regs
+  let of_assoc_array arr =
+    Array.fold_left (fun t (reg, debug_info) ->
+        add_or_replace t reg debug_info)
       empty
+      arr
 
-  (* [inter] and [diff], by construction, preserve the canonical form used
-     in [Canonical_set] below. *)
+  let mem t reg = Reg.Map.mem reg t
+
+  let find t reg =
+    match Reg.Map.find reg t with
+    | exception Not_found -> None
+    | debug_info -> Some debug_info
+
+  let keys t =
+    Reg.Set.of_list (List.map fst (Reg.Map.bindings t))
+
+  let map t ~f = Reg.Map.map f t
+
+  let filter t ~f = Reg.Map.filter (fun reg _debug_info -> f reg) t
+
+  let diff_domain t1 t2 =
+    let t = Reg.Map.filter (fun reg _ -> not (Reg.Map.mem reg t2)) t1 in
+    invariant t;
+    t
+
   let inter t1 t2 =
     let t =
       Reg.Map.merge (fun _reg debug_info_opt1 debug_info_opt2 ->
           match debug_info_opt1, debug_info_opt2 with
-          | Some debug_info, None
-          | None, Some debug_info -> Some debug_info
           | Some debug_info1, Some debug_info2 ->
             (* This check ensures that, for example, when we intersect two sets
                together (for example to handle a join point in a function's
                code) then we correctly lose debugging information when it is not
                valid on all paths.
-          
+
                For example, suppose the value of a mutable variable x is copied
                into another variable y; then there is a conditional where on one
                branch x is assigned and on the other branch it is not. This
@@ -331,48 +262,21 @@ end) = struct
               Some debug_info1
             else
               None
+          | Some debug_info, None
+          | None, Some debug_info ->
+            (* The register only occurred in one of [t1] and [t2]. *)
+            debug_info
           | None, None -> Misc.fatal_error "Bug in [Map.merge]")
         t1 t2
     in
     invariant t;
     t
 
-  let diff t1 t2 =
-    let t = Reg.Map.filter (fun reg _ -> not (Reg.Map.mem reg t2)) t1 in
-    invariant t;
-    t
-
-  let map_debug_info f t =
-    Reg.Map.map f t
-
-  let fold f t init =
-    Reg.Map.fold (fun reg debug_info acc ->
-        f (create_with_debug_info ~reg ~debug_info) acc)
-      t
-      init
-
-  let filter f t =
-    Reg.Map.filter (fun reg debug_info ->
-        f (create_with_debug_info ~reg ~debug_info))
-      t
-
-  let subset t1 t2 = avail_map_subset t1 t2
-
-  let mem_reg t (reg : Reg.t) =
-    Reg.Map.exists (fun reg' _debug_info -> reg.stamp = reg'.stamp) t
-
-  let find_reg t (reg : Reg.t) =
-    match Reg.Map.find reg t with
-    | exception Not_found -> None
-    | debug_info -> Some (create_with_debug_info ~reg ~debug_info)
-
-  let filter_out_reg t (reg : Reg.t) =
-    Reg.Map.filter (fun reg' _debug_info -> reg.stamp <> reg'.stamp) t
-
-  let forget_debug_info t =
-    Reg.Map.fold (fun reg _debug_info acc -> Reg.Set.add reg acc)
-      t
-      Reg.Set.empty
+  let disjoint_union t1 t2 =
+    Reg.Map.union (fun _reg _debug_info1 _debug_info2 ->
+        Misc.fatal_errorf "[Reg.t] keys in supplied availability maps are \
+          not disjoint")
+      t1 t2
 
   let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
     let regs_clobbered = Reg.set_of_array regs_clobbered in
@@ -387,26 +291,17 @@ end) = struct
     t
 end
 
-module Availability_set = struct
-  include Make_set (struct
-    let canonicalise t = t
-  end)
+module Canonical_availability_map = struct
+  type t = Availability_map.t
 
-  let singleton rd = Reg.Map.singleton rd.reg rd.debug_info
-  let add t rd = Reg.Map.add rd.reg rd.debug_info t
+  let print = Availability_map.print
 
-  let disjoint_union t1 t2 =
-    Reg.Map.union (fun _reg _debug_info1 _debug_info2 ->
-        Misc.fatal_errorf "[Reg.t] values in supplied availability sets are \
-          not disjoint")
-      t1 t2
-end
+  let empty = Reg.Map.empty
 
-module Canonical_set = struct
-  let canonicalise set =
+  let create (map : Availability_map.t) =
     let regs_by_var = V.Tbl.create 42 in
     Reg.Map.iter (fun reg debug_info ->
-        let reg = create_with_debug_info ~reg ~debug_info in
+        let reg = create_with_debug_info reg debug_info in
         match debug_info with
         | None -> ()
         | Some debug_info ->
@@ -448,7 +343,7 @@ module Canonical_set = struct
                 end
             end
           | Const_int _ | Const_naked_float _ | Const_symbol _ -> ())
-      set;
+      map;
     let result =
       V.Tbl.fold (fun _var reg result ->
           Reg.Map.add reg.reg reg.debug_info result)
@@ -460,11 +355,43 @@ module Canonical_set = struct
     end;
     result
 
-  include Make_set (struct
-    let canonicalise = canonicalise
-  end)
+  let is_empty = Reg.Map.is_empty
 
-  let of_set set = canonicalise set
+  let invariant t =
+    if !Clflags.ddebug_invariants then begin
+      if not (Reg.Map.equal (Option.equal Debug_info.equal) t (create t))
+      then begin
+        Misc.fatal_errorf "Invariant broken:@ %a" print t
+      end
+    end
+
+  (* [diff] and [inter], by construction, preserve the canonical form. *)
+
+  let diff t1 t2 =
+    let t =
+      Reg.Map.filter (fun reg debug_info_t1 ->
+          let occurs_in_t2 =
+            match Reg.Map.find reg t2 with
+            | exception Not_found -> false
+            | debug_info_t2 -> Debug_info.equal debug_info_t1 debug_info_t2
+          in
+          not occurs_in_t2)
+        t1
+    in
+    invariant t;
+    t
+
+  let inter t1 t2 =
+    let t = Availability_map.inter t1 t2 in
+    invariant t;
+    t
+
+  let fold f t init =
+    Reg.Map.fold (fun reg debug_info acc ->
+        let rd = create_with_debug_info reg debug_info in
+        f rd acc)
+      t
+      init
 
   let find_holding_value_of_variable t var =
     let t =
@@ -478,13 +405,13 @@ module Canonical_set = struct
     in
     match Reg.Map.bindings t with
     | [] -> None
-    | [reg, debug_info] -> Some (create_with_debug_info ~reg ~debug_info)
+    | [reg, debug_info] -> Some (create_with_debug_info reg debug_info)
     | _ ->
       invariant t;
       assert false  (* The invariant must have been broken. *)
 end
 
-module With_canonical_set = struct
+module For_compute_ranges = struct
   type nonrec t = t
 
   let print ppf t : unit = print ?print_reg:None ppf t

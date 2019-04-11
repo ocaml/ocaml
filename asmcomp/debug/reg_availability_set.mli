@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 (** Register availability sets. This module is just a version of
-    [Reg_with_debug_info.Availability_set] whose type is lifted to have an
+    [Reg_with_debug_info.Availability_map] whose type is lifted to have an
     additional top element. This element corresponds to availability information
     known at any unreachable point in the generated code. *)
 
@@ -22,13 +22,13 @@
 (** The type of register availability sets. *)
 type t = private
   | Unreachable
-  | Ok of Reg_with_debug_info.Availability_set.t
+  | Ok of Reg_with_debug_info.Availability_map.t
 
 (** The top element. *)
 val unreachable : t
 
 (** Create a register availability set (that is not the top element). *)
-val create : Reg_with_debug_info.Availability_set.t -> t
+val create : Reg_with_debug_info.Availability_map.t -> t
 
 (** Canonicalise the given register availability set.  The result can be
     used for [Compute_ranges], etc.  See the documentation for
@@ -37,7 +37,7 @@ val create : Reg_with_debug_info.Availability_set.t -> t
 val canonicalise : t -> Reg_with_debug_info.Canonical_set.t
 
 (** The functions below are lifted versions of the corresponding ones in
-    [Reg_with_debug_info.Availability_set]. *)
+    [Reg_with_debug_info.Availability_map]. *)
 
 (** Print a value of type [t] to a formatter.
     [print_reg] should be [Printmach.reg]. *)
@@ -63,12 +63,12 @@ val inter : t -> t -> t
 (** Non-strict subset inclusion. *)
 val subset : t -> t -> bool
 
-(** Map the [Reg_with_debug_info.Availability_set.t] value contained within some
+(** Map the [Reg_with_debug_info.Availability_map.t] value contained within some
     values of type [t]. *)
 val map
    : t
-  -> f:(Reg_with_debug_info.Availability_set.t
-    -> Reg_with_debug_info.Availability_set.t)
+  -> f:(Reg_with_debug_info.Availability_map.t
+    -> Reg_with_debug_info.Availability_map.t)
   -> t
 
 (** Find an element of the set given the underlying [Reg.t].  This function
