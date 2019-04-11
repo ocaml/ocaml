@@ -4814,13 +4814,47 @@ let type_clash_of_trace trace =
     | _ -> None
   ))
 
+(* Hint when the expected type is wrapped in a `ref` *)
+let report_ref_type_constraint env exp diff =
+  let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
+  let is_ref p = Path.same p Path.(Pdot (stdlib, "ref")) in
+  let bang_shadowed =
+    match Env.lookup_value (Longident.Lident "!") env with
+    | exception Not_found -> false
+    | Path.Pdot (prefix, "!"), _ when Path.same prefix stdlib -> false
+    | _, _ -> true
+  in
+  let hint pp ident =
+    let txt ppf =
+      let op = if bang_shadowed then "Stdlib.(!) " else "!" in
+      fprintf ppf "@[Hint: This is a `ref', did you mean `%s%a'?@]" op pp ident
+    in
+    [ Location.{ txt; loc = none } ]
+  in
+  let hint = function
+    | Some (Texp_ident (ident, _, _)) -> hint Printtyp.path ident
+    | Some _ -> hint pp_print_string "( .. )"
+    | None -> []
+  in
+  match diff with
+  | Some Unification_trace.{
+        expected = { t = expected };
+        got = { t = { desc = Tconstr (ref, [ in_ref ], _) } }
+    } when is_ref ref
+      && Ctype.equal env true [ expected ] [ in_ref ] ->
+      hint exp
+  | Some _ | None -> []
+
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
-let report_literal_type_constraint ppf expected_type const =
+let report_literal_type_constraint expected_type const =
   let hint str_val =
     let hint_suffix c =
-      fprintf ppf "@\n@[Hint: Did you mean `%s%c'?@]" str_val c
+      let txt ppf =
+        fprintf ppf "@[Hint: Did you mean `%s%c'?@]" str_val c
+      in
+      [ Location.{ txt; loc = none } ]
     in
     if Path.same expected_type Predef.path_int32 then
       hint_suffix 'l'
@@ -4831,30 +4865,30 @@ let report_literal_type_constraint ppf expected_type const =
     else if Path.same expected_type Predef.path_float then
       hint_suffix '.'
     else
-      ()
+      []
   in
   match const with
   | Const_int n -> hint (Int.to_string n)
   | Const_int32 n -> hint (Int32.to_string n)
   | Const_int64 n -> hint (Int64.to_string n)
   | Const_nativeint n -> hint (Nativeint.to_string n)
-  | _ -> ()
+  | _ -> []
 
-let report_literal_type_constraint ppf const = function
+let report_literal_type_constraint const = function
   | Some Unification_trace.
     { expected = { t = { desc = Tconstr (typ, [], _) } } } ->
-      report_literal_type_constraint ppf typ const
-  | Some _ | None -> ()
+      report_literal_type_constraint typ const
+  | Some _ | None -> []
 
-let report_expr_type_clash_hints ppf exp diff =
+let report_expr_type_clash_hints exp diff =
   match exp with
-  | Some (Texp_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | Some (Texp_constant const) -> report_literal_type_constraint const diff
+  | _ -> []
 
-let report_pattern_type_clash_hints ppf pat diff =
+let report_pattern_type_clash_hints pat diff =
   match pat with
-  | Some (Tpat_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | Some (Tpat_constant const) -> report_literal_type_constraint const diff
+  | _ -> []
 
 (* Hint when using int operators (eg. `+`)
    on other kind of integer and floats *)
@@ -4960,14 +4994,14 @@ let report_error ~loc env = function
            fprintf ppf "but is mixed here with fields of type")
   | Pattern_type_clash (trace, pat) ->
       let diff = type_clash_of_trace trace in
-      Location.error_of_printer ~loc (fun ppf () ->
+      let sub = report_pattern_type_clash_hints pat diff in
+      Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
             fprintf ppf "This pattern matches values of type")
           (function ppf ->
             fprintf ppf "but a pattern was expected which matches values of \
                          type");
-        report_pattern_type_clash_hints ppf pat diff
       ) ()
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
@@ -4989,7 +5023,12 @@ let report_error ~loc env = function
       ) ()
   | Expr_type_clash (trace, explanation, exp) ->
       let diff = type_clash_of_trace trace in
-      let sub = report_application_clash_hints diff explanation in
+      let sub = List.concat [
+          report_application_clash_hints diff explanation;
+          report_expr_type_clash_hints exp diff;
+          report_ref_type_constraint env exp diff;
+        ]
+      in
       Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           ~type_expected_explanation:
@@ -4998,7 +5037,6 @@ let report_error ~loc env = function
              fprintf ppf "This expression has type")
           (function ppf ->
              fprintf ppf "but an expression was expected of type");
-        report_expr_type_clash_hints ppf exp diff
       ) ()
   | Apply_non_function typ ->
       reset_and_mark_loops typ;
