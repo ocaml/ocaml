@@ -178,7 +178,7 @@ Format.eprintf "Imove/reload/spill\n%!";
           Array.map2 (fun arg_reg result_reg ->
               match RDM.find avail_before arg_reg with
               | None ->
-                Misc.fatal_errorf "Second invariant broken: avail_before %a, \
+                Misc.fatal_errorf "Second invariant broken:@ avail_before %a,@ \
                     reg %a"
                   RDM.print avail_before
                   Printmach.reg arg_reg

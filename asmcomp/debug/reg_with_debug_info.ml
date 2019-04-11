@@ -246,7 +246,7 @@ module Availability_map = struct
           if Option.equal Debug_info.equal debug_info1 debug_info2 then
             Some debug_info1
           else
-            None
+            Some None
         | Some _debug_info, None
         | None, Some _debug_info ->
           (* The register only occurred in one of [t1] and [t2].  Since
