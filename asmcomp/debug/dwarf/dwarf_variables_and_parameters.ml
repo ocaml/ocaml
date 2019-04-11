@@ -397,7 +397,11 @@ let phantom_var_location_description state
        get caught by the exception handler in libmonda, but even still, a
        better solution would be desirable.  Follow-up: actually it doesn't
        get that far---the error is thrown even before the value printer
-       is called. *)
+       is called.
+       Update 2019-04-11: Reading closure variables that are unavailable
+       hits this.  You get "cannot read memory at 0x0" or similar in gdb.
+       This happens because the variables are phantom, so there may be
+       ranges for them across points when they're unavailable. *)
     if need_rvalue then
       begin match
         die_location_of_variable_rvalue state var ~proto_dies_for_vars

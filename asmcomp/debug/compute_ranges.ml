@@ -204,10 +204,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          position being the first machine instruction of [insn] and the ending
          position being the next machine address after that.
 
-     (d) [key] is in [S.available_across insn], which means (as for (b) above)
-         it is in [S.available_before insn]. A new range is created with the
-         starting position being the first machine instruction of [insn] and
-         left open.
+     (d) [key] is in [S.available_before insn] and it is also in
+         [S.available_across insn]. A new range is created with the starting
+         position being the first machine instruction of [insn] and left open.
 
      2. Second four cases: [key] is already available, i.e. a member of
      [S.available_across prev_insn].
@@ -232,8 +231,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          terminate the range one byte beyond the first machine instruction of
          [insn].
 
-     (d) [key] is in [S.available_across insn], which means (as for (b) above)
-         it is in [S.available_before insn].  The existing range remains open.
+     (d) [key] is in [S.available_before insn] and it is also in
+         [S.available_across insn].  The existing range remains open.
   *)
 
   type action =
@@ -257,13 +256,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     let case_1b =
       KS.diff
-        (KS.diff available_across opt_available_across_prev_insn)
-        available_before
+        (KS.diff available_across available_before)
+        opt_available_across_prev_insn
     in
     let case_1c =
       KS.diff
-        (KS.diff available_before opt_available_across_prev_insn)
-        available_across
+        (KS.diff available_before available_across)
+        opt_available_across_prev_insn
     in
     let case_1d =
       KS.diff (KS.inter available_before available_across)
@@ -279,9 +278,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         (KS.diff available_across available_before)
     in
     let case_2c =
-      KS.diff
-        (KS.inter opt_available_across_prev_insn available_before)
-        available_across
+      KS.inter opt_available_across_prev_insn
+        (KS.diff available_before available_across)
     in
 (*
 Format.eprintf "-------------\n";
