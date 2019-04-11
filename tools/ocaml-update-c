@@ -5,11 +5,11 @@ if [ -z "$@" ]; then
    exit 1
 fi
 
-sed -i.bak '
+sed -E -i.bak '
 # Field(x, i) = y ==> Init_field_small(x, i, y)
-s/^\(\s*\)Field(\([^;]*\),\s*\([^;]*\))\s*=\s*\([^;]*\);\s*$/\1Init_field_small(\2, \3, \4);/
+s/^([ \t]*)Field\(([^;]*),[ \t]*([^;]*)\)[ \t]*=[ \t]*([^;]*);[ \t]*$/\1Init_field_small\(\2, \3, \4\);/
 
 # caml_initialize(&Field(x, i), y) ==> caml_initialize_field(x, i, y)
 #     caml_modify(&Field(x, i), y) ==>     caml_modify_field(x, i, y)
-s/^\(\s*\)caml_\(initialize\|modify\)\s*(\s*&\s*Field(\s*\([^,]*\),\s*\([^,()]*\)\s*)\s*,/\1caml_\2_field(\3, \4,/
+s/^([ \t]*)caml_(initialize|modify)[ \t]*\([ \t]*&[ \t]*Field\([ \t]*([^,]*),[ \t]*([^,()]*)[ \t]*\)[ \t]*,/\1caml_\2_field\(\3, \4,/
 ' "$@"
