@@ -600,7 +600,8 @@ let lines_around_from_current_input ~start_pos ~end_pos =
     else
       []
   in
-  (*Fix error #7925 added matches for //toplevel// to be able to use the phrase buffer instead of the lexbuffer*)
+  (*Fix error #7925 added matches for //toplevel// to be able to use
+  the phrase buffer instead of the lexbuffer*)
   match !input_lexbuf, !input_phrase_buffer, !input_name with
   | _, Some pb, "//toplevel//" ->
       begin match lines_around_from_phrasebuf pb ~start_pos ~end_pos with
