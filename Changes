@@ -184,6 +184,9 @@ Working version
 
 - #3249: ocamlmklib should reject .cmxa files
   (Xavier Leroy)
+- #7925, #8611: fix error highlighting for execptionally
+  long toplevel phrases
+  (Kyle Miller, reported by Armaël Guéneau)
 - #7937, #2287: fix uncaught Unify exception when looking for type
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
