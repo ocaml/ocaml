@@ -52,7 +52,7 @@ MODCOMPFLAGS =
 # value "flags" when target is compiled and also when its prerequisites
 # are compiled as prerequisites of this target (if they are compiled
 # as prerequisites of another target, then the definition won't be taken
-# into account)
+# into account) 
 # 2. target: private MODCOMPFLAGS = flags defines MODCOMPFLAGS to be
 # "flags" but only for the target itself, not for its prerequisites
 
