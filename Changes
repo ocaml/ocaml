@@ -582,7 +582,7 @@ OCaml 4.08.0
 
 ### Runtime system:
 
-- #7198, #7750, #1738: add a function (caml_custom_alloc_mem)
+- #7198, #7750, #1738: add a function (caml_alloc_custom_mem)
   and three GC parameters to give the user better control of the
   out-of-heap memory retained by custom values; use the function to
   allocate bigarrays and I/O channels.
