@@ -1,6 +1,5 @@
 opam-version: "2.0"
-name: "ocaml-variants"
-version: "4.08.0+dev"
+version: "4.08.0+trunk"
 synopsis: "OCaml development version"
 depends: [
   "ocaml" {= "4.08.0" & post}
@@ -18,7 +17,7 @@ build: [
 ]
 install: [make "install"]
 maintainer: "caml-list@inria.fr"
-homepage: "https://ocaml.org"
+homepage: "https://github.com/ocaml/ocaml/"
 bug-reports: "https://github.com/ocaml/ocaml/issues"
 authors: [
   "Xavier Leroy"
