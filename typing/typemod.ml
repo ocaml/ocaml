@@ -1853,8 +1853,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           let mty_appl =
             match path with
               Some path ->
-                Subst.modtype (Subst.add_module param path Subst.identity)
-                              mty_res
+                let scope = Ctype.create_scope () in
+                Subst.modtype (Rescope scope)
+                  (Subst.add_module param path Subst.identity)
+                  mty_res
             | None ->
                 if generative then mty_res else
                 let env =
