@@ -269,9 +269,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         opt_available_across_prev_insn
     in
     let case_2a =
-      KS.diff
+      KS.inter
         (KS.diff opt_available_across_prev_insn available_before)
-        available_across
+        (KS.diff opt_available_across_prev_insn available_across)
     in
     let case_2b =
       KS.inter opt_available_across_prev_insn
@@ -283,6 +283,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
 (*
 Format.eprintf "-------------\n";
+Format.eprintf "Insn: %a\n%!" (Printlinear.instr ?no_debuginfo:None)
+  { insn with L.next = L.end_instr; };
+Format.eprintf "P = %a\n%!" KS.print opt_available_across_prev_insn;
+Format.eprintf "C = %a\n%!" KS.print available_before;
+Format.eprintf "N = %a\n%!" KS.print available_across;
 Format.eprintf "case_1b: %a\n%!" KS.print case_1b;
 Format.eprintf "case_1c: %a\n%!" KS.print case_1c;
 Format.eprintf "case_1d: %a\n%!" KS.print case_1d;
@@ -356,7 +361,7 @@ Format.eprintf "case_2c: %a\n%!" KS.print case_2c;
         next = insn;
         arg = [| |];
         res = [| |];
-        dbg = Insn_debuginfo.none;
+        dbg = insn.dbg;
         live = insn.live;
         affinity = Irrelevant;
       }
@@ -473,6 +478,9 @@ Format.eprintf "case_2c: %a\n%!" KS.print case_2c;
         ~prev_insn:(Some insn) ~open_subranges ~subrange_state
 
   let process_instructions t fundecl ~first_insn =
+(*
+Format.eprintf "Function: %a\n%!" Backend_sym.print fundecl.L.fun_name;
+*)
     let subrange_state = Subrange_state.create () in
     process_instruction t fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subranges:KM.empty ~subrange_state
