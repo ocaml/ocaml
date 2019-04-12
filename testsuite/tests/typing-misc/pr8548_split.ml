@@ -16,6 +16,5 @@ module = "ranged_intf.ml"
 **** ocamlc.byte
 flags = "-no-alias-deps -open Pr8548__Mapping -o pr8548__Ranged.cmo"
 module = "ranged.ml"
-ocamlc_byte_exit_status = "2"
-** check-ocamlc.byte-output
+ocamlc_byte_exit_status = "0"
 *)

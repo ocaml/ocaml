@@ -39,100 +39,20 @@ module type Ranged = sig
 end
 ;;
 [%%expect{|
-Line 1:
-Error: Module type declarations do not match:
-         module type Ranged =
-           sig
-             module Endpoint : Endpoint_intf
-             module Range :
-               sig
-                 module Endpoint : sig type t = Endpoint.t end
-                 type finite = [ `Before of Endpoint.t ]
-                 type infinite = [ `Until_infinity ]
-                 type +'a range = private { until : 'a; }
-                   constraint 'a =
-                     [< `Before of Endpoint.t | `Until_infinity ]
-                 val until :
-                   ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range ->
-                   'a
-               end
-           end
-       does not match
-         module type Ranged =
-           sig
-             module Endpoint : Endpoint_intf
-             module Range :
-               sig
-                 module Endpoint : sig type t = Endpoint.t end
-                 type finite = [ `Before of Endpoint.t ]
-                 type infinite = [ `Until_infinity ]
-                 type +'a range = private { until : 'a; }
-                   constraint 'a =
-                     [< `Before of Endpoint.t | `Until_infinity ]
-                 val until :
-                   ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range ->
-                   'a
-               end
-           end
-       At position module type Ranged = <here>
-       Modules do not match:
-         sig
-           module Endpoint : Endpoint_intf
-           module Range :
-             sig
-               module Endpoint : sig type t = Endpoint.t end
-               type finite = [ `Before of Endpoint.t ]
-               type infinite = [ `Until_infinity ]
-               type +'a range = private { until : 'a; }
-                 constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
-               val until :
-                 ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range ->
-                 'a
-             end
-         end
-       is not included in
-         sig
-           module Endpoint : Endpoint_intf
-           module Range :
-             sig
-               module Endpoint : sig type t = Endpoint.t end
-               type finite = [ `Before of Endpoint.t ]
-               type infinite = [ `Until_infinity ]
-               type +'a range = private { until : 'a; }
-                 constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
-               val until :
-                 ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range ->
-                 'a
-             end
-         end
-       At position module type Ranged = sig module Range : <here> end
-       Modules do not match:
-         sig
-           module Endpoint = Range.Endpoint
-           type finite = [ `Before of Endpoint.t ]
-           type infinite = [ `Until_infinity ]
-           type +'a range = 'a Range.range = private { until : 'a; }
-             constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
-           val until :
-             ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
-         end
-       is not included in
-         sig
-           module Endpoint : sig type t = Endpoint.t end
-           type finite = [ `Before of Endpoint.t ]
-           type infinite = [ `Until_infinity ]
-           type +'a range = private { until : 'a; }
-             constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
-           val until :
-             ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
-         end
-       At position module type Ranged = sig module Range : <here> end
-       Values do not match:
-         val until :
-           ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
-       is not included in
-         val until :
-           ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
+module type Ranged =
+  sig
+    module Endpoint : Endpoint_intf
+    module Range :
+      sig
+        module Endpoint : sig type t = Endpoint.t end
+        type finite = [ `Before of Endpoint.t ]
+        type infinite = [ `Until_infinity ]
+        type +'a range = private { until : 'a; }
+          constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
+        val until :
+          ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
+      end
+  end
 |}]
 
 module Assume (Given : sig
@@ -155,8 +75,72 @@ struct
 end
 ;;
 [%%expect{|
-Line 6, characters 6-12:
-6 |       Ranged with module Endpoint = Range.Endpoint
-          ^^^^^^
-Error: Unbound module type Ranged
+module Assume :
+  functor
+    (Given : sig
+               module Make_range :
+                 functor (Endpoint : Endpoint_intf) ->
+                   sig
+                     module Endpoint : sig type t = Endpoint.t end
+                     type finite = [ `Before of Endpoint.t ]
+                     type infinite = [ `Until_infinity ]
+                     type +'a range = private { until : 'a; }
+                       constraint 'a =
+                         [< `Before of Endpoint.t | `Until_infinity ]
+                     val until :
+                       ([< `Before of Endpoint.t | `Until_infinity ] as 'a)
+                       range -> 'a
+                   end
+               module Make_ranged :
+                 functor (Range : S) ->
+                   sig
+                     module Endpoint : sig type t = Range.Endpoint.t end
+                     module Range :
+                       sig
+                         module Endpoint : sig type t = Range.Endpoint.t end
+                         type finite = [ `Before of Endpoint.t ]
+                         type infinite = [ `Until_infinity ]
+                         type +'a range =
+                           'a Range.range = private {
+                           until : 'a;
+                         }
+                           constraint 'a =
+                             [< `Before of Endpoint.t | `Until_infinity ]
+                         val until :
+                           ([< `Before of Endpoint.t | `Until_infinity ]
+                            as 'a)
+                           range -> 'a
+                       end
+                   end
+             end) ->
+    sig
+      module Point : sig type t end
+      module Test_range :
+        sig
+          module Endpoint : sig type t = Point.t end
+          type finite = [ `Before of Endpoint.t ]
+          type infinite = [ `Until_infinity ]
+          type +'a range =
+            'a Given.Make_range(Point).range = private {
+            until : 'a;
+          } constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
+          val until :
+            ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range -> 'a
+        end
+      module Test_ranged :
+        sig
+          module Endpoint : sig type t = Test_range.Endpoint.t end
+          module Range :
+            sig
+              module Endpoint : sig type t = Test_range.Endpoint.t end
+              type finite = [ `Before of Endpoint.t ]
+              type infinite = [ `Until_infinity ]
+              type +'a range = 'a Test_range.range = private { until : 'a; }
+                constraint 'a = [< `Before of Endpoint.t | `Until_infinity ]
+              val until :
+                ([< `Before of Endpoint.t | `Until_infinity ] as 'a) range ->
+                'a
+            end
+        end
+    end
 |}]
