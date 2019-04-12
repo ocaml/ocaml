@@ -1557,7 +1557,7 @@ and tree_of_signature sg =
   wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
 
 and tree_of_signature_rec env' in_type_group = function
-    [] -> []
+    [] -> stop_type_group env'; []
   | item :: rem as items ->
       let in_type_group = still_in_type_group env' in_type_group item in
       let (sg, rem) = filter_rem_sig item rem in
