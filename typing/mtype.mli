@@ -26,7 +26,7 @@ val scrape_for_functor_arg: Env.t -> module_type -> module_type
 val scrape_for_type_of:
   remove_aliases:bool -> Env.t -> module_type -> module_type
         (* Process type for module type of *)
-val freshen: module_type -> module_type
+val freshen: scope:int -> module_type -> module_type
         (* Return an alpha-equivalent copy of the given module type
            where bound identifiers are fresh. *)
 val strengthen: aliasable:bool -> Env.t -> module_type -> Path.t -> module_type
