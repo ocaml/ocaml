@@ -42,5 +42,5 @@ type float
 
 0.;;
 [%%expect {|
-- : float = 0.
+- : float/2 = 0.
 |}];;

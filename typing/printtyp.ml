@@ -1524,13 +1524,16 @@ let protect_rec_items items =
       | _ -> [] in
   List.iter Naming_context.add_protected (get_ids Trec_first items)
 
+let stop_type_group env =
+  Naming_context.reset_protected ();
+  set_printing_env env
+
 let still_in_type_group env' in_type_group item =
   match in_type_group, recursive_sigitem item with
-    true, Some (_,Trec_next,_) -> true
+  | true, Some (_,Trec_next,_) -> true
   | _, Some (_, (Trec_not | Trec_first),_) ->
-      Naming_context.reset_protected ();
-      set_printing_env env'; true
-  | _ -> Naming_context.reset_protected (); set_printing_env env'; false
+      stop_type_group env' ; true
+  | _ -> stop_type_group env'; false
 
 let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_ident p ->
@@ -1624,7 +1627,7 @@ let print_items showval env x =
   reset_naming_context ();
   Conflicts.reset ();
   let rec print showval in_type_group env = function
-  | [] -> []
+  | [] -> stop_type_group env; []
   | item :: rem as items ->
       let in_type_group = still_in_type_group env in_type_group item in
       let (sg, rem) = filter_rem_sig item rem in
