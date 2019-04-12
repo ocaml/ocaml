@@ -388,48 +388,64 @@ let extension_constructor s ext =
   For_copy.with_scope
     (fun copy_scope -> extension_constructor' copy_scope s ext)
 
-let rec rename_bound_idents s sg = function
-    [] -> sg, s
-  | Sig_type(id, td, rs, vis) :: rest ->
-      let id' = Ident.rename id in
-      rename_bound_idents
-        (add_type id (Pident id') s)
-        (Sig_type(id', td, rs, vis) :: sg)
-        rest
-  | Sig_module(id, pres, md, rs, vis) :: rest ->
-      let id' = Ident.rename id in
-      rename_bound_idents
-        (add_module id (Pident id') s)
-        (Sig_module (id', pres, md, rs, vis) :: sg)
-        rest
-  | Sig_modtype(id, mtd, vis) :: rest ->
-      let id' = Ident.rename id in
-      rename_bound_idents
-        (add_modtype id (Mty_ident(Pident id')) s)
-        (Sig_modtype(id', mtd, vis) :: sg)
-        rest
-  | Sig_class(id, cd, rs, vis) :: rest ->
-      (* cheat and pretend they are types cf. PR#6650 *)
-      let id' = Ident.rename id in
-      rename_bound_idents
-        (add_type id (Pident id') s)
-        (Sig_class(id', cd, rs, vis) :: sg)
-        rest
-  | Sig_class_type(id, ctd, rs, vis) :: rest ->
-      (* cheat and pretend they are types cf. PR#6650 *)
-      let id' = Ident.rename id in
-      rename_bound_idents
-        (add_type id (Pident id') s)
-        (Sig_class_type(id', ctd, rs, vis) :: sg)
-        rest
-  | Sig_value(id, vd, vis) :: rest ->
-      let id' = Ident.rename id in
-      rename_bound_idents s (Sig_value(id', vd, vis) :: sg) rest
-  | Sig_typext(id, ec, es, vis) :: rest ->
-      let id' = Ident.rename id in
-      rename_bound_idents s (Sig_typext(id',ec,es,vis) :: sg) rest
+type scoping =
+  | Keep
+  | Make_local
+  | Rescope of int
 
-let rec modtype s = function
+let rename_bound_idents scoping s sg =
+  let rename =
+    let open Ident in
+    match scoping with
+    | Keep -> (fun id -> create_scoped ~scope:(scope id) (name id))
+    | Make_local -> Ident.rename
+    | Rescope scope -> (fun id -> create_scoped ~scope (name id))
+  in
+  let rec rename_bound_idents s sg = function
+    | [] -> sg, s
+    | Sig_type(id, td, rs, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_type(id', td, rs, vis) :: sg)
+          rest
+    | Sig_module(id, pres, md, rs, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents
+          (add_module id (Pident id') s)
+          (Sig_module (id', pres, md, rs, vis) :: sg)
+          rest
+    | Sig_modtype(id, mtd, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents
+          (add_modtype id (Mty_ident(Pident id')) s)
+          (Sig_modtype(id', mtd, vis) :: sg)
+          rest
+    | Sig_class(id, cd, rs, vis) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = rename id in
+        rename_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_class(id', cd, rs, vis) :: sg)
+          rest
+    | Sig_class_type(id, ctd, rs, vis) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = rename id in
+        rename_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_class_type(id', ctd, rs, vis) :: sg)
+          rest
+    | Sig_value(id, vd, vis) :: rest ->
+        (* scope doesn't matter for value identifiers. *)
+        let id' = Ident.rename id in
+        rename_bound_idents s (Sig_value(id', vd, vis) :: sg) rest
+    | Sig_typext(id, ec, es, vis) :: rest ->
+        let id' = rename id in
+        rename_bound_idents s (Sig_typext(id',ec,es,vis) :: sg) rest
+  in
+  rename_bound_idents s [] sg
+
+let rec modtype scoping s = function
     Mty_ident p as mty ->
       begin match p with
         Pident id ->
@@ -440,26 +456,26 @@ let rec modtype s = function
           fatal_error "Subst.modtype"
       end
   | Mty_signature sg ->
-      Mty_signature(signature s sg)
+      Mty_signature(signature scoping s sg)
   | Mty_functor(id, arg, res) ->
       let id' = Ident.rename id in
-      Mty_functor(id', may_map (modtype s) arg,
-                       modtype (add_module id (Pident id') s) res)
+      Mty_functor(id', may_map (modtype scoping s) arg,
+                       modtype scoping (add_module id (Pident id') s) res)
   | Mty_alias p ->
       Mty_alias (module_path s p)
 
-and signature s sg =
+and signature scoping s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations
      or class and type declarations), so first build global renaming
      substitution... *)
-  let (sg', s') = rename_bound_idents s [] sg in
+  let (sg', s') = rename_bound_idents scoping s sg in
   (* ... then apply it to each signature component in turn *)
   For_copy.with_scope (fun copy_scope ->
-    List.rev_map (signature_item' copy_scope s') sg'
+    List.rev_map (signature_item' copy_scope scoping s') sg'
   )
 
 
-and signature_item' copy_scope s comp =
+and signature_item' copy_scope scoping s comp =
   match comp with
     Sig_value(id, d, vis) ->
       Sig_value(id, value_description' copy_scope s d, vis)
@@ -468,9 +484,9 @@ and signature_item' copy_scope s comp =
   | Sig_typext(id, ext, es, vis) ->
       Sig_typext(id, extension_constructor' copy_scope s ext, es, vis)
   | Sig_module(id, pres, d, rs, vis) ->
-      Sig_module(id, pres, module_declaration s d, rs, vis)
+      Sig_module(id, pres, module_declaration scoping s d, rs, vis)
   | Sig_modtype(id, d, vis) ->
-      Sig_modtype(id, modtype_declaration s d, vis)
+      Sig_modtype(id, modtype_declaration scoping s d, vis)
   | Sig_class(id, d, rs, vis) ->
       Sig_class(id, class_declaration' copy_scope s d, rs, vis)
   | Sig_class_type(id, d, rs, vis) ->
@@ -479,16 +495,16 @@ and signature_item' copy_scope s comp =
 and signature_item s comp =
   For_copy.with_scope (fun copy_scope -> signature_item' copy_scope s comp)
 
-and module_declaration s decl =
+and module_declaration scoping s decl =
   {
-    md_type = modtype s decl.md_type;
+    md_type = modtype scoping s decl.md_type;
     md_attributes = attrs s decl.md_attributes;
     md_loc = loc s decl.md_loc;
   }
 
-and modtype_declaration s decl  =
+and modtype_declaration scoping s decl  =
   {
-    mtd_type = may_map (modtype s) decl.mtd_type;
+    mtd_type = may_map (modtype scoping s) decl.mtd_type;
     mtd_attributes = attrs s decl.mtd_attributes;
     mtd_loc = loc s decl.mtd_loc;
   }
@@ -516,6 +532,6 @@ let type_replacement s = function
 let compose s1 s2 =
   { types = merge_path_maps (type_replacement s2) s1.types s2.types;
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
-    modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
+    modtypes = merge_tbls (modtype Keep s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
   }
