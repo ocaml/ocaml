@@ -1015,7 +1015,7 @@ end = struct
           if to_remove.subst == Subst.identity then
             component
           else
-            Subst.signature_item to_remove.subst component
+            Subst.signature_item Keep to_remove.subst component
         in
         let component =
           match ids_to_remove with
