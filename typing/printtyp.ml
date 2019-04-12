@@ -205,6 +205,8 @@ let set namespace x = map.(Namespace.id namespace) <- x
 let protected = ref S.empty
 let add_protected id = protected := S.add (Ident.name id) !protected
 let reset_protected () = protected := S.empty
+let with_hidden id f =
+  protect_refs [ R(protected,S.add (Ident.name id) !protected)] f
 
 let pervasives_name namespace name =
   if not !enabled then Out_name.create name else
@@ -2045,4 +2047,7 @@ let tree_of_modtype = tree_of_modtype ~ellipsis:false
 let type_expansion ty ppf ty' =
   type_expansion ppf (trees_of_type_expansion (ty,ty'))
 let tree_of_type_declaration id td rs =
-  wrap_env (hide [id]) (fun () -> tree_of_type_declaration id td rs) ()
+  Naming_context.with_hidden id ( (* for disambiguation *)
+    wrap_env (hide [id]) (* for short-path *)
+      (fun () -> tree_of_type_declaration id td rs)
+  )
