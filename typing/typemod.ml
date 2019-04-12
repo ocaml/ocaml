@@ -2514,7 +2514,9 @@ let package_signatures units =
   in
   List.map
     (fun (_, newid, sg) ->
-      let sg = Subst.signature subst sg in
+      (* This signature won't be used for anything, it'll just be saved in a cmi
+         and cmt. *)
+      let sg = Subst.signature Make_local subst sg in
       let md =
         { md_type=Mty_signature sg;
           md_attributes=[];
