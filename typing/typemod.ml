@@ -1626,14 +1626,14 @@ let check_recmodule_inclusion env bindings =
      recursive definitions being accepted.  A good choice appears to be
      the number of mutually recursive declarations. *)
 
-  let subst_and_strengthen env s id mty =
-    Mtype.strengthen ~aliasable:false env (Subst.modtype s mty)
+  let subst_and_strengthen env scope s id mty =
+    Mtype.strengthen ~aliasable:false env (Subst.modtype (Rescope scope) s mty)
       (Subst.module_path s (Pident id)) in
 
   let rec check_incl first_time n env s =
+    let scope = Ctype.create_scope () in
     if n > 0 then begin
       (* Generate fresh names Y_i for the rec. bound module idents X_i *)
-      let scope = Ctype.create_scope () in
       let bindings1 =
         List.map
           (fun (id, name, _mty_decl, _modl, mty_actual, _attrs, _loc) ->
@@ -1647,7 +1647,7 @@ let check_recmodule_inclusion env bindings =
              let mty_actual' =
                if first_time
                then mty_actual
-               else subst_and_strengthen env s id mty_actual in
+               else subst_and_strengthen env scope s id mty_actual in
              Env.add_module ~arg:false id' Mp_present mty_actual' env)
           env bindings1 in
       (* Build the output substitution Y_i <- X_i *)
@@ -1662,8 +1662,8 @@ let check_recmodule_inclusion env bindings =
       (* Base case: check inclusion of s(mty_actual) in s(mty_decl)
          and insert coercion if needed *)
       let check_inclusion (id, id_loc, mty_decl, modl, mty_actual, attrs, loc) =
-        let mty_decl' = Subst.modtype s mty_decl.mty_type
-        and mty_actual' = subst_and_strengthen env s id mty_actual in
+        let mty_decl' = Subst.modtype (Rescope scope) s mty_decl.mty_type
+        and mty_actual' = subst_and_strengthen env scope s id mty_actual in
         let coercion =
           try
             Includemod.modtypes ~loc:modl.mod_loc env mty_actual' mty_decl'
