@@ -53,7 +53,7 @@ let disjoint_union regs1 regs2 =
   match regs1, regs2 with
   | Unreachable, _ -> regs1
   | _, Unreachable -> regs2
-  | Ok avail1, Ok avail2 -> 
+  | Ok avail1, Ok avail2 ->
     Ok (RD.Availability_map.disjoint_union avail1 avail2)
 
 let inter regs1 regs2 =
