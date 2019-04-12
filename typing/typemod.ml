@@ -616,7 +616,11 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
-       Subst.signature sub sg
+       (* This signature will not be used direcly, it will always be freshened
+          by the caller. So what we do with the scope doesn't really matter. But
+          making it local makes it unlikely that we will ever use the result of
+          this function unfreshened without issue. *)
+       Subst.signature Make_local sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
        let sub =
          List.fold_left
@@ -624,7 +628,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
            Subst.identity
            !real_ids
        in
-       Subst.signature sub sg
+       (* See explanation in the [Twith_typesubst] case above. *)
+       Subst.signature Make_local sub sg
     | _ ->
        sg
     in
@@ -1136,8 +1141,9 @@ and transl_modtype_aux env smty =
             (tcstr :: rev_tcstrs, sg)
         )
         ([],init_sg) constraints in
+      let scope = Ctype.create_scope () in
       mkmty (Tmty_with ( body, List.rev rev_tcstrs))
-        (Mtype.freshen (Mty_signature final_sg)) env loc
+        (Mtype.freshen ~scope (Mty_signature final_sg)) env loc
         smty.pmty_attributes
   | Pmty_typeof smod ->
       let env = Env.in_signature false env in
