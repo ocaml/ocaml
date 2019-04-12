@@ -43,6 +43,14 @@ make tests
 ----
 opam compiler-conf install
 ----
++
+With opam 2, create a local opam switch with the compiler installed from
+the current source directory:
++
+----
+opam switch create . --empty
+opam install .
+----
 
 6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
 

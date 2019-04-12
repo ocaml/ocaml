@@ -802,6 +802,9 @@ OCaml 4.08.0
 * #8533: Remove some unused configure tests
   (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
 
+- GPR#2207,#8604: Add opam files to allow pinning
+  (Leo White, Greta Yorsh, review by Gabriel Radanne)
+
 ### Internal/compiler-libs changes:
 
 - #7918, #1703, #1944, #2213, #2257: Add the module
