@@ -7,14 +7,20 @@ Printexc.register_printer (fun e ->
   match e with
     | Division_by_zero -> Some "A division by zero is undefined"
     | _ -> None);;
+[%%expect{|
+- : unit = ()
+|}];;
+
 Printexc.register_printer (fun e ->
   match e with
     | Exit -> Some "Catching an exit"
     | _ -> None);;
-raise Not_found;;
 [%%expect{|
 - : unit = ()
-- : unit = ()
+|}];;
+
+raise Not_found;;
+[%%expect{|
 Exception: Not_found.
 |}];;
 
