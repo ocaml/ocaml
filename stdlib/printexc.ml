@@ -46,8 +46,9 @@ let fields x =
 let use_printers x =
   let rec conv = function
     | hd :: tl ->
-        let result = (try hd x with _ -> None) in
-        if result <> None then result else conv tl
+        (match hd x with
+         | None | exception _ -> conv tl
+         | Some s -> Some s)
     | [] -> None in
   conv !printers
 
