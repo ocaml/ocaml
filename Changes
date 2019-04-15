@@ -200,6 +200,10 @@ Working version
 - GPR#2296: Fix parsing of hexadecimal floats with underscores in the exponent.
   (Hugo Heuzard and Xavier Leroy, review by Gabriel Scherer)
 
+- #8610, #8613: toplevel printing, consistent deduplicated name for types
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer,
+   reported by Xavier Clerc)
+
 OCaml 4.08.0
 ------------
 
