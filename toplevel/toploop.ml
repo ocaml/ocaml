@@ -36,7 +36,7 @@ type directive_info = {
   doc: string;
 }
 
-(* Phrase Buffer for Fix error #7925 *)
+(* Phase Buffer that Stores the Last Toplevel Phrase *)
 let phrase_buffer = Buffer.create 1024
 
 (* The table of toplevel value bindings and its accessors *)
@@ -450,7 +450,7 @@ let read_input_default prompt buffer len =
       if !i >= len then raise Exit;
       let c = input_char stdin in
       Bytes.set buffer !i c;
-      (*Populate Phrase Buffer as new characters are added *)
+      (* Populate Phrase Buffer as new characters are added *)
       Buffer.add_char phrase_buffer c;
       incr i;
       if c = '\n' then raise Exit;
@@ -557,7 +557,7 @@ let loop ppf =
     let snap = Btype.snapshot () in
     try
       Lexing.flush_input lb;
-      (*Reset the phrase buffer when we flush the lexing buffer*)
+      (* Reset the phrase buffer when we flush the lexing buffer *)
       Buffer.reset phrase_buffer;
       Location.reset();
       Warnings.reset_fatal ();

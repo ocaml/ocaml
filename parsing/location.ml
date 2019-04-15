@@ -547,19 +547,20 @@ let lines_around_from_lexbuf
     lines_around ~start_pos ~end_pos ~seek ~read_char
   end
 
-(* Try to get lines from a phrase buffer fix error #7925 *)
+(* Attempt to get lines from the phrase buffer *)
 let lines_around_from_phrasebuf
     ~(start_pos: position) ~(end_pos: position)
     (pb: Buffer.t):
   input_line list
   =
-  let pos = ref 0 in (* relative position (always starts at 0)*)
+  let pos = ref 0 in
   let seek n = pos := n in
   let read_char () =
-    if !pos >= Buffer.length pb then (* end of buffer *) None
-    else
+    if !pos >= Buffer.length pb then None
+    else begin
       let c = Buffer.nth pb !pos in
       incr pos; Some c
+    end
   in
   lines_around ~start_pos ~end_pos ~seek ~read_char
 
@@ -600,13 +601,11 @@ let lines_around_from_current_input ~start_pos ~end_pos =
     else
       []
   in
-  (*Fix error #7925 added matches for //toplevel// to be able to use
-  the phrase buffer instead of the lexbuffer*)
   match !input_lexbuf, !input_phrase_buffer, !input_name with
   | _, Some pb, "//toplevel//" ->
       begin match lines_around_from_phrasebuf pb ~start_pos ~end_pos with
-      | [] -> (* Couldn't get input from phrase buffer fall back to file *)
-          from_file ()
+      | [] -> (* Couldn't get input from phrase buffer, raise an error *)
+          assert false
       | lines ->
           lines
       end
