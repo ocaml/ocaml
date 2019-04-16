@@ -28,18 +28,37 @@ st_stubs_n.$(O): st_stubs.c ../../runtime/caml/alloc.h \
  ../../runtime/caml/memory.h ../../runtime/caml/signals.h \
  ../../runtime/caml/stack.h ../../runtime/caml/sys.h \
  ../../runtime/caml/memprof.h threads.h
-condition.cmo : mutex.cmi condition.cmi
-condition.cmx : mutex.cmx condition.cmi
-condition.cmi : mutex.cmi
-event.cmo : mutex.cmi condition.cmi event.cmi
-event.cmx : mutex.cmx condition.cmx event.cmi
+condition.cmo : \
+    mutex.cmi \
+    condition.cmi
+condition.cmx : \
+    mutex.cmx \
+    condition.cmi
+condition.cmi : \
+    mutex.cmi
+event.cmo : \
+    mutex.cmi \
+    condition.cmi \
+    event.cmi
+event.cmx : \
+    mutex.cmx \
+    condition.cmx \
+    event.cmi
 event.cmi :
-mutex.cmo : mutex.cmi
-mutex.cmx : mutex.cmi
+mutex.cmo : \
+    mutex.cmi
+mutex.cmx : \
+    mutex.cmi
 mutex.cmi :
-thread.cmo : thread.cmi
-thread.cmx : thread.cmi
+thread.cmo : \
+    thread.cmi
+thread.cmx : \
+    thread.cmi
 thread.cmi :
-threadUnix.cmo : thread.cmi threadUnix.cmi
-threadUnix.cmx : thread.cmx threadUnix.cmi
+threadUnix.cmo : \
+    thread.cmi \
+    threadUnix.cmi
+threadUnix.cmx : \
+    thread.cmx \
+    threadUnix.cmi
 threadUnix.cmi :

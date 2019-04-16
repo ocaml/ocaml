@@ -20,13 +20,33 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
+ifeq "$(filter str,$(OTHERLIBRARIES))" ""
+  str := false
+else
+  str := true
+endif
+
+ifeq "$(filter systhreads,$(OTHERLIBRARIES))" ""
+  systhreads := false
+else
+  systhreads := true
+endif
+
+ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+  unix := None
+else
+  ifeq "$(UNIX_OR_WIN32)" "win32"
+    unix := Some false
+  else
+    unix := Some true
+  endif
+endif
+
 ifeq "$(UNIX_OR_WIN32)" "win32"
-  unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
-  unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
   mkexe := $(MKEXE)
 endif
@@ -34,7 +54,7 @@ endif
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
 CSC := csc
-ifeq "$(HOST)" "msvc"
+ifeq "$(HOST)" "i686-pc-windows"
 CSCFLAGS := /platform:x86
 else
 CSCFLAGS :=
@@ -76,13 +96,13 @@ core := \
   run_command.mli run_command.ml \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
-  environments.mli environments.ml \
   result.mli result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
   tsl_ast.mli tsl_ast.ml \
   tsl_parser.mly \
   tsl_lexer.mli tsl_lexer.mll \
+  environments.mli environments.ml \
   tsl_semantics.mli tsl_semantics.ml \
   builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \
@@ -147,7 +167,8 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := $(addprefix $(ROOTDIR)/,utils parsing stdlib compilerlibs)
+directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
+                                       compilerlibs file_formats)
 
 include_directories := $(addprefix -I , $(directories))
 
@@ -159,7 +180,9 @@ ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
 
 ocamlopt := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlopt $(flags)
 
-ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/tools/ocamldep -slash
+ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/boot/ocamlc -depend
+depflags := -slash
+depincludes :=
 
 ocamllex := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/lex/ocamllex
 
@@ -169,19 +192,21 @@ ocamlcdefaultflags :=
 
 ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
 
+.SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
+
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamltest$(EXE)
 allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
 ocamltest$(EXE): $(bytecode_modules)
-	$(ocamlc_cmd) -custom ocamlcommon.cma -o $@ $^
+	$(ocamlc_cmd) -custom ocamlcommon.cma ocamlbytecomp.cma -o $@ $^
 
 %.cmo: %.ml
 	$(ocamlc) -c $<
 
 ocamltest.opt$(EXE): $(native_modules)
-	$(ocamlopt_cmd) ocamlcommon.cmxa -o $@ $^
+	$(ocamlopt_cmd) ocamlcommon.cmxa ocamlbytecomp.cmxa -o $@ $^
 
 %.cmx: %.ml
 	$(ocamlopt) -c $<
@@ -198,12 +223,14 @@ ocamltest.opt$(EXE): $(native_modules)
 %.$(O): %.c
 	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -c $<
 
-ocamltest_config.ml: ocamltest_config.ml.in Makefile
+ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed \
 	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
 	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
+	  -e 's|@@SYSTHREADS@@|$(systhreads)|' \
+	  -e 's|@@STR@@|$(str)|' \
 	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
@@ -246,7 +273,8 @@ ifneq "$(TOOLCHAIN)" "msvc"
 depend: $(dependencies_generated_prereqs)
 	$(CC) -MM $(OC_CPPFLAGS) $(c_files) \
 	  | sed -e 's/\.o/.$$(O)/' > .depend
-	$(ocamldep) $(mli_files) $(ml_files) >> .depend
+	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
+	  >> .depend
 endif
 
 -include .depend

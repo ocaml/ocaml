@@ -19,6 +19,16 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.config
 
+ifeq "$(UNIX_OR_WIN32)" "win32"
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+  FLEXDLL_DIR =
+else
+  FLEXDLL_DIR = $(if $(wildcard $(ROOTDIR)/flexdll/flexdll_*.$(O)),+flexdll)
+endif
+else
+  FLEXDLL_DIR =
+endif
+
 # SUBST generates the sed substitution for the variable *named* in $1
 # SUBST_QUOTE does the same, adding double-quotes around non-empty strings
 #   (see FLEXDLL_DIR which must empty if FLEXDLL_DIR is empty but an OCaml
@@ -37,7 +47,6 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,BYTECCLIBS) \
 	    $(call SUBST,CC) \
 	    $(call SUBST,CCOMPTYPE) \
-	    $(call SUBST,CC_PROFILE) \
 	    $(call SUBST,OUTPUTOBJ) \
 	    $(call SUBST,EXT_ASM) \
 	    $(call SUBST,EXT_DLL) \
@@ -63,7 +72,6 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,OCAMLOPT_CFLAGS) \
 	    $(call SUBST,OCAMLOPT_CPPFLAGS) \
 	    $(call SUBST,PACKLD) \
-	    $(call SUBST,PROFILING) \
 	    $(call SUBST,PROFINFO_WIDTH) \
 	    $(call SUBST,RANLIBCMD) \
 	    $(call SUBST,FORCE_SAFE_STRING) \

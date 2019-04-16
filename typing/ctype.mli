@@ -19,7 +19,7 @@ open Asttypes
 open Types
 
 module Unification_trace: sig
-  (** Unification traces are used to explain unification errrors
+  (** Unification traces are used to explain unification errors
       when printing error messages *)
 
   type position = First | Second
@@ -45,6 +45,7 @@ module Unification_trace: sig
   type obj =
     | Missing_field of position * string
     | Abstract_row of position
+    | Self_cannot_be_closed
 
   type 'a elt =
     | Diff of 'a diff
@@ -68,6 +69,14 @@ module Unification_trace: sig
 
   (** Switch [expected] and [got] *)
   val swap: t -> t
+
+  (** [explain trace f] calls [f] on trace elements starting from the end
+      until [f ~prev elt] is [Some _], returns that
+      or [None] if the end of the trace is reached. *)
+  val explain:
+          'a elt list ->
+          (prev:'a elt option -> 'a elt -> 'b option) ->
+          'b option
 
 end
 
@@ -145,9 +154,9 @@ val filter_row_fields:
 
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
-val generalize_expansive: Env.t -> type_expr -> unit
-        (* Generalize the covariant part of a type, making
-           contravariant branches non-generalizable *)
+val lower_contravariant: Env.t -> type_expr -> unit
+        (* Lower level of type variables inside contravariant branches;
+           to be used before generalize for expansive expressions *)
 val generalize_structure: type_expr -> unit
         (* Same, but variables are only lowered to !current_level *)
 val generalize_spine: type_expr -> unit

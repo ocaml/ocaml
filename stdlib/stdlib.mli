@@ -19,9 +19,10 @@
     compilation. All components of this module can therefore be
     referred by their short name, without prefixing them by [Stdlib].
 
-    It particular, it provides the basic operations over the built-in types
-    (numbers, booleans, byte sequences, strings, exceptions, references,
-    lists, arrays, input-output channels, ...).
+    It particular, it provides the basic operations over the built-in
+    types (numbers, booleans, byte sequences, strings, exceptions,
+    references, lists, arrays, input-output channels, ...) and the
+    {{!modules}standard library modules}.
 *)
 
 (** {1 Exceptions} *)
@@ -43,15 +44,6 @@ val failwith : string -> 'a
 exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
-
-val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
-(** [protect ~finally work] invokes [work ()] and then [finally ()]
-    before [work] returns with its value or an exception. In the latter
-    case the exception is re-raised after [finally ()].
-    If [finally ()] raises, this exception is not caught and may shadow
-    one [work ()] may have raised.
-
-    @since 4.08.0 *)
 
 exception Match_failure of (string * int * int)
   [@ocaml.warn_on_literal_pattern]
@@ -1328,7 +1320,7 @@ val do_at_exit : unit -> unit
 
 (**/**)
 
-(** {1 Standard library modules } *)
+(** {1:modules Standard library modules } *)
 
 (*MODULE_ALIASES*)
 module Arg          = Arg
@@ -1387,4 +1379,5 @@ module String       = String
 module StringLabels = StringLabels
 module Sys          = Sys
 module Uchar        = Uchar
+module Unit         = Unit
 module Weak         = Weak

@@ -125,10 +125,6 @@ and exp_extra =
         (** E :> T           [Texp_coerce (None, T)]
             E : T0 :> T      [Texp_coerce (Some T0, T)]
          *)
-  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
-        (** let open[!] M in    [Texp_open (!, P, M, env)]
-                                where [env] is the environment after opening [P]
-         *)
   | Texp_poly of core_type option
         (** Used for method bodies. *)
   | Texp_newtype of string
@@ -224,14 +220,24 @@ and expression_desc =
   | Texp_instvar of Path.t * Path.t * string loc
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
   | Texp_override of Path.t * (Path.t * string loc * expression) list
-  | Texp_letmodule of Ident.t * string loc * module_expr * expression
+  | Texp_letmodule of
+      Ident.t * string loc * Types.module_presence * module_expr * expression
   | Texp_letexception of extension_constructor * expression
   | Texp_assert of expression
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
+  | Texp_letop of {
+      let_ : binding_op;
+      ands : binding_op list;
+      param : Ident.t;
+      body : case;
+      partial : partial;
+    }
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
+  | Texp_open of open_declaration * expression
+        (** let open[!] M in e *)
 
 and meth =
     Tmeth_name of string
@@ -247,6 +253,18 @@ and case =
 and record_label_definition =
   | Kept of Types.type_expr
   | Overridden of Longident.t loc * expression
+
+and binding_op =
+  {
+    bop_op_path : Path.t;
+    bop_op_name : string loc;
+    bop_op_val : Types.value_description;
+    bop_op_type : Types.type_expr;
+    (* This is the type at which the operator was used.
+       It is always an instance of [bop_op_val.val_type] *)
+    bop_exp : expression;
+    bop_loc : Location.t;
+  }
 
 (* Value expressions for the class language *)
 
@@ -271,7 +289,7 @@ and class_expr_desc =
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
   (* Visible instance variables, methods and concrete methods *)
-  | Tcl_open of override_flag * Path.t * Longident.t loc * Env.t * class_expr
+  | Tcl_open of open_description * class_expr
 
 and class_structure =
   {
@@ -354,7 +372,7 @@ and structure_item_desc =
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
-  | Tstr_open of open_description
+  | Tstr_open of open_declaration
   | Tstr_class of (class_declaration * string list) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of include_declaration
@@ -364,6 +382,7 @@ and module_binding =
     {
      mb_id: Ident.t;
      mb_name: string loc;
+     mb_presence: module_presence;
      mb_expr: module_expr;
      mb_attributes: attributes;
      mb_loc: Location.t;
@@ -383,7 +402,7 @@ and module_coercion =
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of primitive_coercion
-  | Tcoerce_alias of Path.t * module_coercion
+  | Tcoerce_alias of Env.t * Path.t * module_coercion
 
 and module_type =
   { mty_desc: module_type_desc;
@@ -440,6 +459,7 @@ and module_declaration =
     {
      md_id: Ident.t;
      md_name: string loc;
+     md_presence: module_presence;
      md_type: module_type;
      md_attributes: attributes;
      md_loc: Location.t;
@@ -464,14 +484,20 @@ and module_type_declaration =
      mtd_loc: Location.t;
     }
 
-and open_description =
+and 'a open_infos =
     {
-     open_path: Path.t;
-     open_txt: Longident.t loc;
+     open_expr: 'a;
+     open_bound_items: Types.signature;
      open_override: override_flag;
+     open_env: Env.t;
      open_loc: Location.t;
      open_attributes: attribute list;
     }
+
+and open_description = (Path.t * Longident.t loc) open_infos
+
+and open_declaration = module_expr open_infos
+
 
 and 'a include_infos =
     {
@@ -640,7 +666,7 @@ and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
   | Tcty_arrow of arg_label * core_type * class_type
-  | Tcty_open of override_flag * Path.t * Longident.t loc * Env.t * class_type
+  | Tcty_open of open_description * class_type
 
 and class_signature = {
     csig_self : core_type;
@@ -694,7 +720,7 @@ val let_bound_idents: value_binding list -> Ident.t list
 val rev_let_bound_idents: value_binding list -> Ident.t list
 
 val let_bound_idents_with_loc:
-    value_binding list -> (Ident.t * string loc) list
+    value_binding list -> (Ident.t * string loc * type_expr) list
 
 (** Alpha conversion of patterns *)
 val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern
@@ -703,7 +729,8 @@ val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: pattern -> Ident.t list
-val pat_bound_idents_with_loc: pattern -> (Ident.t * string loc) list
+val pat_bound_idents_full:
+  pattern -> (Ident.t * string loc * type_expr) list
 
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern : pattern -> pattern option * pattern option

@@ -29,6 +29,7 @@ open Parsetree
 type iterator = {
   attribute: iterator -> attribute -> unit;
   attributes: iterator -> attribute list -> unit;
+  binding_op: iterator -> binding_op -> unit;
   case: iterator -> case -> unit;
   cases: iterator -> case list -> unit;
   class_declaration: iterator -> class_declaration -> unit;
@@ -54,6 +55,7 @@ type iterator = {
   module_expr: iterator -> module_expr -> unit;
   module_type: iterator -> module_type -> unit;
   module_type_declaration: iterator -> module_type_declaration -> unit;
+  open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;

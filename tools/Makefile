@@ -26,12 +26,11 @@ endef
 $(foreach i,BINDIR LIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
 endif
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
 # the shell.
-override installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
+override installed_tools := ocamldep ocamlprof ocamlcp \
                    ocamlmktop ocamlmklib ocamlobjinfo
 
 install_files :=
@@ -73,12 +72,14 @@ $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
-CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
+CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp asmcomp \
-                       middle_end middle_end/base_types driver toplevel)
+INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
+                       middle_end middle_end/closure middle_end/flambda \
+                       middle_end/flambda/base_types driver toplevel \
+                       file_formats lambda)
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
@@ -125,7 +126,6 @@ ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                clflags.cmo main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
-$(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 
 opt:: profiling.cmx
 
@@ -167,7 +167,8 @@ clean::
 
 OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
-       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo ccomp.cmo
+       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
+       load_path.cmo ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
@@ -327,9 +328,6 @@ objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
 OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
-        $(ROOTDIR)/asmcomp/backend_var.cmo \
-        $(ROOTDIR)/asmcomp/printclambda.cmo \
-        $(ROOTDIR)/asmcomp/export_info.cmo \
         objinfo.cmo
 
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
@@ -348,9 +346,6 @@ $(call byte_and_opt,primreq,$(primreq),)
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
-        $(ROOTDIR)/asmcomp/backend_var.cmx \
-        $(ROOTDIR)/asmcomp/printclambda.cmx \
-        $(ROOTDIR)/asmcomp/export_info.cmx \
 	$(ROOTDIR)/otherlibs/str/str.cmxa \
 	lintapidiff.cmx
 
@@ -405,7 +400,9 @@ caml-tex: $(CAMLTEX)
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage
+ifneq "$(WITH_CAMLTEX)" ""
 opt.opt:caml-tex
+endif
 clean::
 	rm -f -- caml-tex caml_tex.cm?
 
@@ -425,8 +422,11 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
+CAMLDEP=$(BOOT_OCAMLC) -depend
+DEPFLAGS=-slash
+DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(CAMLRUN) ./ocamldep -slash $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
 
 .PHONY: clean install beforedepend depend
 

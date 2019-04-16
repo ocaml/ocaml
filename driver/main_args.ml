@@ -245,6 +245,18 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_insn_sched f =
+  "-insn-sched", Arg.Unit f,
+  Printf.sprintf " Run the instruction scheduling pass%s"
+    (if Clflags.insn_sched_default then " (default)" else "")
+;;
+
+let mk_no_insn_sched f =
+  "-no-insn-sched", Arg.Unit f,
+  Printf.sprintf " Do not run the instruction scheduling pass%s"
+    (if not Clflags.insn_sched_default then " (default)" else "")
+;;
+
 let mk_keep_docs f =
   "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
 ;;
@@ -389,9 +401,7 @@ let mk_output_complete_obj f =
 ;;
 
 let mk_p f =
-  "-p", Arg.Unit f,
-  " Compile and link with profiling support for \"gprof\"\n\
-  \     (not supported on all platforms)"
+  "-p", Arg.Unit f, " (no longer supported)"
 ;;
 
 let mk_pack_byt f =
@@ -413,7 +423,7 @@ let mk_ppx f =
 
 let mk_plugin f =
   "-plugin", Arg.String f,
-  "<plugin>  Load dynamic plugin <plugin>"
+  "<plugin>  (no longer supported)"
 ;;
 
 let mk_principal f =
@@ -564,8 +574,7 @@ let mk_no_version f =
 
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
-  " (deprecated) Generate code that supports the threads library\n\
-  \     with VM-level scheduling"
+  "  (no longer supported)"
 ;;
 
 let mk_vnum f =
@@ -1003,6 +1012,8 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _insn_sched : unit -> unit
+  val _no_insn_sched : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -1060,10 +1071,6 @@ module type Ocamldoc_options = sig
   val _intf : string -> unit
   val _intf_suffix : string -> unit
   val _pp : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
@@ -1281,6 +1288,7 @@ struct
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inlining_report F._inlining_report;
+    mk_insn_sched F._insn_sched;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
@@ -1299,6 +1307,7 @@ struct
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
+    mk_no_insn_sched F._no_insn_sched;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_nopervasives F._nopervasives;
@@ -1536,3 +1545,46 @@ struct
     mk__ F.anonymous;
   ]
 end;;
+
+[@@@ocaml.warning "-40"]
+let options_with_command_line_syntax_inner r after_rest =
+  let rec loop ~name_opt (spec : Arg.spec) : Arg.spec =
+    let option =
+      match name_opt with
+      | None -> ignore
+      | Some name -> (fun () -> r := name :: !r)
+    in
+    let arg a = r := Filename.quote a :: !r in
+    let option_with_arg a = option (); arg a in
+    let rest a =
+      if not !after_rest then (after_rest := true; option ());
+      arg a
+    in
+    match spec with
+    | Unit f -> Unit (fun a -> f a; option ())
+    | Bool f -> Bool (fun a -> f a; option_with_arg (string_of_bool a))
+    | Set r -> Unit (fun () -> r := true; option ())
+    | Clear r -> Unit (fun () -> r := false; option ())
+    | String f -> String (fun a -> f a; option_with_arg a)
+    | Set_string r -> String (fun a -> r := a; option_with_arg a)
+    | Int f -> Int (fun a -> f a; option_with_arg (string_of_int a))
+    | Set_int r -> Int (fun a -> r := a; option_with_arg (string_of_int a))
+    | Float f -> Float (fun a -> f a; option_with_arg (string_of_float a))
+    | Set_float r ->
+       Float (fun a -> r := a; option_with_arg (string_of_float a))
+    | Tuple [] -> Unit option
+    | Tuple (hd :: tl) ->
+       Tuple (loop ~name_opt hd :: List.map (loop ~name_opt:None) tl)
+    | Symbol (l, f) -> Symbol (l, (fun a -> f a; option_with_arg a))
+    | Rest f -> Rest (fun a -> f a; rest a)
+    | Expand f -> Expand f
+  in
+  loop
+
+let options_with_command_line_syntax options r =
+  let rest = ref false in
+  List.map (fun (name, spec, doc) ->
+    (name,
+     options_with_command_line_syntax_inner r rest
+       ~name_opt:(Some name) spec, doc)
+  ) options

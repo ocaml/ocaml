@@ -30,7 +30,7 @@
 # - presence of a copyright header (missing-header)
 # - absence of a leftover "$Id" string (svn-keyword)
 
-# Exceptions are handled with a git attribute: "ocaml-typo".
+# Exceptions are handled with git attributes: "typo.*".
 # Its value for a given file is a comma-separated list of rule names,
 # which lists the rules that should be disabled for this file.
 # The rule names are the ones shown above in parentheses.
@@ -57,8 +57,8 @@
 # This program ignores any file that is not under git control, unless
 # explicitly given on the command line.
 
-# If a directory has the git attribute "ocaml-typo" set to "prune",
-# then it and its contents are ignored.
+# If a directory has the git attribute "typo.prune" then it and its contents are
+# ignored.
 
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
@@ -98,15 +98,25 @@ get_attrs() {
   | sed "s/: set//g" | sed "s/: true//g" | sed "s/: may/?/g"
 }
 
+# empty if the path is *not* pruned
+check_prune() {
+  env $OCAML_CT_GIT_INDEX git check-attr typo.prune $OCAML_CT_CA_FLAG "$1" \
+  | grep -v ': unspecified$' | grep -v ': false$'
+}
+
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case $2,"$(get_attrs "$2" | grep -xF prune)" in
-      *,prune|.git,*)
-          echo "INFO: pruned directory $2 (typo.prune)" >&2
+    case $2 in
+      .git|.git/*)
+          echo "INFO: pruned path $2 (.git)" >&2
           exit 0;;
-      *,*) exit 3;;
-    esac;;
+    esac
+    if test -n "$(check_prune "$2")"; then
+        echo "INFO: pruned path $2 (typo.prune)" >&2
+        exit 0
+    fi
+    exit 3;;
 esac
 
 case "$1" in
@@ -118,6 +128,25 @@ esac
 usage () {
   echo "usage: check-typo {-<rule>} [--] {<file-or-dir>}" >&2
   exit 2
+}
+
+check_script () {
+  if [ "$($OCAML_CT_CAT "$OCAML_CT_PREFIX$1" \
+            | sed -ne '1s/^#!.*/#!/p')" != '#!' ] ; then
+    # These files are listed manually, rather than via gitattributes,
+    # because the list should never expand, and it should not be trivial to
+    # expand (the unix-execvpe test is an ultra-special-case!)
+    f=${1#./}
+    if [ "$f" != "boot/ocamlc" ] && [ "$f" != "boot/ocamllex" ] && \
+       [ "$f" != "testsuite/tests/lib-unix/unix-execvpe/subdir/script2" ] ; then
+      echo "$1 shouldn't be executable; either:"
+      echo " - Add a #! line"
+      echo " - Run chmod -x $1 (on Unix)"
+      echo " - Run git update-index --chmod=-x $1 (on Windows)"
+      echo "You may wish to check your core.fileMode setting"
+      EXIT_CODE=1
+    fi
+  fi
 }
 
 userrules=''
@@ -136,10 +165,22 @@ IGNORE_DIRS="
   -type d -exec $0 --check-prune {} ; -prune -o
 "
 # `-type d`: simple files (not directories) are not pruned during the
-# "find" invocation but below (look for " prune ") for performance
+# "find" invocation but below (look for "check_prune") for performance
 # reasons: most files outside pruned directories are not pruned, so it
 # is faster to optimistically run check-typo on them (and maybe get
 # out in the middle) than to first check then run.
+
+TEST_AWK='BEGIN {if ("a{1}" ~ /a{1}/) exit 0}'
+if $OCAML_CT_AWK "$TEST_AWK" ; then
+  TEST_AWK='BEGIN {if ("a" ~ /a{1}/) exit 0}'
+  if $OCAML_CT_AWK --re-interval "$TEST_AWK" 2>/dev/null ; then
+    OCAML_CT_AWK="$OCAML_CT_AWK --re-interval"
+  else
+    echo "This script requires interval support in regexes ({m} notation)">&2
+    echo "Please install a version of awk (e.g. gawk) which supports this">&2
+    exit 2
+  fi
+fi
 
 EXIT_CODE=0
 ( case $# in
@@ -148,6 +189,8 @@ EXIT_CODE=0
   esac
 ) | (
   while read f; do
+    if test -n "$(check_prune "$f")"; then continue; fi
+    if $(git check-ignore -q "$f"); then continue; fi
     case `$OCAML_CT_LS_FILES "$f" 2>&1` in
       "") path_in_index=false;;
       *) path_in_index=true;;
@@ -156,6 +199,15 @@ EXIT_CODE=0
       *$f*) is_cmd_line=true;;
       *) is_cmd_line=false;;
     esac
+    if [ -z "$OCAML_CT_PREFIX" ] ; then
+      if [ -x "$f" ] ; then
+        check_script "$f"
+      fi
+    else
+      if git ls-files -s "$f" | grep -q "^100755" ; then
+        check_script "$f"
+      fi
+    fi
     if $path_in_index || $is_cmd_line; then :; else continue; fi
     attr_rules=''
     if $path_in_index; then
@@ -181,10 +233,6 @@ EXIT_CODE=0
     rules=" $(echo $rules) "
     attr_rules=" $(echo $attr_rules) "
 
-    if test -n "$(echo "$rules $attr_rules" | grep " prune ")"
-    then
-        continue
-    fi
     if test -n "$(echo "$rules $attr_rules" | grep " utf8 ")"
     then
         # grep -a is used to force the file to be considered as text and -x

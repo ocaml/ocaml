@@ -24,7 +24,8 @@ OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep -slash
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+DEPFLAGS = -slash
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 # TODO: figure out whether the DEBUG lines the following preprocessor removes
 # are actually useful.
@@ -96,9 +97,10 @@ INCLUDES_NODEP=\
   -I $(ROOTDIR)/compilerlibs \
   -I $(ROOTDIR)/otherlibs/str \
   -I $(ROOTDIR)/otherlibs/dynlink \
-  -I $(ROOTDIR)/otherlibs/$(UNIXLIB) \
-  -I $(ROOTDIR)/otherlibs/$(GRAPHLIB)
+  -I $(ROOTDIR)/otherlibs/dynlink/native \
+  -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
+DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats -bin-annot
@@ -199,7 +201,7 @@ generatorsopt: $(GENERATORS_CMXS)
 debug:
 	$(MAKE) OCAMLPP=""
 
-OCAMLDOC_LIBRARIES = unix str dynlink ocamlcommon
+OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 
 OCAMLDOC_BCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cma)
 OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)
@@ -493,7 +495,7 @@ odoc:
 
 .PHONY: clean
 clean:
-	rm -f *~ \#*\#
+	rm -f \#*\#
 	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.$(A) *.$(O)
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
@@ -509,7 +511,7 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
 
 include .depend

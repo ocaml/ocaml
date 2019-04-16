@@ -21,6 +21,7 @@ val fail : Actions.t
 
 val dumpenv : Actions.t
 
+val hasunix : Actions.t
 val libunix : Actions.t
 val libwin32unix : Actions.t
 
@@ -32,6 +33,9 @@ val not_bsd : Actions.t
 
 val arch32 : Actions.t
 val arch64 : Actions.t
+
+(** Whether the compiler target is POWER architecture. *)
+val arch_power : Actions.t
 
 val has_symlink : Actions.t
 

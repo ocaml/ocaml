@@ -13,17 +13,14 @@
 #**************************************************************************
 
 # Define the lists of mli file used by ocamldoc to generate the stdlib
-# + otherlibs + compilerlibs + plugin hooks documentation
+# + otherlibs + compilerlibs documentation
 
 include $(SRC)/Makefile.config
 include $(SRC)/stdlib/StdlibModules
 PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
 UTILS_MLIS := $(wildcard $(SRC)/utils/*.mli)
-TYPING_MLIS := $(SRC)/typing/typemod.mli
-BYTECOMP_MLIS := $(SRC)/bytecomp/simplif.mli
 STR_MLIS = $(addprefix $(SRC)/otherlibs/str/, str.mli)
 UNIX_MLIS = $(addprefix $(SRC)/otherlibs/unix/, unix.mli unixLabels.mli)
-GRAPHICS_MLIS = $(addprefix $(SRC)/otherlibs/graph/, graphics.mli graphicsX11.mli)
 DYNLINK_MLIS = $(addprefix $(SRC)/otherlibs/dynlink/, dynlink.mli)
 THREAD_MLIS = $(addprefix $(SRC)/otherlibs/systhreads/, \
   thread.mli condition.mli mutex.mli event.mli threadUnix.mli)
@@ -32,10 +29,10 @@ DRIVER_MLIS = $(SRC)/driver/pparse.mli
 
 DOC_STDLIB_DIRS = stdlib \
 	otherlibs/str \
-	otherlibs/$(UNIXLIB) otherlibs/graphics otherlibs/dynlink \
+	otherlibs/$(UNIXLIB) otherlibs/dynlink \
 	otherlibs/systhreads
 
-DOC_COMPILERLIBS_DIRS= parsing utils typing bytecomp driver
+DOC_COMPILERLIBS_DIRS= parsing utils typing bytecomp driver file_formats lambda
 
 DOC_ALL_DIRS = $(DOC_COMPILERLIBS) $(DOC_STDLIB_DIRS)
 
@@ -53,14 +50,11 @@ STDLIB_MLIS=\
   $(STR_MLIS) \
   $(UNIX_MLIS) \
   $(THREAD_MLIS) \
-  $(GRAPHICS_MLIS) \
   $(DYNLINK_MLIS)
 
 COMPILERLIBS_MLIS=\
   $(PARSING_MLIS) \
   $(UTILS_MLIS) \
-  $(TYPING_MLIS) \
-  $(BYTECOMP_MLIS) \
   $(DRIVER_MLIS)
 
 DOC_STDLIB_TEXT = $(SRC)/stdlib/ocaml_operators.mld

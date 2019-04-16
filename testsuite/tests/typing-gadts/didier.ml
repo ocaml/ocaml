@@ -12,13 +12,13 @@ let fbool (type t) (x : t) (tag : t ty) =
 ;;
 [%%expect{|
 type 'a ty = Int : int ty | Bool : bool ty
-Line 6, characters 2-30:
+Lines 6-7, characters 2-13:
 6 | ..match tag with
 7 |   | Bool -> x
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Int
-val fbool : 'a -> 'a ty -> 'a = <fun>
+val fbool : 't -> 't ty -> 't = <fun>
 |}];;
 (* val fbool : 'a -> 'a ty -> 'a = <fun> *)
 (** OK: the return value is x of type t **)
@@ -28,13 +28,13 @@ let fint (type t) (x : t) (tag : t ty) =
   | Int -> x > 0
 ;;
 [%%expect{|
-Line 2, characters 2-33:
+Lines 2-3, characters 2-16:
 2 | ..match tag with
 3 |   | Int -> x > 0
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Bool
-val fint : 'a -> 'a ty -> bool = <fun>
+val fint : 't -> 't ty -> bool = <fun>
 |}];;
 (* val fint : 'a -> 'a ty -> bool = <fun> *)
 (** OK: the return value is x > 0 of type bool;
@@ -47,7 +47,7 @@ let f (type t) (x : t) (tag : t ty) =
   | Bool -> x
 ;;
 [%%expect{|
-val f : 'a -> 'a ty -> bool = <fun>
+val f : 't -> 't ty -> bool = <fun>
 |}, Principal{|
 Line 4, characters 12-13:
 4 |   | Bool -> x
@@ -84,7 +84,7 @@ let g (type t) (x : t) (tag : t ty) : bool =
   | Int -> x > 0
 ;;
 [%%expect{|
-val g : 'a -> 'a ty -> bool = <fun>
+val g : 't -> 't ty -> bool = <fun>
 |}];;
 
 let id x = x;;
@@ -102,7 +102,7 @@ val id : 'a -> 'a = <fun>
 val idb1 : bool -> bool = <fun>
 val idb2 : bool -> bool = <fun>
 val idb3 : bool -> bool = <fun>
-val g : 'a -> 'a ty -> bool = <fun>
+val g : 't -> 't ty -> bool = <fun>
 |}];;
 
 let g (type t) (x : t) (tag : t ty) =
@@ -111,5 +111,5 @@ let g (type t) (x : t) (tag : t ty) =
   | Int -> x > 0
 ;;
 [%%expect{|
-val g : 'a -> 'a ty -> bool = <fun>
+val g : 't -> 't ty -> bool = <fun>
 |}];;

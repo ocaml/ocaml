@@ -143,16 +143,16 @@ let operation d = function
   | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function
-  | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n ->
+  | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
+  | Cconst_natint (n, _dbg) ->
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cblockheader(n, d) ->
     fprintf ppf "block-hdr(%s)%s"
       (Nativeint.to_string n) (Debuginfo.to_string d)
-  | Cconst_float n -> fprintf ppf "%F" n
-  | Cconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Cconst_pointer n -> fprintf ppf "%ia" n
-  | Cconst_natpointer n -> fprintf ppf "%sa" (Nativeint.to_string n)
+  | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
+  | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
+  | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
+  | Cconst_natpointer (n, _dbg) -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =
@@ -211,7 +211,7 @@ let rec expr ppf = function
       fprintf ppf ")@]"
   | Csequence(e1, e2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" sequence e1 sequence e2
-  | Cifthenelse(e1, e2, e3) ->
+  | Cifthenelse(e1, _e2_dbg, e2, _e3_dbg, e3, _dbg) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" expr e1 expr e2 expr e3
   | Cswitch(e1, index, cases, _dbg) ->
       let print_case i ppf =
@@ -220,13 +220,11 @@ let rec expr ppf = function
         done in
       let print_cases ppf =
        for i = 0 to Array.length cases - 1 do
-        fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence cases.(i)
+        fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence (fst cases.(i))
        done in
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
-  | Cloop e ->
-      fprintf ppf "@[<2>(loop@ %a)@]" sequence e
   | Ccatch(flag, handlers, e1) ->
-      let print_handler ppf (i, ids, e2) =
+      let print_handler ppf (i, ids, e2, _dbg) =
         fprintf ppf "(%d%a)@ %a"
           i
           (fun ppf ids ->
@@ -249,7 +247,7 @@ let rec expr ppf = function
       fprintf ppf "@[<2>(exit %d" i;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       fprintf ppf ")@]"
-  | Ctrywith(e1, id, e2) ->
+  | Ctrywith(e1, id, e2, _dbg) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"
              sequence e1 VP.print id sequence e2
 

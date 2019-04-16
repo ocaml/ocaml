@@ -236,6 +236,16 @@ let find_all p =
 
 let filter = find_all
 
+let filter_map f =
+  let rec aux accu = function
+    | [] -> rev accu
+    | x :: l ->
+        match f x with
+        | None -> aux accu l
+        | Some v -> aux (v :: accu) l
+  in
+  aux []
+
 let partition p l =
   let rec part yes no = function
   | [] -> (rev yes, rev no)

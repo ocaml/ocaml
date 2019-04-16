@@ -52,7 +52,7 @@ ifeq "$(TOOLCHAIN)" "msvc"
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 	$(CC) -MM $(OC_CPPFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml >> .depend
 endif
 
 include .depend

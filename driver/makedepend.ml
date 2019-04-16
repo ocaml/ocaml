@@ -87,12 +87,19 @@ let add_to_synonym_list synonyms suffix =
   end
 
 (* Find file 'name' (capitalized) in search path *)
-let find_file name =
-  let uname = String.uncapitalize_ascii name in
+let find_module_in_load_path name =
+  let names = List.map (fun ext -> name ^ ext) (!mli_synonyms @ !ml_synonyms) in
+  let unames =
+    let uname = String.uncapitalize_ascii name in
+    List.map (fun ext -> uname ^ ext) (!mli_synonyms @ !ml_synonyms)
+  in
   let rec find_in_array a pos =
     if pos >= Array.length a then None else begin
       let s = a.(pos) in
-      if s = name || s = uname then Some s else find_in_array a (pos + 1)
+      if List.mem s names || List.mem s unames then
+        Some s
+      else
+        find_in_array a (pos + 1)
     end in
   let rec find_in_path = function
     [] -> raise Not_found
@@ -103,58 +110,49 @@ let find_file name =
       | None -> find_in_path rem in
   find_in_path !load_path
 
-let rec find_file_in_list = function
-  [] -> raise Not_found
-| x :: rem -> try find_file x with Not_found -> find_file_in_list rem
-
-
 let find_dependency target_kind modname (byt_deps, opt_deps) =
   try
-    let candidates = List.map ((^) modname) !mli_synonyms in
-    let filename = find_file_in_list candidates in
+    let filename = find_module_in_load_path modname in
     let basename = Filename.chop_extension filename in
     let cmi_file = basename ^ ".cmi" in
     let cmx_file = basename ^ ".cmx" in
+    let mli_exists =
+      List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !mli_synonyms in
     let ml_exists =
       List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !ml_synonyms in
-    let new_opt_dep =
-      if !all_dependencies then
-        match target_kind with
-        | MLI -> [ cmi_file ]
-        | ML  ->
-          cmi_file :: (if ml_exists then [ cmx_file ] else [])
-      else
+    if mli_exists then
+      let new_opt_dep =
+        if !all_dependencies then
+          match target_kind with
+          | MLI -> [ cmi_file ]
+          | ML  ->
+              cmi_file :: (if ml_exists then [ cmx_file ] else [])
+        else
         (* this is a make-specific hack that makes .cmx to be a 'proxy'
            target that would force the dependency on .cmi via transitivity *)
         if ml_exists
         then [ cmx_file ]
         else [ cmi_file ]
-    in
-    ( cmi_file :: byt_deps, new_opt_dep @ opt_deps)
-  with Not_found ->
-  try
-    (* "just .ml" case *)
-    let candidates = List.map ((^) modname) !ml_synonyms in
-    let filename = find_file_in_list candidates in
-    let basename = Filename.chop_extension filename in
-    let cmi_file = basename ^ ".cmi" in
-    let cmx_file = basename ^ ".cmx" in
-    let bytenames =
-      if !all_dependencies then
-        match target_kind with
-        | MLI -> [ cmi_file ]
-        | ML  -> [ cmi_file ]
-      else
-        (* again, make-specific hack *)
-        [basename ^ (if !native_only then ".cmx" else ".cmo")] in
-    let optnames =
-      if !all_dependencies
-      then match target_kind with
-        | MLI -> [ cmi_file ]
-        | ML  -> [ cmi_file; cmx_file ]
-      else [ cmx_file ]
-    in
-    (bytenames @ byt_deps, optnames @  opt_deps)
+      in
+      ( cmi_file :: byt_deps, new_opt_dep @ opt_deps)
+    else
+      (* "just .ml" case *)
+      let bytenames =
+        if !all_dependencies then
+          match target_kind with
+          | MLI -> [ cmi_file ]
+          | ML  -> [ cmi_file ]
+        else
+          (* again, make-specific hack *)
+          [basename ^ (if !native_only then ".cmx" else ".cmo")] in
+      let optnames =
+        if !all_dependencies
+        then match target_kind with
+          | MLI -> [ cmi_file ]
+          | ML  -> [ cmi_file; cmx_file ]
+        else [ cmx_file ]
+      in
+      (bytenames @ byt_deps, optnames @  opt_deps)
   with Not_found ->
     (byt_deps, opt_deps)
 
@@ -189,17 +187,32 @@ let print_filename s =
 ;;
 
 let print_dependencies target_files deps =
-  let rec print_items pos = function
-    [] -> print_string "\n"
-  | dep :: rem ->
-    if !one_line || (pos + 1 + String.length dep <= 77) then begin
-        if pos <> 0 then print_string " "; print_filename dep;
-        print_items (pos + String.length dep + 1) rem
-      end else begin
-        print_string escaped_eol; print_filename dep;
-        print_items (String.length dep + 4) rem
-      end in
-  print_items 0 (target_files @ [depends_on] @ deps)
+  let pos = ref 0 in
+  let print_on_same_line item =
+    if !pos <> 0 then print_string " ";
+    print_filename item;
+    pos := !pos + String.length item + 1;
+  in
+  let print_on_new_line item =
+    print_string escaped_eol;
+    print_filename item;
+    pos := String.length item + 4;
+  in
+  let print_compact item =
+    if !one_line || (!pos + 1 + String.length item <= 77)
+    then print_on_same_line item
+    else print_on_new_line item
+  in
+  let print_dep item =
+    if !one_line
+    then print_on_same_line item
+    else print_on_new_line item
+  in
+  List.iter print_compact target_files;
+  print_string " "; print_string depends_on;
+  pos := !pos + String.length depends_on + 1;
+  List.iter print_dep deps;
+  print_string "\n"
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;
@@ -579,8 +592,8 @@ let main () =
         " Output one line per file, regardless of the length";
      "-open", Arg.String (add_to_list Clflags.open_modules),
         "<module>  Opens the module <module> before typing";
-     "-plugin", Arg.String Compplugin.load,
-         "<plugin>  Load dynamic plugin <plugin>";
+     "-plugin", Arg.String(fun _p -> Clflags.plugin := true),
+         "<plugin>  (no longer supported)";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
      "-ppx", Arg.String (add_to_list first_ppx),

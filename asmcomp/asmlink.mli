@@ -15,6 +15,7 @@
 
 (* Link a set of .cmx/.o files and produce an executable or a plugin *)
 
+open Misc
 open Format
 
 val link: ppf_dump:formatter -> string list -> string -> unit
@@ -24,20 +25,20 @@ val link_shared: ppf_dump:formatter -> string list -> string -> unit
 val call_linker_shared: string list -> string -> unit
 
 val reset : unit -> unit
-val check_consistency: string -> Cmx_format.unit_infos -> Digest.t -> unit
-val extract_crc_interfaces: unit -> (string * Digest.t option) list
-val extract_crc_implementations: unit -> (string * Digest.t option) list
+val check_consistency: filepath -> Cmx_format.unit_infos -> Digest.t -> unit
+val extract_crc_interfaces: unit -> crcs
+val extract_crc_implementations: unit -> crcs
 
 type error =
-    File_not_found of string
-  | Not_an_object_file of string
-  | Missing_implementations of (string * string list) list
-  | Inconsistent_interface of string * string * string
-  | Inconsistent_implementation of string * string * string
-  | Assembler_error of string
+  | File_not_found of filepath
+  | Not_an_object_file of filepath
+  | Missing_implementations of (modname * string list) list
+  | Inconsistent_interface of modname * filepath * filepath
+  | Inconsistent_implementation of modname * filepath * filepath
+  | Assembler_error of filepath
   | Linking_error
-  | Multiple_definition of string * string * string
-  | Missing_cmx of string * string
+  | Multiple_definition of modname * filepath * filepath
+  | Missing_cmx of filepath * modname
 
 exception Error of error
 

@@ -304,7 +304,7 @@ let pop_castable () =
     | [] -> raise Not_found
 ;;
 
-(* We can add foos and bars to this list, and retrive them *)
+(* We can add foos and bars to this list, and retrieve them *)
 
 push_castable (new foo);;
 push_castable (new bar);;
@@ -6762,7 +6762,7 @@ module PR7135 = struct
     f (x :> int) (y :> int)
 end;;
 
-(* exemple of non-ground coercion *)
+(* example of non-ground coercion *)
 
 module Test1 = struct
   type t = private int
@@ -7364,3 +7364,11 @@ let x = ` (* wait for it *) Bar
 type (+' a, -' a', ' a'b', 'ab', ' abcd', ' (* ! *) x) t =
   ' a * ' a' * ' a'b' * 'ab' * ' abcd' * ' (* !! *) x
   as ' a'
+
+(* #2190 *)
+
+let f = function
+  | lazy (A foo) -> foo
+
+let () =
+  f (fun (type t) -> x)

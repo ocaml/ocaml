@@ -8,7 +8,7 @@ Prerequisites
 
 - A LaTeX installation.
 
-- The HeVeA LaTeX-to-HTML convertor (available in OPAM):
+- The HeVeA LaTeX-to-HTML converter (available in OPAM):
   <http://hevea.inria.fr/>
 
 Note that you must make sure `hevea.sty` is installed into TeX properly. Your
@@ -94,7 +94,7 @@ Consequently, these options are described together in the file
 and `top.etex`. If you need to update this list of options, the top comment
 of `unified-options.etex` contains the relevant information.
 
-- Part IV, The OCaml library: 'libref'
+- Part IV, The OCaml library: 'library'
  This parts contains an brief presentation of all libraries bundled with the
  compilers and the api documentation generated for these libraries.
     - The core library: `core.etex`

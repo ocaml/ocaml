@@ -104,7 +104,7 @@ type int32
 \begin{ocamldocdescription}
  The type of signed 32-bit integers.
  Literals for 32-bit integers are suffixed by l.
- See the "Int32"[\moduleref{Int32}] module.
+ See the \stdmoduleref{Int32} module.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -114,7 +114,7 @@ type int64
 \begin{ocamldocdescription}
  The type of signed 64-bit integers.
  Literals for 64-bit integers are suffixed by L.
- See the "Int64"[\moduleref{Int64}] module.
+ See the \stdmoduleref{Int64} module.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -125,7 +125,7 @@ type nativeint
  The type of signed, platform-native integers (32 bits on 32-bit
  processors, 64 bits on 64-bit processors).
  Literals for native integers are suffixed by n.
- See the "Nativeint"[\moduleref{Nativeint}] module.
+ See the \stdmoduleref{Nativeint} module.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -136,13 +136,12 @@ type ('a, 'b, 'c, 'd, 'e, 'f) format6
   The type of format strings. "'a" is the type of the parameters of
   the format, "'f" is the result type for the "printf"-style
   functions, "'b" is the type of the first argument given to "%a" and
-  "%t" printing functions (see module "Printf"[\moduleref{Printf}]),
+  "%t" printing functions (see module \stdmoduleref{Printf}),
   "'c" is the result type of these functions, and also the type of the
   argument transmitted to the first argument of "kprintf"-style
   functions, "'d" is the result type for the "scanf"-style functions
-  (see module "Scanf"[\moduleref{Scanf}]),
-  and "'e" is the type of the receiver function for the "scanf"-style
-  functions.
+  (see module \stdmoduleref{Scanf}), and "'e" is the type of the receiver function
+  for the "scanf"-style functions.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -150,7 +149,7 @@ type 'a lazy_t
 \end{ocamldoccode}
 \index{lazyt@\verb`lazy_t`}
 \begin{ocamldocdescription}
- This type is used to implement the "Lazy"[\moduleref{Lazy}] module.
+ This type is used to implement the \stdmoduleref{Lazy} module.
  It should not be used directly.
 \end{ocamldocdescription}
 

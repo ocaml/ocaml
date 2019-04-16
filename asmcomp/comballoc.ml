@@ -86,10 +86,6 @@ let rec combine i allocstate =
       let newnext = combine_restart i.next in
       (instr_cons (Iswitch(table, newcases)) i.arg i.res newnext,
        allocated_list_sz allocstate)
-  | Iloop(body) ->
-      let newbody = combine_restart body in
-      (instr_cons (Iloop(newbody)) i.arg i.res i.next,
-       allocated_list_sz allocstate)
   | Icatch(rec_flag, handlers, body) ->
       let (newbody, lsz) = combine body allocstate in
       let newhandlers =

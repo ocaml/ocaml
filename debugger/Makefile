@@ -18,6 +18,7 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
+DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
 UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
@@ -25,20 +26,21 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats
-LINKFLAGS=-linkall -I $(UNIXDIR)
+LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 YACCFLAGS=
 CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
-DEPFLAGS=$(INCLUDES)
+CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+DEPFLAGS=-slash
+DEPINCLUDES=$(INCLUDES)
 
-DIRECTORIES=$(UNIXDIR) $(addprefix $(ROOTDIR)/,\
-  utils parsing typing bytecomp toplevel driver)
+DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
+  utils parsing typing bytecomp toplevel driver file_formats lambda)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
 utils_modules := $(addprefix utils/,\
   config build_path_prefix_map misc identifiable numbers arg_helper clflags \
-  consistbl warnings terminfo)
+  consistbl warnings terminfo load_path)
 
 parsing_modules := $(addprefix parsing/,\
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
@@ -46,18 +48,23 @@ parsing_modules := $(addprefix parsing/,\
 
 typing_modules := $(addprefix typing/,\
   ident path types btype primitive typedtree subst predef datarepr \
-  cmi_format env oprint ctype printtyp mtype envaux)
+  persistent_env env oprint ctype printtyp mtype envaux)
+
+file_formats_modules := $(addprefix file_formats/,\
+  cmi_format)
+
+lambda_modules := $(addprefix lambda/,\
+  runtimedef)
 
 bytecomp_modules := $(addprefix bytecomp/,\
-  runtimedef bytesections dll meta symtable opcodes)
+  bytesections dll meta symtable opcodes)
 
-other_compiler_modules := driver/compdynlink_types \
-  driver/compdynlink_platform_intf \
-  driver/compdynlink_common driver/compdynlink toplevel/genprintval
+other_compiler_modules := toplevel/genprintval
 
 compiler_modules := $(addprefix $(ROOTDIR)/,\
-  $(utils_modules) $(parsing_modules) $(typing_modules) \
-  $(bytecomp_modules) $(other_compiler_modules))
+  $(utils_modules) $(parsing_modules) $(file_formats_modules) \
+  $(lambda_modules) \
+  $(typing_modules) $(bytecomp_modules) $(other_compiler_modules))
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters lexer \
@@ -72,7 +79,7 @@ all_objects := $(addsuffix .cmo,$(all_modules))
 
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(all_objects)
+ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma $(all_objects)
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
@@ -92,7 +99,7 @@ clean::
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) -slash $(DEPFLAGS) *.mli *.ml \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 lexer.ml: lexer.mll

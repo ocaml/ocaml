@@ -81,6 +81,7 @@ module Unification_trace = struct
   type obj =
     | Missing_field of position * string
     | Abstract_row of position
+    | Self_cannot_be_closed
 
   type 'a elt =
     | Diff of 'a diff
@@ -133,6 +134,16 @@ module Unification_trace = struct
   let rec_occur x y = Unify[Rec_occur(x, y)]
   let incompatible_fields name got expected =
     Incompatible_fields {name; diff={got; expected} }
+
+  let explain trace f =
+    let rec explain = function
+      | [] -> None
+      | [h] -> f ~prev:None h
+      | h :: (prev :: _ as rem) ->
+        match f ~prev:(Some prev) h with
+        | Some _ as m -> m
+        | None -> explain rem in
+    explain (List.rev trace)
 
 end
 module Trace = Unification_trace
@@ -213,7 +224,7 @@ let restore_global_level gl =
 let is_object_type path =
   let name =
     match path with Path.Pident id -> Ident.name id
-    | Path.Pdot(_, s,_) -> s
+    | Path.Pdot(_, s) -> s
     | Path.Papply _ -> assert false
   in name.[0] = '#'
 
@@ -710,9 +721,9 @@ let rec generalize_structure var_level ty =
     end
   end
 
-let generalize_structure var_level ty =
+let generalize_structure ty =
   simple_abbrevs := Mnil;
-  generalize_structure var_level ty
+  generalize_structure !current_level ty
 
 (* Generalize the spine of a function, if the level >= !current_level *)
 
@@ -754,11 +765,11 @@ let rec normalize_package_path env p =
   | Some (Mty_ident p) -> normalize_package_path env p
   | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None ->
       match p with
-        Path.Pdot (p1, s, n) ->
+        Path.Pdot (p1, s) ->
           (* For module aliases *)
-          let p1' = Env.normalize_path None env p1 in
+          let p1' = Env.normalize_module_path None env p1 in
           if Path.same p1 p1' then p else
-          normalize_package_path env (Path.Pdot (p1', s, n))
+          normalize_package_path env (Path.Pdot (p1', s))
       | _ -> p
 
 let check_scope_escape env level ty =
@@ -867,15 +878,22 @@ let update_level env level ty =
       update_level env level true ty
   end
 
-(* Generalize and lower levels of contravariant branches simultaneously *)
+(* Lower level of type variables inside contravariant branches *)
 
-let rec generalize_expansive env var_level visited ty =
+let rec lower_contravariant env var_level visited contra ty =
   let ty = repr ty in
-  if ty.level = generic_level || ty.level <= var_level then () else
-  if not (Hashtbl.mem visited ty.id) then begin
-    Hashtbl.add visited ty.id ();
+  let must_visit =
+    ty.level > var_level &&
+    match Hashtbl.find visited ty.id with
+    | done_contra -> contra && not done_contra
+    | exception Not_found -> true
+  in
+  if must_visit then begin
+    Hashtbl.add visited ty.id contra;
+    let generalize_rec = lower_contravariant env var_level visited in
     match ty.desc with
-      Tconstr (path, tyl, abbrev) ->
+      Tvar _ -> if contra then set_level ty var_level
+    | Tconstr (path, tyl, abbrev) ->
         let variance =
           try (Env.find_type path env).type_variance
           with Not_found ->
@@ -886,23 +904,21 @@ let rec generalize_expansive env var_level visited ty =
         List.iter2
           (fun v t ->
             if Variance.(mem May_weak v)
-            then generalize_structure var_level t
-            else generalize_expansive env var_level visited t)
+            then generalize_rec true t
+            else generalize_rec contra t)
           variance tyl
     | Tpackage (_, _, tyl) ->
-        List.iter (generalize_structure var_level) tyl
+        List.iter (generalize_rec true) tyl
     | Tarrow (_, t1, t2, _) ->
-        generalize_structure var_level t1;
-        generalize_expansive env var_level visited t2
+        generalize_rec true t1;
+        generalize_rec contra t2
     | _ ->
-        iter_type_expr (generalize_expansive env var_level visited) ty
+        iter_type_expr (generalize_rec contra) ty
   end
 
-let generalize_expansive env ty =
+let lower_contravariant env ty =
   simple_abbrevs := Mnil;
-  generalize_expansive env !nongen_level (Hashtbl.create 7) ty
-
-let generalize_structure ty = generalize_structure !current_level ty
+  lower_contravariant env !nongen_level (Hashtbl.create 7) false ty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
@@ -1028,8 +1044,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names ty =
-  let copy = copy ?partial ?keep_names in
+let rec copy ?partial ?keep_names scope ty =
+  let copy = copy ?partial ?keep_names scope in
   let ty = repr ty in
   match ty.desc with
     Tsubst ty -> ty
@@ -1048,7 +1064,7 @@ let rec copy ?partial ?keep_names ty =
     in
     if forget <> generic_level then newty2 forget (Tvar None) else
     let desc = ty.desc in
-    save_desc ty desc;
+    For_copy.save_desc scope ty desc;
     let t = newvar() in          (* Stub *)
     set_scope t ty.scope;
     ty.desc <- Tsubst t;
@@ -1091,10 +1107,10 @@ let rec copy ?partial ?keep_names ty =
                 match more.desc with
                   Tsubst ty -> ty
                 | Tconstr _ | Tnil ->
-                    save_desc more more.desc;
+                    For_copy.save_desc scope more more.desc;
                     copy more
                 | Tvar _ | Tunivar _ ->
-                    save_desc more more.desc;
+                    For_copy.save_desc scope more more.desc;
                     if keep then more else newty more.desc
                 |  _ -> assert false
               in
@@ -1138,7 +1154,7 @@ let rec copy ?partial ?keep_names ty =
             Fabsent  -> Tlink (copy ty2)
           | Fpresent -> copy_type_desc copy desc
           | Fvar r ->
-              dup_kind r;
+              For_copy.dup_kind scope r;
               copy_type_desc copy desc
           end
       | Tobject (ty1, _) when partial <> None ->
@@ -1146,8 +1162,6 @@ let rec copy ?partial ?keep_names ty =
       | _ -> copy_type_desc ?keep_names copy desc
       end;
     t
-
-let simple_copy t = copy t
 
 (**** Variants of instantiations ****)
 
@@ -1157,9 +1171,7 @@ let instance ?partial sch =
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
-  let ty = copy ?partial sch in
-  cleanup_types ();
-  ty
+  For_copy.with_scope (fun scope -> copy ?partial scope sch)
 
 let generic_instance sch =
   let old = !current_level in
@@ -1169,9 +1181,7 @@ let generic_instance sch =
   ty
 
 let instance_list schl =
-  let tyl = List.map (fun t -> copy t) schl in
-  cleanup_types ();
-  tyl
+  For_copy.with_scope (fun scope -> List.map (fun t -> copy scope t) schl)
 
 let reified_var_counter = ref Vars.empty
 let reset_reified_var_counter () =
@@ -1209,43 +1219,46 @@ let existential_name cstr ty = match repr ty with
   | _ -> "$" ^ cstr.cstr_name
 
 let instance_constructor ?in_pattern cstr =
-  begin match in_pattern with
-  | None -> ()
-  | Some (env, expansion_scope) ->
-      let process existential =
-        let decl = new_declaration expansion_scope None in
-        let name = existential_name cstr existential in
-        let path =
-          Path.Pident
-            (Ident.create_scoped ~scope:expansion_scope
-               (get_new_abstract_name name))
+  For_copy.with_scope (fun scope ->
+    begin match in_pattern with
+    | None -> ()
+    | Some (env, expansion_scope) ->
+        let process existential =
+          let decl = new_declaration expansion_scope None in
+          let name = existential_name cstr existential in
+          let path =
+            Path.Pident
+              (Ident.create_scoped ~scope:expansion_scope
+                 (get_new_abstract_name name))
+          in
+          let new_env = Env.add_local_type path decl !env in
+          env := new_env;
+          let to_unify = newty (Tconstr (path,[],ref Mnil)) in
+          let tv = copy scope existential in
+          assert (is_Tvar tv);
+          link_type tv to_unify
         in
-        let new_env = Env.add_local_type path decl !env in
-        env := new_env;
-        let to_unify = newty (Tconstr (path,[],ref Mnil)) in
-        let tv = copy existential in
-        assert (is_Tvar tv);
-        link_type tv to_unify
-      in
-      List.iter process cstr.cstr_existentials
-  end;
-  let ty_res = copy cstr.cstr_res in
-  let ty_args = List.map simple_copy  cstr.cstr_args in
-  cleanup_types ();
-  (ty_args, ty_res)
+        List.iter process cstr.cstr_existentials
+    end;
+    let ty_res = copy scope cstr.cstr_res in
+    let ty_args = List.map (copy scope) cstr.cstr_args in
+    (ty_args, ty_res)
+  )
 
 let instance_parameterized_type ?keep_names sch_args sch =
-  let ty_args = List.map (fun t -> copy ?keep_names t) sch_args in
-  let ty = copy sch in
-  cleanup_types ();
-  (ty_args, ty)
+  For_copy.with_scope (fun scope ->
+    let ty_args = List.map (fun t -> copy ?keep_names scope t) sch_args in
+    let ty = copy scope sch in
+    (ty_args, ty)
+  )
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
-  let ty_args = List.map simple_copy sch_args in
-  let ty_lst = List.map simple_copy sch_lst in
-  let ty = copy sch in
-  cleanup_types ();
-  (ty_args, ty_lst, ty)
+  For_copy.with_scope (fun scope ->
+    let ty_args = List.map (copy scope) sch_args in
+    let ty_lst = List.map (copy scope) sch_lst in
+    let ty = copy scope sch in
+    (ty_args, ty_lst, ty)
+  )
 
 let map_kind f = function
   | Type_abstract -> Type_abstract
@@ -1268,14 +1281,12 @@ let map_kind f = function
 
 
 let instance_declaration decl =
-  let decl =
-    {decl with type_params = List.map simple_copy decl.type_params;
-     type_manifest = may_map simple_copy decl.type_manifest;
-     type_kind = map_kind simple_copy decl.type_kind;
+  For_copy.with_scope (fun scope ->
+    {decl with type_params = List.map (copy scope) decl.type_params;
+     type_manifest = may_map (copy scope) decl.type_manifest;
+     type_kind = map_kind (copy scope) decl.type_kind;
     }
-  in
-  cleanup_types ();
-  decl
+  )
 
 let generic_instance_declaration decl =
   let old = !current_level in
@@ -1285,26 +1296,29 @@ let generic_instance_declaration decl =
   decl
 
 let instance_class params cty =
-  let rec copy_class_type =
-    function
-      Cty_constr (path, tyl, cty) ->
-        Cty_constr (path, List.map simple_copy tyl, copy_class_type cty)
+  let rec copy_class_type scope = function
+    | Cty_constr (path, tyl, cty) ->
+        let tyl' = List.map (copy scope) tyl in
+        let cty' = copy_class_type scope cty in
+        Cty_constr (path, tyl', cty')
     | Cty_signature sign ->
         Cty_signature
-          {csig_self = copy sign.csig_self;
+          {csig_self = copy scope sign.csig_self;
            csig_vars =
-             Vars.map (function (m, v, ty) -> (m, v, copy ty)) sign.csig_vars;
+             Vars.map (function (m, v, ty) -> (m, v, copy scope ty))
+               sign.csig_vars;
            csig_concr = sign.csig_concr;
            csig_inher =
-             List.map (fun (p,tl) -> (p, List.map simple_copy tl))
+             List.map (fun (p,tl) -> (p, List.map (copy scope) tl))
                sign.csig_inher}
     | Cty_arrow (l, ty, cty) ->
-        Cty_arrow (l, copy ty, copy_class_type cty)
+        Cty_arrow (l, copy scope ty, copy_class_type scope cty)
   in
-  let params' = List.map simple_copy params in
-  let cty' = copy_class_type cty in
-  cleanup_types ();
-  (params', cty')
+  For_copy.with_scope (fun scope ->
+    let params' = List.map (copy scope) params in
+    let cty' = copy_class_type scope cty in
+    (params', cty')
+  )
 
 (**** Instantiation for types with free universal variables ****)
 
@@ -1322,14 +1336,14 @@ let delayed_copy = ref []
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
-let rec copy_sep fixed free bound visited ty =
+let rec copy_sep cleanup_scope fixed free bound visited ty =
   let ty = repr ty in
   let univars = free ty in
   if TypeSet.is_empty univars then
     if ty.level <> generic_level then ty else
     let t = newvar () in
     delayed_copy :=
-      lazy (t.desc <- Tlink (copy ty))
+      lazy (t.desc <- Tlink (copy cleanup_scope ty))
       :: !delayed_copy;
     t
   else try
@@ -1344,7 +1358,7 @@ let rec copy_sep fixed free bound visited ty =
         Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
           (ty,(t,bound)) :: visited
       | _ -> visited in
-    let copy_rec = copy_sep fixed free bound visited in
+    let copy_rec = copy_sep cleanup_scope fixed free bound visited in
     t.desc <-
       begin match ty.desc with
       | Tvariant row0 ->
@@ -1362,13 +1376,13 @@ let rec copy_sep fixed free bound visited ty =
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
-          Tpoly (copy_sep fixed free bound visited t1, tl')
+          Tpoly (copy_sep cleanup_scope fixed free bound visited t1, tl')
       | _ -> copy_type_desc copy_rec ty.desc
       end;
     t
   end
 
-let instance_poly ?(keep_names=false) fixed univars sch =
+let instance_poly' cleanup_scope ~keep_names fixed univars sch =
   let univars = List.map repr univars in
   let copy_var ty =
     match ty.desc with
@@ -1378,23 +1392,28 @@ let instance_poly ?(keep_names=false) fixed univars sch =
   let vars = List.map copy_var univars in
   let pairs = List.map2 (fun u v -> u, (v, [])) univars vars in
   delayed_copy := [];
-  let ty = copy_sep fixed (compute_univars sch) [] pairs sch in
+  let ty = copy_sep cleanup_scope fixed (compute_univars sch) [] pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
-  cleanup_types ();
   vars, ty
 
+let instance_poly ?(keep_names=false) fixed univars sch =
+  For_copy.with_scope (fun cleanup_scope ->
+    instance_poly' cleanup_scope ~keep_names fixed univars sch
+  )
+
 let instance_label fixed lbl =
-  let ty_res = copy lbl.lbl_res in
-  let vars, ty_arg =
-    match repr lbl.lbl_arg with
-      {desc = Tpoly (ty, tl)} ->
-        instance_poly fixed tl ty
-    | _ ->
-        [], copy lbl.lbl_arg
-  in
-  cleanup_types ();
-  (vars, ty_arg, ty_res)
+  For_copy.with_scope (fun scope ->
+    let ty_res = copy scope lbl.lbl_res in
+    let vars, ty_arg =
+      match repr lbl.lbl_arg with
+        {desc = Tpoly (ty, tl)} ->
+          instance_poly' scope ~keep_names:false fixed tl ty
+      | _ ->
+          [], copy scope lbl.lbl_arg
+    in
+    (vars, ty_arg, ty_res)
+  )
 
 (**** Instantiation with parameter substitution ****)
 
@@ -1511,7 +1530,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           match find_type_expansion path env with
           | exception Not_found ->
             (* another way to expand is to normalize the path itself *)
-            let path' = Env.normalize_path None env path in
+            let path' = Env.normalize_type_path None env path in
             if Path.same path path' then raise Cannot_expand
             else newty2 level (Tconstr (path', args, abbrev))
           | (params, body, lv) ->
@@ -1580,7 +1599,10 @@ let expand_head env ty =
 let _ = forward_try_expand_once := try_expand_safe
 
 
-(* Expand until we find a non-abstract type declaration *)
+(* Expand until we find a non-abstract type declaration,
+   use try_expand_safe to avoid raising "Unify _" when
+   called on recursive types
+ *)
 
 let rec extract_concrete_typedecl env ty =
   let ty = repr ty in
@@ -1589,7 +1611,7 @@ let rec extract_concrete_typedecl env ty =
       let decl = Env.find_type p env in
       if decl.type_kind <> Type_abstract then (p, p, decl) else
       let ty =
-        try try_expand_once env ty with Cannot_expand -> raise Not_found
+        try try_expand_safe env ty with Cannot_expand -> raise Not_found
       in
       let (_, p', decl) = extract_concrete_typedecl env ty in
         (p, p', decl)
@@ -1922,25 +1944,28 @@ let univar_pairs = ref []
 
 (* assumption: [ty] is fully generalized. *)
 let reify_univars ty =
-  let rec subst_univar vars ty =
+  let rec subst_univar scope vars ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
       match ty.desc with
       | Tvar name ->
-          save_desc ty ty.desc;
+          For_copy.save_desc scope ty ty.desc;
           let t = newty2 ty.level (Tunivar name) in
           vars := t :: !vars;
           ty.desc <- Tsubst t
       | _ ->
-          iter_type_expr (subst_univar vars) ty
+          iter_type_expr (subst_univar scope vars) ty
     end
   in
   let vars = ref [] in
-  subst_univar vars ty;
-  unmark_type ty;
-  let ty = copy ty in
-  cleanup_types ();
+  let ty =
+    For_copy.with_scope (fun scope ->
+      subst_univar scope vars ty;
+      unmark_type ty;
+      copy scope ty
+    )
+  in
   newty2 ty.level (Tpoly(repr ty, !vars))
 
 
@@ -2382,7 +2407,7 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
   let id2 = Ident.create_local "Pkg" in
-  let env' = Env.add_module id2 mty2 env in
+  let env' = Env.add_module id2 Mp_present mty2 env in
   let rec complete nl1 ntl2 =
     match nl1, ntl2 with
       [], _ -> ntl2
@@ -2656,7 +2681,9 @@ and unify3 env t1 t1' t2 t2' =
               if d2 = Tnil then unify env rem t2'
               else unify env (newty2 rem.level Tnil) rem
           | _      ->
-              if d1 = Tnil then
+              if f = dummy_method then
+                raise (Unify Trace.[Obj Self_cannot_be_closed])
+              else if d1 = Tnil then
                 raise (Unify Trace.[Obj(Missing_field (First, f))])
               else
                 raise (Unify Trace.[Obj(Missing_field (Second, f))])
@@ -3871,7 +3898,7 @@ let memq_warn t visited =
 let rec lid_of_path ?(hash="") = function
     Path.Pident id ->
       Longident.Lident (hash ^ Ident.name id)
-  | Path.Pdot (p1, s, _) ->
+  | Path.Pdot (p1, s) ->
       Longident.Ldot (lid_of_path p1, hash ^ s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lid_of_path ~hash p1, lid_of_path p2)
@@ -4380,10 +4407,10 @@ let rec normalize_type_rec env visited ty =
     let tm = row_of_type ty in
     begin if not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm then
       match tm.desc with (* PR#7348 *)
-        Tconstr (Path.Pdot(m,i,pos), tl, _abbrev) ->
+        Tconstr (Path.Pdot(m,i), tl, _abbrev) ->
           let i' = String.sub i 0 (String.length i - 4) in
           log_type ty;
-          ty.desc <- Tconstr(Path.Pdot(m,i',pos), tl, ref Mnil)
+          ty.desc <- Tconstr(Path.Pdot(m,i'), tl, ref Mnil)
       | _ -> assert false
     else match ty.desc with
     | Tvariant row ->

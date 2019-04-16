@@ -23,6 +23,7 @@ module T = Typedtree
 type mapper = {
   attribute: mapper -> T.attribute -> attribute;
   attributes: mapper -> T.attribute list -> attribute list;
+  binding_op: mapper -> T.binding_op -> T.pattern -> binding_op;
   case: mapper -> T.case -> case;
   cases: mapper -> T.case list -> case list;
   class_declaration: mapper -> T.class_declaration -> class_declaration;
@@ -52,6 +53,7 @@ type mapper = {
   module_type_declaration:
     mapper -> T.module_type_declaration -> module_type_declaration;
   package_type: mapper -> T.package_type -> package_type;
+  open_declaration: mapper -> T.open_declaration -> open_declaration;
   open_description: mapper -> T.open_description -> open_description;
   pat: mapper -> T.pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
@@ -98,7 +100,7 @@ let map_opt f = function None -> None | Some e -> Some (f e)
 
 let rec lident_of_path = function
   | Path.Pident id -> Longident.Lident (Ident.name id)
-  | Path.Pdot (p, s, _) -> Longident.Ldot (lident_of_path p, s)
+  | Path.Pdot (p, s) -> Longident.Ldot (lident_of_path p, s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lident_of_path p1, lident_of_path p2)
 
@@ -115,6 +117,22 @@ let fresh_name s env =
       | Not_found -> aux (i+1)
   in
   aux 0
+
+(** Extract the [n] patterns from the case of a letop *)
+let rec extract_letop_patterns n pat =
+  if n = 0 then pat, []
+  else begin
+    match pat.pat_desc with
+    | Tpat_tuple([first; rest]) ->
+        let next, others = extract_letop_patterns (n-1) rest in
+        first, next :: others
+    | _ ->
+      let rec anys n =
+        if n = 0 then []
+        else { pat with pat_desc = Tpat_any } :: anys (n-1)
+      in
+      { pat with pat_desc = Tpat_any }, anys (n-1)
+  end
 
 (** Mapping functions. *)
 
@@ -143,7 +161,14 @@ let open_description sub od =
   let attrs = sub.attributes sub od.open_attributes in
   Opn.mk ~loc ~attrs
     ~override:od.open_override
-    (map_loc sub od.open_txt)
+    (snd od.open_expr)
+
+let open_declaration sub od =
+  let loc = sub.location sub od.open_loc in
+  let attrs = sub.attributes sub od.open_attributes in
+  Opn.mk ~loc ~attrs
+    ~override:od.open_override
+    (sub.module_expr sub od.open_expr)
 
 let structure_item sub item =
   let loc = sub.location sub item.str_loc in
@@ -167,7 +192,7 @@ let structure_item sub item =
     | Tstr_modtype mtd ->
         Pstr_modtype (sub.module_type_declaration sub mtd)
     | Tstr_open od ->
-        Pstr_open (sub.open_description sub od)
+        Pstr_open (sub.open_declaration sub od)
     | Tstr_class list ->
         Pstr_class
           (List.map
@@ -342,8 +367,6 @@ let exp_extra sub (extra, loc, attrs) sexp =
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_open (ovf, _path, lid, _) ->
-        Pexp_open (ovf, map_loc sub lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)
   in
@@ -455,7 +478,7 @@ let expression sub exp =
         Pexp_override (List.map (fun (_path, lid, exp) ->
               (map_loc sub lid, sub.expr sub exp)
           ) list)
-    | Texp_letmodule (_id, name, mexpr, exp) ->
+    | Texp_letmodule (_id, name, _pres, mexpr, exp) ->
         Pexp_letmodule (name, sub.module_expr sub mexpr,
           sub.expr sub exp)
     | Texp_letexception (ext, exp) ->
@@ -467,6 +490,14 @@ let expression sub exp =
         Pexp_object (sub.class_structure sub cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (sub.module_expr sub mexpr)
+    | Texp_letop {let_; ands; body; _} ->
+        let pat, and_pats =
+          extract_letop_patterns (List.length ands) body.c_lhs
+        in
+        let let_ = sub.binding_op sub let_ pat in
+        let ands = List.map2 (sub.binding_op sub) ands and_pats in
+        let body = sub.expr sub body.c_rhs in
+        Pexp_letop {let_; ands; body }
     | Texp_unreachable ->
         Pexp_unreachable
     | Texp_extension_constructor (lid, _) ->
@@ -474,9 +505,18 @@ let expression sub exp =
                         PStr [ Str.eval ~loc
                                  (Exp.construct ~loc (map_loc sub lid) None)
                              ])
+    | Texp_open (od, exp) ->
+        Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
+
+let binding_op sub bop pat =
+  let pbop_op = bop.bop_op_name in
+  let pbop_pat = sub.pat sub pat in
+  let pbop_exp = sub.expr sub bop.bop_exp in
+  let pbop_loc = bop.bop_loc in
+  {pbop_op; pbop_pat; pbop_exp; pbop_loc}
 
 let package_type sub pack =
   (map_loc sub pack.pack_txt,
@@ -648,8 +688,8 @@ let class_expr sub cexpr =
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
         Pcl_constraint (sub.class_expr sub cl,  sub.class_type sub clty)
 
-    | Tcl_open (ovf, _p, lid, _env, e) ->
-        Pcl_open (ovf, lid, sub.class_expr sub e)
+    | Tcl_open (od, e) ->
+        Pcl_open (sub.open_description sub od, sub.class_expr sub e)
 
     | Tcl_ident _ -> assert false
     | Tcl_constraint (_, None, _, _, _) -> assert false
@@ -665,8 +705,8 @@ let class_type sub ct =
         Pcty_constr (map_loc sub lid, List.map (sub.typ sub) list)
     | Tcty_arrow (label, ct, cl) ->
         Pcty_arrow (label, sub.typ sub ct, sub.class_type sub cl)
-    | Tcty_open (ovf, _p, lid, _env, e) ->
-        Pcty_open (ovf, lid, sub.class_type sub e)
+    | Tcty_open (od, e) ->
+        Pcty_open (sub.open_description sub od, sub.class_type sub e)
   in
   Cty.mk ~loc ~attrs desc
 
@@ -796,8 +836,9 @@ let location _sub l = l
 
 let default_mapper =
   {
-    attribute = attribute ;
-    attributes = attributes ;
+    attribute = attribute;
+    attributes = attributes;
+    binding_op = binding_op;
     structure = structure;
     structure_item = structure_item;
     module_expr = module_expr;
@@ -828,6 +869,7 @@ let default_mapper =
     module_type_declaration = module_type_declaration;
     module_binding = module_binding;
     package_type = package_type ;
+    open_declaration = open_declaration;
     open_description = open_description;
     include_description = include_description;
     include_declaration = include_declaration;

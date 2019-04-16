@@ -54,18 +54,8 @@ val check_coherence:
 (* for fixed types *)
 val is_fixed_type : Parsetree.type_declaration -> bool
 
-(* for typeclass.ml *)
-val compute_variance_class_decls:
-    Env.t ->
-    (Ident.t * Types.type_declaration * Types.type_declaration *
-     Types.class_declaration * Types.class_type_declaration *
-     'a Typedtree.class_infos) list ->
-    (Types.type_declaration * Types.type_declaration *
-     Types.class_declaration * Types.class_type_declaration) list
-
 (* for typeopt.ml *)
 val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
-
 
 type native_repr_kind = Unboxed | Untagged
 
@@ -90,16 +80,15 @@ type error =
   | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
-  | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
+  | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
-  | Varying_anonymous
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_immediate_attribute
+  | Immediacy of Typedecl_immediacy.error
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed

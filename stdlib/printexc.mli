@@ -22,6 +22,12 @@ val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
    the exception [e]. *)
 
+val to_string_default: exn -> string
+(** [Printexc.to_string_default e] returns a string representation of the
+    exception [e], ignoring all registered exception printers.
+    @since 4.09
+*)
+
 val print: ('a -> 'b) -> 'a -> 'b
 (** [Printexc.print fn x] applies [fn] to [x] and returns the result.
    If the evaluation of [fn x] raises any exception, the
@@ -93,6 +99,12 @@ val register_printer: (exn -> string option) -> unit
     itself. Practically, it means that the code related to [fn] should not use
     the backtrace if it has itself raised an exception before.
     @since 3.11.2
+*)
+
+val use_printers: exn -> string option
+(** [Printexc.use_printers e] returns [None] if there are no registered
+    printers and [Some s] with else as the resulting string otherwise.
+    @since 4.09
 *)
 
 (** {1 Raw backtraces} *)

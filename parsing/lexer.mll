@@ -313,6 +313,9 @@ let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|']
+let kwdopchar =
+  ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
+
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_digit =
@@ -528,6 +531,10 @@ rule token = parse
             { INFIXOP3 op }
   | '#' (symbolchar | '#') + as op
             { HASHOP op }
+  | "let" kwdopchar dotsymbolchar * as op
+            { LETOP op }
+  | "and" kwdopchar dotsymbolchar * as op
+            { ANDOP op }
   | eof { EOF }
   | (_ as illegal_char)
       { error lexbuf (Illegal_character illegal_char) }

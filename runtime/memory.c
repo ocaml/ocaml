@@ -597,7 +597,7 @@ CAMLexport value caml_alloc_shr_effect (mlsize_t wosize, tag_t tag,
    that depend on the GC (and finalizers) for deallocation.
    For the GC to take dependent memory into account when computing
    its automatic speed setting,
-   you must call [caml_alloc_dependent_memory] when you alloate some
+   you must call [caml_alloc_dependent_memory] when you allocate some
    dependent memory, and [caml_free_dependent_memory] when you
    free it.  In both cases, you pass as argument the size (in bytes)
    of the block being allocated or freed.
@@ -805,7 +805,7 @@ CAMLexport void* caml_stat_alloc_aligned_noexc(asize_t sz, int modulo,
 {
   char *raw_mem;
   uintnat aligned_mem;
-  CAMLassert (modulo < Page_size);
+  CAMLassert (0 <= modulo && modulo < Page_size);
   raw_mem = (char *) caml_stat_alloc_noexc(sz + Page_size);
   if (raw_mem == NULL) return NULL;
   *b = raw_mem;

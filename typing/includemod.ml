@@ -28,7 +28,7 @@ type symptom =
         * extension_constructor * Includecore.type_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
-  | Modtype_permutation
+  | Modtype_permutation of Types.module_type * Typedtree.module_coercion
   | Interface_mismatch of string * string
   | Class_type_declarations of
       Ident.t * class_type_declaration * class_type_declaration *
@@ -175,23 +175,25 @@ module FieldMap = Map.Make(struct
   end)
 
 let item_ident_name = function
-    Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
-  | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
-  | Sig_typext(id, d, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
-  | Sig_module(id, d, _) -> (id, d.md_loc, Field_module(Ident.name id))
-  | Sig_modtype(id, d) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
-  | Sig_class(id, d, _) -> (id, d.cty_loc, Field_class(Ident.name id))
-  | Sig_class_type(id, d, _) -> (id, d.clty_loc, Field_classtype(Ident.name id))
+    Sig_value(id, d, _) -> (id, d.val_loc, Field_value(Ident.name id))
+  | Sig_type(id, d, _, _) -> (id, d.type_loc, Field_type(Ident.name id))
+  | Sig_typext(id, d, _, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
+  | Sig_module(id, _, d, _, _) -> (id, d.md_loc, Field_module(Ident.name id))
+  | Sig_modtype(id, d, _) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
+  | Sig_class(id, d, _, _) -> (id, d.cty_loc, Field_class(Ident.name id))
+  | Sig_class_type(id, d, _, _) ->
+      (id, d.clty_loc, Field_classtype(Ident.name id))
 
 let is_runtime_component = function
-  | Sig_value(_,{val_kind = Val_prim _})
-  | Sig_type(_,_,_)
-  | Sig_modtype(_,_)
-  | Sig_class_type(_,_,_) -> false
-  | Sig_value(_,_)
-  | Sig_typext(_,_,_)
-  | Sig_module(_,_,_)
-  | Sig_class(_, _,_) -> true
+  | Sig_value(_,{val_kind = Val_prim _}, _)
+  | Sig_type(_,_,_,_)
+  | Sig_module(_,Mp_absent,_,_,_)
+  | Sig_modtype(_,_,_)
+  | Sig_class_type(_,_,_,_) -> false
+  | Sig_value(_,_,_)
+  | Sig_typext(_,_,_,_)
+  | Sig_module(_,Mp_present,_,_,_)
+  | Sig_class(_,_,_,_) -> true
 
 (* Print a coercion *)
 
@@ -217,7 +219,7 @@ let rec print_coercion ppf c =
   | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
       pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
         Printtyp.raw_type_expr pc_type
-  | Tcoerce_alias (p, c) ->
+  | Tcoerce_alias (_, p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
         print_coercion c
@@ -258,32 +260,21 @@ let rec modtypes ~loc env ~mark cxt subst mty1 mty2 =
                       :: reasons))
 
 and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
-  match (mty1, mty2) with
-  | (Mty_alias(pres1, p1), Mty_alias(pres2, p2)) -> begin
+  match mty1, mty2 with
+  | Mty_alias p1, Mty_alias p2 ->
       if Env.is_functor_arg p2 env then
         raise (Error[cxt, env, Invalid_module_alias p2]);
       if not (Path.same p1 p2) then begin
-        let p1 = Env.normalize_path None env p1
-        and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
+        let p1 = Env.normalize_module_path None env p1
+        and p2 = Env.normalize_module_path None env
+            (Subst.module_path subst p2)
+        in
         if not (Path.same p1 p2) then raise Dont_match
       end;
-      match pres1, pres2 with
-      | Mta_present, Mta_present -> Tcoerce_none
-        (* Should really be Tcoerce_ignore if it existed *)
-      | Mta_absent, Mta_absent -> Tcoerce_none
-        (* Should really be Tcoerce_empty if it existed *)
-      | Mta_present, Mta_absent -> Tcoerce_none
-      | Mta_absent, Mta_present ->
-        let p1 = try
-            Env.normalize_path (Some Location.none) env p1
-          with Env.Error (Env.Missing_module (_, _, path)) ->
-            raise (Error[cxt, env, Unbound_module_path path])
-        in
-        Tcoerce_alias (p1, Tcoerce_none)
-    end
-  | (Mty_alias(pres1, p1), _) -> begin
+      Tcoerce_none
+  | (Mty_alias p1, _) -> begin
       let p1 = try
-        Env.normalize_path (Some Location.none) env p1
+        Env.normalize_module_path (Some Location.none) env p1
       with Env.Error (Env.Missing_module (_, _, path)) ->
         raise (Error[cxt, env, Unbound_module_path path])
       in
@@ -291,10 +282,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
         Mtype.strengthen ~aliasable:true env
           (expand_module_alias env cxt p1) p1
       in
-      let cc = modtypes ~loc env ~mark cxt subst mty1 mty2 in
-      match pres1 with
-      | Mta_present -> cc
-      | Mta_absent -> Tcoerce_alias (p1, cc)
+      modtypes ~loc env ~mark cxt subst mty1 mty2
     end
   | (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes ~loc env ~mark cxt subst
@@ -317,7 +305,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
           (Arg param1::cxt) Subst.identity arg2' arg1
       in
       let cc_res =
-        modtypes ~loc (Env.add_module param1 arg2' env) ~mark
+        modtypes ~loc (Env.add_module param1 Mp_present arg2' env) ~mark
           (Body param1::cxt)
           (Subst.add_module param2 (Path.Pident param1) subst)
           res1 res2
@@ -352,7 +340,7 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
   let (id_pos_list,_) =
     List.fold_left
       (fun (l,pos) -> function
-          Sig_module (id, _, _) ->
+          Sig_module (id, Mp_present, _, _, _) ->
             ((id,pos,Tcoerce_none)::l , pos+1)
         | item -> (l, if is_runtime_component item then pos+1 else pos))
       ([], 0) sig1 in
@@ -360,9 +348,22 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
       [] -> pos, tbl
+    | (Sig_value (_, _, Hidden)
+      |Sig_type (_, _, _, Hidden)
+      |Sig_typext (_, _, _, Hidden)
+      |Sig_module (_, _, _, _, Hidden)
+      |Sig_modtype (_, _, Hidden)
+      |Sig_class (_, _, _, Hidden)
+      |Sig_class_type (_, _, _, Hidden)
+      ) as item :: rem ->
+        let pos = if is_runtime_component item then pos + 1 else pos in
+        build_component_table pos tbl rem (* do not pair private items. *)
     | item :: rem ->
         let (id, _loc, name) = item_ident_name item in
-        let nextpos = if is_runtime_component item then pos + 1 else pos in
+        let pos, nextpos =
+          if is_runtime_component item then pos, pos + 1
+          else -1, pos
+        in
         build_component_table nextpos
                               (FieldMap.add name (id, item, pos) tbl) rem in
   let len1, comps1 =
@@ -396,7 +397,7 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
         let (id2, loc, name2) = item_ident_name item2 in
         let name2, report =
           match item2, name2 with
-            Sig_type (_, {type_manifest=None}, _), Field_type s
+            Sig_type (_, {type_manifest=None}, _, _), Field_type s
             when Btype.is_row_name s ->
               (* Do not report in case of failure,
                  as the main type will generate an error *)
@@ -438,7 +439,7 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
   in
   match paired with
     [] -> []
-  | (Sig_value(id1, valdecl1), Sig_value(_id2, valdecl2), pos) :: rem ->
+  | (Sig_value(id1, valdecl1, _), Sig_value(_id2, valdecl2, _), pos) :: rem ->
       let cc =
         value_descriptions ~loc env ~mark cxt subst id1 valdecl1 valdecl2
       in
@@ -446,24 +447,33 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
         Val_prim _ -> comps_rec rem
       | _ -> (pos, cc) :: comps_rec rem
       end
-  | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
+  | (Sig_type(id1, tydecl1, _, _), Sig_type(_id2, tydecl2, _, _), _pos) :: rem
+    ->
       type_declarations ~loc ~old_env env ~mark cxt subst id1 tydecl1 tydecl2;
       comps_rec rem
-  | (Sig_typext(id1, ext1, _), Sig_typext(_id2, ext2, _), pos)
+  | (Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _), pos)
     :: rem ->
       extension_constructors ~loc env ~mark cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
+  | (Sig_module(id1, pres1, mty1, _, _),
+     Sig_module(_id2, pres2, mty2, _, _), pos) :: rem -> begin
       let cc = module_declarations ~loc env ~mark cxt subst id1 mty1 mty2 in
-      (pos, cc) :: comps_rec rem
-  | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
+      let rem = comps_rec rem in
+      match pres1, pres2, mty1.md_type with
+      | Mp_present, Mp_present, _ -> (pos, cc) :: rem
+      | _, Mp_absent, _ -> rem
+      | Mp_absent, Mp_present, Mty_alias p1 ->
+          (pos, Tcoerce_alias (env, p1, cc)) :: rem
+      | Mp_absent, Mp_present, _ -> assert false
+    end
+  | (Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _), _pos) :: rem ->
       modtype_infos ~loc env ~mark cxt subst id1 info1 info2;
       comps_rec rem
-  | (Sig_class(id1, decl1, _), Sig_class(_id2, decl2, _), pos) :: rem ->
+  | (Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _), pos) :: rem ->
       class_declarations ~old_env env cxt subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_class_type(id1, info1, _),
-     Sig_class_type(_id2, info2, _), _pos) :: rem ->
+  | (Sig_class_type(id1, info1, _, _),
+     Sig_class_type(_id2, info2, _, _), _pos) :: rem ->
       class_type_declarations ~loc ~old_env env cxt subst id1 info1 info2;
       comps_rec rem
   | _ ->
@@ -510,17 +520,17 @@ and check_modtype_equiv ~loc env ~mark cxt mty1 mty2 =
      modtypes ~loc env ~mark:(negate_mark mark) cxt Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
-  | (_c1, _c2) ->
+  | (c1, _c2) ->
       (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
         print_coercion _c1 print_coercion _c2; *)
-      raise(Error [cxt, env, Modtype_permutation])
+      raise(Error [cxt, env, Modtype_permutation (mty1, c1)])
 
 (* Simplified inclusion check between module types (for Env) *)
 
 let can_alias env path =
   let rec no_apply = function
     | Path.Pident _ -> true
-    | Path.Pdot(p, _, _) -> no_apply p
+    | Path.Pdot(p, _) -> no_apply p
     | Path.Papply _ -> false
   in
   no_apply path && not (Env.is_functor_arg path env)
@@ -566,6 +576,107 @@ let modtypes env m1 m2 =
 
 (* Error report *)
 
+module Illegal_permutation = struct
+  (** Extraction of information in case of illegal permutation
+      in a module type *)
+
+  (** When examining coercions, we only have runtime component indices,
+      we use thus a limited version of {!pos}. *)
+  type coerce_pos =
+    | Item of int
+    | InArg
+    | InBody
+
+  let either f x g y = match f x with
+    | None -> g y
+    | Some _ as v -> v
+
+  (** We extract a lone transposition from a full tree of permutations. *)
+  let rec transposition_under path = function
+    | Tcoerce_structure(c,_) ->
+        either
+          (not_fixpoint path 0) c
+          (first_non_id path 0) c
+    | Tcoerce_functor(arg,res) ->
+        either
+          (transposition_under (InArg::path)) arg
+          (transposition_under (InBody::path)) res
+    | Tcoerce_none -> None
+    | Tcoerce_alias _ | Tcoerce_primitive _ ->
+        (* these coercions are not inversible, and raise an error earlier when
+           checking for module type equivalence *)
+        assert false
+  (* we search the first point which is not invariant at the current level *)
+  and not_fixpoint path pos = function
+    | [] -> None
+    | (n, _) :: q ->
+        if n = pos then
+          not_fixpoint path (pos+1) q
+        else
+          Some(List.rev path, pos, n)
+  (* we search the first item with a non-identity inner coercion *)
+  and first_non_id path pos = function
+    | [] -> None
+    | (_,Tcoerce_none) :: q -> first_non_id path (pos + 1) q
+    | (_,c) :: q ->
+        either
+          (transposition_under (Item pos :: path)) c
+          (first_non_id path (pos + 1)) q
+
+  let transposition c =
+    match transposition_under [] c with
+    | None -> raise Not_found
+    | Some x -> x
+
+  let rec runtime_item k = function
+    | [] -> raise Not_found
+    | item :: q ->
+        if not(is_runtime_component item) then
+          runtime_item k q
+        else if k = 0 then
+          item
+        else
+          runtime_item (k-1) q
+
+  (* Find module type at position [path] and convert the [coerce_pos] path to
+     a [pos] path *)
+  let rec find env ctx path mt = match mt, path with
+    | (Mty_ident p | Mty_alias p), _ ->
+        begin match (Env.find_modtype p env).mtd_type with
+        | None -> raise Not_found
+        | Some mt -> find env ctx path mt
+        end
+    | Mty_signature s , [] -> List.rev ctx, s
+    | Mty_signature s, Item k :: q ->
+        begin match runtime_item k s with
+        | Sig_module (id, _, md,_,_) -> find env (Module id :: ctx) q md.md_type
+        | _ -> raise Not_found
+        end
+    | Mty_functor(x,Some mt,_), InArg :: q -> find env (Arg x :: ctx) q mt
+    | Mty_functor(x,_,mt), InBody :: q -> find env (Body x :: ctx) q mt
+    | _ -> raise Not_found
+
+  let find env path mt = find env [] path mt
+  let item mt k = item_ident_name (runtime_item k mt)
+
+  let pp_item ppf (id,_,kind) =
+    Format.fprintf ppf "%s %S" (kind_of_field_desc kind) (Ident.name id)
+
+  let pp ctx_printer env ppf (mty,c) =
+    try
+      let p, k, l = transposition c in
+      let ctx, mt = find env p mty in
+      Format.fprintf ppf
+        "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
+         @[For example,@ %a@[the %a@ and the %a are not in the same order@ \
+         in the expected and actual module types.@]@]"
+        ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
+    with Not_found -> (* this should not happen *)
+      Format.fprintf ppf
+        "Illegal permutation of runtime components in a module type."
+
+end
+
 open Format
 
 let show_loc msg ppf loc =
@@ -577,7 +688,58 @@ let show_locs ppf (loc1, loc2) =
   show_loc "Expected declaration" ppf loc2;
   show_loc "Actual declaration" ppf loc1
 
-let include_err ppf = function
+let path_of_context = function
+    Module id :: rem ->
+      let rec subm path = function
+        | [] -> path
+        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id)) rem
+        | _ -> assert false
+      in subm (Path.Pident id) rem
+  | _ -> assert false
+
+
+let rec context ppf = function
+    Module id :: rem ->
+      fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
+  | Modtype id :: rem ->
+      fprintf ppf "@[<2>module type %a =@ %a@]"
+        Printtyp.ident id context_mty rem
+  | Body x :: rem ->
+      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
+  | Arg x :: rem ->
+      fprintf ppf "functor (%a : %a) -> ..." Printtyp.ident x context_mty rem
+  | [] ->
+      fprintf ppf "<here>"
+and context_mty ppf = function
+    (Module _ | Modtype _) :: _ as rem ->
+      fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
+  | cxt -> context ppf cxt
+and args ppf = function
+    Body x :: rem ->
+      fprintf ppf "(%s)%a" (argname x) args rem
+  | Arg x :: rem ->
+      fprintf ppf "(%a :@ %a) : ..." Printtyp.ident x context_mty rem
+  | cxt ->
+      fprintf ppf " :@ %a" context_mty cxt
+and argname x =
+  let s = Ident.name x in
+  if s = "*" then "" else s
+
+let alt_context ppf cxt =
+  if cxt = [] then () else
+  if List.for_all (function Module _ -> true | _ -> false) cxt then
+    fprintf ppf "in module %a,@ " Printtyp.path (path_of_context cxt)
+  else
+    fprintf ppf "@[<hv 2>at position@ %a,@]@ " context cxt
+
+let context ppf cxt =
+  if cxt = [] then () else
+  if List.for_all (function Module _ -> true | _ -> false) cxt then
+    fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
+  else
+    fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
+
+let include_err env ppf = function
   | Missing_field (id, loc, kind) ->
       fprintf ppf "The %s `%a' is required but not provided"
         kind Printtyp.ident id;
@@ -622,8 +784,8 @@ let include_err ppf = function
         %a@;<1 -2>does not match@ %a@]"
       !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
       !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
-  | Modtype_permutation ->
-      fprintf ppf "Illegal permutation of structure fields"
+  | Modtype_permutation (mty,c) ->
+      Illegal_permutation.pp alt_context env ppf (mty,c)
   | Interface_mismatch(impl_name, intf_name) ->
       fprintf ppf "@[The implementation %s@ does not match the interface %s:"
        impl_name intf_name
@@ -650,52 +812,9 @@ let include_err ppf = function
   | Invalid_module_alias path ->
       fprintf ppf "Module %a cannot be aliased" Printtyp.path path
 
-let rec context ppf = function
-    Module id :: rem ->
-      fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
-  | Modtype id :: rem ->
-      fprintf ppf "@[<2>module type %a =@ %a@]"
-        Printtyp.ident id context_mty rem
-  | Body x :: rem ->
-      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
-  | Arg x :: rem ->
-      fprintf ppf "functor (%a : %a) -> ..." Printtyp.ident x context_mty rem
-  | [] ->
-      fprintf ppf "<here>"
-and context_mty ppf = function
-    (Module _ | Modtype _) :: _ as rem ->
-      fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
-  | cxt -> context ppf cxt
-and args ppf = function
-    Body x :: rem ->
-      fprintf ppf "(%s)%a" (argname x) args rem
-  | Arg x :: rem ->
-      fprintf ppf "(%a :@ %a) : ..." Printtyp.ident x context_mty rem
-  | cxt ->
-      fprintf ppf " :@ %a" context_mty cxt
-and argname x =
-  let s = Ident.name x in
-  if s = "*" then "" else s
-
-let path_of_context = function
-    Module id :: rem ->
-      let rec subm path = function
-          [] -> path
-        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id, -1)) rem
-        | _ -> assert false
-      in subm (Path.Pident id) rem
-  | _ -> assert false
-
-let context ppf cxt =
-  if cxt = [] then () else
-  if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
-  else
-    fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
-
 let include_err ppf (cxt, env, err) =
   Printtyp.wrap_printing_env ~error:true env (fun () ->
-    fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
+    fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) (include_err env) err)
 
 let buffer = ref Bytes.empty
 let is_big obj =

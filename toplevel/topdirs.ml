@@ -70,8 +70,15 @@ let _ = add_directive "quit" (Directive_none dir_quit)
 
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := d :: !Config.load_path;
-  Dll.add_path [d]
+  Dll.add_path [d];
+  let dir = Load_path.Dir.create d in
+  Load_path.add dir;
+  toplevel_env :=
+    Stdlib.String.Set.fold
+      (fun name env ->
+         Env.add_persistent_structure (Ident.create_persistent name) env)
+      (Env.persistent_structures_of_dir dir)
+      !toplevel_env
 
 let _ = add_directive "directory" (Directive_string dir_directory)
     {
@@ -83,7 +90,13 @@ let _ = add_directive "directory" (Directive_string dir_directory)
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path;
+  let keep id =
+    match Load_path.find_uncap (Ident.name id ^ ".cmi") with
+    | exception Not_found -> true
+    | fn -> Filename.dirname fn <> d
+  in
+  toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
+  Load_path.remove_dir s;
   Dll.remove_path [d]
 
 let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
@@ -105,16 +118,8 @@ let _ = add_directive "cd" (Directive_string dir_cd)
 exception Load_failed
 
 let check_consistency ppf filename cu =
-  try
-    List.iter
-      (fun (name, crco) ->
-       Env.add_import name;
-       match crco with
-         None -> ()
-       | Some crc->
-           Consistbl.check Env.crc_units name crc filename)
-      cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
+  try Env.import_crcs ~source:filename cu.cu_imports
+  with Persistent_env.Consistbl.Inconsistency(name, user, auth) ->
     fprintf ppf "@[<hv 0>The files %s@ and %s@ \
                  disagree over interface %s@]@."
             user auth name;
@@ -153,7 +158,7 @@ let load_compunit ic filename ppf compunit =
 
 let rec load_file recursive ppf name =
   let filename =
-    try Some (find_in_path !Config.load_path name) with Not_found -> None
+    try Some (Load_path.find name) with Not_found -> None
   in
   match filename with
   | None -> fprintf ppf "Cannot find file %s.@." name; false
@@ -176,12 +181,9 @@ and really_load_file recursive ppf name filename ic =
             | (Reloc_getglobal id, _)
               when not (Symtable.is_global_defined id) ->
                 let file = Ident.name id ^ ".cmo" in
-                begin match try Some (Misc.find_in_path_uncap !Config.load_path
-                                        file)
-                      with Not_found -> None
-                with
-                | None -> ()
-                | Some file ->
+                begin match Load_path.find_uncap file with
+                | exception Not_found -> ()
+                | file ->
                     if not (load_file recursive ppf file) then raise Load_failed
                 end
             | _ -> ()
@@ -348,7 +350,7 @@ let dir_install_printer ppf lid =
   try
     let ((ty_arg, ty), path, is_old_style) =
       find_printer_type ppf lid in
-    let v = eval_path !toplevel_env path in
+    let v = eval_value_path !toplevel_env path in
     match ty with
     | None ->
        let print_function =
@@ -413,7 +415,7 @@ let dir_trace ppf lid =
         fprintf ppf "%a is an external function and cannot be traced.@."
         Printtyp.longident lid
     | _ ->
-        let clos = eval_path !toplevel_env path in
+        let clos = eval_value_path !toplevel_env path in
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos
         && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
@@ -478,15 +480,15 @@ let trim_signature = function
       Mty_signature
         (List.map
            (function
-               Sig_module (id, md, rs) ->
+               Sig_module (id, pres, md, rs, priv) ->
                  let attribute =
                    Ast_helper.Attr.mk
                      (Location.mknoloc "...")
                      (Parsetree.PStr [])
                  in
-                 Sig_module (id, {md with md_attributes =
-                                            attribute :: md.md_attributes},
-                             rs)
+                 Sig_module (id, pres, {md with md_attributes =
+                                          attribute :: md.md_attributes},
+                             rs, priv)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
              | item -> item)
@@ -530,7 +532,7 @@ let () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_value env loc lid in
-       [ Sig_value (id, desc) ]
+       [ Sig_value (id, desc, Exported) ]
     )
     "Print the signature of the corresponding value."
 
@@ -538,7 +540,7 @@ let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_type env loc lid in
-       [ Sig_type (id, desc, Trec_not) ]
+       [ Sig_type (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
 
@@ -561,7 +563,7 @@ let () =
            Types.ext_loc = desc.cstr_loc;
            Types.ext_attributes = desc.cstr_attributes; }
        in
-         [Sig_typext (id, ext, Text_exception)]
+         [Sig_typext (id, ext, Text_exception, Exported)]
     )
     "Print the signature of the corresponding exception."
 
@@ -571,10 +573,11 @@ let () =
        let rec accum_aliases path acc =
          let md = Env.find_module path env in
          let acc =
-           Sig_module (id, {md with md_type = trim_signature md.md_type},
-                       Trec_not) :: acc in
+           Sig_module (id, Mp_present,
+                       {md with md_type = trim_signature md.md_type},
+                       Trec_not, Exported) :: acc in
          match md.md_type with
-         | Mty_alias(_, path) -> accum_aliases path acc
+         | Mty_alias path -> accum_aliases path acc
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
              List.rev acc
        in
@@ -587,7 +590,7 @@ let () =
   reg_show_prim "show_module_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_modtype env loc lid in
-       [ Sig_modtype (id, desc) ]
+       [ Sig_modtype (id, desc, Exported) ]
     )
     "Print the signature of the corresponding module type."
 
@@ -595,7 +598,7 @@ let () =
   reg_show_prim "show_class"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_class env loc lid in
-       [ Sig_class (id, desc, Trec_not) ]
+       [ Sig_class (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding class."
 
@@ -603,7 +606,7 @@ let () =
   reg_show_prim "show_class_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_class_type env loc lid in
-       [ Sig_class_type (id, desc, Trec_not) ]
+       [ Sig_class_type (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding class type."
 

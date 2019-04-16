@@ -27,7 +27,7 @@ external get : 'a array -> int -> 'a = "%array_safe_get"
    The last element has number [Array.length a - 1].
    You can also write [a.(n)] instead of [Array.get a n].
 
-   Raise [Invalid_argument "index out of bounds"]
+   Raise [Invalid_argument]
    if [n] is outside the range 0 to [(Array.length a - 1)]. *)
 
 external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
@@ -35,7 +35,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    element number [n] with [x].
    You can also write [a.(n) <- x] instead of [Array.set a n x].
 
-   Raise [Invalid_argument "index out of bounds"]
+   Raise [Invalid_argument]
    if [n] is outside the range 0 to [Array.length a - 1]. *)
 
 external make : int -> 'a -> 'a array = "caml_make_vect"
@@ -93,7 +93,10 @@ val create_matrix : int -> int -> 'a -> 'a array array
 
 val append : 'a array -> 'a array -> 'a array
 (** [Array.append v1 v2] returns a fresh array containing the
-   concatenation of the arrays [v1] and [v2]. *)
+   concatenation of the arrays [v1] and [v2].
+
+   Raise [Invalid_argument] if
+   [Array.length v1 + Array.length v2 > Sys.max_array_length]. *)
 
 val concat : 'a array list -> 'a array
 (** Same as {!Array.append}, but concatenates a list of arrays. *)
@@ -103,7 +106,7 @@ val sub : 'a array -> int -> int -> 'a array
    containing the elements number [start] to [start + len - 1]
    of array [a].
 
-   Raise [Invalid_argument "Array.sub"] if [start] and [len] do not
+   Raise [Invalid_argument] if [start] and [len] do not
    designate a valid subarray of [a]; that is, if
    [start < 0], or [len < 0], or [start + len > Array.length a]. *)
 
@@ -115,7 +118,7 @@ val fill : 'a array -> int -> int -> 'a -> unit
 (** [Array.fill a ofs len x] modifies the array [a] in place,
    storing [x] in elements number [ofs] to [ofs + len - 1].
 
-   Raise [Invalid_argument "Array.fill"] if [ofs] and [len] do not
+   Raise [Invalid_argument] if [ofs] and [len] do not
    designate a valid subarray of [a]. *)
 
 val blit : 'a array -> int -> 'a array -> int -> int -> unit
@@ -125,7 +128,7 @@ val blit : 'a array -> int -> 'a array -> int -> int -> unit
    [v1] and [v2] are the same array, and the source and
    destination chunks overlap.
 
-   Raise [Invalid_argument "Array.blit"] if [o1] and [len] do not
+   Raise [Invalid_argument] if [o1] and [len] do not
    designate a valid subarray of [v1], or if [o2] and [len] do not
    designate a valid subarray of [v2]. *)
 
@@ -134,7 +137,10 @@ val to_list : 'a array -> 'a list
 
 val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
-   of [l]. *)
+   of [l].
+
+   Raise [Invalid_argument] if the length of [l] is greater than
+   [Sys.max_array_length].*)
 
 
 (** {1 Iterators} *)
@@ -204,13 +210,14 @@ val exists : ('a -> bool) -> 'a array -> bool
     @since 4.03.0 *)
 
 val mem : 'a -> 'a array -> bool
-(** [mem a l] is true if and only if [a] is equal
-   to an element of [l].
-   @since 4.03.0 *)
+(** [mem a l] is true if and only if [a] is structurally equal
+    to an element of [l] (i.e. there is an [x] in [l] such that
+    [compare a x = 0]).
+    @since 4.03.0 *)
 
 val memq : 'a -> 'a array -> bool
 (** Same as {!Array.mem}, but uses physical equality instead of structural
-   equality to compare array elements.
+   equality to compare elements.
    @since 4.03.0 *)
 
 
@@ -223,8 +230,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see below for a
    complete specification).  For example, {!Stdlib.compare} is
-   a suitable comparison function, provided there are no floating-point
-   NaN values in the data.  After calling [Array.sort], the
+   a suitable comparison function.  After calling [Array.sort], the
    array is sorted in place in increasing order.
    [Array.sort] is guaranteed to run in constant heap space
    and (at most) logarithmic stack space.
@@ -234,7 +240,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
 
    Specification of the comparison function:
    Let [a] be the array and [cmp] the comparison function.  The following
-   must be true for all x, y, z in a :
+   must be true for all [x], [y], [z] in [a] :
 -   [cmp x y] > 0 if and only if [cmp y x] < 0
 -   if [cmp x y] >= 0 and [cmp y z] >= 0 then [cmp x z] >= 0
 
@@ -248,8 +254,8 @@ val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
    elements that compare equal are kept in their original order) and
    not guaranteed to run in constant heap space.
 
-   The current implementation uses Merge Sort. It uses [n/2]
-   words of heap space, where [n] is the length of the array.
+   The current implementation uses Merge Sort. It uses a temporary
+   array of length [n/2], where [n] is the length of the array.
    It is usually faster than the current implementation of {!Array.sort}.
 *)
 

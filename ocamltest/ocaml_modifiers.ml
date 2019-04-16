@@ -98,6 +98,7 @@ let systhreads =
 let compilerlibs_subdirs =
 [
   "utils"; "parsing"; "toplevel"; "typing"; "bytecomp"; "compilerlibs";
+  "file_formats"; "lambda";
 ]
 
 let add_compiler_subdir subdir =
@@ -106,6 +107,8 @@ let add_compiler_subdir subdir =
 let ocamlcommon =
   (Append (Ocaml_variables.libraries, wrap "ocamlcommon")) ::
   (List.map add_compiler_subdir compilerlibs_subdirs)
+
+let debugger = [add_compiler_subdir "debugger"]
 
 let _ =
   register_modifiers "principal" principal;
@@ -120,4 +123,5 @@ let _ =
   register_modifiers "html" html;
   register_modifiers "man" man;
   register_modifiers "tool-ocaml-lib" tool_ocaml_lib;
+  register_modifiers "debugger" debugger;
   ()

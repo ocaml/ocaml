@@ -512,9 +512,16 @@ write.o: write.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/signals.h unixsupport.h
-unix.cmo : unix.cmi
-unix.cmx : unix.cmi
+unix.cmo : \
+    unix.cmi
+unix.cmx : \
+    unix.cmi
 unix.cmi :
-unixLabels.cmo : unix.cmi unixLabels.cmi
-unixLabels.cmx : unix.cmx unixLabels.cmi
-unixLabels.cmi : unix.cmi
+unixLabels.cmo : \
+    unix.cmi \
+    unixLabels.cmi
+unixLabels.cmx : \
+    unix.cmx \
+    unixLabels.cmi
+unixLabels.cmi : \
+    unix.cmi

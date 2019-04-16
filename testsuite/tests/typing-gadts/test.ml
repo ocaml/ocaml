@@ -103,13 +103,13 @@ module Nonexhaustive =
   end
 ;;
 [%%expect{|
-Line 11, characters 6-34:
+Lines 11-12, characters 6-19:
 11 | ......function
 12 |         | C2 x -> x
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C1 _
-Line 24, characters 6-77:
+Lines 24-26, characters 6-30:
 24 | ......function
 25 |         | Foo _ , Foo _ -> true
 26 |         | Bar _, Bar _ -> true
@@ -260,7 +260,7 @@ module PR6801 = struct
     | String s -> print_endline s (* warn : Any *)
 end;;
 [%%expect{|
-Line 8, characters 4-50:
+Lines 8-9, characters 4-33:
 8 | ....match x with
 9 |     | String s -> print_endline s.................
 Warning 8: this pattern-matching is not exhaustive.
@@ -687,7 +687,7 @@ let f : type a b. (a,b) eq -> (<m : a; ..> as 'c) -> (<m : b; ..> as 'c) =
 ;; (* fail *)
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq
-Line 3, characters 4-90:
+Lines 3-4, characters 4-15:
 3 | ....f : type a b. (a,b) eq -> (<m : a; ..> as 'c) -> (<m : b; ..> as 'c) =
 4 |   fun Eq o -> o
 Error: The universal type variable 'b cannot be generalized:
@@ -813,7 +813,7 @@ Error: This expression has type [> `A of a ]
 let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
   fun Eq o -> o ;; (* fail *)
 [%%expect{|
-Line 1, characters 4-84:
+Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
 Error: This definition has type
@@ -915,7 +915,7 @@ let f : type a. a ty -> a t -> int = fun x y ->
   | TA, D z -> z
 ;; (* warn *)
 [%%expect{|
-Line 2, characters 2-153:
+Lines 2-8, characters 2-16:
 2 | ..match x, y with
 3 |   | _, A z -> z
 4 |   | _, B z -> if z then 1 else 2
@@ -979,7 +979,7 @@ let f : type a. a ty -> a t -> int = fun x y ->
 ;; (* ok *)
 [%%expect{|
 type ('a, 'b) pair = { left : 'a; right : 'b; }
-Line 4, characters 2-244:
+Lines 4-10, characters 2-29:
  4 | ..match {left=x; right=y} with
  5 |   | {left=_; right=A z} -> z
  6 |   | {left=_; right=B z} -> if z then 1 else 2
@@ -1101,7 +1101,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
   (x:<foo:int;bar:int;..>)
 ;;
 [%%expect{|
-val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
+val g : 't -> 't int_foo -> 't int_bar -> 't = <fun>
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1109,7 +1109,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   x, x#foo, x#bar
 ;;
 [%%expect{|
-val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
+val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
 |}];;
 
 (* PR#5554 *)

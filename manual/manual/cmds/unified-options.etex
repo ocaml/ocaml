@@ -424,7 +424,7 @@ compiled interface files (".cmi"), compiled object code files
 "-cclib -lxxx". See also option "-I".
 }%comp
 \nat{%
-Do not automatically add the standard library directory the list of
+Do not automatically add the standard library directory to the list of
 directories searched for compiled interface files (".cmi"), compiled
 object code files (".cmx"), and libraries (".cmxa"). See also option
 "-I".
@@ -497,29 +497,6 @@ or a} compiled shared/dynamic library (".so" extension, ".dll" under Windows).
 }%notop
 
 \nat{%
-\item["-p"]
-Generate extra code to write profile information when the program is
-executed.  The profile information can then be examined with the
-analysis program "gprof".  (See chapter~\ref{c:profiler} for more
-information on profiling.)  The "-p" option must be given both at
-compile-time and at link-time.  Linking object files not compiled with
-"-p" is possible, but results in less precise profiling.
-
-\begin{unix} See the Unix manual page for "gprof(1)" for more
-information about the profiles.
-
-Full support for "gprof" is only available for certain platforms
-(currently: Intel x86 32 and 64 bits under Linux, BSD and MacOS X).
-On other platforms, the "-p" option will result in a less precise
-profile (no call graph information, only a time profile).
-\end{unix}
-
-\begin{windows}
-The "-p" option does not work under Windows.
-\end{windows}
-}%nat
-
-\nat{%
 \item["-pack"]
 Build an object file (".cmx" and ".o"/".obj" files) and its associated compiled
 interface (".cmi") that combines the ".cmx" object
@@ -568,17 +545,6 @@ contents of the object files "a.cmo", "b.cmo" and "c.cmo".  These
 contents can be referenced as "P.A", "P.B" and "P.C" in the remainder
 of the program.
 }%comp
-
-
-\notop{%
-\item["-plugin" \var{plugin}]
-Dynamically load the code of the given \var{plugin}
-(a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
-the same kind of code as the compiler ({\machine \ocamlx.byte} must load
-bytecode plugins, while {\machine \ocamlx.opt} must load native code plugins),
-and extension adaptation is done automatically for ".cma" files (to ".cmxs"
-files if the compiler is compiled in native code).
-}%notop
 
 \notop{%
 \item["-pp" \var{command}]
@@ -722,13 +688,6 @@ Print all external commands before they are executed,
 \nat{in particular invocations of the assembler, C compiler, and linker.}
 \comp{in particular invocations of the C compiler and linker in "-custom" mode.}
 Useful to debug C library problems.
-
-\comp{%
-\item["-vmthread"]
-Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
-in combination with the VM-level "threads" library described in
-chapter~\ref{c:threads}.
-}%comp
 
 \notop{%
 \item["-version" or "-vnum"]

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Type-checking of the module language and typed ast plugin hooks
+(** Type-checking of the module language and typed ast hooks
 
   {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.
@@ -41,15 +41,17 @@ val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
 val type_interface:
-        string -> Env.t -> Parsetree.signature -> Typedtree.signature
+        Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
+        (*
 val type_open_:
         ?used_slot:bool ref -> ?toplevel:bool ->
         Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
+        *)
 val modtype_of_package:
         Env.t -> Location.t ->
         Path.t -> Longident.t list -> type_expr list -> module_type
@@ -92,6 +94,13 @@ type hiding_error =
       user_kind: Sig_component_kind.t;
       user_loc: Location.t;
     }
+  | Appears_in_signature of {
+      opened_item_id: Ident.t;
+      opened_item_kind: Sig_component_kind.t;
+      user_id: Ident.t;
+      user_kind: Sig_component_kind.t;
+      user_loc: Location.t;
+    }
 
 type error =
     Cannot_apply of module_type
@@ -126,9 +135,3 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit
-
-
-module ImplementationHooks : Misc.HookSig
-  with type t = Typedtree.structure * Typedtree.module_coercion
-module InterfaceHooks : Misc.HookSig
-  with type t = Typedtree.signature

@@ -200,7 +200,7 @@ let uncapitalize_ascii s =
 type t = string
 
 let compare (x: t) (y: t) = Stdlib.compare x y
-external equal : string -> string -> bool = "caml_string_equal"
+external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
 
 let split_on_char sep s =
   let r = ref [] in

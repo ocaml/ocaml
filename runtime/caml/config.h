@@ -33,7 +33,17 @@
 #define INT64_LITERAL(s) s ## LL
 #endif
 
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define inline __inline
+#endif
+
 #include "s.h"
+
+#if defined(_MSC_VER) && _MSC_VER < 1300
+#define LACKS_SANE_NAN
+#define LACKS_VSCPRINTF
+#endif
+
 #ifdef BOOTSTRAPPING_FLEXLINK
 #undef SUPPORT_DYNAMIC_LINKING
 #endif
@@ -52,7 +62,9 @@
 #include <stdint.h>
 #endif
 
-#ifndef ARCH_SIZET_PRINTF_FORMAT
+#if defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1800)
+#define ARCH_SIZET_PRINTF_FORMAT "I"
+#else
 #define ARCH_SIZET_PRINTF_FORMAT "z"
 #endif
 
@@ -77,18 +89,26 @@
 #endif
 #endif
 
-#ifndef ARCH_INT64_TYPE
-#if SIZEOF_LONG == 8
-#define ARCH_INT64_TYPE long
-#define ARCH_UINT64_TYPE unsigned long
-#define ARCH_INT64_PRINTF_FORMAT "l"
-#elif SIZEOF_LONGLONG == 8
-#define ARCH_INT64_TYPE long long
-#define ARCH_UINT64_TYPE unsigned long long
-#define ARCH_INT64_PRINTF_FORMAT "ll"
+#ifdef __MINGW32__
+  #define ARCH_INT64_TYPE long long
+  #define ARCH_UINT64_TYPE unsigned long long
+  #define ARCH_INT64_PRINTF_FORMAT "I64"
+#elif defined(_MSC_VER)
+  #define ARCH_INT64_TYPE __int64
+  #define ARCH_UINT64_TYPE unsigned __int64
+  #define ARCH_INT64_PRINTF_FORMAT "I64"
 #else
-#error "No 64-bit integer type available"
-#endif
+  #if SIZEOF_LONG == 8
+    #define ARCH_INT64_TYPE long
+    #define ARCH_UINT64_TYPE unsigned long
+    #define ARCH_INT64_PRINTF_FORMAT "l"
+  #elif SIZEOF_LONGLONG == 8
+    #define ARCH_INT64_TYPE long long
+    #define ARCH_UINT64_TYPE unsigned long long
+    #define ARCH_INT64_PRINTF_FORMAT "ll"
+  #else
+    #error "No 64-bit integer type available"
+  #endif
 #endif
 
 #ifndef HAS_STDINT_H

@@ -1,0 +1,1 @@
+class ['a, _] foo : object method bar : 'a -> 'a end

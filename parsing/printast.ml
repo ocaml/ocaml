@@ -373,10 +373,15 @@ and expression i ppf x =
   | Pexp_pack me ->
       line i ppf "Pexp_pack\n";
       module_expr i ppf me
-  | Pexp_open (ovf, m, e) ->
-      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+  | Pexp_open (o, e) ->
+      line i ppf "Pexp_open %a\n" fmt_override_flag o.popen_override;
+      module_expr i ppf o.popen_expr;
       expression i ppf e
+  | Pexp_letop {let_; ands; body} ->
+      line i ppf "Pexp_letop\n";
+      binding_op i ppf let_;
+      list i binding_op ppf ands;
+      expression i ppf body
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -498,9 +503,9 @@ and class_type i ppf x =
   | Pcty_extension (s, arg) ->
       line i ppf "Pcty_extension \"%s\"\n" s.txt;
       payload i ppf arg
-  | Pcty_open (ovf, m, e) ->
-      line i ppf "Pcty_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+  | Pcty_open (o, e) ->
+      line i ppf "Pcty_open %a %a\n" fmt_override_flag o.popen_override
+        fmt_longident_loc o.popen_expr;
       class_type i ppf e
 
 and class_signature i ppf cs =
@@ -588,9 +593,9 @@ and class_expr i ppf x =
   | Pcl_extension (s, arg) ->
       line i ppf "Pcl_extension \"%s\"\n" s.txt;
       payload i ppf arg
-  | Pcl_open (ovf, m, e) ->
-      line i ppf "Pcl_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+  | Pcl_open (o, e) ->
+      line i ppf "Pcl_open %a %a\n" fmt_override_flag o.popen_override
+        fmt_longident_loc o.popen_expr;
       class_expr i ppf e
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
@@ -710,9 +715,8 @@ and signature_item i ppf x =
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
   | Psig_open od ->
-      line i ppf "Psig_open %a %a\n"
-        fmt_override_flag od.popen_override
-        fmt_longident_loc od.popen_lid;
+      line i ppf "Psig_open %a %a\n" fmt_override_flag od.popen_override
+        fmt_longident_loc od.popen_expr;
       attributes i ppf od.popen_attributes
   | Psig_include incl ->
       line i ppf "Psig_include\n";
@@ -816,9 +820,8 @@ and structure_item i ppf x =
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
   | Pstr_open od ->
-      line i ppf "Pstr_open %a %a\n"
-        fmt_override_flag od.popen_override
-        fmt_longident_loc od.popen_lid;
+      line i ppf "Pstr_open %a\n" fmt_override_flag od.popen_override;
+      module_expr i ppf od.popen_expr;
       attributes i ppf od.popen_attributes
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";
@@ -889,6 +892,12 @@ and value_binding i ppf x =
   attributes (i+1) ppf x.pvb_attributes;
   pattern (i+1) ppf x.pvb_pat;
   expression (i+1) ppf x.pvb_expr
+
+and binding_op i ppf x =
+  line i ppf "<binding_op> %a %a"
+    fmt_string_loc x.pbop_op fmt_location x.pbop_loc;
+  pattern (i+1) ppf x.pbop_pat;
+  expression (i+1) ppf x.pbop_exp;
 
 and string_x_expression i ppf (s, e) =
   line i ppf "<override> %a\n" fmt_string_loc s;

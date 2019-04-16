@@ -15,7 +15,6 @@
 
 (* The interactive toplevel loop *)
 
-open Path
 open Format
 open Config
 open Misc
@@ -32,16 +31,16 @@ let _dummy = (Ok (Obj.magic 0), Err "")
 
 external ndl_run_toplevel: string -> string -> res
   = "caml_natdynlink_run_toplevel"
-external ndl_loadsym: string -> Obj.t = "caml_natdynlink_loadsym"
 
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
-  try ndl_loadsym sym
-  with _ -> fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
+  match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
+  | None ->
+    fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
+  | Some obj -> obj
 
 let need_symbol sym =
-  try ignore (ndl_loadsym sym); false
-  with _ -> true
+  Option.is_none (Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym)
 
 let dll_run dll entry =
   match (try Result (Obj.magic (ndl_run_toplevel dll entry))
@@ -62,16 +61,14 @@ type directive_fun =
    | Directive_bool of (bool -> unit)
 
 
-(* Return the value referred to by a path *)
-
 let remembered = ref Ident.empty
 
 let rec remember phrase_name i = function
   | [] -> ()
-  | Sig_value  (id, _) :: rest
-  | Sig_module (id, _, _) :: rest
-  | Sig_typext (id, _, _) :: rest
-  | Sig_class  (id, _, _) :: rest ->
+  | Sig_value  (id, _, _) :: rest
+  | Sig_module (id, _, _, _, _) :: rest
+  | Sig_typext (id, _, _, _) :: rest
+  | Sig_class  (id, _, _, _) :: rest ->
       remembered := Ident.add id (phrase_name, i) !remembered;
       remember phrase_name (succ i) rest
   | _ :: rest -> remember phrase_name i rest
@@ -98,25 +95,41 @@ let toplevel_value id =
   in
   (Obj.magic (global_symbol glob)).(pos)
 
-let rec eval_path = function
-  | Pident id ->
+(* Return the value referred to by a path *)
+
+let rec eval_address = function
+  | Env.Aident id ->
       if Ident.persistent id || Ident.global id
       then global_symbol id
       else toplevel_value id
-  | Pdot(p, _s, pos) ->
-      Obj.field (eval_path p) pos
-  | Papply _ ->
-      fatal_error "Toploop.eval_path"
+  | Env.Adot(a, pos) ->
+      Obj.field (eval_address a) pos
 
-let eval_path env path =
-  eval_path (Env.normalize_path (Some Location.none) env path)
+let eval_path find env path =
+  match find path env with
+  | addr -> eval_address addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
+
+let eval_module_path env path =
+  eval_path Env.find_module_address env path
+
+let eval_value_path env path =
+  eval_path Env.find_value_address env path
+
+let eval_extension_path env path =
+  eval_path Env.find_constructor_address env path
+
+let eval_class_path env path =
+  eval_path Env.find_class_address env path
 
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path env p = try eval_path env p with _ -> raise Error
+  let eval_address addr =
+    try eval_address addr with _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -180,9 +193,25 @@ let parse_mod_use_file name lb =
        ]
    ]
 
-(* Hooks for initialization *)
+(* Hook for initialization *)
 
 let toplevel_startup_hook = ref (fun () -> ())
+
+type event = ..
+type event +=
+  | Startup
+  | After_setup
+
+let hooks = ref []
+
+let add_hook f = hooks := f :: !hooks
+
+let () =
+  add_hook (function
+      | Startup -> !toplevel_startup_hook ()
+      | _ -> ())
+
+let run_hooks hook = List.iter (fun f -> f hook) !hooks
 
 (* Load in-core and execute a lambda term *)
 
@@ -212,7 +241,7 @@ let backend = (module Backend : Backend_intf.S)
 
 let load_lambda ppf ~module_ident ~required_globals lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
-  let slam = Simplif.simplify_lambda "//toplevel//" lam in
+  let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
 
   let dll =
@@ -222,13 +251,13 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
     Asmgen.compile_implementation_clambda
-      ~toplevel:need_symbol fn ~ppf_dump:ppf
+      ~toplevel:need_symbol fn ~backend ~ppf_dump:ppf
       { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda
       ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
-      (Middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
+      (Flambda_middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
@@ -249,7 +278,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
 let pr_item =
   Printtyp.print_items
     (fun env -> function
-      | Sig_value(id, {val_kind = Val_reg; val_type}) ->
+      | Sig_value(id, {val_kind = Val_reg; val_type}, _) ->
           Some (outval_of_value env (toplevel_value id) val_type)
       | _ -> None
     )
@@ -336,7 +365,7 @@ let execute_phrase print_outcome ppf phr =
                 | _ ->
                     if rewritten then
                       match sg' with
-                      | [ Sig_value (id, vd) ] ->
+                      | [ Sig_value (id, vd, _) ] ->
                           let outv =
                             outval_of_value newenv (toplevel_value id)
                               vd.val_type
@@ -408,9 +437,6 @@ let preprocess_phrase ppf phr =
         let str =
           Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
         in
-        let str =
-          Pparse.ImplementationHooks.apply_hooks
-            { Misc.sourcefile = "//toplevel//" } str in
         Ptop_def str
     | phr -> phr
   in
@@ -424,7 +450,7 @@ let use_file ppf wrap_mod name =
       if name = "" then
         ("(stdin)", stdin, false)
       else begin
-        let filename = find_in_path !Config.load_path name in
+        let filename = Load_path.find name in
         let ic = open_in_bin filename in
         (filename, ic, true)
       end
@@ -509,7 +535,7 @@ let refill_lexbuf buffer len =
 
 let _ =
   Sys.interactive := true;
-  Compmisc.init_path true;
+  Compmisc.init_path ();
   Clflags.dlcode := true;
   ()
 
@@ -531,14 +557,17 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   let expand = Misc.expand_directory Config.standard_library in
-  load_path := List.concat [
-    [ "" ];
-    List.map expand (List.rev !Compenv.first_include_dirs);
-    List.map expand (List.rev !Clflags.include_dirs);
-    List.map expand (List.rev !Compenv.last_include_dirs);
-    !load_path;
-    [expand "+camlp4"];
-  ]
+  let current_load_path = Load_path.get_paths () in
+  let load_path = List.concat [
+      [ "" ];
+      List.map expand (List.rev !Compenv.first_include_dirs);
+      List.map expand (List.rev !Clflags.include_dirs);
+      List.map expand (List.rev !Compenv.last_include_dirs);
+      current_load_path;
+      [expand "+camlp4"];
+    ]
+  in
+  Load_path.init load_path
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
@@ -557,6 +586,7 @@ let loop ppf =
   Location.input_name := "//toplevel//";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
+  run_hooks After_setup;
   load_ocamlinit ppf;
   while true do
     let snap = Btype.snapshot () in
@@ -577,25 +607,22 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script.  If [name] is "", read the script from stdin. *)
+external caml_sys_modify_argv : string array -> unit =
+  "caml_sys_modify_argv"
 
-let override_sys_argv args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
+let override_sys_argv new_argv =
+  caml_sys_modify_argv new_argv;
   Arg.current := 0
 
+(* Execute a script.  If [name] is "", read the script from stdin. *)
+
 let run_script ppf name args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
-  Arg.current := 0;
-  Compmisc.init_path ~dir:(Filename.dirname name) true;
+  override_sys_argv args;
+  Compmisc.init_path ~dir:(Filename.dirname name) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
+  run_hooks After_setup;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)
     if Filename.is_implicit name

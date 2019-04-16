@@ -232,7 +232,7 @@ let to_path n =
       (fun acc_opt -> fun s ->
         match acc_opt with
           None -> Some (Path.Pident (Ident.create_local s))
-        | Some acc -> Some (Path.Pdot (acc, s, 0)))
+        | Some acc -> Some (Path.Pdot (acc, s)))
       None
       (Str.split (Str.regexp "\\.") n)
   with

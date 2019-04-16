@@ -47,8 +47,8 @@ let rec env_from_summary sum subst =
           Env.add_extension ~check:false id
             (Subst.extension_constructor subst desc)
             (env_from_summary s subst)
-      | Env_module(s, id, desc) ->
-          Env.add_module_declaration ~check:false id
+      | Env_module(s, id, pres, desc) ->
+          Env.add_module_declaration ~check:false id pres
             (Subst.module_declaration subst desc)
             (env_from_summary s subst)
       | Env_modtype(s, id, desc) ->
@@ -60,18 +60,18 @@ let rec env_from_summary sum subst =
       | Env_cltype (s, id, desc) ->
           Env.add_cltype id (Subst.cltype_declaration subst desc)
                          (env_from_summary s subst)
-      | Env_open(s, hidden_submodules, path) ->
+      | Env_open(s, path) ->
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
-          begin match Env.open_signature_from_env_summary path' env
-                        ~hidden_submodules with
+          begin match Env.open_signature Asttypes.Override path' env with
           | Some env -> env
           | None -> assert false
           | exception Not_found -> raise (Error (Module_not_found path'))
           end
-      | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
+      | Env_functor_arg(Env_module(s, id, pres, desc), id')
+            when Ident.same id id' ->
           Env.add_module_declaration ~check:false
-            id (Subst.module_declaration subst desc)
+            id pres (Subst.module_declaration subst desc)
             ~arg:true (env_from_summary s subst)
       | Env_functor_arg _ -> assert false
       | Env_constraints(s, map) ->
@@ -83,6 +83,9 @@ let rec env_from_summary sum subst =
       | Env_copy_types (s, sl) ->
           let env = env_from_summary s subst in
           Env.do_copy_types (Env.make_copy_of_types sl env) env
+      | Env_persistent (s, id) ->
+          let env = env_from_summary s subst in
+          Env.add_persistent_structure id env
     in
       Hashtbl.add env_cache (sum, subst) env;
       env

@@ -33,16 +33,32 @@ function run {
     fi
 }
 
+# Function: set_configuration
+# Takes 3 arguments
+# $1:the Windows port. Recognized values: mingw, msvc and msvc64
+# $2: the prefix to use to install
+# $3: C compiler flags to use to turn warnings into errors
 function set_configuration {
-    cp config/m-nt.h runtime/caml/m.h
-    cp config/s-nt.h runtime/caml/s.h
+    case "$1" in
+        mingw)
+            build='--build=i686-pc-cygwin'
+            host='--host=i686-w64-mingw32'
+        ;;
+        msvc)
+            build='--build=i686-pc-cygwin'
+            host='--host=i686-pc-windows'
+        ;;
+        msvc64)
+            build='--build=x86_64-unknown-cygwin'
+            host='--host=x86_64-pc-windows'
+        ;;
+    esac
+
+    ./configure $build $host --prefix="$2"
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
-    echo "Edit $FILE to set PREFIX=$2"
-    sed -e "/PREFIX=/s|=.*|=$2|" \
-        -e "/RUNTIMED=/s|=.*|=true|" \
-        -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" \
-         config/Makefile.$1 > Makefile.config
+    echo "Edit $FILE to turn C compiler warnings into errors"
+    sed -i -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" $FILE
 #    run "Content of $FILE" cat Makefile.config
 }
 
@@ -113,6 +129,7 @@ case "$1" in
     export TERM=ansi
 
     if [ "$PORT" = "mingw32" ] ; then
+      set -o pipefail
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \

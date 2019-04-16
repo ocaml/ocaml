@@ -81,6 +81,11 @@ exception Error_forward of Location.error
 
 open Typedtree
 
+let type_open_descr :
+  (?used_slot:bool ref -> Env.t -> Parsetree.open_description
+   -> open_description * Env.t) ref =
+  ref (fun ?used_slot:_ _ -> assert false)
+
 let ctyp desc typ env loc =
   { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env;
     ctyp_attributes = [] }
@@ -554,10 +559,10 @@ and class_type_aux env scty =
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
 
-  | Pcty_open (ovf, lid, e) ->
-      let (path, newenv) = !Typecore.type_open ovf env scty.pcty_loc lid in
+  | Pcty_open (od, e) ->
+      let (od, newenv) = !type_open_descr env od in
       let clty = class_type newenv e in
-      cltyp (Tcty_open (ovf, path, lid, newenv, clty)) clty.cltyp_type
+      cltyp (Tcty_open (od, clty)) clty.cltyp_type
 
   | Pcty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
@@ -783,7 +788,7 @@ and class_field_aux self_loc cl_num self_type meths vars
 
 (* N.B. the self type of a final object type doesn't contain a dummy method in
    the beginning.
-   We only explicitely add a dummy method to class definitions (and class (type)
+   We only explicitly add a dummy method to class definitions (and class (type)
    declarations)), which are later removed (made absent) by [final_decl].
 
    If we ever find a dummy method in a final object self type, it means that
@@ -1158,7 +1163,7 @@ and class_expr_aux cl_num val_env met_env scl =
         Typecore.type_let In_class_def val_env rec_flag sdefs None in
       let (vals, met_env) =
         List.fold_right
-          (fun (id, _id_loc) (vals, met_env) ->
+          (fun (id, _id_loc, _typ) (vals, met_env) ->
              let path = Pident id in
              (* do not mark the value as used *)
              let vd = Env.find_value path val_env in
@@ -1226,14 +1231,12 @@ and class_expr_aux cl_num val_env met_env scl =
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
-  | Pcl_open (ovf, lid, e) ->
+  | Pcl_open (pod, e) ->
       let used_slot = ref false in
-      let (path, new_val_env) =
-        !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
-      let (_path, new_met_env) =
-        !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
+      let (od, new_val_env) = !type_open_descr ~used_slot val_env pod in
+      let ( _, new_met_env) = !type_open_descr ~used_slot met_env pod in
       let cl = class_expr cl_num new_val_env new_met_env e in
-      rc {cl_desc = Tcl_open (ovf, path, lid, new_val_env, cl);
+      rc {cl_desc = Tcl_open (od, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
           cl_env = val_env;
@@ -1738,7 +1741,11 @@ let type_classes define_class approx kind env cls =
   Ctype.end_def ();
   let res = List.rev_map (final_decl env define_class) res in
   let decls = List.fold_right extract_type_decls res [] in
-  let decls = Typedecl.compute_variance_class_decls env decls in
+  let decls =
+    try Typedecl_variance.update_class_decls env decls
+    with Typedecl_variance.Error(loc, err) ->
+      raise (Typedecl.Error(loc, Typedecl.Variance err))
+  in
   let res = List.map2 merge_type_decls res decls in
   let env = List.fold_left (final_env define_class) env res in
   let res = List.map (check_coercions env) res in
@@ -1799,7 +1806,7 @@ let rec unify_parents env ty cl =
       | _exn -> assert false
       end
   | Tcl_structure st -> unify_parents_struct env ty st
-  | Tcl_open (_, _, _, _, cl)
+  | Tcl_open (_, cl)
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_apply (cl, _)
   | Tcl_let (_, _, _, cl)

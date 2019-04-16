@@ -37,7 +37,7 @@ let rec x =
     module N = struct let y = x end
   end in M.N.y;;
 [%%expect{|
-Line 2, characters 2-74:
+Lines 2-4, characters 2-14:
 2 | ..let module M = struct
 3 |     module N = struct let y = x end
 4 |   end in M.N.y..

@@ -121,7 +121,7 @@ let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
-  | Tconstr(Pdot(Pident mod_id, type_name, _), [], _)
+  | Tconstr(Pdot(Pident mod_id, type_name), [], _)
     when Ident.name mod_id = "Stdlib__bigarray" ->
       begin try List.assoc type_name tbl with Not_found -> dfl end
   | _ ->
@@ -171,6 +171,10 @@ let value_kind env ty =
   | _ ->
       Pgenval
 
+let function_return_value_kind env ty =
+  match is_function_type env ty with
+  | Some (_lhs, rhs) -> value_kind env rhs
+  | None -> Pgenval
 
 (** Whether a forward block is needed for a lazy thunk on a value, i.e.
     if the value can be represented as a float/forward/lazy *)
@@ -205,3 +209,7 @@ let classify_lazy_argument : Typedtree.expression ->
        `Identifier `Other
     | _ ->
        `Other
+
+let value_kind_union k1 k2 =
+  if k1 = k2 then k1
+  else Pgenval

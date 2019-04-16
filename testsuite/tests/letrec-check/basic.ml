@@ -112,7 +112,7 @@ val x : 'a option -> unit = <fun>
 val y : 'a list -> unit = <fun>
 |}];;
 
-(* this is accepted as all fields are overriden *)
+(* this is accepted as all fields are overridden *)
 let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 [%%expect{|
 val x : int ref = {contents = 3}
@@ -172,7 +172,7 @@ let rec x =
   done
 and y = x; ();;
 [%%expect{|
-Line 2, characters 2-52:
+Lines 2-4, characters 2-6:
 2 | ..for i = 0 to 1 do
 3 |     let z = y in ignore z
 4 |   done
@@ -185,7 +185,7 @@ let rec x =
   done
 and y = 10;;
 [%%expect{|
-Line 2, characters 2-33:
+Lines 2-4, characters 2-6:
 2 | ..for i = 0 to y do
 3 |     ()
 4 |   done
@@ -198,7 +198,7 @@ let rec x =
   done
 and y = 0;;
 [%%expect{|
-Line 2, characters 2-34:
+Lines 2-4, characters 2-6:
 2 | ..for i = y to 10 do
 3 |     ()
 4 |   done
@@ -211,7 +211,7 @@ let rec x =
   done
 and y = x; ();;
 [%%expect{|
-Line 2, characters 2-49:
+Lines 2-4, characters 2-6:
 2 | ..while false do
 3 |     let y = x in ignore y
 4 |   done
@@ -224,7 +224,7 @@ let rec x =
   done
 and y = false;;
 [%%expect{|
-Line 2, characters 2-26:
+Lines 2-4, characters 2-6:
 2 | ..while y do
 3 |     ()
 4 |   done
@@ -237,7 +237,7 @@ let rec x =
   done
 and y = false;;
 [%%expect{|
-Line 2, characters 2-45:
+Lines 2-4, characters 2-6:
 2 | ..while y do
 3 |     let y = x in ignore y
 4 |   done
@@ -320,9 +320,44 @@ let rec x =
 and y = match x with
   z -> ("y", z);;
 [%%expect{|
-Line 2, characters 2-85:
+Lines 2-4, characters 2-30:
 2 | ..match let _ = y in raise Not_found with
 3 |     _ -> "x"
 4 |   | exception Not_found -> "z"
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
+
+
+(* To compute the dependencies of mutually-recursive bindings,
+   transitive dependencies must be taken into account.
+
+   The example below was causing a segfault in 4.08+dev.
+*)
+let rec wrong =
+  (* x depends on y,
+     and y depends on wrong,
+     so it is important to notice that x transitively depends on wrong;
+
+     an earlier version of our letrec analysis would only report that
+     y depends on wrong, which seems safe as y is not used in the
+     body.
+  *)
+  let rec x = ref y
+  and y = ref wrong
+  in ref ("foo" ^ ! ! !x);;
+[%%expect{|
+Lines 10-12, characters 2-25:
+10 | ..let rec x = ref y
+11 |   and y = ref wrong
+12 |   in ref ("foo" ^ ! ! !x)..
+Error: This kind of expression is not allowed as right-hand side of `let rec'
+|}]
+
+(* in this case, x does not depend on y, so everything is fine *)
+let rec okay =
+  let rec x = ref "bar"
+  and _y = ref okay in
+  ref ("foo" ^ ! x);;
+[%%expect{|
+val okay : string ref = {contents = "foobar"}
+|}]

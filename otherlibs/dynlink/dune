@@ -12,16 +12,20 @@
 ;*                                                                        *
 ;**************************************************************************
 
-(library
-  (name dynlink)
-  (wrapped false)
-  (modules dynlink dynlink_compilerlibs dynlink_common dynlink_types
-     dynlink_platform_intf)
-  ; the -33 is specific to the hackery done with dune.
-  (flags (:standard -nostdlib -w -33))
-  (libraries ocamlcommon stdlib))
-
-(rule
- (targets dynlink_compilerlibs.ml)
- (action (write-file %{targets}
-           "(* empty because we are linking with ocamlcommon *)")))
+; mshinwell: Disabled: this needs to build in the same way as the
+; Makefile does, with the [Dynlink_compilerlibs] pack.
+;
+; (library
+;   (name dynlink)
+;   (wrapped false)
+;   (modules dynlink dynlink_compilerlibs dynlink_common dynlink_types
+;      dynlink_platform_intf)
+;   ; the -33 is specific to the hackery done with dune.
+;   (flags (:standard -nostdlib -w -33))
+;   (modules_without_implementation dynlink)
+;   (libraries ocamlcommon stdlib))
+;
+; (rule
+;  (targets dynlink_compilerlibs.ml)
+;  (action (write-file %{targets}
+;            "(* empty because we are linking with ocamlcommon *)")))

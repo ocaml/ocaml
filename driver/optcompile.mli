@@ -15,16 +15,17 @@
 
 (** Native compilation for .ml and .mli files. *)
 
-val interface: sourcefile:string -> outputprefix:string -> unit
+val interface: source_file:string -> output_prefix:string -> unit
 
 val implementation:
    backend:(module Backend_intf.S)
-   -> sourcefile:string -> outputprefix:string -> unit
+   -> source_file:string -> output_prefix:string -> unit
 
 (** {2 Internal functions} **)
 
 val clambda :
   Compile_common.info ->
+  (module Backend_intf.S) ->
   Typedtree.structure * Typedtree.module_coercion -> unit
 (** [clambda info typed] applies the regular compilation pipeline to the
     given typechecked implementation and outputs the resulting files.

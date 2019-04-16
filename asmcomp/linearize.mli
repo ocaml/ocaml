@@ -36,8 +36,8 @@ and instruction_desc =
   | Lcondbranch of Mach.test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
-  | Lsetuptrap of label
-  | Lpushtrap
+  | Lentertrap
+  | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
 
@@ -53,6 +53,7 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : Mach.spacetime_shape option;
+    fun_tailrec_entry_point_label : label;
   }
 
 val fundecl: Mach.fundecl -> fundecl

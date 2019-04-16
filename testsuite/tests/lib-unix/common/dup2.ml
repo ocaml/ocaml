@@ -1,6 +1,9 @@
 (* TEST
+* hasunix
 include unix
 stderr = "/dev/null"
+** bytecode
+** native
 *)
 
 let cat file =

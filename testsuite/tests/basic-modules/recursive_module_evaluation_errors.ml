@@ -13,7 +13,7 @@ Line 2, characters 27-49:
                                ^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: B -> E -> D -> C -> B.
-       There are no safe modules in this cycle (see manual section 8.3).
+       There are no safe modules in this cycle (see manual section 8.2).
 Line 2, characters 10-20:
 2 | and B:sig val x: int end = struct let x = E.y end
               ^^^^^^^^^^
@@ -42,7 +42,7 @@ Line 2, characters 36-64:
                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.3).
+       There are no safe modules in this cycle (see manual section 8.2).
 Line 2, characters 28-29:
 2 | module rec A: sig type t += A end = struct type t += A = B.A end
                                 ^
@@ -63,14 +63,14 @@ end = struct
 end
 and B: sig val value: unit end = struct let value = A.f () end
 [%%expect {|
-Line 4, characters 6-72:
+Lines 4-7, characters 6-3:
 4 | ......struct
 5 |   module F(X:sig end) = struct end
 6 |   let f () = B.value
 7 | end
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.3).
+       There are no safe modules in this cycle (see manual section 8.2).
 Line 2, characters 2-41:
 2 |   module F: functor(X:sig end) -> sig end
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -93,14 +93,14 @@ module F(X: sig module type t module M: t end) = struct
   and B: sig val value: unit end = struct let value  = A.f () end
 end
 [%%expect {|
-Line 5, characters 8-62:
+Lines 5-8, characters 8-5:
 5 | ........struct
 6 |     module M = X.M
 7 |     let f () = B.value
 8 |   end
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.3).
+       There are no safe modules in this cycle (see manual section 8.2).
 Line 3, characters 4-17:
 3 |     module M: X.t
         ^^^^^^^^^^^^^

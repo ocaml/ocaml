@@ -20,15 +20,15 @@ open Config
 open Cmo_format
 
 type error =
-    File_not_found of string
-  | Not_an_object_file of string
-  | Wrong_object_name of string
-  | Symbol_error of string * Symtable.error
-  | Inconsistent_import of string * string * string
+  | File_not_found of filepath
+  | Not_an_object_file of filepath
+  | Wrong_object_name of filepath
+  | Symbol_error of filepath * Symtable.error
+  | Inconsistent_import of modname * filepath * filepath
   | Custom_runtime
-  | File_exists of string
-  | Cannot_open_dll of string
-  | Required_module_unavailable of string
+  | File_exists of filepath
+  | Cannot_open_dll of filepath
+  | Required_module_unavailable of modname
 
 exception Error of error
 
@@ -94,17 +94,11 @@ let is_required (rel, _pos) =
   | _ -> false
 
 let add_required compunit =
-  let add_required_by_reloc (rel, _pos) =
-    match rel with
-      Reloc_getglobal id ->
-        missing_globals := Ident.Set.add id !missing_globals
-    | _ -> ()
-  in
-  let add_required_for_effects id =
+  let add id =
     missing_globals := Ident.Set.add id !missing_globals
   in
-  List.iter add_required_by_reloc compunit.cu_reloc;
-  List.iter add_required_for_effects compunit.cu_required_globals
+  List.iter add (Symtable.required_globals compunit.cu_reloc);
+  List.iter add compunit.cu_required_globals
 
 let remove_required (rel, _pos) =
   match rel with
@@ -115,7 +109,7 @@ let remove_required (rel, _pos) =
 let scan_file obj_name tolink =
   let file_name =
     try
-      find_in_path !load_path obj_name
+      Load_path.find obj_name
     with Not_found ->
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
@@ -164,6 +158,8 @@ let scan_file obj_name tolink =
 (* Second pass: link in the required units *)
 
 (* Consistency check between interfaces *)
+
+module Consistbl = Consistbl.Make (Misc.Stdlib.String)
 
 let crc_interfaces = Consistbl.create ()
 let interfaces = ref ([] : string list)
@@ -298,14 +294,15 @@ let make_absolute file =
 
 (* Create a bytecode executable file *)
 
-let link_bytecode tolink exec_name standalone =
+let link_bytecode ?final_name tolink exec_name standalone =
+  let final_name = Option.value final_name ~default:exec_name in
   (* Avoid the case where the specified exec output file is the same as
      one of the objects to be linked *)
   List.iter (function
     | Link_object(file_name, _) when file_name = exec_name ->
       raise (Error (Wrong_object_name exec_name));
     | _ -> ()) tolink;
-  Misc.remove_file exec_name; (* avoid permission problems, cf PR#1911 *)
+  Misc.remove_file exec_name; (* avoid permission problems, cf PR#8354 *)
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
                  0o777 exec_name in
@@ -320,7 +317,7 @@ let link_bytecode tolink exec_name standalone =
              if String.length !Clflags.use_runtime > 0
              then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant
            in
-           let inchan = open_in_bin (find_in_path !load_path header) in
+           let inchan = open_in_bin (Load_path.find header) in
            copy_file inchan outchan;
            close_in inchan
          with Not_found | Sys_error _ -> ()
@@ -341,7 +338,7 @@ let link_bytecode tolink exec_name standalone =
        if check_dlls then begin
          (* Initialize the DLL machinery *)
          Dll.init_compile !Clflags.no_std_include;
-         Dll.add_path !load_path;
+         Dll.add_path (Load_path.get_paths ());
          try Dll.open_dlls Dll.For_checking sharedobjs
          with Failure reason -> raise(Error(Cannot_open_dll reason))
        end;
@@ -367,7 +364,7 @@ let link_bytecode tolink exec_name standalone =
        Bytesections.record outchan "PRIM";
        (* The table of global data *)
        Emitcode.marshal_to_channel_with_possibly_32bit_compat
-         ~filename:exec_name ~kind:"bytecode executable"
+         ~filename:final_name ~kind:"bytecode executable"
          outchan (Symtable.initial_global_table());
        Bytesections.record outchan "DATA";
        (* The map of global identifiers *)
@@ -592,7 +589,7 @@ let link objfiles output_name =
           remove_file bytecode_name;
           if not !Clflags.keep_camlprimc_file then remove_file prim_name)
       (fun () ->
-         link_bytecode tolink bytecode_name false;
+         link_bytecode ~final_name:output_name tolink bytecode_name false;
          let poc = open_out prim_name in
          (* note: builds will not be reproducible if the C code contains macros
             such as __FILE__. *)

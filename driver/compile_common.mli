@@ -17,22 +17,32 @@
 (** {2 Initialization} *)
 
 type info = {
-  sourcefile : string;
-  modulename : string;
-  outputprefix : string;
+  source_file : string;
+  module_name : string;
+  output_prefix : string;
   env : Env.t;
   ppf_dump : Format.formatter;
   tool_name : string;
+  native : bool;
 }
 (** Information needed to compile a file. *)
 
-val init :
-  Format.formatter ->
-  init_path:bool ->
+val with_info :
+  native:bool ->
   tool_name:string ->
-  sourcefile:string -> outputprefix:string -> info
-(** [init ppf ~init_path ~tool_name ~sourcefile ~outputprefix] initializes
-    the various global variables and returns an {!info}.
+  source_file:string ->
+  output_prefix:string ->
+  dump_ext:string ->
+  (info -> 'a) -> 'a
+(** [with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k]
+   invokes its continuation [k] with an [info] structure built from
+   its input, after initializing various global variables. This info
+   structure and the initialized global state are not valid anymore
+   after the continuation returns.
+
+   Due to current implementation limitations in the compiler, it is
+   unsafe to try to compile several distinct compilation units by
+   calling [with_info] several times.
 *)
 
 (** {2 Interfaces} *)
@@ -50,9 +60,7 @@ val emit_signature : info -> Parsetree.signature -> Typedtree.signature -> unit
     containing the given signature.
 *)
 
-val interface :
-  tool_name:string ->
-  sourcefile:string -> outputprefix:string -> unit
+val interface : info -> unit
 (** The complete compilation pipeline for interfaces. *)
 
 (** {2 Implementations} *)
@@ -68,11 +76,8 @@ val typecheck_impl :
 *)
 
 val implementation :
-  tool_name:string ->
-  native:bool ->
+  info ->
   backend:(info -> Typedtree.structure * Typedtree.module_coercion -> unit) ->
-  sourcefile:string ->
-  outputprefix:string ->
   unit
 (** The complete compilation pipeline for implementations. *)
 

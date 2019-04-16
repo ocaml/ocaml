@@ -27,6 +27,10 @@
 *.png binary
 *.tfm binary
 
+# configure is declared as binary so that it doesn't get included in diffs.
+# This also means it will have the correct Unix line-endings, even on Windows.
+/configure binary
+
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
 /.mailmap                merge=union
@@ -41,6 +45,7 @@
 README*                  typo.missing-header
 *.adoc                   typo.missing-header
 stdlib/*.mld             typo.missing-header
+tools/mantis2gh_stripped.csv typo.missing-header
 
 *.adoc                   typo.long-line=may
 
@@ -55,7 +60,7 @@ stdlib/*.mld             typo.missing-header
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
 /tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
 /tools/ci/inria/remove-sinh-primitive.patch typo.white-at-eol typo.missing-header typo.long-line
-/tools/release-checklist                    typo.missing-header
+/tools/release-checklist                    typo.missing-header typo.very-long-line
 
 # ignore auto-generated .depend files
 .depend                  typo.prune
@@ -66,15 +71,24 @@ Makefile*                typo.tab=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
+# The build-aux directory contains bundled files so do not check it
+build-aux                typo.prune
+
 /config/gnu              typo.prune
+/config/gnu/**           typo.prune
+
+/manual                  typo.prune
+/manual/**               typo.prune
+
+# configure is generated so do not check it
+configure                typo.prune
+
+ocaml-variants.opam      typo.prune
 
 emacs/*.el               typo.long-line=may
 emacs/caml.el            typo.long-line=may typo.missing-header
 emacs/COPYING            typo.prune
 emacs/ocamltags.in       typo.non-printing
-
-/manual                  typo.prune
-/manual/**               typo.prune
 
 ocamldoc/**              typo.long-line=may
 ocamldoc/Changes.txt     typo.missing-header
@@ -84,8 +98,6 @@ ocamldoc/odoc_index.html typo.missing-header
 otherlibs/win32unix/readlink.c    typo.long-line
 otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
-
-runtime/i386.S      typo.long-line
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
@@ -122,6 +134,7 @@ menhir-bench.bash typo.missing-header typo.utf8
 *.sh text eol=lf
 *.sh.in text eol=lf
 *.awk text eol=lf
+*.m4 text eol=lf
 
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
@@ -129,7 +142,13 @@ menhir-bench.bash typo.missing-header typo.utf8
 
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
-configure text eol=lf
+configure.ac text eol=lf
+autogen text eol=lf
+build-aux/compile text eol=lf
+build-aux/config.guess text eol=lf
+build-aux/config.sub text eol=lf
+build-aux/install text eol=lf
+build-aux/missing text eol=lf
 config/auto-aux/hasgot text eol=lf
 config/auto-aux/hasgot2 text eol=lf
 config/auto-aux/runtest text eol=lf
@@ -156,6 +175,8 @@ tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
+runtime/caml/m.h.in text eol=lf
+runtime/caml/s.h.in text eol=lf
 
 # These two are cat scripts, so may not actually require this
 config/auto-aux/sharpbang text eol=lf
@@ -176,8 +197,15 @@ testsuite/tests/basic-more/robustmatch.ml text eol=lf
 testsuite/tests/parsing/*.ml text eol=lf
 testsuite/tests/docstrings/empty.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
+testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_impl.ml text eol=lf
+testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_intf.mli text eol=lf
+testsuite/tests/tool-ocamlc-stop-after/stop_after_typing_impl.ml text eol=lf
+testsuite/tests/tool-toplevel/error_highlighting.ml text eol=lf
+testsuite/tests/tool-toplevel/error_highlighting_use4.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
 testsuite/tests/typing-objects-bugs/pr3968_bad.ml text eol=lf
+testsuite/tests/typing-ocamlc-i/pr7402.ml text eol=lf
+testsuite/tests/typing-ocamlc-i/pervasives_leitmotiv.ml text eol=lf
 testsuite/tests/typing-recmod/t12bad.ml text eol=lf
 testsuite/tests/typing-safe-linking/b_bad.ml text eol=lf
 testsuite/tests/warnings/w04.ml text eol=lf
@@ -187,6 +215,7 @@ testsuite/tests/warnings/w32.ml text eol=lf
 # These are forced to \n to allow the Cygwin testsuite to pass on a
 # Windows-checkout
 testsuite/tests/formatting/margins.ml text eol=lf
+testsuite/tests/letrec-check/pr7706.ml text eol=lf
 testsuite/tests/letrec-disallowed/disallowed.ml text eol=lf
 testsuite/tests/letrec-disallowed/extension_constructor.ml text eol=lf
 testsuite/tests/letrec-disallowed/float_block_allowed.ml text eol=lf

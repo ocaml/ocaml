@@ -347,9 +347,6 @@ method private cse n i =
      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
       {i with desc = Iswitch(index, Array.map (self#cse n1) cases);
               next = self#cse empty_numbering i.next}
-  | Iloop(body) ->
-      {i with desc = Iloop(self#cse empty_numbering body);
-              next = self#cse empty_numbering i.next}
   | Icatch(rec_flag, handlers, body) ->
       let aux (nfail, handler) =
         nfail, self#cse empty_numbering handler

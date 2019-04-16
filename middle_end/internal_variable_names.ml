@@ -55,6 +55,7 @@ let get_symbol_field = "get_symbol_field"
 let const_immstring = "const_immstring"
 let const_int32 = "const_int32"
 let const_int64 = "const_int64"
+let ignore = "ignore"
 let is_zero = "is_zero"
 let lifted_let_rec_block = "lifted_let_rec_block"
 let meth = "meth"
@@ -288,6 +289,7 @@ let symbol_field_block = "symbol_field_block"
 let the_dead_constant = "the_dead_constant"
 let toplevel_substitution_named = "toplevel_substitution_named"
 let unbox_free_vars_of_closures = "unbox_free_vars_of_closures"
+let unit = "unit"
 let zero = "zero"
 
 let anon_fn_with_loc (loc: Location.t) =
@@ -297,8 +299,8 @@ let anon_fn_with_loc (loc: Location.t) =
     if startchar >= 0 then Format.fprintf ppf ",%i--%i" startchar endchar in
   if loc.Location.loc_ghost then "anon_fn"
   else
-    Format.asprintf "anon_fn[%a:%i%t]"
-      Location.print_filename file line pp_chars
+    Format.asprintf "anon_fn[%s:%i%t]"
+      (Filename.basename file) line pp_chars
 
 let of_primitive : Lambda.primitive -> string = function
   | Pidentity -> pidentity

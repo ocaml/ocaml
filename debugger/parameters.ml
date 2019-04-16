@@ -16,8 +16,6 @@
 
 (* Miscellaneous parameters *)
 
-open Primitives
-open Config
 open Debugger_config
 
 let program_name = ref ""
@@ -35,7 +33,7 @@ let version = ref true
 let topdirs_path = ref (Filename.concat Config.standard_library "compiler-libs")
 
 let add_path dir =
-  load_path := dir :: except dir !load_path;
+  Load_path.add_dir dir;
   Envaux.reset_cache()
 
 let add_path_for mdl dir =

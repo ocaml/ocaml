@@ -29,22 +29,27 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (Cexit(0,[])) in
+  let dbg = Debuginfo.none in
+  let actv = Array.make (Array.length casev) (Cexit(0,[]), dbg) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
-    actv.(i) <- e
+    actv.(i) <- (e, dbg)
   done;
-  Cswitch(selector, index, actv, Debuginfo.none)
+  Cswitch(selector, index, actv, dbg)
 
 let access_array base numelt size =
   match numelt with
-    Cconst_int 0 -> base
-  | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)], Debuginfo.none)
-  | _ -> Cop(Cadda, [base;
-                     Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)],
-                         Debuginfo.none)],
-             Debuginfo.none)
+    Cconst_int (0, _) -> base
+  | Cconst_int (n, _) ->
+      let dbg = Debuginfo.none in
+      Cop(Cadda, [base; Cconst_int(n * size, dbg)], dbg)
+  | _ ->
+      let dbg = Debuginfo.none in
+      Cop(Cadda, [base;
+                  Cop(Clsl, [numelt; Cconst_int(Misc.log2 size, dbg)],
+                  dbg)],
+          dbg)
 
 %}
 
@@ -195,10 +200,10 @@ componentlist:
   | componentlist STAR component { $3 :: $1 }
 ;
 expr:
-    INTCONST    { Cconst_int $1 }
-  | FLOATCONST  { Cconst_float (float_of_string $1) }
-  | STRING      { Cconst_symbol $1 }
-  | POINTER     { Cconst_pointer $1 }
+    INTCONST    { Cconst_int ($1, debuginfo ()) }
+  | FLOATCONST  { Cconst_float (float_of_string $1, debuginfo ()) }
+  | STRING      { Cconst_symbol ($1, debuginfo ()) }
+  | POINTER     { Cconst_pointer ($1, debuginfo ()) }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
@@ -213,24 +218,29 @@ expr:
   | LPAREN unaryop expr RPAREN { Cop($2, [$3], debuginfo ()) }
   | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4], debuginfo ()) }
   | LPAREN SEQ sequence RPAREN { $3 }
-  | LPAREN IF expr expr expr RPAREN { Cifthenelse($3, $4, $5) }
+  | LPAREN IF expr expr expr RPAREN
+      { Cifthenelse($3, debuginfo (), $4, debuginfo (), $5, debuginfo ()) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
       { let body =
           match $3 with
-            Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(Recursive, [0, [], Cloop body], Ctuple []) }
+            Cconst_int (x, _) when x <> 0 -> $4
+          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (), (Cexit(0,[])),
+                             debuginfo ()) in
+        Ccatch(Nonrecursive, [0, [],
+          Ccatch(Recursive,
+            [1, [], Csequence(body, Cexit(1, [])), debuginfo ()],
+            Cexit(1, [])), debuginfo ()], Ctuple []) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
     { let handlers = $5 in
-      List.iter (fun (_, l, _) ->
+      List.iter (fun (_, l, _, _) ->
         List.iter (fun (x, _) -> unbind_ident x) l) handlers;
       Ccatch(Recursive, handlers, $3) }
   | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
-                { unbind_ident $5; Ctrywith($3, $5, $6) }
+                { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
       { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
@@ -376,9 +386,9 @@ catch_handlers:
 
 catch_handler:
   | sequence
-    { 0, [], $1 }
+    { 0, [], $1, debuginfo () }
   | LPAREN IDENT params RPAREN sequence
-    { find_label $2, $3, $5 }
+    { find_label $2, $3, $5, debuginfo () }
 
 location:
     /**/                        { None }

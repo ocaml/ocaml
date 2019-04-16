@@ -100,7 +100,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
          error (Wrong_use_of_module (mlid, `Functor_used_as_structure))
       | Mty_ident _ ->
          error (Wrong_use_of_module (mlid, `Abstract_used_as_structure))
-      | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
+      | Mty_alias p -> error (Cannot_scrape_alias(mlid, p))
       | Mty_signature _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
@@ -112,7 +112,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
            error (Wrong_use_of_module (flid, `Structure_used_as_functor))
         | Mty_ident _ ->
            error (Wrong_use_of_module (flid, `Abstract_used_as_functor))
-        | Mty_alias(_, p) -> error (Cannot_scrape_alias(flid, p))
+        | Mty_alias p -> error (Cannot_scrape_alias(flid, p))
         | Mty_functor (_, None, _) ->
            error (Wrong_use_of_module (flid, `Generative_used_as_applicative))
         | Mty_functor (_, Some mty_param, _) -> mty_param
@@ -121,7 +121,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       let mpath = Env.lookup_module ~load:true mlid env in
       let mmd = Env.find_module mpath env in
       begin match Env.scrape_alias env mmd.md_type with
-      | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
+      | Mty_alias p -> error (Cannot_scrape_alias(mlid, p))
       | mty_arg ->
          let details =
            try Includemod.check_modtype_inclusion
@@ -285,6 +285,9 @@ let type_variable loc name =
   with Not_found ->
     raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
 
+let valid_tyvar_name name =
+  name <> "" && name.[0] <> '_'
+
 let transl_type_param env styp =
   let loc = styp.ptyp_loc in
   match styp.ptyp_desc with
@@ -295,7 +298,7 @@ let transl_type_param env styp =
   | Ptyp_var name ->
       let ty =
         try
-          if name <> "" && name.[0] = '_' then
+          if not (valid_tyvar_name name) then
             raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
           ignore (TyVarMap.find name !type_variables);
           raise Already_bound
@@ -341,7 +344,7 @@ and transl_type_aux env policy styp =
       ctyp Ttyp_any ty
   | Ptyp_var name ->
     let ty =
-      if name <> "" && name.[0] = '_' then
+      if not (valid_tyvar_name name) then
         raise (Error (styp.ptyp_loc, env, Invalid_variable_name ("'" ^ name)));
       begin try
         instance (List.assoc name !univars)
@@ -891,7 +894,7 @@ let fold_types = fold_simple Env.fold_types
 let fold_modules = fold_simple Env.fold_modules
 let fold_constructors = fold_descr Env.fold_constructors (fun d -> d.cstr_name)
 let fold_labels = fold_descr Env.fold_labels (fun d -> d.lbl_name)
-let fold_classs = fold_simple Env.fold_classs
+let fold_classes = fold_simple Env.fold_classes
 let fold_modtypes = fold_simple Env.fold_modtypes
 let fold_cltypes = fold_simple Env.fold_cltypes
 
@@ -1000,7 +1003,7 @@ let report_error env ppf = function
       spellcheck ppf fold_labels env lid;
   | Unbound_class lid ->
       fprintf ppf "Unbound class %a" longident lid;
-      spellcheck ppf fold_classs env lid;
+      spellcheck ppf fold_classes env lid;
   | Unbound_modtype lid ->
       fprintf ppf "Unbound module type %a" longident lid;
       spellcheck ppf fold_modtypes env lid;

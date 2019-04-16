@@ -288,6 +288,48 @@ val print_break : int -> int -> unit
   the current indentation.
 *)
 
+val pp_print_custom_break :
+  formatter ->
+  fits:(string * int * string) ->
+  breaks:(string * int * string) ->
+  unit
+(** [pp_print_custom_break ppf ~fits:(s1, n, s2) ~breaks:(s3, m, s4)] emits a
+   custom break hint: the pretty-printer may split the line at this point.
+
+   If it does not split the line, then the [s1] is emitted, then [n] spaces,
+   then [s2].
+
+   If it splits the line, then it emits the [s3] string, then an indent
+   (according to the box rules), then an offset of [m] spaces, then the [s4]
+   string.
+
+   While [n] and [m] are handled by [formatter_out_functions.out_indent], the
+   strings will be handled by [formatter_out_functions.out_string]. This allows
+   for a custom formatter that handles indentation distinctly, for example,
+   outputs [<br/>] tags or [&nbsp;] entities.
+
+   The custom break is useful if you want to change which visible
+   (non-whitespace) characters are printed in case of break or no break. For
+   example, when printing a list {[ [a; b; c] ]}, you might want to add a
+   trailing semicolon when it is printed vertically:
+
+   {[
+[
+  a;
+  b;
+  c;
+]
+   ]}
+
+   You can do this as follows:
+   {[
+printf "@[<v 0>[@;<0 2>@[<v 0>a;@,b;@,c@]%t]@]@\n"
+  (pp_print_custom_break ~fits:("", 0, "") ~breaks:(";", 0, ""))
+   ]}
+
+  @since 4.08.0
+*)
+
 val pp_force_newline : formatter -> unit -> unit
 val force_newline : unit -> unit
 (** Force a new line in the current pretty-printing box.
@@ -363,6 +405,8 @@ val set_margin : int -> unit
   maximum indentation limit is decreased while trying to preserve
   a minimal ratio [max_indent/margin>=50%] and if possible
   the current difference [margin - max_indent].
+
+  See also {!pp_set_geometry}.
 *)
 
 val pp_get_margin : formatter -> unit -> int
@@ -397,16 +441,61 @@ val set_max_indent : int -> unit
   always fully fit on the current line.
 
   Nothing happens if [d] is smaller than 2.
+
   If [d] is too large, the limit is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
 
   If [d] is greater or equal than the current margin, it is ignored,
   and the current maximum indentation limit is kept.
+
+  See also {!pp_set_geometry}.
 *)
 
 val pp_get_max_indent : formatter -> unit -> int
 val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
+
+(** {1 Geometry }
+
+Geometric functions can be used to manipulate simultaneously the
+coupled variables, margin and maxixum indentation limit.
+
+*)
+
+type geometry = { max_indent:int; margin: int}
+
+val check_geometry: geometry -> bool
+(** Check if the formatter geometry is valid: [1 < max_indent < margin] *)
+
+val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
+val set_geometry : max_indent:int -> margin:int -> unit
+val pp_safe_set_geometry : formatter -> max_indent:int -> margin:int -> unit
+val safe_set_geometry : max_indent:int -> margin:int -> unit
+(**
+   [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
+   and maximum indentation limit for [ppf].
+
+   When [1 < max_indent < margin],
+   [pp_set_geometry ppf ~max_indent ~margin]
+   is equivalent to
+   [pp_set_margin ppf margin; pp_set_max_indent ppf max_indent];
+   and avoids the subtly incorrect
+   [pp_set_max_indent ppf max_indent; pp_set_margin ppf margin];
+
+   Outside of this domain, [pp_set_geometry] raises an invalid argument
+   exception whereas [pp_safe_set_geometry] does nothing.
+
+   @since 4.08.0
+*)
+
+val pp_get_geometry: formatter -> unit -> geometry
+val get_geometry: unit -> geometry
+(** Return the current geometry of the formatter
+
+    @since 4.08.0
+*)
+
+
 
 (** {1 Maximum formatting depth} *)
 

@@ -178,7 +178,7 @@ let rec rename_append_bytecode_list packagename oc mapping defined ofs
           let root = Path.Pident (Ident.create_persistent prefix) in
           rename_append_bytecode_list packagename oc mapping (id :: defined)
             (ofs + size) prefix
-            (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos))
+            (Subst.add_module id (Path.Pdot (root, Ident.name id))
                               subst)
             rem
 
@@ -281,7 +281,7 @@ let package_files ~ppf_dump initial_env files targetfile =
     let files =
     List.map
         (fun f ->
-        try find_in_path !Config.load_path f
+        try Load_path.find f
         with Not_found -> raise(Error(File_not_found f)))
         files in
     let prefix = chop_extensions targetfile in

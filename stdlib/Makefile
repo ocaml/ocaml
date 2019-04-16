@@ -18,7 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc
@@ -33,7 +32,8 @@ OPTCOMPFLAGS=
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+CAMLDEP=$(BOOT_OCAMLC) -depend
+DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
@@ -43,14 +43,14 @@ P=stdlib__
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
 OTHERS= $(P)pervasives.cmo $(P)seq.cmo $(P)option.cmo $(P)result.cmo \
   $(P)bool.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
-  $(P)bytes.cmo $(P)string.cmo $(P)fun.cmo $(P)unit.cmo \
-  $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
+  $(P)bytes.cmo $(P)string.cmo $(P)unit.cmo \
+  $(P)marshal.cmo $(P)obj.cmo $(P)array.cmo $(P)float.cmo \
   $(P)int.cmo $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
   $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
   camlinternalLazy.cmo $(P)lazy.cmo $(P)stream.cmo \
   $(P)buffer.cmo camlinternalFormat.cmo $(P)printf.cmo \
-  $(P)arg.cmo $(P)printexc.cmo $(P)gc.cmo \
+  $(P)arg.cmo $(P)printexc.cmo $(P)fun.cmo $(P)gc.cmo \
   $(P)digest.cmo $(P)random.cmo $(P)hashtbl.cmo $(P)weak.cmo \
   $(P)format.cmo $(P)scanf.cmo $(P)callback.cmo \
   camlinternalOO.cmo $(P)oo.cmo camlinternalMod.cmo \
@@ -74,22 +74,9 @@ ifeq "$(RUNTIMEI)" "true"
 all: camlheaderi target_camlheaderi
 endif
 
-ifeq "$(PROFILING)" "true"
-PROFILINGTARGET = prof
-else
-PROFILINGTARGET = noprof
-endif
-
 .PHONY: allopt opt.opt # allopt and opt.opt are synonyms
-allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILINGTARGET)
+allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
-
-.PHONY: allopt-noprof
-allopt-noprof:
-
-.PHONY: allopt-prof
-allopt-prof: stdlib.p.cmxa std_exit.p.cmx
-	rm -f std_exit.p.cmi
 
 LEGACY_OBJS=$(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", \
                                   $(filter stdlib__%,$(OBJS)))
@@ -123,7 +110,7 @@ install::
 endif
 
 .PHONY: installopt
-installopt: installopt-default installopt-$(PROFILINGTARGET)
+installopt: installopt-default
 
 .PHONY: installopt-default
 installopt-default:
@@ -132,20 +119,14 @@ installopt-default:
 	  "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
 
-.PHONY: installopt-noprof
-installopt-noprof:
-
-.PHONY: installopt-prof
-installopt-prof:
-	$(INSTALL_DATA) \
-	  stdlib.p.cmxa stdlib.p.$(A) std_exit.p.cmx std_exit.p.$(O) \
-	  "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.p.$(A)
-
 ifeq "$(UNIX_OR_WIN32)" "unix"
-HEADERPROGRAM = header.c
+HEADERPROGRAM = header
+HEADER_PATH = $(BINDIR)/
+HEADER_TARGET_PATH = $(TARGET_BINDIR)/
 else # Windows
-HEADERPROGRAM = headernt.c
+HEADERPROGRAM = headernt
+HEADER_PATH =
+HEADER_TARGET_PATH =
 endif
 
 CAMLHEADERS =\
@@ -153,73 +134,61 @@ CAMLHEADERS =\
   camlheaderd target_camlheaderd \
   camlheaderi target_camlheaderi
 
+# The % in pattern rules must always match something, hence the slightly strange
+# patterns and $(subst ...) since `camlheader%:` wouldn't match `camlheader`
 ifeq "$(HASHBANGSCRIPTS)" "true"
-$(CAMLHEADERS): $(ROOTDIR)/Makefile.config
-	for suff in '' d i; do \
-	  echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
-	  echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
-	done && \
-	echo '#!' | tr -d '\012' > camlheader_ur;
+camlhead%: $(ROOTDIR)/Makefile.config Makefile
+	echo '#!$(BINDIR)/ocamlrun$(subst er,,$*)' > $@
+
+target_%: $(ROOTDIR)/Makefile.config Makefile
+	echo '#!$(TARGET_BINDIR)/ocamlrun$(subst camlheader,,$*)' > $@
+
+camlheader_ur: Makefile
+	echo '#!' | tr -d '\012' > $@
+
 else # Hashbang scripts not supported
 
-$(CAMLHEADERS): $(HEADERPROGRAM) $(ROOTDIR)/Makefile.config
+$(CAMLHEADERS): $(HEADERPROGRAM).c $(ROOTDIR)/Makefile.config Makefile
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-$(CAMLHEADERS):
-	for suff in '' d i; do \
-	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(OC_LDFLAGS) \
-	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
-	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(OC_LDFLAGS) \
-	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
-	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) target_camlheader$$suff; \
-	done && \
-	cp camlheader camlheader_ur
+# $@.exe is deleted to ensure no Cygwin .exe mangling takes place
+camlhead%: tmphead%.exe
+	rm -f $@.exe
+	mv $< $@
 
-else # Windows
+# Again, pattern weirdness here means that the dot is always present so that
+# tmpheader.exe matches.
+tmpheader%exe: $(HEADERPROGRAM)%$(O)
+	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
+# FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
+ifneq "$(UNIX_OR_WIN32)" "win32"
+	strip $@
+endif
 
-# TODO: see whether there is a way to further merge the rules below
-# with those above
-
-camlheader: headernt.c
+$(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	rm -f camlheader.exe
-	mv tmpheader.exe camlheader
-
-target_camlheader: camlheader
-	cp camlheader target_camlheader
+	      -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"' \
+	      $(OUTPUTOBJ)$@ $^
 
 camlheader_ur: camlheader
-	cp camlheader camlheader_ur
+	cp camlheader $@
 
-camlheaderd: headernt.c
+ifeq "$(UNIX_OR_WIN32)" "unix"
+tmptargetcamlheader%exe: $(HEADERPROGRAM)%$(O)
+	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
+	strip $@
+
+$(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headerntd.$(O) $<
-	$(MKEXE) -o tmpheaderd.exe headerntd.$(O) $(EXTRALIBS)
-	mv tmpheaderd.exe camlheaderd
+	      -DRUNTIME_NAME='"$(HEADER_TARGET_PATH)ocamlrun$(subst .,,$*)"' \
+	      $(OUTPUTOBJ)$@ $^
 
-target_camlheaderd: camlheaderd
-	cp camlheaderd target_camlheaderd
-
-camlheaderi: headernt.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
-	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
-	mv tmpheaderi.exe camlheaderi
-
-target_camlheaderi: camlheaderi
-	cp camlheaderi target_camlheaderi
-
-# TODO: do not call flexlink to build tmpheader.exe (we don't need
-# the export table)
-
-endif # ifeq "$(UNIX_OR_WIN32)" "unix"
+target_%: tmptarget%.exe
+	rm -f $@.exe
+	mv $< $@
+else
+target_%: %
+	cp $< $@
+endif
 
 endif # ifeq "$(HASHBANGSCRIPTS)" "true"
 
@@ -227,9 +196,6 @@ stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o $@ $^
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $^
-
-stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 sys.ml: $(ROOTDIR)/VERSION sys.mlp
@@ -242,7 +208,7 @@ clean::
 clean::
 	rm -f $(CAMLHEADERS)
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
+.SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 export AWK
 
@@ -265,32 +231,21 @@ stdlib__%.cmx: %.ml
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
 	           -o $@ -c $<
 
-%.p.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
-	           -p -c -o $@ $<
-
-stdlib__%.p.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
-	           -p -c -o $@ $<
-
 # Dependencies on the compiler
-COMPILER_DEPS=$(filter-out -use-prims, $(COMPILER))
+COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
 $(OBJS) std_exit.cmo: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
-# Dependencies on Stdlib (not tracked by ocamldep)
+# Dependencies on Stdlib (not tracked by ocamlc -depend)
+
 $(OTHERS) std_exit.cmo: stdlib.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: stdlib.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A) *.odoc
-	rm -f *~
 	rm -f camlheader*
 
 include .depend
@@ -298,19 +253,12 @@ include .depend
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
-# Note that .p.cmx targets do not depend (for compilation) upon other
-# .p.cmx files.  When the compiler imports another compilation unit,
-# it looks for the .cmx file (not .p.cmx).
 .PHONY: depend
 depend:
-	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
+	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" \
+	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
-	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.ml)) \
-	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
-	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -Ee \
 	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \
 	  .depend.tmp > .depend

@@ -80,15 +80,19 @@ critical errors that must be understood and fixed before your pull
 request can be merged.
 ------------------------------------------------------------------------
 EOF
+
+  configure_flags="\
+    --prefix=$PREFIX \
+    --enable-flambda-invariants \
+    $CONFIG_ARG"
   case $XARCH in
   x64)
-    ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG
+    ./configure $configure_flags
     ;;
   i386)
-    ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG \
-      -host i686-pc-linux-gnu
+    ./configure --build=x86_64-pc-linux-gnu --host=i386-pc-linux-gnu \
+      AS="as" ASPP="gcc -c" \
+      $configure_flags
     ;;
   *)
     echo unknown arch
@@ -190,8 +194,8 @@ not_pruned () {
   if [ "$DIR" = "." ] ; then
     return 0
   else
-    case ",$(git check-attr ocaml-typo "$DIR" | sed -e 's/.*: //')," in
-      ,prune,)
+    case ",$(git check-attr typo.prune "$DIR" | sed -e 's/.*: //')," in
+      ,set,)
       return 1
       ;;
       *)
@@ -217,10 +221,26 @@ CheckTypoTree () {
         touch check-typo-failed
       fi
     else
-      echo "NOT checking $1: $path (ocaml-typo=prune)"
+      echo "NOT checking $1: $path (typo.prune)"
+    fi
+    if [[ $path = 'configure' || $path = 'configure.ac' ]] ; then
+      touch CHECK_CONFIGURE
     fi
   done)
   rm -f tmp-index
+  if [ -e CHECK_CONFIGURE ] ; then
+    rm -f CHECK_CONFIGURE
+    echo "configure or configure.ac altered in $1"
+    echo "Verifying that configure.ac generates configure"
+    git checkout "$1"
+    mv configure configure.ref
+    ./autogen
+    if ! diff -q configure configure.ref >/dev/null ; then
+      echo "configure.ac no longer generates configure, \
+please run ./autogen and commit"
+      exit 1
+    fi
+  fi
 }
 
 CHECK_ALL_COMMITS=0
@@ -230,7 +250,6 @@ CheckTypo () {
   export OCAML_CT_CA_FLAG="--cached"
   # Work around an apparent bug in Ubuntu 12.4.5
   # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
-  export OCAML_CT_AWK="awk --re-interval"
   rm -f check-typo-failed
   if test -z "$TRAVIS_COMMIT_RANGE"
   then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT

@@ -1,5 +1,8 @@
 (* TEST
+* hasunix
 include unix
+** bytecode
+** native
 *)
 
 (* Test the Unix.rename function *)

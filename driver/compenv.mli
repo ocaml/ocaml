@@ -29,9 +29,6 @@ val first_ppx : string list ref
 val first_include_dirs : string list ref
 val last_include_dirs : string list ref
 
-(* function to call on plugin=XXX *)
-val load_plugin : (string -> unit) ref
-
 (* return the list of objfiles, after OCAMLPARAM and List.rev *)
 val get_objfiles : with_ocamlparam:bool -> string list
 val last_objfiles : string list ref
@@ -70,9 +67,9 @@ val intf : string -> unit
 
 val process_deferred_actions :
   Format.formatter *
-  (sourcefile:string -> outputprefix:string -> unit) *
+  (source_file:string -> output_prefix:string -> unit) *
   (* compile implementation *)
-  (sourcefile:string -> outputprefix:string -> unit) *
+  (source_file:string -> output_prefix:string -> unit) *
   (* compile interface *)
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)

@@ -71,7 +71,7 @@ val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
            First bool says whether the values and types of the results
            should be printed. Uncaught exceptions are always printed. *)
 val preprocess_phrase :
-    formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
+      formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
            preprocessors. Return the updated phrase. *)
 val use_file : formatter -> string -> bool
@@ -81,7 +81,10 @@ val mod_use_file : formatter -> string -> bool
            [use_file] prints the types and values of the results.
            [use_silently] does not print them.
            [mod_use_file] wrap the file contents into a module. *)
-val eval_path: Env.t -> Path.t -> Obj.t
+val eval_module_path: Env.t -> Path.t -> Obj.t
+val eval_value_path: Env.t -> Path.t -> Obj.t
+val eval_extension_path: Env.t -> Path.t -> Obj.t
+val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
 
@@ -138,9 +141,25 @@ val print_out_phrase :
 
 val read_interactive_input : (string -> bytes -> int -> int * bool) ref
 
-(* Hooks for initialization *)
+(* Hooks *)
 
 val toplevel_startup_hook : (unit -> unit) ref
+
+type event = ..
+type event +=
+  | Startup
+  | After_setup
+  (* Just after the setup, when the toplevel is ready to evaluate user
+     input. This happens before the toplevel has evaluated any kind of
+     user input, in particular this happens before loading the
+     [.ocamlinit] file. *)
+
+val add_hook : (event -> unit) -> unit
+(* Add a function that will be called at key points of the toplevel
+   initialization process. *)
+
+val run_hooks : event -> unit
+(* Run all the registered hooks. *)
 
 (* Used by Trace module *)
 

@@ -20,10 +20,9 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
-CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -strict-sequence -nostdlib \
+CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
@@ -31,8 +30,9 @@ COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
 LINKFLAGS =
 YACCFLAGS = -v
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-CAMLDEP = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
-
+CAMLDEP = $(BOOT_OCAMLC) -depend
+DEPFLAGS = -slash
+DEPINCLUDES =
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
@@ -50,7 +50,7 @@ ocamllex.opt: $(OBJS:.cmo=.cmx)
 
 clean::
 	rm -f ocamllex ocamllex.opt
-	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.$(O) *~
+	rm -f *.cmo *.cmi *.cmx *.cmt *.cmti *.$(O)
 
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly
@@ -81,6 +81,6 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) -slash *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
 
 include .depend

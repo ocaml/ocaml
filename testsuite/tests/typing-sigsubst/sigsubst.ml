@@ -24,11 +24,11 @@ end
 Line 3, characters 2-36:
 3 |   include Comparable with type t = t
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/20 by t/24
+Error: Illegal shadowing of included type t/97 by t/101
        Line 2, characters 2-19:
-         Type t/20 came from this include
+         Type t/97 came from this include
        Line 3, characters 2-23:
-         The value print has no valid type if t/20 is shadowed
+         The value print has no valid type if t/97 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -47,7 +47,7 @@ module type S0 = sig
   and M2 : sig type t = int end
 end with type M.t = int
 [%%expect {|
-Line 1, characters 17-115:
+Lines 1-4, characters 17-23:
 1 | .................sig
 2 |   module rec M : sig type t = M2.t end
 3 |   and M2 : sig type t = int end
@@ -162,7 +162,7 @@ module type S = sig
 end with type 'a t2 := 'a t * bool
 [%%expect {|
 type 'a t constraint 'a = 'b list
-Line 2, characters 16-142:
+Lines 2-6, characters 16-34:
 2 | ................sig
 3 |   type 'a t2 constraint 'a = 'b list
 4 |   type 'a mylist = 'a list
@@ -267,7 +267,7 @@ module type S = sig
   module A = M
 end with type M.t := float
 [%%expect {|
-Line 1, characters 16-89:
+Lines 1-4, characters 16-26:
 1 | ................sig
 2 |   module M : sig type t end
 3 |   module A = M
@@ -329,7 +329,7 @@ module type S3 = sig
 end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
-Line 2, characters 17-120:
+Lines 2-5, characters 17-25:
 2 | .................sig
 3 |   module rec M : sig type t = A of Id(M2).t end
 4 |   and M2 : sig type t end
@@ -372,7 +372,7 @@ module type S = sig
   module Alias = M
 end with module M.N := A
 [%%expect {|
-Line 1, characters 16-159:
+Lines 1-10, characters 16-24:
  1 | ................sig
  2 |   module M : sig
  3 |     module N : sig

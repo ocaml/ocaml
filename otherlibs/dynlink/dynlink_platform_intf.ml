@@ -60,7 +60,10 @@ module type S = sig
     -> priv:bool
     -> handle * (Unit_header.t list)
 
+  val run_shared_startup : handle -> unit
   val run : handle -> unit_header:Unit_header.t -> priv:bool -> unit
+
+  val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
 
   val finish : handle -> unit
 end

@@ -33,6 +33,7 @@ module String = Misc.Stdlib.String
    emit.mlp files for certain other targets; the reference here ensures
    that when releases are being prepared the .depend files are correct
    for all targets. *)
+[@@@ocaml.warning "-66"]
 open! Branch_relaxation
 
 let _label s = D.label ~typ:QWORD s
@@ -72,9 +73,6 @@ let fastcode_flag = ref true
 let stack_offset = ref 0
 
 (* Layout of the stack frame *)
-
-let frame_required () =
-  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
@@ -475,23 +473,6 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  if system = S_gnu || system = S_linux then begin
-    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-       and rbx, rbp, r12-r15 like all C functions.  This includes
-       all the registers used for argument passing, so we don't
-       need to preserve other regs.  We do need to initialize rbp
-       like mcount expects it, though. *)
-    I.push r10;
-    if not fp then I.mov rsp rbp;
-    (* No Spacetime instrumentation needed: [mcount] cannot call anything
-       OCaml-related. *)
-    emit_call "mcount";
-    I.pop r10
-  end
-
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -505,12 +486,12 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
+    assert (Proc.prologue_required ());
     if fp then begin
       I.push rbp;
       cfi_adjust_cfa_offset 8;
       I.mov rsp rbp;
     end;
-    if !Clflags.gprofile then emit_profile();
     if frame_required() then begin
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0
@@ -518,8 +499,7 @@ let emit_instr fallthrough i =
         I.sub (int n) rsp;
         cfi_adjust_cfa_offset n;
       end;
-    end;
-    def_label !tailrec_entry_point
+    end
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -865,14 +845,22 @@ let emit_instr fallthrough i =
                          ConstLabel lbl))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
-      cfi_adjust_cfa_offset 8;
-      I.push r14;
-      cfi_adjust_cfa_offset 8;
-      I.mov rsp r14;
-      stack_offset := !stack_offset + 16
+  | Lentertrap ->
+      ()
+  | Lpushtrap { lbl_handler; } ->
+      let load_label_addr s arg =
+        if !Clflags.pic_code then
+          I.lea (mem64_rip NONE (emit_label s)) arg
+        else
+          I.mov (sym (emit_label s)) arg
+      in
+      cfi_adjust_cfa_offset 16;
+      I.sub (int 16) rsp;
+      stack_offset := !stack_offset + 16;
+      I.mov r14 (mem64 QWORD 0 RSP);
+      load_label_addr lbl_handler r14;
+      I.mov r14 (mem64 QWORD 8 RSP);
+      I.mov rsp r14
   | Lpoptrap ->
       I.pop r14;
       cfi_adjust_cfa_offset (-8);
@@ -890,7 +878,8 @@ let emit_instr fallthrough i =
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
-          I.ret ()
+          I.pop r11;
+          I.jmp r11
       end
 
 let rec emit_all fallthrough i =
@@ -907,7 +896,7 @@ let all_functions = ref []
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];

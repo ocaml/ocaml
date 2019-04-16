@@ -1,4 +1,4 @@
-File "pr3968_bad.ml", line 20, characters 0-165:
+File "pr3968_bad.ml", lines 20-29, characters 0-3:
 20 | object
 21 |   val l = e1
 22 |   val r = e2

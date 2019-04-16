@@ -91,7 +91,7 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
    a value would be ill-typed, so we can never actually get there.
 
    Checking the first column at each step of the recursion and making the
-   concious decision of "aborting" the algorithm whenever the first column
+   conscious decision of "aborting" the algorithm whenever the first column
    becomes incoherent, allows us to retain the initial assumption in later
    stages of the algorithms.
 
@@ -229,7 +229,7 @@ let first_column simplified_matrix =
 
   The second clause above will NOT (and cannot) be flagged as useless.
 
-  Finally, there are two compatibility fonction
+  Finally, there are two compatibility functions:
    compat p q      ---> 'syntactic compatibility, used for diagnostics.
    may_compat p q --->   a safe approximation of possible compat,
                          for compilation
@@ -2440,37 +2440,35 @@ let pattern_stable_vars ns p =
 
 let all_rhs_idents exp =
   let ids = ref Ident.Set.empty in
-  let module Iterator = TypedtreeIter.MakeIterator(struct
-    include TypedtreeIter.DefaultIteratorArgument
-    let enter_expression exp = match exp.exp_desc with
-      | Texp_ident (path, _lid, _descr) ->
-          List.iter
-            (fun id -> ids := Ident.Set.add id !ids)
-            (Path.heads path)
-      | _ -> ()
-
 (* Very hackish, detect unpack pattern  compilation
    and perform "indirect check for them" *)
-    let is_unpack exp =
+  let is_unpack exp =
       List.exists
         (fun attr -> attr.Parsetree.attr_name.txt = "#modulepat")
-        exp.exp_attributes
+        exp.exp_attributes in
+  let open Tast_iterator in
+  let expr_iter iter exp =
+    (match exp.exp_desc with
+      | Texp_ident (path, _lid, _descr) ->
+        List.iter (fun id -> ids := Ident.Set.add id !ids) (Path.heads path)
+      (* Use default iterator methods for rest of match.*)
+      | _ -> Tast_iterator.default_iterator.expr iter exp);
 
-    let leave_expression exp =
-      if is_unpack exp then begin match exp.exp_desc with
-      | Texp_letmodule
-          (id_mod,_,
-           {mod_desc=
-            Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
-           _) ->
-             assert (Ident.Set.mem id_exp !ids) ;
-             if not (Ident.Set.mem id_mod !ids) then begin
-               ids := Ident.Set.remove id_exp !ids
-             end
-      | _ -> assert false
-      end
-  end) in
-  Iterator.iter_expression exp;
+    if is_unpack exp then begin match exp.exp_desc with
+    | Texp_letmodule
+        (id_mod,_,_,
+         {mod_desc=
+          Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
+         _) ->
+           assert (Ident.Set.mem id_exp !ids) ;
+           if not (Ident.Set.mem id_mod !ids) then begin
+             ids := Ident.Set.remove id_exp !ids
+           end
+    | _ -> assert false
+    end
+  in
+  let iterator = {Tast_iterator.default_iterator with expr = expr_iter} in
+  iterator.expr iterator exp;
   !ids
 
 let check_ambiguous_bindings =

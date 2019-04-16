@@ -168,7 +168,7 @@ and record_representation =
   | Record_float                        (* All fields are floats *)
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
-  | Record_extension                    (* Inlined record under extension *)
+  | Record_extension of Path.t          (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -254,26 +254,31 @@ type class_type_declaration =
 
 (* Type expressions for the module language *)
 
+type visibility =
+  | Exported
+  | Hidden
+
 type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of Ident.t * module_type option * module_type
-  | Mty_alias of alias_presence * Path.t
+  | Mty_alias of Path.t
 
-and alias_presence =
-  | Mta_present
-  | Mta_absent
+and module_presence =
+  | Mp_present
+  | Mp_absent
 
 and signature = signature_item list
 
 and signature_item =
-    Sig_value of Ident.t * value_description
-  | Sig_type of Ident.t * type_declaration * rec_status
-  | Sig_typext of Ident.t * extension_constructor * ext_status
-  | Sig_module of Ident.t * module_declaration * rec_status
-  | Sig_modtype of Ident.t * modtype_declaration
-  | Sig_class of Ident.t * class_declaration * rec_status
-  | Sig_class_type of Ident.t * class_type_declaration * rec_status
+    Sig_value of Ident.t * value_description * visibility
+  | Sig_type of Ident.t * type_declaration * rec_status * visibility
+  | Sig_typext of Ident.t * extension_constructor * ext_status * visibility
+  | Sig_module of
+      Ident.t * module_presence * module_declaration * rec_status * visibility
+  | Sig_modtype of Ident.t * modtype_declaration * visibility
+  | Sig_class of Ident.t * class_declaration * rec_status * visibility
+  | Sig_class_type of Ident.t * class_type_declaration * rec_status * visibility
 
 and module_declaration =
   {
@@ -352,3 +357,23 @@ type label_description =
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
    }
+
+let rec bound_value_identifiers = function
+    [] -> []
+  | Sig_value(id, {val_kind = Val_reg}, _) :: rem ->
+      id :: bound_value_identifiers rem
+  | Sig_typext(id, _, _, _) :: rem -> id :: bound_value_identifiers rem
+  | Sig_module(id, Mp_present, _, _, _) :: rem ->
+      id :: bound_value_identifiers rem
+  | Sig_class(id, _, _, _) :: rem -> id :: bound_value_identifiers rem
+  | _ :: rem -> bound_value_identifiers rem
+
+let signature_item_id = function
+  | Sig_value (id, _, _)
+  | Sig_type (id, _, _, _)
+  | Sig_typext (id, _, _, _)
+  | Sig_module (id, _, _, _, _)
+  | Sig_modtype (id, _, _)
+  | Sig_class (id, _, _, _)
+  | Sig_class_type (id, _, _, _)
+    -> id

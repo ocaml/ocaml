@@ -15,9 +15,7 @@
 
 (* The interactive toplevel loop *)
 
-open Path
 open Format
-open Config
 open Misc
 open Parsetree
 open Types
@@ -53,8 +51,8 @@ let setvalue name v =
 
 (* Return the value referred to by a path *)
 
-let rec eval_path = function
-  | Pident id ->
+let rec eval_address = function
+  | Env.Aident id ->
       if Ident.persistent id || Ident.global id then
         Symtable.get_global_value id
       else begin
@@ -64,20 +62,34 @@ let rec eval_path = function
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
-  | Pdot(p, _s, pos) ->
-      Obj.field (eval_path p) pos
-  | Papply _ ->
-      fatal_error "Toploop.eval_path"
+  | Env.Adot(p, pos) ->
+      Obj.field (eval_address p) pos
 
-let eval_path env path =
-  eval_path (Env.normalize_path (Some Location.none) env path)
+let eval_path find env path =
+  match find path env with
+  | addr -> eval_address addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
+
+let eval_module_path env path =
+  eval_path Env.find_module_address env path
+
+let eval_value_path env path =
+  eval_path Env.find_value_address env path
+
+let eval_extension_path env path =
+  eval_path Env.find_constructor_address env path
+
+let eval_class_path env path =
+  eval_path Env.find_class_address env path
 
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path env p = try eval_path env p with Symtable.Error _ -> raise Error
+  let eval_address addr =
+    try eval_address addr with Symtable.Error _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -141,9 +153,25 @@ let parse_mod_use_file name lb =
        ]
    ]
 
-(* Hooks for initialization *)
+(* Hook for initialization *)
 
 let toplevel_startup_hook = ref (fun () -> ())
+
+type event = ..
+type event +=
+  | Startup
+  | After_setup
+
+let hooks = ref []
+
+let add_hook f = hooks := f :: !hooks
+
+let () =
+  add_hook (function
+      | Startup -> !toplevel_startup_hook ()
+      | _ -> ())
+
+let run_hooks hook = List.iter (fun f -> f hook) !hooks
 
 (* Load in-core and execute a lambda term *)
 
@@ -158,7 +186,7 @@ let record_backtrace () =
 
 let load_lambda ppf lam =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
-  let slam = Simplif.simplify_lambda "//toplevel//" lam in
+  let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
   let (init_code, fun_code) = Bytegen.compile_phrase slam in
   if !Clflags.dump_instr then
@@ -194,7 +222,7 @@ let load_lambda ppf lam =
 let pr_item =
   Printtyp.print_items
     (fun env -> function
-      | Sig_value(id, {val_kind = Val_reg; val_type}) ->
+      | Sig_value(id, {val_kind = Val_reg; val_type}, _) ->
           Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
                   val_type)
       | _ -> None
@@ -355,9 +383,6 @@ let preprocess_phrase ppf phr =
         let str =
           Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
         in
-        let str =
-          Pparse.ImplementationHooks.apply_hooks
-            { Misc.sourcefile = "//toplevel//" } str in
         Ptop_def str
     | phr -> phr
   in
@@ -371,7 +396,7 @@ let use_file ppf wrap_mod name =
       if name = "" then
         ("(stdin)", stdin, false)
       else begin
-        let filename = find_in_path !Config.load_path name in
+        let filename = Load_path.find name in
         let ic = open_in_bin filename in
         (filename, ic, true)
       end
@@ -463,15 +488,9 @@ let _ =
                  cannot be loaded inside the OCaml toplevel";
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
-  Compmisc.init_path false;
-  List.iter
-    (fun (name, crco) ->
-      Env.add_import name;
-      match crco with
-        None -> ()
-      | Some crc->
-          Consistbl.set Env.crc_units name crc Sys.executable_name)
-    crc_intfs
+  Compmisc.init_path ();
+  Env.import_crcs ~source:Sys.executable_name crc_intfs;
+  ()
 
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
@@ -491,15 +510,18 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   let expand = Misc.expand_directory Config.standard_library in
-  load_path := List.concat [
-    [ "" ];
-    List.map expand (List.rev !Compenv.first_include_dirs);
-    List.map expand (List.rev !Clflags.include_dirs);
-    List.map expand (List.rev !Compenv.last_include_dirs);
-    !load_path;
-    [expand "+camlp4"];
-  ];
-  Dll.add_path !load_path
+  let current_load_path = Load_path.get_paths () in
+  let load_path = List.concat [
+      [ "" ];
+      List.map expand (List.rev !Compenv.first_include_dirs);
+      List.map expand (List.rev !Clflags.include_dirs);
+      List.map expand (List.rev !Compenv.last_include_dirs);
+      current_load_path;
+      [expand "+camlp4"];
+    ]
+  in
+  Load_path.init load_path;
+  Dll.add_path load_path
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
@@ -523,6 +545,7 @@ let loop ppf =
   Location.input_name := "//toplevel//";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
+  run_hooks After_setup;
   load_ocamlinit ppf;
   while true do
     let snap = Btype.snapshot () in
@@ -542,18 +565,18 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script.  If [name] is "", read the script from stdin. *)
+external caml_sys_modify_argv : string array -> unit =
+  "caml_sys_modify_argv"
 
-let override_sys_argv args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
+let override_sys_argv new_argv =
+  caml_sys_modify_argv new_argv;
   Arg.current := 0
+
+(* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
   override_sys_argv args;
-  Compmisc.init_path ~dir:(Filename.dirname name) true;
+  Compmisc.init_path ~dir:(Filename.dirname name) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   begin
     try toplevel_env := Compmisc.initial_env()
@@ -561,6 +584,7 @@ let run_script ppf name args =
       Location.report_exception ppf exn; exit 2
   end;
   Sys.interactive := false;
+  run_hooks After_setup;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)
     if name <> "" && Filename.is_implicit name

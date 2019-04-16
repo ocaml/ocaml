@@ -151,7 +151,8 @@ let classify_expression : Typedtree.expression -> sd =
         classify_path env path
 
     (* non-binding cases *)
-    | Texp_letmodule (_, _, _, e)
+    | Texp_open (_, e)
+    | Texp_letmodule (_, _, _, _, e)
     | Texp_sequence (_, e)
     | Texp_letexception (_, e) ->
         classify_expression env e
@@ -200,7 +201,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_field _
     | Texp_assert _
     | Texp_try _
-    | Texp_override _ ->
+    | Texp_override _
+    | Texp_letop _ ->
         Dynamic
   and classify_value_bindings rec_flag env bindings =
     (* We use a non-recursive classification, classifying each
@@ -268,8 +270,8 @@ module Mode = struct
        a variable in an expression in which it does not occur. *)
 
     | Delay
-    (** A [Delay] context can be fully evaluated without evaluting its argument,
-        which will only be needed at a later point of program execution. For
+    (** A [Delay] context can be fully evaluated without evaluating its argument
+        , which will only be needed at a later point of program execution. For
         example, [fun x -> ?] or [lazy ?] are [Delay] contexts. *)
 
     | Guard
@@ -299,6 +301,8 @@ module Mode = struct
     (** A [Dereference] context consumes, inspects and uses the value
         in arbitrary ways. Such a value must be fully defined at the point
         of usage, it cannot be defined mutually-recursively with its context. *)
+
+  let equal = ((=) : t -> t -> bool)
 
   (* Lower-ranked modes demand/use less of the variable/expression they qualify
      -- so they allow more recursive definitions.
@@ -367,6 +371,10 @@ sig
   val join_list : t list -> t
   (** Environments can be joined pointwise (variable per variable) *)
 
+  val compose : Mode.t -> t -> t
+  (** Environment composition m[G] extends mode composition m1[m2]
+      by composing each mode in G pointwise *)
+
   val remove : Ident.t -> t -> t
   (** Remove an identifier from an environment. *)
 
@@ -375,11 +383,15 @@ sig
 
   val remove_list : Ident.t list -> t -> t
   (** Remove all the identifiers of a list from an environment. *)
+
+  val equal : t -> t -> bool
 end = struct
   module M = Map.Make(Ident)
 
   (** A "t" maps each rec-bound variable to an access status *)
   type t = Mode.t M.t
+
+  let equal = M.equal Mode.equal
 
   let find (id: Ident.t) (tbl: t) =
     try M.find id tbl with Not_found -> Ignore
@@ -394,6 +406,9 @@ end = struct
       x y
 
   let join_list li = List.fold_left join empty li
+
+  let compose m env =
+    M.map (Mode.compose m) env
 
   let single id mode = M.add id mode empty
 
@@ -511,7 +526,7 @@ let rec expression : Typedtree.expression -> term_judg =
          G |- let <bindings> in body : m
       *)
       value_bindings rec_flag bindings >> expression body
-    | Texp_letmodule (x, _, mexp, e) ->
+    | Texp_letmodule (x, _, _, mexp, e) ->
       module_binding (x, mexp) >> expression e
     | Texp_match (e, cases, _) ->
       (*
@@ -613,7 +628,7 @@ let rec expression : Typedtree.expression -> term_judg =
           | Record_float -> Dereference
           | Record_unboxed _ -> Return
           | Record_regular | Record_inlined _
-          | Record_extension -> Guard
+          | Record_extension _ -> Guard
         in
         let field (_label, field_def) = match field_def with
             Kept _ -> empty
@@ -787,6 +802,12 @@ let rec expression : Typedtree.expression -> term_judg =
           Delay
       in
       expression e << lazy_mode
+    | Texp_letop{let_; ands; body; _} ->
+        let case_env c m = fst (case c m) in
+        join [
+          list binding_op (let_ :: ands) << Dereference;
+          case_env body << Delay
+        ]
     | Texp_unreachable ->
       (*
         ----------
@@ -795,6 +816,12 @@ let rec expression : Typedtree.expression -> term_judg =
       empty
     | Texp_extension_constructor (_lid, pth) ->
       path pth << Dereference
+    | Texp_open (od, e) ->
+      open_declaration od >> expression e
+
+and binding_op : Typedtree.binding_op -> term_judg =
+  fun bop ->
+    join [path bop.bop_op_path; expression bop.bop_exp]
 
 and class_structure : Typedtree.class_structure -> term_judg =
   fun cs -> list class_field cs.cstr_fields
@@ -848,7 +875,7 @@ and modexp : Typedtree.module_expr -> term_judg =
           (* This corresponds to 'external' declarations,
              and the coercion ignores its argument *)
           k Ignore
-        | Tcoerce_alias (pth, coe) ->
+        | Tcoerce_alias (_, pth, coe) ->
           (* Alias coercions ignore their arguments, but they evaluate
              their alias module 'pth' under another coercion. *)
           coercion coe (fun m -> path pth << m)
@@ -876,7 +903,7 @@ and path : Path.t -> term_judg =
   fun pth -> match pth with
     | Path.Pident x ->
         single x
-    | Path.Pdot (t, _, _) ->
+    | Path.Pdot (t, _) ->
         path t << Dereference
     | Path.Papply (f, p) ->
         join [
@@ -941,13 +968,8 @@ and structure_item : Typedtree.structure_item -> bind_judg =
     | Tstr_class_type _
     | Tstr_attribute _ ->
       env
-    | Tstr_open _ ->
-      (* TODO: open introduces term/module variables in scope,
-         we could/should remove them from the environment.
-
-         See also Texp_open (in exp_extra, outside the normal matching path)
-         and Tcl_open. *)
-      env
+    | Tstr_open od ->
+      open_declaration od m env
     | Tstr_class classes ->
         let class_ids =
           let class_id ({ci_id_class = id; _}, _) = id in
@@ -958,18 +980,7 @@ and structure_item : Typedtree.structure_item -> bind_judg =
           (list class_declaration classes m)
           (Env.remove_list class_ids env)
     | Tstr_include { incl_mod = mexp; incl_type = mty; _ } ->
-      let included_ids =
-        let sigitem_id = function
-          | Sig_value (id, _)
-          | Sig_type (id, _, _)
-          | Sig_typext (id, _, _)
-          | Sig_module (id, _, _)
-          | Sig_modtype (id, _)
-          | Sig_class (id, _, _)
-          | Sig_class_type (id, _, _)
-            -> id
-        in
-        List.map sigitem_id mty in
+      let included_ids = List.map Types.signature_item_id mty in
       Env.join (modexp mexp m) (Env.remove_list included_ids env)
 
 (* G |- module M = E : m -| G *)
@@ -983,6 +994,12 @@ and module_binding : (Ident.t * Typedtree.module_expr) -> bind_judg =
       let mM, env = Env.take id env in
       let judg_E = modexp mexp << (Mode.join mM Guard) in
       Env.join (judg_E m) env
+
+and open_declaration : Typedtree.open_declaration -> bind_judg =
+  fun { open_expr = mexp; open_bound_items = sg; _ } m env ->
+      let judg_E = modexp mexp in
+      let bound_ids = List.map Types.signature_item_id sg in
+      Env.join (judg_E m) (Env.remove_list bound_ids env)
 
 and recursive_module_bindings
   : (Ident.t * Typedtree.module_expr) list -> bind_judg =
@@ -1013,7 +1030,7 @@ and class_expr : Typedtree.class_expr -> term_judg =
       value_bindings rec_flag bindings >> class_expr ce
     | Tcl_constraint (ce, _, _, _, _) ->
         class_expr ce
-    | Tcl_open (_, _, _, _, ce) ->
+    | Tcl_open (_, ce) ->
         class_expr ce
 
 and extension_constructor : Typedtree.extension_constructor -> term_judg =
@@ -1026,22 +1043,88 @@ and extension_constructor : Typedtree.extension_constructor -> term_judg =
 (* G |- let (rec?) (pi = ei)^i : m -| G' *)
 and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
   fun rec_flag bindings mode bound_env ->
-    (*
-       (Gi |- ei : m[mi])^i       (pi : mi -| D)^i
-       G := sum(Gi - if (rec) then (pj)^j else pi)^i
-       -------------------------------------------------
-       G + (D - (pj)^j) |- let (rec)? (pi=ei)^i : m -| D
-    *)
     let all_bound_pats = List.map (fun vb -> vb.vb_pat) bindings in
-    let binding_env {vb_pat; vb_expr; _} m =
-      let bound_pats = match rec_flag with
-        | Recursive -> all_bound_pats
-        | Nonrecursive -> [vb_pat] in
-      let m' = Mode.compose m (pattern vb_pat bound_env) in
-      remove_patlist bound_pats (expression vb_expr m') in
-    Env.join
-      (list binding_env bindings mode)
-      (remove_patlist all_bound_pats bound_env)
+    let outer_env = remove_patlist all_bound_pats bound_env in
+    let bindings_env =
+      match rec_flag with
+      | Nonrecursive ->
+        (*
+           (Gi, pi:_ |- ei : m[mbody_i])^i   (pi : mbody_i -| D)^i
+           ------------------------------------------------------------
+           Sum(Gi) + (D - (pi)^i) |- let (pi=ei)^i : m -| D
+        *)
+          let binding_env {vb_pat; vb_expr; _} m =
+            let m' = Mode.compose m (pattern vb_pat bound_env) in
+            remove_pat vb_pat (expression vb_expr m') in
+          list binding_env bindings mode
+      | Recursive ->
+        (*
+           (Gi, (xj : mdef_ij)^j |- ei : m[mbody_i])^i   (xi : mbody_i -| D)^i
+           G'i = Gi + mdef_ij[G'j]
+           -------------------------------------------------------------------
+           Sum(G'i) + (D - (pi)^i) |- let rec (xi=ei)^i : m -| D
+
+           The (mdef_ij)^i,j are a family of modes over two indices:
+           mdef_ij represents the mode of use, within e_i the definition of x_i,
+           of the mutually-recursive variable x_j.
+
+           The (G'i)^i are defined from the (Gi)^i as a family of equations,
+           whose smallest solution is computed as a least fixpoint.
+
+           The (Gi)^i are the "immediate" dependencies of each (ei)^i
+           on the outer context (excluding the mutually-defined
+           variables).
+           The (G'i)^i contain the "transitive" dependencies as well:
+           if ei depends on xj, then the dependencies of G'i of xi
+           must contain the dependencies of G'j, composed by
+           the mode mdef_ij of use of xj in ei.
+
+           For example, consider:
+
+             let rec z =
+               let rec x = ref y
+               and y = ref z
+               in f x
+
+           this definition should be rejected as the body [f x]
+           dereferences [x], which can be used to access the
+           yet-unitialized value [z]. This requires realizing that [x]
+           depends on [z] through [y], which requires the transitive
+           closure computation.
+
+           An earlier version of our check would take only the (Gi)^i
+           instead of the (G'i)^i, which is incorrect and would accept
+           the example above.
+        *)
+          (* [binding_env] takes a binding (x_i = e_i)
+             and computes (Gi, (mdef_ij)^j). *)
+          let binding_env {vb_pat = x_i; vb_expr = e_i; _} =
+            let mbody_i = pattern x_i bound_env in
+            (* Gi, (x_j:mdef_ij)^j  *)
+            let rhs_env_i = expression e_i (Mode.compose mode mbody_i) in
+            (* (mdef_ij)^j (for a fixed i) *)
+            let mutual_modes =
+              let mdef_ij {vb_pat = x_j; _} = pattern x_j rhs_env_i in
+              List.map mdef_ij bindings in
+            (* Gi *)
+            let env_i = remove_patlist all_bound_pats rhs_env_i in
+            (* (Gi, (mdef_ij)^j) *)
+            (env_i, mutual_modes) in
+          let env, mdef =
+            List.split (List.map binding_env bindings) in
+          let rec transitive_closure env =
+            let transitive_deps env_i mdef_i =
+              (* Gi, (mdef_ij)^j => Gi + Sum_j mdef_ij[Gj] *)
+              Env.join env_i
+                (Env.join_list (List.map2 Env.compose mdef_i env)) in
+            let env' = List.map2 transitive_deps env mdef in
+            if List.for_all2 Env.equal env env'
+            then env'
+            else transitive_closure env'
+          in
+          let env'_i = transitive_closure env in
+          Env.join_list env'_i
+    in Env.join bindings_env outer_env
 
 (* G; m' |- (p -> e) : m
    with outputs G, m' and input m
@@ -1153,7 +1236,7 @@ let is_valid_class_expr idlist ce =
         value_bindings rec_flag bindings mode (class_expr mode ce)
       | Tcl_constraint (ce, _, _, _, _) ->
         class_expr mode ce
-      | Tcl_open (_, _, _, _, ce) ->
+      | Tcl_open (_, ce) ->
         class_expr mode ce
   in
   match Env.unguarded (class_expr Return ce) idlist with

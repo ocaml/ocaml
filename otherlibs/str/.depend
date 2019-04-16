@@ -3,6 +3,8 @@ strstubs.$(O): strstubs.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/memory.h ../../runtime/caml/fail.h
-str.cmo : str.cmi
-str.cmx : str.cmi
+str.cmo : \
+    str.cmi
+str.cmx : \
+    str.cmi
 str.cmi :

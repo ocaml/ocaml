@@ -310,11 +310,11 @@ let emit_instr i =
     match i.desc with
       Lend -> ()
     | Lprologue ->
+      assert (Proc.prologue_required ());
       let n = frame_size() in
       emit_stack_adjust n;
       if !contains_calls then
-        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-      `{emit_label !tailrec_entry_point}:\n`;
+        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -610,11 +610,12 @@ let emit_instr i =
           `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
         done;
         emit_string code_space
-    | Lsetuptrap lbl ->
-        `	brasl	%r14, {emit_label lbl}\n`;
-    | Lpushtrap ->
+    | Lentertrap ->
+        ()
+    | Lpushtrap { lbl_handler; } ->
         stack_offset := !stack_offset + 16;
         emit_stack_adjust 16;
+        `	larl	%r14, {emit_label lbl_handler}\n`;
         `	stg	%r14, 0(%r15)\n`;
         `	stg	%r13, {emit_int size_addr}(%r15)\n`;
         `	lgr	%r13, %r15\n`
@@ -649,7 +650,7 @@ let rec emit_all i =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];

@@ -146,7 +146,7 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
-  if (exe_name == NULL) exe_name = _T("");
+  if (exe_name == NULL) exe_name = T("");
   proc_self_exe = caml_executable_name();
   if (proc_self_exe != NULL)
     exe_name = proc_self_exe;

@@ -69,16 +69,20 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
   caml_enter_blocking_section();
-  retcode = sigprocmask(how, &set, &oldset);
+  retcode = caml_sigmask_hook(how, &set, &oldset);
   caml_leave_blocking_section();
-  if (retcode == -1) uerror("sigprocmask", Nothing);
+  if (retcode != 0) unix_error(retcode, "sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
 
 CAMLprim value unix_sigpending(value unit)
 {
   sigset_t pending;
+  int i;
   if (sigpending(&pending) == -1) uerror("sigpending", Nothing);
+  for (i = 1; i < NSIG; i++)
+    if(caml_pending_signals[i])
+      sigaddset(&pending, i);
   return encode_sigset(&pending);
 }
 

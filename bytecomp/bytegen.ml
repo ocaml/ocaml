@@ -154,7 +154,7 @@ let rec size_of_lambda env = function
       | Record_regular | Record_inlined _ -> RHS_block size
       | Record_unboxed _ -> assert false
       | Record_float -> RHS_floatblock size
-      | Record_extension -> RHS_block (size + 1)
+      | Record_extension _ -> RHS_block (size + 1)
       end
   | Llet(_str, _k, id, arg, body) ->
       size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
@@ -177,7 +177,7 @@ let rec size_of_lambda env = function
       RHS_block size
   | Lprim (Pduprecord (Record_unboxed _, _), _, _) ->
       assert false
-  | Lprim (Pduprecord (Record_extension, size), _, _) ->
+  | Lprim (Pduprecord (Record_extension _, size), _, _) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda env lam
@@ -520,7 +520,7 @@ let rec comp_expr env exp sz cont =
       let lbl = new_label() in
       let fv = Ident.Set.elements(free_variables exp) in
       let to_compile =
-        { params = params; body = body; label = lbl;
+        { params = List.map fst params; body = body; label = lbl;
           free_vars = fv; num_defs = 1; rec_vars = []; rec_pos = 0 } in
       Stack.push to_compile functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
@@ -542,8 +542,9 @@ let rec comp_expr env exp sz cont =
           | (_id, Lfunction{params; body}) :: rem ->
               let lbl = new_label() in
               let to_compile =
-                { params = params; body = body; label = lbl; free_vars = fv;
-                  num_defs = ndecl; rec_vars = rec_idents; rec_pos = pos} in
+                { params = List.map fst params; body = body; label = lbl;
+                  free_vars = fv; num_defs = ndecl; rec_vars = rec_idents;
+                  rec_pos = pos} in
               Stack.push to_compile functions_to_compile;
               lbl :: comp_fun (pos + 1) rem
           | _ -> assert false in
@@ -704,6 +705,7 @@ let rec comp_expr env exp sz cont =
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
+      let vars = List.map fst vars in
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =

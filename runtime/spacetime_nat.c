@@ -176,9 +176,9 @@ static void open_snapshot_channel(void)
 #else
   pid = getpid();
 #endif
-  snprintf_os(filename, filename_len, _T("%s/spacetime-%d"),
+  snprintf_os(filename, filename_len, T("%s/spacetime-%d"),
               automatic_snapshot_dir, pid);
-  filename[filename_len-1] = _T('\0');
+  filename[filename_len-1] = '\0';
   fd = open_os(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
   if (fd == -1) {
     automatic_snapshots = 0;
@@ -225,10 +225,10 @@ void caml_spacetime_initialize(void)
 
   caml_spacetime_static_shape_tables = &caml_spacetime_shapes;
 
-  ap_interval = caml_secure_getenv (_T("OCAML_SPACETIME_INTERVAL"));
+  ap_interval = caml_secure_getenv (T("OCAML_SPACETIME_INTERVAL"));
   if (ap_interval != NULL) {
     unsigned int interval = 0;
-    sscanf_os(ap_interval, _T("%u"), &interval);
+    sscanf_os(ap_interval, T("%u"), &interval);
     if (interval != 0) {
       double time;
       char_os cwd[4096];
@@ -236,7 +236,7 @@ void caml_spacetime_initialize(void)
       int dir_ok = 1;
 
       user_specified_automatic_snapshot_dir =
-        caml_secure_getenv(_T("OCAML_SPACETIME_SNAPSHOT_DIR"));
+        caml_secure_getenv(T("OCAML_SPACETIME_SNAPSHOT_DIR"));
 
       if (user_specified_automatic_snapshot_dir == NULL) {
 #if defined(HAS_GETCWD)

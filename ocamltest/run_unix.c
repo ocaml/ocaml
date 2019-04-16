@@ -105,17 +105,21 @@ static int paths_same_file(
   if (realpath1 == NULL)
     realpath_error(path1);
   realpath2 = realpath(path2, NULL);
-  if ( (realpath2 == NULL)  && (errno != ENOENT) )
+  if (realpath2 == NULL)
   {
     free(realpath1);
-    realpath_error(path2);
+    if (errno == ENOENT) return 0;
+    else realpath_error(path2);
   }
 #else
   char realpath1[PATH_MAX], realpath2[PATH_MAX];
   if (realpath(path1, realpath1) == NULL)
     realpath_error(path1);
-    if ((realpath(path2, realpath2) == NULL) && (errno != ENOENT))
-      realpath_error(path2);
+    if (realpath(path2, realpath2) == NULL)
+    {
+      if (errno == ENOENT) return 0;
+      else realpath_error(path2);
+    }
 #endif /* __GLIBC__ */
   if (strcmp(realpath1, realpath2) == 0)
     same_file = 1;
@@ -148,7 +152,7 @@ static void update_environment(array local_env)
 }
 
 /*
-  This function should retunr an exitcode that can itslef be returned
+  This function should return an exitcode that can itself be returned
   to its father through the exit system call.
   So it returns 0 to report success and 1 to report an error
 
@@ -231,7 +235,7 @@ child_failed:
  * Its termination status as returned by wait(2)
  * A string giving a prefix for the core file name.
    (the file will be called prefix.pid.core but may come from a
-   diffferent process)
+   different process)
  * Returns the code to return if this is the child process
  */
 static int handle_process_termination(
@@ -263,13 +267,19 @@ static int handle_process_termination(
     if ( access(COREFILENAME, F_OK) == -1)
       fprintf(stderr, "Could not find core file.\n");
     else {
-      char corefile[strlen(corefilename_prefix) + 128];
-      snprintf(corefile, sizeof(corefile),
-        "%s.%d.core", corefilename_prefix, pid);
-      if ( rename(COREFILENAME, corefile) == -1)
-        fprintf(stderr, "The core file exists but could not be renamed.\n");
-      else
-        fprintf(stderr,"The core file has been renamed to %s\n", corefile);
+      size_t corefile_len = strlen(corefilename_prefix) + 128;
+      char * corefile = malloc(corefile_len);
+      if (corefile == NULL)
+        fprintf(stderr, "Out of memory while processing core file.\n");
+      else {
+        snprintf(corefile, corefile_len,
+          "%s.%d.core", corefilename_prefix, pid);
+        if ( rename(COREFILENAME, corefile) == -1)
+          fprintf(stderr, "The core file exists but could not be renamed.\n");
+        else
+          fprintf(stderr,"The core file has been renamed to %s\n", corefile);
+        free(corefile);
+      }
     }
   }
 

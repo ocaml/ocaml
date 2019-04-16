@@ -1,7 +1,7 @@
 arrays.ml
 bigints.ml
 boxedints.ml
-constprop.ml
+constprop.ml.c
 divint.ml
 equality.ml
 eval_order_1.ml
@@ -13,6 +13,7 @@ float.ml
 float_physical_equality.ml
 includestruct.ml
 localexn.ml
+localfunction.ml
 maps.ml
 min_int.ml
 opt_variants.ml
@@ -27,4 +28,5 @@ stringmatch.ml
 switch_opts.ml
 tailcalls.ml
 trigraph.ml
+unit_naming.ml
 zero_divided_by_n.ml

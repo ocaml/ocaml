@@ -39,8 +39,8 @@ and instruction_desc =
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
-  | Lsetuptrap of label
-  | Lpushtrap
+  | Lentertrap
+  | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
 
@@ -55,6 +55,7 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : Mach.spacetime_shape option;
+    fun_tailrec_entry_point_label : label;
   }
 
 (* Invert a test *)
@@ -130,7 +131,7 @@ let rec discard_dead_code n =
   | Llabel _ -> n
 (* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
    as this may cause a stack imbalance later during assembler generation. *)
-  | Lpoptrap | Lpushtrap -> n
+  | Lpoptrap | Lpushtrap _ -> n
   | Lop(Istackoffset _) -> n
   | _ -> discard_dead_code n.next
 
@@ -249,11 +250,6 @@ let rec linear i n =
                    i !n2
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
-  | Iloop body ->
-      let lbl_head = Cmm.new_label() in
-      let n1 = linear i.Mach.next n in
-      let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
-      cons_instr (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
@@ -272,7 +268,8 @@ let rec linear i n =
       let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
+          | _ -> cons_instr (Llabel lbl_handler)
+                   (linear handler (add_branch lbl_end n)))
           n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in
@@ -286,9 +283,11 @@ let rec linear i n =
          only to inform the later pass about this stack offset
          (corresponding to N traps).
        *)
+      let lbl_dummy = lbl in
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr Lpushtrap i) (tt - 1)
+        else
+          loop (cons_instr (Lpushtrap { lbl_handler = lbl_dummy; }) i) (tt - 1)
       in
       let n1 = loop (linear i.Mach.next n) !try_depth in
       let rec loop i tt =
@@ -298,32 +297,89 @@ let rec linear i n =
       loop (add_branch lbl n1) !try_depth
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
+      let (lbl_handler, n2) =
+        get_label (cons_instr Lentertrap (linear handler n1))
+      in
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
-      let (lbl_body, n2) =
-        get_label (instr_cons Lpushtrap i.Mach.arg [| |]
-                    (linear body (cons_instr Lpoptrap n1))) in
+      let n3 = cons_instr (Lpushtrap { lbl_handler; })
+                 (linear body
+                    (cons_instr
+                       Lpoptrap
+                       (add_branch lbl_join n2))) in
       decr try_depth;
-      instr_cons (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (linear handler (add_branch lbl_join n2))
+      n3
+
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 
 let add_prologue first_insn =
-  let insn = first_insn in
-  { desc = Lprologue;
-    next = insn;
-    arg = [| |];
-    res = [| |];
-    dbg = insn.dbg;
-    live = insn.live;
-  }
+  (* The prologue needs to come after any [Iname_for_debugger] operations that
+     refer to parameters.  (Such operations always come in a contiguous
+     block, cf. [Selectgen].) *)
+  let rec skip_naming_ops (insn : instruction) : label * instruction =
+    match insn.desc with
+    | Lop (Iname_for_debugger _) ->
+      let tailrec_entry_point_label, next = skip_naming_ops insn.next in
+      tailrec_entry_point_label, { insn with next; }
+    | _ ->
+      let tailrec_entry_point_label = Cmm.new_label () in
+      let tailrec_entry_point =
+        { desc = Llabel tailrec_entry_point_label;
+          next = insn;
+          arg = [| |];
+          res = [| |];
+          dbg = insn.dbg;
+          live = insn.live;
+        }
+      in
+      (* We expect [Lprologue] to expand to at least one instruction---as such,
+         if no prologue is required, we avoid adding the instruction here.
+         The reason is subtle: an empty expansion of [Lprologue] can cause
+         two labels, one either side of the [Lprologue], to point at the same
+         location.  This means that we lose the property (cf. [Coalesce_labels])
+         that we can check if two labels point at the same location by
+         comparing them for equality.  This causes trouble when the function
+         whose prologue is in question lands at the top of the object file
+         and we are emitting DWARF debugging information:
+           foo_code_begin:
+           foo:
+           .L1:
+           ; empty prologue
+           .L2:
+           ...
+         If we were to emit a location list entry from L1...L2, not realising
+         that they point at the same location, then the beginning and ending
+         points of the range would be both equal to each other and (relative to
+         "foo_code_begin") equal to zero.  This appears to confuse objdump,
+         which seemingly misinterprets the entry as an end-of-list entry
+         (which is encoded with two zero words), then complaining about a
+         "hole in location list" (as it ignores any remaining list entries
+         after the misinterpreted entry). *)
+      if Proc.prologue_required () then
+        let prologue =
+          { desc = Lprologue;
+            next = tailrec_entry_point;
+            arg = [| |];
+            res = [| |];
+            dbg = tailrec_entry_point.dbg;
+            live = Reg.Set.empty;  (* will not be used *)
+          }
+        in
+        tailrec_entry_point_label, prologue
+      else
+        tailrec_entry_point_label, tailrec_entry_point
+  in
+  skip_naming_ops first_insn
 
 let fundecl f =
-  let fun_body = add_prologue (linear f.Mach.fun_body end_instr) in
+  let fun_tailrec_entry_point_label, fun_body =
+    add_prologue (linear f.Mach.fun_body end_instr)
+  in
   { fun_name = f.Mach.fun_name;
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
+    fun_tailrec_entry_point_label;
   }

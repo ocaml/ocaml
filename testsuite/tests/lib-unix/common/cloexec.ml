@@ -10,37 +10,38 @@
 
   One possible fix for this would be to make it possible for ocamltest to
   compile C-only programs, which will be a bit of work to handle the
-  output of msvc and will also duplicate what the ocaml compiler itslef
+  output of msvc and will also duplicate what the OCaml compiler itself
   already does.
 *)
 
+* hasunix
 include unix
 files = "fdstatus_aux.c fdstatus_main.ml"
 
-*libunix
-** setup-ocamlc.byte-build-env
+**libunix
+*** setup-ocamlc.byte-build-env
 program = "${test_build_directory}/cloexec.byte"
-*** ocamlc.byte
-program = "${test_build_directory}/fdstatus.exe"
-all_modules = "fdstatus_aux.c fdstatus_main.ml"
 **** ocamlc.byte
-program = "${test_build_directory}/cloexec.byte"
-all_modules= "cloexec.ml"
-***** check-ocamlc.byte-output
-****** run
-******* check-program-output
-
-** setup-ocamlopt.byte-build-env
-program = "${test_build_directory}/cloexec.opt"
-*** ocamlopt.byte
 program = "${test_build_directory}/fdstatus.exe"
 all_modules = "fdstatus_aux.c fdstatus_main.ml"
+***** ocamlc.byte
+program = "${test_build_directory}/cloexec.byte"
+all_modules= "cloexec.ml"
+****** check-ocamlc.byte-output
+******* run
+******** check-program-output
+
+*** setup-ocamlopt.byte-build-env
+program = "${test_build_directory}/cloexec.opt"
 **** ocamlopt.byte
+program = "${test_build_directory}/fdstatus.exe"
+all_modules = "fdstatus_aux.c fdstatus_main.ml"
+***** ocamlopt.byte
 program = "${test_build_directory}/cloexec.opt"
 all_modules= "cloexec.ml"
-***** check-ocamlopt.byte-output
-****** run
-******* check-program-output
+****** check-ocamlopt.byte-output
+******* run
+******** check-program-output
 
 *)
 

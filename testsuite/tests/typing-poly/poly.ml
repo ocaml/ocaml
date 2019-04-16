@@ -27,6 +27,15 @@ type pty = { pv : 'a. 'a list; }
 |}];;
 
 
+type id = { id : 'a. 'a -> 'a };;
+let id x = x;;
+let {id} = id { id };;
+[%%expect {|
+type id = { id : 'a. 'a -> 'a; }
+val id : 'a -> 'a = <fun>
+val id : 'a -> 'a = <fun>
+|}];;
+
 let px = {pv = []};;
 [%%expect {|
 val px : pty = {pv = []}
@@ -38,7 +47,7 @@ match px with
 | {pv=true::_} -> "bool"
 ;;
 [%%expect {|
-Line 1, characters 0-77:
+Lines 1-4, characters 0-24:
 1 | match px with
 2 | | {pv=[]} -> "OK"
 3 | | {pv=5::_} -> "int"
@@ -55,7 +64,7 @@ match px with
 | {pv=5::_} -> "int"
 ;;
 [%%expect {|
-Line 1, characters 0-77:
+Lines 1-4, characters 0-20:
 1 | match px with
 2 | | {pv=[]} -> "OK"
 3 | | {pv=true::_} -> "bool"
@@ -456,6 +465,8 @@ Line 9, characters 41-42:
                                              ^
 Error: This expression has type < m : 'b. 'b -> 'b list >
        but an expression was expected of type < m : 'b. 'b -> 'c >
+       The method m has type 'b. 'b -> 'b list,
+       but the expected method type was 'b. 'b -> 'c
        The universal variable 'b would escape its scope
 |}];;
 
@@ -544,7 +555,7 @@ class id4 () = object
 end
 ;;
 [%%expect {|
-Line 4, characters 12-79:
+Lines 4-7, characters 12-17:
 4 | ............x =
 5 |     match r with
 6 |       None -> r <- Some x; x
@@ -834,7 +845,7 @@ val f :
   (< p : int * 'c > as 'c) -> unit = <fun>
 |}];;
 
-(* PR#1374 *)
+(* PR#3643 *)
 
 type 'a t= [`A of 'a];;
 class c = object (self)
@@ -882,7 +893,7 @@ type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
 type 'b alist = < visit : 'a. ('a, 'b) list_visitor -> 'a >
 |}];;
 
-(* PR#1607 *)
+(* PR#8074 *)
 class type ct = object ('s)
   method fold : ('b -> 's -> 'b) -> 'b -> 'b
 end
@@ -892,7 +903,7 @@ class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
 type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 |}];;
 
-(* PR#1663 *)
+(* PR#8124 *)
 type t = u and u = t;;
 [%%expect {|
 Line 1, characters 0-10:
@@ -902,7 +913,7 @@ Error: The definition of t contains a cycle:
        u
 |}];;
 
-(* PR#1731 *)
+(* PR#8188 *)
 class ['t] a = object constraint 't = [> `A of 't a] end
 type t = [ `A of t a ];;
 [%%expect {|
@@ -964,7 +975,7 @@ Line 1, characters 0-24:
 Error: In the definition of v, type 'a list u should be 'a u
 |}];;
 
-(* PR#1744: Ctype.matches *)
+(* PR#8198: Ctype.matches *)
 type 'a t = 'a
 type 'a u = A of 'a t;;
 [%%expect {|
@@ -997,7 +1008,7 @@ Error: The definition of a contains a cycle:
        [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
 
-(* PR#1917: expanding may change original in Ctype.unify2 *)
+(* PR#8359: expanding may change original in Ctype.unify2 *)
 (* Note: since 3.11, the abbreviations are not used when printing
    a type where they occur recursively inside. *)
 class type ['a, 'b] a = object
@@ -1098,6 +1109,8 @@ Line 2, characters 3-4:
 Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
+       The method m has type 'a. 'a * 'd, but the expected method type was
+       'c. 'c * 'd
        The universal variable 'a would escape its scope
 |}];;
 
@@ -1209,7 +1222,7 @@ let f5 x =
 let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 [%%expect {|
-Line 2, characters 2-88:
+Lines 2-3, characters 2-47:
 2 | ..(x : <m:'a. (<p:int;..> as 'a) -> int>
 3 |     :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
@@ -1708,4 +1721,16 @@ module M :
       val h : 'a -> 'a
       val i : 'a -> 'a
     end
+|}]
+
+(* #8550 *)
+class ['a] r = let r : 'a = ref [] in object method get = r end;;
+[%%expect{|
+Line 1, characters 0-63:
+1 | class ['a] r = let r : 'a = ref [] in object method get = r end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type of this class,
+       class ['a] r :
+         object constraint 'a = '_weak2 list ref method get : 'a end,
+       contains type variables that cannot be generalized
 |}]

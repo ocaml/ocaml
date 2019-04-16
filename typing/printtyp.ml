@@ -285,7 +285,7 @@ let ident ppf id = pp_print_string ppf
 let ident_stdlib = Ident.create_persistent "Stdlib"
 
 let non_shadowed_pervasive = function
-  | Pdot(Pident id, s, _) as path ->
+  | Pdot(Pident id, s) as path ->
       Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
        with Not_found -> true)
@@ -305,7 +305,7 @@ let find_double_underscore s =
 
 let rec module_path_is_an_alias_of env path ~alias_of =
   match Env.find_module path env with
-  | { md_type = Mty_alias (_, path'); _ } ->
+  | { md_type = Mty_alias path'; _ } ->
     Path.same path' alias_of ||
     module_path_is_an_alias_of env path' ~alias_of
   | _ -> false
@@ -315,8 +315,8 @@ let rec module_path_is_an_alias_of env path ~alias_of =
    for Foo__bar. This pattern is used by the stdlib. *)
 let rec rewrite_double_underscore_paths env p =
   match p with
-  | Pdot (p, s, n) ->
-    Pdot (rewrite_double_underscore_paths env p, s, n)
+  | Pdot (p, s) ->
+    Pdot (rewrite_double_underscore_paths env p, s)
   | Papply (a, b) ->
     Papply (rewrite_double_underscore_paths env a,
             rewrite_double_underscore_paths env b)
@@ -348,9 +348,9 @@ let rewrite_double_underscore_paths env p =
 let rec tree_of_path namespace = function
   | Pident id ->
       Oide_ident (ident_name namespace id)
-  | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
+  | Pdot(_, s) as path when non_shadowed_pervasive path ->
       Oide_ident (Naming_context.pervasives_name namespace s)
-  | Pdot(p, s, _pos) ->
+  | Pdot(p, s) ->
       Oide_dot (tree_of_path Module p, s)
   | Papply(p1, p2) ->
       Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
@@ -566,7 +566,7 @@ let rec normalize_type_path ?(cache=false) env p =
         (p, Nth (index params ty))
   with
     Not_found ->
-      (Env.normalize_path None env p, Id)
+      (Env.normalize_type_path None env p, Id)
 
 let penalty s =
   if s <> "" && s.[0] = '_' then
@@ -579,7 +579,7 @@ let penalty s =
 let rec path_size = function
     Pident id ->
       penalty (Ident.name id), -Ident.scope id
-  | Pdot (p, _, _) ->
+  | Pdot (p, _) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
       let (l, b) = path_size p1 in
@@ -1495,10 +1495,10 @@ let hide ids env = List.fold_right
     ids env
 
 let hide_rec_items = function
-  | Sig_type(id, _decl, rs) ::rem
+  | Sig_type(id, _decl, rs, _) ::rem
     when rs = Trec_first && not !Clflags.real_paths ->
       let rec get_ids = function
-          Sig_type (id, _, Trec_next) :: rem ->
+          Sig_type (id, _, Trec_next, _) :: rem ->
             id :: get_ids rem
         | _ -> []
       in
@@ -1508,10 +1508,10 @@ let hide_rec_items = function
   | _ -> ()
 
 let recursive_sigitem = function
-  | Sig_class(id,_,rs) -> Some(id,rs,3)
-  | Sig_class_type (id,_,rs) -> Some(id,rs,2)
-  | Sig_type(id, _, rs)
-  | Sig_module(id, _, rs) -> Some (id,rs,0)
+  | Sig_class(id,_,rs,_) -> Some(id,rs,3)
+  | Sig_class_type (id,_,rs,_) -> Some(id,rs,2)
+  | Sig_type(id, _, rs, _)
+  | Sig_module(id, _, _, rs, _) -> Some (id,rs,0)
   | _ -> None
 
 let skip k l = snd (Misc.Stdlib.List.split_at k l)
@@ -1542,12 +1542,12 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       let res =
         match ty_arg with None -> tree_of_modtype ~ellipsis ty_res
         | Some mty ->
-            wrap_env (Env.add_module ~arg:true param mty)
+            wrap_env (Env.add_module ~arg:true param Mp_present mty)
                      (tree_of_modtype ~ellipsis) ty_res
       in
       Omty_functor (Ident.name param,
                     may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
-  | Mty_alias(_, p) ->
+  | Mty_alias p ->
       Omty_alias (tree_of_path Module p)
 
 and tree_of_signature sg =
@@ -1566,26 +1566,26 @@ and tree_of_signature_rec env' in_type_group = function
       trees @ tree_of_signature_rec env' in_type_group rem
 
 and trees_of_sigitem = function
-  | Sig_value(id, decl) ->
+  | Sig_value(id, decl, _) ->
       [tree_of_value_description id decl]
-  | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+  | Sig_type(id, _, _, _) when is_row_name (Ident.name id) ->
       []
-  | Sig_type(id, decl, rs) ->
+  | Sig_type(id, decl, rs, _) ->
       [tree_of_type_declaration id decl rs]
-  | Sig_typext(id, ext, es) ->
+  | Sig_typext(id, ext, es, _) ->
       [tree_of_extension_constructor id ext es]
-  | Sig_module(id, md, rs) ->
+  | Sig_module(id, _, md, rs, _) ->
       let ellipsis =
         List.exists (function
           | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
           | _ -> false)
           md.md_attributes in
       [tree_of_module id md.md_type rs ~ellipsis]
-  | Sig_modtype(id, decl) ->
+  | Sig_modtype(id, decl, _) ->
       [tree_of_modtype_declaration id decl]
-  | Sig_class(id, decl, rs) ->
+  | Sig_class(id, decl, rs, _) ->
       [tree_of_class_declaration id decl rs]
-  | Sig_class_type(id, decl, rs) ->
+  | Sig_class_type(id, decl, rs, _) ->
       [tree_of_cltype_declaration id decl rs]
 
 and tree_of_modtype_declaration id decl =
@@ -1721,16 +1721,49 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
+
+type printing_status =
+  | Discard
+  | Keep
+  | Optional_refinement
+  (** An [Optional_refinement] printing status is attributed to trace
+      elements that are focusing on a new subpart of a structural type.
+      Since the whole type should have been printed earlier in the trace,
+      we only print those elements if they are the last printed element
+      of a trace, and there is no explicit explanation for the
+      type error.
+  *)
+
+let printing_status  = function
+  | Trace.(Diff { got=t1, t1'; expected=t2, t2'}) ->
+      if  is_constr_row ~allow_ident:true t1'
+       || is_constr_row ~allow_ident:true t2'
+      then Discard
+      else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
+      else Keep
+  | _ -> Keep
+
+(** Flatten the trace and remove elements that are always discarded
+    during printing *)
+let prepare_trace f tr =
+  let clean_trace x l = match printing_status x with
+    | Keep -> x :: l
+    | Optional_refinement when l = [] -> [x]
+    | Optional_refinement | Discard -> l
+  in
+  match Trace.flatten f tr with
+  | [] -> []
+  | elt :: rem -> (* the first element is always kept *)
+      elt :: List.fold_right clean_trace rem []
+
+(** Keep elements that are not [Diff _ ] and take the decision
+    for the last element, require a prepared trace *)
 let rec filter_trace keep_last = function
-  | Trace.(Diff ({ got=t1, t1'; expected=t2, t2'} as elt)) :: rem ->
-      let rem' = filter_trace keep_last rem in
-      if is_constr_row ~allow_ident:true t1'
-      || is_constr_row ~allow_ident:true t2'
-      || same_path t1 t1' && same_path t2 t2' && not (keep_last && rem' = [])
-      then rem'
-      else elt :: rem'
-  | _elt :: rem -> filter_trace keep_last rem
-  | _ -> []
+  | [] -> []
+  | [Trace.Diff d as elt] when printing_status elt = Optional_refinement ->
+      if keep_last then [d] else []
+  | Trace.Diff d :: rem -> d :: filter_trace keep_last rem
+  | _ :: rem -> filter_trace keep_last rem
 
 let type_path_list =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.pp_print_break ppf 2 0)
@@ -1809,10 +1842,15 @@ let explain_variant = function
   | Trace.Incompatible_types_for s ->
       Some(dprintf "@,Types for tag `%s are incompatible" s)
 
-let explain_escape intro ctx e =
+let explain_escape intro prev ctx e =
   let pre = match ctx with
-    | None -> ignore
-    | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx in
+    | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx
+    | None -> match e, prev with
+      | Trace.Univ _, Some(Trace.Incompatible_fields {name; diff}) ->
+          dprintf "@,@[The method %s has type@ %a,@ \
+                   but the expected method type was@ %a@]" name
+            type_expr diff.Trace.got type_expr diff.Trace.expected
+      | _ -> ignore in
   match e with
   | Trace.Univ u ->  Some(
       dprintf "%t@,The universal variable %a would escape its scope"
@@ -1837,6 +1875,8 @@ let explain_escape intro ctx e =
 
 
 let explain_object = function
+  | Trace.Self_cannot_be_closed ->
+      Some (dprintf "@,Self type cannot be unified with a closed object type")
   | Trace.Missing_field (pos,f) ->
       Some(dprintf "@,@[The %a object type has no method %s@]" print_pos pos f)
   | Trace.Abstract_row pos -> Some(
@@ -1846,9 +1886,9 @@ let explain_object = function
     )
 
 
-let explanation intro env = function
+let explanation intro prev env = function
   | Trace.Diff { Trace.got = _, s; expected = _,t } -> explanation_diff env s t
-  | Trace.Escape {kind;context} -> explain_escape intro context kind
+  | Trace.Escape {kind;context} -> explain_escape intro prev context kind
   | Trace.Incompatible_fields { name; _ } ->
         Some(dprintf "@,Types for method %s are incompatible" name)
   | Trace.Variant v -> explain_variant v
@@ -1858,13 +1898,8 @@ let explanation intro env = function
       Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             type_expr x type_expr y)
 
-let rec mismatch intro env = function
-    h :: rem ->
-      begin match mismatch intro env rem with
-        Some _ as m -> m
-      | None -> explanation intro env h
-      end
-  | [] -> None
+let mismatch intro env trace =
+  Trace.explain trace (fun ~prev h -> explanation intro prev env h)
 
 let explain mis ppf =
   match mis with
@@ -1906,7 +1941,7 @@ let warn_on_missing_defs env ppf = function
 
 let unification_error env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
-  let tr = Trace.flatten (fun t t' -> t, hide_variant_name t') tr in
+  let tr = prepare_trace (fun t t' -> t, hide_variant_name t') tr in
   let mis = mismatch txt1 env tr in
   match tr with
   | [] -> assert false
@@ -1942,6 +1977,7 @@ let report_unification_error ppf env tr
     ~error:true
 ;;
 
+(** [trace] requires the trace to be prepared *)
 let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;
   try match tr with
@@ -1964,8 +2000,8 @@ let trace fst keep_last txt ppf tr =
 let report_subtyping_error ppf env tr1 txt1 tr2 =
   wrap_printing_env ~error:true env (fun () ->
     reset ();
-    let tr1 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr1 in
-    let tr2 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr2 in
+    let tr1 = prepare_trace (fun t t' -> prepare_expansion (t, t')) tr1 in
+    let tr2 = prepare_trace (fun t t' -> prepare_expansion (t, t')) tr2 in
     let keep_first = match tr2 with
       | Trace.[Obj _ | Variant _ | Escape _ ] | [] -> true
       | _ -> false in

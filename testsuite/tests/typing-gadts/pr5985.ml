@@ -37,7 +37,7 @@ module F(T:sig type 'a t end) = struct
     object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 end;; (* fail *)
 [%%expect{|
-Line 2, characters 2-86:
+Lines 2-3, characters 2-67:
 2 | ..class ['a] c x =
 3 |     object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 Error: In this definition, a type variable cannot be deduced
@@ -136,7 +136,7 @@ Error: In this definition, a type variable has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
 |}];;
-(* shoud fail: we do not know for sure the variance of Queue.t *)
+(* should fail: we do not know for sure the variance of Queue.t *)
 
 type +'a t = T of 'a;;
 type +'a s = 'b constraint 'a = 'b t;; (* ok *)

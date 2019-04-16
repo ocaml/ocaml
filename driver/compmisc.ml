@@ -21,11 +21,9 @@ open Compenv
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path ?(dir="") native =
+let init_path ?(dir="") () =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
-    else if !Clflags.use_vmthreads && not native then
-      "+vmthreads" :: !Clflags.include_dirs
     else
       !Clflags.include_dirs
   in
@@ -34,14 +32,13 @@ let init_path ?(dir="") native =
   in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
-  Config.load_path := dir ::
-      List.rev_append exp_dirs (Clflags.std_include_dir ());
+  Load_path.init (dir :: List.rev_append exp_dirs (Clflags.std_include_dir ()));
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)
 
 (* Note: do not do init_path() in initial_env, this breaks
-   toplevel initialization (PR#1775) *)
+   toplevel initialization (PR#8227) *)
 
 let initial_env () =
   Ident.reinit();
@@ -74,12 +71,12 @@ let read_clflags_from_env () =
   set_from_env Clflags.error_style Clflags.error_style_reader;
   ()
 
-let with_ppf_dump ~fileprefix f =
+let with_ppf_dump ~file_prefix f =
   let ppf_dump, finally =
     if not !Clflags.dump_into_file
     then Format.err_formatter, ignore
     else
-       let ch = open_out (fileprefix ^ ".dump") in
+       let ch = open_out (file_prefix ^ ".dump") in
        let ppf = Format.formatter_of_out_channel ch in
        ppf,
        (fun () ->

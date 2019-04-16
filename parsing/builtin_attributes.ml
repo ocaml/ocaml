@@ -97,7 +97,7 @@ let alert_attr x =
   | _ -> None
 
 let alert_attrs l =
-  Misc.Stdlib.List.filter_map alert_attr l
+  List.filter_map alert_attr l
 
 let alerts_of_attrs l =
   List.fold_left

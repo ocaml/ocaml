@@ -178,6 +178,8 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _insn_sched : unit -> unit
+  val _no_insn_sched : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -235,10 +237,6 @@ module type Ocamldoc_options = sig
   val _intf : string -> unit
   val _intf_suffix : string -> unit
   val _pp : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
@@ -254,3 +252,13 @@ module Make_bytetop_options (F : Bytetop_options) : Arg_list;;
 module Make_optcomp_options (F : Optcomp_options) : Arg_list;;
 module Make_opttop_options (F : Opttop_options) : Arg_list;;
 module Make_ocamldoc_options (F : Ocamldoc_options) : Arg_list;;
+
+(** [options_with_command_line_syntax options r] returns [options2] that behaves
+    like [options], but additionally pushes command line argument on [r] (quoted
+    by [Filename.quote] when necessary).
+    This is meant for ocaml{c,opt}p, which use this to forward most of their
+    arguments to ocaml{c,opt}. *)
+val options_with_command_line_syntax
+  : (string * Arg.spec * string) list
+  -> string list ref
+  -> (string * Arg.spec * string) list

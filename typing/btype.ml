@@ -235,7 +235,7 @@ let is_constr_row ~allow_ident t =
   match t.desc with
     Tconstr (Path.Pident id, _, _) when allow_ident ->
       is_row_name (Ident.name id)
-  | Tconstr (Path.Pdot (_, s, _), _, _) -> is_row_name s
+  | Tconstr (Path.Pdot (_, s), _, _) -> is_row_name s
   | _ -> false
 
 
@@ -349,13 +349,13 @@ let type_iterators =
   let it_signature it =
     List.iter (it.it_signature_item it)
   and it_signature_item it = function
-      Sig_value (_, vd)     -> it.it_value_description it vd
-    | Sig_type (_, td, _)   -> it.it_type_declaration it td
-    | Sig_typext (_, td, _) -> it.it_extension_constructor it td
-    | Sig_module (_, md, _) -> it.it_module_declaration it md
-    | Sig_modtype (_, mtd)  -> it.it_modtype_declaration it mtd
-    | Sig_class (_, cd, _)  -> it.it_class_declaration it cd
-    | Sig_class_type (_, ctd, _) -> it.it_class_type_declaration it ctd
+      Sig_value (_, vd, _)          -> it.it_value_description it vd
+    | Sig_type (_, td, _, _)        -> it.it_type_declaration it td
+    | Sig_typext (_, td, _, _)      -> it.it_extension_constructor it td
+    | Sig_module (_, _, md, _, _)   -> it.it_module_declaration it md
+    | Sig_modtype (_, mtd, _)       -> it.it_modtype_declaration it mtd
+    | Sig_class (_, cd, _, _)       -> it.it_class_declaration it cd
+    | Sig_class_type (_, ctd, _, _) -> it.it_class_type_declaration it ctd
   and it_value_description it vd =
     it.it_type_expr it vd.val_type
   and it_type_declaration it td =
@@ -382,7 +382,7 @@ let type_iterators =
     it.it_path ctd.clty_path
   and it_module_type it = function
       Mty_ident p
-    | Mty_alias(_, p) -> it.it_path p
+    | Mty_alias p -> it.it_path p
     | Mty_signature sg -> it.it_signature it sg
     | Mty_functor (_, mto, mt) ->
         may (it.it_module_type it) mto;
@@ -480,28 +480,49 @@ let rec copy_type_desc ?(keep_names=false) f = function
 
 (* Utilities for copying *)
 
-let saved_desc = ref []
-  (* Saved association of generic nodes with their description. *)
+module For_copy : sig
+  type copy_scope
 
-let save_desc ty desc =
-  saved_desc := (ty, desc)::!saved_desc
+  val save_desc: copy_scope -> type_expr -> type_desc -> unit
 
-let saved_kinds = ref [] (* duplicated kind variables *)
-let new_kinds = ref []   (* new kind variables *)
-let dup_kind r =
-  (match !r with None -> () | Some _ -> assert false);
-  if not (List.memq r !new_kinds) then begin
-    saved_kinds := r :: !saved_kinds;
-    let r' = ref None in
-    new_kinds := r' :: !new_kinds;
-    r := Some (Fvar r')
-  end
+  val dup_kind: copy_scope -> field_kind option ref -> unit
 
-(* Restored type descriptions. *)
-let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  List.iter (fun r -> r := None) !saved_kinds;
-  saved_desc := []; saved_kinds := []; new_kinds := []
+  val with_scope: (copy_scope -> 'a) -> 'a
+end = struct
+  type copy_scope = {
+    mutable saved_desc : (type_expr * type_desc) list;
+    (* Save association of generic nodes with their description. *)
+
+    mutable saved_kinds: field_kind option ref list;
+    (* duplicated kind variables *)
+
+    mutable new_kinds  : field_kind option ref list;
+    (* new kind variables *)
+  }
+
+  let save_desc copy_scope ty desc =
+    copy_scope.saved_desc <- (ty, desc) :: copy_scope.saved_desc
+
+  let dup_kind copy_scope r =
+    assert (Option.is_none !r);
+    if not (List.memq r copy_scope.new_kinds) then begin
+      copy_scope.saved_kinds <- r :: copy_scope.saved_kinds;
+      let r' = ref None in
+      copy_scope.new_kinds <- r' :: copy_scope.new_kinds;
+      r := Some (Fvar r')
+    end
+
+  (* Restore type descriptions. *)
+  let cleanup { saved_desc; saved_kinds; _ } =
+    List.iter (fun (ty, desc) -> ty.desc <- desc) saved_desc;
+    List.iter (fun r -> r := None) saved_kinds
+
+  let with_scope f =
+    let scope = { saved_desc = []; saved_kinds = []; new_kinds = [] } in
+    let res = f scope in
+    cleanup scope;
+    res
+end
 
 (* Mark a type. *)
 let rec mark_type ty =

@@ -475,7 +475,7 @@ static void caml_thread_reinitialize(void)
 
 CAMLprim value caml_thread_initialize(value unit)   /* ML */
 {
-  /* Protect against repeated initialization (PR#1325) */
+  /* Protect against repeated initialization (PR#3532) */
   if (curr_thread != NULL) return Val_unit;
   /* OS-specific initialization */
   st_initialize();
@@ -750,9 +750,19 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 CAMLprim value caml_thread_yield(value unit)        /* ML */
 {
   if (st_masterlock_waiters(&caml_master_lock) == 0) return Val_unit;
-  caml_enter_blocking_section();
-  st_thread_yield();
-  caml_leave_blocking_section();
+
+  /* Do all the parts of a blocking section enter/leave except lock
+     manipulation, which we'll do more efficiently in st_thread_yield. (Since
+     our blocking section doesn't contain anything interesting, don't bother
+     with saving errno.)
+  */
+  caml_process_pending_signals();
+  caml_thread_save_runtime_state();
+  st_thread_yield(&caml_master_lock);
+  curr_thread = st_tls_get(thread_descriptor_key);
+  caml_thread_restore_runtime_state();
+  caml_process_pending_signals();
+
   return Val_unit;
 }
 

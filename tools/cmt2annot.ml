@@ -104,7 +104,7 @@ let rec iterator ~scope rebuild_env =
     | Texp_function { cases = f; }
     | Texp_try (_, f) ->
         bind_cases f
-    | Texp_letmodule (_, modname, _, body ) ->
+    | Texp_letmodule (_, modname, _, _, body ) ->
         Stypes.record (Stypes.An_ident
                        (modname.loc,modname.txt,Annot.Idef body.exp_loc))
     | _ -> ()
@@ -197,7 +197,7 @@ let record_cmt_info cmt =
 let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
   let open Cmt_format in
   Envaux.reset_cache ();
-  Config.load_path := cmt.cmt_loadpath @ !Config.load_path;
+  List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
   let target_filename =
     match target_filename with
     | None -> Some (filename ^ ".annot")

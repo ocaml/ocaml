@@ -3,9 +3,16 @@
    output="redirections.output"
    script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
    -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
-  * native-compiler
-  ** script with unix,str
-  *** check-program-output
+  * hasstr
+  ** native-compiler
+  *** shared-libraries
+  **** script with unix,str
+  ***** check-program-output
+  *** no-shared-libraries
+  **** script with unix,str
+   script = "${ocamlsrcdir}/tools/caml-tex \
+   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
+  ***** check-program-output
 *)
 
 \begin{caml_example}{toplevel}

@@ -129,10 +129,10 @@ module type S =
         arguments, the function [f] is used to combine them.
         This is a special case of [merge]: [union f m1 m2] is equivalent
         to [merge f' m1 m2], where
-        - [f' None None = None]
-        - [f' (Some v) None = Some v]
-        - [f' None (Some v) = Some v]
-        - [f' (Some v1) (Some v2) = f v1 v2]
+        - [f' _key None None = None]
+        - [f' _key (Some v) None = Some v]
+        - [f' _key None (Some v) = Some v]
+        - [f' key (Some v1) (Some v2) = f key v1 v2]
 
         @since 4.03.0
     *)
@@ -194,35 +194,35 @@ module type S =
 
     val bindings: 'a t -> (key * 'a) list
     (** Return the list of all bindings of the given map.
-       The returned list is sorted in increasing order with respect
+       The returned list is sorted in increasing order of keys with respect
        to the ordering [Ord.compare], where [Ord] is the argument
        given to {!Map.Make}.
         @since 3.12.0
      *)
 
     val min_binding: 'a t -> (key * 'a)
-    (** Return the smallest binding of the given map
+    (** Return the binding with the smallest key in a given map
        (with respect to the [Ord.compare] ordering), or raise
        [Not_found] if the map is empty.
         @since 3.12.0
      *)
 
     val min_binding_opt: 'a t -> (key * 'a) option
-    (** Return the smallest binding of the given map
+    (** Return the binding with the smallest key in the given map
        (with respect to the [Ord.compare] ordering), or [None]
        if the map is empty.
         @since 4.05
      *)
 
     val max_binding: 'a t -> (key * 'a)
-    (** Same as {!Map.S.min_binding}, but returns the largest binding
-        of the given map.
+    (** Same as {!Map.S.min_binding}, but returns the binding with
+        the largest key in the given map.
         @since 3.12.0
      *)
 
     val max_binding_opt: 'a t -> (key * 'a) option
-    (** Same as {!Map.S.min_binding_opt}, but returns the largest binding
-        of the given map.
+    (** Same as {!Map.S.min_binding_opt}, but returns the binding with
+        the largest key in the given map.
         @since 4.05
      *)
 
@@ -309,12 +309,12 @@ module type S =
     (** {1 Iterators} *)
 
     val to_seq : 'a t -> (key * 'a) Seq.t
-    (** Iterate on the whole map, in ascending order
+    (** Iterate on the whole map, in ascending order of keys
         @since 4.07 *)
 
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     (** [to_seq_from k m] iterates on a subset of the bindings of [m],
-        in ascending order, from key [k] or above.
+        in ascending order of keys, from key [k] or above.
         @since 4.07 *)
 
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t

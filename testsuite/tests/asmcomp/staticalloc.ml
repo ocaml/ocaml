@@ -16,7 +16,7 @@ let () =
   let pair x y = (x, y) in
   let a = pair 1 2 in
   let b = pair a ["x";"y"] in
-  let g () = (a, fst b) in
+  let[@local never] g () = (a, fst b) in
   assert (g () == ((1,2), (1,2)));
   assert (fst (pair a a) == (1, 2));
   assert (snd b != ["x"; "y"] || Config.safe_string);  (* mutable "constant",

@@ -36,8 +36,15 @@ val ccomptype : string
 val shared_libraries : bool
 (** [true] if shared libraries are supported, [false] otherwise *)
 
-val libunix : bool
-(** [true] for unix, [false] for win32unix *)
+val libunix : bool option
+(** [Some true] for unix, [Some false] for win32unix, or [None] if neither is
+    built. *)
+
+val systhreads : bool
+(** Indicates whether systhreads is available. *)
+
+val str : bool
+(** Indicates whether str is available. *)
 
 val objext : string
 (** Extension of object files *)

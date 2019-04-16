@@ -88,11 +88,12 @@ class virtual selector_generic : object
        Can be overridden if float values are stored as pairs of
        integer registers. *)
   method insert_op :
-    Mach.operation -> Reg.t array -> Reg.t array -> Reg.t array
+    environment -> Mach.operation -> Reg.t array -> Reg.t array -> Reg.t array
     (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
   method insert_op_debug :
-    Mach.operation -> Debuginfo.t -> Reg.t array -> Reg.t array -> Reg.t array
+    environment -> Mach.operation -> Debuginfo.t -> Reg.t array
+      -> Reg.t array -> Reg.t array
     (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
   method emit_extcall_args :
@@ -136,13 +137,17 @@ class virtual selector_generic : object
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction
   method extract_core : end_instr:Mach.instruction -> Mach.instruction
-  method insert : Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
-  method insert_debug : Mach.instruction_desc -> Debuginfo.t ->
-                                        Reg.t array -> Reg.t array -> unit
-  method insert_move : Reg.t -> Reg.t -> unit
-  method insert_move_args : Reg.t array -> Reg.t array -> int -> unit
-  method insert_move_results : Reg.t array -> Reg.t array -> int -> unit
-  method insert_moves : Reg.t array -> Reg.t array -> unit
+  method insert :
+    environment -> Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
+  method insert_debug :
+    environment -> Mach.instruction_desc -> Debuginfo.t ->
+      Reg.t array -> Reg.t array -> unit
+  method insert_move : environment -> Reg.t -> Reg.t -> unit
+  method insert_move_args :
+    environment -> Reg.t array -> Reg.t array -> int -> unit
+  method insert_move_results :
+    environment -> Reg.t array -> Reg.t array -> int -> unit
+  method insert_moves : environment -> Reg.t array -> Reg.t array -> unit
   method adjust_type : Reg.t -> Reg.t -> unit
   method adjust_types : Reg.t array -> Reg.t array -> unit
   method emit_expr :
@@ -163,6 +168,7 @@ class virtual selector_generic : object
      : environment
     -> Mach.instruction_desc
     -> Reg.t array
+    -> Debuginfo.t
     -> Reg.t array option
   method initial_env : unit -> environment
   method insert_prologue

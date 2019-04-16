@@ -240,7 +240,7 @@ let simple_merged_annotated_return_annotated (type a) (t : a t) (a : a) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-57:
+Lines 3-4, characters 4-30:
 3 | ....IntLit, ((3 : a) as x)
 4 |   | BoolLit, ((true : a) as x)............
 Error: The variable x on the left-hand side of this or-pattern has type
@@ -551,7 +551,7 @@ let extract_merged_annotated (type a) (t2 : a t2) : a =
 
 
 [%%expect{|
-Line 3, characters 4-20:
+Lines 3-4, characters 4-10:
 3 | ....Int x
 4 |   | Bool x.....
 Error: The variable x on the left-hand side of this or-pattern has type
@@ -575,7 +575,7 @@ let extract_merged_too_lightly_annotated (type a) (t2 : a t2) : a =
 ;;
 
 [%%expect{|
-Line 3, characters 4-26:
+Lines 3-4, characters 4-10:
 3 | ....Int (x : a)
 4 |   | Bool x.....
 Error: The variable x on the left-hand side of this or-pattern has type
@@ -731,7 +731,7 @@ let f_amb (type a) (t : a t) (a : bool ref) (b : a ref) =
   | _, _, _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 4-108:
+Lines 3-4, characters 4-65:
 3 | ....IntLit,  ({ contents = true } as x), _
 4 |   | BoolLit,  _,                        ({ contents = true} as x)............
 Error: The variable x on the left-hand side of this or-pattern has type

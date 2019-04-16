@@ -1,57 +1,58 @@
 (* TEST
 
-include unix
 modules = "tscanf2_io.ml"
+* hasunix
+include unix
 files = "tscanf2_worker.ml"
 reference = "${test_source_directory}/tscanf2.reference"
 
 (* The bytcode test *)
 
-* setup-ocamlc.byte-build-env
+** setup-ocamlc.byte-build-env
 
 program = "${test_build_directory}/master.byte"
 
-** ocamlc.byte (* Compiles the master *)
+*** ocamlc.byte (* Compiles the master *)
 
-*** ocamlc.byte (* Compiles the worker *)
+**** ocamlc.byte (* Compiles the worker *)
 
 all_modules = "tscanf2_io.cmo tscanf2_worker.ml"
 
 program = "${test_build_directory}/worker.byte"
 
-**** check-ocamlc.byte-output
+***** check-ocamlc.byte-output
 
-***** run
+****** run
 
 program = "${test_build_directory}/master.byte"
 
 arguments = "${test_build_directory}/worker.byte"
 
-****** check-program-output
+******* check-program-output
 
 (* The native test *)
 
-* setup-ocamlopt.byte-build-env
+** setup-ocamlopt.byte-build-env
 
 program = "${test_build_directory}/master.opt"
 
-** ocamlopt.byte (* Compiles the master *)
+*** ocamlopt.byte (* Compiles the master *)
 
-*** ocamlopt.byte (* Compiles the worker *)
+**** ocamlopt.byte (* Compiles the worker *)
 
 all_modules = "tscanf2_io.cmx tscanf2_worker.ml"
 
 program = "${test_build_directory}/worker.opt"
 
-**** check-ocamlopt.byte-output
+***** check-ocamlopt.byte-output
 
-***** run
+****** run
 
 program = "${test_build_directory}/master.opt"
 
 arguments = "${test_build_directory}/worker.opt"
 
-****** check-program-output
+******* check-program-output
 
 *)
 

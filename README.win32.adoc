@@ -21,7 +21,6 @@ Here is a summary of the main differences between these ports:
 | Replay debugger                        | yes <<tb2,(**)>>       | yes <<tb2,(**)>> | yes
 | The Unix library                       | partial                | partial          | full
 | The Threads library                    | yes                    | yes              | yes
-| The Graphics library                   | yes                    | yes              | no
 | Restrictions on generated executables? | none                   | none             | yes <<tb1,(*)>>
 |=====
 
@@ -196,16 +195,11 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        cp config/m-nt.h runtime/caml/m.h
-        cp config/s-nt.h runtime/caml/s.h
-
-followed by:
-
-        cp config/Makefile.msvc Makefile.config
+        ./configure --build=i686-pc-cygwin --host=i686-pc-windows
 
 for 32-bit, or:
 
-        cp config/Makefile.msvc64 Makefile.config
+        ./configure --build=x86_64-unknown-cygwin --host=x86_64-pc-windows
 
 for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
@@ -231,7 +225,7 @@ your `~/.bashrc` file.
   the performance of bytecode programs is about 2/3 of that obtained under
   Unix/GCC,  Cygwin or Mingw-w64 on similar hardware.
 
-* Libraries available in this port: `bigarray`, `dynlink`, `graphics`, `num`,
+* Libraries available in this port: `bigarray`, `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
@@ -268,16 +262,11 @@ the WinZip Options Window.)
 
 Now run:
 
-        cp config/m-nt.h runtime/caml/m.h
-        cp config/s-nt.h runtime/caml/s.h
-
-followed by:
-
-        cp config/Makefile.mingw Makefile.config
+        ./configure --build=i686-pc-cygwin --host=i686-w64-mingw32
 
 for 32-bit, or:
 
-        cp config/Makefile.mingw64 Makefile.config
+        ./configure --build=x86_64-unknown-cygwin --host=x86_64-w64-mingw32
 
 for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
@@ -292,7 +281,7 @@ After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
 bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
 
-* Libraries available in this port: `bigarray`, `dynlink`, `graphics`, `num`,
+* Libraries available in this port: `bigarray`, `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).

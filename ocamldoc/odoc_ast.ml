@@ -935,7 +935,7 @@ module Analyser =
         let f = match ele with
           Element_module m ->
             (function
-                Types.Sig_module (ident,md,_) ->
+                Types.Sig_module (ident,_,md,_,_) ->
                   let n1 = Name.simple m.m_name
                   and n2 = Ident.name ident in
                   (
@@ -946,7 +946,7 @@ module Analyser =
               | _ -> false)
         | Element_module_type mt ->
             (function
-                Types.Sig_modtype (ident,{Types.mtd_type=Some t}) ->
+                Types.Sig_modtype (ident,{Types.mtd_type=Some t},_) ->
                   let n1 = Name.simple mt.mt_name
                   and n2 = Ident.name ident in
                   (
@@ -957,14 +957,14 @@ module Analyser =
               | _ -> false)
         | Element_value v ->
             (function
-                Types.Sig_value (ident,_) ->
+                Types.Sig_value (ident,_, _) ->
                   let n1 = Name.simple v.val_name
                   and n2 = Ident.name ident in
                   n1 = n2
               | _ -> false)
         | Element_type t ->
              (function
-                Types.Sig_type (ident,_,_) ->
+                Types.Sig_type (ident,_,_,_) ->
                   (* FIXME: type details can be hidden *)
                   let n1 = Name.simple t.ty_name
                   and n2 = Ident.name ident in
@@ -980,21 +980,21 @@ module Analyser =
               else (fun _ -> false)
         | Element_exception e ->
             (function
-                Types.Sig_typext (ident,_,_) ->
+                Types.Sig_typext (ident,_,_, _) ->
                   let n1 = Name.simple e.ex_name
                   and n2 = Ident.name ident in
                   n1 = n2
               | _ -> false)
         | Element_class c ->
             (function
-                Types.Sig_class (ident,_,_) ->
+                Types.Sig_class (ident,_,_, _) ->
                   let n1 = Name.simple c.cl_name
                   and n2 = Ident.name ident in
                   n1 = n2
               | _ -> false)
         | Element_class_type ct ->
             (function
-                Types.Sig_class_type (ident,_,_) ->
+                Types.Sig_class_type (ident,_,_, _) ->
                   let n1 = Name.simple ct.clt_name
                   and n2 = Ident.name ident in
                   n1 = n2
@@ -1010,7 +1010,7 @@ module Analyser =
       let pred xt =
         List.exists
           (function
-              Types.Sig_typext (ident, _, _) ->
+              Types.Sig_typext (ident, _, _, _) ->
                 let n1 = Name.simple xt.xt_name
                 and n2 = Ident.name ident in
                   n1 = n2

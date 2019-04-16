@@ -45,7 +45,7 @@ let prepare ppf =
     let res =
       List.for_all (Opttopdirs.load_file ppf) (List.rev !preload_objects)
     in
-    !Opttoploop.toplevel_startup_hook ();
+    Opttoploop.run_hooks Opttoploop.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false
@@ -153,6 +153,8 @@ module Options = Main_args.Make_opttop_options (struct
     Int_arg_helper.parse spec
       "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
       inline_max_depth
+  let _insn_sched = set insn_sched
+  let _no_insn_sched = clear insn_sched
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
   let _no_unbox_specialised_args = clear unbox_specialised_args
   let _o s = output_name := Some s
@@ -272,5 +274,5 @@ let main () =
   end;
   Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then exit 2;
-  Compmisc.init_path true;
+  Compmisc.init_path ();
   Opttoploop.loop Format.std_formatter

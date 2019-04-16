@@ -1,46 +1,47 @@
 (* TEST
 
+* hassysthreads
 include systhreads
 
 files = "sigint.c"
 
-* libunix (* excludes mingw32/64 and msvc32/64 *)
+** libunix (* excludes mingw32/64 and msvc32/64 *)
 
-** setup-ocamlc.byte-build-env
+*** setup-ocamlc.byte-build-env
 
 program = "${test_build_directory}/signal.byte"
 
-*** ocamlc.byte
+**** ocamlc.byte
 
 program = "sigint"
 all_modules = "sigint.c"
 
-**** ocamlc.byte
+***** ocamlc.byte
 
 program = "${test_build_directory}/signal.byte"
 all_modules = "signal.ml"
 
-***** check-ocamlc.byte-output
-****** run
-******* check-program-output
+****** check-ocamlc.byte-output
+******* run
+******** check-program-output
 
-** setup-ocamlopt.byte-build-env
+*** setup-ocamlopt.byte-build-env
 
 program = "${test_build_directory}/signal.opt"
 
-*** ocamlopt.byte
+**** ocamlopt.byte
 
 program = "sigint"
 all_modules = "sigint.c"
 
-**** ocamlc.byte
+***** ocamlopt.byte
 
 program = "${test_build_directory}/signal.opt"
 all_modules = "signal.ml"
 
-***** check-ocamlopt.byte-output
-****** run
-******* check-program-output
+****** check-ocamlopt.byte-output
+******* run
+******** check-program-output
 
 *)
 

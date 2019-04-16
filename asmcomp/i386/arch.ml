@@ -163,5 +163,4 @@ let stack_alignment =
   match Config.system with
   | "win32" -> 4     (* MSVC *)
   | _ -> 16
-(* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays,
-   even if only MacOS X's ABI formally requires it *)
+  (* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays *)

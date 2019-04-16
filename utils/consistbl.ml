@@ -15,52 +15,75 @@
 
 (* Consistency tables: for checking consistency of module CRCs *)
 
-type t = (string, Digest.t * string) Hashtbl.t
+open Misc
 
-let create () = Hashtbl.create 13
+module Make (Module_name : sig
+  type t
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+  module Tbl : Hashtbl.S with type key = t
+  val compare : t -> t -> int
+end) = struct
+  type t = (Digest.t * filepath) Module_name.Tbl.t
 
-let clear = Hashtbl.clear
+  let create () = Module_name.Tbl.create 13
 
-exception Inconsistency of string * string * string
+  let clear = Module_name.Tbl.clear
 
-exception Not_available of string
+  exception Inconsistency of Module_name.t * filepath * filepath
 
-let check tbl name crc source =
-  try
-    let (old_crc, old_source) = Hashtbl.find tbl name in
-    if crc <> old_crc then raise(Inconsistency(name, source, old_source))
-  with Not_found ->
-    Hashtbl.add tbl name (crc, source)
+  exception Not_available of Module_name.t
 
-let check_noadd tbl name crc source =
-  try
-    let (old_crc, old_source) = Hashtbl.find tbl name in
-    if crc <> old_crc then raise(Inconsistency(name, source, old_source))
-  with Not_found ->
-    raise (Not_available name)
+  let check tbl name crc source =
+    try
+      let (old_crc, old_source) = Module_name.Tbl.find tbl name in
+      if crc <> old_crc then raise(Inconsistency(name, source, old_source))
+    with Not_found ->
+      Module_name.Tbl.add tbl name (crc, source)
 
-let set tbl name crc source = Hashtbl.add tbl name (crc, source)
+  let check_noadd tbl name crc source =
+    try
+      let (old_crc, old_source) = Module_name.Tbl.find tbl name in
+      if crc <> old_crc then raise(Inconsistency(name, source, old_source))
+    with Not_found ->
+      raise (Not_available name)
 
-let source tbl name = snd (Hashtbl.find tbl name)
+  let set tbl name crc source = Module_name.Tbl.add tbl name (crc, source)
 
-let extract l tbl =
-  let l = List.sort_uniq String.compare l in
-  List.fold_left
-    (fun assc name ->
-       try
-         let (crc, _) = Hashtbl.find tbl name in
-           (name, Some crc) :: assc
-       with Not_found ->
-         (name, None) :: assc)
-    [] l
+  let source tbl name = snd (Module_name.Tbl.find tbl name)
 
-let filter p tbl =
-  let to_remove = ref [] in
-  Hashtbl.iter
-    (fun name _ ->
-      if not (p name) then to_remove := name :: !to_remove)
-    tbl;
-  List.iter
-    (fun name ->
-       while Hashtbl.mem tbl name do Hashtbl.remove tbl name done)
-    !to_remove
+  let extract l tbl =
+    let l = List.sort_uniq Module_name.compare l in
+    List.fold_left
+      (fun assc name ->
+         try
+           let (crc, _) = Module_name.Tbl.find tbl name in
+             (name, Some crc) :: assc
+         with Not_found ->
+           (name, None) :: assc)
+      [] l
+
+  let extract_map mod_names tbl =
+    Module_name.Set.fold
+      (fun name result ->
+         try
+           let (crc, _) = Module_name.Tbl.find tbl name in
+           Module_name.Map.add name (Some crc) result
+         with Not_found ->
+           Module_name.Map.add name None result)
+      mod_names
+      Module_name.Map.empty
+
+  let filter p tbl =
+    let to_remove = ref [] in
+    Module_name.Tbl.iter
+      (fun name _ ->
+        if not (p name) then to_remove := name :: !to_remove)
+      tbl;
+    List.iter
+      (fun name ->
+         while Module_name.Tbl.mem tbl name do
+           Module_name.Tbl.remove tbl name
+         done)
+      !to_remove
+end

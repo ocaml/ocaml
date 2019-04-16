@@ -77,7 +77,7 @@ val rev : 'a list -> 'a list
 (** List reversal. *)
 
 val init : int -> (int -> 'a) -> 'a list
-(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+(** [List.init len f] is [[f 0; f 1; ...; f (len-1)]], evaluated left to right.
 
     @raise Invalid_argument if len < 0.
     @since 4.06.0
@@ -133,6 +133,13 @@ val rev_map : ('a -> 'b) -> 'a list -> 'b list
 (** [List.rev_map f l] gives the same result as
    {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
    more efficient. *)
+
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+(** [filter_map f l] applies [f] to every element of [l], filters
+    out the [None] elements and returns the list of the arguments of
+    the [Some] elements.
+    @since 4.08.0
+*)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is

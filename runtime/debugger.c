@@ -180,7 +180,7 @@ void caml_debugger_init(void)
   Store_field(marshal_flags, 0, Val_int(1)); /* Marshal.Closures */
   Store_field(marshal_flags, 1, Val_emptylist);
 
-  a = caml_secure_getenv(_T("CAML_DEBUG_SOCKET"));
+  a = caml_secure_getenv(T("CAML_DEBUG_SOCKET"));
   address = a ? caml_stat_strdup_of_os(a) : NULL;
   if (address == NULL) return;
   if (dbg_addr != NULL) caml_stat_free(dbg_addr);

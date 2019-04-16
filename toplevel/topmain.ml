@@ -48,7 +48,7 @@ let prepare ppf =
       in
       List.for_all (Topdirs.load_file ppf) objects
     in
-    !Toploop.toplevel_startup_hook ();
+    Toploop.run_hooks Toploop.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false
@@ -182,5 +182,5 @@ let main () =
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then exit 2;
-  Compmisc.init_path false;
+  Compmisc.init_path ();
   Toploop.loop Format.std_formatter

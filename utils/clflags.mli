@@ -96,7 +96,6 @@ val absname : bool ref
 val annotations : bool ref
 val binary_annotations : bool ref
 val use_threads : bool ref
-val use_vmthreads : bool ref
 val noassert : bool ref
 val verbose : bool ref
 val noprompt : bool ref
@@ -106,6 +105,7 @@ val noinit : bool ref
 val noversion : bool ref
 val use_prims : string ref
 val use_runtime : string ref
+val plugin : bool ref
 val principal : bool ref
 val real_paths : bool ref
 val recursive_types : bool ref
@@ -113,7 +113,6 @@ val strict_sequence : bool ref
 val strict_formats : bool ref
 val applicative_functors : bool ref
 val make_runtime : bool ref
-val gprofile : bool ref
 val c_compiler : string option ref
 val no_auto_link : bool ref
 val dllpaths : string list ref
@@ -216,6 +215,7 @@ val dump_into_file : bool ref
 (* Support for flags that can also be set from an environment variable *)
 type 'a env_reader = {
   parse : string -> 'a option;
+  print : 'a -> string;
   usage : string;
   env_var : string;
 }
@@ -227,6 +227,9 @@ val error_style : Misc.Error_style.setting option ref
 val error_style_reader : Misc.Error_style.setting env_reader
 
 val unboxed_types : bool ref
+
+val insn_sched : bool ref
+val insn_sched_default : bool
 
 module Compiler_pass : sig
   type t = Parsing | Typing
@@ -248,8 +251,7 @@ val arg_spec : (string * Arg.spec * string) list ref
 val add_arguments : string -> (string * Arg.spec * string) list -> unit
 
 (* [parse_arguments anon_arg usage] will parse the arguments, using
-  the arguments provided in [Clflags.arg_spec]. It allows plugins to
-  provide their own arguments.
+  the arguments provided in [Clflags.arg_spec].
 *)
 val parse_arguments : Arg.anon_fun -> string -> unit
 

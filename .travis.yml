@@ -13,6 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
+dist: xenial
 sudo: false
 language: c
 git:
@@ -31,13 +32,13 @@ matrix:
         - libx11-dev:i386
         - libc6-dev:i386
   - env: CI_KIND=build XARCH=x64
-  - env: CI_KIND=build XARCH=x64 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
+  - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0
   - env: CI_KIND=changes
   - env: CI_KIND=manual
   - env: CI_KIND=check-typo
-  - env: CI_KIND=tests
-  allow_failures:
-  - env: CI_KIND=tests
+#  - env: CI_KIND=tests
+#  allow_failures:
+#  - env: CI_KIND=tests
 addons:
   apt:
     packages:
