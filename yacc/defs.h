@@ -69,8 +69,6 @@
 
 /* defines for constructing filenames */
 
-#define CODE_SUFFIX        ".code.c"
-#define        DEFINES_SUFFIX        ".tab.h"
 #define        OUTPUT_SUFFIX        ".ml"
 #define        VERBOSE_SUFFIX        ".output"
 #define INTERFACE_SUFFIX ".mli"
