@@ -82,8 +82,6 @@ let rec eval_address = function
     end
   | Env.Adot(addr, pos) -> Obj.field (eval_address addr) pos
 
-(* PR#7258: get rid of module aliases before evaluating paths *)
-
 let eval_value_path env path =
   match Env.find_value_address path env with
   | addr -> eval_address addr
