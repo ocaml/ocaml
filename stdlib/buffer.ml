@@ -20,6 +20,13 @@ type t =
   mutable position : int;
   mutable length : int;
   initial_buffer : bytes}
+(* Invariants: all parts of the code preserve the invariants that:
+   - [0 <= b.position <= b.length]
+   - [b.length = Bytes.length b.buffer]
+
+   Note in particular that [b.position = b.length] is legal,
+   it means that the buffer is full and will have to be extended
+   before any further addition. *)
 
 let create n =
  let n = if n < 1 then 1 else n in
@@ -55,9 +62,18 @@ let length b = b.position
 let clear b = b.position <- 0
 
 let reset b =
-  b.position <- 0; b.buffer <- b.initial_buffer;
+  b.position <- 0;
+  b.buffer <- b.initial_buffer;
   b.length <- Bytes.length b.buffer
 
+(* [resize b more] ensures that [b.position + more <= b.length] holds
+   by dynamically extending [b.buffer] if necessary -- and thus
+   increasing [b.length].
+
+   In particular, after [resize b more] is called, a direct access of
+   size [more] at [b.position] will always be in-bounds, so that
+   (unsafe_{get,set}) may be used for performance.
+*)
 let resize b more =
   let old_pos = b.position in
   let old_len = b.length in
@@ -75,11 +91,42 @@ let resize b more =
   b.buffer <- new_buffer;
   b.length <- !new_len;
   assert (b.position + more <= b.length);
-  (* In some strange threaded/finalization cases
-     [old_pos] may differ from [b.position] here;
-     we use either assertions to guard [unsafe_set] calls,
-     so better be memory-safe than sorry *)
-  assert (old_pos + more <= b.length)
+  assert (old_pos + more <= b.length);
+  ()
+  (* Note: there are various situations (preemptive threads, signals and
+     gc finalizers) where OCaml code may be run asynchronously; in
+     particular, there may be a race with another user of [b], changing
+     its mutable fields in the middle of the [resize] call. The Buffer
+     module does not provide any correctness guarantee if that happens,
+     but we must still ensure that the datastructure invariants hold for
+     memory-safety -- as we plan to use [unsafe_{get,set}].
+
+     There are two potential allocation points in this function,
+     [ref] and [Bytes.create], but all reads and writes to the fields
+     of [b] happen before both of them or after both of them.
+
+     We therefore assume that [b.position] may change at these allocations,
+     and check that the [b.position + more <= b.length] postcondition
+     holds for both values of [b.position], before or after the function
+     is called. More precisely, the following invariants must hold if the
+     function returns correctly, in addition to the usual buffer invariants:
+     - [old(b.position) + more <= new(b.length)]
+     - [new(b.position) + more <= new(b.length)]
+     - [old(b.length) <= new(b.length)]
+
+     Note: [b.position + more <= old(b.length)] does *not*
+     hold in general, as it is precisely the case where you need
+     to call [resize] to increase [b.length].
+
+     Note: [assert] above does not mean that we know the conditions
+     always hold, but that the function may return correctly
+     only if they hold.
+
+     Note: the other functions in this module does not need
+     to be checked with this level of scrutiny, given that they
+     read/write the buffer immediately after checking that
+     [b.position + more <= b.length] hold or calling [resize].
+  *)
 
 let add_char b c =
   let pos = b.position in
@@ -209,9 +256,10 @@ let unsafe_add_channel_up_to b ic len =
   if b.position + len > b.length then resize b len;
   let n = really_input_up_to ic b.buffer b.position len in
   (* The assertion below may fail in weird scenario where
-     threaded/finalizer code races on the buffer; we don't
-     support these use-cases, but we want to at least
-     preserve the invariant. *)
+     threaded/finalizer code, run asynchronously during the
+     [really_input_up_to] call, races on the buffer; we don't ensure
+     correctness in this case, but need to preserve the invariants for
+     memory-safety (see discussion of [resize]). *)
   assert (b.position + n <= b.length);
   b.position <- b.position + n;
   n
