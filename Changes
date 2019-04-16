@@ -150,6 +150,9 @@ Working version
 * #2293: Constify "caml_named_value"
   (Stephen Dolan, review by Xavier Leroy)
 
+- #8607: Remove obsolete macros for pre-2002 MSVC support
+  (Stephen Dolan, review by Nicolás Ojeda Bär and David Allsopp)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
