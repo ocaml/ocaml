@@ -623,7 +623,11 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
-       Subst.signature sub sg
+       (* This signature will not be used direcly, it will always be freshened
+          by the caller. So what we do with the scope doesn't really matter. But
+          making it local makes it unlikely that we will ever use the result of
+          this function unfreshened without issue. *)
+       Subst.signature Make_local sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
        let sub =
          List.fold_left
@@ -631,7 +635,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
            Subst.identity
            !real_ids
        in
-       Subst.signature sub sg
+       (* See explanation in the [Twith_typesubst] case above. *)
+       Subst.signature Make_local sub sg
     | _ ->
        sg
     in
@@ -1017,7 +1022,7 @@ end = struct
           if to_remove.subst == Subst.identity then
             component
           else
-            Subst.signature_item to_remove.subst component
+            Subst.signature_item Keep to_remove.subst component
         in
         let component =
           match ids_to_remove with
@@ -1143,8 +1148,9 @@ and transl_modtype_aux env smty =
             (tcstr :: rev_tcstrs, sg)
         )
         ([],init_sg) constraints in
+      let scope = Ctype.create_scope () in
       mkmty (Tmty_with ( body, List.rev rev_tcstrs))
-        (Mtype.freshen (Mty_signature final_sg)) env loc
+        (Mtype.freshen ~scope (Mty_signature final_sg)) env loc
         smty.pmty_attributes
   | Pmty_typeof smod ->
       let env = Env.in_signature false env in
@@ -1631,14 +1637,14 @@ let check_recmodule_inclusion env bindings =
      recursive definitions being accepted.  A good choice appears to be
      the number of mutually recursive declarations. *)
 
-  let subst_and_strengthen env s id mty =
-    Mtype.strengthen ~aliasable:false env (Subst.modtype s mty)
+  let subst_and_strengthen env scope s id mty =
+    Mtype.strengthen ~aliasable:false env (Subst.modtype (Rescope scope) s mty)
       (Subst.module_path s (Pident id)) in
 
   let rec check_incl first_time n env s =
+    let scope = Ctype.create_scope () in
     if n > 0 then begin
       (* Generate fresh names Y_i for the rec. bound module idents X_i *)
-      let scope = Ctype.create_scope () in
       let bindings1 =
         List.map
           (fun (id, name, _mty_decl, _modl, mty_actual, _attrs, _loc) ->
@@ -1652,7 +1658,7 @@ let check_recmodule_inclusion env bindings =
              let mty_actual' =
                if first_time
                then mty_actual
-               else subst_and_strengthen env s id mty_actual in
+               else subst_and_strengthen env scope s id mty_actual in
              Env.add_module ~arg:false id' Mp_present mty_actual' env)
           env bindings1 in
       (* Build the output substitution Y_i <- X_i *)
@@ -1667,8 +1673,8 @@ let check_recmodule_inclusion env bindings =
       (* Base case: check inclusion of s(mty_actual) in s(mty_decl)
          and insert coercion if needed *)
       let check_inclusion (id, id_loc, mty_decl, modl, mty_actual, attrs, loc) =
-        let mty_decl' = Subst.modtype s mty_decl.mty_type
-        and mty_actual' = subst_and_strengthen env s id mty_actual in
+        let mty_decl' = Subst.modtype (Rescope scope) s mty_decl.mty_type
+        and mty_actual' = subst_and_strengthen env scope s id mty_actual in
         let coercion =
           try
             Includemod.modtypes ~loc:modl.mod_loc env mty_actual' mty_decl'
@@ -1858,8 +1864,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           let mty_appl =
             match path with
               Some path ->
-                Subst.modtype (Subst.add_module param path Subst.identity)
-                              mty_res
+                let scope = Ctype.create_scope () in
+                Subst.modtype (Rescope scope)
+                  (Subst.add_module param path Subst.identity)
+                  mty_res
             | None ->
                 if generative then mty_res else
                 let env =
@@ -2524,7 +2532,9 @@ let package_signatures units =
   in
   List.map
     (fun (_, newid, sg) ->
-      let sg = Subst.signature subst sg in
+      (* This signature won't be used for anything, it'll just be saved in a cmi
+         and cmt. *)
+      let sg = Subst.signature Make_local subst sg in
       let md =
         { md_type=Mty_signature sg;
           md_attributes=[];

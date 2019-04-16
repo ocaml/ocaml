@@ -28,7 +28,7 @@ OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 
 INCLUDES=$(addprefix -I $(ROOTDIR)/,utils typing bytecomp asmcomp)
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -bin-annot -g \
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-40-41-42-44-45-48 -bin-annot -g \
    -I $(ROOTDIR)/stdlib -warn-error A \
    -safe-string -strict-sequence -strict-formats
 ifeq "$(FLAMBDA)" "true"

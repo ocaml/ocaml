@@ -677,8 +677,9 @@ OCaml 4.08.0
   `Location.report_error` is removed, use `Location.print_report` instead
   (Armaël Guéneau, review by Thomas Refis)
 
-- MPR#7835, GPR#1980: separate scope from stamp in idents
-  (Thomas Refis, review by Leo White)
+- MPR#7835, GPR#1980, GPR#8548, GPR#8586: separate scope from stamp in idents
+  and explicitly rescope idents when substituting signatures.
+  (Thomas Refis, review by Jacques Garrigue and Leo White)
 
 - GPR#1996: expose Pprintast.longident to help compiler-libs users print
   Longident.t values.
