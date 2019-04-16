@@ -1242,8 +1242,10 @@ CAMLprim value caml_ba_overlap(value va, value vb, value vadims, value vbdims)
       || Wosize_val(vbdims) != b->num_dims)
     caml_invalid_argument("Bigarray.overlap: dims mistmatch");
 
-  a_bytes = caml_ba_num_elts(a) * caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
-  b_bytes = caml_ba_num_elts(b) * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
+  a_bytes = caml_ba_num_elts(a)
+    * caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
+  b_bytes = caml_ba_num_elts(b)
+    * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
 
 #define MAX(X, Y) (((X) < (Y)) ? (Y) : (X))
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
@@ -1253,7 +1255,8 @@ CAMLprim value caml_ba_overlap(value va, value vb, value vadims, value vbdims)
 
   if (src_a >= src_b && src_a < src_b + b_bytes)
     {
-      offset = (uintptr_t) (src_a - src_b) / caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
+      offset = (uintptr_t) (src_a - src_b)
+        / caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
       for (i = b->num_dims - 1; i >= 0; i--)
         {
           Modify(&Field(vadims, i), Val_long(0));
@@ -1263,7 +1266,8 @@ CAMLprim value caml_ba_overlap(value va, value vb, value vadims, value vbdims)
     }
   else if (src_b >= src_a && src_b < src_a + a_bytes)
     {
-      offset = (uintptr_t) (src_b - src_a) / caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
+      offset = (uintptr_t) (src_b - src_a)
+        / caml_ba_element_size[a->flags & CAML_BA_KIND_MASK];
       for (i = a->num_dims - 1; i >= 0; i--)
         {
           Modify(&Field(vbdims, i), Val_long(0));

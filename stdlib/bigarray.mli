@@ -465,7 +465,8 @@ module Genarray :
      can be achieved by applying [Genarray.fill] to a sub-array
      or a slice of [a]. *)
 
-  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> (int * int array * int array) option
+  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t ->
+                   (int * int array * int array) option
   end
 
 (** {1 Zero-dimensional arrays} *)
@@ -623,7 +624,8 @@ module Array1 : sig
       Use with caution and only when the program logic guarantees that
       the access is within bounds. *)
 
-  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> (int * int * int) option
+  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t ->
+                   (int * int * int) option
 end
 
 
@@ -741,7 +743,8 @@ module Array2 :
   (** Like {!Bigarray.Array2.set}, but bounds checking is not always
       performed. *)
 
-  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> (int * (int * int) * (int * int)) option
+  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t ->
+                   (int * (int * int) * (int * int)) option
 end
 
 (** {1 Three-dimensional arrays} *)
@@ -883,8 +886,8 @@ module Array3 :
   (** Like {!Bigarray.Array3.set}, but bounds checking is not always
       performed. *)
 
-
-  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> (int * (int * int * int) * (int * int * int)) option
+  val overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t ->
+                   (int * (int * int * int) * (int * int * int)) option
 end
 
 (** {1 Coercions between generic Bigarrays and fixed-dimension Bigarrays} *)

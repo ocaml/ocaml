@@ -130,7 +130,9 @@ module Genarray = struct
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
 
-  external overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> int array -> int array -> int = "caml_ba_overlap" [@@noalloc]
+  external overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t ->
+                        int array -> int array -> int
+    = "caml_ba_overlap" [@@noalloc]
 
   let overlap a b =
     let a_dims = Array.make (num_dims a) 0 in
@@ -322,7 +324,8 @@ module Array3 = struct
     done;
     ba
   let overlap a b = match Genarray.overlap a b with
-    | Some (len, [| xa; ya; za |], [| xb; yb; zb |]) -> Some (len, (xa, ya, za), (xb, yb, zb))
+    | Some (len, [| xa; ya; za |], [| xb; yb; zb |]) ->
+        Some (len, (xa, ya, za), (xb, yb, zb))
     | Some _ -> assert false
     | None -> None
 end
