@@ -49,8 +49,6 @@ bucket **plhs;
 int name_pool_size;
 char *name_pool;
 
-char line_format[] = "# %d \"%s\"\n";
-
 static unsigned char caml_ident_start[32] =
 "\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
 static unsigned char caml_ident_body[32] =

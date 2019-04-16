@@ -245,7 +245,7 @@ extern int ntokens;
 extern int nvars;
 extern int ntags;
 
-extern char line_format[];
+#define line_format "# %d \"%s\"\n"
 
 extern int   start_symbol;
 extern char  **symbol_name;
