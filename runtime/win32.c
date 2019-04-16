@@ -83,6 +83,45 @@ static void caml_win32_sys_error(int errnum)
   caml_raise_sys_error(msg);
 }
 
+/* Modest attempt at mapping Win32 error codes to POSIX error codes.
+   The __dosmaperr() function from the CRT does a better job but is
+   generally not accessible. */
+static void caml_win32_set_errno(DWORD errcode)
+{
+  switch (errcode) {
+  case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
+    errno = ENOENT; break;
+  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTECT: case ERROR_CANNOT_MAKE:
+    errno = EACCES; break;
+  case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
+    errno = EBUSY; break;
+  case ERROR_NOT_SAME_DEVICE:
+    errno = EXDEV; break;
+  case ERROR_ALREADY_EXISTS:
+    errno = EEXIST; break;
+  default:
+    errno = EINVAL;
+  }
+}
+
+int caml_open_file(char_os * path, int rw)
+{
+  HANDLE h;
+  h = CreateFile(path,
+                 rw ? GENERIC_WRITE : GENERIC_READ,
+                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                 NULL,
+                 rw ? CREATE_ALWAYS : OPEN_EXISTING,
+                 FILE_ATTRIBUTE_NORMAL,
+                 NULL);
+  if (h != INVALID_HANDLE_VALUE) {
+    return _open_osfhandle((intptr_t) h, O_BINARY);
+  } else {
+    caml_win32_set_errno(GetLastError());
+    return -1;
+  }
+}
+
 int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
@@ -772,25 +811,10 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                  MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
                  MOVEFILE_COPY_ALLOWED)) {
     return 0;
+  } else {
+    caml_win32_set_errno(GetLastError());
+    return -1;
   }
-  /* Modest attempt at mapping Win32 error codes to POSIX error codes.
-     The __dosmaperr() function from the CRT does a better job but is
-     generally not accessible. */
-  switch (GetLastError()) {
-  case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
-    errno = ENOENT; break;
-  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTECT: case ERROR_CANNOT_MAKE:
-    errno = EACCES; break;
-  case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
-    errno = EBUSY; break;
-  case ERROR_NOT_SAME_DEVICE:
-    errno = EXDEV; break;
-  case ERROR_ALREADY_EXISTS:
-    errno = EEXIST; break;
-  default:
-    errno = EINVAL;
-  }
-  return -1;
 }
 
 /* Windows Unicode support */

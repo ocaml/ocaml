@@ -71,6 +71,17 @@
 #define EWOULDBLOCK (-1)
 #endif
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+int caml_open_file(char_os * path, int rw)
+{
+  return open(path,
+              rw ? O_WRONLY | O_BINARY | O_CREAT | O_TRUNC : O_RDONLY,
+              0666);
+}
+
 int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;

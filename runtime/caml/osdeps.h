@@ -30,6 +30,15 @@ extern unsigned short caml_win32_revision;
 #include "misc.h"
 #include "memory.h"
 
+/* Open a file descriptor on the given file name.
+   If [rw] is false, the file is opened for reading, in binary mode.
+   If [rw] is true, the file is opened for writing in binary mode.
+   It is created if it does not exist.  
+   The main difference with the standard [open] system call
+   is that, under Windows, the file is opened in SHARE_DELETE
+   mode, so that it can be removed before the descriptor is closed. */
+extern int caml_open_file(char_os * pathname, int rw);
+
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
    [flags] indicates whether [fd] is a socket
    (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
