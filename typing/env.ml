@@ -391,7 +391,7 @@ type t = {
 }
 
 and module_declaration_lazy =
-  (Subst.t * module_declaration, module_declaration) EnvLazy.t
+  (Subst.t * Subst.scoping * module_declaration, module_declaration) EnvLazy.t
 
 and module_components =
   {
@@ -484,8 +484,8 @@ let check_shadowing env = function
   | `Class None | `Class_type None | `Component None ->
       None
 
-let subst_modtype_maker (subst, md) =
-  {md with md_type = Subst.modtype subst md.md_type}
+let subst_modtype_maker (subst, scoping, md) =
+  {md with md_type = Subst.modtype scoping subst md.md_type}
 
 let empty = {
   values = IdTbl.empty; constrs = TycompTbl.empty;
@@ -612,7 +612,7 @@ let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
       flags
   in
   let loc = Location.none in
-  let pm_signature = lazy (Subst.signature Subst.identity sign) in
+  let pm_signature = lazy (Subst.signature Make_local Subst.identity sign) in
   let pm_components =
     let freshening_subst =
       if freshen then (Some Subst.identity) else None in
@@ -820,7 +820,7 @@ let find_module ~alias path env =
                   Hashtbl.find f.fcomp_subst_cache p2
                 with Not_found ->
                   let mty =
-                    Subst.modtype
+                    Subst.modtype (Rescope (Path.scope path))
                       (Subst.add_module f.fcomp_param p2 Subst.identity)
                       f.fcomp_res in
                   Hashtbl.add f.fcomp_subst_cache p2 mty;
@@ -1508,7 +1508,7 @@ let rec scrape_alias env sub ?path mty =
   match mty, path with
     Mty_ident _, _ ->
       let p =
-        match may_subst Subst.modtype sub mty with
+        match may_subst (Subst.modtype Keep) sub mty with
         | Mty_ident p -> p
         | _ -> assert false (* only [Mty_ident]s in [sub] *)
       in
@@ -1712,7 +1712,11 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, Some addr) c.comp_constrs
         | Sig_module(id, pres, md, _, _) ->
-            let md' = EnvLazy.create (sub, md) in
+            let md' =
+              (* The prefixed items get the same scope as [cm_path], which is
+                 the prefix. *)
+              EnvLazy.create (sub, Subst.Rescope (Path.scope cm_path), md)
+            in
             let addr =
               match pres with
               | Mp_absent -> begin
@@ -1739,10 +1743,16 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
               store_module ~freshening_sub ~check:false id addr pres md !env
         | Sig_modtype(id, decl, _) ->
             let fresh_decl =
-              may_subst Subst.modtype_declaration freshening_sub decl
+              (* the fresh_decl is only going in the local temporary env, and
+                 shouldn't be used for anything. So we make the items local. *)
+              may_subst (Subst.modtype_declaration Make_local) freshening_sub
+                decl
             in
             let final_decl =
-              Subst.modtype_declaration prefixing_sub fresh_decl
+              (* The prefixed items get the same scope as [cm_path], which is
+                 the prefix. *)
+              Subst.modtype_declaration (Rescope (Path.scope cm_path))
+                prefixing_sub fresh_decl
             in
             c.comp_modtypes <-
               NameMap.add (Ident.name id) final_decl c.comp_modtypes;
@@ -1762,12 +1772,13 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
       let sub =
         may_subst Subst.compose cm_freshening_subst cm_prefixing_subst
       in
+      let scoping = Subst.Rescope (Path.scope cm_path) in
         Some (Functor_comps {
           fcomp_param = param;
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
-          fcomp_arg = may_map (Subst.modtype sub) ty_arg;
-          fcomp_res = Subst.modtype sub ty_res;
+          fcomp_arg = may_map (Subst.modtype scoping sub) ty_arg;
+          fcomp_res = Subst.modtype scoping sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
   | Mty_ident _
@@ -1897,7 +1908,7 @@ and store_module ~check ~freshening_sub id addr presence md env =
   let module_decl_lazy =
     match freshening_sub with
     | None -> EnvLazy.create_forced md
-    | Some s -> EnvLazy.create (s, md)
+    | Some s -> EnvLazy.create (s, Subst.Rescope (Ident.scope id), md)
   in
   { env with
     modules = IdTbl.add id (Value (module_decl_lazy, addr)) env.modules;
@@ -1937,7 +1948,7 @@ let components_of_functor_appl f env p1 p2 =
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
-    let mty = Subst.modtype sub f.fcomp_res in
+    let mty = Subst.modtype (Rescope (Path.scope p)) sub f.fcomp_res in
     let addr = EnvLazy.create_failed Not_found in
     !check_well_formed_module env Location.(in_file !input_name)
       ("the signature of " ^ Path.name p) mty;
@@ -2059,55 +2070,8 @@ let rec add_signature sg env =
     [] -> env
   | comp :: rem -> add_signature rem (add_item comp env)
 
-let refresh_signature ~scope sg =
-  let rec refresh_bound_idents s sg =
-    let open Subst in
-    function
-      [] -> sg, s
-    | Sig_type(id, td, rs, vis) :: rest ->
-        let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents
-          (add_type id (Pident id') s)
-          (Sig_type(id', td, rs, vis) :: sg)
-          rest
-    | Sig_module(id, pres, md, rs, vis) :: rest ->
-        let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents
-          (add_module id (Pident id') s)
-          (Sig_module (id', pres, md, rs, vis) :: sg)
-          rest
-    | Sig_modtype(id, mtd, vis) :: rest ->
-        let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents
-          (add_modtype id (Mty_ident(Pident id')) s)
-          (Sig_modtype(id', mtd, vis) :: sg)
-          rest
-    | Sig_class(id, cd, rs, vis) :: rest ->
-        (* cheat and pretend they are types cf. PR#6650 *)
-        let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents
-          (add_type id (Pident id') s)
-          (Sig_class(id', cd, rs, vis) :: sg)
-          rest
-    | Sig_class_type(id, ctd, rs, vis) :: rest ->
-        (* cheat and pretend they are types cf. PR#6650 *)
-        let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents
-          (add_type id (Pident id') s)
-          (Sig_class_type(id', ctd, rs, vis) :: sg)
-          rest
-    | Sig_value(id, vd, vis) :: rest ->
-        let id' = Ident.create_local (Ident.name id) in
-        refresh_bound_idents s (Sig_value(id', vd, vis) :: sg) rest
-    | Sig_typext(id, ec, es, vis) :: rest ->
-        let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents s (Sig_typext(id',ec,es,vis) :: sg) rest
-  in
-  let (sg', s') = refresh_bound_idents Subst.identity [] sg in
-  List.rev_map (Subst.signature_item s') sg'
-
 let enter_signature ~scope sg env =
-  let sg = refresh_signature ~scope sg in
+  let sg = Subst.signature (Rescope scope) Subst.identity sg in
   sg, add_signature sg env
 
 (* Open a signature path *)
@@ -2264,7 +2228,7 @@ let persistent_structures_of_dir dir =
 let save_signature_with_transform cmi_transform ~alerts sg modname filename =
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
-  let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
+  let sg = Subst.signature Make_local (Subst.for_saving Subst.identity) sg in
   let cmi =
     Persistent_env.make_cmi persistent_env modname sg alerts
     |> cmi_transform in
