@@ -19,6 +19,9 @@
 
 #include "defs.h"
 
+/* String displayed if we can't malloc a buffer for the UTF-8 conversion */
+static char *unknown = "<unknown; out of memory>";
+
 void fatal(char *msg)
 {
     fprintf(stderr, "%s: f - %s\n", myname, msg);
@@ -33,9 +36,10 @@ void no_space(void)
 }
 
 
-void open_error(char *filename)
+void open_error(char_os *filename)
 {
-    fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, filename);
+    char *u8 = caml_stat_strdup_of_os(filename);
+    fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, (u8 ? u8 : unknown));
     done(2);
 }
 

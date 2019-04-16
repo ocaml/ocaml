@@ -785,7 +785,7 @@ void output_stored_text(void)
     register FILE *in, *out;
 
     fclose(text_file);
-    text_file = fopen(text_file_name, "r");
+    text_file = fopen_os(text_file_name, T("r"));
     if (text_file == NULL)
         open_error(text_file_name);
     in = text_file;
@@ -802,7 +802,7 @@ void output_stored_text(void)
         putc(c, out);
     }
     if (!lflag)
-        fprintf(out, line_format, ++outline + 1, code_file_name);
+        fprintf(out, line_format, ++outline + 1, code_file_name_disp);
 }
 
 
@@ -855,7 +855,7 @@ void output_trailing_text(void)
         if (!lflag)
         {
             ++outline;
-            fprintf(out, line_format, lineno, input_file_name);
+            fprintf(out, line_format, lineno, input_file_name_disp);
         }
         if (c == '\n')
             ++outline;
@@ -867,7 +867,7 @@ void output_trailing_text(void)
         if (!lflag)
         {
             ++outline;
-            fprintf(out, line_format, lineno, input_file_name);
+            fprintf(out, line_format, lineno, input_file_name_disp);
         }
         do { putc(c, out); } while ((c = *++cptr) != '\n');
         ++outline;
@@ -890,18 +890,18 @@ void output_trailing_text(void)
         putc('\n', out);
     }
     if (!lflag)
-        fprintf(out, line_format, ++outline + 1, code_file_name);
+        fprintf(out, line_format, ++outline + 1, code_file_name_disp);
 }
 
 
-void copy_file(FILE **file, char *file_name)
+void copy_file(FILE **file, char_os *file_name)
 {
   register int c, last;
   register FILE *out = code_file;
   int state = 0;
 
   fclose(*file);
-    *file = fopen(file_name, "r");
+    *file = fopen_os(file_name, T("r"));
     if (*file == NULL)
         open_error(file_name);
 
@@ -915,7 +915,7 @@ void copy_file(FILE **file, char *file_name)
       case ' ': state = (state == 2) ? 3 : 0; break;
       case '0':
         if (state == 3){
-          fprintf (out, "%d \"%s", outline+2, code_file_name);
+          fprintf (out, "%d \"%s", outline+2, code_file_name_disp);
           c = '"';
         }
         state = 0;

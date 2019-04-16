@@ -563,7 +563,7 @@ void copy_text(void)
         if (line == 0)
             unterminated_text(t_lineno, t_line, t_cptr);
     }
-    fprintf(f, line_format, lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name_disp);
 
 loop:
     c = *cptr++;
@@ -1286,7 +1286,7 @@ void copy_action(void)
                 item->name);
     }
     fprintf(f, "    Obj.repr(\n");
-    fprintf(f, line_format, lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name_disp);
     for (i = 0; i < cptr - line; i++) fputc(' ', f);
     fputc ('(', f);
 
@@ -1820,8 +1820,8 @@ void print_grammar(void)
 
 void reader(void)
 {
-    virtual_input_file_name = substring (input_file_name, 0,
-                                         strlen (input_file_name));
+    virtual_input_file_name = caml_stat_strdup_of_os(input_file_name);
+    if (!virtual_input_file_name) no_space();
     create_symbol_table();
     read_declarations();
     output_token_type();
