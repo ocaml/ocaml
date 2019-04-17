@@ -216,6 +216,9 @@ Working version
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer,
    reported by Xavier Clerc)
 
+- #8622: Don't generate #! headers over 127 characters.
+  (David Allsopp, review by Xavier Leroy and Stephen Dolan)
+
 - #8635, #8636: Fix a bad side-effect of the -allow-approx option of
   ocamldep. It used to turn some errors into successes
   (Jérémie Dimino)

@@ -56,7 +56,10 @@ LIBRARIES_MAN_SECTION=@libraries_man_section@
 ### Beware: on some systems (e.g. SunOS 4), this will work only if
 ### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
 ### In doubt, set HASHBANGSCRIPTS to false.
-HASHBANGSCRIPTS=@hashbangscripts@
+SHEBANGSCRIPTS=@shebangscripts@
+LONG_SHEBANG=@long_shebang@
+# For compatibility
+HASHBANGSCRIPTS:=$(SHEBANGSCRIPTS)
 
 ### Path to the libtool script
 LIBTOOL = $(TOP_BUILDDIR)/libtool
