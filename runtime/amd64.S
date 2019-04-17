@@ -476,19 +476,19 @@ CFI_ENDPROC
 FUNCTION(G(caml_call_gc1))
 CFI_STARTPROC
         addq    $16, %r15
-        jmpq    GCALL(caml_call_gc)
+        jmp     GCALL(caml_call_gc)
 CFI_ENDPROC
 
 FUNCTION(G(caml_call_gc2))
 CFI_STARTPROC
         addq    $24, %r15
-        jmpq    GCALL(caml_call_gc)
+        jmp     GCALL(caml_call_gc)
 CFI_ENDPROC
 
 FUNCTION(G(caml_call_gc3))
 CFI_STARTPROC
         addq    $32, %r15
-        jmpq    GCALL(caml_call_gc)
+        jmp     GCALL(caml_call_gc)
 CFI_ENDPROC
 
 
