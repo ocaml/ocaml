@@ -131,6 +131,9 @@ endif
 
 TARGETHEADERPROGRAM = target_$(HEADERPROGRAM)
 
+# The shebang test in configure.ac will need updating if any runtime is
+# introduced with a suffix more than one character long (camlheader_ur doesn't
+# matter).
 CAMLHEADERS =\
   camlheader target_camlheader camlheader_ur \
   camlheaderd target_camlheaderd \
@@ -138,10 +141,17 @@ CAMLHEADERS =\
 
 # The % in pattern rules must always match something, hence the slightly strange
 # patterns and $(subst ...) since `camlheader%:` wouldn't match `camlheader`
-ifeq "$(HASHBANGSCRIPTS)" "true"
+ifeq "$(SHEBANGSCRIPTS)" "true"
 camlhead%: $(ROOTDIR)/Makefile.config Makefile
+ifeq "$(LONG_SHEBANG)" "true"
+	echo '#!/bin/sh' > $@
+	echo 'exec "$(BINDIR)/ocamlrun$(subst er,,$*)" "$$0" "$$@"' >> $@
+else
 	echo '#!$(BINDIR)/ocamlrun$(subst er,,$*)' > $@
+endif
 
+# TODO This does not take long shebangs into account (since TARGET_BINDIR is not
+#      yet processed by configure)
 target_%: $(ROOTDIR)/Makefile.config Makefile
 	echo '#!$(TARGET_BINDIR)/ocamlrun$(subst camlheader,,$*)' > $@
 
@@ -192,7 +202,7 @@ target_%: %
 	cp $< $@
 endif
 
-endif # ifeq "$(HASHBANGSCRIPTS)" "true"
+endif # ifeq "$(SHEBANGSCRIPTS)" "true"
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o $@ $^
