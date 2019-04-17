@@ -291,8 +291,13 @@ let emit_call_gc gc =
     assert Config.spacetime;
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
-  I.add (int gc.gc_size) r15;
-  emit_call "caml_call_gc";
+  begin match gc.gc_size with
+  | 16 -> emit_call "caml_call_gc1"
+  | 24 -> emit_call "caml_call_gc2"
+  | 32 -> emit_call "caml_call_gc3"
+  | n ->  I.add (int n) r15;
+          emit_call "caml_call_gc"
+  end;
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
