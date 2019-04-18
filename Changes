@@ -420,6 +420,10 @@ OCaml 4.08.0
 - #8568: Fix a memory leak in mmapped bigarrays
   (Damien Doligez, review by Xavier Leroy and Jérémie Dimino)
 
+- #8627: Require SSE2 for 32-bit mingw port to generate correct code
+  for caml_round with GCC 7.4.
+  (David Allsopp, review by Xavier Leroy)
+
 ### Tools
 
 - GPR#2182: Split Emacs caml-mode as an independent project.
