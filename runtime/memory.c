@@ -216,7 +216,7 @@ static int caml_page_table_modify(uintnat page, int toclear, int toset)
 
 #endif
 
-int caml_page_table_add(int kind, void * start, void * end)
+int caml_page_table_try_add(int kind, void * start, void * end)
 {
   uintnat pstart = (uintnat) start & Page_mask;
   uintnat pend = ((uintnat) end - 1) & Page_mask;
@@ -227,15 +227,21 @@ int caml_page_table_add(int kind, void * start, void * end)
   return 0;
 }
 
-int caml_page_table_remove(int kind, void * start, void * end)
+void caml_page_table_add(int kind, void * start, void * end)
+{
+  if(caml_page_table_try_add(kind, start, end) != 0)
+    caml_fatal_error ("out of memory");
+}
+
+void caml_page_table_remove(int kind, void * start, void * end)
 {
   uintnat pstart = (uintnat) start & Page_mask;
   uintnat pend = ((uintnat) end - 1) & Page_mask;
   uintnat p;
 
   for (p = pstart; p <= pend; p += Page_size)
-    if (caml_page_table_modify(p, kind, 0) != 0) return -1;
-  return 0;
+    if (caml_page_table_modify(p, kind, 0) != 0)
+      caml_fatal_error ("out of memory");
 }
 
 
@@ -322,7 +328,7 @@ void caml_free_for_heap (char *mem)
    some blocks are blue, they must be added to the free list by the
    caller.  All other blocks must have the color [caml_allocation_color(m)].
    The caller must update [caml_allocated_words] if applicable.
-   Return value: 0 if no error; -1 in case of error.
+   Return value: always 0.
 
    See also: caml_compact_heap, which duplicates most of this function.
 */
@@ -337,8 +343,7 @@ int caml_add_to_heap (char *m)
                    (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
-  if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
-    return -1;
+  caml_page_table_add(In_heap, m, m + Chunk_size(m));
 
   /* Chain this heap chunk. */
   {
@@ -370,7 +375,6 @@ int caml_add_to_heap (char *m)
    The caller must insert the blocks into the free list.
    [request] is a number of words and must be less than or equal
    to [Max_wosize].
-   Return NULL when out of memory.
 */
 static value *expand_heap (mlsize_t request)
 {
@@ -384,7 +388,7 @@ static value *expand_heap (mlsize_t request)
   mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n");
-    return NULL;
+    caml_fatal_error ("out of memory");
   }
   remain = Wsize_bsize (Chunk_size (mem));
   prev = hp = mem;
@@ -413,10 +417,7 @@ static value *expand_heap (mlsize_t request)
     }
   }
   CAMLassert (Wosize_hp (mem) >= request);
-  if (caml_add_to_heap ((char *) mem) != 0){
-    caml_free_for_heap ((char *) mem);
-    return NULL;
-  }
+  caml_add_to_heap ((char *) mem);
   return Op_hp (mem);
 }
 
@@ -477,29 +478,17 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
-                                        int raise_oom, uintnat profinfo)
+static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
 
   if (wosize > Max_wosize) {
-    if (raise_oom)
-      caml_raise_out_of_memory ();
-    else
-      return 0;
+    caml_fatal_error ("out of memory");
   }
   hp = caml_fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
-    if (new_block == NULL) {
-      if (!raise_oom)
-        return 0;
-      else if (caml_in_minor_collection)
-        caml_fatal_error ("out of memory");
-      else
-        caml_raise_out_of_memory ();
-    }
     caml_fl_add_blocks ((value) new_block);
     hp = caml_fl_allocate (wosize);
   }
@@ -535,11 +524,6 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   return Val_hp (hp);
 }
 
-CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
-{
-  return caml_alloc_shr_aux(wosize, tag, 0, 0);
-}
-
 #ifdef WITH_PROFINFO
 
 /* Use this to debug problems with macros... */
@@ -548,7 +532,7 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
                                                intnat profinfo)
 {
-  return caml_alloc_shr_aux(wosize, tag, 1, profinfo);
+  return caml_alloc_shr_aux(wosize, tag, profinfo);
 }
 
 CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
@@ -572,7 +556,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 #else
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux (wosize, tag, 1, NO_PROFINFO);
+  return caml_alloc_shr_aux (wosize, tag, NO_PROFINFO);
 }
 #endif
 
@@ -816,7 +800,7 @@ CAMLexport void* caml_stat_alloc_aligned(asize_t sz, int modulo,
   void *result = caml_stat_alloc_aligned_noexc(sz, modulo, b);
   /* malloc() may return NULL if size is 0 */
   if ((result == NULL) && (sz != 0))
-    caml_raise_out_of_memory();
+    caml_fatal_error ("out of memory");
   return result;
 }
 
@@ -850,7 +834,7 @@ CAMLexport caml_stat_block caml_stat_alloc(asize_t sz)
   void *result = caml_stat_alloc_noexc(sz);
   /* malloc() may return NULL if size is 0 */
   if ((result == NULL) && (sz != 0))
-    caml_raise_out_of_memory();
+    caml_fatal_error ("out of memory");
   return result;
 }
 
@@ -895,7 +879,7 @@ CAMLexport caml_stat_block caml_stat_resize(caml_stat_block b, asize_t sz)
 {
   void *result = caml_stat_resize_noexc(b, sz);
   if (result == NULL)
-    caml_raise_out_of_memory();
+    caml_fatal_error ("out of memory");
   return result;
 }
 
@@ -927,7 +911,7 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
 {
   caml_stat_string result = caml_stat_strdup_noexc(s);
   if (result == NULL)
-    caml_raise_out_of_memory();
+    caml_fatal_error ("out of memory");
   return result;
 }
 
@@ -938,7 +922,7 @@ CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
   int slen = wcslen(s);
   wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
   if (result == NULL)
-    caml_raise_out_of_memory();
+    caml_fatal_error ("out of memory");
   memcpy(result, s, (slen + 1)*sizeof(wchar_t));
   return result;
 }

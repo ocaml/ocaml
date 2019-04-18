@@ -192,9 +192,8 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   }
 
   /* Allocate if needed and copy the backtrace buffer */
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
-    return Val_unit;
-  }
+  if (caml_backtrace_buffer == NULL)
+    caml_alloc_backtrace_buffer();
 
   caml_backtrace_pos = bt_size;
   for(i=0; i < caml_backtrace_pos; i++){

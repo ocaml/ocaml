@@ -81,19 +81,11 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 /* Forward declarations */
 
 CAMLnoreturn_start
-static void extern_out_of_memory(void)
-CAMLnoreturn_end;
-
-CAMLnoreturn_start
 static void extern_invalid_argument(char *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
 static void extern_failwith(char *msg)
-CAMLnoreturn_end;
-
-CAMLnoreturn_start
-static void extern_stack_overflow(void)
 CAMLnoreturn_end;
 
 static void extern_replay_trail(void);
@@ -116,17 +108,17 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   asize_t sp_offset = sp - extern_stack;
   struct extern_item * newstack;
 
-  if (newsize >= EXTERN_STACK_MAX_SIZE) extern_stack_overflow();
+  if (newsize >= EXTERN_STACK_MAX_SIZE) {
+    caml_gc_message (0x04, "Stack overflow in marshaling value\n");
+    extern_failwith("output_value: stack overflow");
+  }
   if (extern_stack == extern_stack_init) {
-    newstack = caml_stat_alloc_noexc(sizeof(struct extern_item) * newsize);
-    if (newstack == NULL) extern_stack_overflow();
+    newstack = caml_stat_alloc(sizeof(struct extern_item) * newsize);
     memcpy(newstack, extern_stack_init,
            sizeof(struct extern_item) * EXTERN_STACK_INIT_SIZE);
-  } else {
-    newstack = caml_stat_resize_noexc(extern_stack,
-                                      sizeof(struct extern_item) * newsize);
-    if (newstack == NULL) extern_stack_overflow();
-  }
+  } else
+    newstack = caml_stat_resize(extern_stack,
+                                sizeof(struct extern_item) * newsize);
   extern_stack = newstack;
   extern_stack_limit = newstack + newsize;
   return newstack + sp_offset;
@@ -180,8 +172,7 @@ static void extern_record_location(value obj)
   if (extern_flags & NO_SHARING) return;
   if (extern_trail_cur == extern_trail_limit) {
     struct trail_block * new_block =
-      caml_stat_alloc_noexc(sizeof(struct trail_block));
-    if (new_block == NULL) extern_out_of_memory();
+      caml_stat_alloc(sizeof(struct trail_block));
     new_block->previous = extern_trail_block;
     extern_trail_block = new_block;
     extern_trail_cur = extern_trail_block->entries;
@@ -212,8 +203,7 @@ static struct output_block * extern_output_first, * extern_output_block;
 static void init_extern_output(void)
 {
   extern_userprovided_output = NULL;
-  extern_output_first = caml_stat_alloc_noexc(sizeof(struct output_block));
-  if (extern_output_first == NULL) caml_raise_out_of_memory();
+  extern_output_first = caml_stat_alloc(sizeof(struct output_block));
   extern_output_block = extern_output_first;
   extern_output_block->next = NULL;
   extern_ptr = extern_output_block->data;
@@ -253,8 +243,7 @@ static void grow_extern_output(intnat required)
     extra = 0;
   else
     extra = required;
-  blk = caml_stat_alloc_noexc(sizeof(struct output_block) + extra);
-  if (blk == NULL) extern_out_of_memory();
+  blk = caml_stat_alloc(sizeof(struct output_block) + extra);
   extern_output_block->next = blk;
   extern_output_block = blk;
   extern_output_block->next = NULL;
@@ -278,13 +267,6 @@ static intnat extern_output_length(void)
 
 /* Exception raising, with cleanup */
 
-static void extern_out_of_memory(void)
-{
-  extern_replay_trail();
-  free_extern_output();
-  caml_raise_out_of_memory();
-}
-
 static void extern_invalid_argument(char *msg)
 {
   extern_replay_trail();
@@ -297,14 +279,6 @@ static void extern_failwith(char *msg)
   extern_replay_trail();
   free_extern_output();
   caml_failwith(msg);
-}
-
-static void extern_stack_overflow(void)
-{
-  caml_gc_message (0x04, "Stack overflow in marshaling value\n");
-  extern_replay_trail();
-  free_extern_output();
-  caml_raise_out_of_memory();
 }
 
 /* Conversion to big-endian */
@@ -793,8 +767,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
 
   init_extern_output();
   data_len = extern_value(v, flags, header, &header_len);
-  res = caml_stat_alloc_noexc(header_len + data_len);
-  if (res == NULL) extern_out_of_memory();
+  res = caml_stat_alloc(header_len + data_len);
   *buf = res;
   *len = header_len + data_len;
   memcpy(res, header, header_len);

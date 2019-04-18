@@ -46,9 +46,8 @@ val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
     [protect] can be used to enforce local invariants whether [work
     ()] returns normally or raises an exception. However, it does not
     protect against unexpected exceptions raised inside [finally ()]
-    such as {!Stdlib.Out_of_memory}, {!Stdlib.Stack_overflow}, or
-    asynchronous exceptions raised by signal handlers
-    (e.g. {!Sys.Break}).
+    such as {!Stdlib.Stack_overflow}, or asynchronous exceptions
+    raised by signal handlers (e.g. {!Sys.Break}).
 
     Note: It is a {e programming error} if other kinds of exceptions
     are raised by [finally], as any exception raised in [work ()] will

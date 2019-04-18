@@ -46,7 +46,6 @@ CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
 #define caml_alloc_shr_preserving_profinfo(size, tag, header) \
   caml_alloc_shr(size, tag)
 #endif /* WITH_PROFINFO */
-CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
@@ -71,6 +70,10 @@ CAMLextern int caml_huge_fallback_count;
    to blocks returned by the [caml_stat_*] functions below. Attempting to use
    these functions on memory blocks allocated by a different memory manager
    (e.g. the one from the C runtime) will cause undefined behaviour.
+
+   None of these functions require the runtime lock to be held. They
+   are however not thread safe. Several threads racing on allocations
+   or deallocations will case undefined behavior.
 */
 typedef void* caml_stat_block;
 
@@ -96,9 +99,9 @@ CAMLextern void caml_stat_destroy_pool(void);
 
 #endif /* CAML_INTERNALS */
 
-/* [caml_stat_alloc(size)] allocates a memory block of the requested [size]
-   (in bytes) and returns a pointer to it. It throws an OCaml exception in case
-   the request fails, and so requires the runtime lock to be held.
+/* [caml_stat_alloc(size)] allocates a memory block of the requested
+   [size] (in bytes) and returns a pointer to it. It exits the program
+   with a fatal error in case the request fails.
 */
 CAMLextern caml_stat_block caml_stat_alloc(asize_t);
 
@@ -111,14 +114,13 @@ CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
 /* [caml_stat_alloc_aligned(size, modulo, block*)] allocates a memory block of
    the requested [size] (in bytes), the starting address of which is aligned to
    the provided [modulo] value. The function returns the aligned address, as
-   well as the unaligned [block] (as an output parameter). It throws an OCaml
-   exception in case the request fails, and so requires the runtime lock.
+   well as the unaligned [block] (as an output parameter). It exits the program
+   with a fatal error in case the request fails.
 */
 CAMLextern void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
 
 /* [caml_stat_alloc_aligned_noexc] is a variant of [caml_stat_alloc_aligned]
-   that returns NULL in case the request fails, and doesn't require the runtime
-   lock to be held.
+   that returns NULL in case the request fails.
 */
 CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
                                                caml_stat_block*);
@@ -138,13 +140,13 @@ CAMLextern void caml_stat_free(caml_stat_block);
    address is returned by the function). The content of the [block] is preserved
    up to the smaller of the new and old sizes, even if the block is moved to a
    new location. If the new size is larger, the value of the newly allocated
-   portion is indeterminate. The function throws an OCaml exception in case the
-   request fails, and so requires the runtime lock to be held.
+   portion is indeterminate. It exits the program with a fatal error in case
+   the request fails.
 */
 CAMLextern caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
 
 /* [caml_stat_resize_noexc] is a variant of [caml_stat_resize] that returns NULL
-   in case the request fails, and doesn't require the runtime lock.
+   in case the request fails.
 */
 CAMLextern caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
 
@@ -153,8 +155,8 @@ CAMLextern caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
 typedef char* caml_stat_string;
 
 /* [caml_stat_strdup(s)] returns a pointer to a heap-allocated string which is a
-   copy of the NULL-terminated string [s]. It throws an OCaml exception in case
-   the request fails, and so requires the runtime lock to be held.
+   copy of the NULL-terminated string [s]. It exits the program with a fatal
+   error in case the request fails.
 */
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
 #ifdef _WIN32
@@ -162,14 +164,14 @@ CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
 #endif
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
-   in case the request fails, and doesn't require the runtime lock.
+   in case the request fails.
 */
 CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
 
 /* [caml_stat_strconcat(nargs, strings)] concatenates NULL-terminated [strings]
    (an array of [char*] of size [nargs]) into a new string, dropping all NULLs,
-   except for the very last one. It throws an OCaml exception in case the
-   request fails, and so requires the runtime lock to be held.
+   except for the very last one. It exits the program with a fatal error in
+   case the request fails.
 */
 CAMLextern caml_stat_string caml_stat_strconcat(int n, ...);
 #ifdef _WIN32
@@ -191,8 +193,9 @@ extern uintnat caml_use_huge_pages;
 #endif
 
 
-int caml_page_table_add(int kind, void * start, void * end);
-int caml_page_table_remove(int kind, void * start, void * end);
+int caml_page_table_try_add(int kind, void * start, void * end);
+void caml_page_table_add(int kind, void * start, void * end);
+void caml_page_table_remove(int kind, void * start, void * end);
 int caml_page_table_initialize(mlsize_t bytesize);
 
 #ifdef DEBUG

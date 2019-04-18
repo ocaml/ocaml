@@ -211,15 +211,6 @@ exception Not_found
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
-exception Out_of_memory
-\end{ocamldoccode}
-\index{Outofmemory@\verb`Out_of_memory`}
-\begin{ocamldocdescription}
-   Exception raised by the garbage collector
-   when there is insufficient memory to complete the computation.
-\end{ocamldocdescription}
-
-\begin{ocamldoccode}
 exception Stack_overflow
 \end{ocamldoccode}
 \index{Stackoverflow@\verb`Stack_overflow`}

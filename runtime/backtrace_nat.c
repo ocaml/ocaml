@@ -65,12 +65,10 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
   }
 }
 
-int caml_alloc_backtrace_buffer(void){
+void caml_alloc_backtrace_buffer(void){
   CAMLassert(caml_backtrace_pos == 0);
   caml_backtrace_buffer =
-    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
-  if (caml_backtrace_buffer == NULL) return -1;
-  return 0;
+    caml_stat_alloc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
 }
 
 /* Stores the return addresses contained in the given stack fragment
@@ -86,8 +84,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     caml_backtrace_last_exn = exn;
   }
 
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
-    return;
+  if (caml_backtrace_buffer == NULL)
+    caml_alloc_backtrace_buffer();
 
   /* iterate on each frame  */
   while (1) {

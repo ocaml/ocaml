@@ -561,17 +561,8 @@ CAMLprim value caml_array_concat(value al)
     lengths = static_lengths;
   } else {
     arrays = caml_stat_alloc(n * sizeof(value));
-    offsets = caml_stat_alloc_noexc(n * sizeof(intnat));
-    if (offsets == NULL) {
-      caml_stat_free(arrays);
-      caml_raise_out_of_memory();
-    }
-    lengths = caml_stat_alloc_noexc(n * sizeof(value));
-    if (lengths == NULL) {
-      caml_stat_free(offsets);
-      caml_stat_free(arrays);
-      caml_raise_out_of_memory();
-    }
+    offsets = caml_stat_alloc(n * sizeof(intnat));
+    lengths = caml_stat_alloc(n * sizeof(value));
   }
   /* Build the parameters to caml_array_gather */
   for (i = 0, l = al; l != Val_int(0); l = Field(l, 1), i++) {

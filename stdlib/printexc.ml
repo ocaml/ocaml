@@ -53,7 +53,7 @@ let use_printers x =
   conv !printers
 
 let to_string_default = function
-  | Out_of_memory -> "Out of memory"
+  | Out_of_memory [@ocaml.warning "-3"] -> "Out of memory"
   | Stack_overflow -> "Stack overflow"
   | Match_failure(file, line, char) ->
       sprintf locfmt file line char (char+5) "Pattern matching failed"
@@ -280,40 +280,35 @@ let empty_backtrace : raw_backtrace = Obj.obj (Obj.new_block Obj.abstract_tag 0)
 let try_get_raw_backtrace () =
   try
     get_raw_backtrace ()
-  with _ (* Out_of_memory? *) ->
+  with _ ->
     empty_backtrace
 
 let handle_uncaught_exception' exn debugger_in_use =
-  try
-    (* Get the backtrace now, in case one of the [at_exit] function
-       destroys it. *)
-    let raw_backtrace =
-      if debugger_in_use (* Same test as in [runtime/printexc.c] *) then
-        empty_backtrace
-      else
-        try_get_raw_backtrace ()
-    in
-    (try Stdlib.do_at_exit () with _ -> ());
-    match !uncaught_exception_handler with
-    | None ->
+  (* Get the backtrace now, in case one of the [at_exit] function
+     destroys it. *)
+  let raw_backtrace =
+    if debugger_in_use (* Same test as in [runtime/printexc.c] *) then
+      empty_backtrace
+    else
+      try_get_raw_backtrace ()
+  in
+  (try Stdlib.do_at_exit () with _ -> ());
+  match !uncaught_exception_handler with
+  | None ->
+      eprintf "Fatal error: exception %s\n" (to_string exn);
+      print_raw_backtrace stderr raw_backtrace;
+      flush stderr
+  | Some handler ->
+      try
+        handler exn raw_backtrace
+      with exn' ->
+        let raw_backtrace' = try_get_raw_backtrace () in
         eprintf "Fatal error: exception %s\n" (to_string exn);
         print_raw_backtrace stderr raw_backtrace;
+        eprintf "Fatal error in uncaught exception handler: exception %s\n"
+          (to_string exn');
+        print_raw_backtrace stderr raw_backtrace';
         flush stderr
-    | Some handler ->
-        try
-          handler exn raw_backtrace
-        with exn' ->
-          let raw_backtrace' = try_get_raw_backtrace () in
-          eprintf "Fatal error: exception %s\n" (to_string exn);
-          print_raw_backtrace stderr raw_backtrace;
-          eprintf "Fatal error in uncaught exception handler: exception %s\n"
-            (to_string exn');
-          print_raw_backtrace stderr raw_backtrace';
-          flush stderr
-  with
-    | Out_of_memory ->
-        prerr_endline
-          "Fatal error: out of memory in uncaught exception handler"
 
 (* This function is called by [caml_fatal_uncaught_exception] in
    [runtime/printexc.c] which expects no exception is raised. *)

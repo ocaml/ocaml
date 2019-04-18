@@ -93,8 +93,7 @@ CAMLexport char * caml_format_exception(value exn)
 
   *buf.ptr = 0;              /* Terminate string */
   i = buf.ptr - buf.data + 1;
-  res = caml_stat_alloc_noexc(i);
-  if (res == NULL) return NULL;
+  res = caml_stat_alloc(i);
   memmove(res, buf.data, i);
   return res;
 }

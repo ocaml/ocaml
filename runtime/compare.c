@@ -47,18 +47,6 @@ static void compare_free_stack(struct compare_stack* stk)
   }
 }
 
-/* Same, then raise Out_of_memory */
-CAMLnoreturn_start
-static void compare_stack_overflow(struct compare_stack* stk)
-CAMLnoreturn_end;
-
-static void compare_stack_overflow(struct compare_stack* stk)
-{
-  caml_gc_message (0x04, "Stack overflow in structural comparison\n");
-  compare_free_stack(stk);
-  caml_raise_out_of_memory();
-}
-
 /* Grow the compare stack */
 static struct compare_item * compare_resize_stack(struct compare_stack* stk,
                                                   struct compare_item * sp)
@@ -69,16 +57,18 @@ static struct compare_item * compare_resize_stack(struct compare_stack* stk,
 
   if (stk->stack == stk->init_stack) {
     newsize = COMPARE_STACK_MIN_ALLOC_SIZE;
-    newstack = caml_stat_alloc_noexc(sizeof(struct compare_item) * newsize);
-    if (newstack == NULL) compare_stack_overflow(stk);
+    newstack = caml_stat_alloc(sizeof(struct compare_item) * newsize);
     memcpy(newstack, stk->init_stack,
            sizeof(struct compare_item) * COMPARE_STACK_INIT_SIZE);
   } else {
     newsize = 2 * (stk->limit - stk->stack);
-    if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow(stk);
-    newstack = caml_stat_resize_noexc(stk->stack,
-                                      sizeof(struct compare_item) * newsize);
-    if (newstack == NULL) compare_stack_overflow(stk);
+    if (newsize >= COMPARE_STACK_MAX_SIZE) {
+      caml_gc_message (0x04, "Stack overflow in structural comparison\n");
+      compare_free_stack(stk);
+      caml_failwith("structural comparison: stack overflow");
+    }
+    newstack = caml_stat_resize(stk->stack,
+                                sizeof(struct compare_item) * newsize);
   }
   stk->stack = newstack;
   stk->limit = newstack + newsize;

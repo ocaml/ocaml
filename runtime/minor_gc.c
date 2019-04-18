@@ -75,8 +75,6 @@ CAMLexport struct caml_custom_table
 /* Table of custom blocks in the minor heap that contain finalizers
    or GC speed parameters. */
 
-int caml_in_minor_collection = 0;
-
 double caml_extra_heap_resources_minor = 0;
 
 /* [sz] and [rsv] are numbers of entries */
@@ -87,9 +85,8 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (void *) caml_stat_alloc_noexc((tbl->size + tbl->reserve) *
-                                             element_size);
-  if (new_table == NULL) caml_fatal_error ("not enough memory");
+  new_table = (void *) caml_stat_alloc((tbl->size + tbl->reserve) *
+                                        element_size);
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
@@ -147,10 +144,8 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
-  new_heap = caml_stat_alloc_aligned_noexc(bsz, 0, &new_heap_base);
-  if (new_heap == NULL) caml_raise_out_of_memory();
-  if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
-    caml_raise_out_of_memory();
+  new_heap = caml_stat_alloc_aligned(bsz, 0, &new_heap_base);
+  caml_page_table_add(In_young, new_heap, new_heap + bsz);
 
   if (caml_young_start != NULL){
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
@@ -347,7 +342,6 @@ void caml_empty_minor_heap (void)
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
     CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
-    caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<");
     caml_oldify_local_roots();
     CAML_INSTR_TIME (tmr, "minor/local_roots");
@@ -398,7 +392,6 @@ void caml_empty_minor_heap (void)
     clear_table ((struct generic_table *) &caml_custom_table);
     caml_extra_heap_resources_minor = 0;
     caml_gc_message (0x02, ">");
-    caml_in_minor_collection = 0;
     caml_final_empty_young ();
     CAML_INSTR_TIME (tmr, "minor/finalized");
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
@@ -494,7 +487,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 
 static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
- char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
+ char * msg_intr_int, char *msg_threshold, char *msg_growing)
 {
   CAMLassert (tbl->ptr == tbl->limit);
   CAMLassert (tbl->limit <= tbl->end);
@@ -516,10 +509,7 @@ static void realloc_generic_table
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;
     caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
-    tbl->base = caml_stat_resize_noexc (tbl->base, sz);
-    if (tbl->base == NULL){
-      caml_fatal_error ("%s", msg_error);
-    }
+    tbl->base = caml_stat_resize (tbl->base, sz);
     tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
     tbl->threshold = tbl->base + tbl->size * element_size;
     tbl->ptr = tbl->base + cur_ptr;
@@ -533,8 +523,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     ((struct generic_table *) tbl, sizeof (value *),
      "request_minor/realloc_ref_table@",
      "ref_table threshold crossed\n",
-     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-     "ref_table overflow");
+     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n");
 }
 
 void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
@@ -543,8 +532,7 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
     ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
      "request_minor/realloc_ephe_ref_table@",
      "ephe_ref_table threshold crossed\n",
-     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-     "ephe_ref_table overflow");
+     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n");
 }
 
 void caml_realloc_custom_table (struct caml_custom_table *tbl)
@@ -553,6 +541,5 @@ void caml_realloc_custom_table (struct caml_custom_table *tbl)
     ((struct generic_table *) tbl, sizeof (struct caml_custom_elt),
      "request_minor/realloc_custom_table@",
      "custom_table threshold crossed\n",
-     "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-     "custom_table overflow");
+     "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n");
 }

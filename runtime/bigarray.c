@@ -102,14 +102,14 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     num_elts = 1;
     for (i = 0; i < num_dims; i++) {
       if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
-        caml_raise_out_of_memory();
+        caml_fatal_error("out of memory");
     }
     if (caml_umul_overflow(num_elts,
                            caml_ba_element_size[flags & CAML_BA_KIND_MASK],
                            &size))
-      caml_raise_out_of_memory();
+      caml_fatal_error("out of memory");
     data = malloc(size);
-    if (data == NULL && size != 0) caml_raise_out_of_memory();
+    if (data == NULL && size != 0) caml_fatal_error("out of memory");
     flags |= CAML_BA_MANAGED;
   }
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
@@ -922,7 +922,7 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
   } else {
     /* Otherwise, create proxy and attach it to both b1 and b2 */
     proxy = malloc(sizeof(struct caml_ba_proxy));
-    if (proxy == NULL) caml_raise_out_of_memory();
+    if (proxy == NULL) caml_fatal_error("out of memory");
     proxy->refcount = 2;      /* original array + sub array */
     proxy->data = b1->data;
     proxy->size =

@@ -166,8 +166,7 @@ typedef CRITICAL_SECTION * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
-  if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
+  st_mutex m = caml_stat_alloc(sizeof(CRITICAL_SECTION));
   InitializeCriticalSection(m);
   *res = m;
   return 0;
@@ -230,8 +229,7 @@ typedef struct st_condvar_struct {
 
 static DWORD st_condvar_create(st_condvar * res)
 {
-  st_condvar c = caml_stat_alloc_noexc(sizeof(struct st_condvar_struct));
-  if (c == NULL) return ERROR_NOT_ENOUGH_MEMORY;
+  st_condvar c = caml_stat_alloc(sizeof(struct st_condvar_struct));
   InitializeCriticalSection(&c->lock);
   c->waiters = NULL;
   *res = c;
@@ -374,7 +372,6 @@ static void st_check_error(DWORD retcode, char * msg)
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
   ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL,
                       retcode,

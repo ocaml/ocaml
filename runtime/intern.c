@@ -263,34 +263,25 @@ static void intern_free_stack(void)
   }
 }
 
-/* Same, then raise Out_of_memory */
-CAMLnoreturn_start
-static void intern_stack_overflow(void)
-CAMLnoreturn_end;
-
-static void intern_stack_overflow(void)
-{
-  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
-  intern_free_stack();
-  caml_raise_out_of_memory();
-}
-
 static struct intern_item * intern_resize_stack(struct intern_item * sp)
 {
   asize_t newsize = 2 * (intern_stack_limit - intern_stack);
   asize_t sp_offset = sp - intern_stack;
   struct intern_item * newstack;
 
-  if (newsize >= INTERN_STACK_MAX_SIZE) intern_stack_overflow();
+  if (newsize >= INTERN_STACK_MAX_SIZE) {
+    caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
+    intern_free_stack();
+    caml_failwith("input_value: stack overflow");
+  }
+
   if (intern_stack == intern_stack_init) {
-    newstack = caml_stat_alloc_noexc(sizeof(struct intern_item) * newsize);
-    if (newstack == NULL) intern_stack_overflow();
+    newstack = caml_stat_alloc(sizeof(struct intern_item) * newsize);
     memcpy(newstack, intern_stack_init,
            sizeof(struct intern_item) * INTERN_STACK_INIT_SIZE);
   } else {
-    newstack = caml_stat_resize_noexc(intern_stack,
-                                      sizeof(struct intern_item) * newsize);
-    if (newstack == NULL) intern_stack_overflow();
+    newstack = caml_stat_resize(intern_stack,
+                                sizeof(struct intern_item) * newsize);
   }
   intern_stack = newstack;
   intern_stack_limit = newstack + newsize;
@@ -612,10 +603,8 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
     intern_extra_block = caml_alloc_for_heap(request);
-    if (intern_extra_block == NULL) {
-      intern_cleanup();
-      caml_raise_out_of_memory();
-    }
+    if (intern_extra_block == NULL)
+      caml_fatal_error ("out of memory");
     intern_color =
       outside_heap ? Caml_black : caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
@@ -629,13 +618,9 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
         intern_block = caml_alloc_small (wosize, String_tag);
       }
     }else{
-      intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
+      intern_block = caml_alloc_shr (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the intern_color assertion below */
-      if (intern_block == 0) {
-        intern_cleanup();
-        caml_raise_out_of_memory();
-      }
     }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
@@ -645,12 +630,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
   }
   obj_counter = 0;
   if (num_objects > 0) {
-    intern_obj_table =
-      (value *) caml_stat_alloc_noexc(num_objects * sizeof(value));
-    if (intern_obj_table == NULL) {
-      intern_cleanup();
-      caml_raise_out_of_memory();
-    }
+    intern_obj_table = (value *) caml_stat_alloc(num_objects * sizeof(value));
   } else
     CAMLassert(intern_obj_table == NULL);
 }

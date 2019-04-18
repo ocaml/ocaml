@@ -78,8 +78,10 @@ exception Not_found
    not be found. *)
 
 exception Out_of_memory
-(** Exception raised by the garbage collector when there is
-   insufficient memory to complete the computation. *)
+  [@ocaml.deprecated "[Out_of_memory] is no longer raised by the OCaml runtime"]
+(** @deprecated [Out_of_memory] was formally raised by the OCaml
+  runtime when there was insufficient memory. Instead, it now produces
+  a fatal error. *)
 
 exception Stack_overflow
 (** Exception raised by the bytecode interpreter when the evaluation
