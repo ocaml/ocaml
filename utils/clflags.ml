@@ -129,6 +129,7 @@ let dont_record_crc_unit : string option ref = ref None
 let bs_only = ref false
 let bs_gentype = ref None
 let no_assert_false = ref false
+let bs_quiet = ref false
 #end
 
 type color_setting = Auto | Always | Never

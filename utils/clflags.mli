@@ -109,6 +109,7 @@ val dont_record_crc_unit : string option ref
 val bs_only : bool ref (* set true on bs top*)
 val bs_gentype : string option ref
 val no_assert_false : bool ref
+val bs_quiet : bool ref 
 #end
 
 type color_setting = Auto | Always | Never
