@@ -153,6 +153,10 @@ Working version
 - #8607: Remove obsolete macros for pre-2002 MSVC support
   (Stephen Dolan, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #8627: Require SSE2 for 32-bit mingw port to generate correct code
+  for caml_round with GCC 7.4.
+  (David Allsopp, review by ???)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
