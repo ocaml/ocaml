@@ -486,11 +486,6 @@ static inline value caml_alloc_shr_aux(mlsize_t wosize, tag_t tag,
   header_t *hp;
   value *new_block;
 
-  // We temporarily change the tag of the newly allocated  block to
-  // Abstract_tag, because we may trigger the GC and we want to avoid
-  // scanning this uninitialized block.
-  tag_t tmp_tag = effect >= CAML_ALLOC_EFFECT_GC ? Abstract_tag : tag;
-
   if (wosize > Max_wosize) {
     caml_fatal_error ("out of memory");
   }
@@ -506,17 +501,15 @@ static inline value caml_alloc_shr_aux(mlsize_t wosize, tag_t tag,
   /* Inline expansion of caml_allocation_color. */
   if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
-    Hd_hp (hp) = Make_header_with_profinfo (wosize, tmp_tag,
-                                            Caml_black, profinfo);
+    Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_black, profinfo);
   }else{
     CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
                 && (addr)hp < (addr)caml_gc_sweep_hp));
-    Hd_hp (hp) = Make_header_with_profinfo (wosize, tmp_tag,
-                                            Caml_white, profinfo);
+    Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_white, profinfo);
   }
   CAMLassert (Hd_hp (hp)
-    == Make_header_with_profinfo (wosize, tmp_tag, caml_allocation_color (hp),
+    == Make_header_with_profinfo (wosize, tag, caml_allocation_color (hp),
                                   profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > caml_minor_heap_wsz){
@@ -531,22 +524,11 @@ static inline value caml_alloc_shr_aux(mlsize_t wosize, tag_t tag,
     }
   }
 #endif
-  if(effect >= CAML_ALLOC_EFFECT_GC) {
 #ifdef WITH_STATMEMPROF
-    value res = caml_memprof_track_alloc_shr(tag, Val_hp (hp));
-#else
-    value res = Val_hp (hp);
+  if(effect >= CAML_ALLOC_EFFECT_TRACK)
+    caml_memprof_postpone_track_alloc_shr(Val_hp (hp));
 #endif
-    res = caml_check_urgent_gc(res);
-    Tag_val(res) = tag;
-    return res;
-  } else {
-#ifdef WITH_STATMEMPROF
-    if(effect >= CAML_ALLOC_EFFECT_TRACK)
-      caml_memprof_postpone_track_alloc_shr(Val_hp (hp));
-#endif
-    return Val_hp (hp);
-  }
+  return Val_hp (hp);
 }
 
 #ifdef WITH_PROFINFO

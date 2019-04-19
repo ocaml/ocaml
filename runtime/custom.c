@@ -68,9 +68,10 @@ static value alloc_custom_gen (struct custom_operations * ops,
       }
     }
   } else {
-    result = caml_alloc_shr_effect(wosize, Custom_tag, CAML_ALLOC_EFFECT_GC);
+    result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     caml_adjust_gc_speed(mem, max_major);
+    result = caml_check_urgent_gc(result);
   }
   CAMLreturn(result);
 }

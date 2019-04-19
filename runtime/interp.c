@@ -543,13 +543,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, 1 + nvars, Closure_tag);
         for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
       } else {
-        value block;
         /* PR#6385: must allocate in major heap */
-        Setup_for_track_gc;
-        block = caml_alloc_shr_effect(1 + nvars, Closure_tag,
-                                      CAML_ALLOC_EFFECT_GC);
-        Restore_after_track_gc;
-        accu = block;
+        /* caml_alloc_shr and caml_initialize never trigger a GC,
+           so no need to Setup_for_gc */
+        accu = caml_alloc_shr(1 + nvars, Closure_tag);
         for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 1), sp[i]);
       }
       /* The code pointer is not in the heap, so no need to go through
@@ -557,6 +554,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Code_val(accu) = pc + *pc;
       pc++;
       sp += nvars;
+      if(nvars >= Max_young_wosize) {
+        Setup_for_track_gc;
+        caml_check_urgent_gc(Val_unit);
+        Restore_after_track_gc;
+      }
       Next;
     }
 
@@ -572,13 +574,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
         p = &Field(accu, nfuncs * 2 - 1);
         for (i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
-        value block;
         /* PR#6385: must allocate in major heap */
-        Setup_for_track_gc;
-        block = caml_alloc_shr_effect(blksize, Closure_tag,
-                                      CAML_ALLOC_EFFECT_GC);
-        Restore_after_track_gc;
-        accu = block;
+        /* caml_alloc_shr and caml_initialize never trigger a GC,
+           so no need to Setup_for_gc */
+        accu = caml_alloc_shr(blksize, Closure_tag);
         p = &Field(accu, nfuncs * 2 - 1);
         for (i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
@@ -597,6 +596,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
         p++;
       }
       pc += nfuncs;
+      if(blksize > Max_young_wosize) {
+        Setup_for_track_gc;
+        caml_check_urgent_gc(Val_unit);
+        Restore_after_track_gc;
+      }
       Next;
     }
 
@@ -669,14 +673,16 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(block, wosize, tag);
         Field(block, 0) = accu;
         for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+        accu = block;
       } else {
-        Setup_for_track_gc;
-        block = caml_alloc_shr_effect(wosize, tag, CAML_ALLOC_EFFECT_GC);
-        Restore_after_track_gc;
+        block = caml_alloc_shr(wosize, tag);
         caml_initialize(&Field(block, 0), accu);
         for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
+        accu = block;
+        Setup_for_track_gc;
+        caml_check_urgent_gc(Val_unit);
+        Restore_after_track_gc;
       }
-      accu = block;
       Next;
     }
     Instruct(MAKEBLOCK1): {
@@ -715,10 +721,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (size <= Max_young_wosize / Double_wosize) {
         Alloc_small(block, size * Double_wosize, Double_array_tag);
       } else {
-        Setup_for_track_gc;
-        block = caml_alloc_shr_effect(size * Double_wosize, Double_array_tag,
-                                      CAML_ALLOC_EFFECT_GC);
-        Restore_after_track_gc;
+        block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
       }
       Store_double_flat_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
@@ -726,6 +729,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
         ++ sp;
       }
       accu = block;
+      if (size > Max_young_wosize / Double_wosize) {
+        Setup_for_track_gc;
+        block = caml_check_urgent_gc(block);
+        Restore_after_track_gc;
+      }
       Next;
     }
 

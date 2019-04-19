@@ -50,10 +50,11 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
       }
     }
   }else{
-    result = caml_alloc_shr_effect (wosize, tag, CAML_ALLOC_EFFECT_GC);
+    result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
+    result = caml_check_urgent_gc (result);
   }
   return result;
 }
@@ -102,7 +103,8 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   if (wosize <= Max_young_wosize) {
     Alloc_small (result, wosize, String_tag);
   }else{
-    result = caml_alloc_shr_effect (wosize, String_tag, CAML_ALLOC_EFFECT_GC);
+    result = caml_alloc_shr (wosize, String_tag);
+    result = caml_check_urgent_gc (result);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;

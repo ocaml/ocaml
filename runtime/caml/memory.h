@@ -42,8 +42,6 @@ enum caml_alloc_effect {
   CAML_ALLOC_EFFECT_NONE,       /* No effect. */
   CAML_ALLOC_EFFECT_TRACK,      /* As previoulsy, and the allocation is
                                    taken into account by memprof. */
-  CAML_ALLOC_EFFECT_GC          /* As previously, and the GC may
-                                   possibly get called. */
 };
 
 CAMLextern value caml_alloc_shr_effect (mlsize_t, tag_t,
