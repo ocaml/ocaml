@@ -1075,8 +1075,8 @@ OCaml 4.08.0
 - #2231: Env: always freshen persistent signatures before using them
   (Thomas Refis and Leo White, review by Gabriel Radanne)
 
-- #7851: Module type of allows to transform a malformed module type into
-  a vicious signature, breaking soundness
+- #7851, #8570: Module type of allows to transform a malformed module type
+  into a vicious signature, breaking soundness
   (Jacques Garrigue, review by Leo White)
 
 - #7923, #2259: fix regression in FlexDLL bootstrapped build caused by
