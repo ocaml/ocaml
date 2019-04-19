@@ -36,6 +36,9 @@ Working version
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
+- #8630: Use abort() instead of exit(2) in caml_fatal_error.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Standard library:
 
 - #8657: Optimization in [Array.make] when initializing with unboxed

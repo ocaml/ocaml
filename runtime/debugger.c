@@ -349,7 +349,6 @@ void caml_debugger(enum event_kind event)
       }
 #else
       caml_fatal_error("REQ_CHECKPOINT command");
-      exit(-1);
 #endif
       break;
     case REQ_GO:
@@ -363,7 +362,6 @@ void caml_debugger(enum event_kind event)
       wait(NULL);
 #else
       caml_fatal_error("REQ_WAIT command");
-      exit(-1);
 #endif
       break;
     case REQ_INITIAL_FRAME:

@@ -84,7 +84,7 @@ CAMLexport void caml_fatal_error (char *msg, ...)
   vfprintf (stderr, msg, ap);
   va_end(ap);
   fprintf (stderr, "\n");
-  exit(2);
+  abort();
 }
 
 /* If you change the caml_ext_table* functions, also update
