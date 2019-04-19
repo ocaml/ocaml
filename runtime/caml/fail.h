@@ -105,6 +105,7 @@ CAMLnoreturn_start
 CAMLextern void caml_invalid_argument_value (value msg)
 CAMLnoreturn_end;
 
+/* Deprecated. */
 CAMLnoreturn_start
 CAMLextern void caml_raise_out_of_memory (void)
 CAMLnoreturn_end;

@@ -362,10 +362,8 @@ CAMLprim value caml_obj_reachable_words(value v)
             if (write_pos == ENTRIES_PER_QUEUE_CHUNK) {
               struct queue_chunk *new_chunk =
                 malloc(sizeof(struct queue_chunk));
-              if (new_chunk == NULL) {
-                size = (-1);
-                goto release;
-              }
+              if (new_chunk == NULL)
+                caml_fatal_error("out of memory");
               write_chunk->next = new_chunk;
               write_pos = 0;
               write_chunk = new_chunk;
@@ -379,7 +377,6 @@ CAMLprim value caml_obj_reachable_words(value v)
   }
 
   /* Second pass: restore colors and free extra queue chunks */
- release:
   read_pos = 0;
   read_chunk = &first_chunk;
   while (read_pos != write_pos || read_chunk != write_chunk) {
@@ -397,7 +394,5 @@ CAMLprim value caml_obj_reachable_words(value v)
   }
   if (read_chunk != &first_chunk) free(read_chunk);
 
-  if (size < 0)
-    caml_raise_out_of_memory();
   return Val_int(size);
 }

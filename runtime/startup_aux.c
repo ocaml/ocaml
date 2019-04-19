@@ -43,10 +43,7 @@ void caml_init_atom_table(void)
     caml_atom_table[i] = Make_header(0, i, Caml_white);
 #endif
   }
-  if (caml_page_table_add(In_static_data,
-                          caml_atom_table, caml_atom_table + 256) != 0) {
-    caml_fatal_error("not enough memory for initial page table");
-  }
+  caml_page_table_add(In_static_data, caml_atom_table, caml_atom_table + 256);
 }
 
 

@@ -54,8 +54,8 @@ type t = D
 Line 2, characters 25-26:
 2 | let f: t -> t = fun D -> x;;
                              ^
-Error: This expression has type t/1 but an expression was expected of type
-         t/2
+Error: This expression has type t/2 but an expression was expected of type
+         t/1
        Line 1, characters 0-10:
          Definition of type t/1
        Line 1, characters 0-10:

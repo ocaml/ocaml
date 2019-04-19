@@ -349,8 +349,7 @@ static uintnat caml_thread_stack_usage(void)
 static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
-  th = (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
-  if (th == NULL) return NULL;
+  th = (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
   th->descr = Val_unit;         /* filled later */
 #ifdef NATIVE_CODE
   th->bottom_of_stack = NULL;
@@ -595,7 +594,6 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
 
   /* Create a thread info block */
   th = caml_thread_new_info();
-  if (th == NULL) caml_raise_out_of_memory();
   /* Equip it with a thread descriptor */
   th->descr = caml_thread_new_descriptor(clos);
   /* Add thread info block to the list of threads */
@@ -632,7 +630,6 @@ CAMLexport int caml_c_thread_register(void)
   if (st_tls_get(thread_descriptor_key) != NULL) return 0;
   /* Create a thread info block */
   th = caml_thread_new_info();
-  if (th == NULL) return 0;
 #ifdef NATIVE_CODE
   th->top_of_stack = (char *) &err;
 #endif

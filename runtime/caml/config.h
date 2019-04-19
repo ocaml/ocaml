@@ -39,11 +39,6 @@
 
 #include "s.h"
 
-#if defined(_MSC_VER) && _MSC_VER < 1300
-#define LACKS_SANE_NAN
-#define LACKS_VSCPRINTF
-#endif
-
 #ifdef BOOTSTRAPPING_FLEXLINK
 #undef SUPPORT_DYNAMIC_LINKING
 #endif

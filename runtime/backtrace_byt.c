@@ -127,9 +127,7 @@ static struct ev_info *process_debug_events(code_t code_start,
   if (*num_events == 0)
       CAMLreturnT(struct ev_info *, NULL);
 
-  events = caml_stat_alloc_noexc(*num_events * sizeof(struct ev_info));
-  if(events == NULL)
-    caml_fatal_error ("caml_add_debug_info: out of memory");
+  events = caml_stat_alloc(*num_events * sizeof(struct ev_info));
 
   j = 0;
   for (i = 0; i < caml_array_length(events_heap); i++) {
@@ -143,9 +141,7 @@ static struct ev_info *process_debug_events(code_t code_start,
 
       {
         uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
-        events[j].ev_filename = (char*)caml_stat_alloc_noexc(fnsz);
-        if(events[j].ev_filename == NULL)
-          caml_fatal_error ("caml_add_debug_info: out of memory");
+        events[j].ev_filename = (char*)caml_stat_alloc(fnsz);
         memcpy(events[j].ev_filename,
             String_val(Field(ev_start, POS_FNAME)),
             fnsz);
@@ -218,12 +214,10 @@ CAMLprim value caml_remove_debug_info(code_t start)
   CAMLreturn(Val_unit);
 }
 
-int caml_alloc_backtrace_buffer(void){
+void caml_alloc_backtrace_buffer(void){
   CAMLassert(caml_backtrace_pos == 0);
   caml_backtrace_buffer =
-    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-  if (caml_backtrace_buffer == NULL) return -1;
-  return 0;
+    caml_stat_alloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
 }
 
 /* Store the return addresses contained in the given stack fragment
@@ -237,8 +231,8 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     caml_backtrace_last_exn = exn;
   }
 
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
-    return;
+  if (caml_backtrace_buffer == NULL)
+    caml_alloc_backtrace_buffer();
 
   if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   /* testing the code region is needed: PR#8026 */

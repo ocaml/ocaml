@@ -332,19 +332,11 @@ static void store_argument(wchar_t * arg);
 static void expand_argument(wchar_t * arg);
 static void expand_pattern(wchar_t * arg);
 
-static void out_of_memory(void)
-{
-  fprintf(stderr, "Out of memory while expanding command line\n");
-  exit(2);
-}
-
 static void store_argument(wchar_t * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
-    argv =
-      (wchar_t **) caml_stat_resize_noexc(argv, argvsize * sizeof(wchar_t *));
-    if (argv == NULL) out_of_memory();
+    argv = (wchar_t **) caml_stat_resize(argv, argvsize * sizeof(wchar_t *));
   }
   argv[argc++] = arg;
 }
@@ -399,8 +391,7 @@ CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
   int i;
   argc = 0;
   argvsize = 16;
-  argv = (wchar_t **) caml_stat_alloc_noexc(argvsize * sizeof(wchar_t *));
-  if (argv == NULL) out_of_memory();
+  argv = (wchar_t **) caml_stat_alloc(argvsize * sizeof(wchar_t *));
   for (i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
   argv[argc] = NULL;
   *argcp = argc;
@@ -676,26 +667,6 @@ wchar_t * caml_executable_name(void)
 
 /* snprintf emulation */
 
-#ifdef LACKS_VSCPRINTF
-/* No _vscprintf until Visual Studio .NET 2002 and sadly no version number
-   in the CRT headers until Visual Studio 2005 so forced to predicate this
-   on the compiler version instead */
-int _vscprintf(const char * format, va_list args)
-{
-  int n;
-  int sz = 5;
-  char* buf = (char*)malloc(sz);
-  n = _vsnprintf(buf, sz, format, args);
-  while (n < 0 || n > sz) {
-    sz += 512;
-    buf = (char*)realloc(buf, sz);
-    n = _vsnprintf(buf, sz, format, args);
-  }
-  free(buf);
-  return n;
-}
-#endif
-
 #if defined(_WIN32) && !defined(_UCRT)
 int caml_snprintf(char * buf, size_t size, const char * format, ...)
 {
@@ -742,10 +713,7 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
   wchar_t * lpBuffer;
   DWORD nSize = 256, res;
 
-  lpBuffer = caml_stat_alloc_noexc(nSize * sizeof(wchar_t));
-
-  if (lpBuffer == NULL)
-    return NULL;
+  lpBuffer = caml_stat_alloc(nSize * sizeof(wchar_t));
 
   res = GetEnvironmentVariable(lpName, lpBuffer, nSize);
 
@@ -758,10 +726,7 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
     return lpBuffer;
 
   nSize = res;
-  lpBuffer = caml_stat_resize_noexc(lpBuffer, nSize * sizeof(wchar_t));
-
-  if (lpBuffer == NULL)
-    return NULL;
+  lpBuffer = caml_stat_resize(lpBuffer, nSize * sizeof(wchar_t));
 
   res = GetEnvironmentVariable(lpName, lpBuffer, nSize);
 
@@ -907,7 +872,7 @@ CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
   int retcode;
 
   retcode = win_multi_byte_to_wide_char(s, -1, NULL, 0);
-  ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
+  ws = caml_stat_alloc(retcode * sizeof(*ws));
   win_multi_byte_to_wide_char(s, -1, ws, retcode);
 
   return ws;

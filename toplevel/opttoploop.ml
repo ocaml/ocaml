@@ -293,7 +293,6 @@ let print_out_exception ppf exn outv =
   !print_out_phrase ppf (Ophr_exception (exn, outv))
 
 let print_exception_outcome ppf exn =
-  if exn = Out_of_memory then Gc.full_major ();
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
   print_out_exception ppf exn outv
 
@@ -378,7 +377,6 @@ let execute_phrase print_outcome ppf phr =
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
-              if exn = Out_of_memory then Gc.full_major();
               let outv =
                 outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn
               in

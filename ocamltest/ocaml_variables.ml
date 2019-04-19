@@ -29,6 +29,9 @@ open Variables (* Should not be necessary with a ppx *)
 let all_modules = make ("all_modules",
   "All the modules to compile and link")
 
+let arch = make ("arch",
+  "Host architecture")
+
 let binary_modules = make ("binary_modules",
   "Additional binary modules to link")
 
@@ -226,6 +229,7 @@ let use_runtime =
 let _ = List.iter register_variable
   [
     all_modules;
+    arch;
     binary_modules;
     bytecc_libs;
     c_preprocessor;

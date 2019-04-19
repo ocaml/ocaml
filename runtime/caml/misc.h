@@ -361,7 +361,7 @@ extern struct caml_instr_block *caml_instr_log;
 #define CAML_INSTR_ALLOC(t) do{                                     \
     if (caml_stat_minor_collections >= caml_instr_starttime         \
         && caml_stat_minor_collections < caml_instr_stoptime){      \
-      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block)); \
+      t = caml_stat_alloc (sizeof (struct caml_instr_block));       \
       t->index = 0;                                                 \
       t->tag[0] = "";                                               \
       t->next = caml_instr_log;                                     \

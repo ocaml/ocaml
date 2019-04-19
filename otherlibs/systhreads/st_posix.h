@@ -202,8 +202,7 @@ typedef pthread_mutex_t * st_mutex;
 static int st_mutex_create(st_mutex * res)
 {
   int rc;
-  st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) return ENOMEM;
+  st_mutex m = caml_stat_alloc(sizeof(pthread_mutex_t));
   rc = pthread_mutex_init(m, NULL);
   if (rc != 0) { caml_stat_free(m); return rc; }
   *res = m;
@@ -243,8 +242,7 @@ typedef pthread_cond_t * st_condvar;
 static int st_condvar_create(st_condvar * res)
 {
   int rc;
-  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
-  if (c == NULL) return ENOMEM;
+  st_condvar c = caml_stat_alloc(sizeof(pthread_cond_t));
   rc = pthread_cond_init(c, NULL);
   if (rc != 0) { caml_stat_free(c); return rc; }
   *res = c;
@@ -285,8 +283,7 @@ typedef struct st_event_struct {
 static int st_event_create(st_event * res)
 {
   int rc;
-  st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
-  if (e == NULL) return ENOMEM;
+  st_event e = caml_stat_alloc(sizeof(struct st_event_struct));
   rc = pthread_mutex_init(&e->lock, NULL);
   if (rc != 0) { caml_stat_free(e); return rc; }
   rc = pthread_cond_init(&e->triggered, NULL);
@@ -340,7 +337,6 @@ static void st_check_error(int retcode, char * msg)
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ENOMEM) caml_raise_out_of_memory();
   err = strerror(retcode);
   msglen = strlen(msg);
   errlen = strlen(err);
