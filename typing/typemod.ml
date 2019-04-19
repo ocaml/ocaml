@@ -264,7 +264,7 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
   in
   let env = if rs = Trec_not then env else add_rec_types env rem in
   Includemod.type_declarations ~loc env id newdecl decl;
-  Typedecl.check_coherence env loc id newdecl
+  Typedecl.check_coherence env loc (Path.Pident id) newdecl
 
 let update_rec_next rs rem =
   match rs with

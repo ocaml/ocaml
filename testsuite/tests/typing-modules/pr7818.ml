@@ -311,10 +311,9 @@ module type S' =
   end
 module Asc : sig type t = int val compare : int -> int -> int end
 module Desc : sig type t = int val compare : int -> int -> int end
-module rec M1 :
-  sig
-    type t = M.t = E of (MkT(Desc).t, MkT(Desc).t) eq
-    type u = t = E of (MkT(Asc).t, MkT(Desc).t) eq
-  end
-val eq : (MkT(Asc).t, MkT(Desc).t) eq = Eq
+Line 15, characters 16-64:
+15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type M.t
+       The types for field E are not equal.
 |}]
