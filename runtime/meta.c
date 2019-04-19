@@ -189,14 +189,13 @@ CAMLprim value caml_realloc_global(value size)
     caml_gc_message (0x08, "Growing global data to %"
                      ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
                      requested_size);
-    new_global_data = caml_alloc_shr_effect(requested_size, 0,
-                                            CAML_ALLOC_EFFECT_TRACK);
+    new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
       caml_initialize(&Field(new_global_data, i), Field(caml_global_data, i));
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    caml_global_data = new_global_data;
+    caml_global_data = caml_check_urgent_gc(new_global_data);
   }
   return Val_unit;
 }

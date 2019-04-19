@@ -35,37 +35,16 @@
 extern "C" {
 #endif
 
-/* The function, [caml_alloc_shr_effect], that does an allocation in
-   the major heap, can be called in 4 modes, depending on the kind of
-   effects it is allowed to perform. */
-enum caml_alloc_effect {
-  CAML_ALLOC_EFFECT_NONE,       /* No effect. */
-  CAML_ALLOC_EFFECT_TRACK,      /* As previoulsy, and the allocation is
-                                   taken into account by memprof. */
-};
 
-CAMLextern value caml_alloc_shr_effect (mlsize_t, tag_t,
-                                        enum caml_alloc_effect);
-
+CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO
-CAMLextern value caml_alloc_shr_effect_with_profinfo (mlsize_t, tag_t,
-  enum caml_alloc_effect, intnat);
-CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
-                                                     header_t);
+CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
 #else
-#define caml_alloc_shr_effect_with_profinfo(size, tag, effect, profinfo) \
-  caml_alloc_shr_effect(size, tag, effect)
-#define caml_alloc_shr_preserving_profinfo(size, tag, header) \
-  caml_alloc_shr_effect(size, tag, CAML_ALLOC_EFFECT_NONE)
+#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
+  caml_alloc_shr(size, tag)
 #endif /* WITH_PROFINFO */
-
-/* [caml_alloc_shr] uses [CAML_ALLOC_EFFECT_TRACK], which is compatible
-   with historical behavior. */
-#define caml_alloc_shr(wosize, tag) \
-  caml_alloc_shr_effect(wosize, tag, CAML_ALLOC_EFFECT_TRACK)
-#define caml_alloc_shr_with_profinfo(wosize, tag, profinfo)             \
-  caml_alloc_shr_effect_with_profinfo(wosize, tag,                      \
-                                      CAML_ALLOC_EFFECT_TRACK, profinfo)
+CAMLextern value caml_alloc_shr_for_minor_gc (mlsize_t, tag_t, header_t);
+CAMLextern value caml_alloc_shr_for_intern (mlsize_t, tag_t);
 
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);

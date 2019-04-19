@@ -479,9 +479,8 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-static inline value caml_alloc_shr_aux(mlsize_t wosize, tag_t tag,
-                                       enum caml_alloc_effect effect,
-                                       uintnat profinfo)
+static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
+                                        uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
@@ -525,7 +524,7 @@ static inline value caml_alloc_shr_aux(mlsize_t wosize, tag_t tag,
   }
 #endif
 #ifdef WITH_STATMEMPROF
-  if(effect >= CAML_ALLOC_EFFECT_TRACK)
+  if(track)
     caml_memprof_postpone_track_alloc_shr(Val_hp (hp));
 #endif
   return Val_hp (hp);
@@ -536,39 +535,51 @@ static inline value caml_alloc_shr_aux(mlsize_t wosize, tag_t tag,
 /* Use this to debug problems with macros... */
 #define NO_PROFINFO 0xff
 
-CAMLexport value caml_alloc_shr_effect_with_profinfo (mlsize_t wosize,
-  tag_t tag, enum caml_alloc_effect effect, intnat profinfo)
+CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
+                                               intnat profinfo)
 {
-  return caml_alloc_shr_aux(wosize, tag, effect , profinfo);
+  return caml_alloc_shr_aux(wosize, tag, 1, profinfo);
 }
 
-CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
-  tag_t tag, header_t old_header)
+CAMLexport value caml_alloc_shr_for_minor_gc (mlsize_t wosize,
+                                              tag_t tag, header_t old_header)
 {
-  return caml_alloc_shr_effect_with_profinfo (wosize, tag,
-                                              CAML_ALLOC_EFFECT_NONE,
-                                              Profinfo_hd(old_header));
+  return caml_alloc_shr_aux (wosize, tag, 0, Profinfo_hd(old_header));
 }
-
 
 #else
 #define NO_PROFINFO 0
+
+CAMLexport value caml_alloc_shr_for_minor_gc (mlsize_t wosize,
+                                              tag_t tag, header_t old_header)
+{
+  return caml_alloc_shr_aux (wosize, tag, 0, NO_PROFINFO);
+}
 #endif /* WITH_PROFINFO */
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
 
-CAMLexport value caml_alloc_shr_effect (mlsize_t wosize, tag_t tag,
-                                        enum caml_alloc_effect effect)
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux (wosize, tag, effect,
+  return caml_alloc_shr_with_profinfo (wosize, tag,
     caml_spacetime_my_profinfo (NULL, wosize));
 }
-#else
-CAMLexport value caml_alloc_shr_effect (mlsize_t wosize, tag_t tag,
-                                        enum caml_alloc_effect effect)
+
+CAMLexport value caml_alloc_shr_for_intern (mlsize_t wosize, tag_t tag)
 {
-  return caml_alloc_shr_aux (wosize, tag, effect, NO_PROFINFO);
+  return caml_alloc_shr_aux (wosize, tag, 0,
+                             caml_spacetime_my_profinfo (NULL, wosize));
+}
+#else
+CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+{
+  return caml_alloc_shr_aux (wosize, tag, 1, NO_PROFINFO);
+}
+
+CAMLexport value caml_alloc_shr_for_intern (mlsize_t wosize, tag_t tag)
+{
+  return caml_alloc_shr_aux (wosize, tag, 0, NO_PROFINFO);
 }
 #endif
 

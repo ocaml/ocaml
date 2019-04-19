@@ -205,7 +205,7 @@ void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
+        result = caml_alloc_shr_for_minor_gc (sz, tag, hd);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -222,7 +222,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr_preserving_profinfo (sz, tag, hd);
+        result = caml_alloc_shr_for_minor_gc (sz, tag, hd);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -255,7 +255,7 @@ void caml_oldify_one (value v, value *p)
             ){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           CAMLassert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
+          result = caml_alloc_shr_for_minor_gc (1, Forward_tag, hd);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */

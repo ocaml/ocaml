@@ -297,7 +297,7 @@ value caml_get_current_callstack_impl(intnat max_frames, int avoid_gc)
   if(trace_size == 0) CAMLreturn(Atom (0));
 
   if(avoid_gc)
-    trace = caml_alloc_shr_effect(trace_size, 0, CAML_ALLOC_EFFECT_TRACK);
+    trace = caml_alloc_shr(trace_size, 0);
   else
     trace = caml_alloc(trace_size, 0);
 

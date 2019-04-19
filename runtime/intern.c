@@ -628,8 +628,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
 #undef Restore_after_track_gc
       }
     }else{
-      intern_block = caml_alloc_shr_effect(wosize, String_tag,
-                                           CAML_ALLOC_EFFECT_NONE);
+      intern_block = caml_alloc_shr_for_intern(wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the intern_color assertion below */
     }
