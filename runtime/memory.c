@@ -478,7 +478,8 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, uintnat profinfo)
+static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
+                                        uintnat profinfo)
 {
   header_t *hp;
   value *new_block;

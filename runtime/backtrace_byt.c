@@ -216,7 +216,8 @@ CAMLprim value caml_remove_debug_info(code_t start)
 
 void caml_alloc_backtrace_buffer(void){
   CAMLassert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer = caml_stat_alloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+  caml_backtrace_buffer =
+    caml_stat_alloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
 }
 
 /* Store the return addresses contained in the given stack fragment
