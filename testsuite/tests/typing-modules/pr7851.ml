@@ -4,12 +4,10 @@
 
 (* Leo's version *)
 module F(X : sig type t end) = struct
-  module type S = sig
-    type x = X.t
-    type y = X.t
-    type t = E of x
-    type u = t = E of y
-  end
+  type x = X.t
+  type y = X.t
+  type t = E of x
+  type u = t = E of y
 end;;
 
 module M = F(struct type t end);;
@@ -18,12 +16,9 @@ module type S = module type of M;;
 [%%expect{|
 module F :
   functor (X : sig type t end) ->
-    sig
-      module type S =
-        sig type x = X.t type y = X.t type t = E of x type u = t = E of y end
-    end
-module M : sig module type S end
-module type S = sig module type S end
+    sig type x = X.t type y = X.t type t = E of x type u = t = E of y end
+module M : sig type x type y type t = E of x type u = t = E of y end
+module type S = sig type x type y type t = E of x type u = t = E of y end
 |}]
 
 module rec M1 : S with type x = int and type y = bool = M1;;
@@ -31,7 +26,8 @@ module rec M1 : S with type x = int and type y = bool = M1;;
 Line 1, characters 16-53:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The signature constrained by `with' has no component named x
+Error: This variant or record definition does not match that of type M1.t
+       The types for field E are not equal.
 |}]
 
 let bool_of_int x =
