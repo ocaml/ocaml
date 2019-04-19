@@ -87,7 +87,7 @@ let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
   let decl2 = Subst.type_declaration subst decl2 in
   match
     Includecore.type_declarations ~loc env ~mark
-      (Ident.name id) decl1 id decl2
+      (Ident.name id) decl1 (Path.Pident id) decl2
   with
   | None -> ()
   | Some err ->
