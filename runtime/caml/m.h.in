@@ -94,6 +94,8 @@
 
 #undef WITH_PROFINFO
 
+#undef WITH_STATMEMPROF
+
 #undef CAML_WITH_FPIC
 
 #undef CAML_SAFE_STRING

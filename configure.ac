@@ -273,6 +273,10 @@ AC_ARG_ENABLE([spacetime],
   [AS_HELP_STRING([--enable-spacetime],
     [build the spacetime profiler])])
 
+AC_ARG_ENABLE([statmemprof],
+  [AS_HELP_STRING([--enable-statmemprof],
+    [enable statistcal memory profiling])])
+
 AC_ARG_ENABLE([call-counts],
   [AS_HELP_STRING([--disable-call-counts],
     [disable the call counts in spacetime])])
@@ -1477,7 +1481,7 @@ AS_IF([test x"$enable_statmemprof" = "xyes"],
       AC_MSG_NOTICE([using statistical memprof])],
     [AC_MSG_ERROR([Statistical memory profiling in native code for this platform is not supported])]
   )],
-  [AC_MSG_NOTICE([not using using statistical memprof])
+  [AC_MSG_NOTICE([notusing statistical memprof])
   statmemprof=false])
 
 ## No naked pointers

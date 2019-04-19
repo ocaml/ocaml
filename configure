@@ -833,6 +833,7 @@ enable_ocamldoc
 enable_frame_pointers
 enable_naked_pointers
 enable_spacetime
+enable_statmemprof
 enable_call_counts
 enable_cfi
 enable_installing_source_artifacts
@@ -1497,6 +1498,7 @@ Optional Features:
   --disable-naked-pointers
                           do not allow naked pointers
   --enable-spacetime      build the spacetime profiler
+  --enable-statmemprof    enable statistcal memory profiling
   --disable-call-counts   disable the call counts in spacetime
   --disable-cfi           disable the CFI directives in assembly files
   --enable-installing-source-artifacts
@@ -3066,6 +3068,12 @@ fi
 # Check whether --enable-spacetime was given.
 if test "${enable_spacetime+set}" = set; then :
   enableval=$enable_spacetime;
+fi
+
+
+# Check whether --enable-statmemprof was given.
+if test "${enable_statmemprof+set}" = set; then :
+  enableval=$enable_statmemprof;
 fi
 
 
@@ -16246,8 +16254,8 @@ $as_echo "$as_me: using statistical memprof" >&6;} ;; #(
    ;;
 esac
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: not using using statistical memprof" >&5
-$as_echo "$as_me: not using using statistical memprof" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: notusing statistical memprof" >&5
+$as_echo "$as_me: notusing statistical memprof" >&6;}
   statmemprof=false
 fi
 
