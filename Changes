@@ -191,6 +191,9 @@ Working version
 
 ### Bug fixes:
 
+- #5942, #8615: increase safety of marshaled function closures
+  (Xavier Leroy, report by Benoît Vaugon, review by David Allsopp,
+   Alain Frisch)
 - #7156, #8594: make top level use custom printers if they are available
   (Andrew Litteken, report by Martin Jambon, review by Nicolás Ojeda Bär,
    Thomas Refis, Armaël Guéneau, Gabriel Scherer, David Allsopp)
