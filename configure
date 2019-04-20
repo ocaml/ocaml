@@ -16475,8 +16475,8 @@ if test "$with_pic"; then :
   fpic=true
   $as_echo "#define CAML_WITH_FPIC 1" >>confdefs.h
 
-  common_cflags="$common_cflags $sharedlib_cflags"
-  aspp="$aspp $sharedlib_cflags"
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  ASPP="$ASPP $sharedlib_cflags"
 else
   fpic=false
 fi

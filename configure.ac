@@ -1584,8 +1584,8 @@ AS_IF([$profinfo], [AC_DEFINE([WITH_PROFINFO])])
 AS_IF([test "$with_pic"],
   [fpic=true
   AC_DEFINE([CAML_WITH_FPIC])
-  common_cflags="$common_cflags $sharedlib_cflags"
-  aspp="$aspp $sharedlib_cflags"],
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  ASPP="$ASPP $sharedlib_cflags"],
   [fpic=false])
 
 AS_IF([test x"$enable_installing_bytecode_programs" = "xno"],
