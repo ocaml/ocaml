@@ -804,8 +804,6 @@ AR
 shebangscripts
 long_shebang
 iflexdir
-ocamlopt_cppflags
-ocamlopt_cflags
 ocamlc_cppflags
 ocamlc_cflags
 nativecclibs
@@ -2748,8 +2746,6 @@ internal_cflags=""
 internal_cppflags=""
 ocamlc_cflags=""
 ocamlc_cppflags=""
-ocamlopt_cflags=""
-ocamlopt_cppflags=""
 oc_ldflags=""
 with_sharedlibs=true
 ostype="Unix"
@@ -2806,8 +2802,6 @@ VERSION=4.11.0+dev0-2019-10-18
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
-
 
 
 
@@ -16886,8 +16880,6 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags"
 ocamlc_cppflags="$common_cppflags"
-ocamlopt_cflags="$common_cflags"
-ocamlopt_cppflags="$common_cppflags"
 cclibs="$cclibs $mathlib"
 
 case $host in #(

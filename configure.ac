@@ -47,8 +47,6 @@ internal_cflags=""
 internal_cppflags=""
 ocamlc_cflags=""
 ocamlc_cppflags=""
-ocamlopt_cflags=""
-ocamlopt_cppflags=""
 oc_ldflags=""
 with_sharedlibs=true
 ostype="Unix"
@@ -108,8 +106,6 @@ AC_SUBST([bytecclibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
-AC_SUBST([ocamlopt_cflags])
-AC_SUBST([ocamlopt_cppflags])
 AC_SUBST([iflexdir])
 AC_SUBST([long_shebang])
 AC_SUBST([shebangscripts])
@@ -1788,8 +1784,6 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags"
 ocamlc_cppflags="$common_cppflags"
-ocamlopt_cflags="$common_cflags"
-ocamlopt_cppflags="$common_cppflags"
 cclibs="$cclibs $mathlib"
 
 AS_CASE([$host],
