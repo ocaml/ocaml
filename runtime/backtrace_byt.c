@@ -274,50 +274,32 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
   return NULL;
 }
 
-/* Stores upto [max_frames_value] frames of the current call stack to
-   return to the user. This is used not in an exception-raising
-   context, but only when the user requests to save the trace
-   (hopefully less often). Instead of using a bounded buffer as
-   [caml_stash_backtrace], we first traverse the stack to compute the
-   right size, then allocate space for the trace. */
-
-CAMLprim value caml_get_current_callstack(value max_frames_value)
+intnat caml_current_callstack_size(intnat max_frames)
 {
-  CAMLparam1(max_frames_value);
-  CAMLlocal1(trace);
-
-  /* we use `intnat` here because, were it only `int`, passing `max_int`
-     from the OCaml side would overflow on 64bits machines. */
-  intnat max_frames = Long_val(max_frames_value);
   intnat trace_size;
+  value * sp = caml_extern_sp;
+  value * trsp = caml_trapsp;
 
-  /* first compute the size of the trace */
-  {
-    value * sp = caml_extern_sp;
-    value * trsp = caml_trapsp;
-
-    for (trace_size = 0; trace_size < max_frames; trace_size++) {
-      code_t p = caml_next_frame_pointer(&sp, &trsp);
-      if (p == NULL) break;
-    }
+  for (trace_size = 0; trace_size < max_frames; trace_size++) {
+    code_t p = caml_next_frame_pointer(&sp, &trsp);
+    if (p == NULL) break;
   }
 
-  trace = caml_alloc(trace_size, 0);
+  return trace_size;
+}
 
-  /* then collect the trace */
-  {
-    value * sp = caml_extern_sp;
-    value * trsp = caml_trapsp;
-    uintnat trace_pos;
+void caml_current_callstack_write(value trace) {
+  value * sp = caml_extern_sp;
+  value * trsp = caml_trapsp;
+  uintnat trace_pos, trace_size = Wosize_val(trace);
 
-    for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-      code_t p = caml_next_frame_pointer(&sp, &trsp);
-      CAMLassert(p != NULL);
-      Field(trace, trace_pos) = Val_backtrace_slot(p);
-    }
+  for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
+    code_t p = caml_next_frame_pointer(&sp, &trsp);
+    CAMLassert(p != NULL);
+    /* [Val_backtrace_slot(...)] is always a long, no need to call
+       [caml_modify]. */
+    Field(trace, trace_pos) = Val_backtrace_slot(p);
   }
-
-  CAMLreturn(trace);
 }
 
 /* Read the debugging info contained in the current bytecode executable. */

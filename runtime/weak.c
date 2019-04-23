@@ -105,7 +105,7 @@ CAMLexport value caml_ephemeron_create (mlsize_t len)
   for (i = 1; i < size; i++) Field (res, i) = caml_ephe_none;
   Field (res, CAML_EPHE_LINK_OFFSET) = caml_ephe_list_head;
   caml_ephe_list_head = res;
-  return res;
+  return caml_check_urgent_gc(res);
 }
 
 CAMLprim value caml_ephe_create (value len)

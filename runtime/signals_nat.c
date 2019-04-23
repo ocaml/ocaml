@@ -31,6 +31,8 @@
 #include "signals_osdep.h"
 #include "caml/stack.h"
 #include "caml/spacetime.h"
+#include "caml/memprof.h"
+
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>
@@ -83,6 +85,8 @@ void caml_garbage_collection(void)
     caml_spacetime_automatic_snapshot();
   }
 #endif
+
+  caml_memprof_handle_postponed();
 
   caml_process_pending_signals();
 }

@@ -180,6 +180,12 @@ Working version
    or young values.
    (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
 
+- #8634: Statistical memory profiling provided by the Gc.Memprof
+   module.
+   Incomplete version: it only samples objects allocated in the major
+   heap.
+   (Jacques-Henri Jourdan, review by Stephen Dolan)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.

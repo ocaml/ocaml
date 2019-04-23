@@ -33,6 +33,7 @@
 #include "caml/stacks.h"
 #endif
 #include "caml/sys.h"
+#include "caml/memprof.h"
 #include "threads.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
@@ -98,6 +99,7 @@ struct caml_thread_struct {
   int backtrace_pos;         /* Saved caml_backtrace_pos */
   backtrace_slot * backtrace_buffer; /* Saved caml_backtrace_buffer */
   value backtrace_last_exn;  /* Saved caml_backtrace_last_exn (root) */
+  int memprof_suspended;     /* Saved caml_memprof_suspended */
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -195,6 +197,7 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->backtrace_pos = caml_backtrace_pos;
   curr_thread->backtrace_buffer = caml_backtrace_buffer;
   curr_thread->backtrace_last_exn = caml_backtrace_last_exn;
+  curr_thread->memprof_suspended = caml_memprof_suspended;
 }
 
 static inline void caml_thread_restore_runtime_state(void)
@@ -224,6 +227,7 @@ static inline void caml_thread_restore_runtime_state(void)
   caml_backtrace_pos = curr_thread->backtrace_pos;
   caml_backtrace_buffer = curr_thread->backtrace_buffer;
   caml_backtrace_last_exn = curr_thread->backtrace_last_exn;
+  caml_memprof_set_suspended(curr_thread->memprof_suspended);
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
@@ -376,6 +380,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->backtrace_pos = 0;
   th->backtrace_buffer = NULL;
   th->backtrace_last_exn = Val_unit;
+  th->memprof_suspended = 0;
   return th;
 }
 
