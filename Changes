@@ -232,6 +232,9 @@ OCaml 4.10.0
   the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
+- #8637, #8805: Record debug info for each allocation
+  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez)
+
 - #8713: Introduce a state table in the runtime to contain the global variables
    which must be duplicated for each domain in the multicore runtime.
    (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
@@ -483,7 +486,6 @@ OCaml 4.09.0 (19 September 2019):
 
 - #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
   (Jeremy Yallop, report by Marcello Seri)
-
 
 - #2075, #7729: rename _T macro used to support Unicode in the (Windows) runtime
   in order to avoid compiler warning

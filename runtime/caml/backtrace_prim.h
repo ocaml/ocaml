@@ -43,7 +43,7 @@ struct caml_loc_info {
 };
 
 /* When compiling with -g, backtrace slots have debug info associated.
- * When a call is inlined in native mode, debuginfos form a linked list.
+ * When a call is inlined in native mode, debuginfos form a sequence.
  */
 typedef void * debuginfo;
 
