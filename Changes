@@ -207,6 +207,10 @@ Working version
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer,
    reported by Xavier Clerc)
 
+- #8635, #8636: Fix a bad side-effect of the -allow-approx option of
+  ocamldep. It used to turn some errors into successes
+  (Jérémie Dimino)
+
 OCaml 4.08.0
 ------------
 
