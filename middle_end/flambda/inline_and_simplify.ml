@@ -1101,7 +1101,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         | Some constructed_var ->
             let approx = E.find_exn env constructed_var in
             Flambda.Expr (Var constructed_var),
-            ret (R.map_benefit r B.remove_prim) approx
+            ret (R.map_benefit r B.remove_alloc) approx
         | _ -> default p args args_approxs
         end
       | p, args, args_approxs ->
