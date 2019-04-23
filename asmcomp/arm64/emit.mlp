@@ -527,23 +527,32 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
   if !fastcode_flag then begin
     let lbl_redo = new_label() in
     let lbl_call_gc = new_label() in
-    assert (n < 0x1_000_000);
-    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
+    assert (16 <= n && n < 0x1_000_000 && n land 0x7 = 0);
+    (* Instead of checking whether young_ptr - n < young_limit, we check whether
+       young_ptr - (n - 8) <= young_limit. It's equivalent, but this way around
+       we can avoid mutating young_ptr on failed allocations, by doing the
+       calculations in i.res.(0) instead of young_ptr. *)
+    let nl = (n - 8) land 0xFFF and nh = (n - 8) land 0xFFF_000 in
     `{emit_label lbl_redo}:`;
-    if nh <> 0 then
-      `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int nh}\n`;
-    if nl <> 0 then
-      `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int nl}\n`;
-    `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
-    `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
+    begin match nh, nl with
+    | 0, nl ->
+      `	sub	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #{emit_int nl}\n`
+    | nh, 0 ->
+      `	sub	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #{emit_int nh}\n`
+    | nh, nl ->
+      `	sub	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #{emit_int nl}\n`;
+      `	sub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #{emit_int nh}\n`
+    end;
+    `	cmp	{emit_reg i.res.(0)}, {emit_reg reg_alloc_limit}\n`;
     if not far then begin
-      `	b.lo	{emit_label lbl_call_gc}\n`
+      `	b.ls	{emit_label lbl_call_gc}\n`
     end else begin
       let lbl = new_label () in
-      `	b.cs	{emit_label lbl}\n`;
+      `	b.hi	{emit_label lbl}\n`;
       `	b	{emit_label lbl_call_gc}\n`;
       `{emit_label lbl}:\n`
     end;
+    `	sub	{emit_reg reg_alloc_ptr}, {emit_reg i.res.(0)}, #8\n`;
     call_gc_sites :=
       { gc_lbl = lbl_call_gc;
         gc_return_lbl = lbl_redo;
