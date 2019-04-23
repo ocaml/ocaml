@@ -438,9 +438,12 @@ module Env = struct
           | _ -> false
     in
     let matching_blocks =
-      Variable.Map.filter (fun _ -> shape_match) t.constructed_blocks
+      Variable.Map.filter (fun var block_key ->
+          shape_match block_key && fields_match 0 args var
+        )
+        t.constructed_blocks
     in
-    match Variable.Map.find_first_opt (fields_match 0 args) matching_blocks with
+    match Variable.Map.choose_opt matching_blocks with
     | None -> None
     | Some (var, _) -> Some var
 
