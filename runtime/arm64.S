@@ -185,7 +185,8 @@ caml_alloc1:
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
         ret
-2:      stp     x29, x30, [sp, -16]!
+2:      add     ALLOC_PTR, ALLOC_PTR, #16
+        stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
     /* Record the lowest address of the caller's stack frame.  This is the
        address immediately above the pair of words (x29 and x30) we just
@@ -217,7 +218,8 @@ caml_alloc2:
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
         ret
-2:      stp     x29, x30, [sp, -16]!
+2:      add     ALLOC_PTR, ALLOC_PTR, #24
+        stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
     /* Record the lowest address of the caller's stack frame.
        See comment above. */
@@ -245,7 +247,8 @@ caml_alloc3:
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
         ret
-2:      stp     x29, x30, [sp, -16]!
+2:      add     ALLOC_PTR, ALLOC_PTR, #32
+        stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
     /* Record the lowest address of the caller's stack frame.
        See comment above. */
@@ -273,7 +276,8 @@ caml_allocN:
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
         ret
-2:      stp     x29, x30, [sp, -16]!
+2:      add     ALLOC_PTR, ALLOC_PTR, ARG
+        stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
     /* Record the lowest address of the caller's stack frame.
        See comment above. */
