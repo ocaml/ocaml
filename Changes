@@ -169,6 +169,9 @@ Working version
     David Allsopp, review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
     Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
+- #8641: Better call stacks when a C call is involved in byte code mode
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Tools:
 
 * #6792, #8654 ocamldebug now supports program using Dynlink. This
