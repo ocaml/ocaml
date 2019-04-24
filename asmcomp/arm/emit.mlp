@@ -643,7 +643,7 @@ let emit_instr i =
           `	cmp	{emit_reg i.res.(0)}, alloc_limit\n`;
           let lbl_call_gc = new_label() in
           `	bls	{emit_label lbl_call_gc}\n`;
-          `	sub	alloc_ptr, {emit_reg i.res.(0)}, #4\n;`
+          `	sub	alloc_ptr, {emit_reg i.res.(0)}, #4\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;
