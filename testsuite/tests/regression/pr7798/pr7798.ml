@@ -1,4 +1,12 @@
-(* TEST *)
+(* TEST
+   * bytecode
+   * native
+   * native
+     ocamlopt_flags = "-compact"
+*)
+
+type mut2 = { mutable p: int; mutable q:int }
+type mut3 = { mutable s: int; mutable t:int; mutable u:int }
 
 type mut_record =
   { mutable a : int;
@@ -19,6 +27,16 @@ let go () =
     Sys.opaque_identity (ref i)
     |> ignore;
     allocs := !allocs + 2;
+  done;
+  for i = 1 to n do
+    Sys.opaque_identity { p = i; q = i }
+    |> ignore;
+    allocs := !allocs + 3;
+  done;
+  for i = 1 to n do
+    Sys.opaque_identity { s = i; t = i; u = i }
+    |> ignore;
+    allocs := !allocs + 4;
   done;
   for i = 1 to n do
     Sys.opaque_identity { a = i; b = i; c = i; d = i; e = i; f = i }
