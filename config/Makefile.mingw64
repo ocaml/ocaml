@@ -114,7 +114,7 @@ BYTECCLIBS=-lws2_32 -lversion
 NATIVECCLIBS=-lws2_32 -lversion
 
 ### How to invoke the C preprocessor
-CPP=cpp
+CPP=x86_64-w64-mingw32-gcc -E
 
 ### Flexlink
 FLEXLINK_CMD=flexlink
