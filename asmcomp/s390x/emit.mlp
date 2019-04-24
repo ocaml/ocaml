@@ -431,8 +431,9 @@ let emit_instr i =
         `{emit_label lbl_redo}:`;
         `	lay	{emit_reg i.res.(0)}, {emit_int(-n+8)}(%r11)\n`;
         `	clgr	{emit_reg i.res.(0)}, %r10\n`;
-        `	brcl	13, {emit_label lbl_call_gc}\n`;  (* less than *)
-        `	la	%r11, -8({emit_reg i.res.(0)})\n`
+        `	brcl	12, {emit_label lbl_call_gc}\n`;
+                                                 (* less than or equal *)
+        `	lay	%r11, -8({emit_reg i.res.(0)})\n`
 
     | Lop(Iintop Imulh) ->
        (* Hacker's Delight section 8.3:
