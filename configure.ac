@@ -181,7 +181,6 @@ AS_CASE([$host],
     S=asm
     SO=dll
     outputexe=-Fe
-    mkexedebugflag=''
     syslib='$(1).lib'],
   [ccomptype=cc
   S=s
@@ -626,7 +625,7 @@ AS_CASE([$CC,$host],
       flexdir=`$flexlink -where | tr -d '\015'`
       AS_IF([test -z "$flexdir"], [flexdir='$(ROOTDIR)/flexdll'])
       iflexdir="-I\"$flexdir\""
-      mkexedebugflag="-link -g"])],
+      mkexedebugflag=''])],
   [*,x86_64-*-linux*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
   [xlc*,powerpc-ibm-aix*],
