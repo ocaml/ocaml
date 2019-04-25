@@ -92,12 +92,14 @@ module Sync : sig
   type timeout_or_notified = Timeout | Notified
 
   val wait_for : nanoseconds -> timeout_or_notified
-  (** Same as [wait], but returns once the specified number of
+  (** As with [wait], must be called from within a critical section.
+      Same as [wait], but returns once the specified number of
       nanoseconds has elapsed, regardless of whether [notify]
       is called *)
 
   val wait_until : nanoseconds -> timeout_or_notified
-  (** [wait_until t] is the same as [wait ()], but returns once
+  (** As with [wait] and [wait_for], must be called from within a critical section.
+      [wait_until t] is the same as [wait ()], but returns once
       [timer_ticks () > t], regardless of whether [notify] is
       called *)
 
