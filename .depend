@@ -617,6 +617,7 @@ typing/includecore.cmx : \
 typing/includecore.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi
@@ -2175,6 +2176,14 @@ asmcomp/cmm.cmi : \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi
+asmcomp/cmm_simplify.cmo : \
+    asmcomp/cmm.cmi \
+    asmcomp/cmm_simplify.cmi
+asmcomp/cmm_simplify.cmx : \
+    asmcomp/cmm.cmx \
+    asmcomp/cmm_simplify.cmi
+asmcomp/cmm_simplify.cmi : \
+    asmcomp/cmm.cmi
 asmcomp/cmmgen.cmo : \
     middle_end/flambda/un_anf.cmi \
     typing/types.cmi \
@@ -2193,6 +2202,7 @@ asmcomp/cmmgen.cmo : \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
     asmcomp/cmmgen_state.cmi \
+    asmcomp/cmm_simplify.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     middle_end/clambda_primitives.cmi \
@@ -2220,6 +2230,7 @@ asmcomp/cmmgen.cmx : \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
+    asmcomp/cmm_simplify.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     middle_end/clambda_primitives.cmx \

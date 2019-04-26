@@ -21,8 +21,12 @@ Working version
   (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
    and Xavier Leroy)
 
-- GPR#8547: Optimize matches that are an affine function of the input.
+- #8547: Optimize matches that are an affine function of the input.
   (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
+
+- #????: Add proof-of-concept Cmm peephole optimizations with machine-
+  checked verification using SMT.
+  (Stefan Muenzel, review by ????)
 
 ### Compiler user-interface and warnings:
 

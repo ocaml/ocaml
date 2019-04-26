@@ -1722,7 +1722,7 @@ struct
   (* CR mshinwell: GPR#2294 will fix the Debuginfo here *)
 
   let make_const i =  Cconst_int (i, Debuginfo.none)
-  let make_prim p args = Cop (p,args, Debuginfo.none)
+  let make_prim p args = Cmm_simplify.reduce_cmm (Cop (p,args, Debuginfo.none))
   let make_offset arg n = add_const arg n Debuginfo.none
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
@@ -2577,13 +2577,16 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int(mod_int (untag_int(transl env arg1) dbg)
         (untag_int(transl env arg2) dbg) is_safe dbg) dbg
   | Pandint ->
-      Cop(Cand, [transl env arg1; transl env arg2], dbg)
+      Cmm_simplify.reduce_cmm
+        (Cop(Cand, [transl env arg1; transl env arg2], dbg))
   | Porint ->
-      Cop(Cor, [transl env arg1; transl env arg2], dbg)
+      Cmm_simplify.reduce_cmm
+        (Cop(Cor, [transl env arg1; transl env arg2], dbg))
   | Pxorint ->
-      Cop(Cor, [Cop(Cxor, [ignore_low_bit_int(transl env arg1);
-                           ignore_low_bit_int(transl env arg2)], dbg);
-                Cconst_int (1, dbg)], dbg)
+      Cmm_simplify.reduce_cmm
+        (Cop(Cor, [Cop(Cxor, [ignore_low_bit_int(transl env arg1);
+                             ignore_low_bit_int(transl env arg2)], dbg);
+                  Cconst_int (1, dbg)], dbg))
   | Plslint ->
       incr_int(lsl_int (decr_int(transl env arg1) dbg)
         (untag_int(transl env arg2) dbg) dbg) dbg
@@ -2594,8 +2597,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
       Cop(Cor, [asr_int (transl env arg1) (untag_int(transl env arg2) dbg) dbg;
                 Cconst_int (1, dbg)], dbg)
   | Pintcomp cmp ->
-      tag_int(Cop(Ccmpi(transl_int_comparison cmp),
-                  [transl env arg1; transl env arg2], dbg)) dbg
+      let inner =
+        Cmm_simplify.reduce_cmm
+          (Cop(Ccmpi(transl_int_comparison cmp),
+               [transl env arg1; transl env arg2], dbg))
+      in
+      tag_int inner dbg
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2) dbg
   (* Float operations *)
@@ -2774,9 +2781,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       untag_int(transl env arg2) dbg], dbg))
   | Pbintcomp(bi, cmp) ->
-      tag_int (Cop(Ccmpi(transl_int_comparison cmp),
-                     [transl_unbox_int dbg env bi arg1;
-                      transl_unbox_int dbg env bi arg2], dbg)) dbg
+      let inner =
+        Cmm_simplify.reduce_cmm (Cop(Ccmpi(transl_int_comparison cmp),
+                                     [transl_unbox_int dbg env bi arg1;
+                                      transl_unbox_int dbg env bi arg2], dbg))
+      in
+      tag_int inner dbg
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
   | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _
