@@ -101,7 +101,7 @@
     (case XOR (ocaml-xor x y))
   ))
 
-  
+
 
 (push 1)
 (echo "verifying nested-compare")
@@ -238,5 +238,3 @@
    #b0000000000000000000000000000000000000000000000000000000000000001)))
 (check-sat)
 (pop 1)
-
-
