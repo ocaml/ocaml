@@ -582,7 +582,8 @@ let test_bool dbg cmm =
         Cconst_int (0, dbg)
       else
         Cconst_int (1, dbg)
-  | c -> Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg)
+  | c ->
+      Cmm_simplify.reduce_cmm (Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg))
 
 (* Float *)
 
