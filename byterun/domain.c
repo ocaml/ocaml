@@ -226,6 +226,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     caml_init_major_gc(domain_state);
     caml_reallocate_minor_heap(initial_minor_heap_wsize);
     Caml_state->current_stack = caml_alloc_main_stack (Stack_size/sizeof(value));
+    Caml_state->read_fault_ret_val = caml_create_root(Val_unit);
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
@@ -873,6 +874,7 @@ static void domain_terminate()
     caml_plat_unlock(&s->lock);
   }
 
+  caml_delete_root(domain_state->read_fault_ret_val);
   caml_stat_free(domain_state->final_info);
   caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_state->shared_heap);

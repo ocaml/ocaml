@@ -192,6 +192,8 @@ static void scan_native_globals(scanning_action f, void* fdata)
 #endif
 
 void caml_scan_global_roots(scanning_action f, void* fdata) {
+  /* FIXME KC: Needs to be done only once per major cycle. Currently, every
+   * domain scans global roots */
   scan_global_roots(f, fdata);
 #ifdef NATIVE_CODE
   scan_native_globals(f, fdata);
