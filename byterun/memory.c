@@ -395,10 +395,8 @@ static void handle_read_fault(struct domain* target, void* reqp, interrupt* done
   value v = Op_val(req->obj)[req->field];
 
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
-    // caml_gc_log("Handling read fault for domain [%02d]", target->id);
     ret = caml_promote(target, v);
     caml_modify_root(*req->ret, ret);
-    Assert (!Is_minor(req->ret));
     /* Update the field so that future requests don't fault. We must
        use a CAS here, since another thread may modify the field and
        we must avoid overwriting its update */
@@ -409,7 +407,6 @@ static void handle_read_fault(struct domain* target, void* reqp, interrupt* done
        into the read barrier. This always terminates: in the worst
        case, all domains get tied up servicing one fault and then
        there are no more left running to win the race */
-    // caml_gc_log("Stale read fault for domain [%02d]", target->id);
     send_read_fault(req);
   }
   caml_acknowledge_interrupt(done);
