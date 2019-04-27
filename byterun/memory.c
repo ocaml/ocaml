@@ -383,22 +383,26 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 struct read_fault_req {
   value obj;
   int field;
-  value* ret;
+  caml_root* ret;
 };
 
 static void send_read_fault(struct read_fault_req*);
 
 static void handle_read_fault(struct domain* target, void* reqp, interrupt* done) {
+  CAMLparam0();
+  CAMLlocal1(ret);
   struct read_fault_req* req = reqp;
   value v = Op_val(req->obj)[req->field];
+
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
     // caml_gc_log("Handling read fault for domain [%02d]", target->id);
-    *req->ret = caml_promote(target, v);
+    ret = caml_promote(target, v);
+    caml_modify_root(*req->ret, ret);
     Assert (!Is_minor(req->ret));
     /* Update the field so that future requests don't fault. We must
        use a CAS here, since another thread may modify the field and
        we must avoid overwriting its update */
-    caml_atomic_cas_field(req->obj, req->field, v, *req->ret);
+    caml_atomic_cas_field(req->obj, req->field, v, ret);
   } else {
     /* Race condition: by the time we handled the fault, the field was
        already modified and no longer points to our heap.  We recurse
@@ -409,41 +413,40 @@ static void handle_read_fault(struct domain* target, void* reqp, interrupt* done
     send_read_fault(req);
   }
   caml_acknowledge_interrupt(done);
+  CAMLreturn0;
 }
 
 static void send_read_fault(struct read_fault_req* req)
 {
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v)) {
-    // caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
     if (!caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req)) {
       send_read_fault(req);
     }
     Assert(!Is_minor(*req->ret));
-    // caml_gc_log("Read fault returned (%p)", (void*)req->ret);
   } else {
-    // caml_gc_log("Stale read fault: already promoted");
-    *req->ret = v;
+    caml_modify_root (*req->ret, v);
   }
 }
 
 CAMLexport value caml_read_barrier(value obj, int field)
 {
-  /* A GC may occur just before or just after sending a fault.
-     The obj and ret values must be roots, because if a GC occurs
-     just after a fault is handled they must be preserved.
-     The orig value must *not* be a root, since it may contain
-     a foreign value, which the GC must not see even if it runs
-     just before the fault is handled. */
+  /* A GC may occur just before or just after sending a fault. The obj value
+     must be root. The orig value must *not* be a root, since it may contain a
+     foreign value, which the GC must not see even if it runs just before the
+     fault is handled. */
   CAMLparam1(obj);
-  CAMLlocal1(ret);
   value orig = Op_val(obj)[field];
+  value ret;
+
   if (Is_foreign(orig)) {
-    struct read_fault_req req = {obj, field, &ret};
+    struct read_fault_req req = {obj, field, &Caml_state->read_fault_ret_val};
     caml_ev_begin("fault/read");
     send_read_fault(&req);
     caml_ev_end("fault/read");
+    ret = caml_read_root(Caml_state->read_fault_ret_val);
     Assert (!Is_foreign(ret));
+    caml_modify_root(Caml_state->read_fault_ret_val, Val_unit);
   } else {
     ret = orig;
   }
