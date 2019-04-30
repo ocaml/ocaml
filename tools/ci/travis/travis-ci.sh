@@ -223,14 +223,15 @@ CheckTypoTree () {
     else
       echo "NOT checking $1: $path (typo.prune)"
     fi
-    if [[ $path = 'configure' || $path = 'configure.ac' ]] ; then
-      touch CHECK_CONFIGURE
-    fi
+    case "$path" in
+      configure|configure.ac|VERSION|tools/ci/travis/travis-ci.sh)
+        touch CHECK_CONFIGURE;;
+    esac
   done)
   rm -f tmp-index
   if [ -e CHECK_CONFIGURE ] ; then
     rm -f CHECK_CONFIGURE
-    echo "configure or configure.ac altered in $1"
+    echo "configure generation altered in $1"
     echo "Verifying that configure.ac generates configure"
     git checkout "$1"
     mv configure configure.ref
