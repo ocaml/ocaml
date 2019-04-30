@@ -37,13 +37,20 @@ else
   FETCH_HEAD=$TRAVIS_COMMIT
 fi
 
-if [[ $TRAVIS_COMMIT != $(git rev-parse FETCH_HEAD) ]] ; then
-  echo "WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!"
-  if git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
-    echo "TRAVIS_COMMIT exists, so going with it"
-  else
-    echo "TRAVIS_COMMIT does not exist; setting to FETCH_HEAD"
-    TRAVIS_COMMIT=$FETCH_HEAD
+if [[ $TRAVIS_EVENT_TYPE = 'push' ]] ; then
+  if ! git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
+    echo 'TRAVIS_COMMIT does not exist - CI failure'
+    exit 1
+  fi
+else
+  if [[ $TRAVIS_COMMIT != $(git rev-parse FETCH_HEAD) ]] ; then
+    echo "WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!"
+    if git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
+      echo "TRAVIS_COMMIT exists, so going with it"
+    else
+      echo "TRAVIS_COMMIT does not exist; setting to FETCH_HEAD"
+      TRAVIS_COMMIT=$FETCH_HEAD
+    fi
   fi
 fi
 
