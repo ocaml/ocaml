@@ -407,7 +407,7 @@ let label_for_call_gc ?label_after_call_gc sz =
   match IntMap.find_opt sz !call_gc_labels with
   | Some lbl -> lbl
   | None ->
-      let lbl = 
+      let lbl =
         match label_after_call_gc with Some l -> l | None -> new_label() in
       call_gc_labels := IntMap.add sz lbl !call_gc_labels;
       lbl
