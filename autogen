@@ -20,8 +20,9 @@ autoconf --force --warnings=all,error
 # removed for CI consistency...
 # POSIX Notes
 #  - sed -i without a backup file is not portable, hence configure.tmp
+#  - GNU sed's /../,+8d becomes /../{N;..;d;} (and the last ; is important)
 sed -e '/^runstatedir/d' \
-    -e '/-runstatedir /,+8d' \
+    -e '/-runstatedir /{N;N;N;N;N;N;N;N;d;}' \
     -e '/--runstatedir=DIR/d' \
     -e 's/ runstatedir//' configure > configure.tmp
 mv -f configure.tmp configure
