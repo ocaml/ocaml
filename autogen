@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-autoconf -W all,error
+autoconf --force --warnings=all,error
 # Some distros have the 2013 --runstatedir patch to autoconf (see
 # http://git.savannah.gnu.org/cgit/autoconf.git/commit/?id=a197431414088a417b407b9b20583b2e8f7363bd
 # in the GNU autoconf repo), and some don't, so ensure its effects are
