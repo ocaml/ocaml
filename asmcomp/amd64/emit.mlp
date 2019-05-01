@@ -977,6 +977,9 @@ let begin_assembly() =
     D.extrn "caml_young_limit" QWORD;
     D.extrn "caml_exception_pointer" QWORD;
     D.extrn "caml_call_gc" NEAR;
+    D.extrn "caml_call_gc1" NEAR;
+    D.extrn "caml_call_gc2" NEAR;
+    D.extrn "caml_call_gc3" NEAR;
     D.extrn "caml_c_call" NEAR;
     D.extrn "caml_allocN" NEAR;
     D.extrn "caml_alloc1" NEAR;
