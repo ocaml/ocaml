@@ -178,7 +178,6 @@ LBL(103):
         subl    G(caml_young_ptr), %eax /* eax = - size */
         negl    %eax                    /* eax = size */
         pushl   %eax; CFI_ADJUST(4)     /* save desired size */
-        subl    %eax, G(caml_young_ptr) /* must update young_ptr */
         movl    4(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax
