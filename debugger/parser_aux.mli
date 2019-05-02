@@ -23,7 +23,7 @@ type expression =
 
 type break_arg =
     BA_none                             (* break *)
-  | BA_pc of int                        (* break PC *)
+  | BA_pc of Debugcom.pc                (* break FRAG PC *)
   | BA_function of expression           (* break FUNCTION *)
   | BA_pos1 of Longident.t option * int * int option
                                         (* break @ [MODULE] LINE [POS] *)

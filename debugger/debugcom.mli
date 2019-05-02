@@ -16,18 +16,25 @@
 
 (* Low-level communication with the debuggee *)
 
+type pc =
+  { frag : int;
+    pos : int; }
+
 type execution_summary =
     Event
   | Breakpoint
   | Exited
   | Trap_barrier
   | Uncaught_exc
+  | Debug_info of Instruct.debug_event list array
+  | Code_loaded of int
+  | Code_unloaded of int
 
 type report =
   { rep_type : execution_summary;
-    rep_event_count : int;
+    rep_event_count : int64;
     rep_stack_pointer : int;
-    rep_program_pointer : int }
+    rep_program_pointer : pc }
 
 type checkpoint_report =
     Checkpoint_done of int
@@ -41,13 +48,13 @@ type follow_fork_mode =
 val set_current_connection : Primitives.io_channel -> unit
 
 (* Put an event at given pc *)
-val set_event : int -> unit
+val set_event : pc -> unit
 
 (* Put a breakpoint at given pc *)
-val set_breakpoint : int -> unit
+val set_breakpoint : pc -> unit
 
 (* Remove breakpoint or event at given pc *)
-val reset_instr : int -> unit
+val reset_instr : pc -> unit
 
 (* Create a new checkpoint (the current process forks). *)
 val do_checkpoint : unit -> checkpoint_report
@@ -63,12 +70,12 @@ val wait_child : Primitives.io_channel -> unit
 
 (* Move to initial frame (that of current function). *)
 (* Return stack position and current pc *)
-val initial_frame : unit -> int * int
+val initial_frame : unit -> int * pc
 val set_initial_frame : unit -> unit
 
 (* Get the current frame position *)
 (* Return stack position and current pc *)
-val get_frame : unit -> int * int
+val get_frame : unit -> int * pc
 
 (* Set the current frame *)
 val set_frame : int -> unit
@@ -76,7 +83,7 @@ val set_frame : int -> unit
 (* Move up one frame *)
 (* Return stack position and current pc.
    If there's no frame above, return (-1, 0). *)
-val up_frame : int -> int * int
+val up_frame : int -> int * pc
 
 (* Set the trap barrier to given stack position. *)
 val set_trap_barrier : int -> unit
@@ -109,7 +116,7 @@ module Remote_value :
     val from_environment : int -> t
     val global : int -> t
     val accu : unit -> t
-    val closure_code : t -> int
+    val closure_code : t -> pc
 
     (* Returns a hexadecimal representation of the remote address,
        or [""] if the value is local. *)

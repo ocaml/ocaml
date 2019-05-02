@@ -26,7 +26,6 @@
 
 extern code_t caml_start_code;
 extern asize_t caml_code_size;
-extern unsigned char * caml_saved_code;
 
 void caml_init_code_fragments(void);
 void caml_load_code (int fd, asize_t len);

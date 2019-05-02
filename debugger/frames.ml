@@ -25,7 +25,7 @@ open Symbols
 let current_frame = ref 0
 
 (* Event at selected position *)
-let selected_event = ref (None : debug_event option)
+let selected_event = ref (None : code_event option)
 
 (* Selected position in source. *)
 (* Raise `Not_found' if not on an event. *)
@@ -33,7 +33,7 @@ let selected_point () =
   match !selected_event with
     None ->
       raise Not_found
-  | Some ev ->
+  | Some {ev_ev=ev} ->
       (ev.ev_module,
        (Events.get_pos ev).Lexing.pos_lnum,
        (Events.get_pos ev).Lexing.pos_cnum - (Events.get_pos ev).Lexing.pos_bol)
@@ -42,7 +42,7 @@ let selected_event_is_before () =
   match !selected_event with
     None ->
       raise Not_found
-  | Some {ev_kind = Event_before} ->
+  | Some {ev_ev={ev_kind = Event_before}} ->
       true
   | _ ->
       false
@@ -52,7 +52,7 @@ let selected_event_is_before () =
 
 let rec move_up frame_count event =
   if frame_count <= 0 then event else begin
-    let (sp, pc) = up_frame event.ev_stacksize in
+    let (sp, pc) = up_frame event.ev_ev.ev_stacksize in
     if sp < 0 then raise Not_found;
     move_up (frame_count - 1) (any_event_at_pc pc)
   end
@@ -106,13 +106,13 @@ let reset_frame () =
 let do_backtrace action =
   match !current_event with
     None -> Misc.fatal_error "Frames.do_backtrace"
-  | Some curr_ev ->
+  | Some ev ->
       let (initial_sp, _) = get_frame() in
       set_initial_frame();
-      let event = ref curr_ev in
+      let event = ref ev in
       begin try
         while action (Some !event) do
-          let (sp, pc) = up_frame !event.ev_stacksize in
+          let (sp, pc) = up_frame !event.ev_ev.ev_stacksize in
           if sp < 0 then raise Exit;
           event := any_event_at_pc pc
         done
