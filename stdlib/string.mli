@@ -36,8 +36,7 @@
   {!String.set} and {!String.blit} functions described below. This
   usage is deprecated and only possible when the compiler is put in
   "unsafe-string" mode by giving the [-unsafe-string] command-line
-  option (which is currently the default for reasons of backward
-  compatibility). This is done by making the types [string] and
+  option. This compatibility mode makes the types [string] and
   [bytes] (see module {!Bytes}) interchangeable so that functions
   expecting byte sequences can also accept strings as arguments and
   modify them.
