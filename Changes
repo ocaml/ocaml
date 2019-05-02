@@ -192,6 +192,12 @@ Working version
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
 
+### Build system:
+
+- #8650: ensure that "make" variables are defined before use;
+  revise generation of config/util.ml to better quote special characters
+  (Xavier Leroy, review by David Allsopp)
+
 ### Bug fixes:
 
 - #7156, #8594: make top level use custom printers if they are available
