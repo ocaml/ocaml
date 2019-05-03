@@ -1074,6 +1074,12 @@ let fundecl fundecl =
       | (sz1, lbl1) :: ((sz2, _) :: _ as l) ->
            (sz1 - sz2, lbl1) :: delta_encode l
       | ([] | [(_,_)]) as l -> l in
+    (* Enumerate the GC call points by decreasing size.  This is not
+       necessary for correctness, but it is nice for two reasons:
+       1- all deltas are positive, making the generated code
+          easier to read, and
+       2- smaller allocation sizes, which are more frequent, execute
+          fewer instructions before calling the GC. *)
     let delta_lbl_list =
       delta_encode (List.rev (IntMap.bindings !call_gc_labels)) in
     List.iter
