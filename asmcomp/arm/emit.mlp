@@ -635,7 +635,7 @@ let emit_instr i =
           `{emit_label lbl_redo}:`;
           let first = ref true in
           let ninstr =
-            decompose_intconst (Int32.of_int n) (fun a ->
+            decompose_intconst (Int32.of_int (n - 4)) (fun a ->
               if !first
               then `	sub	{emit_reg i.res.(0)}, alloc_ptr, #{emit_int32 a}\n`
               else `	sub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #{emit_int32 a}\n`;
