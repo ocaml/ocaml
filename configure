@@ -2941,7 +2941,6 @@ case $host in #(
     S=asm
     SO=dll
     outputexe=-Fe
-    mkexedebugflag=''
     syslib='$(1).lib' ;; #(
   *) :
     ccomptype=cc
@@ -12543,7 +12542,7 @@ esac
   flexdir='$(ROOTDIR)/flexdll'
 fi
       iflexdir="-I\"$flexdir\""
-      mkexedebugflag="-link -g"
+      mkexedebugflag=''
 fi ;; #(
   *,x86_64-*-linux*) :
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
