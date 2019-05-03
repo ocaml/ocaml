@@ -90,7 +90,7 @@ CAMLprim value unix_truncate_64(value path, value vlen)
   CAMLparam2(path, vlen);
   WCHAR * p;
   int ret;
-  file_offset len = File_offset_val(vlen);
+  __int64 len = Int64_val(vlen);
   caml_unix_check_path(path, "truncate");
   p = caml_stat_strdup_to_utf16(String_val(path));
   caml_enter_blocking_section();
@@ -118,7 +118,7 @@ CAMLprim value unix_ftruncate_64(value fd, value vlen)
 {
   int ret;
   HANDLE h = Handle_val(fd);
-  file_offset len = File_offset_val(vlen);
+  __int64 len = Int64_val(vlen);
   caml_enter_blocking_section();
   ret = win_ftruncate(h, len);
   caml_leave_blocking_section();
