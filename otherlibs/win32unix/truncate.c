@@ -26,7 +26,7 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-static int win_truncate_handle(HANDLE fh, long long len)
+static int win_truncate_handle(HANDLE fh, __int64 len)
 {
   LARGE_INTEGER fp;
   fp.QuadPart = len;
@@ -37,7 +37,7 @@ static int win_truncate_handle(HANDLE fh, long long len)
   return 0;
 }
 
-static int win_ftruncate(HANDLE fh, long long len)
+static int win_ftruncate(HANDLE fh, __int64 len)
 {
   HANDLE dupfh, currproc;
   int ret;
@@ -55,7 +55,7 @@ static int win_ftruncate(HANDLE fh, long long len)
   return ret;
 }
 
-static int win_truncate(WCHAR * path, long long len)
+static int win_truncate(WCHAR * path, __int64 len)
 {
   HANDLE fh;
   int ret;
