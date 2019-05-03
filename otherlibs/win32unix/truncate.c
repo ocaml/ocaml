@@ -41,9 +41,6 @@ static int win_ftruncate(HANDLE fh, __int64 len)
 {
   HANDLE dupfh, currproc;
   int ret;
-  if (fh == INVALID_HANDLE_VALUE) {
-    return -1;
-  }
   currproc = GetCurrentProcess();
   /* Duplicate the handle, so we are free to modify its file position. */
   if (DuplicateHandle(currproc, fh, currproc, &dupfh, 0, FALSE,
