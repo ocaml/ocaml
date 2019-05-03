@@ -104,25 +104,25 @@ CAMLprim value unix_truncate_64(value path, value vlen)
 
 CAMLprim value unix_ftruncate(value fd, value len)
 {
-  CAMLparam1(len);
   int ret;
+  HANDLE h = Handle_val(fd);
   caml_enter_blocking_section();
-  ret = win_ftruncate(Handle_val(fd), Long_val(len));
+  ret = win_ftruncate(h, Long_val(len));
   caml_leave_blocking_section();
   if (ret == -1)
     uerror("ftruncate", Nothing);
-  CAMLreturn(Val_unit);
+  return Val_unit;
 }
 
 CAMLprim value unix_ftruncate_64(value fd, value vlen)
 {
-  CAMLparam1(vlen);
   int ret;
+  HANDLE h = Handle_val(fd);
   file_offset len = File_offset_val(vlen);
   caml_enter_blocking_section();
-  ret = win_ftruncate(Handle_val(fd), len);
+  ret = win_ftruncate(h, len);
   caml_leave_blocking_section();
   if (ret == -1)
     uerror("ftruncate", Nothing);
-  CAMLreturn(Val_unit);
+  return Val_unit;
 }
