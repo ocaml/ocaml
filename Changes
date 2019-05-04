@@ -170,6 +170,10 @@ Working version
   (Damien Doligez, reports by John Whitington and Alain Frisch,
    review by Jeremy Yallop and Gabriel Scherer)
 
+- #8657: Optimization in [Array.make] when initializing with unboxed
+   or young values.
+   (Jacques-Henri Jourda, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
