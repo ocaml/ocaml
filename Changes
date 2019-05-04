@@ -156,6 +156,10 @@ Working version
 - #8607: Remove obsolete macros for pre-2002 MSVC support
   (Stephen Dolan, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #8619: Ensure Gc.minor_words remains accurate after a GC.
+  (Stephen Dolan, Xavier Leroy and David Allsopp,
+   review by Xavier Leroy and Gabriel Scherer)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account

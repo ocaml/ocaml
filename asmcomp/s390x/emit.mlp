@@ -429,10 +429,11 @@ let emit_instr i =
             gc_return_lbl = lbl_redo;
             gc_frame_lbl = lbl_frame } :: !call_gc_sites;
         `{emit_label lbl_redo}:`;
-        `	lay	%r11, {emit_int(-n)}(%r11)\n`;
-        `	clgr	%r11, %r10\n`;
-        `	brcl	4, {emit_label lbl_call_gc}\n`;  (* less than *)
-        `	la	{emit_reg i.res.(0)}, 8(%r11)\n`
+        `	lay	{emit_reg i.res.(0)}, {emit_int(-n+8)}(%r11)\n`;
+        `	clgr	{emit_reg i.res.(0)}, %r10\n`;
+        `	brcl	12, {emit_label lbl_call_gc}\n`;
+                                                 (* less than or equal *)
+        `	lay	%r11, -8({emit_reg i.res.(0)})\n`
 
     | Lop(Iintop Imulh) ->
        (* Hacker's Delight section 8.3:

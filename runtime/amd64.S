@@ -397,6 +397,7 @@ LBL(caml_alloc1):
         jb      LBL(100)
         ret
 LBL(100):
+        addq    $16, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
@@ -414,6 +415,7 @@ LBL(caml_alloc2):
         jb      LBL(101)
         ret
 LBL(101):
+        addq    $24, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
@@ -431,6 +433,7 @@ LBL(caml_alloc3):
         jb      LBL(102)
         ret
 LBL(102):
+        addq    $32, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8) */
@@ -450,6 +453,7 @@ LBL(caml_allocN):
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
+        addq    0(%rsp), %r15
         CFI_ADJUST(8)
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
@@ -466,6 +470,27 @@ LBL(103):
         popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
+
+/* Reset the allocation pointer and invoke the GC */
+
+FUNCTION(G(caml_call_gc1))
+CFI_STARTPROC
+        addq    $16, %r15
+        jmp     GCALL(caml_call_gc)
+CFI_ENDPROC
+
+FUNCTION(G(caml_call_gc2))
+CFI_STARTPROC
+        addq    $24, %r15
+        jmp     GCALL(caml_call_gc)
+CFI_ENDPROC
+
+FUNCTION(G(caml_call_gc3))
+CFI_STARTPROC
+        addq    $32, %r15
+        jmp     GCALL(caml_call_gc)
+CFI_ENDPROC
+
 
 /* Call a C function from OCaml */
 
