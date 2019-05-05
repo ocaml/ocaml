@@ -172,6 +172,9 @@ Working version
 
 ### Other libraries:
 
+- #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
+  (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
+
 - #7903, #2306: Make Thread.delay interruptible by signals again
   (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
 
