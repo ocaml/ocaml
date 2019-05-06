@@ -77,6 +77,10 @@ module TestGenerational = Test(Generational)
 external young2old : unit -> unit = "gb_young2old"
 let _ = young2old (); Gc.full_major ()
 
+external static2young : int * int -> (unit -> unit) -> int = "gb_static2young"
+let _ =
+  assert (static2young (1, 1) Gc.full_major == 0x42)
+
 let _ =
   let n =
     if Array.length Sys.argv < 2 then 10000 else int_of_string Sys.argv.(1) in

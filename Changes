@@ -153,6 +153,9 @@ Working version
 - #8607: Remove obsolete macros for pre-2002 MSVC support
   (Stephen Dolan, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #8656: Fix a bug in [caml_modify_generational_global_root]
+  (Jacques-Henri Jourdan, review by Gabriel Scherer)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
