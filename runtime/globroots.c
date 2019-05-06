@@ -183,6 +183,16 @@ struct global_root_list caml_global_roots_young = { NULL, { NULL, }, 0 };
 struct global_root_list caml_global_roots_old = { NULL, { NULL, }, 0 };
                   /* generational roots pointing to major heap */
 
+/* The invariant of the generational roots is the following:
+   - If the global root contains a pointer to the minor heap, then the root is
+     in [caml_global_roots_young];
+   - If the global root contains a pointer to the major heap, then the root is
+     in [caml_global_roots_old] or in [caml_global_roots_young];
+   - Otherwise (the root contains a pointer outside of the heap or an integer),
+     then neither [caml_global_roots_young] nor [caml_global_roots_old] contain
+     it.
+ */
+
 /* Register a global C root of the mutable kind */
 
 CAMLexport void caml_register_global_root(value *r)
@@ -198,17 +208,34 @@ CAMLexport void caml_remove_global_root(value *r)
   caml_delete_global_root(&caml_global_roots, r);
 }
 
+enum gc_root_class {
+  YOUNG,
+  OLD,
+  UNTRACKED
+};
+
+static enum gc_root_class classify_gc_root(value v)
+{
+  if(!Is_block(v)) return UNTRACKED;
+  if(Is_young(v)) return YOUNG;
+  if(Is_in_heap(v)) return OLD;
+  return UNTRACKED;
+}
+
 /* Register a global C root of the generational kind */
 
 CAMLexport void caml_register_generational_global_root(value *r)
 {
-  value v = *r;
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
-  if (Is_block(v)) {
-    if (Is_young(v))
+
+  switch(classify_gc_root(*r)) {
+    case YOUNG:
       caml_insert_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(v))
+      break;
+    case OLD:
       caml_insert_global_root(&caml_global_roots_old, r);
+      break;
+    case UNTRACKED: break;
   }
 }
 
@@ -216,12 +243,15 @@ CAMLexport void caml_register_generational_global_root(value *r)
 
 CAMLexport void caml_remove_generational_global_root(value *r)
 {
-  value v = *r;
-  if (Is_block(v)) {
-    if (Is_in_heap_or_young(v))
-      caml_delete_global_root(&caml_global_roots_young, r);
-    if (Is_in_heap(v))
+  switch(classify_gc_root(*r)) {
+    case OLD:
       caml_delete_global_root(&caml_global_roots_old, r);
+      /* Fallthrough: the root can be in the young list while actually
+         being in the major heap. */
+    case YOUNG:
+      caml_delete_global_root(&caml_global_roots_young, r);
+      break;
+    case UNTRACKED: break;
   }
 }
 
@@ -229,39 +259,31 @@ CAMLexport void caml_remove_generational_global_root(value *r)
 
 CAMLexport void caml_modify_generational_global_root(value *r, value newval)
 {
-  value oldval = *r;
+  enum gc_root_class c;
+  /* See PRs #4704, #607 and #8656 */
+  switch(classify_gc_root(newval)) {
+    case YOUNG:
+      c = classify_gc_root(*r);
+      if(c == OLD)
+        caml_delete_global_root(&caml_global_roots_old, r);
+      if(c != YOUNG)
+        caml_insert_global_root(&caml_global_roots_young, r);
+      break;
 
-  /* It is OK to have a root in roots_young that suddenly points to
-     the old generation -- the next minor GC will take care of that.
-     What needs corrective action is a root in roots_old that suddenly
-     points to the young generation. */
-  if (Is_block(newval) && Is_young(newval) &&
-      Is_block(oldval) && Is_in_heap(oldval)) {
-    caml_delete_global_root(&caml_global_roots_old, r);
-    caml_insert_global_root(&caml_global_roots_young, r);
+    case OLD:
+      /* If the old class is YOUNG, then we do not need to do
+         anything: It is OK to have a root in roots_young that
+         suddenly points to the old generation -- the next minor GC
+         will take care of that. */
+      if(classify_gc_root(*r) == UNTRACKED)
+        caml_insert_global_root(&caml_global_roots_old, r);
+      break;
+
+    case UNTRACKED:
+      caml_remove_generational_global_root(r);
+      break;
   }
-  /* PR#4704 */
-  else if (!Is_block(oldval) && Is_block(newval)) {
-    /* The previous value in the root was unboxed but now it is boxed.
-       The root won't appear in any of the root lists thus far (by virtue
-       of the operation of [caml_register_generational_global_root]), so we
-       need to make sure it gets in, or else it will never be scanned. */
-    if (Is_young(newval))
-      caml_insert_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(newval))
-      caml_insert_global_root(&caml_global_roots_old, r);
-  }
-  else if (Is_block(oldval) && !Is_block(newval)) {
-    /* The previous value in the root was boxed but now it is unboxed, so
-       the root should be removed. If [oldval] is young, this will happen
-       anyway at the next minor collection, but it is safer to delete it
-       here. */
-    if (Is_in_heap_or_young(oldval))
-      caml_delete_global_root(&caml_global_roots_young, r);
-    if (Is_in_heap(oldval))
-      caml_delete_global_root(&caml_global_roots_old, r);
-  }
-  /* end PR#4704 */
+
   *r = newval;
 }
 

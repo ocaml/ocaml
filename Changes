@@ -160,6 +160,9 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
+- #8656: Fix a bug in [caml_modify_generational_global_root]
+  (Jacques-Henri Jourdan, review by ???)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
