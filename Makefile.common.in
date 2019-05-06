@@ -62,3 +62,6 @@ else
   ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
   ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
 endif
+
+# By default, request ocamllex to be quiet
+OCAMLLEX_FLAGS ?= -q
