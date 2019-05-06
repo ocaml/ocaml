@@ -174,20 +174,7 @@ $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
-OCAML299TO3=lexer299.cmo ocaml299to3.cmo
 LIBRARY3=config.cmo build_path_prefix_map.cmo misc.cmo warnings.cmo location.cmo
-
-ocaml299to3: $(OCAML299TO3)
-	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)
-
-lexer299.ml: lexer299.mll
-	$(CAMLLEX) lexer299.mll
-
-#install::
-#	$(INSTALL_PROG) ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
-
-clean::
-	rm -f ocaml299to3 lexer299.ml
 
 # Label remover for interface files (upgrade 3.02 to 3.03)
 

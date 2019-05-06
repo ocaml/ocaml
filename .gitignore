@@ -242,8 +242,6 @@ _build
 /tools/primreq.opt
 /tools/ocamldumpobj
 /tools/keywords
-/tools/lexer299.ml
-/tools/ocaml299to3
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
