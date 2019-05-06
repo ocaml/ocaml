@@ -245,9 +245,6 @@ _build
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
 /tools/ocamlmklibconfig.ml
-/tools/lexer301.ml
-/tools/scrapelabels
-/tools/addlabels
 /tools/objinfo_helper
 /tools/read_cmt
 /tools/read_cmt.opt
