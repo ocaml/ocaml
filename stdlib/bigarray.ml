@@ -130,16 +130,42 @@ module Genarray = struct
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
 
-  external overlap : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t ->
-                        int array -> int array -> int
-    = "caml_ba_overlap" [@@noalloc]
+  external ptr : ('a, 'b, c_layout) t -> int = "caml_ba_ptr" [@@noalloc]
 
-  let overlap a b =
-    let a_dims = Array.make (num_dims a) 0 in
-    let b_dims = Array.make (num_dims b) 0 in
-    let len = overlap a b a_dims b_dims in
+  let overlap
+    : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> (int * int array * int array) option
+    = fun a b ->
+    if (num_dims a) <> (num_dims b) then invalid_arg "Bigarray.Genarray.overlap" ;
 
-    if len = 0 then None else Some (len, a_dims, b_dims)
+    let src_a = ptr a in
+    let src_b = ptr b in
+    let len_a = size_in_bytes a in
+    let len_b = size_in_bytes b in
+
+    let len = max 0 (min (src_a + len_a) (src_b + len_b) - max src_a src_b) in
+    let len = len / kind_size_in_bytes (kind a) in
+
+    if src_a >= src_b && src_a < src_b + len_b
+    then begin
+      let offset = ref ((src_a - src_b) / kind_size_in_bytes (kind a)) in
+      let points = Array.make (num_dims b) 0 in
+      for i = num_dims b - 1 downto 0
+      do
+        points.(i) <- !offset mod (nth_dim b i);
+        offset := !offset / (nth_dim b i);
+      done ;
+      Some (len, Array.make (num_dims a) 0, points)
+    end else if src_b >= src_a && src_b < src_a + len_a
+    then begin
+      let offset = ref ((src_b - src_a) / kind_size_in_bytes (kind b)) in
+      let points = Array.make (num_dims a) 0 in
+      for i = num_dims a - 1 downto 0
+      do
+        points.(i) <- !offset mod (nth_dim a i);
+        offset := !offset / (nth_dim a i);
+      done ;
+      Some (len, points, Array.make (num_dims b) 0)
+    end else None
 end
 
 module Array0 = struct

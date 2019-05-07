@@ -1219,6 +1219,16 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
 #undef b
 }
 
+CAMLprim value caml_ba_ptr(value va)
+{
+  CAMLparam1(va);
+
+  struct caml_ba_array * a = Caml_ba_array_val(va);
+  void *src_a = a->data;
+
+  CAMLreturn(Val_long(src_a));
+}
+
 CAMLprim value caml_ba_overlap(value va, value vb, value vadims, value vbdims)
 {
   CAMLparam4(va, vb, vadims, vbdims);
