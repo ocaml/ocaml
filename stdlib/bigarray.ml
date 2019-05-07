@@ -133,7 +133,9 @@ module Genarray = struct
   external ptr : ('a, 'b, c_layout) t -> int = "caml_ba_ptr" [@@noalloc]
 
   let overlap
-    : ('a, 'b, c_layout) t -> ('a, 'b, c_layout) t -> (int * int array * int array) option
+    : ('a, 'b, c_layout) t ->
+      ('a, 'b, c_layout) t ->
+      (int * int array * int array) option
     = fun a b ->
     if (num_dims a) <> (num_dims b) then invalid_arg "Bigarray.Genarray.overlap" ;
 
