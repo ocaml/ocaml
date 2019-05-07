@@ -61,7 +61,7 @@ clean::
 beforedepend:: parser.ml parser.mli
 
 lexer.ml: lexer.mll
-	$(CAMLLEX) lexer.mll
+	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 clean::
 	rm -f lexer.ml
