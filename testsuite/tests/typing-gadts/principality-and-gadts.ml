@@ -1,0 +1,381 @@
+(* TEST
+   * expect *)
+
+module M = struct type t = A | B end;;
+[%%expect{|
+module M : sig type t = A | B end
+|}];;
+
+type 'a t = I : int t | M : M.t t;;
+[%%expect{|
+type 'a t = I : int t | M : M.t t
+|}];;
+
+type dyn = Sigma : 'a t * 'a -> dyn;;
+[%%expect{|
+type dyn = Sigma : 'a t * 'a -> dyn
+|}];;
+
+let f = function Sigma (M, A) -> ();;
+[%%expect{|
+Line 1, characters 8-35:
+1 | let f = function Sigma (M, A) -> ();;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Sigma (M, B)
+val f : dyn -> unit = <fun>
+|}];;
+
+type _ t = IntLit : int t | BoolLit : bool t;;
+[%%expect{|
+type _ t = IntLit : int t | BoolLit : bool t
+|}]
+
+(* The following should warn *)
+
+let f (type a) t (x : a) =
+  ignore  (t : a t);
+  match t, x with
+  | IntLit, n -> n+1
+  | BoolLit, b -> 1
+;;
+[%%expect{|
+val f : 'a t -> 'a -> int = <fun>
+|}, Principal{|
+Line 5, characters 4-14:
+5 |   | BoolLit, b -> 1
+        ^^^^^^^^^^
+Error: This pattern matches values of type bool t * a
+       but a pattern was expected which matches values of type int t * a
+       Type bool is not compatible with type int
+|}]
+
+let f (type a) t (x : a) =
+  ignore  (t : a t);
+  match t, x with
+  | IntLit, n -> n+1
+  | _, _ -> 1
+;;
+[%%expect{|
+val f : 'a t -> 'a -> int = <fun>
+|}, Principal{|
+Line 4, characters 4-13:
+4 |   | IntLit, n -> n+1
+        ^^^^^^^^^
+Error: This pattern matches values of type int t * a
+       but a pattern was expected which matches values of type a t * a
+       Type int is not compatible with type a
+|}]
+
+
+let f (type a) t (x : a) =
+  begin match t, x with
+  | IntLit, n -> n+1
+  | BoolLit, b -> 1
+  end;
+  ignore  (t : a t)
+;;
+[%%expect{|
+Line 4, characters 4-11:
+4 |   | BoolLit, b -> 1
+        ^^^^^^^
+Error: This pattern matches values of type bool t
+       but a pattern was expected which matches values of type int t
+       Type bool is not compatible with type int
+|}, Principal{|
+Line 4, characters 4-14:
+4 |   | BoolLit, b -> 1
+        ^^^^^^^^^^
+Error: This pattern matches values of type bool t * a
+       but a pattern was expected which matches values of type int t * a
+       Type bool is not compatible with type int
+|}]
+
+let f (type a) t (x : a) =
+  begin match t, x with
+  | IntLit, n -> n+1
+  | _, _ -> 1
+  end;
+  ignore  (t : a t)
+;;
+[%%expect{|
+Line 3, characters 17-18:
+3 |   | IntLit, n -> n+1
+                     ^
+Error: This expression has type a but an expression was expected of type int
+|}]
+
+(**********************)
+(* Derived from #9019 *)
+(**********************)
+
+type _ ab = A | B
+
+module M : sig
+  type _ mab
+  type _ t = AB : unit ab t | MAB : unit mab t
+end = struct
+  type 'a mab = 'a ab = A | B
+  type _ t = AB : unit ab t | MAB : unit mab t
+end;;
+[%%expect{|
+type _ ab = A | B
+module M : sig type _ mab type _ t = AB : unit ab t | MAB : unit mab t end
+|}]
+
+open M;;
+[%%expect{|
+|}]
+
+let f1 t1 =
+  match t1 with
+  | AB -> true
+  | MAB -> false;;
+[%%expect{|
+val f1 : unit ab M.t -> bool = <fun>
+|}, Principal{|
+Line 4, characters 4-7:
+4 |   | MAB -> false;;
+        ^^^
+Error: This pattern matches values of type unit M.mab M.t
+       but a pattern was expected which matches values of type unit ab M.t
+       Type unit M.mab is not compatible with type unit ab
+|}]
+
+let f2 (type x) t1 =
+  ignore (t1 : x t);
+  match t1 with
+  | AB -> true
+  | MAB -> false;;
+[%%expect{|
+val f2 : 'x M.t -> bool = <fun>
+|}, Principal{|
+Line 5, characters 4-7:
+5 |   | MAB -> false;;
+        ^^^
+Error: This pattern matches values of type unit M.mab M.t
+       but a pattern was expected which matches values of type unit ab M.t
+       Type unit M.mab is not compatible with type unit ab
+|}]
+
+(* This should warn *)
+let f3 t1 =
+  ignore (t1 : unit ab t);
+  match t1 with
+  | AB -> true
+  | MAB -> false;;
+[%%expect{|
+val f3 : unit ab M.t -> bool = <fun>
+|}, Principal{|
+Line 5, characters 4-7:
+5 |   | MAB -> false;;
+        ^^^
+Error: This pattern matches values of type unit M.mab M.t
+       but a pattern was expected which matches values of type unit ab M.t
+       Type unit M.mab is not compatible with type unit ab
+|}]
+
+(* Example showing we need to warn when any part of the type is non generic. *)
+type (_,_) eq = Refl : ('a,'a) eq;;
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+|}]
+
+let g1 (type x) (e : (x, int option) eq) (x : x) : int option =
+   let Refl = e in x;;
+[%%expect{|
+val g1 : ('x, int option) eq -> 'x -> int option = <fun>
+|}]
+
+(* This should warn *)
+let g2 (type x) (e : (x, _ option) eq) (x : x) : int option =
+   ignore (e : (x, int option) eq);
+   let Refl = e in x;;
+[%%expect{|
+val g2 : ('x, int option) eq -> 'x -> int option = <fun>
+|}, Principal{|
+Line 3, characters 7-11:
+3 |    let Refl = e in x;;
+           ^^^^
+Error: This pattern matches values of type (x, $0 option) eq
+       The type constructor $0 would escape its scope
+|}]
+
+(* Issues with "principal level" *)
+
+module Foo : sig
+  type t
+end = struct
+  type t = int
+end
+
+type _ gadt = F : Foo.t gadt
+
+type  'a t = { a: 'a; b: 'a gadt } ;;
+[%%expect{|
+module Foo : sig type t end
+type _ gadt = F : Foo.t gadt
+type 'a t = { a : 'a; b : 'a gadt; }
+|}]
+
+let () =
+  match [] with
+  | [ { a = 3; _ } ; { b = F; _ }] -> ()
+  | _ -> ();;
+[%%expect{|
+|}]
+
+let () =
+  match [] with
+  | [ { b = F; _ } ; { a = 3; _ }] -> ()
+  | _ -> ();;
+[%%expect{|
+Line 3, characters 27-28:
+3 |   | [ { b = F; _ } ; { a = 3; _ }] -> ()
+                               ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type Foo.t
+|}]
+
+type (_, _, _) eq3 = Refl3 : ('a, 'a, 'a) eq3
+
+type  'a t = { a: 'a; b: (int, Foo.t, 'a) eq3 }
+;;
+[%%expect{|
+type (_, _, _) eq3 = Refl3 : ('a, 'a, 'a) eq3
+type 'a t = { a : 'a; b : (int, Foo.t, 'a) eq3; }
+|}]
+
+let () =
+  match [] with
+  | [ { a = 3; _ }; { b = Refl3 ; _ }] -> ()
+  | _ -> ()
+;;
+[%%expect{|
+|}]
+
+let () =
+  match [] with
+  | [ { b = Refl3 ; _ }; { a = 3; _ } ] -> ()
+  | _ -> ()
+;;
+[%%expect{|
+|}]
+
+(* Unify with 'a first *)
+
+type  'a t = { a: 'a; b: ('a, int, Foo.t) eq3 }
+;;
+[%%expect{|
+type 'a t = { a : 'a; b : ('a, int, Foo.t) eq3; }
+|}]
+
+let () =
+  match [] with
+  | [ { a = 3; _ }; { b = Refl3 ; _ }] -> ()
+  | _ -> ()
+[%%expect{|
+|}]
+
+let () =
+  match [] with
+  | [ { b = Refl3 ; _ }; { a = 3; _ } ] -> ()
+  | _ -> ()
+[%%expect{|
+|}]
+
+
+(*************)
+(* Some more *)
+(*************)
+
+module M : sig type t end = struct type t = int end
+module N : sig type t end = struct type t = int end
+;;
+[%%expect{|
+module M : sig type t end
+module N : sig type t end
+|}]
+
+type 'a foo = { x : 'a; eq : (M.t, N.t, 'a) eq3 };;
+[%%expect{|
+type 'a foo = { x : 'a; eq : (M.t, N.t, 'a) eq3; }
+|}]
+
+let foo x =
+  match x with
+  | { x = x; eq = Refl3 } -> x
+;;
+[%%expect{|
+val foo : M.t foo -> M.t = <fun>
+|}]
+
+let foo x =
+  match x with
+  | { x = (x : int); eq = Refl3 } -> x
+;;
+[%%expect{|
+val foo : int foo -> int = <fun>
+|}]
+
+let foo x =
+  match x with
+  | { x = (x : N.t); eq = Refl3 } -> x
+;;
+[%%expect{|
+Line 3, characters 4-33:
+3 |   | { x = (x : N.t); eq = Refl3 } -> x
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type N.t foo
+       but a pattern was expected which matches values of type 'a
+       This instance of M.t is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line 3, characters 4-33:
+3 |   | { x = (x : N.t); eq = Refl3 } -> x
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type N.t foo
+       This instance of N.t is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+let foo x =
+  match x with
+  | { x = (x : string); eq = Refl3 } -> x
+;;
+[%%expect{|
+val foo : string foo -> string = <fun>
+|}]
+
+let bar x =
+  match x with
+  | { x = x; _ } -> x
+;;
+[%%expect{|
+val bar : 'a foo -> 'a = <fun>
+|}]
+
+let bar x =
+  match x with
+  | { x = (x : int); _ } -> x
+;;
+[%%expect{|
+val bar : int foo -> int = <fun>
+|}]
+
+let bar x =
+  match x with
+  | { x = (x : N.t); _ } -> x
+;;
+[%%expect{|
+val bar : N.t foo -> N.t = <fun>
+|}]
+
+let bar x =
+  match x with
+  | { x = (x : string); _ } -> x
+;;
+[%%expect{|
+val bar : string foo -> string = <fun>
+|}]
