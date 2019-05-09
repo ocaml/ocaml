@@ -514,8 +514,8 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
         if (Tag_hd(hd) == Cont_tag) {
           mark_stack_push(stk, e);
           caml_darken_cont(v);
-          e = stk->stack[--stk->count];
-        } else {
+	  e = (mark_entry){0};
+	} else {
 again:
           if (Tag_hd(hd) == Lazy_tag) {
             if (!atomic_compare_exchange_strong(
