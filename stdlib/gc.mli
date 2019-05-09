@@ -419,7 +419,7 @@ module Memprof :
         tag: int;
         (** The tag of the allocated block. *)
         size: int;
-        (** The size of the allocated block, in words (exclusing the
+        (** The size of the allocated block, in words (excluding the
             header). *)
         callstack: Printexc.raw_backtrace;
         (** The callstack for the allocation. *)
@@ -428,8 +428,10 @@ module Memprof :
 
     type 'a callback = sample_info -> (Obj.t, 'a) Ephemeron.K1.t option
     (** [callback] is the type of callbacks launch by the sampling
-       engine.  A callback returns an option over an ephemeron whose
-       key is set to the allocated block for further tracking.
+       engine. A callback returns an option over an ephemeron whose
+       key is set to the allocated block for further tracking. After
+       the callback returns, the key of the ephemeron should not be
+       read, since this would change its reachability properties.
 
        The sampling is temporarily disabled when calling the callback
        for the current thread. So it needs not be reentrant if only

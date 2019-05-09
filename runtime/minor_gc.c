@@ -48,9 +48,11 @@
          [caml_gc_dispatch]. Currently, it is either [caml_young_alloc_start]
          or the mid-point of the allocation arena.
        - [caml_young_limit] is the pointer that is compared to
-         [caml_young_ptr] for allocation. It is either
-         [caml_young_alloc_end] if a signal is pending and we are in
-         native code, or [caml_young_trigger].
+         [caml_young_ptr] for allocation. It is either:
+            + [caml_young_alloc_end] if a signal is pending and we are in
+              native code,
+            + [caml_memprof_young_trigger] if a memprof sample is planned,
+            + or [caml_young_trigger].
 */
 
 struct generic_table CAML_TABLE_STRUCT(char);
@@ -143,7 +145,7 @@ void caml_set_minor_heap_size (asize_t bsz)
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
-    caml_young_limit = caml_young_trigger;
+    caml_update_young_limit();
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
@@ -163,9 +165,10 @@ void caml_set_minor_heap_size (asize_t bsz)
   caml_young_alloc_mid = caml_young_alloc_start + Wsize_bsize (bsz) / 2;
   caml_young_alloc_end = caml_young_end;
   caml_young_trigger = caml_young_alloc_start;
-  caml_young_limit = caml_young_trigger;
+  caml_update_young_limit();
   caml_young_ptr = caml_young_alloc_end;
   caml_minor_heap_wsz = Wsize_bsize (bsz);
+  caml_memprof_renew_minor_sample();
 
   reset_table ((struct generic_table *) &caml_ref_table);
   reset_table ((struct generic_table *) &caml_ephe_ref_table);
@@ -404,6 +407,7 @@ void caml_empty_minor_heap (void)
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
     CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
+    caml_memprof_renew_minor_sample();
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }else{
     /* The minor heap is empty nothing to do. */
@@ -442,7 +446,7 @@ CAMLexport void caml_gc_dispatch (void)
     /* reset the pointers first because the end hooks might allocate */
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
-    caml_young_limit = caml_young_trigger;
+    caml_update_young_limit();
     caml_empty_minor_heap ();
     /* The minor heap is empty, we can start a major collection. */
     if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
@@ -456,7 +460,7 @@ CAMLexport void caml_gc_dispatch (void)
          repeat the minor collection. */
       caml_requested_minor_gc = 0;
       caml_young_trigger = caml_young_alloc_mid;
-      caml_young_limit = caml_young_trigger;
+      caml_update_young_limit();
       caml_empty_minor_heap ();
       /* The minor heap is empty, we can start a major collection. */
       if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
@@ -467,9 +471,34 @@ CAMLexport void caml_gc_dispatch (void)
     /* The minor heap is half-full, do a major GC slice. */
     caml_requested_major_slice = 0;
     caml_young_trigger = caml_young_alloc_start;
-    caml_young_limit = caml_young_trigger;
+    caml_update_young_limit();
     caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/major");
+  }
+}
+
+/* Called by [Alloc_small] when [caml_young_ptr] reaches [caml_young_limit].
+   We have to either call memprof or the gc. */
+void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int track)
+{
+  if (caml_young_ptr < caml_young_trigger){
+    caml_young_ptr += Whsize_wosize (wosize);
+    CAML_INSTR_INT ("force_minor/alloc_small@", 1);
+    caml_gc_dispatch ();
+    caml_young_ptr -= Whsize_wosize (wosize);
+  }
+  if(caml_young_ptr < caml_memprof_young_trigger){
+    if(track) {
+      caml_memprof_track_young((tag), (wosize));
+      /* Until the allocation actually takes place, the heap is in an invalid
+         state (see comments in [caml_memprof_track_young]). Hence, very little
+         heap operations are allowed before the actual allocation.
+
+         Moreover, [caml_young_ptr] should not be modified before the
+         allocation, because its value has been used as the pointer to
+         the sampled block.
+      */
+    } else caml_memprof_renew_minor_sample();
   }
 }
 
