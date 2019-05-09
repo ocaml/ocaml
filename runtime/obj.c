@@ -118,6 +118,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
   } else {
     res = caml_alloc_shr(sz, tg);
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
+    res = caml_check_urgent_gc(res);
   }
   CAMLreturn (res);
 }

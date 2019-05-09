@@ -90,10 +90,28 @@ value caml_remove_debug_info(code_t start);
  * It defines the [caml_stash_backtrace] function, which is called to quickly
  * fill the backtrace buffer by walking the stack when an exception is raised.
  *
- * It also defines the [caml_get_current_callstack] OCaml primitive, which also
- * walks the stack but directly turns it into a [raw_backtrace] and is called
- * explicitly.
- */
+ * It also defines the two following functions, which makes it possible
+ * to store upto [max_frames_value] frames of the current call
+ * stack. This is used not in an exception-raising context, but only
+ * when the user requests to save the trace (hopefully less often), or
+ * the contect of profiling. Instead of using a bounded buffer as
+ * [caml_stash_backtrace], we first traverse the stack to compute the
+ * right size, then allocate space for the trace.
+ *
+ * The first function, [caml_current_callstack_size] computes the size
+ * (in words) of the needed buffer, while the second actually writes
+ * the call stack to the buffer as an object of type
+ * [raw_backtrace]. It should always be called with a bufer of the
+ * size predicted by [caml_current_callstack_size]. The reason we use
+ * two separated functions is to allow using either [caml_alloc] (for
+ * performance) or [caml_alloc_shr] (when we need to avoid a call to
+ * the GC, in memprof.c).
+ *
+ * We use `intnat` for max_frames because, were it only `int`, passing
+ * `max_int` from the OCaml side would overflow on 64bits machines. */
+
+intnat caml_current_callstack_size(intnat max_frames);
+void caml_current_callstack_write(value trace);
 
 #endif /* CAML_INTERNALS */
 

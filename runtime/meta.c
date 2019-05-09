@@ -195,7 +195,7 @@ CAMLprim value caml_realloc_global(value size)
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    caml_global_data = new_global_data;
+    caml_global_data = caml_check_urgent_gc(new_global_data);
   }
   return Val_unit;
 }
