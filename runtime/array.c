@@ -336,19 +336,19 @@ CAMLprim value caml_make_vect(value len, value init)
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (size > Max_wosize) caml_invalid_argument("Array.make");
-    else if (Is_block(init) && Is_young(init)) {
-      /* We don't want to create so many major-to-minor references,
-         so [init] is moved to the major heap by doing a minor GC. */
-      CAML_INSTR_INT ("force_minor/make_vect@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
-      res = caml_alloc_shr(size, 0);
-      for (i = 0; i < size; i++) Field(res, i) = init;
-      res = caml_check_urgent_gc (res);
-    }
     else {
+      if (Is_block(init) && Is_young(init)) {
+        /* We don't want to create so many major-to-minor references,
+           so [init] is moved to the major heap by doing a minor GC. */
+        CAML_INSTR_INT ("force_minor/make_vect@", 1);
+        caml_request_minor_gc ();
+        caml_gc_dispatch ();
+      }
+      CAMLassert(!(Is_block(init) && Is_young(init)));
       res = caml_alloc_shr(size, 0);
-      for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
+      /* We now know that [init] is not in the minor heap, so there is
+         no need to call [caml_initialize]. */
+      for (i = 0; i < size; i++) Field(res, i) = init;
       res = caml_check_urgent_gc (res);
     }
   }

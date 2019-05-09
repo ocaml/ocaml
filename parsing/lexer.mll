@@ -620,6 +620,8 @@ and comment = parse
       { store_lexeme lexbuf; comment lexbuf }
   | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
       { store_lexeme lexbuf; comment lexbuf }
+  | "\'\\" 'o' ['0'-'3'] ['0'-'7'] ['0'-'7'] "\'"
+      { store_lexeme lexbuf; comment lexbuf }
   | "\'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "\'"
       { store_lexeme lexbuf; comment lexbuf }
   | eof
@@ -635,6 +637,8 @@ and comment = parse
         store_lexeme lexbuf;
         comment lexbuf
       }
+  | (lowercase | uppercase) identchar *
+      { store_lexeme lexbuf; comment lexbuf }
   | _
       { store_lexeme lexbuf; comment lexbuf }
 

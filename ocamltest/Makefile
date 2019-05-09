@@ -218,7 +218,7 @@ ocamltest.opt$(EXE): $(native_modules)
 	$(ocamlyacc) $<
 
 %.ml: %.mll
-	$(ocamllex) -q $<
+	$(ocamllex) $(OCAMLLEX_FLAGS) $<
 
 %.$(O): %.c
 	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -c $<

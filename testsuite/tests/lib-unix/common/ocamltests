@@ -10,3 +10,4 @@ utimes.ml
 wait_nohang.ml
 getaddrinfo.ml
 process_pid.ml
+truncate.ml

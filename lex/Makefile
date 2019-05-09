@@ -25,7 +25,7 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
 YACCFLAGS = -v
@@ -61,7 +61,7 @@ clean::
 beforedepend:: parser.ml parser.mli
 
 lexer.ml: lexer.mll
-	$(CAMLLEX) lexer.mll
+	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 clean::
 	rm -f lexer.ml
