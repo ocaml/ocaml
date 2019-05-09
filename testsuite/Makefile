@@ -39,6 +39,7 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
   else # Non-cygwin Unix
     find := find
   endif
+  FLEXLINK_ENV =
 else # Windows
   find := /usr/bin/find
   FLEXDLL_SUBMODULE_PRESENT := $(wildcard ../flexdll/Makefile)
@@ -268,7 +269,7 @@ promote:
 
 .PHONY: lib
 lib:
-	@cd lib && $(MAKE) -s BASEDIR=$(BASEDIR)
+	@$(MAKE) -s -C lib
 
 .PHONY: tools
 tools:
@@ -276,7 +277,7 @@ tools:
 
 .PHONY: clean
 clean:
-	@cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean
+	@$(MAKE) -C lib clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
 	@for file in `$(FIND) interactive tests -name Makefile`; do \
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
