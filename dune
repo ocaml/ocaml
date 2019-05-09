@@ -13,8 +13,8 @@
 ;**************************************************************************
 
 (env
- (dev     (flags (:standard -w +a-4-9-41-42-44-45-48)))
- (release (flags (:standard -w +a-4-9-41-42-44-45-48))))
+ (dev     (flags (:standard -w +a-4-9-40-41-42-44-45-48)))
+ (release (flags (:standard -w +a-4-9-40-41-42-44-45-48))))
 
 ;; Too annoying to get to work. Use (copy_files# ...) instead
 ; (include_subdirs unqualified)

@@ -18,9 +18,7 @@
 type stat =
   { minor_words : float;
     (** Number of words allocated in the minor heap since
-       the program was started.  This number is accurate in
-       byte-code programs, but only an approximation in programs
-       compiled to native code. *)
+       the program was started. *)
 
     promoted_words : float;
     (** Number of words allocated in the minor heap that

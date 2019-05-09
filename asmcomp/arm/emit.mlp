@@ -633,14 +633,17 @@ let emit_instr i =
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
           `{emit_label lbl_redo}:`;
-          let ninstr = decompose_intconst
-                         (Int32.of_int n)
-                         (fun i ->
-                           `	sub	alloc_ptr, alloc_ptr, #{emit_int32 i}\n`) in
-          `	cmp	alloc_ptr, alloc_limit\n`;
-          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+          let first = ref true in
+          let ninstr =
+            decompose_intconst (Int32.of_int (n - 4)) (fun a ->
+              if !first
+              then `	sub	{emit_reg i.res.(0)}, alloc_ptr, #{emit_int32 a}\n`
+              else `	sub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #{emit_int32 a}\n`;
+              first := false) in
+          `	cmp	{emit_reg i.res.(0)}, alloc_limit\n`;
           let lbl_call_gc = new_label() in
-          `	bcc	{emit_label lbl_call_gc}\n`;
+          `	bls	{emit_label lbl_call_gc}\n`;
+          `	sub	alloc_ptr, {emit_reg i.res.(0)}, #4\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;

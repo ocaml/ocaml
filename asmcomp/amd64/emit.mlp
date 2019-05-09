@@ -273,7 +273,8 @@ let spacetime_before_uninstrumented_call ~node_ptr ~index =
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
+  { gc_size: int;                       (* Allocation size, in bytes *)
+    gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label;                    (* Label of frame descriptor *)
     gc_spacetime : (X86_ast.arg * int) option;
@@ -290,7 +291,13 @@ let emit_call_gc gc =
     assert Config.spacetime;
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
-  emit_call "caml_call_gc";
+  begin match gc.gc_size with
+  | 16 -> emit_call "caml_call_gc1"
+  | 24 -> emit_call "caml_call_gc2"
+  | 32 -> emit_call "caml_call_gc3"
+  | n ->  I.add (int n) r15;
+          emit_call "caml_call_gc"
+  end;
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
@@ -660,7 +667,8 @@ let emit_instr fallthrough i =
           else Some (arg i 0, spacetime_index)
         in
         call_gc_sites :=
-          { gc_lbl = lbl_call_gc;
+          { gc_size = n;
+            gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
             gc_frame = lbl_frame;
             gc_spacetime; } :: !call_gc_sites
@@ -969,6 +977,9 @@ let begin_assembly() =
     D.extrn "caml_young_limit" QWORD;
     D.extrn "caml_exception_pointer" QWORD;
     D.extrn "caml_call_gc" NEAR;
+    D.extrn "caml_call_gc1" NEAR;
+    D.extrn "caml_call_gc2" NEAR;
+    D.extrn "caml_call_gc3" NEAR;
     D.extrn "caml_c_call" NEAR;
     D.extrn "caml_allocN" NEAR;
     D.extrn "caml_alloc1" NEAR;
