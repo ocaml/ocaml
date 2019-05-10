@@ -437,7 +437,7 @@ let read_one_param ppf position name v =
     | Some pass ->
         Clflags.stop_after := Some pass;
         begin match pass with
-        | P.Parsing | P.Typing ->
+        | P.Parsing | P.Typing | P.Lambda ->
             compile_only := true
         end;
     end

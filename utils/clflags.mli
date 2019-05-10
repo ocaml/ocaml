@@ -232,7 +232,7 @@ val insn_sched : bool ref
 val insn_sched_default : bool
 
 module Compiler_pass : sig
-  type t = Parsing | Typing
+  type t = Parsing | Typing | Lambda
   val of_string : string -> t option
   val to_string : t -> string
   val passes : t list

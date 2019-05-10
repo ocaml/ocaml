@@ -20,11 +20,17 @@ val interface:
 val implementation:
   source_file:string -> output_prefix:string -> unit
 
-(** {2 Internal functions} **)
+(** {3 Internal functions} **)
+
+val to_lambda :
+  Compile_common.info ->
+  Typedtree.structure * Typedtree.module_coercion ->
+  Lambda.lambda * Ident.Set.t
+
 
 val to_bytecode :
   Compile_common.info ->
-  Typedtree.structure * Typedtree.module_coercion ->
+  Lambda.lambda * Ident.Set.t ->
   Instruct.instruction list * Ident.Set.t
 (** [to_bytecode info typed] takes a typechecked implementation
     and returns its bytecode.

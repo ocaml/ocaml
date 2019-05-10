@@ -69,7 +69,7 @@ module Options = Main_args.Make_optcomp_options (struct
     | Some pass ->
         stop_after := Some pass;
         begin match pass with
-        | P.Parsing | P.Typing ->
+        | P.Parsing | P.Typing | P.Lambda ->
             compile_only := true
         end;
     end
