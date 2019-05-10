@@ -146,7 +146,7 @@ OCaml 4.09.0
   (Mark Shinwell, review by Vincent Laviron)
 
 - #2281: Move some middle-end files around
-  (Mark Shinwell)
+  (Mark Shinwell, review by Pierre Chambart and Vincent Laviron)
 
 - #2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
   [Misc.Stdlib.List]
@@ -158,6 +158,10 @@ OCaml 4.09.0
 
 - #2286: Functorise [Consistbl]
   (Mark Shinwell, review by Gabriel Radanne)
+
+- #2288: Move middle end code from [Asmgen] to [Clambda_middle_end] and
+  [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
+  (Mark Shinwell, review by Pierre Chambart)
 
 - #2291: Add [Compute_ranges] pass
   (Mark Shinwell, review by Vincent Laviron)
