@@ -53,35 +53,11 @@ val assemble_file: (*infile*) string -> (*outfile*) string -> (*retcode*) int
     the input file is ignored). Otherwise, the source asm file with an
     external assembler. *)
 
-(** System detection *)
-
-type system =
-  (* 32 bits and 64 bits *)
-  | S_macosx
-  | S_gnu
-  | S_cygwin
-
-  (* 32 bits only *)
-  | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
-  | S_beos
-  | S_mingw
-
-  (* 64 bits only *)
-  | S_win64
-  | S_linux
-  | S_mingw64
-
-  | S_unknown
-
-val system: system
-val masm: bool
-val windows:bool
+(** Whether the MASM assembler is being used. *)
+val masm : unit -> bool
 
 (** Whether calls need to go via the PLT. *)
-val use_plt : bool
+val use_plt : unit -> bool
 
 (** Support for plumbing a binary code emitter *)
 

@@ -82,6 +82,9 @@ val linux : unit -> bool
 (** Whether the target system is a Windows platform. *)
 val windows : unit -> bool
 
+(** Whether the target system is a Solaris platform. *)
+val solaris : unit -> bool
+
 (** Whether the target system is a Windows 32-bit native platform (not
     MinGW or Cygwin). *)
 val win32 : unit -> bool

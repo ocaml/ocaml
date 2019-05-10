@@ -185,7 +185,7 @@ let print_instr b = function
   | MOV ((Imm n as arg1), (Reg64 _ as arg2))
     when not (n <= 0x7FFF_FFFFL && n >= -0x8000_0000L) ->
       i2 b "movabsq" arg1 arg2
-  | MOV ((Sym _ as arg1), (Reg64 _ as arg2)) when windows ->
+  | MOV ((Sym _ as arg1), (Reg64 _ as arg2)) when Target_system.windows () ->
       i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
@@ -245,11 +245,11 @@ let print_line b = function
 
   | Align (_data,n) ->
       (* MacOSX assembler interprets the integer n as a 2^n alignment *)
-      let n = if system = S_macosx then Misc.log2 n else n in
+      let n = if Target_system.macos_like () then Misc.log2 n else n in
       bprintf b "\t.align\t%d" n
   | Byte n -> bprintf b "\t.byte\t%a" cst n
   | Bytes s ->
-      if system = S_solaris then buf_bytes_directive b ".byte" s
+      if Target_system.solaris () then buf_bytes_directive b ".byte" s
       else bprintf b "\t.ascii\t\"%s\"" (string_of_string_literal s)
   | Comment s -> bprintf b "\t\t\t\t/* %s */" s
   | Global s -> bprintf b "\t.globl\t%s" s;
@@ -269,10 +269,10 @@ let print_line b = function
       | _ -> bprintf b ",%s" (String.concat "," args)
       end
   | Space n ->
-      if system = S_solaris then bprintf b "\t.zero\t%d" n
+      if Target_system.solaris () then bprintf b "\t.zero\t%d" n
       else bprintf b "\t.space\t%d" n
   | Word n ->
-      if system = S_solaris then bprintf b "\t.value\t%a" cst n
+      if Target_system.solaris () then bprintf b "\t.value\t%a" cst n
       else bprintf b "\t.word\t%a" cst n
 
   (* gas only *)

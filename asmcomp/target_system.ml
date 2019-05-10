@@ -202,3 +202,8 @@ let macos_like () =
   match system () with
   | MacOS_like -> true
   | _ -> false
+
+let solaris () =
+  match system () with
+  | Solaris -> true
+  | _ -> false

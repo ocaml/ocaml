@@ -15,49 +15,6 @@
 
 open X86_ast
 
-type system =
-  (* 32 bits and 64 bits *)
-  | S_macosx
-  | S_gnu
-  | S_cygwin
-
-  (* 32 bits only *)
-  | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
-  | S_beos
-  | S_mingw
-
-  (* 64 bits only *)
-  | S_win64
-  | S_linux
-  | S_mingw64
-
-  | S_unknown
-
-
-let system = match Config.system with
-  | "macosx" -> S_macosx
-  | "solaris" -> S_solaris
-  | "win32" -> S_win32
-  | "linux_elf" -> S_linux_elf
-  | "bsd_elf" -> S_bsd_elf
-  | "beos" -> S_beos
-  | "gnu" -> S_gnu
-  | "cygwin" -> S_cygwin
-  | "mingw" -> S_mingw
-  | "mingw64" -> S_mingw64
-  | "win64" -> S_win64
-  | "linux" -> S_linux
-
-  | _ -> S_unknown
-
-let windows =
-  match system with
-  | S_mingw64 | S_cygwin | S_win64 -> true
-  | _ -> false
-
 let string_of_string_literal s =
   let b = Buffer.create (String.length s + 2) in
   let last_was_escape = ref false in
@@ -204,14 +161,18 @@ let internal_assembler = ref None
 let register_internal_assembler f = internal_assembler := Some f
 
 (* Which asm conventions to use *)
-let masm =
-  match system with
-  | S_win32 | S_win64 -> true
-  | _ -> false
+let masm () =
+  match Target_system.assembler () with
+  | MASM -> true
+  | GAS_like
+  | MacOS -> false
 
-let use_plt =
-  match system with
-  | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
+let use_plt () =
+  match Target_system.architecture (), Target_system.system () with
+  | _, MacOS_like
+  | X86_64, Windows MinGW
+  | _, Windows Cygwin
+  | X86_64, Windows Native -> false
   | _ -> !Clflags.dlcode
 
 (* Shall we use an external assembler command ?
@@ -221,7 +182,7 @@ let use_plt =
 let binary_content = ref None
 
 let compile infile outfile =
-  if masm then
+  if masm () then
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))

@@ -62,58 +62,40 @@ let symbol_prefix t =
     match Target_system.architecture () with
     | IA32 ->
       begin match Target_system.system () with
-      | Linux
-      | FreeBSD
-      | NetBSD
-      | OpenBSD
-      | Generic_BSD
-      | Solaris
-      | BeOS
-      | GNU
-      | Dragonfly -> ""
-      | Windows Cygwin
-      | Windows MinGW
-      | Windows Native
-      | Unknown
+      | Windows Cygwin | Windows MinGW | Windows Native | Unknown
       | MacOS_like -> "_"
+      | Linux | FreeBSD | NetBSD | OpenBSD | Generic_BSD | Solaris | BeOS
+      | GNU | Dragonfly -> ""
       end
     | X86_64 ->
       begin match Target_system.system () with
-      | Linux
-      | Windows Cygwin
-      | Windows MinGW
-      | FreeBSD
-      | NetBSD
-      | OpenBSD
-      | Generic_BSD
-      | Solaris
-      | BeOS
-      | GNU
-      | Dragonfly
-      | Windows Native
-      | Unknown -> ""
       | MacOS_like -> "_"
+      | Linux | Windows Cygwin | Windows MinGW | FreeBSD | NetBSD | OpenBSD
+      | Generic_BSD | Solaris | BeOS | GNU | Dragonfly | Windows Native
+      | Unknown -> ""
       end
-    | ARM
-    | AArch64 -> "$"
-    | POWER
-    | Z -> "."
+    | ARM | AArch64 | POWER | Z -> ""
+
+let escape_character () =
+  match Target_system.architecture () with
+  | IA32 | X86_64 | ARM | AArch64 -> '$'
+  | POWER | Z -> '.'
 
 let escape name =
-  let spec = ref false in
+  let contains_special_chars = ref false in
   for i = 0 to String.length name - 1 do
     match String.unsafe_get name i with
     | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ -> spec := true;
+    | _ -> contains_special_chars := true
   done;
-  if not !spec then begin
+  if not !contains_special_chars then begin
     name
   end else begin
     let b = Buffer.create (String.length name + 10) in
     String.iter
       (function
         | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-        | c -> Printf.bprintf b "$%02x" (Char.code c)
+        | c -> Printf.bprintf b "%c%02x" (escape_character ()) (Char.code c)
       )
       name;
     Buffer.contents b
