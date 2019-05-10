@@ -752,6 +752,8 @@ void caml_major_collection_slice (intnat howmuch)
                / Caml_state->stat_heap_wsz / caml_percent_free / 2.0;
     }
     caml_major_work_credit += filt_p;
+    /* Limit work credit to 1.0 */
+    caml_major_work_credit = fmin(caml_major_work_credit, 1.0);
   }
 
   p = filt_p;
