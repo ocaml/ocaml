@@ -3344,8 +3344,8 @@ let emit_cmm_data_items_for_constants cont =
           c := (Cdata cmm) :: !c
       | Const_table (global, elems) ->
           c := (Cdata (emit_constant_table (symbol, global) elems)) :: !c)
-    (Cmmgen_state.constants ());
-  Cdata (Cmmgen_state.data_items ()) :: !c
+    (Cmmgen_state.get_and_clear_constants ());
+  Cdata (Cmmgen_state.get_and_clear_data_items ()) :: !c
 
 let transl_all_functions cont =
   let rec aux already_translated cont translated_functions =
@@ -3418,6 +3418,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
 (* Translate a compilation unit *)
 
 let compunit (ulam, preallocated_blocks, constants) =
+  assert (Cmmgen_state.no_more_functions ());
   let dbg = Debuginfo.none in
   let init_code =
     if !Clflags.afl_instrument then
@@ -3938,6 +3939,3 @@ let plugin_header units =
     } in
   global_data "caml_plugin_header"
     { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }
-
-let reset () =
-  Cmmgen_state.reset ()

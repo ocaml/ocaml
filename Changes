@@ -116,7 +116,7 @@ Working version
 
 - #2288: Move middle end code from [Asmgen] to [Clambda_middle_end] and
   [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
-  (Mark Shinwell)
+  (Mark Shinwell, review by Pierre Chambart)
 
 - #2291: Add [Compute_ranges] pass
   (Mark Shinwell, review by Vincent Laviron)

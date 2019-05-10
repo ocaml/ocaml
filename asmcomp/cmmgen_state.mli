@@ -19,8 +19,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-val reset : unit -> unit
-
 type is_global = Global | Local
 
 type constant =
@@ -33,9 +31,9 @@ val add_data_items : Cmm.data_item list -> unit
 
 val add_function : Clambda.ufunction -> unit
 
-val constants : unit -> constant Misc.Stdlib.String.Map.t
+val get_and_clear_constants : unit -> constant Misc.Stdlib.String.Map.t
 
-val data_items : unit -> Cmm.data_item list
+val get_and_clear_data_items : unit -> Cmm.data_item list
 
 val next_function : unit -> Clambda.ufunction option
 

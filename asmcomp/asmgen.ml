@@ -67,7 +67,6 @@ let (++) x f = f x
 
 let compile_fundecl ~ppf_dump fd_cmm =
   Proc.init ();
-  Cmmgen.reset ();
   Reg.reset();
   fd_cmm
   ++ Profile.record ~accumulate:true "selection" Selection.fundecl
@@ -134,7 +133,6 @@ let compile_unit asm_filename keep_asm obj_filename gen =
 let end_gen_implementation ?toplevel ~ppf_dump
     (clambda : Clambda.with_constants) =
   Emit.begin_assembly ();
-  Cmmgen.reset ();
   clambda
   ++ Profile.record "cmm" Cmmgen.compunit
   ++ Profile.record "compile_phrases" (List.iter (compile_phrase ~ppf_dump))

@@ -230,7 +230,10 @@ let lambda_to_clambda ~backend ~filename ~prefixname ~ppf_dump
       |> (fun { Flambda_to_clambda. expr; preallocated_blocks;
                 structured_constants; exported; } ->
            Compilenv.set_export_info exported;
-           let clambda = Un_anf.apply ~ppf_dump expr in
+           let clambda =
+             Un_anf.apply ~what:(Compilenv.current_unit_symbol ())
+               ~ppf_dump expr
+           in
            clambda, preallocated_blocks, structured_constants))
   in
   let constants =

@@ -81,9 +81,7 @@ let check_closure t ulam named : Clambda.ulambda =
         ~arity:2 ~alloc:false
     in
     let str = Format.asprintf "%a" Flambda.print_named named in
-    let sym =
-      Compilenv.new_structured_constant (Uconst_string str) ~shared:true
-    in
+    let sym = Compilenv.new_const_symbol () in
     let sym' =
       Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
         (Linkage_name.create sym)
@@ -107,9 +105,7 @@ let check_field t ulam pos named_opt : Clambda.ulambda =
       | None -> "<none>"
       | Some named -> Format.asprintf "%a" Flambda.print_named named
     in
-    let sym =
-      Compilenv.new_structured_constant (Uconst_string str) ~shared:true
-    in
+    let sym = Compilenv.new_const_symbol () in
     let sym' =
       Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
         (Linkage_name.create sym)
