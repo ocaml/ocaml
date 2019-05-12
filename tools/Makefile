@@ -85,8 +85,6 @@ COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
 LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
-# scrapelabels addlabels
-
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 allopt: opt.opt
 
@@ -174,50 +172,7 @@ $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
-OCAML299TO3=lexer299.cmo ocaml299to3.cmo
 LIBRARY3=config.cmo build_path_prefix_map.cmo misc.cmo warnings.cmo location.cmo
-
-ocaml299to3: $(OCAML299TO3)
-	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)
-
-lexer299.ml: lexer299.mll
-	$(CAMLLEX) lexer299.mll
-
-#install::
-#	$(INSTALL_PROG) ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
-
-clean::
-	rm -f ocaml299to3 lexer299.ml
-
-# Label remover for interface files (upgrade 3.02 to 3.03)
-
-SCRAPELABELS= lexer301.cmo scrapelabels.cmo
-
-scrapelabels: $(SCRAPELABELS)
-	$(CAMLC) $(LINKFLAGS) -o scrapelabels $(LIBRARY3) $(SCRAPELABELS)
-
-lexer301.ml: lexer301.mll
-	$(CAMLLEX) lexer301.mll
-
-#install::
-#	$(INSTALL_PROG) scrapelabels "$(INSTALL_LIBDIR)"
-
-clean::
-	rm -f scrapelabels lexer301.ml
-
-# Insert labels following an interface file (upgrade 3.02 to 3.03)
-
-ADDLABELS_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo arg_helper.cmo \
-  clflags.cmo identifiable.cmo numbers.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
-
-addlabels: addlabels.cmo
-	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
-		$(ADDLABELS_IMPORTS) addlabels.cmo
-
-#install::
-#	$(INSTALL_PROG) addlabels "$(INSTALL_LIBDIR)"
 
 ifeq ($(UNIX_OR_WIN32),unix)
 LN := ln -sf
@@ -245,9 +200,6 @@ else
 	  fi; \
 	done
 endif
-
-clean::
-	rm -f addlabels
 
 # The preprocessor for asm generators
 
