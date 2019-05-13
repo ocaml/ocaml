@@ -3,6 +3,11 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Language features
+
+- #7557, #1726: multi-indices for extended indexing operators
+  (Florian Angeletti, review by Gabriel Radanne)
+
 ### Internal/compiler-libs changes:
 
 - #7927, #8527: Replace long tuples into records in typeclass.ml

@@ -8,6 +8,7 @@ extended_indexoperators.ml
 extensions.ml
 hash_ambiguity.ml
 int_and_float_with_modifier.ml
+multi_indices.ml
 pr6604_2.ml
 pr6604_3.ml
 pr6604.ml
