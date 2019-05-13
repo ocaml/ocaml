@@ -626,7 +626,15 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
       if (wosize == 0){
         intern_block = Atom (String_tag);
       } else {
+        /* The call to [caml_alloc_small] may trigger a finalizer,
+           which may in turn call one of the marshalling function,
+           which would overwrite these global variables. */
+        unsigned char *src_save = intern_src, *input_save = intern_input;
+        intern_src = NULL; intern_input = NULL;
+
         intern_block = caml_alloc_small (wosize, String_tag);
+
+        intern_src = src_save; intern_input = input_save;
       }
     }else{
       intern_block = caml_alloc_shr_no_track (wosize, String_tag);

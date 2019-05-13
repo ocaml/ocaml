@@ -66,11 +66,8 @@ extern char caml_system__code_begin, caml_system__code_end;
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
    With system threads, this callback can cause a context switch.
-   Hence [caml_garbage_collection] must not be called from regular C code
-   (e.g. the [caml_alloc] function) because the context of the call
-   (e.g. [intern_val]) may not allow context switching.
    Only generated assembly code can call [caml_garbage_collection],
-   via the caml_call_gc assembly stubs.  */
+   via the [caml_call_gc] assembly stubs.  */
 
 void caml_garbage_collection(void)
 {

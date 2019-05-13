@@ -33,6 +33,9 @@ Working version
    heap.
    (Jacques-Henri Jourdan, review by Stephen Dolan)
 
+- #8674: Make unmarshalling code reentrant.
+  (Jacques-Henri Jourdan, review by XXX)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
