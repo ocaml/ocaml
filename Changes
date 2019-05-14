@@ -694,11 +694,6 @@ OCaml 4.08.0
   on a new line, for more readable diffs of versioned dependencies.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
-- #2221: ocamldep will now correctly allow a .ml file in an include directory
-  that appears first in the search order to shadow a .mli appearing in a later
-  include directory.
-  (Nicolás Ojeda Bär, review by Florian Angeletti)
-
 - #2223: ocamltest: fix the "bsd" and "not-bsd" built-in actions to
   recognize all BSD variants
   (Damien Doligez, review by Sébastien Hinderer and David Allsopp)
@@ -833,13 +828,13 @@ OCaml 4.08.0
 - #8528: get rid of the direct call to the C preprocessor in the testsuite
   (Sébastien Hinderer, review by David Allsopp)
 
-- Issue #7938, PR #8532: Fix alignment detection for ints on 32-bits platforms
+- #7938, #8532: Fix alignment detection for ints on 32-bits platforms
   (Sébastien Hinderer, review by Xavier Leroy)
 
 * #8533: Remove some unused configure tests
   (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
 
-- #2207,#8604: Add opam files to allow pinning
+- #2207, #8604: Add opam files to allow pinning
   (Leo White, Greta Yorsh, review by Gabriel Radanne)
 
 - #8616: configure: use variables rather than arguments for a few options
