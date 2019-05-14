@@ -189,6 +189,13 @@ OCaml 4.09.0
   (Jérémie Dimino, review by Nicolas Ojeda Bar, Xavier Leroy and
    Sébastien Hinderer)
 
+### Tools:
+
+- #2221: ocamldep will now correctly allow a .ml file in an include directory
+  that appears first in the search order to shadow a .mli appearing in a later
+  include directory.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
+
 ### Manual and documentation:
 
 - #7584, #8538: Document .cmt* files in the "overview" of ocaml{c,opt}
