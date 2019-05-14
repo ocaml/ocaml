@@ -21,7 +21,7 @@ OCaml 4.09.0
   (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
    and Xavier Leroy)
 
-- GPR#8547: Optimize matches that are an affine function of the input.
+- #8547: Optimize matches that are an affine function of the input.
   (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
@@ -168,6 +168,11 @@ OCaml 4.09.0
 
 ### Other libraries:
 
+- #2112: Fix Thread.yield unfairness with busy threads yielding to each
+  other.
+  (Andrew Hunter, review by Jacques-Henri Jourdan, Spiros Eliopoulos, Stephen
+  Weeks, & Mark Shinwell)
+
 - #7903, #2306: Make Thread.delay interruptible by signals again
   (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
 
@@ -203,7 +208,7 @@ OCaml 4.09.0
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
 
-- GPR#2296: Fix parsing of hexadecimal floats with underscores in the exponent.
+- #2296: Fix parsing of hexadecimal floats with underscores in the exponent.
   (Hugo Heuzard and Xavier Leroy, review by Gabriel Scherer)
 
 - #8610, #8613: toplevel printing, consistent deduplicated name for types
@@ -419,7 +424,7 @@ OCaml 4.08.0
 - #1525: Make function set_max_indent respect documentation
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
 
-- GPR#2202: Correct Hashtbl.MakeSeeded.{add_seq,replace_seq,of_seq} to use
+- #2202: Correct Hashtbl.MakeSeeded.{add_seq,replace_seq,of_seq} to use
   functor hash function instead of default hash function. Hashtbl.Make.of_seq
   shouldn't create randomized hash tables.
   (David Allsopp, review by Alain Frisch)
@@ -540,7 +545,7 @@ OCaml 4.08.0
   to stop compilation after the parsing or typing pass
   (Gabriel Scherer, review by Jérémie Dimino)
 
-- GRP#1953: Add locations to attributes in the parsetree.
+- #1953: Add locations to attributes in the parsetree.
   (Hugo Heuzard, review by Gabriel Radanne)
 
 - #1954: Add locations to toplevel directives.
@@ -827,7 +832,7 @@ OCaml 4.08.0
 * #8533: Remove some unused configure tests
   (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
 
-- GPR#2207,#8604: Add opam files to allow pinning
+- #2207,#8604: Add opam files to allow pinning
   (Leo White, Greta Yorsh, review by Gabriel Radanne)
 
 - #8616: configure: use variables rather than arguments for a few options
@@ -983,11 +988,6 @@ OCaml 4.08.0
 * #2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
 
-- #2112: Fix Thread.yield unfairness with busy threads yielding to each
-  other.
-  (Andrew Hunter, review by Jacques-Henri Jourdan, Spiros Eliopoulos, Stephen
-  Weeks, & Mark Shinwell)
-
 - #7867: Fix #mod_use raising an exception for filenames with no
   extension.
   (Geoff Gole)
@@ -1089,8 +1089,8 @@ OCaml 4.08.0
 - #2231: Env: always freshen persistent signatures before using them
   (Thomas Refis and Leo White, review by Gabriel Radanne)
 
-- #7851, #8570: Module type of allows to transform a malformed module type
-  into a vicious signature, breaking soundness
+- #7851, #8570: Module type of allows to transform a malformed
+  module type into a vicious signature, breaking soundness
   (Jacques Garrigue, review by Leo White)
 
 - #7923, #2259: fix regression in FlexDLL bootstrapped build caused by
@@ -1552,7 +1552,7 @@ OCaml 4.07.0 (10 July 2018)
   (Gabriel Scherer and Armaël Guéneau,
    review by Valentin Gatien-Baron and Damien Doligez)
 
-- #1519, #1532, GRP#1570: migrate tests to ocamltest.
+- #1519, #1532, #1570: migrate tests to ocamltest.
   (Sébastien Hinderer, review by Gabriel Scherer, Valentin Gatien-Baron
   and Nicolás Ojeda Bär)
 
@@ -1897,7 +1897,7 @@ OCaml 4.06.0 (3 Nov 2017):
   (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
   Angeletti, Gabriel Scherer, Nathan Moreau, Alain Frisch)
 
-- GRP#1091 Add the Uchar.{bom,rep} constants.
+- #1091 Add the Uchar.{bom,rep} constants.
   (Daniel Bünzli, Alain Frisch)
 
 - #1091: Add Buffer.add_utf_{8,16le,16be}_uchar to encode Uchar.t
@@ -2388,7 +2388,7 @@ OCaml 4.06.0 (3 Nov 2017):
   (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
    Pierre Chambart, Mark Shinwell)
 
-- GRP#1119: Change Set (private) type to inline records.
+- #1119: Change Set (private) type to inline records.
   (Albin Coquereau)
 
 * #1127: move config/{m,s}.h to byterun/caml and install them.
