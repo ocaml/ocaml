@@ -17,7 +17,7 @@
    Visual C++ or Mingw compiler */
 
 #ifdef _WIN64
-#define ARCH_SIXTYFOUR
+#define ARCH_SIXTYFOUR 1
 #else
 #undef ARCH_SIXTYFOUR
 #endif
@@ -32,27 +32,10 @@
 #define SIZEOF_PTR 4
 #endif
 #define SIZEOF_SHORT 2
-
-#ifdef __MINGW32__
-#define ARCH_INT64_TYPE long long
-#define ARCH_UINT64_TYPE unsigned long long
-#else
-#define ARCH_INT64_TYPE __int64
-#define ARCH_UINT64_TYPE unsigned __int64
-#endif
-#define ARCH_INT64_PRINTF_FORMAT "I64"
-#if _MSC_VER >= 1800
-#define ARCH_SIZET_PRINTF_FORMAT "z"
-#else
-#define ARCH_SIZET_PRINTF_FORMAT "I"
-#endif
-
-#if defined(_MSC_VER) && !defined(__cplusplus)
-#define inline __inline
-#endif
+#define SIZEOF_LONGLONG 8
 
 #undef NONSTANDARD_DIV_MOD
 
 #define PROFINFO_WIDTH 0
 
-#define FLAT_FLOAT_ARRAY
+#define FLAT_FLOAT_ARRAY 1

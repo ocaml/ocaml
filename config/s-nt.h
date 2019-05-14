@@ -17,23 +17,38 @@
 
 #define OCAML_OS_TYPE "Win32"
 
-#if defined(__MINGW32__) || _MSC_VER >= 1600
-#define HAS_STDINT_H
-#endif
 #undef BSD_SIGNALS
-#define HAS_STRERROR
-#define HAS_SOCKETS
-#define HAS_GETCWD
-#define HAS_UTIME
-#define HAS_GETHOSTNAME
-#define HAS_MKTIME
-#define HAS_PUTENV
-#ifndef __MINGW32__
-#define HAS_LOCALE_H
-#define HAS_STRTOD_L
+#define SUPPORT_DYNAMIC_LINKING 1
+#define HAS_SOCKETS 1
+#define HAS_IPV6 1
+#if defined(__MINGW32__) || _MSC_VER >= 1600
+#define HAS_STDINT_H 1
 #endif
-#define HAS_BROKEN_PRINTF
-#define HAS_IPV6
-#define HAS_NICE
-#define SUPPORT_DYNAMIC_LINKING
-#define HAS_EXECVPE
+#ifdef __MINGW32__
+#define HAS_UNISTD 1
+#define HAS_DIRENT 1
+#define HAS_REWINDDIR 1
+#endif
+#define HAS_GETCWD 1
+#define HAS_UTIME 1
+#ifdef __MINGW32__
+#define HAS_TRUNCATE 1
+#define HAS_NANOSLEEP 1
+#endif
+#define HAS_GETHOSTNAME 1
+#ifdef __MINGW32__
+#define HAS_GETTIMEOFDAY 1
+#endif
+#define HAS_MKTIME 1
+#define HAS_PUTENV 1
+#ifndef __MINGW32__
+#define HAS_LOCALE_H 1
+#define HAS_STRTOD_L 1
+#endif
+#ifdef __MINGW32__
+#define HAS_MKSTEMP 1
+#endif
+#define HAS_NICE 1
+#define HAS_EXECVPE 1
+#define HAS_BROKEN_PRINTF 1
+#define HAS_STRERROR 1
