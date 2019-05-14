@@ -45,6 +45,7 @@ void caml_set_something_to_do (void);
 void caml_raise_in_async_callback (value exc);
 void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
+void caml_setup_stack_overflow_detection(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);

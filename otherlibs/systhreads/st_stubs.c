@@ -563,6 +563,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   st_tls_set(thread_descriptor_key, (void *) th);
   /* Acquire the global mutex */
   caml_leave_blocking_section();
+  caml_setup_stack_overflow_detection();
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
