@@ -960,7 +960,8 @@ OCaml 4.08.0
 - #1746: remove unreachable error variant: Make_seltype_nongen.
   (Florian Angeletti, review by Gabriel Radanne)
 
-- #1747: type_cases: always propagate. (preliminary work for GADTs in or-patterns)
+- #1747: type_cases: always propagate (preliminary work
+  for GADTs in or-patterns)
   (Thomas Refis, review by Jacques Garrigue)
 
 - #1811: shadow the polymorphic comparison in the middle-end
