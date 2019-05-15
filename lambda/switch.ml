@@ -659,8 +659,8 @@ let rec pkey chan  = function
           and right = {s with cases=right} in
 
           if i=1 && (lim+ctx.off)=1 && get_low cases 0+ctx.off=0 then
-            make_if_ne
-              ctx.arg 0
+            Arg.make_if
+              ctx.arg
               (c_test ctx right) (c_test ctx left)
           else if less_tests cright cleft then
             make_if_lt

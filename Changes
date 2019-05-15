@@ -20,6 +20,11 @@ Working version
   [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
   (Mark Shinwell, review by Pierre Chambart)
 
+### Code generation and optimizations:
+
+- #8672: Optimise Switch code generation on booleans.
+  (Stephen Dolan, review by Pierre Chambart)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
