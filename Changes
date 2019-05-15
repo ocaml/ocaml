@@ -26,6 +26,11 @@ Working version
 - #8677: Use unsigned comparisons in amd64 and i386 emitter of Lcondbranch3.
   (Greta Yorsh, review by Xavier Leroy)
 
+### Code generation and optimizations:
+
+- #8672: Optimise Switch code generation on booleans.
+  (Stephen Dolan, review by Pierre Chambart, Gabriel Scherer and Luc Maranget)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
