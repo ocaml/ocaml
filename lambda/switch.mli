@@ -77,26 +77,24 @@ module type S =
     (* type of actions *)
     type act
 
-    type location
-    val no_location : location
-    val location_of_action : act -> location
-
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
     val bind : act -> (act -> act) -> act
-    val make_const : location -> int -> act
-    val make_offset : location -> act -> int -> act
-    val make_prim : location -> primitive -> act list -> act
-    val make_isout : location -> act -> act -> act
-    val make_isin : location -> act -> act -> act
-    val make_if : location -> act -> act -> act -> act
+    val make_const : int -> act
+    val make_offset : act -> int -> act
+    val make_prim : primitive -> act list -> act
+    val make_isout : act -> act -> act
+    val make_isin : act -> act -> act
+    val make_if : act -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts
       NB:  cases is in the value form *)
-    val make_switch : location -> act -> int array -> act array -> act
-    (* Build last minute sharing of action stuff *)
-    val make_catch : location -> act -> int * (act -> act)
-    val make_exit : location -> int -> act
+    val make_switch :
+        Location.t -> act -> int array -> act array -> act
+   (* Build last minute sharing of action stuff *)
+   val make_catch : act -> int * (act -> act)
+   val make_exit : int -> act
+
   end
 
 
@@ -113,34 +111,19 @@ module type S =
 module Make :
   functor (Arg : S) ->
     sig
-      (** The locations in type [case] may not exactly correspond to
-          [low] and [high + 1], in the case where those values do not
-          coincide with constants being matched against, but are treated as if
-          they did. *)
-      type case = {
-        low_loc : Arg.location;
-        low : int;
-        high_plus_one_loc : Arg.location;
-        high : int;
-        action_index : int;
-      }
-
-      type cases = case array
-
 (* Standard entry point, sharing is tracked *)
       val zyva :
-          Arg.location ->
+          Location.t ->
           (int * int) ->
            Arg.act ->
-           cases ->
+           (int * int * int) array ->
            (Arg.act, _) t_store ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
-           Arg.location ->
            Arg.act ->
-           cases ->
+           (int * int * int) array ->
            (Arg.act, _) t_store ->
            Arg.act
     end

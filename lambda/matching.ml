@@ -2004,11 +2004,6 @@ let share_actions_tree sw ~(default : Lambda.block option) =
   let sw = List.map (fun (cst, j) -> cst, acts.(j)) sw in
   !hs,sw,default
 
-let first_location_in rem =
-  match rem with
-  | [] -> Location.none
-  | ((loc, _), _) :: _ -> loc
-
 type const_with_loc = Location.t * Asttypes.constant
 
 module Tests = struct
@@ -2101,16 +2096,13 @@ module SArg = struct
 
   type act = Lambda.block
 
-  let location_of_action { block_loc; expr = _; } = block_loc
+  let loc = Location.none
 
-  type location = Location.t
-  let no_location = Location.none
-
-  let make_prim loc p args =
+  let make_prim p args =
     let args = List.map (fun act -> act.expr) args in
     Lambda.block loc (Lprim (p, args, loc))
 
-  let make_offset loc arg n =
+  let make_offset arg n =
     let expr =
       let arg = arg.expr in
       match n with
@@ -2132,19 +2124,19 @@ module SArg = struct
     let expr = bind Alias newvar arg.expr ((body newarg).expr) in
     Lambda.block arg.block_loc expr
 
-  let make_const loc i =
+  let make_const i =
     Lambda.block loc (Lconst (Const_base (Const_int i), loc))
 
-  let make_isout_expr loc h arg =
+  let make_isout_expr h arg =
     Lprim (Pisout, [h.expr; arg.expr], loc)
 
-  let make_isout loc h arg =
-    Lambda.block loc (make_isout_expr loc h arg)
+  let make_isout h arg =
+    Lambda.block loc (make_isout_expr h arg)
 
-  let make_isin loc h arg =
-    Lambda.block loc (Lprim (Pnot, [make_isout_expr loc h arg], loc))
+  let make_isin h arg =
+    Lambda.block loc (Lprim (Pnot, [make_isout_expr h arg], loc))
 
-  let make_if loc cond ifso ifnot =
+  let make_if cond ifso ifnot =
     Lambda.block loc (Lifthenelse (cond.expr, ifso, ifnot, loc))
 
   let make_switch loc arg cases acts =
@@ -2162,11 +2154,11 @@ module SArg = struct
     in
     Lambda.block loc expr
 
-  let make_catch loc act =
+  let make_catch act =
     let block = Lambda.block loc act.expr in
     make_catch_delayed block
 
-  let make_exit = make_exit
+  let make_exit act = make_exit loc act
 end
 
 (* Action sharing for Lswitch argument *)
@@ -2253,14 +2245,15 @@ open Switch
 
 let rec last def = function
   | [] -> def
-  | [(_loc, x),_] -> x
+  | [x,_] -> x
   | _::rem -> last def rem
 
-let get_edges low high l : int * int = match l with
+let get_edges low high l = match l with
 | [] -> low, high
-| ((_loc, x),_)::_ -> x, last high l
+| (x,_)::_ -> x, last high l
 
-let as_interval_canfail fail low_loc low high_plus_one_loc high l =
+
+let as_interval_canfail fail low high l =
   let store = StoreExp.mk_store () in
 
   let do_store _tag act =
@@ -2270,140 +2263,51 @@ let as_interval_canfail fail low_loc low high_plus_one_loc high l =
     eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
     i in
-  let rec nofail_rec (cur_low_loc : Location.t) (cur_low : int)
-        (cur_high_plus_one_loc : Location.t) (cur_high : int)
-        cur_act cases =
-    let case =
-      { Switcher.
-        low_loc = cur_low_loc;
-        low = cur_low;
-        high_plus_one_loc = cur_high_plus_one_loc;
-        high = cur_high;
-        action_index = cur_act;
-      }
-    in
-    match cases with
+
+  let rec nofail_rec cur_low cur_high cur_act = function
     | [] ->
         if cur_high = high then
-          [case]
+          [cur_low,cur_high,cur_act]
         else
-          let next_case =
-            { Switcher.
-              low_loc = cur_high_plus_one_loc;
-              low = cur_high + 1;
-              high_plus_one_loc;
-              high;
-              action_index = 0;
-            }
-          in
-          [case; next_case]
-    | (((i_loc, i), act_i)::rem) as all ->
+          [(cur_low,cur_high,cur_act) ; (cur_high+1,high, 0)]
+    | ((i,act_i)::rem) as all ->
         let act_index = do_store "NO" act_i in
-        let i_plus_one_loc = first_location_in rem in
         if cur_high+1= i then
           if act_index=cur_act then
-            nofail_rec cur_low_loc cur_low i_plus_one_loc i cur_act rem
+            nofail_rec cur_low i cur_act rem
           else if act_index=0 then
-            let case =
-              { Switcher.
-                low_loc = cur_low_loc;
-                low = cur_low;
-                high_plus_one_loc = i_loc;
-                high = i - 1;
-                action_index = cur_act;
-              }
-            in
-            case :: fail_rec i_loc i i_plus_one_loc i rem
+            (cur_low,i-1, cur_act)::fail_rec i i rem
           else
-            let case =
-              { Switcher.
-                low_loc = cur_low_loc;
-                low = cur_low;
-                high_plus_one_loc = i_loc;
-                high = i - 1;
-                action_index = cur_act;
-              }
-            in
-            case :: nofail_rec i_loc i i_plus_one_loc i act_index rem
+            (cur_low, i-1, cur_act)::nofail_rec i i act_index rem
         else if act_index = 0 then
-          (* CR mshinwell: the second [cur_high_plus_one_loc] isn't
-             right -- should correspond to cur_high + 2 *)
-          case ::
-            fail_rec cur_high_plus_one_loc (cur_high+1)
-              cur_high_plus_one_loc (cur_high+1) all
+          (cur_low, cur_high, cur_act)::
+          fail_rec (cur_high+1) (cur_high+1) all
         else
-          let next_case =
-            { Switcher.
-              low_loc = cur_high_plus_one_loc;
-              low = cur_high + 1;
-              high_plus_one_loc = i_loc;
-              high = i - 1;
-              action_index = 0;
-            }
-          in
-          case :: next_case :: nofail_rec i_loc i i_plus_one_loc i act_index rem
-  and fail_rec (cur_low_loc : Location.t) (cur_low : int)
-        (cur_high_plus_one_loc : Location.t) (cur_high : int) =
-    function
-    | [] ->
-        let case =
-          { Switcher.
-            low_loc = cur_low_loc;
-            low = cur_low;
-            high_plus_one_loc = cur_high_plus_one_loc;
-            high = cur_high;
-            action_index = 0;
-          }
-        in
-        [case]
-    | ((i_loc, i), act_i)::rem ->
+          (cur_low, cur_high, cur_act)::
+          (cur_high+1,i-1,0)::
+          nofail_rec i i act_index rem
+
+  and fail_rec cur_low cur_high = function
+    | [] -> [(cur_low, cur_high, 0)]
+    | (i,act_i)::rem ->
         let index = do_store "YES" act_i in
-        let i_plus_one_loc = first_location_in rem in
-        if index=0 then fail_rec cur_low_loc cur_low i_plus_one_loc i rem
+        if index=0 then fail_rec cur_low i rem
         else
-          let case =
-            { Switcher.
-              low_loc = cur_low_loc;
-              low = cur_low;
-              high_plus_one_loc = i_loc;
-              high = i - 1;
-              action_index = 0;
-            }
-          in
-          case :: nofail_rec i_loc i i_plus_one_loc i index rem
-  in
+          (cur_low,i-1,0)::
+          nofail_rec i i index rem in
+
   let init_rec = function
-    | [] ->
-        let case =
-          { Switcher.
-            low_loc = low_loc;
-            low;
-            high_plus_one_loc = high_plus_one_loc;
-            high;
-            action_index = 0;
-          }
-        in
-        [case]
-    | ((i_loc, i),act_i)::rem ->
+    | [] -> [low,high,0]
+    | (i,act_i)::rem ->
         let index = do_store "INIT" act_i in
-        let i_plus_one_loc = first_location_in rem in
         if index=0 then
-          fail_rec low_loc low i_plus_one_loc i rem
+          fail_rec low i rem
         else
           if low < i then
-            let case =
-              { Switcher.
-                low_loc = low_loc;
-                low = low;
-                high_plus_one_loc = i_loc;
-                high = i - 1;
-                action_index = 0;
-              }
-            in
-            case :: nofail_rec i_loc i i_plus_one_loc i index rem
+            (low,i-1,0)::nofail_rec i i index rem
           else
-            nofail_rec i_loc i i_plus_one_loc i index rem
-  in
+            nofail_rec i i index rem in
+
   assert (do_store "FAIL" fail = 0) ; (* fail has action index 0 *)
   let r = init_rec l in
   Array.of_list r,  store
@@ -2412,42 +2316,20 @@ let as_interval_nofail l =
   let store = StoreExp.mk_store () in
   let rec some_hole = function
     | []|[_] -> false
-    | ((_i_loc, i), _)::(((_j_loc, j), _)::_ as rem) ->
+    | (i,_)::((j,_)::_ as rem) ->
         j > i+1 || some_hole rem in
-  let rec i_rec (cur_low_loc : Location.t) (cur_low : int)
-        (cur_high_plus_one_loc : Location.t) (cur_high : int)
-        cur_act =
-    function
+  let rec i_rec cur_low cur_high cur_act = function
     | [] ->
-        let case =
-          { Switcher.
-            low_loc = cur_low_loc;
-            low = cur_low;
-            high_plus_one_loc = cur_high_plus_one_loc;
-            high = cur_high;
-            action_index = cur_act;
-          }
-        in
-        [case]
-    | ((i_loc, i), act)::rem ->
+        [cur_low, cur_high, cur_act]
+    | (i,act)::rem ->
         let act_index = store.act_store () act in
-        let i_plus_one_loc = first_location_in rem in
         if act_index = cur_act then
-          i_rec cur_low_loc cur_low i_plus_one_loc i cur_act rem
+          i_rec cur_low i cur_act rem
         else
-          let case =
-            { Switcher.
-              low_loc = cur_low_loc;
-              low = cur_low;
-              high_plus_one_loc = cur_high_plus_one_loc;
-              high = cur_high;
-              action_index = cur_act;
-            }
-          in
-          case :: i_rec i_loc i i_plus_one_loc i act_index rem
-  in
+          (cur_low, cur_high, cur_act)::
+          i_rec i i act_index rem in
   let inters = match l with
-  | (((i_loc : Location.t), (i : int)), act)::rem ->
+  | (i,act)::rem ->
       let act_index =
         (* In case there is some hole and that a switch is emitted,
            action 0 will be used as the action of unreachable
@@ -2457,39 +2339,33 @@ let as_interval_nofail l =
           store.act_store_shared () act
         else
           store.act_store () act in
-      assert (act_index = 0);
-      let i_plus_one_loc = first_location_in rem in
-      i_rec i_loc i i_plus_one_loc i act_index rem
+      assert (act_index = 0) ;
+      i_rec i i act_index rem
   | _ -> assert false in
 
   Array.of_list inters, store
 
-let sort_cases_by_int
-      (l : ((Location.t * int) * Lambda.block) list) =
+
+let sort_int_lambda_list l =
   List.sort
-    (fun ((_loc1, (i1 : int)), _) ((_loc2, (i2 : int)), _) ->
+    (fun (i1,_) (i2,_) ->
       if i1 < i2 then -1
       else if i2 < i1 then 1
       else 0)
     l
 
-let as_interval ~default low_loc low high_plus_one_loc high
-      (l : ((Location.t * int) * Lambda.block) list) =
-  let l = sort_cases_by_int l in
-  let as_interval =
-    match default with
-    | None -> as_interval_nofail l
-    | Some act -> as_interval_canfail act low_loc low high_plus_one_loc high l
-  in
-  get_edges low high l, as_interval
+let as_interval ~default low high l =
+  let l = sort_int_lambda_list l in
+  get_edges low high l,
+  (match default with
+  | None -> as_interval_nofail l
+  | Some act -> as_interval_canfail act low high l)
 
-let call_switcher loc ~default (arg : Lambda.lambda) low high
-      (cases_by_int : ((Location.t * int) * Lambda.block) list) =
-  let low_loc = first_location_in cases_by_int in
+let call_switcher loc ~default arg low high int_lambda_list =
   let edges, (cases, actions) =
-    as_interval ~default low_loc low Location.none high cases_by_int in
-  let arg = Lambda.block loc arg in
-  Switcher.zyva loc edges arg cases actions
+    as_interval ~default low high int_lambda_list in
+  Switcher.zyva loc edges (Lambda.block loc arg) cases actions
+
 
 let rec list_as_pat = function
   | [] -> fatal_error "Matching.list_as_pat"
@@ -2500,10 +2376,9 @@ let rec list_as_pat = function
 
 let complete_pats_constrs = function
   | p::_ as pats ->
-      let completed =
-        complete_constrs p (List.map get_key_constr_no_location pats)
-      in
-      List.map (pat_of_constr p) completed
+      List.map
+        (pat_of_constr p)
+        (complete_constrs p (List.map get_key_constr_no_location pats))
   | _ -> assert false
 
 
@@ -2592,8 +2467,7 @@ let combine_constant loc (arg : Lambda.lambda) cst partial ctx def
     | Const_int _ ->
         let cases_by_int =
           List.map (function
-              | (pat_loc, Const_int n), act ->
-                (pat_loc, n), act
+              | (_pat_loc, Const_int n), act -> n, act
               | _ -> assert false)
             cases
         in
@@ -2601,8 +2475,7 @@ let combine_constant loc (arg : Lambda.lambda) cst partial ctx def
     | Const_char _ ->
         let cases_by_int =
           List.map (function
-              | (pat_loc, Const_char c), act ->
-                (pat_loc, Char.code c), act
+              | (_pat_loc, Const_char c), act -> Char.code c, act
               | _ -> assert false)
             cases
         in
@@ -2649,16 +2522,16 @@ let combine_constant loc (arg : Lambda.lambda) cst partial ctx def
 let split_cases tag_lambda_list =
   let rec split_rec = function
       [] -> ([], [])
-    | ((pat_loc, cstr), (act : Lambda.block)) :: rem ->
+    | ((_pat_loc, cstr), (act : Lambda.block)) :: rem ->
         let (consts, nonconsts) = split_rec rem in
         match cstr with
-          Cstr_constant n -> (((pat_loc, n), act) :: consts, nonconsts)
-        | Cstr_block n    -> (consts, ((pat_loc, n), act) :: nonconsts)
-        | Cstr_unboxed    -> (consts, ((pat_loc, 0), act) :: nonconsts)
+          Cstr_constant n -> ((n, act) :: consts, nonconsts)
+        | Cstr_block n    -> (consts, (n, act) :: nonconsts)
+        | Cstr_unboxed    -> (consts, (0, act) :: nonconsts)
         | Cstr_extension _ -> assert false in
   let const, nonconst = split_rec tag_lambda_list in
-  sort_cases_by_int const,
-  sort_cases_by_int nonconst
+  sort_int_lambda_list const,
+  sort_int_lambda_list nonconst
 
 let split_extension_cases (cases : Types.constructor_tag combine_cases) =
   let rec split_rec = function
@@ -2746,10 +2619,10 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
           match
             (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
           with
-          | (1, 1, [(pat_loc1, 0), act1], [(_pat_loc2, 0), act2]) ->
+          | (1, 1, [0, act1], [0, act2]) ->
               (* Typically, match on lists, will avoid isint primitive in that
                  case *)
-              Lambda.block pat_loc1 (Lifthenelse (arg, act2, act1, pat_loc1))
+              Lambda.block loc (Lifthenelse (arg, act2, act1, loc))
           | (n,0,_,[])  -> (* The type defines constant constructors only *)
               call_switcher loc ~default:fail_opt arg 0 (n-1) consts
           | (n, _, _, _) ->
@@ -2776,11 +2649,6 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
               | None ->
                   (* Emit a switch, as bytecode implements this sophisticated
                      instruction *)
-                  let make_arms arms =
-                    List.map (fun ((_pat_loc, cst), act) -> cst, act) arms
-                  in
-                  let consts = make_arms consts in
-                  let nonconsts = make_arms nonconsts in
                   let sw =
                     {sw_numconsts = cstr.cstr_consts; sw_consts = consts;
                      sw_numblocks = cstr.cstr_nonconsts; sw_blocks = nonconsts;
@@ -2795,12 +2663,9 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
 
 let make_test_sequence_variant_constant loc ~default
       (arg : Lambda.lambda) cases_by_int : Lambda.block =
-  let low_loc = first_location_in cases_by_int in
-  let _, (cases, actions) =
-    as_interval ~default low_loc min_int Location.none max_int cases_by_int
-  in
+  let _, (cases, actions) = as_interval ~default min_int max_int cases_by_int in
   let arg = Lambda.block loc arg in
-  Switcher.test_sequence loc arg cases actions
+  Switcher.test_sequence arg cases actions
 
 let call_switcher_variant_constant loc ~default (arg : Lambda.lambda)
       cases_by_int : Lambda.block =
@@ -2877,6 +2742,10 @@ let combine_variant loc row arg partial ctx def
 
 let combine_array loc arg kind partial ctx def
     (len_lambda_list, total1, _pats) : Lambda.block * Jumps.t =
+  let len_lambda_list =
+    List.map (fun ((_pat_loc, len), block) -> len, block)
+      len_lambda_list
+  in
   let default, local_jumps = mk_failaction_neg loc partial ctx def in
   let block : Lambda.block =
     let newvar = Ident.create_local "*len*" in

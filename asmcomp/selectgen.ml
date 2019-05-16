@@ -336,9 +336,9 @@ method effects_of exp =
   | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
-  | Cifthenelse (cond, ifso, ifnot, _dbg) ->
+  | Cifthenelse (cond, _ifso_dbg, ifso, _ifnot_dbg, ifnot, _dbg) ->
     EC.join (self#effects_of cond)
-      (EC.join (self#effects_of ifso.expr) (self#effects_of ifnot.expr))
+      (EC.join (self#effects_of ifso) (self#effects_of ifnot))
   | Cop (op, args, _) ->
     let from_op =
       match op with
@@ -708,8 +708,8 @@ method emit_expr (env:environment) exp =
   | Cop(Ccmpf _, _, dbg) ->
       self#emit_expr env
         (Cifthenelse (exp,
-          Cmm.block dbg (Cconst_int (1, dbg)),
-          Cmm.block dbg (Cconst_int (0, dbg)),
+          dbg, Cconst_int (1, dbg),
+          dbg, Cconst_int (0, dbg),
           dbg))
   | Cop(op, args, dbg) ->
       begin match self#emit_parts_list env args with
@@ -778,13 +778,13 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some _ -> self#emit_expr env e2
       end
-  | Cifthenelse(econd, eif, eelse, _dbg) ->
+  | Cifthenelse(econd, _ifso_dbg, eif, _ifnot_dbg, eelse, _dbg) ->
       let (cond, earg) = self#select_condition econd in
       begin match self#emit_expr env earg with
         None -> None
       | Some rarg ->
-          let (rif, sif) = self#emit_sequence env eif.expr in
-          let (relse, selse) = self#emit_sequence env eelse.expr in
+          let (rif, sif) = self#emit_sequence env eif in
+          let (relse, selse) = self#emit_sequence env eelse in
           let r = join env rif sif relse selse in
           self#insert env (Iifthenelse(cond, sif#extract, selse#extract))
                       rarg [||];
@@ -795,7 +795,7 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some rsel ->
           let rscases =
-            Array.map (fun case -> self#emit_sequence env case.expr) ecases
+            Array.map (fun (case, _dbg) -> self#emit_sequence env case) ecases
           in
           let r = join_array env rscases in
           self#insert env (Iswitch(index,
@@ -807,31 +807,31 @@ method emit_expr (env:environment) exp =
       self#emit_expr env e1
   | Ccatch(rec_flag, handlers, body) ->
       let handlers =
-        List.map (fun (nfail, ids, e2) ->
+        List.map (fun (nfail, ids, e2, dbg) ->
             let rs =
               List.map
                 (fun (id, typ) ->
                   let r = self#regs_for typ in name_regs id r; r)
                 ids in
-            (nfail, ids, rs, e2))
+            (nfail, ids, rs, e2, dbg))
           handlers
       in
       let env =
         (* Since the handlers may be recursive, and called from the body,
            the same environment is used for translating both the handlers and
            the body. *)
-        List.fold_left (fun env (nfail, _ids, rs, _e2) ->
+        List.fold_left (fun env (nfail, _ids, rs, _e2, _dbg) ->
             env_add_static_exception nfail rs env)
           env handlers
       in
       let (r_body, s_body) = self#emit_sequence env body in
-      let translate_one_handler (nfail, ids, rs, e2) =
+      let translate_one_handler (nfail, ids, rs, e2, _dbg) =
         assert(List.length ids = List.length rs);
         let new_env =
           List.fold_left (fun env ((id, _typ), r) -> env_add id r env)
             env (List.combine ids rs)
         in
-        let (r, s) = self#emit_sequence new_env e2.expr in
+        let (r, s) = self#emit_sequence new_env e2 in
         (nfail, (r, s))
       in
       let l = List.map translate_one_handler handlers in
@@ -862,10 +862,10 @@ method emit_expr (env:environment) exp =
           self#insert env (Iexit nfail) [||] [||];
           None
       end
-  | Ctrywith(e1, v, e2) ->
+  | Ctrywith(e1, v, e2, _dbg) ->
       let (r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_val in
-      let (r2, s2) = self#emit_sequence (env_add v rv env) e2.expr in
+      let (r2, s2) = self#emit_sequence (env_add v rv env) e2 in
       let r = join env r1 s1 r2 s2 in
       self#insert env
         (Itrywith(s1#extract,
@@ -1122,15 +1122,14 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some _ -> self#emit_tail env e2
       end
-  | Cifthenelse(econd, eif, eelse, _dbg) ->
+  | Cifthenelse(econd, _ifso_dbg, eif, _ifnot_dbg, eelse, _dbg) ->
       let (cond, earg) = self#select_condition econd in
       begin match self#emit_expr env earg with
         None -> ()
       | Some rarg ->
           self#insert env
-                      (Iifthenelse(cond,
-                                   self#emit_tail_sequence env eif.expr,
-                                   self#emit_tail_sequence env eelse.expr))
+                      (Iifthenelse(cond, self#emit_tail_sequence env eif,
+                                         self#emit_tail_sequence env eelse))
                       rarg [||]
       end
   | Cswitch(esel, index, ecases, _dbg) ->
@@ -1138,7 +1137,7 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some rsel ->
           let cases =
-            Array.map (fun case -> self#emit_tail_sequence env case.expr)
+            Array.map (fun (case, _dbg) -> self#emit_tail_sequence env case)
               ecases
           in
           self#insert env (Iswitch (index, cases)) rsel [||]
@@ -1147,33 +1146,33 @@ method emit_tail (env:environment) exp =
       self#emit_tail env e1
   | Ccatch(rec_flag, handlers, e1) ->
       let handlers =
-        List.map (fun (nfail, ids, e2) ->
+        List.map (fun (nfail, ids, e2, dbg) ->
             let rs =
               List.map
                 (fun (id, typ) ->
                   let r = self#regs_for typ in name_regs id r; r)
                 ids in
-            (nfail, ids, rs, e2))
+            (nfail, ids, rs, e2, dbg))
           handlers in
       let env =
-        List.fold_left (fun env (nfail, _ids, rs, _e2) ->
+        List.fold_left (fun env (nfail, _ids, rs, _e2, _dbg) ->
             env_add_static_exception nfail rs env)
           env handlers in
       let s_body = self#emit_tail_sequence env e1 in
-      let aux (nfail, ids, rs, e2) =
+      let aux (nfail, ids, rs, e2, _dbg) =
         assert(List.length ids = List.length rs);
         let new_env =
           List.fold_left
             (fun env ((id, _typ),r) -> env_add id r env)
             env (List.combine ids rs) in
-        nfail, self#emit_tail_sequence new_env e2.expr
+        nfail, self#emit_tail_sequence new_env e2
       in
       self#insert env (Icatch(rec_flag, List.map aux handlers, s_body))
         [||] [||]
-  | Ctrywith(e1, v, e2) ->
+  | Ctrywith(e1, v, e2, _dbg) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_val in
-      let s2 = self#emit_tail_sequence (env_add v rv env) e2.expr in
+      let s2 = self#emit_tail_sequence (env_add v rv env) e2 in
       self#insert env
         (Itrywith(s1#extract,
                   instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2))

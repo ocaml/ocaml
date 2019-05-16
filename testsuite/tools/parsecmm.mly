@@ -30,11 +30,11 @@ let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
   let dbg = Debuginfo.none in
-  let actv = Array.make (Array.length casev) (Cmm.block dbg (Cexit(0,[]))) in
+  let actv = Array.make (Array.length casev) (Cexit(0,[]), dbg) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
-    actv.(i) <- Cmm.block dbg e
+    actv.(i) <- (e, dbg)
   done;
   Cswitch(selector, index, actv, dbg)
 
@@ -219,36 +219,28 @@ expr:
   | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4], debuginfo ()) }
   | LPAREN SEQ sequence RPAREN { $3 }
   | LPAREN IF expr expr expr RPAREN
-      { Cifthenelse($3,
-                    Cmm.block (debuginfo ()) $4,
-                    Cmm.block (debuginfo ()) $5,
-                    debuginfo ()) }
+      { Cifthenelse($3, debuginfo (), $4, debuginfo (), $5, debuginfo ()) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
       { let body =
           match $3 with
             Cconst_int (x, _) when x <> 0 -> $4
-          | _ -> Cifthenelse($3,
-                             Cmm.block (debuginfo ()) $4,
-                             Cmm.block (debuginfo ()) (Cexit(0,[])),
+          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (), (Cexit(0,[])),
                              debuginfo ()) in
         Ccatch(Nonrecursive, [0, [],
-          Cmm.block (debuginfo ())
-            (Ccatch(Recursive,
-              [1, [], Cmm.block (debuginfo ()) (Csequence(body, Cexit(1, [])))],
-              Cexit(1, [])))], Ctuple []) }
+          Ccatch(Recursive,
+            [1, [], Csequence(body, Cexit(1, [])), debuginfo ()],
+            Cexit(1, [])), debuginfo ()], Ctuple []) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
     { let handlers = $5 in
-      List.iter (fun (_, l, _) ->
+      List.iter (fun (_, l, _, _) ->
         List.iter (fun (x, _) -> unbind_ident x) l) handlers;
       Ccatch(Recursive, handlers, $3) }
   | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
-                { unbind_ident $5;
-                  Ctrywith($3, $5, Cmm.block (debuginfo ()) $6)
-                }
+                { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
       { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
@@ -394,9 +386,9 @@ catch_handlers:
 
 catch_handler:
   | sequence
-    { 0, [], Cmm.block (debuginfo ()) $1 }
+    { 0, [], $1, debuginfo () }
   | LPAREN IDENT params RPAREN sequence
-    { find_label $2, $3, Cmm.block (debuginfo ()) $5 }
+    { find_label $2, $3, $5, debuginfo () }
 
 location:
     /**/                        { None }
