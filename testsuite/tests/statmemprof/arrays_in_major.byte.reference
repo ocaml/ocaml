@@ -1,13 +1,13 @@
 check_nosample
 check_ephe_full_major
 check_no_nested
-check_distrib 300 3000 1 0.000010
+check_distrib 300 3000 3 0.000010
 check_distrib 300 3000 1 0.000100
 check_distrib 300 3000 1 0.010000
-check_distrib 300 3000 1 1.000000
+check_distrib 300 3000 1 0.900000
 check_distrib 300 300 100000 0.100000
 check_distrib 300000 300000 30 0.100000
 check_callstack
-Raised by primitive operation at file "arrays_in_major.ml", line 136, characters 2-35
-Called from file "arrays_in_major.ml", line 142, characters 9-27
+Raised by primitive operation at file "arrays_in_major.ml", line 147, characters 2-35
+Called from file "arrays_in_major.ml", line 153, characters 9-27
 OK !

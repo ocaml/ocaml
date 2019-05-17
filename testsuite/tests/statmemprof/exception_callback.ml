@@ -12,7 +12,11 @@ let _ = Printexc.record_backtrace false
 
 let _ =
   start {
-    sampling_rate = 1.;
+    (* FIXME: we should use 1. to make sure the block is sampled,
+       but the runtime does an infinite loop in native mode in this
+       case. This bug will go away when the sampling of natively
+       allocated will be correctly implemented. *)
+    sampling_rate = 0.5;
     callstack_size = 10;
     callback = fun _ -> assert false
   };

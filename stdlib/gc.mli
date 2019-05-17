@@ -387,14 +387,15 @@ val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
    to [a].  Calling [delete_alarm a] again has no effect. *)
 
-(** [Memprof] is a sampling engine for allocated words. The blocks
-    are sampled according to a Poisson process. That is, every block
-    has a probability of being sampled which is proportional to its
-    size, and large blocks can be sampled several times. The samples
-    appear using a configurable sampling rate.
+(** [Memprof] is a sampling engine for allocated memory words. Every
+   allocated word has a probability of being sampled equal to a
+   configurable sampling rate. Since blocks are composed of several
+   words, a block can potentially be sampled several times. When a
+   block is sampled (i.e., it contains at least one sample word), a
+   user-defined callback is called.
 
-    This engine is typically used by a statistical memory profiler.
- *)
+   This engine makes it possible to implement a low-overhead memory
+   profiler as an OCaml library. *)
 module Memprof :
   sig
     type alloc_kind =
@@ -409,10 +410,11 @@ module Memprof :
 
     type sample_info = {
         n_samples: int;
-        (** The number of samples in this block. Always >= 1, it is sampled
-            according to a Poisson process, and in average equal to the
-            size of the block (including the header) multiplied by lambda
-            (the sampling rate). *)
+        (** The number of samples in this block. Always >= 1, it is
+           sampled according to a binomial distribution whose
+           parameters are the size of the block (including the header)
+           and the sampling rate. Hence, it is in average equal to the
+           size of the block multiplied by the sampling rate. *)
         kind: alloc_kind;
         (** The kind of the allocation. *)
         tag: int;
@@ -446,9 +448,9 @@ module Memprof :
     type 'a ctrl = {
         sampling_rate : float;
         (** The sampling rate in samples per word (including headers).
-            Usually, with cheap callbacks, a rate of 0.001 has no
-            visible effect on performance, and 0.01 causes the program
-            to run a few percent slower. *)
+           Usually, with cheap callbacks, a rate of 0.001 has no
+           visible effect on performance, and 0.01 causes the program
+           to run a few percent slower. *)
         callstack_size : int;
         (** The length of the callstack recorded at every sample. *)
         callback : 'a callback
