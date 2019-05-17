@@ -633,7 +633,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
 #undef Restore_after_gc
       }
     }else{
-      intern_block = caml_alloc_shr_no_track (wosize, String_tag);
+      intern_block = caml_alloc_shr_no_track_noexc (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the intern_color assertion below */
       if (intern_block == 0) {

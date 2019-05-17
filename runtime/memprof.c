@@ -243,8 +243,8 @@ static value capture_callstack_major()
   intnat wosize = caml_current_callstack_size(callstack_size);
   /* We do not use [caml_alloc] to make sure the GC will not get called. */
   if(wosize == 0) return Atom (0);
-  res = caml_alloc_shr_no_track(wosize, 0);
-  caml_current_callstack_write(res);
+  res = caml_alloc_shr_no_track_noexc(wosize, 0);
+  if(res != 0) caml_current_callstack_write(res);
   return res;
 }
 
@@ -279,10 +279,15 @@ void caml_memprof_track_alloc_shr(value block)
     return;
   occurrences = mt_generate_poisson(Whsize_val(block));
   if(occurrences > 0) {
+    value callstack;
     struct caml_memprof_postponed_block* pb =
       caml_stat_alloc_noexc(sizeof(struct caml_memprof_postponed_block));
-    value callstack = capture_callstack_major();
     if(pb == NULL) return;
+    callstack = capture_callstack_major();
+    if(callstack == 0) {
+      caml_stat_free(pb);
+      return;
+    }
     pb->block = block;
     caml_register_generational_global_root(&pb->block);
     pb->callstack = callstack;
