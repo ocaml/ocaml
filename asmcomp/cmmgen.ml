@@ -940,6 +940,21 @@ let rec expr_size env = function
       expr_size env closure
   | Usequence(_exp, exp') ->
       expr_size env exp'
+  | Uoffset(ushared, _ofs) ->
+      (* Uoffset is generated to access an element of a shared-closure
+         representation of mutual function recursion; in this case,
+         the 'u' argument is the closure for the whole block,
+         and its size is the correct size to use. *)
+      expr_size env ushared
+(*
+  (*FIXME: covering all desirable cases above and failing otherwise
+    would be more robust in the face of new edge cases of recursive
+    value definitions. But currently the list above is too incomplete
+    for this strategy to be practical, we fail to build
+    class-using code. *)
+  | other ->
+      fatal_errorf "expr_size %a" Printclambda.clambda other
+*)
   | _ -> RHS_nonrec
 
 (* Record application and currying functions *)
