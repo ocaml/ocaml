@@ -159,11 +159,29 @@ let rec size_of_lambda env = function
   | Llet(_str, _k, id, arg, body) ->
       size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
   | Lletrec(bindings, body) ->
-      let env = List.fold_right
-        (fun (id, e) env -> Ident.add id (size_of_lambda env e) env)
-        bindings env
-      in
-      size_of_lambda env body
+      let env =
+        if List.for_all (function (_, Lfunction _) -> true | _ -> false) bindings
+        then
+          (* letrec of functions; special size computation for the function:
+               2 * number of functions - 1 + number of free variables
+             (see CLOSUREREC case in interp.c) *)
+          let nfuncs = List.length bindings in
+          let nvars =
+            List.map (fun (_id, e) -> free_variables e) bindings
+            |> List.fold_left Ident.Set.union Ident.Set.empty
+            |> Ident.Set.cardinal
+          in
+          let closize = RHS_function (2 * nfuncs - 1 + nvars,
+                                      1 (*FIXME arity? for js_of_ocaml*)) in
+          List.fold_right
+            (fun (id, _e) env -> Ident.add id closize env)
+            bindings env
+        else
+          List.fold_right
+            (fun (id, e) env -> Ident.add id (size_of_lambda env e) env)
+            bindings env
+        in
+        size_of_lambda env body
   | Lprim(Pmakeblock _, args, _) -> RHS_block (List.length args)
   | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
       RHS_block (List.length args)
