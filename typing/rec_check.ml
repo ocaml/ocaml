@@ -205,29 +205,46 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_letop _ ->
         Dynamic
   and classify_value_bindings rec_flag env bindings =
-    (* We use a non-recursive classification, classifying each
-        binding with respect to the old environment
-        (before all definitions), even if the bindings are recursive.
-
-        Note: computing a fixpoint in some way would be more
-        precise, as the following could be allowed:
-
-          let rec topdef =
-            let rec x = y and y = fun () -> topdef ()
-            in x
-    *)
-    ignore rec_flag;
-    let old_env = env in
-    let add_value_binding env vb =
-      match vb.vb_pat.pat_desc with
-      | Tpat_var (id, _loc) ->
-          let size = classify_expression old_env vb.vb_expr in
-          Ident.add id size env
-      | _ ->
-          (* Note: we don't try to compute any size for complex patterns *)
-          env
+    let immediate_function vb = match vb.vb_expr.exp_desc with
+      | Texp_function _ -> true
+      | _ -> false
     in
-    List.fold_left add_value_binding env bindings
+    if rec_flag = Recursive
+    && List.length bindings > 1
+    && List.for_all immediate_function bindings then
+      (* mutually-recursive functions get compiled to a shared
+         closure, whose size computation on various backends is
+         tricky. Here we just declare them as Dynamic, which will
+         reject tricky declarations instead of mis-compiling them. *)
+      let add_binding env vb =
+        match vb.vb_pat.pat_desc with
+        | Tpat_var (id, _loc) ->
+            Ident.add id Dynamic env
+        | _ -> env in
+      List.fold_left add_binding env bindings
+    else
+      (* We use a non-recursive classification, classifying each
+          binding with respect to the old environment
+          (before all definitions), even if the bindings are recursive.
+
+          Note: computing a fixpoint in some way would be more
+          precise, as the following could be allowed:
+
+            let rec topdef =
+              let rec x = y and y = fun () -> topdef ()
+              in x
+      *)
+      let old_env = env in
+      let add_value_binding env vb =
+        match vb.vb_pat.pat_desc with
+        | Tpat_var (id, _loc) ->
+            let size = classify_expression old_env vb.vb_expr in
+            Ident.add id size env
+        | _ ->
+            (* Note: we don't try to compute any size for complex patterns *)
+            env
+      in
+      List.fold_left add_value_binding env bindings
   and classify_path env = function
     | Path.Pident x ->
         begin
