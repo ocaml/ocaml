@@ -387,7 +387,7 @@ val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
    to [a].  Calling [delete_alarm a] again has no effect. *)
 
-(** [Memprof] is an sampling engine for allocated words. The blocks
+(** [Memprof] is a sampling engine for allocated words. The blocks
 
     are sampled according to a Poisson process. That is, every block
     has a probability of being sampled which is proportional to its
@@ -427,21 +427,21 @@ module Memprof :
     (** The meta data passed at each callback.  *)
 
     type 'a callback = sample_info -> (Obj.t, 'a) Ephemeron.K1.t option
-    (** [callback] is the type of callbacks launch by the sampling
+    (** [callback] is the type of callbacks launched by the sampling
        engine. A callback returns an option over an ephemeron whose
        key is set to the allocated block for further tracking. After
        the callback returns, the key of the ephemeron should not be
        read, since this would change its reachability properties.
 
        The sampling is temporarily disabled when calling the callback
-       for the current thread. So it needs not be reentrant if only
-       one thread is running. However, if threads are used, it is
+       for the current thread. So it does not need to be reentrant if
+       the program is single-threaded. However, if threads are used, it is
        possible that a context switch occurs during a callback, in
-       which case reentrency has to be taken into account.
+       which case reentrancy has to be taken into account.
 
-       Note that when the callback kind is [Major], the callback could
+       Note that when the callback kind is [Major], the callback can
        be postponed after the actual allocation. Therefore, the
-       context of the callback is maybe slightly different than
+       context of the callback may be slightly different than
        expected. This should not happen if no C binding is used. *)
 
     type 'a ctrl = {
