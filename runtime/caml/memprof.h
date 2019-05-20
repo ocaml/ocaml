@@ -30,7 +30,7 @@ extern void caml_memprof_track_young(tag_t tag, uintnat wosize);
 
 extern int caml_memprof_suspended;
 
-struct caml_memprof_postponed_block *caml_memprof_postponed_head;
+extern struct caml_memprof_postponed_block *caml_memprof_postponed_head;
 
 #endif
 
