@@ -78,6 +78,9 @@
 
 #undef PROFINFO_WIDTH
 
+#undef WITH_SPACETIME
+#undef ENABLE_CALL_COUNTS
+
 #undef NONSTANDARD_DIV_MOD
 
 /* Leave NONSTANDARD_DIV_MOD undefined if the C operators / and % implement

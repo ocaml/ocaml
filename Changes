@@ -913,7 +913,11 @@ OCaml 4.08.0
   (Leo White, Greta Yorsh, review by Gabriel Radanne)
 
 - #8616: configure: use variables rather than arguments for a few options
-  (Sébastien Hinderer, review by David Allsopp and Gabriel Scherer)
+  (Sébastien Hinderer, review by David Allsopp, Gabriel Scherer and
+  Damien Doligez)
+
+- #8673: restore SpaceTime and libunwind support in configure script
+  (Sébastien Hinderer, review by Damien Doligez)
 
 ### Internal/compiler-libs changes:
 
