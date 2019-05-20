@@ -74,7 +74,11 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-  caml_young_limit = caml_young_trigger;
+  /* TEMPORARY: if we have just sampled an allocation in native mode,
+     we simply renew the sample to ignore it. Otherwise, renewing now
+     will not have any efect on the sampling distribution, because of
+     the memorylessness of the Poisson process. */
+  caml_memprof_renew_minor_sample();
   if (caml_requested_major_slice || caml_requested_minor_gc ||
       caml_young_ptr - caml_young_trigger < Max_young_whsize){
     caml_gc_dispatch ();

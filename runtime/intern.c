@@ -625,8 +625,12 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     if (wosize <= Max_young_wosize){
       if (wosize == 0){
         intern_block = Atom (String_tag);
-      } else {
-        intern_block = caml_alloc_small (wosize, String_tag);
+      }else{
+#define Setup_for_gc
+#define Restore_after_gc
+        Alloc_small_no_track(intern_block, wosize, String_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
       }
     }else{
       intern_block = caml_alloc_shr_no_track (wosize, String_tag);

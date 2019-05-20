@@ -30,6 +30,7 @@
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
 #include "caml/sys.h"
+#include "caml/memprof.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
@@ -71,6 +72,7 @@ void caml_process_pending_signals(void)
   if(!caml_signals_are_pending)
     return;
   caml_signals_are_pending = 0;
+  caml_update_young_limit();
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
@@ -244,6 +246,19 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   }
 #endif
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+}
+
+void caml_update_young_limit (void)
+{
+  /* The minor heap grows downwards. The first trigger is the largest one. */
+  caml_young_limit = caml_memprof_young_trigger < caml_young_trigger ?
+    caml_young_trigger : caml_memprof_young_trigger;
+
+#ifdef NATIVE_CODE
+  if(caml_requested_major_slice || caml_requested_minor_gc ||
+     caml_signals_are_pending || caml_memprof_postponed_head != NULL)
+    caml_young_limit = caml_young_alloc_end;
+#endif
 }
 
 /* Arrange for a garbage collection to be performed as soon as possible */

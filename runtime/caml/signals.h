@@ -37,6 +37,7 @@ CAMLextern int volatile caml_something_to_do;
 extern int volatile caml_requested_major_slice;
 extern int volatile caml_requested_minor_gc;
 
+void caml_update_young_limit(void);
 void caml_request_major_slice (void);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
