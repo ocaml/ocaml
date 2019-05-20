@@ -20,8 +20,12 @@ if [ "$version" != '2.69' ] ; then
 else
   autoconf -W all,error
   # Some distros have this 2013 patch to autoconf, some don't...
-  sed -i -e '/^runstatedir/d' \
-         -e '/-runstatedir /,+8d' \
-         -e '/--runstatedir=DIR/d' \
-         -e 's/ runstatedir//' configure
+  if grep -q runstatedir configure; then
+    # This sed command doesn't work on macos, but homebrew's version of
+    # autoconf doesn't include the runstatedir lines, so all is well.
+    sed -i -e '/^runstatedir/d' \
+           -e '/-runstatedir /,+8d' \
+           -e '/--runstatedir=DIR/d' \
+           -e 's/ runstatedir//' configure
+  fi
 fi
