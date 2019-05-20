@@ -986,6 +986,13 @@ AS_CASE(["$arch,$system"],
       [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
       [default_aspp="${toolpref}gcc -c"])])
 
+AS_IF([test "$with_pic"],
+  [fpic=true
+  AC_DEFINE([CAML_WITH_FPIC])
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  default_aspp="$default_aspp $sharedlib_cflags"],
+  [fpic=false])
+
 AS_IF([test -z "$AS"], [AS="$default_as"])
 
 AS_IF([test -z "$ASPP"], [ASPP="$default_aspp"])
@@ -1578,15 +1585,6 @@ AS_IF([test x"$enable_spacetime" != "xyes" ],
 
 AC_DEFINE_UNQUOTED([PROFINFO_WIDTH], [$profinfo_width])
 AS_IF([$profinfo], [AC_DEFINE([WITH_PROFINFO])])
-
-## PIC
-
-AS_IF([test "$with_pic"],
-  [fpic=true
-  AC_DEFINE([CAML_WITH_FPIC])
-  internal_cflags="$internal_cflags $sharedlib_cflags"
-  ASPP="$ASPP $sharedlib_cflags"],
-  [fpic=false])
 
 AS_IF([test x"$enable_installing_bytecode_programs" = "xno"],
   [install_bytecode_programs=false],

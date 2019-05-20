@@ -917,7 +917,7 @@ OCaml 4.08.0
   Damien Doligez)
 
 - #8632: Correctly propagate flags for --with-pic in configure.
-  (David Allsopp, review by ??)
+  (David Allsopp, review by Sébastien Hinderer and Damien Doligez)
 
 - #8673: restore SpaceTime and libunwind support in configure script
   (Sébastien Hinderer, review by Damien Doligez)
