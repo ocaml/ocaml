@@ -251,3 +251,16 @@ int main (int argc, char *argv[]){
     [AC_MSG_RESULT([no])],
     [AC_MSG_RESULT([no assumed])])
 ])
+
+AC_DEFUN([OCAML_CHECK_LIBUNWIND], [
+  SAVED_CFLAGS="$CFLAGS"
+  SAVED_LDFLAGS="$LDFLAGS"
+  CFLAGS="$CFLAGS $libunwind_include_flags"
+  LDFLAGS="$LDFLAGS $libunwind_link_flags"
+  AC_CHECK_HEADER([libunwind.h],
+    [AC_DEFINE([HAS_LIBUNWIND])
+    libunwind_available=true],
+    [libunwind_available=false])
+  LDFLAGS="$SAVED_LDFLAGS"
+  CFLAGS="$SAVED_CFLAGS"
+])
