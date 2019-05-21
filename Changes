@@ -1046,9 +1046,6 @@ OCaml 4.08.0
 - #2065: Add [Proc.destroyed_at_reloadretaddr].
   (Mark Shinwell, review by Damien Doligez)
 
-- #2060: "Phantom let" support for the Clambda language.
-  (Mark Shinwell, review by Vincent Laviron)
-
 - #2070: "Phantom let" support for the Cmm language.
   (Mark Shinwell, review by Vincent Laviron)
 
