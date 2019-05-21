@@ -187,7 +187,7 @@ CAMLprim value caml_memprof_set(value v)
   intnat sz = Long_val(Field(v, 1));
 
   if(sz < 0 || !(l >= 0.) || l > 1.)
-    caml_failwith("caml_memprof_set");
+    caml_invalid_argument("caml_memprof_set");
 
   if(!init) {
     int i;

@@ -92,9 +92,9 @@ value caml_remove_debug_info(code_t start);
  *
  * It also defines the two following functions, which makes it possible
  * to store upto [max_frames_value] frames of the current call
- * stack. This is used not in an exception-raising context, but only
+ * stack. This is not used in an exception-raising context, but only
  * when the user requests to save the trace (hopefully less often), or
- * the contect of profiling. Instead of using a bounded buffer as
+ * the context of profiling. Instead of using a bounded buffer as
  * [caml_stash_backtrace], we first traverse the stack to compute the
  * right size, then allocate space for the trace.
  *

@@ -388,7 +388,6 @@ val delete_alarm : alarm -> unit
    to [a].  Calling [delete_alarm a] again has no effect. *)
 
 (** [Memprof] is a sampling engine for allocated words. The blocks
-
     are sampled according to a Poisson process. That is, every block
     has a probability of being sampled which is proportional to its
     size, and large blocks can be sampled several times. The samples
