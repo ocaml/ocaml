@@ -6155,7 +6155,7 @@ Bug Fixes:
 - #5575: Random states are not marshallable across architectures
 - #5579: camlp4: when a plugin is loaded in the toplevel,
   Token.Filter.define_filter has no effect before the first syntax error
-- #5585: typo: "explicitely"
+- #5585: typo: "explicitly"
 - #5587: documentation: "allows to" is not correct English
 - #5593: remove C file when -output-obj fails
 - #5597: register names for instrtrace primitives in embedded bytecode
@@ -6437,7 +6437,7 @@ Native-code compiler:
   float comparisons.
 
 Standard library:
-- Format: new function ikfprintf analoguous to ifprintf with a continuation
+- Format: new function ikfprintf analogous to ifprintf with a continuation
   argument.
 * #4210, #4245: stricter range checking in string->integer conversion
   functions (int_of_string, Int32.of_string, Int64.of_string,

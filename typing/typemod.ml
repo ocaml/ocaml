@@ -616,7 +616,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
-       (* This signature will not be used direcly, it will always be freshened
+       (* This signature will not be used directly, it will always be freshened
           by the caller. So what we do with the scope doesn't really matter. But
           making it local makes it unlikely that we will ever use the result of
           this function unfreshened without issue. *)

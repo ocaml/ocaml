@@ -101,7 +101,7 @@ value caml_remove_debug_info(code_t start);
  * The first function, [caml_current_callstack_size] computes the size
  * (in words) of the needed buffer, while the second actually writes
  * the call stack to the buffer as an object of type
- * [raw_backtrace]. It should always be called with a bufer of the
+ * [raw_backtrace]. It should always be called with a buffer of the
  * size predicted by [caml_current_callstack_size]. The reason we use
  * two separated functions is to allow using either [caml_alloc] (for
  * performance) or [caml_alloc_shr] (when we need to avoid a call to
