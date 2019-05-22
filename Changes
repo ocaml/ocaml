@@ -54,6 +54,9 @@ Working version
   revise generation of config/util.ml to better quote special characters
   (Xavier Leroy, review by David Allsopp)
 
+- #8690: avoid rebuilding the world when files containing primitives change.
+  (Stephen Dolan, review by ??)
+
 ### Bug fixes:
 
 - #8622: Don't generate #! headers over 127 characters.
