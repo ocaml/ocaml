@@ -40,6 +40,12 @@ let emit_label lbl =
 let emit_symbol s =
   Emitaux.emit_symbol '$' s
 
+let declare_global_symbol sym =
+  `	.globl	{emit_symbol sym}\n`;
+  if not !Clflags.dlcode then begin
+    `	.hidden	{emit_symbol sym}\n`
+  end
+
 let emit_call s =
   if !Clflags.dlcode || !Clflags.pic_code
   then `bl	{emit_symbol s}(PLT)`
@@ -944,7 +950,7 @@ let fundecl fundecl =
   bound_error_sites := [];
   `	.text\n`;
   `	.align	2\n`;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+  declare_global_symbol fundecl.fun_name;
   if !arch > ARMv6 && !thumb then
     `	.thumb\n`
   else
@@ -964,7 +970,7 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cglobal_symbol s -> `	.globl	{emit_symbol s}\n`;
+    Cglobal_symbol s -> declare_global_symbol s
   | Cdefine_symbol s -> `{emit_symbol s}:\n`
   | Cint8 n -> `	.byte	{emit_int n}\n`
   | Cint16 n -> `	.short	{emit_int n}\n`
@@ -1007,26 +1013,26 @@ let begin_assembly() =
   `alloc_limit	.req	r11\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
+  declare_global_symbol lbl_begin;
   `{emit_symbol lbl_begin}:\n`;
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
+  declare_global_symbol lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
-  `	.globl	{emit_symbol lbl_end}\n`;
+  declare_global_symbol lbl_end;
   `{emit_symbol lbl_end}:\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.long 0\n`;  (* PR#6329 *)
-  `	.globl	{emit_symbol lbl_end}\n`;
+  declare_global_symbol lbl_end;
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;
   let lbl = Compilenv.make_symbol (Some "frametable") in
-  `	.globl	{emit_symbol lbl}\n`;
+  declare_global_symbol lbl;
   `{emit_symbol lbl}:\n`;
   emit_frames
     { efa_code_label = (fun lbl ->

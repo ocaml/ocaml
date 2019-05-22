@@ -71,9 +71,15 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
   | ELF64v1 -> (32, 56, 64)
   | ELF64v2 -> (32, 40, 48)
 
-(* Output a symbol *)
+(* Symbols *)
 
 let emit_symbol s = Emitaux.emit_symbol '.' s
+
+let declare_global_symbol sym =
+  `	.globl	{emit_symbol sym}\n`;
+  if not !Clflags.dlcode then begin
+    `	.hidden	{emit_symbol sym}\n`
+  end
 
 (* Output a label *)
 
@@ -1036,14 +1042,14 @@ let fundecl fundecl =
   begin match abi with
   | ELF32 ->
     emit_string code_space;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
+    declare_global_symbol fundecl.fun_name;
     `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
     `	.align	2\n`;
     `{emit_symbol fundecl.fun_name}:\n`
   | ELF64v1 ->
     emit_string function_descr_space;
     `	.align 3\n`;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
+    declare_global_symbol fundecl.fun_name;
     `	.type   {emit_symbol fundecl.fun_name}, @function\n`;
     `{emit_symbol fundecl.fun_name}:\n`;
     `	.quad .L.{emit_symbol fundecl.fun_name}, .TOC.@tocbase\n`;
@@ -1052,7 +1058,7 @@ let fundecl fundecl =
     `.L.{emit_symbol fundecl.fun_name}:\n`
   | ELF64v2 ->
     emit_string code_space;
-    `	.globl	{emit_symbol fundecl.fun_name}\n`;
+    declare_global_symbol fundecl.fun_name;
     `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
     `	.align	2\n`;
     `{emit_symbol fundecl.fun_name}:\n`;
@@ -1135,7 +1141,7 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let declare_global_data s =
-  `	.globl	{emit_symbol s}\n`;
+  declare_global_symbol s;
   `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function
