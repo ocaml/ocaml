@@ -259,9 +259,7 @@ void caml_update_young_limit (void)
 
 #ifdef NATIVE_CODE
   if(caml_requested_major_slice || caml_requested_minor_gc ||
-     caml_final_to_do ||
-     caml_signals_are_pending ||
-     caml_memprof_postponed_head != NULL)
+     caml_final_to_do || caml_signals_are_pending || caml_memprof_to_do)
     caml_young_limit = caml_young_alloc_end;
 #endif
 }

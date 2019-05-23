@@ -21,16 +21,16 @@
 #include "config.h"
 #include "mlvalues.h"
 
-extern void caml_memprof_track_alloc_shr(value block);
+extern int caml_memprof_suspended;
+
 extern void caml_memprof_handle_postponed();
+extern int caml_memprof_to_do;
+
+extern void caml_memprof_track_alloc_shr(value block);
+extern void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml);
 
 extern void caml_memprof_renew_minor_sample(void);
 extern value* caml_memprof_young_trigger;
-extern void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml);
-
-extern int caml_memprof_suspended;
-
-extern struct caml_memprof_postponed_block *caml_memprof_postponed_head;
 
 #endif
 
