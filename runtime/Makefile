@@ -239,15 +239,8 @@ ld.conf: $(ROOTDIR)/Makefile.config
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
 
-primitives.new : $(PRIMS)
+primitives : $(PRIMS)
 	./gen_primitives.sh >$@
-
-# To speed up builds, we avoid changing "primitives" when files
-# in PRIMS change but the primitives table does not
-.PHONY: maybe-update-primitives
-maybe-update-primitives: primitives.new
-	cmp primitives primitives.new || cp primitives.new primitives
-primitives: maybe-update-primitives
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \
