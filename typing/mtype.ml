@@ -175,7 +175,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
       let var_inv =
         match va with Co -> Contra | Contra -> Co | Strict -> Strict in
       let mty =
-        Mty_functor(param, Misc.may_map (nondep_mty env var_inv ids) arg,
+        Mty_functor(param, Option.map (nondep_mty env var_inv ids) arg,
                     nondep_mty
                       (Env.add_module ~arg:true param Mp_present
                          (Btype.default_mty arg) env) va ids res)
@@ -215,7 +215,7 @@ and nondep_sig env va ids sg =
   List.map (nondep_sig_item env va ids) sg
 
 and nondep_modtype_decl env ids mtd =
-  {mtd with mtd_type = Misc.may_map (nondep_mty env Strict ids) mtd.mtd_type}
+  {mtd with mtd_type = Option.map (nondep_mty env Strict ids) mtd.mtd_type}
 
 let nondep_supertype env ids = nondep_mty env Co ids
 let nondep_sig_item env ids = nondep_sig_item env Co ids

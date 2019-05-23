@@ -648,7 +648,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         let lam =
           if args = [] then lam else lapply lam (List.rev_map fst args) in
         let handle = protect "func" lam
-        and l = List.map (fun (arg, opt) -> may_map (protect "arg") arg, opt) l
+        and l = List.map (fun (arg, opt) -> Option.map (protect "arg") arg, opt) l
         and id_arg = Ident.create_local "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
@@ -679,7 +679,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         lapply lam (List.rev_map fst args)
   in
   (build_apply lam [] (List.map (fun (l, x) ->
-                                   may_map transl_exp x, Btype.is_optional l)
+                                   Option.map transl_exp x, Btype.is_optional l)
                                 sargs)
      : Lambda.lambda)
 

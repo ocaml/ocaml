@@ -189,7 +189,7 @@ let iter_expression f e =
     | Pexp_new _
     | Pexp_constant _ -> ()
     | Pexp_function pel -> List.iter case pel
-    | Pexp_fun (_, eo, _, e) -> may expr eo; expr e
+    | Pexp_fun (_, eo, _, e) -> Option.iter expr eo; expr e
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
     | Pexp_let (_, pel, e) ->  expr e; List.iter binding pel
     | Pexp_match (e, pel)
@@ -197,9 +197,9 @@ let iter_expression f e =
     | Pexp_array el
     | Pexp_tuple el -> List.iter expr el
     | Pexp_construct (_, eo)
-    | Pexp_variant (_, eo) -> may expr eo
+    | Pexp_variant (_, eo) -> Option.iter expr eo
     | Pexp_record (iel, eo) ->
-        may expr eo; List.iter (fun (_, e) -> expr e) iel
+        Option.iter expr eo; List.iter (fun (_, e) -> expr e) iel
     | Pexp_open (_, e)
     | Pexp_newtype (_, e)
     | Pexp_poly (e, _)
@@ -214,7 +214,7 @@ let iter_expression f e =
     | Pexp_while (e1, e2)
     | Pexp_sequence (e1, e2)
     | Pexp_setfield (e1, _, e2) -> expr e1; expr e2
-    | Pexp_ifthenelse (e1, e2, eo) -> expr e1; expr e2; may expr eo
+    | Pexp_ifthenelse (e1, e2, eo) -> expr e1; expr e2; Option.iter expr eo
     | Pexp_for (_, e1, e2, _, e3) -> expr e1; expr e2; expr e3
     | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
@@ -225,7 +225,7 @@ let iter_expression f e =
     | Pexp_unreachable -> ()
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
-    may expr pc_guard;
+    Option.iter expr pc_guard;
     expr pc_rhs
 
   and binding_op { pbop_exp; _ } =
@@ -267,7 +267,7 @@ let iter_expression f e =
     match ce.pcl_desc with
     | Pcl_constr _ -> ()
     | Pcl_structure { pcstr_fields = fs } -> List.iter class_field fs
-    | Pcl_fun (_, eo, _,  ce) -> may expr eo; class_expr ce
+    | Pcl_fun (_, eo, _,  ce) -> Option.iter expr eo; class_expr ce
     | Pcl_apply (ce, lel) ->
         class_expr ce; List.iter (fun (_, e) -> expr e) lel
     | Pcl_let (_, pel, ce) ->
@@ -524,7 +524,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
     module_variables := (name, loc) :: !module_variables
   end else
     (* moved to genannot *)
-    may (fun s -> Stypes.record (Stypes.An_ident (name.loc, name.txt, s)))
+    Option.iter (fun s -> Stypes.record (Stypes.An_ident (name.loc, name.txt, s)))
         !pattern_scope;
   id
 
@@ -583,7 +583,7 @@ let rec build_as_type env p =
         (List.combine pl tyl) ty_args;
       ty_res
   | Tpat_variant(l, p', _) ->
-      let ty = may_map (build_as_type env) p' in
+      let ty = Option.map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
                       row_bound=(); row_name=None;
                       row_fixed=false; row_closed=false})
@@ -1082,7 +1082,7 @@ let all_idents_cases half_typed_cases =
   in
   List.iter
     (fun { untyped_case = cp; _ } ->
-      may (iter_expression f) cp.pc_guard;
+      Option.iter (iter_expression f) cp.pc_guard;
       iter_expression f cp.pc_rhs
     )
     half_typed_cases;
@@ -2166,7 +2166,7 @@ let iter_ppat f p =
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
-  | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> may f arg
+  | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> Option.iter f arg
   | Ppat_tuple lst ->  List.iter f lst
   | Ppat_exception p | Ppat_alias (p,_)
   | Ppat_open (_,p)
@@ -2566,8 +2566,8 @@ and type_expect_
           end
       | _ -> raise Not_found
       with Not_found ->
-        let arg = may_map (type_exp env) sarg in
-        let arg_type = may_map (fun arg -> arg.exp_type) arg in
+        let arg = Option.map (type_exp env) sarg in
+        let arg_type = Option.map (fun arg -> arg.exp_type) arg in
         rue {
           exp_desc = Texp_variant(l, arg);
           exp_loc = loc; exp_extra = [];
@@ -3848,7 +3848,7 @@ and type_label_exp create env loc ty_expected
       arg
     with exn when maybe_expansive arg -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
-      may Btype.backtrack snap;
+      Option.iter Btype.backtrack snap;
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();

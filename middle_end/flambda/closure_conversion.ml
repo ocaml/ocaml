@@ -502,14 +502,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           consts = List.map aux sw.sw_consts;
           numblocks = nums sw.sw_numblocks sw.sw_blocks sw.sw_failaction;
           blocks = List.map aux sw.sw_blocks;
-          failaction = Misc.may_map (close t env) sw.sw_failaction;
+          failaction = Option.map (close t env) sw.sw_failaction;
         }))
   | Lstringswitch (arg, sw, def, _) ->
     let scrutinee = Variable.create Names.string_switch in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (String_switch (scrutinee,
         List.map (fun (s, e) -> s, close t env e) sw,
-        Misc.may_map (close t env) def))
+        Option.map (close t env) def))
   | Lstaticraise (i, args) ->
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left

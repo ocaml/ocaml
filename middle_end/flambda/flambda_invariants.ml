@@ -213,14 +213,14 @@ let variable_and_symbol_invariants (program : Flambda.program) =
           ignore_int n;
           loop env e)
         (consts @ blocks);
-      Misc.may (loop env) failaction
+      Option.iter (loop env) failaction
     | String_switch (arg, cases, e_opt) ->
       check_variable_is_bound env arg;
       List.iter (fun (label, case) ->
           ignore_string label;
           loop env case)
         cases;
-      Misc.may (loop env) e_opt
+      Option.iter (loop env) e_opt
     | Static_raise (static_exn, es) ->
       ignore_static_exception static_exn;
       List.iter (check_variable_is_bound env) es
