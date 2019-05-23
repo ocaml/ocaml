@@ -6155,7 +6155,7 @@ Bug Fixes:
 - #5575: Random states are not marshallable across architectures
 - #5579: camlp4: when a plugin is loaded in the toplevel,
   Token.Filter.define_filter has no effect before the first syntax error
-- #5585: typo: "explicitly"
+- #5585: typo: "explicitely"
 - #5587: documentation: "allows to" is not correct English
 - #5593: remove C file when -output-obj fails
 - #5597: register names for instrtrace primitives in embedded bytecode
