@@ -26,7 +26,7 @@ extern void caml_memprof_handle_postponed();
 
 extern void caml_memprof_renew_minor_sample(void);
 extern value* caml_memprof_young_trigger;
-extern void caml_memprof_track_young(tag_t tag, uintnat wosize);
+extern void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml);
 
 extern int caml_memprof_suspended;
 

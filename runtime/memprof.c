@@ -213,45 +213,39 @@ struct caml_memprof_postponed_block {
   value block;
   value callstack;
   uintnat occurrences;
+  enum ml_alloc_kind kind;
   struct caml_memprof_postponed_block* next;
 } *caml_memprof_postponed_head = NULL;
 
-/* When allocating in the major heap, we cannot call the callback,
-   because [caml_alloc_shr] is guaranteed not to call the GC. Hence,
-   this function determines if the block needs to be sampled, and if
-   so, it registers the block in the todo-list so that the callback
-   call is performed when possible. */
-void caml_memprof_track_alloc_shr(value block)
-{
-  uintnat occurrences;
-  CAMLassert(Is_in_heap(block));
-  /* This test also makes sure memprof is initialized. */
-  if(lambda == 0 || caml_memprof_suspended)
+/* When allocating in from C code, we cannot call the callback,
+   because the [caml_alloc_***] are guaranteed not to do so. This
+   function registers a sampled block in a todo-list so that the
+   callback call is performed when possible. */
+static void register_postponed_callback(value block, uintnat occurrences,
+                                        enum ml_alloc_kind kind) {
+  struct caml_memprof_postponed_block* pb;
+  value callstack;
+  if(occurrences == 0) return;
+  pb = caml_stat_alloc_noexc(sizeof(struct caml_memprof_postponed_block));
+  if(pb == NULL) return;      /* OOM */
+  callstack = capture_callstack_major();
+  if(callstack == 0) {        /* OOM */
+    caml_stat_free(pb);
     return;
-  occurrences = mt_generate_binom(Whsize_val(block));
-  if(occurrences > 0) {
-    value callstack;
-    struct caml_memprof_postponed_block* pb =
-      caml_stat_alloc_noexc(sizeof(struct caml_memprof_postponed_block));
-    if(pb == NULL) return;
-    callstack = capture_callstack_major();
-    if(callstack == 0) {
-      caml_stat_free(pb);
-      return;
-    }
-    pb->block = block;
-    caml_register_generational_global_root(&pb->block);
-    pb->callstack = callstack;
-    caml_register_generational_global_root(&pb->callstack);
-    pb->occurrences = occurrences;
-    pb->next = caml_memprof_postponed_head;
-    caml_memprof_postponed_head = pb;
-#ifndef NATIVE_CODE
-    caml_something_to_do = 1;
-#else
-    caml_young_limit = caml_young_alloc_end;
-#endif
   }
+  pb->block = block;
+  caml_register_generational_global_root(&pb->block);
+  pb->callstack = callstack;
+  caml_register_generational_global_root(&pb->callstack);
+  pb->occurrences = occurrences;
+  pb->kind = kind;
+  pb->next = caml_memprof_postponed_head;
+  caml_memprof_postponed_head = pb;
+#ifndef NATIVE_CODE
+  caml_something_to_do = 1;
+#else
+  caml_young_limit = caml_young_alloc_end;
+#endif
 }
 
 void caml_memprof_handle_postponed()
@@ -286,7 +280,7 @@ void caml_memprof_handle_postponed()
   /* We then do the actual iteration on postponed blocks */
   while(p != NULL) {
     ephe = do_callback(Tag_val(p->block), Wosize_val(p->block),
-                       p->occurrences, p->callstack, Major);
+                       p->occurrences, p->callstack, p->kind);
     if (Is_exception_result(ephe)) {
       caml_memprof_suspended = 0;
       /* In the case of an exception, we just forget the entire list. */
@@ -298,6 +292,15 @@ void caml_memprof_handle_postponed()
     NEXT_P;
   }
   caml_memprof_suspended = 0;
+}
+
+void caml_memprof_track_alloc_shr(value block)
+{
+  CAMLassert(Is_in_heap(block));
+  /* This test also makes sure memprof is initialized. */
+  if(lambda == 0 || caml_memprof_suspended) return;
+  register_postponed_callback(
+      block, mt_generate_binom(Whsize_val(block)), Major);
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -337,7 +340,7 @@ void caml_memprof_renew_minor_sample(void)
 /* Called when exceeding the threshold for the next sample in the
    minor heap, from the C code (the handling is different when called
    from natively compiled OCaml code). */
-void caml_memprof_track_young(tag_t tag, uintnat wosize)
+void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
 {
   CAMLparam0();
   CAMLlocal2(ephe, callstack);
@@ -355,15 +358,21 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
      caml_memprof_young_trigger], which is contradictory. */
   CAMLassert(lambda > 0);
 
+  occurrences =
+    mt_generate_binom(caml_memprof_young_trigger - 1 - caml_young_ptr) + 1;
+
+  if(!from_caml) {
+    register_postponed_callback(Val_hp(caml_young_ptr), occurrences, Minor);
+    caml_memprof_renew_minor_sample();
+    CAMLreturn0;
+  }
+
   /* We need to call the callback for this sampled block. Since the
      callback can potentially allocate, the sampled block will *not*
      be the one pointed to by [caml_memprof_young_trigger]. Instead,
-     we remember here that we need to sample the next allocated word,
+     we remember that we need to sample the next allocated word,
      call the callback and use as a sample the block which will be
      allocated right after the callback. */
-
-  occurrences =
-    mt_generate_binom(caml_memprof_young_trigger - 1 - caml_young_ptr) + 1;
 
   /* Restore the minor heap in a valid state and suspend sampling for
      calling the callback.
@@ -382,13 +391,6 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
      [Alloc_small_aux].
      We should not call the GC after this. */
   if(caml_young_ptr - whsize < caml_young_trigger) {
-    /* The call to [caml_gc_dispatch] may run arbitrary OCaml code via
-       finalizers. We artificially fill the ephemeron with [Val_unit]
-       so that the client code never sees the ephemeron empty before
-       the block is actually freed. */
-    if(Is_block(ephe))
-      caml_ephemeron_set_key(Field(ephe, 0), 0, Val_unit);
-
     CAML_INSTR_INT ("force_minor/memprof@", 1);
     caml_gc_dispatch();
   }

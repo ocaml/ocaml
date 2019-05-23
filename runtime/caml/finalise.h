@@ -31,6 +31,8 @@ void caml_final_update_minor_roots(void);
 value caml_final_register (value f, value v);
 void caml_final_invariant_check(void);
 
+extern int caml_final_to_do;
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_FINALISE_H */

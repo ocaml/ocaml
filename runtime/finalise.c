@@ -61,6 +61,7 @@ struct to_do {
 
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
+int caml_final_to_do = 0;
 /*
   to_do_hd: head of the list of finalisation functions that can be run.
   to_do_tl: tail of the list of finalisation functions that can be run.
@@ -68,6 +69,7 @@ static struct to_do *to_do_tl = NULL;
   It is the finalising set.
 */
 
+static int running_finalisation_function = 0;
 
 /* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
@@ -80,6 +82,14 @@ static void alloc_to_do (int size)
   if (to_do_tl == NULL){
     to_do_hd = result;
     to_do_tl = result;
+    if(!running_finalisation_function) {
+      caml_final_to_do = 1;
+#ifndef NATIVE_CODE
+      caml_something_to_do = 1;
+#else
+      caml_young_limit = caml_young_alloc_end;
+#endif
+    }
   }else{
     CAMLassert (to_do_tl->next == NULL);
     to_do_tl->next = result;
@@ -161,9 +171,6 @@ void caml_final_update_clean_phase (){
   generic_final_update(&finalisable_last, /* darken_value */ 0);
 }
 
-
-static int running_finalisation_function = 0;
-
 /* Call the finalisation functions for the finalising set.
    Note that this function must be reentrant.
 */
@@ -175,8 +182,7 @@ void caml_final_do_calls (void)
   void* saved_spacetime_trie_node_ptr;
 #endif
 
-  if (running_finalisation_function) return;
-  if (to_do_hd != NULL){
+  if (!running_finalisation_function && to_do_hd != NULL){
     if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
     caml_gc_message (0x80, "Calling finalisation functions.\n");
     while (1){
@@ -208,6 +214,7 @@ void caml_final_do_calls (void)
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
     if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
   }
+  caml_final_to_do = 0;
 }
 
 /* Call a scanning_action [f] on [x]. */
@@ -420,10 +427,11 @@ CAMLprim value caml_final_register_called_without_value (value f, value v){
   return Val_unit;
 }
 
-
 CAMLprim value caml_final_release (value unit)
 {
   running_finalisation_function = 0;
+  /* Some finalisers might be waiting. */
+  caml_final_do_calls();
   return Val_unit;
 }
 

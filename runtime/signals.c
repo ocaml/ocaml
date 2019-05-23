@@ -31,6 +31,7 @@
 #include "caml/signals_machdep.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
+#include "caml/finalise.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
@@ -72,7 +73,9 @@ void caml_process_pending_signals(void)
   if(!caml_signals_are_pending)
     return;
   caml_signals_are_pending = 0;
+#ifdef NATIVE_CODE
   caml_update_young_limit();
+#endif
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
@@ -152,7 +155,7 @@ CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_process_pending_signals();
+    caml_async_callbacks();
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
@@ -181,7 +184,7 @@ CAMLexport void caml_leave_blocking_section(void)
      [caml_signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   caml_signals_are_pending = 1;
-  caml_process_pending_signals();
+  caml_async_callbacks();
 
   errno = saved_errno;
 }
@@ -256,7 +259,9 @@ void caml_update_young_limit (void)
 
 #ifdef NATIVE_CODE
   if(caml_requested_major_slice || caml_requested_minor_gc ||
-     caml_signals_are_pending || caml_memprof_postponed_head != NULL)
+     caml_final_to_do ||
+     caml_signals_are_pending ||
+     caml_memprof_postponed_head != NULL)
     caml_young_limit = caml_young_alloc_end;
 #endif
 }
@@ -288,6 +293,16 @@ void caml_request_minor_gc (void)
 #else
   caml_young_limit = caml_young_alloc_end;
   /* Same remark as above in [caml_request_major_slice]. */
+#endif
+}
+
+void caml_async_callbacks (void)
+{
+  caml_memprof_handle_postponed();
+  caml_final_do_calls();
+  caml_process_pending_signals();
+#ifdef NATIVE_CODE
+  caml_update_young_limit();
 #endif
 }
 
