@@ -99,7 +99,7 @@ let lambda_smaller' lam ~than:threshold =
           size := !size + 2;
           lambda_size lam)
         sw;
-      Misc.may lambda_size def
+      Option.iter lambda_size def
     | Static_raise _ -> ()
     | Static_catch (_, _, body, handler) ->
       incr size; lambda_size body; lambda_size handler

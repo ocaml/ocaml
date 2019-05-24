@@ -89,7 +89,7 @@ let import_set_of_closures units pack
       Closure_id.Map.map (import_approx_for_pack units pack)
         set_of_closures.results;
     aliased_symbol =
-      Misc.may_map
+      Option.map
         (import_symbol_for_pack units pack)
         set_of_closures.aliased_symbol;
   }

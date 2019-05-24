@@ -37,12 +37,10 @@ let rec no_effects (flam : Flambda.t) =
     let aux (_, flam) = no_effects flam in
     List.for_all aux sw.blocks
       && List.for_all aux sw.consts
-      && Misc.Stdlib.Option.value_default no_effects sw.failaction
-        ~default:true
+      && Option.fold ~some:no_effects ~none:true sw.failaction
   | String_switch (_, sw, def) ->
     List.for_all (fun (_, lam) -> no_effects lam) sw
-      && Misc.Stdlib.Option.value_default no_effects def
-        ~default:true
+      && Option.fold ~some:no_effects ~none:true def
   | Static_catch (_, _, body, _) | Try_with (body, _, _) ->
     (* If there is a [raise] in [body], the whole [Try_with] may have an
        effect, so there is no need to test the handler. *)

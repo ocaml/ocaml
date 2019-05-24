@@ -20,6 +20,9 @@ Working version
   [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
   (Mark Shinwell, review by Pierre Chambart)
 
+- #8692: Remove Misc.may_map and similar
+  (Leo White, review by Gabriel Scherer and Thomas Refis)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.

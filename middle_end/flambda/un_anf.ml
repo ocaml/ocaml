@@ -152,7 +152,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
           ignore_string str;
           loop branch)
         branches;
-      Misc.may loop default
+      Option.iter loop default
     | Ustaticfail (static_exn, args) ->
       ignore_int static_exn;
       List.iter loop args
@@ -354,7 +354,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
           loop branch)
         branches;
       let_stack := [];
-      Misc.may loop default;
+      Option.iter loop default;
       let_stack := []
     | Ustaticfail (static_exn, args) ->
       ignore_int static_exn;
@@ -516,7 +516,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
         branches
     in
     let default =
-      Misc.may_map (substitute_let_moveable is_let_moveable env) default
+      Option.map (substitute_let_moveable is_let_moveable env) default
     in
     Ustringswitch (cond, branches, default)
   | Ustaticfail (n, args) ->
@@ -735,7 +735,7 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
       List.map (fun (s, branch) -> s, un_anf var_info env branch)
         branches
     in
-    let default = Misc.may_map (un_anf var_info env) default in
+    let default = Option.map (un_anf var_info env) default in
     Ustringswitch (cond, branches, default), Fixed
   | Ustaticfail (n, args) ->
     let args = un_anf_list var_info env args in

@@ -32,10 +32,10 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
   | Switch (_, sw) ->
     List.iter (fun (_,l) -> f l) sw.consts;
     List.iter (fun (_,l) -> f l) sw.blocks;
-    Misc.may f sw.failaction
+    Option.iter f sw.failaction
   | String_switch (_, sw, def) ->
     List.iter (fun (_,l) -> f l) sw;
-    Misc.may f def
+    Option.iter f def
   | Static_catch (_,_,f1,f2) ->
     f f1; f f2;
   | Try_with (f1,_,f2) ->

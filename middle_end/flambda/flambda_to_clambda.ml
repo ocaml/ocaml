@@ -313,7 +313,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   | String_switch (arg, sw, def) ->
     let arg = subst_var env arg in
     let sw = List.map (fun (s, e) -> s, to_clambda t env e) sw in
-    let def = Misc.may_map (to_clambda t env) def in
+    let def = Option.map (to_clambda t env) def in
     Ustringswitch (arg, sw, def)
   | Static_raise (static_exn, args) ->
     Ustaticfail (Static_exception.to_int static_exn,

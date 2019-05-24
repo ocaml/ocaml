@@ -565,11 +565,11 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
         free_variable scrutinee;
         List.iter (fun (_, e) -> aux e) switch.consts;
         List.iter (fun (_, e) -> aux e) switch.blocks;
-        Misc.may aux switch.failaction
+        Option.iter aux switch.failaction
       | String_switch (scrutinee, cases, failaction) ->
         free_variable scrutinee;
         List.iter (fun (_, e) -> aux e) cases;
-        Misc.may aux failaction
+        Option.iter aux failaction
       | Static_raise (_, es) ->
         List.iter free_variable es
       | Static_catch (_, vars, e1, e2) ->
@@ -789,10 +789,10 @@ let iter_general ~toplevel f f_named maybe_named =
       | Switch (_, sw) ->
         List.iter (fun (_,l) -> aux l) sw.consts;
         List.iter (fun (_,l) -> aux l) sw.blocks;
-        Misc.may aux sw.failaction
+        Option.iter aux sw.failaction
       | String_switch (_, sw, def) ->
         List.iter (fun (_,l) -> aux l) sw;
-        Misc.may aux def
+        Option.iter aux def
   and aux_named (named : named) =
     f_named named;
     match named with
