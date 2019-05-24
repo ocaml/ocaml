@@ -55,8 +55,6 @@ val typ_addr: machtype
 val typ_int: machtype
 val typ_float: machtype
 
-val size_component: machtype_component -> int
-
 (** Least upper bound of two [machtype_component]s. *)
 val lub_component
    : machtype_component
@@ -69,8 +67,6 @@ val ge_component
    : machtype_component
   -> machtype_component
   -> bool
-
-val size_machtype: machtype -> int
 
 type integer_comparison = Lambda.integer_comparison =
   | Ceq | Cne | Clt | Cgt | Cle | Cge
