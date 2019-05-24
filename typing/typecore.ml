@@ -522,10 +522,12 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
     if not !allow_modules then
       raise (Error (loc, Env.empty, Modules_not_allowed));
     module_variables := (name, loc) :: !module_variables
-  end else
+  end else begin
     (* moved to genannot *)
-    Option.iter (fun s -> Stypes.record (Stypes.An_ident (name.loc, name.txt, s)))
-        !pattern_scope;
+    Option.iter
+      (fun s -> Stypes.record (Stypes.An_ident (name.loc, name.txt, s)))
+      !pattern_scope
+  end;
   id
 
 let sort_pattern_variables vs =

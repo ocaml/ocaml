@@ -212,7 +212,8 @@ let pat sub x =
     | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
     | Tpat_construct (loc, cd, l) ->
         Tpat_construct (loc, cd, List.map (sub.pat sub) l)
-    | Tpat_variant (l, po, rd) -> Tpat_variant (l, Option.map (sub.pat sub) po, rd)
+    | Tpat_variant (l, po, rd) ->
+        Tpat_variant (l, Option.map (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 id id (sub.pat sub)) l, closed)
     | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
