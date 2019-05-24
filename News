@@ -156,7 +156,7 @@ Some highlights include:
 -   Instrumentation support for fuzzing with afl-fuzz.
     (GPR#504, by Stephen Dolan)
 
--   The compilers now accept new `-args/-args0 <file>` comand-line
+-   The compilers now accept new `-args/-args0 <file>` command-line
     parameters to provide extra command-line arguments in a file.  User
     programs may implement similar options using the new `Expand`
     constructor of the `Arg` module.

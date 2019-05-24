@@ -1138,7 +1138,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
        This would be true when the function is known never to have
        been inlined.
 
-       Note that something like that may maybe enforcable in
+       Note that something like that may maybe enforceable in
        inline_and_simplify, but there is no way to do that on other
        passes.
 

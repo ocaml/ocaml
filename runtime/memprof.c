@@ -123,7 +123,7 @@ static int32_t mt_generate_poisson(double len)
     next_mt_generate_poisson -= cur_lambda;
     if(next_mt_generate_poisson > 0) {
       /* Fast path if [cur_lambda] is small: we reuse the same
-         exponential sample accross several calls to
+         exponential sample across several calls to
          [mt_generate_poisson]. */
       return 0;
     } else {
@@ -461,7 +461,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
   /* Write the ephemeron if not [None]. */
   if(Is_block(ephe)) {
     /* Subtlety: we are actually writing the ephemeron with an invalid
-       (unitialized) block. This is correct for two reasons:
+       (uninitialized) block. This is correct for two reasons:
           - The logic of [caml_ephemeron_set_key] never inspects the content of
             the block. In only checks that the block is young.
           - The allocation and initialization happens right after returning

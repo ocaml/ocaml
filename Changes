@@ -6437,7 +6437,7 @@ Native-code compiler:
   float comparisons.
 
 Standard library:
-- Format: new function ikfprintf analoguous to ifprintf with a continuation
+- Format: new function ikfprintf analogous to ifprintf with a continuation
   argument.
 * #4210, #4245: stricter range checking in string->integer conversion
   functions (int_of_string, Int32.of_string, Int64.of_string,

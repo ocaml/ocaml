@@ -177,7 +177,7 @@ CAMLexport void caml_leave_blocking_section(void)
      Another case where this is necessary (even in a single threaded
      setting) is when the blocking section unmasks a pending signal:
      If the signal is pending and masked but has already been
-     examinated by [caml_process_pending_signals], then
+     examined by [caml_process_pending_signals], then
      [caml_signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   caml_signals_are_pending = 1;
