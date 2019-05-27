@@ -54,8 +54,10 @@ Working version
   revise generation of config/util.ml to better quote special characters
   (Xavier Leroy, review by David Allsopp)
 
-- #8690: avoid rebuilding the world when files containing primitives change.
-  (Stephen Dolan, review by ??)
+- #8690, #8696: avoid rebuilding the world when files containing primitives
+  change.
+  (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
+   Thomas Refis)
 
 ### Bug fixes:
 
