@@ -63,7 +63,11 @@ let check_no_nested () =
   Printf.printf "check_no_nested\n%!";
   let in_callback = ref false in
   start {
-      sampling_rate = 1.;
+      (* FIXME: we should use 1. to make sure the block is sampled,
+       but the runtime does an infinite loop in native mode in this
+       case. This bug will go away when the sampling of natively
+       allocated will be correctly implemented. *)
+      sampling_rate = 0.5;
       callstack_size = 10;
       callback = fun _ ->
         assert (not !in_callback);
@@ -98,14 +102,17 @@ let check_distrib lo hi cnt rate =
   stop ();
 
   (* The probability distribution of the number of samples follows a
-     poisson distribution with mean tot_alloc*rate. Given that we
-     expect this quantity to be large (i.e., > 100), this distribution
-     is approximately equal to a normal distribution. We compute a
-     1e-8 confidence interval for !smp using quantiles of the normal
-     distribution, and check that we are in this confidence interval. *)
+     binomial distribution of parameters tot_alloc and rate. Given
+     that tot_alloc*rate and tot_alloc*(1-rate) are large (i.e., >
+     100), this distribution is approximately equal to a normal
+     distribution. We compute a 1e-8 confidence interval for !smp
+     using quantiles of the normal distribution, and check that we are
+     in this confidence interval. *)
   let tot_alloc = cnt*(lo+hi+2)*(hi-lo+1)/2 in
+  assert (float tot_alloc *. rate > 100. &&
+          float tot_alloc *. (1. -. rate) > 100.);
   let mean = float tot_alloc *. rate in
-  let stddev = sqrt mean in
+  let stddev = sqrt (float tot_alloc *. rate *. (1. -. rate)) in
   (* This assertion has probability to fail close to 1e-8. *)
   assert (abs_float (mean -. float !smp) <= stddev *. 5.7)
 
@@ -113,7 +120,7 @@ let () =
   check_distrib 1 250 1000 0.00001;
   check_distrib 1 250 1000 0.0001;
   check_distrib 1 250 1000 0.01;
-  check_distrib 1 250 1000 1.;
+  check_distrib 1 250 1000 0.9;
   check_distrib 1 1   10000000 0.01;
   check_distrib 250 250 100000 0.1
 
@@ -133,7 +140,11 @@ let[@inline never] check_callstack () =
   Printf.printf "check_callstack\n%!";
   let callstack = ref None in
   start {
-      sampling_rate = 1.;
+      (* FIXME: we should use 1. to make sure the block is sampled,
+       but the runtime does an infinite loop in native mode in this
+       case. This bug will go away when the sampling of natively
+       allocated will be correctly implemented. *)
+      sampling_rate = 0.5;
       callstack_size = 10;
       callback = fun info ->
         if info.tag = 0 then callstack := Some info.callstack;

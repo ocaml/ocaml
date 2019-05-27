@@ -77,7 +77,13 @@ void caml_garbage_collection(void)
   /* TEMPORARY: if we have just sampled an allocation in native mode,
      we simply renew the sample to ignore it. Otherwise, renewing now
      will not have any effect on the sampling distribution, because of
-     the memorylessness of the Poisson process. */
+     the memorylessness of the Bernoulli process.
+
+     FIXME: if the sampling rate is 1, this leads to infinite loop,
+     because we are using a binomial distribution in [memprof.c]. This
+     will go away when the sampling of natively allocated blocks will
+     be correctly implemented.
+  */
   caml_memprof_renew_minor_sample();
   if (caml_requested_major_slice || caml_requested_minor_gc ||
       caml_young_ptr - caml_young_trigger < Max_young_whsize){
