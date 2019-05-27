@@ -19,6 +19,7 @@
 #ifdef CAML_INTERNALS
 
 #include "backtrace.h"
+#include "memory.h"
 
 /* Backtrace generation is split in [backtrace.c] and [backtrace_prim].
  *
@@ -110,8 +111,35 @@ value caml_remove_debug_info(code_t start);
  * We use `intnat` for max_frames because, were it only `int`, passing
  * `max_int` from the OCaml side would overflow on 64bits machines. */
 
-intnat caml_current_callstack_size(intnat max_frames);
-void caml_current_callstack_write(value trace);
+enum { Small_callstack_size = 32 };
+typedef struct caml_callstack {
+  intnat length;
+  /* Callstack entries are represented as OCaml values, but need
+     not be registered with the GC since they are always integers */
+  union {
+    /* Sufficiently small callstacks are stored inline */
+    value* ptr;
+    value init[Small_callstack_size];
+  } elems;
+} caml_callstack;
+
+void caml_collect_current_callstack(intnat max_frames, caml_callstack*);
+
+static inline void caml_write_callstack(caml_callstack* stk, value block)
+{
+  intnat i, len = stk->length;
+  value* p = len > Small_callstack_size ? stk->elems.ptr : stk->elems.init;
+  CAMLassert(Wosize_val(block) == len);
+  for (i = 0; i < len; i++) {
+    Field(block, i) = p[i];
+  }
+}
+
+static inline void caml_free_callstack(caml_callstack* stk)
+{
+  if (stk->length > Small_callstack_size)
+    caml_stat_free(stk->elems.ptr);
+}
 
 #endif /* CAML_INTERNALS */
 

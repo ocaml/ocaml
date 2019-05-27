@@ -189,20 +189,24 @@ enum ml_alloc_kind {
    make sure the postponed queue will be handled fully at some
    point. */
 static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
-                         value callstack, enum ml_alloc_kind cb_kind) {
-  CAMLparam1(callstack);
-  CAMLlocal1(sample_info);
+                         caml_callstack* callstack, enum ml_alloc_kind cb_kind) {
+  CAMLparam0();
+  CAMLlocal2(sample_info, vcallstack);
   value res; /* Not a root, can be an exception result. */
   CAMLassert(occurrences > 0 && !caml_memprof_suspended);
 
   caml_memprof_suspended = 1;
+
+  vcallstack = caml_alloc(callstack->length, 0);
+  caml_write_callstack(callstack, vcallstack);
+  caml_free_callstack(callstack);
 
   sample_info = caml_alloc_small(5, 0);
   Field(sample_info, 0) = Val_long(occurrences);
   Field(sample_info, 1) = cb_kind;
   Field(sample_info, 2) = Val_long(tag);
   Field(sample_info, 3) = Val_long(wosize);
-  Field(sample_info, 4) = callstack;
+  Field(sample_info, 4) = vcallstack;
 
   res = caml_callback_exn(memprof_callback, sample_info);
 
@@ -216,33 +220,6 @@ static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
   CAMLreturn(res);
 }
 
-/**** Capturing the call stack *****/
-
-/* This function is called for postponed blocks, so it guarantees
-   that the GC is not called. */
-static value capture_callstack_postponed(void)
-{
-  value res;
-  uintnat wosize = caml_current_callstack_size(callstack_size);
-  /* We do not use [caml_alloc] to make sure the GC will not get called. */
-  if (wosize == 0) return Atom (0);
-  res = caml_alloc_shr_no_track_noexc(wosize, 0);
-  if (res != 0) caml_current_callstack_write(res);
-  return res;
-}
-
-static value capture_callstack(void)
-{
-  value res;
-  uintnat wosize = caml_current_callstack_size(callstack_size);
-  CAMLassert(!caml_memprof_suspended);
-  caml_memprof_suspended = 1; /* => no samples in the call stack. */
-  res = caml_alloc(wosize, 0);
-  caml_memprof_suspended = 0;
-  caml_current_callstack_write(res);
-  return res;
-}
-
 /**** Handling postponed sampled blocks. ****/
 /* When allocating in from C code, we cannot call the callback,
    because the [caml_alloc_***] are guaranteed not to do so. These
@@ -252,10 +229,10 @@ static value capture_callstack(void)
    linked to a root during the delay, so that the reachability
    properties of the sampled block are artificially modified. */
 
-#define POSTPONED_DEFAULT_QUEUE_SIZE 128
+#define POSTPONED_DEFAULT_QUEUE_SIZE 16
 static struct postponed_block {
   value block;
-  value callstack;
+  caml_callstack callstack;
   uintnat occurrences;
   enum ml_alloc_kind kind;
 } default_postponed_queue[POSTPONED_DEFAULT_QUEUE_SIZE],
@@ -268,7 +245,6 @@ int caml_memprof_to_do = 0;
 static void postponed_pop(void)
 {
   caml_remove_global_root(&postponed_tl->block);
-  caml_remove_global_root(&postponed_tl->callstack);
   postponed_tl++;
   if (postponed_tl == postponed_queue_end) postponed_tl = postponed_queue;
 }
@@ -291,11 +267,8 @@ static void purge_postponed_queue(void)
 static void register_postponed_callback(value block, uintnat occurrences,
                                         enum ml_alloc_kind kind)
 {
-  value callstack;
   struct postponed_block* new_hd;
   if (occurrences == 0) return;
-  callstack = capture_callstack_postponed();
-  if (callstack == 0) return;    /* OOM */
 
   new_hd = postponed_hd + 1;
   if (new_hd == postponed_queue_end) new_hd = postponed_queue;
@@ -311,7 +284,6 @@ static void register_postponed_callback(value block, uintnat occurrences,
     while (postponed_tl != postponed_hd) {
       *new_hd = *postponed_tl;
       caml_register_global_root(&new_hd->block);
-      caml_register_global_root(&new_hd->callstack);
       new_hd++;
       postponed_pop();
     }
@@ -324,9 +296,8 @@ static void register_postponed_callback(value block, uintnat occurrences,
   }
 
   postponed_hd->block = block;
-  postponed_hd->callstack = callstack;
   caml_register_global_root(&postponed_hd->block);
-  caml_register_global_root(&postponed_hd->callstack);
+  caml_collect_current_callstack(callstack_size, &postponed_hd->callstack);
   postponed_hd->occurrences = occurrences;
   postponed_hd->kind = kind;
   postponed_hd = new_hd;
@@ -346,18 +317,20 @@ void caml_memprof_handle_postponed(void)
   }
 
   while (postponed_tl != postponed_hd) {
-    struct postponed_block pb = *postponed_tl;
-    block = pb.block;           /* pb.block is not a root! */
+    caml_callstack* callstack = &postponed_tl->callstack;
+    uintnat occurrences = postponed_tl->occurrences;
+    enum ml_alloc_kind kind = postponed_tl->kind;
+    block = postponed_tl->block;
     postponed_pop();
-    if (postponed_tl == postponed_hd) purge_postponed_queue();
 
     /* If using threads, this call can trigger reentrant calls to
        [caml_memprof_handle_postponed] even though we set
        [caml_memprof_suspended]. */
     ephe = do_callback(Tag_val(block), Wosize_val(block),
-                       pb.occurrences, pb.callstack, pb.kind);
+                       occurrences, callstack, kind);
 
     if (Is_block(ephe)) caml_ephemeron_set_key(Field(ephe, 0), 0, block);
+    if (postponed_tl == postponed_hd) purge_postponed_queue();
   }
 
   caml_memprof_to_do = 0;
@@ -415,9 +388,10 @@ void caml_memprof_renew_minor_sample(void)
 void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
 {
   CAMLparam0();
-  CAMLlocal2(ephe, callstack);
+  CAMLlocal1(ephe);
   uintnat whsize = Whsize_wosize(wosize);
   uintnat occurrences;
+  caml_callstack callstack;
 
   if (caml_memprof_suspended) {
     caml_memprof_renew_minor_sample();
@@ -455,8 +429,8 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
      order. */
   caml_memprof_handle_postponed();
 
-  callstack = capture_callstack();
-  ephe = do_callback(tag, wosize, occurrences, callstack, Minor);
+  caml_collect_current_callstack(callstack_size, &callstack);
+  ephe = do_callback(tag, wosize, occurrences, &callstack, Minor);
 
   /* We can now restore the minor heap in the state needed by
      [Alloc_small_aux]. */

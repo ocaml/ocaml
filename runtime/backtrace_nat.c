@@ -102,35 +102,35 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
   }
 }
 
-intnat caml_current_callstack_size(intnat max_frames) {
+void caml_collect_current_callstack(intnat max_frames, caml_callstack* ret)
+{
   intnat trace_size = 0;
+  intnat trace_alloc = Small_callstack_size;
   uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
+  char* sp = caml_bottom_of_stack;
+  value* callstack = ret->elems.init;
 
-  while (1) {
+  while (trace_size < max_frames) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) break;
-    if (trace_size >= max_frames) break;
-    ++trace_size;
 
-    if (sp > caml_top_of_stack) break;
+    if (trace_size == trace_alloc) {
+      if (trace_alloc == Small_callstack_size) {
+        trace_alloc *= 2;
+        callstack = caml_stat_alloc_noexc(sizeof(value) * trace_alloc);
+        if (!callstack) { ret->length = 0; return; } /* OOM */
+        memcpy(callstack, ret->elems.init, sizeof(value)*Small_callstack_size);
+        ret->elems.ptr = callstack;
+      } else {
+        trace_alloc *= 2;
+        callstack = ret->elems.ptr =
+          caml_stat_resize(callstack, sizeof(value) * trace_alloc);
+        if (!callstack) { ret->length = 0; return; } /* OOM */
+      }
+    }
+    callstack[trace_size++] = Val_backtrace_slot((backtrace_slot)descr);
   }
-
-  return trace_size;
-}
-
-void caml_current_callstack_write(value trace) {
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
-  intnat trace_pos, trace_size = Wosize_val(trace);
-
-  for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-    CAMLassert(descr != NULL);
-    /* [Val_backtrace_slot(...)] is always a long, no need to call
-       [caml_modify]. */
-    Field(trace, trace_pos) = Val_backtrace_slot((backtrace_slot) descr);
-  }
+  ret->length = trace_size;
 }
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)

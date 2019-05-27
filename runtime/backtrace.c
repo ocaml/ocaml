@@ -351,9 +351,12 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 CAMLprim value caml_get_current_callstack(value max_frames_value) {
   CAMLparam1(max_frames_value);
   CAMLlocal1(res);
+  caml_callstack stk;
 
-  res = caml_alloc(caml_current_callstack_size(Long_val(max_frames_value)), 0);
-  caml_current_callstack_write(res);
+  caml_collect_current_callstack(Long_val(max_frames_value), &stk);
+  res = caml_alloc(stk.length, 0);
+  caml_write_callstack(&stk, res);
+  caml_free_callstack(&stk);
 
   CAMLreturn(res);
 }
