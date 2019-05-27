@@ -274,7 +274,7 @@ let constructor_declaration copy_scope s c =
   {
     cd_id = c.cd_id;
     cd_args = constructor_arguments copy_scope s c.cd_args;
-    cd_res = may_map (typexp copy_scope s) c.cd_res;
+    cd_res = Option.map (typexp copy_scope s) c.cd_res;
     cd_loc = loc s c.cd_loc;
     cd_attributes = attrs s c.cd_attributes;
   }
@@ -379,7 +379,7 @@ let extension_constructor' copy_scope s ext =
   { ext_type_path = type_path s ext.ext_type_path;
     ext_type_params = List.map (typexp copy_scope s) ext.ext_type_params;
     ext_args = constructor_arguments copy_scope s ext.ext_args;
-    ext_ret_type = may_map (typexp copy_scope s) ext.ext_ret_type;
+    ext_ret_type = Option.map (typexp copy_scope s) ext.ext_ret_type;
     ext_private = ext.ext_private;
     ext_attributes = attrs s ext.ext_attributes;
     ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
@@ -459,7 +459,7 @@ let rec modtype scoping s = function
       Mty_signature(signature scoping s sg)
   | Mty_functor(id, arg, res) ->
       let id' = Ident.rename id in
-      Mty_functor(id', may_map (modtype scoping s) arg,
+      Mty_functor(id', Option.map (modtype scoping s) arg,
                        modtype scoping (add_module id (Pident id') s) res)
   | Mty_alias p ->
       Mty_alias (module_path s p)
@@ -504,7 +504,7 @@ and module_declaration scoping s decl =
 
 and modtype_declaration scoping s decl  =
   {
-    mtd_type = may_map (modtype scoping s) decl.mtd_type;
+    mtd_type = Option.map (modtype scoping s) decl.mtd_type;
     mtd_attributes = attrs s decl.mtd_attributes;
     mtd_loc = loc s decl.mtd_loc;
   }

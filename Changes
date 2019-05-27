@@ -20,6 +20,9 @@ Working version
   [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
   (Mark Shinwell, review by Pierre Chambart)
 
+- #8692: Remove Misc.may_map and similar
+  (Leo White, review by Gabriel Scherer and Thomas Refis)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
@@ -6437,7 +6440,7 @@ Native-code compiler:
   float comparisons.
 
 Standard library:
-- Format: new function ikfprintf analoguous to ifprintf with a continuation
+- Format: new function ikfprintf analogous to ifprintf with a continuation
   argument.
 * #4210, #4245: stricter range checking in string->integer conversion
   functions (int_of_string, Int32.of_string, Int64.of_string,
