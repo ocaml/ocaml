@@ -265,17 +265,15 @@ static struct postponed_block {
   *postponed_hd = default_postponed_queue; /* Pointer to next push */
 int caml_memprof_to_do = 0;
 
-static void postponed_pop(void)
+static struct postponed_block* postponed_next(struct postponed_block* p)
 {
-  caml_remove_global_root(&postponed_tl->block);
-  caml_remove_global_root(&postponed_tl->callstack);
-  postponed_tl++;
-  if (postponed_tl == postponed_queue_end) postponed_tl = postponed_queue;
+  p++;
+  if (p == postponed_queue_end) return postponed_queue;
+  else return p;
 }
 
 static void purge_postponed_queue(void)
 {
-  while (postponed_tl != postponed_hd) postponed_pop();
   if (postponed_queue != default_postponed_queue) {
     caml_stat_free(postponed_queue);
     postponed_queue = default_postponed_queue;
@@ -297,23 +295,20 @@ static void register_postponed_callback(value block, uintnat occurrences,
   callstack = capture_callstack_postponed();
   if (callstack == 0) return;    /* OOM */
 
-  new_hd = postponed_hd + 1;
-  if (new_hd == postponed_queue_end) new_hd = postponed_queue;
+  new_hd = postponed_next(postponed_hd);
   if (new_hd == postponed_tl) {
     /* Queue is full, reallocate it. (We always leave one free slot in
        order to be able to distinguish the 100% full and the empty
        states). */
-    uintnat sz = 4 * (postponed_queue_end - postponed_queue);
+    uintnat sz = 2 * (postponed_queue_end - postponed_queue);
     struct postponed_block* new_queue =
       caml_stat_alloc_noexc(sz * sizeof(struct postponed_block));
     if (new_queue == NULL) return;
     new_hd = new_queue;
     while (postponed_tl != postponed_hd) {
       *new_hd = *postponed_tl;
-      caml_register_global_root(&new_hd->block);
-      caml_register_global_root(&new_hd->callstack);
       new_hd++;
-      postponed_pop();
+      postponed_tl = postponed_next(postponed_tl);
     }
     if (postponed_queue != default_postponed_queue)
       caml_stat_free(postponed_queue);
@@ -325,8 +320,6 @@ static void register_postponed_callback(value block, uintnat occurrences,
 
   postponed_hd->block = block;
   postponed_hd->callstack = callstack;
-  caml_register_global_root(&postponed_hd->block);
-  caml_register_global_root(&postponed_hd->callstack);
   postponed_hd->occurrences = occurrences;
   postponed_hd->kind = kind;
   postponed_hd = new_hd;
@@ -348,7 +341,7 @@ void caml_memprof_handle_postponed(void)
   while (postponed_tl != postponed_hd) {
     struct postponed_block pb = *postponed_tl;
     block = pb.block;           /* pb.block is not a root! */
-    postponed_pop();
+    postponed_tl = postponed_next(postponed_tl);
     if (postponed_tl == postponed_hd) purge_postponed_queue();
 
     /* If using threads, this call can trigger reentrant calls to
@@ -362,6 +355,16 @@ void caml_memprof_handle_postponed(void)
 
   caml_memprof_to_do = 0;
   CAMLreturn0;
+}
+
+/* We don't expect these roots to live long. No need to have a special
+   case for young roots. */
+void caml_memprof_scan_roots(scanning_action f) {
+  struct postponed_block* p;
+  for(p = postponed_tl; p != postponed_hd; p = postponed_next(p)) {
+    f(p->block, &p->block);
+    f(p->callstack, &p->callstack);
+  }
 }
 
 /**** Sampling procedures ****/

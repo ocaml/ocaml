@@ -26,7 +26,6 @@
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
-#include "memprof.h"
 #endif /* CAML_INTERNALS */
 #include "misc.h"
 #include "mlvalues.h"

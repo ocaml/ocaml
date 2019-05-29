@@ -20,6 +20,7 @@
 
 #include "config.h"
 #include "mlvalues.h"
+#include "roots.h"
 
 extern int caml_memprof_suspended;
 
@@ -30,6 +31,8 @@ extern void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml);
 
 extern void caml_memprof_renew_minor_sample(void);
 extern value* caml_memprof_young_trigger;
+
+extern void caml_memprof_scan_roots(scanning_action f);
 
 #endif
 
