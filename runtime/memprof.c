@@ -179,7 +179,7 @@ CAMLprim value caml_memprof_set(value v)
 enum ml_alloc_kind {
   Minor = Val_long(0),
   Major = Val_long(1),
-  Serialized = Val_long(2)
+  Unmarshalled = Val_long(2)
 };
 
 /* When we call do_callback, we suspend/resume sampling. In order to
@@ -287,13 +287,13 @@ static void purge_postponed_queue(void)
    block is allocated, but not yet initialized, so that the heap
    invariants are broken. */
 static void register_postponed_callback(value block, uintnat occurrences,
-                                        enum ml_alloc_kind kind)
+                                        enum ml_alloc_kind kind,
+                                        value* callstack)
 {
-  value callstack;
   struct postponed_block* new_hd;
   if (occurrences == 0) return;
-  callstack = capture_callstack_postponed();
-  if (callstack == 0) return;    /* OOM */
+  if (*callstack == 0) *callstack = capture_callstack_postponed();
+  if (*callstack == 0) return;    /* OOM */
 
   new_hd = postponed_next(postponed_hd);
   if (new_hd == postponed_tl) {
@@ -319,7 +319,7 @@ static void register_postponed_callback(value block, uintnat occurrences,
   }
 
   postponed_hd->block = block;
-  postponed_hd->callstack = callstack;
+  postponed_hd->callstack = *callstack;
   postponed_hd->occurrences = occurrences;
   postponed_hd->kind = kind;
   postponed_hd = new_hd;
@@ -371,11 +371,12 @@ void caml_memprof_scan_roots(scanning_action f) {
 
 void caml_memprof_track_alloc_shr(value block)
 {
+  value callstack = 0;
   CAMLassert(Is_in_heap(block));
   /* This test also makes sure memprof is initialized. */
   if (lambda == 0 || caml_memprof_suspended) return;
   register_postponed_callback(
-      block, mt_generate_binom(Whsize_val(block)), Major);
+      block, mt_generate_binom(Whsize_val(block)), Major, &callstack);
 }
 
 /* Shifts the next sample in the minor heap by [n] words. Essentially,
@@ -438,8 +439,9 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
                       - Caml_state->young_ptr) + 1;
 
   if (!from_caml) {
+    value callstack = 0;
     register_postponed_callback(Val_hp(Caml_state->young_ptr), occurrences,
-                                Minor);
+                                Minor, &callstack);
     caml_memprof_renew_minor_sample();
     CAMLreturn0;
   }
@@ -492,4 +494,40 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
      very little heap operations are allowed until then. */
 
   CAMLreturn0;
+}
+
+void caml_memprof_track_interned(header_t* block, header_t* blockend) {
+  header_t *p;
+  value callstack = 0;
+
+  if(lambda == 0 || caml_memprof_suspended)
+    return;
+
+  /* We have to select the sampled blocks before sampling them,
+     because sampling may trigger GC, and then blocks can escape from
+     [block, blockend[. So we use the postponing machinery for
+     selecting blocks. [intern.c] will call [check_urgent_gc] which
+     will call [caml_memprof_handle_postponed] in turn. */
+  p = block;
+  while(1) {
+    uintnat next_sample = mt_generate_geom();
+    header_t *next_sample_p, *next_p;
+    if(next_sample > blockend - p)
+      break;
+    /* [next_sample_p] is the block *following* the next sampled
+       block! */
+    next_sample_p = p + next_sample;
+
+    while(1) {
+      next_p = p + Whsize_hp(p);
+      if(next_p >= next_sample_p) break;
+      p = next_p;
+    }
+
+    register_postponed_callback(
+      Val_hp(p), mt_generate_binom(next_p - next_sample_p) + 1,
+      Unmarshalled, &callstack);
+
+    p = next_p;
+  }
 }

@@ -401,12 +401,11 @@ module Memprof :
     type alloc_kind =
       | Minor
       | Major
-      | Serialized
+      | Unmarshalled
     (** Allocation kinds
         - [Minor] : the allocation took place in the minor heap.
         - [Major] : the allocation took place in the major heap.
-        - [Serialized] : the allocation happened during a
-          deserialization. *)
+        - [Unmarshalled] : the allocation happened while unmarshalling. *)
 
     type sample_info = {
         n_samples: int;

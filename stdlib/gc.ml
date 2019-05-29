@@ -124,7 +124,7 @@ module Memprof =
     type alloc_kind =
       | Minor
       | Major
-      | Serialized
+      | Unmarshalled
 
     type sample_info = {
         n_samples: int; kind: alloc_kind; tag: int;

@@ -149,7 +149,8 @@ intern_b.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_b.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -509,7 +510,8 @@ intern_bd.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_bd.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -864,7 +866,8 @@ intern_bi.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_bi.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -1219,7 +1222,8 @@ intern_bpic.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_bpic.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -1571,7 +1575,8 @@ intern_n.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_n.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -1928,7 +1933,8 @@ intern_nd.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_nd.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -2280,7 +2286,8 @@ intern_ni.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_ni.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
@@ -2632,7 +2639,8 @@ intern_npic.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
  caml/intext.h caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
- caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h
+ caml/domain.h caml/mlvalues.h caml/misc.h caml/reverse.h caml/memprof.h \
+ caml/roots.h caml/memory.h
 interp_npic.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/backtrace.h caml/exec.h caml/callback.h caml/debugger.h caml/fail.h \
