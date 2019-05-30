@@ -36,7 +36,8 @@ Working version
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
-- #8630: Use abort() instead of exit(2) in caml_fatal_error.
+- #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
+  the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
 ### Standard library:
