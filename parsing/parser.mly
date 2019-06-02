@@ -3219,6 +3219,9 @@ atomic_type:
     | tys = actual_type_parameters
       tid = mkrhs(type_longident)
         { Ptyp_constr(tid, tys) }
+    | tys = actual_type_parameters
+      LPAREN poly = mktyp(poly(core_type)) RPAREN
+        { Ptyp_apply(poly, tys) }
     | LESS meth_list GREATER
         { let (f, c) = $2 in Ptyp_object (f, c) }
     | LESS GREATER
