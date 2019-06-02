@@ -133,6 +133,8 @@ module T = struct
         iter_loc sub lid;
         List.iter (iter_tuple (iter_loc sub) (sub.typ sub)) l
     | Ptyp_extension x -> sub.extension sub x
+    | Ptyp_apply (ty, tyl) ->
+        sub.typ sub ty; List.iter (sub.typ sub) tyl
 
   let iter_type_declaration sub
       {ptype_name; ptype_params; ptype_cstrs;

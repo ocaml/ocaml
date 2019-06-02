@@ -139,6 +139,8 @@ module T = struct
         package ~loc ~attrs (map_loc sub lid)
           (List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Ptyp_apply (t, tyl) ->
+        apply ~loc ~attrs (sub.typ sub t) (List.map (sub.typ sub) tyl)
 
   let map_type_declaration sub
       {ptype_name; ptype_params; ptype_cstrs;

@@ -45,6 +45,7 @@ type error =
   | Unbound_type_constructor of Longident.t
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
+  | Arity_mismatch of int * int
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t

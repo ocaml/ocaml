@@ -118,6 +118,7 @@ let rec add_type bv ty =
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
   | Ptyp_extension e -> handle_extension e
+  | Ptyp_apply(t, tl) -> add_type bv t; List.iter (add_type bv) tl
 
 and add_package_type bv (lid, l) =
   add bv lid;

@@ -31,6 +31,7 @@ type error =
   | Unbound_type_constructor of Longident.t
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
+  | Arity_mismatch of int * int
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
@@ -692,6 +693,14 @@ and transl_type_aux env policy styp =
            }) ty
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  | Ptyp_apply (st, stl) ->
+      let cty = transl_apply_type env policy (List.length stl) st in
+      let args = List.map (transl_type env policy) stl in
+      let ty =
+        newty (Tapply (cty.ctyp_type,
+                       List.map (fun ctyp -> ctyp.ctyp_type) args))
+      in
+      ctyp (Ttyp_apply (cty, args)) ty
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
@@ -758,6 +767,44 @@ and transl_fields env policy o fields =
       newty (Tfield (s, Fpresent, ty', ty))) ty_init fields in
   ty, object_fields
 
+and transl_apply_type env policy argc styp =
+  let loc = styp.ptyp_loc in
+  let ctyp ctyp_desc ctyp_type =
+    { ctyp_desc; ctyp_type; ctyp_env = env;
+      ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes }
+  in
+  match styp.ptyp_desc with
+  | Ptyp_poly(vars, st) ->
+      let vars = List.map (fun v -> v.txt) vars in
+      if List.length vars <> argc then
+        raise(Error(styp.ptyp_loc, env,
+                    Arity_mismatch(List.length vars, argc)));
+      begin_def();
+      let new_univars = List.map (fun name -> name, newvar ~name ()) vars in
+      let old_univars = !univars in
+      univars := new_univars @ !univars;
+      let cty = transl_type env policy st in
+      let ty = cty.ctyp_type in
+      univars := old_univars;
+      end_def();
+      generalize ty;
+      let ty_list =
+        List.map
+          (fun (name, ty1) ->
+            let v = Btype.proxy ty1 in
+            match v.desc with
+                Tvar name when v.level = Btype.generic_level ->
+                  v.desc <- Tunivar name;
+                  v
+              | _ ->
+                raise (Error (styp.ptyp_loc, env, Cannot_quantify (name, v))))
+          new_univars
+      in
+      let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
+      unify_var env (newvar()) ty';
+      ctyp (Ttyp_poly (vars, cty)) ty'
+  | _ ->
+      raise(Error(styp.ptyp_loc, env, Arity_mismatch(0, argc)))
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =
@@ -916,6 +963,11 @@ let report_error env ppf = function
       "@[The type constructor %a@ expects %i argument(s),@ \
         but is here applied to %i argument(s)@]"
       longident lid expected provided
+  | Arity_mismatch(expected, provided) ->
+    fprintf ppf
+      "@[This type expects %i argument(s),@ \
+        but is here applied to %i argument(s)@]"
+      expected provided
   | Bound_type_variable name ->
     fprintf ppf "Already bound type parameter %a" Pprintast.tyvar name
   | Recursive_type ->

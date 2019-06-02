@@ -754,6 +754,8 @@ let core_type sub ct =
         let list = List.map (fun v -> mkloc v loc) list in
         Ptyp_poly (list, sub.typ sub ct)
     | Ttyp_package pack -> Ptyp_package (sub.package_type sub pack)
+    | Ttyp_apply (ct, list) ->
+        Ptyp_apply (sub.typ sub ct, List.map (sub.typ sub) list)
   in
   Typ.mk ~loc ~attrs desc
 

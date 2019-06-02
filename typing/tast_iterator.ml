@@ -415,6 +415,7 @@ let typ sub {ctyp_desc; ctyp_env; _} =
   | Ttyp_variant (list, _, _) -> List.iter (sub.row_field sub) list
   | Ttyp_poly (_, ct) -> sub.typ sub ct
   | Ttyp_package pack -> sub.package_type sub pack
+  | Ttyp_apply (ct, list) -> sub.typ sub ct; List.iter (sub.typ sub) list
 
 let class_structure sub {cstr_self; cstr_fields; _} =
   sub.pat sub cstr_self;

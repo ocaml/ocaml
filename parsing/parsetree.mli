@@ -138,12 +138,16 @@ and core_type_desc =
            - As the pld_type field of a label_declaration.
 
            - As a core_type of a Ptyp_object node.
+
+           - As the first argument of a Ptyp_apply node.
          *)
 
   | Ptyp_package of package_type
         (* (module S) *)
   | Ptyp_extension of extension
         (* [%id] *)
+  | Ptyp_apply of core_type * core_type list
+        (* (T1, ..., Tn) ('a1 ... 'an. T) *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
       (*
