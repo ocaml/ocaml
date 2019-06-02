@@ -4078,6 +4078,16 @@ let rec build_subtype env visited loops posi level t =
       else (t, Unchanged)
   | Tunivar _ | Tpackage _ ->
       (t, Unchanged)
+  | Tapply(t1, tl) ->
+      if memq_warn t visited then (t, Unchanged) else
+      let visited = t :: visited in
+      let tl' =
+        List.map (build_subtype env visited loops posi level) tl
+      in
+      let (t1', c) = build_subtype env visited loops posi level t1 in
+      let c = max c (collect tl') in
+      if c > Unchanged then (newty (Tapply(t1', List.map fst tl')), c)
+      else (t, Unchanged)
 
 let enlarge_type env ty =
   warn := false;

@@ -95,6 +95,7 @@ let classify env ty =
       end
   | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
       Addr
+  | Tapply _ -> Any
   | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
       assert false
 

@@ -55,6 +55,7 @@ type out_value =
   | Oval_stuff of string
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
+  | Oval_apply of out_value * out_value list
 
 type out_type =
   | Otyp_abstract
@@ -75,6 +76,7 @@ type out_type =
   | Otyp_poly of string list * out_type
   | Otyp_module of out_ident * string list * out_type list
   | Otyp_attribute of out_type * out_attribute
+  | Otyp_apply of out_type * out_type list
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list

@@ -283,7 +283,8 @@ let rec check_unboxed_abstract_arg loc univ ty =
     check_unboxed_abstract_arg loc univ t2
   | Ttuple args
   | Tconstr (_, args, _)
-  | Tpackage (_, _, args) ->
+  | Tpackage (_, _, args)
+  | Tapply (_, args) ->
     List.iter (check_unboxed_abstract_arg loc univ) args
   | Tobject (fields, r) ->
     check_unboxed_abstract_arg loc univ fields;
@@ -334,6 +335,7 @@ let rec check_unboxed_gadt_arg loc univ env ty =
   | Some {desc = Tfield _ | Tlink _ | Tsubst _; _} -> assert false
   | Some {desc = Tunivar _; _} -> ()
   | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc univ env t2
+  | Some {desc = Tapply _; _} -> assert false
   | None -> ()
       (* This case is tricky: the argument is another (or the same) type
          in the same recursive definition. In this case we don't have to

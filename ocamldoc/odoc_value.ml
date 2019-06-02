@@ -89,6 +89,7 @@ let parameter_list_from_arrows typ =
     | Types.Tpackage _
     | Types.Tvariant _ ->
         []
+    | Types.Tapply (texp, _) -> iter texp
   in
   iter typ
 
