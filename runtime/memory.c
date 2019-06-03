@@ -239,17 +239,6 @@ int caml_page_table_remove(int kind, void * start, void * end)
   return 0;
 }
 
-
-/* Initialize the [alloc_for_heap] system.
-   This function must be called exactly once, and it must be called
-   before the first call to [alloc_for_heap].
-   It returns 0 on success and -1 on failure.
-*/
-int caml_init_alloc_for_heap (void)
-{
-  return 0;
-}
-
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
    [request] will be rounded up to some implementation-dependent size.
