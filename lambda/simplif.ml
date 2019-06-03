@@ -762,7 +762,8 @@ let simplify_local_functions lam =
       -> false
   in
   let rec tail = function
-    | Llet (_str, _kind, id, Lfunction lf, cont) when enabled lf.attr ->
+    | Llet (_str, _kind, id, Lfunction lf, cont)
+      when Lambda.function_is_curried lf && enabled lf.attr ->
         let r = {nargs=List.length lf.params; scope=None} in
         Hashtbl.add slots id r;
         tail cont;
