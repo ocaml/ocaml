@@ -403,6 +403,8 @@ val swap_float_comparison : float_comparison -> float_comparison
 val default_function_attribute : function_attribute
 val default_stub_attribute : function_attribute
 
+val function_is_curried : lfunction -> bool
+
 (***********************)
 (* For static failures *)
 (***********************)
