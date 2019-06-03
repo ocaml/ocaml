@@ -23,6 +23,9 @@ Working version
 - #8692: Remove Misc.may_map and similar
   (Leo White, review by Gabriel Scherer and Thomas Refis)
 
+- #8677: Use unsigned comparisons in amd64 and i386 emitter of Lcondbranch3.
+  (Greta Yorsh, review by Xavier Leroy)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
