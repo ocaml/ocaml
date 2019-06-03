@@ -233,7 +233,7 @@ static value heap_stats (int returnstats)
 
     /* get a copy of these before allocating anything... */
     double minwords = caml_stat_minor_words
-                      + (double) (caml_young_alloc_end - caml_young_ptr);
+                      + (double) (caml_young_alloc_end - Caml_state->young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     intnat mincoll = caml_stat_minor_collections;
@@ -289,7 +289,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) (caml_young_alloc_end - caml_young_ptr);
+                    + (double) (caml_young_alloc_end - Caml_state->young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
@@ -322,7 +322,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 double caml_gc_minor_words_unboxed()
 {
   return (caml_stat_minor_words
-          + (double) (caml_young_alloc_end - caml_young_ptr));
+          + (double) (caml_young_alloc_end - Caml_state->young_ptr));
 }
 
 CAMLprim value caml_gc_minor_words(value v)
@@ -338,7 +338,7 @@ CAMLprim value caml_gc_counters(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) (caml_young_alloc_end - caml_young_ptr);
+                    + (double) (caml_young_alloc_end - Caml_state->young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
 
@@ -592,7 +592,7 @@ CAMLprim value caml_gc_compaction(value v)
 
 CAMLprim value caml_get_minor_free (value v)
 {
-  return Val_int (caml_young_ptr - caml_young_alloc_start);
+  return Val_int (Caml_state->young_ptr - caml_young_alloc_start);
 }
 
 CAMLprim value caml_get_major_bucket (value v)

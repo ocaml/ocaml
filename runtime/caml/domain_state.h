@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include "misc.h"
+#include "mlvalues.h"
 
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */

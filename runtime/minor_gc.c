@@ -41,14 +41,14 @@
        The allocation arena: newly-allocated blocks are carved from
        this interval, starting at [caml_young_alloc_end].
    [caml_young_alloc_mid] is the mid-point of this interval.
-   [caml_young_ptr], [caml_young_trigger], [caml_young_limit]
+   [Caml_state->young_ptr], [caml_young_trigger], [Caml_state->young_limit]
        These pointers are all inside the allocation arena.
-       - [caml_young_ptr] is where the next allocation will take place.
+       - [Caml_state->young_ptr] is where the next allocation will take place.
        - [caml_young_trigger] is how far we can allocate before triggering
          [caml_gc_dispatch]. Currently, it is either [caml_young_alloc_start]
          or the mid-point of the allocation arena.
-       - [caml_young_limit] is the pointer that is compared to
-         [caml_young_ptr] for allocation. It is either:
+       - [Caml_state->young_limit] is the pointer that is compared to
+         [Caml_state->young_ptr] for allocation. It is either:
             + [caml_young_alloc_end] if a signal is pending and we are in
               native code,
             + [caml_memprof_young_trigger] if a memprof sample is planned,
@@ -63,7 +63,6 @@ CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
 CAMLexport value *caml_young_alloc_start = NULL,
                  *caml_young_alloc_mid = NULL,
                  *caml_young_alloc_end = NULL;
-CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
 CAMLexport value *caml_young_trigger = NULL;
 
 CAMLexport struct caml_ref_table
@@ -141,14 +140,14 @@ void caml_set_minor_heap_size (asize_t bsz)
   CAMLassert (bsz >= Bsize_wsize(Minor_heap_min));
   CAMLassert (bsz <= Bsize_wsize(Minor_heap_max));
   CAMLassert (bsz % sizeof (value) == 0);
-  if (caml_young_ptr != caml_young_alloc_end){
+  if (Caml_state->young_ptr != caml_young_alloc_end){
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
     caml_update_young_limit();
     caml_empty_minor_heap ();
   }
-  CAMLassert (caml_young_ptr == caml_young_alloc_end);
+  CAMLassert (Caml_state->young_ptr == caml_young_alloc_end);
   new_heap = caml_stat_alloc_aligned_noexc(bsz, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
   if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
@@ -166,7 +165,7 @@ void caml_set_minor_heap_size (asize_t bsz)
   caml_young_alloc_end = caml_young_end;
   caml_young_trigger = caml_young_alloc_start;
   caml_update_young_limit();
-  caml_young_ptr = caml_young_alloc_end;
+  Caml_state->young_ptr = caml_young_alloc_end;
   caml_minor_heap_wsz = Wsize_bsize (bsz);
   caml_memprof_renew_minor_sample();
 
@@ -189,7 +188,7 @@ void caml_oldify_one (value v, value *p)
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
-    CAMLassert ((value *) Hp_val (v) >= caml_young_ptr);
+    CAMLassert ((value *) Hp_val (v) >= Caml_state->young_ptr);
     hd = Hd_val (v);
     if (hd == 0){         /* If already forwarded */
       *p = Field (v, 0);  /*  then forward pointer is first field. */
@@ -346,7 +345,7 @@ void caml_empty_minor_heap (void)
   uintnat prev_alloc_words;
   struct caml_ephe_ref_elt *re;
 
-  if (caml_young_ptr != caml_young_alloc_end){
+  if (Caml_state->young_ptr != caml_young_alloc_end){
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
     CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
@@ -392,10 +391,10 @@ void caml_empty_minor_heap (void)
       }
     }
     CAML_INSTR_TIME (tmr, "minor/update_weak");
-    caml_stat_minor_words += caml_young_alloc_end - caml_young_ptr;
-    caml_gc_clock += (double) (caml_young_alloc_end - caml_young_ptr)
+    caml_stat_minor_words += caml_young_alloc_end - Caml_state->young_ptr;
+    caml_gc_clock += (double) (caml_young_alloc_end - Caml_state->young_ptr)
                      / caml_minor_heap_wsz;
-    caml_young_ptr = caml_young_alloc_end;
+    Caml_state->young_ptr = caml_young_alloc_end;
     clear_table ((struct generic_table *) &caml_ref_table);
     clear_table ((struct generic_table *) &caml_ephe_ref_table);
     clear_table ((struct generic_table *) &caml_custom_table);
@@ -463,27 +462,27 @@ CAMLexport void caml_gc_dispatch (void)
   }
 }
 
-/* Called by [Alloc_small] when [caml_young_ptr] reaches [caml_young_limit].
-   We have to either call memprof or the gc. */
+/* Called by [Alloc_small] when [Caml_state->young_ptr] reaches
+   [caml_young_limit]. We have to either call memprof or the gc. */
 void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
 {
   /* Async callbacks may fill the minor heap again, so we need a while
      loop here. */
-  while (caml_young_ptr < caml_young_trigger){
-    caml_young_ptr += Whsize_wosize (wosize);
+  while (Caml_state->young_ptr < caml_young_trigger){
+    Caml_state->young_ptr += Whsize_wosize (wosize);
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
     if(flags & CAML_FROM_CAML) caml_check_urgent_gc (Val_unit);
-    caml_young_ptr -= Whsize_wosize (wosize);
+    Caml_state->young_ptr -= Whsize_wosize (wosize);
   }
-  if(caml_young_ptr < caml_memprof_young_trigger){
+  if(Caml_state->young_ptr < caml_memprof_young_trigger){
     if(flags & CAML_DO_TRACK) {
       caml_memprof_track_young(tag, wosize, flags & CAML_FROM_CAML);
       /* Until the allocation actually takes place, the heap is in an invalid
          state (see comments in [caml_memprof_track_young]). Hence, very little
          heap operations are allowed before the actual allocation.
 
-         Moreover, [caml_young_ptr] should not be modified before the
+         Moreover, [Caml_state->young_ptr] should not be modified before the
          allocation, because its value has been used as the pointer to
          the sampled block.
       */

@@ -28,6 +28,7 @@
 #include "minor_gc.h"
 #include "memprof.h"
 #endif /* CAML_INTERNALS */
+#include "domain.h"
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -222,16 +223,16 @@ extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags);
   CAMLassert ((wosize) >= 1);                                          \
   CAMLassert ((tag_t) (tag) < 256);                                    \
   CAMLassert ((wosize) <= Max_young_wosize);                           \
-  caml_young_ptr -= Whsize_wosize (wosize);                            \
-  if (caml_young_ptr < caml_young_limit) {                             \
+  Caml_state->young_ptr -= Whsize_wosize (wosize);                     \
+  if (Caml_state->young_ptr < Caml_state->young_limit) {               \
     Setup_for_gc;                                                      \
     caml_alloc_small_dispatch((tag), (wosize),                         \
                               (track) | Alloc_small_origin);           \
     Restore_after_gc;                                                  \
   }                                                                    \
-  Hd_hp (caml_young_ptr) =                                             \
+  Hd_hp (Caml_state->young_ptr) =                                      \
     Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo); \
-  (result) = Val_hp (caml_young_ptr);                                  \
+  (result) = Val_hp (Caml_state->young_ptr);                           \
   DEBUG_clear ((result), (wosize));                                    \
 }while(0)
 

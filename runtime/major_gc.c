@@ -764,7 +764,7 @@ void caml_major_collection_slice (intnat howmuch)
                    (intnat) (p * 1000000));
 
   if (caml_gc_phase == Phase_idle){
-    if (caml_young_ptr == caml_young_alloc_end){
+    if (Caml_state->young_ptr == caml_young_alloc_end){
       /* We can only start a major GC cycle if the minor allocation arena
          is empty, otherwise we'd have to treat it as a set of roots. */
       start_cycle ();

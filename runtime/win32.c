@@ -560,8 +560,6 @@ static LONG CALLBACK
 }
 
 #else
-extern char *caml_exception_pointer;
-extern value *caml_young_ptr;
 
 /* Do not use the macro from address_class.h here. */
 #undef Is_in_code_area
@@ -589,8 +587,7 @@ static LONG CALLBACK
       faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
 
       /* refresh runtime parameters from registers */
-      caml_exception_pointer =  (char *) ctx->R14;
-      caml_young_ptr         = (value *) ctx->R15;
+      Caml_state->young_ptr = (value *) ctx->R15;
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
       alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);

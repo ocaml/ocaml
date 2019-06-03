@@ -265,12 +265,12 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 void caml_update_young_limit (void)
 {
   /* The minor heap grows downwards. The first trigger is the largest one. */
-  caml_young_limit = caml_memprof_young_trigger < caml_young_trigger ?
+  Caml_state->young_limit = caml_memprof_young_trigger < caml_young_trigger ?
     caml_young_trigger : caml_memprof_young_trigger;
 
 #ifdef NATIVE_CODE
   if(caml_something_to_do)
-    caml_young_limit = caml_young_alloc_end;
+    Caml_state->young_limit = caml_young_alloc_end;
 #endif
 }
 

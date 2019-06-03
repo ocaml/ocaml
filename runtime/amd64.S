@@ -357,8 +357,8 @@ LBL(caml_call_gc):
         pushq   %rbx; CFI_ADJUST (8);
         pushq   %rax; CFI_ADJUST (8);
         STORE_VAR(%rsp, caml_gc_regs)
-    /* Save caml_young_ptr */
-        STORE_VAR(%r15, caml_young_ptr)
+    /* Save young_ptr */
+        movq    %r15, Caml_state(young_ptr)
 #ifdef WITH_SPACETIME
         STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
 #endif
@@ -384,8 +384,8 @@ LBL(caml_call_gc):
         PREPARE_FOR_C_CALL
         call    GCALL(caml_garbage_collection)
         CLEANUP_AFTER_C_CALL
-    /* Restore caml_young_ptr */
-        LOAD_VAR(caml_young_ptr, %r15)
+    /* Restore young_ptr */
+        movq    Caml_state(young_ptr), %r15
     /* Restore all regs used by the code generator */
         movsd   0*8(%rsp), %xmm0
         movsd   1*8(%rsp), %xmm1
@@ -430,7 +430,7 @@ FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
 LBL(caml_alloc1):
         subq    $16, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        cmpq    Caml_state(young_limit), %r15
         jb      LBL(100)
         ret
 LBL(100):
@@ -449,7 +449,7 @@ FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
 LBL(caml_alloc2):
         subq    $24, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        cmpq    Caml_state(young_limit), %r15
         jb      LBL(101)
         ret
 LBL(101):
@@ -468,7 +468,7 @@ FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
 LBL(caml_alloc3):
         subq    $32, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        cmpq    Caml_state(young_limit), %r15
         jb      LBL(102)
         ret
 LBL(102):
@@ -488,7 +488,7 @@ CFI_STARTPROC
 LBL(caml_allocN):
         pushq   %rax; CFI_ADJUST(8)        /* save desired size */
         subq    %rax, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        cmpq    Caml_state(young_limit), %r15
         jb      LBL(103)
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
@@ -554,7 +554,7 @@ LBL(caml_c_call):
         movq    %rax, 0(%rsp)
         addq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(-STACK_PROBE_SIZE);
     /* Make the alloc ptr available to the C code */
-        STORE_VAR(%r15, caml_young_ptr)
+        movq    %r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
@@ -599,7 +599,7 @@ LBL(caml_start_program):
         popq    %rax; CFI_ADJUST (-8)
 #endif
     /* Setup alloc ptr */
-        LOAD_VAR(caml_young_ptr, %r15)
+        movq    Caml_state(young_ptr), %r15
     /* Build an exception handler */
         lea     LBL(108)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
@@ -616,7 +616,7 @@ LBL(107):
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
 LBL(109):
     /* Update alloc ptr */
-        STORE_VAR(%r15,caml_young_ptr)
+        movq    %r15, Caml_state(young_ptr)
     /* Pop the callback link, restoring the global variables */
         POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
@@ -680,7 +680,7 @@ CFI_STARTPROC
         movq    C_ARG_2, %rax
         movq    Caml_state(exn_handler), %rsp  /* Cut stack */
         popq    Caml_state(exn_handler) /* Recover previous exception handler */
-        LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
+        movq    Caml_state(young_ptr), %r15 /* Reload alloc ptr */
         ret
 LBL(112):
 #ifdef WITH_FRAME_POINTERS
@@ -700,7 +700,7 @@ LBL(112):
         movq    %r12, %rax            /* Recover exception bucket */
         movq    Caml_state(exn_handler), %rsp
         popq    Caml_state(exn_handler) /* Recover previous exception handler */
-        LOAD_VAR(caml_young_ptr,%r15) /* Reload alloc ptr */
+        movq    Caml_state(young_ptr), %r15 /* Reload alloc ptr */
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exception))
