@@ -795,9 +795,7 @@ let simplify_local_functions lam =
     | Lvar id ->
         Hashtbl.remove slots id
     | Lfunction lf as lam ->
-        if Lambda.function_is_curried lf then begin
-          check_static lf
-        end;
+        check_static lf;
         Lambda.shallow_iter ~tail ~non_tail lam
     | lam ->
         Lambda.shallow_iter ~tail ~non_tail lam
