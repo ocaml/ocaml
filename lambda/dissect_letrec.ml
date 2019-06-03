@@ -505,6 +505,7 @@ let dissect_letrec ~bindings ~body =
         Printlambda.lambda (Lletrec (bindings, body))
 
 let preallocate_letrec ~bindings ~body =
+  let bindings = List.rev bindings in
   let body_with_initialization =
   List.fold_left
     (fun body (id, def, _size) -> Lsequence (update_dummy id def, body))
