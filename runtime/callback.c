@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "caml/callback.h"
+#include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
@@ -131,7 +132,30 @@ CAMLexport value caml_callback3_exn(value closure,
 
 #else
 
-/* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
+/* Native-code callbacks. */
+
+typedef value (callback_stub)(caml_domain_state* state, value closure, value* args);
+
+callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
+
+CAMLexport value caml_callback_exn(value closure, value arg)
+{
+  return caml_callback_asm(Caml_state, closure, &arg);
+}
+
+CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
+{
+  value args[] = {arg1, arg2};
+  return caml_callback2_asm(Caml_state, closure, args);
+}
+
+CAMLexport value caml_callback3_exn(value closure,
+                                    value arg1, value arg2, value arg3)
+{
+  value args[] = {arg1, arg2, arg3};
+  return caml_callback3_asm(Caml_state, closure, args);
+}
+
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {

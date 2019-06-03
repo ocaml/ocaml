@@ -83,6 +83,35 @@ typedef char * addr;
 #define CAMLweakdef
 #endif
 
+/* Alignment */
+#if defined(__GNUC__)
+#define CAMLalign(n) __attribute__((aligned(n)))
+#else
+#error "How do I align values on this platform?"
+#endif
+
+/* CAMLunused is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     CAMLunused foo;
+   you should prefer
+     CAMLunused_start foo CAMLunused_end;
+   which supports both GCC/Clang and MSVC.
+*/
+#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+  #define CAMLunused_start __attribute__ ((unused))
+  #define CAMLunused_end
+  #define CAMLunused __attribute__ ((unused))
+#elif _MSC_VER >= 1500
+  #define CAMLunused_start  __pragma( warning (push) )           \
+    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_end __pragma( warning (pop))
+  #define CAMLunused
+#else
+  #define CAMLunused_start
+  #define CAMLunused_end
+  #define CAMLunused
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -94,6 +123,11 @@ typedef void (*caml_timing_hook) (void);
 extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
 extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
 extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+
+#define CAML_STATIC_ASSERT_3(b, l) \
+  typedef CAMLunused_start char static_assertion_failure_line_##l[(b) ? 1 : -1] CAMLunused_end
+#define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
+#define CAML_STATIC_ASSERT(b) CAML_STATIC_ASSERT_2(b, __LINE__)
 
 /* Windows Unicode support (rest below - char_os is needed earlier) */
 

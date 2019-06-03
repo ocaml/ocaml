@@ -182,7 +182,6 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
     caml_sigmask_hook(SIG_UNBLOCK, &mask, NULL);
   }
 #endif
-  caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
   caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
   caml_bottom_of_stack = (char *) CONTEXT_SP;
   caml_last_return_address = (uintnat) CONTEXT_PC;
@@ -234,6 +233,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
        handler, we jump to the asm function [caml_stack_overflow]
        (from $ARCH.S). */
 #ifdef CONTEXT_PC
+    CONTEXT_C_ARG_1 = (context_reg) Caml_state;
     CONTEXT_PC = (context_reg) &caml_stack_overflow;
 #else
 #error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
@@ -241,7 +241,6 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #else
     /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
-    caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
     caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
 #endif
     caml_raise_stack_overflow();

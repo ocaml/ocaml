@@ -154,6 +154,9 @@ let load_symbol_addr s arg =
   else
     I.mov (sym (emit_symbol s)) arg
 
+let domain_field f =
+  mem64 QWORD (Domainstate.idx_of_field f * 8) R14
+
 (* Output a label *)
 
 let emit_label lbl =
@@ -887,15 +890,15 @@ let emit_instr fallthrough i =
         else
           I.mov (sym (emit_label s)) arg
       in
-      cfi_adjust_cfa_offset 16;
-      I.sub (int 16) rsp;
+      load_label_addr lbl_handler r11;
+      cfi_adjust_cfa_offset 8;
+      I.push r11;
+      cfi_adjust_cfa_offset 8;
+      I.push (domain_field Domainstate.Domain_exn_handler);
+      I.mov rsp (domain_field Domainstate.Domain_exn_handler);
       stack_offset := !stack_offset + 16;
-      I.mov r14 (mem64 QWORD 0 RSP);
-      load_label_addr lbl_handler r14;
-      I.mov r14 (mem64 QWORD 8 RSP);
-      I.mov rsp r14
   | Lpoptrap ->
-      I.pop r14;
+      I.pop (domain_field Domainstate.Domain_exn_handler);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
@@ -909,8 +912,8 @@ let emit_instr fallthrough i =
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
       | Cmm.Raise_notrace ->
-          I.mov r14 rsp;
-          I.pop r14;
+          I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
+          I.pop (domain_field Domainstate.Domain_exn_handler);
           I.pop r11;
           I.jmp r11
       end
@@ -1001,7 +1004,6 @@ let begin_assembly() =
   if system = S_win64 then begin
     D.extrn "caml_young_ptr" QWORD;
     D.extrn "caml_young_limit" QWORD;
-    D.extrn "caml_exception_pointer" QWORD;
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_call_gc1" NEAR;
     D.extrn "caml_call_gc2" NEAR;

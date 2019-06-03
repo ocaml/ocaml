@@ -1,0 +1,2 @@
+DOMAIN_STATE(char*, exn_handler)
+/* Exception pointer that points into the current stack */

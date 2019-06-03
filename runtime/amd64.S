@@ -112,6 +112,18 @@
 
 #endif
 
+#define CAML_CONFIG_H_NO_TYPEDEFS
+#include "../runtime/caml/config.h"
+
+        .set    domain_curr_field, 0
+#define DOMAIN_STATE(c_type, name) \
+        .equ    domain_field_caml_##name, domain_curr_field ; \
+        .set    domain_curr_field, domain_curr_field + 1
+#include "../runtime/caml/domain_state.tbl"
+#undef DOMAIN_STATE
+
+#define Caml_state(var) (8*domain_field_caml_##var)(%r14)
+
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 
 /* Position-independent operations on global variables. */
@@ -345,9 +357,8 @@ LBL(caml_call_gc):
         pushq   %rbx; CFI_ADJUST (8);
         pushq   %rax; CFI_ADJUST (8);
         STORE_VAR(%rsp, caml_gc_regs)
-    /* Save caml_young_ptr, caml_exception_pointer */
+    /* Save caml_young_ptr */
         STORE_VAR(%r15, caml_young_ptr)
-        STORE_VAR(%r14, caml_exception_pointer)
 #ifdef WITH_SPACETIME
         STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
 #endif
@@ -373,9 +384,8 @@ LBL(caml_call_gc):
         PREPARE_FOR_C_CALL
         call    GCALL(caml_garbage_collection)
         CLEANUP_AFTER_C_CALL
-    /* Restore caml_young_ptr, caml_exception_pointer */
+    /* Restore caml_young_ptr */
         LOAD_VAR(caml_young_ptr, %r15)
-        LOAD_VAR(caml_exception_pointer, %r14)
     /* Restore all regs used by the code generator */
         movsd   0*8(%rsp), %xmm0
         movsd   1*8(%rsp), %xmm1
@@ -543,9 +553,8 @@ LBL(caml_c_call):
         subq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(STACK_PROBE_SIZE);
         movq    %rax, 0(%rsp)
         addq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(-STACK_PROBE_SIZE);
-    /* Make the exception handler and alloc ptr available to the C code */
+    /* Make the alloc ptr available to the C code */
         STORE_VAR(%r15, caml_young_ptr)
-        STORE_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
@@ -559,6 +568,8 @@ FUNCTION(G(caml_start_program))
        CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
+    /* Load Caml_state into r14 (was passed as an argument from C) */
+        movq    C_ARG_1, %r14
     /* Initial entry point is G(caml_program) */
         LEA_VAR(caml_program, %r12)
     /* Common code for caml_start_program and caml_callback* */
@@ -587,14 +598,13 @@ LBL(caml_start_program):
         popq    %rbx; CFI_ADJUST (-8)
         popq    %rax; CFI_ADJUST (-8)
 #endif
-    /* Setup alloc ptr and exception ptr */
+    /* Setup alloc ptr */
         LOAD_VAR(caml_young_ptr, %r15)
-        LOAD_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
         lea     LBL(108)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
-        pushq   %r14; CFI_ADJUST(8)
-        movq    %rsp, %r14
+        pushq   Caml_state(exn_handler); CFI_ADJUST(8)
+        movq    %rsp, Caml_state(exn_handler)
 #ifdef WITH_SPACETIME
         LOAD_VAR(caml_spacetime_trie_node_ptr, %r13)
 #endif
@@ -602,12 +612,11 @@ LBL(caml_start_program):
         call    *%r12
 LBL(107):
     /* Pop the exception handler */
-        popq    %r14; CFI_ADJUST(-8)
+        popq    Caml_state(exn_handler); CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
 LBL(109):
-    /* Update alloc ptr and exception ptr */
+    /* Update alloc ptr */
         STORE_VAR(%r15,caml_young_ptr)
-        STORE_VAR(%r14,caml_exception_pointer)
     /* Pop the callback link, restoring the global variables */
         POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
@@ -635,8 +644,8 @@ FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(110)
-        movq    %r14, %rsp
-        popq    %r14
+        movq    Caml_state(exn_handler), %rsp
+        popq    Caml_state(exn_handler)
         ret
 LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
@@ -649,14 +658,14 @@ LBL(110):
         popq    C_ARG_2               /* arg 2: pc of raise */
         movq    %rsp, C_ARG_3         /* arg 3: sp at raise */
 #endif
-        movq    %r14, C_ARG_4         /* arg 4: sp of handler */
+        movq    Caml_state(exn_handler), C_ARG_4 /* arg 4: sp of handler */
         /* PR#5700: thanks to popq above, stack is now 16-aligned */
         /* Thanks to ENTER_FUNCTION, stack is now 16-aligned */
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
-        movq    %r14, %rsp
-        popq    %r14
+        movq    Caml_state(exn_handler), %rsp
+        popq    Caml_state(exn_handler)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exn))
@@ -665,30 +674,32 @@ ENDFUNCTION(G(caml_raise_exn))
 
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
+        movq    C_ARG_1, %r14   /* Caml_state */
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(112)
-        movq    C_ARG_1, %rax
-        LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
-        popq    %r14                   /* Recover previous exception handler */
+        movq    C_ARG_2, %rax
+        movq    Caml_state(exn_handler), %rsp  /* Cut stack */
+        popq    Caml_state(exn_handler) /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(112):
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
 #endif
-        movq    C_ARG_1, %r12            /* Save exception bucket */
-                                      /* arg 1: exception bucket */
+        /* Save exception bucket. Caml_state in r14 saved across C calls. */
+        movq    C_ARG_2, %r12
+        movq    C_ARG_2, C_ARG_1                /* arg 1: exception bucket */
         LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */
         LOAD_VAR(caml_bottom_of_stack,C_ARG_3)       /* arg 3: sp of raise */
-        LOAD_VAR(caml_exception_pointer,C_ARG_4)     /* arg 4: sp of handler */
+        movq    Caml_state(exn_handler), C_ARG_4     /* arg 4: sp of handler */
 #ifndef WITH_FRAME_POINTERS
         subq    $8, %rsp              /* PR#5700: maintain stack alignment */
 #endif
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
-        LOAD_VAR(caml_exception_pointer,%rsp)
-        popq    %r14                  /* Recover previous exception handler */
+        movq    Caml_state(exn_handler), %rsp
+        popq    Caml_state(exn_handler) /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr,%r15) /* Reload alloc ptr */
         ret
 CFI_ENDPROC
@@ -701,48 +712,52 @@ ENDFUNCTION(G(caml_raise_exception))
    backtrace anyway. */
 
 FUNCTION(G(caml_stack_overflow))
+        movq    C_ARG_1, %r14                 /* Caml_state */
         LEA_VAR(caml_exn_Stack_overflow, %rax)
-        movq    %r14, %rsp            /* cut the stack */
-        popq    %r14                  /* recover previous exn handler */
-        ret                           /* jump to handler's code */
+        movq    Caml_state(exn_handler), %rsp /* cut the stack */
+        popq    Caml_state(exn_handler)       /* recover previous exn handler */
+        ret                                   /* jump to handler's code */
 ENDFUNCTION(G(caml_stack_overflow))
 
 /* Callback from C to OCaml */
 
-FUNCTION(G(caml_callback_exn))
+FUNCTION(G(caml_callback_asm))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %rbx      /* closure */
-        movq    C_ARG_2, %rax      /* argument */
+        movq    C_ARG_1, %r14      /* Caml_state */
+        movq    C_ARG_2, %rbx      /* closure */
+        movq    0(C_ARG_3), %rax   /* argument */
         movq    0(%rbx), %r12      /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_callback_exn))
 
-FUNCTION(G(caml_callback2_exn))
+FUNCTION(G(caml_callback2_asm))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %rdi      /* closure -- no op with Unix conventions */
-        movq    C_ARG_2, %rax      /* first argument */
-        movq    C_ARG_3, %rbx      /* second argument */
+        movq    C_ARG_1, %r14      /* Caml_state */
+        movq    C_ARG_2, %rdi      /* closure */
+        movq    0(C_ARG_3), %rax   /* first argument */
+        movq    8(C_ARG_3), %rbx   /* second argument */
         LEA_VAR(caml_apply2, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_callback2_exn))
 
-FUNCTION(G(caml_callback3_exn))
+FUNCTION(G(caml_callback3_asm))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_2, %rax      /* first argument */
-        movq    C_ARG_3, %rbx      /* second argument */
-        movq    C_ARG_1, %rsi      /* closure */
-        movq    C_ARG_4, %rdi      /* third argument */
+        movq    C_ARG_1, %r14      /* Caml_state */
+        movq    0(C_ARG_3), %rax   /* first argument */
+        movq    8(C_ARG_3), %rbx   /* second argument */
+        movq    C_ARG_2, %rsi      /* closure */
+        movq    16(C_ARG_3), %rdi  /* third argument */
         LEA_VAR(caml_apply3, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
