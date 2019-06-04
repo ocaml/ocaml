@@ -160,6 +160,7 @@ ASMCOMP=\
   asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo \
+  asmcomp/cmm_simplify.cmo \
   asmcomp/cmmgen_state.cmo \
   asmcomp/cmmgen.cmo \
   asmcomp/interval.cmo \

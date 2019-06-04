@@ -91,6 +91,10 @@ OCaml 4.09.0
 - #8547: Optimize matches that are an affine function of the input.
   (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
 
+- #????: Add proof-of-concept Cmm peephole optimizations with machine-
+  checked verification using SMT.
+  (Stefan Muenzel, review by ????)
+
 ### Compiler user-interface and warnings:
 
 * #2276: Remove support for compiler plugins and hooks (also adds
