@@ -3171,18 +3171,19 @@ let do_for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
   let partial = check_partial pat_act_list partial in
   let raise_num,pm1 =
-    match partial with
-    | Partial ->
+    let raise_num, default =
+      match partial with
+      | Partial ->
         let raise_num = next_raise_count () in
-        raise_num,
-        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), Strict];
-          default = [[[omega]],raise_num] }
-    | _ ->
-        -1,
-        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), Strict];
-          default = [] } in
+        raise_num, [ [[omega]], raise_num ]
+      | Total ->
+        -1, []
+    in
+    raise_num,
+    { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
+      args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), Strict];
+      default }
+  in
 
   try
     try
