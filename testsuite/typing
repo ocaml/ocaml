@@ -36,5 +36,6 @@ tests/typing-signatures
 tests/typing-sigsubst
 tests/typing-typeparam
 tests/typing-unboxed
+tests/typing-unnamed-type-constructors
 tests/typing-warnings
 tests/warnings
