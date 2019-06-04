@@ -2681,13 +2681,15 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
                 | Unused ->
                     c_rec (Lstaticcatch (body,(i,[]),lambda_unit))
                       total_rem  rem
-            end in
-   try
-      let first_lam,total = comp_fun Partial ctx arg first_match in
-      c_rec first_lam total rem
-   with Unused -> match next_matchs with
-   | [] -> raise Unused
-   | (_,x)::xs ->  comp_match_handlers comp_fun partial ctx arg x xs
+            end
+      in
+      try
+        let first_lam,total = comp_fun Partial ctx arg first_match in
+        c_rec first_lam total rem
+      with Unused ->
+        match next_matchs with
+        | [] -> raise Unused
+        | (_,x)::xs ->  comp_match_handlers comp_fun partial ctx arg x xs
 
 (* To find reasonable names for variables *)
 
