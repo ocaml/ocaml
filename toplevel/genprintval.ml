@@ -481,10 +481,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               tree_of_val (depth - 1) obj ty
           | Tpackage _ ->
               Oval_stuff "<module>"
-          | Tapply (ty, tyl) ->
-              let ty' = tree_of_val (depth - 1) obj ty in
-              let tyl' = tree_of_val_list 0 (depth - 1) obj tyl in
-              Oval_apply (ty', tyl')
+          | Tapply _ ->
+              let ty' = Ctype.expand_head env ty in
+              if ty == ty' then
+                Oval_stuff "<poly>"
+              else
+                tree_of_val (depth - 1) obj ty'
         end
 
       and tree_of_record_fields depth env path type_params ty_list

@@ -55,7 +55,6 @@ type out_value =
   | Oval_stuff of string
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
-  | Oval_apply of out_value * out_value list
 
 type out_type =
   | Otyp_abstract
