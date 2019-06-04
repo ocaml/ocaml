@@ -573,15 +573,16 @@ let up_ok (ps,act_p) l =
 exception Var of pattern
 
 let simplify_or p =
-  let rec simpl_rec p = match p with
-    | {pat_desc = Tpat_any|Tpat_var _} -> raise (Var p)
-    | {pat_desc = Tpat_alias (q,id,s)} ->
+  let rec simpl_rec p =
+    match p.pat_desc with
+    | Tpat_any | Tpat_var _ -> raise (Var p)
+    | Tpat_alias (q,id,s) ->
         begin try
           {p with pat_desc = Tpat_alias (simpl_rec q,id,s)}
         with
-        | Var q -> raise (Var {p with pat_desc = Tpat_alias (q,id,s)})
+        | Var q' -> raise (Var {p with pat_desc = Tpat_alias (q', id, s)})
         end
-    | {pat_desc = Tpat_or (p1,p2,o)} ->
+    | Tpat_or (p1,p2,o) ->
         let q1 = simpl_rec p1 in
         begin try
           let q2 = simpl_rec p2 in
@@ -589,10 +590,11 @@ let simplify_or p =
         with
         | Var q2 -> raise (Var {p with pat_desc = Tpat_or (q1, q2, o)})
         end
-    | {pat_desc = Tpat_record (lbls,closed)} ->
+    | Tpat_record (lbls,closed) ->
         let all_lbls = all_record_args lbls in
-        {p with pat_desc=Tpat_record (all_lbls, closed)}
-    | _ -> p in
+        {p with pat_desc = Tpat_record (all_lbls, closed)}
+    | _ -> p
+  in
   try
     simpl_rec p
   with
