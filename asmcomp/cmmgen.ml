@@ -944,6 +944,7 @@ let rec expr_size env = function
   | Uoffset (exp, offset) ->
       (match expr_size env exp with
       | RHS_block blocksize -> RHS_infix { blocksize; offset }
+      | RHS_nonrec -> RHS_nonrec
       | _ -> assert false)
   | _ -> RHS_nonrec
 

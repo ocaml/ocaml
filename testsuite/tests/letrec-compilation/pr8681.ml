@@ -47,3 +47,17 @@ let with_free_vars a b c =
 
 let () = print_int (with_free_vars 1 2 3 2); print_newline ()
 let () = print_int (with_free_vars 1 2 3 7); print_newline ()
+
+let bar =
+  let rec f = function
+    | 0 -> 3
+    | n -> g (n - 1)
+  and g = function
+    | 0 -> 10 + f 10
+    | n -> f (n - 1)
+  in
+  let rec foof = f
+  and goof = g
+  in (foof, goof)
+
+let () = print_int (snd bar 42); print_newline ()
