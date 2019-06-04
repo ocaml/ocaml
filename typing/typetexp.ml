@@ -793,7 +793,8 @@ and transl_apply_type env policy argc styp =
           (fun (name, ty1) ->
             let v = Btype.proxy ty1 in
             match v.desc with
-                Tvar name when v.level = Btype.generic_level ->
+                Tvar name ->
+                  if v.level <> Btype.generic_level then generalize v;
                   v.desc <- Tunivar name;
                   v
               | _ ->
