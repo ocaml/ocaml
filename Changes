@@ -64,6 +64,9 @@ Working version
 - #8622: Don't generate #! headers over 127 characters.
   (David Allsopp, review by Xavier Leroy and Stephen Dolan)
 
+- #8712: Fix code generation with nested let rec of functions.
+  (Stephen Dolan, Leo White, Gabriel Scherer and Pierre Chambart)
+
 OCaml 4.09.0
 ------------
 
