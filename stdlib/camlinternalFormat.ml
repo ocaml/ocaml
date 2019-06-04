@@ -2629,14 +2629,6 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
         Fmt_EBB (Formatting_lit (Scan_indic c, fmt_rest))
 
-  and check_open_box : type a b c d e f . (a, b, c, d, e, f) fmt -> unit =
-  fun fmt -> match fmt with
-    | String_literal (str, End_of_format) -> (
-      try ignore (open_box_of_string str) with Failure _ ->
-        ((* Emit warning: invalid open box *))
-    )
-    | _ -> ()
-
   (* Try to read the optional <name> after "@{" or "@[". *)
   and parse_tag : type e f . bool -> int -> int -> (_, _, e, f) fmt_ebb =
   fun is_open_tag str_ind end_ind ->
@@ -2650,9 +2642,8 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let Fmt_EBB fmt_rest = parse (ind + 1) end_ind in
         let Fmt_EBB sub_fmt = parse str_ind (ind + 1) in
         let sub_format = Format (sub_fmt, sub_str) in
-        let formatting = if is_open_tag then Open_tag sub_format else (
-          check_open_box sub_fmt;
-          Open_box sub_format) in
+        let formatting =
+          if is_open_tag then Open_tag sub_format else Open_box sub_format in
         Fmt_EBB (Formatting_gen (formatting, fmt_rest))
       | _ ->
         raise Not_found
