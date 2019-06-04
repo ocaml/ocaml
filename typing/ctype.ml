@@ -1547,6 +1547,14 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             end;
             ty'
       end
+  | {desc = Tapply (ty1, args); level; scope= _} ->
+      begin match (repr ty1).desc with
+      | Tpoly (body, params) ->
+          let params', body' = instance_poly false params body in
+          subst env level kind (ref Mnil) None params' args body'
+      | _ ->
+          assert false
+      end
   | _ ->
       assert false
 
@@ -1572,7 +1580,7 @@ let safe_abbrev env ty =
 let try_expand_once env ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr _ -> repr (expand_abbrev env ty)
+    Tconstr _ | Tapply _ -> repr (expand_abbrev env ty)
   | _ -> raise Cannot_expand
 
 (* This one only raises Cannot_expand *)
@@ -3192,6 +3200,10 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                 (moregen inst_nongen type_pairs env)
           | (Tunivar _, Tunivar _) ->
               unify_univar t1' t2' !univar_pairs
+          | (Tapply _, _) when t1 != t1' -> (* Try to expand *)
+              moregen inst_nongen type_pairs env t1' t2'
+          | (_, Tapply _) when t2 != t2' -> (* Try to expand *)
+              moregen inst_nongen type_pairs env t1' t2'
           | (_, _) ->
               raise (Unify [])
         end
@@ -3463,6 +3475,9 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 (eqtype rename type_pairs subst env)
           | (Tunivar _, Tunivar _) ->
               unify_univar t1' t2' !univar_pairs
+          | (Tapply (t1, tl1), Tapply (t2, tl2)) ->
+              eqtype rename type_pairs subst env t1 t2;
+              eqtype_list rename type_pairs subst env tl1 tl2
           | (_, _) ->
               raise (Unify [])
         end
