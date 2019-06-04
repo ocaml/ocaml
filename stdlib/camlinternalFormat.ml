@@ -453,8 +453,8 @@ let bprint_float_fmt buf ign_flag fconv pad prec =
   bprint_precision buf prec;
   buffer_add_char buf (char_of_fconv fconv)
 
-(* Compute the literal string representation of a formatting_lit. *)
-(* Also used by Printf and Scanf where formatting is not interpreted. *)
+(* Compute the literal string representation of a Formatting_lit. *)
+(* Used by Printf and Scanf where formatting is not interpreted. *)
 let string_of_formatting_lit formatting_lit = match formatting_lit with
   | Close_box            -> "@]"
   | Close_tag            -> "@}"
@@ -466,14 +466,6 @@ let string_of_formatting_lit formatting_lit = match formatting_lit with
   | Escaped_at           -> "@@"
   | Escaped_percent      -> "@%"
   | Scan_indic c -> "@" ^ (String.make 1 c)
-
-(* Compute the literal string representation of a formatting. *)
-(* Also used by Printf and Scanf where formatting is not interpreted. *)
-let string_of_formatting_gen : type a b c d e f .
-    (a, b, c, d, e, f) formatting_gen -> string =
-  fun formatting_gen -> match formatting_gen with
-  | Open_tag (Format (_, str)) -> str
-  | Open_box (Format (_, str)) -> str
 
 (***)
 
@@ -626,8 +618,12 @@ let bprint_fmt buf fmt =
       bprint_string_literal buf (string_of_formatting_lit fmting_lit);
       fmtiter rest ign_flag;
     | Formatting_gen (fmting_gen, rest) ->
-      bprint_string_literal buf "@{";
-      bprint_string_literal buf (string_of_formatting_gen fmting_gen);
+      begin match fmting_gen with
+      | Open_tag (Format (_, str)) ->
+        buffer_add_string buf "@{"; buffer_add_string buf str
+      | Open_box (Format (_, str)) ->
+        buffer_add_string buf "@["; buffer_add_string buf str
+      end;
       fmtiter rest ign_flag;
 
     | End_of_format -> ()

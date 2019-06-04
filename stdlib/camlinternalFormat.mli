@@ -91,8 +91,6 @@ val format_of_string_format :
 
 val char_of_iconv : CamlinternalFormatBasics.int_conv -> char
 val string_of_formatting_lit : CamlinternalFormatBasics.formatting_lit -> string
-val string_of_formatting_gen :
-  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.formatting_gen -> string
 
 val string_of_fmtty :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty -> string
