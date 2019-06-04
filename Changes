@@ -34,7 +34,7 @@ Working version
 
 * #8711: The major GC hooks are no longer allowed to interact with the
    OCaml heap.
-   (Jacques-Henri Jourdan, review by xxx)
+   (Jacques-Henri Jourdan, review by Damien Doligez)
 
 ### Standard library:
 
