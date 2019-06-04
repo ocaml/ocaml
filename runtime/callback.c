@@ -134,7 +134,8 @@ CAMLexport value caml_callback3_exn(value closure,
 
 /* Native-code callbacks. */
 
-typedef value (callback_stub)(caml_domain_state* state, value closure, value* args);
+typedef value (callback_stub)(caml_domain_state* state, value closure,
+                              value* args);
 
 callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 
