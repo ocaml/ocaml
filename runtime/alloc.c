@@ -242,7 +242,6 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
 
   if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
-    CAMLassert (tag < No_scan_tag || tag == Double_array_tag);
     Tag_val(dummy) = tag;
     size = Wosize_val (newval) / Double_wosize;
     for (i = 0; i < size; i++) {
@@ -260,7 +259,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
       caml_modify (&Field(dummy, i), Field(clos, i));
     }
   } else {
-    CAMLassert (tag < No_scan_tag || tag == Double_array_tag);
+    CAMLassert (tag < No_scan_tag);
     Tag_val(dummy) = tag;
     size = Wosize_val(newval);
     CAMLassert (size == Wosize_val(dummy));

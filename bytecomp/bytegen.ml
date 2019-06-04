@@ -129,7 +129,7 @@ let rec push_dummies n k = match n with
 
 type rhs_kind =
   | RHS_block of int
-  | RHS_blockoffset of int * int
+  | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
   | RHS_nonrec
   | RHS_function of int * int
@@ -166,10 +166,10 @@ let rec size_of_lambda env = function
       let fv =
         Ident.Set.elements (free_variables (Lletrec(bindings, lambda_unit))) in
       (* See Instruct(CLOSUREREC) in interp.c *)
-      let sz = List.length bindings * 2 - 1 + List.length fv in
+      let blocksize = List.length bindings * 2 - 1 + List.length fv in
       let offsets = List.mapi (fun i (id, _e) -> (id, i * 2)) bindings in
-      let env = List.fold_right (fun (id, ofs) env ->
-        Ident.add id (RHS_blockoffset (sz, ofs)) env) offsets env in
+      let env = List.fold_right (fun (id, offset) env ->
+        Ident.add id (RHS_infix { blocksize; offset }) env) offsets env in
       size_of_lambda env body
   | Lletrec(bindings, body) ->
       let env = List.fold_right
@@ -580,8 +580,8 @@ let rec comp_expr env exp sz cont =
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("caml_alloc_dummy", 1) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_blockoffset (blocksize, ofs)) :: rem ->
-              Kconst(Const_base(Const_int ofs)) ::
+          | (id, _exp, RHS_infix { blocksize; offset }) :: rem ->
+              Kconst(Const_base(Const_int offset)) ::
               Kpush ::
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("caml_alloc_dummy_infix", 2) :: Kpush ::
@@ -597,7 +597,7 @@ let rec comp_expr env exp sz cont =
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
           | [] -> comp_rec new_env sz ndecl decl_size
-          | (_id, _exp, (RHS_block _ | RHS_blockoffset _ |
+          | (_id, _exp, (RHS_block _ | RHS_infix _ |
                          RHS_floatblock _ | RHS_function _))
             :: rem ->
               comp_nonrec new_env sz (i-1) rem
@@ -606,7 +606,7 @@ let rec comp_expr env exp sz cont =
                 (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
         and comp_rec new_env sz i = function
           | [] -> comp_expr new_env body sz (add_pop ndecl cont)
-          | (_id, exp, (RHS_block _ | RHS_blockoffset _ |
+          | (_id, exp, (RHS_block _ | RHS_infix _ |
                         RHS_floatblock _ | RHS_function _))
             :: rem ->
               comp_expr new_env exp sz
