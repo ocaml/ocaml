@@ -85,9 +85,8 @@ typedef char * addr;
 extern "C" {
 #endif
 
-/* GC timing hooks. These can be assigned by the user. None of these
-   hooks are authorized to allocate, change any heap value or call
-   OCaml code.
+/* GC timing hooks. These can be assigned by the user. These hooks
+   must not allocate, change any heap value, nor call OCaml code.
 */
 typedef void (*caml_timing_hook) (void);
 extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
