@@ -559,7 +559,15 @@ let up_ok (ps,act_p) l =
      - aliases are removed and replaced by bindings in actions.
    However or-patterns are simplified differently,
      - aliases are not removed
-     - or-patterns (_|p) are changed into _
+     - or-patterns: (_|p) are changed into _
+                    (p|_) are left unchanged
+       This difference is observable in situations like:
+         {v
+             # match lazy (print_int 3; 3) with _ | lazy 2 -> ();;
+             - : unit = ()
+             # match lazy (print_int 3; 3) with lazy 2 | _ -> ();;
+             3- : unit = ()
+         v}
 *)
 
 exception Var of pattern
