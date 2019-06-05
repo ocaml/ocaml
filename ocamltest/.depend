@@ -36,6 +36,7 @@ actions_helpers.cmo : \
     run_command.cmi \
     result.cmi \
     ocamltest_stdlib.cmi \
+    modifier_parser.cmi \
     filecompare.cmi \
     environments.cmi \
     builtin_variables.cmi \
@@ -46,6 +47,7 @@ actions_helpers.cmx : \
     run_command.cmx \
     result.cmx \
     ocamltest_stdlib.cmx \
+    modifier_parser.cmx \
     filecompare.cmx \
     environments.cmx \
     builtin_variables.cmx \
@@ -86,12 +88,10 @@ builtin_variables.cmi : \
     variables.cmi
 environments.cmo : \
     variables.cmi \
-    tsl_lexer.cmi \
     ocamltest_stdlib.cmi \
     environments.cmi
 environments.cmx : \
     variables.cmx \
-    tsl_lexer.cmx \
     ocamltest_stdlib.cmx \
     environments.cmi
 environments.cmi : \
@@ -132,6 +132,20 @@ main.cmx : \
     actions.cmx \
     main.cmi
 main.cmi :
+modifier_parser.cmo : \
+    variables.cmi \
+    tsl_lexer.cmi \
+    ocamltest_stdlib.cmi \
+    environments.cmi \
+    modifier_parser.cmi
+modifier_parser.cmx : \
+    variables.cmx \
+    tsl_lexer.cmx \
+    ocamltest_stdlib.cmx \
+    environments.cmx \
+    modifier_parser.cmi
+modifier_parser.cmi : \
+    environments.cmi
 ocaml_actions.cmo : \
     result.cmi \
     ocamltest_stdlib.cmi \

@@ -205,7 +205,7 @@ let run_script log env =
     log scriptenv in
   let final_value =
     if Result.is_pass result then begin
-      match Environments.modifiers_of_file response_file with
+      match Modifier_parser.modifiers_of_file response_file with
       | modifiers ->
         let modified_env = Environments.apply_modifiers newenv modifiers in
         (result, modified_env)
@@ -248,7 +248,7 @@ let run_hook hook_name log input_env =
   } in let exit_status = run settings in
   let final_value = match exit_status with
     | 0 ->
-      begin match Environments.modifiers_of_file response_file with
+      begin match Modifier_parser.modifiers_of_file response_file with
       | modifiers ->
         let modified_env = Environments.apply_modifiers hookenv modifiers in
         (Result.pass, modified_env)
