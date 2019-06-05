@@ -97,7 +97,7 @@ void caml_garbage_collection(void)
   }
 #endif
 
-  caml_async_callbacks();
+  caml_check_urgent_gc (Val_unit);
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)

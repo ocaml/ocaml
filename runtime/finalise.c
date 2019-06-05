@@ -82,14 +82,7 @@ static void alloc_to_do (int size)
   if (to_do_tl == NULL){
     to_do_hd = result;
     to_do_tl = result;
-    if(!running_finalisation_function) {
-      caml_final_to_do = 1;
-#ifndef NATIVE_CODE
-      caml_something_to_do = 1;
-#else
-      caml_young_limit = caml_young_alloc_end;
-#endif
-    }
+    if(!running_finalisation_function) caml_set_something_to_do();
   }else{
     CAMLassert (to_do_tl->next == NULL);
     to_do_tl->next = result;
@@ -209,12 +202,12 @@ void caml_final_do_calls (void)
       caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
 #endif
       running_finalisation_function = 0;
-      if (Is_exception_result (res)) caml_raise (Extract_exception (res));
+      if (Is_exception_result (res))
+        caml_raise_in_async_callback(Extract_exception(res));
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
     if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
   }
-  caml_final_to_do = 0;
 }
 
 /* Call a scanning_action [f] on [x]. */

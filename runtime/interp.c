@@ -891,7 +891,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     process_signal:
-      caml_something_to_do = 0;
       Setup_for_event;
       caml_process_event();
       Restore_after_event;

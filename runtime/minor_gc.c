@@ -473,7 +473,7 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
     caml_young_ptr += Whsize_wosize (wosize);
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
-    if(flags & CAML_FROM_CAML) caml_async_callbacks();
+    if(flags & CAML_FROM_CAML) caml_check_urgent_gc (Val_unit);
     caml_young_ptr -= Whsize_wosize (wosize);
   }
   if(caml_young_ptr < caml_memprof_young_trigger){
@@ -498,17 +498,6 @@ CAMLexport void caml_minor_collection (void)
 {
   caml_requested_minor_gc = 1;
   caml_gc_dispatch ();
-}
-
-CAMLexport value caml_check_urgent_gc (value extra_root)
-{
-  CAMLparam1 (extra_root);
-  if (caml_requested_major_slice || caml_requested_minor_gc){
-    CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
-    caml_gc_dispatch();
-  }
-  caml_async_callbacks();
-  CAMLreturn (extra_root);
 }
 
 static void realloc_generic_table

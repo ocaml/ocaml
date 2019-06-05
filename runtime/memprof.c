@@ -128,7 +128,6 @@ static uintnat mt_generate_binom(uintnat len)
 /**** Interface with the OCaml code. ****/
 
 static void purge_postponed_queue(void);
-static void check_to_do(void);
 
 CAMLprim value caml_memprof_set(value v)
 {
@@ -183,6 +182,12 @@ enum ml_alloc_kind {
   Serialized = Val_long(2)
 };
 
+/* When we call do_callback, we suspend/resume sampling. In order to
+   to avoid a systematic unnecessary calls to [caml_check_urgent_gc]
+   after each memprof callback, we do not set [caml_something_to_do]
+   when resuming. Therefore, any call to [do_callback] has to also
+   make sure the postponed queue will be handled fully at some
+   point. */
 static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
                          value callstack, enum ml_alloc_kind cb_kind) {
   CAMLparam1(callstack);
@@ -202,14 +207,20 @@ static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
   res = caml_callback_exn(memprof_callback, sample_info);
 
   caml_memprof_suspended = 0;
-  check_to_do();
+
+  if (Is_exception_result(res))
+    /* We are not necessarily called from `caml_check_urgent_gc`, but
+       this is OK to call this regardless of this fact.  */
+    caml_raise_in_async_callback(Extract_exception(res));
 
   CAMLreturn(res);
 }
 
 /**** Capturing the call stack *****/
 
-static value capture_callstack_major(void)
+/* This function is called for postponed blocks, so it guarantees
+   that the GC is not called. */
+static value capture_callstack_postponed(void)
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
@@ -220,7 +231,7 @@ static value capture_callstack_major(void)
   return res;
 }
 
-static value capture_callstack_minor(void)
+static value capture_callstack(void)
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
@@ -228,7 +239,6 @@ static value capture_callstack_minor(void)
   caml_memprof_suspended = 1; /* => no samples in the call stack. */
   res = caml_alloc(wosize, 0);
   caml_memprof_suspended = 0;
-  check_to_do();
   caml_current_callstack_write(res);
   return res;
 }
@@ -284,7 +294,7 @@ static void register_postponed_callback(value block, uintnat occurrences,
   value callstack;
   struct postponed_block* new_hd;
   if (occurrences == 0) return;
-  callstack = capture_callstack_major();
+  callstack = capture_callstack_postponed();
   if (callstack == 0) return;    /* OOM */
 
   new_hd = postponed_hd + 1;
@@ -321,7 +331,7 @@ static void register_postponed_callback(value block, uintnat occurrences,
   postponed_hd->kind = kind;
   postponed_hd = new_hd;
 
-  check_to_do();
+  if (!caml_memprof_suspended) caml_set_something_to_do();
 }
 
 void caml_memprof_handle_postponed(void)
@@ -347,24 +357,11 @@ void caml_memprof_handle_postponed(void)
     ephe = do_callback(Tag_val(block), Wosize_val(block),
                        pb.occurrences, pb.callstack, pb.kind);
 
-    if (Is_exception_result(ephe)) caml_raise(Extract_exception(ephe));
     if (Is_block(ephe)) caml_ephemeron_set_key(Field(ephe, 0), 0, block);
   }
 
   caml_memprof_to_do = 0;
   CAMLreturn0;
-}
-
-static void check_to_do(void)
-{
-  if (!caml_memprof_suspended && postponed_tl != postponed_hd) {
-    caml_memprof_to_do = 1;
-#ifndef NATIVE_CODE
-    caml_something_to_do = 1;
-#else
-    caml_young_limit = caml_young_alloc_end;
-#endif
-  }
 }
 
 /**** Sampling procedures ****/
@@ -458,10 +455,8 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
      order. */
   caml_memprof_handle_postponed();
 
-  callstack = capture_callstack_minor();
+  callstack = capture_callstack();
   ephe = do_callback(tag, wosize, occurrences, callstack, Minor);
-
-  if (Is_exception_result(ephe)) caml_raise(Extract_exception(ephe));
 
   /* We can now restore the minor heap in the state needed by
      [Alloc_small_aux]. */
