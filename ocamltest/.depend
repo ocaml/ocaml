@@ -21,14 +21,17 @@ ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
  ../runtime/caml/alloc.h ../runtime/caml/signals.h \
  ../runtime/caml/osdeps.h ../runtime/caml/memory.h
 actions.cmo : \
+    variables.cmi \
     result.cmi \
     environments.cmi \
     actions.cmi
 actions.cmx : \
+    variables.cmx \
     result.cmx \
     environments.cmx \
     actions.cmi
 actions.cmi : \
+    variables.cmi \
     result.cmi \
     environments.cmi
 actions_helpers.cmo : \
