@@ -55,6 +55,7 @@
 
   typedef unsigned long long context_reg;
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
+  #define CONTEXT_C_ARG_1 (CONTEXT_STATE.CONTEXT_REG(rdi))
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(rip))
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.CONTEXT_REG(r15))
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(rsp))
