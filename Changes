@@ -71,9 +71,6 @@ Working version
 - #8622: Don't generate #! headers over 127 characters.
   (David Allsopp, review by Xavier Leroy and Stephen Dolan)
 
-- #8712: Fix code generation with nested let rec of functions.
-  (Stephen Dolan, Leo White, Gabriel Scherer and Pierre Chambart)
-
 OCaml 4.09.0
 ------------
 
@@ -97,6 +94,10 @@ OCaml 4.09.0
 
 - #8547: Optimize matches that are an affine function of the input.
   (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
+
+- #8681, #8699, #8712: Fix code generation with nested let rec of functions.
+  (Stephen Dolan, Leo White, Gabriel Scherer and Pierre Chambart,
+   review by Gabriel Scherer, reports by Alexey Solovyev and Jonathan French)
 
 ### Compiler user-interface and warnings:
 
