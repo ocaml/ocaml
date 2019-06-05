@@ -81,9 +81,11 @@ let create ?(random = !randomized) initial_size =
   { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
-  h.size <- 0;
-  let len = Array.length h.data in
-  Array.fill h.data 0 len Empty
+  if h.size > 0 then begin
+    h.size <- 0;
+    let len = Array.length h.data in
+    Array.fill h.data 0 len Empty
+  end
 
 let reset h =
   let len = Array.length h.data in
