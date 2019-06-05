@@ -36,6 +36,7 @@ actions.cmi : \
     environments.cmi
 actions_helpers.cmo : \
     variables.cmi \
+    strace.cmi \
     run_command.cmi \
     result.cmi \
     ocamltest_stdlib.cmi \
@@ -47,6 +48,7 @@ actions_helpers.cmo : \
     actions_helpers.cmi
 actions_helpers.cmx : \
     variables.cmx \
+    strace.cmx \
     run_command.cmx \
     result.cmx \
     ocamltest_stdlib.cmx \
@@ -391,6 +393,14 @@ run_command.cmx : \
     ocamltest_stdlib.cmx \
     run_command.cmi
 run_command.cmi :
+strace.cmo : \
+    variables.cmi \
+    strace.cmi
+strace.cmx : \
+    variables.cmx \
+    strace.cmi
+strace.cmi : \
+    variables.cmi
 tests.cmo : \
     result.cmi \
     actions.cmi \

@@ -97,13 +97,29 @@ let run_cmd
     ?(stderr_variable=Builtin_variables.stderr)
     ?(append=false)
     ?(timeout=0)
-    log env cmd
+    log env original_cmd
   =
   let log_redirection std filename =
     if filename<>"" then
     begin
       Printf.fprintf log "  Redirecting %s to %s \n%!" std filename
     end in
+  let cmd =
+    if (Environments.lookup_as_bool Strace.strace env) = Some true then
+    begin
+      let action_name = Environments.safe_lookup Actions.action_name env in
+      let test_build_directory = test_build_directory env in
+      let strace_logfile_name = Strace.get_logfile_name action_name in
+      let strace_logfile =
+        Filename.make_path [test_build_directory; strace_logfile_name]
+      in
+      let strace_flags = Environments.safe_lookup Strace.strace_flags env in
+      let strace_cmd =
+        ["strace -f -o"; strace_logfile; strace_flags]
+      in
+      strace_cmd @ original_cmd
+    end else original_cmd
+  in
   let lst = List.concat (List.map String.words cmd) in
   let quoted_lst =
     if Sys.os_type="Win32"
