@@ -783,8 +783,24 @@ let float_array_ref dbg arr ofs =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
 
 let addr_array_set arr ofs newval dbg =
-  Cop(Cextcall("caml_modify", typ_void, false, None),
-      [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
+  let idx = array_indexing log2_size_addr arr ofs dbg in
+  let modify idx =
+    Cop(Cextcall("caml_modify", typ_void, false, None), [idx], dbg)
+  in
+  match newval with
+  | Cconst_int _ | Cconst_pointer _ when !Clflags.optimize_for_speed ->
+      bind "idx" idx
+        (fun idx ->
+           let oldval = Cop(Cload (Word_val, Mutable), [idx], dbg) in
+           Cifthenelse
+             (Cop(Cand, [oldval; Cconst_int (1, dbg)], dbg), dbg,
+              Cop(Cstore (Word_val, Assignment), [idx; newval], dbg), dbg,
+              modify idx, dbg
+             )
+        )
+  | _ ->
+      modify idx
+
 let addr_array_initialize arr ofs newval dbg =
   Cop(Cextcall("caml_initialize", typ_void, false, None),
       [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
