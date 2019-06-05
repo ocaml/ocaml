@@ -100,6 +100,7 @@ core := \
   result.mli result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
+  strace.mli strace.ml \
   tsl_ast.mli tsl_ast.ml \
   tsl_parser.mly \
   tsl_lexer.mli tsl_lexer.mll \
