@@ -19,7 +19,7 @@ type code = out_channel -> Environments.t -> Result.t * Environments.t
 
 type t
 
-val action_name : t -> string
+val name : t -> string
 
 val update : t -> code -> t
 

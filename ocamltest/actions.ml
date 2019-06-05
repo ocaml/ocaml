@@ -23,7 +23,7 @@ type t = {
   mutable hook : code option
 }
 
-let action_name a = a.name
+let name a = a.name
 
 let make n c = { name = n; body = c; hook = None }
 

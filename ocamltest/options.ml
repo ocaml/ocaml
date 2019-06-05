@@ -21,7 +21,7 @@ let show_objects title string_of_object objects =
   List.iter print_object objects;
   exit 0
 
-let string_of_action = Actions.action_name
+let string_of_action = Actions.name
 
 let string_of_test test =
   if test.Tests.test_run_by_default
