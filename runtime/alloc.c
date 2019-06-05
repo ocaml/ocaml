@@ -242,7 +242,8 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
 
   if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
-    Tag_val(dummy) = tag;
+    CAMLassert (Tag_val(dummy) != Infix_tag);
+    Tag_val(dummy) = Double_array_tag;
     size = Wosize_val (newval) / Double_wosize;
     for (i = 0; i < size; i++) {
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
@@ -260,6 +261,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     }
   } else {
     CAMLassert (tag < No_scan_tag);
+    CAMLassert (Tag_val(dummy) != Infix_tag);
     Tag_val(dummy) = tag;
     size = Wosize_val(newval);
     CAMLassert (size == Wosize_val(dummy));
