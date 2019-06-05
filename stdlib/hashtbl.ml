@@ -83,9 +83,7 @@ let create ?(random = !randomized) initial_size =
 let clear h =
   h.size <- 0;
   let len = Array.length h.data in
-  for i = 0 to len - 1 do
-    h.data.(i) <- Empty
-  done
+  Array.fill h.data 0 len Empty
 
 let reset h =
   let len = Array.length h.data in
