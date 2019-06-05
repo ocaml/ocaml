@@ -589,3 +589,41 @@ CAMLprim value caml_array_concat(value al)
   }
   return res;
 }
+
+CAMLprim value caml_array_fill (value array, value v_ofs, value v_len, value val)
+{
+  value old;
+  intnat ofs = Long_val(v_ofs);
+  intnat len = Long_val(v_len);
+  value* fp;
+
+  /* See caml_modify for invariants */
+
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag) {
+    double d = Double_val (val);
+    for (; len > 0; len--, ofs++)
+      Store_double_flat_field(array, ofs, d);
+    return Val_unit;
+  }
+#endif
+  fp = &Field(array, ofs);
+  if (Is_young(array)) {
+    for (; len > 0; len--, fp++) *fp = val;
+  } else {
+    CAMLassert(Is_in_heap(fp));
+    int is_val_young_block = Is_block(val) && Is_young(val);
+    for (; len > 0; len--, fp++) {
+      old = *fp;
+      if (old == val) continue;
+      *fp = val;
+      if (Is_block(old)) {
+        if (Is_young(old)) continue;
+        if (caml_gc_phase == Phase_mark) caml_darken(old, NULL);
+      }
+      if (is_val_young_block) add_to_ref_table (&caml_ref_table, fp);
+    }
+    /* Should we call caml_check_urgent_gc? */
+  }
+  return Val_unit;
+}
