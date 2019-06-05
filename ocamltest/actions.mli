@@ -21,6 +21,8 @@ type t
 
 val name : t -> string
 
+val action_name : Variables.t
+
 val update : t -> code -> t
 
 val make : string -> code -> t
