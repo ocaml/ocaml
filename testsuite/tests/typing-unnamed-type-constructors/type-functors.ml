@@ -30,6 +30,40 @@ val g : (bool, unit) u -> int -> int = <fun>
 
 
 
+
+
+(* Type constraint. *)
+
+type 'a constrained = 'b constraint 'b = 'a ('c. 'c)
+;;
+[%%expect {|
+type 'a constrained = 'a ('c. 'c)
+|}];;
+
+type ('a, 'b) eq = unit constraint 'a ('c. 'c) = 'b ('c. 'c)
+;;
+[%%expect {|
+type ('a, 'b) eq = unit constraint 'a = 'b ('c. 'c)
+|}];;
+
+let check (eq : (int, int) eq) : unit = eq
+;;
+[%%expect {|
+val check : (int, int) eq -> unit = <fun>
+|}];;
+
+let check (not_eq : (int, bool) eq) : unit = eq
+;;
+[%%expect {|
+Line 1, characters 26-30:
+1 | let check (not_eq : (int, bool) eq) : unit = eq
+                              ^^^^
+Error: This type bool should be an instance of type int
+|}];;
+
+
+
+
 (* Type declarations referencing variants. *)
 
 type 'a variant = A | B of 'a ('a. 'a)
@@ -87,6 +121,7 @@ Error: This expression has type int ('a. 'a) = int
 
 
 
+
 (* Type functors in record fields. *)
 
 type record = {
@@ -134,6 +169,7 @@ Error: This expression has type 'a variant
 
 
 
+
 (* Naked type functors. *)
 
 let w (a : int ('a. 'a)) : int = a
@@ -164,6 +200,7 @@ Line 1, characters 23-27:
 Error: This expression has type bool but an expression was expected of type
          int ('a. 'a) = int
 |}];;
+
 
 
 
@@ -200,6 +237,7 @@ Error: This expression has type float but an expression was expected of type
 
 
 
+
 (* Functors using newtypes. *)
 
 let e (type t) (x : int ('a. t)) (y : t) = x = y
@@ -207,6 +245,7 @@ let e (type t) (x : int ('a. t)) (y : t) = x = y
 [%%expect {|
 val e : int ('a. 't) -> 't -> bool = <fun>
 |}];;
+
 
 
 
@@ -235,6 +274,7 @@ include (T : S with type t := (bool, bool) ('a 'b. int))
 [%%expect {|
 val x : (bool, bool) ('a 'b. int) = 15
 |}];;
+
 
 
 
