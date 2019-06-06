@@ -1090,6 +1090,8 @@ let rec copy ?partial ?keep_names scope ty =
                               Mcons _ -> Mlink !abbreviations
                             | abbrev  -> abbrev))
           end
+      | Tapply (ty, tl) ->
+          Tapply (ty, List.map copy tl)
       | Tvariant row0 ->
           let row = row_repr row0 in
           let more = repr row.row_more in
@@ -2494,9 +2496,9 @@ let rec unify (env:Env.t ref) t1 t2 =
   try
     type_changed := true;
     begin match (t1.desc, t2.desc) with
-      (Tvar _, Tconstr _) when deep_occur t1 t2 ->
+      (Tvar _, Tconstr _) | (Tvar _, Tapply _) when deep_occur t1 t2 ->
         unify2 env t1 t2
-    | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
+    | (Tconstr _, Tvar _) | (Tapply _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar _, _) ->
         unify1_var !env t1 t2
