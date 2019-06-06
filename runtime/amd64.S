@@ -67,7 +67,6 @@
 
 #if defined(SYS_linux) || defined(SYS_gnu)
 #define ENDFUNCTION(name) \
-        .type name,@function; \
         .size name, . - name
 #else
 #define ENDFUNCTION(name)
