@@ -453,8 +453,8 @@ let bprint_float_fmt buf ign_flag fconv pad prec =
   bprint_precision buf prec;
   buffer_add_char buf (char_of_fconv fconv)
 
-(* Compute the literal string representation of a formatting_lit. *)
-(* Also used by Printf and Scanf where formatting is not interpreted. *)
+(* Compute the literal string representation of a Formatting_lit. *)
+(* Used by Printf and Scanf where formatting is not interpreted. *)
 let string_of_formatting_lit formatting_lit = match formatting_lit with
   | Close_box            -> "@]"
   | Close_tag            -> "@}"
@@ -466,14 +466,6 @@ let string_of_formatting_lit formatting_lit = match formatting_lit with
   | Escaped_at           -> "@@"
   | Escaped_percent      -> "@%"
   | Scan_indic c -> "@" ^ (String.make 1 c)
-
-(* Compute the literal string representation of a formatting. *)
-(* Also used by Printf and Scanf where formatting is not interpreted. *)
-let string_of_formatting_gen : type a b c d e f .
-    (a, b, c, d, e, f) formatting_gen -> string =
-  fun formatting_gen -> match formatting_gen with
-  | Open_tag (Format (_, str)) -> str
-  | Open_box (Format (_, str)) -> str
 
 (***)
 
@@ -626,8 +618,12 @@ let bprint_fmt buf fmt =
       bprint_string_literal buf (string_of_formatting_lit fmting_lit);
       fmtiter rest ign_flag;
     | Formatting_gen (fmting_gen, rest) ->
-      bprint_string_literal buf "@{";
-      bprint_string_literal buf (string_of_formatting_gen fmting_gen);
+      begin match fmting_gen with
+      | Open_tag (Format (_, str)) ->
+        buffer_add_string buf "@{"; buffer_add_string buf str
+      | Open_box (Format (_, str)) ->
+        buffer_add_string buf "@["; buffer_add_string buf str
+      end;
       fmtiter rest ign_flag;
 
     | End_of_format -> ()
@@ -2629,14 +2625,6 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
         Fmt_EBB (Formatting_lit (Scan_indic c, fmt_rest))
 
-  and check_open_box : type a b c d e f . (a, b, c, d, e, f) fmt -> unit =
-  fun fmt -> match fmt with
-    | String_literal (str, End_of_format) -> (
-      try ignore (open_box_of_string str) with Failure _ ->
-        ((* Emit warning: invalid open box *))
-    )
-    | _ -> ()
-
   (* Try to read the optional <name> after "@{" or "@[". *)
   and parse_tag : type e f . bool -> int -> int -> (_, _, e, f) fmt_ebb =
   fun is_open_tag str_ind end_ind ->
@@ -2650,9 +2638,8 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let Fmt_EBB fmt_rest = parse (ind + 1) end_ind in
         let Fmt_EBB sub_fmt = parse str_ind (ind + 1) in
         let sub_format = Format (sub_fmt, sub_str) in
-        let formatting = if is_open_tag then Open_tag sub_format else (
-          check_open_box sub_fmt;
-          Open_box sub_format) in
+        let formatting =
+          if is_open_tag then Open_tag sub_format else Open_box sub_format in
         Fmt_EBB (Formatting_gen (formatting, fmt_rest))
       | _ ->
         raise Not_found

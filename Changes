@@ -71,6 +71,11 @@ Working version
 - #8622: Don't generate #! headers over 127 characters.
   (David Allsopp, review by Xavier Leroy and Stephen Dolan)
 
+- #8715: minor bugfixes in CamlinternalFormat; removes the unused
+  and misleading function CamlinternalFormat.string_of_formatting_gen
+  (Gabriel Scherer and Florian Angeletti,
+   review by Florian Angeletti and Gabriel Radanne)
+
 OCaml 4.09.0
 ------------
 
