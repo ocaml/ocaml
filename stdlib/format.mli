@@ -455,6 +455,10 @@ val pp_get_max_indent : formatter -> unit -> int
 val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
 
+val pp_set_max_newline_offset : formatter -> int -> unit
+(** Maximum offset added to a new line in addition to the offset of the
+    previous line. *)
+
 (** {1 Geometry }
 
 Geometric functions can be used to manipulate simultaneously the
