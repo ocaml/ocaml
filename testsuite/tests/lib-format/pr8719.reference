@@ -1,0 +1,36 @@
+max_newline_offset = 4
+
+  foooooooooooooooooooo
+  foooooooooooooooooooo
+      foooooooooooooooooooo
+      foooooooooooooooooooo
+          foooooooooooooooooooo
+          foooooooooooooooooooo
+          foooooooooooooooooooo
+max_newline_offset = 3
+
+  foooooooooooooooooooo
+  foooooooooooooooooooo
+     foooooooooooooooooooo
+     foooooooooooooooooooo
+        foooooooooooooooooooo
+        foooooooooooooooooooo
+        foooooooooooooooooooo
+max_newline_offset = 2
+
+  foooooooooooooooooooo
+  foooooooooooooooooooo
+    foooooooooooooooooooo
+    foooooooooooooooooooo
+      foooooooooooooooooooo
+      foooooooooooooooooooo
+      foooooooooooooooooooo
+max_newline_offset = 1
+
+ foooooooooooooooooooo
+ foooooooooooooooooooo
+  foooooooooooooooooooo
+  foooooooooooooooooooo
+   foooooooooooooooooooo
+   foooooooooooooooooooo
+   foooooooooooooooooooo
