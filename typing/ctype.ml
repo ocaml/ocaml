@@ -1090,8 +1090,24 @@ let rec copy ?partial ?keep_names scope ty =
                               Mcons _ -> Mlink !abbreviations
                             | abbrev  -> abbrev))
           end
-      | Tapply (ty, tl) ->
-          Tapply (ty, List.map copy tl)
+      | Tapply (ty1, tl1) ->
+          (*
+             HACK: Manually copy the body, to ensure that it isn't erased to a
+             Tvar.
+             This may be removed when Tvars in Tapply bodies are implemented.
+          *)
+          let ty1 =
+            let t = newvar () in (* Stub *)
+            t.desc <-
+              begin match (repr ty1).desc with
+              | Tpoly (ty2, tl2) ->
+                  Tpoly (copy ty2, List.map copy tl2)
+              | _ ->
+                  assert false
+              end;
+            t
+          in
+          Tapply (ty1, List.map copy tl1)
       | Tvariant row0 ->
           let row = row_repr row0 in
           let more = repr row.row_more in

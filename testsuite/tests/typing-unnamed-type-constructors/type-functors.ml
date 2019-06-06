@@ -267,24 +267,10 @@ let f : 'a 'b. 'a ('a. 'b) -> 'b -> 'b = fun x y -> x
 
 [%%expect{|
 val f : 'a ('a0. 'b) -> 'b -> 'b = <fun>
-|}, Principal{|
-Line 1, characters 45-46:
-1 | let f : 'a 'b. 'a ('a. 'b) -> 'b -> 'b = fun x y -> x
-                                                 ^
-Error: This pattern matches values of type 'c ('a. 'b) = 'b0
-       but a pattern was expected which matches values of type 'd
-       The universal variable 'b would escape its scope
 |}]
 
 let f : 'a 'b. int ('a. 'b) -> 'b -> 'b = fun x y -> x
 ;;
 [%%expect{|
 val f : int ('a. 'b) -> 'b -> 'b = <fun>
-|}, Principal{|
-Line 1, characters 46-47:
-1 | let f : 'a 'b. int ('a. 'b) -> 'b -> 'b = fun x y -> x
-                                                  ^
-Error: This pattern matches values of type 'c ('a. 'b) = 'b0
-       but a pattern was expected which matches values of type 'd
-       The universal variable 'b would escape its scope
 |}]
