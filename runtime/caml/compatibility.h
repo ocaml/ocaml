@@ -235,8 +235,8 @@
 /* **** meta.c */
 
 /* **** minor_gc.c */
-#define young_start caml_young_start
-#define young_end caml_young_end
+#define young_start (caml_state->young_start)
+#define young_end (Caml_state->young_end)
 #define young_ptr (Caml_state->young_ptr)
 #define young_limit (Caml_state->young_limit)
 #define ref_table caml_ref_table

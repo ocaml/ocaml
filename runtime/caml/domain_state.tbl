@@ -5,4 +5,15 @@ DOMAIN_STATE(char*, exn_handler)
 /* Exception handler pointer that points into the current stack */
 
 DOMAIN_STATE(value*, young_ptr)
-/* Minor heap pointer. See minor_gc.c. */
+DOMAIN_STATE(void*, young_base)
+DOMAIN_STATE(value*, young_start)
+DOMAIN_STATE(value*, young_end)
+DOMAIN_STATE(value*, young_alloc_start)
+DOMAIN_STATE(value*, young_alloc_end)
+DOMAIN_STATE(value*, young_alloc_mid)
+DOMAIN_STATE(value*, young_trigger)
+DOMAIN_STATE(asize_t, minor_heap_wsz)
+DOMAIN_STATE(intnat, in_minor_collection)
+DOMAIN_STATE(double, extra_heap_resources_minor)
+DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
+/* See minor_gc.c */

@@ -429,10 +429,13 @@ void caml_compact_heap (void)
   uintnat target_wsz, live;
   CAML_INSTR_SETUP(tmr, "compact");
 
-  CAMLassert (Caml_state->young_ptr == caml_young_alloc_end);
-  CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
-  CAMLassert (caml_ephe_ref_table.ptr == caml_ephe_ref_table.base);
-  CAMLassert (caml_custom_table.ptr == caml_custom_table.base);
+  CAMLassert (Caml_state->young_ptr == Caml_state->young_alloc_end);
+  CAMLassert (Caml_state->minor_tables->ref.ptr ==
+              Caml_state->minor_tables->ref.base);
+  CAMLassert (Caml_state->minor_tables->ephe_ref.ptr ==
+              Caml_state->minor_tables->ephe_ref.base);
+  CAMLassert (Caml_state->minor_tables->custom.ptr ==
+              Caml_state->minor_tables->custom.base);
 
   do_compaction ();
   CAML_INSTR_TIME (tmr, "compact/main");

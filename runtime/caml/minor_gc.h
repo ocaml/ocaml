@@ -20,13 +20,6 @@
 #include "address_class.h"
 #include "config.h"
 
-CAMLextern value *caml_young_start, *caml_young_end;
-CAMLextern value *caml_young_alloc_start, *caml_young_alloc_end;
-CAMLextern value *caml_young_trigger;
-extern asize_t caml_minor_heap_wsz;
-extern int caml_in_minor_collection;
-extern double caml_extra_heap_resources_minor;
-
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \
   t *end;                      \
@@ -38,7 +31,6 @@ extern double caml_extra_heap_resources_minor;
 }
 
 struct caml_ref_table CAML_TABLE_STRUCT(value *);
-CAMLextern struct caml_ref_table caml_ref_table;
 
 struct caml_ephe_ref_elt {
   value ephe;      /* an ephemeron in major heap */
@@ -46,7 +38,6 @@ struct caml_ephe_ref_elt {
 };
 
 struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
-CAMLextern struct caml_ephe_ref_table caml_ephe_ref_table;
 
 struct caml_custom_elt {
   value block;     /* The finalized block in the minor heap. */
@@ -55,12 +46,22 @@ struct caml_custom_elt {
 };
 
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
-CAMLextern struct caml_custom_table caml_custom_table;
+/* Table of custom blocks in the minor heap that contain finalizers
+   or GC speed parameters. */
+
+struct caml_minor_tables {
+  struct caml_ref_table ref;
+  struct caml_ephe_ref_table ephe_ref;
+  struct caml_custom_table custom;
+};
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);
 CAMLextern void caml_gc_dispatch (void);
 CAMLextern void garbage_collection (void); /* runtime/signals_nat.c */
+extern void caml_oldify_one (value, value *);
+extern void caml_oldify_mopup (void);
+
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
@@ -69,8 +70,7 @@ extern void caml_alloc_ephe_table (struct caml_ephe_ref_table *,
 extern void caml_realloc_custom_table (struct caml_custom_table *);
 extern void caml_alloc_custom_table (struct caml_custom_table *,
                                      asize_t, asize_t);
-extern void caml_oldify_one (value, value *);
-extern void caml_oldify_mopup (void);
+struct caml_minor_tables* caml_alloc_minor_tables (void);
 
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \

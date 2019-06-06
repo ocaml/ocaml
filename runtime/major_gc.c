@@ -270,10 +270,10 @@ static inline value* mark_slice_darken(value *gray_vals_ptr,
         /* The variable child is not changed because it must be mark alive */
         Field (v, i) = f;
         if (Is_block (f) && Is_young (f) && !Is_young (child)){
-          if(in_ephemeron){
-            add_to_ephe_ref_table (&caml_ephe_ref_table, v, i);
-          }else{
-            add_to_ref_table (&caml_ref_table, &Field (v, i));
+          if(in_ephemeron) {
+            add_to_ephe_ref_table (&Caml_state->minor_tables->ephe_ref, v, i);
+          } else {
+            add_to_ref_table (&Caml_state->minor_tables->ref, &Field (v, i));
           }
         }
       }
@@ -764,7 +764,7 @@ void caml_major_collection_slice (intnat howmuch)
                    (intnat) (p * 1000000));
 
   if (caml_gc_phase == Phase_idle){
-    if (Caml_state->young_ptr == caml_young_alloc_end){
+    if (Caml_state->young_ptr == Caml_state->young_alloc_end){
       /* We can only start a major GC cycle if the minor allocation arena
          is empty, otherwise we'd have to treat it as a set of roots. */
       start_cycle ();

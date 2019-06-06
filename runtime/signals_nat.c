@@ -87,12 +87,12 @@ void caml_garbage_collection(void)
   */
   caml_memprof_renew_minor_sample();
   if (caml_requested_major_slice || caml_requested_minor_gc ||
-      Caml_state->young_ptr - caml_young_trigger < Max_young_whsize){
+      Caml_state->young_ptr - Caml_state->young_trigger < Max_young_whsize){
     caml_gc_dispatch ();
   }
 
 #ifdef WITH_SPACETIME
-  if (Caml_state->young_ptr == caml_young_alloc_end) {
+  if (Caml_state->young_ptr == Caml_state->young_alloc_end) {
     caml_spacetime_automatic_snapshot();
   }
 #endif

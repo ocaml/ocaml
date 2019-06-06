@@ -26,4 +26,19 @@ void caml_init_domain ()
     (caml_domain_state*)caml_stat_alloc_noexc(sizeof(caml_domain_state));
   if (Caml_state == NULL)
     caml_fatal_error ("cannot initialize domain state");
+
+  Caml_state->young_limit = NULL;
+  Caml_state->exn_handler = NULL;
+  Caml_state->young_ptr = NULL;
+  Caml_state->young_base = NULL;
+  Caml_state->young_start = NULL;
+  Caml_state->young_end = NULL;
+  Caml_state->young_alloc_start = NULL;
+  Caml_state->young_alloc_mid = NULL;
+  Caml_state->young_alloc_end = NULL;
+  Caml_state->young_trigger = NULL;
+  Caml_state->minor_heap_wsz = 0;
+  Caml_state->in_minor_collection = 0;
+  Caml_state->extra_heap_resources_minor = 0;
+  Caml_state->minor_tables = caml_alloc_minor_tables();
 }

@@ -233,7 +233,7 @@ static value heap_stats (int returnstats)
 
     /* get a copy of these before allocating anything... */
     double minwords = caml_stat_minor_words
-                      + (double) (caml_young_alloc_end - Caml_state->young_ptr);
+                      + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     intnat mincoll = caml_stat_minor_collections;
@@ -289,7 +289,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) (caml_young_alloc_end - Caml_state->young_ptr);
+                    + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
@@ -322,7 +322,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 double caml_gc_minor_words_unboxed()
 {
   return (caml_stat_minor_words
-          + (double) (caml_young_alloc_end - Caml_state->young_ptr));
+          + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr));
 }
 
 CAMLprim value caml_gc_minor_words(value v)
@@ -338,7 +338,7 @@ CAMLprim value caml_gc_counters(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) (caml_young_alloc_end - Caml_state->young_ptr);
+                    + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
 
@@ -360,7 +360,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_tuple (11);
-  Store_field (res, 0, Val_long (caml_minor_heap_wsz));                 /* s */
+  Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));                 /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
   Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
@@ -501,7 +501,7 @@ CAMLprim value caml_gc_set(value v)
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminwsz = norm_minsize (Long_val (Field (v, 0)));
-  if (newminwsz != caml_minor_heap_wsz){
+  if (newminwsz != Caml_state->minor_heap_wsz){
     caml_gc_message (0x20, "New minor heap size: %"
                      ARCH_SIZET_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
     caml_set_minor_heap_size (Bsize_wsize (newminwsz));
@@ -592,7 +592,7 @@ CAMLprim value caml_gc_compaction(value v)
 
 CAMLprim value caml_get_minor_free (value v)
 {
-  return Val_int (Caml_state->young_ptr - caml_young_alloc_start);
+  return Val_int (Caml_state->young_ptr - Caml_state->young_alloc_start);
 }
 
 CAMLprim value caml_get_major_bucket (value v)
@@ -652,7 +652,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_custom_minor_max_bsz = custom_bsz;
   caml_gc_message (0x20, "Initial minor heap size: %"
                    ARCH_SIZET_PRINTF_FORMAT "uk words\n",
-                   caml_minor_heap_wsz / 1024);
+                   Caml_state->minor_heap_wsz / 1024);
   caml_gc_message (0x20, "Initial major heap size: %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                    major_heap_size / 1024);
@@ -715,7 +715,7 @@ CAMLprim value caml_runtime_parameters (value unit)
      /* O */ caml_percent_max,
      /* p */ caml_parser_trace,
      /* R */ /* missing */
-     /* s */ caml_minor_heap_wsz,
+     /* s */ Caml_state->minor_heap_wsz,
      /* t */ caml_trace_level,
      /* v */ caml_verb_gc,
      /* w */ caml_major_window,
