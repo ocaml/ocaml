@@ -456,6 +456,7 @@ val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
 
 val pp_set_max_newline_offset : formatter -> int -> unit
+val set_max_newline_offset : int -> unit
 (** Maximum offset added to a new line in addition to the offset of the
     previous line. *)
 

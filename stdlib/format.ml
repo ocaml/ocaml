@@ -1129,6 +1129,8 @@ and get_margin = pp_get_margin std_formatter
 and set_max_indent = pp_set_max_indent std_formatter
 and get_max_indent = pp_get_max_indent std_formatter
 
+and set_max_newline_offset = pp_set_max_newline_offset std_formatter
+
 and set_geometry = pp_set_geometry std_formatter
 and safe_set_geometry = pp_safe_set_geometry std_formatter
 and get_geometry = pp_get_geometry std_formatter
