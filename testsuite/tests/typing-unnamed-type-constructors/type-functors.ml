@@ -53,6 +53,24 @@ let f (x : t_variant) =
 val f : t_variant -> int ('a. 'a) = <fun>
 |}];;
 
+let a : int ('a. 'a) variant = A
+;;
+[%%expect {|
+val a : int ('a. 'a) variant = A
+|}];;
+
+let b = B a
+;;
+[%%expect {|
+val b : int ('a. 'a) variant variant = B A
+|}];;
+
+let b' = B ((15, ()) : (unit, int) ('b 'a. 'a * 'b))
+;;
+[%%expect {|
+val b' : (unit, int) ('b 'a. 'a * 'b) variant = B (15, ())
+|}];;
+
 (* Expected failure in return type. *)
 let f (x : t_variant) =
   match x with
