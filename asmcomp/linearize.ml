@@ -128,16 +128,15 @@ let check_label n = match n.desc with
    of differences in exception trap depths.
    The argument delta is the number of trap frames (not bytes). *)
 
-let adjust_trap_depth delta_traps next =
+let rec adjust_trap_depth delta_traps next =
   (* Simplify by merging and eliminating Ladjust_trap_depth instructions
      whenever possible. *)
-  let delta_traps, next  =
-    match next.desc with
-    | Ladjust_trap_depth { delta_traps = k } -> delta_traps + k, next.next
-    | _ -> delta_traps, next
-  in
-  if delta_traps = 0 then next
-  else cons_instr (Ladjust_trap_depth { delta_traps }) next
+  match next.desc with
+  | Ladjust_trap_depth { delta_traps = k } ->
+    adjust_trap_depth (delta_traps + k) next.next
+  | _ ->
+    if delta_traps = 0 then next
+    else cons_instr (Ladjust_trap_depth { delta_traps }) next
 
 (* Discard all instructions up to the next label.
    This function is to be called before adding a non-terminating
