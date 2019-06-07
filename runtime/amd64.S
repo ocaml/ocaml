@@ -642,7 +642,7 @@ ENDFUNCTION(G(caml_start_program))
 
 FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
-        TESTL_VAR($1, caml_backtrace_active)
+        testq   $1, Caml_state(backtrace_active)
         jne     LBL(110)
         movq    Caml_state(exn_handler), %rsp
         popq    Caml_state(exn_handler)
@@ -675,7 +675,7 @@ ENDFUNCTION(G(caml_raise_exn))
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
         movq    C_ARG_1, %r14   /* Caml_state */
-        TESTL_VAR($1, caml_backtrace_active)
+        testq   $1, Caml_state(backtrace_active)
         jne     LBL(112)
         movq    C_ARG_2, %rax
         movq    Caml_state(exn_handler), %rsp  /* Cut stack */

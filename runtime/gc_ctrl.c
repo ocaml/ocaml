@@ -691,7 +691,7 @@ CAMLprim value caml_runtime_parameters (value unit)
     ("a=%d,b=%d,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,p=%d,"
      "s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
      /* a */ (int) caml_allocation_policy,
-     /* b */ caml_backtrace_active,
+     /* b */ (int) Caml_state->backtrace_active,
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
      /* H */ caml_use_huge_pages,
      /* i */ caml_major_heap_increment,

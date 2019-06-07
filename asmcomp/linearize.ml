@@ -43,7 +43,7 @@ and instruction_desc =
   | Ladjust_trap_depth of { delta_traps : int; }
   | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
-  | Lraise of Cmm.raise_kind
+  | Lraise of Lambda.raise_kind
 
 let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise _

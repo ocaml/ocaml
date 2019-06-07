@@ -98,10 +98,6 @@ let label_counter = ref 99
 
 let new_label() = incr label_counter; !label_counter
 
-type raise_kind =
-  | Raise_withtrace
-  | Raise_notrace
-
 type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
@@ -143,7 +139,7 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of float_comparison
-  | Craise of raise_kind
+  | Craise of Lambda.raise_kind
   | Ccheckbound
 
 type expression =

@@ -223,10 +223,10 @@ CAMLprim value caml_remove_debug_info(code_t start)
 }
 
 int caml_alloc_backtrace_buffer(void){
-  CAMLassert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer =
+  CAMLassert(Caml_state->backtrace_pos == 0);
+  Caml_state->backtrace_buffer =
     caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-  if (caml_backtrace_buffer == NULL) return -1;
+  if (Caml_state->backtrace_buffer == NULL) return -1;
   return 0;
 }
 
@@ -236,26 +236,26 @@ int caml_alloc_backtrace_buffer(void){
 void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 {
   if (pc != NULL) pc = pc - 1;
-  if (exn != caml_backtrace_last_exn || !reraise) {
-    caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = exn;
+  if (exn != Caml_state->backtrace_last_exn || !reraise) {
+    Caml_state->backtrace_pos = 0;
+    Caml_state->backtrace_last_exn = exn;
   }
 
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
+  if (Caml_state->backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
     return;
 
-  if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+  if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   /* testing the code region is needed: PR#8026 */
   if (find_debug_info(pc) != NULL)
-    caml_backtrace_buffer[caml_backtrace_pos++] = pc;
+    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = pc;
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
   for (/*nothing*/; sp < caml_trapsp; sp++) {
     code_t p = (code_t) *sp;
-    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
+    if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
-      caml_backtrace_buffer[caml_backtrace_pos++] = p;
+      Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = p;
   }
 }
 

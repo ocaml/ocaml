@@ -83,10 +83,6 @@ val swap_float_comparison: float_comparison -> float_comparison
 type label = int
 val new_label: unit -> label
 
-type raise_kind =
-  | Raise_withtrace
-  | Raise_notrace
-
 type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
@@ -145,7 +141,7 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of float_comparison
-  | Craise of raise_kind
+  | Craise of Lambda.raise_kind
   | Ccheckbound
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its

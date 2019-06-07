@@ -52,4 +52,9 @@ void caml_init_domain ()
   Caml_state->stat_top_heap_wsz = 0;
   Caml_state->stat_compactions = 0;
   Caml_state->stat_heap_chunks = 0;
+
+  Caml_state->backtrace_active = 0;
+  Caml_state->backtrace_pos = 0;
+  Caml_state->backtrace_buffer = NULL;
+  Caml_state->backtrace_last_exn = Val_unit;
 }

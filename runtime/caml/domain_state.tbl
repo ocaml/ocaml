@@ -28,3 +28,9 @@ DOMAIN_STATE(intnat, stat_top_heap_wsz)
 DOMAIN_STATE(intnat, stat_compactions)
 DOMAIN_STATE(intnat, stat_heap_chunks)
 /* See gc_ctrl.c */
+
+DOMAIN_STATE(intnat, backtrace_active)
+DOMAIN_STATE(intnat, backtrace_pos)
+DOMAIN_STATE(backtrace_slot*, backtrace_buffer)
+DOMAIN_STATE(value, backtrace_last_exn)
+/* backtrace.c */

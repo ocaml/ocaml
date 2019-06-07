@@ -97,9 +97,9 @@ struct caml_thread_struct {
   struct caml__roots_block * local_roots; /* Saved value of caml_local_roots */
   struct longjmp_buffer * external_raise; /* Saved caml_external_raise */
 #endif
-  int backtrace_pos;         /* Saved caml_backtrace_pos */
-  backtrace_slot * backtrace_buffer; /* Saved caml_backtrace_buffer */
-  value backtrace_last_exn;  /* Saved caml_backtrace_last_exn (root) */
+  int backtrace_pos;         /* Saved Caml_state->backtrace_pos */
+  backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
+  value backtrace_last_exn;  /* Saved Caml_state->backtrace_last_exn (root) */
   int memprof_suspended;     /* Saved caml_memprof_suspended */
 };
 
@@ -195,9 +195,9 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->local_roots = caml_local_roots;
   curr_thread->external_raise = caml_external_raise;
 #endif
-  curr_thread->backtrace_pos = caml_backtrace_pos;
-  curr_thread->backtrace_buffer = caml_backtrace_buffer;
-  curr_thread->backtrace_last_exn = caml_backtrace_last_exn;
+  curr_thread->backtrace_pos = Caml_state->backtrace_pos;
+  curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
+  curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
   curr_thread->memprof_suspended = caml_memprof_suspended;
 }
 
@@ -225,9 +225,9 @@ static inline void caml_thread_restore_runtime_state(void)
   caml_local_roots = curr_thread->local_roots;
   caml_external_raise = curr_thread->external_raise;
 #endif
-  caml_backtrace_pos = curr_thread->backtrace_pos;
-  caml_backtrace_buffer = curr_thread->backtrace_buffer;
-  caml_backtrace_last_exn = curr_thread->backtrace_last_exn;
+  Caml_state->backtrace_pos = curr_thread->backtrace_pos;
+  Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
+  Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
   caml_memprof_suspended = curr_thread->memprof_suspended;
 }
 
@@ -702,7 +702,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
   caml_stat_free(msg);
-  if (caml_backtrace_active) caml_print_exception_backtrace();
+  if (Caml_state->backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
 }

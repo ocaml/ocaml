@@ -890,10 +890,14 @@ let emit_instr fallthrough i =
          [caml_reraise_exn].  The only function called that might affect the
          trie is [caml_stash_backtrace], and it does not. *)
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_regular ->
+          I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Cmm.Raise_notrace ->
+      | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty true i.dbg
+      | Lambda.Raise_notrace ->
           I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
           I.pop (domain_field Domainstate.Domain_exn_handler);
           I.pop r11;
