@@ -133,9 +133,9 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  caml_top_of_stack = &tos;
   /* Initialize the domain */
   caml_init_domain();
+  Caml_state->top_of_stack = &tos;
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window,

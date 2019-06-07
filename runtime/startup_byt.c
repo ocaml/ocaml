@@ -502,7 +502,6 @@ CAMLexport value caml_startup_code_exn(
   }
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
-  Caml_state->external_raise = NULL;
   /* Initialize the domain */
   caml_init_domain();
   /* Initialize the abstract machine */

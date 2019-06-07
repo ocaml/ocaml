@@ -76,9 +76,9 @@ struct caml_thread_struct {
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
   char * top_of_stack;          /* Top of stack for this thread (approx.) */
-  char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
-  uintnat last_retaddr;         /* Saved value of caml_last_return_address */
-  value * gc_regs;              /* Saved value of caml_gc_regs */
+  char * bottom_of_stack;       /* Saved value of Caml_state->bottom_of_stack */
+  uintnat last_retaddr;         /* Saved value of Caml_state->last_return_address */
+  value * gc_regs;              /* Saved value of Caml_state->gc_regs */
   char * exception_pointer;     /* Saved value of Caml_state->exn_handler */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * exit_buf; /* For thread exit */
@@ -174,10 +174,10 @@ static void caml_thread_scan_roots(scanning_action action)
 static inline void caml_thread_save_runtime_state(void)
 {
 #ifdef NATIVE_CODE
-  curr_thread->top_of_stack = caml_top_of_stack;
-  curr_thread->bottom_of_stack = caml_bottom_of_stack;
-  curr_thread->last_retaddr = caml_last_return_address;
-  curr_thread->gc_regs = caml_gc_regs;
+  curr_thread->top_of_stack = Caml_state->top_of_stack;
+  curr_thread->bottom_of_stack = Caml_state->bottom_of_stack;
+  curr_thread->last_retaddr = Caml_state->last_return_address;
+  curr_thread->gc_regs = Caml_state->gc_regs;
   curr_thread->exception_pointer = Caml_state->exn_handler;
   curr_thread->local_roots = caml_local_roots;
 #ifdef WITH_SPACETIME
@@ -204,10 +204,10 @@ static inline void caml_thread_save_runtime_state(void)
 static inline void caml_thread_restore_runtime_state(void)
 {
 #ifdef NATIVE_CODE
-  caml_top_of_stack = curr_thread->top_of_stack;
-  caml_bottom_of_stack= curr_thread->bottom_of_stack;
-  caml_last_return_address = curr_thread->last_retaddr;
-  caml_gc_regs = curr_thread->gc_regs;
+  Caml_state->top_of_stack = curr_thread->top_of_stack;
+  Caml_state->bottom_of_stack= curr_thread->bottom_of_stack;
+  Caml_state->last_return_address = curr_thread->last_retaddr;
+  Caml_state->gc_regs = curr_thread->gc_regs;
   Caml_state->exn_handler = curr_thread->exception_pointer;
   caml_local_roots = curr_thread->local_roots;
 #ifdef WITH_SPACETIME

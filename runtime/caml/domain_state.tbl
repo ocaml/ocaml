@@ -28,6 +28,11 @@ DOMAIN_STATE(struct longjmp_buffer*, external_raise)
 DOMAIN_STATE(value, exn_bucket)
 /* See interp.c */
 
+DOMAIN_STATE(char*, top_of_stack)
+DOMAIN_STATE(char*, bottom_of_stack)
+DOMAIN_STATE(uintnat, last_return_address)
+DOMAIN_STATE(value*, gc_regs)
+
 DOMAIN_STATE(double, stat_minor_words)
 DOMAIN_STATE(double, stat_promoted_words)
 DOMAIN_STATE(double, stat_major_words)

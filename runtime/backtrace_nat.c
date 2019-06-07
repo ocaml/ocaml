@@ -104,8 +104,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 
 intnat caml_current_callstack_size(intnat max_frames) {
   intnat trace_size = 0;
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
+  uintnat pc = Caml_state->last_return_address;
+  char * sp = Caml_state->bottom_of_stack;
 
   while (1) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
@@ -113,15 +113,15 @@ intnat caml_current_callstack_size(intnat max_frames) {
     if (trace_size >= max_frames) break;
     ++trace_size;
 
-    if (sp > caml_top_of_stack) break;
+    if (sp > Caml_state->top_of_stack) break;
   }
 
   return trace_size;
 }
 
 void caml_current_callstack_write(value trace) {
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
+  uintnat pc = Caml_state->last_return_address;
+  char * sp = Caml_state->bottom_of_stack;
   intnat trace_pos, trace_size = Wosize_val(trace);
 
   for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {

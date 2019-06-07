@@ -166,9 +166,9 @@
 #define RECORD_STACK_FRAME(OFFSET) \
         pushq   %r11 ; CFI_ADJUST(8); \
         movq    8+OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_last_return_address) ; \
+        movq    %rax, Caml_state(last_return_address) ; \
         leaq    16+OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_bottom_of_stack) ; \
+        movq    %rax, Caml_state(bottom_of_stack) ; \
         popq    %r11; CFI_ADJUST(-8)
 
 /* Load address of global [label] in register [dst]. */
@@ -202,9 +202,9 @@
 
 #define RECORD_STACK_FRAME(OFFSET) \
         movq    OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_last_return_address) ; \
+        movq    %rax, Caml_state(last_return_address) ; \
         leaq    8+OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_bottom_of_stack)
+        movq    %rax, Caml_state(bottom_of_stack)
 
 #define LEA_VAR(label,dst) \
         leaq    G(label)(%rip), dst
@@ -338,7 +338,7 @@ LBL(caml_call_gc):
         subq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(STACK_PROBE_SIZE);
         movq    %rax, 0(%rsp)
         addq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(-STACK_PROBE_SIZE);
-    /* Build array of registers, save it into caml_gc_regs */
+    /* Build array of registers, save it into Caml_state->gc_regs */
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
 #else
@@ -356,7 +356,7 @@ LBL(caml_call_gc):
         pushq   %rdi; CFI_ADJUST (8);
         pushq   %rbx; CFI_ADJUST (8);
         pushq   %rax; CFI_ADJUST (8);
-        STORE_VAR(%rsp, caml_gc_regs)
+        movq    %rsp, Caml_state(gc_regs)
     /* Save young_ptr */
         movq    %r15, Caml_state(young_ptr)
 #ifdef WITH_SPACETIME
@@ -540,11 +540,11 @@ CFI_STARTPROC
 LBL(caml_c_call):
     /* Record lowest stack address and return address */
         popq    %r12; CFI_ADJUST(-8)
-        STORE_VAR(%r12, caml_last_return_address)
-        STORE_VAR(%rsp, caml_bottom_of_stack)
+        movq    %r12, Caml_state(last_return_address)
+        movq    %rsp, Caml_state(bottom_of_stack)
 #ifdef WITH_SPACETIME
     /* Record the trie node hole pointer that corresponds to
-       [caml_last_return_address] */
+       [Caml_state->last_return_address] */
         STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
 #endif
         subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
@@ -580,9 +580,9 @@ LBL(caml_start_program):
 #else
         subq    $8, %rsp; CFI_ADJUST (8)        /* stack 16-aligned */
 #endif
-        PUSH_VAR(caml_gc_regs)
-        PUSH_VAR(caml_last_return_address)
-        PUSH_VAR(caml_bottom_of_stack)
+        pushq   Caml_state(gc_regs)
+        pushq   Caml_state(last_return_address)
+        pushq   Caml_state(bottom_of_stack)
 #ifdef WITH_SPACETIME
         /* Save arguments to caml_callback* */
         pushq   %rax; CFI_ADJUST (8)
@@ -618,9 +618,9 @@ LBL(109):
     /* Update alloc ptr */
         movq    %r15, Caml_state(young_ptr)
     /* Pop the callback link, restoring the global variables */
-        POP_VAR(caml_bottom_of_stack)
-        POP_VAR(caml_last_return_address)
-        POP_VAR(caml_gc_regs)
+        popq    Caml_state(bottom_of_stack)
+        popq    Caml_state(last_return_address)
+        popq    Caml_state(gc_regs)
 #ifdef WITH_SPACETIME
         POP_VAR(caml_spacetime_trie_node_ptr)
 #else
@@ -688,10 +688,10 @@ LBL(112):
 #endif
         /* Save exception bucket. Caml_state in r14 saved across C calls. */
         movq    C_ARG_2, %r12
-        movq    C_ARG_2, C_ARG_1                /* arg 1: exception bucket */
-        LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */
-        LOAD_VAR(caml_bottom_of_stack,C_ARG_3)       /* arg 3: sp of raise */
-        movq    Caml_state(exn_handler), C_ARG_4     /* arg 4: sp of handler */
+        movq    C_ARG_2, C_ARG_1                   /* arg 1: exception bucket */
+        movq    Caml_state(last_return_address), C_ARG_2 /* arg 2: pc of raise */
+        movq    Caml_state(bottom_of_stack), C_ARG_3    /* arg 3: sp of raise */
+        movq    Caml_state(exn_handler), C_ARG_4      /* arg 4: sp of handler */
 #ifndef WITH_FRAME_POINTERS
         subq    $8, %rsp              /* PR#5700: maintain stack alignment */
 #endif
