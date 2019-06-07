@@ -18,6 +18,16 @@ DOMAIN_STATE(double, extra_heap_resources_minor)
 DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 /* See minor_gc.c */
 
+DOMAIN_STATE(value*, stack_low)
+DOMAIN_STATE(value*, stack_high)
+DOMAIN_STATE(value*, stack_threshold)
+DOMAIN_STATE(value*, extern_sp)
+DOMAIN_STATE(value*, trapsp)
+DOMAIN_STATE(value*, trap_barrier)
+DOMAIN_STATE(struct longjmp_buffer*, external_raise)
+DOMAIN_STATE(value, exn_bucket)
+/* See interp.c */
+
 DOMAIN_STATE(double, stat_minor_words)
 DOMAIN_STATE(double, stat_promoted_words)
 DOMAIN_STATE(double, stat_major_words)
@@ -33,4 +43,4 @@ DOMAIN_STATE(intnat, backtrace_active)
 DOMAIN_STATE(intnat, backtrace_pos)
 DOMAIN_STATE(backtrace_slot*, backtrace_buffer)
 DOMAIN_STATE(value, backtrace_last_exn)
-/* backtrace.c */
+/* See backtrace.c */

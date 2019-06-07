@@ -355,7 +355,6 @@ CAMLexport void caml_main(char_os **argv)
 #endif
   caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
-  caml_external_raise = NULL;
 
   /* Determine position of bytecode file */
   pos = 0;
@@ -456,13 +455,13 @@ CAMLexport void caml_main(char_os **argv)
   caml_debugger(PROGRAM_START, Val_unit);
   res = caml_interprete(caml_start_code, caml_code_size);
   if (Is_exception_result(res)) {
-    caml_exn_bucket = Extract_exception(res);
+    Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      caml_extern_sp = &caml_exn_bucket; /* The debugger needs the
+      Caml_state->extern_sp = &Caml_state->exn_bucket; /* The debugger needs the
                                             exception value.*/
       caml_debugger(UNCAUGHT_EXC, Val_unit);
     }
-    caml_fatal_uncaught_exception(caml_exn_bucket);
+    caml_fatal_uncaught_exception(Caml_state->exn_bucket);
   }
 }
 
@@ -503,7 +502,7 @@ CAMLexport value caml_startup_code_exn(
   }
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
-  caml_external_raise = NULL;
+  Caml_state->external_raise = NULL;
   /* Initialize the domain */
   caml_init_domain();
   /* Initialize the abstract machine */
@@ -557,12 +556,12 @@ CAMLexport void caml_startup_code(
                               section_table, section_table_size,
                               pooling, argv);
   if (Is_exception_result(res)) {
-    caml_exn_bucket = Extract_exception(res);
+    Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      caml_extern_sp = &caml_exn_bucket; /* The debugger needs the
+      Caml_state->extern_sp = &Caml_state->exn_bucket; /* The debugger needs the
                                             exception value.*/
       caml_debugger(UNCAUGHT_EXC, Val_unit);
     }
-    caml_fatal_uncaught_exception(caml_exn_bucket);
+    caml_fatal_uncaught_exception(Caml_state->exn_bucket);
   }
 }

@@ -42,7 +42,7 @@ void caml_oldify_local_roots (void)
   intnat i, j;
 
   /* The stack */
-  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
+  for (sp = Caml_state->extern_sp; sp < Caml_state->stack_high; sp++) {
     caml_oldify_one (*sp, sp);
   }
   /* Local C roots */  /* FIXME do the old-frame trick ? */
@@ -85,7 +85,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   f(caml_global_data, &caml_global_data);
   CAML_INSTR_TIME (tmr, "major_roots/global");
   /* The stack and the local C roots */
-  caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
+  caml_do_local_roots(f, Caml_state->extern_sp, Caml_state->stack_high, caml_local_roots);
   CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);

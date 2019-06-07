@@ -92,10 +92,10 @@ struct caml_thread_struct {
   value * stack_low;         /* The execution stack for this thread */
   value * stack_high;
   value * stack_threshold;
-  value * sp;                /* Saved value of caml_extern_sp for this thread */
-  value * trapsp;            /* Saved value of caml_trapsp for this thread */
+  value * sp;                /* Saved value of Caml_state->extern_sp for this thread */
+  value * trapsp;            /* Saved value of Caml_state->trapsp for this thread */
   struct caml__roots_block * local_roots; /* Saved value of caml_local_roots */
-  struct longjmp_buffer * external_raise; /* Saved caml_external_raise */
+  struct longjmp_buffer * external_raise; /* Saved Caml_state->external_raise */
 #endif
   int backtrace_pos;         /* Saved Caml_state->backtrace_pos */
   backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
@@ -187,13 +187,13 @@ static inline void caml_thread_save_runtime_state(void)
     = caml_spacetime_finaliser_trie_root;
 #endif
 #else
-  curr_thread->stack_low = caml_stack_low;
-  curr_thread->stack_high = caml_stack_high;
-  curr_thread->stack_threshold = caml_stack_threshold;
-  curr_thread->sp = caml_extern_sp;
-  curr_thread->trapsp = caml_trapsp;
+  curr_thread->stack_low = Caml_state->stack_low;
+  curr_thread->stack_high = Caml_state->stack_high;
+  curr_thread->stack_threshold = Caml_state->stack_threshold;
+  curr_thread->sp = Caml_state->extern_sp;
+  curr_thread->trapsp = Caml_state->trapsp;
   curr_thread->local_roots = caml_local_roots;
-  curr_thread->external_raise = caml_external_raise;
+  curr_thread->external_raise = Caml_state->external_raise;
 #endif
   curr_thread->backtrace_pos = Caml_state->backtrace_pos;
   curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
@@ -217,13 +217,13 @@ static inline void caml_thread_restore_runtime_state(void)
     = curr_thread->spacetime_finaliser_trie_root;
 #endif
 #else
-  caml_stack_low = curr_thread->stack_low;
-  caml_stack_high = curr_thread->stack_high;
-  caml_stack_threshold = curr_thread->stack_threshold;
-  caml_extern_sp = curr_thread->sp;
-  caml_trapsp = curr_thread->trapsp;
+  Caml_state->stack_low = curr_thread->stack_low;
+  Caml_state->stack_high = curr_thread->stack_high;
+  Caml_state->stack_threshold = curr_thread->stack_threshold;
+  Caml_state->extern_sp = curr_thread->sp;
+  Caml_state->trapsp = curr_thread->trapsp;
   caml_local_roots = curr_thread->local_roots;
-  caml_external_raise = curr_thread->external_raise;
+  Caml_state->external_raise = curr_thread->external_raise;
 #endif
   Caml_state->backtrace_pos = curr_thread->backtrace_pos;
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;

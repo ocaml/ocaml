@@ -43,6 +43,15 @@ void caml_init_domain ()
   Caml_state->extra_heap_resources_minor = 0;
   Caml_state->minor_tables = caml_alloc_minor_tables();
 
+  Caml_state->stack_low = NULL;
+  Caml_state->stack_high = NULL;
+  Caml_state->stack_threshold = NULL;
+  Caml_state->extern_sp = NULL;
+  Caml_state->trapsp = NULL;
+  Caml_state->trap_barrier = NULL;
+  Caml_state->external_raise = NULL;
+  Caml_state->exn_bucket = Val_unit;
+
   Caml_state->stat_minor_words = 0.0;
   Caml_state->stat_promoted_words = 0.0;
   Caml_state->stat_major_words = 0.0;

@@ -251,7 +251,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
-  for (/*nothing*/; sp < caml_trapsp; sp++) {
+  for (/*nothing*/; sp < Caml_state->trapsp; sp++) {
     code_t p = (code_t) *sp;
     if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
@@ -265,7 +265,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 
 code_t caml_next_frame_pointer(value ** sp, value ** trsp)
 {
-  while (*sp < caml_stack_high) {
+  while (*sp < Caml_state->stack_high) {
     code_t *p = (code_t*) (*sp)++;
     if(&Trap_pc(*trsp) == p) {
       *trsp = Trap_link(*trsp);
@@ -281,8 +281,8 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
 intnat caml_current_callstack_size(intnat max_frames)
 {
   intnat trace_size;
-  value * sp = caml_extern_sp;
-  value * trsp = caml_trapsp;
+  value * sp = Caml_state->extern_sp;
+  value * trsp = Caml_state->trapsp;
 
   for (trace_size = 0; trace_size < max_frames; trace_size++) {
     code_t p = caml_next_frame_pointer(&sp, &trsp);
@@ -293,8 +293,8 @@ intnat caml_current_callstack_size(intnat max_frames)
 }
 
 void caml_current_callstack_write(value trace) {
-  value * sp = caml_extern_sp;
-  value * trsp = caml_trapsp;
+  value * sp = Caml_state->extern_sp;
+  value * trsp = Caml_state->trapsp;
   uintnat trace_pos, trace_size = Wosize_val(trace);
 
   for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
