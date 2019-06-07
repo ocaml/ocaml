@@ -41,17 +41,6 @@
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
 #endif
 
-double caml_stat_minor_words = 0.0,
-       caml_stat_promoted_words = 0.0,
-       caml_stat_major_words = 0.0;
-
-intnat caml_stat_minor_collections = 0,
-       caml_stat_major_collections = 0,
-       caml_stat_heap_wsz = 0,
-       caml_stat_top_heap_wsz = 0,
-       caml_stat_compactions = 0,
-       caml_stat_heap_chunks = 0;
-
 extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
@@ -225,22 +214,22 @@ static value heap_stats (int returnstats)
   caml_final_invariant_check();
 #endif
 
-  CAMLassert (heap_chunks == caml_stat_heap_chunks);
-  CAMLassert (live_words + free_words + fragments == caml_stat_heap_wsz);
+  CAMLassert (heap_chunks == Caml_state->stat_heap_chunks);
+  CAMLassert (live_words + free_words + fragments == Caml_state->stat_heap_wsz);
 
   if (returnstats){
     CAMLlocal1 (res);
 
     /* get a copy of these before allocating anything... */
-    double minwords = caml_stat_minor_words
+    double minwords = Caml_state->stat_minor_words
                       + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr);
-    double prowords = caml_stat_promoted_words;
-    double majwords = caml_stat_major_words + (double) caml_allocated_words;
-    intnat mincoll = caml_stat_minor_collections;
-    intnat majcoll = caml_stat_major_collections;
-    intnat heap_words = caml_stat_heap_wsz;
-    intnat cpct = caml_stat_compactions;
-    intnat top_heap_words = caml_stat_top_heap_wsz;
+    double prowords = Caml_state->stat_promoted_words;
+    double majwords = Caml_state->stat_major_words + (double) caml_allocated_words;
+    intnat mincoll = Caml_state->stat_minor_collections;
+    intnat majcoll = Caml_state->stat_major_collections;
+    intnat heap_words = Caml_state->stat_heap_wsz;
+    intnat cpct = Caml_state->stat_compactions;
+    intnat top_heap_words = Caml_state->stat_top_heap_wsz;
 
     res = caml_alloc_tuple (16);
     Store_field (res, 0, caml_copy_double (minwords));
@@ -288,16 +277,16 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = caml_stat_minor_words
+  double minwords = Caml_state->stat_minor_words
                     + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr);
-  double prowords = caml_stat_promoted_words;
-  double majwords = caml_stat_major_words + (double) caml_allocated_words;
-  intnat mincoll = caml_stat_minor_collections;
-  intnat majcoll = caml_stat_major_collections;
-  intnat heap_words = caml_stat_heap_wsz;
-  intnat top_heap_words = caml_stat_top_heap_wsz;
-  intnat cpct = caml_stat_compactions;
-  intnat heap_chunks = caml_stat_heap_chunks;
+  double prowords = Caml_state->stat_promoted_words;
+  double majwords = Caml_state->stat_major_words + (double) caml_allocated_words;
+  intnat mincoll = Caml_state->stat_minor_collections;
+  intnat majcoll = Caml_state->stat_major_collections;
+  intnat heap_words = Caml_state->stat_heap_wsz;
+  intnat top_heap_words = Caml_state->stat_top_heap_wsz;
+  intnat cpct = Caml_state->stat_compactions;
+  intnat heap_chunks = Caml_state->stat_heap_chunks;
 
   res = caml_alloc_tuple (16);
   Store_field (res, 0, caml_copy_double (minwords));
@@ -321,7 +310,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 
 double caml_gc_minor_words_unboxed()
 {
-  return (caml_stat_minor_words
+  return (Caml_state->stat_minor_words
           + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr));
 }
 
@@ -337,10 +326,10 @@ CAMLprim value caml_gc_counters(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = caml_stat_minor_words
+  double minwords = Caml_state->stat_minor_words
                     + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr);
-  double prowords = caml_stat_promoted_words;
-  double majwords = caml_stat_major_words + (double) caml_allocated_words;
+  double prowords = Caml_state->stat_promoted_words;
+  double majwords = Caml_state->stat_major_words + (double) caml_allocated_words;
 
   res = caml_alloc_tuple (3);
   Store_field (res, 0, caml_copy_double (minwords));
@@ -525,7 +514,7 @@ static void test_and_compact (void)
 {
   double fp;
 
-  fp = 100.0 * caml_fl_cur_wsz / (caml_stat_heap_wsz - caml_fl_cur_wsz);
+  fp = 100.0 * caml_fl_cur_wsz / (Caml_state->stat_heap_wsz - caml_fl_cur_wsz);
   if (fp > 999999.0) fp = 999999.0;
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",

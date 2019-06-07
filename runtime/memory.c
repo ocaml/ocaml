@@ -335,7 +335,7 @@ int caml_add_to_heap (char *m)
 
   caml_gc_message (0x04, "Growing heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                   (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
+                   (Bsize_wsize (Caml_state->stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
@@ -353,12 +353,12 @@ int caml_add_to_heap (char *m)
     Chunk_next (m) = cur;
     *last = m;
 
-    ++ caml_stat_heap_chunks;
+    ++ Caml_state->stat_heap_chunks;
   }
 
-  caml_stat_heap_wsz += Wsize_bsize (Chunk_size (m));
-  if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
-    caml_stat_top_heap_wsz = caml_stat_heap_wsz;
+  Caml_state->stat_heap_wsz += Wsize_bsize (Chunk_size (m));
+  if (Caml_state->stat_heap_wsz > Caml_state->stat_top_heap_wsz){
+    Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
   }
   return 0;
 }
@@ -437,10 +437,10 @@ void caml_shrink_heap (char *chunk)
   */
   if (chunk == caml_heap_start) return;
 
-  caml_stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
+  Caml_state->stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
   caml_gc_message (0x04, "Shrinking heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
-                   caml_stat_heap_wsz / 1024);
+                   Caml_state->stat_heap_wsz / 1024);
 
 #ifdef DEBUG
   {
@@ -451,7 +451,7 @@ void caml_shrink_heap (char *chunk)
   }
 #endif
 
-  -- caml_stat_heap_chunks;
+  -- Caml_state->stat_heap_chunks;
 
   /* Remove [chunk] from the list of chunks. */
   cp = &caml_heap_start;

@@ -17,3 +17,14 @@ DOMAIN_STATE(intnat, in_minor_collection)
 DOMAIN_STATE(double, extra_heap_resources_minor)
 DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 /* See minor_gc.c */
+
+DOMAIN_STATE(double, stat_minor_words)
+DOMAIN_STATE(double, stat_promoted_words)
+DOMAIN_STATE(double, stat_major_words)
+DOMAIN_STATE(intnat, stat_minor_collections)
+DOMAIN_STATE(intnat, stat_major_collections)
+DOMAIN_STATE(intnat, stat_heap_wsz)
+DOMAIN_STATE(intnat, stat_top_heap_wsz)
+DOMAIN_STATE(intnat, stat_compactions)
+DOMAIN_STATE(intnat, stat_heap_chunks)
+/* See gc_ctrl.c */

@@ -29,6 +29,7 @@ void caml_init_domain ()
 
   Caml_state->young_limit = NULL;
   Caml_state->exn_handler = NULL;
+
   Caml_state->young_ptr = NULL;
   Caml_state->young_base = NULL;
   Caml_state->young_start = NULL;
@@ -41,4 +42,14 @@ void caml_init_domain ()
   Caml_state->in_minor_collection = 0;
   Caml_state->extra_heap_resources_minor = 0;
   Caml_state->minor_tables = caml_alloc_minor_tables();
+
+  Caml_state->stat_minor_words = 0.0;
+  Caml_state->stat_promoted_words = 0.0;
+  Caml_state->stat_major_words = 0.0;
+  Caml_state->stat_minor_collections = 0;
+  Caml_state->stat_major_collections = 0;
+  Caml_state->stat_heap_wsz = 0;
+  Caml_state->stat_top_heap_wsz = 0;
+  Caml_state->stat_compactions = 0;
+  Caml_state->stat_heap_chunks = 0;
 }

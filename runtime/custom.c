@@ -92,7 +92,7 @@ CAMLexport value caml_alloc_custom_mem(struct custom_operations * ops,
   mlsize_t mem_minor =
     mem < caml_custom_minor_max_bsz ? mem : caml_custom_minor_max_bsz;
   return alloc_custom_gen (ops, bsz, mem,
-                           Bsize_wsize (caml_stat_heap_wsz) / 150
+                           Bsize_wsize (Caml_state->stat_heap_wsz) / 150
                            * caml_custom_major_ratio,
                            mem_minor,
                            Bsize_wsize (Caml_state->minor_heap_wsz) / 100

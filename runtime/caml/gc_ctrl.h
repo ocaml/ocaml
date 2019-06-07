@@ -20,19 +20,6 @@
 
 #include "misc.h"
 
-extern double
-     caml_stat_minor_words,
-     caml_stat_promoted_words,
-     caml_stat_major_words;
-
-extern intnat
-     caml_stat_minor_collections,
-     caml_stat_major_collections,
-     caml_stat_heap_wsz,
-     caml_stat_top_heap_wsz,
-     caml_stat_compactions,
-     caml_stat_heap_chunks;
-
 uintnat caml_normalize_heap_increment (uintnat);
 
 /*
