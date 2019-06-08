@@ -52,13 +52,25 @@ let check (eq : (int, int) eq) : unit = eq
 val check : (int, int) eq -> unit = <fun>
 |}];;
 
-let check (not_eq : (int, bool) eq) : unit = eq
+(* Expected failure in constraint. *)
+let check (not_eq : (int, bool) eq) : unit = not_eq
 ;;
 [%%expect {|
 Line 1, characters 26-30:
-1 | let check (not_eq : (int, bool) eq) : unit = eq
+1 | let check (not_eq : (int, bool) eq) : unit = not_eq
                               ^^^^
 Error: This type bool should be an instance of type int
+|}];;
+
+(* Expected failure in generalising constraints. *)
+let check (eq : (int, int) ('a 'b. ('a, 'b) eq)) : unit = eq
+;;
+[%%expect {|
+Line 1, characters 28-46:
+1 | let check (eq : (int, int) ('a 'b. ('a, 'b) eq)) : unit = eq
+                                ^^^^^^^^^^^^^^^^^^
+Error: The universal type variable 'a cannot be generalized: it is bound to
+       'b ('c. 'c).
 |}];;
 
 
@@ -331,4 +343,102 @@ let f : 'a 'b. int ('a. 'b) -> 'b -> 'b = fun x y -> x
 ;;
 [%%expect{|
 val f : int ('a. 'b) -> 'b -> 'b = <fun>
+|}]
+
+
+
+
+(* Row types. *)
+
+type static_row = [`A | `B]
+;;
+
+type 'a dynamic_row = [> `A | `B] as 'a
+;;
+[%%expect{|
+type static_row = [ `A | `B ]
+type 'a dynamic_row = 'a constraint 'a = [> `A | `B ]
+|}]
+
+type static_row_functor =
+  [ int ('a. [`C])
+  | [`D] ('a. 'a)
+  | static_row ('a. 'a)
+  | bool ('a. static_row dynamic_row) ]
+;;
+[%%expect{|
+type static_row_functor = [ `A | `B | `C | `D ]
+|}]
+
+type 'a dynamic_row_passthrough = 'b
+  constraint 'a = [> `A | `B]
+  constraint 'b = 'a ('c. 'c)
+;;
+[%%expect{|
+type 'a dynamic_row_passthrough = 'a ('c. 'c) constraint 'a = _[> `A | `B ]
+|}]
+
+let f (x : 'a dynamic_row_passthrough) : [`A | `B | `C] = x
+;;
+[%%expect{|
+val f : [ `A | `B | `C ] dynamic_row_passthrough -> [ `A | `B | `C ] = <fun>
+|}]
+
+let f (x : 'a dynamic_row_passthrough) : 'a ('c. 'c) = x
+;;
+[%%expect{|
+val f : [ `A | `B | `C ] dynamic_row_passthrough -> [ `A | `B | `C ] ('c. 'c) =
+  <fun>
+|}]
+
+(* Expected failure in non-row variable. *)
+type 'a dynamic_row_functor = 'a ('a. [ | 'a])
+;;
+[%%expect{|
+Line 1, characters 42-44:
+1 | type 'a dynamic_row_functor = 'a ('a. [ | 'a])
+                                              ^^
+Error: The type 'a does not expand to a polymorphic variant type
+Hint: Did you mean `a?
+|}]
+
+(* Expected failure in non-row variable. *)
+type 'a dynamic_row_functor = ([>] as 'a) ('a. [ | 'a])
+[%%expect{|
+Line 1, characters 51-53:
+1 | type 'a dynamic_row_functor = ([>] as 'a) ('a. [ | 'a])
+                                                       ^^
+Error: The type 'a does not expand to a polymorphic variant type
+Hint: Did you mean `a?
+|}]
+
+(* Expected failure in generalising constraint. *)
+type 'a dynamic_row_functor = ([>] as 'a) ('a. [ | ([>] as 'a)])
+[%%expect{|
+Line 1, characters 52-61:
+1 | type 'a dynamic_row_functor = ([>] as 'a) ('a. [ | ([>] as 'a)])
+                                                        ^^^^^^^^^
+Error: The type [>  ] does not expand to a polymorphic variant type
+|}]
+
+(* Expected failure in non-row variable. *)
+type static_row_functor_fail = [ | [`B] ('a. [`A | 'a])]
+;;
+[%%expect{|
+Line 1, characters 51-53:
+1 | type static_row_functor_fail = [ | [`B] ('a. [`A | 'a])]
+                                                       ^^
+Error: The type 'a does not expand to a polymorphic variant type
+Hint: Did you mean `a?
+|}]
+
+(* Expected failure in generalising constraint. *)
+type static_row_functor_fail = [ | [`B] ('a. [`A | ([`B] as 'a)])]
+;;
+[%%expect{|
+Line 1, characters 41-64:
+1 | type static_row_functor_fail = [ | [`B] ('a. [`A | ([`B] as 'a)])]
+                                             ^^^^^^^^^^^^^^^^^^^^^^^
+Error: The universal type variable 'a cannot be generalized: it is bound to
+       [ `B ].
 |}]
