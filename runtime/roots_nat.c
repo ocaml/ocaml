@@ -31,8 +31,6 @@
 
 /* Roots registered from C functions */
 
-struct caml__roots_block *caml_local_roots = NULL;
-
 void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
@@ -312,7 +310,7 @@ void caml_oldify_local_roots (void)
     }
   }
   /* Local C roots */
-  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
+  for (lr = Caml_state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
@@ -411,7 +409,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_INSTR_TIME (tmr, "major_roots/dynamic_global");
   /* The stack and local roots */
   caml_do_local_roots(f, Caml_state->bottom_of_stack, Caml_state->last_return_address,
-                      Caml_state->gc_regs, caml_local_roots);
+                      Caml_state->gc_regs, Caml_state->local_roots);
   CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);

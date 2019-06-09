@@ -61,9 +61,9 @@ void caml_raise(value v)
   Unlock_exn();
   if (Caml_state->exn_handler == NULL) caml_fatal_uncaught_exception(v);
 
-  while (caml_local_roots != NULL &&
-         (char *) caml_local_roots < Caml_state->exn_handler) {
-    caml_local_roots = caml_local_roots->next;
+  while (Caml_state->local_roots != NULL &&
+         (char *) Caml_state->local_roots < Caml_state->exn_handler) {
+    Caml_state->local_roots = Caml_state->local_roots->next;
   }
 
   caml_raise_exception(Caml_state, v);

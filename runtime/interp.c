@@ -242,14 +242,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   jumptbl_base = Jumptbl_base;
 #endif
-  initial_local_roots = caml_local_roots;
+  initial_local_roots = Caml_state->local_roots;
   initial_sp_offset = (char *) Caml_state->stack_high - (char *) Caml_state->extern_sp;
   initial_external_raise = Caml_state->external_raise;
   caml_callback_depth++;
   saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
-    caml_local_roots = initial_local_roots;
+    Caml_state->local_roots = initial_local_roots;
     sp = Caml_state->extern_sp;
     accu = Caml_state->exn_bucket;
     pc = saved_pc; saved_pc = NULL;

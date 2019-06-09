@@ -276,9 +276,6 @@ void caml_update_young_limit (void)
 
 /* Arrange for a garbage collection to be performed as soon as possible */
 
-int volatile caml_requested_major_slice = 0;
-int volatile caml_requested_minor_gc = 0;
-
 void caml_request_major_slice (void)
 {
   caml_requested_major_slice = 1;

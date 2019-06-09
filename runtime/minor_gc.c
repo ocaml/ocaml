@@ -129,7 +129,7 @@ void caml_set_minor_heap_size (asize_t bsz)
   CAMLassert (bsz % sizeof (value) == 0);
   if (Caml_state->young_ptr != Caml_state->young_alloc_end){
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
-    caml_requested_minor_gc = 0;
+    Caml_state->requested_minor_gc = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_mid;
     caml_update_young_limit();
     caml_empty_minor_heap ();
@@ -430,10 +430,10 @@ CAMLexport void caml_gc_dispatch (void)
   caml_instr_alloc_jump = 0;
 #endif
 
-  if (trigger == Caml_state->young_alloc_start || caml_requested_minor_gc){
+  if (trigger == Caml_state->young_alloc_start || Caml_state->requested_minor_gc){
     /* The minor heap is full, we must do a minor collection. */
     /* reset the pointers first because the end hooks might allocate */
-    caml_requested_minor_gc = 0;
+    Caml_state->requested_minor_gc = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_mid;
     caml_update_young_limit();
     caml_empty_minor_heap ();
@@ -441,9 +441,9 @@ CAMLexport void caml_gc_dispatch (void)
     if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/minor");
   }
-  if (trigger != Caml_state->young_alloc_start || caml_requested_major_slice){
+  if (trigger != Caml_state->young_alloc_start || Caml_state->requested_major_slice){
     /* The minor heap is half-full, do a major GC slice. */
-    caml_requested_major_slice = 0;
+    Caml_state->requested_major_slice = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_start;
     caml_update_young_limit();
     caml_major_collection_slice (-1);
@@ -484,7 +484,7 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
 */
 CAMLexport void caml_minor_collection (void)
 {
-  caml_requested_minor_gc = 1;
+  Caml_state->requested_minor_gc = 1;
   caml_gc_dispatch ();
 }
 
@@ -507,7 +507,7 @@ static void realloc_generic_table
   }else{
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
-    CAMLassert (caml_requested_minor_gc);
+    CAMLassert (Caml_state->requested_minor_gc);
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;

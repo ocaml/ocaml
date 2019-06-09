@@ -235,10 +235,6 @@
 /* **** meta.c */
 
 /* **** minor_gc.c */
-#define young_start (caml_state->young_start)
-#define young_end (Caml_state->young_end)
-#define young_ptr (Caml_state->young_ptr)
-#define young_limit (Caml_state->young_limit)
 #define ref_table caml_ref_table
 #define minor_collection caml_minor_collection
 #define check_urgent_gc caml_check_urgent_gc
@@ -255,7 +251,6 @@
 #define format_caml_exception caml_format_exception /*SP*/
 
 /* **** roots.c */
-#define local_roots caml_local_roots
 #define scan_roots_hook caml_scan_roots_hook
 #define do_local_roots caml_do_local_roots
 

@@ -24,11 +24,11 @@ extern "C" {
 
 #include "domain_state.h"
 
-CAMLextern caml_domain_state* Caml_state;
-
 void caml_init_domain(void);
 
 #endif /* CAML_INTERNALS */
+
+CAMLextern caml_domain_state* Caml_state;
 
 #ifdef __cplusplus
 }

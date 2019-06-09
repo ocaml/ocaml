@@ -71,4 +71,9 @@ void caml_init_domain ()
   Caml_state->backtrace_pos = 0;
   Caml_state->backtrace_buffer = NULL;
   Caml_state->backtrace_last_exn = Val_unit;
+
+  Caml_state->compare_unordered = 0;
+  Caml_state->local_roots = NULL;
+  Caml_state->requested_major_slice = 0;
+  Caml_state->requested_minor_gc = 0;
 }

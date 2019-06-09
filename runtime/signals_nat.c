@@ -86,7 +86,7 @@ void caml_garbage_collection(void)
      be correctly implemented.
   */
   caml_memprof_renew_minor_sample();
-  if (caml_requested_major_slice || caml_requested_minor_gc ||
+  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc ||
       Caml_state->young_ptr - Caml_state->young_trigger < Max_young_whsize){
     caml_gc_dispatch ();
   }
