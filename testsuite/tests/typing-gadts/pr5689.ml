@@ -107,5 +107,5 @@ Error: This expression has type ([< inkind > `Nonlink ] as 'a) inline_t
        but an expression was expected of type a inline_t
        Type 'a = [< `Link | `Nonlink > `Nonlink ] is not compatible with type
          a = [< `Link | `Nonlink ]
-       Types for tag `Nonlink are incompatible
+       The second variant type is bound to $'a
 |}];;

@@ -479,7 +479,7 @@ and raw_type_desc ppf = function
         row.row_fields
         "row_more=" raw_type row.row_more
         "row_closed=" row.row_closed
-        "row_fixed=" row.row_fixed
+        "row_fixed=" (row.row_fixed <> None)
         "row_name="
         (fun ppf ->
           match row.row_name with None -> fprintf ppf "None"
@@ -1846,6 +1846,23 @@ let explain_variant = function
     )
   | Trace.Incompatible_types_for s ->
       Some(dprintf "@,Types for tag `%s are incompatible" s)
+  | Trace.Fixed_row (pos, Univar x) -> Some (
+      dprintf "@,The %a variant type is bound to the universal type variable %a"
+        print_pos pos type_expr x
+    )
+  | Trace.Fixed_row (pos, Fixed_private) -> Some (
+      dprintf "@,The %a variant type is private" print_pos pos
+    )
+  | Trace.Fixed_row (pos, Reified p) ->
+      let p = tree_of_path Type p in
+      Some (
+      dprintf "@,The %a variant type is bound to %a" print_pos pos
+         !Oprint.out_ident p
+    )
+  | Trace.Fixed_row (_, Rigid) ->
+      (* this case never happens *)
+      None
+
 
 let explain_escape intro prev ctx e =
   let pre = match ctx with

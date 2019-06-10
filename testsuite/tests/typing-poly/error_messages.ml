@@ -83,3 +83,25 @@ Error: This expression has type 'a v but an expression was expected of type
        'a0. 'a0 -> int
        The universal variable 'a0 would escape its scope
 |}]
+
+(* Issue #8702: row types unified with universally quantified types*)
+
+let f: 'a. ([> `A ] as 'a) -> [ `A ] = fun x -> x
+[%%expect {|
+Line 1, characters 48-49:
+1 | let f: 'a. ([> `A ] as 'a) -> [ `A ] = fun x -> x
+                                                    ^
+Error: This expression has type [> `A ]
+       but an expression was expected of type [ `A ]
+       The first variant type is bound to the universal type variable 'a
+|}]
+
+let f: 'a. [ `A ] -> ([> `A ] as 'a) = fun x -> x
+[%%expect {|
+Line 1, characters 48-49:
+1 | let f: 'a. [ `A ] -> ([> `A ] as 'a) = fun x -> x
+                                                    ^
+Error: This expression has type [ `A ] but an expression was expected of type
+         [> `A ]
+       The second variant type is bound to the universal type variable 'a
+|}]

@@ -41,6 +41,8 @@ module Unification_trace: sig
     | No_intersection
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
+    | Fixed_row of position * fixed_explanation
+    (** Fixed row types,  e.g. ['a. [> `X] as 'a] *)
 
   type obj =
     | Missing_field of position * string

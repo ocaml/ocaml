@@ -71,6 +71,11 @@ val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
 val row_fixed: row_desc -> bool
         (* Return whether the row should be treated as fixed or not *)
+val fixed_explanation: row_desc -> fixed_explanation option
+(* Eventually return the explanation behind the fixed row *)
+val merge_fixed_explanation: row_desc -> row_desc -> fixed_explanation option
+(* Merge two explanation for a fixed row *)
+
 val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int

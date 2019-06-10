@@ -478,7 +478,7 @@ and transl_type_aux env policy styp =
           in
           let row = { row_closed = true; row_fields = fields;
                       row_bound = (); row_name = Some (path, ty_args);
-                      row_fixed = false; row_more = newvar () } in
+                      row_fixed = None; row_more = newvar () } in
           let static = Btype.static_row row in
           let row =
             if static then { row with row_more = newty Tnil }
@@ -537,7 +537,7 @@ and transl_type_aux env policy styp =
       let mkfield l f =
         newty (Tvariant {row_fields=[l,f]; row_more=newvar();
                          row_bound=(); row_closed=true;
-                         row_fixed=false; row_name=None}) in
+                         row_fixed=None; row_name=None}) in
       let hfields = Hashtbl.create 17 in
       let add_typed_field loc l f =
         let h = Btype.hash_variant l in
@@ -634,7 +634,7 @@ and transl_type_aux env policy styp =
       let row =
         { row_fields = List.rev fields; row_more = newvar ();
           row_bound = (); row_closed = (closed = Closed);
-          row_fixed = false; row_name = !name } in
+          row_fixed = None; row_name = !name } in
       let static = Btype.static_row row in
       let row =
         if static then { row with row_more = newty Tnil }
@@ -767,9 +767,10 @@ let rec make_fixed_univars ty =
     match ty.desc with
     | Tvariant row ->
         let row = Btype.row_repr row in
-        if Btype.is_Tunivar (Btype.row_more row) then
+        let more = Btype.row_more row in
+        if Btype.is_Tunivar more then
           ty.desc <- Tvariant
-              {row with row_fixed=true;
+              {row with row_fixed=Some(Univar more);
                row_fields = List.map
                  (fun (s,f as p) -> match Btype.row_field_repr f with
                    Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)

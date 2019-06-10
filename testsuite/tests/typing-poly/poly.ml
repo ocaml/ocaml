@@ -1357,7 +1357,7 @@ Line 4, characters 16-22:
                     ^^^^^^
 Error: This expression has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
-       Types for tag `Int are incompatible
+       The second variant type is bound to the universal type variable 'a
 |}];;
 
 (* Yet another example *)

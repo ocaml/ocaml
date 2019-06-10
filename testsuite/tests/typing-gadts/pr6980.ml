@@ -26,5 +26,5 @@ Line 11, characters 27-29:
                                 ^^
 Error: This expression has type [< `Bar | `Foo > `Bar ]
        but an expression was expected of type [< `Bar | `Foo ]
-       Types for tag `Bar are incompatible
+       The second variant type is bound to $Aux
 |}];;
