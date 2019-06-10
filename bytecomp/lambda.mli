@@ -163,7 +163,7 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
   (* Atomic operations *)
-  | Patomic_load
+  | Patomic_load of {immediate_or_pointer : immediate_or_pointer}
   | Patomic_exchange
   | Patomic_cas
   | Patomic_fetch_add

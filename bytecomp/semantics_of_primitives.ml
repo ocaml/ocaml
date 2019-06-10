@@ -125,7 +125,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Psetfield_computed _
   | Psetfloatfield _
   | Psetglobal _
-  | Patomic_load
+  | Patomic_load {immediate_or_pointer = _}
   | Patomic_exchange
   | Patomic_cas
   | Patomic_fetch_add

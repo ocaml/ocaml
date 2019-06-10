@@ -2091,7 +2091,7 @@ and transl_prim_1 env p arg dbg =
                    [untag_int (transl env arg) dbg],
                    dbg))
               dbg
-  | Patomic_load ->
+  | Patomic_load {immediate_or_pointer=_} ->
      Cop (Cextcall("caml_atomic_load", typ_val, true, None),
           [transl env arg], dbg)
   | prim ->
