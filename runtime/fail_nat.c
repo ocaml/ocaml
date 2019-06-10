@@ -59,10 +59,10 @@ CAMLnoreturn_end;
 void caml_raise(value v)
 {
   Unlock_exn();
-  if (Caml_state->exn_handler == NULL) caml_fatal_uncaught_exception(v);
+  if (Caml_state->exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
   while (Caml_state->local_roots != NULL &&
-         (char *) Caml_state->local_roots < Caml_state->exn_handler) {
+         (char *) Caml_state->local_roots < Caml_state->exception_pointer) {
     Caml_state->local_roots = Caml_state->local_roots->next;
   }
 

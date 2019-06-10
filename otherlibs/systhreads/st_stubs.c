@@ -79,7 +79,7 @@ struct caml_thread_struct {
   char * bottom_of_stack;       /* Saved value of Caml_state->bottom_of_stack */
   uintnat last_retaddr;         /* Saved value of Caml_state->last_return_address */
   value * gc_regs;              /* Saved value of Caml_state->gc_regs */
-  char * exception_pointer;     /* Saved value of Caml_state->exn_handler */
+  char * exception_pointer;     /* Saved value of Caml_state->exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * exit_buf; /* For thread exit */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
@@ -178,7 +178,7 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->bottom_of_stack = Caml_state->bottom_of_stack;
   curr_thread->last_retaddr = Caml_state->last_return_address;
   curr_thread->gc_regs = Caml_state->gc_regs;
-  curr_thread->exception_pointer = Caml_state->exn_handler;
+  curr_thread->exception_pointer = Caml_state->exception_pointer;
 #ifdef WITH_SPACETIME
   curr_thread->spacetime_trie_node_ptr
     = caml_spacetime_trie_node_ptr;
@@ -207,7 +207,7 @@ static inline void caml_thread_restore_runtime_state(void)
   Caml_state->bottom_of_stack= curr_thread->bottom_of_stack;
   Caml_state->last_return_address = curr_thread->last_retaddr;
   Caml_state->gc_regs = curr_thread->gc_regs;
-  Caml_state->exn_handler = curr_thread->exception_pointer;
+  Caml_state->exception_pointer = curr_thread->exception_pointer;
 #ifdef WITH_SPACETIME
   caml_spacetime_trie_node_ptr
     = curr_thread->spacetime_trie_node_ptr;

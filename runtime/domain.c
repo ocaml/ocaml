@@ -28,7 +28,7 @@ void caml_init_domain ()
     caml_fatal_error ("cannot initialize domain state");
 
   Caml_state->young_limit = NULL;
-  Caml_state->exn_handler = NULL;
+  Caml_state->exception_pointer = NULL;
 
   Caml_state->young_ptr = NULL;
   Caml_state->young_base = NULL;
