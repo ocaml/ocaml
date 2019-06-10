@@ -179,13 +179,13 @@ has excellent documentation.
   VERSION::               version string
   asmcomp/::              native-code compiler and linker
   boot/::                 bootstrap compiler
+  build-aux/:             autotools support scripts
   bytecomp/::             bytecode compiler and linker
   compilerlibs/::         the OCaml compiler as a library
-  config/::               configuration files
   configure::             configure script
+  configure.ac:           autoconf input file
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
-  emacs/::                editing mode and debugger interface for GNU Emacs
   flexdll/::              git submodule -- see link:README.win32.adoc[]
   lex/::                  lexer generator
   man/::                  man pages
