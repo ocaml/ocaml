@@ -65,7 +65,7 @@ let operation d = function
     match mutability with
     | Asttypes.Immutable -> Printf.sprintf "load %s" (chunk memory_chunk)
     | Asttypes.Mutable   -> Printf.sprintf "load_mut %s" (chunk memory_chunk) )
-  | Cloadmut -> "load_mut_rb"
+  | Cloadmut {is_atomic=_} -> "load_mut_rb"
   | Calloc -> "alloc" ^ Debuginfo.to_string d
   | Cstore (c, init) ->
     let init =
