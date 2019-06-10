@@ -34,10 +34,15 @@ val g : (bool, unit) u -> int -> int = <fun>
 
 (* Type constraint. *)
 
+(*
+   Note that, in general, type constraints cannot exist within a type functor,
+   as there is nowhere to keep them.
+*)
+
 type 'a constrained = 'b constraint 'b = 'a ('c. 'c)
 ;;
 [%%expect {|
-type 'a constrained = 'a ('c. 'c)
+type 'a constrained = 'a
 |}];;
 
 type ('a, 'b) eq = unit constraint 'a ('c. 'c) = 'b ('c. 'c)
@@ -69,8 +74,8 @@ let check (eq : (int, int) ('a 'b. ('a, 'b) eq)) : unit = eq
 Line 1, characters 28-46:
 1 | let check (eq : (int, int) ('a 'b. ('a, 'b) eq)) : unit = eq
                                 ^^^^^^^^^^^^^^^^^^
-Error: The universal type variable 'a cannot be generalized: it is bound to
-       'b ('c. 'c).
+Error: The universal type variable 'b cannot be generalized:
+       it is already bound to another variable.
 |}];;
 
 
@@ -97,6 +102,8 @@ let f (x : t_variant) =
 ;;
 [%%expect {|
 val f : t_variant -> int ('a. 'a) = <fun>
+|}, Principal{|
+val f : t_variant -> int = <fun>
 |}];;
 
 let a : int ('a. 'a) variant = A
@@ -129,6 +136,12 @@ Line 4, characters 11-12:
                ^
 Error: This expression has type int ('a. 'a) = int
        but an expression was expected of type bool
+|}, Principal{|
+Line 4, characters 11-12:
+4 |   | B x -> x
+               ^
+Error: This expression has type int but an expression was expected of type
+         bool
 |}];;
 
 
@@ -187,13 +200,13 @@ Error: This expression has type 'a variant
 let w (a : int ('a. 'a)) : int = a
 ;;
 [%%expect {|
-val w : int ('a. 'a) -> int = <fun>
+val w : int -> int = <fun>
 |}];;
 
 let x (f : bool ('a. 'a -> 'a)) : bool = f true
 ;;
 [%%expect {|
-val x : bool ('a. 'a -> 'a) -> bool = <fun>
+val x : (bool -> bool) -> bool = <fun>
 |}];;
 
 let y : int ('a. 'a) = 15
@@ -244,7 +257,7 @@ Line 1, characters 34-38:
 1 | let d : int ('a. int) variant = B 15.0
                                       ^^^^
 Error: This expression has type float but an expression was expected of type
-         int ('a. int) ('a. 'a) = int
+         int ('a. 'a) = int
 |}];;
 
 
@@ -255,7 +268,7 @@ Error: This expression has type float but an expression was expected of type
 let e (type t) (x : int ('a. t)) (y : t) = x = y
 ;;
 [%%expect {|
-val e : int ('a. 't) -> 't -> bool = <fun>
+val e : 't -> 't -> bool = <fun>
 |}];;
 
 
@@ -310,7 +323,7 @@ Error: The type variable 'b is unbound in this type declaration.
 let f (x : int ('a. 'b)) (y : 'b) = x = y
 
 [%%expect{|
-val f : int ('a. 'b) -> 'b -> bool = <fun>
+val f : 'b -> 'b -> bool = <fun>
 |}]
 
 let f (x : int ('a. 'a * 'b)) (y : 'b) = x = y
@@ -322,7 +335,7 @@ Line 1, characters 45-46:
                                                  ^
 Error: This expression has type 'b but an expression was expected of type
          int ('a. 'a * 'b) = int * 'b
-       The type variable 'b occurs inside int ('a. 'a * 'b)
+       The type variable 'b occurs inside int * 'b
 |}]
 
 let f : 'a 'b. 'a ('a. 'a) -> 'b -> 'a = fun x y -> x
@@ -353,21 +366,21 @@ val f : int ('a. 'b) -> 'b -> 'b = <fun>
 type static_row = [`A | `B]
 ;;
 
-type 'a dynamic_row = [> `A | `B] as 'a
+type 'a dynamic_row = [> `Y | `Z] as 'a
 ;;
 [%%expect{|
 type static_row = [ `A | `B ]
-type 'a dynamic_row = 'a constraint 'a = [> `A | `B ]
+type 'a dynamic_row = 'a constraint 'a = [> `Y | `Z ]
 |}]
 
 type static_row_functor =
   [ int ('a. [`C])
   | [`D] ('a. 'a)
   | static_row ('a. 'a)
-  | bool ('a. static_row dynamic_row) ]
+  | bool ('a. [`X | `Y | `Z] dynamic_row) ]
 ;;
 [%%expect{|
-type static_row_functor = [ `A | `B | `C | `D ]
+type static_row_functor = [ `A | `B | `C | `D | `X | `Y | `Z ]
 |}]
 
 type 'a dynamic_row_passthrough = 'b
@@ -375,7 +388,7 @@ type 'a dynamic_row_passthrough = 'b
   constraint 'b = 'a ('c. 'c)
 ;;
 [%%expect{|
-type 'a dynamic_row_passthrough = 'a ('c. 'c) constraint 'a = _[> `A | `B ]
+type 'a dynamic_row_passthrough = 'a constraint 'a = [> `A | `B ]
 |}]
 
 let f (x : 'a dynamic_row_passthrough) : [`A | `B | `C] = x
@@ -387,8 +400,7 @@ val f : [ `A | `B | `C ] dynamic_row_passthrough -> [ `A | `B | `C ] = <fun>
 let f (x : 'a dynamic_row_passthrough) : 'a ('c. 'c) = x
 ;;
 [%%expect{|
-val f : [ `A | `B | `C ] dynamic_row_passthrough -> [ `A | `B | `C ] ('c. 'c) =
-  <fun>
+val f : ([> `A | `B ] as 'a) dynamic_row_passthrough -> 'a = <fun>
 |}]
 
 (* Expected failure in non-row variable. *)
