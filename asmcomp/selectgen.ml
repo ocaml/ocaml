@@ -56,7 +56,7 @@ let oper_result_type = function
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
-  | Cloadmut -> typ_val
+  | Cloadmut {is_atomic=_} -> typ_val
   | Calloc -> typ_val
   | Cstore (_c, _) -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
@@ -295,7 +295,7 @@ method is_simple_expr = function
   | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Cloadmut | Calloc | Cstore _ | Craise _ -> false
+      | Capply _ | Cextcall _ | Cloadmut {is_atomic=_} | Calloc | Cstore _ | Craise _ -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
@@ -339,7 +339,7 @@ method effects_of exp =
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
       | Cload {mutability = Asttypes.Immutable} -> EC.none
-      | Cloadmut | Cload {mutability = Asttypes.Mutable} ->
+      | Cloadmut {is_atomic=_} | Cload {mutability = Asttypes.Mutable} ->
           EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
@@ -420,10 +420,10 @@ method select_operation op args _dbg =
       | Some label_after -> label_after
     in
     Iextcall { func; alloc; label_after; stack_ofs = -1}, args
-  | (Cload {memory_chunk=chunk; mutability=_mut; is_atomic=true}, [arg]) ->
+  | (Cload {memory_chunk=chunk; mutability=_mut; is_atomic=_}, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
-  | (Cloadmut, _) -> (Iloadmut, args)
+  | (Cloadmut {is_atomic=_}, _) -> (Iloadmut, args)
   | (Cstore (chunk, init), [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       let is_assign =
