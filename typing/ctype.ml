@@ -2512,10 +2512,18 @@ let rec unify (env:Env.t ref) t1 t2 =
   try
     type_changed := true;
     begin match (t1.desc, t2.desc) with
-      (Tvar _, Tconstr _) | (Tvar _, Tapply _) when deep_occur t1 t2 ->
+      (Tvar _, Tconstr _) when deep_occur t1 t2 ->
         unify2 env t1 t2
-    | (Tconstr _, Tvar _) | (Tapply _, Tvar _) when deep_occur t2 t1 ->
+    | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
+    | (Tvar _, Tapply _) | (Tapply _, Tvar _) ->
+        (* Expand Tapply before unification, if possible. *)
+        let t1' = expand_head_unif !env t1 in
+        let t2' = expand_head_unif !env t2 in
+        if t1 != t1' || t2 != t2' then
+          unify env t1' t2'
+        else
+          unify2 env t1 t2
     | (Tvar _, _) ->
         unify1_var !env t1 t2
     | (_, Tvar _) ->
