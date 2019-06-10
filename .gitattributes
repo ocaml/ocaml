@@ -74,11 +74,6 @@ asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 # The build-aux directory contains bundled files so do not check it
 build-aux                typo.prune
 
-# For comparison with autoconf, some overlong lines are now permitted.
-config/Makefile.m*       typo.long-line
-/config/gnu              typo.prune
-/config/gnu/**           typo.prune
-
 /manual                  typo.prune
 /manual/**               typo.prune
 
@@ -151,15 +146,6 @@ build-aux/config.guess text eol=lf
 build-aux/config.sub text eol=lf
 build-aux/install text eol=lf
 build-aux/missing text eol=lf
-config/auto-aux/hasgot text eol=lf
-config/auto-aux/hasgot2 text eol=lf
-config/auto-aux/runtest text eol=lf
-config/auto-aux/searchpath text eol=lf
-config/auto-aux/solaris-ld text eol=lf
-config/auto-aux/tryassemble text eol=lf
-config/auto-aux/trycompile text eol=lf
-config/gnu/config.guess text eol=lf
-config/gnu/config.sub text eol=lf
 ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
 stdlib/Compflags text eol=lf
@@ -180,11 +166,7 @@ tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/m.h.in text eol=lf
 runtime/caml/s.h.in text eol=lf
 
-# These two are cat scripts, so may not actually require this
-config/auto-aux/sharpbang text eol=lf
-config/auto-aux/sharpbang2 text eol=lf
-
-# Similarly, these are all Perl scripts, so may not actually require this
+# These are all Perl scripts, so may not actually require this
 manual/tools/caml-tex text eol=lf
 manual/tools/format-intf text eol=lf
 manual/tools/htmlcut text eol=lf

@@ -246,7 +246,7 @@ else
   MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
 endif # ifeq "$(TOOLCHAIN)" "msvc"
 
-# The following variables were defined only in the config/Makefile.* files.
+# The following variables were defined only in the Windows-specific makefiles.
 # They were not defined by the configure script used on Unix systems,
 # so we also make sure to provide them only under Windows
 # User code should absolutely not rely on their presence because
