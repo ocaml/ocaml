@@ -59,9 +59,10 @@ By default, build is 32-bit. For 64-bit build, please set environment variable `
 If something goes wrong during the automatic configuration, or if the generated
 files cause errors later on, then look at the template files:
 
-        config/Makefile-templ
-        config/m-templ.h
-        config/s-templ.h
+        Makefile.config.in
+        Makefile.common.in
+        runtime/caml/m.h.in
+        runtime/caml/s.h.in
 +
 for guidance on how to edit the generated files by hand.
 
