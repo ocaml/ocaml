@@ -306,7 +306,7 @@ OCaml 4.09.0
   ocamldep. It used to turn some errors into successes
   (Jérémie Dimino)
 
-- #8701: Variance of constrained parameters causes principality issues
+- #8701, #8725: Variance of constrained parameters causes principality issues
   (Jacques Garrigue, report by Leo White)
 
 OCaml 4.08.0
