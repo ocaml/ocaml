@@ -50,7 +50,7 @@ let env_empty = {
 let oper_result_type = function
     Capply ty -> ty
   | Cextcall(_s, ty, _alloc, _) -> ty
-  | Cload (c, _) ->
+  | Cload {memory_chunk = c; _;} ->
       begin match c with
       | Word_val -> typ_val
       | Single | Double | Double_u -> typ_float
@@ -338,8 +338,8 @@ method effects_of exp =
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
-      | Cload (_, Asttypes.Immutable) -> EC.none
-      | Cloadmut | Cload (_, Asttypes.Mutable) ->
+      | Cload {mutability = Asttypes.Immutable} -> EC.none
+      | Cloadmut | Cload {mutability = Asttypes.Mutable} ->
           EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
@@ -420,7 +420,7 @@ method select_operation op args _dbg =
       | Some label_after -> label_after
     in
     Iextcall { func; alloc; label_after; stack_ofs = -1}, args
-  | (Cload (chunk, _mut), [arg]) ->
+  | (Cload {memory_chunk=chunk; mutability=_mut; is_atomic=true}, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
   | (Cloadmut, _) -> (Iloadmut, args)
