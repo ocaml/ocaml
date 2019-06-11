@@ -303,11 +303,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
       raise (Error (Wrong_object_name exec_name));
     | _ -> ()) tolink;
   Misc.remove_file exec_name; (* avoid permission problems, cf PR#8354 *)
-  let output_permissions = if !Clflags.with_runtime then 0o777 else 0o666
-  in
+  let outperm = if !Clflags.with_runtime then 0o777 else 0o666 in
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
-                 output_permissions exec_name in
+                 outperm exec_name in
   Misc.try_finally
     ~always:(fun () -> close_out outchan)
     ~exceptionally:(fun () -> remove_file exec_name)
@@ -542,7 +541,7 @@ let link_bytecode_as_c tolink outfile =
 
 let build_custom_runtime prim_name exec_name =
   let runtime_lib =
-    if (not !Clflags.with_runtime)
+    if not !Clflags.with_runtime
     then ""
     else "-lcamlrun" ^ !Clflags.runtime_variant in
   let debug_prefix_map =
@@ -669,7 +668,7 @@ let link objfiles output_name =
              in
              if not (
                  let runtime_lib =
-                   if (not !Clflags.with_runtime)
+                   if not !Clflags.with_runtime
                    then ""
                    else "-lcamlrun" ^ !Clflags.runtime_variant in
                  Ccomp.call_linker mode output_name

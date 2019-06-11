@@ -461,7 +461,7 @@ let mk_with_runtime f =
 
 let mk_without_runtime f =
   "-without-runtime", Arg.Unit f,
-  "Don't include the runtime system in the generated program."
+  "Do not include the runtime system in the generated program."
 ;;
 
 let mk_S f =
