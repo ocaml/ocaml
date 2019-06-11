@@ -95,8 +95,10 @@ typedef struct {
 extern frame_descr ** caml_frame_descriptors;
 extern uintnat caml_frame_descriptors_mask;
 
+#define Hash_retaddr_mask(addr, mask) \
+  (((uintnat)(addr) >> 3) & (mask))
 #define Hash_retaddr(addr) \
-  (((uintnat)(addr) >> 3) & caml_frame_descriptors_mask)
+  Hash_retaddr_mask(addr, caml_frame_descriptors_mask)
 
 extern void caml_init_frame_descriptors(void);
 extern void caml_register_frametable(intnat *);
@@ -116,8 +118,6 @@ extern value * caml_globals[];
 extern char caml_globals_map[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
-
-CAMLextern frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp);
 
 #endif /* CAML_INTERNALS */
 

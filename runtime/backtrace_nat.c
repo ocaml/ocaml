@@ -31,18 +31,20 @@
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
-frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
+static inline frame_descr * next_frame_descriptor(uintnat * pc, char ** sp,
+                                                  frame_descr** frame_descrs,
+                                                  uintnat frame_descrs_mask)
 {
   frame_descr * d;
   uintnat h;
 
   while (1) {
-    h = Hash_retaddr(*pc);
+    h = Hash_retaddr_mask(*pc, frame_descrs_mask);
     while (1) {
-      d = caml_frame_descriptors[h];
+      d = frame_descrs[h];
       if (d == NULL) return NULL; /* happens if some code compiled without -g */
       if (d->retaddr == *pc) break;
-      h = (h+1) & caml_frame_descriptors_mask;
+      h = (h+1) & frame_descrs_mask;
     }
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
@@ -81,6 +83,9 @@ int caml_alloc_backtrace_buffer(void){
    [caml_get_current_callstack] was implemented. */
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
+  frame_descr** frame_descrs = caml_frame_descriptors;
+  uintnat frame_descrs_mask = caml_frame_descriptors_mask;
+
   if (exn != caml_backtrace_last_exn) {
     caml_backtrace_pos = 0;
     caml_backtrace_last_exn = exn;
@@ -91,7 +96,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 
   /* iterate on each frame  */
   while (1) {
-    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
+    frame_descr * descr =
+      next_frame_descriptor(&pc, &sp, frame_descrs, frame_descrs_mask);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
     if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
@@ -109,9 +115,12 @@ void caml_collect_current_callstack(intnat max_frames, caml_callstack* ret)
   uintnat pc = caml_last_return_address;
   char* sp = caml_bottom_of_stack;
   value* callstack = ret->elems.init;
+  frame_descr** frame_descrs = caml_frame_descriptors;
+  uintnat frame_descrs_mask = caml_frame_descriptors_mask;
 
   while (trace_size < max_frames) {
-    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
+    frame_descr * descr =
+      next_frame_descriptor(&pc, &sp, frame_descrs, frame_descrs_mask);
     if (descr == NULL) break;
 
     if (trace_size == trace_alloc) {
