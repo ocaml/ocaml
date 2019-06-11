@@ -5,6 +5,9 @@ Working version
 
 ### Language features
 
+- #8728: Anonymous type functors
+  (Matthew Ryan)
+
 - #7557, #1726: multi-indices for extended indexing operators
   (Florian Angeletti, review by Gabriel Radanne)
 
