@@ -354,82 +354,106 @@ let specialize_default matcher env =
   in
   make_rec env
 
-type jumps = (int * Context.t) list
+module Jumps : sig
+  type t
 
-let pretty_jumps (env : jumps) =
-  List.iter
-    (fun (i, ctx) ->
-      Printf.fprintf stderr "jump for %d\n" i;
-      Context.eprintf ctx)
-    env
+  val is_empty : t -> bool
 
-let rec jumps_extract i = function
-  | [] -> (Context.empty, [])
-  | ((j, pss) as x) :: rem as all ->
-      if i = j then
-        (pss, rem)
-      else if j < i then
-        (Context.empty, all)
-      else
-        let r, rem = jumps_extract i rem in
-        (r, x :: rem)
+  val empty : t
 
-let rec jumps_remove i = function
-  | [] -> []
-  | (j, _) :: rem when i = j -> rem
-  | x :: rem -> x :: jumps_remove i rem
+  val singleton : int -> Context.t -> t
 
-let jumps_empty = []
+  val add : int -> Context.t -> t -> t
 
-and jumps_is_empty = function
-  | [] -> true
-  | _ -> false
+  val union : t -> t -> t
 
-let jumps_singleton i ctx =
-  if Context.is_empty ctx then
-    []
-  else
-    [ (i, ctx) ]
+  val unions : t list -> t
 
-let jumps_add i ctx jumps =
-  let rec add = function
-    | [] -> [ (i, ctx) ]
-    | ((j, qss) as x) :: rem as all ->
-        if j > i then
-          x :: add rem
+  val map : (Context.t -> Context.t) -> t -> t
+
+  val remove : int -> t -> t
+
+  val extract : int -> t -> Context.t * t
+
+  val eprintf : t -> unit
+end = struct
+  type t = (int * Context.t) list
+
+  let eprintf (env : t) =
+    List.iter
+      (fun (i, ctx) ->
+        Printf.eprintf "jump for %d\n" i;
+        Context.eprintf ctx)
+      env
+
+  let rec extract i = function
+    | [] -> (Context.empty, [])
+    | ((j, pss) as x) :: rem as all ->
+        if i = j then
+          (pss, rem)
         else if j < i then
-          (i, ctx) :: all
+          (Context.empty, all)
         else
-          (i, Context.union ctx qss) :: rem
-  in
-  if Context.is_empty ctx then
-    jumps
-  else
-    add jumps
+          let r, rem = extract i rem in
+          (r, x :: rem)
 
-let rec jumps_union (env1 : jumps) env2 =
-  match (env1, env2) with
-  | [], _ -> env2
-  | _, [] -> env1
-  | ((i1, pss1) as x1) :: rem1, ((i2, pss2) as x2) :: rem2 ->
-      if i1 = i2 then
-        (i1, Context.union pss1 pss2) :: jumps_union rem1 rem2
-      else if i1 > i2 then
-        x1 :: jumps_union rem1 env2
-      else
-        x2 :: jumps_union env1 rem2
+  let rec remove i = function
+    | [] -> []
+    | (j, _) :: rem when i = j -> rem
+    | x :: rem -> x :: remove i rem
 
-let rec merge = function
-  | env1 :: env2 :: rem -> jumps_union env1 env2 :: merge rem
-  | envs -> envs
+  let empty = []
 
-let rec jumps_unions envs =
-  match envs with
-  | [] -> []
-  | [ env ] -> env
-  | _ -> jumps_unions (merge envs)
+  and is_empty = function
+    | [] -> true
+    | _ -> false
 
-let jumps_map f env = List.map (fun (i, pss) -> (i, f pss)) env
+  let singleton i ctx =
+    if Context.is_empty ctx then
+      []
+    else
+      [ (i, ctx) ]
+
+  let add i ctx jumps =
+    let rec add = function
+      | [] -> [ (i, ctx) ]
+      | ((j, qss) as x) :: rem as all ->
+          if j > i then
+            x :: add rem
+          else if j < i then
+            (i, ctx) :: all
+          else
+            (i, Context.union ctx qss) :: rem
+    in
+    if Context.is_empty ctx then
+      jumps
+    else
+      add jumps
+
+  let rec union (env1 : t) env2 =
+    match (env1, env2) with
+    | [], _ -> env2
+    | _, [] -> env1
+    | ((i1, pss1) as x1) :: rem1, ((i2, pss2) as x2) :: rem2 ->
+        if i1 = i2 then
+          (i1, Context.union pss1 pss2) :: union rem1 rem2
+        else if i1 > i2 then
+          x1 :: union rem1 env2
+        else
+          x2 :: union env1 rem2
+
+  let rec merge = function
+    | env1 :: env2 :: rem -> union env1 env2 :: merge rem
+    | envs -> envs
+
+  let rec unions envs =
+    match envs with
+    | [] -> []
+    | [ env ] -> env
+    | _ -> unions (merge envs)
+
+  let map f env = List.map (fun (i, pss) -> (i, f pss)) env
+end
 
 (* Pattern matching before any compilation *)
 
@@ -2323,14 +2347,14 @@ let mk_failaction_neg partial ctx def =
   | Partial -> (
       match def with
       | (_, idef) :: _ ->
-          (Some (Lstaticraise (idef, [])), jumps_singleton idef ctx)
+          (Some (Lstaticraise (idef, [])), Jumps.singleton idef ctx)
       | [] ->
           (* Act as Total, this means
           If no appropriate default matrix exists,
           then this switch cannot fail *)
-          (None, jumps_empty)
+          (None, Jumps.empty)
     )
-  | Total -> (None, jumps_empty)
+  | Total -> (None, Jumps.empty)
 
 (* In line with the article and simpler than before *)
 let mk_failaction_pos partial seen ctx defs =
@@ -2351,10 +2375,10 @@ let mk_failaction_pos partial seen ctx defs =
                 (fun pat r -> (get_key_constr pat, action) :: r)
                 pats klist
             and jumps =
-              jumps_add i (Context.lub (list_as_pat pats) ctx) jumps
+              Jumps.add i (Context.lub (list_as_pat pats) ctx) jumps
             in
             (klist, jumps))
-          ([], jumps_empty) env
+          ([], Jumps.empty) env
     | _, (pss, idef) :: rem -> (
         let now, later =
           List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
@@ -2373,7 +2397,7 @@ let mk_failaction_pos partial seen ctx defs =
     in
     if dbg then (
       eprintf "POSITIVE JUMPS [%i]:\n" (List.length fail_pats);
-      pretty_jumps jmps
+      Jumps.eprintf jmps
     );
     (None, fail, jmps)
   ) else (
@@ -2447,7 +2471,7 @@ let combine_constant loc arg cst partial ctx def
           (Pbintcomp (Pnativeint, Clt))
           arg const_lambda_list
   in
-  (lambda1, jumps_union local_jumps total)
+  (lambda1, Jumps.union local_jumps total)
 
 let split_cases tag_lambda_list =
   let rec split_rec = function
@@ -2515,7 +2539,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
           Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem))
         consts nonconst_lambda
     in
-    (lambda1, jumps_union local_jumps total1)
+    (lambda1, Jumps.union local_jumps total1)
   else
     (* Regular concrete type *)
     let ncases = List.length tag_lambda_list
@@ -2523,7 +2547,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
     let sig_complete = ncases = nconstrs in
     let fail_opt, fails, local_jumps =
       if sig_complete then
-        (None, [], jumps_empty)
+        (None, [], Jumps.empty)
       else
         mk_failaction_pos partial pats ctx def
     in
@@ -2575,7 +2599,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
             )
         )
     in
-    (lambda1, jumps_union local_jumps total1)
+    (lambda1, Jumps.union local_jumps total1)
 
 let make_test_sequence_variant_constant fail arg int_lambda_list =
   let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
@@ -2621,7 +2645,7 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
       | Total -> true
       | _ -> false
     then
-      (None, jumps_empty)
+      (None, Jumps.empty)
     else
       mk_failaction_neg partial ctx def
   in
@@ -2651,7 +2675,7 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
             test_int_or_block arg lam_const lam_nonconst
       )
   in
-  (lambda1, jumps_union local_jumps total1)
+  (lambda1, Jumps.union local_jumps total1)
 
 let combine_array loc arg kind partial ctx def (len_lambda_list, total1, _pats)
     =
@@ -2663,7 +2687,7 @@ let combine_array loc arg kind partial ctx def (len_lambda_list, total1, _pats)
     in
     bind Alias newvar (Lprim (Parraylength kind, [ arg ], loc)) switch
   in
-  (lambda1, jumps_union local_jumps total1)
+  (lambda1, Jumps.union local_jumps total1)
 
 (* Insertion of debugging events *)
 
@@ -2704,7 +2728,7 @@ exception Unused
 
 let compile_list compile_fun division =
   let rec c_rec totals = function
-    | [] -> ([], jumps_unions totals, [])
+    | [] -> ([], Jumps.unions totals, [])
     | (key, cell) :: rem -> (
         if Context.is_empty cell.ctx then
           c_rec totals rem
@@ -2712,7 +2736,7 @@ let compile_list compile_fun division =
           try
             let lambda1, total1 = compile_fun cell.ctx cell.pm in
             let c_rem, total, new_pats =
-              c_rec (jumps_map Context.combine total1 :: totals) rem
+              c_rec (Jumps.map Context.combine total1 :: totals) rem
             in
             ((key, lambda1) :: c_rem, total, cell.pat :: new_pats)
           with Unused -> c_rec totals rem
@@ -2733,14 +2757,14 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
                 ( List.fold_right2
                     (bind_with_value_kind Alias)
                     vars args handler_i,
-                  jumps_map (Context.rshift_num (ncols mat)) total_i )
+                  Jumps.map (Context.rshift_num (ncols mat)) total_i )
               else
                 do_rec r total_r rem
           | _ ->
               do_rec
                 (Lstaticcatch (r, (i, vars), handler_i))
-                (jumps_union (jumps_remove i total_r)
-                   (jumps_map (Context.rshift_num (ncols mat)) total_i))
+                (Jumps.union (Jumps.remove i total_r)
+                   (Jumps.map (Context.rshift_num (ncols mat)) total_i))
                 rem
         with Unused ->
           do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
@@ -2804,7 +2828,7 @@ let bind_check str v arg lam =
 
 let comp_exit ctx m =
   match m.default with
-  | (_, i) :: _ -> (Lstaticraise (i, []), jumps_singleton i ctx)
+  | (_, i) :: _ -> (Lstaticraise (i, []), Jumps.singleton i ctx)
   | _ -> fatal_error "Matching.comp_exit"
 
 let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
@@ -2816,7 +2840,7 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
         (* Hum, -1 means never taken
         | (-1,pm)::rem -> c_rec body total_body rem *)
         | (i, pm) :: rem -> (
-            let ctx_i, total_rem = jumps_extract i total_body in
+            let ctx_i, total_rem = Jumps.extract i total_body in
             if Context.is_empty ctx_i then
               c_rec body total_body rem
             else
@@ -2831,7 +2855,7 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
                 in
                 c_rec
                   (Lstaticcatch (body, (i, []), li))
-                  (jumps_union total_i total_rem)
+                  (Jumps.union total_i total_rem)
                   rem
               with Unused ->
                 c_rec (Lstaticcatch (body, (i, []), lambda_unit)) total_rem rem
@@ -2886,7 +2910,7 @@ let rec compile_match repr partial ctx m =
         in
         (event_branch repr (patch_guarded lambda action), total)
       else
-        (event_branch repr action, jumps_empty)
+        (event_branch repr action, Jumps.empty)
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
       let first_match, rem =
@@ -2917,7 +2941,7 @@ and do_compile_matching_pr repr partial ctx arg x =
   Context.eprintf ctx;
   let ((_, jumps) as r) = do_compile_matching repr partial ctx arg x in
   Format.eprintf "JUMPS\n";
-  pretty_jumps jumps;
+  Jumps.eprintf jumps;
   r
 
 and do_compile_matching repr partial ctx arg pmh =
@@ -2970,7 +2994,7 @@ and do_compile_matching repr partial ctx arg pmh =
       let lam, total =
         do_compile_matching repr partial (Context.lshift ctx) arg pmh
       in
-      (lam, jumps_map Context.rshift total)
+      (lam, Jumps.map Context.rshift total)
   | PmOr { body; handlers } ->
       let lam, total = compile_match repr partial ctx body in
       compile_orhandlers (compile_match repr partial) lam total ctx handlers
@@ -2978,7 +3002,7 @@ and do_compile_matching repr partial ctx arg pmh =
 and compile_no_test divide up_ctx repr partial ctx to_match =
   let { pm = this_match; ctx = this_ctx } = divide ctx to_match in
   let lambda, total = compile_match repr partial this_ctx this_match in
-  (lambda, jumps_map up_ctx total)
+  (lambda, Jumps.map up_ctx total)
 
 (* The entry points *)
 
@@ -3093,7 +3117,7 @@ let check_partial = check_partial is_mutable is_lazy
 (* have toplevel handler when appropriate *)
 
 let check_total total lambda i handler_fun =
-  if jumps_is_empty total then
+  if Jumps.is_empty total then
     lambda
   else
     Lstaticcatch (lambda, (i, []), handler_fun ())
@@ -3123,7 +3147,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
         }
       in
       let lambda, total = compile_match repr partial (Context.start 1) pm in
-      assert (jumps_is_empty total);
+      assert (Jumps.is_empty total);
       lambda
 
 let partial_function loc () =
@@ -3424,7 +3448,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
         ( match partial with
         | Partial -> check_total total lam raise_num (partial_function loc)
         | Total ->
-            assert (jumps_is_empty total);
+            assert (Jumps.is_empty total);
             lam
         )
     with Cannot_flatten -> (
@@ -3432,7 +3456,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       match partial with
       | Partial -> check_total total lambda raise_num (partial_function loc)
       | Total ->
-          assert (jumps_is_empty total);
+          assert (Jumps.is_empty total);
           lambda
     )
   with Unused -> assert false
