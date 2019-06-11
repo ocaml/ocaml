@@ -524,36 +524,28 @@ let raw_action l =
   | Some l -> l
   | None -> l
 
-let tr_raw act =
-  match make_key act with
-  | Some act -> act
-  | None -> raise Exit
-
 let same_actions = function
   | [] -> None
   | [ (_, act) ] -> Some act
   | (_, act0) :: rem -> (
-      try
-        let raw_act0 = tr_raw act0 in
-        let rec s_rec = function
-          | [] -> Some act0
-          | (_, act) :: rem ->
-              if raw_act0 = tr_raw act then
-                s_rec rem
-              else
-                None
-        in
-        s_rec rem
-      with Exit -> None
+      match make_key act0 with
+      | None -> None
+      | key0_opt ->
+          let same_act (_, act) = make_key act = key0_opt in
+          if List.for_all same_act rem then
+            Some act0
+          else
+            None
     )
 
 (* Test for swapping two clauses *)
 
 let up_ok_action act1 act2 =
-  try
-    let raw1 = tr_raw act1 and raw2 = tr_raw act2 in
-    raw1 = raw2
-  with Exit -> false
+  match (make_key act1, make_key act2) with
+  | Some key1, Some key2 -> key1 = key2
+  | None, _
+  | _, None ->
+      false
 
 let up_ok (ps, act_p) l =
   List.for_all
