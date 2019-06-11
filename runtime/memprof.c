@@ -189,7 +189,8 @@ enum ml_alloc_kind {
    make sure the postponed queue will be handled fully at some
    point. */
 static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
-                         caml_callstack* callstack, enum ml_alloc_kind cb_kind) {
+                         caml_callstack* callstack, enum ml_alloc_kind cb_kind)
+{
   CAMLparam0();
   CAMLlocal2(sample_info, vcallstack);
   value res; /* Not a root, can be an exception result. */

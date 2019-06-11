@@ -45,6 +45,9 @@ Working version
    OCaml callback when called from C.
    (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
 
+- #8731: Statmemprof optimisations.
+   (Stephen Dolan, review by ??)
+
 ### Standard library:
 
 - #8657: Optimization in [Array.make] when initializing with unboxed
