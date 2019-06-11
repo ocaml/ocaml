@@ -1,0 +1,5 @@
+profile=conventional
+if-then-else=k-r
+indicate-multiline-delimiters=closing-on-separate-line
+break-cases=all
+disable=true
