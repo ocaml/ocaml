@@ -592,12 +592,13 @@ CAMLprim value caml_array_concat(value al)
 
 CAMLprim value caml_array_fill (value array, value v_ofs, value v_len, value val)
 {
-  value old;
   intnat ofs = Long_val(v_ofs);
   intnat len = Long_val(v_len);
   value* fp;
 
-  /* See caml_modify for invariants */
+  /* This duplicates the logic of caml_modify.  Please refer to the
+     implementation of that function for a description of GC
+     invariants we need to enforce.*/
 
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag) {
@@ -614,7 +615,7 @@ CAMLprim value caml_array_fill (value array, value v_ofs, value v_len, value val
     CAMLassert(Is_in_heap(fp));
     int is_val_young_block = Is_block(val) && Is_young(val);
     for (; len > 0; len--, fp++) {
-      old = *fp;
+      value old = *fp;
       if (old == val) continue;
       *fp = val;
       if (Is_block(old)) {
