@@ -275,9 +275,9 @@ let select_columns pss ctx =
     (fun ps r ->
       List.fold_right
         (fun {left=left ; right=right} r ->
-          let transfert, right = nchars n right in
+          let transfer, right = nchars n right in
           try
-            {left = lubs transfert ps @ left ; right=right}::r
+            {left = lubs transfer ps @ left ; right=right}::r
           with
           | Empty -> r)
         ctx r)
