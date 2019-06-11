@@ -525,7 +525,7 @@ let rec read_args xs r = match xs,r with
 | _,_ ->
     fatal_error "Parmatch.read_args"
 
-let do_set_args erase_mutable q r = match q with
+let do_set_args ~erase_mutable q r = match q with
 | {pat_desc = Tpat_tuple omegas} ->
     let args,rest = read_args omegas r in
     make_pat (Tpat_tuple args) q.pat_type q.pat_env::rest
@@ -576,8 +576,8 @@ let do_set_args erase_mutable q r = match q with
     q::r (* case any is used in matching.ml *)
 | _ -> fatal_error "Parmatch.set_args"
 
-let set_args q r = do_set_args false q r
-and set_args_erase_mutable q r = do_set_args true q r
+let set_args q r = do_set_args ~erase_mutable:false q r
+and set_args_erase_mutable q r = do_set_args ~erase_mutable:true q r
 
 (* Given a matrix of non-empty rows
    p1 :: r1...
