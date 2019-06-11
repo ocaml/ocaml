@@ -180,7 +180,7 @@ let specialize_default matcher env =
         let rem = make_rec rem in
         match specialize_matrix matcher pss with
         | [] -> rem
-        | [] :: _ -> ([ [] ], i) :: rem
+        | [] :: _ -> [ ([ [] ], i) ]
         | pss -> (pss, i) :: rem
       )
   in
