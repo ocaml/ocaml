@@ -1313,6 +1313,9 @@ let matcher_constr cstr = match cstr.cstr_arity with
 | 1 ->
     let rec matcher_rec q rem = match q.pat_desc with
     | Tpat_or (p1,p2,_) ->
+       (* if both sides of the or-pattern match the head constructor,
+            (K p1 | K p2) :: rem
+          return (p1 | p2) :: rem *)
         let r1 = try Some (matcher_rec p1 rem) with NoMatch -> None
         and r2 = try Some (matcher_rec p2 rem) with NoMatch -> None in
         begin match r1,r2 with
@@ -1333,7 +1336,12 @@ let matcher_constr cstr = match cstr.cstr_arity with
     matcher_rec
 | _ ->
     fun q rem -> match q.pat_desc with
-    | Tpat_or (_,_,_) -> raise OrPat
+    | Tpat_or (_,_,_) ->
+       (* we cannot preserve the or-pattern as in the arity-1 case,
+          because we cannot express
+            (K (p1, .., pn) | K (q1, .. qn))
+          as (p1 .. pn | q1 .. qn) *)
+       raise OrPat
     | Tpat_construct (_,cstr',args)
       when  Types.may_equal_constr cstr cstr' -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
