@@ -644,18 +644,20 @@ let half_simplify_cases args cls =
 
 let rec what_is_cases cases =
   match cases with
-  | ({ pat_desc = Tpat_any } :: _, _) :: rem -> what_is_cases rem
-  | ( { pat_desc = Tpat_var _ | Tpat_or (_, _, _) | Tpat_alias (_, _, _) } :: _,
-      _ )
-    :: _ ->
-      assert false (* applies to simplified matchings only *)
-  | (p :: _, _) :: _ -> p
   | [] -> omega
-  | _ -> assert false
+  | ([], _) :: _ -> assert false
+  | (p :: _, _) :: rem -> (
+      match p.pat_desc with
+      | Tpat_any -> what_is_cases rem
+      | Tpat_var _
+      | Tpat_or (_, _, _)
+      | Tpat_alias (_, _, _) ->
+          (* applies to simplified matchings only *)
+          assert false
+      | _ -> p
+    )
 
 (* A few operations on default environments *)
-let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
-
 let cons_default matrix raise_num default =
   match matrix with
   | [] -> default
@@ -869,6 +871,8 @@ let insert_or_append p ps act ors no =
   attempt [] ors
 
 (* Reconstruct default information from half_compiled  pm list *)
+
+let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
 
 let rec rebuild_matrix pmh =
   match pmh with
