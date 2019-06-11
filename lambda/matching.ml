@@ -147,7 +147,7 @@ exception NoMatch
 
 exception OrPat
 
-let filter_matrix matcher pss =
+let specialize_matrix matcher pss =
   let rec filter_rec = function
     | (p :: ps) :: rem -> (
         match p.pat_desc with
@@ -168,17 +168,17 @@ let filter_matrix matcher pss =
     | [] -> []
     | _ ->
         pretty_matrix Format.err_formatter pss;
-        fatal_error "Matching.filter_matrix"
+        fatal_error "Matching.specialize_matrix"
   in
   filter_rec pss
 
-let make_default matcher env =
+let specialize_default matcher env =
   let rec make_rec = function
     | [] -> []
     | ([ [] ], i) :: _ -> [ ([ [] ], i) ]
     | (pss, i) :: rem -> (
         let rem = make_rec rem in
-        match filter_matrix matcher pss with
+        match specialize_matrix matcher pss with
         | [] -> rem
         | [] :: _ -> ([ [] ], i) :: rem
         | pss -> (pss, i) :: rem
@@ -257,7 +257,7 @@ let ctx_matcher p =
     )
   | _ -> fatal_error "Matching.ctx_matcher"
 
-let filter_ctx q ctx =
+let specialize_ctx q ctx =
   let matcher = ctx_matcher q in
   let rec filter_rec = function
     | ({ right = p :: ps } as l) :: rem -> (
@@ -279,7 +279,7 @@ let filter_ctx q ctx =
           )
       )
     | [] -> []
-    | _ -> fatal_error "Matching.filter_ctx"
+    | _ -> fatal_error "Matching.specialize_ctx"
   in
   filter_rec ctx
 
@@ -1103,7 +1103,7 @@ and precompile_var args cls def k =
                 | _ :: ps -> (ps, act)
                 | _ -> assert false)
               cls
-          and var_def = make_default (fun _ rem -> rem) def in
+          and var_def = specialize_default (fun _ rem -> rem) def in
           let { me = first; matrix }, nexts =
             split_or (Some v) var_cls (arg :: rargs) var_def
           in
@@ -1244,7 +1244,7 @@ let divide_line make_ctx make get_args pat ctx pm =
    There is one set of functions per matching style
    (constants, constructors etc.)
 
-   - matcher functions are arguments to make_default (for default handlers)
+   - matcher functions are arguments to specialize_default (for default handlers)
    They may raise NoMatch or OrPat and perform the full
    matching (selection + arguments).
 
@@ -1277,8 +1277,9 @@ let get_args_constant _ rem = rem
 let make_constant_matching p def ctx = function
   | [] -> fatal_error "Matching.make_constant_matching"
   | _ :: argl ->
-      let def = make_default (matcher_const (get_key_constant "make" p)) def
-      and ctx = filter_ctx p ctx in
+      let def =
+        specialize_default (matcher_const (get_key_constant "make" p)) def
+      and ctx = specialize_ctx p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
         pat = normalize_pat p
@@ -1395,9 +1396,9 @@ let make_constr_matching p def ctx = function
       { pm =
           { cases = [];
             args = newargs;
-            default = make_default (matcher_constr cstr) def
+            default = specialize_default (matcher_constr cstr) def
           };
-        ctx = filter_ctx p ctx;
+        ctx = specialize_ctx p ctx;
         pat = normalize_pat p
       }
 
@@ -1419,8 +1420,8 @@ let rec matcher_variant_const lab p rem =
 let make_variant_matching_constant p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_constant"
   | _ :: argl ->
-      let def = make_default (matcher_variant_const lab) def
-      and ctx = filter_ctx p ctx in
+      let def = specialize_default (matcher_variant_const lab) def
+      and ctx = specialize_ctx p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
         pat = normalize_pat p
@@ -1436,8 +1437,8 @@ let matcher_variant_nonconst lab p rem =
 let make_variant_matching_nonconst p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_nonconst"
   | (arg, _mut) :: argl ->
-      let def = make_default (matcher_variant_nonconst lab) def
-      and ctx = filter_ctx p ctx in
+      let def = specialize_default (matcher_variant_nonconst lab) def
+      and ctx = specialize_ctx p ctx in
       { pm =
           { cases = [];
             args = (Lprim (Pfield 1, [ arg ], p.pat_loc), Alias) :: argl;
@@ -1487,7 +1488,10 @@ let get_args_var _ rem = rem
 let make_var_matching def = function
   | [] -> fatal_error "Matching.make_var_matching"
   | _ :: argl ->
-      { cases = []; args = argl; default = make_default get_args_var def }
+      { cases = [];
+        args = argl;
+        default = specialize_default get_args_var def
+      }
 
 let divide_var ctx pm =
   divide_line ctx_lshift make_var_matching get_args_var omega ctx pm
@@ -1646,11 +1650,11 @@ let make_lazy_matching def = function
   | (arg, _mut) :: argl ->
       { cases = [];
         args = (inline_lazy_force arg Location.none, Strict) :: argl;
-        default = make_default matcher_lazy def
+        default = specialize_default matcher_lazy def
       }
 
 let divide_lazy p ctx pm =
-  divide_line (filter_ctx p) make_lazy_matching get_arg_lazy p ctx pm
+  divide_line (specialize_ctx p) make_lazy_matching get_arg_lazy p ctx pm
 
 (* Matching against a tuple pattern *)
 
@@ -1680,11 +1684,11 @@ let make_tuple_matching loc arity def = function
       in
       { cases = [];
         args = make_args 0;
-        default = make_default (matcher_tuple arity) def
+        default = specialize_default (matcher_tuple arity) def
       }
 
 let divide_tuple arity p ctx pm =
-  divide_line (filter_ctx p)
+  divide_line (specialize_ctx p)
     (make_tuple_matching p.pat_loc arity)
     (get_args_tuple arity) p ctx pm
 
@@ -1740,12 +1744,12 @@ let make_record_matching loc all_labels def = function
           (access, str) :: make_args (pos + 1)
       in
       let nfields = Array.length all_labels in
-      let def = make_default (matcher_record nfields) def in
+      let def = specialize_default (matcher_record nfields) def in
       { cases = []; args = make_args 0; default = def }
 
 let divide_record all_labels p ctx pm =
   let get_args = get_args_record (Array.length all_labels) in
-  divide_line (filter_ctx p)
+  divide_line (specialize_ctx p)
     (make_record_matching p.pat_loc all_labels)
     get_args p ctx pm
 
@@ -1782,8 +1786,8 @@ let make_array_matching kind p def ctx = function
             StrictOpt )
           :: make_args (pos + 1)
       in
-      let def = make_default (matcher_array len) def
-      and ctx = filter_ctx p ctx in
+      let def = specialize_default (matcher_array len) def
+      and ctx = specialize_ctx p ctx in
       { pm = { cases = []; args = make_args 0; default = def };
         ctx;
         pat = normalize_pat p
