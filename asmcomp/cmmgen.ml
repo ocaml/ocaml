@@ -2091,9 +2091,12 @@ and transl_prim_1 env p arg dbg =
                    [untag_int (transl env arg) dbg],
                    dbg))
               dbg
-  | Patomic_load {immediate_or_pointer=_} ->
-     Cop (Cextcall("caml_atomic_load", typ_val, true, None),
-          [transl env arg], dbg)
+  | Patomic_load {immediate_or_pointer} ->
+      let ptr = transl env arg
+      in
+      ( match immediate_or_pointer with
+        | Immediate -> Cop (Cload {memory_chunk=Word_int ; mutability=Mutable ; is_atomic=true} , [ptr; Cconst_int 0], dbg)
+        | Pointer -> Cop (Cloadmut {is_atomic=true}, [ptr; Cconst_int 0], dbg) )
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
 
