@@ -553,25 +553,29 @@ let up_ok (ps, act_p) l =
     l
 
 (*
-   The simplify function normalizes the first column of the match
+   The half-simplify functions transforms the first column of the match
      - records are expanded so that they possess all fields
      - aliases are removed and replaced by bindings in actions.
-   However or-patterns are simplified differently,
-     - aliases are not removed
-     - or-patterns: (_|p) are changed into _
-                    (p|_) are left unchanged
-       This difference is observable in situations like:
+
+   However or-patterns are only half-simplified,
+     - aliases under or-patterns are kept
+     - or-patterns whose left-hand-side is simplifiable
+       are removed: (_|p) is changed into _
+     - or-patterns whose left-hand-side is not simplified
+       are preserved: (p|q) is changed into (simpl(p)|simpl(q))
          {v
              # match lazy (print_int 3; 3) with _ | lazy 2 -> ();;
              - : unit = ()
              # match lazy (print_int 3; 3) with lazy 2 | _ -> ();;
              3- : unit = ()
          v}
+
+   In particular, or-patterns may still occur in the head of the output row,
+   so this is only a "half-simplification".
 *)
 
-exception Var of pattern
-
-let simplify_or p =
+let half_simplify_or p =
+  let exception Var of pattern in
   let rec simpl_rec p =
     match p.pat_desc with
     | Tpat_any
@@ -596,46 +600,47 @@ let simplify_or p =
   in
   try simpl_rec p with Var p -> p
 
-let simplify_cases args cls =
-  match args with
-  | [] -> assert false
-  | (arg, _) :: _ ->
-      let rec simplify = function
-        | [] -> []
-        | ((pat :: patl, action) as cl) :: rem -> (
-            match pat.pat_desc with
-            | Tpat_var (id, _) ->
-                let k = Typeopt.value_kind pat.pat_env pat.pat_type in
-                (omega :: patl, bind_with_value_kind Alias (id, k) arg action)
-                :: simplify rem
-            | Tpat_any -> cl :: simplify rem
-            | Tpat_alias (p, id, _) ->
-                let k = Typeopt.value_kind pat.pat_env pat.pat_type in
-                simplify
-                  ((p :: patl, bind_with_value_kind Alias (id, k) arg action)
-                  :: rem
-                  )
-            | Tpat_record ([], _) -> (omega :: patl, action) :: simplify rem
-            | Tpat_record (lbls, closed) ->
-                let all_lbls = all_record_args lbls in
-                let full_pat =
-                  { pat with pat_desc = Tpat_record (all_lbls, closed) }
-                in
-                (full_pat :: patl, action) :: simplify rem
-            | Tpat_or _ -> (
-                let pat_simple = simplify_or pat in
-                match pat_simple.pat_desc with
-                | Tpat_or _ -> (pat_simple :: patl, action) :: simplify rem
-                | _ -> simplify ((pat_simple :: patl, action) :: rem)
+let half_simplify_cases args cls =
+  let arg =
+    match args with
+    | [] -> assert false
+    | (arg, _) :: _ -> arg
+  in
+  let rec half_simplify = function
+    | [] -> []
+    | ([], _) :: _ -> assert false
+    | ((pat :: patl, action) as cl) :: rem -> (
+        match pat.pat_desc with
+        | Tpat_any -> cl :: half_simplify rem
+        | Tpat_var (id, s) ->
+            let p = { pat with pat_desc = Tpat_alias (omega, id, s) } in
+            half_simplify ((p :: patl, action) :: rem)
+        | Tpat_alias (p, id, _) ->
+            let k = Typeopt.value_kind pat.pat_env pat.pat_type in
+            half_simplify
+              ((p :: patl, bind_with_value_kind Alias (id, k) arg action)
+              :: rem
               )
-            | _ -> cl :: simplify rem
+        | Tpat_record ([], _) -> (omega :: patl, action) :: half_simplify rem
+        | Tpat_record (lbls, closed) ->
+            let all_lbls = all_record_args lbls in
+            let full_pat =
+              { pat with pat_desc = Tpat_record (all_lbls, closed) }
+            in
+            (full_pat :: patl, action) :: half_simplify rem
+        | Tpat_or _ -> (
+            let pat_simple = half_simplify_or pat in
+            match pat_simple.pat_desc with
+            | Tpat_or _ -> (pat_simple :: patl, action) :: half_simplify rem
+            | _ -> half_simplify ((pat_simple :: patl, action) :: rem)
           )
-        | _ -> assert false
-      in
-      simplify cls
+        | _ -> cl :: half_simplify rem
+      )
+  in
+  half_simplify cls
 
-(* Once matchings are simplified one can easily find
-   their nature *)
+(* Once matchings are *fully* simplified, one can easily find
+   their nature. *)
 
 let rec what_is_cases cases =
   match cases with
@@ -894,7 +899,7 @@ let rebuild_nexts arg nexts k =
     Some precompilation of or-patterns and
     variable pattern occurs. Mostly this means that bindings
     are performed now,  being replaced by let-bindings
-    in actions (cf. simplify_cases).
+    in actions (cf. half_simplify_cases).
 
     Additionally, if the match argument is a variable, matchings whose
     first column is made of variables only are split further
@@ -903,7 +908,7 @@ let rebuild_nexts arg nexts k =
 *)
 
 let rec split_or argo cls args def =
-  let cls = simplify_cases args cls in
+  let cls = half_simplify_cases args cls in
   let rec do_split before ors no = function
     | [] -> cons_next (List.rev before) (List.rev ors) (List.rev no)
     | ((p :: ps, act) as cl) :: rem ->
