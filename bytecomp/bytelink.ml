@@ -29,6 +29,7 @@ type error =
   | File_exists of filepath
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname
+  | Camlheader of string * filepath
 
 exception Error of error
 
@@ -312,15 +313,17 @@ let link_bytecode ?final_name tolink exec_name standalone =
     (fun () ->
        if standalone then begin
          (* Copy the header *)
+         let header =
+           if String.length !Clflags.use_runtime > 0
+           then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant
+         in
          try
-           let header =
-             if String.length !Clflags.use_runtime > 0
-             then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant
-           in
            let inchan = open_in_bin (Load_path.find header) in
            copy_file inchan outchan;
            close_in inchan
-         with Not_found | Sys_error _ -> ()
+         with
+         | Not_found -> raise (Error (File_not_found header))
+         | Sys_error msg -> raise (Error (Camlheader (header, msg)))
        end;
        Bytesections.init_record outchan;
        (* The path to the bytecode interpreter (in use_runtime mode) *)
@@ -705,6 +708,8 @@ let report_error ppf = function
         Location.print_filename file
   | Required_module_unavailable s ->
       fprintf ppf "Required module `%s' is unavailable" s
+  | Camlheader (msg, header) ->
+      fprintf ppf "System error while copying file %s: %s" header msg
 
 let () =
   Location.register_error_of_exn

@@ -125,6 +125,9 @@ OCaml 4.09.0
 - #3819, #8546 more explanations and tests for illegal permutation
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #8537: fix the -runtime-variant option for bytecode
+  (Damien Doligez, review by David Allsopp)
+
 - #8541: Correctly print multi-lines locations
   (Louis Roché, review by Gabriel Scherer)
 
