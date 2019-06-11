@@ -95,13 +95,11 @@ let ncols = function
   | ps :: _ -> List.length ps
 
 module Context : sig
-  module Row : sig
-    type t
+  type t
 
-    val le : t -> t -> bool
-  end
+  val empty : t
 
-  type t = Row.t list
+  val is_empty : t -> bool
 
   val start : int -> t
 
@@ -122,6 +120,8 @@ module Context : sig
   val combine : t -> t
 
   val select_columns : matrix -> t -> t
+
+  val union : t -> t -> t
 end = struct
   module Row = struct
     type t = { left : pattern list; right : pattern list }
@@ -161,7 +161,13 @@ end = struct
 
   type t = Row.t list
 
+  let empty = []
+
   let start n : t = [ { left = []; right = omegas n } ]
+
+  let is_empty = function
+    | [] -> true
+    | _ -> false
 
   let eprintf ctx = List.iter Row.eprintf ctx
 
@@ -303,6 +309,8 @@ end = struct
     List.exists
       (fun { Row.right = qs } -> List.exists (fun ps -> may_compats qs ps) pss)
       ctx
+
+  let union pss qss = get_mins Row.le (pss @ qss)
 end
 
 exception OrPat
@@ -356,12 +364,12 @@ let pretty_jumps (env : jumps) =
     env
 
 let rec jumps_extract i = function
-  | [] -> ([], [])
+  | [] -> (Context.empty, [])
   | ((j, pss) as x) :: rem as all ->
       if i = j then
         (pss, rem)
       else if j < i then
-        ([], all)
+        (Context.empty, all)
       else
         let r, rem = jumps_extract i rem in
         (r, x :: rem)
@@ -377,25 +385,27 @@ and jumps_is_empty = function
   | [] -> true
   | _ -> false
 
-let jumps_singleton i = function
-  | [] -> []
-  | ctx -> [ (i, ctx) ]
+let jumps_singleton i ctx =
+  if Context.is_empty ctx then
+    []
+  else
+    [ (i, ctx) ]
 
-let jumps_add i pss jumps =
-  match pss with
-  | [] -> jumps
-  | _ ->
-      let rec add = function
-        | [] -> [ (i, pss) ]
-        | ((j, qss) as x) :: rem as all ->
-            if j > i then
-              x :: add rem
-            else if j < i then
-              (i, pss) :: all
-            else
-              (i, get_mins Context.Row.le (pss @ qss)) :: rem
-      in
-      add jumps
+let jumps_add i ctx jumps =
+  let rec add = function
+    | [] -> [ (i, ctx) ]
+    | ((j, qss) as x) :: rem as all ->
+        if j > i then
+          x :: add rem
+        else if j < i then
+          (i, ctx) :: all
+        else
+          (i, Context.union ctx qss) :: rem
+  in
+  if Context.is_empty ctx then
+    jumps
+  else
+    add jumps
 
 let rec jumps_union (env1 : jumps) env2 =
   match (env1, env2) with
@@ -403,7 +413,7 @@ let rec jumps_union (env1 : jumps) env2 =
   | _, [] -> env1
   | ((i1, pss1) as x1) :: rem1, ((i2, pss2) as x2) :: rem2 ->
       if i1 = i2 then
-        (i1, get_mins Context.Row.le (pss1 @ pss2)) :: jumps_union rem1 rem2
+        (i1, Context.union pss1 pss2) :: jumps_union rem1 rem2
       else if i1 > i2 then
         x1 :: jumps_union rem1 env2
       else
@@ -2696,17 +2706,16 @@ let compile_list compile_fun division =
   let rec c_rec totals = function
     | [] -> ([], jumps_unions totals, [])
     | (key, cell) :: rem -> (
-        match cell.ctx with
-        | [] -> c_rec totals rem
-        | _ -> (
-            try
-              let lambda1, total1 = compile_fun cell.ctx cell.pm in
-              let c_rem, total, new_pats =
-                c_rec (jumps_map Context.combine total1 :: totals) rem
-              in
-              ((key, lambda1) :: c_rem, total, cell.pat :: new_pats)
-            with Unused -> c_rec totals rem
-          )
+        if Context.is_empty cell.ctx then
+          c_rec totals rem
+        else
+          try
+            let lambda1, total1 = compile_fun cell.ctx cell.pm in
+            let c_rem, total, new_pats =
+              c_rec (jumps_map Context.combine total1 :: totals) rem
+            in
+            ((key, lambda1) :: c_rem, total, cell.pat :: new_pats)
+          with Unused -> c_rec totals rem
       )
   in
   c_rec [] division
@@ -2808,27 +2817,24 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
         | (-1,pm)::rem -> c_rec body total_body rem *)
         | (i, pm) :: rem -> (
             let ctx_i, total_rem = jumps_extract i total_body in
-            match ctx_i with
-            | [] -> c_rec body total_body rem
-            | _ -> (
-                try
-                  let li, total_i =
-                    comp_fun
-                      ( match rem with
-                      | [] -> partial
-                      | _ -> Partial
-                      )
-                      ctx_i arg pm
-                  in
-                  c_rec
-                    (Lstaticcatch (body, (i, []), li))
-                    (jumps_union total_i total_rem)
-                    rem
-                with Unused ->
-                  c_rec
-                    (Lstaticcatch (body, (i, []), lambda_unit))
-                    total_rem rem
-              )
+            if Context.is_empty ctx_i then
+              c_rec body total_body rem
+            else
+              try
+                let li, total_i =
+                  comp_fun
+                    ( match rem with
+                    | [] -> partial
+                    | _ -> Partial
+                    )
+                    ctx_i arg pm
+                in
+                c_rec
+                  (Lstaticcatch (body, (i, []), li))
+                  (jumps_union total_i total_rem)
+                  rem
+              with Unused ->
+                c_rec (Lstaticcatch (body, (i, []), lambda_unit)) total_rem rem
           )
       in
       try
