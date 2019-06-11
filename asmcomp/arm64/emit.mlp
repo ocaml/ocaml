@@ -33,6 +33,7 @@ let fastcode_flag = ref true
 
 (* Names for special regs *)
 
+let reg_domain_state_ptr = phys_reg 22
 let reg_trap_ptr = phys_reg 23
 let reg_alloc_ptr = phys_reg 24
 let reg_alloc_limit = phys_reg 25
@@ -500,8 +501,9 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 1
     | Lraise k ->
       begin match k with
-      | Cmm.Raise_withtrace -> 1
-      | Cmm.Raise_notrace -> 4
+      | Lambda.Raise_regular -> 2
+      | Lambda.Raise_reraise -> 1
+      | Lambda.Raise_notrace -> 4
       end
 
   let relax_allocation ~num_bytes ~label_after_call_gc =
@@ -894,10 +896,15 @@ let emit_instr i =
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Lambda.Raise_regular ->
+          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
+          `	str	xzr, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty true i.dbg}\n`
-        | Cmm.Raise_notrace ->
+        | Lambda.Raise_reraise ->
+          `	bl	{emit_symbol "caml_raise_exn"}\n`;
+          `{record_frame Reg.Set.empty true i.dbg}\n`
+        | Lambda.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
           `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
           `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
