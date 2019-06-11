@@ -110,16 +110,16 @@ let  rshift {left=left ; right=right} = match left with
 
 let ctx_rshift ctx = List.map rshift ctx
 
-let rec nchars n ps =
+let rec rev_split_at n ps =
   if n <= 0 then [],ps
   else match ps with
   | p::rem ->
-    let chars, cdrs = nchars (n-1) rem in
-    p::chars,cdrs
+    let left,right = rev_split_at (n-1) rem in
+    p::left,right
   | _ -> assert false
 
 let  rshift_num n {left=left ; right=right} =
-  let shifted,left = nchars n left in
+  let shifted,left = rev_split_at n left in
   {left=left ; right = shifted@right}
 
 let ctx_rshift_num n ctx = List.map (rshift_num n) ctx
@@ -275,7 +275,7 @@ let select_columns pss ctx =
     (fun ps r ->
       List.fold_right
         (fun {left=left ; right=right} r ->
-          let transfer, right = nchars n right in
+          let transfer, right = rev_split_at n right in
           try
             {left = lubs transfer ps @ left ; right=right}::r
           with
