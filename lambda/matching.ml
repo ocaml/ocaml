@@ -405,9 +405,14 @@ type pm_half_compiled =
 and pm_var_compiled =
     {inside : pm_half_compiled ; var_arg : lambda ; }
 
+(* Only used inside the various split functions, we only keep [me] when we're
+   done splitting / precompiling. *)
 type pm_half_compiled_info =
     {me : pm_half_compiled ;
      matrix : matrix ;
+     (* the matrix matched by [me]. Is used to extend the list of reachable trap
+        handlers (aka "default environments") when returning from recursive
+        calls. *)
      top_default : (matrix * int) list ; }
 
 let pretty_cases cases =
