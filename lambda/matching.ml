@@ -312,14 +312,11 @@ let ctx_match ctx pss =
 type jumps = (int * ctx list) list
 
 let pretty_jumps (env : jumps) =
-  match env with
-  | [] -> ()
-  | _ ->
-      List.iter
-        (fun (i, ctx) ->
-          Printf.fprintf stderr "jump for %d\n" i;
-          pretty_ctx ctx)
-        env
+  List.iter
+    (fun (i, ctx) ->
+      Printf.fprintf stderr "jump for %d\n" i;
+      pretty_ctx ctx)
+    env
 
 let rec jumps_extract i = function
   | [] -> ([], [])
