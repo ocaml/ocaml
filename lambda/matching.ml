@@ -285,24 +285,24 @@ let specialize_ctx q ctx =
 
 let select_columns pss ctx =
   let n = ncols pss in
-  List.fold_right
-    (fun ps r ->
-      List.fold_right
-        (fun { left; right } r ->
-          let transfer, right = rev_split_at n right in
-          try { left = lubs transfer ps @ left; right } :: r with Empty -> r)
-        ctx r)
-    pss []
+  let lub_row ps { left; right } =
+    let transfer, right = rev_split_at n right in
+    match lubs transfer ps with
+    | exception Empty -> None
+    | inter -> Some { left = inter @ left; right }
+  in
+  let lub_with_ctx ps = List.filter_map (lub_row ps) ctx in
+  List.flatten (List.map lub_with_ctx pss)
 
 let ctx_lub p ctx =
-  List.fold_right
-    (fun { left; right } r ->
+  List.filter_map
+    (fun { left; right } ->
       match right with
       | q :: rem -> (
-          try { left; right = lub p q :: rem } :: r with Empty -> r
+          try Some { left; right = lub p q :: rem } with Empty -> None
         )
       | _ -> fatal_error "Matching.ctx_lub")
-    ctx []
+    ctx
 
 let ctx_match ctx pss =
   List.exists
