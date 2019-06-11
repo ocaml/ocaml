@@ -31,7 +31,6 @@ extern "C" {
 #endif
 
 #ifdef CAML_INTERNALS
-CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
 extern int volatile caml_requested_major_slice;
@@ -44,7 +43,8 @@ CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
 void caml_execute_signal(int signal_number, int in_signal_handler);
 void caml_record_signal(int signal_number);
-void caml_process_pending_signals(void);
+void caml_set_something_to_do (void);
+void caml_raise_in_async_callback (value exc);
 void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
 

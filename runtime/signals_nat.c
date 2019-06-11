@@ -32,6 +32,7 @@
 #include "caml/stack.h"
 #include "caml/spacetime.h"
 #include "caml/memprof.h"
+#include "caml/finalise.h"
 
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
@@ -96,9 +97,7 @@ void caml_garbage_collection(void)
   }
 #endif
 
-  caml_memprof_handle_postponed();
-
-  caml_process_pending_signals();
+  caml_check_urgent_gc (Val_unit);
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
