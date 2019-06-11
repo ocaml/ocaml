@@ -78,40 +78,6 @@ type matrix = pattern list list
 
 let add_omega_column pss = List.map (fun ps -> omega :: ps) pss
 
-type ctx = { left : pattern list; right : pattern list }
-
-let pretty_ctx ctx =
-  List.iter
-    (fun { left; right } ->
-      Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right)
-    ctx
-
-let le_ctx c1 c2 = le_pats c1.left c2.left && le_pats c1.right c2.right
-
-let lshift { left; right } =
-  match right with
-  | x :: xs -> { left = x :: left; right = xs }
-  | _ -> assert false
-
-let lforget { left; right } =
-  match right with
-  | _ :: xs -> { left = omega :: left; right = xs }
-  | _ -> assert false
-
-let ctx_lshift ctx =
-  if List.length ctx < !Clflags.match_context_rows then
-    List.map lshift ctx
-  else
-    (* Context pruning *)
-    get_mins le_ctx (List.map lforget ctx)
-
-let rshift { left; right } =
-  match left with
-  | p :: ps -> { left = ps; right = p :: right }
-  | _ -> assert false
-
-let ctx_rshift ctx = List.map rshift ctx
-
 let rec rev_split_at n ps =
   if n <= 0 then
     ([], ps)
@@ -122,28 +88,222 @@ let rec rev_split_at n ps =
         (p :: left, right)
     | _ -> assert false
 
-let rshift_num n { left; right } =
-  let shifted, left = rev_split_at n left in
-  { left; right = shifted @ right }
-
-let ctx_rshift_num n ctx = List.map (rshift_num n) ctx
-
-(* Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
-  All mutable fields are replaced by '_', since side-effects in
-  guards can alter these fields *)
-
-let combine { left; right } =
-  match left with
-  | p :: ps -> { left = ps; right = set_args_erase_mutable p right }
-  | _ -> assert false
-
-let ctx_combine ctx = List.map combine ctx
+exception NoMatch
 
 let ncols = function
   | [] -> 0
   | ps :: _ -> List.length ps
 
-exception NoMatch
+module Context : sig
+  module Row : sig
+    type t
+
+    val le : t -> t -> bool
+  end
+
+  type t = Row.t list
+
+  val start : int -> t
+
+  val eprintf : t -> unit
+
+  val specialize : pattern -> t -> t
+
+  val lshift : t -> t
+
+  val rshift : t -> t
+
+  val rshift_num : int -> t -> t
+
+  val lub : pattern -> t -> t
+
+  val matches : t -> matrix -> bool
+
+  val combine : t -> t
+
+  val select_columns : matrix -> t -> t
+end = struct
+  module Row = struct
+    type t = { left : pattern list; right : pattern list }
+
+    let eprintf { left; right } =
+      Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right
+
+    let le c1 c2 = le_pats c1.left c2.left && le_pats c1.right c2.right
+
+    let lshift { left; right } =
+      match right with
+      | x :: xs -> { left = x :: left; right = xs }
+      | _ -> assert false
+
+    let lforget { left; right } =
+      match right with
+      | _ :: xs -> { left = omega :: left; right = xs }
+      | _ -> assert false
+
+    let rshift { left; right } =
+      match left with
+      | p :: ps -> { left = ps; right = p :: right }
+      | _ -> assert false
+
+    let rshift_num n { left; right } =
+      let shifted, left = rev_split_at n left in
+      { left; right = shifted @ right }
+
+    (** Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
+  All mutable fields are replaced by '_', since side-effects in
+  guards can alter these fields *)
+    let combine { left; right } =
+      match left with
+      | p :: ps -> { left = ps; right = set_args_erase_mutable p right }
+      | _ -> assert false
+  end
+
+  type t = Row.t list
+
+  let start n : t = [ { left = []; right = omegas n } ]
+
+  let eprintf ctx = List.iter Row.eprintf ctx
+
+  let lshift ctx =
+    if List.length ctx < !Clflags.match_context_rows then
+      List.map Row.lshift ctx
+    else
+      (* Context pruning *)
+      get_mins Row.le (List.map Row.lforget ctx)
+
+  let rshift ctx = List.map Row.rshift ctx
+
+  let rshift_num n ctx = List.map (Row.rshift_num n) ctx
+
+  let combine ctx = List.map Row.combine ctx
+
+  let ctx_matcher p =
+    let p = normalize_pat p in
+    match p.pat_desc with
+    | Tpat_construct (_, cstr, omegas) -> (
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_construct (_, cstr', args)
+          (* NB:  may_constr_equal considers (potential) constructor rebinding *)
+            when Types.may_equal_constr cstr cstr' ->
+              (p, args @ rem)
+          | Tpat_any -> (p, omegas @ rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_constant cst -> (
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_constant cst' when const_compare cst cst' = 0 -> (p, rem)
+          | Tpat_any -> (p, rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_variant (lab, Some omega, _) -> (
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_variant (lab', Some arg, _) when lab = lab' -> (p, arg :: rem)
+          | Tpat_any -> (p, omega :: rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_variant (lab, None, _) -> (
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_variant (lab', None, _) when lab = lab' -> (p, rem)
+          | Tpat_any -> (p, rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_array omegas -> (
+        let len = List.length omegas in
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_array args when List.length args = len -> (p, args @ rem)
+          | Tpat_any -> (p, omegas @ rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_tuple omegas -> (
+        let len = List.length omegas in
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_tuple args when List.length args = len -> (p, args @ rem)
+          | Tpat_any -> (p, omegas @ rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_record (((_, lbl, _) :: _ as l), _) -> (
+        (* Records are normalized *)
+        let len = Array.length lbl.lbl_all in
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_record (((_, lbl', _) :: _ as l'), _)
+            when Array.length lbl'.lbl_all = len ->
+              let l' = all_record_args l' in
+              (p, List.fold_right (fun (_, _, p) r -> p :: r) l' rem)
+          | Tpat_any -> (p, List.fold_right (fun (_, _, p) r -> p :: r) l rem)
+          | _ -> raise NoMatch
+      )
+    | Tpat_lazy omega -> (
+        fun q rem ->
+          match q.pat_desc with
+          | Tpat_lazy arg -> (p, arg :: rem)
+          | Tpat_any -> (p, omega :: rem)
+          | _ -> raise NoMatch
+      )
+    | _ -> fatal_error "Matching.Context.matcher"
+
+  let specialize q ctx =
+    let matcher = ctx_matcher q in
+    let rec filter_rec : t -> t = function
+      | ({ right = p :: ps } as l) :: rem -> (
+          match p.pat_desc with
+          | Tpat_or (p1, p2, _) ->
+              filter_rec
+                ({ l with right = p1 :: ps }
+                :: { l with
+                     Row.right (* disam not principal, OK *) = p2 :: ps
+                   }
+                :: rem
+                )
+          | Tpat_alias (p, _, _) ->
+              filter_rec ({ l with right = p :: ps } :: rem)
+          | Tpat_var _ -> filter_rec ({ l with right = omega :: ps } :: rem)
+          | _ -> (
+              let rem = filter_rec rem in
+              try
+                let to_left, right = matcher p ps in
+                { left = to_left :: l.left; right } :: rem
+              with NoMatch -> rem
+            )
+        )
+      | [] -> []
+      | _ -> fatal_error "Matching.Context.specialize"
+    in
+    filter_rec ctx
+
+  let select_columns pss ctx =
+    let n = ncols pss in
+    let lub_row ps { Row.left; right } =
+      let transfer, right = rev_split_at n right in
+      match lubs transfer ps with
+      | exception Empty -> None
+      | inter -> Some { Row.left = inter @ left; right }
+    in
+    let lub_with_ctx ps = List.filter_map (lub_row ps) ctx in
+    List.flatten (List.map lub_with_ctx pss)
+
+  let lub p ctx =
+    List.filter_map
+      (fun { Row.left; right } ->
+        match right with
+        | q :: rem -> (
+            try Some { Row.left; right = lub p q :: rem } with Empty -> None
+          )
+        | _ -> fatal_error "Matching.Context.lub")
+      ctx
+
+  let matches ctx pss =
+    List.exists
+      (fun { Row.right = qs } -> List.exists (fun ps -> may_compats qs ps) pss)
+      ctx
+end
 
 exception OrPat
 
@@ -186,136 +346,13 @@ let specialize_default matcher env =
   in
   make_rec env
 
-let ctx_matcher p =
-  let p = normalize_pat p in
-  match p.pat_desc with
-  | Tpat_construct (_, cstr, omegas) -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_construct (_, cstr', args)
-        (* NB:  may_constr_equal considers (potential) constructor rebinding *)
-          when Types.may_equal_constr cstr cstr' ->
-            (p, args @ rem)
-        | Tpat_any -> (p, omegas @ rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_constant cst -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_constant cst' when const_compare cst cst' = 0 -> (p, rem)
-        | Tpat_any -> (p, rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_variant (lab, Some omega, _) -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_variant (lab', Some arg, _) when lab = lab' -> (p, arg :: rem)
-        | Tpat_any -> (p, omega :: rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_variant (lab, None, _) -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_variant (lab', None, _) when lab = lab' -> (p, rem)
-        | Tpat_any -> (p, rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_array omegas -> (
-      let len = List.length omegas in
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_array args when List.length args = len -> (p, args @ rem)
-        | Tpat_any -> (p, omegas @ rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_tuple omegas -> (
-      let len = List.length omegas in
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_tuple args when List.length args = len -> (p, args @ rem)
-        | Tpat_any -> (p, omegas @ rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_record (((_, lbl, _) :: _ as l), _) -> (
-      (* Records are normalized *)
-      let len = Array.length lbl.lbl_all in
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_record (((_, lbl', _) :: _ as l'), _)
-          when Array.length lbl'.lbl_all = len ->
-            let l' = all_record_args l' in
-            (p, List.fold_right (fun (_, _, p) r -> p :: r) l' rem)
-        | Tpat_any -> (p, List.fold_right (fun (_, _, p) r -> p :: r) l rem)
-        | _ -> raise NoMatch
-    )
-  | Tpat_lazy omega -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_lazy arg -> (p, arg :: rem)
-        | Tpat_any -> (p, omega :: rem)
-        | _ -> raise NoMatch
-    )
-  | _ -> fatal_error "Matching.ctx_matcher"
-
-let specialize_ctx q ctx =
-  let matcher = ctx_matcher q in
-  let rec filter_rec = function
-    | ({ right = p :: ps } as l) :: rem -> (
-        match p.pat_desc with
-        | Tpat_or (p1, p2, _) ->
-            filter_rec
-              ({ l with right = p1 :: ps }
-              :: { l with right = p2 :: ps }
-              :: rem
-              )
-        | Tpat_alias (p, _, _) -> filter_rec ({ l with right = p :: ps } :: rem)
-        | Tpat_var _ -> filter_rec ({ l with right = omega :: ps } :: rem)
-        | _ -> (
-            let rem = filter_rec rem in
-            try
-              let to_left, right = matcher p ps in
-              { left = to_left :: l.left; right } :: rem
-            with NoMatch -> rem
-          )
-      )
-    | [] -> []
-    | _ -> fatal_error "Matching.specialize_ctx"
-  in
-  filter_rec ctx
-
-let select_columns pss ctx =
-  let n = ncols pss in
-  let lub_row ps { left; right } =
-    let transfer, right = rev_split_at n right in
-    match lubs transfer ps with
-    | exception Empty -> None
-    | inter -> Some { left = inter @ left; right }
-  in
-  let lub_with_ctx ps = List.filter_map (lub_row ps) ctx in
-  List.flatten (List.map lub_with_ctx pss)
-
-let ctx_lub p ctx =
-  List.filter_map
-    (fun { left; right } ->
-      match right with
-      | q :: rem -> (
-          try Some { left; right = lub p q :: rem } with Empty -> None
-        )
-      | _ -> fatal_error "Matching.ctx_lub")
-    ctx
-
-let ctx_match ctx pss =
-  List.exists
-    (fun { right = qs } -> List.exists (fun ps -> may_compats qs ps) pss)
-    ctx
-
-type jumps = (int * ctx list) list
+type jumps = (int * Context.t) list
 
 let pretty_jumps (env : jumps) =
   List.iter
     (fun (i, ctx) ->
       Printf.fprintf stderr "jump for %d\n" i;
-      pretty_ctx ctx)
+      Context.eprintf ctx)
     env
 
 let rec jumps_extract i = function
@@ -356,17 +393,17 @@ let jumps_add i pss jumps =
             else if j < i then
               (i, pss) :: all
             else
-              (i, get_mins le_ctx (pss @ qss)) :: rem
+              (i, get_mins Context.Row.le (pss @ qss)) :: rem
       in
       add jumps
 
-let rec jumps_union (env1 : (int * ctx list) list) env2 =
+let rec jumps_union (env1 : jumps) env2 =
   match (env1, env2) with
   | [], _ -> env2
   | _, [] -> env1
   | ((i1, pss1) as x1) :: rem1, ((i2, pss2) as x2) :: rem2 ->
       if i1 = i2 then
-        (i1, get_mins le_ctx (pss1 @ pss2)) :: jumps_union rem1 rem2
+        (i1, get_mins Context.Row.le (pss1 @ pss2)) :: jumps_union rem1 rem2
       else if i1 > i2 then
         x1 :: jumps_union rem1 env2
       else
@@ -1199,7 +1236,7 @@ let add_line patl_action pm =
   pm.cases <- patl_action :: pm.cases;
   pm
 
-type cell = { pm : pattern_matching; ctx : ctx list; pat : pattern }
+type cell = { pm : pattern_matching; ctx : Context.t; pat : pattern }
 
 let add make_matching_fun division eq_key key patl_action args =
   try
@@ -1270,7 +1307,7 @@ let make_constant_matching p def ctx = function
   | _ :: argl ->
       let def =
         specialize_default (matcher_const (get_key_constant "make" p)) def
-      and ctx = specialize_ctx p ctx in
+      and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
         pat = normalize_pat p
@@ -1389,7 +1426,7 @@ let make_constr_matching p def ctx = function
             args = newargs;
             default = specialize_default (matcher_constr cstr) def
           };
-        ctx = specialize_ctx p ctx;
+        ctx = Context.specialize p ctx;
         pat = normalize_pat p
       }
 
@@ -1412,7 +1449,7 @@ let make_variant_matching_constant p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_constant"
   | _ :: argl ->
       let def = specialize_default (matcher_variant_const lab) def
-      and ctx = specialize_ctx p ctx in
+      and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
         pat = normalize_pat p
@@ -1429,7 +1466,7 @@ let make_variant_matching_nonconst p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_nonconst"
   | (arg, _mut) :: argl ->
       let def = specialize_default (matcher_variant_nonconst lab) def
-      and ctx = specialize_ctx p ctx in
+      and ctx = Context.specialize p ctx in
       { pm =
           { cases = [];
             args = (Lprim (Pfield 1, [ arg ], p.pat_loc), Alias) :: argl;
@@ -1485,7 +1522,7 @@ let make_var_matching def = function
       }
 
 let divide_var ctx pm =
-  divide_line ctx_lshift make_var_matching get_args_var omega ctx pm
+  divide_line Context.lshift make_var_matching get_args_var omega ctx pm
 
 (* Matching and forcing a lazy value *)
 
@@ -1645,7 +1682,7 @@ let make_lazy_matching def = function
       }
 
 let divide_lazy p ctx pm =
-  divide_line (specialize_ctx p) make_lazy_matching get_arg_lazy p ctx pm
+  divide_line (Context.specialize p) make_lazy_matching get_arg_lazy p ctx pm
 
 (* Matching against a tuple pattern *)
 
@@ -1679,7 +1716,7 @@ let make_tuple_matching loc arity def = function
       }
 
 let divide_tuple arity p ctx pm =
-  divide_line (specialize_ctx p)
+  divide_line (Context.specialize p)
     (make_tuple_matching p.pat_loc arity)
     (get_args_tuple arity) p ctx pm
 
@@ -1740,7 +1777,7 @@ let make_record_matching loc all_labels def = function
 
 let divide_record all_labels p ctx pm =
   let get_args = get_args_record (Array.length all_labels) in
-  divide_line (specialize_ctx p)
+  divide_line (Context.specialize p)
     (make_record_matching p.pat_loc all_labels)
     get_args p ctx pm
 
@@ -1778,7 +1815,7 @@ let make_array_matching kind p def ctx = function
           :: make_args (pos + 1)
       in
       let def = specialize_default (matcher_array len) def
-      and ctx = specialize_ctx p ctx in
+      and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = make_args 0; default = def };
         ctx;
         pat = normalize_pat p
@@ -2303,12 +2340,14 @@ let mk_failaction_pos partial seen ctx defs =
               List.fold_right
                 (fun pat r -> (get_key_constr pat, action) :: r)
                 pats klist
-            and jumps = jumps_add i (ctx_lub (list_as_pat pats) ctx) jumps in
+            and jumps =
+              jumps_add i (Context.lub (list_as_pat pats) ctx) jumps
+            in
             (klist, jumps))
           ([], jumps_empty) env
     | _, (pss, idef) :: rem -> (
         let now, later =
-          List.partition (fun (_p, p_ctx) -> ctx_match p_ctx pss) to_test
+          List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
         in
         match now with
         | [] -> scan_def env to_test rem
@@ -2318,7 +2357,9 @@ let mk_failaction_pos partial seen ctx defs =
   let fail_pats = complete_pats_constrs seen in
   if List.length fail_pats < !Clflags.match_context_rows then (
     let fail, jmps =
-      scan_def [] (List.map (fun pat -> (pat, ctx_lub pat ctx)) fail_pats) defs
+      scan_def []
+        (List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats)
+        defs
     in
     if dbg then (
       eprintf "POSITIVE JUMPS [%i]:\n" (List.length fail_pats);
@@ -2661,7 +2702,7 @@ let compile_list compile_fun division =
             try
               let lambda1, total1 = compile_fun cell.ctx cell.pm in
               let c_rem, total, new_pats =
-                c_rec (jumps_map ctx_combine total1 :: totals) rem
+                c_rec (jumps_map Context.combine total1 :: totals) rem
               in
               ((key, lambda1) :: c_rem, total, cell.pat :: new_pats)
             with Unused -> c_rec totals rem
@@ -2675,7 +2716,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
     | [] -> (r, total_r)
     | (mat, i, vars, pm) :: rem -> (
         try
-          let ctx = select_columns mat ctx in
+          let ctx = Context.select_columns mat ctx in
           let handler_i, total_i = compile_fun ctx pm in
           match raw_action r with
           | Lstaticraise (j, args) ->
@@ -2683,14 +2724,14 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
                 ( List.fold_right2
                     (bind_with_value_kind Alias)
                     vars args handler_i,
-                  jumps_map (ctx_rshift_num (ncols mat)) total_i )
+                  jumps_map (Context.rshift_num (ncols mat)) total_i )
               else
                 do_rec r total_r rem
           | _ ->
               do_rec
                 (Lstaticcatch (r, (i, vars), handler_i))
                 (jumps_union (jumps_remove i total_r)
-                   (jumps_map (ctx_rshift_num (ncols mat)) total_i))
+                   (jumps_map (Context.rshift_num (ncols mat)) total_i))
                 rem
         with Unused ->
           do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
@@ -2867,7 +2908,7 @@ and do_compile_matching_pr repr partial ctx arg x =
     );
   pretty_precompiled x;
   Format.eprintf "CTX\n";
-  pretty_ctx ctx;
+  Context.eprintf ctx;
   let ((_, jumps) as r) = do_compile_matching repr partial ctx arg x in
   Format.eprintf "JUMPS\n";
   pretty_jumps jumps;
@@ -2878,15 +2919,16 @@ and do_compile_matching repr partial ctx arg pmh =
   | Pm pm -> (
       let pat = what_is_cases pm.cases in
       match pat.pat_desc with
-      | Tpat_any -> compile_no_test divide_var ctx_rshift repr partial ctx pm
+      | Tpat_any ->
+          compile_no_test divide_var Context.rshift repr partial ctx pm
       | Tpat_tuple patl ->
           compile_no_test
             (divide_tuple (List.length patl) (normalize_pat pat))
-            ctx_combine repr partial ctx pm
+            Context.combine repr partial ctx pm
       | Tpat_record ((_, lbl, _) :: _, _) ->
           compile_no_test
             (divide_record lbl.lbl_all (normalize_pat pat))
-            ctx_combine repr partial ctx pm
+            Context.combine repr partial ctx pm
       | Tpat_constant cst ->
           compile_test
             (compile_match repr partial)
@@ -2909,7 +2951,7 @@ and do_compile_matching repr partial ctx arg pmh =
       | Tpat_lazy _ ->
           compile_no_test
             (divide_lazy (normalize_pat pat))
-            ctx_combine repr partial ctx pm
+            Context.combine repr partial ctx pm
       | Tpat_variant (_, _, row) ->
           compile_test
             (compile_match repr partial)
@@ -2920,9 +2962,9 @@ and do_compile_matching repr partial ctx arg pmh =
     )
   | PmVar { inside = pmh; var_arg = arg } ->
       let lam, total =
-        do_compile_matching repr partial (ctx_lshift ctx) arg pmh
+        do_compile_matching repr partial (Context.lshift ctx) arg pmh
       in
-      (lam, jumps_map ctx_rshift total)
+      (lam, jumps_map Context.rshift total)
   | PmOr { body; handlers } ->
       let lam, total = compile_match repr partial ctx body in
       compile_orhandlers (compile_match repr partial) lam total ctx handlers
@@ -3044,8 +3086,6 @@ let check_partial = check_partial is_mutable is_lazy
 
 (* have toplevel handler when appropriate *)
 
-let start_ctx n = [ { left = []; right = omegas n } ]
-
 let check_total total lambda i handler_fun =
   if jumps_is_empty total then
     lambda
@@ -3064,7 +3104,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
         }
       in
       try
-        let lambda, total = compile_match repr partial (start_ctx 1) pm in
+        let lambda, total = compile_match repr partial (Context.start 1) pm in
         check_total total lambda raise_num handler_fun
       with Unused -> assert false
       (* ; handler_fun() *)
@@ -3076,7 +3116,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
           default = []
         }
       in
-      let lambda, total = compile_match repr partial (start_ctx 1) pm in
+      let lambda, total = compile_match repr partial (Context.start 1) pm in
       assert (jumps_is_empty total);
       lambda
 
@@ -3265,7 +3305,7 @@ let for_tupled_function loc paraml pats_act_list partial =
   in
   try
     let lambda, total =
-      compile_match None partial (start_ctx (List.length paraml)) pm
+      compile_match None partial (Context.start (List.length paraml)) pm
     in
     check_total total lambda raise_num (partial_function loc)
   with Unused -> partial_function loc ()
@@ -3371,8 +3411,8 @@ let do_for_multiple_match loc paraml pat_act_list partial =
         List.map (fun (e, pm) -> (e, flatten_precompiled size args pm)) nexts
       in
       let lam, total =
-        comp_match_handlers (compile_flattened repr) partial (start_ctx size)
-          () flat_next flat_nexts
+        comp_match_handlers (compile_flattened repr) partial
+          (Context.start size) () flat_next flat_nexts
       in
       List.fold_right2 (bind Strict) idl paraml
         ( match partial with
@@ -3382,7 +3422,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
             lam
         )
     with Cannot_flatten -> (
-      let lambda, total = compile_match None partial (start_ctx 1) pm1 in
+      let lambda, total = compile_match None partial (Context.start 1) pm1 in
       match partial with
       | Partial -> check_total total lambda raise_num (partial_function loc)
       | Total ->
