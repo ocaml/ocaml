@@ -97,14 +97,8 @@ let lforget {left=left ; right=right} = match right with
 | _::xs -> {left=omega::left ; right=xs}
 |  _ -> assert false
 
-let rec small_enough n = function
-  | [] -> true
-  | _::rem ->
-      if n <= 0 then false
-      else small_enough (n-1) rem
-
 let ctx_lshift ctx =
-  if small_enough (!Clflags.match_context_rows - 1) ctx then
+  if List.length ctx < !Clflags.match_context_rows then
     List.map lshift ctx
   else (* Context pruning *) begin
     get_mins le_ctx (List.map lforget ctx)
