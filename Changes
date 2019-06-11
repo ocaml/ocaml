@@ -71,7 +71,7 @@ Working version
   (Xavier Leroy, review by David Allsopp and Damien Doligez)
 
 - #8716: Optimize [Array.fill] and [Hashtbl.clear] with a new runtime primitive
-  (Alain Frisch, review by David Allsopp, Stephen Dolan, Damien Doligez)
+  (Alain Frisch, review by David Allsopp, Stephen Dolan and Damien Doligez)
 
 ### Other libraries:
 
