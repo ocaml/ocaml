@@ -907,52 +907,54 @@ module Or_matrix = struct
         | _ -> true)
       l
 
-  (* Insert or append a pattern in the Or matrix *)
+  (* Insert or append a clause in the Or matrix:
+     - insert: adding the clause in the middle of the or_matrix
+     - append: adding the clause at the bottom of the or_matrix
 
-  let insert_or_append p ps act ors no =
-    let rec attempt seen = function
-      | ((q :: qs, act_q) as cl) :: rem ->
-          if is_or q then
-            if may_compat p q then
-              if
-                Typedtree.pat_bound_idents p = []
-                && Typedtree.pat_bound_idents q = []
-                && equiv_pat p q
-              then
-                (* attempt insert, for equivalent orpats with no variables *)
-                let _, not_e = extract_equiv_head q rem in
-                if
-                  safe_below_or_matrix not_e (p, ps)
-                  && (* check append condition for head of O *)
-                     List.for_all (* check insert condition for tail of O *)
-                       (fun cl ->
-                         match cl with
-                         | q :: _, _ -> disjoint p q
-                         | _ -> assert false)
-                       seen
-                then
-                  (* insert *)
-                  (List.rev_append seen ((p :: ps, act) :: cl :: rem), no)
-                else
-                  (* fail to insert or append *)
-                  (ors, (p :: ps, act) :: no)
-              else if safe_below (qs, act_q) ps then
-                (* check condition (b) for append *)
-                attempt (cl :: seen) rem
-              else
-                (ors, (p :: ps, act) :: no)
-            else
-              (* p # q, go on with append/insert *)
-              attempt (cl :: seen) rem
-          else
-            (* q is not an or-pat, go on with append/insert *)
-            attempt (cl :: seen) rem
-      | _ ->
-          (* [] in fact *)
-          ((p :: ps, act) :: ors, no)
+     If neither are possible we add to the bottom of the No matrix.
+   *)
+  let insert_or_append (p, ps, act) rev_ors rev_no =
+    let safe_to_insert rem (p, ps) seen =
+      let _, not_e = extract_equiv_head p rem in
+      (* check append condition for head of O *)
+      safe_below_or_matrix not_e (p, ps)
+      && (* check insert condition for tail of O *)
+         List.for_all
+           (fun cl ->
+             match cl with
+             | q :: _, _ -> disjoint p q
+             | _ -> assert false)
+           seen
     in
-    (* success in appending *)
-    attempt [] ors
+    let rec attempt seen = function
+      (* invariant: the new clause is safe to append at the end of
+       'seen' (but maybe not rem yet) *)
+      | [] -> ((p :: ps, act) :: rev_ors, rev_no)
+      | ([], _act) :: _ -> assert false
+      | ((q :: qs, act_q) as cl) :: rem ->
+          if not (is_or q) then
+            (* q is not an or-pat, continue *)
+            attempt (cl :: seen) rem
+          else if disjoint p q then
+            (* p # q, continue *)
+            attempt (cl :: seen) rem
+          else if
+            Typedtree.pat_bound_idents p = []
+            && Typedtree.pat_bound_idents q = []
+            && equiv_pat p q
+          then
+            (* attempt insertion, for equivalent orpats with no variables *)
+            if safe_to_insert rem (p, ps) seen then
+              (List.rev_append seen ((p :: ps, act) :: cl :: rem), rev_no)
+            else
+              (* fail to insert or append *)
+              (rev_ors, (p :: ps, act) :: rev_no)
+          else if safe_below (qs, act_q) ps then
+            attempt (cl :: seen) rem
+          else
+            (rev_ors, (p :: ps, act) :: rev_no)
+    in
+    attempt [] rev_ors
 end
 
 (* Reconstruct default information from half_compiled  pm list *)
@@ -1003,7 +1005,7 @@ let rec split_or argo cls args def =
     | ((p :: ps, act) as cl) :: rem ->
         if safe_before cl no then
           if is_or p then
-            let ors, no = Or_matrix.insert_or_append p ps act ors no in
+            let ors, no = Or_matrix.insert_or_append (p, ps, act) ors no in
             do_split before ors no rem
           else if safe_before cl ors then
             do_split (cl :: before) ors no rem
