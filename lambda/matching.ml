@@ -993,16 +993,18 @@ let rec split_or argo cls args def =
           in
           do_split rev_before rev_ors rev_no rem
     | _ -> assert false
-  and cons_next yes yesor = function
-    | [] -> precompile_or argo yes yesor args def []
-    | rem ->
-        let { me = next; matrix; top_default = def }, nexts =
-          do_split [] [] [] rem
-        in
-        let idef = next_raise_count () in
-        precompile_or argo yes yesor args
-          (cons_default matrix idef def)
-          ((idef, next) :: nexts)
+  and cons_next yes yesor no =
+    let def, nexts =
+      match no with
+      | [] -> (def, [])
+      | _ ->
+          let { me = next; matrix; top_default = def }, nexts =
+            do_split [] [] [] no
+          in
+          let idef = next_raise_count () in
+          (cons_default matrix idef def, (idef, next) :: nexts)
+    in
+    precompile_or argo yes yesor args def nexts
   in
   do_split [] [] [] cls
 
