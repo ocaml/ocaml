@@ -961,23 +961,6 @@ end
 
 let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
 
-let rec rebuild_matrix pmh =
-  match pmh with
-  | Pm pm -> as_matrix pm.cases
-  | PmOr { or_matrix = m } -> m
-  | PmVar x -> add_omega_column (rebuild_matrix x.inside)
-
-let rec rebuild_default nexts def =
-  match nexts with
-  | [] -> def
-  | (e, pmh) :: rem ->
-      (add_omega_column (rebuild_matrix pmh), e) :: rebuild_default rem def
-
-let rebuild_nexts arg nexts k =
-  List.fold_right
-    (fun (e, pm) k -> (e, PmVar { inside = pm; var_arg = arg }) :: k)
-    nexts k
-
 (*
   Split a matching.
     Splitting is first directed by or-patterns, then by
@@ -1198,6 +1181,25 @@ and precompile_var args cls def k =
               (* If you need *)
               dont_precompile_var args cls def k
           | _ ->
+              let rec rebuild_matrix pmh =
+                match pmh with
+                | Pm pm -> as_matrix pm.cases
+                | PmOr { or_matrix = m } -> m
+                | PmVar x -> add_omega_column (rebuild_matrix x.inside)
+              in
+              let rec rebuild_default nexts def =
+                match nexts with
+                | [] -> def
+                | (e, pmh) :: rem ->
+                    (add_omega_column (rebuild_matrix pmh), e)
+                    :: rebuild_default rem def
+              in
+              let rebuild_nexts arg nexts k =
+                List.fold_right
+                  (fun (e, pm) k ->
+                    (e, PmVar { inside = pm; var_arg = arg }) :: k)
+                  nexts k
+              in
               let rfirst =
                 { me = PmVar { inside = first; var_arg = av };
                   matrix = add_omega_column matrix;
