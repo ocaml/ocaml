@@ -313,6 +313,13 @@ end = struct
   let union pss qss = get_mins Row.le (pss @ qss)
 end
 
+(* A few operations on default environments *)
+
+let cons_default matrix raise_num default =
+  match matrix with
+  | [] -> default
+  | _ -> (matrix, raise_num) :: default
+
 exception OrPat
 
 let specialize_matrix matcher pss =
@@ -353,6 +360,17 @@ let specialize_default matcher env =
       )
   in
   make_rec env
+
+let default_pop_column def = specialize_default (fun _p rem -> rem) def
+
+let default_pop_compat p def =
+  let compat_matcher q rem =
+    if may_compat p q then
+      rem
+    else
+      raise NoMatch
+  in
+  specialize_default compat_matcher def
 
 module Jumps : sig
   type t
@@ -727,21 +745,6 @@ let rec what_is_cases cases =
           assert false
       | _ -> p
     )
-
-(* A few operations on default environments *)
-let cons_default matrix raise_num default =
-  match matrix with
-  | [] -> default
-  | _ -> (matrix, raise_num) :: default
-
-let default_compat p def =
-  let compat_matcher q rem =
-    if may_compat p q then
-      rem
-    else
-      raise NoMatch
-  in
-  specialize_default compat_matcher def
 
 (* Or-pattern expansion, variables are a complication w.r.t. the article *)
 
@@ -1165,7 +1168,7 @@ and precompile_var args cls def k =
                 | _ :: ps -> (ps, act)
                 | _ -> assert false)
               cls
-          and var_def = specialize_default (fun _ rem -> rem) def in
+          and var_def = default_pop_column def in
           let { me = first; matrix }, nexts =
             split_or (Some v) var_cls (arg :: rargs) var_def
           in
@@ -1213,7 +1216,7 @@ and precompile_or argo cls ors args def k =
                   | _ :: r -> r
                   | _ -> assert false
                   );
-                default = default_compat orp def
+                default = default_pop_compat orp def
               }
             in
             let pm_fv = pm_free_variables orpm in
@@ -1544,8 +1547,7 @@ let divide_variant row ctx { cases = cl; args = al; default = def } =
   *)
 
 (* Matching against a variable *)
-
-let get_args_var _ rem = rem
+let get_args_var _p rem = rem
 
 let make_var_matching def = function
   | [] -> fatal_error "Matching.make_var_matching"
