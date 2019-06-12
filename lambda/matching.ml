@@ -979,21 +979,23 @@ let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
 
 let rec split_or argo cls args def =
   let cls = half_simplify_cases args cls in
-  let rec do_split before ors no = function
-    | [] -> cons_next (List.rev before) (List.rev ors) (List.rev no)
+  let rec do_split rev_before rev_ors rev_no = function
+    | [] ->
+        cons_next (List.rev rev_before) (List.rev rev_ors) (List.rev rev_no)
     | ((p :: ps, act) as cl) :: rem ->
-        if safe_before cl no then
-          if is_or p then
-            let ors, no = Or_matrix.insert_or_append (p, ps, act) ors no in
-            do_split before ors no rem
-          else if safe_before cl ors then
-            do_split (cl :: before) ors no rem
-          else if Or_matrix.safe_below_or_matrix ors (p, ps) then
-            do_split before (cl :: ors) no rem
-          else
-            do_split before ors (cl :: no) rem
+        if not (safe_before cl rev_no) then
+          do_split rev_before rev_ors (cl :: rev_no) rem
+        else if is_or p then
+          let ors, no =
+            Or_matrix.insert_or_append (p, ps, act) rev_ors rev_no
+          in
+          do_split rev_before ors no rem
+        else if safe_before cl rev_ors then
+          do_split (cl :: rev_before) rev_ors rev_no rem
+        else if Or_matrix.safe_below_or_matrix rev_ors (p, ps) then
+          do_split rev_before (cl :: rev_ors) rev_no rem
         else
-          do_split before ors (cl :: no) rem
+          do_split rev_before rev_ors (cl :: rev_no) rem
     | _ -> assert false
   and cons_next yes yesor = function
     | [] -> precompile_or argo yes yesor args def []
