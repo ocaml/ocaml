@@ -484,10 +484,16 @@ type pattern_matching = {
 (* Pattern matching after application of both the or-pat rule and the
    mixture rule *)
 
+type handler = {
+  provenance : matrix;
+  exit : int;
+  vars : (Ident.t * Lambda.value_kind) list;
+  pm : pattern_matching
+}
+
 type pm_or_compiled = {
   body : pattern_matching;
-  handlers :
-    (matrix * int * (Ident.t * Lambda.value_kind) list * pattern_matching) list;
+  handlers : handler list;
   or_matrix : matrix
 }
 
@@ -539,7 +545,7 @@ let rec pretty_precompiled = function
       pretty_pm x.body;
       pretty_matrix Format.err_formatter x.or_matrix;
       List.iter
-        (fun (_, i, _, pm) ->
+        (fun { exit = i; pm; _ } ->
           eprintf "++ Handler %d ++\n" i;
           pretty_pm pm)
         x.handlers
@@ -1239,6 +1245,7 @@ and precompile_or argo cls ors args def k =
             in
             let pm_fv = pm_free_variables orpm in
             let vars =
+              (* bound variables of the or-pattern and used in the orpm actions *)
               Typedtree.pat_bound_idents_full orp
               |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
               |> List.map (fun (id, _, ty) ->
@@ -1249,19 +1256,23 @@ and precompile_or argo cls ors args def k =
             let mk_new_action vs =
               Lstaticraise (or_num, List.map (fun v -> Lvar v) vs)
             in
-            let body, handlers = do_cases rem in
-            ( explode_or_pat argo new_patl mk_new_action body
-                (List.map fst vars) [] orp,
-              let mat = [ [ orp ] ] in
-              (mat, or_num, vars, orpm) :: handlers )
+            let rem_cases, rem_handlers = do_cases rem in
+            let cases =
+              explode_or_pat argo new_patl mk_new_action rem_cases
+                (List.map fst vars) [] orp
+            in
+            let handler =
+              { provenance = [ [ orp ] ]; exit = or_num; vars; pm = orpm }
+            in
+            (cases, handler :: rem_handlers)
         | cl :: rem ->
             let new_ord, new_to_catch = do_cases rem in
             (cl :: new_ord, new_to_catch)
         | [] -> ([], [])
       in
-      let end_body, handlers = do_cases ors in
+      let cases, handlers = do_cases ors in
       let matrix = as_matrix (cls @ ors)
-      and body = { cases = cls @ end_body; args; default = def } in
+      and body = { cases = cls @ cases; args; default = def } in
       ( { me = PmOr { body; handlers; or_matrix = matrix };
           matrix;
           top_default = def
@@ -2767,7 +2778,7 @@ let compile_list compile_fun division =
 let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> (r, total_r)
-    | (mat, i, vars, pm) :: rem -> (
+    | { provenance = mat; exit = i; vars; pm } :: rem -> (
         try
           let ctx = Context.select_columns mat ctx in
           let handler_i, total_i = compile_fun ctx pm in
@@ -3403,17 +3414,16 @@ let flatten_pm size args pm =
     default = flatten_def size pm.default
   }
 
+let flatten_handler size handler =
+  { handler with provenance = flatten_matrix size handler.provenance }
+
 let flatten_precompiled size args pmh =
   match pmh with
   | Pm pm -> Pm (flatten_pm size args pm)
   | PmOr { body = b; handlers = hs; or_matrix = m } ->
       PmOr
         { body = flatten_pm size args b;
-          handlers =
-            List.map
-              (fun (mat, i, vars, pm) ->
-                (flatten_matrix size mat, i, vars, pm))
-              hs;
+          handlers = List.map (flatten_handler size) hs;
           or_matrix = flatten_matrix size m
         }
   | PmVar _ -> assert false
