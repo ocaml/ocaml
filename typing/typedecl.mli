@@ -38,6 +38,8 @@ val transl_value_decl:
     Env.t -> Location.t ->
     Parsetree.value_description -> Typedtree.value_description * Env.t
 
+(* If a [Path.t] optional argument is provided, the [Parsetree.type_declaration]
+   argument should satisfy [is_fixed_type] *)
 val transl_with_constraint:
     Ident.t -> Path.t option ->
     sig_env:Env.t -> sig_decl:Types.type_declaration ->
@@ -89,7 +91,6 @@ type error =
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
-  | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Val_in_structure
   | Multiple_native_repr_attributes
@@ -100,6 +101,7 @@ type error =
   | Bad_unboxed_attribute of string
   | Boxed_and_unboxed
   | Nonrec_gadt
+  | Invalid_private_row_declaration of type_expr
 
 exception Error of Location.t * error
 
