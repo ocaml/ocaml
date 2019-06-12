@@ -492,7 +492,7 @@ FUNCTION(caml_raise_exception)
 FUNCTION(caml_callback_asm)
         CFI_STARTPROC
     /* Initial shuffling of arguments */
-    /* (x0 = Caml_state, x1 = closure, x2 = first arg) */
+    /* (x0 = Caml_state, x1 = closure, [x2] = first arg) */
         mov     ARG_DOMAIN_STATE_PTR, x0
         ldr     x0, [x2]        /* x0 = first arg */
                                 /* x1 = closure environment */
