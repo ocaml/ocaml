@@ -627,18 +627,17 @@ let same_actions = function
             None
     )
 
-(* Test for swapping two clauses *)
-
-let up_ok_action act1 act2 =
-  match (make_key act1, make_key act2) with
-  | Some key1, Some key2 -> key1 = key2
-  | None, _
-  | _, None ->
-      false
-
-let up_ok (ps, act_p) l =
+let safe_before (ps, act_p) l =
+  (* Test for swapping two clauses *)
+  let same_actions act1 act2 =
+    match (make_key act1, make_key act2) with
+    | Some key1, Some key2 -> key1 = key2
+    | None, _
+    | _, None ->
+        false
+  in
   List.for_all
-    (fun (qs, act_q) -> up_ok_action act_p act_q || not (may_compats ps qs))
+    (fun (qs, act_q) -> same_actions act_p act_q || not (may_compats ps qs))
     l
 
 (*
@@ -999,11 +998,11 @@ let rec split_or argo cls args def =
   let rec do_split before ors no = function
     | [] -> cons_next (List.rev before) (List.rev ors) (List.rev no)
     | ((p :: ps, act) as cl) :: rem ->
-        if up_ok cl no then
+        if safe_before cl no then
           if is_or p then
             let ors, no = insert_or_append p ps act ors no in
             do_split before ors no rem
-          else if up_ok cl ors then
+          else if safe_before cl ors then
             do_split (cl :: before) ors no rem
           else if safe_below_or_matrix ors (p, ps) then
             do_split before (cl :: ors) no rem
@@ -1128,7 +1127,7 @@ and split_constr cls args def k =
               )
           )
         | ((p :: _, _) as cl) :: rem ->
-            if group p && up_ok cl no then
+            if group p && safe_before cl no then
               split_ex (cl :: yes) no rem
             else
               split_ex yes (cl :: no) rem
@@ -1152,7 +1151,7 @@ and split_constr cls args def k =
           last row is made of variables only *)
             split_noex yes (cl :: no) []
         | ((p :: _, _) as cl) :: rem ->
-            if (not (group p)) && up_ok cl no then
+            if (not (group p)) && safe_before cl no then
               split_noex (cl :: yes) no rem
             else
               split_noex yes (cl :: no) rem
