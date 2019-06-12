@@ -897,11 +897,11 @@ let safe_below_or_matrix l (q, qs) =
 
 let equiv_pat p q = le_pat p q && le_pat q p
 
-let rec get_equiv p l =
+let rec extract_equiv_head p l =
   match l with
   | ((q :: _, _) as cl) :: rem ->
       if equiv_pat p q then
-        let others, rem = get_equiv p rem in
+        let others, rem = extract_equiv_head p rem in
         (cl :: others, rem)
       else
         ([], l)
@@ -918,7 +918,7 @@ let insert_or_append p ps act ors no =
               && equiv_pat p q
             then
               (* attempt insert, for equivalent orpats with no variables *)
-              let _, not_e = get_equiv q rem in
+              let _, not_e = extract_equiv_head q rem in
               if
                 safe_below_or_matrix not_e (p, ps)
                 && (* check append condition for head of O *)
@@ -1217,7 +1217,7 @@ and precompile_or argo cls ors args def k =
   | _ ->
       let rec do_cases = function
         | (({ pat_desc = Tpat_or _ } as orp) :: patl, action) :: rem ->
-            let others, rem = get_equiv orp rem in
+            let others, rem = extract_equiv_head orp rem in
             let orpm =
               { cases =
                   (patl, action)
