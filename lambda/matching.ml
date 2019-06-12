@@ -767,17 +767,17 @@ let mk_alpha_env arg aliases ids =
           Ident.create_local (Ident.name id) ))
     ids
 
-let rec explode_or_pat arg patl mk_action rem vars aliases = function
-  | { pat_desc = Tpat_or (p1, p2, _) } ->
-      explode_or_pat arg patl mk_action
-        (explode_or_pat arg patl mk_action rem vars aliases p2)
-        vars aliases p1
-  | { pat_desc = Tpat_alias (p, id, _) } ->
-      explode_or_pat arg patl mk_action rem vars (id :: aliases) p
-  | { pat_desc = Tpat_var (x, _) } ->
+let rec explode_or_pat p arg patl mk_action vars aliases rem =
+  match p.pat_desc with
+  | Tpat_or (p1, p2, _) ->
+      explode_or_pat p1 arg patl mk_action vars aliases
+        (explode_or_pat p2 arg patl mk_action vars aliases rem)
+  | Tpat_alias (p, id, _) ->
+      explode_or_pat p arg patl mk_action vars (id :: aliases) rem
+  | Tpat_var (x, _) ->
       let env = mk_alpha_env arg (x :: aliases) vars in
       (omega :: patl, mk_action (List.map snd env)) :: rem
-  | p ->
+  | _ ->
       let env = mk_alpha_env arg aliases vars in
       (alpha_pat env p :: patl, mk_action (List.map snd env)) :: rem
 
@@ -1258,8 +1258,8 @@ and precompile_or argo cls ors args def k =
             in
             let rem_cases, rem_handlers = do_cases rem in
             let cases =
-              explode_or_pat argo new_patl mk_new_action rem_cases
-                (List.map fst vars) [] orp
+              explode_or_pat orp argo new_patl mk_new_action
+                (List.map fst vars) [] rem_cases
             in
             let handler =
               { provenance = [ [ orp ] ]; exit = or_num; vars; pm = orpm }
