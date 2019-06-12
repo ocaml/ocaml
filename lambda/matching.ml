@@ -985,17 +985,13 @@ let rec split_or argo cls args def =
     | ((p :: ps, act) as cl) :: rem ->
         if not (safe_before cl rev_no) then
           do_split rev_before rev_ors (cl :: rev_no) rem
-        else if is_or p then
-          let ors, no =
+        else if (not (is_or p)) && safe_before cl rev_ors then
+          do_split (cl :: rev_before) rev_ors rev_no rem
+        else
+          let rev_ors, rev_no =
             Or_matrix.insert_or_append (p, ps, act) rev_ors rev_no
           in
-          do_split rev_before ors no rem
-        else if safe_before cl rev_ors then
-          do_split (cl :: rev_before) rev_ors rev_no rem
-        else if Or_matrix.safe_below_or_matrix rev_ors (p, ps) then
-          do_split rev_before (cl :: rev_ors) rev_no rem
-        else
-          do_split rev_before rev_ors (cl :: rev_no) rem
+          do_split rev_before rev_ors rev_no rem
     | _ -> assert false
   and cons_next yes yesor = function
     | [] -> precompile_or argo yes yesor args def []
