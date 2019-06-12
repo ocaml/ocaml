@@ -864,37 +864,6 @@ let is_or p =
   | Tpat_or _ -> true
   | _ -> false
 
-(* Splitting a matrix uses an or-matrix that contains or-patterns
-   (at the head of some of its rows).
-
-   The property that we want to maintain for the rows of the
-   or-matrix is that if the row p::ps is before q::qs and p is an
-   or-pattern, and v::vs matches p but not ps, then we don't need to
-   try q::qs. This is necessary because the compilation of the
-   or-pattern p will exit to a sub-matrix and never come back.
-
-   For this to hold, (p::ps) and (q::qs) must satisfy one of:
-   - disjointness: p and q are not compatible
-   - ordering: if p and q are compatible, ps is more general than qs
-     (this only works if the row p::ps is not guarded; otherwise the
-      guard could fail and q::qs should still be tried)
-*)
-
-(* Conditions for appending to the Or matrix *)
-let disjoint p q = not (may_compat p q)
-
-let safe_below (ps, act) qs = (not (is_guarded act)) && Parmatch.le_pats ps qs
-
-let safe_below_or_matrix l (q, qs) =
-  List.for_all
-    (function
-      | ({ pat_desc = Tpat_or _ } as p) :: ps, act_p ->
-          disjoint p q || safe_below (ps, act_p) qs
-      | _ -> true)
-    l
-
-(* Insert or append a pattern in the Or matrix *)
-
 let equiv_pat p q = le_pat p q && le_pat q p
 
 let rec extract_equiv_head p l =
@@ -907,50 +876,84 @@ let rec extract_equiv_head p l =
         ([], l)
   | _ -> ([], l)
 
-let insert_or_append p ps act ors no =
-  let rec attempt seen = function
-    | ((q :: qs, act_q) as cl) :: rem ->
-        if is_or q then
-          if may_compat p q then
-            if
-              Typedtree.pat_bound_idents p = []
-              && Typedtree.pat_bound_idents q = []
-              && equiv_pat p q
-            then
-              (* attempt insert, for equivalent orpats with no variables *)
-              let _, not_e = extract_equiv_head q rem in
+module Or_matrix = struct
+  (* Splitting a matrix uses an or-matrix that contains or-patterns (at
+     the head of some of its rows).
+
+     The property that we want to maintain for the rows of the
+     or-matrix is that if the row p::ps is before q::qs and p is an
+     or-pattern, and v::vs matches p but not ps, then we don't need to
+     try q::qs. This is necessary because the compilation of the
+     or-pattern p will exit to a sub-matrix and never come back.
+
+     For this to hold, (p::ps) and (q::qs) must satisfy one of:
+     - disjointness: p and q are not compatible
+     - ordering: if p and q are compatible, ps is more general than qs
+       (this only works if the row p::ps is not guarded; otherwise the
+        guard could fail and q::qs should still be tried)
+  *)
+
+  (* Conditions for appending to the Or matrix *)
+  let disjoint p q = not (may_compat p q)
+
+  let safe_below (ps, act) qs =
+    (not (is_guarded act)) && Parmatch.le_pats ps qs
+
+  let safe_below_or_matrix l (q, qs) =
+    List.for_all
+      (function
+        | ({ pat_desc = Tpat_or _ } as p) :: ps, act_p ->
+            disjoint p q || safe_below (ps, act_p) qs
+        | _ -> true)
+      l
+
+  (* Insert or append a pattern in the Or matrix *)
+
+  let insert_or_append p ps act ors no =
+    let rec attempt seen = function
+      | ((q :: qs, act_q) as cl) :: rem ->
+          if is_or q then
+            if may_compat p q then
               if
-                safe_below_or_matrix not_e (p, ps)
-                && (* check append condition for head of O *)
-                   List.for_all (* check insert condition for tail of O *)
-                     (fun cl ->
-                       match cl with
-                       | q :: _, _ -> disjoint p q
-                       | _ -> assert false)
-                     seen
+                Typedtree.pat_bound_idents p = []
+                && Typedtree.pat_bound_idents q = []
+                && equiv_pat p q
               then
-                (* insert *)
-                (List.rev_append seen ((p :: ps, act) :: cl :: rem), no)
+                (* attempt insert, for equivalent orpats with no variables *)
+                let _, not_e = extract_equiv_head q rem in
+                if
+                  safe_below_or_matrix not_e (p, ps)
+                  && (* check append condition for head of O *)
+                     List.for_all (* check insert condition for tail of O *)
+                       (fun cl ->
+                         match cl with
+                         | q :: _, _ -> disjoint p q
+                         | _ -> assert false)
+                       seen
+                then
+                  (* insert *)
+                  (List.rev_append seen ((p :: ps, act) :: cl :: rem), no)
+                else
+                  (* fail to insert or append *)
+                  (ors, (p :: ps, act) :: no)
+              else if safe_below (qs, act_q) ps then
+                (* check condition (b) for append *)
+                attempt (cl :: seen) rem
               else
-                (* fail to insert or append *)
                 (ors, (p :: ps, act) :: no)
-            else if safe_below (qs, act_q) ps then
-              (* check condition (b) for append *)
-              attempt (cl :: seen) rem
             else
-              (ors, (p :: ps, act) :: no)
+              (* p # q, go on with append/insert *)
+              attempt (cl :: seen) rem
           else
-            (* p # q, go on with append/insert *)
+            (* q is not an or-pat, go on with append/insert *)
             attempt (cl :: seen) rem
-        else
-          (* q is not an or-pat, go on with append/insert *)
-          attempt (cl :: seen) rem
-    | _ ->
-        (* [] in fact *)
-        ((p :: ps, act) :: ors, no)
-  in
-  (* success in appending *)
-  attempt [] ors
+      | _ ->
+          (* [] in fact *)
+          ((p :: ps, act) :: ors, no)
+    in
+    (* success in appending *)
+    attempt [] ors
+end
 
 (* Reconstruct default information from half_compiled  pm list *)
 
@@ -1000,11 +1003,11 @@ let rec split_or argo cls args def =
     | ((p :: ps, act) as cl) :: rem ->
         if safe_before cl no then
           if is_or p then
-            let ors, no = insert_or_append p ps act ors no in
+            let ors, no = Or_matrix.insert_or_append p ps act ors no in
             do_split before ors no rem
           else if safe_before cl ors then
             do_split (cl :: before) ors no rem
-          else if safe_below_or_matrix ors (p, ps) then
+          else if Or_matrix.safe_below_or_matrix ors (p, ps) then
             do_split before (cl :: ors) no rem
           else
             do_split before ors (cl :: no) rem
