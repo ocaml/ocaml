@@ -1088,9 +1088,15 @@ and split_constr cls args def k =
       split_naive cls args def k
   | _ -> (
       let group = get_group ex_pat in
-      let rec split_ex yes no = function
+      let rec split_ex rev_yes rev_no = function
+        | ([], _) :: _ -> assert false
+        | ((p :: _, _) as cl) :: rem ->
+            if group p && safe_before cl rev_no then
+              split_ex (cl :: rev_yes) rev_no rem
+            else
+              split_ex rev_yes (cl :: rev_no) rem
         | [] -> (
-            let yes = List.rev yes and no = List.rev no in
+            let yes = List.rev rev_yes and no = List.rev rev_no in
             match no with
             | [] ->
                 ( { me = Pm { cases = yes; args; default = def };
@@ -1101,7 +1107,7 @@ and split_constr cls args def k =
             | cl :: rem -> (
                 match yes with
                 | [] ->
-                    (* Could not success in raising up a constr matching up *)
+                    (* Could not succeeed in raising up a constr matching up *)
                     split_noex [ cl ] [] rem
                 | _ ->
                     let { me = next; matrix; top_default = def }, nexts =
@@ -1116,15 +1122,20 @@ and split_constr cls args def k =
                       (idef, next) :: nexts )
               )
           )
+      and split_noex rev_yes rev_no = function
+        | ([], _) :: _ -> assert false
+        | [ ((ps, _) as cl) ] when List.for_all group_var ps && rev_yes <> []
+          ->
+            (* This enables an extra division in some frequent cases:
+               last row is made of variables only *)
+            split_noex rev_yes (cl :: rev_no) []
         | ((p :: _, _) as cl) :: rem ->
-            if group p && safe_before cl no then
-              split_ex (cl :: yes) no rem
+            if (not (group p)) && safe_before cl rev_no then
+              split_noex (cl :: rev_yes) rev_no rem
             else
-              split_ex yes (cl :: no) rem
-        | _ -> assert false
-      and split_noex yes no = function
+              split_noex rev_yes (cl :: rev_no) rem
         | [] -> (
-            let yes = List.rev yes and no = List.rev no in
+            let yes = List.rev rev_yes and no = List.rev rev_no in
             match no with
             | [] -> precompile_var args yes def k
             | cl :: rem ->
@@ -1136,16 +1147,6 @@ and split_constr cls args def k =
                   (cons_default matrix idef def)
                   ((idef, next) :: nexts)
           )
-        | [ ((ps, _) as cl) ] when List.for_all group_var ps && yes <> [] ->
-            (* This enables an extra division in some frequent cases :
-          last row is made of variables only *)
-            split_noex yes (cl :: no) []
-        | ((p :: _, _) as cl) :: rem ->
-            if (not (group p)) && safe_before cl no then
-              split_noex (cl :: yes) no rem
-            else
-              split_noex yes (cl :: no) rem
-        | _ -> assert false
       in
       match cls with
       | ((p :: _, _) as cl) :: rem ->
