@@ -964,7 +964,8 @@ end
 let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
 
 (*
-  Split a matching.
+  Split a matching along the first column.
+
     Splitting is first directed by or-patterns, then by
     tests (e.g. constructors)/variable transitions.
 
@@ -980,6 +981,30 @@ let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
     Additionally, if the match argument is a variable, matchings whose
     first column is made of variables only are split further
     (cf. precompile_var).
+
+  ---
+
+  Note: we assume that the first column of each pattern is coherent -- all
+  patterns match values of the same type. This comes from the fact that
+  we make agressive splitting decisions, splitting pattern heads that
+  may be different into different submatrices; in particular, in a given
+  submatrix the first column is formed of first arguments to the same
+  constructor.
+
+  GADTs are not an issue because we split columns left-to-right, and
+  GADT typing also introduces typing equations left-to-right. In
+  particular, a leftmost column in matching.ml will be well-typed under
+  a set of equations accepted by the type-checker, and those equations
+  are forced to remain consistent: they can equate known types to
+  abstract types, but they cannot equate two incompatible known types
+  together, and in particular incompatible pattern heads do not appear
+  in a leftmost column.
+
+  Parmatch has to be more conservative because it splits less
+  agressively: submatrices will contain not just the arguments of
+  a given pattern head, but also other lines that may be compatible with
+  it, in particular those with a leftmost omega and those starting with
+  an extension constructor that may be equal to it.
 
 *)
 
@@ -1015,7 +1040,14 @@ let rec split_or argo cls args def =
   do_split [] [] [] cls
 
 (* Ultra-naive splitting, close to semantics, used for extension,
-   as potential rebind prevents any kind of optimisation *)
+   as potential rebind prevents any kind of optimisation
+
+   Indeed, extension constructors with distinct names may be equal thanks to
+   constructor rebinding. This is compiled by having a specialized
+   submatrix for each syntactically-distinct constructor, with a threading
+   of exits such that each submatrix falls back to the potentially-compatible
+   submatrices below it.
+*)
 and split_naive cls args def k =
   let rec split_exc cstr0 yes = function
     | [] ->
