@@ -928,15 +928,11 @@ module Or_matrix = struct
     in
     let rec attempt seen = function
       (* invariant: the new clause is safe to append at the end of
-       'seen' (but maybe not rem yet) *)
+         [seen] (but maybe not [rem] yet) *)
       | [] -> ((p :: ps, act) :: rev_ors, rev_no)
       | ([], _act) :: _ -> assert false
       | ((q :: qs, act_q) as cl) :: rem ->
-          if not (is_or q) then
-            (* q is not an or-pat, continue *)
-            attempt (cl :: seen) rem
-          else if disjoint p q then
-            (* p # q, continue *)
+          if (not (is_or q)) || disjoint p q then
             attempt (cl :: seen) rem
           else if
             Typedtree.pat_bound_idents p = []
