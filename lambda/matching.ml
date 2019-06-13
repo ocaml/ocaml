@@ -1334,43 +1334,51 @@ let split_and_precompile argo pm =
 
 (* General divide functions *)
 
-let add_line patl_action pm =
-  pm.cases <- patl_action :: pm.cases;
-  pm
-
 type cell = { pm : pattern_matching; ctx : Context.t; discr : pattern }
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
 
-let add make_matching_fun division eq_key key patl_action args =
-  try
-    let _, cell = List.find (fun (k, _) -> eq_key key k) division in
-    cell.pm.cases <- patl_action :: cell.pm.cases;
-    division
-  with Not_found ->
-    let cell = make_matching_fun args in
-    cell.pm.cases <- [ patl_action ];
-    (key, cell) :: division
+type 'a division = {
+  args : (lambda * let_kind) list;
+  cells : ('a * cell) list
+}
 
-let divide make eq_key get_key get_args ctx pm =
-  let rec divide_rec = function
-    | (p :: patl, action) :: rem ->
-        let this_match = divide_rec rem in
-        add (make p pm.default ctx) this_match eq_key (get_key p)
+let add_in_div make_matching_fun eq_key key patl_action division =
+  let cells =
+    match List.find_opt (fun (k, _) -> eq_key key k) division.cells with
+    | None ->
+        let cell = make_matching_fun division.args in
+        cell.pm.cases <- [ patl_action ];
+        (key, cell) :: division.cells
+    | Some (_, cell) ->
+        cell.pm.cases <- patl_action :: cell.pm.cases;
+        division.cells
+  in
+  { division with cells }
+
+let divide make eq_key get_key get_args ctx (pm : pattern_matching) =
+  let add clause division =
+    match clause with
+    | [], _ -> assert false
+    | p :: patl, action ->
+        add_in_div (make p pm.default ctx) eq_key (get_key p)
           (get_args p patl, action)
-          pm.args
-    | _ -> []
+          division
   in
-  divide_rec pm.cases
+  List.fold_right add pm.cases { args = pm.args; cells = [] }
 
-let divide_line make_ctx make get_args discr ctx pm =
-  let rec divide_rec = function
-    | (p :: patl, action) :: rem ->
-        let this_match = divide_rec rem in
-        add_line (get_args p patl, action) this_match
-    | _ -> make pm.default pm.args
+let add_line patl_action pm =
+  pm.cases <- patl_action :: pm.cases;
+  pm
+
+let divide_line make_ctx make get_args discr ctx (pm : pattern_matching) =
+  let add clause submatrix =
+    match clause with
+    | [], _ -> assert false
+    | p :: patl, action -> add_line (get_args p patl, action) submatrix
   in
-  { pm = divide_rec pm.cases; ctx = make_ctx ctx; discr }
+  let pm = List.fold_right add pm.cases (make pm.default pm.args) in
+  { pm; ctx = make_ctx ctx; discr }
 
 (* Then come various functions,
    There is one set of functions per matching style
@@ -1380,11 +1388,10 @@ let divide_line make_ctx make get_args discr ctx pm =
    They may raise NoMatch or OrPat and perform the full
    matching (selection + arguments).
 
-
    - get_args and get_key are for the compiled matrices, note that
    selection and getting arguments are separated.
 
-   - make_ _matching combines the previous functions for producing
+   - make_*_matching combines the previous functions for producing
    new  ``pattern_matching'' records.
 *)
 
@@ -1580,7 +1587,7 @@ let make_variant_matching_nonconst p lab def ctx = function
         discr = normalize_pat p
       }
 
-let divide_variant row ctx { cases = cl; args = al; default = def } =
+let divide_variant row ctx { cases = cl; args; default = def } =
   let row = Btype.row_repr row in
   let rec divide = function
     | (({ pat_desc = Tpat_variant (lab, pato, _) } as p) :: patl, action)
@@ -1595,17 +1602,17 @@ let divide_variant row ctx { cases = cl; args = al; default = def } =
           let tag = Btype.hash_variant lab in
           match pato with
           | None ->
-              add
+              add_in_div
                 (make_variant_matching_constant p lab def ctx)
-                variants ( = ) (Cstr_constant tag) (patl, action) al
+                ( = ) (Cstr_constant tag) (patl, action) variants
           | Some pat ->
-              add
+              add_in_div
                 (make_variant_matching_nonconst p lab def ctx)
-                variants ( = ) (Cstr_block tag)
+                ( = ) (Cstr_block tag)
                 (pat :: patl, action)
-                al
+                variants
       )
-    | _ -> []
+    | _ -> { args; cells = [] }
   in
   divide cl
 
@@ -2843,7 +2850,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
 
 let compile_test compile_fun partial divide combine ctx to_match =
   let division = divide ctx to_match in
-  let c_div = compile_list compile_fun division in
+  let c_div = compile_list compile_fun division.cells in
   match c_div with
   | [], _, _ -> (
       match mk_failaction_neg partial ctx to_match.default with
@@ -2969,7 +2976,7 @@ let arg_to_var arg cls =
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
 *)
 
-let rec compile_match repr partial ctx m =
+let rec compile_match repr partial ctx (m : pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { cases = ([], action) :: rem } ->
