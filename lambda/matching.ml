@@ -667,71 +667,67 @@ let safe_before (ps, act_p) l =
    In particular, or-patterns may still occur in the head of the output row,
    so this is only a "half-simplification".
 *)
-
-let half_simplify_or p =
-  let exception Var of pattern in
-  let rec simpl_rec p =
+let half_simplify_cases args cls =
+  let rec simpl_pat p =
     match p.pat_desc with
     | Tpat_any
     | Tpat_var _ ->
-        raise (Var p)
-    | Tpat_alias (q, id, s) -> (
-        try { p with pat_desc = Tpat_alias (simpl_rec q, id, s) }
-        with Var q' ->
-          raise (Var { p with pat_desc = Tpat_alias (q', id, s) })
-      )
-    | Tpat_or (p1, p2, o) -> (
-        let q1 = simpl_rec p1 in
-        try
-          let q2 = simpl_rec p2 in
-          { p with pat_desc = Tpat_or (q1, q2, o) }
-        with Var q2 -> raise (Var { p with pat_desc = Tpat_or (q1, q2, o) })
-      )
+        p
+    | Tpat_alias (q, id, s) ->
+        { p with pat_desc = Tpat_alias (simpl_pat q, id, s) }
+    | Tpat_or (p1, p2, o) ->
+        let p1, p2 = (simpl_pat p1, simpl_pat p2) in
+        if le_pat p1 p2 then
+          p1
+        else
+          { p with pat_desc = Tpat_or (p1, p2, o) }
     | Tpat_record (lbls, closed) ->
         let all_lbls = all_record_args lbls in
         { p with pat_desc = Tpat_record (all_lbls, closed) }
     | _ -> p
   in
-  try simpl_rec p with Var p -> p
-
-let half_simplify_cases args cls =
-  let arg =
-    match args with
-    | [] -> assert false
-    | (arg, _) :: _ -> arg
-  in
-  let rec half_simplify = function
-    | [] -> []
-    | ([], _) :: _ -> assert false
-    | ((pat :: patl, action) as cl) :: rem -> (
+  let rec simpl_clause cl =
+    match cl with
+    | [], _ -> assert false
+    | pat :: patl, action -> (
         match pat.pat_desc with
-        | Tpat_any -> cl :: half_simplify rem
+        | Tpat_any -> cl
         | Tpat_var (id, s) ->
             let p = { pat with pat_desc = Tpat_alias (omega, id, s) } in
-            half_simplify ((p :: patl, action) :: rem)
+            simpl_clause (p :: patl, action)
         | Tpat_alias (p, id, _) ->
+            let arg =
+              match args with
+              | [] -> assert false
+              | (arg, _) :: _ -> arg
+            in
             let k = Typeopt.value_kind pat.pat_env pat.pat_type in
-            half_simplify
-              ((p :: patl, bind_with_value_kind Alias (id, k) arg action)
-              :: rem
-              )
-        | Tpat_record ([], _) -> (omega :: patl, action) :: half_simplify rem
+            simpl_clause
+              (p :: patl, bind_with_value_kind Alias (id, k) arg action)
+        | Tpat_record ([], _) -> (omega :: patl, action)
         | Tpat_record (lbls, closed) ->
             let all_lbls = all_record_args lbls in
             let full_pat =
               { pat with pat_desc = Tpat_record (all_lbls, closed) }
             in
-            (full_pat :: patl, action) :: half_simplify rem
+            (full_pat :: patl, action)
         | Tpat_or _ -> (
-            let pat_simple = half_simplify_or pat in
+            let pat_simple = simpl_pat pat in
             match pat_simple.pat_desc with
-            | Tpat_or _ -> (pat_simple :: patl, action) :: half_simplify rem
-            | _ -> half_simplify ((pat_simple :: patl, action) :: rem)
+            | Tpat_or _ -> (pat_simple :: patl, action)
+            | _ -> simpl_clause (pat_simple :: patl, action)
           )
-        | _ -> cl :: half_simplify rem
+        | Tpat_constant _
+        | Tpat_tuple _
+        | Tpat_construct _
+        | Tpat_variant _
+        | Tpat_array _
+        | Tpat_lazy _
+        | Tpat_exception _ ->
+            cl
       )
   in
-  half_simplify cls
+  List.map simpl_clause cls
 
 (* Once matchings are *fully* simplified, one can easily find
    their nature. *)
