@@ -478,6 +478,11 @@ end
 type pattern_matching = {
   mutable cases : (pattern list * lambda) list;
   args : (lambda * let_kind) list;
+      (** args are not just Ident.t in at least the following cases:
+        - when matching the arguments of a constructor,
+          direct field projections are used (make_field_args)
+        - with lazy patterns args can be of the form [Lazy.force ...]
+          (inline_lazy_force). *)
   default : (matrix * int) list
 }
 
