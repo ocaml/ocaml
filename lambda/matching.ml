@@ -1338,7 +1338,9 @@ let add_line patl_action pm =
   pm.cases <- patl_action :: pm.cases;
   pm
 
-type cell = { pm : pattern_matching; ctx : Context.t; pat : pattern }
+type cell = { pm : pattern_matching; ctx : Context.t; discr : pattern }
+(** a submatrix after specializing by discriminant pattern;
+    [ctx] is the context shared by all rows. *)
 
 let add make_matching_fun division eq_key key patl_action args =
   try
@@ -1361,14 +1363,14 @@ let divide make eq_key get_key get_args ctx pm =
   in
   divide_rec pm.cases
 
-let divide_line make_ctx make get_args pat ctx pm =
+let divide_line make_ctx make get_args discr ctx pm =
   let rec divide_rec = function
     | (p :: patl, action) :: rem ->
         let this_match = divide_rec rem in
         add_line (get_args p patl, action) this_match
     | _ -> make pm.default pm.args
   in
-  { pm = divide_rec pm.cases; ctx = make_ctx ctx; pat }
+  { pm = divide_rec pm.cases; ctx = make_ctx ctx; discr }
 
 (* Then come various functions,
    There is one set of functions per matching style
@@ -1412,7 +1414,7 @@ let make_constant_matching p def ctx = function
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
-        pat = normalize_pat p
+        discr = normalize_pat p
       }
 
 let divide_constant ctx m =
@@ -1529,7 +1531,7 @@ let make_constr_matching p def ctx = function
             default = specialize_default (matcher_constr cstr) def
           };
         ctx = Context.specialize p ctx;
-        pat = normalize_pat p
+        discr = normalize_pat p
       }
 
 let divide_constructor ctx pm =
@@ -1554,7 +1556,7 @@ let make_variant_matching_constant p lab def ctx = function
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
-        pat = normalize_pat p
+        discr = normalize_pat p
       }
 
 let matcher_variant_nonconst lab p rem =
@@ -1575,7 +1577,7 @@ let make_variant_matching_nonconst p lab def ctx = function
             default = def
           };
         ctx;
-        pat = normalize_pat p
+        discr = normalize_pat p
       }
 
 let divide_variant row ctx { cases = cl; args = al; default = def } =
@@ -1919,7 +1921,7 @@ let make_array_matching kind p def ctx = function
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = make_args 0; default = def };
         ctx;
-        pat = normalize_pat p
+        discr = normalize_pat p
       }
 
 let divide_array kind ctx pm =
@@ -2802,10 +2804,10 @@ let compile_list compile_fun division =
         else
           try
             let lambda1, total1 = compile_fun cell.ctx cell.pm in
-            let c_rem, total, new_pats =
+            let c_rem, total, new_discrs =
               c_rec (Jumps.map Context.combine total1 :: totals) rem
             in
-            ((key, lambda1) :: c_rem, total, cell.pat :: new_pats)
+            ((key, lambda1) :: c_rem, total, cell.discr :: new_discrs)
           with Unused -> c_rec totals rem
       )
   in
