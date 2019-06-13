@@ -13,12 +13,17 @@
 #*                                                                        *
 #**************************************************************************
 
-autoconf -W all,error
+autoconf --force --warnings=all,error
 # Some distros have the 2013 --runstatedir patch to autoconf (see
 # http://git.savannah.gnu.org/cgit/autoconf.git/commit/?id=a197431414088a417b407b9b20583b2e8f7363bd
 # in the GNU autoconf repo), and some don't, so ensure its effects are
 # removed for CI consistency...
-sed -i -e '/^runstatedir/d' \
-       -e '/-runstatedir /,+8d' \
-       -e '/--runstatedir=DIR/d' \
-       -e 's/ runstatedir//' configure
+# POSIX Notes
+#  - sed -i without a backup file is not portable, hence configure.tmp
+#  - GNU sed's /../,+8d becomes /../{N;..;d;} (and the last ; is important)
+sed -e '/^runstatedir/d' \
+    -e '/-runstatedir /{N;N;N;N;N;N;N;N;d;}' \
+    -e '/--runstatedir=DIR/d' \
+    -e 's/ runstatedir//' configure > configure.tmp
+mv -f configure.tmp configure
+chmod +x configure
