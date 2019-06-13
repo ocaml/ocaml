@@ -905,7 +905,6 @@ let rec lower_contravariant env var_level visited contra ty =
         begin match !forward_try_expand_once env ty with
         | ty -> lower_rec contra ty
         | exception Cannot_expand ->
-          (* abbrev := Mnil;  Should not be needed anymore *)
           List.iter2
             (fun v t ->
               if v = Variance.null then () else
