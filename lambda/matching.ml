@@ -1199,6 +1199,8 @@ and precompile_var args cls def k =
   match args with
   | [] -> assert false
   | _ :: (((Lvar v as av), _) as arg) :: rargs -> (
+      (* We will use the name of the head column of the submatrix
+         we compile, and this is the *second* column of our argument. *)
       match cls with
       | [ _ ] ->
           (* as split as it can *)
