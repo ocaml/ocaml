@@ -1317,7 +1317,7 @@ and precompile_or argo cls ors args def k =
     },
     k )
 
-let split_precompile argo pm =
+let split_and_precompile argo pm =
   let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
   if
     dbg
@@ -2983,7 +2983,7 @@ let rec compile_match repr partial ctx m =
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
       let first_match, rem =
-        split_precompile (Some v) { m with args = (newarg, Alias) :: argl }
+        split_and_precompile (Some v) { m with args = (newarg, Alias) :: argl }
       in
       let lam, total =
         comp_match_handlers
@@ -3500,7 +3500,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
   try
     try
       (* Once for checking that compilation is possible *)
-      let next, nexts = split_precompile None pm1 in
+      let next, nexts = split_and_precompile None pm1 in
       let size = List.length paraml
       and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
       let args = List.map (fun id -> (Lvar id, Alias)) idl in
