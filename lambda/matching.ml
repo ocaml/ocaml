@@ -1203,7 +1203,9 @@ and precompile_var args cls def k =
             List.map
               (fun (ps, act) ->
                 match ps with
-                | _ :: ps -> (ps, act)
+                | p :: ps ->
+                    assert (group_var p);
+                    (ps, act)
                 | _ -> assert false)
               cls
           and var_def = default_pop_column def in
