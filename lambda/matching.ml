@@ -1035,7 +1035,9 @@ let rec split_or argo cls args def =
           let idef = next_raise_count () in
           (cons_default matrix idef def, (idef, next) :: nexts)
     in
-    precompile_or argo yes yesor args def nexts
+    match yesor with
+    | [] -> split_constr yes args def nexts
+    | _ -> precompile_or argo yes yesor args def nexts
   in
   do_split [] [] [] cls
 
@@ -1260,63 +1262,60 @@ and dont_precompile_var args cls def k =
     k )
 
 and precompile_or argo cls ors args def k =
-  match ors with
-  | [] -> split_constr cls args def k
-  | _ ->
-      let rec do_cases = function
-        | (({ pat_desc = Tpat_or _ } as orp) :: patl, action) :: rem ->
-            let others, rem = extract_equiv_head orp rem in
-            let orpm =
-              { cases =
-                  (patl, action)
-                  :: List.map
-                       (function
-                         | _ :: ps, action -> (ps, action)
-                         | _ -> assert false)
-                       others;
-                args =
-                  ( match args with
-                  | _ :: r -> r
-                  | _ -> assert false
-                  );
-                default = default_pop_compat orp def
-              }
-            in
-            let pm_fv = pm_free_variables orpm in
-            let vars =
-              (* bound variables of the or-pattern and used in the orpm actions *)
-              Typedtree.pat_bound_idents_full orp
-              |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
-              |> List.map (fun (id, _, ty) ->
-                     (id, Typeopt.value_kind orp.pat_env ty))
-            in
-            let or_num = next_raise_count () in
-            let new_patl = Parmatch.omega_list patl in
-            let mk_new_action vs =
-              Lstaticraise (or_num, List.map (fun v -> Lvar v) vs)
-            in
-            let rem_cases, rem_handlers = do_cases rem in
-            let cases =
-              explode_or_pat orp argo new_patl mk_new_action
-                (List.map fst vars) [] rem_cases
-            in
-            let handler =
-              { provenance = [ [ orp ] ]; exit = or_num; vars; pm = orpm }
-            in
-            (cases, handler :: rem_handlers)
-        | cl :: rem ->
-            let new_ord, new_to_catch = do_cases rem in
-            (cl :: new_ord, new_to_catch)
-        | [] -> ([], [])
-      in
-      let cases, handlers = do_cases ors in
-      let matrix = as_matrix (cls @ ors)
-      and body = { cases = cls @ cases; args; default = def } in
-      ( { me = PmOr { body; handlers; or_matrix = matrix };
-          matrix;
-          top_default = def
-        },
-        k )
+  let rec do_cases = function
+    | (({ pat_desc = Tpat_or _ } as orp) :: patl, action) :: rem ->
+        let others, rem = extract_equiv_head orp rem in
+        let orpm =
+          { cases =
+              (patl, action)
+              :: List.map
+                   (function
+                     | _ :: ps, action -> (ps, action)
+                     | _ -> assert false)
+                   others;
+            args =
+              ( match args with
+              | _ :: r -> r
+              | _ -> assert false
+              );
+            default = default_pop_compat orp def
+          }
+        in
+        let pm_fv = pm_free_variables orpm in
+        let vars =
+          (* bound variables of the or-pattern and used in the orpm actions *)
+          Typedtree.pat_bound_idents_full orp
+          |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
+          |> List.map (fun (id, _, ty) ->
+                 (id, Typeopt.value_kind orp.pat_env ty))
+        in
+        let or_num = next_raise_count () in
+        let new_patl = Parmatch.omega_list patl in
+        let mk_new_action vs =
+          Lstaticraise (or_num, List.map (fun v -> Lvar v) vs)
+        in
+        let rem_cases, rem_handlers = do_cases rem in
+        let cases =
+          explode_or_pat orp argo new_patl mk_new_action (List.map fst vars) []
+            rem_cases
+        in
+        let handler =
+          { provenance = [ [ orp ] ]; exit = or_num; vars; pm = orpm }
+        in
+        (cases, handler :: rem_handlers)
+    | cl :: rem ->
+        let new_ord, new_to_catch = do_cases rem in
+        (cl :: new_ord, new_to_catch)
+    | [] -> ([], [])
+  in
+  let cases, handlers = do_cases ors in
+  let matrix = as_matrix (cls @ ors)
+  and body = { cases = cls @ cases; args; default = def } in
+  ( { me = PmOr { body; handlers; or_matrix = matrix };
+      matrix;
+      top_default = def
+    },
+    k )
 
 let split_precompile argo pm =
   let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
