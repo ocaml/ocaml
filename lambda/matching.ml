@@ -1190,6 +1190,10 @@ and split_constr cls args def k =
     )
 
 and precompile_var args cls def k =
+  (* Strategy: pop the first column,
+     precompile the rest, add a PmVar to all precompiled submatrices.
+
+     If the rest doesn't generate any split, abort and dont_precompile_var. *)
   match args with
   | [] -> assert false
   | _ :: (((Lvar v as av), _) as arg) :: rargs -> (
@@ -1231,18 +1235,18 @@ and precompile_var args cls def k =
                     (add_omega_column (rebuild_matrix pmh), e)
                     :: rebuild_default rem def
               in
-              let rebuild_nexts arg nexts k =
-                List.fold_right
-                  (fun (e, pm) k ->
-                    (e, PmVar { inside = pm; var_arg = arg }) :: k)
-                  nexts k
+              let rebuild_half_matrix pm =
+                PmVar { inside = pm; var_arg = av }
+              in
+              let rebuild_nexts nexts k =
+                map_end (fun (e, pm) -> (e, rebuild_half_matrix pm)) nexts k
               in
               let rfirst =
-                { me = PmVar { inside = first; var_arg = av };
+                { me = rebuild_half_matrix first;
                   matrix = add_omega_column matrix;
                   top_default = rebuild_default nexts def
                 }
-              and rnexts = rebuild_nexts av nexts k in
+              and rnexts = rebuild_nexts nexts k in
               (rfirst, rnexts)
         )
     )
