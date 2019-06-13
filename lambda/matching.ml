@@ -504,10 +504,8 @@ type pm_or_compiled = {
 
 type pm_half_compiled =
   | PmOr of pm_or_compiled
-  | PmVar of pm_var_compiled
+  | PmVar of { inside : pm_half_compiled }
   | Pm of pattern_matching
-
-and pm_var_compiled = { inside : pm_half_compiled; var_arg : lambda }
 
 (* Only used inside the various split functions, we only keep [me] when we're
    done splitting / precompiling. *)
@@ -1199,7 +1197,7 @@ and precompile_var args cls def k =
      If the rest doesn't generate any split, abort and dont_precompile_var. *)
   match args with
   | [] -> assert false
-  | _ :: (((Lvar v as av), _) as arg) :: rargs -> (
+  | _ :: ((Lvar v, _) as arg) :: rargs -> (
       (* We will use the name of the head column of the submatrix
          we compile, and this is the *second* column of our argument. *)
       match cls with
@@ -1240,14 +1238,11 @@ and precompile_var args cls def k =
                     (add_omega_column (rebuild_matrix pmh), e)
                     :: rebuild_default rem def
               in
-              let rebuild_half_matrix pm =
-                PmVar { inside = pm; var_arg = av }
-              in
               let rebuild_nexts nexts k =
-                map_end (fun (e, pm) -> (e, rebuild_half_matrix pm)) nexts k
+                map_end (fun (e, pm) -> (e, PmVar { inside = pm })) nexts k
               in
               let rfirst =
-                { me = rebuild_half_matrix first;
+                { me = PmVar { inside = first };
                   matrix = add_omega_column matrix;
                   top_default = rebuild_default nexts def
                 }
@@ -2912,9 +2907,9 @@ let comp_exit ctx m =
   | (_, i) :: _ -> (Lstaticraise (i, []), Jumps.singleton i ctx)
   | _ -> fatal_error "Matching.comp_exit"
 
-let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
+let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
   match next_matchs with
-  | [] -> comp_fun partial ctx arg first_match
+  | [] -> comp_fun partial ctx first_match
   | rem -> (
       let rec c_rec body total_body = function
         | [] -> (body, total_body)
@@ -2932,7 +2927,7 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
                     | [] -> partial
                     | _ -> Partial
                     )
-                    ctx_i arg pm
+                    ctx_i pm
                 in
                 c_rec
                   (Lstaticcatch (body, (i, []), li))
@@ -2943,12 +2938,12 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
           )
       in
       try
-        let first_lam, total = comp_fun Partial ctx arg first_match in
+        let first_lam, total = comp_fun Partial ctx first_match in
         c_rec first_lam total rem
       with Unused -> (
         match next_matchs with
         | [] -> raise Unused
-        | (_, x) :: xs -> comp_match_handlers comp_fun partial ctx arg x xs
+        | (_, x) :: xs -> comp_match_handlers comp_fun partial ctx x xs
       )
     )
 
@@ -3005,13 +3000,13 @@ let rec compile_match repr partial ctx (m : pattern_matching) =
              do_compile_matching
            )
              repr)
-          partial ctx newarg first_match rem
+          partial ctx first_match rem
       in
       (bind_check str v arg lam, total)
   | _ -> assert false
 
 (* verbose version of do_compile_matching, for debug *)
-and do_compile_matching_pr repr partial ctx arg x =
+and do_compile_matching_pr repr partial ctx x =
   Format.eprintf "COMPILE: %s\nMATCH\n"
     ( match partial with
     | Partial -> "Partial"
@@ -3020,14 +3015,27 @@ and do_compile_matching_pr repr partial ctx arg x =
   pretty_precompiled x;
   Format.eprintf "CTX\n";
   Context.eprintf ctx;
-  let ((_, jumps) as r) = do_compile_matching repr partial ctx arg x in
+  let ((_, jumps) as r) = do_compile_matching repr partial ctx x in
   Format.eprintf "JUMPS\n";
   Jumps.eprintf jumps;
   r
 
-and do_compile_matching repr partial ctx arg pmh =
+and do_compile_matching repr partial ctx pmh =
   match pmh with
   | Pm pm -> (
+      let arg =
+        match pm.args with
+        | (first_arg, _) :: _ -> first_arg
+        | _ ->
+            (* We arrive in do_compile_matching from:
+               - compile_matching
+               - recursive call on PmVars
+               The first one explicitly checks that [args] is nonempty, the
+               second one is only generated when the inner pm first looks at
+               a variable (i.e. there is something to look at).
+            *)
+            assert false
+      in
       let pat = what_is_cases pm.cases in
       match pat.pat_desc with
       | Tpat_any ->
@@ -3071,9 +3079,9 @@ and do_compile_matching repr partial ctx arg pmh =
             ctx pm
       | _ -> assert false
     )
-  | PmVar { inside = pmh; var_arg = arg } ->
+  | PmVar { inside = pmh } ->
       let lam, total =
-        do_compile_matching repr partial (Context.lshift ctx) arg pmh
+        do_compile_matching repr partial (Context.lshift ctx) pmh
       in
       (lam, Jumps.map Context.rshift total)
   | PmOr { body; handlers } ->
@@ -3483,7 +3491,7 @@ let flatten_precompiled size args pmh =
    Hence it needs a fourth argument, which it ignores
 *)
 
-let compile_flattened repr partial ctx _ pmh =
+let compile_flattened repr partial ctx pmh =
   match pmh with
   | Pm pm -> compile_match repr partial ctx pm
   | PmOr { body = b; handlers = hs } ->
@@ -3522,7 +3530,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       in
       let lam, total =
         comp_match_handlers (compile_flattened repr) partial
-          (Context.start size) () flat_next flat_nexts
+          (Context.start size) flat_next flat_nexts
       in
       List.fold_right2 (bind Strict) idl paraml
         ( match partial with
