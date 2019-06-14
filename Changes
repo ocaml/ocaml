@@ -364,9 +364,9 @@ OCaml 4.08.0
 
 ### Standard library:
 
-- #8719: Add Format.set_max_newline_offset to set the maximum offset
+- #8719: Add Format.set_max_indent_offset to set the maximum offset
   added to a new line
-  (Guillaume Petiot, review by ...)
+  (Guillaume Petiot, review by David Allsopp)
 
 - #2128: Add Fun module: `id, const, flip, negate, protect`
   (protect is a "try_finally" combinator)

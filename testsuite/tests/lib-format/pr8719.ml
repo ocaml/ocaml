@@ -2,7 +2,7 @@
 
 (*
 
-A test file for Format.set_max_newline_offset.
+A test file for Format.set_max_indent_offset.
 
 *)
 
@@ -13,12 +13,12 @@ let set_margin n =
   Format.set_max_indent (n - 1)
 ;;
 
-let test_max_newline_offset n =
-  print_string "max_newline_offset = ";
+let test_max_indent_offset n =
+  print_string "max_indent_offset = ";
   print_int n;
   print_newline ();
   set_margin 20;
-  set_max_newline_offset n;
+  set_max_indent_offset n;
   print_break 0 2;
   open_hvbox 0;
   begin
@@ -48,7 +48,7 @@ let test_max_newline_offset n =
   print_newline ()
 ;;
 
-test_max_newline_offset 4;;
-test_max_newline_offset 3;;
-test_max_newline_offset 2;;
-test_max_newline_offset 1;;
+test_max_indent_offset 4;;
+test_max_indent_offset 3;;
+test_max_indent_offset 2;;
+test_max_indent_offset 1;;

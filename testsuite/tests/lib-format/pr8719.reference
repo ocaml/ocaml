@@ -1,4 +1,4 @@
-max_newline_offset = 4
+max_indent_offset = 4
 
   foooooooooooooooooooo
   foooooooooooooooooooo
@@ -7,7 +7,7 @@ max_newline_offset = 4
           foooooooooooooooooooo
           foooooooooooooooooooo
           foooooooooooooooooooo
-max_newline_offset = 3
+max_indent_offset = 3
 
   foooooooooooooooooooo
   foooooooooooooooooooo
@@ -16,7 +16,7 @@ max_newline_offset = 3
         foooooooooooooooooooo
         foooooooooooooooooooo
         foooooooooooooooooooo
-max_newline_offset = 2
+max_indent_offset = 2
 
   foooooooooooooooooooo
   foooooooooooooooooooo
@@ -25,7 +25,7 @@ max_newline_offset = 2
       foooooooooooooooooooo
       foooooooooooooooooooo
       foooooooooooooooooooo
-max_newline_offset = 1
+max_indent_offset = 1
 
  foooooooooooooooooooo
  foooooooooooooooooooo

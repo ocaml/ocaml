@@ -455,10 +455,30 @@ val pp_get_max_indent : formatter -> unit -> int
 val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
 
-val pp_set_max_newline_offset : formatter -> int -> unit
-val set_max_newline_offset : int -> unit
-(** Maximum offset added to a new line in addition to the offset of the
-    previous line. *)
+val pp_set_max_indent_offset : formatter -> int -> unit
+val set_max_indent_offset : int -> unit
+(** Maximum offset added to a new line in addition to the indentation of the
+    previous line.
+    As an illustration, if the following text is printed with adding 4 columns
+    of indentation for each opened parenthesis, and 6 columns of indentation
+    for braces:
+    {[
+      text (
+          text {
+                text
+          }
+      )
+    ]}
+    Setting the maximum offset to 2 with [set_max_indent_offset 2] would format
+    the previous text this way:
+    {[
+      text (
+        text (
+          text
+        )
+      )
+    ]}
+*)
 
 (** {1 Geometry }
 
