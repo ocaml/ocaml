@@ -152,7 +152,7 @@
 #include "../runtime/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-#define Caml_state(var) WORD*domain_field_caml_##var(28)
+#define Caml_state(var) 8*domain_field_caml_##var(28)
 
 #if defined(MODEL_ppc64)
         .section ".opd","aw"
