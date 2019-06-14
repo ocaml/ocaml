@@ -486,9 +486,6 @@ type pattern_matching = {
   default : (matrix * int) list
 }
 
-(* Pattern matching after application of both the or-pat rule and the
-   mixture rule *)
-
 type handler = {
   provenance : matrix;
   exit : int;
@@ -501,6 +498,9 @@ type pm_or_compiled = {
   handlers : handler list;
   or_matrix : matrix
 }
+
+(* Pattern matching after application of both the or-pat rule and the
+   mixture rule *)
 
 type pm_half_compiled =
   | PmOr of pm_or_compiled
