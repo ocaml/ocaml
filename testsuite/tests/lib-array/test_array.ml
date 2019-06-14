@@ -11,7 +11,6 @@ val a : '_weak1 option array =
 - : unit = ()
 - : int option array =
 [|None; None; Some 42; Some 42; Some 42; None; None; None|]
-|}, Principal{|
 |}]
 let _ = Array.fill a 3 1 (Some 0);;
 a;;
@@ -19,19 +18,16 @@ a;;
 - : unit = ()
 - : int option array =
 [|None; None; Some 42; Some 0; Some 42; None; None; None|]
-|}, Principal{|
 |}]
 let _ = Array.fill a 3 6 None;;
 a;;
 [%%expect{|
 Exception: Invalid_argument "Array.fill".
-|}, Principal{|
 |}]
 let _ = Array.fill a (-1) 2 None;;
 a;;
 [%%expect{|
 Exception: Invalid_argument "Array.fill".
-|}, Principal{|
 |}]
 let _ = Gc.compact ();;
 let _ = Array.fill a 5 1 (Some (if Random.int 2 < 0 then 1 else 2));;
@@ -41,7 +37,6 @@ a;;
 - : unit = ()
 - : int option array =
 [|None; None; Some 42; Some 0; Some 42; Some 2; None; None|]
-|}, Principal{|
 |}]
 let _ = Array.fill a 5 1 None;;
 a;;
@@ -49,7 +44,6 @@ a;;
 - : unit = ()
 - : int option array =
 [|None; None; Some 42; Some 0; Some 42; None; None; None|]
-|}, Principal{|
 |}]
 
 
@@ -60,5 +54,4 @@ a;;
 val a : float array = [|0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.|]
 - : unit = ()
 - : float array = [|0.; 0.; 42.; 42.; 42.; 0.; 0.; 0.|]
-|}, Principal{|
 |}]
