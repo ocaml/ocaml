@@ -623,8 +623,12 @@ end
 
 (* Pattern matching before any compilation *)
 
-type pattern_matching = {
-  mutable cases : (pattern list * lambda) list;
+type initial_row = pattern list * lambda
+
+type half_compiled_row = pattern * pattern list * lambda
+
+type 'row pattern_matching = {
+  mutable cases : 'row list;
   args : (lambda * let_kind) list;
       (** args are not just Ident.t in at least the following cases:
         - when matching the arguments of a constructor,
@@ -638,11 +642,11 @@ type handler = {
   provenance : matrix;
   exit : int;
   vars : (Ident.t * Lambda.value_kind) list;
-  pm : pattern_matching
+  pm : initial_row pattern_matching
 }
 
 type pm_or_compiled = {
-  body : pattern_matching;
+  body : initial_row pattern_matching;
   handlers : handler list;
   or_matrix : matrix
 }
@@ -653,7 +657,7 @@ type pm_or_compiled = {
 type pm_half_compiled =
   | PmOr of pm_or_compiled
   | PmVar of { inside : pm_half_compiled }
-  | Pm of pattern_matching
+  | Pm of half_compiled_row pattern_matching
 
 (* Only used inside the various split functions, we only keep [me] when we're
    done splitting / precompiling. *)
@@ -678,10 +682,15 @@ let pretty_pm pm =
   if not (Default_environment.is_empty pm.default) then
     Default_environment.pp pm.default
 
+let pretty_hc_pm pm =
+  pretty_cases (List.map (fun (p, ps, act) -> (p :: ps, act)) pm.cases);
+  if not (Default_environment.is_empty pm.default) then
+    Default_environment.pp pm.default
+
 let rec pretty_precompiled = function
   | Pm pm ->
       Format.eprintf "++++ PM ++++\n";
-      pretty_pm pm
+      pretty_hc_pm pm
   | PmVar x ->
       Format.eprintf "++++ VAR ++++\n";
       pretty_precompiled x.inside
@@ -778,7 +787,7 @@ let same_actions = function
             None
     )
 
-let safe_before (ps, act_p) l =
+let safe_before (p, ps, act_p) l =
   (* Test for swapping two clauses *)
   let same_actions act1 act2 =
     match (make_key act1, make_key act2) with
@@ -788,7 +797,8 @@ let safe_before (ps, act_p) l =
         false
   in
   List.for_all
-    (fun (qs, act_q) -> same_actions act_p act_q || not (may_compats ps qs))
+    (fun (q, qs, act_q) ->
+      same_actions act_p act_q || not (may_compats (p :: ps) (q :: qs)))
     l
 
 (*
@@ -832,12 +842,11 @@ let half_simplify_cases args cls =
         { p with pat_desc = Tpat_record (all_lbls, closed) }
     | _ -> p
   in
-  let rec simpl_clause cl =
-    match cl with
+  let rec simpl_clause = function
     | [], _ -> assert false
     | pat :: patl, action -> (
         match pat.pat_desc with
-        | Tpat_any -> cl
+        | Tpat_any -> (pat, patl, action)
         | Tpat_var (id, s) ->
             let p = { pat with pat_desc = Tpat_alias (omega, id, s) } in
             simpl_clause (p :: patl, action)
@@ -850,17 +859,17 @@ let half_simplify_cases args cls =
             let k = Typeopt.value_kind pat.pat_env pat.pat_type in
             simpl_clause
               (p :: patl, bind_with_value_kind Alias (id, k) arg action)
-        | Tpat_record ([], _) -> (omega :: patl, action)
+        | Tpat_record ([], _) -> (omega, patl, action)
         | Tpat_record (lbls, closed) ->
             let all_lbls = all_record_args lbls in
             let full_pat =
               { pat with pat_desc = Tpat_record (all_lbls, closed) }
             in
-            (full_pat :: patl, action)
+            (full_pat, patl, action)
         | Tpat_or _ -> (
             let pat_simple = simpl_pat pat in
             match pat_simple.pat_desc with
-            | Tpat_or _ -> (pat_simple :: patl, action)
+            | Tpat_or _ -> (pat_simple, patl, action)
             | _ -> simpl_clause (pat_simple :: patl, action)
           )
         | Tpat_constant _
@@ -869,7 +878,7 @@ let half_simplify_cases args cls =
         | Tpat_variant _
         | Tpat_array _
         | Tpat_lazy _ ->
-            cl
+            (pat, patl, action)
       )
   in
   List.map simpl_clause cls
@@ -880,8 +889,7 @@ let half_simplify_cases args cls =
 let rec what_is_cases ~skip_any cases =
   match cases with
   | [] -> omega
-  | ([], _) :: _ -> assert false
-  | (p :: _, _) :: rem -> (
+  | (p, _, _) :: rem -> (
       match p.pat_desc with
       | Tpat_any when skip_any -> what_is_cases ~skip_any rem
       | Tpat_var _
@@ -1040,7 +1048,7 @@ let equiv_pat p q = le_pat p q && le_pat q p
 
 let rec extract_equiv_head p l =
   match l with
-  | ((q :: _, _) as cl) :: rem ->
+  | ((q, _, _) as cl) :: rem ->
       if equiv_pat p q then
         let others, rem = extract_equiv_head p rem in
         (cl :: others, rem)
@@ -1074,7 +1082,7 @@ module Or_matrix = struct
   let safe_below_or_matrix l (q, qs) =
     List.for_all
       (function
-        | ({ pat_desc = Tpat_or _ } as p) :: ps, act_p ->
+        | ({ pat_desc = Tpat_or _ } as p), ps, act_p ->
             disjoint p q || safe_below (ps, act_p) qs
         | _ -> true)
       l
@@ -1091,19 +1099,13 @@ module Or_matrix = struct
       (* check append condition for head of O *)
       safe_below_or_matrix not_e (p, ps)
       && (* check insert condition for tail of O *)
-         List.for_all
-           (fun cl ->
-             match cl with
-             | q :: _, _ -> disjoint p q
-             | _ -> assert false)
-           seen
+         List.for_all (fun (q, _, _) -> disjoint p q) seen
     in
     let rec attempt seen = function
       (* invariant: the new clause is safe to append at the end of
          [seen] (but maybe not [rem] yet) *)
-      | [] -> ((p :: ps, act) :: rev_ors, rev_no)
-      | ([], _act) :: _ -> assert false
-      | ((q :: qs, act_q) as cl) :: rem ->
+      | [] -> ((p, ps, act) :: rev_ors, rev_no)
+      | ((q, qs, act_q) as cl) :: rem ->
           if (not (is_or q)) || disjoint p q then
             attempt (cl :: seen) rem
           else if
@@ -1113,21 +1115,22 @@ module Or_matrix = struct
           then
             (* attempt insertion, for equivalent orpats with no variables *)
             if safe_to_insert rem (p, ps) seen then
-              (List.rev_append seen ((p :: ps, act) :: cl :: rem), rev_no)
+              (List.rev_append seen ((p, ps, act) :: cl :: rem), rev_no)
             else
               (* fail to insert or append *)
-              (rev_ors, (p :: ps, act) :: rev_no)
+              (rev_ors, (p, ps, act) :: rev_no)
           else if safe_below (qs, act_q) ps then
             attempt (cl :: seen) rem
           else
-            (rev_ors, (p :: ps, act) :: rev_no)
+            (rev_ors, (p, ps, act) :: rev_no)
     in
     attempt [] rev_ors
 end
 
 (* Reconstruct default information from half_compiled  pm list *)
 
-let as_matrix cases = get_mins le_pats (List.map (fun (ps, _) -> ps) cases)
+let as_matrix cases =
+  get_mins le_pats (List.map (fun (p, ps, _) -> p :: ps) cases)
 
 (*
   Split a matching along the first column.
@@ -1179,7 +1182,7 @@ let rec split_or argo cls args def =
   let rec do_split rev_before rev_ors rev_no = function
     | [] ->
         cons_next (List.rev rev_before) (List.rev rev_ors) (List.rev rev_no)
-    | ((p :: ps, act) as cl) :: rem ->
+    | ((p, ps, act) as cl) :: rem ->
         if not (safe_before cl rev_no) then
           do_split rev_before rev_ors (cl :: rev_no) rem
         else if (not (is_or p)) && safe_before cl rev_ors then
@@ -1189,7 +1192,6 @@ let rec split_or argo cls args def =
             Or_matrix.insert_or_append (p, ps, act) rev_ors rev_no
           in
           do_split rev_before rev_ors rev_no rem
-    | _ -> assert false
   and cons_next yes yesor no =
     let def, nexts =
       match no with
@@ -1225,8 +1227,8 @@ and split_no_or cls args def k =
     let discr = what_is_first_case cls in
     collect discr [] [] cls
   and collect group_discr rev_yes rev_no = function
-    | ([], _) :: _ -> assert false
-    | [ ((ps, _) as cl) ] when rev_yes <> [] && List.for_all omega_like ps ->
+    | [ ((p, ps, _) as cl) ]
+      when rev_yes <> [] && List.for_all omega_like (p :: ps) ->
         (* This enables an extra division in some frequent cases:
                last row is made of variables only
 
@@ -1238,7 +1240,7 @@ and split_no_or cls args def k =
            This optimisation is tested in the first part of
            testsuite/tests/basic/patmatch_split_no_or.ml *)
         collect group_discr rev_yes (cl :: rev_no) []
-    | ((p :: _, _) as cl) :: rem ->
+    | ((p, _, _) as cl) :: rem ->
         if can_group group_discr p && safe_before cl rev_no then
           collect group_discr (cl :: rev_yes) rev_no rem
         else if should_split group_discr then (
@@ -1292,12 +1294,9 @@ and precompile_var args cls def k =
           (* Precompile *)
           let var_cls =
             List.map
-              (fun (ps, act) ->
-                match ps with
-                | p :: ps ->
-                    assert (group_var p);
-                    (ps, act)
-                | _ -> assert false)
+              (fun (p, ps, act) ->
+                assert (group_var p);
+                (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
           let { me = first; matrix }, nexts =
@@ -1354,16 +1353,12 @@ and do_not_precompile args cls def k =
 
 and precompile_or argo cls ors args def k =
   let rec do_cases = function
-    | (({ pat_desc = Tpat_or _ } as orp) :: patl, action) :: rem ->
+    | (({ pat_desc = Tpat_or _ } as orp), patl, action) :: rem ->
         let others, rem = extract_equiv_head orp rem in
         let orpm =
           { cases =
               (patl, action)
-              :: List.map
-                   (function
-                     | _ :: ps, action -> (ps, action)
-                     | _ -> assert false)
-                   others;
+              :: List.map (fun (_, ps, action) -> (ps, action)) others;
             args =
               ( match args with
               | _ :: r -> r
@@ -1394,14 +1389,19 @@ and precompile_or argo cls ors args def k =
           { provenance = [ [ orp ] ]; exit = or_num; vars; pm = orpm }
         in
         (cases, handler :: rem_handlers)
-    | cl :: rem ->
+    | (p, ps, act) :: rem ->
         let new_ord, new_to_catch = do_cases rem in
-        (cl :: new_ord, new_to_catch)
+        ((p :: ps, act) :: new_ord, new_to_catch)
     | [] -> ([], [])
   in
   let cases, handlers = do_cases ors in
   let matrix = as_matrix (cls @ ors)
-  and body = { cases = cls @ cases; args; default = def } in
+  and body =
+    { cases = List.map (fun (p, ps, act) -> (p :: ps, act)) cls @ cases;
+      args;
+      default = def
+    }
+  in
   ( { me = PmOr { body; handlers; or_matrix = matrix };
       matrix;
       top_default = def
@@ -1427,7 +1427,11 @@ let split_and_precompile argo pm =
 
 (* General divide functions *)
 
-type cell = { pm : pattern_matching; ctx : Context.t; discr : pattern }
+type cell = {
+  pm : initial_row pattern_matching;
+  ctx : Context.t;
+  discr : pattern
+}
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
 
@@ -1449,14 +1453,12 @@ let add_in_div make_matching_fun eq_key key patl_action division =
   in
   { division with cells }
 
-let divide make eq_key get_key get_args ctx (pm : pattern_matching) =
-  let add clause division =
-    match clause with
-    | [], _ -> assert false
-    | p :: patl, action ->
-        add_in_div (make p pm.default ctx) eq_key (get_key p)
-          (get_args p patl, action)
-          division
+let divide make eq_key get_key get_args ctx
+    (pm : half_compiled_row pattern_matching) =
+  let add (p, patl, action) division =
+    add_in_div (make p pm.default ctx) eq_key (get_key p)
+      (get_args p patl, action)
+      division
   in
   List.fold_right add pm.cases { args = pm.args; cells = [] }
 
@@ -1464,11 +1466,10 @@ let add_line patl_action pm =
   pm.cases <- patl_action :: pm.cases;
   pm
 
-let divide_line make_ctx make get_args discr ctx (pm : pattern_matching) =
-  let add clause submatrix =
-    match clause with
-    | [], _ -> assert false
-    | p :: patl, action -> add_line (get_args p patl, action) submatrix
+let divide_line make_ctx make get_args discr ctx
+    (pm : half_compiled_row pattern_matching) =
+  let add (p, patl, action) submatrix =
+    add_line (get_args p patl, action) submatrix
   in
   let pm = List.fold_right add pm.cases (make pm.default pm.args) in
   { pm; ctx = make_ctx ctx; discr }
@@ -1687,8 +1688,8 @@ let make_variant_matching_nonconst p lab def ctx = function
 let divide_variant row ctx { cases = cl; args; default = def } =
   let row = Btype.row_repr row in
   let rec divide = function
-    | (({ pat_desc = Tpat_variant (lab, pato, _) } as p) :: patl, action)
-      :: rem -> (
+    | (({ pat_desc = Tpat_variant (lab, pato, _) } as p), patl, action) :: rem
+      -> (
         let variants = divide rem in
         if
           try Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
@@ -3070,7 +3071,7 @@ let arg_to_var arg cls =
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
 *)
 
-let rec compile_match repr partial ctx (m : pattern_matching) =
+let rec compile_match repr partial ctx (m : initial_row pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { cases = ([], action) :: rem } ->
@@ -3533,7 +3534,18 @@ let flatten_cases size cases =
       | _ -> fatal_error "Matching.flatten_case")
     cases
 
-let flatten_pm size args pm =
+let flatten_hc_cases size cases =
+  List.map
+    (function
+      | p, [], action -> (
+          match flatten_pattern size p with
+          | p :: ps -> (p, ps, action)
+          | [] -> assert false
+        )
+      | _ -> fatal_error "Matching.flatten_hc_cases")
+    cases
+
+let flatten_pm flatten_cases size args pm =
   { args;
     cases = flatten_cases size pm.cases;
     default = Default_environment.flatten size pm.default
@@ -3544,10 +3556,10 @@ let flatten_handler size handler =
 
 let flatten_precompiled size args pmh =
   match pmh with
-  | Pm pm -> Pm (flatten_pm size args pm)
+  | Pm pm -> Pm (flatten_pm flatten_hc_cases size args pm)
   | PmOr { body = b; handlers = hs; or_matrix = m } ->
       PmOr
-        { body = flatten_pm size args b;
+        { body = flatten_pm flatten_cases size args b;
           handlers = List.map (flatten_handler size) hs;
           or_matrix = flatten_matrix size m
         }
@@ -3560,7 +3572,11 @@ let flatten_precompiled size args pmh =
 
 let compile_flattened repr partial ctx pmh =
   match pmh with
-  | Pm pm -> compile_match repr partial ctx pm
+  | Pm pm ->
+      compile_match repr partial ctx
+        { pm with
+          cases = List.map (fun (p, ps, act) -> (p :: ps, act)) pm.cases
+        }
   | PmOr { body = b; handlers = hs } ->
       let lam, total = compile_match repr partial ctx b in
       compile_orhandlers (compile_match repr partial) lam total ctx hs
