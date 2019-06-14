@@ -850,7 +850,7 @@ OCaml 4.08.0
   fixes an imenu crash.
   (Wilfred Hughes, review by Christophe Troestler)
 
-- #1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
+- #1711: the new 'open' flag in OCAMLPARAM takes a comma-separated list of
   modules to open as if they had been passed via the command line -open flag.
   (Nicolás Ojeda Bär, review by Mark Shinwell)
 
