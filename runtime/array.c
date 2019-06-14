@@ -615,8 +615,8 @@ CAMLprim value caml_array_fill(value array,
   if (Is_young(array)) {
     for (; len > 0; len--, fp++) *fp = val;
   } else {
-    CAMLassert(Is_in_heap(fp));
     int is_val_young_block = Is_block(val) && Is_young(val);
+    CAMLassert(Is_in_heap(fp));
     for (; len > 0; len--, fp++) {
       value old = *fp;
       if (old == val) continue;
