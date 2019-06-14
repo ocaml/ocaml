@@ -590,7 +590,10 @@ CAMLprim value caml_array_concat(value al)
   return res;
 }
 
-CAMLprim value caml_array_fill (value array, value v_ofs, value v_len, value val)
+CAMLprim value caml_array_fill(value array,
+                               value v_ofs,
+                               value v_len,
+                               value val)
 {
   intnat ofs = Long_val(v_ofs);
   intnat len = Long_val(v_len);
