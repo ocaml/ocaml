@@ -1817,20 +1817,20 @@ method_:
     no_override_flag
     attrs = attributes
     private_ = virtual_with_private_flag
-    label = mkrhs(label) COLON ty = poly_type
+    label = mkrhs(method_label) COLON ty = poly_type
       { (label, private_, Cfk_virtual ty), attrs }
-  | override_flag attributes private_flag mkrhs(label) strict_binding
+  | override_flag attributes private_flag mkrhs(method_label) strict_binding
       { let e = $5 in
         let loc = Location.(e.pexp_loc.loc_start, e.pexp_loc.loc_end) in
         ($4, $3,
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly (e, None)))), $2 }
-  | override_flag attributes private_flag mkrhs(label)
+  | override_flag attributes private_flag mkrhs(method_label)
     COLON poly_type EQUAL seq_expr
       { let poly_exp =
           let loc = ($startpos($6), $endpos($8)) in
           ghexp ~loc (Pexp_poly($8, Some $6)) in
         ($4, $3, Cfk_concrete ($1, poly_exp)), $2 }
-  | override_flag attributes private_flag mkrhs(label) COLON TYPE lident_list
+  | override_flag attributes private_flag mkrhs(method_label) COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
       { let poly_exp_loc = ($startpos($7), $endpos($11)) in
         let poly_exp =
@@ -1906,7 +1906,7 @@ class_sig_field:
   | VAL attributes value_type post_item_attributes
       { let docs = symbol_docs $sloc in
         mkctf ~loc:$sloc (Pctf_val $3) ~attrs:($2@$4) ~docs }
-  | METHOD attributes private_virtual_flags mkrhs(label) COLON poly_type
+  | METHOD attributes private_virtual_flags mkrhs(method_label) COLON poly_type
     post_item_attributes
       { let (p, v) = $3 in
         let docs = symbol_docs $sloc in
@@ -2283,7 +2283,7 @@ simple_expr:
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_override $4)) }
   | mod_longident DOT LBRACELESS object_expr_content error
       { unclosed "{<" $loc($3) ">}" $loc($5) }
-  | simple_expr HASH mkrhs(label)
+  | simple_expr HASH mkrhs(method_label)
       { Pexp_send($1, $3) }
   | simple_expr op(HASHOP) simple_expr
       { mkinfix $1 $2 $3 }
@@ -3319,14 +3319,14 @@ meth_list:
       { [], Open }
 ;
 %inline field:
-  mkrhs(label) COLON poly_type_no_attr attributes
+  mkrhs(method_label) COLON poly_type_no_attr attributes
     { let info = symbol_info $endpos in
       let attrs = add_info_attrs info $4 in
       Of.tag ~loc:(make_loc $sloc) ~attrs $1 $3 }
 ;
 
 %inline field_semi:
-  mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
+  mkrhs(method_label) COLON poly_type_no_attr attributes SEMI attributes
     { let info =
         match rhs_info $endpos($4) with
         | Some _ as info_before_semi -> info_before_semi
@@ -3343,6 +3343,11 @@ meth_list:
 
 %inline label:
     LIDENT                                      { $1 }
+;
+
+%inline method_label:
+    LIDENT                                      { $1 }
+  | UIDENT                                      { $1 }
 ;
 
 /* Constants */
