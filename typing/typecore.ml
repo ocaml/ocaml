@@ -2929,7 +2929,8 @@ and type_expect_
         exp_extra = (Texp_coerce (cty, cty'), loc, sexp.pexp_attributes) ::
                        arg.exp_extra;
       }
-  | Pexp_send (e, {txt=met}) ->
+  | Pexp_send (e, ({txt=met} as lab)) ->
+      Typetexp.check_method_name lab;
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
       let obj_meths = ref None in

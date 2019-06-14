@@ -459,15 +459,16 @@ and class_type_field_aux env self_type meths
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
       add_val lab (mut, virt, ty) val_sig, concr_meths, inher)
 
-  | Pctf_method ({txt=lab}, priv, virt, sty)  ->
+  | Pctf_method (lab, priv, virt, sty)  ->
+      Typetexp.check_method_name lab;
       let cty =
-        declare_method env meths self_type lab priv sty  ctf.pctf_loc in
+        declare_method env meths self_type lab.txt priv sty  ctf.pctf_loc in
       let concr_meths =
         match virt with
-        | Concrete -> Concr.add lab concr_meths
+        | Concrete -> Concr.add lab.txt concr_meths
         | Virtual -> concr_meths
       in
-      (mkctf (Tctf_method (lab, priv, virt, cty)) :: fields,
+      (mkctf (Tctf_method (lab.txt, priv, virt, cty)) :: fields,
         val_sig, concr_meths, inher)
 
   | Pctf_constraint (sty, sty') ->
@@ -699,6 +700,7 @@ and class_field_aux self_loc cl_num self_type meths vars
        Concr.add lab.txt local_vals)
 
   | Pcf_method (lab, priv, Cfk_virtual sty) ->
+      Typetexp.check_method_name lab;
       let cty = virtual_method val_env meths self_type lab.txt priv sty loc in
       (val_env, met_env, par_env,
         lazy (mkcf(Tcf_method (lab, priv, Tcfk_virtual cty)))
@@ -706,6 +708,7 @@ and class_field_aux self_loc cl_num self_type meths vars
         concr_meths, warn_vals, inher, local_meths, local_vals)
 
   | Pcf_method (lab, priv, Cfk_concrete (ovf, expr))  ->
+      Typetexp.check_method_name lab;
       let expr =
         match expr.pexp_desc with
         | Pexp_poly _ -> expr

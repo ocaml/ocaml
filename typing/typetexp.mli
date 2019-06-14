@@ -79,6 +79,7 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Unbound_value_missing_rec of Longident.t * Location.t
+  | Invalid_method_name of string
 
 exception Error of Location.t * Env.t * error
 
@@ -124,3 +125,5 @@ val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a
 
 (* To update location from typemod errors *)
 val typemod_update_location: (Location.t -> exn -> exn) ref
+
+val check_method_name: string Location.loc -> unit

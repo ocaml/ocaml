@@ -65,9 +65,14 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Unbound_value_missing_rec of Longident.t * Location.t
+  | Invalid_method_name of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
+
+let check_method_name {txt; loc} =
+  if txt.[0] = Char.uppercase_ascii txt.[0] then
+    raise (Error(loc, Env.empty, Invalid_method_name txt))
 
 (** Map indexed by type variable names. *)
 module TyVarMap = Misc.Stdlib.String.Map
@@ -712,6 +717,7 @@ and transl_fields env policy o fields =
     let of_attributes = pof_attributes in
     let of_desc = match pof_desc with
     | Otag (s, ty1) -> begin
+        check_method_name s;
         let ty1 =
           Builtin_attributes.warning_scope of_attributes
             (fun () -> transl_poly_type env policy ty1)
@@ -1061,6 +1067,8 @@ let report_error env ppf = function
         "Hint: If this is a recursive definition,"
         "you should add the 'rec' keyword on line"
         line
+  | Invalid_method_name name ->
+    fprintf ppf "@[`%s' is not a valid method name.@]" name
 
 let () =
   Location.register_error_of_exn
