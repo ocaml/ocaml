@@ -42,4 +42,6 @@ CAML_STATIC_ASSERT(
    (Domain_state_num_fields
    ) * 8);
 
+CAMLextern caml_domain_state* Caml_state;
+
 #endif /* CAML_STATE_H */

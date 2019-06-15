@@ -88,6 +88,7 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let eax = phys_reg 0
+let ebx = phys_reg 1
 let ecx = phys_reg 2
 let edx = phys_reg 3
 
@@ -204,10 +205,12 @@ let destroyed_at_oper = function
     all_phys_regs
   | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) -> [| eax; edx |]
-  | Iop(Ialloc _ | Iintop Imulh) -> [| eax |]
+  | Iop(Ialloc _) -> [| eax; ebx |]
+  | Iop(Iintop Imulh) -> [| eax |]
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| eax |]
   | Iop(Iintoffloat) -> [| eax |]
   | Iifthenelse(Ifloattest _, _, _) -> [| eax |]
+  | Itrywith _ -> [| edx |]
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
