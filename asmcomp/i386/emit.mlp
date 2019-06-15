@@ -876,17 +876,14 @@ let emit_instr fallthrough i =
       I.push (domain_field Domain_exception_pointer RDX);
       cfi_adjust_cfa_offset trap_frame_size;
       I.mov esp (domain_field Domain_exception_pointer RDX);
-      I.mov (int 23) edx;
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
-      I.push ecx;
-      I.push edx;
-      I.mov (mem32 DWORD 8 RSP) ecx;
+      I.mov edx (mem32 DWORD 4 RSP);
       load_domain_state edx;
-      I.mov ecx (domain_field Domain_exception_pointer RDX);
+      I.pop (domain_field Domain_exception_pointer RDX);
       I.pop edx;
-      I.pop ecx;
-      I.add (int trap_frame_size) esp;
+      if trap_frame_size > 8 then
+        I.add (int (trap_frame_size - 8)) esp;
       cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
@@ -894,7 +891,6 @@ let emit_instr fallthrough i =
       | Lambda.Raise_regular ->
           load_domain_state ebx;
           I.mov (int 0) (domain_field Domain_backtrace_pos RBX);
-          I.mov (int 43) ebx;
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
       | Lambda.Raise_reraise ->
@@ -904,7 +900,6 @@ let emit_instr fallthrough i =
           load_domain_state ebx;
           I.mov (domain_field Domain_exception_pointer RBX) esp;
           I.pop (domain_field Domain_exception_pointer RBX);
-          I.mov (int 59) ebx;
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
           I.pop ebx;
