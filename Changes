@@ -8,6 +8,11 @@ Working version
 - #7557, #1726: multi-indices for extended indexing operators
   (Florian Angeletti, review by Gabriel Radanne)
 
+- #8737: the parser now accepts method names starting with an
+  uppercase letter. These are rejected by the typechecker and
+  are meant to be exploited by ppx.
+  (Nicolás Ojeda Bär)
+
 ### Internal/compiler-libs changes:
 
 - #7927, #8527: Replace long tuples into records in typeclass.ml
