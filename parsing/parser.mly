@@ -1830,8 +1830,8 @@ method_:
           let loc = ($startpos($6), $endpos($8)) in
           ghexp ~loc (Pexp_poly($8, Some $6)) in
         ($4, $3, Cfk_concrete ($1, poly_exp)), $2 }
-  | override_flag attributes private_flag mkrhs(method_label) COLON TYPE lident_list
-    DOT core_type EQUAL seq_expr
+  | override_flag attributes private_flag mkrhs(method_label)
+    COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let poly_exp_loc = ($startpos($7), $endpos($11)) in
         let poly_exp =
           let exp, poly =
