@@ -37,8 +37,7 @@ val get : 'a option -> 'a
 (** [get o] is [v] if [o] is [Some v] and @raise Invalid_argument otherwise. *)
 
 val bind : 'a option -> ('a -> 'b option) -> 'b option
-(** [bind o f] is [Some (f v)] if [o] is [Some v] and [None] if [o] is
-    [None]. *)
+(** [bind o f] is [f v] if [o] is [Some v] and [None] if [o] is [None]. *)
 
 val join : 'a option option -> 'a option
 (** [join oo] is [Some v] if [oo] is [Some (Some v)] and [None] otherwise. *)
