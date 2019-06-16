@@ -324,7 +324,7 @@ endif
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp Makefile.config utils/Makefile Makefile
+utils/config.ml: utils/config.mlp Makefile.config utils/Makefile
 	$(MAKE) -C utils config.ml
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
