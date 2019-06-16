@@ -23,9 +23,9 @@ function run {
     echo "-=-=- $NAME -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
     "$@"
     CODE=$?
-    if [ $CODE -ne 0 ]; then
+    if [[ $CODE -ne 0 ]] ; then
         echo "-=-=- $NAME failed! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
-        if [ $BUILD_PID -ne 0 ] ; then
+        if [[ $BUILD_PID -ne 0 ]] ; then
           kill -KILL $BUILD_PID 2>/dev/null
           wait $BUILD_PID 2>/dev/null
         fi
@@ -83,7 +83,7 @@ case "$1" in
     for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
       cp "$f" "$OCAMLROOT/bin/flexdll/"
     done
-    if [ "$PORT" = "msvc64" ] ; then
+    if [[ $PORT = 'msvc64' ]] ; then
       echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
         >> ~/.bash_profile
     fi
@@ -93,26 +93,26 @@ case "$1" in
 
     set_configuration msvc "$OCAMLROOT-msvc32" -WX
 
-    run "make world" make world
-    run "make runtimeopt" make runtimeopt
-    run "make -C otherlibs/systhreads libthreadsnat.lib" \
+    run 'make world' make world
+    run 'make runtimeopt' make runtimeopt
+    run 'make -C otherlibs/systhreads libthreadsnat.lib' \
          make -C otherlibs/systhreads libthreadsnat.lib
 
     exit 0
     ;;
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
-    run "ocamlc.opt -version" "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
+    run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
     run "test $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" tests
     run "install $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" install
-    if [ "$PORT" = "msvc64" ] ; then
-      run "check_all_arches" make -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
+    if [[ $PORT = 'msvc64' ]] ; then
+      run 'check_all_arches' make -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
     fi
     ;;
   *)
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
-    if [ "$PORT" = "msvc64" ] ; then
+    if [[ $PORT = 'msvc64' ]] ; then
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
       make MSVC_DETECT=0 CHAINS=msvc64 support
@@ -120,7 +120,7 @@ case "$1" in
       cd ..
     fi
 
-    if [ "$PORT" = "msvc64" ] ; then
+    if [[ $PORT = 'msvc64' ]] ; then
       set_configuration msvc64 "$OCAMLROOT" -WX
     else
       set_configuration mingw "$OCAMLROOT-mingw32" -Werror
@@ -130,7 +130,7 @@ case "$1" in
 
     export TERM=ansi
 
-    if [ "$PORT" = "mingw32" ] ; then
+    if [[ $PORT = 'mingw32' ]] ; then
       set -o pipefail
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
@@ -141,10 +141,10 @@ case "$1" in
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
     else
-      run "make world" make world
-      run "make bootstrap" make bootstrap
-      run "make opt" make opt
-      run "make opt.opt" make opt.opt
+      run 'make world' make world
+      run 'make bootstrap' make bootstrap
+      run 'make opt' make opt
+      run 'make opt.opt' make opt.opt
     fi
 
     ;;

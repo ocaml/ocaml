@@ -32,7 +32,7 @@ set -e
 #
 echo "TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE"
 echo "TRAVIS_COMMIT=$TRAVIS_COMMIT"
-if [[ $TRAVIS_EVENT_TYPE = "pull_request" ]] ; then
+if [[ $TRAVIS_EVENT_TYPE = 'pull_request' ]] ; then
   FETCH_HEAD=$(git rev-parse FETCH_HEAD)
   echo "FETCH_HEAD=$FETCH_HEAD"
 else
@@ -46,11 +46,11 @@ if [[ $TRAVIS_EVENT_TYPE = 'push' ]] ; then
   fi
 else
   if [[ $TRAVIS_COMMIT != $(git rev-parse FETCH_HEAD) ]] ; then
-    echo "WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!"
+    echo 'WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!'
     if git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
-      echo "TRAVIS_COMMIT exists, so going with it"
+      echo 'TRAVIS_COMMIT exists, so going with it'
     else
-      echo "TRAVIS_COMMIT does not exist; setting to FETCH_HEAD"
+      echo 'TRAVIS_COMMIT does not exist; setting to FETCH_HEAD'
       TRAVIS_COMMIT=$FETCH_HEAD
     fi
   fi
@@ -100,7 +100,7 @@ EOF
     ;;
   i386)
     ./configure --build=x86_64-pc-linux-gnu --host=i386-pc-linux-gnu \
-      AS="as" ASPP="gcc -c" \
+      AS='as' ASPP='gcc -c' \
       $configure_flags
     ;;
   *)
@@ -116,7 +116,7 @@ EOF
   echo Running the testsuite with the normal runtime
   $MAKE all
   echo Running the testsuite with the debug runtime
-  $MAKE USE_RUNTIME="d" OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
+  $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
   cd ..
   $MAKE install
   echo Check the code examples in the manual
@@ -152,10 +152,10 @@ EOF
 
 CheckNoChangesMessage () {
   API_URL=https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels
-  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 \
-    "${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD"})"
+  if [[ -n $(git log --grep='[Nn]o [Cc]hange.* needed' --max-count=1 \
+    "$TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD") ]]
   then echo pass
-  elif test -n "$(curl $API_URL | grep 'no-change-entry-needed')"
+  elif [[ -n $(curl "$API_URL" | grep 'no-change-entry-needed') ]]
   then echo pass
   else exit 1
   fi
@@ -200,7 +200,7 @@ EOF
 # Test to see if any part of the directory name has been marked prune
 not_pruned () {
   DIR=$(dirname "$1")
-  if [ "$DIR" = "." ] ; then
+  if [[ $DIR = '.' ]] ; then
     return 0
   else
     case ",$(git check-attr typo.prune "$DIR" | sed -e 's/.*: //')," in
@@ -218,7 +218,7 @@ not_pruned () {
 CheckTypoTree () {
   export OCAML_CT_HEAD=$1
   export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r $2 --"
-  export OCAML_CT_CAT="git cat-file --textconv"
+  export OCAML_CT_CAT='git cat-file --textconv'
   export OCAML_CT_PREFIX="$1:"
   GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
   git diff-tree --diff-filter=d --no-commit-id --name-only -r $2 \
@@ -238,10 +238,10 @@ CheckTypoTree () {
     esac
   done)
   rm -f tmp-index
-  if [ -e CHECK_CONFIGURE ] ; then
+  if [[ -e CHECK_CONFIGURE ]] ; then
     rm -f CHECK_CONFIGURE
     echo "configure generation altered in $1"
-    echo "Verifying that configure.ac generates configure"
+    echo 'Verifying that configure.ac generates configure'
     git checkout "$1"
     mv configure configure.ref
     ./autogen
@@ -256,32 +256,32 @@ please run ./autogen and commit"
 CHECK_ALL_COMMITS=0
 
 CheckTypo () {
-  export OCAML_CT_GIT_INDEX="tmp-index"
-  export OCAML_CT_CA_FLAG="--cached"
+  export OCAML_CT_GIT_INDEX='tmp-index'
+  export OCAML_CT_CA_FLAG='--cached'
   # Work around an apparent bug in Ubuntu 12.4.5
   # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
   rm -f check-typo-failed
-  if test -z "$TRAVIS_COMMIT_RANGE"
+  if [[ -z $TRAVIS_COMMIT_RANGE ]]
   then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
   else
-    if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+    if [[ $TRAVIS_EVENT_TYPE = 'pull_request' ]]
     then TRAVIS_COMMIT_RANGE=$TRAVIS_MERGE_BASE..$TRAVIS_PULL_REQUEST_SHA
     fi
-    if [ $CHECK_ALL_COMMITS -eq 1 ]
+    if [[ $CHECK_ALL_COMMITS -eq 1 ]]
     then
       for commit in $(git rev-list "$TRAVIS_COMMIT_RANGE" --reverse)
       do
         CheckTypoTree $commit $commit
       done
     else
-      if [ -z "$TRAVIS_PULL_REQUEST_SHA" ]
+      if [[ -z $TRAVIS_PULL_REQUEST_SHA ]]
       then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
       else CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT_RANGE
       fi
     fi
   fi
   echo complete
-  if [ -e check-typo-failed ]
+  if [[ -e check-typo-failed ]]
   then exit 1
   fi
 }
