@@ -60,7 +60,7 @@ function set_configuration {
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"
-    sed -i -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" "$FILE"
+    sed -i -e '/^ *OC_CFLAGS *=/s/\r\?$/ '"$3"'\0/' "$FILE"
 #    run "Content of $FILE" cat Makefile.config
 }
 

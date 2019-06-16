@@ -40,14 +40,14 @@ else
 fi
 
 if [[ $TRAVIS_EVENT_TYPE = 'push' ]] ; then
-  if ! git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
+  if ! git cat-file -e "$TRAVIS_COMMIT" 2> /dev/null ; then
     echo 'TRAVIS_COMMIT does not exist - CI failure'
     exit 1
   fi
 else
   if [[ $TRAVIS_COMMIT != $(git rev-parse FETCH_HEAD) ]] ; then
     echo 'WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!'
-    if git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
+    if git cat-file -e "$TRAVIS_COMMIT" 2> /dev/null ; then
       echo 'TRAVIS_COMMIT exists, so going with it'
     else
       echo 'TRAVIS_COMMIT does not exist; setting to FETCH_HEAD'
@@ -68,10 +68,10 @@ case $TRAVIS_EVENT_TYPE in
    # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
    pull_request)
      DEEPEN=50
-     while ! git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD > /dev/null 2>&1
+     while ! git merge-base "$TRAVIS_CUR_HEAD" "$TRAVIS_PR_HEAD" >& /dev/null
      do
        echo "Deepening $TRAVIS_BRANCH by $DEEPEN commits"
-       git fetch origin --deepen=$DEEPEN $TRAVIS_BRANCH
+       git fetch origin --deepen=$DEEPEN "$TRAVIS_BRANCH"
        ((DEEPEN*=2))
      done
      TRAVIS_MERGE_BASE=$(git merge-base "$TRAVIS_CUR_HEAD" "$TRAVIS_PR_HEAD");;
@@ -209,7 +209,7 @@ not_pruned () {
       ;;
       *)
 
-      not_pruned $DIR
+      not_pruned "$DIR"
       return $?
     esac
   fi
@@ -220,13 +220,13 @@ CheckTypoTree () {
   export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r $2 --"
   export OCAML_CT_CAT='git cat-file --textconv'
   export OCAML_CT_PREFIX="$1:"
-  GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
-  git diff-tree --diff-filter=d --no-commit-id --name-only -r $2 \
+  GIT_INDEX_FILE=tmp-index git read-tree --reset -i "$1"
+  git diff-tree --diff-filter=d --no-commit-id --name-only -r "$2" \
     | (while IFS= read -r path
   do
-    if not_pruned $path ; then
+    if not_pruned "$path" ; then
       echo "Checking $1: $path"
-      if ! tools/check-typo ./$path ; then
+      if ! tools/check-typo "./$path" ; then
         touch check-typo-failed
       fi
     else
@@ -262,7 +262,7 @@ CheckTypo () {
   # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
   rm -f check-typo-failed
   if [[ -z $TRAVIS_COMMIT_RANGE ]]
-  then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
+  then CheckTypoTree "$TRAVIS_COMMIT" "$TRAVIS_COMMIT"
   else
     if [[ $TRAVIS_EVENT_TYPE = 'pull_request' ]]
     then TRAVIS_COMMIT_RANGE=$TRAVIS_MERGE_BASE..$TRAVIS_PULL_REQUEST_SHA
@@ -271,12 +271,12 @@ CheckTypo () {
     then
       for commit in $(git rev-list "$TRAVIS_COMMIT_RANGE" --reverse)
       do
-        CheckTypoTree $commit $commit
+        CheckTypoTree "$commit" "$commit"
       done
     else
       if [[ -z $TRAVIS_PULL_REQUEST_SHA ]]
-      then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
-      else CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT_RANGE
+      then CheckTypoTree "$TRAVIS_COMMIT" "$TRAVIS_COMMIT"
+      else CheckTypoTree "$TRAVIS_COMMIT" "$TRAVIS_COMMIT_RANGE"
       fi
     fi
   fi

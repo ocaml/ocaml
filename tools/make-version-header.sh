@@ -44,12 +44,12 @@ patchlvl="`echo "$version" | sed -n -e '1s/^[0-9]*\.[0-9]*\.\([0-9]*\).*/\1/p'`"
 suffix="`echo "$version" | sed -n -e '1s/^[^+]*+\(.*\)/\1/p'`"
 
 echo "#define OCAML_VERSION_MAJOR $major"
-printf "#define OCAML_VERSION_MINOR %d\n" "$minor"
+printf '#define OCAML_VERSION_MINOR %d\n' "$minor"
 case $patchlvl in "") patchlvl=0;; esac
 echo "#define OCAML_VERSION_PATCHLEVEL $patchlvl"
 case "$suffix" in
   "") echo "#undef OCAML_VERSION_ADDITIONAL";;
   *) echo "#define OCAML_VERSION_ADDITIONAL \"$suffix\"";;
 esac
-printf "#define OCAML_VERSION %d%02d%02d\n" "$major" "$minor" "$patchlvl"
+printf '#define OCAML_VERSION %d%02d%02d\n' "$major" "$minor" "$patchlvl"
 echo "#define OCAML_VERSION_STRING \"$version\""
