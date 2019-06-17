@@ -71,7 +71,7 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
-* #8711: The major GC hooks are no longer allowed to interact with the
+- #8711: The major GC hooks are no longer allowed to interact with the
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
@@ -82,6 +82,9 @@ Working version
 - #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
   the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
+
+- #8713: Introduce domain state to hold C global variables in the runtime.
+  (KC Sivaramakrishnan)
 
 ### Tools:
 
