@@ -431,10 +431,12 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
   CAMLassert(lambda > 0);
 
   occurrences =
-    mt_generate_binom(caml_memprof_young_trigger - 1 - caml_young_ptr) + 1;
+    mt_generate_binom(caml_memprof_young_trigger - 1
+                      - Caml_state->young_ptr) + 1;
 
   if (!from_caml) {
-    register_postponed_callback(Val_hp(caml_young_ptr), occurrences, Minor);
+    register_postponed_callback(Val_hp(Caml_state->young_ptr), occurrences,
+                                Minor);
     caml_memprof_renew_minor_sample();
     CAMLreturn0;
   }

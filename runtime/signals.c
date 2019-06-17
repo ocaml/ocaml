@@ -109,10 +109,10 @@ void caml_set_something_to_do(void)
   caml_something_to_do = 1;
 #ifdef NATIVE_CODE
   /* When this function is called without [caml_c_call] (e.g., in
-     [caml_modify]), this is only moderately effective on ports that
-     cache [caml_young_limit] in a register, so it may take a while
-     before the register is reloaded from [caml_young_limit]. */
-  caml_young_limit = caml_young_alloc_end;
+     [caml_modify]), this is only moderately effective on ports that cache
+     [Caml_state->young_limit] in a register, so it may take a while before the
+     register is reloaded from [Caml_state->young_limit]. */
+  Caml_state->young_limit = Caml_state->young_alloc_end;
 #endif
 }
 
@@ -279,13 +279,13 @@ void caml_update_young_limit (void)
 
 void caml_request_major_slice (void)
 {
-  caml_requested_major_slice = 1;
+  Caml_state->requested_major_slice = 1;
   caml_set_something_to_do();
 }
 
 void caml_request_minor_gc (void)
 {
-  caml_requested_minor_gc = 1;
+  Caml_state->requested_minor_gc = 1;
   caml_set_something_to_do();
 }
 
@@ -297,7 +297,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 #ifdef NATIVE_CODE
   caml_update_young_limit();
 #endif
-  if (caml_requested_major_slice || caml_requested_minor_gc){
+  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc){
     CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
     caml_gc_dispatch();
   }
