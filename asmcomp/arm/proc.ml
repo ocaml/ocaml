@@ -34,7 +34,7 @@ let word_addressed = false
     r8                    trap pointer (preserved)
     r9                    platform register, usually reserved
     r10                   allocation pointer (preserved)
-    r11                   allocation limit (preserved)
+    r11                   domain state pointer (preserved)
     r12                   intra-procedural scratch register (not preserved)
     r13                   stack pointer
     r14                   return address
