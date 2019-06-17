@@ -241,7 +241,8 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     Caml_state->backtrace_last_exn = exn;
   }
 
-  if (Caml_state->backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
+  if (Caml_state->backtrace_buffer == NULL &&
+      caml_alloc_backtrace_buffer() == -1)
     return;
 
   if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;

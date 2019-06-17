@@ -650,10 +650,10 @@ void caml_major_collection_slice (intnat howmuch)
      the P above.
 
      Amount of marking work for the GC cycle:
-                 MW = Caml_state->stat_heap_wsz * 100 / (100 + caml_percent_free)
-                      + caml_incremental_roots_count
+             MW = Caml_state->stat_heap_wsz * 100 / (100 + caml_percent_free)
+                  + caml_incremental_roots_count
      Amount of sweeping work for the GC cycle:
-                 SW = Caml_state->stat_heap_wsz
+             SW = Caml_state->stat_heap_wsz
 
      In order to finish marking with a non-empty free list, we will
      use 40% of the time for marking, and 60% for sweeping.
@@ -673,7 +673,8 @@ void caml_major_collection_slice (intnat howmuch)
 
      Amount of marking work for a marking slice:
                  MS = P * MW / (40/100)
-                 MS = P * (Caml_state->stat_heap_wsz * 250 / (100 + caml_percent_free)
+                 MS = P * (Caml_state->stat_heap_wsz * 250
+                           / (100 + caml_percent_free)
                            + 2.5 * caml_incremental_roots_count)
      Amount of sweeping work for a sweeping slice:
                  SS = P * SW / (60/100)
@@ -880,7 +881,8 @@ void caml_init_major_heap (asize_t heap_size)
 {
   int i;
 
-  Caml_state->stat_heap_wsz = caml_clip_heap_chunk_wsz (Wsize_bsize (heap_size));
+  Caml_state->stat_heap_wsz =
+    caml_clip_heap_chunk_wsz (Wsize_bsize (heap_size));
   Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
   CAMLassert (Bsize_wsize (Caml_state->stat_heap_wsz) % Page_size == 0);
   caml_heap_start =
@@ -893,7 +895,7 @@ void caml_init_major_heap (asize_t heap_size)
   Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
 
   if (caml_page_table_add(In_heap, caml_heap_start,
-                          caml_heap_start + Bsize_wsize (Caml_state->stat_heap_wsz))
+        caml_heap_start + Bsize_wsize (Caml_state->stat_heap_wsz))
       != 0) {
     caml_fatal_error ("cannot allocate initial page table");
   }

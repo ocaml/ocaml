@@ -447,7 +447,8 @@ FUNCTION(caml_callback2_asm)
 FUNCTION(caml_callback3_asm)
         CFI_STARTPROC
     /* Initial shuffling of arguments */
-    /* (r0 = Caml_state, r1 = closure, [r2] = arg1, [r2,4] = arg2, [r2,8] = arg3) */
+    /* (r0 = Caml_state, r1 = closure, [r2] = arg1, [r2,4] = arg2,
+        [r2,8] = arg3) */
         mov     r3, r1            /* r3 = closure environment */
         ldr     r0, [r2]          /* r0 = first arg */
         ldr     r1, [r2,4]        /* r1 = second arg */

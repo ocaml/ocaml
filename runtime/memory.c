@@ -335,7 +335,7 @@ int caml_add_to_heap (char *m)
 
   caml_gc_message (0x04, "Growing heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                   (Bsize_wsize (Caml_state->stat_heap_wsz) + Chunk_size (m)) / 1024);
+     (Bsize_wsize (Caml_state->stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)

@@ -225,9 +225,9 @@ caml_start_program:
         std     %f13, 112(%r15)
         std     %f14, 120(%r15)
         std     %f15, 128(%r15)
-    
+
     /* Load Caml_state to r10 register */
-        lgr     %r10, %r1 
+        lgr     %r10, %r1
     /* Set up a callback link */
         lay     %r15, -32(%r15)
         lg      %r1, Caml_state(bottom_of_stack)
@@ -278,7 +278,7 @@ caml_start_program:
         ld      %f13, 112(%r15)
         ld      %f14, 120(%r15)
         ld      %f15, 128(%r15)
- 
+
     /* Return */
         lay     %r15, 144(%r15)
         br      %r14
@@ -310,7 +310,7 @@ caml_callback2_asm:
     /* Initial shuffling of arguments */
     /* (r2 = Caml_state, r3 = closure, 0(r4) = arg1, 8(r4) = arg2) */
         lgr      %r1, %r2            /* r1 = Caml_state */
-        lgr      %r0, %r3            
+        lgr      %r0, %r3
         lg       %r2, 0(%r4)         /* r2 = First argument */
         lg       %r3, 8(%r4)         /* r3 = Second argument */
         lgr      %r4, %r0            /* r4 = Closure */
@@ -321,7 +321,8 @@ caml_callback2_asm:
         .type   caml_callback3_asm, @function
 caml_callback3_asm:
     /* Initial shuffling of arguments */
-    /* (r2 = Caml_state, r3 = closure, 0(r4) = arg1, 8(r4) = arg2, 16(r4) = arg3) */
+    /* (r2 = Caml_state, r3 = closure, 0(r4) = arg1, 8(r4) = arg2,
+        16(r4) = arg3) */
         lgr      %r1, %r2            /* r1 = Caml_state */
         lgr      %r5, %r3            /* r5 = Closure */
         lg       %r2, 0(%r4)         /* r2 = First argument */

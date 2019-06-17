@@ -621,7 +621,8 @@ FUNCTION(caml_callback_asm)
 ENDFUNCTION(caml_callback_asm)
 
 FUNCTION(caml_callback2_asm)
-    /* r3 = Caml_state, r4 = closure, 0(r5) = first arg, WORD(r5) = second arg */
+    /* r3 = Caml_state, r4 = closure, 0(r5) = first arg,
+       WORD(r5) = second arg */
         mr      START_PRG_DOMAIN_STATE_PTR, 3
         mr      0, 4
         lg      3, 0(5)             /* r3 = First argument */
@@ -632,7 +633,8 @@ FUNCTION(caml_callback2_asm)
 ENDFUNCTION(caml_callback2_asm)
 
 FUNCTION(caml_callback3_asm)
-    /* r3 = Caml_state, r4 = closure, 0(r5) = first arg, WORD(r5) = second arg, 2*WORD(r5) = third arg */
+    /* r3 = Caml_state, r4 = closure, 0(r5) = first arg, WORD(r5) = second arg,
+       2*WORD(r5) = third arg */
         mr      START_PRG_DOMAIN_STATE_PTR, 3
         mr      6, 4                /* r6 = Closure */
         lg      3, 0(5)             /* r3 = First argument */

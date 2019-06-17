@@ -408,8 +408,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   }
   CAML_INSTR_TIME (tmr, "major_roots/dynamic_global");
   /* The stack and local roots */
-  caml_do_local_roots(f, Caml_state->bottom_of_stack, Caml_state->last_return_address,
-                      Caml_state->gc_regs, Caml_state->local_roots);
+  caml_do_local_roots(f, Caml_state->bottom_of_stack,
+                      Caml_state->last_return_address, Caml_state->gc_regs,
+                      Caml_state->local_roots);
   CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
@@ -493,7 +494,8 @@ uintnat (*caml_stack_usage_hook)(void) = NULL;
 uintnat caml_stack_usage (void)
 {
   uintnat sz;
-  sz = (value *) Caml_state->top_of_stack - (value *) Caml_state->bottom_of_stack;
+  sz = (value *) Caml_state->top_of_stack -
+       (value *) Caml_state->bottom_of_stack;
   if (caml_stack_usage_hook != NULL)
     sz += (*caml_stack_usage_hook)();
   return sz;

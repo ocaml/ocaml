@@ -658,7 +658,8 @@ LBL(110):
         popq    C_ARG_2               /* arg 2: pc of raise */
         movq    %rsp, C_ARG_3         /* arg 3: sp at raise */
 #endif
-        movq    Caml_state(exception_pointer), C_ARG_4 /* arg 4: sp of handler */
+        /* arg 4: sp of handler */
+        movq    Caml_state(exception_pointer), C_ARG_4
         /* PR#5700: thanks to popq above, stack is now 16-aligned */
         /* Thanks to ENTER_FUNCTION, stack is now 16-aligned */
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
@@ -679,7 +680,8 @@ CFI_STARTPROC
         jne     LBL(112)
         movq    C_ARG_2, %rax
         movq    Caml_state(exception_pointer), %rsp  /* Cut stack */
-        popq    Caml_state(exception_pointer) /* Recover previous exception handler */
+        /* Recover previous exception handler */
+        popq    Caml_state(exception_pointer)
         movq    Caml_state(young_ptr), %r15 /* Reload alloc ptr */
         ret
 LBL(112):
@@ -688,10 +690,14 @@ LBL(112):
 #endif
         /* Save exception bucket. Caml_state in r14 saved across C calls. */
         movq    C_ARG_2, %r12
-        movq    C_ARG_2, C_ARG_1                   /* arg 1: exception bucket */
-        movq    Caml_state(last_return_address), C_ARG_2 /* arg 2: pc of raise */
-        movq    Caml_state(bottom_of_stack), C_ARG_3    /* arg 3: sp of raise */
-        movq    Caml_state(exception_pointer), C_ARG_4      /* arg 4: sp of handler */
+        /* arg 1: exception bucket */
+        movq    C_ARG_2, C_ARG_1
+        /* arg 2: pc of raise */
+        movq    Caml_state(last_return_address), C_ARG_2
+        /* arg 3: sp of raise */
+        movq    Caml_state(bottom_of_stack), C_ARG_3
+        /* arg 4: sp of handler */
+        movq    Caml_state(exception_pointer), C_ARG_4
 #ifndef WITH_FRAME_POINTERS
         subq    $8, %rsp              /* PR#5700: maintain stack alignment */
 #endif
@@ -699,7 +705,8 @@ LBL(112):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    Caml_state(exception_pointer), %rsp
-        popq    Caml_state(exception_pointer) /* Recover previous exception handler */
+        /* Recover previous exception handler */
+        popq    Caml_state(exception_pointer)
         movq    Caml_state(young_ptr), %r15 /* Reload alloc ptr */
         ret
 CFI_ENDPROC
@@ -715,7 +722,7 @@ FUNCTION(G(caml_stack_overflow))
         movq    C_ARG_1, %r14                 /* Caml_state */
         LEA_VAR(caml_exn_Stack_overflow, %rax)
         movq    Caml_state(exception_pointer), %rsp /* cut the stack */
-        popq    Caml_state(exception_pointer)       /* recover previous exn handler */
+        popq    Caml_state(exception_pointer) /* recover previous exn handler */
         ret                                   /* jump to handler's code */
 ENDFUNCTION(G(caml_stack_overflow))
 

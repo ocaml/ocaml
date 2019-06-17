@@ -235,7 +235,8 @@ FUNCTION(caml_allocN)
         pushl   %eax; CFI_ADJUST(4) /* saved desired size */
         pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
-        subl    CAML_STATE(young_ptr, %ebx), %eax /* eax = size - caml_young_ptr */
+        /* eax = size - caml_young_ptr */
+        subl    CAML_STATE(young_ptr, %ebx), %eax
         negl    %eax                    /* eax = caml_young_ptr - size */
         cmpl    CAML_STATE(young_limit, %ebx), %eax
         jb      LBL(103)
@@ -376,10 +377,14 @@ FUNCTION(caml_raise_exception)
 LBL(112):
         movl    8(%esp), %esi          /* Save exception bucket in esi */
         ALIGN_STACK(12)
-        pushl   CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(4)  /* 4: sp of handler */
-        pushl   CAML_STATE(bottom_of_stack, %ebx); CFI_ADJUST(4)    /* 3: sp of raise */
-        pushl   CAML_STATE(last_return_address, %ebx); CFI_ADJUST(4)/* 2: pc of raise */
-        pushl   %esi; CFI_ADJUST(4)                    /* 1: exception bucket */
+        /* 4: sp of handler */
+        pushl   CAML_STATE(exception_pointer, %ebx); CFI_ADJUST(4)
+        /* 3: sp of raise */
+        pushl   CAML_STATE(bottom_of_stack, %ebx); CFI_ADJUST(4)
+        /* 2: pc of raise */
+        pushl   CAML_STATE(last_return_address, %ebx); CFI_ADJUST(4)
+        /* 1: exception bucket */
+        pushl   %esi; CFI_ADJUST(4)
         call    G(caml_stash_backtrace)
         movl    %esi, %eax              /* Recover exception bucket */
         movl    CAML_STATE(exception_pointer, %ebx), %esp

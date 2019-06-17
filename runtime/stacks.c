@@ -32,7 +32,8 @@ void caml_init_stack (uintnat initial_max_size)
 {
   Caml_state->stack_low = (value *) caml_stat_alloc(Stack_size);
   Caml_state->stack_high = Caml_state->stack_low + Stack_size / sizeof (value);
-  Caml_state->stack_threshold = Caml_state->stack_low + Stack_threshold / sizeof (value);
+  Caml_state->stack_threshold =
+    Caml_state->stack_low + Stack_threshold / sizeof (value);
   Caml_state->extern_sp = Caml_state->stack_high;
   Caml_state->trapsp = Caml_state->stack_high;
   Caml_state->trap_barrier = Caml_state->stack_high + 1;
@@ -53,7 +54,8 @@ void caml_realloc_stack(asize_t required_space)
   do {
     if (size >= caml_max_stack_size) caml_raise_stack_overflow();
     size *= 2;
-  } while (size < Caml_state->stack_high - Caml_state->extern_sp + required_space);
+  } while (size < Caml_state->stack_high - Caml_state->extern_sp
+                  + required_space);
   caml_gc_message (0x08, "Growing stack to %"
                          ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                    (uintnat) size * sizeof(value) / 1024);
@@ -74,7 +76,8 @@ void caml_realloc_stack(asize_t required_space)
     Trap_link(p) = (value *) shift(Trap_link(p));
   Caml_state->stack_low = new_low;
   Caml_state->stack_high = new_high;
-  Caml_state->stack_threshold = Caml_state->stack_low + Stack_threshold / sizeof (value);
+  Caml_state->stack_threshold =
+    Caml_state->stack_low + Stack_threshold / sizeof (value);
   Caml_state->extern_sp = new_sp;
 
 #undef shift
@@ -83,7 +86,8 @@ void caml_realloc_stack(asize_t required_space)
 CAMLprim value caml_ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);
-  if (Caml_state->extern_sp - req < Caml_state->stack_low) caml_realloc_stack(req);
+  if (Caml_state->extern_sp - req < Caml_state->stack_low)
+    caml_realloc_stack(req);
   return Val_unit;
 }
 

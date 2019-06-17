@@ -41,16 +41,18 @@
        The allocation arena: newly-allocated blocks are carved from
        this interval, starting at [Caml_state->young_alloc_end].
    [Caml_state->young_alloc_mid] is the mid-point of this interval.
-   [Caml_state->young_ptr], [Caml_state->young_trigger], [Caml_state->young_limit]
+   [Caml_state->young_ptr], [Caml_state->young_trigger],
+   [Caml_state->young_limit]
        These pointers are all inside the allocation arena.
        - [Caml_state->young_ptr] is where the next allocation will take place.
-       - [Caml_state->young_trigger] is how far we can allocate before triggering
-         [caml_gc_dispatch]. Currently, it is either [Caml_state->young_alloc_start]
-         or the mid-point of the allocation arena.
+       - [Caml_state->young_trigger] is how far we can allocate before
+         triggering [caml_gc_dispatch]. Currently, it is either
+         [Caml_state->young_alloc_start] or the mid-point of the allocation
+         arena.
        - [Caml_state->young_limit] is the pointer that is compared to
          [Caml_state->young_ptr] for allocation. It is either:
-            + [Caml_state->young_alloc_end] if a signal is pending and we are in
-              native code,
+            + [Caml_state->young_alloc_end] if a signal is pending and we are
+              in native code,
             + [caml_memprof_young_trigger] if a memprof sample is planned,
             + or [Caml_state->young_trigger].
 */
@@ -141,14 +143,16 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_raise_out_of_memory();
 
   if (Caml_state->young_start != NULL){
-    caml_page_table_remove(In_young, Caml_state->young_start, Caml_state->young_end);
+    caml_page_table_remove(In_young, Caml_state->young_start,
+                           Caml_state->young_end);
     caml_stat_free (Caml_state->young_base);
   }
   Caml_state->young_base = new_heap_base;
   Caml_state->young_start = (value *) new_heap;
   Caml_state->young_end = (value *) (new_heap + bsz);
   Caml_state->young_alloc_start = Caml_state->young_start;
-  Caml_state->young_alloc_mid = Caml_state->young_alloc_start + Wsize_bsize (bsz) / 2;
+  Caml_state->young_alloc_mid =
+    Caml_state->young_alloc_start + Wsize_bsize (bsz) / 2;
   Caml_state->young_alloc_end = Caml_state->young_end;
   Caml_state->young_trigger = Caml_state->young_alloc_start;
   caml_update_young_limit();
@@ -380,9 +384,11 @@ void caml_empty_minor_heap (void)
       }
     }
     CAML_INSTR_TIME (tmr, "minor/update_weak");
-    Caml_state->stat_minor_words += Caml_state->young_alloc_end - Caml_state->young_ptr;
-    caml_gc_clock += (double) (Caml_state->young_alloc_end - Caml_state->young_ptr)
-                     / Caml_state->minor_heap_wsz;
+    Caml_state->stat_minor_words +=
+      Caml_state->young_alloc_end - Caml_state->young_ptr;
+    caml_gc_clock +=
+      (double) (Caml_state->young_alloc_end - Caml_state->young_ptr)
+      / Caml_state->minor_heap_wsz;
     Caml_state->young_ptr = Caml_state->young_alloc_end;
     clear_table ((struct generic_table *) &Caml_state->minor_tables->ref);
     clear_table ((struct generic_table *) &Caml_state->minor_tables->ephe_ref);
@@ -404,7 +410,8 @@ void caml_empty_minor_heap (void)
 #ifdef DEBUG
   {
     value *p;
-    for (p = Caml_state->young_alloc_start; p < Caml_state->young_alloc_end; ++p){
+    for (p = Caml_state->young_alloc_start; p < Caml_state->young_alloc_end;
+         ++p) {
       *p = Debug_free_minor;
     }
   }
@@ -430,7 +437,8 @@ CAMLexport void caml_gc_dispatch (void)
   caml_instr_alloc_jump = 0;
 #endif
 
-  if (trigger == Caml_state->young_alloc_start || Caml_state->requested_minor_gc){
+  if (trigger == Caml_state->young_alloc_start
+      || Caml_state->requested_minor_gc) {
     /* The minor heap is full, we must do a minor collection. */
     /* reset the pointers first because the end hooks might allocate */
     Caml_state->requested_minor_gc = 0;
@@ -441,7 +449,8 @@ CAMLexport void caml_gc_dispatch (void)
     if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/minor");
   }
-  if (trigger != Caml_state->young_alloc_start || Caml_state->requested_major_slice){
+  if (trigger != Caml_state->young_alloc_start
+      || Caml_state->requested_major_slice) {
     /* The minor heap is half-full, do a major GC slice. */
     Caml_state->requested_major_slice = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_start;

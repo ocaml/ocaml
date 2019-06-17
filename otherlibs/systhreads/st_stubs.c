@@ -71,15 +71,15 @@ struct caml_thread_descr {
 /* The infos on threads (allocated via caml_stat_alloc()) */
 
 struct caml_thread_struct {
-  value descr;                  /* The heap-allocated descriptor (root) */
+  value descr;              /* The heap-allocated descriptor (root) */
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
-  char * top_of_stack;          /* Top of stack for this thread (approx.) */
-  char * bottom_of_stack;       /* Saved value of Caml_state->bottom_of_stack */
-  uintnat last_retaddr;         /* Saved value of Caml_state->last_return_address */
-  value * gc_regs;              /* Saved value of Caml_state->gc_regs */
-  char * exception_pointer;     /* Saved value of Caml_state->exception_pointer */
+  char * top_of_stack;      /* Top of stack for this thread (approx.) */
+  char * bottom_of_stack;   /* Saved value of Caml_state->bottom_of_stack */
+  uintnat last_retaddr;     /* Saved value of Caml_state->last_return_address */
+  value * gc_regs;          /* Saved value of Caml_state->gc_regs */
+  char * exception_pointer; /* Saved value of Caml_state->exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * exit_buf; /* For thread exit */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
@@ -89,15 +89,16 @@ struct caml_thread_struct {
   value* spacetime_finaliser_trie_root;
 #endif
 #else
-  value * stack_low;         /* The execution stack for this thread */
+  value * stack_low; /* The execution stack for this thread */
   value * stack_high;
   value * stack_threshold;
-  value * sp;                /* Saved value of Caml_state->extern_sp for this thread */
-  value * trapsp;            /* Saved value of Caml_state->trapsp for this thread */
-  struct caml__roots_block * local_roots; /* Saved value of Caml_state->local_roots */
+  value * sp;        /* Saved value of Caml_state->extern_sp for this thread */
+  value * trapsp;    /* Saved value of Caml_state->trapsp for this thread */
+  /* Saved value of Caml_state->local_roots */
+  struct caml__roots_block * local_roots;
   struct longjmp_buffer * external_raise; /* Saved Caml_state->external_raise */
 #endif
-  int backtrace_pos;         /* Saved Caml_state->backtrace_pos */
+  int backtrace_pos; /* Saved Caml_state->backtrace_pos */
   backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
   value backtrace_last_exn;  /* Saved Caml_state->backtrace_last_exn (root) */
   int memprof_suspended;     /* Saved caml_memprof_suspended */

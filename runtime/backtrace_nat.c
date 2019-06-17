@@ -86,7 +86,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     Caml_state->backtrace_last_exn = exn;
   }
 
-  if (Caml_state->backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
+  if (Caml_state->backtrace_buffer == NULL &&
+      caml_alloc_backtrace_buffer() == -1)
     return;
 
   /* iterate on each frame  */
@@ -95,7 +96,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
     if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = (backtrace_slot) descr;
+    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] =
+      (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
     if (sp > trapsp) return;

@@ -243,7 +243,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
   jumptbl_base = Jumptbl_base;
 #endif
   initial_local_roots = Caml_state->local_roots;
-  initial_sp_offset = (char *) Caml_state->stack_high - (char *) Caml_state->extern_sp;
+  initial_sp_offset =
+    (char *) Caml_state->stack_high - (char *) Caml_state->extern_sp;
   initial_external_raise = Caml_state->external_raise;
   caml_callback_depth++;
   saved_pc = NULL;

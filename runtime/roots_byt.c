@@ -83,7 +83,8 @@ void caml_do_roots (scanning_action f, int do_globals)
   f(caml_global_data, &caml_global_data);
   CAML_INSTR_TIME (tmr, "major_roots/global");
   /* The stack and the local C roots */
-  caml_do_local_roots(f, Caml_state->extern_sp, Caml_state->stack_high, Caml_state->local_roots);
+  caml_do_local_roots(f, Caml_state->extern_sp, Caml_state->stack_high,
+                      Caml_state->local_roots);
   CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
