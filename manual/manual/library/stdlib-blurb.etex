@@ -128,7 +128,7 @@ be called from C \\
 \item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
 \item \ahref{libref/Genlex.html}{Module \texttt{Genlex}: a generic lexical analyzer}
 \item \ahref{libref/Hashtbl.html}{Module \texttt{Hashtbl}: hash tables and hash functions}
-\item \ahref{libref/Int}{Module \texttt{Int}: integers}
+\item \ahref{libref/Int.html}{Module \texttt{Int}: integers}
 \item \ahref{libref/Int32.html}{Module \texttt{Int32}: 32-bit integers}
 \item \ahref{libref/Int64.html}{Module \texttt{Int64}: 64-bit integers}
 \item \ahref{libref/Lazy.html}{Module \texttt{Lazy}: deferred computations}
