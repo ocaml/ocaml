@@ -253,9 +253,6 @@ tools:
 clean:
 	@$(MAKE) -C lib clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
-	@for file in `$(FIND) interactive tests -name Makefile`; do \
-	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
-	done
 	$(FIND) . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
 
