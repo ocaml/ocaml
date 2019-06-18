@@ -21,7 +21,10 @@ SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli' | grep -v boot/menhir/parser)
 
 AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
 
-build-all-asts: $(AST_FILES)
+build-all-asts:
+# Recursive invocation ensures that `git ls-files` is not executed on every
+# invocation of make
+	@$(MAKE) --no-print-directory $(AST_FILES)
 
 CAMLC_DPARSETREE := \
 	$(CAMLRUN) ./ocamlc -nostdlib -nopervasives \
