@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-# Developer-only rules
+# Developer-only rules, included in Makefile when a Git repository is detected.
 
 # Testing the parser -- see parsing/HACKING.adoc
 
