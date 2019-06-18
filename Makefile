@@ -1279,34 +1279,9 @@ partialclean::
 
 beforedepend:: bytecomp/opcodes.ml
 
-# Testing the parser -- see parsing/HACKING.adoc
-
-SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli' | grep -v boot/menhir/parser)
-
-AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
-
-build-all-asts: $(AST_FILES)
-
-CAMLC_DPARSETREE := \
-	$(CAMLRUN) ./ocamlc -nostdlib -nopervasives \
-	  -stop-after parsing -dparsetree
-
-%.ml.ast: %.ml ocamlc
-	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
-# `|| exit 0` : some source files will fail to parse
-# (for example, they are meant as toplevel scripts
-# rather than source files, or are parse-error tests),
-# we ignore the failure in that case
-
-%.mli.ast: %.mli ocamlc
-	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
-
-.PHONY: list-all-asts
-list-all-asts:
-	@for f in $(AST_FILES); do echo "'$$f'"; done
-
-partialclean::
-	rm -f $(AST_FILES)
+ifneq "$(wildcard .git)" ""
+include Makefile.dev
+endif
 
 # Default rules
 
