@@ -127,8 +127,10 @@ extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
 extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 
 #define CAML_STATIC_ASSERT_3(b, l) \
-  typedef CAMLunused_start \
-    char static_assertion_failure_line_##l[(b) ? 1 : -1] CAMLunused_end
+  CAMLunused_start \
+    char static_assertion_failure_line_##l[(b) ? 1 : -1] \
+  CAMLunused_end
+
 #define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
 #define CAML_STATIC_ASSERT(b) CAML_STATIC_ASSERT_2(b, __LINE__)
 
