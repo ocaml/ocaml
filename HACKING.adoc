@@ -229,6 +229,10 @@ installation, the following targets may be of use:
 
 `make -C testsuite parallel`:: see link:testsuite/HACKING.adoc[]
 
+Additionally, there are some developer specific targets in link:Makefile.dev[].
+These targets are automatically available when working in a Git clone of the
+repository, but are not available from a tarball.
+
 === Bootstrapping
 
 The OCaml compiler is bootstrapped. This means that
