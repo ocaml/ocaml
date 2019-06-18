@@ -16264,8 +16264,9 @@ fi
 
 ac_fn_c_check_header_mongrel "$LINENO" "bfd.h" "ac_cv_header_bfd_h" "$ac_includes_default"
 if test "x$ac_cv_header_bfd_h" = xyes; then :
-  libbfd_ling=""
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  if test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ; then :
+  unset ac_cv_lib_bfd_bfd_openr
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16305,8 +16306,10 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
   libbfd_link="-lbfd"
 fi
 
-  if test -z "$libbfd_link"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+fi
+  if test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ; then :
+  unset ac_cv_lib_bfd_bfd_openr
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16347,8 +16350,52 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  if test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ; then :
+  unset ac_cv_lib_bfd_bfd_openr
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
+if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lbfd -liberty -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char bfd_openr ();
+int
+main ()
+{
+return bfd_openr ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_bfd_bfd_openr=yes
+else
+  ac_cv_lib_bfd_bfd_openr=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
+$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
+if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
+  libbfd_link="-lbfd -liberty -lz"
+fi
+
+fi
+  if test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ; then :
+  unset ac_cv_lib_bfd_bfd_openr
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16389,8 +16436,9 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  if test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ; then :
+  unset ac_cv_lib_bfd_bfd_openr
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16431,8 +16479,9 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  if test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ; then :
+  unset ac_cv_lib_bfd_bfd_openr
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16473,12 +16522,14 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
 fi
 
 fi
-  if test -n "$libbfd_link"; then :
-  $as_echo "#define HAS_LIBBFD 1" >>confdefs.h
+  if test x"${ac_cv_lib_bfd_bfd_openr}" = "xyes" ; then :
+  libbfd_link="${oc_ldflags} ${libbfd_link}"
+    $as_echo "#define HAS_LIBBFD 1" >>confdefs.h
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: BFD library not found, 'objinfo' will be unable to display info on .cmxs files." >&5
 $as_echo "$as_me: BFD library not found, 'objinfo' will be unable to display info on .cmxs files." >&6;}
+
 fi
 
 fi
