@@ -84,8 +84,10 @@ typedef char * addr;
 #endif
 
 /* Alignment */
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #define CAMLalign(n) __attribute__((aligned(n)))
+#elif _MSC_VER >= 1500
+#define CAMLalign(n) __declspec(align(n))
 #else
 #error "How do I align values on this platform?"
 #endif
