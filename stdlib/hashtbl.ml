@@ -196,7 +196,8 @@ let filter_map_inplace f h =
   try
     for i = 0 to Array.length d - 1 do
       filter_map_inplace_bucket f h i Empty h.data.(i)
-    done
+    done;
+    if not old_trav then flip_ongoing_traversal h
   with exn when not old_trav ->
     flip_ongoing_traversal h;
     raise exn
