@@ -1563,27 +1563,39 @@ AS_IF([test x"$enable_graph_lib" = "xno" ],
 ## libbfd
 
 AC_CHECK_HEADER([bfd.h],
-  [libbfd_ling=""
-  AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd"])
-  AS_IF([test -z "$libbfd_link"],
-    [AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd -ldl"], [], [-ldl])])
-  AS_IF([test -z "$libbfd_link"],
-    [AC_CHECK_LIB([bfd], [bfd_openr],
-      [libbfd_link="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
-  AS_IF([test -z "$libbfd_link"],
-    [AC_CHECK_LIB([bfd], [bfd_openr],
-      [libbfd_link="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
-  AS_IF([test -z "$libbfd_link"],
-    [AC_CHECK_LIB([bfd], [bfd_openr],
+  [AS_IF([test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ],
+    [unset ac_cv_lib_bfd_bfd_openr
+    AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd"])])]
+  [AS_IF([test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ],
+    [unset ac_cv_lib_bfd_bfd_openr
+    AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd -ldl"], [], [-ldl])])]
+  [AS_IF([test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ],
+    [unset ac_cv_lib_bfd_bfd_openr
+    AC_CHECK_LIB([bfd], [bfd_openr],
+      [libbfd_link="-lbfd -liberty -lz"], [], [-liberty -lz])])]
+  [AS_IF([test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ],
+    [unset ac_cv_lib_bfd_bfd_openr
+    AC_CHECK_LIB([bfd], [bfd_openr],
+      [libbfd_link="-lbfd -ldl -liberty"], [], [-ldl -liberty])])]
+  [AS_IF([test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ],
+    [unset ac_cv_lib_bfd_bfd_openr
+    AC_CHECK_LIB([bfd], [bfd_openr],
+      [libbfd_link="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])]
+  [AS_IF([test x"${ac_cv_lib_bfd_bfd_openr}" != "xyes" ],
+    [unset ac_cv_lib_bfd_bfd_openr
+    AC_CHECK_LIB([bfd], [bfd_openr],
       [libbfd_link="-lbfd -ldl -liberty -lz -lintl"], [],
-      [-ldl -liberty -lz -lintl])])
-  AS_IF([test -n "$libbfd_link"],
-    [AC_DEFINE([HAS_LIBBFD])],
+      [-ldl -liberty -lz -lintl])])]
+  [AS_IF(
+    [test x"${ac_cv_lib_bfd_bfd_openr}" = "xyes" ],
+    [libbfd_link="${oc_ldflags} ${libbfd_link}"
+    AC_DEFINE([HAS_LIBBFD])],
     [AC_MSG_NOTICE(m4_normalize([
       BFD library not found, 'objinfo' will be unable to display
       info on .cmxs files.
-    ]))])
-  ])
+    ]))]
+  )]
+)
 
 ## Does the assembler support debug prefix map and CFI directives
 as_has_debug_prefix_map=false
