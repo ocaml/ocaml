@@ -335,6 +335,9 @@ CAMLexport void caml_main(char_os **argv)
 
   caml_ensure_spacetime_dot_o_is_included++;
 
+  /* Initialize the domain */
+  caml_init_domain();
+
   /* Determine options */
 #ifdef DEBUG
   caml_verb_gc = 0x3F;
@@ -407,8 +410,6 @@ CAMLexport void caml_main(char_os **argv)
   }
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
-  /* Initialize the domain */
-  caml_init_domain();
   /* Initialize the abstract machine */
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
@@ -477,6 +478,8 @@ CAMLexport value caml_startup_code_exn(
   char_os * cds_file;
   char_os * exe_name;
 
+  /* Initialize the domain */
+  caml_init_domain();
   /* Determine options */
 #ifdef DEBUG
   caml_verb_gc = 0x3F;
@@ -502,8 +505,6 @@ CAMLexport value caml_startup_code_exn(
   }
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
-  /* Initialize the domain */
-  caml_init_domain();
   /* Initialize the abstract machine */
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,

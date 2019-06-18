@@ -110,6 +110,8 @@ value caml_startup_common(char_os **argv, int pooling)
   char_os * exe_name, * proc_self_exe;
   char tos;
 
+  /* Initialize the domain */
+  caml_init_domain();
   /* Determine options */
 #ifdef DEBUG
   caml_verb_gc = 0x3F;
@@ -133,8 +135,6 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  /* Initialize the domain */
-  caml_init_domain();
   Caml_state->top_of_stack = &tos;
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,

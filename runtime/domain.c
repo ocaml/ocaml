@@ -22,6 +22,9 @@ CAMLexport caml_domain_state* Caml_state;
 
 void caml_init_domain ()
 {
+  if (Caml_state != NULL)
+    return;
+
   Caml_state =
     (caml_domain_state*)caml_stat_alloc_noexc(sizeof(caml_domain_state));
   if (Caml_state == NULL)
