@@ -232,6 +232,7 @@ let read_one_param ppf position name v =
 
   | "pp" -> preprocessor := Some v
   | "runtime-variant" -> runtime_variant := v
+  | "with-runtime" -> set "with-runtime" [ with_runtime ] v
   | "open" ->
       open_modules := List.rev_append (String.split_on_char ',' v) !open_modules
   | "cc" -> c_compiler := Some v
