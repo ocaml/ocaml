@@ -116,6 +116,7 @@ git commit -m "last commit before tagging $VERSION"
 # update VERSION with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
+# Update the copyright year in the manual.
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
@@ -260,10 +261,11 @@ source /tmp/env-$USER.sh
 cd $WEB_PATH/caml/pub/docs
 mkdir -p manual-ocaml-$BRANCH
 cd manual-ocaml-$BRANCH
+rm -fR htmlman ocaml-$BRANCH-refman-html.tar.gz
 wget http://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$BRANCH-refman-html.tar.gz
 tar -xzvf ocaml-$BRANCH-refman-html.tar.gz # this extracts into htmlman/
-cp -r htmlman/* . # move HTML content to docs/manual-caml-$BRANCH
-rm -fR htmlman
+/bin/cp -r htmlman/* . # move HTML content to docs/manual-caml-$BRANCH
+rm -fR htmlman ocaml-$BRANCH-refman-html.tar.gz
 
 cd $WEB_PATH/caml/pub/docs
 rm manual-ocaml
