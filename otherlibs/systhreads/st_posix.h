@@ -152,6 +152,7 @@ static void st_masterlock_release(st_masterlock * m)
   pthread_cond_signal(&m->is_free);
 }
 
+CAMLno_tsan  /* This can be called for reading [waiters] without locking. */
 static INLINE int st_masterlock_waiters(st_masterlock * m)
 {
   return m->waiters;
