@@ -14,8 +14,7 @@ dynlink_common.cmi : \
 dynlink_platform_intf.cmo : \
     dynlink_types.cmi \
     dynlink_platform_intf.cmi
-dynlink_platform_intf.cmi : \
-    dynlink_types.cmi
+dynlink_platform_intf.cmi :
 dynlink_types.cmo : \
     dynlink_types.cmi
 dynlink_types.cmi :
