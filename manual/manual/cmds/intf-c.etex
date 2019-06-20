@@ -2287,7 +2287,7 @@ system.  The following functions are declared in the include file
 \item
 "caml_c_thread_register()" registers the calling thread with the OCaml
 run-time system.  Returns 1 on success, 0 on error.  Registering an
-already-register thread does nothing and returns 0.
+already-registered thread does nothing and returns 0.
 \item
 "caml_c_thread_unregister()"  must be called before the thread
   terminates, to unregister it from the OCaml run-time system.
