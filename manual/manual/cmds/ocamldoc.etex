@@ -98,7 +98,7 @@ read with the "-load" option in a subsequent invocation of "ocamldoc".
 \item["-hide" \var{modules}]
 Hide the given complete module names in the generated documentation.
 \var{modules} is a list of complete module names separated
- by '","', without blanks.  For instance: "Pervasives,M2.M3".
+ by '","', without blanks.  For instance: "Stdlib,M2.M3".
 
 \item["-inv-merge-ml-mli"]
 Reverse the precedence of implementations and interfaces when merging.
