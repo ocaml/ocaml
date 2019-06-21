@@ -88,7 +88,7 @@ type t =
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
   | Erroneous_printed_signature of string   (* 63 *)
-  | Unsafe_without_parsing                  (* 64 *)
+(*| Unsafe_without_parsing *)               (* 64 *)
   | Redefining_unit of string               (* 65 *)
   | Unused_open_bang of string              (* 66 *)
 ;;
@@ -165,7 +165,6 @@ let number = function
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
   | Erroneous_printed_signature _ -> 63
-  | Unsafe_without_parsing -> 64
   | Redefining_unit _ -> 65
   | Unused_open_bang _ -> 66
 ;;
@@ -617,8 +616,6 @@ let message = function
      ^ s
      ^ "\nBeware that this warning is purely informational and will not catch\n\
         all instances of erroneous printed interface."
-  | Unsafe_without_parsing ->
-     "option -unsafe used with a preprocessor returning a syntax tree"
   | Redefining_unit name ->
       Printf.sprintf
         "This type declaration is defining a new '()' constructor\n\
