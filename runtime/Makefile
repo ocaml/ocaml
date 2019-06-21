@@ -203,7 +203,7 @@ endif
 clean:
 	rm -f $(PROGRAMS) *.$(O) *.$(A) *.$(SO) ld.conf
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
-	rm -f caml/version.h
+	rm -f caml/version.h domain_state.inc
 
 .PHONY: distclean
 distclean: clean
@@ -358,7 +358,10 @@ $(foreach object_type,$(subst %,,$(object_types)), \
 %_libasmrunpic.o: %.S
 	$(ASPP) $(ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
 
-%.obj: %.asm
+domain_state.inc: caml/domain_state.tbl gen_domain_state_inc.awk
+	awk -f gen_domain_state_inc.awk $< > $@
+
+%.obj: %.asm domain_state.inc
 	$(ASM)$@ $(ASMFLAGS) $<
 
 %_libasmrunpic.obj: %.asm
