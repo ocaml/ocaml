@@ -550,7 +550,7 @@ module Array : sig
       function.  The comparison function must return 0 if its arguments
       compare as equal, a positive integer if the first is greater,
       and a negative integer if the first is smaller (see below for a
-      complete specification).  For example, {!Pervasives.compare} is
+      complete specification).  For example, {!Stdlib.compare} is
       a suitable comparison function.  After calling [sort], the
       array is sorted in place in increasing order.
       [sort] is guaranteed to run in constant heap space
