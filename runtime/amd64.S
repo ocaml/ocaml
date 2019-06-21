@@ -580,9 +580,9 @@ LBL(caml_start_program):
 #else
         subq    $8, %rsp; CFI_ADJUST (8)        /* stack 16-aligned */
 #endif
-        pushq   Caml_state(gc_regs)
-        pushq   Caml_state(last_return_address)
-        pushq   Caml_state(bottom_of_stack)
+        pushq   Caml_state(gc_regs); CFI_ADJUST(8)
+        pushq   Caml_state(last_return_address); CFI_ADJUST(8)
+        pushq   Caml_state(bottom_of_stack); CFI_ADJUST(8)
 #ifdef WITH_SPACETIME
         /* Save arguments to caml_callback* */
         pushq   %rax; CFI_ADJUST (8)
@@ -618,9 +618,9 @@ LBL(109):
     /* Update alloc ptr */
         movq    %r15, Caml_state(young_ptr)
     /* Pop the callback link, restoring the global variables */
-        popq    Caml_state(bottom_of_stack)
-        popq    Caml_state(last_return_address)
-        popq    Caml_state(gc_regs)
+        popq    Caml_state(bottom_of_stack); CFI_ADJUST(-8)
+        popq    Caml_state(last_return_address); CFI_ADJUST(-8)
+        popq    Caml_state(gc_regs); CFI_ADJUST(-8)
 #ifdef WITH_SPACETIME
         POP_VAR(caml_spacetime_trie_node_ptr)
 #else
@@ -645,7 +645,7 @@ CFI_STARTPROC
         testq   $1, Caml_state(backtrace_active)
         jne     LBL(110)
         movq    Caml_state(exception_pointer), %rsp
-        popq    Caml_state(exception_pointer)
+        popq    Caml_state(exception_pointer); CFI_ADJUST(-8)
         ret
 LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
@@ -666,7 +666,7 @@ LBL(110):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    Caml_state(exception_pointer), %rsp
-        popq    Caml_state(exception_pointer)
+        popq    Caml_state(exception_pointer); CFI_ADJUST(-8)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exn))
@@ -681,7 +681,7 @@ CFI_STARTPROC
         movq    C_ARG_2, %rax
         movq    Caml_state(exception_pointer), %rsp  /* Cut stack */
         /* Recover previous exception handler */
-        popq    Caml_state(exception_pointer)
+        popq    Caml_state(exception_pointer); CFI_ADJUST(-8)
         movq    Caml_state(young_ptr), %r15 /* Reload alloc ptr */
         ret
 LBL(112):
@@ -705,8 +705,8 @@ LBL(112):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    Caml_state(exception_pointer), %rsp
-        /* Recover previous exception handler */
-        popq    Caml_state(exception_pointer)
+     /* Recover previous exception handler */
+        popq    Caml_state(exception_pointer); CFI_ADJUST(-8)
         movq    Caml_state(young_ptr), %r15 /* Reload alloc ptr */
         ret
 CFI_ENDPROC
@@ -722,7 +722,8 @@ FUNCTION(G(caml_stack_overflow))
         movq    C_ARG_1, %r14                 /* Caml_state */
         LEA_VAR(caml_exn_Stack_overflow, %rax)
         movq    Caml_state(exception_pointer), %rsp /* cut the stack */
-        popq    Caml_state(exception_pointer) /* recover previous exn handler */
+     /* Recover previous exn handler */
+        popq    Caml_state(exception_pointer)
         ret                                   /* jump to handler's code */
 ENDFUNCTION(G(caml_stack_overflow))
 

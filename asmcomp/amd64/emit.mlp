@@ -873,10 +873,10 @@ let emit_instr fallthrough i =
           I.mov (sym (emit_label s)) arg
       in
       load_label_addr lbl_handler r11;
-      cfi_adjust_cfa_offset 8;
       I.push r11;
       cfi_adjust_cfa_offset 8;
       I.push (domain_field Domainstate.Domain_exception_pointer);
+      cfi_adjust_cfa_offset 8;
       I.mov rsp (domain_field Domainstate.Domain_exception_pointer);
       stack_offset := !stack_offset + 16;
   | Lpoptrap ->
