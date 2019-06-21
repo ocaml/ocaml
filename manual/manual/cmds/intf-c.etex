@@ -24,7 +24,7 @@ User primitives are declared in an implementation file or
 This defines the value name \var{name} as a function with type
 \var{type} that executes by calling the given C function.
 For instance, here is how the "input" primitive is declared in the
-standard library module "Pervasives":
+standard library module "Stdlib":
 \begin{verbatim}
         external input : in_channel -> bytes -> int -> int -> int
                        = "input"
@@ -1624,10 +1624,10 @@ OCaml runtime explicitly, in order to avoid various system resource leaks.
 Since 4.05, "caml_shutdown" function can be used to shut the runtime down
 gracefully, which equals the following:
 \begin{itemize}
-\item Running the functions that were registered with "Pervasives.at_exit".
+\item Running the functions that were registered with "Stdlib.at_exit".
 \item Triggering finalization of allocated custom blocks (see
-section~\ref{s:custom}). For example, "Pervasives.in_channel" and
-"Pervasives.out_channel" are represented by custom blocks that enclose file
+section~\ref{s:custom}). For example, "Stdlib.in_channel" and
+"Stdlib.out_channel" are represented by custom blocks that enclose file
 descriptors, which are to be released.
 \item Unloading the dependent shared libraries that were loaded by the runtime,
 including "dynlink" plugins.

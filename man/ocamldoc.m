@@ -160,7 +160,7 @@ Hide the given complete module names in the generated documentation.
 .I modules
 is a list of complete module names are separated by commas (,),
 without blanks. For instance:
-.IR Pervasives,M2.M3 .
+.IR Stdlib,M2.M3 .
 .TP
 .B \-inv\-merge\-ml\-mli
 Reverse the precedence of implementations and interfaces when merging.
