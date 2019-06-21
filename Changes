@@ -295,6 +295,9 @@ OCaml 4.09.0
 
 ### Manual and documentation:
 
+- #8757: Stop talking about Pervasives in core library documentation.
+  (Ian Zimmerman)
+
 - #7584, #8538: Document .cmt* files in the "overview" of ocaml{c,opt}
   (Oxana Kostikova, rewiew by Florian Angeletti)
 
