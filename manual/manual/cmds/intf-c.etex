@@ -23,11 +23,10 @@ User primitives are declared in an implementation file or
 \end{alltt}
 This defines the value name \var{name} as a function with type
 \var{type} that executes by calling the given C function.
-For instance, here is how the "input" primitive is declared in the
+For instance, here is how the "int_of_string" primitive is declared in the
 standard library module "Stdlib":
 \begin{verbatim}
-        external input : in_channel -> bytes -> int -> int -> int
-                       = "input"
+        external int_of_string : string -> int = "caml_int_of_string"
 \end{verbatim}
 Primitives with several arguments are always curried. The C function
 does not necessarily have the same name as the ML function.
