@@ -2,8 +2,8 @@
 
 This chapter describes the OCaml core library, which is
  composed of declarations for built-in types and exceptions, plus
-the module "Pervasives" that provides basic operations on these
- built-in types.  The "Pervasives" module is special in two
+the module "Stdlib" that provides basic operations on these
+ built-in types.  The "Stdlib" module is special in two
 ways:
 \begin{itemize}
 \item It is automatically linked with the user's object code files by
@@ -12,13 +12,13 @@ the "ocamlc" command (chapter~\ref{c:camlc}).
 \item It is automatically ``opened'' when a compilation starts, or
 when the toplevel system is launched. Hence, it is possible to use
 unqualified identifiers to refer to the functions provided by the
-"Pervasives" module, without adding a "open Pervasives" directive.
+"Stdlib" module, without adding a "open Stdlib" directive.
 \end{itemize}
 
 \section*{Conventions}
 
 The declarations of the built-in types and the components of module
-"Pervasives" are printed one by one in typewriter font, followed by a
+"Stdlib" are printed one by one in typewriter font, followed by a
 short comment.  All library modules and the components they provide are
 indexed at the end of this report.
 
