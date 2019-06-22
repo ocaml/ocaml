@@ -263,6 +263,7 @@ LBL(103):
 FUNCTION(caml_c_call)
         CFI_STARTPROC
     /* Record lowest stack address and return address */
+    /* ecx and edx are destroyed at C call. Use them as temp. */
         movl    G(Caml_state), %ecx
         movl    (%esp), %edx
         movl    %edx, CAML_STATE(last_return_address, %ecx)
@@ -437,11 +438,11 @@ FUNCTION(caml_callback3_asm)
         pushl   %edi; CFI_ADJUST(4)
         pushl   %ebp; CFI_ADJUST(4)
     /* Initial loading of arguments */
-        movl    24(%esp), %edx   /* closure */
+        movl    24(%esp), %edx   /* arg4: closure */
         movl    28(%esp), %edi   /* arguments array */
         movl    0(%edi), %eax    /* arg1: first argument */
         movl    4(%edi), %ebx    /* arg2: second argument */
-        movl    8(%edi), %ecx    /* third argument */
+        movl    8(%edi), %ecx    /* arg3: third argument */
         movl    $ G(caml_apply3), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC

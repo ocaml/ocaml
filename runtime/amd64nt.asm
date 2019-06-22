@@ -31,7 +31,7 @@ IFDEF WITH_SPACETIME
         EXTRN  caml_spacetime_c_to_ocaml: NEAR
 ENDIF
 
-INCLUDE domain_state.inc
+INCLUDE domain_state64.inc
 
         .CODE
 

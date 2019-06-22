@@ -976,7 +976,6 @@ let begin_assembly() =
   if system = S_win32 then begin
     D.mode386 ();
     D.model "FLAT";
-    D.extrn "_caml_exception_pointer" DWORD;
     D.extrn "_caml_extra_params" DWORD;
     D.extrn "_caml_call_gc" PROC;
     D.extrn "_caml_c_call" PROC;
@@ -986,6 +985,7 @@ let begin_assembly() =
     D.extrn "_caml_alloc3" PROC;
     D.extrn "_caml_ml_array_bound_error" PROC;
     D.extrn "_caml_raise_exn" PROC;
+    D.extrn "_Caml_state" DWORD;
   end;
 
   D.data ();
