@@ -190,6 +190,8 @@ _build
 /runtime/.gdb_history
 /runtime/*.d.c
 /runtime/*.pic.c
+/runtime/domain_state32.inc
+/runtime/domain_state64.inc
 
 /stdlib/camlheader
 /stdlib/target_camlheader
@@ -258,6 +260,8 @@ _build
 /tools/caml-tex
 
 /utils/config.ml
+/utils/domainstate.ml
+/utils/domainstate.mli
 
 /yacc/ocamlyacc
 /yacc/version.h

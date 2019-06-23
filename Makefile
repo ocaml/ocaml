@@ -903,10 +903,6 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
-ocamlopt.d.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-              $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) -runtime-variant d -I runtime $(LINKFLAGS) -o $@ $^
-
 partialclean::
 	rm -f ocamlopt.opt
 
