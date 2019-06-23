@@ -1,0 +1,37 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*         Damien Doligez, projet Gallium, INRIA Rocquencourt             *
+#*                                                                        *
+#*   Copyright 2013 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+BEGIN{FS=",";count=0};
+/DOMAIN_STATE/{
+  print "Store_" substr($2,2,length($2)-2) " MACRO reg1, reg2";
+  print "  mov [reg1+" count "], reg2";
+  print "ENDM";
+  print "Load_" substr($2,2,length($2)-2) " MACRO reg1, reg2";
+  print "  mov reg2, [reg1+" count "]";
+  print  "ENDM";
+  print "Push_" substr($2,2, length($2)-2) " MACRO reg1";
+  print "  push [reg1+ " count "]";
+  print "ENDM";
+  print "Pop_" substr($2, 2, length($2)-2) " MACRO reg1";
+  print "  pop [reg1+ " count "]";
+  print "ENDM";
+  print "Cmp_" substr($2, 2, length($2)-2) " MACRO reg1, reg2";
+  print "  cmp reg2, [reg1+ " count "]";
+  print "ENDM";
+  print "Sub_" substr($2, 2, length($2)-2) " MACRO reg1, reg2";
+  print "  sub reg2, [reg1+ " count "]";
+  print "ENDM";
+  count+=8
+}
