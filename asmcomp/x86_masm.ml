@@ -240,6 +240,7 @@ let print_line b = function
   | Cfi_endproc
   | Cfi_startproc
   | File _
+  | Hidden _
   | Indirect_symbol _
   | Loc _
   | Private_extern _

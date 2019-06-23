@@ -49,6 +49,12 @@ let emit_label lbl =
 let emit_symbol s =
   Emitaux.emit_symbol '$' s
 
+let declare_global_symbol sym =
+  `	.globl	{emit_symbol sym}\n`;
+  if not !Clflags.dlcode then begin
+    `	.hidden	{emit_symbol sym}\n`
+  end
+
 (* Output a pseudo-register *)
 
 let emit_reg = function
@@ -906,7 +912,7 @@ let fundecl fundecl =
   bound_error_sites := [];
   `	.text\n`;
   `	.align	3\n`;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+  declare_global_symbol fundecl.fun_name;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
@@ -932,7 +938,7 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-  | Cglobal_symbol s -> `	.globl	{emit_symbol s}\n`;
+  | Cglobal_symbol s -> declare_global_symbol s
   | Cdefine_symbol s ->
     if !Clflags.dlcode then begin
       (* GOT relocations against non-global symbols don't seem to work
@@ -965,27 +971,27 @@ let begin_assembly() =
   `	.file	\"\"\n`;  (* PR#7037 *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
+  declare_global_symbol lbl_begin;
   `{emit_symbol lbl_begin}:\n`;
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
-  `	.globl	{emit_symbol lbl_begin}\n`;
+  declare_global_symbol lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
-  `	.globl	{emit_symbol lbl_end}\n`;
+  declare_global_symbol lbl_end;
   `{emit_symbol lbl_end}:\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.quad	0\n`;  (* PR#6329 *)
-  `	.globl	{emit_symbol lbl_end}\n`;
+  declare_global_symbol lbl_end;
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
   `	.align	3\n`;  (* #7887 *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
-  `	.globl	{emit_symbol lbl}\n`;
+  declare_global_symbol lbl;
   `{emit_symbol lbl}:\n`;
   emit_frames
     { efa_code_label = (fun lbl ->

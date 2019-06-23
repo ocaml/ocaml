@@ -209,6 +209,7 @@ type asm_line =
   | Cfi_endproc
   | Cfi_startproc
   | File of int * string (* (file_num, file_name) *)
+  | Hidden of string
   | Indirect_symbol of string
   | Loc of int * int * int (* (file_num, line, col) *)
   | Private_extern of string

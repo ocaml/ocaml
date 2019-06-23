@@ -7,6 +7,11 @@ Working version
 
 - #7557, #1726: multi-indices for extended indexing operators
   (Florian Angeletti, review by Gabriel Radanne)
+### Code generation and optimizations:
+
+- #8689: Declare global symbols as "hidden" or "private_extern"
+  when using -nodynlink
+  (Mark Shinwell, Stephen Dolan)
 
 ### Internal/compiler-libs changes:
 

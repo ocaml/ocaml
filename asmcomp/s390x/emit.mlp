@@ -46,9 +46,15 @@ let slot_offset loc cls =
   | Incoming n -> frame_size() + n
   | Outgoing n -> n
 
-(* Output a symbol *)
+(* Symbols *)
 
 let emit_symbol s = Emitaux.emit_symbol '.' s
+
+let declare_global_symbol sym =
+  `	.globl	{emit_symbol sym}\n`;
+  if not !Clflags.dlcode then begin
+    `	.hidden	{emit_symbol sym}\n`
+  end
 
 (* Output function call *)
 
@@ -656,7 +662,7 @@ let fundecl fundecl =
   bound_error_call := 0;
   float_literals := [];
   int_literals := [];
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+  declare_global_symbol fundecl.fun_name;
   emit_debug_info fundecl.fun_dbg;
   `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
   emit_string code_space;
@@ -685,7 +691,7 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let declare_global_data s =
-  `	.globl	{emit_symbol s}\n`;
+  declare_global_symbol s;
   `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function

@@ -282,6 +282,7 @@ let print_line b = function
   | File (file_num, file_name) ->
       bprintf b "\t.file\t%d\t\"%s\""
         file_num (X86_proc.string_of_string_literal file_name)
+  | Hidden s -> bprintf b "\t.hidden\t%s" s;
   | Indirect_symbol s -> bprintf b "\t.indirect_symbol %s" s
   | Loc (file_num, line, col) ->
       (* PR#7726: Location.none uses column -1, breaks LLVM assembler *)
