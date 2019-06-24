@@ -59,6 +59,9 @@ Working version
    (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
     Damien Doligez)
 
+- #8765: Added [Buffer.drop]
+  (Romain Beauxis)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.

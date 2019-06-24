@@ -34,13 +34,15 @@ let failed = output "failed"
 
 let buffer_truncate = "Buffer.truncate"
 
+let buffer_drop = "Buffer.drop"
+
 let unexpected str =
   Printf.sprintf "The Invalid_argument exception has been raised with an \
     invalid value as argument \"%s\". Expecting \"%s\"."
     str buffer_truncate
 
-let validate f str msg =
-  if str=buffer_truncate then f msg
+let validate expected f str msg =
+  if str=expected then f msg
   else failed (unexpected str)
 
 (* Tests *)
@@ -53,7 +55,7 @@ let truncate_neg : unit =
     Buffer.truncate buf (-1);
     failed msg
   with
-    Invalid_argument str -> validate passed str msg
+    Invalid_argument str -> validate buffer_truncate passed str msg
 ;;
 
 let truncate_large : unit =
@@ -62,7 +64,7 @@ let truncate_large : unit =
     Buffer.truncate buf (n+1);
     failed msg
   with
-    Invalid_argument str -> validate passed str msg
+    Invalid_argument str -> validate buffer_truncate passed str msg
 ;;
 
 let truncate_correct : unit =
@@ -70,12 +72,46 @@ let truncate_correct : unit =
   and msg =  "truncate: in-range" in
   try
     Buffer.truncate buf n';
-    if Buffer.length buf = n' then
+    let ret = Buffer.length buf in
+    Buffer.add_char buf 'a';
+    if ret = n' then
       passed msg
     else
       failed msg
   with
-    Invalid_argument str -> validate failed str msg
+    Invalid_argument str -> validate buffer_truncate failed str msg
+;;
+
+let drop_neg : unit =
+  let msg =  "drop: negative" in
+  try
+    Buffer.drop buf (-1);
+    failed msg
+  with
+    Invalid_argument str -> validate buffer_drop passed str msg
+;;
+
+let drop_large : unit =
+  let msg = "drop: large" in
+  try
+    Buffer.drop buf (n+1);
+    failed msg
+  with
+    Invalid_argument str -> validate buffer_drop passed str msg
+;;
+
+let drop_correct : unit =
+  let msg =  "drop: in-range" in
+  try
+    Buffer.drop buf 1;
+    let ret = Buffer.length buf in
+    Buffer.add_char buf 'a';
+    if ret = n-1 then
+      passed msg
+    else
+      failed msg
+  with
+    Invalid_argument str -> validate buffer_drop failed str msg
 ;;
 
 let reset_non_zero : unit =
