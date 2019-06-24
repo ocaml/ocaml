@@ -535,6 +535,7 @@ module BR = Branch_relaxation.Make (struct
         + (if lbl2 = None then 0 else 1)
     | Lswitch _ -> size 7 (5 + tocload_size()) (5 + tocload_size())
     | Lentertrap -> size 0 (tocload_size()) (tocload_size())
+    | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> size 5 (4 + tocload_size()) (4 + tocload_size())
     | Lpoptrap -> 2
     | Lraise _ -> 6
@@ -981,6 +982,8 @@ let emit_instr i =
         | ELF32 -> ()
         | ELF64v1 | ELF64v2 -> emit_reload_toc()
         end
+    | Ladjust_trap_depth { delta_traps } ->
+        adjust_stack_offset (trap_size * delta_traps)
     | Lpushtrap { lbl_handler; } ->
         begin match abi with
         | ELF32 ->

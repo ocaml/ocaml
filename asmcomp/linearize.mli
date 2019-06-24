@@ -37,6 +37,7 @@ and instruction_desc =
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
   | Lentertrap
+  | Ladjust_trap_depth of { delta_traps : int; }
   | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
