@@ -244,6 +244,10 @@ OCaml 4.09.0
 - #8701, #8725: Variance of constrained parameters causes principality issues
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
+- #8751: fix bug that could result in misaligned data section when compiling to
+  native-code on amd64.  (observed with the mingw64 compiler)
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
 OCaml 4.08.0
 ------------
 
