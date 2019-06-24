@@ -260,6 +260,9 @@ clean: partialclean
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
 	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli
 
+.PHONY: beforedepend
+beforedepend: dynlink_platform_intf.mli
+
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"
 depend:
@@ -269,15 +272,14 @@ DEPEND_DUMMY_FILES=\
   native/dynlink_compilerlibs.ml \
   byte/dynlink_compilerlibs.mli \
   byte/dynlink.mli \
-  native/dynlink.mli \
-  dynlink_platform_intf.mli
+  native/dynlink.mli
 
-depend:
+depend: beforedepend
 	touch $(DEPEND_DUMMY_FILES)
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
-    -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
+	  -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
 	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
-    -I native -native *.ml native/dynlink.ml >> .depend
+	  -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
 endif
 
