@@ -965,6 +965,7 @@ let emit_item = function
 
 let data l =
   D.data ();
+  D.align 8;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
