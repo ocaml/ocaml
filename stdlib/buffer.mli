@@ -159,8 +159,8 @@ val truncate : t -> int -> unit
   @since 4.05.0 *)
 
 val drop : t -> int -> unit
-(** [drop b len] drops the first [len] bytes of [b]
-  Raise [Invalid_argument] if [len < 0] or [len > length b].
+(** [drop b len] drops the first [len] bytes of [b].
+  @raise Invalid_argument if [len < 0] or [len > length b].
   @since 4.10.0 *)
 
 (** {1 Iterators} *)

@@ -354,7 +354,7 @@ let drop b len =
     if len < 0 || len > b.position then
       invalid_arg "Buffer.drop"
     else begin
-      b.position <- b.position-len;
+      b.position <- b.position - len;
       (* unsafe_blit uses memmove, which allows in-place copy *)
       Bytes.unsafe_blit b.buffer len b.buffer 0 b.position
     end
