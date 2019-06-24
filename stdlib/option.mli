@@ -21,8 +21,8 @@
 
 (** {1:options Options} *)
 
+type 'a t = 'a option = None | Some of 'a (**)
 (** The type for option values. Either [None] or a value [Some v]. *)
-type 'a t = 'a option = None | Some of 'a
 
 val none : 'a option
 (** [none] is [None]. *)
