@@ -2,10 +2,11 @@
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
-/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                     Stephen Dolan, Jane Street Europe                  */
 /*                                                                        */
-/*   Copyright 1996 Institut National de Recherche en Informatique et     */
-/*     en Automatique.                                                    */
+/*   Copyright 2019 Indian Institute of Technology, Madras                */
+/*   Copyright 2019 Jane Street Group LLC                                 */
 /*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */

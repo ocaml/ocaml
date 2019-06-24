@@ -84,7 +84,7 @@ Working version
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
 - #8713: Introduce domain state to hold C global variables in the runtime.
-  (KC Sivaramakrishnan)
+  (KC Sivaramakrishnan and Stephen Dolan reviewed by David Allsopp)
 
 ### Tools:
 

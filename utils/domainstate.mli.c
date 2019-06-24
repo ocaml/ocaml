@@ -1,3 +1,19 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                     Stephen Dolan, Jane Street Europe                  */
+/*                                                                        */
+/*   Copyright 2019 Indian Institute of Technology, Madras                */
+/*   Copyright 2019 Jane Street Group LLC                                 */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 type t =
 #define DOMAIN_STATE(type, name) | Domain_##name
 #include "domain_state.tbl"
