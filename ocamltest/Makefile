@@ -184,7 +184,7 @@ ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/boot/ocamlc -depend
 depflags := -slash
 depincludes :=
 
-ocamllex := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/lex/ocamllex
+ocamllex := $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/boot/ocamllex
 
 ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
 
