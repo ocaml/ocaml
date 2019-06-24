@@ -253,8 +253,8 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
     ret = atomic_exchange(Op_atomic_val(ref), v);
-    write_barrier(ref, 0, ret, v);
   }
+  write_barrier(ref, 0, ret, v);
   return ret;
 }
 
