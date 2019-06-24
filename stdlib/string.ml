@@ -42,7 +42,7 @@ let make n c =
 let init n f =
   B.init n f |> bts
 let copy s =
-  B.copy (bos s) |> bts
+  bts (bos s)
 let sub s ofs len =
   B.sub (bos s) ofs len |> bts
 let fill =
