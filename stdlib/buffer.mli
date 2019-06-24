@@ -160,6 +160,7 @@ val truncate : t -> int -> unit
 
 val drop : t -> int -> unit
 (** [drop b len] drops the first [len] bytes of [b].
+  Note: the internal byte sequence is copied using memmove.
   @raise Invalid_argument if [len < 0] or [len > length b].
   @since 4.10.0 *)
 
