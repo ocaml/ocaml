@@ -2579,103 +2579,106 @@ let split_extension_cases tag_lambda_list =
 
 let combine_constructor loc arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
-  if cstr.cstr_consts < 0 then
-    (* Special cases for extensions *)
-    let fail, local_jumps = mk_failaction_neg partial ctx def in
-    let lambda1 =
-      let consts, nonconsts = split_extension_cases tag_lambda_list in
-      let default, consts, nonconsts =
-        match fail with
-        | None -> (
-            match (consts, nonconsts) with
-            | _, (_, act) :: rem -> (act, consts, rem)
-            | (_, act) :: rem, _ -> (act, rem, nonconsts)
-            | _ -> assert false
-          )
-        | Some fail -> (fail, consts, nonconsts)
-      in
-      let nonconst_lambda =
-        match nonconsts with
-        | [] -> default
-        | _ ->
-            let tag = Ident.create_local "tag" in
-            let tests =
-              List.fold_right
-                (fun (path, act) rem ->
-                  let ext = transl_extension_path loc ex_pat.pat_env path in
-                  Lifthenelse
-                    (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
-                nonconsts default
-            in
-            Llet (Alias, Pgenval, tag, Lprim (Pfield 0, [ arg ], loc), tests)
-      in
-      List.fold_right
-        (fun (path, act) rem ->
-          let ext = transl_extension_path loc ex_pat.pat_env path in
-          Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem))
-        consts nonconst_lambda
-    in
-    (lambda1, Jumps.union local_jumps total1)
-  else
-    (* Regular concrete type *)
-    let ncases = List.length tag_lambda_list
-    and nconstrs = cstr.cstr_consts + cstr.cstr_nonconsts in
-    let sig_complete = ncases = nconstrs in
-    let fail_opt, fails, local_jumps =
-      if sig_complete then
-        (None, [], Jumps.empty)
-      else
-        mk_failaction_pos partial pats ctx def
-    in
-    let tag_lambda_list = fails @ tag_lambda_list in
-    let consts, nonconsts = split_cases tag_lambda_list in
-    let lambda1 =
-      match (fail_opt, same_actions tag_lambda_list) with
-      | None, Some act -> act (* Identical actions, no failure *)
-      | _ -> (
-          match (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts) with
-          | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
-              (* Typically, match on lists, will avoid isint primitive in that
-              case *)
-              Lifthenelse (arg, act2, act1)
-          | n, 0, _, [] ->
-              (* The type defines constant constructors only *)
-              call_switcher loc fail_opt arg 0 (n - 1) consts
-          | n, _, _, _ -> (
-              let act0 =
-                (* = Some act when all non-const constructors match to act *)
-                match (fail_opt, nonconsts) with
-                | Some a, [] -> Some a
-                | Some _, _ ->
-                    if List.length nonconsts = cstr.cstr_nonconsts then
-                      same_actions nonconsts
-                    else
-                      None
-                | None, _ -> same_actions nonconsts
-              in
-              match act0 with
-              | Some act ->
-                  Lifthenelse
-                    ( Lprim (Pisint, [ arg ], loc),
-                      call_switcher loc fail_opt arg 0 (n - 1) consts,
-                      act )
-              (* Emit a switch, as bytecode implements this sophisticated instruction *)
-              | None ->
-                  let sw =
-                    { sw_numconsts = cstr.cstr_consts;
-                      sw_consts = consts;
-                      sw_numblocks = cstr.cstr_nonconsts;
-                      sw_blocks = nonconsts;
-                      sw_failaction = fail_opt
-                    }
-                  in
-                  let hs, sw = share_actions_sw sw in
-                  let sw = reintroduce_fail sw in
-                  hs (Lswitch (arg, sw, loc))
+  match cstr.cstr_tag with
+  | Cstr_extension _ ->
+      (* Special cases for extensions *)
+      let fail, local_jumps = mk_failaction_neg partial ctx def in
+      let lambda1 =
+        let consts, nonconsts = split_extension_cases tag_lambda_list in
+        let default, consts, nonconsts =
+          match fail with
+          | None -> (
+              match (consts, nonconsts) with
+              | _, (_, act) :: rem -> (act, consts, rem)
+              | (_, act) :: rem, _ -> (act, rem, nonconsts)
+              | _ -> assert false
             )
-        )
-    in
-    (lambda1, Jumps.union local_jumps total1)
+          | Some fail -> (fail, consts, nonconsts)
+        in
+        let nonconst_lambda =
+          match nonconsts with
+          | [] -> default
+          | _ ->
+              let tag = Ident.create_local "tag" in
+              let tests =
+                List.fold_right
+                  (fun (path, act) rem ->
+                    let ext = transl_extension_path loc ex_pat.pat_env path in
+                    Lifthenelse
+                      (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
+                  nonconsts default
+              in
+              Llet (Alias, Pgenval, tag, Lprim (Pfield 0, [ arg ], loc), tests)
+        in
+        List.fold_right
+          (fun (path, act) rem ->
+            let ext = transl_extension_path loc ex_pat.pat_env path in
+            Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem))
+          consts nonconst_lambda
+      in
+      (lambda1, Jumps.union local_jumps total1)
+  | _ ->
+      (* Regular concrete type *)
+      let ncases = List.length tag_lambda_list
+      and nconstrs = cstr.cstr_consts + cstr.cstr_nonconsts in
+      let sig_complete = ncases = nconstrs in
+      let fail_opt, fails, local_jumps =
+        if sig_complete then
+          (None, [], Jumps.empty)
+        else
+          mk_failaction_pos partial pats ctx def
+      in
+      let tag_lambda_list = fails @ tag_lambda_list in
+      let consts, nonconsts = split_cases tag_lambda_list in
+      let lambda1 =
+        match (fail_opt, same_actions tag_lambda_list) with
+        | None, Some act -> act (* Identical actions, no failure *)
+        | _ -> (
+            match
+              (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
+            with
+            | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
+                (* Typically, match on lists, will avoid isint primitive in that
+              case *)
+                Lifthenelse (arg, act2, act1)
+            | n, 0, _, [] ->
+                (* The type defines constant constructors only *)
+                call_switcher loc fail_opt arg 0 (n - 1) consts
+            | n, _, _, _ -> (
+                let act0 =
+                  (* = Some act when all non-const constructors match to act *)
+                  match (fail_opt, nonconsts) with
+                  | Some a, [] -> Some a
+                  | Some _, _ ->
+                      if List.length nonconsts = cstr.cstr_nonconsts then
+                        same_actions nonconsts
+                      else
+                        None
+                  | None, _ -> same_actions nonconsts
+                in
+                match act0 with
+                | Some act ->
+                    Lifthenelse
+                      ( Lprim (Pisint, [ arg ], loc),
+                        call_switcher loc fail_opt arg 0 (n - 1) consts,
+                        act )
+                (* Emit a switch, as bytecode implements this sophisticated instruction *)
+                | None ->
+                    let sw =
+                      { sw_numconsts = cstr.cstr_consts;
+                        sw_consts = consts;
+                        sw_numblocks = cstr.cstr_nonconsts;
+                        sw_blocks = nonconsts;
+                        sw_failaction = fail_opt
+                      }
+                    in
+                    let hs, sw = share_actions_sw sw in
+                    let sw = reintroduce_fail sw in
+                    hs (Lswitch (arg, sw, loc))
+              )
+          )
+      in
+      (lambda1, Jumps.union local_jumps total1)
 
 let make_test_sequence_variant_constant fail arg int_lambda_list =
   let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
