@@ -63,6 +63,10 @@ Working version
    (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
     Damien Doligez)
 
+- #7672, #1492: Add `Filename.quote_command` to produce properly-quoted
+  commands for execution by Sys.command.
+  (Xavier Leroy, review by David Allsopp and Damien Doligez)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
