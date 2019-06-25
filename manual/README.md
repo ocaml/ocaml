@@ -98,7 +98,7 @@ of `unified-options.etex` contains the relevant information.
  This parts contains an brief presentation of all libraries bundled with the
  compilers and the api documentation generated for these libraries.
     - The core library: `core.etex`
-    - The standard library: `stdlib.etex`
+    - The standard library: `stdlib-blurb.etex`
     - The compiler front-end: `compilerlibs.etex`
     - The unix library: Unix system calls: `libunix.etex`
     - The legacy num library: this library has been removed from the core

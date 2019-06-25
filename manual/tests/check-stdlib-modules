@@ -12,8 +12,8 @@ for i in `cat $TMPDIR/stdlib-$$-modules`; do
   case $i in
     Stdlib | Camlinternal* | *Labels | Obj | Pervasives) continue;;
   esac
-  grep -q -e '"'$i'" & p\.~\\pageref{'$i'} &' $1/manual/manual/library/stdlib.etex || {
-    echo "Module $i is missing from stdlib.etex." >&2
+  grep -q -e '"'$i'" & p\.~\\pageref{'$i'} &' $1/manual/manual/library/stdlib-blurb.etex || {
+    echo "Module $i is missing from stdlib-blurb.etex." >&2
     exitcode=2
   }
 done
