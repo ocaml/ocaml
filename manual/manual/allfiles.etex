@@ -78,7 +78,7 @@ and as a
 \part{The OCaml library}
 \label{p:library}
 \input{core.tex}
-\input{stdlib.tex}
+\input{stdlib-blurb.tex}
 \input{compilerlibs.tex}
 \input{libunix.tex}
 \input{libnum.tex}
