@@ -14,9 +14,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_CONFIG_H_NO_TYPEDEFS
-#include "config.h"
-
 type t =
 #define DOMAIN_STATE(type, name) | Domain_##name
 #include "domain_state.tbl"

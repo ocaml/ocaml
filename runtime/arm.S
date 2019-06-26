@@ -122,9 +122,6 @@ caml_hot__code_begin:
 caml_hot__code_end:
 #endif
 
-#define CAML_CONFIG_H_NO_TYPEDEFS
-#include "../runtime/caml/config.h"
-
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
         .equ    domain_field_caml_##name, domain_curr_field ; \

@@ -112,9 +112,6 @@
 
 #endif
 
-#define CAML_CONFIG_H_NO_TYPEDEFS
-#include "../runtime/caml/config.h"
-
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
         .equ    domain_field_caml_##name, domain_curr_field ; \
@@ -539,15 +536,15 @@ FUNCTION(G(caml_c_call))
 CFI_STARTPROC
 LBL(caml_c_call):
     /* Record lowest stack address and return address */
-        popq    %r12; CFI_ADJUST(-8)
-        movq    %r12, Caml_state(last_return_address)
+        popq    Caml_state(last_return_address); CFI_ADJUST(-8)
         movq    %rsp, Caml_state(bottom_of_stack)
+    /* equivalent to pushing last return address */
+        subq    $8, %rsp; CFI_ADJUST(8)
 #ifdef WITH_SPACETIME
     /* Record the trie node hole pointer that corresponds to
        [Caml_state->last_return_address] */
         STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
 #endif
-        subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
         subq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(STACK_PROBE_SIZE);
