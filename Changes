@@ -71,7 +71,7 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
-- #8711: The major GC hooks are no longer allowed to interact with the
+* #8711: The major GC hooks are no longer allowed to interact with the
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
