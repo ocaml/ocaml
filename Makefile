@@ -339,8 +339,7 @@ endif
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
 
-utils/domainstate.mli: utils/domainstate.mli.c utils/domainstate.ml \
-                       runtime/caml/domain_state.tbl
+utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
 
 .PHONY: partialclean
