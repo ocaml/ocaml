@@ -1,5 +1,7 @@
 (* TEST
-   * native
+* function_sections
+** native
+flags = "-S -function-sections"
 *)
 
 (* Test for anonymous functions which result in a mangled symbol *)

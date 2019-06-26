@@ -151,6 +151,12 @@ let arch_power = make
     "Target is POWER architecture"
     "Target is not POWER architecture")
 
+let function_sections = make
+  "function_sections"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.function_sections)
+     "Target supports function sections"
+     "Target does not support function sections")
+
 let has_symlink = make
   "has_symlink"
   (Actions_helpers.pass_or_skip (Sys.has_symlink () )
@@ -215,4 +221,5 @@ let _ =
     script;
     check_program_output;
     arch_power;
+    function_sections;
   ]
