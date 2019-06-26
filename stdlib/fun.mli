@@ -17,7 +17,7 @@
 
     @since 4.08 *)
 
-(** {1 Combinators} *)
+(** {1:combinators Combinators} *)
 
 external id : 'a -> 'a = "%identity"
 (** [id] is the identity function. For any argument [x], [id x] is [x]. *)
@@ -34,7 +34,7 @@ val negate : ('a -> bool) -> ('a -> bool)
 (** [negate p] is the negation of the predicate function [p]. For any
     argument [x], [(negate p) x] is [not (p x)]. *)
 
-(** {1 Exception handling} *)
+(** {1:exception Exception handling} *)
 
 val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
 (** [protect ~finally work] invokes [work ()] and then [finally ()]
@@ -43,8 +43,8 @@ val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
     [finally ()] raises an exception, then the exception
     {!Finally_raised} is raised instead.
 
-    [protect] can be used to enforce local invariants whether [work
-    ()] returns normally or raises an exception. However, it does not
+    [protect] can be used to enforce local invariants whether [work ()]
+    returns normally or raises an exception. However, it does not
     protect against unexpected exceptions raised inside [finally ()]
     such as {!Stdlib.Out_of_memory}, {!Stdlib.Stack_overflow}, or
     asynchronous exceptions raised by signal handlers
