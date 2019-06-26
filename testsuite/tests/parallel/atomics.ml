@@ -1,3 +1,15 @@
+type u = U of unit
+let () =
+  (* See https://github.com/ocaml-multicore/ocaml-multicore/issues/252 *)
+  let make_cell (x : unit) : u Atomic.t =
+    let cell = Atomic.make (U x) in
+    Atomic.set cell (U x) ;
+    cell in
+  (* the error shows up with an array of length 256 or larger *)
+  let a = Array.make 256 (make_cell ()) in
+  ignore (Sys.opaque_identity a)
+
+
 let test_fetch_add () =
   let ndoms = 4 in
   let count = 10000 in
