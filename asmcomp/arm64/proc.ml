@@ -67,7 +67,7 @@ let register_class r =
   | Float -> 1
 
 let num_available_registers =
-  [| 22; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
+  [| 22; 32 |] (* first 22 int regs allocatable; all float regs allocatable *)
 
 let first_available_register =
   [| 0; 100 |]
