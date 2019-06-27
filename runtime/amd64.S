@@ -737,7 +737,7 @@ CFI_STARTPROC
         movq    0(%rbx), %r12      /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
-ENDFUNCTION(G(caml_callback_exn))
+ENDFUNCTION(G(caml_callback_asm))
 
 FUNCTION(G(caml_callback2_asm))
 CFI_STARTPROC
@@ -751,7 +751,7 @@ CFI_STARTPROC
         LEA_VAR(caml_apply2, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
-ENDFUNCTION(G(caml_callback2_exn))
+ENDFUNCTION(G(caml_callback2_asm))
 
 FUNCTION(G(caml_callback3_asm))
 CFI_STARTPROC
@@ -766,7 +766,7 @@ CFI_STARTPROC
         LEA_VAR(caml_apply3, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
-ENDFUNCTION(G(caml_callback3_exn))
+ENDFUNCTION(G(caml_callback3_asm))
 
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC

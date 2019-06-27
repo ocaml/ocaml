@@ -408,7 +408,7 @@ FUNCTION(caml_callback_asm)
         movl    0(%ebx), %esi    /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
-        ENDFUNCTION(caml_callback_exn)
+ENDFUNCTION(caml_callback_asm)
 
 FUNCTION(caml_callback2_asm)
         CFI_STARTPROC
@@ -425,7 +425,7 @@ FUNCTION(caml_callback2_asm)
         movl    $ G(caml_apply2), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
-        ENDFUNCTION(caml_callback2_exn)
+ENDFUNCTION(caml_callback2_asm)
 
 FUNCTION(caml_callback3_asm)
         CFI_STARTPROC
@@ -443,7 +443,7 @@ FUNCTION(caml_callback3_asm)
         movl    $ G(caml_apply3), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
-        ENDFUNCTION(caml_callback3_exn)
+ENDFUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
