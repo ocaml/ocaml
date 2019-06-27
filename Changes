@@ -83,8 +83,10 @@ Working version
   the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8713: Introduce domain state to hold C global variables in the runtime.
-  (KC Sivaramakrishnan and Stephen Dolan reviewed by David Allsopp)
+- #8713: Introduce a state table in the runtime to contain the global variables
+	 which must be duplicated for each domain in the multicore runtime.
+   (KC Sivaramakrishnan and Stephen Dolan review by David Allsopp, Alain Frisch,
+    Nicolas Ojeda Bar, Gabriel Scherer and Damien Doligez)
 
 ### Tools:
 
