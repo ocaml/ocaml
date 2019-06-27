@@ -440,7 +440,7 @@ let emit_load_handler_address handler =
 
 let emit_named_text_section func_name =
   if !Clflags.function_sections then begin
-    `	.text.{emit_symbol func_name},{emit_string_literal "ax"},{emit_string_literal "%progbits"}\n`
+    `	.section .text.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
   end
   else
     `	.text\n`
