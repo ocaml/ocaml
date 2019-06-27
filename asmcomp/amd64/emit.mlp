@@ -482,7 +482,7 @@ let emit_global_label s =
    supported on the target system. *)
 
 let emit_named_text_section func_name =
-  if Config.function_sections then
+  if !Clflags.function_sections then
     begin match system with
     | S_macosx
     (* Names of section segments in macosx are restricted to 16 characters,

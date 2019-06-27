@@ -1521,9 +1521,8 @@ Optional Features:
                           force strings to be safe
   --disable-flat-float-array
                           do not use flat float arrays
-  --enable-function-sections
-                          generate each function in a separate section if
-                          target supports it
+  --disable-function-sections
+                          do not emit each function in a separate section
   --enable-shared[=PKGS]  build shared libraries [default=yes]
   --enable-static[=PKGS]  build static libraries [default=yes]
   --enable-fast-install[=PKGS]
@@ -16529,39 +16528,41 @@ else
   flat_float_array=true
 fi
 
-if test x"$enable_function_sections" = "xyes"; then :
+if test x"$enable_function_sections" = "xno"; then :
+  function_sections=false
+else
   case $arch in #(
   amd64|i386|arm|arm64) :
     case $target in #(
-  *-*-cygwin*|*-*-mingw*|*-pc-windows) :
+  *-cygwin*|*-mingw*|*-windows|*-apple-darwin*) :
     function_sections=false;
-           { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Disabling function sections. No target support." >&5
-$as_echo "$as_me: WARNING: Disabling function sections. No target support." >&2;} ;; #(
+           { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections. No target support." >&5
+$as_echo "$as_me: Disabling function sections. No target support." >&6;} ;; #(
   *) :
     case $ocaml_cv_cc_vendor in #(
   gcc-0123-*|gcc-4-01234567) :
     function_sections=false;
-              { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Disabling function sections.
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections.
               Not supported in GCC prior to version 4.8." >&5
-$as_echo "$as_me: WARNING: Disabling function sections.
-              Not supported in GCC prior to version 4.8." >&2;} ;; #(
+$as_echo "$as_me: Disabling function sections.
+              Not supported in GCC prior to version 4.8." >&6;} ;; #(
   clang-012-*|clang-3-01234) :
     function_sections=false;
-              { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Disabling function sections.
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections.
               Not supported in Clang prior to version 3.5." >&5
-$as_echo "$as_me: WARNING: Disabling function sections.
-              Not supported in Clang prior to version 3.5." >&2;} ;; #(
+$as_echo "$as_me: Disabling function sections.
+              Not supported in Clang prior to version 3.5." >&6;} ;; #(
   gcc-*|clang-*) :
     function_sections=true;
-              common_cflags="$common_cflags -ffunction-sections";
+              internal_cflags="$internal_cflags -ffunction-sections";
               $as_echo "#define FUNCTION_SECTIONS 1" >>confdefs.h
  ;; #(
   *) :
     function_sections=false;
-              { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Disabling function sections.
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections.
               Compiler not supported." >&5
-$as_echo "$as_me: WARNING: Disabling function sections.
-              Compiler not supported." >&2;} ;; #(
+$as_echo "$as_me: Disabling function sections.
+              Compiler not supported." >&6;} ;; #(
   *) :
      ;;
 esac ;; #(
@@ -16570,11 +16571,9 @@ esac ;; #(
 esac ;; #(
   *) :
     function_sections=false
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Disabling function sections on this target." >&5
-$as_echo "$as_me: WARNING: Disabling function sections on this target." >&2;} ;;
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections on this target." >&5
+$as_echo "$as_me: Disabling function sections on this target." >&6;} ;;
 esac
-else
-  function_sections=false
 fi
 
 if test x"$with_afl" = "xyes"; then :

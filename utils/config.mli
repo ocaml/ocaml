@@ -225,7 +225,7 @@ val flat_float_array : bool
 
 val function_sections : bool
 (** Whether the compiler was configured to generate
-    functions in separate section *)
+    each function in a separate section *)
 
 val windows_unicode: bool
 (** Whether Windows Unicode runtime is enabled *)
