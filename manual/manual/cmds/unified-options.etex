@@ -593,7 +593,7 @@ After parsing, pipe the abstract syntax tree through the preprocessor
 \var{command}. The module "Ast_mapper", described in
 \ifouthtml
 chapter~\ref{c:parsinglib}:
-\ahref{libref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
+\ahref{compilerlibref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
 \else section~\ref{Ast-underscoremapper}\fi,
 implements the external interface of a preprocessor.
 

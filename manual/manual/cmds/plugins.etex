@@ -12,23 +12,23 @@ are based on the compiler library API. In complement, new hooks have been added 
 the compiler to increase its flexibility.
 
 In particular, hooks are available in the
-\ifouthtml\ahref{libref/Pparse.html}{\texttt{Pparse} module}
+\ifouthtml\ahref{compilerlibref/Pparse.html}{\texttt{Pparse} module}
 \else\texttt{Pparse} module (see section~\ref{Pparse})\fi
 to transform the parsed abstract syntax tree, providing similar functionality
 to extension point based preprocessors.
 Other hooks are available to analyze the typed tree in the
-\ifouthtml\ahref{libref/Typemod.html}{\texttt{Typemod} module}
+\ifouthtml\ahref{compilerlibref/Typemod.html}{\texttt{Typemod} module}
 \else\texttt{Typemod} module (see section~\ref{Typemod})\fi
 after the type-checking phase of the compiler. Since the typed tree relies
 on numerous invariants that play a vital part in ulterior phases of the
 compiler, it is not possible however to transform the typed tree.
 Similarly, the intermediary lambda representation can be modified by using the
 hooks provided in the
-\ifouthtml\ahref{libref/Simplif.html}{\texttt{Simplif} module}
+\ifouthtml\ahref{compilerlibref/Simplif.html}{\texttt{Simplif} module}
 \else\texttt{Simplif} module (see section~\ref{Simplif})\fi.
 A plugin can also add new options to a tool through the
 "Clflags.add_arguments" function (see
-\ifouthtml\ahref{libref/Clflags.html}{\texttt{Clflags} module}
+\ifouthtml\ahref{compilerlibref/Clflags.html}{\texttt{Clflags} module}
 \else\texttt{Clflags} module (see section~\ref{Clflags})\fi).
 
 Plugins are dynamically loaded and need to be compiled in the same mode (i.e.
