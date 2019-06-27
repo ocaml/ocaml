@@ -82,25 +82,25 @@ let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X025"
+let exec_magic_number = "Caml1999X026"
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I025"
-and cmo_magic_number = "Caml1999O025"
-and cma_magic_number = "Caml1999A025"
+and cmi_magic_number = "Caml1999I026"
+and cmo_magic_number = "Caml1999O026"
+and cma_magic_number = "Caml1999A026"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y025"
+    "Caml1999y026"
   else
-    "Caml1999Y025"
+    "Caml1999Y026"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z025"
+    "Caml1999z026"
   else
-    "Caml1999Z025"
-and ast_impl_magic_number = "Caml1999M025"
-and ast_intf_magic_number = "Caml1999N025"
-and cmxs_magic_number = "Caml1999D025"
-and cmt_magic_number = "Caml1999T025"
+    "Caml1999Z026"
+and ast_impl_magic_number = "Caml1999M026"
+and ast_intf_magic_number = "Caml1999N026"
+and cmxs_magic_number = "Caml1999D026"
+and cmt_magic_number = "Caml1999T026"
 
 let interface_suffix = ref ".mli"
 
