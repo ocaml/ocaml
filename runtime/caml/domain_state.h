@@ -21,6 +21,12 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+#undef young_ptr
+#undef young_limit
+#undef young_start
+#undef young_end
+#undef local_roots
+
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
 typedef struct {
@@ -44,5 +50,7 @@ CAML_STATIC_ASSERT(
    ) * 8);
 
 CAMLextern caml_domain_state* Caml_state;
+
+#include "compatibility.h"
 
 #endif /* CAML_STATE_H */
