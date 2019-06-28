@@ -250,13 +250,13 @@ method! select_operation op args dbg =
 
 method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
-    [arg1; Cop(Cload (chunk, _), [loc2], _)] ->
-      let (addr, arg2) = self#select_addressing chunk loc2 in
-      (Ispecific(Ifloatarithmem(chunk_double chunk, mem_op, addr)),
+    [arg1; Cop(Cload {memory_chunk}, [loc2], _)] ->
+      let (addr, arg2) = self#select_addressing memory_chunk loc2 in
+      (Ispecific(Ifloatarithmem(chunk_double memory_chunk, mem_op, addr)),
                  [arg1; arg2])
-  | [Cop(Cload (chunk, _), [loc1], _); arg2] ->
-      let (addr, arg1) = self#select_addressing chunk loc1 in
-      (Ispecific(Ifloatarithmem(chunk_double chunk, mem_rev_op, addr)),
+  | [Cop(Cload {memory_chunk}, [loc1], _); arg2] ->
+      let (addr, arg1) = self#select_addressing memory_chunk loc1 in
+      (Ispecific(Ifloatarithmem(chunk_double memory_chunk, mem_rev_op, addr)),
                  [arg2; arg1])
   | [arg1; arg2] ->
       (* Evaluate bigger subexpression first to minimize stack usage.
@@ -292,10 +292,10 @@ method select_push exp =
   | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
+  | Cop(Cload {memory_chunk = (Word_int | Word_val) as chunk}, [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload (Double_u, _), [loc], _) ->
+  | Cop(Cload {memory_chunk = Double_u}, [loc], _) ->
       let (addr, arg) = self#select_addressing Double_u loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)

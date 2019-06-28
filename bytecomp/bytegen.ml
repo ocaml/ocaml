@@ -446,7 +446,7 @@ let comp_primitive p sz args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
-  | Patomic_load -> Kccall("caml_atomic_load", 1)
+  | Patomic_load _ -> Kccall("caml_atomic_load", 1)
   | Patomic_exchange -> Kccall("caml_atomic_exchange", 2);
   | Patomic_cas -> Kccall("caml_atomic_cas", 3);
   | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add", 2);

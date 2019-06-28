@@ -54,6 +54,9 @@ let reset ~spacetime_node_ident:ident ~function_label =
   current_function_label := function_label;
   reverse_shape := []
 
+let mk_load_mut memory_chunk = let open Cmm in
+  Cload {memory_chunk; mutability=Asttypes.Mutable; is_atomic=false}
+
 let code_for_function_prologue ~function_name ~node_hole =
   let node = Ident.create "node" in
   let new_node = Ident.create "new_node" in
@@ -89,7 +92,7 @@ let code_for_function_prologue ~function_name ~node_hole =
         body)
   in
   let pc = Ident.create "pc" in
-  Clet (node, Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
+  Clet (node, Cop (mk_load_mut Word_int, [Cvar node_hole], dbg),
     Clet (must_allocate_node,
       Cop (Cand, [Cvar node; Cconst_int 1], dbg),
       Cifthenelse (
@@ -105,7 +108,7 @@ let code_for_function_prologue ~function_name ~node_hole =
               ],
               dbg)),
             Clet (new_node,
-              Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
+              Cop (mk_load_mut Word_int, [Cvar node_hole], dbg),
               if no_tail_calls then Cvar new_node
               else
                 Cifthenelse (
@@ -149,7 +152,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Cconst_int offset_into_node;
     ], dbg),
     Clet (existing_profinfo,
-        Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo],
+        Cop (mk_load_mut Word_int, [Cvar address_of_profinfo],
           dbg),
       Clet (profinfo,
         Cifthenelse (
@@ -157,7 +160,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
           Cvar existing_profinfo,
           generate_new_profinfo),
         Clet (existing_count,
-          Cop (Cload (Word_int, Asttypes.Mutable), [
+          Cop (mk_load_mut Word_int, [
             Cop (Caddi,
               [Cvar address_of_profinfo; Cconst_int Arch.size_addr], dbg)
           ], dbg),
@@ -232,7 +235,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
         Clet (count_addr,
           Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr], dbg),
           Clet (count,
-            Cop (Cload (Word_int, Asttypes.Mutable), [Cvar count_addr], dbg),
+            Cop (mk_load_mut Word_int, [Cvar count_addr], dbg),
             Csequence (
               Cop (Cstore (Word_int, Lambda.Assignment),
                 (* Adding 2 really means adding 1; the count is encoded

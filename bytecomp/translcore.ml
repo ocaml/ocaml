@@ -360,7 +360,7 @@ let primitives_table = create_hashtable 57 [
   "%bswap_int64", Pbbswap(Pint64);
   "%bswap_native", Pbbswap(Pnativeint);
   "%int_as_pointer", Pint_as_pointer;
-  "%atomic_load", Patomic_load;
+  "%atomic_load", Patomic_load {immediate_or_pointer=Pointer};
   "%atomic_exchange", Patomic_exchange;
   "%atomic_cas", Patomic_cas;
   "%atomic_fetch_add", Patomic_fetch_add;
