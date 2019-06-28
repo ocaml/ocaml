@@ -80,9 +80,9 @@ let rec env_from_summary sum subst =
               Env.add_local_type (Subst.type_path subst path)
                 (Subst.type_declaration subst info))
             map (env_from_summary s subst)
-      | Env_copy_types (s, sl) ->
+      | Env_copy_types s ->
           let env = env_from_summary s subst in
-          Env.do_copy_types (Env.make_copy_of_types sl env) env
+          Env.make_copy_of_types env env
       | Env_persistent (s, id) ->
           let env = env_from_summary s subst in
           Env.add_persistent_structure id env
