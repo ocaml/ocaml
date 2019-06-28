@@ -74,16 +74,19 @@ let rec deadcode i =
     let body' = deadcode body in
     let s = deadcode i.next in
     let handlers' = Int.Map.map deadcode (Int.Map.of_list handlers) in
-    let rec add_live exit (live_exits, used_handlers) =
-      if Int.Set.mem exit live_exits then
+    (* Previous passes guarantee that indexes of handlers are unique
+       across the entire function and Iexit instructions refer
+       to the correctly scoped handlers. *)
+    let rec add_live nfail (live_exits, used_handlers) =
+      if Int.Set.mem nfail live_exits then
         (live_exits, used_handlers)
       else
-        let live_exits = Int.Set.add exit live_exits in
-        match Int.Map.find_opt exit handlers' with
+        let live_exits = Int.Set.add nfail live_exits in
+        match Int.Map.find_opt nfail handlers' with
         | None -> (live_exits, used_handlers)
         | Some handler ->
-            Int.Set.fold add_live handler.exits
-              (live_exits, (exit, handler.i) :: used_handlers)
+          let used_handlers = (nfail, handler.i) :: used_handlers in
+          Int.Set.fold add_live handler.exits (live_exits, used_handlers)
     in
     let live_exits, used_handlers =
       Int.Set.fold add_live body'.exits (s.exits, [])
