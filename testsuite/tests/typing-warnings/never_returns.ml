@@ -5,17 +5,17 @@
 
 let () = (let module L = List in raise Exit); () ;;
 [%%expect {|
-Line 1, characters 9-44:
+Line 1, characters 33-43:
 1 | let () = (let module L = List in raise Exit); () ;;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                     ^^^^^^^^^^
 Warning 21: this statement never returns (or has an unsound type.)
 Exception: Stdlib.Exit.
 |}]
 let () = (let exception E in raise Exit); ();;
 [%%expect {|
-Line 1, characters 9-40:
+Line 1, characters 29-39:
 1 | let () = (let exception E in raise Exit); ();;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 ^^^^^^^^^^
 Warning 21: this statement never returns (or has an unsound type.)
 Exception: Stdlib.Exit.
 |}]
@@ -29,9 +29,9 @@ Exception: Stdlib.Exit.
 |}]
 let () = (let open Stdlib in raise Exit); ();;
 [%%expect {|
-Line 1, characters 9-40:
+Line 1, characters 29-39:
 1 | let () = (let open Stdlib in raise Exit); ();;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 ^^^^^^^^^^
 Warning 21: this statement never returns (or has an unsound type.)
 Exception: Stdlib.Exit.
 |}]

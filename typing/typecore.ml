@@ -1777,6 +1777,9 @@ let rec final_subexpression exp =
   | Texp_try (e, _)
   | Texp_ifthenelse (_, e, _)
   | Texp_match (_, {c_rhs=e} :: _, _)
+  | Texp_letmodule (_, _, _, _, e)
+  | Texp_letexception (_, e)
+  | Texp_open (_, e)
     -> final_subexpression e
   | _ -> exp
 
