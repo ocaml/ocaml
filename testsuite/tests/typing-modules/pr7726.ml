@@ -19,7 +19,8 @@ Line 1, characters 12-77:
 1 | module T1 = Fix(functor (X:sig type t end) -> struct type t = X.t option end);;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the signature of this functor application:
-       The type abbreviation Fixed.t is cyclic
+       The type abbreviation Fixed.t is cyclic.
+       Did you mean to use -rectypes?
 |}]
 module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
 [%%expect{|

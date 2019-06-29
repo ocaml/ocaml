@@ -617,7 +617,7 @@ val app : int * bool = (1, true)
 Line 9, characters 0-25:
 9 | type 'a foo = 'a foo list
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation foo is cyclic
+Error: The type abbreviation foo is cyclic. Did you mean to use -rectypes?
 |}];;
 
 class ['a] bar (x : 'a) = object end

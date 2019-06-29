@@ -1627,7 +1627,8 @@ let report_error ppf = function
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
-      fprintf ppf "The type abbreviation %s is cyclic" s
+      fprintf ppf "@[The type abbreviation %s is cyclic.@ \
+                     Did you mean to use -rectypes?@]" s
   | Cycle_in_def (s, ty) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"

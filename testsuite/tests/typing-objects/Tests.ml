@@ -208,7 +208,7 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic. Did you mean to use -rectypes?
 |}];;
 type 'a u = 'a;;
 [%%expect{|
@@ -219,7 +219,7 @@ type t = t u * t u;;
 Line 1, characters 0-18:
 1 | type t = t u * t u;;
     ^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic. Did you mean to use -rectypes?
 |}];;
 
 type t = <x : 'a> as 'a;;
