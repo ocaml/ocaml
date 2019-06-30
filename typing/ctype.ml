@@ -903,24 +903,30 @@ let rec lower_contravariant env var_level visited contra ty =
       Tvar _ -> if contra then set_level ty var_level
     | Tconstr (_, [], _) -> ()
     | Tconstr (path, tyl, _abbrev) ->
-        let variance =
-          try (Env.find_type path env).type_variance
+       let variance, maybe_expand =
+         try
+           let typ = Env.find_type path env in
+           typ.type_variance,
+           typ.type_kind = Type_abstract
           with Not_found ->
             (* See testsuite/tests/typing-missing-cmi-2 for an example *)
-            List.map (fun _ -> Variance.may_inv) tyl
+            List.map (fun _ -> Variance.may_inv) tyl,
+            false
         in
         if List.for_all ((=) Variance.null) variance then () else
-        begin match !forward_try_expand_once env ty with
-        | ty -> lower_rec contra ty
-        | exception Cannot_expand ->
-          List.iter2
-            (fun v t ->
-              if v = Variance.null then () else
-              if Variance.(mem May_weak v)
-              then lower_rec true t
-              else lower_rec contra t)
-            variance tyl
-        end
+          let not_expanded () =
+            List.iter2
+              (fun v t ->
+                if v = Variance.null then () else
+                  if Variance.(mem May_weak v)
+                  then lower_rec true t
+                  else lower_rec contra t)
+              variance tyl in
+          if maybe_expand then (* we expand cautiously to avoid missing cmis *)
+            match !forward_try_expand_once env ty with
+            | ty -> lower_rec contra ty
+            | exception Cannot_expand -> not_expanded ()
+          else not_expanded ()
     | Tpackage (_, _, tyl) ->
         List.iter (lower_rec true) tyl
     | Tarrow (_, t1, t2, _) ->
