@@ -66,3 +66,9 @@ val of_string : string -> bool option
 val to_string : bool -> string
 (** [to_string b] is ["true"] if [b] is [true] and ["false"] if [b] is
     [false]. *)
+
+val of_option : unit option -> bool
+(** [of_option o] is [false] if [o] is [None] and [true] if [o] is [Some ()]. *)
+
+val to_option : bool -> unit option
+(** [to_option b] is [None] if [b] is [false] and [Some ()] if [b] is [true]. *)

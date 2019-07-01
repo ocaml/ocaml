@@ -31,3 +31,5 @@ let of_string = function
 *)
 
 let to_string = function false -> "false" | true -> "true"
+let of_option = function None -> false | Some () -> true
+let to_option = function false -> None | true -> Some ()
