@@ -1,8 +1,22 @@
 (* TEST
 * function_sections
-** native
 flags = "-S -function-sections"
+** arch_arm
+*** native
+reference = "${test_source_directory}/func_sections.arm.reference"
+** arch_arm64
+*** native
+reference = "${test_source_directory}/func_sections.arm.reference"
+** arch_amd64
+*** native
+reference = "${test_source_directory}/func_sections.reference"
+** arch_i386
+*** native
+reference = "${test_source_directory}/func_sections.reference"
 *)
+
+(* We have a separate reference output for ARM because
+   it doesn't emit .text after jump tables. *)
 
 (* Test for anonymous functions which result in a mangled symbol *)
 let f4 list =
