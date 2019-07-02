@@ -1,0 +1,17 @@
+(* TEST
+flags = "-dlive"
+files = "main.c"
+arguments = "-DUNIT_INT -DFUN=catch_rec_deadhandler main.c"
+* asmgen
+** run
+*** check-program-output
+*)
+
+(function "catch_rec_deadhandler" ()
+  (let x
+    (catch
+      (exit one)
+     with (one) 1
+     and (two) (exit three)
+     and (three) 3)
+    x))

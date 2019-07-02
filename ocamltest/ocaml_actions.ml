@@ -699,9 +699,15 @@ let run_codegen log env =
       compiler_output
       env
   in
+  let output = Filename.make_path
+                 [test_build_directory;
+                  (Filename.make_filename
+                     (Filename.chop_extension testfile) "output")] in
+  let env = Environments.add Builtin_variables.output output env in
   let commandline =
   [
     Ocaml_commands.ocamlrun_codegen ocamlsrcdir;
+    flags env;
     "-S " ^ testfile
   ] in
   let expected_exit_status = 0 in
