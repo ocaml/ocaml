@@ -11,7 +11,7 @@ TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
 TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
 FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
-  depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
+  ocamldep.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
   warnings-help.tex ocamlbuild.tex flambda.tex spacetime-chapter.tex \
   afl-fuzz.tex unified-options.tex
 
