@@ -27,6 +27,8 @@
 *.png binary
 *.tfm binary
 
+/boot/menhir/parser.ml* -diff
+
 # configure is declared as binary so that it doesn't get included in diffs.
 # This also means it will have the correct Unix line-endings, even on Windows.
 /configure binary
