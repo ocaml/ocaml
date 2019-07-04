@@ -18,10 +18,10 @@ open Asttypes
 open Lambda
 
 (* Converts let-rec containing values into an initialization then
-   asignment sequence.
+   assignment sequence.
 
    We assume that the typechecker correclty validated that the letrec
-   is compilable (See Typecore.check_recursive_expression).
+   is compilable (See typing/Rec_check.is_valid_recursive_expression).
 
    That is, for every expression to which a variable is bound in
    the let-rec verify:
@@ -34,7 +34,7 @@ open Lambda
      size can't be statically known, or because the value is not
      allocated, like integers), then the value does not
      depend on any other rec-bound variables.
-     This implies that any value that can't be preallocate can be
+     This implies that any value that can't be preallocated can be
      computed before any other binding. Note that this does not mean
      that other variables can't be refered to by the expression,
      but if it happens, then the value is useless.
@@ -45,9 +45,9 @@ open Lambda
    be turned into a single letrec.
 
    Note that this does not exactly match the definition of Static
-   and Dynamic size for check_recursive_expression. It considers
+   and Dynamic size for is_valid_recursive_expression. It considers
    Static to be anything that can be preallocated or that can't
-   contain the value of its dependencies. Neitheir containing, nor
+   contain the value of its dependencies. Neither containing, nor
    using (inspecting) a value means that its content is useless.
    Hence it can be replaced by anything.
 
@@ -132,7 +132,7 @@ type letrec = {
      This is presented as a function for easy 'concatenation':
      to append 'expr': [fun ~tail -> Lsequence (expr, letrec.pre ~tail)] *)
   effects : Lambda.lambda;
-  (* Effects that are applied afterward. *)
+  (* Effects that are applied afterwards. *)
   functions : (Ident.t * Lambda.lfunction) list;
   substitution : Ident.t Ident.Map.t;
   (* Alias to recursive variables should be forbidden, to prevent
