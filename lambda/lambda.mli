@@ -340,18 +340,14 @@ val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
-val iter_head_constructor: (lambda -> unit) -> lambda -> unit
-(** [iter_head_constructor f lam] apply [f] to only the first level of
-    sub expressions of [lam]. It does not recursively traverse the
-    expression.
-*)
+val shallow_fold_left: ('a -> lambda -> 'a) -> 'a -> lambda -> 'a
 
 val shallow_iter:
   tail:(lambda -> unit) ->
   non_tail:(lambda -> unit) ->
   lambda -> unit
-(** Same as [iter_head_constructor], but use a different callback for
-    sub-terms which are in tail position or not. *)
+(** Iterate over the first level of sub-terms and use a different callback
+    depending on whether the term is in a tail position or not. *)
 
 val transl_prim: string -> string -> lambda
 (** Translate a value from a persistent module. For instance:
@@ -362,6 +358,7 @@ val transl_prim: string -> string -> lambda
 *)
 
 val free_variables: lambda -> Ident.Set.t
+val free_variables_fixpoint: (lambda -> Ident.Set.t) -> lambda -> Ident.Set.t
 
 val transl_module_path: Location.t -> Env.t -> Path.t -> lambda
 val transl_value_path: Location.t -> Env.t -> Path.t -> lambda

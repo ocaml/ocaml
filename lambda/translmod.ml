@@ -692,16 +692,14 @@ let _ =
 
 (* Introduce dependencies on modules referenced only by "external". *)
 
-let scan_used_globals lam =
-  let globals = ref Ident.Set.empty in
-  let rec scan lam =
-    Lambda.iter_head_constructor scan lam;
-    match lam with
-      Lprim ((Pgetglobal id | Psetglobal id), _, _) ->
-        globals := Ident.Set.add id !globals
-    | _ -> ()
-  in
-  scan lam; !globals
+let rec scan_used_globals = function
+  | Lprim ((Pgetglobal id | Psetglobal id), _, _) -> Ident.Set.singleton id
+  | Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Llet _ | Lletrec _ | Lprim _
+  | Lswitch _ | Lstringswitch _ | Lstaticraise _ | Lstaticcatch _ | Ltrywith _
+  | Lifthenelse _ | Lsequence _ | Lwhile _ | Lfor _ | Lassign _ | Lsend _
+  | Levent _ | Lifused _ as other ->
+      let folder env t = Ident.Set.union (scan_used_globals t) env in
+      shallow_fold_left folder Ident.Set.empty other
 
 let required_globals ~flambda body =
   let globals = scan_used_globals body in

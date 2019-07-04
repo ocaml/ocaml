@@ -630,32 +630,14 @@ let prerr_ids msg ids =
   prerr_endline (String.concat " " (msg :: names))
 *)
 
-let free_methods l =
-  let fv = ref Ident.Set.empty in
-  let rec free l =
-    Lambda.iter_head_constructor free l;
-    match l with
-    | Lsend(Self, Lvar meth, _, _, _) ->
-        fv := Ident.Set.add meth !fv
-    | Lsend _ -> ()
-    | Lfunction{params} ->
-        List.iter (fun (param, _) -> fv := Ident.Set.remove param !fv) params
-    | Llet(_str, _k, id, _arg, _body) ->
-        fv := Ident.Set.remove id !fv
-    | Lletrec(decl, _body) ->
-        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
-    | Lstaticcatch(_e1, (_,vars), _e2) ->
-        List.iter (fun (id, _) -> fv := Ident.Set.remove id !fv) vars
-    | Ltrywith(_e1, exn, _e2) ->
-        fv := Ident.Set.remove exn !fv
-    | Lfor(v, _e1, _e2, _dir, _e3) ->
-        fv := Ident.Set.remove v !fv
-    | Lassign _
-    | Lvar _ | Lconst _ | Lapply _
-    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
-    | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Levent _ | Lifused _ -> ()
-  in free l; !fv
+let rec free_methods = function
+  | Lvar _ -> Ident.Set.empty
+  | Lassign (_id, e) -> free_methods e
+  | Lsend (Self, Lvar meth, _, _, _) -> Ident.Set.singleton meth
+  | Lconst _ | Lapply _ | Lfunction _ | Llet _ | Lletrec _ | Lprim _
+  | Lswitch _ | Lstringswitch _ | Lstaticraise _ | Lstaticcatch _ | Ltrywith _
+  | Lifthenelse _ | Lsequence _ | Lwhile _ | Lfor _ | Lsend _ | Levent _
+  | Lifused _ as other -> free_variables_fixpoint free_methods other
 
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
