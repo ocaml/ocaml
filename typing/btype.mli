@@ -69,12 +69,17 @@ val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
+
+val is_fixed: row_desc -> bool
+(* Return whether the row is directly marked as fixed or not *)
 val row_fixed: row_desc -> bool
-        (* Return whether the row should be treated as fixed or not *)
+(* Return whether the row should be treated as fixed or not.
+   In particular, [is_fixed row] implies [row_fixed row].
+*)
 val fixed_explanation: row_desc -> fixed_explanation option
-(* Eventually return the explanation behind the fixed row *)
+(* Return the potential explanation for the fixed row *)
 val merge_fixed_explanation: row_desc -> row_desc -> fixed_explanation option
-(* Merge two explanation for a fixed row *)
+(* Merge two explanations for a fixed row *)
 
 val static_row: row_desc -> bool
         (* Return whether the row is static or not *)

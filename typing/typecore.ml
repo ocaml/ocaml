@@ -2148,7 +2148,7 @@ let contains_variant_either ty =
       match ty.desc with
         Tvariant row ->
           let row = row_repr row in
-          if row.row_fixed = None then
+          if not (is_fixed row) then
             List.iter
               (fun (_,f) ->
                 match row_field_repr f with Reither _ -> raise Exit | _ -> ())
@@ -2211,7 +2211,7 @@ let check_absent_variant env =
       let row = row_repr !row in
       if List.exists (fun (s',fi) -> s = s' && row_field_repr fi <> Rabsent)
           row.row_fields
-      || row.row_fixed = None && not (static_row row)  (* same as Ctype.poly *)
+      || not (is_fixed row) && not (static_row row)  (* same as Ctype.poly *)
       then () else
       let ty_arg =
         match arg with None -> [] | Some p -> [correct_levels p.pat_type] in

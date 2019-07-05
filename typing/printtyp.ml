@@ -479,7 +479,7 @@ and raw_type_desc ppf = function
         row.row_fields
         "row_more=" raw_type row.row_more
         "row_closed=" row.row_closed
-        "row_fixed=" (row.row_fixed <> None)
+        "row_fixed=" (Btype.is_fixed row)
         "row_name="
         (fun ppf ->
           match row.row_name with None -> fprintf ppf "None"

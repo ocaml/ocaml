@@ -1124,7 +1124,7 @@ let rec copy ?partial ?keep_names scope ty =
               in
               let row =
                 match repr more' with (* PR#6163 *)
-                  {desc=Tconstr (x,_,_)} when row.row_fixed = None ->
+                  {desc=Tconstr (x,_,_)} when not (is_fixed row) ->
                     {row with row_fixed = Some (Reified x)}
                 | _ -> row
               in
@@ -1142,7 +1142,7 @@ let rec copy ?partial ?keep_names scope ty =
                         Reither _ -> false
                       | _ -> true
                     in
-                    if row.row_closed && row.row_fixed = None
+                    if row.row_closed && not (is_fixed row)
                     && TypeSet.is_empty (free_univars ty)
                     && not (List.for_all not_reither row.row_fields) then
                       (more',
@@ -2079,7 +2079,7 @@ let reify env t =
       | Tvariant r ->
           let r = row_repr r in
           if not (static_row r) then begin
-            if r.row_fixed <> None then iterator (row_more r) else
+            if is_fixed r then iterator (row_more r) else
             let m = r.row_more in
             match m.desc with
               Tvar o ->
@@ -2810,10 +2810,11 @@ and unify_row env row1 row2 =
       r2
   end;
   let fixed1 = fixed_explanation row1 and fixed2 = fixed_explanation row2 in
-  let more =
-    if fixed1 <> None then rm1 else
-    if fixed2 <> None then rm2 else
-    newty2 (min rm1.level rm2.level) (Tvar None) in
+  let more = match fixed1, fixed2 with
+    | Some _, _ -> rm1
+    | None, Some _ -> rm2
+    | None, None -> newty2 (min rm1.level rm2.level) (Tvar None)
+  in
   let fixed = merge_fixed_explanation row1 row2
   and closed = row1.row_closed || row2.row_closed in
   let keep switch =

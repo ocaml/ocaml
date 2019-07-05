@@ -188,6 +188,10 @@ let fixed_explanation row =
       | Tconstr (p,_,_) -> Some (Reified p)
       | _ -> assert false
 
+let is_fixed row = match row.row_fixed with
+  | None -> false
+  | Some _ -> true
+
 let row_fixed row = fixed_explanation row <> None
 
 
