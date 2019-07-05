@@ -1835,6 +1835,23 @@ let print_pos ppf = function
   | Trace.First -> fprintf ppf "first"
   | Trace.Second -> fprintf ppf "second"
 
+let explain_fixed_row_case ppf = function
+  | Trace.Cannot_be_closed -> Format.fprintf ppf "it cannot be closed"
+  | Trace.Cannot_add_tag tag ->
+      Format.fprintf ppf "it may not allow the tag `%s" tag
+
+let explain_fixed_row pos expl = match expl with
+  | Types.Fixed_private ->
+      dprintf "The %a variant type is private" print_pos pos
+  | Types.Univar x ->
+      dprintf "The %a variant type is bound to the universal type variable %a"
+        print_pos pos type_expr x
+  | Types.Reified p ->
+      let p = tree_of_path Type p in
+      dprintf "The %a variant type is bound to %a" print_pos pos
+        !Oprint.out_ident p
+  | Types.Rigid -> ignore
+
 let explain_variant = function
   | Trace.No_intersection ->
       Some(dprintf "@,These two variant types have no intersection")
@@ -1846,20 +1863,12 @@ let explain_variant = function
     )
   | Trace.Incompatible_types_for s ->
       Some(dprintf "@,Types for tag `%s are incompatible" s)
-  | Trace.Fixed_row (pos, Univar x) -> Some (
-      dprintf "@,The %a variant type is bound to the universal type variable %a"
-        print_pos pos type_expr x
-    )
-  | Trace.Fixed_row (pos, Fixed_private) -> Some (
-      dprintf "@,The %a variant type is private" print_pos pos
-    )
-  | Trace.Fixed_row (pos, Reified p) ->
-      let p = tree_of_path Type p in
+  | Trace.Fixed_row (pos, k, (Univar _ | Reified _ | Fixed_private as e)) ->
       Some (
-      dprintf "@,The %a variant type is bound to %a" print_pos pos
-         !Oprint.out_ident p
-    )
-  | Trace.Fixed_row (_, Rigid) ->
+        dprintf "@,@[%t,@ %a@]" (explain_fixed_row pos e)
+          explain_fixed_row_case k
+      )
+  | Trace.Fixed_row (_,_, Rigid) ->
       (* this case never happens *)
       None
 

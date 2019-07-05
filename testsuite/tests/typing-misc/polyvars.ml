@@ -174,5 +174,5 @@ Line 2, characters 30-31:
                                   ^
 Error: This expression has type t but an expression was expected of type
          [ `A ]
-       The first variant type is private
+       The first variant type is private, it may not allow the tag `A
 |}]

@@ -93,7 +93,8 @@ Line 1, characters 48-49:
                                                     ^
 Error: This expression has type [> `A ]
        but an expression was expected of type [ `A ]
-       The first variant type is bound to the universal type variable 'a
+       The first variant type is bound to the universal type variable 'a,
+       it cannot be closed
 |}]
 
 let f: 'a. [ `A ] -> ([> `A ] as 'a) = fun x -> x
@@ -103,5 +104,6 @@ Line 1, characters 48-49:
                                                     ^
 Error: This expression has type [ `A ] but an expression was expected of type
          [> `A ]
-       The second variant type is bound to the universal type variable 'a
+       The second variant type is bound to the universal type variable 'a,
+       it cannot be closed
 |}]

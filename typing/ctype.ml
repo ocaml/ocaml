@@ -73,11 +73,16 @@ module Unification_trace = struct
     | Module_type of Path.t
     | Equation of 'a
 
+  type fixed_row_case =
+    | Cannot_be_closed
+    | Cannot_add_tag of string
+
   type variant =
     | No_intersection
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
-    | Fixed_row of position * fixed_explanation
+    | Fixed_row of position * fixed_row_case * fixed_explanation
+
 
   type obj =
     | Missing_field of position * string
@@ -125,7 +130,7 @@ module Unification_trace = struct
         Incompatible_fields { name; diff = swap_diff diff}
     | Obj (Missing_field(pos,s)) -> Obj(Missing_field(swap_position pos,s))
     | Obj (Abstract_row pos) -> Obj(Abstract_row (swap_position pos))
-    | Variant (Fixed_row(pos,f)) -> Variant (Fixed_row(swap_position pos,f))
+    | Variant (Fixed_row(pos,k,f)) -> Variant (Fixed_row(swap_position pos,k,f))
     | Variant (No_tags(pos,f)) -> Variant (No_tags(swap_position pos,f))
     | x -> x
   let swap x = List.map swap_elt x
@@ -2080,7 +2085,8 @@ let reify env t =
               Tvar o ->
                 let path, t = create_fresh_constr m.level o in
                 let row =
-                  {r with row_fields=[]; row_fixed=Some (Reified path); row_more = t} in
+                  let row_fixed = Some (Reified path) in
+                  {r with row_fields=[]; row_fixed; row_more = t} in
                 link_type m (newty2 m.level (Tvariant row));
                 if m.level < fresh_constr_scope then
                   raise Trace.(Unify [escape (Constructor path)])
@@ -2842,15 +2848,15 @@ and unify_row env row1 row2 =
       if closed then
         filter_row_fields row.row_closed rest
       else rest in
-    if rest <> [] && (row.row_closed || row_fixed row) then
+    begin if rest <> [] && row.row_closed then
       let pos = if row == row1 then Trace.First else Trace.Second in
       raise Trace.(Unify [Variant (No_tags(pos,rest))])
-    else if closed && not row.row_closed then begin
+    else if closed && not row.row_closed then
       match fixed_explanation row with
       | None -> ()
-      | Some fix ->
+      | Some fixed ->
           let pos = if row == row1 then Trace.First else Trace.Second in
-          raise Trace.(Unify [Variant (Fixed_row (pos, fix))])
+          raise Trace.(Unify [Variant(Fixed_row(pos,Cannot_be_closed,fixed))])
     end;
     (* The following test is not principal... should rather use Tnil *)
     let rm = row_more row in
@@ -2890,7 +2896,8 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   let if_not_fixed (pos,fixed) f =
     match fixed with
     | None -> f ()
-    | Some fix -> raise (Unify Trace.[Variant(Fixed_row (pos,fix))]) in
+    | Some fix ->
+        raise (Unify Trace.[Variant(Fixed_row (pos,Cannot_add_tag l,fix))]) in
   let first = Trace.First, fixed1 and second = Trace.Second, fixed2 in
   if f1 == f2 then () else
   match f1, f2 with
