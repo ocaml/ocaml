@@ -100,7 +100,7 @@ caml_hot__code_end:
 #endif
 
 #define FUNCTION(name) \
-        TEXT_SECTION(name); \
+        TEXT_SECTION(caml.##name); \
         .align 2; \
         .globl name; \
         .type name, %function; \

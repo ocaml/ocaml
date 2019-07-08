@@ -478,7 +478,7 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
-(* Output .text section directive, or named .text.<name> if enabled and
+(* Output .text section directive, or named .text.caml.<name> if enabled and
    supported on the target system. *)
 
 let emit_named_text_section func_name =
@@ -492,7 +492,7 @@ let emit_named_text_section func_name =
        systems does not support function sections. *)
       ->  assert false
     | _ -> D.section
-             [ ".text."^(emit_symbol func_name) ]
+             [ ".text.caml."^(emit_symbol func_name) ]
              (Some "ax")
              ["@progbits"]
     end

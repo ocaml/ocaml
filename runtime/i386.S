@@ -48,7 +48,7 @@
 #if defined(SYS_macosx)
 #define TEXT_SECTION(name) .text
 #elif defined(SYS_mingw) || defined(SYS_cygwin)
-#define TEXT_SECTION(name) .section .text.##name
+#define TEXT_SECTION(name) .section .text.caml.##name
 #else
 #define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
 #endif
@@ -57,7 +57,7 @@
 #endif
 
 #define FUNCTION(name) \
-        TEXT_SECTION(name); \
+        TEXT_SECTION(caml.##name); \
         .globl G(name); \
         .align FUNCTION_ALIGN; \
         G(name):

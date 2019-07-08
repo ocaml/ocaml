@@ -42,7 +42,7 @@
 #undef  GREL
 #define GCALL(r) r
 #if defined(FUNCTION_SECTIONS)
-#define TEXT_SECTION(name) .section .text.##name
+#define TEXT_SECTION(name) .section .text.caml.##name
 #else
 #define TEXT_SECTION(name)
 #endif
@@ -70,7 +70,7 @@
 #define EIGHT_ALIGN 8
 #define SIXTEEN_ALIGN 16
 #define FUNCTION(name) \
-        TEXT_SECTION(name); \
+        TEXT_SECTION(caml.##name); \
         .globl name; \
         .type name,@function; \
         .align FUNCTION_ALIGN; \

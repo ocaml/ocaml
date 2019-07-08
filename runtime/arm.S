@@ -106,7 +106,7 @@ alloc_limit     .req    r11
 #endif
 
 #define FUNCTION(name) \
-        TEXT_SECTION(name); \
+        TEXT_SECTION(caml.##name); \
         .align 2; \
         .globl name; \
         .type name, %function; \

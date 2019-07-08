@@ -436,11 +436,11 @@ let emit_load_handler_address handler =
   2
 
 
-(* Output .text section directive, or named .text.<name> if enabled. *)
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
 
 let emit_named_text_section func_name =
   if !Clflags.function_sections then begin
-    `	.section .text.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
+    `	.section .text.caml.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
   end
   else
     `	.text\n`
