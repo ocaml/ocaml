@@ -18,7 +18,7 @@
 
 open Mach
 
-module Int = Identifiable.Make (Numbers.Int)
+module Int = Numbers.Int
 
 type d = {
   i : instruction;   (* optimized instruction *)
@@ -76,7 +76,8 @@ let rec deadcode i =
     let handlers' = Int.Map.map deadcode (Int.Map.of_list handlers) in
     (* Previous passes guarantee that indexes of handlers are unique
        across the entire function and Iexit instructions refer
-       to the correctly scoped handlers. *)
+       to the correctly scoped handlers.
+       We do not rely on it here, for safety. *)
     let rec add_live nfail (live_exits, used_handlers) =
       if Int.Set.mem nfail live_exits then
         (live_exits, used_handlers)
@@ -85,15 +86,38 @@ let rec deadcode i =
         match Int.Map.find_opt nfail handlers' with
         | None -> (live_exits, used_handlers)
         | Some handler ->
-          let used_handlers = (nfail, handler.i) :: used_handlers in
-          Int.Set.fold add_live handler.exits (live_exits, used_handlers)
+          let used_handlers = (nfail, handler) :: used_handlers in
+          match rec_flag with
+          | Cmm.Nonrecursive -> (live_exits, used_handlers)
+          | Cmm.Recursive ->
+            Int.Set.fold add_live handler.exits (live_exits, used_handlers)
     in
     let live_exits, used_handlers =
-      Int.Set.fold add_live body'.exits (s.exits, [])
+      Int.Set.fold add_live body'.exits (Int.Set.empty, [])
     in
-    { i = {i with desc = Icatch(rec_flag, used_handlers, body'.i); next = s.i};
+    (* Remove exits that are going out of scope. *)
+    let used_handler_indexes = Int.Set.of_list (List.map fst used_handlers) in
+    let live_exits = Int.Set.diff live_exits used_handler_indexes in
+    (* For non-recursive catch, live exits referenced in handlers are free. *)
+    let live_exits =
+      match rec_flag with
+      | Cmm.Recursive -> live_exits
+      | Cmm.Nonrecursive ->
+        List.fold_left (fun exits (_,h) -> Int.Set.union h.exits exits)
+          live_exits
+          used_handlers
+    in
+    let i =
+      match used_handlers with
+      | [] -> (* Simplify catch without handlers *)
+        { i with desc = body'.i.desc; next = s.i }
+      | _ ->
+        let handlers = List.map (fun (n,h) -> (n,h.i)) used_handlers in
+        { i with desc = Icatch(rec_flag, handlers, body'.i); next = s.i }
+    in
+    { i;
       regs = i.live;
-      exits = live_exits;
+      exits = Int.Set.union s.exits live_exits;
     }
   | Iexit nfail ->
       { i;  regs = i.live; exits = Int.Set.singleton nfail; }
