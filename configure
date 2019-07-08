@@ -3172,6 +3172,8 @@ fi
 # Check whether --enable-function-sections was given.
 if test "${enable_function_sections+set}" = set; then :
   enableval=$enable_function_sections;
+else
+  enable_function_sections=auto
 fi
 
 
@@ -16536,22 +16538,22 @@ else
     case $target in #(
   *-cygwin*|*-mingw*|*-windows|*-apple-darwin*) :
     function_sections=false;
-           { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections. No target support." >&5
-$as_echo "$as_me: Disabling function sections. No target support." >&6;} ;; #(
+           { $as_echo "$as_me:${as_lineno-$LINENO}: No support for function sections on $target." >&5
+$as_echo "$as_me: No support for function sections on $target." >&6;} ;; #(
   *) :
     case $ocaml_cv_cc_vendor in #(
   gcc-0123-*|gcc-4-01234567) :
     function_sections=false;
-              { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections.
-              Not supported in GCC prior to version 4.8." >&5
-$as_echo "$as_me: Disabling function sections.
-              Not supported in GCC prior to version 4.8." >&6;} ;; #(
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Function sections are not
+              supported in GCC prior to version 4.8." >&5
+$as_echo "$as_me: Function sections are not
+              supported in GCC prior to version 4.8." >&6;} ;; #(
   clang-012-*|clang-3-01234) :
     function_sections=false;
-              { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections.
-              Not supported in Clang prior to version 3.5." >&5
-$as_echo "$as_me: Disabling function sections.
-              Not supported in Clang prior to version 3.5." >&6;} ;; #(
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Function sections are not supported
+              in Clang prior to version 3.5." >&5
+$as_echo "$as_me: Function sections are not supported
+              in Clang prior to version 3.5." >&6;} ;; #(
   gcc-*|clang-*) :
     function_sections=true;
               internal_cflags="$internal_cflags -ffunction-sections";
@@ -16559,10 +16561,10 @@ $as_echo "$as_me: Disabling function sections.
  ;; #(
   *) :
     function_sections=false;
-              { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections.
-              Compiler not supported." >&5
-$as_echo "$as_me: Disabling function sections.
-              Compiler not supported." >&6;} ;; #(
+              { $as_echo "$as_me:${as_lineno-$LINENO}: Function sections are not supported by
+              $ocaml_cv_cc_vendor." >&5
+$as_echo "$as_me: Function sections are not supported by
+              $ocaml_cv_cc_vendor." >&6;} ;; #(
   *) :
      ;;
 esac ;; #(
@@ -16570,10 +16572,16 @@ esac ;; #(
      ;;
 esac ;; #(
   *) :
-    function_sections=false
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections on this target." >&5
-$as_echo "$as_me: Disabling function sections on this target." >&6;} ;;
-esac
+    function_sections=false ;;
+esac;
+  if test x"$function_sections" = "xfalse"; then :
+  if test x"$enable_function_sections" = "xyes"; then :
+  as_fn_error $? "Function sections are not supported." "$LINENO" 5
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling function sections." >&5
+$as_echo "$as_me: Disabling function sections." >&6;}
+fi
+fi
 fi
 
 if test x"$with_afl" = "xyes"; then :

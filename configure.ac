@@ -355,7 +355,9 @@ AC_ARG_ENABLE([flat-float-array],
 
 AC_ARG_ENABLE([function-sections],
   [AS_HELP_STRING([--disable-function-sections],
-    [do not emit each function in a separate section])])
+    [do not emit each function in a separate section])],
+  [],
+  [enable_function_sections=auto])
 
 AC_ARG_WITH([afl],
   [AS_HELP_STRING([--with-afl],
@@ -1625,27 +1627,31 @@ AS_IF([test x"$enable_function_sections" = "xno"],
      [AS_CASE([$target],
         [*-cygwin*|*-mingw*|*-windows|*-apple-darwin*],
           [function_sections=false;
-           AC_MSG_NOTICE([Disabling function sections. No target support.])],
+           AC_MSG_NOTICE([No support for function sections on $target.])],
         [*],
           [AS_CASE([$ocaml_cv_cc_vendor],
             [gcc-[0123]-*|gcc-4-[01234567]],
               [function_sections=false;
-              AC_MSG_NOTICE([Disabling function sections.
-              Not supported in GCC prior to version 4.8.])],
+              AC_MSG_NOTICE([Function sections are not
+              supported in GCC prior to version 4.8.])],
             [clang-[012]-*|clang-3-[01234]],
               [function_sections=false;
-              AC_MSG_NOTICE([Disabling function sections.
-              Not supported in Clang prior to version 3.5.])],
+              AC_MSG_NOTICE([Function sections are not supported
+              in Clang prior to version 3.5.])],
             [gcc-*|clang-*],
               [function_sections=true;
               internal_cflags="$internal_cflags -ffunction-sections";
               AC_DEFINE([FUNCTION_SECTIONS])],
             [*],
               [function_sections=false;
-              AC_MSG_NOTICE([Disabling function sections.
-              Compiler not supported.])])])],
-    [function_sections=false
-      AC_MSG_NOTICE([Disabling function sections on this target.])])])
+              AC_MSG_NOTICE([Function sections are not supported by
+              $ocaml_cv_cc_vendor.])])])],
+    [function_sections=false]);
+  AS_IF([test x"$function_sections" = "xfalse"],
+    [AS_IF([test x"$enable_function_sections" = "xyes"],
+      [AC_MSG_ERROR([Function sections are not supported.])],
+      [AC_MSG_NOTICE([Disabling function sections.])])],
+    [])])
 
 AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
