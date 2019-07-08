@@ -45,10 +45,8 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-#if defined(SYS_macosx)
-#define TEXT_SECTION(name) .text
-#elif defined(SYS_mingw) || defined(SYS_cygwin)
-#define TEXT_SECTION(name) .section .text.caml.##name
+#if defined(SYS_macosx) || defined(SYS_mingw) || defined(SYS_cygwin)
+#define TEXT_SECTION(name)
 #else
 #define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
 #endif

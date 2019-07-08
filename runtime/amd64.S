@@ -41,11 +41,7 @@
 #define G(r) r
 #undef  GREL
 #define GCALL(r) r
-#if defined(FUNCTION_SECTIONS)
-#define TEXT_SECTION(name) .section .text.caml.##name
-#else
 #define TEXT_SECTION(name)
-#endif
 #define FUNCTION_ALIGN 4
 #define EIGHT_ALIGN 8
 #define SIXTEEN_ALIGN 16
