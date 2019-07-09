@@ -107,10 +107,18 @@ let rec deadcode i =
           live_exits
           used_handlers
     in
+    let rec patch_next body next_final =
+      let next =
+        match body.next.desc with
+        | Iend -> next_final
+        | _ -> patch_next body.next next_final
+      in
+      { body with next; }
+    in
     let i =
       match used_handlers with
       | [] -> (* Simplify catch without handlers *)
-        { i with desc = body'.i.desc; next = s.i }
+        patch_next body'.i s.i
       | _ ->
         let handlers = List.map (fun (n,h) -> (n,h.i)) used_handlers in
         { i with desc = Icatch(rec_flag, handlers, body'.i); next = s.i }
