@@ -24,10 +24,6 @@
 
 #include <windows.h>
 
-/* Used to prevent race conditions when disabling SeRestorePrivilege */
-static LONG processing = 0;
-static BOOL restore_privilege = FALSE;
-
 static void convert_time(double unixTime, FILETIME* ft)
 {
   ULARGE_INTEGER u;
@@ -67,18 +63,17 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     dwFlags = FILE_FLAG_BACKUP_SEMANTICS;
 
     /* However, we don't want to access a directory which we can only see
-       through SeRestorePrivilege, so check if it's enabled. There are two
-       possible race conditions:
-         - Another call may restore SeRestorePrivilege between
-           GetTokenInformation and CreateFile
-         - Another call may restore SeRestorePrivilege between
-           AdjustTokenPrivileges and CreateFile
+       through SeRestorePrivilege, so ensure it's disabled when CreateFile is
+       called and restore it if necessary afterwards.
+
+       As always, this isn't easy...
      */
 
+    /* Step 1: get the effective privileges for this thread */
     LookupPrivilegeValue(NULL, SE_RESTORE_NAME, &seRestorePrivilege);
-    /* -4 is the pseudo-handle for GetCurrentProcessToken, which is not
+    /* -6 is the pseudo-handle for GetCurrentThreadEffectiveToken, which is not
        present in the mingw-w64 headers */
-    if (!GetTokenInformation((HANDLE)(LONG_PTR)-4,
+    if (!GetTokenInformation((HANDLE)(LONG_PTR)-6,
                              TokenPrivileges,
                              NULL, 0, &dwReturnLength)
         && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
@@ -87,7 +82,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
       if (!(privs = (TOKEN_PRIVILEGES*)malloc(dwReturnLength)))
         caml_raise_out_of_memory();
 
-      if (GetTokenInformation((HANDLE)(LONG_PTR)-4,
+      if (GetTokenInformation((HANDLE)(LONG_PTR)-6,
                               TokenPrivileges, privs,
                               dwReturnLength, &dwReturnLength)) {
         int i = 0;
@@ -101,90 +96,128 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
           privilege++;
         }
 
-        /* If SeRestorePrivilege is present, then open the process token */
         if (i < privs->PrivilegeCount) {
-          if (OpenProcessToken(GetCurrentProcess(),
-                               TOKEN_ADJUST_PRIVILEGES,
-                               &hToken)) {
-            restore.PrivilegeCount = 1;
-            restore.Privileges->Luid = seRestorePrivilege;
-            restore.Privileges->Attributes = 0;
-            /* The first thread records whether ultimately the privilege must be
-               restored, but all threads will disable it (since we can't know
-               which will reach AdjustTokenPrivilege first) */
-            if (InterlockedIncrement(&processing) == 1)
-              restore_privilege =
-                (privilege->Attributes & SE_PRIVILEGE_ENABLED);
+          HANDLE hProcessToken = INVALID_HANDLE_VALUE;
+          restore.PrivilegeCount = 1;
+          restore.Privileges->Luid = seRestorePrivilege;
+          restore.Privileges->Attributes = 0;
+
+          /* If this thread already has a token, adjust it, otherwise duplicate
+             the process's token, adjust that and impersonate it on this thread
+           */
+          if (OpenThreadToken(GetCurrentThread(),
+                              TOKEN_ADJUST_PRIVILEGES,
+                              TRUE,
+                              &hToken)) {
+            /* This thread has a token, but the privilege isn't enabled so we
+               can assume that it will remain disabled for the duration of this
+               call (or at least we can't prevent another thread mucking around)
+             */
+            if ((privilege->Attributes & SE_PRIVILEGE_ENABLED) == 0) {
+              CloseHandle(hToken);
+              restore.PrivilegeCount = 0;
+            } else {
+              /* Adjust the privileges of this thread */
+              if (!AdjustTokenPrivileges(hToken, FALSE,
+                                         &restore, sizeof(TOKEN_PRIVILEGES),
+                                         NULL, NULL)) {
+                win32_maperr(GetLastError());
+                CloseHandle(hToken);
+                res = TRUE;
+              }
+            }
+          } else if (OpenProcessToken(GetCurrentProcess(),
+                                      TOKEN_ADJUST_PRIVILEGES | TOKEN_DUPLICATE,
+                                      &hProcessToken)
+                  && DuplicateTokenEx(hProcessToken,
+                                      TOKEN_ADJUST_PRIVILEGES
+                                        | TOKEN_IMPERSONATE, NULL,
+                                      SecurityImpersonation, TokenImpersonation,
+                                      &hToken)
+                  && AdjustTokenPrivileges(hToken, FALSE,
+                                           &restore, sizeof(TOKEN_PRIVILEGES),
+                                           NULL, NULL)
+                  && SetThreadToken(NULL, hToken)) {
+            /* Success - the token has been duplicated, adjusted and
+               impersonated, so close the handle. Setting hToken to
+               INVALID_HANDLE_VALUE signals the cleanup code to call
+               RevertToSelf */
+            CloseHandle(hProcessToken);
+            CloseHandle(hToken);
+            hToken = INVALID_HANDLE_VALUE;
           } else {
+            /* An API call, somewhere, failed! */
             win32_maperr(GetLastError());
-            caml_stat_free(wpath);
-            uerror("utimes", path);
+            if (hProcessToken != INVALID_HANDLE_VALUE)
+              CloseHandle(hProcessToken);
+            res = TRUE;
           }
-        } else {
-          CloseHandle(hToken);
-          hToken = INVALID_HANDLE_VALUE;
         }
       } else {
         win32_maperr(GetLastError());
-        caml_stat_free(wpath);
-        uerror("utimes", path);
+        res = TRUE;
       }
       free(privs);
     } else {
       win32_maperr(GetLastError());
+      res = TRUE;
+    }
+    if (res) {
       caml_stat_free(wpath);
+      if (hToken != INVALID_HANDLE_VALUE) CloseHandle(hToken);
       uerror("utimes", path);
     }
+  } else {
+    restore.PrivilegeCount = 0;
   }
 
-  /* Disable SeRestorePrivilege, if necessary */
-  if (hToken != INVALID_HANDLE_VALUE
-      && !AdjustTokenPrivileges(hToken, FALSE,
-                                &restore, sizeof(TOKEN_PRIVILEGES),
-                                NULL, NULL)) {
-    win32_maperr(GetLastError());
-  } else {
-    caml_enter_blocking_section();
-    hFile = CreateFile(wpath,
-                       FILE_WRITE_ATTRIBUTES,
-                       FILE_SHARE_READ | FILE_SHARE_WRITE,
-                       NULL,
-                       OPEN_EXISTING,
-                       dwFlags,
-                       NULL);
-    caml_leave_blocking_section();
-    caml_stat_free(wpath);
-    if (hFile != INVALID_HANDLE_VALUE) {
-      if (at == 0.0 && mt == 0.0) {
-        GetSystemTime(&systemTime);
-        SystemTimeToFileTime(&systemTime, &lastAccessTime);
-        memcpy(&lastModificationTime, &lastAccessTime, sizeof(FILETIME));
-      } else {
-        convert_time(at, &lastAccessTime);
-        convert_time(mt, &lastModificationTime);
-      }
-      caml_enter_blocking_section();
-      res = SetFileTime(hFile, NULL, &lastAccessTime, &lastModificationTime);
-      caml_leave_blocking_section();
-      if (!res)
-        win32_maperr(GetLastError());
-      CloseHandle(hFile);
+  /* Attempt to open the file */
+  caml_enter_blocking_section();
+  hFile = CreateFile(wpath,
+                     FILE_WRITE_ATTRIBUTES,
+                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                     NULL,
+                     OPEN_EXISTING,
+                     dwFlags,
+                     NULL);
+  caml_leave_blocking_section();
+  caml_stat_free(wpath);
+
+  /* The cleanup code after this block must always be called */
+  if (hFile != INVALID_HANDLE_VALUE) {
+    if (at == 0.0 && mt == 0.0) {
+      GetSystemTime(&systemTime);
+      SystemTimeToFileTime(&systemTime, &lastAccessTime);
+      memcpy(&lastModificationTime, &lastAccessTime, sizeof(FILETIME));
     } else {
-      win32_maperr(GetLastError());
+      convert_time(at, &lastAccessTime);
+      convert_time(mt, &lastModificationTime);
     }
+    caml_enter_blocking_section();
+    res = SetFileTime(hFile, NULL, &lastAccessTime, &lastModificationTime);
+    caml_leave_blocking_section();
+    if (!res)
+      win32_maperr(GetLastError());
+    CloseHandle(hFile);
+  } else {
+    win32_maperr(GetLastError());
   }
-  if (hToken != INVALID_HANDLE_VALUE) {
-    /* restore_privilege must be read before processing == 0 */
-    BOOL will_restore = restore_privilege;
-    if (InterlockedDecrement(&processing) == 0 && will_restore) {
-      /* Restore SeRestorePrivilege */
+
+  /* If necessary, re-enable SeRestorePrivilege for the thread, or revert the
+     impersonation */
+  if (restore.PrivilegeCount != 0) {
+    if (hToken != INVALID_HANDLE_VALUE) {
       restore.Privileges->Attributes = SE_PRIVILEGE_ENABLED;
       AdjustTokenPrivileges(hToken, FALSE,
                             &restore, sizeof(TOKEN_PRIVILEGES), NULL, NULL);
+      CloseHandle(hToken);
+    } else {
+      RevertToSelf();
     }
-    CloseHandle(hToken);
   }
+
   if (!res)
     uerror("utimes", path);
+
   CAMLreturn(Val_unit);
 }
