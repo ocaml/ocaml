@@ -627,7 +627,7 @@ CAMLprim value caml_array_fill(value array,
       }
       if (is_val_young_block) add_to_ref_table (&caml_ref_table, fp);
     }
-    caml_check_urgent_gc (Val_unit);
+    if (is_val_young_block) caml_check_urgent_gc (Val_unit);
   }
   return Val_unit;
 }
