@@ -65,9 +65,9 @@ CAMLprim value unix_readlink(value opath)
                         OPEN_EXISTING,
                         flags,
                         NULL)) == INVALID_HANDLE_VALUE) {
+      win32_maperr(GetLastError());
       caml_leave_blocking_section();
       caml_stat_free(path);
-      errno = ENOENT;
       unix_restore_privilege(&restore, hToken);
       uerror("readlink", opath);
     } else {

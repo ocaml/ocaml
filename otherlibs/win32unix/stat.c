@@ -176,7 +176,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
    }
   }
   if (h == INVALID_HANDLE_VALUE) {
-    errno = ENOENT;
+    win32_maperr(GetLastError());
     unix_restore_privilege(&restore, hToken);
     return 0;
   }
@@ -229,7 +229,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
                             OPEN_EXISTING,
                             flags,
                             NULL)) == INVALID_HANDLE_VALUE) {
-          errno = ENOENT;
+          win32_maperr(GetLastError());
           caml_leave_blocking_section();
           unix_restore_privilege(&restore, hToken);
           return 0;
