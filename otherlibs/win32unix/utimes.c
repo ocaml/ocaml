@@ -55,120 +55,13 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   wpath = caml_stat_strdup_to_utf16(String_val(path));
 
   /* Directories require special handling for CreateFile */
-  if (((GetFileAttributes(wpath) & FILE_ATTRIBUTE_DIRECTORY) != 0)) {
-    LUID seRestorePrivilege;
-    DWORD dwReturnLength;
-
-    /* FILE_FLAG_BACKUP_SEMANTICS is required to get a handle to a directory */
-    dwFlags = FILE_FLAG_BACKUP_SEMANTICS;
-
-    /* However, we don't want to access a directory which we can only see
-       through SeRestorePrivilege, so ensure it's disabled when CreateFile is
-       called and restore it if necessary afterwards.
-
-       As always, this isn't easy...
-     */
-
-    /* Step 1: get the effective privileges for this thread */
-    LookupPrivilegeValue(NULL, SE_RESTORE_NAME, &seRestorePrivilege);
-    /* -6 is the pseudo-handle for GetCurrentThreadEffectiveToken, which is not
-       present in the mingw-w64 headers */
-    if (!GetTokenInformation((HANDLE)(LONG_PTR)-6,
-                             TokenPrivileges,
-                             NULL, 0, &dwReturnLength)
-        && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-      TOKEN_PRIVILEGES* privs;
-
-      if (!(privs = (TOKEN_PRIVILEGES*)malloc(dwReturnLength)))
-        caml_raise_out_of_memory();
-
-      if (GetTokenInformation((HANDLE)(LONG_PTR)-6,
-                              TokenPrivileges, privs,
-                              dwReturnLength, &dwReturnLength)) {
-        int i = 0;
-        LUID_AND_ATTRIBUTES* privilege = privs->Privileges;
-
-        /* Search for SeRestorePrivilege */
-        while (i < privs->PrivilegeCount
-               && (privilege->Luid.HighPart != seRestorePrivilege.HighPart
-                   || privilege->Luid.LowPart != seRestorePrivilege.LowPart)) {
-          i++;
-          privilege++;
-        }
-
-        if (i < privs->PrivilegeCount) {
-          HANDLE hProcessToken = INVALID_HANDLE_VALUE;
-          restore.PrivilegeCount = 1;
-          restore.Privileges->Luid = seRestorePrivilege;
-          restore.Privileges->Attributes = 0;
-
-          /* If this thread already has a token, adjust it, otherwise duplicate
-             the process's token, adjust that and impersonate it on this thread
-           */
-          if (OpenThreadToken(GetCurrentThread(),
-                              TOKEN_ADJUST_PRIVILEGES,
-                              TRUE,
-                              &hToken)) {
-            /* This thread has a token, but the privilege isn't enabled so we
-               can assume that it will remain disabled for the duration of this
-               call (or at least we can't prevent another thread mucking around)
-             */
-            if ((privilege->Attributes & SE_PRIVILEGE_ENABLED) == 0) {
-              CloseHandle(hToken);
-              restore.PrivilegeCount = 0;
-            } else {
-              /* Adjust the privileges of this thread */
-              if (!AdjustTokenPrivileges(hToken, FALSE,
-                                         &restore, sizeof(TOKEN_PRIVILEGES),
-                                         NULL, NULL)) {
-                win32_maperr(GetLastError());
-                CloseHandle(hToken);
-                res = TRUE;
-              }
-            }
-          } else if (OpenProcessToken(GetCurrentProcess(),
-                                      TOKEN_ADJUST_PRIVILEGES | TOKEN_DUPLICATE,
-                                      &hProcessToken)
-                  && DuplicateTokenEx(hProcessToken,
-                                      TOKEN_ADJUST_PRIVILEGES
-                                        | TOKEN_IMPERSONATE, NULL,
-                                      SecurityImpersonation, TokenImpersonation,
-                                      &hToken)
-                  && AdjustTokenPrivileges(hToken, FALSE,
-                                           &restore, sizeof(TOKEN_PRIVILEGES),
-                                           NULL, NULL)
-                  && SetThreadToken(NULL, hToken)) {
-            /* Success - the token has been duplicated, adjusted and
-               impersonated, so close the handle. Setting hToken to
-               INVALID_HANDLE_VALUE signals the cleanup code to call
-               RevertToSelf */
-            CloseHandle(hProcessToken);
-            CloseHandle(hToken);
-            hToken = INVALID_HANDLE_VALUE;
-          } else {
-            /* An API call, somewhere, failed! */
-            win32_maperr(GetLastError());
-            if (hProcessToken != INVALID_HANDLE_VALUE)
-              CloseHandle(hProcessToken);
-            res = TRUE;
-          }
-        }
-      } else {
-        win32_maperr(GetLastError());
-        res = TRUE;
-      }
-      free(privs);
-    } else {
-      win32_maperr(GetLastError());
-      res = TRUE;
-    }
-    if (res) {
-      caml_stat_free(wpath);
-      if (hToken != INVALID_HANDLE_VALUE) CloseHandle(hToken);
-      uerror("utimes", path);
-    }
-  } else {
-    restore.PrivilegeCount = 0;
+  if (!unix_drop_privilege(GetFileAttributes(wpath),
+                           SE_RESTORE_NAME,
+                           &hToken,
+                           &restore,
+                           &dwFlags)) {
+    caml_stat_free(wpath);
+    uerror("utimes", path);
   }
 
   /* Attempt to open the file */
@@ -205,16 +98,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 
   /* If necessary, re-enable SeRestorePrivilege for the thread, or revert the
      impersonation */
-  if (restore.PrivilegeCount != 0) {
-    if (hToken != INVALID_HANDLE_VALUE) {
-      restore.Privileges->Attributes = SE_PRIVILEGE_ENABLED;
-      AdjustTokenPrivileges(hToken, FALSE,
-                            &restore, sizeof(TOKEN_PRIVILEGES), NULL, NULL);
-      CloseHandle(hToken);
-    } else {
-      RevertToSelf();
-    }
-  }
+  unix_restore_privilege(&restore, hToken);
 
   if (!res)
     uerror("utimes", path);

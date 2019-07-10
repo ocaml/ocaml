@@ -130,4 +130,11 @@ typedef struct _REPARSE_DATA_BUFFER
 
 #define EXECV_CAST (const char_os * const *)
 
+BOOL unix_drop_privilege(DWORD dwAttributes,
+                         LPCWSTR lpName,
+                         PHANDLE hToken_out,
+                         PTOKEN_PRIVILEGES restore,
+                         PDWORD dwFlags);
+void unix_restore_privilege(PTOKEN_PRIVILEGES restore, HANDLE hToken);
+
 #endif /* CAML_UNIXSUPPORT_H */

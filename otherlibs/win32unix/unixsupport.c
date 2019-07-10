@@ -328,3 +328,140 @@ int unix_cloexec_p(value cloexec)
   else
     return unix_cloexec_default;
 }
+
+BOOL unix_drop_privilege(DWORD dwAttributes,
+                         LPCWSTR lpName,
+                         PHANDLE hToken_out,
+                         PTOKEN_PRIVILEGES restore,
+                         PDWORD dwFlags)
+{
+  BOOL result = TRUE;
+  if (((dwAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)) {
+    LUID privilege_luid;
+    DWORD dwReturnLength;
+    HANDLE hToken;
+
+    /* FILE_FLAG_BACKUP_SEMANTICS is required to get a handle to a directory */
+    *dwFlags |= FILE_FLAG_BACKUP_SEMANTICS;
+
+    /* However, we don't want to access a directory which we can only see
+       through SeRestorePrivilege, so ensure it's disabled when CreateFile is
+       called and restore it if necessary afterwards.
+
+       As always, this isn't easy...
+     */
+
+    /* Step 1: get the effective privileges for this thread */
+    LookupPrivilegeValue(NULL, lpName, &privilege_luid);
+    /* -6 is the pseudo-handle for GetCurrentThreadEffectiveToken, which is not
+       present in the mingw-w64 headers */
+    if (!GetTokenInformation((HANDLE)(LONG_PTR)-6,
+                             TokenPrivileges,
+                             NULL, 0, &dwReturnLength)
+        && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+      TOKEN_PRIVILEGES* privs;
+
+      if (!(privs = (TOKEN_PRIVILEGES*)malloc(dwReturnLength)))
+        caml_raise_out_of_memory();
+
+      if (GetTokenInformation((HANDLE)(LONG_PTR)-6,
+                              TokenPrivileges, privs,
+                              dwReturnLength, &dwReturnLength)) {
+        int i = 0;
+        LUID_AND_ATTRIBUTES* privilege = privs->Privileges;
+
+        /* Search for SeRestorePrivilege */
+        while (i < privs->PrivilegeCount
+               && (privilege->Luid.HighPart != privilege_luid.HighPart
+                   || privilege->Luid.LowPart != privilege_luid.LowPart)) {
+          i++;
+          privilege++;
+        }
+
+        if (i < privs->PrivilegeCount) {
+          HANDLE hProcessToken = INVALID_HANDLE_VALUE;
+          restore->PrivilegeCount = 1;
+          restore->Privileges->Luid = privilege_luid;
+          restore->Privileges->Attributes = 0;
+
+          /* If this thread already has a token, adjust it, otherwise duplicate
+             the process's token, adjust that and impersonate it on this thread
+           */
+          if (OpenThreadToken(GetCurrentThread(),
+                              TOKEN_ADJUST_PRIVILEGES,
+                              TRUE,
+                              &hToken)) {
+            /* This thread has a token, but the privilege isn't enabled so we
+               can assume that it will remain disabled for the duration of this
+               call (or at least we can't prevent another thread mucking around)
+             */
+            if ((privilege->Attributes & SE_PRIVILEGE_ENABLED) == 0) {
+              CloseHandle(hToken);
+              restore->PrivilegeCount = 0;
+            } else {
+              /* Adjust the privileges of this thread */
+              if (AdjustTokenPrivileges(hToken, FALSE,
+                                         restore, sizeof(TOKEN_PRIVILEGES),
+                                         NULL, NULL)) {
+                *hToken_out = hToken;
+                restore->Privileges->Attributes = SE_PRIVILEGE_ENABLED;
+              } else {
+                win32_maperr(GetLastError());
+                CloseHandle(hToken);
+                result = FALSE;
+              }
+            }
+          } else if (OpenProcessToken(GetCurrentProcess(),
+                                      TOKEN_ADJUST_PRIVILEGES | TOKEN_DUPLICATE,
+                                      &hProcessToken)
+                  && DuplicateTokenEx(hProcessToken,
+                                      TOKEN_ADJUST_PRIVILEGES
+                                        | TOKEN_IMPERSONATE, NULL,
+                                      SecurityImpersonation, TokenImpersonation,
+                                      &hToken)
+                  && AdjustTokenPrivileges(hToken, FALSE,
+                                           restore, sizeof(TOKEN_PRIVILEGES),
+                                           NULL, NULL)
+                  && SetThreadToken(NULL, hToken)) {
+            /* Success - the token has been duplicated, adjusted and
+               impersonated, so close the handle. */
+            CloseHandle(hProcessToken);
+            CloseHandle(hToken);
+          } else {
+            /* An API call, somewhere, failed! */
+            win32_maperr(GetLastError());
+            if (hProcessToken != INVALID_HANDLE_VALUE)
+              CloseHandle(hProcessToken);
+            result = FALSE;
+          }
+        }
+      } else {
+        win32_maperr(GetLastError());
+        result = FALSE;
+      }
+      free(privs);
+    } else {
+      win32_maperr(GetLastError());
+      result = FALSE;
+    }
+    if (!result && hToken != INVALID_HANDLE_VALUE)
+      CloseHandle(hToken);
+  } else {
+    restore->PrivilegeCount = 0;
+  }
+
+  return result;
+}
+
+void unix_restore_privilege(PTOKEN_PRIVILEGES restore, HANDLE hToken)
+{
+  if (restore->PrivilegeCount != 0) {
+    if (hToken != INVALID_HANDLE_VALUE) {
+      AdjustTokenPrivileges(hToken, FALSE,
+                            restore, sizeof(TOKEN_PRIVILEGES), NULL, NULL);
+      CloseHandle(hToken);
+    } else {
+      RevertToSelf();
+    }
+  }
+}
