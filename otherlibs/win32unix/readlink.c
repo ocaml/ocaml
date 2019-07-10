@@ -28,7 +28,9 @@ CAMLprim value unix_readlink(value opath)
 {
   CAMLparam1(opath);
   CAMLlocal1(result);
-  HANDLE h;
+  HANDLE h, hToken = INVALID_HANDLE_VALUE;
+  TOKEN_PRIVILEGES restore;
+  DWORD flags = FILE_FLAG_OPEN_REPARSE_POINT;
   wchar_t* path;
   DWORD attributes;
   caml_unix_check_path(opath, "readlink");
@@ -42,27 +44,33 @@ CAMLprim value unix_readlink(value opath)
     caml_stat_free(path);
     win32_maperr(GetLastError());
     uerror("readlink", opath);
-  }
-  else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+  } else if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
     caml_stat_free(path);
     errno = EINVAL;
     uerror("readlink", opath);
-  }
-  else {
+  } else {
+    if (!unix_drop_privilege(attributes,
+                             SE_BACKUP_NAME,
+                             &hToken,
+                             &restore,
+                             &flags)) {
+      caml_stat_free(path);
+      uerror("readlink", opath);
+    }
     caml_enter_blocking_section();
     if ((h = CreateFile(path,
                         FILE_READ_ATTRIBUTES,
                         FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
                         NULL,
                         OPEN_EXISTING,
-                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                        flags,
                         NULL)) == INVALID_HANDLE_VALUE) {
       caml_leave_blocking_section();
       caml_stat_free(path);
       errno = ENOENT;
+      unix_restore_privilege(&restore, hToken);
       uerror("readlink", opath);
-    }
-    else {
+    } else {
       char buffer[16384];
       DWORD read;
       REPARSE_DATA_BUFFER* point;
@@ -86,17 +94,17 @@ CAMLprim value unix_readlink(value opath)
             String_val(result),
             len);
           CloseHandle(h);
-        }
-        else {
+        } else {
           errno = EINVAL;
           CloseHandle(h);
+          unix_restore_privilege(&restore, hToken);
           uerror("readline", opath);
         }
-      }
-      else {
+      } else {
         caml_leave_blocking_section();
         win32_maperr(GetLastError());
         CloseHandle(h);
+        unix_restore_privilege(&restore, hToken);
         uerror("readlink", opath);
       }
     }

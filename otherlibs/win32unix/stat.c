@@ -146,26 +146,38 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   int i;
   wchar_t* ptr;
   char c;
-  HANDLE h;
+  HANDLE h, hToken = INVALID_HANDLE_VALUE;
+  TOKEN_PRIVILEGES restore;
+  DWORD flags = 0;
   unsigned short mode;
   int is_symlink = 0;
 
   if (!path) {
     h = fstat;
+    restore.PrivilegeCount = 0;
   }
   else {
-    caml_enter_blocking_section();
-    h = CreateFile(path,
-                   FILE_READ_ATTRIBUTES,
-                   FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                   NULL,
-                   OPEN_EXISTING,
-                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-                   NULL);
-    caml_leave_blocking_section();
+    if (!unix_drop_privilege(GetFileAttributes(path),
+                             SE_BACKUP_NAME,
+                             &hToken,
+                             &restore,
+                             &flags)) {
+      return 0;
+    } else {
+      caml_enter_blocking_section();
+      h = CreateFile(path,
+                     FILE_READ_ATTRIBUTES,
+                     FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                     NULL,
+                     OPEN_EXISTING,
+                     flags | FILE_FLAG_OPEN_REPARSE_POINT,
+                     NULL);
+      caml_leave_blocking_section();
+   }
   }
   if (h == INVALID_HANDLE_VALUE) {
     errno = ENOENT;
+    unix_restore_privilege(&restore, hToken);
     return 0;
   }
   else {
@@ -174,6 +186,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
       win32_maperr(GetLastError());
       caml_leave_blocking_section();
       if (path) CloseHandle(h);
+      unix_restore_privilege(&restore, hToken);
       return 0;
     }
     caml_leave_blocking_section();
@@ -214,10 +227,11 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
                             FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
                             NULL,
                             OPEN_EXISTING,
-                            FILE_FLAG_BACKUP_SEMANTICS,
+                            flags,
                             NULL)) == INVALID_HANDLE_VALUE) {
           errno = ENOENT;
           caml_leave_blocking_section();
+          unix_restore_privilege(&restore, hToken);
           return 0;
         }
         else {
@@ -225,6 +239,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
             win32_maperr(GetLastError());
             caml_leave_blocking_section();
             CloseHandle(h);
+            unix_restore_privilege(&restore, hToken);
             return 0;
           }
           caml_leave_blocking_section();
@@ -252,6 +267,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
 
     if (!use_64 && res->st_size > Max_long) {
       win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+      unix_restore_privilege(&restore, hToken);
       return 0;
     }
 
@@ -259,6 +275,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
         !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
         !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
       win32_maperr(GetLastError());
+      unix_restore_privilege(&restore, hToken);
       return 0;
     }
 
@@ -293,6 +310,8 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   res->st_mode = mode;
   res->st_uid = res->st_gid = res->st_ino = 0;
   res->st_rdev = res->st_dev;
+
+  unix_restore_privilege(&restore, hToken);
 
   return 1;
 }
