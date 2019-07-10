@@ -327,7 +327,20 @@ end = struct
   type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
 end
 [%%expect {|
-module M : sig type ('a, 'b) bar += A : 'c -> ('c, 'd) bar end
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type ('a, 'b) bar += A : 'd -> ('c, 'd) bar end
+       is not included in
+         sig type ('a, 'b) bar += A : 'c -> ('c, 'd) bar end
+       Extension declarations do not match:
+         type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
+       is not included in
+         type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
+       The types for field A are not equal.
 |}]
 
 (* Extensions can be rebound *)
