@@ -83,8 +83,7 @@ let create ?(random = !randomized) initial_size =
 let clear h =
   if h.size > 0 then begin
     h.size <- 0;
-    let len = Array.length h.data in
-    Array.fill h.data 0 len Empty
+    Array.fill h.data 0 (Array.length h.data) Empty
   end
 
 let reset h =
