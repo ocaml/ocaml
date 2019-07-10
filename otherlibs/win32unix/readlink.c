@@ -98,7 +98,7 @@ CAMLprim value unix_readlink(value opath)
           errno = EINVAL;
           CloseHandle(h);
           unix_restore_privilege(&restore, hToken);
-          uerror("readline", opath);
+          uerror("readlink", opath);
         }
       } else {
         caml_leave_blocking_section();
