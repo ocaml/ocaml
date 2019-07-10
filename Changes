@@ -75,6 +75,10 @@ Working version
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
   (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
 
+- #8796, #8797: Ensure Unix.utimes works on directories on Windows and correct
+  the use of FILE_FLAG_BACKUP_SEMANTICS in Unix.stat and Unix.readlink.
+  (David Allsopp, report by Daniil Baturin, review by ??)
+
 ### Build system:
 
 - #8650: ensure that "make" variables are defined before use;
