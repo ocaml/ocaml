@@ -63,7 +63,7 @@ and as a
 \input{runtime.tex}
 \input{native.tex}
 \input{lexyacc.tex}
-\input{depend.tex}
+\input{ocamldep.tex}
 \input{browser.tex}
 \input{ocamldoc.tex}
 \input{debugger.tex}
@@ -72,7 +72,7 @@ and as a
 % \input emacs.tex
 \input{intf-c.tex}
 \input{flambda.tex}
-\input{spacetime.tex}
+\input{spacetime-chapter.tex}
 \input{afl-fuzz.tex}
 
 \part{The OCaml library}

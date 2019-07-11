@@ -164,13 +164,14 @@ CheckNoChangesMessage () {
 CheckManual () {
       cat<<EOF
 --------------------------------------------------------------------------
-This test checks that all standard library modules are referenced by the
-standard library chapter of the manual.
+This test checks the global structure of the reference manual
+(e.g. missing chapters).
 --------------------------------------------------------------------------
 EOF
   # we need some of the configuration data provided by configure
   ./configure
-  $MAKE check-stdlib -C manual/tests
+  $MAKE check-stdlib check-case-collision -C manual/tests
+
 }
 
 CheckTestsuiteModified () {
