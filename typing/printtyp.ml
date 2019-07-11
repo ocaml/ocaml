@@ -472,14 +472,14 @@ and raw_type_desc ppf = function
         raw_type_list tl
   | Tvariant row ->
       fprintf ppf
-        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%B;@ %s%B;@ @[<1>%s%t@]}@]"
+        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%B;@ %s%a;@ @[<1>%s%t@]}@]"
         "row_fields="
         (raw_list (fun ppf (l, f) ->
           fprintf ppf "@[%s,@ %a@]" l raw_field f))
         row.row_fields
         "row_more=" raw_type row.row_more
         "row_closed=" row.row_closed
-        "row_fixed=" (Btype.is_fixed row)
+        "row_fixed=" raw_row_fixed row.row_fixed
         "row_name="
         (fun ppf ->
           match row.row_name with None -> fprintf ppf "None"
@@ -488,6 +488,12 @@ and raw_type_desc ppf = function
   | Tpackage (p, _, tl) ->
       fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
         raw_type_list tl
+and raw_row_fixed ppf = function
+| None -> fprintf ppf "None"
+| Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
+| Some Types.Rigid -> fprintf ppf "Some Rigid"
+| Some Types.Univar t -> fprintf ppf "Some(Univar(%a))" raw_type t
+| Some Types.Reified p -> fprintf ppf "Some(Reified(%a))" path p
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -1798,7 +1804,8 @@ let may_prepare_expansion compact (t, t') =
 let print_tag ppf = fprintf ppf "`%s"
 
 let print_tags =
-  Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ") print_tag
+  let comma ppf () = Format.fprintf ppf ",@ " in
+  Format.pp_print_list ~pp_sep:comma print_tag
 
 let is_unit env ty =
   match (Ctype.expand_head env ty).desc with
