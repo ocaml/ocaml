@@ -26,6 +26,16 @@ type d = {
   exits : Int.Set.t;  (* indexes of Iexit instructions "live before" [i] *)
 }
 
+let append a b =
+  let rec append a b =
+    match a.desc with
+    | Iend -> b
+    | _ -> { a with next = append a.next b }
+  in
+  match b.desc with
+  | Iend -> a
+  | _ -> append a b
+
 let rec deadcode i =
   let arg =
     if Config.spacetime
@@ -107,26 +117,20 @@ let rec deadcode i =
           live_exits
           used_handlers
     in
-    let rec patch_next body next_final =
-      let next =
-        match body.next.desc with
-        | Iend -> next_final
-        | _ -> patch_next body.next next_final
-      in
-      { body with next; }
-    in
-    let i =
-      match used_handlers with
-      | [] -> (* Simplify catch without handlers *)
-        patch_next body'.i s.i
-      | _ ->
-        let handlers = List.map (fun (n,h) -> (n,h.i)) used_handlers in
-        { i with desc = Icatch(rec_flag, handlers, body'.i); next = s.i }
-    in
-    { i;
-      regs = i.live;
-      exits = Int.Set.union s.exits live_exits;
-    }
+    let exits = Int.Set.union s.exits live_exits in
+    begin match used_handlers with
+    | [] -> (* Simplify catch without handlers *)
+      { i = append body'.i s.i;
+        regs = body'.regs;
+        exits;
+      }
+    | _ ->
+      let handlers = List.map (fun (n,h) -> (n,h.i)) used_handlers in
+      { i = { i with desc = Icatch(rec_flag, handlers, body'.i); next = s.i };
+        regs = i.live;
+        exits;
+      }
+    end
   | Iexit nfail ->
       { i;  regs = i.live; exits = Int.Set.singleton nfail; }
   | Itrywith(body, handler) ->
