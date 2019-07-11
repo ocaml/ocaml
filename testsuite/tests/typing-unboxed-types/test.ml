@@ -307,7 +307,7 @@ Error: Signature mismatch:
        is not included in
          type u = { f1 : t; f2 : t; }
        Their internal representations differ:
-       the first declaration uses unboxed float representation.
+       The first declaration uses unboxed float representation.
 |}];;
 
 (* implementing [@@immediate] with [@@ocaml.unboxed]: this works because the

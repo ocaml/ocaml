@@ -193,5 +193,5 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of { x : int; }
-       The types for field E are not equal.
+       The types for constructor E are not equal.
 |}];;
