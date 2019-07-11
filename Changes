@@ -168,6 +168,9 @@ OCaml 4.09.0
 - #8656: Fix a bug in [caml_modify_generational_global_root]
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
 
+- #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
+  (Jeremy Yallop, report by Marcello Seri)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
