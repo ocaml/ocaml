@@ -208,7 +208,11 @@ Line 2, characters 0-37:
 2 | type mut = d = {x:int; mutable y:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The mutability of field y is different.
+       Fields do not match:
+         y : int;
+       is not compatible with:
+         mutable y : int;
+       This is mutable and the original is not.
 |}]
 
 type missing = d = { x:int }
@@ -226,7 +230,11 @@ Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The types for field x are not equal.
+       Fields do not match:
+         x : int;
+       is not compatible with:
+         x : float;
+       The types are not equal.
 |}]
 
 type unboxed = d = {x:float} [@@unboxed]
@@ -245,5 +253,5 @@ Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields number 1 have different names, x and y.
+       1st fields have different names, x and y.
 |}]

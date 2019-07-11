@@ -19,7 +19,11 @@ Error: Signature mismatch:
          type t += F of int
        is not included in
          type t += F
-       The arities for field F differ.
+       Constructors do not match:
+         F of int
+       is not compatible with:
+         F
+       They have different arities.
 |}];;
 
 module M1 : sig type t += A end = struct type t += private A end;;

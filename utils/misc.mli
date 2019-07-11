@@ -456,7 +456,6 @@ val print_if :
   Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
 (** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
 
-
 type filepath = string
 type modname = string
 type crcs = (modname * Digest.t option) list
@@ -483,3 +482,5 @@ module EnvLazy: sig
   val backtrack : log -> unit
 
 end
+
+val suffix : int -> string
