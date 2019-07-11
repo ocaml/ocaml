@@ -40,7 +40,7 @@ module Unification_trace: sig
 
   type fixed_row_case =
     | Cannot_be_closed
-    | Cannot_add_tag of string
+    | Cannot_add_tags of string list
 
   type variant =
     | No_intersection

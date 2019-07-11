@@ -75,7 +75,7 @@ module Unification_trace = struct
 
   type fixed_row_case =
     | Cannot_be_closed
-    | Cannot_add_tag of string
+    | Cannot_add_tags of string list
 
   type variant =
     | No_intersection
@@ -2843,21 +2843,24 @@ and unify_row env row1 row2 =
     else None
   in
   let row0 = {row_fields = []; row_more = more; row_bound = ();
-              row_closed = closed; row_fixed=fixed; row_name = name} in
+              row_closed = closed; row_fixed = fixed; row_name = name} in
   let set_more row rest =
     let rest =
       if closed then
         filter_row_fields row.row_closed rest
       else rest in
-    begin if rest <> [] && row.row_closed then
-      let pos = if row == row1 then Trace.First else Trace.Second in
-      raise Trace.(Unify [Variant (No_tags(pos,rest))])
-    else if closed && not row.row_closed then
-      match fixed_explanation row with
-      | None -> ()
+    begin match fixed_explanation row with
+      | None ->
+          if rest <> [] && row.row_closed then
+            let pos = if row == row1 then Trace.First else Trace.Second in
+            raise Trace.(Unify [Variant (No_tags(pos,rest))])
       | Some fixed ->
           let pos = if row == row1 then Trace.First else Trace.Second in
-          raise Trace.(Unify [Variant(Fixed_row(pos,Cannot_be_closed,fixed))])
+          if closed && not row.row_closed then
+            raise Trace.(Unify [Variant(Fixed_row(pos,Cannot_be_closed,fixed))])
+          else if rest <> [] then
+            let case = Trace.Cannot_add_tags (List.map fst rest) in
+            raise Trace.(Unify [Variant(Fixed_row(pos,case,fixed))])
     end;
     (* The following test is not principal... should rather use Tnil *)
     let rm = row_more row in
@@ -2898,7 +2901,8 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
     match fixed with
     | None -> f ()
     | Some fix ->
-        raise (Unify Trace.[Variant(Fixed_row (pos,Cannot_add_tag l,fix))]) in
+        let tr = Trace.[ Variant (Fixed_row (pos,Cannot_add_tags [l],fix)) ] in
+        raise (Unify tr) in
   let first = Trace.First, fixed1 and second = Trace.Second, fixed2 in
   if f1 == f2 then () else
   match f1, f2 with

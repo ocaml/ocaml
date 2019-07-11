@@ -119,3 +119,15 @@ Error: This expression has type [ `A | `B ]
        The second variant type is bound to the universal type variable 'a,
        it cannot be closed
 |}]
+
+
+let f: 'a. [> `A | `B | `C ] -> ([> `A ] as 'a) = fun x -> x
+[%%expect {|
+Line 1, characters 59-60:
+1 | let f: 'a. [> `A | `B | `C ] -> ([> `A ] as 'a) = fun x -> x
+                                                               ^
+Error: This expression has type [> `A | `B | `C ]
+       but an expression was expected of type [> `A ]
+       The second variant type is bound to the universal type variable 'a,
+       it may not allow the tag(s) `B, `C
+|}]
