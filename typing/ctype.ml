@@ -2974,12 +2974,12 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
         )
   | Rpresent(Some t1), Reither(false, tl, _, e2) ->
       if_not_fixed second (fun () ->
-        set_row_field e2 f1;
-        let rm = repr more in
-        update_level !env rm.level t1;
-        update_scope rm.scope t1;
-        (try List.iter (unify env t1) tl
-         with exn -> e2 := None; raise exn)
+          set_row_field e2 f1;
+          let rm = repr more in
+          update_level !env rm.level t1;
+          update_scope rm.scope t1;
+          (try List.iter (unify env t1) tl
+           with exn -> e2 := None; raise exn)
         )
   | Reither(true, [], _, e1), Rpresent None ->
       if_not_fixed first (fun () -> set_row_field e1 f2)
