@@ -40,7 +40,11 @@ Error: Signature mismatch:
            f0 : unit * unit * unit * int * unit * unit * unit;
            f1 : unit * unit * unit * int * unit * unit * unit;
          }
-       The types for field f0 are not equal.
+       Fields do not match:
+         f0 : unit * unit * unit * float * unit * unit * unit;
+       is not compatible with:
+         f0 : unit * unit * unit * int * unit * unit * unit;
+       The types are not equal.
 |}];;
 
 
@@ -82,7 +86,11 @@ Error: Signature mismatch:
            mutable f0 : unit * unit * unit * int * unit * unit * unit;
            f1 : unit * unit * unit * int * unit * unit * unit;
          }
-       The mutability of field f0 is different.
+       Fields do not match:
+         f0 : unit * unit * unit * float * unit * unit * unit;
+       is not compatible with:
+         mutable f0 : unit * unit * unit * int * unit * unit * unit;
+       The second is mutable and the first is not.
 |}];;
 
 module M3 : sig
@@ -104,7 +112,7 @@ Error: Signature mismatch:
          type t = { f1 : unit; }
        is not included in
          type t = { f0 : unit; }
-       Fields number 1 have different names, f1 and f0.
+       1st fields have different names, f1 and f0.
 |}];;
 
 module M4 : sig

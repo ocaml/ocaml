@@ -94,12 +94,19 @@ val type_scheme_max: ?b_reset_names: bool ->
 (* End Maxence *)
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
+val tree_of_label : label_declaration -> string * bool * out_type
+val label : formatter -> label_declaration -> unit
+val tree_of_constructor :
+  constructor_declaration -> string * out_type list * out_type option
+val constructor : formatter -> constructor_declaration -> unit
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
 val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
 val extension_constructor:
+    Ident.t -> formatter -> extension_constructor -> unit
+val extension_only_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
 val tree_of_module:
     Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item

@@ -24,7 +24,11 @@ Error: Signature mismatch:
          type t = Foo of float * int
        is not included in
          type t = Foo of int * int
-       The types for field Foo are not equal.
+       Constructors do not match:
+         Foo of float * int
+       is not compatible with:
+         Foo of int * int
+       The types are not equal.
 |}];;
 
 module M2 : sig
@@ -49,7 +53,11 @@ Error: Signature mismatch:
          type t = Foo of float
        is not included in
          type t = Foo of int * int
-       The arities for field Foo differ.
+       Constructors do not match:
+         Foo of float
+       is not compatible with:
+         Foo of int * int
+       They have different arities.
 |}];;
 
 module M3 : sig
@@ -74,7 +82,15 @@ Error: Signature mismatch:
          type t = Foo of { x : float; y : int; }
        is not included in
          type t = Foo of { x : int; y : int; }
-       The types for field x are not equal.
+       Constructors do not match:
+         Foo of { x : float; y : int; }
+       is not compatible with:
+         Foo of { x : int; y : int; }
+       Fields do not match:
+         x : float;
+       is not compatible with:
+         x : int;
+       The types are not equal.
 |}];;
 
 module M4 : sig
@@ -99,7 +115,11 @@ Error: Signature mismatch:
          type t = Foo of float
        is not included in
          type t = Foo of { x : int; y : int; }
-       The types for field Foo are not equal.
+       Constructors do not match:
+         Foo of float
+       is not compatible with:
+         Foo of { x : int; y : int; }
+       The second uses inline records and the first doesn't.
 |}];;
 
 module M5 : sig
@@ -124,5 +144,9 @@ Error: Signature mismatch:
          type 'a t = Foo of 'a
        is not included in
          type 'a t = Foo : int -> int t
-       The types for field Foo are not equal.
+       Constructors do not match:
+         Foo of 'a
+       is not compatible with:
+         Foo : int -> int t
+       The second has explicit return type and the first doesn't.
 |}];;
