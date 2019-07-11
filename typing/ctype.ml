@@ -2904,13 +2904,16 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
         let tr = Trace.[ Variant (Fixed_row (pos,Cannot_add_tags [l],fix)) ] in
         raise (Unify tr) in
   let first = Trace.First, fixed1 and second = Trace.Second, fixed2 in
+  let either_fixed = match fixed1, fixed2 with
+    | None, None -> false
+    | _ -> true in
   if f1 == f2 then () else
   match f1, f2 with
     Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
   | Rpresent None, Rpresent None -> ()
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
-      if (fixed1 <> None || fixed2 <> None) && not (c1 || c2)
+      if either_fixed && not (c1 || c2)
       && List.length tl1 = List.length tl2 then begin
         (* PR#7496 *)
         let f = Reither (c1 || c2, [], m1 || m2, ref None) in
@@ -2919,7 +2922,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       end
       else let redo =
         not !passive_variants &&
-        (m1 || m2 || fixed1 <> None || fixed2 <> None ||
+        (m1 || m2 || either_fixed ||
          !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
