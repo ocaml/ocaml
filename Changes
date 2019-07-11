@@ -40,6 +40,9 @@ Working version
 
 ### Runtime system:
 
+- #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
+  (Jeremy Yallop, report by Marcello Seri)
+
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
