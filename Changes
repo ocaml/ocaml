@@ -347,6 +347,9 @@ OCaml 4.09.0
 - #8769, #8770: Fix assertion failure with -pack
   (Leo White, review by Gabriel Scherer, report by Fabian @copy)
 
+- #8800: Fix soundness bug in extension constructor inclusion
+  (Leo White, review by Jacques Garrigue)
+
 OCaml 4.08.0
 ------------
 
