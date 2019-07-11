@@ -2815,7 +2815,7 @@ and unify_row env row1 row2 =
     | None, Some _ -> rm2
     | None, None -> newty2 (min rm1.level rm2.level) (Tvar None)
   in
-  let fixed = merge_fixed_explanation row1 row2
+  let fixed = merge_fixed_explanation fixed1 fixed2
   and closed = row1.row_closed || row2.row_closed in
   let keep switch =
     List.for_all

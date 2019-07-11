@@ -72,13 +72,18 @@ val row_more: row_desc -> type_expr
 
 val is_fixed: row_desc -> bool
 (* Return whether the row is directly marked as fixed or not *)
+
 val row_fixed: row_desc -> bool
 (* Return whether the row should be treated as fixed or not.
    In particular, [is_fixed row] implies [row_fixed row].
 *)
+
 val fixed_explanation: row_desc -> fixed_explanation option
 (* Return the potential explanation for the fixed row *)
-val merge_fixed_explanation: row_desc -> row_desc -> fixed_explanation option
+
+val merge_fixed_explanation:
+  fixed_explanation option -> fixed_explanation option
+  -> fixed_explanation option
 (* Merge two explanations for a fixed row *)
 
 val static_row: row_desc -> bool

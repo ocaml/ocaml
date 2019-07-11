@@ -167,8 +167,8 @@ let rec row_more row =
   | {desc=Tvariant row'} -> row_more row'
   | ty -> ty
 
-let merge_fixed_explanation row1 row2 =
-  match row1.row_fixed, row2.row_fixed with
+let merge_fixed_explanation fixed1 fixed2 =
+  match fixed1, fixed2 with
   | Some Univar _ as x, _ | _, (Some Univar _ as x) -> x
   | Some Fixed_private as x, _ | _, (Some Fixed_private as x) -> x
   | Some Reified _ as x, _ | _, (Some Reified _ as x) -> x
@@ -447,7 +447,7 @@ let copy_row f fixed row keep more =
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
         | Reither(c, tl, m, e) ->
             let e = if keep then e else ref None in
-            let m = if row.row_fixed <> None then fixed else m in
+            let m = if is_fixed row then fixed else m in
             let tl = List.map f tl in
             Reither(c, tl, m, e)
         | _ -> fi)
