@@ -164,3 +164,15 @@ Error: This alias is bound to type [ `B ] but is used as an instance of type
          [ `A ]
        These two variant types have no intersection
 |}]
+
+type t = private [< `A]
+let f: t -> [ `A ] = fun x -> x
+[%%expect {|
+type t = private [< `A ]
+Line 2, characters 30-31:
+2 | let f: t -> [ `A ] = fun x -> x
+                                  ^
+Error: This expression has type t but an expression was expected of type
+         [ `A ]
+       The first variant type is private, it may not allow the tag(s) `A
+|}]

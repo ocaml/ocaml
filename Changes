@@ -86,6 +86,11 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
 
+### Compiler user-interface and warnings:
+
+- #8702, #8777: improved error messages for fixed row polymorphic variants
+  (Florian Angeletti, report by Leo White, review by Thomas Refis)
+
 ### Bug fixes:
 
 - #8622: Don't generate #! headers over 127 characters.
