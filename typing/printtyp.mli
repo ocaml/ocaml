@@ -69,7 +69,10 @@ module Conflicts: sig
 
   type explanation =
     { kind: namespace;
-      name:string; location:Location.t}
+      name:string;
+      common_name:string;
+      location:Location.t
+    }
 
   val take: unit -> explanation list
   val pp: Format.formatter -> explanation list -> unit

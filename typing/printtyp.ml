@@ -75,6 +75,8 @@ module Namespace = struct
     | Class_type -> "class type"
     | Other -> ""
 
+  let pp ppf x = Format.pp_print_string ppf (show x)
+
   let lookup =
     let to_lookup f lid =
       fst @@ f ?loc:None ?mark:(Some false) (Lident lid) !printing_env in
@@ -119,16 +121,18 @@ end
 *)
 module Conflicts = struct
   module M = String.Map
-  type explanation = { kind: namespace; name:string; location:Location.t}
+  type explanation =
+    { kind: namespace; name:string; common_name:string; location:Location.t}
   let explanations = ref M.empty
   let explain namespace n id =
     let name = human_unique n id in
+    let common_name = Ident.name id in
     if not (M.mem name !explanations) then
       match Namespace.location namespace id with
       | None -> ()
       | Some location ->
-          explanations :=
-            M.add name { kind = namespace; location; name } !explanations
+          let explanation = { kind = namespace; location; name; common_name } in
+          explanations := M.add name explanation !explanations
 
   let pp_explanation ppf r=
     Format.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
@@ -144,15 +148,49 @@ module Conflicts = struct
     c |> M.bindings |> List.map snd |> List.sort Stdlib.compare
 
   let print ppf =
-    let sep ppf = Format.fprintf ppf "@ " in
-    let l =
-      List.filter (* remove toplevel locations, since they are too imprecise *)
-        ( fun a ->
-            a.location.Location.loc_start.Lexing.pos_fname <> "//toplevel//" )
-        (take ()) in
-    match l with
+    let conj ppf () = Format.fprintf ppf " and@ " in
+    let pp_namespace_plural ppf n = Format.fprintf ppf "%as" Namespace.pp n in
+    let ltop, l =
+      (* isolate toplevel locations, since they are too imprecise *)
+      let from_toplevel a =
+        a.location.Location.loc_start.Lexing.pos_fname = "//toplevel//" in
+      List.partition from_toplevel (take ())
+    in
+    begin match l with
     | [] -> ()
-    | l -> Format.fprintf ppf "%t%a" sep pp l
+    | l -> Format.fprintf ppf "@ %a" pp l
+    end;
+    (* if there are name collisions in a toplevel session,
+       display at least one generic hint by namespace *)
+    let ltop = StringMap
+      List.sort_uniq Stdlib.compare
+      @@ List.map (fun r -> r.kind, r.common_name) ltop in
+    let submsgs = Array.make Namespace.size [] in
+    let () = List.iter (fun (n,_ as x) ->
+        submsgs.(Namespace.id n) <- x :: submsgs.(Namespace.id n)
+      )  ltop in
+    let pp_submsg ppf names =
+      match names with
+      | [] -> ()
+      | [namespace, a] ->
+          Format.fprintf ppf
+        "@ \
+         @[<2>Hint: The %a %s has been defined multiple times@ \
+         in@ this@ toplevel@ session.@ \
+         Some toplevel values still refer to@ old@ versions@ of@ this@ %a.\
+         @ Did you try to redefine them?@]"
+        Namespace.pp namespace a Namespace.pp namespace
+      | (namespace, _) :: _ :: _ ->
+      Format.fprintf ppf
+        "@ \
+         @[<2>Hint: The %a %a have been defined multiple times@ \
+         in@ this@ toplevel@ session.@ \
+         Some toplevel values still refer to@ old@ versions@ of@ those@ %a.\
+         @ Did you try to redefine them?@]"
+        pp_namespace_plural namespace
+        Format.(pp_print_list ~pp_sep:conj pp_print_string) (List.map snd names)
+        pp_namespace_plural namespace in
+    Array.iter (pp_submsg ppf) submsgs
 
   let exists () = M.cardinal !explanations >0
 end
