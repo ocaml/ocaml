@@ -29,6 +29,7 @@ type error =
   | File_exists of filepath
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname
+  | Camlheader of string * filepath
 
 exception Error of error
 
@@ -303,28 +304,32 @@ let link_bytecode ?final_name tolink exec_name standalone =
       raise (Error (Wrong_object_name exec_name));
     | _ -> ()) tolink;
   Misc.remove_file exec_name; (* avoid permission problems, cf PR#8354 *)
+  let outperm = if !Clflags.with_runtime then 0o777 else 0o666 in
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
-                 0o777 exec_name in
+                 outperm exec_name in
   Misc.try_finally
     ~always:(fun () -> close_out outchan)
     ~exceptionally:(fun () -> remove_file exec_name)
     (fun () ->
-       if standalone then begin
+       if standalone && !Clflags.with_runtime then begin
          (* Copy the header *)
+         let header =
+           if String.length !Clflags.use_runtime > 0
+           then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant
+         in
          try
-           let header =
-             if String.length !Clflags.use_runtime > 0
-             then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant
-           in
            let inchan = open_in_bin (Load_path.find header) in
            copy_file inchan outchan;
            close_in inchan
-         with Not_found | Sys_error _ -> ()
+         with
+         | Not_found -> raise (Error (File_not_found header))
+         | Sys_error msg -> raise (Error (Camlheader (header, msg)))
        end;
        Bytesections.init_record outchan;
        (* The path to the bytecode interpreter (in use_runtime mode) *)
-       if String.length !Clflags.use_runtime > 0 then begin
+       if String.length !Clflags.use_runtime > 0 && !Clflags.with_runtime then
+       begin
          let runtime = make_absolute !Clflags.use_runtime in
          let runtime =
            (* shebang mustn't exceed 128 including the #! and \0 *)
@@ -538,7 +543,10 @@ let link_bytecode_as_c tolink outfile =
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
-  let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
+  let runtime_lib =
+    if not !Clflags.with_runtime
+    then ""
+    else "-lcamlrun" ^ !Clflags.runtime_variant in
   let debug_prefix_map =
     if Config.c_has_debug_prefix_map && not !Clflags.keep_camlprimc_file then
       [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
@@ -662,7 +670,10 @@ let link objfiles output_name =
                else Ccomp.MainDll, Config.bytecomp_c_libraries
              in
              if not (
-                 let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
+                 let runtime_lib =
+                   if not !Clflags.with_runtime
+                   then ""
+                   else "-lcamlrun" ^ !Clflags.runtime_variant in
                  Ccomp.call_linker mode output_name
                    ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
                    c_libs
@@ -705,6 +716,8 @@ let report_error ppf = function
         Location.print_filename file
   | Required_module_unavailable s ->
       fprintf ppf "Required module `%s' is unavailable" s
+  | Camlheader (msg, header) ->
+      fprintf ppf "System error while copying file %s: %s" header msg
 
 let () =
   Location.register_error_of_exn

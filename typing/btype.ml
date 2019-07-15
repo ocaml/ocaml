@@ -167,13 +167,33 @@ let rec row_more row =
   | {desc=Tvariant row'} -> row_more row'
   | ty -> ty
 
-let row_fixed row =
+let merge_fixed_explanation fixed1 fixed2 =
+  match fixed1, fixed2 with
+  | Some Univar _ as x, _ | _, (Some Univar _ as x) -> x
+  | Some Fixed_private as x, _ | _, (Some Fixed_private as x) -> x
+  | Some Reified _ as x, _ | _, (Some Reified _ as x) -> x
+  | Some Rigid as x, _ | _, (Some Rigid as x) -> x
+  | None, None -> None
+
+
+let fixed_explanation row =
   let row = row_repr row in
-  row.row_fixed ||
-  match (repr row.row_more).desc with
-    Tvar _ | Tnil -> false
-  | Tunivar _ | Tconstr _ -> true
-  | _ -> assert false
+  match row.row_fixed with
+  | Some _ as x -> x
+  | None ->
+      let more = repr row.row_more in
+      match more.desc with
+      | Tvar _ | Tnil -> None
+      | Tunivar _ -> Some (Univar more)
+      | Tconstr (p,_,_) -> Some (Reified p)
+      | _ -> assert false
+
+let is_fixed row = match row.row_fixed with
+  | None -> false
+  | Some _ -> true
+
+let row_fixed row = fixed_explanation row <> None
+
 
 let static_row row =
   let row = row_repr row in
@@ -427,16 +447,18 @@ let copy_row f fixed row keep more =
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
         | Reither(c, tl, m, e) ->
             let e = if keep then e else ref None in
-            let m = if row.row_fixed then fixed else m in
+            let m = if is_fixed row then fixed else m in
             let tl = List.map f tl in
             Reither(c, tl, m, e)
         | _ -> fi)
       row.row_fields in
   let name =
-    match row.row_name with None -> None
+    match row.row_name with
+    | None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
+  let row_fixed = if fixed then row.row_fixed else None in
   { row_fields = fields; row_more = more;
-    row_bound = (); row_fixed = row.row_fixed && fixed;
+    row_bound = (); row_fixed;
     row_closed = row.row_closed; row_name = name; }
 
 let rec copy_kind = function

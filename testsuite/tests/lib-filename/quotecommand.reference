@@ -1,0 +1,38 @@
+-------- Spaces
+argv[1] = {|Lorem ipsum dolor|}
+argv[2] = {|sit amet,|}
+argv[3] = {|consectetur adipiscing elit,|}
+-------- All ASCII characters
+argv[1] = {|!"#$%&'()*+,-./|}
+argv[2] = {|0123456789|}
+argv[3] = {|:;<=>?@|}
+argv[4] = {|ABCDEFGHIJKLMNOPQRSTUVWXYZ|}
+argv[5] = {|[\]^_`|}
+argv[6] = {|abcdefghijklmnopqrstuvwxyz|}
+argv[7] = {|{~|~}|}
+-------- Output redirection
+-------- Input redirection
+argv[1] = {|sed do eiusmod tempor incididunt|}
+argv[2] = {|ut labore et dolore magna aliqua.|}
+-------- Error redirection
+argv[1] = {|Exceptur sint|}
+argv[6] = {|non proident|}
+-- stderr:
+argv[3] = {|occaecat|}
+argv[4] = {|cupidatat|}
+argv[8] = {|sunt in culpa|}
+-------- Output and error redirections (different files)
+-- stdout:
+argv[1] = {|qui officia|}
+argv[6] = {|anim id est|}
+-- stderr:
+argv[3] = {|deserunt|}
+argv[4] = {|mollit|}
+argv[8] = {|laborum.|}
+-------- Output and error redirections (same file)
+argv[1] = {|Duis aute|}
+argv[2] = {|irure dolor|}
+argv[4] = {|in reprehenderit|}
+argv[5] = {|in voluptate|}
+argv[7] = {|velit esse cillum|}
+argv[9] = {|dolore|}

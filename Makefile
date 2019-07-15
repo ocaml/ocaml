@@ -324,7 +324,7 @@ endif
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp Makefile.config utils/Makefile Makefile
+utils/config.ml: utils/config.mlp Makefile.config utils/Makefile
 	$(MAKE) -C utils config.ml
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -498,11 +498,12 @@ flexdll: flexdll/Makefile flexlink
 flexlink: flexdll/Makefile
 	$(MAKE) -C runtime BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
-	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
+	$(MAKE) -C stdlib COMPILER=../boot/ocamlc \
+	                  $(filter-out *.cmi,$(LIBFILES))
+	cd stdlib && cp $(LIBFILES) ../boot/
 	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
 	  CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
-	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
+	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot" \
 	  flexlink.exe
 	$(MAKE) -C runtime clean
 	$(MAKE) partialclean
@@ -513,7 +514,8 @@ flexlink.opt:
 	mv flexlink.exe flexlink && \
 	($(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
 	           OCAML_CONFIG_FILE=../Makefile.config \
-	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe || \
+	           OCAMLOPT="../ocamlopt.opt -nostdlib -I ../stdlib" \
+	           flexlink.exe || \
 	 (mv flexlink flexlink.exe && false)) && \
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
@@ -523,8 +525,7 @@ INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 .PHONY: install-flexdll
 install-flexdll:
-	cat stdlib/camlheader flexdll/flexlink.exe > \
-	  "$(INSTALL_BINDIR)/flexlink.exe"
+	$(INSTALL_PROG) flexdll/flexlink.exe "$(INSTALL_BINDIR)/flexlink$(EXE)"
 ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
 	$(INSTALL_DATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
     "$(INSTALL_BINDIR)/"
@@ -1020,7 +1021,7 @@ partialclean::
 # The lexer and parser generators
 
 .PHONY: ocamllex
-ocamllex: ocamlyacc ocamlc
+ocamllex: ocamlyacc
 	$(MAKE) -C lex all
 
 .PHONY: ocamllex.opt
@@ -1073,6 +1074,9 @@ parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
 parsing/parser.mli: boot/menhir/parser.mli
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 
+beforedepend:: parsing/camlinternalMenhirLib.ml \
+  parsing/camlinternalMenhirLib.mli \
+	parsing/parser.ml parsing/parser.mli
 
 partialclean:: partialclean-menhir
 
@@ -1266,34 +1270,9 @@ partialclean::
 
 beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
-# Testing the parser -- see parsing/HACKING.adoc
-
-SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli' | grep -v boot/menhir/parser)
-
-AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
-
-build-all-asts: $(AST_FILES)
-
-CAMLC_DPARSETREE := \
-	$(CAMLRUN) ./ocamlc -nostdlib -nopervasives \
-	  -stop-after parsing -dparsetree
-
-%.ml.ast: %.ml ocamlc
-	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
-# `|| exit 0` : some source files will fail to parse
-# (for example, they are meant as toplevel scripts
-# rather than source files, or are parse-error tests),
-# we ignore the failure in that case
-
-%.mli.ast: %.mli ocamlc
-	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
-
-.PHONY: list-all-asts
-list-all-asts:
-	@for f in $(AST_FILES); do echo "'$$f'"; done
-
-partialclean::
-	rm -f $(AST_FILES)
+ifneq "$(wildcard .git)" ""
+include Makefile.dev
+endif
 
 # Default rules
 

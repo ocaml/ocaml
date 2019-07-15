@@ -364,20 +364,22 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
   in
   if not (Ctype.equal env true (ty1 :: ext1.ext_type_params)
                                (ty2 :: ext2.ext_type_params))
-  then Some (Field_type id)
-  else
-    let r =
-      compare_constructor_arguments ~loc env id
-        ext1.ext_type_params ext2.ext_type_params
-        ext1.ext_args ext2.ext_args
-    in
-    if r <> None then r else
+  then Some (Field_type id) else
+  let r =
     match ext1.ext_ret_type, ext2.ext_ret_type with
-      Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
-        Some (Field_type id)
+    | Some r1, Some r2 ->
+        if Ctype.equal env true [r1] [r2] then
+          compare_constructor_arguments ~loc env id [r1] [r2]
+            ext1.ext_args ext2.ext_args
+        else Some (Field_type id)
     | Some _, None | None, Some _ ->
         Some (Field_type id)
-    | _ ->
-        match ext1.ext_private, ext2.ext_private with
-          Private, Public -> Some Privacy
-        | _, _ -> None
+    | None, None ->
+        compare_constructor_arguments ~loc env id
+          ext1.ext_type_params ext2.ext_type_params
+          ext1.ext_args ext2.ext_args
+  in
+  if r <> None then r else
+  match ext1.ext_private, ext2.ext_private with
+  | Private, Public -> Some Privacy
+  | _, _ -> None

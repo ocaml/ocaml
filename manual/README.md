@@ -85,7 +85,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - The ocamlbuild compilation manager: `ocamlbuild.etex`
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
-    - Memory profiling with Spacetime: `spacetime.etex`
+    - Memory profiling with Spacetime: `spacetime-chapter.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
@@ -98,7 +98,7 @@ of `unified-options.etex` contains the relevant information.
  This parts contains an brief presentation of all libraries bundled with the
  compilers and the api documentation generated for these libraries.
     - The core library: `core.etex`
-    - The standard library: `stdlib.etex`
+    - The standard library: `stdlib-blurb.etex`
     - The compiler front-end: `compilerlibs.etex`
     - The unix library: Unix system calls: `libunix.etex`
     - The legacy num library: this library has been removed from the core

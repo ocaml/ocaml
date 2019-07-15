@@ -31,6 +31,7 @@
 #include "caml/signals_machdep.h"
 #include "caml/sys.h"
 #include "caml/memprof.h"
+#include "caml/finalise.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
@@ -40,9 +41,11 @@
 #define NSIG 64
 #endif
 
+CAMLexport int volatile caml_something_to_do = 0;
+
 /* The set of pending signals (received but not yet processed) */
 
-CAMLexport intnat volatile caml_signals_are_pending = 0;
+static intnat volatile signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
 
 #ifdef POSIX_SIGNALS
@@ -69,10 +72,9 @@ void caml_process_pending_signals(void)
   sigset_t set;
 #endif
 
-  if(!caml_signals_are_pending)
+  if(!signals_are_pending)
     return;
-  caml_signals_are_pending = 0;
-  caml_update_young_limit();
+  signals_are_pending = 0;
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
@@ -100,6 +102,20 @@ void caml_process_pending_signals(void)
   }
 }
 
+CAMLno_tsan /* When called from [caml_record_signal], these memory
+               accesses may not be synchronized. */
+void caml_set_something_to_do(void)
+{
+  caml_something_to_do = 1;
+#ifdef NATIVE_CODE
+  /* When this function is called without [caml_c_call] (e.g., in
+     [caml_modify]), this is only moderately effective on ports that
+     cache [caml_young_limit] in a register, so it may take a while
+     before the register is reloaded from [caml_young_limit]. */
+  caml_young_limit = caml_young_alloc_end;
+#endif
+}
+
 /* Record the delivery of a signal, and arrange for it to be processed
    as soon as possible:
    - in bytecode: via caml_something_to_do, processed in caml_process_event
@@ -107,15 +123,11 @@ void caml_process_pending_signals(void)
        in caml_garbage_collection
 */
 
-void caml_record_signal(int signal_number)
+CAMLno_tsan void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
-  caml_signals_are_pending = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
-  caml_young_limit = caml_young_alloc_end;
-#endif
+  signals_are_pending = 1;
+  caml_set_something_to_do();
 }
 
 /* Management of blocking sections. */
@@ -148,15 +160,16 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
    caml_try_leave_blocking_section_default;
 
+CAMLno_tsan /* The read of [caml_something_to_do] is no synchronized. */
 CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_process_pending_signals();
+    caml_check_urgent_gc (Val_unit);
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if (! caml_signals_are_pending) break;
+    if (! caml_something_to_do) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -169,7 +182,7 @@ CAMLexport void caml_leave_blocking_section(void)
   caml_leave_blocking_section_hook ();
 
   /* Some other thread may have switched
-     [caml_signals_are_pending] to 0 even though there are still
+     [signals_are_pending] to 0 even though there are still
      pending signals (masked in the other thread). To handle this
      case, we force re-examination of all signals by setting it back
      to 1.
@@ -178,10 +191,10 @@ CAMLexport void caml_leave_blocking_section(void)
      setting) is when the blocking section unmasks a pending signal:
      If the signal is pending and masked but has already been
      examined by [caml_process_pending_signals], then
-     [caml_signals_are_pending] is 0 but the signal needs to be
+     [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
-  caml_signals_are_pending = 1;
-  caml_process_pending_signals();
+  signals_are_pending = 1;
+  caml_check_urgent_gc (Val_unit);
 
   errno = saved_errno;
 }
@@ -245,7 +258,8 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
     caml_sigmask_hook(SIG_SETMASK, &sigs, NULL);
   }
 #endif
-  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+  if (Is_exception_result(res))
+    caml_raise_in_async_callback(Extract_exception(res));
 }
 
 void caml_update_young_limit (void)
@@ -255,8 +269,7 @@ void caml_update_young_limit (void)
     caml_young_trigger : caml_memprof_young_trigger;
 
 #ifdef NATIVE_CODE
-  if(caml_requested_major_slice || caml_requested_minor_gc ||
-     caml_signals_are_pending || caml_memprof_postponed_head != NULL)
+  if(caml_something_to_do)
     caml_young_limit = caml_young_alloc_end;
 #endif
 }
@@ -269,26 +282,50 @@ int volatile caml_requested_minor_gc = 0;
 void caml_request_major_slice (void)
 {
   caml_requested_major_slice = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
-  caml_young_limit = caml_young_alloc_end;
-  /* This is only moderately effective on ports that cache [caml_young_limit]
-     in a register, since [caml_modify] is called directly, not through
-     [caml_c_call], so it may take a while before the register is reloaded
-     from [caml_young_limit]. */
-#endif
+  caml_set_something_to_do();
 }
 
 void caml_request_minor_gc (void)
 {
   caml_requested_minor_gc = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
-  caml_young_limit = caml_young_alloc_end;
-  /* Same remark as above in [caml_request_major_slice]. */
+  caml_set_something_to_do();
+}
+
+
+CAMLexport value caml_check_urgent_gc (value extra_root)
+{
+  CAMLparam1 (extra_root);
+  caml_something_to_do = 0;
+#ifdef NATIVE_CODE
+  caml_update_young_limit();
 #endif
+  if (caml_requested_major_slice || caml_requested_minor_gc){
+    CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
+    caml_gc_dispatch();
+  }
+  caml_memprof_handle_postponed();
+  caml_final_do_calls();
+  caml_process_pending_signals();
+  CAMLreturn (extra_root);
+}
+
+
+/* If an exception is raised during an asynchronous callback (i.e.,
+   from an OCaml function called in `caml_check_urgent_gc`), then it
+   might be the case that we did not run all the callbacks we needed
+   to run even though [caml_something_to_do] has been reset to 0 at
+   the begining of [caml_check_urgent_gc]. Therefore, we set
+   [caml_something_to_do] in order to force reexamination of
+   callbacks.
+
+   Apart from a reasonable performance penalty (an extra call to
+   `caml_check_urgent_gc`), it is OK to call this function where
+   `caml_raise` would have been more appropriate (i.e., not called
+   from `caml_check_urgent_gc`). */
+void caml_raise_in_async_callback (value exc)
+{
+  caml_set_something_to_do();
+  caml_raise(exc);
 }
 
 /* OS-independent numbering of signals */

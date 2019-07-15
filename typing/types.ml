@@ -45,9 +45,10 @@ and row_desc =
       row_more: type_expr;
       row_bound: unit;
       row_closed: bool;
-      row_fixed: bool;
+      row_fixed: fixed_explanation option;
       row_name: (Path.t * type_expr list) option }
-
+and fixed_explanation =
+  | Univar of type_expr | Fixed_private | Reified of Path.t | Rigid
 and row_field =
     Rpresent of type_expr option
   | Reither of bool * type_expr list * bool * row_field option ref

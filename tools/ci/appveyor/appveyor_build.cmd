@@ -85,7 +85,7 @@ set CYGWIN_UPGRADE_REQUIRED=0
 for %%P in (%CYGWIN_PACKAGES%) do call :CheckPackage %%P
 call :UpgradeCygwin
 
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh install" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh install" || exit /b 1
 
 goto :EOF
 
@@ -95,18 +95,18 @@ if "%PORT%" equ "msvc64" (
   call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
 )
 rem Do the main build (either msvc64 or mingw32)
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
 
 if "%PORT%" neq "msvc64" goto :EOF
 
 rem Reconfigure the environment and run the msvc32 partial build
 endlocal
 call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh msvc32-only" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh msvc32-only" || exit /b 1
 goto :EOF
 
 :test
 rem Reconfigure the environment for the msvc64 build
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lc "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF

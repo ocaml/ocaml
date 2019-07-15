@@ -444,6 +444,15 @@ extern void caml_instr_atexit (void);
 
 #endif /* CAML_INSTR */
 
+/* Macro used to deactivate thread sanitizer on some functions. */
+#define CAMLno_tsan
+#if defined(__has_feature)
+#  if __has_feature(thread_sanitizer)
+#    undef CAMLno_tsan
+#    define CAMLno_tsan __attribute__((no_sanitize("thread")))
+#  endif
+#endif
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

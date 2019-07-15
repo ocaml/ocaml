@@ -588,7 +588,7 @@ let rec build_as_type env p =
       let ty = Option.map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
                       row_bound=(); row_name=None;
-                      row_fixed=false; row_closed=false})
+                      row_fixed=None; row_closed=false})
   | Tpat_record (lpl,_) ->
       let lbl = snd3 (List.hd lpl) in
       if lbl.lbl_private = Private then p.pat_type else
@@ -649,7 +649,7 @@ let build_or_pat env loc lid =
       ([],[]) (row_repr row0).row_fields in
   let row =
     { row_fields = List.rev fields; row_more = newvar(); row_bound = ();
-      row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
+      row_closed = false; row_fixed = None; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
   let gloc = {loc with Location.loc_ghost=true} in
@@ -1385,7 +1385,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
                   row_bound = ();
                   row_closed = false;
                   row_more = newgenvar ();
-                  row_fixed = false;
+                  row_fixed = None;
                   row_name = None } in
       begin_def ();
       let expected_ty = instance expected_ty in
@@ -1770,15 +1770,18 @@ let force_delayed_checks () =
   reset_delayed_checks ();
   Btype.backtrack snap
 
-let rec final_subexpression sexp =
-  match sexp.pexp_desc with
-    Pexp_let (_, _, e)
-  | Pexp_sequence (_, e)
-  | Pexp_try (e, _)
-  | Pexp_ifthenelse (_, e, _)
-  | Pexp_match (_, {pc_rhs=e} :: _)
+let rec final_subexpression exp =
+  match exp.exp_desc with
+    Texp_let (_, _, e)
+  | Texp_sequence (_, e)
+  | Texp_try (e, _)
+  | Texp_ifthenelse (_, e, _)
+  | Texp_match (_, {c_rhs=e} :: _, _)
+  | Texp_letmodule (_, _, _, _, e)
+  | Texp_letexception (_, e)
+  | Texp_open (_, e)
     -> final_subexpression e
-  | _ -> sexp
+  | _ -> exp
 
 (* Generalization criterion for expressions *)
 
@@ -2148,7 +2151,7 @@ let contains_variant_either ty =
       match ty.desc with
         Tvariant row ->
           let row = row_repr row in
-          if not row.row_fixed then
+          if not (is_fixed row) then
             List.iter
               (fun (_,f) ->
                 match row_field_repr f with Reither _ -> raise Exit | _ -> ())
@@ -2211,13 +2214,13 @@ let check_absent_variant env =
       let row = row_repr !row in
       if List.exists (fun (s',fi) -> s = s' && row_field_repr fi <> Rabsent)
           row.row_fields
-      || not row.row_fixed && not (static_row row)  (* same as Ctype.poly *)
+      || not (is_fixed row) && not (static_row row)  (* same as Ctype.poly *)
       then () else
       let ty_arg =
         match arg with None -> [] | Some p -> [correct_levels p.pat_type] in
       let row' = {row_fields = [s, Reither(arg=None,ty_arg,true,ref None)];
                   row_more = newvar (); row_bound = ();
-                  row_closed = false; row_fixed = false; row_name = None} in
+                  row_closed = false; row_fixed = None; row_name = None} in
       (* Should fail *)
       unify_pat env {pat with pat_type = newty (Tvariant row')}
                     (correct_levels pat.pat_type)
@@ -2577,7 +2580,7 @@ and type_expect_
                                     row_more = newvar ();
                                     row_bound = ();
                                     row_closed = false;
-                                    row_fixed = false;
+                                    row_fixed = None;
                                     row_name = None});
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
@@ -4243,13 +4246,14 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement ?explanation env sexp =
-  let loc = (final_subexpression sexp).pexp_loc in
   begin_def();
   let exp = type_exp env sexp in
   end_def();
   let ty = expand_head env exp.exp_type and tv = newvar() in
   if is_Tvar ty && ty.level > tv.level then
-    Location.prerr_warning loc Warnings.Nonreturning_statement;
+    Location.prerr_warning
+      (final_subexpression exp).exp_loc
+      Warnings.Nonreturning_statement;
   if !Clflags.strict_sequence then
     let expected_ty = instance Predef.type_unit in
     with_explanation explanation (fun () ->

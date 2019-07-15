@@ -1357,7 +1357,8 @@ Line 4, characters 16-22:
                     ^^^^^^
 Error: This expression has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
-       Types for tag `Int are incompatible
+       The second variant type is bound to the universal type variable 'a,
+       it may not allow the tag(s) `Int
 |}];;
 
 (* Yet another example *)
@@ -1733,4 +1734,23 @@ Error: The type of this class,
        class ['a] r :
          object constraint 'a = '_weak2 list ref method get : 'a end,
        contains type variables that cannot be generalized
+|}]
+
+(* #8701 *)
+type 'a t = 'a constraint 'a = 'b list;;
+type 'a s = 'a list;;
+let id x = x;;
+[%%expect{|
+type 'a t = 'a constraint 'a = 'b list
+type 'a s = 'a list
+val id : 'a -> 'a = <fun>
+|}]
+
+let x : [ `Foo of _ s | `Foo of 'a t ] = id (`Foo []);;
+[%%expect{|
+val x : [ `Foo of 'a s ] = `Foo []
+|}]
+let x : [ `Foo of 'a t | `Foo of _ s ] = id (`Foo []);;
+[%%expect{|
+val x : [ `Foo of 'a list t ] = `Foo []
 |}]

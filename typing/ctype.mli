@@ -37,10 +37,17 @@ module Unification_trace: sig
     | Equation of 'a
 
    (** Errors for polymorphic variants *)
+
+  type fixed_row_case =
+    | Cannot_be_closed
+    | Cannot_add_tags of string list
+
   type variant =
     | No_intersection
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
+    | Fixed_row of position * fixed_row_case * fixed_explanation
+    (** Fixed row types,  e.g. ['a. [> `X] as 'a] *)
 
   type obj =
     | Missing_field of position * string

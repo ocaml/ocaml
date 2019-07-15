@@ -105,6 +105,7 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         let main_module_block_size, code =
           Translmod.transl_package_flambda components coercion
         in
+        let code = Simplif.simplify_lambda code in
         let program =
           { Lambda.
             code;
@@ -119,6 +120,7 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
           Translmod.transl_store_package components
             (Ident.create_persistent targetname) coercion
         in
+        let code = Simplif.simplify_lambda code in
         let program =
           { Lambda.
             code;
