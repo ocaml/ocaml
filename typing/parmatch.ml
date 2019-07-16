@@ -529,16 +529,13 @@ let record_arg ph = match Pattern_head.desc ph with
 | _ -> fatal_error "Parmatch.as_record"
 
 
-(* Raise Not_found when pos is not present in arg *)
-let get_field pos arg =
-  let _, p = List.find (fun (lbl,_) -> pos = lbl.lbl_pos) arg in
-  p
-
 let extract_fields lbls arg =
-  List.map (fun lbl ->
-      try get_field lbl.lbl_pos arg
-      with Not_found -> omega
-  ) lbls
+  let get_field pos arg =
+    match List.find (fun (lbl,_) -> pos = lbl.lbl_pos) arg with
+    | _, p -> p
+    | exception Not_found -> omega
+  in
+  List.map (fun lbl -> get_field lbl.lbl_pos arg) lbls
 
 (* Build argument list when p2 >= p1, where p1 is a simple pattern *)
 let simple_match_args discr head args = match Pattern_head.desc head with
