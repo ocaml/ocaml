@@ -83,6 +83,11 @@ static frame_descr * next_frame_descr(frame_descr * d) {
   CAMLassert(d->retaddr >= 4096);
   /* Skip to end of live_ofs */
   p = (unsigned char*)&d->live_ofs[d->num_live];
+  /* Skip alloc_lengths if present */
+  if (d->frame_size & 2) {
+    num_allocs = *p;
+    p += num_allocs + 1;
+  }
   /* Skip debug info if present */
   if (d->frame_size & 1) {
     /* Align to 32 bits */

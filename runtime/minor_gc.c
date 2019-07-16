@@ -508,6 +508,11 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
        callbacks. */
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    if (caml_young_ptr == caml_young_alloc_end) {
+      caml_spacetime_automatic_snapshot();
+    }
+#endif
   }
 
   /* Re-do the allocation: we now have enough space in the minor heap. */

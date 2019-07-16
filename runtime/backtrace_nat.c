@@ -146,8 +146,20 @@ debuginfo caml_debuginfo_extract(backtrace_slot slot)
   }
   /* Recover debugging info */
   infoptr = (unsigned char*)&d->live_ofs[d->num_live];
-  /* align to 32 bits */
-  infoptr = Align_to(infoptr, uint32_t);
+  if (d->frame_size & 2) {
+    /* skip alloc_lengths */
+    infoptr += *infoptr + 1;
+    /* align to 32 bits */
+    infoptr = Align_to(infoptr, uint32_t);
+    /* we know there's at least one valid debuginfo,
+       but it may not be the one for the first alloc */
+    while (*(uint32_t*)infoptr == 0) {
+      infoptr += sizeof(uint32_t);
+    }
+  } else {
+    /* align to 32 bits */
+    infoptr = Align_to(infoptr, uint32_t);
+  }
   /* read offset to debuginfo */
   debuginfo_offset = *(uint32_t*)infoptr;
   return (debuginfo)(infoptr + debuginfo_offset);

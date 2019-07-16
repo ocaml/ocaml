@@ -39,6 +39,7 @@ val emit_debug_info_gen :
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
 type frame_debuginfo =
+  | Dbg_alloc of Mach.alloc_dbginfo list
   | Dbg_raise of Debuginfo.t
   | Dbg_other of Debuginfo.t
 

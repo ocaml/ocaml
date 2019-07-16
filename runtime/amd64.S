@@ -425,111 +425,70 @@ ENDFUNCTION(G(caml_call_gc))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
-LBL(caml_alloc1):
         subq    $16, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(100)
         ret
 LBL(100):
-        addq    $16, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
         call    LBL(caml_call_gc)
 /*        addq    $8, %rsp; CFI_ADJUST (-8); */
         LEAVE_FUNCTION
-        jmp     LBL(caml_alloc1)
+        ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc1))
 
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
-LBL(caml_alloc2):
         subq    $24, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(101)
         ret
 LBL(101):
-        addq    $24, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
         call    LBL(caml_call_gc)
 /*        addq    $8, %rsp; CFI_ADJUST (-8); */
         LEAVE_FUNCTION
-        jmp     LBL(caml_alloc2)
+        ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc2))
 
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
-LBL(caml_alloc3):
         subq    $32, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(102)
         ret
 LBL(102):
-        addq    $32, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8) */
         call    LBL(caml_call_gc)
 /*        addq    $8, %rsp; CFI_ADJUST (-8) */
         LEAVE_FUNCTION
-        jmp     LBL(caml_alloc3)
+        ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
-LBL(caml_allocN):
-        pushq   %rax; CFI_ADJUST(8)        /* save desired size */
         subq    %rax, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(103)
-        addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
-        addq    0(%rsp), %r15
-        CFI_ADJUST(8)
-        RECORD_STACK_FRAME(8)
-#ifdef WITH_FRAME_POINTERS
-        /* ensure 16 byte alignment by subq + enter using 16-bytes, PR#7417 */
-        subq    $8, %rsp; CFI_ADJUST (8)
+        RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
-#endif
         call    LBL(caml_call_gc)
-#ifdef WITH_FRAME_POINTERS
-        /* ensure 16 byte alignment by leave + addq using 16-bytes PR#7417 */
         LEAVE_FUNCTION
-        addq    $8, %rsp; CFI_ADJUST (-8)
-#endif
-        popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
-        jmp     LBL(caml_allocN)
+        ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_allocN))
-
-/* Reset the allocation pointer and invoke the GC */
-
-FUNCTION(G(caml_call_gc1))
-CFI_STARTPROC
-        addq    $16, %r15
-        jmp     GCALL(caml_call_gc)
-CFI_ENDPROC
-
-FUNCTION(G(caml_call_gc2))
-CFI_STARTPROC
-        addq    $24, %r15
-        jmp     GCALL(caml_call_gc)
-CFI_ENDPROC
-
-FUNCTION(G(caml_call_gc3))
-CFI_STARTPROC
-        addq    $32, %r15
-        jmp     GCALL(caml_call_gc)
-CFI_ENDPROC
-
-
+        
 /* Call a C function from OCaml */
 
 FUNCTION(G(caml_c_call))

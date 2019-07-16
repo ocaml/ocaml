@@ -89,9 +89,15 @@ typedef struct {
   unsigned short num_live;
   unsigned short live_ofs[1 /* num_live */];
   /*
+    If frame_size & 2, then allocation info follows:
+  unsigned char num_allocs;
+  unsigned char alloc_lengths[num_alloc];
+
     If frame_size & 1, then debug info follows:
-  uint32_t debug_info_offset;
-    Debug info is stored as a relative offset to a debuginfo structure. */
+  uint32_t debug_info_offset[num_debug];
+
+    Debug info is stored as relative offsets to debuginfo structures.
+    num_debug is num_alloc if frame_size & 2, otherwise 1. */
 } frame_descr;
 
 /* Used to compute offsets in frame tables.
