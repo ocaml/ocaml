@@ -673,6 +673,11 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
         while the GC is in the marking phase
         --> call [caml_darken] on the overwritten pointer so that the
             major GC treats it as an additional root.
+
+     The logic implemented below is duplicated in caml_array_fill to
+     avoid repated calls to caml_modify and repeated tests on the
+     values.  Don't forget to update caml_array_fill if the logic
+     below changes!
   */
   value old;
 
