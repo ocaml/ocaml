@@ -386,20 +386,26 @@ void caml_debugger(enum event_kind event, value param)
   /* Report the event to the debugger */
   switch(event) {
   case PROGRAM_START:           /* Nothing to report */
+    CAMLassert (param == Val_unit);
     goto command_loop;
   case EVENT_COUNT:
+    CAMLassert (param == Val_unit);
     caml_putch(dbg_out, REP_EVENT);
     break;
   case BREAKPOINT:
+    CAMLassert (param == Val_unit);
     caml_putch(dbg_out, REP_BREAKPOINT);
     break;
   case PROGRAM_EXIT:
+    CAMLassert (param == Val_unit);
     caml_putch(dbg_out, REP_EXITED);
     break;
   case TRAP_BARRIER:
+    CAMLassert (param == Val_unit);
     caml_putch(dbg_out, REP_TRAP);
     break;
   case UNCAUGHT_EXC:
+    CAMLassert (param == Val_unit);
     caml_putch(dbg_out, REP_UNCAUGHT_EXC);
     break;
   case DEBUG_INFO_ADDED:

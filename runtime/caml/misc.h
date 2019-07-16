@@ -444,7 +444,6 @@ extern void caml_instr_atexit (void);
 #endif
 
 /* A table of all code fragments (main program and dynlinked modules) */
-
 struct code_fragment {
   char *code_start;
   char *code_end;
@@ -454,7 +453,7 @@ struct code_fragment {
 
 extern struct ext_table caml_code_fragments_table;
 
-int caml_find_code_fragment(char* pc, int *index, struct code_fragment **cf);
+int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
 
 #endif /* CAML_INTERNALS */
 

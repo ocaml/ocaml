@@ -29,8 +29,6 @@ let modules =
 let program_source_dirs =
   ref ([] : string list)
 
-let events =
-  ref ([] : debug_event list)
 let events_by_pc =
   (Hashtbl.create 257 : (pc, debug_event) Hashtbl.t)
 let events_by_module =
@@ -96,7 +94,7 @@ let read_symbols' bytecode_file =
   !eventlists, !dirs
 
 let clear_symbols () =
-  modules := []; events := [];
+  modules := [];
   program_source_dirs := [];
   Hashtbl.clear events_by_pc; Hashtbl.clear events_by_module;
   Hashtbl.clear all_events_by_module
@@ -106,7 +104,6 @@ let add_symbols frag all_events =
     (fun evl ->
       List.iter
         (fun ev ->
-          events := ev :: !events;
           Hashtbl.add events_by_pc {frag; pos = ev.ev_pos} ev)
         evl)
     all_events;

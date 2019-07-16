@@ -538,7 +538,7 @@ external module is not yet loaded, it is impossible to set a
 breakpoint in its code. In order to facilitate setting breakpoints in
 dynamically loaded code, the debugger stops the program each time new
 modules are loaded. This behavior can be disabled using the
-"break_on_load" variable:
+\var{break_on_load} variable:
 
 \begin{options}
 \item["set break_on_load"  \var{on/off}]

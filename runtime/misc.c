@@ -282,7 +282,7 @@ void caml_instr_atexit (void)
 }
 #endif /* CAML_INSTR */
 
-int caml_find_code_fragment(char* pc, int *index, struct code_fragment **cf)
+int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf)
 {
   struct code_fragment *cfi;
   int i;

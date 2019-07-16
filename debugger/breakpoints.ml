@@ -122,7 +122,9 @@ let update_breakpoints () =
 let execute_without_breakpoints f =
   Misc.protect_refs [Misc.R (Debugger_config.break_on_load, false);
                      Misc.R (current_version, 0);
-                     Misc.R (positions, [])]
+                     Misc.R (positions, []);
+                     Misc.R (breakpoints, []);
+                     Misc.R (breakpoint_number, 0)]
                     f
 
 (* Add a position in the position list. *)

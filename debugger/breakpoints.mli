@@ -31,7 +31,7 @@ val breakpoints : (breakpoint_id * Events.code_event) list ref
 val breakpoint_at_pc : Debugcom.pc -> bool
 
 (* List of breakpoints at `pc'. *)
-val breakpoints_at_pc : Debugcom.pc -> int list
+val breakpoints_at_pc : Debugcom.pc -> breakpoint_id list
 
 (*** Set and remove breakpoints ***)
 
@@ -46,7 +46,7 @@ val execute_without_breakpoints : (unit -> unit) -> unit
 val new_breakpoint : Events.code_event -> unit
 
 (* Remove a breakpoint from lists. *)
-val remove_breakpoint : int -> unit
+val remove_breakpoint : breakpoint_id -> unit
 
 val remove_all_breakpoints : unit -> unit
 
