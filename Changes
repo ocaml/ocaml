@@ -38,6 +38,10 @@ Working version
 - #8707: Simplif: more regular treatment of Tupled and Curried functions
   (Gabriel Scherer, review by Leo White and Alain Frisch)
 
+- #8526: Add compile-time option -function-sections in ocamlopt to emit
+  each function in a separate named text section on supported targets.
+  (Greta Yorsh, review by Pierre Chambart)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.

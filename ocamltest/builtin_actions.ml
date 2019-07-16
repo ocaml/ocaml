@@ -145,11 +145,41 @@ let arch64 = make
     "64-bit architecture"
     "non-64-bit architecture")
 
+let arch_arm = make
+  "arch_arm"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "arm")
+     "Target is ARM architecture"
+     "Target is not ARM architecture")
+
+let arch_arm64 = make
+  "arch_arm64"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "arm64")
+     "Target is ARM64 architecture"
+     "Target is not ARM64 architecture")
+
+ let arch_amd64 = make
+  "arch_amd64"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "amd64")
+     "Target is AMD64 architecture"
+     "Target is not AMD64 architecture")
+
+ let arch_i386 = make
+  "arch_i386"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "i386")
+     "Target is i386 architecture"
+     "Target is not i386 architecture")
+
 let arch_power = make
   "arch_power"
   (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "power")
     "Target is POWER architecture"
     "Target is not POWER architecture")
+
+let function_sections = make
+  "function_sections"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.function_sections)
+     "Target supports function sections"
+     "Target does not support function sections")
 
 let has_symlink = make
   "has_symlink"
@@ -214,5 +244,10 @@ let _ =
     run;
     script;
     check_program_output;
+    arch_arm;
+    arch_arm64;
+    arch_amd64;
+    arch_i386;
     arch_power;
+    function_sections;
   ]

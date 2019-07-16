@@ -257,6 +257,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	  -e 's|@@CFLAGS@@|$(OC_CFLAGS)|' \
 	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
 	  -e 's|@@WINDOWS_UNICODE@@|$(WINDOWS_UNICODE)|' \
+	  -e 's|@@FUNCTION_SECTIONS@@|$(FUNCTION_SECTIONS)|' \
 	  $< > $@
 
 .PHONY: clean

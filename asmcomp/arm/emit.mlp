@@ -435,6 +435,16 @@ let emit_load_handler_address handler =
   `	add	lr, pc, lr\n`;
   2
 
+
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then begin
+    `	.section .text.caml.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
+  end
+  else
+    `	.text\n`
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -947,7 +957,7 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
-  `	.text\n`;
+  emit_named_text_section !function_name;
   `	.align	2\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   if !arch > ARMv6 && !thumb then
@@ -1015,13 +1025,13 @@ let begin_assembly() =
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  `	.text\n`;
+  emit_named_text_section lbl_begin;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  `	.text\n`;
+  emit_named_text_section lbl_end;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in

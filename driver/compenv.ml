@@ -239,6 +239,8 @@ let read_one_param ppf position name v =
 
   | "clambda-checks" -> set "clambda-checks" [ clambda_checks ] v
 
+  | "function-sections" ->
+    set "function-sections" [ Clflags.function_sections ] v
   (* assembly sources *)
   |  "s" ->
     set "s" [ Clflags.keep_asm_file ; Clflags.keep_startup_file ] v
