@@ -26,6 +26,10 @@ Working version
 - #8677: Use unsigned comparisons in amd64 and i386 emitter of Lcondbranch3.
   (Greta Yorsh, review by Xavier Leroy)
 
+- #8766: Parmatch: introduce a type for simplified pattern heads
+  (Gabriel Scherer and Thomas Refis, review by Stephen Dolan and
+   Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.
