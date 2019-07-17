@@ -359,9 +359,6 @@ let rec prepare_letrec
           recursive_set
       in
       let top_rec_vars = Ident.Set.inter vars recursive_set in
-      let top_rec_bindings, non_rec_bindings =
-        List.partition (fun (x, _) -> Ident.Set.mem x top_rec_vars) bindings
-      in
       let letrec =
         { letrec with immutables =
                         Ident.Set.union letrec.immutables top_rec_vars }
@@ -369,21 +366,36 @@ let rec prepare_letrec
       let letrec =
         prepare_letrec recursive_set current_let body letrec
       in
-      let letrec =
-        List.fold_right (fun (id, def) letrec ->
-            let let_def = {
-              let_kind = Strict;
-              value_kind = Pgenval;
-              ident = id;
-            } in
-            prepare_letrec recursive_set (Some let_def) def letrec)
-          top_rec_bindings
-          letrec
+      (* The [pre] within the recursive bindings are split and re-inserted into
+         the inner letrec binding, in order to preserve exacution order *)
+      let letrec, pre =
+        { letrec with pre = fun ~tail -> tail },
+        letrec.pre
       in
-      let pre =
-        match non_rec_bindings with
-        | [] -> letrec.pre
-        | bnd -> fun ~tail : Lambda.lambda -> Lletrec (bnd, letrec.pre ~tail)
+      let letrec, pre_bnd =
+        List.fold_right (fun (id, def) (letrec, pre_bnd) ->
+            if Ident.Set.mem id top_rec_vars then
+              let let_def = {
+                let_kind = Strict;
+                value_kind = Pgenval;
+                ident = id;
+              } in
+              prepare_letrec recursive_set (Some let_def) def letrec,
+              pre_bnd
+            else
+              let unit = Lconst (Const_pointer 0) in
+              let pre = letrec.pre ~tail:unit in
+              { letrec with pre = fun ~tail -> tail },
+              (id, def) ::
+              if pre = unit then pre_bnd
+              else (Ident.create_local "dummy_in_letrec", pre) :: pre_bnd
+          )
+          bindings
+          (letrec, [])
+      in
+      let pre ~tail = match pre_bnd with
+        | [] -> letrec.pre ~tail:(pre ~tail)
+        | bnds -> letrec.pre ~tail:(Lletrec (bnds, pre ~tail))
       in
       { letrec with pre }
 
