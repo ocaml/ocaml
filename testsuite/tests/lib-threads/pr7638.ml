@@ -2,6 +2,8 @@
 
 * hassysthreads
 include systhreads
+** bytecode
+** native
 
 *)
 

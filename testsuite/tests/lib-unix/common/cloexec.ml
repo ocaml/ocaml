@@ -18,7 +18,7 @@
 include unix
 files = "fdstatus_aux.c fdstatus_main.ml"
 
-**libunix
+** libunix
 *** setup-ocamlc.byte-build-env
 program = "${test_build_directory}/cloexec.byte"
 **** ocamlc.byte
