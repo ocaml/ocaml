@@ -43,8 +43,9 @@ type checkpoint = {
   mutable c_state : checkpoint_state;
   mutable c_parent : checkpoint;
   mutable c_breakpoint_version : int;
-  mutable c_breakpoints : (int * int ref) list;
-  mutable c_trap_barrier : int
+  mutable c_breakpoints : (pc * int ref) list;
+  mutable c_trap_barrier : int;
+  mutable c_code_fragments : int list
   }
 
 (*** Pseudo-checkpoint `root'. ***)
@@ -59,7 +60,8 @@ let rec root = {
   c_parent = root;
   c_breakpoint_version = 0;
   c_breakpoints = [];
-  c_trap_barrier = 0
+  c_trap_barrier = 0;
+  c_code_fragments = [0]
   }
 
 (*** Current state ***)
@@ -75,12 +77,14 @@ let current_time () =
 let current_report () =
   !current_checkpoint.c_report
 
-let current_pc () =
-  match current_report () with
-    None | Some {rep_type = Exited | Uncaught_exc} -> None
-  | Some {rep_program_pointer = pc } -> Some pc
-
 let current_pc_sp () =
+  (* This pattern matching mimics the test used in debugger.c for
+     deciding whether or not PC/SP should be sent with the report.
+     See debugger.c, the [if] statement above the [command_loop]
+     label. *)
   match current_report () with
-    None | Some {rep_type = Exited | Uncaught_exc} -> None
-  | Some {rep_program_pointer = pc; rep_stack_pointer = sp } -> Some (pc, sp)
+  | Some {rep_type = Event | Breakpoint;
+          rep_program_pointer = pc; rep_stack_pointer = sp } -> Some (pc, sp)
+  | _ -> None
+
+let current_pc () = Option.map fst (current_pc_sp ())

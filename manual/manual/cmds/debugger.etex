@@ -86,7 +86,7 @@ by typing an end-of-file character (usually "ctrl-D").
 
 Typing an interrupt character (usually "ctrl-C") will not exit the
 debugger, but will terminate the action of any debugger command that is in
-progress and return to the debugger command level. 
+progress and return to the debugger command level.
 
 \section{Commands} \label{s:debugger-commands}
 
@@ -310,8 +310,13 @@ column \var{column}.
 Set a breakpoint in module \var{module} at the event closest to
 character number \var{character}.
 
-\item["break "\var{address}]
-Set a breakpoint at the code address \var{address}.
+\item["break " \var{frag}":"\var{pc}, "break " \var{pc}]
+Set a breakpoint at code address \var{frag}":"\var{pc}.  The integer
+\var{frag} is the identifier of a code fragment, a set of modules that
+have been loaded at once, either initially or with the "Dynlink"
+module. The integer \var{pc} is the instruction counter within this
+code fragment.  If \var{frag} is ommited, it defaults to 0, which is
+the code fragment of the program loaded initially.
 
 \item["delete "\optvar{breakpoint-numbers}]
 Delete the specified breakpoints. Without argument, all breakpoints
@@ -511,6 +516,33 @@ checkpoints.
 \begin{options}
 \item["set checkpoints" \var{on/off}]
 Select whether the debugger makes checkpoints or not.
+\end{options}
+
+\subsection{Behavior of the debugger with respect to "fork"}
+
+When the program issues a call to "fork", the debugger can either
+follow the child or the parent. By default, the debugger follows the
+parent process. The variable \var{follow_fork_mode} controls this
+behavior:
+
+\begin{options}
+\item["set follow_fork_mode" \var{child/parent}]
+Select whether to follow the child or the parent in case of a call to
+"fork".
+\end{options}
+
+\subsection{Stopping execution when new code is loaded}
+
+The debugger is compatible with the "Dynlink" module. However, when an
+external module is not yet loaded, it is impossible to set a
+breakpoint in its code. In order to facilitate setting breakpoints in
+dynamically loaded code, the debugger stops the program each time new
+modules are loaded. This behavior can be disabled using the
+\var{break_on_load} variable:
+
+\begin{options}
+\item["set break_on_load"  \var{on/off}]
+Select whether to stop after loading new code.
 \end{options}
 
 \subsection{Communication between the debugger and the program}

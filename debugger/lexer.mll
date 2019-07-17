@@ -83,6 +83,8 @@ and lexeme =    (* Read a lexeme *)
       { AT }
   | "$"
       { DOLLAR }
+  | ":"
+      { COLON }
   | "!"
       { BANG }
   | "("

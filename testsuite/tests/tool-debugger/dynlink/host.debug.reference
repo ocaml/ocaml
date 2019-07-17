@@ -1,0 +1,11 @@
+Loading program... done.
+hello host
+
+Module(s) Plugin loaded.
+Breakpoint: 1
+2   <|b|>print_endline "hello plugin"
+Backtrace:
+#0 Plugin plugin.ml:2:3
+#1 Plugin plugin.ml:4:10
+hello plugin
+Program exit.

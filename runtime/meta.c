@@ -31,6 +31,7 @@
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
 #include "caml/stacks.h"
+#include "caml/debugger.h"
 #include "caml/backtrace_prim.h"
 
 #ifndef NATIVE_CODE
@@ -117,6 +118,10 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   caml_thread_code((code_t) prog, len);
 #endif
   caml_prepare_bytecode((code_t) prog, len);
+
+  /* Notify debugger after fragment gets added and reified. */
+  caml_debugger(CODE_LOADED, Val_long(caml_code_fragments_table.size - 1));
+
   clos = caml_alloc_small (1, Closure_tag);
   Code_val(clos) = (code_t) prog;
   bytecode = caml_alloc_small (2, Abstract_tag);
@@ -136,26 +141,21 @@ CAMLprim value caml_static_release_bytecode(value bc)
 {
   code_t prog;
   asize_t len;
-  struct code_fragment * cf = NULL, * cfi;
-  int i;
+  int found, index;
+  struct code_fragment *cf;
+
   prog = Bytecode_val(bc)->prog;
   len = Bytecode_val(bc)->len;
   caml_remove_debug_info(prog);
-  for (i = 0; i < caml_code_fragments_table.size; i++) {
-    cfi = (struct code_fragment *) caml_code_fragments_table.contents[i];
-    if (cfi->code_start == (char *) prog &&
-        cfi->code_end == (char *) prog + len) {
-      cf = cfi;
-      break;
-    }
-  }
 
-  if (!cf) {
-      /* [cf] Not matched with a caml_reify_bytecode call; impossible. */
-      CAMLassert (0);
-  } else {
-      caml_ext_table_remove(&caml_code_fragments_table, cf);
-  }
+  found = caml_find_code_fragment((char*) prog, &index, &cf);
+  /* Not matched with a caml_reify_bytecode call; impossible. */
+  CAMLassert(found); (void) found; /* Silence unused variable warning. */
+
+  /* Notify debugger before the fragment gets destroyed. */
+  caml_debugger(CODE_UNLOADED, Val_long(index));
+
+  caml_ext_table_remove(&caml_code_fragments_table, cf);
 
 #ifndef NATIVE_CODE
   caml_release_bytecode(prog, len);
@@ -163,17 +163,6 @@ CAMLprim value caml_static_release_bytecode(value bc)
   caml_failwith("Meta.static_release_bytecode impossible with native code");
 #endif
   caml_stat_free(prog);
-  return Val_unit;
-}
-
-CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
-{
-  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
-  cf->code_start = (char *) prog;
-  cf->code_end = (char *) prog + Long_val(len);
-  memcpy(cf->digest, String_val(digest), 16);
-  cf->digest_computed = 1;
-  caml_ext_table_add(&caml_code_fragments_table, cf);
   return Val_unit;
 }
 

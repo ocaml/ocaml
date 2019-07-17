@@ -19,7 +19,7 @@ open Parser_aux
 open Format
 
 val expression :
-    Instruct.debug_event option -> Env.t -> expression ->
+    Events.code_event option -> Env.t -> expression ->
     Debugcom.Remote_value.t * type_expr
 
 type error =

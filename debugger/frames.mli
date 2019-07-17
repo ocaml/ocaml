@@ -16,13 +16,13 @@
 
 (****************************** Frames *********************************)
 
-open Instruct
+open Events
 
 (* Current frame number *)
 val current_frame : int ref
 
-(* Event at selected position. *)
-val selected_event : debug_event option ref
+(* Fragment and event at selected position. *)
+val selected_event : code_event option ref
 
 (* Selected position in source (module, line, column). *)
 (* Raise `Not_found' if not on an event. *)
@@ -48,7 +48,7 @@ val reset_frame : unit -> unit
    or None if we've encountered a stack frame with no debugging info
    attached. Stop when the function returns false, or frame with no
    debugging info reached, or top of stack reached. *)
-val do_backtrace : (debug_event option -> bool) -> unit
+val do_backtrace : (code_event option -> bool) -> unit
 
 (* Return the number of frames in the stack, or (-1) if it can't be
    determined because some frames have no debugging info. *)

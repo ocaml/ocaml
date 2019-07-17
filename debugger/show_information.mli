@@ -14,14 +14,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format;;
+open Format
 
 (* Display information about the current event. *)
-val show_current_event : formatter -> unit;;
+val show_current_event : formatter -> unit
 
 (* Display information about the current frame. *)
 (* --- `select frame' must have succeeded before calling this function. *)
-val show_current_frame : formatter -> bool -> unit;;
+val show_current_frame : formatter -> bool -> unit
 
 (* Display short information about one frame. *)
-val show_one_frame : int -> formatter -> Instruct.debug_event -> unit
+val show_one_frame : int -> formatter -> Events.code_event -> unit

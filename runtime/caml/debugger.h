@@ -29,12 +29,15 @@ extern uintnat caml_event_count;
 
 enum event_kind {
   EVENT_COUNT, BREAKPOINT, PROGRAM_START, PROGRAM_EXIT,
-  TRAP_BARRIER, UNCAUGHT_EXC
+  TRAP_BARRIER, UNCAUGHT_EXC, DEBUG_INFO_ADDED,
+  CODE_LOADED, CODE_UNLOADED
 };
 
 void caml_debugger_init (void);
-void caml_debugger (enum event_kind event);
+void caml_debugger (enum event_kind event, value param);
 void caml_debugger_cleanup_fork (void);
+
+opcode_t caml_debugger_saved_instruction(code_t pc);
 
 /* Communication protocol */
 
@@ -97,7 +100,11 @@ enum debugger_request {
 /* Replies to a REQ_GO request. All replies are followed by three uint32_t:
    - the value of the event counter
    - the position of the stack
-   - the current pc. */
+   - the current pc.
+   The REP_CODE_DEBUG_INFO reply is also followed by:
+   - the newly added debug information.
+   The REP_CODE_{UN,}LOADED reply is also followed by:
+   - the code fragment index. */
 
 enum debugger_reply {
   REP_EVENT = 'e',
@@ -108,8 +115,14 @@ enum debugger_reply {
   /* Program exited by calling exit or reaching the end of the source. */
   REP_TRAP = 's',
   /* Trap barrier crossed. */
-  REP_UNCAUGHT_EXC = 'u'
+  REP_UNCAUGHT_EXC = 'u',
   /* Program exited due to a stray exception. */
+  REP_CODE_DEBUG_INFO = 'D',
+  /* Additional debug info loaded. */
+  REP_CODE_LOADED = 'L',
+  /* Additional code loaded. */
+  REP_CODE_UNLOADED = 'U',
+  /* Additional code unloaded. */
 };
 
 #endif /* CAML_INTERNALS */

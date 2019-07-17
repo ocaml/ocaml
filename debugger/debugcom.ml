@@ -45,16 +45,23 @@ let set_current_connection io_chan =
 
 (* Modify the program code *)
 
-let set_event pos =
+type pc =
+  { frag : int;
+    pos : int; }
+
+let set_event {frag; pos} =
   output_char !conn.io_out 'e';
+  output_binary_int !conn.io_out frag;
   output_binary_int !conn.io_out pos
 
-let set_breakpoint pos =
+let set_breakpoint {frag; pos} =
   output_char !conn.io_out 'B';
+  output_binary_int !conn.io_out frag;
   output_binary_int !conn.io_out pos
 
-let reset_instr pos =
+let reset_instr {frag; pos} =
   output_char !conn.io_out 'i';
+  output_binary_int !conn.io_out frag;
   output_binary_int !conn.io_out pos
 
 (* Basic commands for flow control *)
@@ -65,12 +72,15 @@ type execution_summary =
   | Exited
   | Trap_barrier
   | Uncaught_exc
+  | Debug_info of Instruct.debug_event list array
+  | Code_loaded of int
+  | Code_unloaded of int
 
 type report = {
   rep_type : execution_summary;
-  rep_event_count : int;
+  rep_event_count : int64;
   rep_stack_pointer : int;
-  rep_program_pointer : int
+  rep_program_pointer : pc
 }
 
 type checkpoint_report =
@@ -95,24 +105,33 @@ let do_go_smallint n =
          | 'x' -> Exited
          | 's' -> Trap_barrier
          | 'u' -> Uncaught_exc
-         |  _  -> Misc.fatal_error "Debugcom.do_go" in
+         | 'D' -> Debug_info (input_value !conn.io_in :
+                                Instruct.debug_event list array)
+         | 'L' -> Code_loaded (input_binary_int !conn.io_in)
+         | 'U' -> Code_unloaded (input_binary_int !conn.io_in)
+         |  c  -> Misc.fatal_error (Printf.sprintf "Debugcom.do_go %c" c)
+       in
        let event_counter = input_binary_int !conn.io_in in
        let stack_pos = input_binary_int !conn.io_in in
-       let pc = input_binary_int !conn.io_in in
+       let frag = input_binary_int !conn.io_in in
+       let pos = input_binary_int !conn.io_in in
        { rep_type = summary;
-         rep_event_count = event_counter;
+         rep_event_count = Int64.of_int event_counter;
          rep_stack_pointer = stack_pos;
-         rep_program_pointer = pc })
+         rep_program_pointer = {frag; pos} })
 
 let rec do_go n =
   assert (n >= _0);
-  if n > max_small_int then(
-    ignore (do_go_smallint max_int);
-    do_go (n -- max_small_int)
-  )else(
+  if n > max_small_int then
+    begin match do_go_smallint max_int with
+    | { rep_type = Event } ->
+      do_go (n -- max_small_int)
+    | report ->
+      { report with
+        rep_event_count = report.rep_event_count ++ (n -- max_small_int) }
+    end
+  else
     do_go_smallint (Int64.to_int n)
-  )
-;;
 
 (* Perform a checkpoint *)
 
@@ -148,8 +167,9 @@ let initial_frame () =
   output_char !conn.io_out '0';
   flush !conn.io_out;
   let stack_pos = input_binary_int !conn.io_in in
-  let pc = input_binary_int !conn.io_in in
-  (stack_pos, pc)
+  let frag = input_binary_int !conn.io_in in
+  let pos = input_binary_int !conn.io_in in
+  (stack_pos, {frag; pos})
 
 let set_initial_frame () =
   ignore(initial_frame ())
@@ -163,8 +183,14 @@ let up_frame stacksize =
   output_binary_int !conn.io_out stacksize;
   flush !conn.io_out;
   let stack_pos = input_binary_int !conn.io_in in
-  let pc = if stack_pos = -1 then 0 else input_binary_int !conn.io_in in
-  (stack_pos, pc)
+  let frag, pos =
+    if stack_pos = -1
+    then 0, 0
+    else let frag = input_binary_int !conn.io_in in
+         let pos = input_binary_int !conn.io_in in
+         frag, pos
+  in
+  (stack_pos, { frag; pos })
 
 (* Get and set the current frame position *)
 
@@ -172,8 +198,9 @@ let get_frame () =
   output_char !conn.io_out 'f';
   flush !conn.io_out;
   let stack_pos = input_binary_int !conn.io_in in
-  let pc = input_binary_int !conn.io_in in
-  (stack_pos, pc)
+  let frag = input_binary_int !conn.io_in in
+  let pos = input_binary_int !conn.io_in in
+  (stack_pos, {frag; pos})
 
 let set_frame stack_pos =
   output_char !conn.io_out 'S';
@@ -308,7 +335,9 @@ module Remote_value =
         output_char !conn.io_out 'C';
         output_remote_value !conn.io_out v;
         flush !conn.io_out;
-        input_binary_int !conn.io_in
+        let frag = input_binary_int !conn.io_in in
+        let pos = input_binary_int !conn.io_in in
+        {frag;pos}
 
     let same rv1 rv2 =
       match (rv1, rv2) with
