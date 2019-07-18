@@ -18,6 +18,8 @@ if [ "$version" != '2.69' ] ; then
   echo "autoconf 2.69 is required" >&2
   exit 1
 else
+  # Remove the autom4te.cache directory to make sure we start in a clean state
+  rm -rf autom4te.cache
   autoconf -W all,error
   # Some distros have this 2013 patch to autoconf, some don't...
   sed -i -e '/^runstatedir/d' \
