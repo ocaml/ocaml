@@ -380,6 +380,9 @@ OCaml 4.09.0
 - #8800: Fix soundness bug in extension constructor inclusion
   (Leo White, review by Jacques Garrigue)
 
+- #8810: Env.lookup_module: don't allow creating loops
+  (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
 OCaml 4.08.0
 ------------
 
