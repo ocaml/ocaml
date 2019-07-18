@@ -79,7 +79,7 @@ type summary =
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
-  | Env_copy_types of summary * string list
+  | Env_copy_types of summary
   | Env_persistent of summary * Ident.t
 
 type address =
@@ -207,29 +207,37 @@ module IdTbl =
       current: 'a Ident.tbl;
       (** Local bindings since the last open *)
 
-      opened: 'a opened option;
+      layer: 'a layer;
       (** Symbolic representation of the last (innermost) open, if any. *)
     }
 
-    and 'a opened = {
-      root: Path.t;
-      (** The path of the opened module, to be prefixed in front of
-          its local names to produce a valid path in the current
-          environment. *)
+    and 'a layer =
+      | Open of {
+          root: Path.t;
+          (** The path of the opened module, to be prefixed in front of
+              its local names to produce a valid path in the current
+              environment. *)
 
-      components: 'a NameMap.t;
-      (** Components from the opened module. *)
+          components: 'a NameMap.t;
+          (** Components from the opened module. *)
 
-      using: (string -> ('a * 'a) option -> unit) option;
-      (** A callback to be applied when a component is used from this
-          "open".  This is used to detect unused "opens".  The
-          arguments are used to detect shadowing. *)
+          using: (string -> ('a * 'a) option -> unit) option;
+          (** A callback to be applied when a component is used from this
+              "open".  This is used to detect unused "opens".  The
+              arguments are used to detect shadowing. *)
 
-      next: 'a t;
-      (** The table before opening the module. *)
-    }
+          next: 'a t;
+          (** The table before opening the module. *)
+        }
 
-    let empty = { current = Ident.empty; opened = None }
+      | Map of {
+          f: ('a -> 'a);
+          next: 'a t;
+        }
+
+      | Nothing
+
+    let empty = { current = Ident.empty; layer = Nothing }
 
     let add id x tbl =
       {tbl with current = Ident.add id x tbl.current}
@@ -245,15 +253,22 @@ module IdTbl =
       in
       {
         current = Ident.empty;
-        opened = Some {using; root; components; next};
+        layer = Open {using; root; components; next};
+      }
+
+    let map f next =
+      {
+        current = Ident.empty;
+        layer = Map {f; next}
       }
 
     let rec find_same id tbl =
       try Ident.find_same id tbl.current
       with Not_found as exn ->
-        begin match tbl.opened with
-        | Some {next; _} -> find_same id next
-        | None -> raise exn
+        begin match tbl.layer with
+        | Open {next; _} -> find_same id next
+        | Map {f; next} -> f (find_same id next)
+        | Nothing -> raise exn
         end
 
     let rec find_name ~mark name tbl =
@@ -261,8 +276,8 @@ module IdTbl =
         let (id, desc) = Ident.find_name name tbl.current in
         Pident id, desc
       with Not_found as exn ->
-        begin match tbl.opened with
-        | Some {using; root; next; components} ->
+        begin match tbl.layer with
+        | Open {using; root; next; components} ->
             begin try
               let descr = NameMap.find name components in
               let res = Pdot (root, name), descr in
@@ -278,45 +293,29 @@ module IdTbl =
             with Not_found ->
               find_name ~mark name next
             end
-        | None ->
+        | Map {f; next} ->
+            let (p, desc) =  find_name ~mark name next in
+            p, f desc
+        | Nothing ->
             raise exn
         end
-
-    let rec update name f tbl =
-      try
-        let (id, desc) = Ident.find_name name tbl.current in
-        let new_desc = f desc in
-        {tbl with current = Ident.add id new_desc tbl.current}
-      with Not_found ->
-        begin match tbl.opened with
-        | Some {root; using; next; components} ->
-            begin try
-              let desc = NameMap.find name components in
-              let new_desc = f desc in
-              let components = NameMap.add name new_desc components in
-              {tbl with opened = Some {root; using; next; components}}
-            with Not_found ->
-              let next = update name f next in
-              {tbl with opened = Some {root; using; next; components}}
-            end
-        | None ->
-            tbl
-        end
-
-
 
     let rec find_all name tbl =
       List.map
         (fun (id, desc) -> Pident id, desc)
         (Ident.find_all name tbl.current) @
-      match tbl.opened with
-      | None -> []
-      | Some {root; using = _; next; components} ->
-          try
+      match tbl.layer with
+      | Nothing -> []
+      | Open {root; using = _; next; components} ->
+          begin try
             let desc = NameMap.find name components in
             (Pdot (root, name), desc) :: find_all name next
           with Not_found ->
             find_all name next
+          end
+      | Map {f; next} ->
+          List.map (fun (p, desc) -> (p, f desc))
+            (find_all name next)
 
     let rec fold_name f tbl acc =
       let acc =
@@ -324,27 +323,30 @@ module IdTbl =
           (fun id d -> f (Ident.name id) (Pident id, d))
           tbl.current acc
       in
-      match tbl.opened with
-      | Some {root; using = _; next; components} ->
+      match tbl.layer with
+      | Open {root; using = _; next; components} ->
           acc
           |> NameMap.fold
             (fun name desc -> f name (Pdot (root, name), desc))
             components
           |> fold_name f next
-      | None ->
+      | Nothing ->
           acc
+      | Map {f=g; next} ->
+          acc
+          |> fold_name (fun name (path, desc) -> f name (path, g desc)) next
 
     let rec local_keys tbl acc =
       let acc = Ident.fold_all (fun k _ accu -> k::accu) tbl.current acc in
-      match tbl.opened with
-      | Some o -> local_keys o.next acc
-      | None -> acc
+      match tbl.layer with
+      | Open {next; _ } | Map {next; _} -> local_keys next acc
+      | Nothing -> acc
 
 
     let rec iter f tbl =
       Ident.iter (fun id desc -> f id (Pident id, desc)) tbl.current;
-      match tbl.opened with
-      | Some {root; using = _; next; components} ->
+      match tbl.layer with
+      | Open {root; using = _; next; components} ->
           NameMap.iter
             (fun s x ->
                let root_scope = Path.scope root in
@@ -352,7 +354,9 @@ module IdTbl =
                 (Pdot (root, s), x))
             components;
           iter f next
-      | None -> ()
+      | Map {f=g; next} ->
+          iter (fun id (path, desc) -> f id (path, g desc)) next
+      | Nothing -> ()
 
     let diff_keys tbl1 tbl2 =
       let keys2 = local_keys tbl2 [] in
@@ -1219,24 +1223,26 @@ let lookup_cltype ?loc ~mark lid env =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
     ?loc ~mark lid env
 
-type copy_of_types = {
-  to_copy: string list;
-  initial_values: (value_description * address_lazy) IdTbl.t;
-  new_values: (value_description * address_lazy) IdTbl.t;
-}
-
-let make_copy_of_types l env : copy_of_types =
+let make_copy_of_types env0 =
+  let memo = Hashtbl.create 16 in
+  let copy t =
+    try
+      Hashtbl.find memo t.id
+    with Not_found ->
+      let t2 = Subst.type_expr Subst.identity t in
+      Hashtbl.add memo t.id t2;
+      t2
+  in
   let f (desc, addr) =
-    {desc with val_type = Subst.type_expr Subst.identity desc.val_type}, addr
+    {desc with val_type = copy desc.val_type}, addr
   in
   let values =
-    List.fold_left (fun env s -> IdTbl.update s f env) env.values l
+    IdTbl.map f env0.values
   in
-  {to_copy = l; initial_values = env.values; new_values = values}
-
-let do_copy_types { to_copy = l; initial_values; new_values = values } env =
-  if initial_values != env.values then fatal_error "Env.do_copy_types";
-  {env with values; summary = Env_copy_types (env.summary, l)}
+  (fun env ->
+     if env.values != env0.values then fatal_error "Env.make_copy_of_types";
+     {env with values; summary = Env_copy_types env.summary}
+  )
 
 let mark_value_used name vd =
   try Hashtbl.find value_declarations (name, vd.val_loc) ()
@@ -2384,8 +2390,8 @@ let filter_non_loaded_persistent f env =
           Env_functor_arg (filter_summary s ids, id)
       | Env_constraints (s, cstrs) ->
           Env_constraints (filter_summary s ids, cstrs)
-      | Env_copy_types (s, types) ->
-          Env_copy_types (filter_summary s ids, types)
+      | Env_copy_types s ->
+          Env_copy_types (filter_summary s ids)
       | Env_persistent (s, id) ->
           if String.Set.mem (Ident.name id) ids then
             filter_summary s (String.Set.remove (Ident.name id) ids)
