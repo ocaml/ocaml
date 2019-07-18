@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-# Remove the autom4te.cache directory tomake sure we start in a clean state
+# Remove the autom4te.cache directory to make sure we start in a clean state
 rm -rf autom4te.cache
 
 autoconf --force --warnings=all,error
