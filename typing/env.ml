@@ -1083,7 +1083,10 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
   match lid with
     Lident s ->
       begin match IdTbl.find_name ~mark s env.modules with
-      | exception Not_found when !Clflags.transparent_modules && not load ->
+      | exception Not_found
+        when not (Current_unit_name.is s)
+          && !Clflags.transparent_modules
+          && not load ->
           check_pers_mod s
             ~loc:(Option.value loc ~default:Location.none);
           Path.Pident (Ident.create_persistent s)
