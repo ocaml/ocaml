@@ -1705,6 +1705,7 @@ bytecomp/bytepackager.cmo : \
     typing/typemod.cmi \
     bytecomp/translmod.cmi \
     typing/subst.cmi \
+    bytecomp/simplif.cmi \
     bytecomp/printlambda.cmi \
     typing/path.cmi \
     utils/misc.cmi \
@@ -1724,6 +1725,7 @@ bytecomp/bytepackager.cmx : \
     typing/typemod.cmx \
     bytecomp/translmod.cmx \
     typing/subst.cmx \
+    bytecomp/simplif.cmx \
     bytecomp/printlambda.cmx \
     typing/path.cmx \
     utils/misc.cmx \
@@ -2483,6 +2485,7 @@ asmcomp/asmlink.cmi : \
 asmcomp/asmpackager.cmo : \
     typing/typemod.cmi \
     bytecomp/translmod.cmi \
+    bytecomp/simplif.cmi \
     utils/profile.cmi \
     utils/misc.cmi \
     middle_end/middle_end.cmi \
@@ -2505,6 +2508,7 @@ asmcomp/asmpackager.cmo : \
 asmcomp/asmpackager.cmx : \
     typing/typemod.cmx \
     bytecomp/translmod.cmx \
+    bytecomp/simplif.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
     middle_end/middle_end.cmx \

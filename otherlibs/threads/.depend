@@ -1,15 +1,17 @@
 scheduler.o: scheduler.c ../../runtime/caml/alloc.h \
-  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
-  ../../runtime/caml/m.h ../../runtime/caml/s.h \
-  ../../runtime/caml/mlvalues.h ../../runtime/caml/backtrace.h \
-  ../../runtime/caml/exec.h ../../runtime/caml/callback.h \
-  ../../runtime/caml/fail.h ../../runtime/caml/io.h \
-  ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
-  ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
-  ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
-  ../../runtime/caml/printexc.h ../../runtime/caml/roots.h \
-  ../../runtime/caml/signals.h ../../runtime/caml/stacks.h \
-  ../../runtime/caml/sys.h
+ ../../runtime/caml/misc.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/backtrace.h \
+ ../../runtime/caml/exec.h ../../runtime/caml/callback.h \
+ ../../runtime/caml/config.h ../../runtime/caml/fail.h \
+ ../../runtime/caml/io.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/printexc.h \
+ ../../runtime/caml/roots.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/stacks.h \
+ ../../runtime/caml/sys.h
 condition.cmo : \
     thread.cmi \
     mutex.cmi \
