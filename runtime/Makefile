@@ -341,6 +341,9 @@ object_types := % %_b %_bd %_bi %_bpic %_n %_nd %_ni %_np %_npic
 $(foreach object_type, $(object_types), \
   $(eval $(call COMPILE_C_FILE,$(object_type))))
 
+$(foreach object_type,$(subst %,,$(object_types)), \
+  $(eval dynlink$(object_type).$(O): $(ROOTDIR)/Makefile.config))
+
 # Compilation of assembly files
 
 %.o: %.S
