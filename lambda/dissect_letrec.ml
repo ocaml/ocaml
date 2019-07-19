@@ -299,29 +299,22 @@ let rec prepare_letrec
       let immutables = Ident.Set.add id letrec.immutables in
       let letrec = { letrec with immutables } in
       let free_vars = Lambda.free_variables def in
-      (* if Ident.Set.is_empty (Ident.Set.inter free_vars recursive_set) then
-       *   (\* Non recursive let *\)
-       *   let letrec = prepare_letrec recursive_set current_var body letrec in
-       *   let pre ~tail : Lambda.lambda =
-       *     Llet (let_kind, k, id, def, letrec.pre ~tail)
-       *   in
-       *   { letrec with pre }
-       * else *)
-      let recursive_set =
-        if Ident.Set.disjoint free_vars recursive_set then
-          recursive_set
-        else
-          Ident.Set.add id recursive_set
-      in
+      if Ident.Set.disjoint free_vars recursive_set then
+        (* Non recursive let *)
+        let letrec = prepare_letrec recursive_set current_let body letrec in
+        let pre ~tail : Lambda.lambda =
+          Llet (let_kind, value_kind, id, def, letrec.pre ~tail)
+        in
+        { letrec with pre }
+      else
+      let recursive_set = Ident.Set.add id recursive_set in
       let letrec = prepare_letrec recursive_set current_let body letrec in
       let let_def = { let_kind; value_kind; ident = id } in
       prepare_letrec recursive_set (Some let_def) def letrec
   | Lsequence (lam1, lam2) ->
-      let () = debug "seq %a@." Printlambda.lambda lam in
       let free_vars = Lambda.free_variables lam1 in
       let letrec = prepare_letrec recursive_set current_let lam2 letrec in
       if Ident.Set.disjoint free_vars recursive_set then
-        let () = debug "non req seq\n%!" in
         { letrec with pre = fun ~tail -> Lsequence (lam1, letrec.pre ~tail) }
       else
         (* Note that it is important not to handle this the same way as lets.
@@ -332,6 +325,18 @@ let rec prepare_letrec
       let letrec = prepare_letrec recursive_set current_let body letrec in
       { letrec with effects = Levent (letrec.effects, event) }
   | Lletrec (bindings, body) ->
+      (* Inner letrecs need some special care: We split between _outer_ bindings
+         that are recursive with the current [recursive_set], and therefore need
+         to be merged into it, and _inner_ bindings that are not (but can still
+         be recursive between themselves). This corresponds to the [Recursive]
+         case in [Rec_check.value_bindings].
+
+         One solution would be to handle now the outer bindings, and lift the
+         inner ones into [letrec.pre], to be handled in a second pass. That
+         would change the evaluation order, though, so we instead descend
+         recursively in a single pass. This requires separate accumulators that
+         we re-integrate in the right place in [letrec] afterwards, so that the
+         outer bindings can safely depend upon them. *)
       let deps =
         List.fold_left (fun acc (x, def) ->
             Ident.Map.add x (Lambda.free_variables def) acc)
@@ -339,65 +344,129 @@ let rec prepare_letrec
           bindings
       in
       let vars = Ident.Map.keys deps in
-      (* Split the bindings that are recursive with the top-level letrec and
-         need to be handled now, and the ones that don't and should be handled
-         separately afterwards *)
-      let rdeps = (* a simple transposition *)
+      let reverse_deps =
+        (* Set.t Map.t to Set.t Map.t transposition to get reverse
+           dependencies *)
         let add_opt x = function
           | None -> Some (Ident.Set.singleton x)
           | Some s -> Some (Ident.Set.add x s)
         in
-        Ident.Map.fold (fun x deps rdeps ->
-            Ident.Set.fold (fun d rdeps ->
-                Ident.Map.update d (add_opt x) rdeps)
-              deps rdeps)
+        Ident.Map.fold (fun x deps reverse_deps ->
+            Ident.Set.fold (fun d reverse_deps ->
+                Ident.Map.update d (add_opt x) reverse_deps)
+              deps reverse_deps)
           deps Ident.Map.empty
       in
       let recursive_set =
+        (* and a fixpoint to get their transitive counterpart *)
         Ident.Set.fixpoint (fun x ->
-            try Ident.Map.find x rdeps with Not_found -> Ident.Set.empty)
+            try Ident.Map.find x reverse_deps with Not_found -> Ident.Set.empty)
           recursive_set
       in
-      let top_rec_vars = Ident.Set.inter vars recursive_set in
+      let outer_vars = Ident.Set.inter vars recursive_set in
+
+      (* TODO lg: it's probably better to have this, but commented out atm so
+         that it doesn't hide bugs in the more complex path
+       * if Ident.Set.is_empty outer_vars then
+       *   (\* Non recursive relative to top-level letrec, we can avoid dissecting it right now.
+       *      Its turn will come later. *\)
+       *   let letrec = prepare_letrec recursive_set current_let body letrec in
+       *   let pre ~tail : Lambda.lambda =
+       *     Lletrec (bindings, letrec.pre ~tail)
+       *   in
+       *   { letrec with pre }
+       * else *)
+
       let letrec =
         { letrec with immutables =
-                        Ident.Set.union letrec.immutables top_rec_vars }
+                        Ident.Set.union letrec.immutables vars }
       in
       let letrec =
         prepare_letrec recursive_set current_let body letrec
       in
-      (* The [pre] within the recursive bindings are split and re-inserted into
-         the inner letrec binding, in order to preserve exacution order *)
-      let letrec, pre =
-        { letrec with pre = fun ~tail -> tail },
-        letrec.pre
+      let pre, letrec =
+        (* extract the current [pre], so that definitions from the inner letrec
+           can be re-inserted in the middle *)
+        letrec.pre, { letrec with pre = fun ~tail -> tail }
       in
-      let letrec, pre_bnd =
-        List.fold_right (fun (id, def) (letrec, pre_bnd) ->
-            if Ident.Set.mem id top_rec_vars then
-              let let_def = {
-                let_kind = Strict;
-                value_kind = Pgenval;
-                ident = id;
-              } in
+      let letrec, inner_effects, inner_functions =
+        List.fold_right
+          (fun (id, def) (letrec, inner_effects, inner_functions) ->
+            debug "    [31m%a = %a[m %b@."
+              Ident.print id
+              Printlambda.lambda def
+              (Ident.Set.mem id outer_vars);
+            let let_def = {
+              let_kind = Strict;
+              value_kind = Pgenval;
+              ident = id;
+            } in
+            if Ident.Set.mem id outer_vars then
               prepare_letrec recursive_set (Some let_def) def letrec,
-              pre_bnd
+              inner_effects, inner_functions
             else
-              let unit = Lconst (Const_pointer 0) in
-              let pre = letrec.pre ~tail:unit in
-              { letrec with pre = fun ~tail -> tail },
-              (id, def) ::
-              if pre = unit then pre_bnd
-              else (Ident.create_local "dummy_in_letrec", pre) :: pre_bnd
+              let { blocks; consts; pre; effects;
+                    functions; substitution; immutables } =
+                letrec
+              in
+              let inner_letrec = {
+                effects = Lconst (Const_pointer 0);
+                functions = [];
+                (* these can be safely handled in common *)
+                blocks; consts; pre; substitution; immutables;
+              } in
+              let inner_letrec =
+                prepare_letrec
+                  (Ident.Set.diff vars outer_vars) (Some let_def)
+                  def inner_letrec
+              in
+              { inner_letrec with effects; functions },
+              inner_letrec.effects :: inner_effects,
+              inner_letrec.functions @ inner_functions
           )
           bindings
-          (letrec, [])
+          (letrec, [], [])
       in
-      let pre ~tail = match pre_bnd with
-        | [] -> letrec.pre ~tail:(pre ~tail)
-        | bnds -> letrec.pre ~tail:(Lletrec (bnds, pre ~tail))
+      let pre =
+        List.fold_left (fun pre -> function
+            | Lconst (Const_pointer 0) -> pre
+            | eff -> fun ~tail -> Lsequence (eff, pre ~tail))
+          pre inner_effects
       in
+      let pre =
+        match inner_functions with
+        | [] -> pre
+        | _ :: _ ->
+            let functions =
+              List.map (fun (id, lfun) -> id, Lfunction lfun) inner_functions
+            in
+            fun ~tail -> Lletrec (functions, pre ~tail)
+      in
+      let pre ~tail = letrec.pre ~tail:(pre ~tail) in
       { letrec with pre }
+
+     (* let outer_bindings, non_rec_bindings =
+      *   List.partition (fun (x, _) -> Ident.Set.mem x outer_vars) bindings
+      * in
+      * let letrec =
+      *   List.fold_right (fun (id, def) letrec ->
+      *       let let_def = {
+      *         let_kind = Strict;
+      *         value_kind = Pgenval;
+      *         ident = id;
+      *       } in
+      *       prepare_letrec recursive_set (Some let_def) def letrec)
+      *     outer_bindings
+      *     letrec
+      * in
+      * let pre =
+      *   match non_rec_bindings with
+      *   | [] -> letrec.pre
+      *   | bnd -> fun ~tail : Lambda.lambda -> Lletrec (bnd, letrec.pre ~tail)
+      * in
+      * { letrec with pre } *)
+
+
 
   | Lvar id when Ident.Set.mem id letrec.immutables ->
       (* This cannot be a mutable variable: it is ok to copy it *)
