@@ -1,10 +1,11 @@
 (* TEST
    (* Test that yielding between busy threads reliably triggers a thread
       switch. *)
+   * hassysthreads
    include systhreads
-   * not-windows
-   ** bytecode
-   ** native
+   ** not-windows
+   *** bytecode
+   *** native
 *)
 
 let threads = 4
