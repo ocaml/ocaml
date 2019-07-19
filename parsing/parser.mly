@@ -418,6 +418,11 @@ let wrap_sig_ext ~loc body ext =
 let wrap_mksig_ext ~loc (item, ext) =
   wrap_sig_ext ~loc (mksig ~loc item) ext
 
+let mk_quotedext ~loc (id, content, delim) =
+  let exp_id = mkloc id (make_loc loc) in
+  let e = ghexp ~loc (Pexp_constant (Pconst_string (content, delim))) in
+  (exp_id, PStr [mkstrexp e []])
+
 let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)
 let text_cstr pos = Cf.text (rhs_text pos)
@@ -678,6 +683,8 @@ let mk_directive ~loc name arg =
 %token SIG
 %token STAR
 %token <string * string option> STRING
+%token <string * string * string option> BRACEPERCENTBRACE
+%token <string * string * string option> BRACEPERCENTPERCENTBRACE
 %token STRUCT
 %token THEN
 %token TILDE
@@ -759,7 +766,7 @@ The precedences must be listed from low to high.
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
-          LBRACKETPERCENT
+          LBRACKETPERCENT BRACEPERCENTBRACE
 
 
 /* Entry points */
@@ -3680,10 +3687,14 @@ ext:
   ext attributes    { $1, $2 }
 ;
 extension:
-  LBRACKETPERCENT attr_id payload RBRACKET { ($2, $3) }
+  | LBRACKETPERCENT attr_id payload RBRACKET { ($2, $3) }
+  | BRACEPERCENTBRACE
+    { mk_quotedext ~loc:$sloc $1 }
 ;
 item_extension:
-  LBRACKETPERCENTPERCENT attr_id payload RBRACKET { ($2, $3) }
+  | LBRACKETPERCENTPERCENT attr_id payload RBRACKET { ($2, $3) }
+  | BRACEPERCENTPERCENTBRACE
+    { mk_quotedext ~loc:$sloc $1 }
 ;
 payload:
     structure { PStr $1 }

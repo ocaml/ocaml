@@ -326,6 +326,8 @@ let dotsymbolchar =
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
+let extattrident = identchar+ ('.' identchar+)*
+
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_digit =
@@ -404,6 +406,18 @@ rule token = parse
   | "{" (lowercase* as delim) "|"
       { let s = with_string (quoted_string delim) lexbuf in
         STRING (s, Some delim) }
+  | "{%" (extattrident as id) "|"
+      { let s = with_string (quoted_string "") lexbuf in
+        BRACEPERCENTBRACE (id, s, Some "") }
+  | "{%" (extattrident as id) blank* (lowercase* as delim) "|"
+      { let s = with_string (quoted_string delim) lexbuf in
+        BRACEPERCENTBRACE (id, s, Some delim) }
+  | "{%%" (extattrident as id) "|"
+      { let s = with_string (quoted_string "") lexbuf in
+        BRACEPERCENTPERCENTBRACE (id, s, Some "") }
+  | "{%%" (extattrident as id) blank* (lowercase* as delim) "|"
+      { let s = with_string (quoted_string delim) lexbuf in
+        BRACEPERCENTPERCENTBRACE (id, s, Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         (* newline is ('\013'* '\010') *)
