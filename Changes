@@ -101,6 +101,10 @@ OCaml 4.10.0
   (Guillaume Munch-Maccagnoni, review by Jacques-Henri Jourdan,
    Stephen Dolan, and Gabriel Scherer)
 
+- #8820: quoted extensions: {%foo|...|}
+  (Gabriel Radanne, Leo White and Gabriel Scherer,
+   request by Bikal Lem)
+
 ### Internal/compiler-libs changes:
 
 - #8844: Printing faulty constructors, inline records fields and their types
