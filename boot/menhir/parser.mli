@@ -111,6 +111,8 @@ type token =
   | COLON
   | CLASS
   | CHAR of (char)
+  | BRACEPERCENTPERCENTBRACE of (string * string * string option)
+  | BRACEPERCENTBRACE of (string * string * string option)
   | BEGIN
   | BARRBRACKET
   | BARBAR
