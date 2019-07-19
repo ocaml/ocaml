@@ -124,6 +124,16 @@ let store_escaped_char lexbuf c =
 let store_escaped_uchar lexbuf u =
   if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
 
+let with_string f lexbuf =
+  reset_string_buffer();
+  is_in_string := true;
+  let string_start = lexbuf.lex_start_p in
+  string_start_loc := Location.curr lexbuf;
+  f lexbuf;
+  is_in_string := false;
+  lexbuf.lex_start_p <- string_start;
+  get_stored_string ()
+
 let with_comment_buffer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
   comment_start_loc := [start_loc];
@@ -389,23 +399,11 @@ rule token = parse
   | (float_literal | hex_float_literal | int_literal) identchar+ as invalid
       { error lexbuf (Invalid_literal invalid) }
   | "\""
-      { reset_string_buffer();
-        is_in_string := true;
-        let string_start = lexbuf.lex_start_p in
-        string_start_loc := Location.curr lexbuf;
-        string lexbuf;
-        is_in_string := false;
-        lexbuf.lex_start_p <- string_start;
-        STRING (get_stored_string(), None) }
+      { let s = with_string string lexbuf in
+        STRING (s, None) }
   | "{" (lowercase* as delim) "|"
-      { reset_string_buffer();
-        is_in_string := true;
-        let string_start = lexbuf.lex_start_p in
-        string_start_loc := Location.curr lexbuf;
-        quoted_string delim lexbuf;
-        is_in_string := false;
-        lexbuf.lex_start_p <- string_start;
-        STRING (get_stored_string(), Some delim) }
+      { let s = with_string (quoted_string delim) lexbuf in
+        STRING (s, Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         (* newline is ('\013'* '\010') *)
