@@ -123,10 +123,6 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
-- #8751: fix bug that could result in misaligned data section when compiling to
-  native-code on amd64.  (observed with the mingw64 compiler)
-  (Nicolás Ojeda Bär, review by David Allsopp)
-
 OCaml 4.09.0
 ------------
 
@@ -135,10 +131,6 @@ OCaml 4.09.0
 - #2278: Remove native code generation support for 32-bit Intel macOS,
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
-
-- #7887: ensure frame table is 8-aligned on ARM64 and PPC64
-  (Xavier Leroy, report by Mark Hayden, review by Mark Shinwell
-   and Gabriel Scherer)
 
 - #8507: Shorten symbol names of anonymous functions in Flambda mode
   (the directory portions are now hidden)
@@ -374,17 +366,30 @@ OCaml 4.09.0
 - #8701, #8725: Variance of constrained parameters causes principality issues
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
-- #8769, #8770: Fix assertion failure with -pack
-  (Leo White, review by Gabriel Scherer, report by Fabian @copy)
-
 - #8800: Fix soundness bug in extension constructor inclusion
   (Leo White, review by Jacques Garrigue)
 
 - #8810: Env.lookup_module: don't allow creating loops
   (Thomas Refis, report by Leo White, review by Jacques Garrigue)
 
-OCaml 4.08.0
-------------
+OCaml 4.08 maintenance branch:
+------------------------------
+
+### Bug fixes:
+
+- #7887: ensure frame table is 8-aligned on ARM64 and PPC64
+  (Xavier Leroy, report by Mark Hayden, review by Mark Shinwell
+   and Gabriel Scherer)
+
+- #8751: fix bug that could result in misaligned data section when compiling to
+  native-code on amd64.  (observed with the mingw64 compiler)
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #8769, #8770: Fix assertion failure with -pack
+  (Leo White, review by Gabriel Scherer, report by Fabian @copy)
+
+OCaml 4.08.0 (13 June 2019)
+---------------------------
 
 ### Language features:
 
