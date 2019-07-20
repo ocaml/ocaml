@@ -388,6 +388,10 @@ OCaml 4.08 maintenance branch:
 - #8769, #8770: Fix assertion failure with -pack
   (Leo White, review by Gabriel Scherer, report by Fabian @copy)
 
+- #8816, #8818: fix loading of packed modules with Dynlink (regression in
+  #2176).
+  (Leo White, report by Andre Maroneze, review by Gabriel Scherer)
+
 OCaml 4.08.0 (13 June 2019)
 ---------------------------
 
