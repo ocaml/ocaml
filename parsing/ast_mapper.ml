@@ -731,16 +731,18 @@ let extension_of_error {kind; main; sub} =
   let str_of_pp pp_msg = Format.asprintf "%t" pp_msg in
   let extension_of_sub sub =
     { loc = sub.loc; txt = "ocaml.error" },
-    PStr ([Str.eval (Exp.constant (Pconst_string (str_of_pp sub.txt, None)))])
+    PStr ([Str.eval (Exp.constant
+                       (Pconst_string (str_of_pp sub.txt, sub.loc, None)))])
   in
   { loc = main.loc; txt = "ocaml.error" },
-  PStr (Str.eval (Exp.constant (Pconst_string (str_of_pp main.txt, None))) ::
+  PStr (Str.eval (Exp.constant
+                    (Pconst_string (str_of_pp main.txt, main.loc, None))) ::
         List.map (fun msg -> Str.extension (extension_of_sub msg)) sub)
 
 let attribute_of_warning loc s =
   Attr.mk
     {loc; txt = "ocaml.ppwarning" }
-    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))]))
+    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, loc, None)))]))
 
 let cookies = ref String.Map.empty
 
@@ -763,7 +765,7 @@ module PpxContext = struct
 
   let lid name = { txt = Lident name; loc = Location.none }
 
-  let make_string x = Exp.constant (Pconst_string (x, None))
+  let make_string s = Exp.constant (Const.string s)
 
   let make_bool x =
     if x
@@ -828,7 +830,7 @@ module PpxContext = struct
   let restore fields =
     let field name payload =
       let rec get_string = function
-        | { pexp_desc = Pexp_constant (Pconst_string (str, None)) } -> str
+        | { pexp_desc = Pexp_constant (Pconst_string (str, _, None)) } -> str
         | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
                              { %s }] string syntax" name
       and get_bool pexp =

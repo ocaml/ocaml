@@ -29,7 +29,7 @@ module MenhirBasics = struct
     | STRUCT
     | STRING of (
 # 685 "parsing/parser.mly"
-       (string * string option)
+       (string * Location.t * string option)
 # 34 "parsing/parser.ml"
   )
     | STAR
@@ -196,12 +196,12 @@ module MenhirBasics = struct
   )
     | BRACEPERCENTPERCENTBRACE of (
 # 687 "parsing/parser.mly"
-       (string * string * string option)
+       (string * string * Location.t * string option)
 # 201 "parsing/parser.ml"
   )
     | BRACEPERCENTBRACE of (
 # 686 "parsing/parser.mly"
-       (string * string * string option)
+       (string * string * Location.t * string option)
 # 206 "parsing/parser.ml"
   )
     | BEGIN
@@ -632,9 +632,9 @@ let wrap_sig_ext ~loc body ext =
 let wrap_mksig_ext ~loc (item, ext) =
   wrap_sig_ext ~loc (mksig ~loc item) ext
 
-let mk_quotedext ~loc (id, content, delim) =
+let mk_quotedext ~loc (id, content, strloc, delim) =
   let exp_id = mkloc id (make_loc loc) in
-  let e = ghexp ~loc (Pexp_constant (Pconst_string (content, delim))) in
+  let e = ghexp ~loc (Pexp_constant (Pconst_string (content, strloc, delim))) in
   (exp_id, PStr [mkstrexp e []])
 
 let text_str pos = Str.text (rhs_text pos)
@@ -6700,7 +6700,7 @@ module Tables = struct
         } = _menhir_stack in
         let _1 : (
 # 685 "parsing/parser.mly"
-       (string * string option)
+       (string * Location.t * string option)
 # 6705 "parsing/parser.ml"
         ) = Obj.magic _1 in
         let _endpos__0_ = _menhir_stack.MenhirLib.EngineTypes.endp in
@@ -6708,7 +6708,7 @@ module Tables = struct
         let _endpos = _endpos__1_ in
         let _v : (Parsetree.constant) = 
 # 3358 "parsing/parser.mly"
-                 ( let (s, d) = _1 in Pconst_string (s, d) )
+                 ( let (s, strloc, d) = _1 in Pconst_string (s, strloc, d) )
 # 6713 "parsing/parser.ml"
          in
         {
@@ -12351,7 +12351,7 @@ module Tables = struct
         } = _menhir_stack in
         let _1 : (
 # 686 "parsing/parser.mly"
-       (string * string * string option)
+       (string * string * Location.t * string option)
 # 12356 "parsing/parser.ml"
         ) = Obj.magic _1 in
         let _endpos__0_ = _menhir_stack.MenhirLib.EngineTypes.endp in
@@ -14416,7 +14416,7 @@ module Tables = struct
         } = _menhir_stack in
         let _1 : (
 # 687 "parsing/parser.mly"
-       (string * string * string option)
+       (string * string * Location.t * string option)
 # 14421 "parsing/parser.ml"
         ) = Obj.magic _1 in
         let _endpos__0_ = _menhir_stack.MenhirLib.EngineTypes.endp in
@@ -22453,7 +22453,7 @@ module Tables = struct
         } = _menhir_stack in
         let s : (
 # 685 "parsing/parser.mly"
-       (string * string option)
+       (string * Location.t * string option)
 # 22458 "parsing/parser.ml"
         ) = Obj.magic s in
         let _endpos__0_ = _menhir_stack.MenhirLib.EngineTypes.endp in
@@ -22461,7 +22461,7 @@ module Tables = struct
         let _endpos = _endpos_s_ in
         let _v : (string list) = let x = 
 # 3504 "parsing/parser.mly"
-    ( fst s )
+    ( let body, _, _ = s in body )
 # 22466 "parsing/parser.ml"
          in
         
@@ -22494,7 +22494,7 @@ module Tables = struct
         let xs : (string list) = Obj.magic xs in
         let s : (
 # 685 "parsing/parser.mly"
-       (string * string option)
+       (string * Location.t * string option)
 # 22499 "parsing/parser.ml"
         ) = Obj.magic s in
         let _endpos__0_ = _menhir_stack.MenhirLib.EngineTypes.endp in
@@ -22502,7 +22502,7 @@ module Tables = struct
         let _endpos = _endpos_xs_ in
         let _v : (string list) = let x = 
 # 3504 "parsing/parser.mly"
-    ( fst s )
+    ( let body, _, _ = s in body )
 # 22507 "parsing/parser.ml"
          in
         
@@ -43028,7 +43028,7 @@ module Tables = struct
         } = _menhir_stack in
         let _1_inlined2 : (
 # 685 "parsing/parser.mly"
-       (string * string option)
+       (string * Location.t * string option)
 # 43033 "parsing/parser.ml"
         ) = Obj.magic _1_inlined2 in
         let _1_inlined1 : (Asttypes.label) = Obj.magic _1_inlined1 in
@@ -43041,7 +43041,7 @@ module Tables = struct
           let x =
             let _1 = 
 # 3486 "parsing/parser.mly"
-                  ( let (s, _) = _1 in Pdir_string s )
+                  ( let (s, _, _) = _1 in Pdir_string s )
 # 43046 "parsing/parser.ml"
              in
             let _endpos = _endpos__1_ in

@@ -418,9 +418,9 @@ let wrap_sig_ext ~loc body ext =
 let wrap_mksig_ext ~loc (item, ext) =
   wrap_sig_ext ~loc (mksig ~loc item) ext
 
-let mk_quotedext ~loc (id, content, delim) =
+let mk_quotedext ~loc (id, content, strloc, delim) =
   let exp_id = mkloc id (make_loc loc) in
-  let e = ghexp ~loc (Pexp_constant (Pconst_string (content, delim))) in
+  let e = ghexp ~loc (Pexp_constant (Pconst_string (content, strloc, delim))) in
   (exp_id, PStr [mkstrexp e []])
 
 let text_str pos = Str.text (rhs_text pos)
@@ -682,9 +682,9 @@ let mk_directive ~loc name arg =
 %token <string> HASHOP
 %token SIG
 %token STAR
-%token <string * string option> STRING
-%token <string * string * string option> BRACEPERCENTBRACE
-%token <string * string * string option> BRACEPERCENTPERCENTBRACE
+%token <string * Location.t * string option> STRING
+%token <string * string * Location.t * string option> BRACEPERCENTBRACE
+%token <string * string * Location.t * string option> BRACEPERCENTPERCENTBRACE
 %token STRUCT
 %token THEN
 %token TILDE
@@ -3355,7 +3355,7 @@ meth_list:
 constant:
   | INT          { let (n, m) = $1 in Pconst_integer (n, m) }
   | CHAR         { Pconst_char $1 }
-  | STRING       { let (s, d) = $1 in Pconst_string (s, d) }
+  | STRING       { let (s, strloc, d) = $1 in Pconst_string (s, strloc, d) }
   | FLOAT        { let (f, m) = $1 in Pconst_float (f, m) }
 ;
 signed_constant:
@@ -3483,7 +3483,7 @@ toplevel_directive:
 ;
 
 %inline toplevel_directive_argument:
-  | STRING        { let (s, _) = $1 in Pdir_string s }
+  | STRING        { let (s, _, _) = $1 in Pdir_string s }
   | INT           { let (n, m) = $1 in Pdir_int (n ,m) }
   | val_longident { Pdir_ident $1 }
   | mod_longident { Pdir_ident $1 }
@@ -3501,7 +3501,7 @@ toplevel_directive:
 
 %inline raw_string:
   s = STRING
-    { fst s }
+    { let body, _, _ = s in body }
 ;
 
 name_tag:

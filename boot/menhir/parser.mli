@@ -16,7 +16,7 @@ type token =
   | TILDE
   | THEN
   | STRUCT
-  | STRING of (string * string option)
+  | STRING of (string * Location.t * string option)
   | STAR
   | SIG
   | SEMISEMI
@@ -111,8 +111,8 @@ type token =
   | COLON
   | CLASS
   | CHAR of (char)
-  | BRACEPERCENTPERCENTBRACE of (string * string * string option)
-  | BRACEPERCENTBRACE of (string * string * string option)
+  | BRACEPERCENTPERCENTBRACE of (string * string * Location.t * string option)
+  | BRACEPERCENTBRACE of (string * string * Location.t * string option)
   | BEGIN
   | BARRBRACKET
   | BARBAR
