@@ -71,6 +71,7 @@ type mapper = {
   class_type_declaration: mapper -> class_type_declaration
                           -> class_type_declaration;
   class_type_field: mapper -> class_type_field -> class_type_field;
+  constant: mapper -> constant -> constant;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
   expr: mapper -> expression -> expression;
