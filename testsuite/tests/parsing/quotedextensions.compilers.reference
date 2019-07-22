@@ -109,7 +109,7 @@
     ]
 ]
 
-File "quotedextensions.ml", line 10, characters 0-23:
+File "quotedextensions.ml", line 10, characters 3-8:
 10 | {%%M.foo| <hello>{x} |}
-     ^^^^^^^^^^^^^^^^^^^^^^^
+        ^^^^^
 Error: Uninterpreted extension 'M.foo'.
