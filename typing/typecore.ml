@@ -216,7 +216,7 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
      end
   | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
-  | Pconst_string (s,_,d) -> Ok (Const_string (s,d))
+  | Pconst_string (s,loc,d) -> Ok (Const_string (s,loc,d))
   | Pconst_float (f,None)-> Ok (Const_float f)
   | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))
 
