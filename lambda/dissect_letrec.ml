@@ -131,7 +131,7 @@ type letrec = {
      are allowed, for instance 'let rec a = let c = b in 1 :: b and b = 2 :: a'.
      The simplest way to handle those aliases is simply
      to apply a substitute of all these aliases afterward. *)
-  immutables : Ident.Set.t;
+  letbound : Ident.Set.t;
   (* Set of known immutable variables. Mutable ones cannot define aliases *)
 }
 
@@ -271,8 +271,8 @@ let rec prepare_letrec
       (* This is not supposed to appear at this point *)
       assert false
   | Llet ((Strict | Alias | StrictOpt) as let_kind, value_kind, id, def, body) ->
-      let immutables = Ident.Set.add id letrec.immutables in
-      let letrec = { letrec with immutables } in
+      let letbound = Ident.Set.add id letrec.letbound in
+      let letrec = { letrec with letbound } in
       let free_vars = Lambda.free_variables def in
       if Ident.Set.disjoint free_vars recursive_set then
         (* Non recursive let *)
@@ -344,8 +344,8 @@ let rec prepare_letrec
       else
 
       let letrec =
-        { letrec with immutables =
-                        Ident.Set.union letrec.immutables vars }
+        { letrec with letbound =
+                        Ident.Set.union letrec.letbound vars }
       in
       let letrec =
         prepare_letrec recursive_set current_let body letrec
@@ -368,14 +368,14 @@ let rec prepare_letrec
               inner_effects, inner_functions
             else
               let { blocks; consts; pre; effects;
-                    functions; substitution; immutables } =
+                    functions; substitution; letbound } =
                 letrec
               in
               let inner_letrec = {
                 effects = Lconst (Const_pointer 0);
                 functions = [];
                 (* these can be safely handled in common *)
-                blocks; consts; pre; substitution; immutables;
+                blocks; consts; pre; substitution; letbound;
               } in
               let inner_letrec =
                 prepare_letrec
@@ -407,7 +407,7 @@ let rec prepare_letrec
       let pre ~tail = letrec.pre ~tail:(pre ~tail) in
       { letrec with pre }
 
-  | Lvar id when Ident.Set.mem id letrec.immutables ->
+  | Lvar id when Ident.Set.mem id letrec.letbound ->
       (* This cannot be a mutable variable: it is ok to copy it *)
       (match current_let with
        | Some cl ->
@@ -424,8 +424,8 @@ let rec prepare_letrec
            in
            debug "ADD SUBST: %a => %a@."
              Ident.print cl.ident Ident.print id;
-           let immutables = Ident.Set.add cl.ident letrec.immutables in
-           { letrec with substitution; immutables }
+           let letbound = Ident.Set.add cl.ident letrec.letbound in
+           { letrec with substitution; letbound }
        | None -> dead_code lam letrec)
 
   | Lifused (_v, lam) ->
@@ -496,7 +496,7 @@ let dissect_letrec ~bindings ~body =
   debug "dissect@ %a@.@."
     Printlambda.lambda (Lletrec (bindings, Lconst (Const_pointer 0)));
 
-  let recursive_set =
+  let letbound =
     Ident.Set.of_list (List.map fst bindings)
   in
 
@@ -507,7 +507,7 @@ let dissect_letrec ~bindings ~body =
           value_kind = Pgenval;
           ident = id;
         } in
-        prepare_letrec recursive_set (Some let_def) def letrec)
+        prepare_letrec letbound (Some let_def) def letrec)
       bindings
       { blocks = [];
         consts = [];
@@ -515,7 +515,7 @@ let dissect_letrec ~bindings ~body =
         effects = Lconst (Const_pointer 0);
         functions = [];
         substitution = Ident.Map.empty;
-        immutables = recursive_set;
+        letbound;
       }
   in
 
