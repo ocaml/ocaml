@@ -27,7 +27,7 @@ let debug x =
 (* Converts let-rec containing values into an initialization then
    assignment sequence.
 
-   We assume that the typechecker correclty validated that the letrec
+   We assume that the typechecker correctly validated that the letrec
    is compilable (See typing/Rec_check.is_valid_recursive_expression).
 
    That is, for every expression to which a variable is bound in
@@ -47,60 +47,36 @@ let debug x =
      but if it happens, then the value is useless.
 
    We consider two cases for expressions that we consider of
-   known size: the makeblock primitive and function declarations.
-   Makeblocks will be preallocated, while all the functions will
-   be turned into a single letrec.
-
-   Note that this does not exactly match the definition of Static
-   and Dynamic size for is_valid_recursive_expression. It considers
-   Static to be anything that can be preallocated or that can't
-   contain the value of its dependencies. Neither containing, nor
-   using (inspecting) a value means that its content is useless.
-   Hence it can be replaced by anything.
-
-   For instance
-
-   let rec a =
-     for i = 0 to 10 do let _ = () :: b in () done
-   and b = a :: []
-
-   The result of a 'for' expression cannot be preallocated, but also
-   cannot contain any value, hence, cannot contain b, even if it
-   depends on it. Since it also cannot inspect it, this means
-   that the value of b is completely useless in the definition
-   of a.
+   known size (the [Static] case in [is_valid_recursive_expression]):
+   the makeblock primitive and function declarations. Makeblocks will
+   be preallocated, while all the functions will be turned into a single
+   letrec.
 
    The structure of the generated code will be:
+   {[
+     let c = const in
+     (* [consts]: constants *)
+     ...
+     let v = caml_alloc_dummy n in
+     (* [blocks]: With n the staticaly known size of blocks *)
+     ...
+     let p = expr in
+     (* [pre]: Values that do not depend on any other from the let-rec in
+        [Rec_check.Dereference] position *)
+     ...
+     let rec f x = ...
+     and g x = ...
+     and ...
+     in
+     (* [functions]: All the functions from the let-rec *)
+     caml_update_dummy v v_contents;
+     (* Initialisation ([effects]) *)
+     ...
+   ]}
 
-   let p = expr in
-   (* Values that do not depend on any other from the let-rec *)
-   ...
-   let v = caml_alloc_dummy n in
-   (* With n the staticaly known size of blocks *)
-   ...
-   let n = dummy_value in
-   (* The values that can't be used *)
-   ...
-   let x = expr in
-   (* The values that can't be preallocated but can depend on
-      others. The expression might refer to dummy values, but
-      they will never be used. *)
-   ...
-   let rec f x = ...
-   and g x = ...
-   and ...
-   in
-   (* All the functions from the let-rec *)
-   let v_contents = expr in
-   (* The expressions with statically known size that have been
-      preallocated *)
-   ...
-   caml_update_dummy v v_contents;
-   ...
-
-
-   The recursive values of a letrec are not only the one bound
-   by the letrec expression itself. For instance
+   Special care is taken to handle nested [let rec]s:
+   the recursive values of a letrec are often more than the ones
+   bound by the letrec expression itself. For instance
 
    let rec f =
      let rec g x = h (x+1)
@@ -121,6 +97,14 @@ let debug x =
    and g x = h (x+1)
    and h x = i x
 
+   However, there might be (a subset of) a local [let rec] that is indeed
+   internally recursive, but that is used by the top-level [let rec] in
+   [Dereference] positions. We carefully lift those within [pre], and handle
+   them recursively in the same pass to preserve the order of evaluation.
+
+   The analysis for which variables should remain in the inner [let rec], and
+   which are indeed part of the outer [let rec] is equivalent to the
+   [Rec_check.value_bindings] case.
 *)
 
 type block_type = Normal of int (* tag *) | Boxed_float
@@ -184,6 +168,15 @@ let is_simple (lam:Lambda.lambda) =
   | Lconst _ -> true
   | _ -> false
 
+let dead_code lam letrec =
+  (* Some cases generate code without effects, and bound to nothing. We use this
+     function to insert it as [Lsequence] in [pre], for documentation.
+     It would be correct to discard and just return [letrec] instead. *)
+  let pre ~tail : Lambda.lambda =
+    Lsequence (lam, letrec.pre ~tail)
+  in
+  { letrec with pre }
+
 (* We desconstruct the let-rec into a description *)
 
 let rec prepare_letrec
@@ -208,19 +201,14 @@ let rec prepare_letrec
                   current_let.ident, lam, letrec.pre ~tail)
           in
           { letrec with pre }
-      | None ->
-          (* dead code, but keep it as Lsequence for now *)
-          let pre ~tail : Lambda.lambda =
-            Lsequence (Lfunction funct, letrec.pre ~tail)
-          in
-          { letrec with pre }
+      | None -> dead_code lam letrec
     end
   | Lprim ((Pmakeblock _ | Pmakearray (_, _) | Pduprecord (_, _)) as prim, args, dbg)
     when not (List.for_all is_simple args) ->
       (* If there are some non-trivial expressions as arguments, we
          first extract the arguments (to let-bound variables) before
-         deconstructing. Arguments could contain side effects and
-         other blocks declarations *)
+         deconstructing. Arguments could contain side effects and other
+         blocks declarations. *)
       let defs, args =
         List.fold_right (fun (def:Lambda.lambda) (defs, args) ->
             (* Fold-right to preserve the list order *)
@@ -242,14 +230,17 @@ let rec prepare_letrec
       in
       prepare_letrec recursive_set current_let lam letrec
   | Lprim (Pmakeblock _, args, _)
-  | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
-      (match current_let with
-       | Some cl -> build_block cl (List.length args) (Normal 0) lam letrec
-       | None -> letrec)
-  | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
-      (match current_let with
-       | Some cl -> build_block cl (List.length args) Boxed_float lam letrec
-       | None -> letrec)
+  | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) -> begin
+      match current_let with
+      | Some cl -> build_block cl (List.length args) (Normal 0) lam letrec
+      | None -> dead_code lam letrec
+      (* We know that [args] are all "simple" at this point, so no effects *)
+    end
+  | Lprim (Pmakearray (Pfloatarray, _), args, _) -> begin
+      match current_let with
+      | Some cl -> build_block cl (List.length args) Boxed_float lam letrec
+      | None -> dead_code lam letrec
+    end
   | Lprim (Pduprecord (kind, size), args, _) -> begin
       match current_let with
       | Some cl ->
@@ -269,38 +260,16 @@ let rec prepare_letrec
                assert false
            | Types.Record_float ->
                build_block cl size Boxed_float arg letrec)
-      | None -> letrec
+      | None -> dead_code lam letrec
     end
   | Lconst const ->
       (match current_let with
        | Some current_let ->
            { letrec with consts = (current_let.ident, const) :: letrec.consts }
-       | None -> letrec)
-  | Llet (Variable, k, id, def, body) ->
-      let letrec = prepare_letrec recursive_set current_let body letrec in
-      (* Variable let comes from mutable values, and reading from it is
-         considered as inspections by Typecore.check_recursive_expression.
-         This means that either:
-         - the value does not depend on any recursive value,
-         - or it is not read in the let-rec
-      *)
-
-      (* TODO: binder dans une variable temporaire *)
-
-      let free_vars_def = Lambda.free_variables def in
-      if Ident.Set.disjoint free_vars_def recursive_set then
-        let pre ~tail : Lambda.lambda =
-          Llet (Variable, k, id, def, letrec.pre ~tail)
-        in
-        { letrec with pre }
-      else begin
-        let free_vars_body = Lambda.free_variables body in
-        (* This is infrequent enough for not caring
-           about performances *)
-        assert(not (Ident.Set.mem id free_vars_body));
-        (* It is not used, we only keep the effect *)
-        { letrec with effects = Lsequence (def, letrec.effects) }
-      end
+       | None -> dead_code lam letrec)
+  | Llet (Variable, _, _, _, _) ->
+      (* This is not supposed to appear at this point *)
+      assert false
   | Llet ((Strict | Alias | StrictOpt) as let_kind, value_kind, id, def, body) ->
       let immutables = Ident.Set.add id letrec.immutables in
       let letrec = { letrec with immutables } in
@@ -318,15 +287,8 @@ let rec prepare_letrec
       let let_def = { let_kind; value_kind; ident = id } in
       prepare_letrec recursive_set (Some let_def) def letrec
   | Lsequence (lam1, lam2) ->
-      let free_vars = Lambda.free_variables lam1 in
       let letrec = prepare_letrec recursive_set current_let lam2 letrec in
-      if Ident.Set.disjoint free_vars recursive_set then
-        { letrec with pre = fun ~tail -> Lsequence (lam1, letrec.pre ~tail) }
-      else
-        (* Note that it is important not to handle this the same way as lets.
-           XXX: TODO think about an explanation *)
-        let letrec = prepare_letrec recursive_set None lam1 letrec in
-        { letrec with effects = Lsequence (lam1, letrec.effects) }
+      prepare_letrec recursive_set None lam1 letrec
   | Levent (body, event) ->
       let letrec = prepare_letrec recursive_set current_let body letrec in
       { letrec with effects = Levent (letrec.effects, event) }
@@ -371,17 +333,15 @@ let rec prepare_letrec
       in
       let outer_vars = Ident.Set.inter vars recursive_set in
 
-      (* TODO lg: it's probably better to have this, but commented out atm so
-         that it doesn't hide bugs in the more complex path
-       * if Ident.Set.is_empty outer_vars then
-       *   (\* Non recursive relative to top-level letrec, we can avoid dissecting it right now.
-       *      Its turn will come later. *\)
-       *   let letrec = prepare_letrec recursive_set current_let body letrec in
-       *   let pre ~tail : Lambda.lambda =
-       *     Lletrec (bindings, letrec.pre ~tail)
-       *   in
-       *   { letrec with pre }
-       * else *)
+      if Ident.Set.is_empty outer_vars then
+        (* Non recursive relative to top-level letrec, we can avoid dissecting
+           it right now. Its turn will come later. *)
+        let letrec = prepare_letrec recursive_set current_let body letrec in
+        let pre ~tail : Lambda.lambda =
+          Lletrec (bindings, letrec.pre ~tail)
+        in
+        { letrec with pre }
+      else
 
       let letrec =
         { letrec with immutables =
@@ -398,10 +358,6 @@ let rec prepare_letrec
       let letrec, inner_effects, inner_functions =
         List.fold_right
           (fun (id, def) (letrec, inner_effects, inner_functions) ->
-            debug "    [31m%a = %a[m %b@."
-              Ident.print id
-              Printlambda.lambda def
-              (Ident.Set.mem id outer_vars);
             let let_def = {
               let_kind = Strict;
               value_kind = Pgenval;
@@ -451,29 +407,6 @@ let rec prepare_letrec
       let pre ~tail = letrec.pre ~tail:(pre ~tail) in
       { letrec with pre }
 
-     (* let outer_bindings, non_rec_bindings =
-      *   List.partition (fun (x, _) -> Ident.Set.mem x outer_vars) bindings
-      * in
-      * let letrec =
-      *   List.fold_right (fun (id, def) letrec ->
-      *       let let_def = {
-      *         let_kind = Strict;
-      *         value_kind = Pgenval;
-      *         ident = id;
-      *       } in
-      *       prepare_letrec recursive_set (Some let_def) def letrec)
-      *     outer_bindings
-      *     letrec
-      * in
-      * let pre =
-      *   match non_rec_bindings with
-      *   | [] -> letrec.pre
-      *   | bnd -> fun ~tail : Lambda.lambda -> Lletrec (bnd, letrec.pre ~tail)
-      * in
-      * { letrec with pre } *)
-
-
-
   | Lvar id when Ident.Set.mem id letrec.immutables ->
       (* This cannot be a mutable variable: it is ok to copy it *)
       (match current_let with
@@ -493,7 +426,7 @@ let rec prepare_letrec
              Ident.print cl.ident Ident.print id;
            let immutables = Ident.Set.add cl.ident letrec.immutables in
            { letrec with substitution; immutables }
-       | None -> letrec)
+       | None -> dead_code lam letrec)
 
   | Lifused (_v, lam) ->
       prepare_letrec recursive_set current_let lam letrec
