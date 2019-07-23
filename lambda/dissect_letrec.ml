@@ -524,18 +524,32 @@ let rec prepare_letrec
       (* This cannot be recursive, otherwise it should have been caught
          by the well formedness check. Hence it is ok to evaluate it
          before anything else. *)
-      (* CR vlaviron: This invariant is false when this expression is the result
-         of a previously dissected term, which can contain calls to
-         caml_update_dummy *)
-      let free_vars = Lambda.free_variables lam in
-      if not (Ident.Set.disjoint free_vars recursive_set) then begin
-        debug "case %a@.%a@."
-          Ident.Set.print
-          (Ident.Set.inter free_vars recursive_set)
-          Printlambda.lambda lam;
-        (* raise Bug; *)
-      end;
-      (* assert(Ident.Set.disjoint free_vars recursive_set); *)
+      (* Check that no recursive variable appears in a position where it is
+         inspected (appearances in guarded positions in other cases are OK) *)
+      let no_recurse = match lam with
+        | Lstaticcatch (_, _, _)
+        | Ltrywith (_, _, _)
+          -> None
+        | Lswitch (lam1, _, _)
+        | Lstringswitch (lam1, _, _, _)
+        | Lifthenelse (lam1, _, _)
+          -> Some lam1
+        | Lapply _
+        | Lstaticraise _
+        | Lsend _
+        | Lvar _
+        | Lprim _
+          -> Some lam
+        | _ -> assert false
+      in
+      Option.iter (fun lam ->
+          let free_vars = Lambda.free_variables lam in
+          if not (Ident.Set.disjoint free_vars recursive_set)
+          then
+            Misc.fatal_errorf "Unallowed recursive access to %a in:@.%a@."
+              Ident.Set.print (Ident.Set.inter free_vars recursive_set)
+              Printlambda.lambda lam)
+        no_recurse;
       let pre = match current_let with
         | Some cl -> fun ~tail : Lambda.lambda ->
             Llet (cl.let_kind, cl.value_kind, cl.ident, lam, letrec.pre ~tail)
