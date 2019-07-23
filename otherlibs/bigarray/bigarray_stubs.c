@@ -966,22 +966,34 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
 uintnat caml_ba_deserialize(void * dst)
 {
   struct caml_ba_array * b = dst;
-  int i, elt_size;
-  uintnat num_elts;
+  int i;
+  uintnat num_elts, size;
+  int overflow;
 
   /* Read back header information */
   b->num_dims = caml_deserialize_uint_4();
+  if (b->num_dims < 0 || b->num_dims > CAML_BA_MAX_NUM_DIMS)
+    caml_deserialize_error("input_value: wrong number of bigarray dimensions");
   b->flags = caml_deserialize_uint_4() | CAML_BA_MANAGED;
   b->proxy = NULL;
   for (i = 0; i < b->num_dims; i++) b->dim[i] = caml_deserialize_uint_4();
-  /* Compute total number of elements */
-  num_elts = caml_ba_num_elts(b);
-  /* Determine element size in bytes */
+  /* Compute total number of elements.  Watch out for overflows (MPR#7765). */
+  num_elts = 1;
+  for (i = 0; i < b->num_dims; i++) {
+    overflow = 0;
+    num_elts = caml_ba_multov(num_elts, b->dim[i], &overflow);
+    if (overflow)
+      caml_deserialize_error("input_value: size overflow for bigarray");
+  }
+  /* Determine array size in bytes.  Watch out for overflows (MPR#7765). */
   if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_CHAR)
     caml_deserialize_error("input_value: bad bigarray kind");
-  elt_size = caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
+  overflow = 0;
+  size = caml_ba_multov(num_elts, caml_ba_element_size[b->flags & CAML_BA_KIND_MASK], &overflow);
+  if (overflow)
+    caml_deserialize_error("input_value: size overflow for bigarray");
   /* Allocate room for data */
-  b->data = malloc(elt_size * num_elts);
+  b->data = malloc(size);
   if (b->data == NULL)
     caml_deserialize_error("input_value: out of memory for bigarray");
   /* Read data */
