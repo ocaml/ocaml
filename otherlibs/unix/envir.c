@@ -39,7 +39,7 @@ CAMLprim value unix_environment_unsafe(value unit)
 
 static char **secure_environ(void)
 {
-#ifdef HAS_GETAUXVAL
+#if defined(HAS_GETAUXVAL) && defined(AT_SECURE)
   if (!getauxval(AT_SECURE))
     return environ;
   else
