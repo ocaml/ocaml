@@ -142,7 +142,7 @@ type record_mismatch =
 type constructor_mismatch =
   | Type of Ident.t
   | Arity of Ident.t
-  | Record of record_mismatch
+  | Inline_record of record_mismatch
   | Explicit_return_type of position
 
 type variant_mismatch =
@@ -194,7 +194,7 @@ let report_constructor_mismatch first second decl ppf err =
   match (err : constructor_mismatch) with
   | Type s -> pr "The types for field %s are not equal." (Ident.name s)
   | Arity s -> pr "The arities for field %s differ." (Ident.name s)
-  | Record err -> report_record_mismatch first second decl ppf err
+  | Inline_record err -> report_record_mismatch first second decl ppf err
   | Explicit_return_type ord ->
       pr "%s has explicit return type and %s doesn't."
         (String.capitalize_ascii (choose ord first second))
@@ -254,7 +254,7 @@ let rec compare_constructor_arguments ~loc env cstr params1 params2 arg1 arg2 =
       then None else Some (Type cstr : constructor_mismatch)
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
       Option.map
-        (fun rec_err -> Record rec_err)
+        (fun rec_err -> Inline_record rec_err)
         (compare_records env ~loc params1 params2 0 l1 l2)
   | Types.Cstr_record _, _ | _, Types.Cstr_record _ -> Some (Type cstr)
 

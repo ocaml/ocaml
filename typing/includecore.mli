@@ -35,7 +35,7 @@ type record_mismatch =
 type constructor_mismatch =
   | Type of Ident.t
   | Arity of Ident.t
-  | Record of record_mismatch
+  | Inline_record of record_mismatch
   | Explicit_return_type of position
 
 type variant_mismatch =
