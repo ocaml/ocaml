@@ -90,11 +90,8 @@ and core_type_desc =
         (*  _ *)
   | Ptyp_var of string
         (* 'a *)
-  | Ptyp_arrow of arg_label * core_type * core_type
-        (* T1 -> T2       Simple
-           ~l:T1 -> T2    Labelled
-           ?l:T1 -> T2    Optional
-         *)
+  | Ptyp_arrow of arrow_parameter * core_type
+        (* AP -> T *)
   | Ptyp_tuple of core_type list
         (* T1 * ... * Tn
 
@@ -222,9 +219,9 @@ and pattern_desc =
         (* `A             (None)
            `A P           (Some P)
          *)
-  | Ppat_record of (Longident.t loc * pattern) list * closed_flag
-        (* { l1=P1; ...; ln=Pn }     (flag = Closed)
-           { l1=P1; ...; ln=Pn; _}   (flag = Open)
+  | Ppat_record of (Longident.t loc * pattern option) list * closed_flag
+        (* { l1; ...; ln=Pn }        [(l1, None); ...; (ln, Some Pn)], Closed
+           { l1; ...; ln=Pn; _}      [(l1, None); ...; (ln, Some Pn)], Open
 
            Invariant: n > 0
          *)
@@ -252,6 +249,39 @@ and pattern_desc =
 
 (* Value expressions *)
 
+and argument =
+  | Anolabel of expression
+  | Alabelled of label loc * expression option
+  | Aoptional of label loc * expression option
+        (* E            Anolabel E
+           ~l           Alabelled (l, None)
+           ~l:E         Alabelled (l, Some E)
+           ?l           Aoptional (l, None)
+           ?l:E         Aoptional (l, Some E)
+         *)
+
+and parameter =
+  | Pnolabel of pattern
+  | Plabelled of label loc * pattern option
+  | Poptional of label loc * pattern option * expression option
+        (* P           Pnolabel P
+           ~l          Plabelled (l, None)
+           ~l:P        Plabelled (l, Some P)
+           ?l          Poptional (l, None, None)
+           ?l:P        Poptional (l, Some P, None)
+           ?(l = E)    Poptional (l, None, Some E)
+           ?l:(P = E)  Poptional (l, Some P, Some E)
+         *)
+
+and arrow_parameter =
+  | APnolabel of core_type
+  | APlabelled of label loc * core_type
+  | APoptional of label loc * core_type
+        (* T          APnolabel T
+           l:T        APlabelled (l, T)
+           ?l:T       APoptional (l, T)
+         *)
+
 and expression =
     {
      pexp_desc: expression_desc;
@@ -273,21 +303,15 @@ and expression_desc =
          *)
   | Pexp_function of case list
         (* function P1 -> E1 | ... | Pn -> En *)
-  | Pexp_fun of arg_label * expression option * pattern * expression
-        (* fun P -> E1                          (Simple, None)
-           fun ~l:P -> E1                       (Labelled l, None)
-           fun ?l:P -> E1                       (Optional l, None)
-           fun ?l:(P = E0) -> E1                (Optional l, Some E0)
+  | Pexp_fun of parameter * expression
+        (* fun P -> E
 
            Notes:
-           - If E0 is provided, only Optional is allowed.
            - "fun P1 P2 .. Pn -> E1" is represented as nested Pexp_fun.
            - "let f P = E" is represented using Pexp_fun.
          *)
-  | Pexp_apply of expression * (arg_label * expression) list
-        (* E0 ~l1:E1 ... ~ln:En
-           li can be empty (non labeled argument) or start with '?'
-           (optional argument).
+  | Pexp_apply of expression * argument list
+        (* E0 A1 ... An
 
            Invariant: n > 0
          *)
@@ -309,9 +333,9 @@ and expression_desc =
         (* `A             (None)
            `A E           (Some E)
          *)
-  | Pexp_record of (Longident.t loc * expression) list * expression option
-        (* { l1=P1; ...; ln=Pn }     (None)
-           { E0 with l1=P1; ...; ln=Pn }   (Some E0)
+  | Pexp_record of (Longident.t loc * expression option) list * expression option
+        (* { l1; ...; ln=En }          [(l1, None); ...; (ln, Some En)], None
+           { E0 with l1; ...; ln=En }  [(l1, None); ...; (ln, Some En)], Some E0
 
            Invariant: n > 0
          *)
@@ -344,8 +368,8 @@ and expression_desc =
         (* new M.c *)
   | Pexp_setinstvar of label loc * expression
         (* x <- 2 *)
-  | Pexp_override of (label loc * expression) list
-        (* {< x1 = E1; ...; Xn = En >} *)
+  | Pexp_override of (label loc * expression option) list
+        (* {< x1; ...; Xn = En >}   [(x1, None); ...; (Xn, Some En)] *)
   | Pexp_letmodule of string loc * module_expr * expression
         (* let module M = ME in E *)
   | Pexp_letexception of extension_constructor * expression
@@ -548,11 +572,8 @@ and class_type_desc =
            ['a1, ..., 'an] c *)
   | Pcty_signature of class_signature
         (* object ... end *)
-  | Pcty_arrow of arg_label * core_type * class_type
-        (* T -> CT       Simple
-           ~l:T -> CT    Labelled l
-           ?l:T -> CT    Optional l
-         *)
+  | Pcty_arrow of arrow_parameter * class_type
+        (* AP -> CT *)
   | Pcty_extension of extension
         (* [%id] *)
   | Pcty_open of open_description * class_type
@@ -626,16 +647,10 @@ and class_expr_desc =
            ['a1, ..., 'an] c *)
   | Pcl_structure of class_structure
         (* object ... end *)
-  | Pcl_fun of arg_label * expression option * pattern * class_expr
-        (* fun P -> CE                          (Simple, None)
-           fun ~l:P -> CE                       (Labelled l, None)
-           fun ?l:P -> CE                       (Optional l, None)
-           fun ?l:(P = E0) -> CE                (Optional l, Some E0)
-         *)
-  | Pcl_apply of class_expr * (arg_label * expression) list
-        (* CE ~l1:E1 ... ~ln:En
-           li can be empty (non labeled argument) or start with '?'
-           (optional argument).
+  | Pcl_fun of parameter * class_expr
+        (* fun P -> CE *)
+  | Pcl_apply of class_expr * argument list
+        (* CE A1 ... An
 
            Invariant: n > 0
          *)
