@@ -113,6 +113,10 @@ Working version
 - #8702, #8777: improved error messages for fixed row polymorphic variants
   (Florian Angeletti, report by Leo White, review by Thomas Refis)
 
+- #8823: added warning 67 which triggers in the presence of a missed
+  punning opportunity.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Vincent Laviron)
+
 ### Bug fixes:
 
 - #8622: Don't generate #! headers over 127 characters.
