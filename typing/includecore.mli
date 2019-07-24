@@ -20,6 +20,8 @@ open Types
 
 exception Dont_match
 
+type position = Ctype.Unification_trace.position = First | Second
+
 type label_mismatch =
   | Type of Ident.t
   | Mutable of Ident.t
@@ -27,19 +29,19 @@ type label_mismatch =
 type record_mismatch =
   | Label_mismatch of label_mismatch
   | Label_names of int * Ident.t * Ident.t
-  | Label_missing of bool * Ident.t
-  | Unboxed_representation of bool   (* true means second one is unboxed float *)
+  | Label_missing of position * Ident.t
+  | Unboxed_representation of position
 
 type constructor_mismatch =
   | Type of Ident.t
   | Arity of Ident.t
   | Record of record_mismatch
-  | Explicit_return_type of bool
+  | Explicit_return_type of position
 
 type variant_mismatch =
   | Constructor_mismatch of constructor_mismatch
   | Constructor_names of int * Ident.t * Ident.t
-  | Constructor_missing of bool * Ident.t
+  | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Privacy
@@ -55,7 +57,7 @@ type type_mismatch =
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_mismatch
   | Extension_constructor_mismatch of extension_constructor_mismatch
-  | Unboxed_representation of bool  (* true means second one is unboxed *)
+  | Unboxed_representation of position
   | Immediate
 
 val value_descriptions:

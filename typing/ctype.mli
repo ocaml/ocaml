@@ -21,8 +21,10 @@ open Types
 module Unification_trace: sig
   (** Unification traces are used to explain unification errors
       when printing error messages *)
-
   type position = First | Second
+
+  val swap_position : position -> position
+
   type desc = { t: type_expr; expanded: type_expr option }
   type 'a diff = { got: 'a; expected: 'a}
 

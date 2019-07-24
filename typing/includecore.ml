@@ -122,6 +122,13 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
 
 (* Inclusion between type declarations *)
 
+type position = Ctype.Unification_trace.position = First | Second
+
+let choose ord first second =
+  match ord with
+  | First -> first
+  | Second -> second
+
 type label_mismatch =
   | Type of Ident.t
   | Mutable of Ident.t
@@ -129,19 +136,19 @@ type label_mismatch =
 type record_mismatch =
   | Label_mismatch of label_mismatch
   | Label_names of int * Ident.t * Ident.t
-  | Label_missing of bool * Ident.t
-  | Unboxed_representation of bool   (* true means second one is unboxed float *)
+  | Label_missing of position * Ident.t
+  | Unboxed_representation of position
 
 type constructor_mismatch =
   | Type of Ident.t
   | Arity of Ident.t
   | Record of record_mismatch
-  | Explicit_return_type of bool
+  | Explicit_return_type of position
 
 type variant_mismatch =
   | Constructor_mismatch of constructor_mismatch
   | Constructor_names of int * Ident.t * Ident.t
-  | Constructor_missing of bool * Ident.t
+  | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Privacy
@@ -157,7 +164,7 @@ type type_mismatch =
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_mismatch
   | Extension_constructor_mismatch of extension_constructor_mismatch
-  | Unboxed_representation of bool  (* true means second one is unboxed *)
+  | Unboxed_representation of position
   | Immediate
 
 let report_label_mismatch _first _second ppf err =
@@ -174,12 +181,12 @@ let report_record_mismatch first second decl ppf err =
   | Label_names (n, name1, name2) ->
       pr "@[<hv>Fields number %i have different names, %s and %s.@]"
         n (Ident.name name1) (Ident.name name2)
-  | Label_missing (b, s) ->
+  | Label_missing (ord, s) ->
       pr "@[<hv>The field %s is only present in %s %s.@]"
-        (Ident.name s) (if b then second else first) decl
-  | Unboxed_representation b ->
+        (Ident.name s) (choose ord first second) decl
+  | Unboxed_representation ord ->
       pr "@[<hv>Their internal representations differ:@ %s %s %s.@]"
-        (if b then second else first) decl
+        (choose ord first second) decl
         "uses unboxed float representation"
 
 let report_constructor_mismatch first second decl ppf err =
@@ -188,10 +195,10 @@ let report_constructor_mismatch first second decl ppf err =
   | Type s -> pr "The types for field %s are not equal." (Ident.name s)
   | Arity s -> pr "The arities for field %s differ." (Ident.name s)
   | Record err -> report_record_mismatch first second decl ppf err
-  | Explicit_return_type is_second ->
+  | Explicit_return_type ord ->
       pr "%s has explicit return type and %s doesn't."
-        (String.capitalize_ascii (if is_second then second else first))
-        (if is_second then first else second)
+        (String.capitalize_ascii (choose ord first second))
+        (choose (Ctype.Unification_trace.swap_position ord) first second)
 
 let report_variant_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -201,9 +208,9 @@ let report_variant_mismatch first second decl ppf err =
   | Constructor_names (n, name1, name2) ->
       pr "Fields number %i have different names, %s and %s."
         n (Ident.name name1) (Ident.name name2)
-  | Constructor_missing (b, s) ->
+  | Constructor_missing (ord, s) ->
       pr "The field %s is only present in %s %s."
-        (Ident.name s) (if b then second else first) decl
+        (Ident.name s) (choose ord first second) decl
 
 let report_extension_constructor_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -225,9 +232,9 @@ let report_type_mismatch0 first second decl ppf err =
   | Variant_mismatch err -> report_variant_mismatch first second decl ppf err
   | Extension_constructor_mismatch err -> report_extension_constructor_mismatch
                                             first second decl ppf err
-  | Unboxed_representation b ->
+  | Unboxed_representation ord ->
       pr "Their internal representations differ:@ %s %s %s."
-         (if b then second else first) decl
+         (choose ord first second) decl
          "uses unboxed representation"
   | Immediate -> pr "%s is not an immediate type."
                    (StringLabels.capitalize_ascii first)
@@ -257,8 +264,8 @@ and compare_constructors ~loc env cstr params1 params2 res1 res2 args1 args2 =
       if Ctype.equal env true [r1] [r2] then
         compare_constructor_arguments ~loc env cstr [r1] [r2] args1 args2
       else Some (Type cstr : constructor_mismatch)
-  | Some _, None -> Some (Explicit_return_type false : constructor_mismatch)
-  | None, Some _ -> Some (Explicit_return_type true : constructor_mismatch)
+  | Some _, None -> Some (Explicit_return_type First : constructor_mismatch)
+  | None, Some _ -> Some (Explicit_return_type Second : constructor_mismatch)
   | None, None ->
       compare_constructor_arguments ~loc env cstr params1 params2 args1 args2
 
@@ -267,8 +274,8 @@ and compare_variants ~loc env params1 params2 n
     (cstrs2 : Types.constructor_declaration list) =
   match cstrs1, cstrs2 with
   | [], []   -> None
-  | [], c::_ -> Some (Constructor_missing (true, c.Types.cd_id))
-  | c::_, [] -> Some (Constructor_missing (false, c.Types.cd_id))
+  | [], c::_ -> Some (Constructor_missing (Second, c.Types.cd_id))
+  | c::_, [] -> Some (Constructor_missing (First, c.Types.cd_id))
   | cd1::rem1, cd2::rem2 ->
       if Ident.name cd1.cd_id <> Ident.name cd2.cd_id then
         Some (Constructor_names (n, cd1.cd_id, cd2.cd_id))
@@ -300,8 +307,8 @@ and compare_records ~loc env params1 params2 n
     (labels2 : Types.label_declaration list) =
   match labels1, labels2 with
   | [], []           -> None
-  | [], l::_ -> Some (Label_missing (true, l.Types.ld_id))
-  | l::_, [] -> Some (Label_missing (false, l.Types.ld_id))
+  | [], l::_ -> Some (Label_missing (Second, l.Types.ld_id))
+  | l::_, [] -> Some (Label_missing (First, l.Types.ld_id))
   | ld1::rem1, ld2::rem2 ->
       if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
       then Some (Label_names (n, ld1.ld_id, ld2.ld_id))
@@ -326,7 +333,10 @@ let compare_records_with_representation ~loc env params1 params2 n
   =
   match compare_records ~loc env params1 params2 n labels1 labels2 with
   | None when rep1 <> rep2 ->
-      Some (Unboxed_representation (rep2 = Record_float) : record_mismatch)
+    Some (
+      Unboxed_representation
+            (if rep2 = Record_float then Second else First) : record_mismatch
+    )
   | err -> err
 
 let type_declarations ?(equality = false) ~loc env ~mark name
@@ -361,8 +371,8 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     match (decl2.type_kind, decl1.type_unboxed.unboxed,
            decl2.type_unboxed.unboxed) with
     | Type_abstract, _, _ -> None
-    | _, true, false -> Some (Unboxed_representation false)
-    | _, false, true -> Some (Unboxed_representation true)
+    | _, true, false -> Some (Unboxed_representation First)
+    | _, false, true -> Some (Unboxed_representation Second)
     | _ -> None
   in
   if err <> None then err else
@@ -455,8 +465,8 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
             compare_constructor_arguments ~loc env id [r1] [r2]
               ext1.ext_args ext2.ext_args
         else Some (Type id : constructor_mismatch)
-      | Some _, None -> Some (Explicit_return_type false)
-      | None, Some _ -> Some (Explicit_return_type true)
+      | Some _, None -> Some (Explicit_return_type First)
+      | None, Some _ -> Some (Explicit_return_type Second)
       | None, None ->
           compare_constructor_arguments ~loc env id
             ext1.ext_type_params ext2.ext_type_params
