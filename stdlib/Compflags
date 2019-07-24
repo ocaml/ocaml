@@ -27,7 +27,7 @@ case $1 in
   camlinternalFormat.cm[io]) echo ' -w Ae';;
   camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
   stdlib__printf.cm[io]|stdlib__format.cm[io]|stdlib__scanf.cm[io])
-      echo ' -w Ae';;
+      echo ' -w Ae-67';;
   stdlib__scanf.cmx) echo ' -inline 9';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__float.cm[ox]) echo ' -nolabels -no-alias-deps';;

@@ -896,6 +896,18 @@ let check_recordpat_labels loc lbl_pat_list closed =
         end
       end
 
+(* Missed punning opportunity *)
+
+let check_missed_punning_opportunity f l =
+  if Warnings.is_active (Warnings.Missed_punning_opportunity "") then
+    List.iter
+      (fun x ->
+        match f x with
+        | Some (lab, loc, x) when lab.txt = x && lab.loc <> loc ->
+            Location.prerr_warning loc (Warnings.Missed_punning_opportunity x)
+        | _ -> ()
+      ) l
+
 (* Constructors *)
 
 module Constructor = NameChoice (struct
@@ -1287,6 +1299,12 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
           Some (p0, p, true), ty
         with Not_found -> None, newvar ()
       in
+      check_missed_punning_opportunity
+        (function
+          | (lab, {ppat_loc=loc; ppat_desc=Ppat_var x}) ->
+              Some ({lab with txt = Longident.last lab.txt}, loc, x.txt)
+          | _ -> None
+        ) lid_sp_list;
       let type_label_pat (label_lid, label, sarg) k =
         begin_def ();
         let (_, ty_arg, ty_res) = instance_label false label in
@@ -2506,6 +2524,13 @@ and type_expect_
         | [] -> ()
       in
       check_duplicates lbl_exp_list;
+      check_missed_punning_opportunity
+        (function
+          | lab, {pexp_loc=loc;
+                  pexp_desc=Pexp_ident{txt=Longident.Lident x}} ->
+              Some ({lab with txt = Longident.last lab.txt}, loc, x)
+          | _ -> None
+        ) lid_sexp_list;
       let opt_exp, label_definitions =
         let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
         let matching_label lbl =
@@ -2982,6 +3007,12 @@ and type_expect_
             end
           in
           let modifs = List.map type_override lst in
+          check_missed_punning_opportunity
+            (function
+              | lab, {pexp_loc=loc; pexp_desc=Pexp_ident{txt=Longident.Lident x}} ->
+                  Some (lab, loc, x)
+              | _ -> None
+            ) lst;
           rue {
             exp_desc = Texp_override(path_self, modifs);
             exp_loc = loc; exp_extra = [];

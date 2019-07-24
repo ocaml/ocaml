@@ -1,0 +1,25 @@
+File "w67.ml", line 19, characters 15-18:
+19 | let _ = {foo = foo}
+                    ^^^
+Warning 67: Missed punning opportunity.
+You can omit `= foo' in this case.
+File "w67.ml", line 21, characters 17-20:
+21 | let _ = {L.foo = foo}
+                      ^^^
+Warning 67: Missed punning opportunity.
+You can omit `= foo' in this case.
+File "w67.ml", line 29, characters 11-14:
+29 | let {foo = foo} = {foo = 12}
+                ^^^
+Warning 67: Missed punning opportunity.
+You can omit `= foo' in this case.
+File "w67.ml", line 33, characters 13-16:
+33 | let {L.foo = foo} = {L.foo = 43}
+                  ^^^
+Warning 67: Missed punning opportunity.
+You can omit `= foo' in this case.
+File "w67.ml", line 60, characters 24-25:
+60 |     method f x = {< x = x >}
+                             ^
+Warning 67: Missed punning opportunity.
+You can omit `= x' in this case.
