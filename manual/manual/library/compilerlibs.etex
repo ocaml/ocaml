@@ -3,7 +3,7 @@
 
 This chapter describes the OCaml front-end, which declares the abstract
 syntax tree used by the compiler, provides a way to parse, print
-and pretty-print OCaml code, and ultimately allows to write abstract
+and pretty-print OCaml code, and ultimately allows one to write abstract
 syntax tree preprocessors invoked via the {\tt -ppx} flag (see chapters~\ref{c:camlc}
 and~\ref{c:nativecomp}) and plugins invoked via the {\tt -plugin} flag
 (see chapter~\ref{c:plugins}).
