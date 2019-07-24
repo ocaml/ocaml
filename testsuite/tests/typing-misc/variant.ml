@@ -96,7 +96,7 @@ Line 1, characters 0-32:
 1 | type wrong_type = d = X of float
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The types for field X are not equal.
+       The types for constructor X are not equal.
 |}]
 
 type unboxed = d = X of float [@@unboxed]

@@ -192,8 +192,8 @@ let report_record_mismatch first second decl ppf err =
 let report_constructor_mismatch first second decl ppf err =
   let pr fmt  = Format.fprintf ppf fmt in
   match (err : constructor_mismatch) with
-  | Type s -> pr "The types for field %s are not equal." (Ident.name s)
-  | Arity s -> pr "The arities for field %s differ." (Ident.name s)
+  | Type s -> pr "The types for constructor %s are not equal." (Ident.name s)
+  | Arity s -> pr "The arities for constructor %s differ." (Ident.name s)
   | Inline_record err -> report_record_mismatch first second decl ppf err
   | Explicit_return_type ord ->
       pr "%s has explicit return type and %s doesn't."
