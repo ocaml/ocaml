@@ -28,7 +28,7 @@ type record_mismatch =
   | Label_mismatch of label_mismatch
   | Label_names of int * Ident.t * Ident.t
   | Label_missing of bool * Ident.t
-  | Representation of bool   (* true means second one is unboxed float *)
+  | Unboxed_representation of bool   (* true means second one is unboxed float *)
 
 type constructor_mismatch =
   | Type of Ident.t

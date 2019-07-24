@@ -130,7 +130,7 @@ type record_mismatch =
   | Label_mismatch of label_mismatch
   | Label_names of int * Ident.t * Ident.t
   | Label_missing of bool * Ident.t
-  | Representation of bool   (* true means second one is unboxed float *)
+  | Unboxed_representation of bool   (* true means second one is unboxed float *)
 
 type constructor_mismatch =
   | Type of Ident.t
@@ -169,7 +169,7 @@ let report_label_mismatch _first _second ppf err =
 
 let report_record_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
-  match err with
+  match (err : record_mismatch) with
   | Label_mismatch err -> report_label_mismatch first second ppf err
   | Label_names (n, name1, name2) ->
       pr "@[<hv>Fields number %i have different names, %s and %s.@]"
@@ -177,7 +177,7 @@ let report_record_mismatch first second decl ppf err =
   | Label_missing (b, s) ->
       pr "@[<hv>The field %s is only present in %s %s.@]"
         (Ident.name s) (if b then second else first) decl
-  | Representation b ->
+  | Unboxed_representation b ->
       pr "@[<hv>Their internal representations differ:@ %s %s %s.@]"
         (if b then second else first) decl
         "uses unboxed float representation"
@@ -325,7 +325,8 @@ let compare_records_with_representation ~loc env params1 params2 n
       labels1 labels2 rep1 rep2
   =
   match compare_records ~loc env params1 params2 n labels1 labels2 with
-  | None when rep1 <> rep2 -> Some (Representation (rep2 = Record_float))
+  | None when rep1 <> rep2 ->
+      Some (Unboxed_representation (rep2 = Record_float) : record_mismatch)
   | err -> err
 
 let type_declarations ?(equality = false) ~loc env ~mark name
