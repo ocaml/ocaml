@@ -141,9 +141,9 @@ open https://github.com/ocaml/ocaml/releases
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
 
-## 6: create OPAM switches
+## 6: create OPAM packages
 
-Create OPAM switches for the new version, copying the particular
+Create ocaml-variants packages for the new version, copying the particular
 switch configuration choices from the previous version.
 
 Do not forget to add/update the checksum field for the tarballs in the
