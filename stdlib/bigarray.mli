@@ -133,7 +133,7 @@ type ('a, 'b) kind =
    of OCaml types with element kinds, and are re-exported below for
    backward-compatibility reasons.
 
-   Using a generalized algebraic datatype (GADT) here allows to write
+   Using a generalized algebraic datatype (GADT) here allows writing
    well-typed polymorphic functions whose return type depend on the
    argument type, such as:
 
