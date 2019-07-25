@@ -839,7 +839,8 @@ let report_error ppf errs =
   let print_errs ppf = List.iter (include_err' ppf) in
   Printtyp.Conflicts.reset();
   fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
-    Printtyp.Conflicts.print
+    Printtyp.Conflicts.print_explanations
+
 (* We could do a better job to split the individual error items
    as sub-messages of the main interface mismatch on the whole unit. *)
 let () =

@@ -122,53 +122,41 @@ end
 module Conflicts = struct
   module M = String.Map
   type explanation =
-    { kind: namespace; name:string; common_name:string; location:Location.t}
+    { kind: namespace; name:string; root_name:string; location:Location.t}
   let explanations = ref M.empty
-  let explain namespace n id =
+  let collect_explanation namespace n id =
     let name = human_unique n id in
-    let common_name = Ident.name id in
+    let root_name = Ident.name id in
     if not (M.mem name !explanations) then
       match Namespace.location namespace id with
       | None -> ()
       | Some location ->
-          let explanation = { kind = namespace; location; name; common_name } in
+          let explanation = { kind = namespace; location; name; root_name } in
           explanations := M.add name explanation !explanations
 
   let pp_explanation ppf r=
     Format.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
       Location.print_loc r.location (Namespace.show r.kind) r.name
 
-  let pp ppf l =
+  let print_located_explanations ppf l =
     Format.fprintf ppf "@[<v>%a@]" (Format.pp_print_list pp_explanation) l
 
   let reset () = explanations := M.empty
-  let take () =
+  let list_explanations () =
     let c = !explanations in
     reset ();
     c |> M.bindings |> List.map snd |> List.sort Stdlib.compare
 
-  let print ppf =
+
+  let print_toplevel_hint ppf l =
     let conj ppf () = Format.fprintf ppf " and@ " in
     let pp_namespace_plural ppf n = Format.fprintf ppf "%as" Namespace.pp n in
-    let ltop, l =
-      (* isolate toplevel locations, since they are too imprecise *)
-      let from_toplevel a =
-        a.location.Location.loc_start.Lexing.pos_fname = "//toplevel//" in
-      List.partition from_toplevel (take ())
-    in
-    begin match l with
-    | [] -> ()
-    | l -> Format.fprintf ppf "@ %a" pp l
-    end;
-    (* if there are name collisions in a toplevel session,
-       display at least one generic hint by namespace *)
-    let ltop = StringMap
-      List.sort_uniq Stdlib.compare
-      @@ List.map (fun r -> r.kind, r.common_name) ltop in
+    let root_names = List.map (fun r -> r.kind, r.root_name) l in
+    let unique_root_names = List.sort_uniq Stdlib.compare root_names in
     let submsgs = Array.make Namespace.size [] in
     let () = List.iter (fun (n,_ as x) ->
         submsgs.(Namespace.id n) <- x :: submsgs.(Namespace.id n)
-      )  ltop in
+      )  unique_root_names in
     let pp_submsg ppf names =
       match names with
       | [] -> ()
@@ -191,6 +179,21 @@ module Conflicts = struct
         Format.(pp_print_list ~pp_sep:conj pp_print_string) (List.map snd names)
         pp_namespace_plural namespace in
     Array.iter (pp_submsg ppf) submsgs
+
+  let print_explanations ppf =
+    let ltop, l =
+      (* isolate toplevel locations, since they are too imprecise *)
+      let from_toplevel a =
+        a.location.Location.loc_start.Lexing.pos_fname = "//toplevel//" in
+      List.partition from_toplevel (list_explanations ())
+    in
+    begin match l with
+    | [] -> ()
+    | l -> Format.fprintf ppf "@ %a" print_located_explanations l
+    end;
+    (* if there are name collisions in a toplevel session,
+       display at least one generic hint by namespace *)
+    print_toplevel_hint ppf ltop
 
   let exists () = M.cardinal !explanations >0
 end
@@ -254,7 +257,7 @@ let pervasives_name namespace name =
   | Uniquely_associated_to (id',r) ->
       let hid, map = add_hid_id id' Ident.Map.empty in
       Out_name.set r (human_unique hid id');
-      Conflicts.explain namespace hid id';
+      Conflicts.collect_explanation namespace hid id';
       set namespace @@ M.add name (Need_unique_name map) (get namespace);
       Out_name.create (pervasives name)
   | exception Not_found ->
@@ -279,14 +282,14 @@ let ident_name_simple namespace id =
       r
   | Need_unique_name map ->
       let hid, m = find_hid id map in
-      Conflicts.explain namespace hid id;
+      Conflicts.collect_explanation namespace hid id;
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | Uniquely_associated_to (id',r) ->
       let hid', m = find_hid id' Ident.Map.empty in
       let hid, m = find_hid id m in
       Out_name.set r (human_unique hid' id');
-      List.iter (fun (id,hid) -> Conflicts.explain namespace hid id)
+      List.iter (fun (id,hid) -> Conflicts.collect_explanation namespace hid id)
         [id, hid; id', hid' ];
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
@@ -1702,7 +1705,7 @@ let printed_signature sourcefile ppf sg =
   if Warnings.(is_active @@ Erroneous_printed_signature "")
   && Conflicts.exists ()
   then begin
-    let conflicts = Format.asprintf "%t" Conflicts.print in
+    let conflicts = Format.asprintf "%t" Conflicts.print_explanations in
     Location.prerr_warning (Location.in_file sourcefile)
       (Warnings.Erroneous_printed_signature conflicts);
     Warnings.check_fatal ()
@@ -2039,7 +2042,7 @@ let unification_error env tr txt1 ppf txt2 ty_expect_explanation =
         (explain mis);
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
-      Conflicts.print ppf;
+      Conflicts.print_explanations ppf;
       print_labels := true
     with exn ->
       print_labels := true;
@@ -2087,7 +2090,7 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     fprintf ppf "%a%t%t@]"
       (trace false (mis = None) "is not compatible with type") tr2
       (explain mis)
-      Conflicts.print
+      Conflicts.print_explanations
   )
 
 
