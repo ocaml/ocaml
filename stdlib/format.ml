@@ -687,7 +687,7 @@ let pp_print_if_newline state () =
       { size = Size.zero; token = Pp_if_newline; length = 0 }
 
 
-(* Generalized break hint that allows to print strings before/after
+(* Generalized break hint that allows printing strings before/after
    same-line offset (width) or new-line offset *)
 let pp_print_custom_break state ~fits ~breaks =
   let before, width, after = fits in

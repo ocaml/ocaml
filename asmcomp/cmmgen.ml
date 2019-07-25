@@ -1528,8 +1528,8 @@ end
    phases, we only share exits *)
 (* Some specific patterns can lead to switches where several cases
    point to the same action, but this action is not an exit (see GPR#1370).
-   The addition of the index in the action array as context allows to
-   share them correctly without duplication. *)
+   The addition of the index in the action array as context allows
+   sharing them correctly without duplication. *)
 module StoreExpForSwitch =
   Switch.CtxStore
     (struct
