@@ -156,7 +156,6 @@ Here is an example of a case that is not matched:
 Exception: Match_failure ("", 6, 23).
 |}]
 
-
 (* #9866, #9873 *)
 
 type 'a t = 'b  constraint 'a = 'b t;;
@@ -259,3 +258,41 @@ struct
   type !'a t = 'b constraint 'a = 'b s
 end
 *)
+
+type 'a t = T
+  constraint 'a = int
+  constraint 'a = float
+[%%expect{|
+Line 3, characters 13-23:
+3 |   constraint 'a = float
+                 ^^^^^^^^^^
+Error: The type constraints are not consistent.
+Type int is not compatible with type float
+|}]
+
+type ('a,'b) t = T
+  constraint 'a = int -> float
+  constraint 'b = bool -> char
+  constraint 'a = 'b
+[%%expect{|
+Line 4, characters 13-20:
+4 |   constraint 'a = 'b
+                 ^^^^^^^
+Error: The type constraints are not consistent.
+Type int -> float is not compatible with type bool -> char
+Type int is not compatible with type bool
+|}]
+
+class type ['a, 'b] a = object
+  constraint 'a = 'b
+  constraint 'a = int * int
+  constraint 'b = float * float
+end;;
+[%%expect{|
+Line 4, characters 2-31:
+4 |   constraint 'b = float * float
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The class constraints are not consistent.
+Type int * int is not compatible with type float * float
+Type int is not compatible with type float
+|}]
