@@ -24,13 +24,13 @@ type position = Ctype.Unification_trace.position = First | Second
 
 type label_mismatch =
   | Type of Ident.t
-  | Mutable of Ident.t
+  | Mutability of Ident.t
 
 type record_mismatch =
   | Label_mismatch of label_mismatch
   | Label_names of int * Ident.t * Ident.t
   | Label_missing of position * Ident.t
-  | Unboxed_representation of position
+  | Unboxed_float_representation of position
 
 type constructor_mismatch =
   | Type of Ident.t
@@ -44,7 +44,7 @@ type variant_mismatch =
   | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
-  | Privacy
+  | Constructor_privacy
   | Constructor_mismatch of constructor_mismatch
 
 type type_mismatch =

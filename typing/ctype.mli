@@ -23,8 +23,6 @@ module Unification_trace: sig
       when printing error messages *)
   type position = First | Second
 
-  val swap_position : position -> position
-
   type desc = { t: type_expr; expanded: type_expr option }
   type 'a diff = { got: 'a; expected: 'a}
 
