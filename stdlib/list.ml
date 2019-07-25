@@ -228,6 +228,14 @@ let rec find_opt p = function
   | [] -> None
   | x :: l -> if p x then Some x else find_opt p l
 
+let rec find_map f = function
+  | [] -> None
+  | x :: l ->
+     begin match f x with
+       | Some _ as result -> result
+       | None -> find_map f l
+     end
+
 let find_all p =
   let rec find accu = function
   | [] -> rev accu
