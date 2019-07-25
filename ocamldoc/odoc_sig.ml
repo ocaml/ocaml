@@ -1740,11 +1740,11 @@ module Analyser =
             )
           else
             (
-             raise (Failure "Parsetree.Pcty_arrow (parse_label, _, pclass_type), labels differents")
+             raise (Failure "Parsetree.Pcty_arrow (parse_label, _, pclass_type), different labels")
             )
 
       | _ ->
-          raise (Failure "analyse_class_kind pas de correspondance dans le match")
+          raise (Failure "analyse_class_kind: match failure")
 
     (** Analyse of a Parsetree.class_type and a Types.class_type to return a class_type_kind.*)
     and analyse_class_type_kind env current_class_name last_pos parse_class_type sig_class_type =
@@ -1799,7 +1799,7 @@ module Analyser =
            ([], k)
 *)
       | _ ->
-          raise (Failure "analyse_class_type_kind pas de correspondance dans le match")
+          raise (Failure "analyse_class_type_kind: match failure")
 
     let analyse_signature source_file input_file
         (ast : Parsetree.signature) (signat : Types.signature) =
