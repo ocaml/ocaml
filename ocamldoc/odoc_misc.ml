@@ -72,6 +72,14 @@ let list_concat sep =
   in
   iter
 
+let remove_duplicates (type a) compare (li : a list) =
+  let module S = Set.Make(struct type t = a let compare = compare end) in
+  let maybe_cons ((set, rev_acc) as acc) x =
+    if S.mem x set then acc
+    else (S.add x set, x :: rev_acc) in
+  let (_, rev_acc) = List.fold_left maybe_cons (S.empty, []) li in
+  List.rev rev_acc
+
 let rec string_of_longident li =
   match li with
   | Longident.Lident s -> s
