@@ -40,46 +40,68 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   WCHAR *wpath;
-  HANDLE hFile;
+  HANDLE hFile, hToken = INVALID_HANDLE_VALUE;
+  TOKEN_PRIVILEGES restore;
+  DWORD dwFlags = 0;
   FILETIME lastAccessTime, lastModificationTime;
   SYSTEMTIME systemTime;
+
   double at, mt;
-  BOOL res;
+  BOOL res = FALSE;
 
   caml_unix_check_path(path, "utimes");
   at = Double_val(atime);
   mt = Double_val(mtime);
   wpath = caml_stat_strdup_to_utf16(String_val(path));
+
+  /* Directories require special handling for CreateFile */
+  if (!unix_drop_privilege(GetFileAttributes(wpath),
+                           SE_RESTORE_NAME,
+                           &hToken,
+                           &restore,
+                           &dwFlags)) {
+    caml_stat_free(wpath);
+    uerror("utimes", path);
+  }
+
+  /* Attempt to open the file */
   caml_enter_blocking_section();
   hFile = CreateFile(wpath,
                      FILE_WRITE_ATTRIBUTES,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL,
                      OPEN_EXISTING,
-                     0,
+                     dwFlags,
                      NULL);
   caml_leave_blocking_section();
   caml_stat_free(wpath);
-  if (hFile == INVALID_HANDLE_VALUE) {
-    win32_maperr(GetLastError());
-    uerror("utimes", path);
-  }
-  if (at == 0.0 && mt == 0.0) {
-    GetSystemTime(&systemTime);
-    SystemTimeToFileTime(&systemTime, &lastAccessTime);
-    memcpy(&lastModificationTime, &lastAccessTime, sizeof(FILETIME));
-  } else {
-    convert_time(at, &lastAccessTime);
-    convert_time(mt, &lastModificationTime);
-  }
-  caml_enter_blocking_section();
-  res = SetFileTime(hFile, NULL, &lastAccessTime, &lastModificationTime);
-  caml_leave_blocking_section();
-  if (res == 0) {
-    win32_maperr(GetLastError());
+
+  /* The cleanup code after this block must always be called */
+  if (hFile != INVALID_HANDLE_VALUE) {
+    if (at == 0.0 && mt == 0.0) {
+      GetSystemTime(&systemTime);
+      SystemTimeToFileTime(&systemTime, &lastAccessTime);
+      memcpy(&lastModificationTime, &lastAccessTime, sizeof(FILETIME));
+    } else {
+      convert_time(at, &lastAccessTime);
+      convert_time(mt, &lastModificationTime);
+    }
+    caml_enter_blocking_section();
+    res = SetFileTime(hFile, NULL, &lastAccessTime, &lastModificationTime);
+    caml_leave_blocking_section();
+    if (!res)
+      win32_maperr(GetLastError());
     CloseHandle(hFile);
-    uerror("utimes", path);
+  } else {
+    win32_maperr(GetLastError());
   }
-  CloseHandle(hFile);
+
+  /* If necessary, re-enable SeRestorePrivilege for the thread, or revert the
+     impersonation */
+  unix_restore_privilege(&restore, hToken);
+
+  if (!res)
+    uerror("utimes", path);
+
   CAMLreturn(Val_unit);
 }
