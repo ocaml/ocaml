@@ -92,6 +92,10 @@ Working version
 - #8716: Optimize [Array.fill] and [Hashtbl.clear] with a new runtime primitive
   (Alain Frisch, review by David Allsopp, Stephen Dolan and Damien Doligez)
 
+- #8530: List.sort: avoid duplicate work by chop
+  (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
+   Gabriel Scherer)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
