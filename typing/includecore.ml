@@ -218,7 +218,7 @@ let report_variant_mismatch first second decl ppf err =
 let report_extension_constructor_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : extension_constructor_mismatch) with
-  | Constructor_privacy -> pr ".A private type would be revealed"
+  | Constructor_privacy -> pr "A private type would be revealed"
   | Constructor_mismatch err ->
     report_constructor_mismatch first second decl ppf err
 
