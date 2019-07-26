@@ -3009,7 +3009,8 @@ and type_expect_
           let modifs = List.map type_override lst in
           check_missed_punning_opportunity
             (function
-              | lab, {pexp_loc=loc; pexp_desc=Pexp_ident{txt=Longident.Lident x}} ->
+              | lab, {pexp_loc=loc;
+                      pexp_desc=Pexp_ident{txt=Longident.Lident x}} ->
                   Some (lab, loc, x)
               | _ -> None
             ) lst;

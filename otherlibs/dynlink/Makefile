@@ -30,8 +30,8 @@ OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
-COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66-67 \
-	  -warn-error A \
+COMPFLAGS=-strict-sequence -principal -absname \
+          -w +a-4-9-40-41-42-44-45-48-66-67 -warn-error A \
           -bin-annot -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS=-O3
