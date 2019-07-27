@@ -154,6 +154,11 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
 
+- #8837: build manpages using ocamldoc.opt when available
+  cuts the manpages build time from 14s to 4s
+  (Gabriel Scherer, review by David Allsopp and Sébastien Hinderer,
+   report by David Allsopp)
+
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
