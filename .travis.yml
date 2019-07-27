@@ -33,6 +33,11 @@ matrix:
         - libx11-dev:i386
         - libc6-dev:i386
   - env: CI_KIND=build XARCH=x64
+    addons:
+      apt:
+        packages:
+        - texlive-latex-extra
+        - texlive-fonts-recommended
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--disable-shared
   - env: CI_KIND=build XARCH=x64 MIN_BUILD=1
   - env: CI_KIND=changes

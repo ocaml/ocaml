@@ -144,6 +144,10 @@ EOF
     $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
   fi
   cd ..
+  if command -v pdflatex &>/dev/null  ; then
+    echo Ensuring that all library documentation compiles
+    make -C ocamldoc html_doc pdf_doc texi_doc
+  fi
   $MAKE install
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
