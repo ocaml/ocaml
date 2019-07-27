@@ -170,7 +170,7 @@ LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
 
 .PHONY: all
-all: lib exe generators manpages
+all: lib exe generators
 
 .PHONY: exe
 exe: $(OCAMLDOC)
