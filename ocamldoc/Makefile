@@ -371,11 +371,6 @@ test_stdlib_code:
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
 	$(ROOTDIR)/otherlibs/str/str.ml
 
-.PHONY: test_framed
-test_framed:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN_PLUGINS) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
-
 .PHONY: test_latex
 test_latex:
 	$(MKDIR) $@
