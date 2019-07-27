@@ -221,6 +221,10 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
 
+- #8835: new configure option --disable-stdlib-manpages to disable building
+  and installation of the library manpages.
+  (David Allsopp, review by Florian Angeletti and Gabriel Scherer)
+
 - #8837: build manpages using ocamldoc.opt when available
   cuts the manpages build time from 14s to 4s
   (Gabriel Scherer, review by David Allsopp and Sébastien Hinderer,

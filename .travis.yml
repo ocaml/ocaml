@@ -22,7 +22,7 @@ script: tools/ci/travis/travis-ci.sh
 matrix:
   include:
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0
-  - env: CI_KIND=build XARCH=i386
+  - env: CI_KIND=build XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages
     addons:
       apt:
         packages:
