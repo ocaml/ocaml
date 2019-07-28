@@ -250,6 +250,10 @@ Working version
 
 ### Build system:
 
+- #8840: use ocaml{c,opt}.opt when available to build internal tools
+  On my machine this reduces parallel-build times from 3m30s to 2m50s.
+  (Gabriel Scherer, review by Xavier Leroy and Sébastien Hinderer)
+
 - #8650: ensure that "make" variables are defined before use;
   revise generation of config/util.ml to better quote special characters
   (Xavier Leroy, review by David Allsopp)
