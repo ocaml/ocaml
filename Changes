@@ -103,6 +103,9 @@ Working version
 
 ### Build system:
 
+- #8839: use ocaml{c,opt}.opt when available to build ocamldoc
+  (Gabriel Scherer, review by ??)
+
 - #8650: ensure that "make" variables are defined before use;
   revise generation of config/util.ml to better quote special characters
   (Xavier Leroy, review by David Allsopp)
