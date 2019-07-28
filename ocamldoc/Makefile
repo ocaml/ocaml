@@ -52,6 +52,9 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
     ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
       OCAMLDOC_RUN_BYTE=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
     else
+# if shared-libraries are not supported, unix.cma and str.cma
+# are compiled with -custom, so ocamldoc also uses -custom,
+# and (ocamlrun ocamldoc) does not work.
       OCAMLDOC_RUN_BYTE=./$(OCAMLDOC)
     endif
   else
