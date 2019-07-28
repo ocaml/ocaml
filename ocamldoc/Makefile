@@ -22,11 +22,34 @@ OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+ifeq "$(wildcard $(ROOTDIR)/ocamlc.opt)" ""
+OCAMLC_CMD = $(OCAMLRUN) $(ROOTDIR)/ocamlc
+else
+OCAMLC_CMD = $(ROOTDIR)/ocamlc.opt
+endif
+
+ifeq "$(wildcard $(ROOTDIR)/ocamlopt.opt)" ""
+OCAMLOPT_CMD = $(OCAMLRUN) $(ROOTDIR)/ocamlopt
+else
+OCAMLOPT_CMD = $(ROOTDIR)/ocamlopt.opt
+endif
+
+ifeq "$(wildcard $(ROOTDIR)/lex/ocamllex.opt)" ""
+OCAMLLEX_CMD = $(ROOTDIR)/lex/ocamllex.opt
+else
+  ifeq "$(wildcard $(ROOTDIR)/lex/ocamllex)" ""
+  OCAMLLEX_CMD = $(OCAMLRUN) $(ROOTDIR)/lex/ocamllex
+  else
+  OCAMLLEX_CMD = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+  endif
+endif
+
+OCAMLC = $(OCAMLC_CMD) $(STDLIBFLAGS)
+OCAMLOPT = $(OCAMLOPT_CMD) $(STDLIBFLAGS)
+OCAMLDEP  = $(OCAMLC_CMD) -depend
 DEPFLAGS = -slash
-OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLLEX = $(OCAMLLEX_CMD)
+
 # TODO: figure out whether the DEBUG lines the following preprocessor removes
 # are actually useful.
 # If they are not, then the preprocessor logic (including the
