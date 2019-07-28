@@ -422,11 +422,11 @@ opt.opt: checknative
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  ocamltest.opt
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt \
+	        $(WITH_OCAMLDOC) $(OCAMLDOC_OPT) ocamltest.opt
 
 # Core bootstrapping cycle
 .PHONY: coreboot
