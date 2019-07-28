@@ -17,16 +17,18 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+OCAMLDEP = $(BEST_OCAMLDEP)
 DEPFLAGS = -slash
-OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLLEX = $(BEST_OCAMLLEX)
+
 # TODO: figure out whether the DEBUG lines the following preprocessor removes
 # are actually useful.
 # If they are not, then the preprocessor logic (including the
