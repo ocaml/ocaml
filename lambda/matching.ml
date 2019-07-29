@@ -2091,16 +2091,6 @@ let sort_lambda_list l =
   let l = List.stable_sort (fun (x, _) (y, _) -> const_compare x y) l in
   uniq_lambda_list l
 
-let rec cut n l =
-  if n = 0 then
-    ([], l)
-  else
-    match l with
-    | [] -> raise (Invalid_argument "cut")
-    | a :: l ->
-        let l1, l2 = cut (n - 1) l in
-        (a :: l1, l2)
-
 let rec do_tests_fail loc fail tst arg = function
   | [] -> fail
   | (c, act) :: rem ->
@@ -2132,7 +2122,7 @@ let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
       | Some fail -> do_tests_fail loc fail tst arg const_lambda_list
   and split_sequence const_lambda_list =
     let list1, list2 =
-      cut (List.length const_lambda_list / 2) const_lambda_list
+      rev_split_at (List.length const_lambda_list / 2) const_lambda_list
     in
     Lifthenelse
       ( Lprim (lt_tst, [ arg; Lconst (Const_base (fst (List.hd list2))) ], loc),
