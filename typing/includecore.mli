@@ -56,7 +56,6 @@ type type_mismatch =
   | Variance
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_mismatch
-  | Extension_constructor_mismatch of extension_constructor_mismatch
   | Unboxed_representation of position
   | Immediate
 

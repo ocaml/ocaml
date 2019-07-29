@@ -128,9 +128,11 @@ let choose ord first second =
   match ord with
   | First -> first
   | Second -> second
-let choose_other ord = match ord with
-  | First -> choose Second
-  | Second -> choose First
+
+let choose_other ord first second =
+  match ord with
+  | First -> choose Second first second
+  | Second -> choose First first second
 
 type label_mismatch =
   | Type of Ident.t
@@ -166,7 +168,6 @@ type type_mismatch =
   | Variance
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_mismatch
-  | Extension_constructor_mismatch of extension_constructor_mismatch
   | Unboxed_representation of position
   | Immediate
 
@@ -233,8 +234,6 @@ let report_type_mismatch0 first second decl ppf err =
   | Variance -> pr "Their variances do not agree."
   | Record_mismatch err -> report_record_mismatch first second decl ppf err
   | Variant_mismatch err -> report_variant_mismatch first second decl ppf err
-  | Extension_constructor_mismatch err -> report_extension_constructor_mismatch
-                                            first second decl ppf err
   | Unboxed_representation ord ->
       pr "Their internal representations differ:@ %s %s %s."
          (choose ord first second) decl
