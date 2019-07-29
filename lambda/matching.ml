@@ -191,7 +191,7 @@ end = struct
         fun q rem ->
           match q.pat_desc with
           | Tpat_construct (_, cstr', args)
-          (* NB:  may_constr_equal considers (potential) constructor rebinding *)
+          (* NB: may_constr_equal considers (potential) constructor rebinding *)
             when Types.may_equal_constr cstr cstr' ->
               (p, args @ rem)
           | Tpat_any -> (p, omegas @ rem)
@@ -1385,7 +1385,8 @@ let divide_line make_ctx make get_args discr ctx (pm : pattern_matching) =
    There is one set of functions per matching style
    (constants, constructors etc.)
 
-   - matcher functions are arguments to specialize_default (for default handlers)
+   - matcher functions are arguments to specialize_default (for default
+   handlers).
    They may raise NoMatch or OrPat and perform the full
    matching (selection + arguments).
 
@@ -1693,6 +1694,7 @@ let inline_lazy_force_cond arg loc =
   let idarg = Ident.create_local "lzarg" in
   let varg = Lvar idarg in
   let tag = Ident.create_local "tag" in
+  let tag_var = Lvar tag in
   let force_fun = Lazy.force code_force_lazy_block in
   Llet
     ( Strict,
@@ -1708,14 +1710,14 @@ let inline_lazy_force_cond arg loc =
             ( (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
               Lprim
                 ( Pintcomp Ceq,
-                  [ Lvar tag; Lconst (Const_base (Const_int Obj.forward_tag)) ],
+                  [ tag_var; Lconst (Const_base (Const_int Obj.forward_tag)) ],
                   loc ),
               Lprim (Pfield 0, [ varg ], loc),
               Lifthenelse
-                ( (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
+                ( (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                   Lprim
                     ( Pintcomp Ceq,
-                      [ Lvar tag; Lconst (Const_base (Const_int Obj.lazy_tag)) ],
+                      [ tag_var; Lconst (Const_base (Const_int Obj.lazy_tag)) ],
                       loc ),
                   Lapply
                     { ap_should_be_tailcall = false;
@@ -1978,10 +1980,12 @@ let make_string_test_sequence loc arg sw d =
   in
   bind_sw arg (fun arg ->
       List.fold_right
-        (fun (s, lam) k ->
+        (fun (str, lam) k ->
           Lifthenelse
             ( Lprim
-                (prim_string_notequal, [ arg; Lconst (Const_immstring s) ], loc),
+                ( prim_string_notequal,
+                  [ arg; Lconst (Const_immstring str) ],
+                  loc ),
               k,
               lam ))
         sw d)
@@ -2653,8 +2657,9 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
                       ( Lprim (Pisint, [ arg ], loc),
                         call_switcher loc fail_opt arg 0 (n - 1) consts,
                         act )
-                (* Emit a switch, as bytecode implements this sophisticated instruction *)
                 | None ->
+                    (* Emit a switch, as bytecode implements this sophisticated
+                      instruction *)
                     let sw =
                       { sw_numconsts = cstr.cstr_consts;
                         sw_consts = consts;
