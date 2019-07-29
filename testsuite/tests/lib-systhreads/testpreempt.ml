@@ -19,6 +19,7 @@ let rec generate_list n =
   aux [] n
 
 let rec long_computation time0 =
+  Thread.delay 0.1;
   let long_list = generate_list 100000 in
   let res = List.length (List.rev_map sin long_list) in
   if Sys.time () -. time0 > 2. then
