@@ -656,8 +656,9 @@ let safe_before (ps, act_p) l =
 
    However or-patterns are only half-simplified,
      - aliases under or-patterns are kept
-     - or-patterns whose left-hand-side is simplifiable
-       are removed: (_|p) is changed into _
+     - or-patterns whose right-hand-side is subsumed by their lhs
+       are simplified to their lhs.
+       For instance: [(_ :: _ | 1 :: _)] is changed into [_ :: _]
      - or-patterns whose left-hand-side is not simplified
        are preserved: (p|q) is changed into (simpl(p)|simpl(q))
          {v
