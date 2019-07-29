@@ -72,7 +72,7 @@ let all_record_args lbls =
       in
       List.iter (fun ((_, lbl, _) as x) -> t.(lbl.lbl_pos) <- x) lbls;
       Array.to_list t
-  | _ -> fatal_error "Parmatch.all_record_args"
+  | _ -> fatal_error "Matching.all_record_args"
 
 type matrix = pattern list list
 
