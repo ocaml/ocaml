@@ -117,7 +117,7 @@
    (Stored as an offset, to survive stack reallocations). Clobbers %r11 */
 #define PUSH_EXN_HANDLER \
         movq    Caml_state(exn_handler), %r11; \
-	    subq    %rsp, %r11; \
+        subq    %rsp, %r11; \
         addq    $0x8, %r11; \
         pushq   %r11; CFI_ADJUST(8);
 
@@ -125,9 +125,9 @@
 #define POP_EXN_HANDLER \
         leaq    Caml_state(exn_handler), %r11; \
         popq    %r10; CFI_ADJUST(-8); \
-	    subq    $0x8, %r10; \
-	    addq    %rsp, %r10; \
-	    movq    %r10, (%r11)
+        subq    $0x8, %r10; \
+        addq    %rsp, %r10; \
+        movq    %r10, (%r11)
 
 /******************************************************************************/
 /* Stack switching operations */
