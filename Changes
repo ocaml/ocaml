@@ -25,6 +25,9 @@ OCaml 4.08 maintenance branch:
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
+- #8842: check for definition of AT_SECURE before using it
+  (Stéphane Glondu, review by David Allsopp)
+
 OCaml 4.08.0 (13 June 2019)
 ---------------------------
 
