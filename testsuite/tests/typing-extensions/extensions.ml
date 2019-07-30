@@ -330,6 +330,33 @@ Error: Signature mismatch:
 |}]
 
 module M : sig
+  type ('a, 'b) bar = A of 'a
+end = struct
+  type ('b, 'a) bar = A of 'a
+end;;
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type ('b, 'a) bar = A of 'a
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type ('b, 'a) bar = A of 'a end
+       is not included in
+         sig type ('a, 'b) bar = A of 'a end
+       Type declarations do not match:
+         type ('b, 'a) bar = A of 'a
+       is not included in
+         type ('a, 'b) bar = A of 'a
+       Constructors do not match:
+         A of 'a
+       is not compatible with:
+         A of 'a0
+       The types are not equal.
+|}];;
+
+
+module M : sig
   type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
 end = struct
   type ('a, 'b) bar += A : 'd -> ('c, 'd) bar

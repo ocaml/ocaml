@@ -150,3 +150,55 @@ Error: Signature mismatch:
          Foo : int -> int t
        The second has explicit return type and the first doesn't.
 |}];;
+
+module M : sig
+  type ('a, 'b) t = A of 'a
+end = struct
+  type ('a, 'b) t = A of 'b
+end;;
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type ('a, 'b) t = A of 'b
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type ('a, 'b) t = A of 'b end
+       is not included in
+         sig type ('a, 'b) t = A of 'a end
+       Type declarations do not match:
+         type ('a, 'b) t = A of 'b
+       is not included in
+         type ('a, 'b) t = A of 'a
+       Constructors do not match:
+         A of 'b
+       is not compatible with:
+         A of 'a0
+       The types are not equal.
+|}];;
+
+module M : sig
+  type ('a, 'b) t = A of 'a
+end = struct
+  type ('b, 'a) t = A of 'a
+end;;
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type ('b, 'a) t = A of 'a
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type ('b, 'a) t = A of 'a end
+       is not included in
+         sig type ('a, 'b) t = A of 'a end
+       Type declarations do not match:
+         type ('b, 'a) t = A of 'a
+       is not included in
+         type ('a, 'b) t = A of 'a
+       Constructors do not match:
+         A of 'a
+       is not compatible with:
+         A of 'a0
+       The types are not equal.
+|}];;
