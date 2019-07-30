@@ -95,7 +95,7 @@ Line 3, characters 23-33:
 3 | module type B = A with type t = u;; (* fail *)
                            ^^^^^^^^^^
 Error: This variant or record definition does not match that of type u
-       The types for field X are not equal.
+       The types for constructor X are not equal.
 |}];;
 
 (* PR#5815 *)
@@ -141,7 +141,7 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E
-       The arities for field E differ.
+       The arities for constructor E differ.
 |}];;
 
 module M : sig type t += E of char end = struct type t += E of int end;;
@@ -158,7 +158,7 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of char
-       The types for field E are not equal.
+       The types for constructor E are not equal.
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;
@@ -193,5 +193,5 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of { x : int; }
-       The types for field E are not equal.
+       The types for constructor E are not equal.
 |}];;
