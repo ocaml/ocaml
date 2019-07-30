@@ -8,7 +8,6 @@ recursive_types: true
 principal: true
 transparent_modules: false
 unboxed_types: true
-unsafe_string: false
 </ppx-context>
 <ppx-context>
 tool_name: "ocamlc"
@@ -20,5 +19,4 @@ recursive_types: false
 principal: false
 transparent_modules: true
 unboxed_types: false
-unsafe_string: true
 </ppx-context>
