@@ -403,6 +403,10 @@ OCaml 4.08 maintenance branch:
   #2176).
   (Leo White, report by Andre Maroneze, review by Gabriel Scherer)
 
+- #8830: configure script: fix tool prefix detection and Debian's armhf
+  detection
+  (Stéphane Glondu, review by David Allsopp)
+
 OCaml 4.08.0 (13 June 2019)
 ---------------------------
 

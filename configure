@@ -13505,6 +13505,8 @@ fi; system=elf ;; #(
     arch=arm; model=armv5te; system=linux_eabi ;; #(
   armv5*-*-linux-gnueabi) :
     arch=arm; model=armv5; system=linux_eabi ;; #(
+  arm*-*-linux-gnueabihf) :
+    arch=arm; system=linux_eabihf ;; #(
   arm*-*-linux-gnueabi) :
     arch=arm; system=linux_eabi ;; #(
   arm*-*-openbsd*) :
@@ -13687,7 +13689,7 @@ fi
 # Assembler
 
 if test -n "$host_alias"; then :
-  toolpref="${host}-"
+  toolpref="${host_alias}-"
 else
   toolpref=""
 fi
