@@ -173,7 +173,7 @@ Error: Signature mismatch:
        Constructors do not match:
          A of 'b
        is not compatible with:
-         A of 'a0
+         A of 'a
        The types are not equal.
 |}];;
 
@@ -199,6 +199,6 @@ Error: Signature mismatch:
        Constructors do not match:
          A of 'a
        is not compatible with:
-         A of 'a0
+         A of 'a
        The types are not equal.
 |}];;

@@ -1221,9 +1221,13 @@ and tree_of_constructor cd =
 and tree_of_label l =
   (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
 
-let constructor ppf c = !Oprint.out_constr ppf (tree_of_constructor c)
+let constructor ppf c =
+  reset_except_context ();
+  !Oprint.out_constr ppf (tree_of_constructor c)
 
-let label ppf l = !Oprint.out_label ppf (tree_of_label l)
+let label ppf l =
+  reset_except_context ();
+  !Oprint.out_label ppf (tree_of_label l)
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
@@ -1291,6 +1295,7 @@ let extension_constructor id ppf ext =
   !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
 
 let extension_only_constructor id ppf ext =
+  reset_except_context ();
   let name = Ident.name id in
   let args, ret =
     extension_constructor_args_and_ret_type_subtree
