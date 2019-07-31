@@ -120,6 +120,9 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
 
+- #8843, #8841: fix use of off_t on 32-bit systems.
+  (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants

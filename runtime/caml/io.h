@@ -29,11 +29,9 @@
 
 #if defined(_WIN32)
 typedef __int64 file_offset;
-#elif defined(HAS_OFF_T)
+#else
 #include <sys/types.h>
 typedef off_t file_offset;
-#else
-typedef long file_offset;
 #endif
 
 struct channel {
