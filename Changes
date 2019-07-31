@@ -138,10 +138,6 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
-- #8848: Fix x86 stack probe CFI information in caml_c_call and
-  caml_call_gc
-  (Tom Kelly, review by Xavier Leroy)
-
 OCaml 4.09.0
 ------------
 
@@ -393,6 +389,10 @@ OCaml 4.09.0
 
 - #8810: Env.lookup_module: don't allow creating loops
   (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
+- #8848: Fix x86 stack probe CFI information in caml_c_call and
+  caml_call_gc
+  (Tom Kelly, review by Xavier Leroy)
 
 OCaml 4.08 maintenance branch:
 ------------------------------
