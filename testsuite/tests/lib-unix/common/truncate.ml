@@ -1,5 +1,8 @@
 (* TEST
 include unix
+* hasunix
+** bytecode
+** native
 *)
 
 let str = "Hello, OCaml!"

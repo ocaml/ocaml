@@ -90,10 +90,25 @@ request can be merged.
 ------------------------------------------------------------------------
 EOF
 
-  configure_flags="\
-    --prefix=$PREFIX \
-    --enable-flambda-invariants \
-    $CONFIG_ARG"
+  if [ "$MIN_BUILD" = "1" ] ; then
+    configure_flags="\
+      --prefix=$PREFIX \
+      --disable-shared \
+      --disable-debug-runtime \
+      --disable-instrumented-runtime \
+      --disable-systhreads \
+      --disable-str-lib \
+      --disable-unix-lib \
+      --disable-bigarray-lib \
+      --disable-ocamldoc \
+      --disable-native-compiler \
+      $CONFIG_ARG"
+  else
+    configure_flags="\
+      --prefix=$PREFIX \
+      --enable-flambda-invariants \
+      $CONFIG_ARG"
+  fi
   case $XARCH in
   x64)
     ./configure $configure_flags
@@ -110,17 +125,34 @@ EOF
   esac
 
   export PATH=$PREFIX/bin:$PATH
-  $MAKE world.opt
-  $MAKE ocamlnat
+  if [ "$MIN_BUILD" = "1" ] ; then
+    if $MAKE world.opt ; then
+      echo "world.opt is not supposed to work!"
+      exit 1
+    else
+      $MAKE world
+    fi
+  else
+    $MAKE world.opt
+    $MAKE ocamlnat
+  fi
   cd testsuite
   echo Running the testsuite with the normal runtime
   $MAKE all
-  echo Running the testsuite with the debug runtime
-  $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
+  if [ "$MIN_BUILD" != "1" ] ; then
+    echo Running the testsuite with the debug runtime
+    $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
+  fi
   cd ..
+  if command -v pdflatex &>/dev/null  ; then
+    echo Ensuring that all library documentation compiles
+    make -C ocamldoc html_doc pdf_doc texi_doc
+  fi
   $MAKE install
-  echo Check the code examples in the manual
-  $MAKE manual-pregen
+  if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
+    echo Check the code examples in the manual
+    $MAKE manual-pregen
+  fi
   # check_all_arches checks tries to compile all backends in place,
   # we would need to redo (small parts of) world.opt afterwards to
   # use the compiler again

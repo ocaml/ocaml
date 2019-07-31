@@ -32,7 +32,7 @@ type summary =
       to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
-  | Env_copy_types of summary * string list
+  | Env_copy_types of summary
   | Env_persistent of summary * Ident.t
 
 type address =
@@ -144,11 +144,7 @@ val lookup_cltype:
   ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> Path.t * class_type_declaration
 
-type copy_of_types
-val make_copy_of_types: string list -> t -> copy_of_types
-val do_copy_types: copy_of_types -> t -> t
-(** [do_copy_types copy env] will raise a fatal error if the values in
-    [env] are different from the env passed to [make_copy_of_types]. *)
+val make_copy_of_types: t -> (t -> t)
 
 exception Recmodule
   (* Raise by lookup_module when the identifier refers

@@ -26,6 +26,7 @@
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
+#include "caml/debugger.h"
 
 /* The table of debug information fragments */
 struct ext_table caml_debug_info;

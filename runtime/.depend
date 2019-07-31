@@ -18,12 +18,13 @@ backtrace_byt_b.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_b.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_b.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -183,8 +184,8 @@ meta_b.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_b.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -327,12 +328,13 @@ backtrace_byt_bd.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_bd.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_bd.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -496,8 +498,8 @@ meta_bd.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_bd.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -640,12 +642,13 @@ backtrace_byt_bi.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_bi.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_bi.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -805,8 +808,8 @@ meta_bi.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_bi.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -949,12 +952,13 @@ backtrace_byt_bpic.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_bpic.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_bpic.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -1114,8 +1118,8 @@ meta_bpic.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h 
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_bpic.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -1258,12 +1262,13 @@ backtrace_byt_n.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_n.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_n.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -1420,8 +1425,8 @@ meta_n.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_n.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -1564,12 +1569,13 @@ backtrace_byt_nd.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_nd.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_nd.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -1730,8 +1736,8 @@ meta_nd.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_nd.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -1874,12 +1880,13 @@ backtrace_byt_ni.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_ni.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_ni.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -2036,8 +2043,8 @@ meta_ni.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_ni.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -2180,12 +2187,13 @@ backtrace_byt_npic.$(O): backtrace_byt.c caml/config.h caml/m.h caml/s.h \
  caml/exec.h caml/fix_code.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h
+ caml/backtrace.h caml/fail.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/debugger.h
 backtrace_npic.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/memprof.h \
  caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/fail.h caml/debugger.h
 backtrace_nat_npic.$(O): backtrace_nat.c caml/alloc.h caml/misc.h caml/config.h \
  caml/m.h caml/s.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
  caml/backtrace_prim.h caml/backtrace.h caml/memory.h caml/gc.h \
@@ -2342,8 +2350,8 @@ meta_npic.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h 
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/memprof.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/stacks.h caml/memory.h caml/backtrace_prim.h caml/backtrace.h \
- caml/exec.h
+ caml/stacks.h caml/memory.h caml/debugger.h caml/backtrace_prim.h \
+ caml/backtrace.h caml/exec.h
 minor_gc_npic.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \

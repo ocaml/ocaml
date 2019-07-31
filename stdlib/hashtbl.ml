@@ -15,15 +15,6 @@
 
 (* Hash tables *)
 
-external seeded_hash_param :
-  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
-external old_hash_param :
-  int -> int -> 'a -> int = "caml_hash_univ_param" [@@noalloc]
-
-let hash x = seeded_hash_param 10 100 0 x
-let hash_param n1 n2 x = seeded_hash_param n1 n2 0 x
-let seeded_hash seed x = seeded_hash_param 10 100 seed x
-
 (* We do dynamic hashing, and resize the table and rehash the elements
    when buckets become too long. *)
 
@@ -68,6 +59,10 @@ let is_randomized () = !randomized
 
 let prng = lazy (Random.State.make_self_init())
 
+(* Functions which appear before the functorial interface must either be
+   independent of the hash function or take it as a parameter (see #2202 and
+   code below the functor definitions. *)
+
 (* Creating a fresh, empty table *)
 
 let rec power_2_above x n =
@@ -81,11 +76,10 @@ let create ?(random = !randomized) initial_size =
   { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
-  h.size <- 0;
-  let len = Array.length h.data in
-  for i = 0 to len - 1 do
-    h.data.(i) <- Empty
-  done
+  if h.size > 0 then begin
+    h.size <- 0;
+    Array.fill h.data 0 (Array.length h.data) Empty
+  end
 
 let reset h =
   let len = Array.length h.data in
@@ -152,111 +146,6 @@ let resize indexfun h =
         | Cons tail -> tail.next <- Empty
       done;
   end
-
-let key_index h key =
-  (* compatibility with old hash tables *)
-  if Obj.size (Obj.repr h) >= 3
-  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
-  else (old_hash_param 10 100 key) mod (Array.length h.data)
-
-let add h key data =
-  let i = key_index h key in
-  let bucket = Cons{key; data; next=h.data.(i)} in
-  h.data.(i) <- bucket;
-  h.size <- h.size + 1;
-  if h.size > Array.length h.data lsl 1 then resize key_index h
-
-let rec remove_bucket h i key prec = function
-  | Empty ->
-      ()
-  | (Cons {key=k; next}) as c ->
-      if compare k key = 0
-      then begin
-        h.size <- h.size - 1;
-        match prec with
-        | Empty -> h.data.(i) <- next
-        | Cons c -> c.next <- next
-      end
-      else remove_bucket h i key c next
-
-let remove h key =
-  let i = key_index h key in
-  remove_bucket h i key Empty h.data.(i)
-
-let rec find_rec key = function
-  | Empty ->
-      raise Not_found
-  | Cons{key=k; data; next} ->
-      if compare key k = 0 then data else find_rec key next
-
-let find h key =
-  match h.data.(key_index h key) with
-  | Empty -> raise Not_found
-  | Cons{key=k1; data=d1; next=next1} ->
-      if compare key k1 = 0 then d1 else
-      match next1 with
-      | Empty -> raise Not_found
-      | Cons{key=k2; data=d2; next=next2} ->
-          if compare key k2 = 0 then d2 else
-          match next2 with
-          | Empty -> raise Not_found
-          | Cons{key=k3; data=d3; next=next3} ->
-              if compare key k3 = 0 then d3 else find_rec key next3
-
-let rec find_rec_opt key = function
-  | Empty ->
-      None
-  | Cons{key=k; data; next} ->
-      if compare key k = 0 then Some data else find_rec_opt key next
-
-let find_opt h key =
-  match h.data.(key_index h key) with
-  | Empty -> None
-  | Cons{key=k1; data=d1; next=next1} ->
-      if compare key k1 = 0 then Some d1 else
-      match next1 with
-      | Empty -> None
-      | Cons{key=k2; data=d2; next=next2} ->
-          if compare key k2 = 0 then Some d2 else
-          match next2 with
-          | Empty -> None
-          | Cons{key=k3; data=d3; next=next3} ->
-              if compare key k3 = 0 then Some d3 else find_rec_opt key next3
-
-let find_all h key =
-  let rec find_in_bucket = function
-  | Empty ->
-      []
-  | Cons{key=k; data; next} ->
-      if compare k key = 0
-      then data :: find_in_bucket next
-      else find_in_bucket next in
-  find_in_bucket h.data.(key_index h key)
-
-let rec replace_bucket key data = function
-  | Empty ->
-      true
-  | Cons ({key=k; next} as slot) ->
-      if compare k key = 0
-      then (slot.key <- key; slot.data <- data; false)
-      else replace_bucket key data next
-
-let replace h key data =
-  let i = key_index h key in
-  let l = h.data.(i) in
-  if replace_bucket key data l then begin
-    h.data.(i) <- Cons{key; data; next=l};
-    h.size <- h.size + 1;
-    if h.size > Array.length h.data lsl 1 then resize key_index h
-  end
-
-let mem h key =
-  let rec mem_in_bucket = function
-  | Empty ->
-      false
-  | Cons{key=k; next} ->
-      compare k key = 0 || mem_in_bucket next in
-  mem_in_bucket h.data.(key_index h key)
 
 let iter f h =
   let rec do_bucket = function
@@ -374,17 +263,6 @@ let to_seq tbl =
 let to_seq_keys m = Seq.map fst (to_seq m)
 
 let to_seq_values m = Seq.map snd (to_seq m)
-
-let add_seq tbl i =
-  Seq.iter (fun (k,v) -> add tbl k v) i
-
-let replace_seq tbl i =
-  Seq.iter (fun (k,v) -> replace tbl k v) i
-
-let of_seq i =
-  let tbl = create 16 in
-  replace_seq tbl i;
-  tbl
 
 (* Functorial interface *)
 
@@ -604,3 +482,132 @@ module Make(H: HashedType): (S with type key = H.t) =
       replace_seq tbl i;
       tbl
   end
+
+(* Polymorphic hash function-based tables *)
+(* Code included below the functorial interface to guard against accidental
+   use - see #2202 *)
+
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+external old_hash_param :
+  int -> int -> 'a -> int = "caml_hash_univ_param" [@@noalloc]
+
+let hash x = seeded_hash_param 10 100 0 x
+let hash_param n1 n2 x = seeded_hash_param n1 n2 0 x
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
+
+let key_index h key =
+  (* compatibility with old hash tables *)
+  if Obj.size (Obj.repr h) >= 3
+  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
+  else (old_hash_param 10 100 key) mod (Array.length h.data)
+
+let add h key data =
+  let i = key_index h key in
+  let bucket = Cons{key; data; next=h.data.(i)} in
+  h.data.(i) <- bucket;
+  h.size <- h.size + 1;
+  if h.size > Array.length h.data lsl 1 then resize key_index h
+
+let rec remove_bucket h i key prec = function
+  | Empty ->
+      ()
+  | (Cons {key=k; next}) as c ->
+      if compare k key = 0
+      then begin
+        h.size <- h.size - 1;
+        match prec with
+        | Empty -> h.data.(i) <- next
+        | Cons c -> c.next <- next
+      end
+      else remove_bucket h i key c next
+
+let remove h key =
+  let i = key_index h key in
+  remove_bucket h i key Empty h.data.(i)
+
+let rec find_rec key = function
+  | Empty ->
+      raise Not_found
+  | Cons{key=k; data; next} ->
+      if compare key k = 0 then data else find_rec key next
+
+let find h key =
+  match h.data.(key_index h key) with
+  | Empty -> raise Not_found
+  | Cons{key=k1; data=d1; next=next1} ->
+      if compare key k1 = 0 then d1 else
+      match next1 with
+      | Empty -> raise Not_found
+      | Cons{key=k2; data=d2; next=next2} ->
+          if compare key k2 = 0 then d2 else
+          match next2 with
+          | Empty -> raise Not_found
+          | Cons{key=k3; data=d3; next=next3} ->
+              if compare key k3 = 0 then d3 else find_rec key next3
+
+let rec find_rec_opt key = function
+  | Empty ->
+      None
+  | Cons{key=k; data; next} ->
+      if compare key k = 0 then Some data else find_rec_opt key next
+
+let find_opt h key =
+  match h.data.(key_index h key) with
+  | Empty -> None
+  | Cons{key=k1; data=d1; next=next1} ->
+      if compare key k1 = 0 then Some d1 else
+      match next1 with
+      | Empty -> None
+      | Cons{key=k2; data=d2; next=next2} ->
+          if compare key k2 = 0 then Some d2 else
+          match next2 with
+          | Empty -> None
+          | Cons{key=k3; data=d3; next=next3} ->
+              if compare key k3 = 0 then Some d3 else find_rec_opt key next3
+
+let find_all h key =
+  let rec find_in_bucket = function
+  | Empty ->
+      []
+  | Cons{key=k; data; next} ->
+      if compare k key = 0
+      then data :: find_in_bucket next
+      else find_in_bucket next in
+  find_in_bucket h.data.(key_index h key)
+
+let rec replace_bucket key data = function
+  | Empty ->
+      true
+  | Cons ({key=k; next} as slot) ->
+      if compare k key = 0
+      then (slot.key <- key; slot.data <- data; false)
+      else replace_bucket key data next
+
+let replace h key data =
+  let i = key_index h key in
+  let l = h.data.(i) in
+  if replace_bucket key data l then begin
+    h.data.(i) <- Cons{key; data; next=l};
+    h.size <- h.size + 1;
+    if h.size > Array.length h.data lsl 1 then resize key_index h
+  end
+
+let mem h key =
+  let rec mem_in_bucket = function
+  | Empty ->
+      false
+  | Cons{key=k; next} ->
+      compare k key = 0 || mem_in_bucket next in
+  mem_in_bucket h.data.(key_index h key)
+
+let add_seq tbl i =
+  Seq.iter (fun (k,v) -> add tbl k v) i
+
+let replace_seq tbl i =
+  Seq.iter (fun (k,v) -> replace tbl k v) i
+
+let of_seq i =
+  let tbl = create 16 in
+  replace_seq tbl i;
+  tbl

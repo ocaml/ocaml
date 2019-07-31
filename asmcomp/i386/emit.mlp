@@ -461,6 +461,17 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then
+    begin match system with
+    | S_macosx | S_mingw | S_cygwin | S_win32 -> D.text ()
+    | _ -> D.section [ ".text.caml."^(emit_symbol func_name) ]
+             (Some "ax") ["@progbits"]
+    end
+  else D.text ()
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -843,7 +854,7 @@ let emit_instr fallthrough i =
       for i = 0 to Array.length jumptbl - 1 do
         D.long (ConstLabel (emit_label jumptbl.(i)))
       done;
-      D.text ()
+      emit_named_text_section !function_name
   | Lentertrap ->
       ()
   | Ladjust_trap_depth { delta_traps } ->
@@ -896,7 +907,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
-  D.text ();
+  emit_named_text_section !function_name;
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);
   D.global (emit_symbol fundecl.fun_name);
@@ -963,8 +974,7 @@ let begin_assembly() =
 
   D.data ();
   emit_global_label "data_begin";
-
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin"
 
 let end_assembly() =
@@ -973,8 +983,7 @@ let end_assembly() =
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  D.text ();
-
+  emit_named_text_section (Compilenv.make_symbol (Some "code_end"));
   emit_global_label "code_end";
 
   D.data ();

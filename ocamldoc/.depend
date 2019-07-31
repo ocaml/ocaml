@@ -619,6 +619,7 @@ odoc_search.cmo : \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_module.cmo \
+    odoc_misc.cmi \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
@@ -628,6 +629,7 @@ odoc_search.cmx : \
     odoc_types.cmx \
     odoc_type.cmx \
     odoc_module.cmx \
+    odoc_misc.cmx \
     odoc_extension.cmx \
     odoc_exception.cmx \
     odoc_class.cmx \
