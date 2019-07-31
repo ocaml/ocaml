@@ -29,7 +29,6 @@
 #include "caml/memprof.h"
 #include <string.h>
 #include <stdio.h>
-#include <stddef.h>
 
 /* Roots registered from C functions */
 

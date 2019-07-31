@@ -200,7 +200,7 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   info2 = ((uint32_t *)dbg)[1];
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb ffffffffffffffffffffffff k n
-                         44       36         26                       2  1 0
+                         44       36         26                        2 1 0
                        (32+12)    (32+4)
      n ( 1 bit ): 0 if this is the final debuginfo
                   1 if there's another following this one

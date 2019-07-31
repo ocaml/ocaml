@@ -662,6 +662,7 @@ let emit_instr fallthrough i =
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
   | Lop(Ialloc { bytes = n; label_after_call_gc; spacetime_index; dbginfo }) ->
+      assert (n <= (Config.max_young_wosize + 1) * Arch.size_addr);
       let dbginfo =
         if not !Clflags.debug && not Config.spacetime then
           List.map (fun d -> { d with alloc_dbg = Debuginfo.none }) dbginfo

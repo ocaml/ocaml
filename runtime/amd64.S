@@ -488,7 +488,7 @@ LBL(103):
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_allocN))
-        
+
 /* Call a C function from OCaml */
 
 FUNCTION(G(caml_c_call))

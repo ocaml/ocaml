@@ -31,17 +31,18 @@ let rec combine i allocstate =
     Iend | Ireturn | Iexit _ | Iraise _ ->
       (i, allocstate)
   | Iop(Ialloc { bytes = sz; dbginfo; _ }) ->
+      assert (List.length dbginfo = 1);
       begin match allocstate with
       | Pending_alloc {reg; dbginfos; totalsz}
-          when totalsz + sz < Config.max_young_wosize * Arch.size_addr ->
-         let (next, totalsz) =
+          when totalsz + sz <= (Config.max_young_wosize + 1) * Arch.size_addr ->
+          let (next, state) =
            combine i.next
              (Pending_alloc { reg = i.res.(0);
                               dbginfos = dbginfo @ dbginfos;
                               totalsz = totalsz + sz }) in
          (instr_cons_debug (Iop(Iintop_imm(Iadd, -sz)))
             [| reg |] i.res i.dbg next,
-          totalsz)
+           state)
       | No_alloc | Pending_alloc _ ->
          let (next, state) =
            combine i.next
@@ -50,7 +51,7 @@ let rec combine i allocstate =
                               totalsz = sz }) in
          let totalsz, dbginfo =
            match state with
-           | No_alloc -> 0, dbginfo
+           | No_alloc -> assert false
            | Pending_alloc { totalsz; dbginfos; _ } -> totalsz, dbginfos in
          let next =
            let offset = totalsz - sz in
