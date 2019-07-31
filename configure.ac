@@ -670,7 +670,6 @@ AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
 
 ## off_t
 AC_TYPE_OFF_T
-AC_DEFINE([HAS_OFF_T])
 
 # Checks for structures
 
