@@ -273,6 +273,9 @@ OCaml 4.08 maintenance branch:
   detection
   (Stéphane Glondu, review by David Allsopp)
 
+- #8843, #8841: fix use of off_t on 32-bit systems.
+  (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
+
 OCaml 4.08.0 (13 June 2019)
 ---------------------------
 
