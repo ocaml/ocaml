@@ -27,6 +27,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /* Basic types and constants */
 
@@ -124,6 +125,15 @@ CAMLnoreturn_end;
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
+
+/* This hook is called when a fatal error occurs in the OCaml
+   runtime. It is given arguments to be passed to the [vprintf]-like
+   functions in order to synthetize the error message.
+   If it returns, the runtime calls [abort()].
+
+   If it is [NULL], the error message is printed on stderr and then
+   [abort()] is called. */
+extern void (*caml_fatal_error_hook) (char *msg, va_list args);
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
