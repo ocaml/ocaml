@@ -114,6 +114,33 @@ export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 
 #########################################################################
 
+# Ensure that the repo still passes the check-typo script
+if [ ! -x tools/check-typo ] ; then
+  error "tools/check-typo does not appear to be executable?"
+fi
+tools/check-typo
+
+#########################################################################
+
+echo "======== old school build =========="
+
+$make -s distclean || :
+
+instdir="$HOME/ocaml-tmp-install-$$"
+./configure --prefix "$instdir"
+
+# Build the system without using world.opt
+make $jobs world
+make $jobs opt
+make $jobs opt.opt
+make install
+
+rm -rf "$instdir"
+
+# It's a build system test only, so we don't bother testing the compiler
+
+#########################################################################
+
 echo "======== clang 6.0, address sanitizer, UB sanitizer =========="
 
 $make -s distclean || :
@@ -222,11 +249,3 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 # # Build the system (bytecode only) and test
 # make $jobs world
 # $run_testsuite
-
-#########################################################################
-
-# Ensure that the repo still passes the check-typo script
-if [ ! -x tools/check-typo ] ; then
-  error "tools/check-typo does not appear to be executable?"
-fi
-tools/check-typo
