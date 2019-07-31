@@ -78,6 +78,10 @@
 #define CFI_ADJUST(n)
 #endif
 
+#if !defined(SYS_mingw) && !defined(SYS_cygwin)
+#define STACK_PROBE_SIZE 16384
+#endif
+
 /* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays,
    even if only MacOS X's ABI formally requires it. */
 #define ALIGN_STACK(amount) subl $ amount, %esp ; CFI_ADJUST(amount)
@@ -109,9 +113,9 @@ LBL(105):
 #if !defined(SYS_mingw) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
-        subl    $16384, %esp
+        subl    $(STACK_PROBE_SIZE), %esp; CFI_ADJUST(STACK_PROBE_SIZE);
         movl    %eax, 0(%esp)
-        addl    $16384, %esp
+        addl    $(STACK_PROBE_SIZE), %esp; CFI_ADJUST(-STACK_PROBE_SIZE);
 #endif
     /* Build array of registers, save it into caml_gc_regs */
         pushl   %ebp; CFI_ADJUST(4)
@@ -234,9 +238,9 @@ FUNCTION(caml_c_call)
 #if !defined(SYS_mingw) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
-        subl    $16384, %esp
+        subl    $(STACK_PROBE_SIZE), %esp; CFI_ADJUST(STACK_PROBE_SIZE);
         movl    %eax, 0(%esp)
-        addl    $16384, %esp
+        addl    $(STACK_PROBE_SIZE), %esp; CFI_ADJUST(-STACK_PROBE_SIZE);
 #endif
     /* Call the function (address in %eax) */
         jmp     *%eax
