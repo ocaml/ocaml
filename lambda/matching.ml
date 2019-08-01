@@ -335,8 +335,24 @@ let flatten_matrix size pss =
       | _ -> fatal_error "Matching.flatten_matrix")
     pss []
 
-(* A few operations on default environments *)
+(** A default environment (referred to as "reachable trap handlers" in the
+    paper), is an ordered list of [matrix * raise_num] pairs, and is used to
+    decide where to jump next if none of the rows in a given matrix match the
+    input.
 
+    In such situations, one thing you can do is to jump to the first (leftmost)
+    [raise_num] in that list (by doing a raise to the static-cach handler number
+    [raise_num]); and you can assume that if the associated pm doesn't match
+    either, it will do the same thing, etc.
+    This is what [mk_failaction_neg] (and its callers) does.
+
+    A more sophisticated alternative is to use what you know about the input
+    (what you might already have matched) and the current pm (what you know you
+    can't match) to directly jump to a pm that might match it instead of the
+    next one; that is why we don't just keep [raise_num]s but also the
+    associated matrices.
+    [mk_failaction_pos] does (a slightly more sophisticated version of) this.
+*)
 module Default_environment : sig
   type t
 
