@@ -1232,12 +1232,19 @@ and precompile_var args cls def k =
                 | PmOr { or_matrix = m } -> m
                 | PmVar x -> add_omega_column (rebuild_matrix x.inside)
               in
-              let rec rebuild_default nexts def =
-                match nexts with
-                | [] -> def
-                | (e, pmh) :: rem ->
-                    (add_omega_column (rebuild_matrix pmh), e)
-                    :: rebuild_default rem def
+              let rebuild_default nexts def =
+                (* We can't just do:
+                   {[
+                     List.map
+                       (fun (mat, e) -> add_omega_column mat, e)
+                       top_default (* assuming it'd been bound. *)
+                   ]}
+                   As we would be loosing information: [def] is more precise
+                   than [add_omega_column (pop_column def)]. *)
+                List.fold_right
+                  (fun (e, pmh) ->
+                    cons_default (add_omega_column (rebuild_matrix pmh)) e)
+                  nexts def
               in
               let rebuild_nexts nexts k =
                 map_end (fun (e, pm) -> (e, PmVar { inside = pm })) nexts k
