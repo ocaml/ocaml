@@ -2097,7 +2097,7 @@ and transl_prim_1 env p arg dbg =
       let ptr = transl env arg
       in
       ( match immediate_or_pointer with
-        | Immediate -> Cop (Cload {memory_chunk=Word_int ; mutability=Mutable ; is_atomic=true} , [ptr; Cconst_int 0], dbg)
+        | Immediate -> Cop (Cload {memory_chunk=Word_int ; mutability=Mutable ; is_atomic=true} , [ptr], dbg)
         | Pointer -> Cop (Cloadmut {is_atomic=true}, [ptr; Cconst_int 0], dbg) )
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
