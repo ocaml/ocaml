@@ -614,7 +614,8 @@ typing/includecore.cmi : \
     typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    typing/ctype.cmi
 typing/includemod.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \

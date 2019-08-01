@@ -43,6 +43,9 @@ module Float_arg_helper : sig
   val get : key:int -> parsed -> float
 end
 
+(** Exception raised in case a setter function is called with a wrong value. *)
+exception ForbiddenValue of string
+
 type inlining_arguments = {
   inline_call_cost : int option;
   inline_alloc_cost : int option;
@@ -189,7 +192,12 @@ val with_runtime : bool ref
 val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
-val unsafe_string : bool ref
+val get_unsafe_string : unit -> bool
+
+(** [set_unsafe_string true] will raise [ForbiddenValue] if force-safe-string
+    is enabled *)
+val set_unsafe_string : bool -> unit
+
 val opaque : bool ref
 val profile_columns : Profile.column list ref
 val flambda_invariant_checks : bool ref

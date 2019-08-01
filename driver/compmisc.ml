@@ -50,7 +50,7 @@ let initial_env () =
   in
   Typemod.initial_env
     ~loc:(Location.in_file "command line")
-    ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
+    ~safe_string:(Config.safe_string || not (Clflags.get_unsafe_string ()))
     ~initially_opened_module
     ~open_implicit_modules:(List.rev !Clflags.open_modules)
 

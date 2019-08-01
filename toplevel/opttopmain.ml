@@ -242,8 +242,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _dlinear = set dump_linear
   let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
-  let _safe_string = clear unsafe_string
-  let _unsafe_string = set unsafe_string
+  let _safe_string () = set_unsafe_string false
+  let _unsafe_string () = set_unsafe_string true
   let _open s = open_modules := s :: !open_modules
   let _color = Misc.set_or_ignore color_reader.parse color
   let _error_style = Misc.set_or_ignore error_style_reader.parse error_style

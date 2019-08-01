@@ -150,10 +150,13 @@ let setter ppf f name options s =
       | "1" -> true
       | _ -> raise Not_found
     in
-    List.iter (fun b -> b := f bool) options
-  with Not_found ->
-    Printf.ksprintf (print_error ppf)
-      "bad value %s for %s" s name
+    List.iter (fun b -> f b bool) options
+  with
+  | Not_found ->
+      Printf.ksprintf (print_error ppf)
+        "bad value %s for %s" s name
+  | Clflags.ForbiddenValue s ->
+      print_error ppf s
 
 let int_setter ppf name option s =
   try
@@ -193,8 +196,9 @@ let check_bool ppf name s =
 let can_discard = ref []
 
 let read_one_param ppf position name v =
-  let set name options s =  setter ppf (fun b -> b) name options s in
-  let clear name options s = setter ppf (fun b -> not b) name options s in
+  let set name options s =  setter ppf (fun r b -> r := b) name options s in
+  let clear name options s = setter ppf (fun r b -> r := not b) name options s in
+  let clear_fun name options s = setter ppf (fun f b -> f (not b)) name options s in
   match name with
   | "g" -> set "g" [ Clflags.debug ] v
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
@@ -211,7 +215,7 @@ let read_one_param ppf position name v =
   | "nolabels" -> set "nolabels" [ classic ] v
   | "principal" -> set "principal"  [ principal ] v
   | "rectypes" -> set "rectypes" [ recursive_types ] v
-  | "safe-string" -> clear "safe-string" [ unsafe_string ] v
+  | "safe-string" -> clear_fun "safe-string" [ set_unsafe_string ] v
   | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
   | "strict-formats" -> set "strict-formats" [ strict_formats ] v
   | "thread" -> set "thread" [ use_threads ] v
