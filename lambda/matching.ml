@@ -13,7 +13,79 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compilation of pattern matching *)
+(* Compilation of pattern matching
+
+   Based upon Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001.
+
+   A previous version was based on Peyton-Jones, ``The Implementation of
+   functional programming languages'', chapter 5.
+
+
+   Overview of the implementation
+   ==============================
+
+       1. Precompilation
+       -----------------
+
+     (split_and_precompile)
+   We first split the initial pattern matching (or "pm") along its first column
+   -- simplifying pattern heads in the process --, so that we obtain an ordered
+   list of pms.
+   For every pm in this list, and any two patterns in its first column, either
+   the patterns have the same head, or they match disjoint sets of values. (In
+   particular, two extension constructors that may or may not be equal due to
+   hidden rebinding cannot occur in the same simple pm.)
+
+       2. Compilation
+       --------------
+
+   The compilation of one of these pms obtained after precompiling is done as
+   follows:
+
+     (divide)
+   We split the match along the first column again, this time grouping rows
+   which start with the same head, and removing the first column.
+   As a result we get a "division", which is a list a "cells" of the form:
+         discriminating pattern head * specialized pm
+
+     (compile_list + compile_match)
+   We then map over the division to compile each cell: we simply restart the
+   whole process on the second element of each cell.
+   Each cell is now of the form:
+         discriminating pattern head * lambda
+
+     (combine_constant, combine_construct, combine_array, ...)
+   We recombine the cells using a switch or some ifs, and if the matching can
+   fail, introduce a jump to the next pm that could potentially match the
+   scrutiny.
+
+       3. Chaining of pms
+       ------------------
+
+     (comp_match_handlers)
+   Once the pms have been compiled, we stitch them back together in the order
+   produced by precompilation, resulting in the following structure:
+   {v
+       catch
+         catch
+           <first body>
+         with <exit i> ->
+           <second body>
+       with <exit j> ->
+         <third body>
+   v}
+
+   Additionally, bodies whose corresponding exit-number is never used are
+   discarded. So for instance, if in the pseudo-example above we know that exit
+   [i] is never taken, we would actually generate:
+   {v
+       catch
+         <first body>
+       with <exit j> ->
+         <third body>
+   v}
+
+*)
 
 open Misc
 open Asttypes
@@ -25,13 +97,6 @@ open Printf
 open Printpat
 
 let dbg = false
-
-(*  See Peyton-Jones, ``The Implementation of functional programming
-    languages'', chapter 5. *)
-(*
-  Well, it was true at the beginning of the world.
-  Now, see Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001
-*)
 
 (*
    Compatibility predicate that considers potential rebindings of constructors
