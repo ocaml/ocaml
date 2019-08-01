@@ -313,64 +313,128 @@ end = struct
   let union pss qss = get_mins Row.le (pss @ qss)
 end
 
-(* A few operations on default environments *)
-
-let cons_default matrix raise_num default =
-  match matrix with
-  | [] -> default
-  | _ -> (matrix, raise_num) :: default
-
 exception OrPat
 
-let specialize_matrix matcher pss =
-  let rec filter_rec = function
-    | (p :: ps) :: rem -> (
-        match p.pat_desc with
-        | Tpat_alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
-        | Tpat_var _ -> filter_rec ((omega :: ps) :: rem)
-        | _ -> (
-            let rem = filter_rec rem in
-            try matcher p ps :: rem with
-            | NoMatch -> rem
-            | OrPat -> (
-                match p.pat_desc with
-                | Tpat_or (p1, p2, _) ->
-                    filter_rec [ p1 :: ps; p2 :: ps ] @ rem
-                | _ -> assert false
-              )
-          )
-      )
-    | [] -> []
-    | _ ->
-        pretty_matrix Format.err_formatter pss;
-        fatal_error "Matching.specialize_matrix"
-  in
-  filter_rec pss
+let rec flatten_pat_line size p k =
+  match p.pat_desc with
+  | Tpat_any -> omegas size :: k
+  | Tpat_tuple args -> args :: k
+  | Tpat_or (p1, p2, _) ->
+      flatten_pat_line size p1 (flatten_pat_line size p2 k)
+  | Tpat_alias (p, _, _) ->
+      (* Note: if this 'as' pat is here, then this is a
+                           useless binding, solves PR#3780 *)
+      flatten_pat_line size p k
+  | _ -> fatal_error "Matching.flatten_pat_line"
 
-let specialize_default matcher env =
-  let rec make_rec = function
-    | [] -> []
-    | ([ [] ], i) :: _ -> [ ([ [] ], i) ]
-    | (pss, i) :: rem -> (
-        let rem = make_rec rem in
-        match specialize_matrix matcher pss with
-        | [] -> rem
-        | [] :: _ -> [ ([ [] ], i) ]
-        | pss -> (pss, i) :: rem
-      )
-  in
-  make_rec env
+let flatten_matrix size pss =
+  List.fold_right
+    (fun ps r ->
+      match ps with
+      | [ p ] -> flatten_pat_line size p r
+      | _ -> fatal_error "Matching.flatten_matrix")
+    pss []
 
-let default_pop_column def = specialize_default (fun _p rem -> rem) def
+(* A few operations on default environments *)
 
-let default_pop_compat p def =
-  let compat_matcher q rem =
-    if may_compat p q then
-      rem
-    else
-      raise NoMatch
-  in
-  specialize_default compat_matcher def
+module Default_environment : sig
+  type t
+
+  val is_empty : t -> bool
+
+  val pop : t -> ((matrix * int) * t) option
+
+  val empty : t
+
+  val cons : matrix -> int -> t -> t
+
+  val specialize : (pattern -> pattern list -> pattern list) -> t -> t
+
+  val pop_column : t -> t
+
+  val pop_compat : pattern -> t -> t
+
+  val flatten : int -> t -> t
+
+  val pp : t -> unit
+end = struct
+  type t = (matrix * int) list
+
+  let empty = []
+
+  let is_empty = function
+    | [] -> true
+    | _ -> false
+
+  let cons matrix raise_num default =
+    match matrix with
+    | [] -> default
+    | _ -> (matrix, raise_num) :: default
+
+  let specialize_matrix matcher pss =
+    let rec filter_rec = function
+      | (p :: ps) :: rem -> (
+          match p.pat_desc with
+          | Tpat_alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
+          | Tpat_var _ -> filter_rec ((omega :: ps) :: rem)
+          | _ -> (
+              let rem = filter_rec rem in
+              try matcher p ps :: rem with
+              | NoMatch -> rem
+              | OrPat -> (
+                  match p.pat_desc with
+                  | Tpat_or (p1, p2, _) ->
+                      filter_rec [ p1 :: ps; p2 :: ps ] @ rem
+                  | _ -> assert false
+                )
+            )
+        )
+      | [] -> []
+      | _ ->
+          pretty_matrix Format.err_formatter pss;
+          fatal_error "Matching.Default_environment.specialize_matrix"
+    in
+    filter_rec pss
+
+  let specialize matcher env =
+    let rec make_rec = function
+      | [] -> []
+      | ([ [] ], i) :: _ -> [ ([ [] ], i) ]
+      | (pss, i) :: rem -> (
+          let rem = make_rec rem in
+          match specialize_matrix matcher pss with
+          | [] -> rem
+          | [] :: _ -> [ ([ [] ], i) ]
+          | pss -> (pss, i) :: rem
+        )
+    in
+    make_rec env
+
+  let pop_column def = specialize (fun _p rem -> rem) def
+
+  let pop_compat p def =
+    let compat_matcher q rem =
+      if may_compat p q then
+        rem
+      else
+        raise NoMatch
+    in
+    specialize compat_matcher def
+
+  let pop = function
+    | [] -> None
+    | def :: defs -> Some (def, defs)
+
+  let pp def =
+    Format.eprintf "+++++ Defaults +++++\n";
+    List.iter
+      (fun (pss, i) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
+      def;
+    Format.eprintf "+++++++++++++++++++++\n"
+
+  let flatten size def =
+    List.map (fun (pss, i) -> (flatten_matrix size pss, i)) def
+end
 
 module Jumps : sig
   type t
@@ -483,7 +547,7 @@ type pattern_matching = {
           direct field projections are used (make_field_args)
         - with lazy patterns args can be of the form [Lazy.force ...]
           (inline_lazy_force). *)
-  default : (matrix * int) list
+  default : Default_environment.t
 }
 
 type handler = {
@@ -515,7 +579,7 @@ type pm_half_compiled_info = {
   (* the matrix matched by [me]. Is used to extend the list of reachable trap
         handlers (aka "default environments") when returning from recursive
         calls. *)
-  top_default : (matrix * int) list
+  top_default : Default_environment.t
 }
 
 let pretty_cases cases =
@@ -525,16 +589,10 @@ let pretty_cases cases =
       Format.eprintf "\n")
     cases
 
-let pretty_def def =
-  Format.eprintf "+++++ Defaults +++++\n";
-  List.iter
-    (fun (pss, i) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
-    def;
-  Format.eprintf "+++++++++++++++++++++\n"
-
 let pretty_pm pm =
   pretty_cases pm.cases;
-  if pm.default <> [] then pretty_def pm.default
+  if not (Default_environment.is_empty pm.default) then
+    Default_environment.pp pm.default
 
 let rec pretty_precompiled = function
   | Pm pm ->
@@ -1033,7 +1091,7 @@ let rec split_or argo cls args def =
             do_split [] [] [] no
           in
           let idef = next_raise_count () in
-          (cons_default matrix idef def, (idef, next) :: nexts)
+          (Default_environment.cons matrix idef def, (idef, next) :: nexts)
     in
     match yesor with
     | [] -> split_constr yes args def nexts
@@ -1070,7 +1128,7 @@ and split_naive cls args def k =
               split_exc cstr [ cl ] rem
             in
             let idef = next_raise_count () in
-            let def = cons_default matrix idef def in
+            let def = Default_environment.cons matrix idef def in
             ( { me = Pm { cases = yes; args; default = def };
                 matrix = as_matrix yes;
                 top_default = def
@@ -1082,7 +1140,7 @@ and split_naive cls args def k =
             split_noexc [ cl ] rem
           in
           let idef = next_raise_count () in
-          let def = cons_default matrix idef def in
+          let def = Default_environment.cons matrix idef def in
           ( { me = Pm { cases = yes; args; default = def };
               matrix = as_matrix yes;
               top_default = def
@@ -1102,7 +1160,7 @@ and split_naive cls args def k =
           in
           let idef = next_raise_count () in
           precompile_var args yes
-            (cons_default matrix idef def)
+            (Default_environment.cons matrix idef def)
             ((idef, next) :: nexts)
   in
   match cls with
@@ -1148,7 +1206,7 @@ and split_constr cls args def k =
                       split_noex [ cl ] [] rem
                     in
                     let idef = next_raise_count () in
-                    let def = cons_default matrix idef def in
+                    let def = Default_environment.cons matrix idef def in
                     ( { me = Pm { cases = yes; args; default = def };
                         matrix = as_matrix yes;
                         top_default = def
@@ -1178,7 +1236,7 @@ and split_constr cls args def k =
                 in
                 let idef = next_raise_count () in
                 precompile_var args yes
-                  (cons_default matrix idef def)
+                  (Default_environment.cons matrix idef def)
                   ((idef, next) :: nexts)
           )
       in
@@ -1216,7 +1274,7 @@ and precompile_var args cls def k =
                     (ps, act)
                 | _ -> assert false)
               cls
-          and var_def = default_pop_column def in
+          and var_def = Default_environment.pop_column def in
           let { me = first; matrix }, nexts =
             split_or (Some v) var_cls (arg :: rargs) var_def
           in
@@ -1243,7 +1301,9 @@ and precompile_var args cls def k =
                    than [add_omega_column (pop_column def)]. *)
                 List.fold_right
                   (fun (e, pmh) ->
-                    cons_default (add_omega_column (rebuild_matrix pmh)) e)
+                    Default_environment.cons
+                      (add_omega_column (rebuild_matrix pmh))
+                      e)
                   nexts def
               in
               let rebuild_nexts nexts k =
@@ -1284,7 +1344,7 @@ and precompile_or argo cls ors args def k =
               | _ :: r -> r
               | _ -> assert false
               );
-            default = default_pop_compat orp def
+            default = Default_environment.pop_compat orp def
           }
         in
         let pm_fv = pm_free_variables orpm in
@@ -1392,8 +1452,8 @@ let divide_line make_ctx make get_args discr ctx (pm : pattern_matching) =
    There is one set of functions per matching style
    (constants, constructors etc.)
 
-   - matcher functions are arguments to specialize_default (for default
-   handlers).
+   - matcher functions are arguments to Default_environment.specialize (for
+   default handlers)
    They may raise NoMatch or OrPat and perform the full
    matching (selection + arguments).
 
@@ -1426,7 +1486,9 @@ let make_constant_matching p def ctx = function
   | [] -> fatal_error "Matching.make_constant_matching"
   | _ :: argl ->
       let def =
-        specialize_default (matcher_const (get_key_constant "make" p)) def
+        Default_environment.specialize
+          (matcher_const (get_key_constant "make" p))
+          def
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
@@ -1544,7 +1606,7 @@ let make_constr_matching p def ctx = function
       { pm =
           { cases = [];
             args = newargs;
-            default = specialize_default (matcher_constr cstr) def
+            default = Default_environment.specialize (matcher_constr cstr) def
           };
         ctx = Context.specialize p ctx;
         discr = normalize_pat p
@@ -1568,7 +1630,7 @@ let rec matcher_variant_const lab p rem =
 let make_variant_matching_constant p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_constant"
   | _ :: argl ->
-      let def = specialize_default (matcher_variant_const lab) def
+      let def = Default_environment.specialize (matcher_variant_const lab) def
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
@@ -1585,7 +1647,8 @@ let matcher_variant_nonconst lab p rem =
 let make_variant_matching_nonconst p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_nonconst"
   | (arg, _mut) :: argl ->
-      let def = specialize_default (matcher_variant_nonconst lab) def
+      let def =
+        Default_environment.specialize (matcher_variant_nonconst lab) def
       and ctx = Context.specialize p ctx in
       { pm =
           { cases = [];
@@ -1637,7 +1700,7 @@ let make_var_matching def = function
   | _ :: argl ->
       { cases = [];
         args = argl;
-        default = specialize_default get_args_var def
+        default = Default_environment.specialize get_args_var def
       }
 
 let divide_var ctx pm =
@@ -1798,7 +1861,7 @@ let make_lazy_matching def = function
   | (arg, _mut) :: argl ->
       { cases = [];
         args = (inline_lazy_force arg Location.none, Strict) :: argl;
-        default = specialize_default matcher_lazy def
+        default = Default_environment.specialize matcher_lazy def
       }
 
 let divide_lazy p ctx pm =
@@ -1832,7 +1895,7 @@ let make_tuple_matching loc arity def = function
       in
       { cases = [];
         args = make_args 0;
-        default = specialize_default (matcher_tuple arity) def
+        default = Default_environment.specialize (matcher_tuple arity) def
       }
 
 let divide_tuple arity p ctx pm =
@@ -1892,7 +1955,7 @@ let make_record_matching loc all_labels def = function
           (access, str) :: make_args (pos + 1)
       in
       let nfields = Array.length all_labels in
-      let def = specialize_default (matcher_record nfields) def in
+      let def = Default_environment.specialize (matcher_record nfields) def in
       { cases = []; args = make_args 0; default = def }
 
 let divide_record all_labels p ctx pm =
@@ -1934,7 +1997,7 @@ let make_array_matching kind p def ctx = function
             StrictOpt )
           :: make_args (pos + 1)
       in
-      let def = specialize_default (matcher_array len) def
+      let def = Default_environment.specialize (matcher_array len) def
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = make_args 0; default = def };
         ctx;
@@ -2423,10 +2486,10 @@ let complete_pats_constrs = function
 let mk_failaction_neg partial ctx def =
   match partial with
   | Partial -> (
-      match def with
-      | (_, idef) :: _ ->
+      match Default_environment.pop def with
+      | Some ((_, idef), _) ->
           (Some (Lstaticraise (idef, [])), Jumps.singleton idef ctx)
-      | [] ->
+      | None ->
           (* Act as Total, this means
           If no appropriate default matrix exists,
           then this switch cannot fail *)
@@ -2438,13 +2501,13 @@ let mk_failaction_neg partial ctx def =
 let mk_failaction_pos partial seen ctx defs =
   if dbg then (
     Format.eprintf "**POS**\n";
-    pretty_def defs;
+    Default_environment.pp defs;
     ()
   );
   let rec scan_def env to_test defs =
-    match (to_test, defs) with
+    match (to_test, Default_environment.pop defs) with
     | [], _
-    | _, [] ->
+    | _, None ->
         List.fold_left
           (fun (klist, jumps) (pats, i) ->
             let action = Lstaticraise (i, []) in
@@ -2457,7 +2520,7 @@ let mk_failaction_pos partial seen ctx defs =
             in
             (klist, jumps))
           ([], Jumps.empty) env
-    | _, (pss, idef) :: rem -> (
+    | _, Some ((pss, idef), rem) -> (
         let now, later =
           List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
         in
@@ -2909,9 +2972,9 @@ let bind_check str v arg lam =
   | _, _ -> bind str v arg lam
 
 let comp_exit ctx m =
-  match m.default with
-  | (_, i) :: _ -> (Lstaticraise (i, []), Jumps.singleton i ctx)
-  | _ -> fatal_error "Matching.comp_exit"
+  match Default_environment.pop m.default with
+  | Some ((_, i), _) -> (Lstaticraise (i, []), Jumps.singleton i ctx)
+  | None -> fatal_error "Matching.comp_exit"
 
 let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
   match next_matchs with
@@ -3225,7 +3288,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
       let pm =
         { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
           args = [ (arg, Strict) ];
-          default = [ ([ [ omega ] ], raise_num) ]
+          default = Default_environment.(cons [ [ omega ] ] raise_num empty)
         }
       in
       try
@@ -3238,7 +3301,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
       let pm =
         { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
           args = [ (arg, Strict) ];
-          default = []
+          default = Default_environment.empty
         }
       in
       let lambda, total = compile_match repr partial (Context.start 1) pm in
@@ -3425,7 +3488,7 @@ let for_tupled_function loc paraml pats_act_list partial =
   let pm =
     { cases = pats_act_list;
       args = List.map (fun id -> (Lvar id, Strict)) paraml;
-      default = [ (omegas, raise_num) ]
+      default = Default_environment.(cons omegas raise_num empty)
     }
   in
   try
@@ -3441,18 +3504,6 @@ let flatten_pattern size p =
   | Tpat_any -> omegas size
   | _ -> raise Cannot_flatten
 
-let rec flatten_pat_line size p k =
-  match p.pat_desc with
-  | Tpat_any -> omegas size :: k
-  | Tpat_tuple args -> args :: k
-  | Tpat_or (p1, p2, _) ->
-      flatten_pat_line size p1 (flatten_pat_line size p2 k)
-  | Tpat_alias (p, _, _) ->
-      (* Note: if this 'as' pat is here, then this is a
-                           useless binding, solves PR#3780 *)
-      flatten_pat_line size p k
-  | _ -> fatal_error "Matching.flatten_pat_line"
-
 let flatten_cases size cases =
   List.map
     (fun (ps, action) ->
@@ -3461,21 +3512,10 @@ let flatten_cases size cases =
       | _ -> fatal_error "Matching.flatten_case")
     cases
 
-let flatten_matrix size pss =
-  List.fold_right
-    (fun ps r ->
-      match ps with
-      | [ p ] -> flatten_pat_line size p r
-      | _ -> fatal_error "Matching.flatten_matrix")
-    pss []
-
-let flatten_def size def =
-  List.map (fun (pss, i) -> (flatten_matrix size pss, i)) def
-
 let flatten_pm size args pm =
   { args;
     cases = flatten_cases size pm.cases;
-    default = flatten_def size pm.default
+    default = Default_environment.flatten size pm.default
   }
 
 let flatten_handler size handler =
@@ -3513,8 +3553,8 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       match partial with
       | Partial ->
           let raise_num = next_raise_count () in
-          (raise_num, [ ([ [ omega ] ], raise_num) ])
-      | Total -> (-1, [])
+          (raise_num, Default_environment.(cons [ [ omega ] ] raise_num empty))
+      | Total -> (-1, Default_environment.empty)
     in
     ( raise_num,
       { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
