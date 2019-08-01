@@ -129,7 +129,7 @@ ENDIF
         pop     r10
         pop     r11
         pop     rbp
-    ; Restore Caml_state_young_ptr, caml_exception_pointer
+    ; Restore Caml_state(young_ptr)
         Load_young_ptr r15
     ; Return to caller
         ret
@@ -310,7 +310,7 @@ IFDEF WITH_SPACETIME
         pop     rbx
         pop     rax
 ENDIF
-    ; Setup alloc ptr and exception ptr
+    ; Setup alloc ptr
         Load_young_ptr r15
     ; Build an exception handler
         lea     r13, L108

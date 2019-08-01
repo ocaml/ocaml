@@ -273,7 +273,6 @@ value caml_static_release_bytecode(value prog, value len)
   return Val_unit; /* not reached */
 }
 
-int volatile caml_something_to_do;
 void (* volatile caml_async_action_hook)(void);
 
 #endif

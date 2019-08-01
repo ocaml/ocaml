@@ -394,7 +394,7 @@ FUNCTION(caml_raise_exception)
         mov     domain_state_ptr, r0
     /* Load exception bucket */
         mov     r0, r1
-    /* Reload trap ptr, alloc ptr and alloc limit */
+    /* Reload trap ptr and alloc ptr */
         ldr     trap_ptr, Caml_state(exception_pointer)
         ldr     alloc_ptr, Caml_state(young_ptr)
     /* Test if backtrace is active */

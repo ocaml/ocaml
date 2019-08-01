@@ -510,7 +510,7 @@ int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
  * [caml_backtrace_buffer].  In bytecode, it is the same as a
  * [code_t], in native code it as a [frame_descr *].  The difference
  * doesn't matter for code outside [backtrace_{byt,nat}.c],
- * so it is just exposed as a [backtrace_slot].
+ * so it is just exposed as a [void *].
  */
 typedef void * backtrace_slot;
 

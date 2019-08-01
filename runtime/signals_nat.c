@@ -207,7 +207,7 @@ static char sig_alt_stack[SIGSTKSZ];
 #endif
 
 #ifdef RETURN_AFTER_STACK_OVERFLOW
-extern void caml_stack_overflow(void);
+extern void caml_stack_overflow(caml_domain_state*);
 #endif
 
 DECLARE_SIGNAL_HANDLER(segv_handler)
