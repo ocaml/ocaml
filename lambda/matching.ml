@@ -375,6 +375,9 @@ module Default_environment : sig
   val pp : t -> unit
 end = struct
   type t = (matrix * int) list
+  (** All matrices in the list should have the same arity -- their rows should
+      have the same number of columns -- as it should match the arity of the
+      current scrutiny vector. *)
 
   let empty = []
 
