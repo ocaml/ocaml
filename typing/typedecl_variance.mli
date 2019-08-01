@@ -28,8 +28,14 @@ type prop = Variance.t list
 type req = surface_variance list
 val property : (Variance.t list, req) property
 
+type variance_error =
+| Variance_not_satisfied of int
+| No_variable
+| Variance_not_reflected
+| Variance_not_deducible
+
 type error =
-| Bad_variance of int * surface_variance * surface_variance
+| Bad_variance of variance_error * surface_variance * surface_variance
 | Varying_anonymous
 
 exception Error of Location.t * error
