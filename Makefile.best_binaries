@@ -25,29 +25,22 @@
 # native binary, if available. Note that they never use the boot/
 # versions: we assume that ocamlc, ocamlopt, etc. have been run first.
 
-define define_best
-  ifeq "$(wildcard $(ROOTDIR)/$(3))" ""
-  $(1)=$(CAMLRUN) $(ROOTDIR)/$(2)
-  else
-    ifeq "$(shell \
-            if test $(ROOTDIR)/$(2) -nt $(ROOTDIR)/$(3); \
-	    then echo 'stale'; else echo 'good'; fi)" "stale"
-# the double-dollars ensure that the warning is displayed
-# only if the conditional fires (by the `eval` call below)
-# instead of always being shown as `define_best` is expanded.
-$$(info Warning: we are not using the native binary $(3) \
-because it is older than the bytecode binary $(2); \
-you should silence this warning by either removing $(3) \
-or rebuilding it (or `touch`-ing it) if you want it used.)
-      $(1)=$(CAMLRUN) $(ROOTDIR)/$(2)
-    else
-      $(1)=$(ROOTDIR)/$(3)
-    endif
-  endif
-endef
+check_not_stale = \
+  $(if $(shell test $(ROOTDIR)/$1 -nt $(ROOTDIR)/$2 && echo stale), \
+    $(info Warning: we are not using the native binary $2 \
+because it is older than the bytecode binary $1; \
+you should silence this warning by either removing $2 \
+or rebuilding it (or `touch`-ing it) if you want it used.), \
+    ok)
 
-$(eval $(call define_best,BEST_OCAMLC,ocamlc,ocamlc.opt))
-$(eval $(call define_best,BEST_OCAMLOPT,ocamlopt,ocamlopt.opt))
-$(eval $(call define_best,BEST_OCAMLLEX,lex/ocamllex,lex/ocamllex.opt))
+choose_best = $(strip $(if \
+   $(and $(wildcard $(ROOTDIR)/$1.opt),$(strip \
+      $(call check_not_stale,$1,$1.opt))), \
+    $(ROOTDIR)/$1.opt, \
+    $(CAMLRUN) $(ROOTDIR)/$1))
 
-BEST_OCAMLDEP = $(BEST_OCAMLC) -depend
+BEST_OCAMLC := $(call choose_best,ocamlc)
+BEST_OCAMLOPT := $(call choose_best,ocamlopt)
+BEST_OCAMLLEX := $(call choose_best,lex/ocamllex)
+
+BEST_OCAMLDEP := $(BEST_OCAMLC) -depend
