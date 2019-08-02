@@ -75,15 +75,13 @@ let f = function
      (function param/26 : int
        (let (*match*/27 =a (field 0 param/26))
          (catch
-           (catch
-             (if (== *match*/27 A/22) (if (field 1 param/26) 1 (exit 8))
-               (exit 8))
-            with (8)
-             (if (field 1 param/26)
-               (if (== (field 0 *match*/27) B/23) 2
-                 (if (== (field 0 *match*/27) C/24) 3 (exit 5)))
-               (if (field 2 param/26) (exit 5) 11)))
-          with (5) (if (field 1 param/26) 4 12)))))
+           (if (== *match*/27 A/22) (if (field 1 param/26) 1 (exit 8))
+             (exit 8))
+          with (8)
+           (if (field 1 param/26)
+             (if (== (field 0 *match*/27) B/23) 2
+               (if (== (field 0 *match*/27) C/24) 3 4))
+             (if (field 2 param/26) 12 11))))))
   (apply (field 1 (global Toploop!)) "f" f/25))
 val f : t * bool * bool -> int = <fun>
 |}]
