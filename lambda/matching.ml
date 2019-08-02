@@ -998,7 +998,7 @@ and group_lazy = function
   | { pat_desc = Tpat_lazy _ } -> true
   | _ -> false
 
-let get_group p =
+let can_group p =
   match p.pat_desc with
   | Tpat_any -> group_var
   | Tpat_constant (Const_int _) -> group_const_int
@@ -1021,7 +1021,7 @@ let get_group p =
   | Tpat_array _ -> group_array
   | Tpat_variant (_, _, _) -> group_variant
   | Tpat_lazy _ -> group_lazy
-  | _ -> fatal_error "Matching.get_group"
+  | _ -> fatal_error "Matching.can_group"
 
 let is_or p =
   match p.pat_desc with
@@ -1218,14 +1218,14 @@ and split_no_or cls args def k =
     if group_var discr then
       collect_vars [] [] cls
     else
-      collect_group (get_group discr) [] [] cls
-  and collect_group can_group rev_yes rev_no = function
+      collect_group discr [] [] cls
+  and collect_group group_discr rev_yes rev_no = function
     | ([], _) :: _ -> assert false
     | ((p :: _, _) as cl) :: rem ->
-        if can_group p && safe_before cl rev_no then
-          collect_group can_group (cl :: rev_yes) rev_no rem
+        if can_group group_discr p && safe_before cl rev_no then
+          collect_group group_discr (cl :: rev_yes) rev_no rem
         else
-          collect_group can_group rev_yes (cl :: rev_no) rem
+          collect_group group_discr rev_yes (cl :: rev_no) rem
     | [] ->
         let yes = List.rev rev_yes and no = List.rev rev_no in
         insert_split precompile_normal yes no def k
