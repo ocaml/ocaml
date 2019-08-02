@@ -334,7 +334,7 @@ let need_send_fun n =
 let write_unit_info info filename =
   let oc = open_out_bin filename in
   output_string oc cmx_magic_number;
-  output_value oc info;
+  Marshal.to_channel oc info [Marshal.No_sharing_strings];
   flush oc;
   let crc = Digest.file filename in
   Digest.output oc crc;

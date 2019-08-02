@@ -42,8 +42,9 @@ static uintnat size_64;  /* Size in words of 64-bit block for struct. */
 enum {
   NO_SHARING = 1,               /* Flag to ignore sharing */
   CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
-  COMPAT_32 = 4                 /* Flag to ensure that output can safely
+  COMPAT_32 = 4,                /* Flag to ensure that output can safely
                                    be read back on a 32-bit platform */
+  NO_SHARING_STRINGS = 8        /* Flag to ignore sharing string values */
 };
 
 static int extern_flags;        /* logical or of some of the flags above */
@@ -191,8 +192,10 @@ static void extern_record_location(value obj)
   extern_trail_cur->obj = obj | Colornum_hd(hdr);
   extern_trail_cur->field0 = Field(obj, 0);
   extern_trail_cur++;
-  Hd_val(obj) = Bluehd_hd(hdr);
-  Field(obj, 0) = (value) obj_counter;
+  if (!(extern_flags & NO_SHARING_STRINGS) || Tag_hd(hdr) != String_tag) {
+    Hd_val(obj) = Bluehd_hd(hdr);
+    Field(obj, 0) = (value) obj_counter;
+  }
   obj_counter++;
 }
 
@@ -635,7 +638,8 @@ static void extern_rec(value v)
   /* Never reached as function leaves with return */
 }
 
-static int extern_flag_values[] = { NO_SHARING, CLOSURES, COMPAT_32 };
+static int extern_flag_values[] =
+  { NO_SHARING, CLOSURES, COMPAT_32, NO_SHARING_STRINGS };
 
 static intnat extern_value(value v, value flags,
                            /*out*/ char header[32],

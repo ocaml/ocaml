@@ -56,6 +56,7 @@ type extern_flags =
     No_sharing                          (** Don't preserve sharing *)
   | Closures                            (** Send function closures *)
   | Compat_32                           (** Ensure 32-bit compatibility *)
+  | No_sharing_strings                  (** Don't preserve sharing of strings *)
 (** The flags to the [Marshal.to_*] functions below. *)
 
 val to_channel : out_channel -> 'a -> extern_flags list -> unit
