@@ -54,7 +54,7 @@ static value alloc_custom_gen (struct custom_operations * ops,
       }
       /* The remaining [mem_minor] will be counted if the block survives a
          minor GC */
-      add_to_custom_table (&Caml_state->minor_tables->custom, result,
+      add_to_custom_table (Caml_state->custom_table, result,
                            mem_minor, max_major);
       /* Keep track of extra resources held by custom block in
          minor heap. */

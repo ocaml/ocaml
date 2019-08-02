@@ -648,7 +648,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   CAMLassert(Is_in_heap_or_young(fp));
   *fp = val;
   if (!Is_young((value)fp) && Is_block (val) && Is_young (val)) {
-    add_to_ref_table (&Caml_state->minor_tables->ref, fp);
+    add_to_ref_table (Caml_state->ref_table, fp);
   }
 }
 
@@ -701,7 +701,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
     }
     /* Check for condition 1. */
     if (Is_block(val) && Is_young(val)) {
-      add_to_ref_table (&Caml_state->minor_tables->ref, fp);
+      add_to_ref_table (Caml_state->ref_table, fp);
     }
   }
 }

@@ -271,9 +271,9 @@ static inline value* mark_slice_darken(value *gray_vals_ptr,
         Field (v, i) = f;
         if (Is_block (f) && Is_young (f) && !Is_young (child)){
           if(in_ephemeron) {
-            add_to_ephe_ref_table (&Caml_state->minor_tables->ephe_ref, v, i);
+            add_to_ephe_ref_table (Caml_state->ephe_ref_table, v, i);
           } else {
-            add_to_ref_table (&Caml_state->minor_tables->ref, &Field (v, i));
+            add_to_ref_table (Caml_state->ref_table, &Field (v, i));
           }
         }
       }

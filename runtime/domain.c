@@ -45,7 +45,7 @@ void caml_init_domain ()
   Caml_state->minor_heap_wsz = 0;
   Caml_state->in_minor_collection = 0;
   Caml_state->extra_heap_resources_minor = 0;
-  Caml_state->minor_tables = caml_alloc_minor_tables();
+  caml_alloc_minor_tables();
 
   Caml_state->stack_low = NULL;
   Caml_state->stack_high = NULL;

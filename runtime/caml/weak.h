@@ -184,7 +184,7 @@ static inline void caml_ephe_clean (value v){
           }else{
             Field (v, i) = child = f;
             if (Is_block (f) && Is_young (f))
-              add_to_ephe_ref_table(&Caml_state->minor_tables->ephe_ref, v, i);
+              add_to_ephe_ref_table(Caml_state->ephe_ref_table, v, i);
             goto ephemeron_again;
           }
         }

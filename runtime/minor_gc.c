@@ -59,14 +59,25 @@
 
 struct generic_table CAML_TABLE_STRUCT(char);
 
-struct caml_minor_tables* caml_alloc_minor_tables ()
+void caml_alloc_minor_tables ()
 {
-  struct caml_minor_tables* t =
-    caml_stat_alloc_noexc(sizeof(struct caml_minor_tables));
-  if (t == NULL)
+  Caml_state->ref_table =
+    caml_stat_alloc_noexc(sizeof(struct caml_ref_table));
+  if (Caml_state->ref_table == NULL)
     caml_fatal_error ("cannot initialize minor heap");
-  memset(t, 0, sizeof(*t));
-  return t;
+  memset(Caml_state->ref_table, 0, sizeof(struct caml_ref_table));
+
+  Caml_state->ephe_ref_table =
+    caml_stat_alloc_noexc(sizeof(struct caml_ephe_ref_table));
+  if (Caml_state->ephe_ref_table == NULL)
+    caml_fatal_error ("cannot initialize minor heap");
+  memset(Caml_state->ephe_ref_table, 0, sizeof(struct caml_ephe_ref_table));
+
+  Caml_state->custom_table =
+    caml_stat_alloc_noexc(sizeof(struct caml_custom_table));
+  if (Caml_state->custom_table == NULL)
+    caml_fatal_error ("cannot initialize minor heap");
+  memset(Caml_state->custom_table, 0, sizeof(struct caml_custom_table));
 }
 
 /* [sz] and [rsv] are numbers of entries */
@@ -160,9 +171,9 @@ void caml_set_minor_heap_size (asize_t bsz)
   Caml_state->minor_heap_wsz = Wsize_bsize (bsz);
   caml_memprof_renew_minor_sample();
 
-  reset_table ((struct generic_table *) &Caml_state->minor_tables->ref);
-  reset_table ((struct generic_table *) &Caml_state->minor_tables->ephe_ref);
-  reset_table ((struct generic_table *) &Caml_state->minor_tables->custom);
+  reset_table ((struct generic_table *) Caml_state->ref_table);
+  reset_table ((struct generic_table *) Caml_state->ephe_ref_table);
+  reset_table ((struct generic_table *) Caml_state->custom_table);
 }
 
 static value oldify_todo_list = 0;
@@ -305,8 +316,8 @@ void caml_oldify_mopup (void)
 
   /* Oldify the data in the minor heap of alive ephemeron
      During minor collection keys outside the minor heap are considered alive */
-  for (re = Caml_state->minor_tables->ephe_ref.base;
-       re < Caml_state->minor_tables->ephe_ref.ptr; re++){
+  for (re = Caml_state->ephe_ref_table->base;
+       re < Caml_state->ephe_ref_table->ptr; re++){
     /* look only at ephemeron with data in the minor heap */
     if (re->offset == 1){
       value *data = &Field(re->ephe,1);
@@ -344,16 +355,16 @@ void caml_empty_minor_heap (void)
     caml_gc_message (0x02, "<");
     caml_oldify_local_roots();
     CAML_INSTR_TIME (tmr, "minor/local_roots");
-    for (r = Caml_state->minor_tables->ref.base;
-         r < Caml_state->minor_tables->ref.ptr; r++) {
+    for (r = Caml_state->ref_table->base;
+         r < Caml_state->ref_table->ptr; r++) {
       caml_oldify_one (**r, *r);
     }
     CAML_INSTR_TIME (tmr, "minor/ref_table");
     caml_oldify_mopup ();
     CAML_INSTR_TIME (tmr, "minor/copy");
     /* Update the ephemerons */
-    for (re = Caml_state->minor_tables->ephe_ref.base;
-         re < Caml_state->minor_tables->ephe_ref.ptr; re++){
+    for (re = Caml_state->ephe_ref_table->base;
+         re < Caml_state->ephe_ref_table->ptr; re++){
       if(re->offset < Wosize_val(re->ephe)){
         /* If it is not the case, the ephemeron has been truncated */
         value *key = &Field(re->ephe,re->offset);
@@ -371,8 +382,8 @@ void caml_empty_minor_heap (void)
     /* Update the OCaml finalise_last values */
     caml_final_update_minor_roots();
     /* Run custom block finalisation of dead minor values */
-    for (elt = Caml_state->minor_tables->custom.base;
-         elt < Caml_state->minor_tables->custom.ptr; elt++){
+    for (elt = Caml_state->custom_table->base;
+         elt < Caml_state->custom_table->ptr; elt++){
       value v = elt->block;
       if (Hd_val (v) == 0){
         /* Block was copied to the major heap: adjust GC speed numbers. */
@@ -390,9 +401,9 @@ void caml_empty_minor_heap (void)
       (double) (Caml_state->young_alloc_end - Caml_state->young_ptr)
       / Caml_state->minor_heap_wsz;
     Caml_state->young_ptr = Caml_state->young_alloc_end;
-    clear_table ((struct generic_table *) &Caml_state->minor_tables->ref);
-    clear_table ((struct generic_table *) &Caml_state->minor_tables->ephe_ref);
-    clear_table ((struct generic_table *) &Caml_state->minor_tables->custom);
+    clear_table ((struct generic_table *) Caml_state->ref_table);
+    clear_table ((struct generic_table *) Caml_state->ephe_ref_table);
+    clear_table ((struct generic_table *) Caml_state->custom_table);
     Caml_state->extra_heap_resources_minor = 0;
     caml_gc_message (0x02, ">");
     Caml_state->in_minor_collection = 0;
