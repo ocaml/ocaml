@@ -32,9 +32,9 @@
    -- simplifying pattern heads in the process --, so that we obtain an ordered
    list of pms.
    For every pm in this list, and any two patterns in its first column, either
-   the patterns have the same head, or they match disjoint sets of values. (In
-   particular, two extension constructors that may or may not be equal due to
-   hidden rebinding cannot occur in the same simple pm.)
+   the patterns have the same head, or their heads match disjoint sets of
+   values. (In particular, two extension constructors that may or may not be
+   equal due to hidden rebinding cannot occur in the same simple pm.)
 
        2. Compilation
        --------------
