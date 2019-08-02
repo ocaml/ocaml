@@ -464,6 +464,11 @@ let specialize_primitive p env ty ~has_constant_constructor =
     | (Pmakeblock(tag, mut, None), fields) ->
         let shape = List.map (Typeopt.value_kind env) fields in
         Pmakeblock(tag, mut, Some shape)
+    | (Patomic_load { immediate_or_pointer = Pointer }, _) ->
+        let is_int = match is_function_type env ty with
+          | None -> Pointer
+          | Some (_p1, rhs) -> maybe_pointer_type env rhs in
+        Patomic_load {immediate_or_pointer = is_int}
     | _ -> p
 
 (* Eta-expand a primitive *)
