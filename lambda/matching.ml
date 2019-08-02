@@ -1229,21 +1229,13 @@ and split_no_or cls args def k =
     | [] -> (
         let yes = List.rev rev_yes and no = List.rev rev_no in
         match no with
-        | [] ->
-            ( { me = Pm { cases = yes; args; default = def };
-                matrix = as_matrix yes;
-                top_default = def
-              },
-              k )
+        | [] -> precompile_normal args yes def k
         | _ ->
             let { me = next; matrix; top_default = def }, nexts = split no in
             let idef = next_raise_count () in
-            let def = Default_environment.cons matrix idef def in
-            ( { me = Pm { cases = yes; args; default = def };
-                matrix = as_matrix yes;
-                top_default = def
-              },
-              (idef, next) :: nexts )
+            precompile_normal args yes
+              (Default_environment.cons matrix idef def)
+              ((idef, next) :: nexts)
       )
   and collect_vars rev_yes rev_no = function
     | ([], _) :: _ -> assert false
@@ -1269,6 +1261,13 @@ and split_no_or cls args def k =
       )
   in
   split cls
+
+and precompile_normal args cls default k =
+  ( { me = Pm { cases = cls; args; default };
+      matrix = as_matrix cls;
+      top_default = default
+    },
+    k )
 
 and precompile_var args cls def k =
   (* Strategy: pop the first column,
