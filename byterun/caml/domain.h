@@ -19,7 +19,7 @@ struct domain {
    CAMLunlikely((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit))
 
 asize_t caml_norm_minor_heap_size (intnat);
-void caml_reallocate_minor_heap(asize_t);
+int caml_reallocate_minor_heap(asize_t);
 
 void caml_handle_gc_interrupt(void);
 
