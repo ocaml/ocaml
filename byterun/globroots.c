@@ -62,6 +62,24 @@ CAMLexport caml_root caml_create_root(value init)
 
   CAMLreturnT(caml_root, (caml_root)v);
 }
+CAMLexport caml_root caml_create_root_noexc(value init)
+{
+  CAMLparam1(init);
+  CAMLlocal1(v);
+  v = caml_alloc_shr_noexc(3, 0);
+  if(v == (value)NULL) {
+    CAMLreturnT(caml_root, (caml_root)v);
+  }
+  caml_initialize_field(v, 0, init);
+  caml_initialize_field(v, 1, Val_int(1));
+
+  caml_plat_lock(&roots_mutex);
+  caml_initialize_field(v, 2, roots_all);
+  roots_all = v;
+  caml_plat_unlock(&roots_mutex);
+
+  CAMLreturnT(caml_root, (caml_root)v);
+}
 
 CAMLexport void caml_delete_root(caml_root root)
 {

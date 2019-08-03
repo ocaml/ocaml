@@ -30,7 +30,7 @@ extern "C" {
 CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
-void caml_init_signal_stack(void);
+int caml_init_signal_stack(void);
 void caml_free_signal_stack(void);
 void caml_init_signal_handling(void);
 /* </private> */

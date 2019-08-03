@@ -29,7 +29,7 @@ intnat caml_major_collection_slice (intnat, intnat* left /* out */);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 uintnat caml_get_num_domains_to_mark(void);
-void caml_init_major_gc(caml_domain_state*);
+int caml_init_major_gc(caml_domain_state*);
 void caml_teardown_major_gc(void);
 void caml_darken(void*, value, value* ignored);
 void caml_darken_cont(value);
