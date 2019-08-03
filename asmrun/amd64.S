@@ -117,14 +117,17 @@
    (Stored as an offset, to survive stack reallocations). Clobbers %r11 */
 #define PUSH_EXN_HANDLER \
         movq    Caml_state(exn_handler), %r11; \
-        pushq   %r11; CFI_ADJUST(8); \
-        subq    %rsp, 0(%rsp)
+        subq    %rsp, %r11; \
+        addq    $0x8, %r11; \
+        pushq   %r11; CFI_ADJUST(8);
 
-/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers %r11. */
+/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers %r11 and %r10. */
 #define POP_EXN_HANDLER \
         leaq    Caml_state(exn_handler), %r11; \
-        addq    %rsp, 0(%rsp); \
-        popq    (%r11); CFI_ADJUST(-8)
+        popq    %r10; CFI_ADJUST(-8); \
+        subq    $0x8, %r10; \
+        addq    %rsp, %r10; \
+        movq    %r10, (%r11)
 
 /******************************************************************************/
 /* Stack switching operations */
@@ -169,20 +172,20 @@
         .cfi_restore_state
 
 /* Switch from C to OCaml stack. Also pops the context
- * from the bottom of the OCaml stack. Clobbers %r11. */
+ * from the bottom of the OCaml stack. Clobbers %r10 and %r11. */
 #define SWITCH_C_TO_OCAML \
         SWITCH_C_TO_OCAML_NO_CTXT; \
     /* Pop the caml_context from the bottom of stack */ \
         POP_EXN_HANDLER; \
         popq    %r11; CFI_ADJUST(-8); \
 
-/* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r11. */
+/* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r10 and %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
         movq    Caml_state(exn_handler), %rsp; \
         .cfi_def_cfa_offset 16; \
         POP_EXN_HANDLER
 
-/* Switch between OCaml stacks. Clobbers %r11. Expects target stack in %r10. */
+/* Switch between OCaml stacks. Clobbers %r10 and %r11. Expects target stack in %r10. */
 #define SWITCH_OCAML_STACKS \
     /* Build caml_context at the bottom of the stack, \
        saving the exception pointer of the source stack */ \
