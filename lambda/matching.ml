@@ -1215,41 +1215,34 @@ and split_no_or cls args def k =
      [can_group] function. *)
   let rec split cls =
     let discr = what_is_first_case cls in
-    if group_var discr then
-      collect_vars [] [] cls
-    else
-      collect_group discr [] [] cls
-  and collect_group group_discr rev_yes rev_no = function
-    | ([], _) :: _ -> assert false
-    | ((p :: _, _) as cl) :: rem ->
-        if can_group group_discr p && safe_before cl rev_no then
-          collect_group group_discr (cl :: rev_yes) rev_no rem
-        else
-          collect_group group_discr rev_yes (cl :: rev_no) rem
-    | [] ->
-        let yes = List.rev rev_yes and no = List.rev rev_no in
-        insert_split precompile_normal yes no def k
-  and collect_vars rev_yes rev_no = function
+    collect discr [] [] cls
+  and collect group_discr rev_yes rev_no = function
     | ([], _) :: _ -> assert false
     | [ ((ps, _) as cl) ] when List.for_all group_var ps && rev_yes <> [] ->
         (* This enables an extra division in some frequent cases:
                last row is made of variables only *)
-        collect_vars rev_yes (cl :: rev_no) []
+        collect group_discr rev_yes (cl :: rev_no) []
     | ((p :: _, _) as cl) :: rem ->
-        if group_var p && safe_before cl rev_no then
-          collect_vars (cl :: rev_yes) rev_no rem
+        if can_group group_discr p && safe_before cl rev_no then
+          collect group_discr (cl :: rev_yes) rev_no rem
         else
-          collect_vars rev_yes (cl :: rev_no) rem
+          collect group_discr rev_yes (cl :: rev_no) rem
     | [] ->
         let yes = List.rev rev_yes and no = List.rev rev_no in
-        insert_split precompile_var yes no def k
-  and insert_split precompile yes no def k =
+        insert_split group_discr yes no def k
+  and insert_split group_discr yes no def k =
+    let precompile_group =
+      if group_var group_discr then
+        precompile_var
+      else
+        precompile_normal
+    in
     match no with
-    | [] -> precompile args yes def k
+    | [] -> precompile_group args yes def k
     | _ ->
         let { me = next; matrix; top_default = def }, nexts = split no in
         let idef = next_raise_count () in
-        precompile args yes
+        precompile_group args yes
           (Default_environment.cons matrix idef def)
           ((idef, next) :: nexts)
   in
