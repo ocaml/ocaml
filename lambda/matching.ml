@@ -1222,11 +1222,24 @@ and split_no_or cls args def k =
         (* This enables an extra division in some frequent cases:
                last row is made of variables only *)
         collect group_discr rev_yes (cl :: rev_no) []
-    | ((p :: _, _) as cl) :: rem ->
+    | ((p :: _, _) as cl) :: rem -> (
         if can_group group_discr p && safe_before cl rev_no then
           collect group_discr (cl :: rev_yes) rev_no rem
         else
-          collect group_discr rev_yes (cl :: rev_no) rem
+          (* If we can't group the current clause, we have on more decision to
+             make: do we want to try raising lower clauses, or do we want to
+             split now?
+             The decision is made based on the following heuristic: if the group
+             consists of extension constructors, it is unlikely that we are
+             going to raise anything, so we split now.
+             Otherwise, we try to raise lower clauses. *)
+          match group_discr.pat_desc with
+          | Tpat_construct (_, { cstr_tag = Cstr_extension _ }, _) ->
+              assert (rev_no = []);
+              let yes = List.rev rev_yes in
+              insert_split group_discr yes (cl :: rem) def k
+          | _ -> collect group_discr rev_yes (cl :: rev_no) rem
+      )
     | [] ->
         let yes = List.rev rev_yes and no = List.rev rev_no in
         insert_split group_discr yes no def k
