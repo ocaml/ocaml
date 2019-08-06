@@ -263,6 +263,11 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
+- #8855, #8858: Links for tools not created when installing with
+  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
+  ocamldep link not created)
+  (David Allsopp, report by Thomas Leonard)
+
 - #8875: fix missing newlines in the output from MSVC invocation.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
