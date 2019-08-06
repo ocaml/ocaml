@@ -51,3 +51,37 @@ type (+' a', -' a'b, 'cd') t = ' a'b -> ' a'  * 'cd';;
 [%%expect{|
 type (' a', ' a'b, 'cd') t = ' a'b -> ' a' * 'cd'
 |}];;
+
+
+(* #8856: cycles in types expressions could trigger stack overflows
+   when printing subpart of error messages *)
+type ('a,'b) eq = Refl: ('a,'a) eq
+type t = <m : int * 't> as 't
+let f (x:t) (type a) (y:a) (witness:(a,t) eq) = match witness with
+  | Refl -> if true then x else y
+[%%expect {|
+type ('a, 'b) eq = Refl : ('a, 'a) eq
+type t = < m : int * 'a > as 'a
+Line 4, characters 32-33:
+4 |   | Refl -> if true then x else y
+                                    ^
+Error: This expression has type a but an expression was expected of type t
+       This instance of < m : int * 'a > as 'a is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+
+type t1 = <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>
+type t2 = <m : 'a. 'a * ('a * 'foo)> as 'foo
+let f (x : t1) : t2 = x;;
+[%%expect {|
+type t1 = < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
+type t2 = < m : 'a. 'a * ('a * 'b) > as 'b
+Line 3, characters 22-23:
+3 | let f (x : t1) : t2 = x;;
+                          ^
+Error: This expression has type t1 but an expression was expected of type t2
+       The method m has type 'c. 'c * ('a * < m : 'c. 'b >) as 'b,
+       but the expected method type was 'a. 'a * ('a * < m : 'a. 'd >) as 'd
+       The universal variable 'a would escape its scope
+|}]

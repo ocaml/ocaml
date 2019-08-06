@@ -1110,7 +1110,7 @@ Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
        The method m has type 'a. 'a * 'd, but the expected method type was
-       'c. 'c * 'd
+       'c. 'c * 'd as 'e
        The universal variable 'a would escape its scope
 |}];;
 
