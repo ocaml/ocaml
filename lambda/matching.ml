@@ -1248,7 +1248,7 @@ and split_no_or cls args def k =
       if group_var group_discr then
         precompile_var
       else
-        precompile_normal
+        do_not_precompile
     in
     match no with
     | [] -> precompile_group args yes def k
@@ -1261,18 +1261,11 @@ and split_no_or cls args def k =
   in
   split cls
 
-and precompile_normal args cls default k =
-  ( { me = Pm { cases = cls; args; default };
-      matrix = as_matrix cls;
-      top_default = default
-    },
-    k )
-
 and precompile_var args cls def k =
   (* Strategy: pop the first column,
      precompile the rest, add a PmVar to all precompiled submatrices.
 
-     If the rest doesn't generate any split, abort and dont_precompile_var. *)
+     If the rest doesn't generate any split, abort and do_not_precompile. *)
   match args with
   | [] -> assert false
   | _ :: ((Lvar v, _) as arg) :: rargs -> (
@@ -1281,7 +1274,7 @@ and precompile_var args cls def k =
       match cls with
       | [ _ ] ->
           (* as split as it can *)
-          dont_precompile_var args cls def k
+          do_not_precompile args cls def k
       | _ -> (
           (* Precompile *)
           let var_cls =
@@ -1301,7 +1294,7 @@ and precompile_var args cls def k =
           match nexts with
           | [] ->
               (* If you need *)
-              dont_precompile_var args cls def k
+              do_not_precompile args cls def k
           | _ ->
               let rec rebuild_matrix pmh =
                 match pmh with
@@ -1337,9 +1330,9 @@ and precompile_var args cls def k =
               (rfirst, rnexts)
         )
     )
-  | _ -> dont_precompile_var args cls def k
+  | _ -> do_not_precompile args cls def k
 
-and dont_precompile_var args cls def k =
+and do_not_precompile args cls def k =
   ( { me = Pm { cases = cls; args; default = def };
       matrix = as_matrix cls;
       top_default = def
