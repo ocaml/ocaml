@@ -21,6 +21,7 @@ exception Undefined
 exception RacyLazy
 
 external domain_self : unit -> int = "caml_ml_domain_id"
+external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
 
 let wrap_fun (f: unit -> 'a) l =
   let myid = domain_self () in
@@ -42,9 +43,7 @@ let force_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
   try
     let result = closure () in
-    (* do set_field BEFORE set_tag *)
-    Obj.set_field (Obj.repr blk) 0 (Obj.repr result);
-    Obj.cas_tag (Obj.repr blk) Obj.lazy_tag Obj.forward_tag;
+    make_forward (Obj.repr blk) (Obj.repr result);
     result
   with e ->
     Obj.set_field (Obj.repr blk) 0 (Obj.repr (fun () -> raise e));
@@ -55,9 +54,7 @@ let force_lazy_block (blk : 'arg lazy_t) =
 let force_val_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
   let result = closure () in
-  (* do set_field BEFORE set_tag *)
-  Obj.set_field (Obj.repr blk) 0 (Obj.repr result);
-  Obj.cas_tag (Obj.repr blk) Obj.lazy_tag Obj.forward_tag;
+  make_forward (Obj.repr blk) (Obj.repr result);
   result
 
 
