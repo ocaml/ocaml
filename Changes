@@ -1,3 +1,11 @@
+OCaml 4.08 maintenance branch:
+------------------------------
+
+- #8855, #8858: Links for tools not created when installing with
+  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
+  ocamldep link not created)
+  (David Allsopp, report by Thomas Leonard)
+
 OCaml 4.08.1 (5 August 2019)
 ----------------------------
 
