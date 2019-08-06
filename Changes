@@ -54,6 +54,9 @@ Working version
   each function in a separate named text section on supported targets.
   (Greta Yorsh, review by Pierre Chambart)
 
+- #2321: Eliminate dead ICatch handlers
+  (Greta Yorsh, review by Pierre Chambart and Vincent Laviron)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.

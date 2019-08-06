@@ -686,6 +686,7 @@ let finalise_codegen_msvc ocamlsrcdir test_basename log env =
 let run_codegen log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
   let testfile = Actions_helpers.testfile env in
+  let testfile_basename = Filename.chop_extension testfile in
   let what = Printf.sprintf "Running codegen on %s" testfile in
   Printf.fprintf log "%s\n%!" what;
   let test_build_directory =
@@ -699,9 +700,13 @@ let run_codegen log env =
       compiler_output
       env
   in
+  let output_file = Filename.make_filename testfile_basename "output" in
+  let output = Filename.make_path [test_build_directory; output_file] in
+  let env = Environments.add Builtin_variables.output output env in
   let commandline =
   [
     Ocaml_commands.ocamlrun_codegen ocamlsrcdir;
+    flags env;
     "-S " ^ testfile
   ] in
   let expected_exit_status = 0 in
@@ -714,7 +719,6 @@ let run_codegen log env =
       log env commandline in
   if exit_status=expected_exit_status
   then begin
-    let testfile_basename = Filename.chop_extension testfile in
     let finalise =
        if Ocamltest_config.ccomptype="msvc"
       then finalise_codegen_msvc

@@ -27,16 +27,16 @@ arguments = "-DSORT -DFUN=quicksort main.c"
         (while (< i j)
           (catch
               (while 1
-                (if (>= i hi) exit [])
-                (if (> (addraref a (>>s i 1)) pivot) exit [])
+                (if (>= i hi) (exit n25) [])
+                (if (> (addraref a (>>s i 1)) pivot) (exit n25) [])
                 (assign i (+ i 2)))
-           with [])
+           with (n25) [])
           (catch
               (while 1
-                (if (<= j lo) exit [])
-                (if (< (addraref a (>>s j 1)) pivot) exit [])
+                (if (<= j lo) (exit n35) [])
+                (if (< (addraref a (>>s j 1)) pivot) (exit n35) [])
                 (assign j (- j 2)))
-           with [])
+           with (n35) [])
           (if (< i j)
               (let temp (addraref a (>>s i 1))
                    (addraset a (>>s i 1) (addraref a (>>s j 1)))
