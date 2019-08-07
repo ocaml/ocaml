@@ -55,6 +55,20 @@ type (' a', ' a'b, 'cd') t = ' a'b -> ' a' * 'cd'
 
 (* #8856: cycles in types expressions could trigger stack overflows
    when printing subpart of error messages *)
+
+type 'a t = private X of 'a
+let zeros = object(self) method next = 0, self end
+let x = X zeros;;
+[%%expect {|
+type 'a t = private X of 'a
+val zeros : < next : int * 'a > as 'a = <obj>
+Line 3, characters 8-15:
+3 | let x = X zeros;;
+            ^^^^^^^
+Error: Cannot create values of the private type (< next : int * 'a > as 'a) t
+|}]
+
+
 type ('a,'b) eq = Refl: ('a,'a) eq
 type t = <m : int * 't> as 't
 let f (x:t) (type a) (y:a) (witness:(a,t) eq) = match witness with
@@ -82,6 +96,6 @@ Line 3, characters 22-23:
                           ^
 Error: This expression has type t1 but an expression was expected of type t2
        The method m has type 'c. 'c * ('a * < m : 'c. 'b >) as 'b,
-       but the expected method type was 'a. 'a * ('a * < m : 'a. 'd >) as 'd
+       but the expected method type was 'a. 'a * ('a * < m : 'a. 'b >) as 'b
        The universal variable 'a would escape its scope
 |}]

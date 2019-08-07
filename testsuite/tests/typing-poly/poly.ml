@@ -1109,8 +1109,10 @@ Line 2, characters 3-4:
 Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
-       The method m has type 'a. 'a * 'd, but the expected method type was
-       'c. 'c * 'd as 'e
+       The method m has type
+       'a. 'a * (< m : 'a * < m : 'c. 'c * 'b > > as 'b),
+       but the expected method type was
+       'c. 'c * < m : 'a * < m : 'c. 'b > > as 'b
        The universal variable 'a would escape its scope
 |}];;
 
