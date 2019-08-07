@@ -287,7 +287,8 @@ the toplevel is running with the "#directory" directive
 \item["-init" \var{file}]
 Load the given file instead of the default initialization file.
 The default file is ".ocamlinit" in the current directory if it
-exists, otherwise ".ocamlinit" in the user's home directory.
+exists, otherwise "XDG_CONFIG_HOME/ocaml/init.ml" or
+".ocamlinit" in the user's home directory.
 }%top
 
 \notop{%
