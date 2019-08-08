@@ -199,8 +199,8 @@ let report_record_mismatch first second decl ppf err =
         Printtyp.label l2
         (report_label_mismatch first second) err
   | Label_names (n, name1, name2) ->
-      pr "@[<hv>%i%s fields have different names, %s and %s.@]"
-        n (Misc.suffix n) (Ident.name name1) (Ident.name name2)
+      pr "@[<hv>Fields number %i have different names, %s and %s.@]"
+        n (Ident.name name1) (Ident.name name2)
   | Label_missing (ord, s) ->
       pr "@[<hv>The field %s is only present in %s %s.@]"
         (Ident.name s) (choose ord first second) decl
@@ -235,8 +235,8 @@ let report_variant_mismatch first second decl ppf err =
         Printtyp.constructor c2
         (report_constructor_mismatch first second decl) err
   | Constructor_names (n, name1, name2) ->
-      pr "%i%s constructors have different names, %s and %s."
-        n (Misc.suffix n) (Ident.name name1) (Ident.name name2)
+      pr "Constructors number %i have different names, %s and %s."
+        n (Ident.name name1) (Ident.name name2)
   | Constructor_missing (ord, s) ->
       pr "The constructor %s is only present in %s %s."
         (Ident.name s) (choose ord first second) decl

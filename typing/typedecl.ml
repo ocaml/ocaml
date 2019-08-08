@@ -1746,6 +1746,14 @@ let report_error ppf = function
         | false, true  -> inj ^ "contravariant"
         | false, false -> if inj = "" then "unrestricted" else inj
       in
+      let suffix n =
+        let teen = (n mod 100)/10 = 1 in
+        match n mod 10 with
+        | 1 when not teen -> "st"
+        | 2 when not teen -> "nd"
+        | 3 when not teen -> "rd"
+        | _ -> "th"
+      in
       (* FIXME: this test below is horrible, use a proper variant *)
       if n = -1 then
         fprintf ppf "@[%s@ %s@ It"

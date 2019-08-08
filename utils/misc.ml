@@ -862,13 +862,6 @@ let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
   arg
 
-let suffix n =
-  let teen = (n mod 100)/10 = 1 in
-  match n mod 10 with
-  | 1 when not teen -> "st"
-  | 2 when not teen -> "nd"
-  | 3 when not teen -> "rd"
-  | _ -> "th"
 
 type filepath = string
 type modname = string

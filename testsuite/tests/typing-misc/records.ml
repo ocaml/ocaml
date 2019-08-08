@@ -253,5 +253,5 @@ Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       1st fields have different names, x and y.
+       Fields number 1 have different names, x and y.
 |}]

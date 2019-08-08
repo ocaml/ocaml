@@ -119,7 +119,7 @@ Line 1, characters 0-35:
 1 | type perm = d = Y of int | X of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       1st constructors have different names, X and Y.
+       Constructors number 1 have different names, X and Y.
 |}]
 
 module M : sig
