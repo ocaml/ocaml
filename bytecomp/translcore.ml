@@ -1086,7 +1086,7 @@ and transl_exp0 e =
                       ap_inlined=Default_inline;
                       ap_specialised=Default_specialise},
          Lsequence(
-           Lprim(Psetfield(0,Pointer,Assignment), [lzvar;wfnvar], e.exp_loc),
+           Lprim(Psetfield(0,Pointer,Heap_initialization), [lzvar;wfnvar], e.exp_loc),
            lzvar)))
       end
   | Texp_object (cs, meths) ->
