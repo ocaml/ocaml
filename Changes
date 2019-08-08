@@ -146,6 +146,9 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
+- #8864, #8865: Fix native compilation of left shift by (word_size - 1)
+  (Vincent Laviron, report by Murilo Giacometti Rocha)
+
 OCaml 4.09.0
 ------------
 
