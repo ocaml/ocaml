@@ -55,26 +55,27 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
   return Val_unit;
 }
 
-CAMLprim value caml_obj_cas_tag (value arg, value old_tag, value new_tag)
+/* only called on lazy block */
+CAMLprim value caml_obj_make_forward (value blk, value fwd)
 {
-  header_t hd;
-  tag_t tag;
+  caml_modify_field(blk, 0, fwd);
+  header_t hd_lazy;
 
-again:
-  hd = Hd_val(arg);
-  tag = Tag_hd(hd);
-  if (tag == Int_val(old_tag)) {
-    if (caml_domain_alone()) {
-      Tag_val (arg) = Int_val (new_tag);
-      return Val_unit;
-    } else if (atomic_compare_exchange_strong(Hp_atomic_val(arg), &hd,
-                                       (hd & ~0xFF) | Int_val(new_tag))) {
-      return Val_unit;
-    } else {
-      goto again;
-    }
+  again:
+  hd_lazy = (Hd_val(blk) & ~0xFF) | Int_val(Lazy_tag);
+  if (caml_domain_alone()) {
+    Tag_val (blk) = Forward_tag;
+    return Val_unit;
   } else {
-    caml_invalid_argument ("unexpected tag");
+    int cas_result = atomic_compare_exchange_strong(
+      Hp_atomic_val(blk),
+      &hd_lazy,
+      (hd_lazy & ~0xFF) | Int_val(Forward_tag));
+
+    if (cas_result) 
+        return Val_unit;
+    else
+        goto again;
   }
 }
 
