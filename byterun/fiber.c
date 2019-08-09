@@ -29,7 +29,7 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
   CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
   CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
 
-  stack = caml_stat_alloc(sizeof(struct stack_info) +
+  stack = caml_stat_alloc_noexc(sizeof(struct stack_info) +
                           sizeof(value) * wosize +
                           8 /* for alignment */ +
                           sizeof(struct stack_handler));
