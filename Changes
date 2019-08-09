@@ -146,9 +146,6 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
-- #8864, #8865: Fix native compilation of left shift by (word_size - 1)
-  (Vincent Laviron, report by Murilo Giacometti Rocha)
-
 OCaml 4.09.0
 ------------
 
@@ -404,6 +401,9 @@ OCaml 4.09.0
 - #8848: Fix x86 stack probe CFI information in caml_c_call and
   caml_call_gc
   (Tom Kelly, review by Xavier Leroy)
+
+- #8864, #8865: Fix native compilation of left shift by (word_size - 1)
+  (Vincent Laviron, report by Murilo Giacometti Rocha, review by Xavier Leroy)
 
 OCaml 4.08 maintenance branch:
 ------------------------------
