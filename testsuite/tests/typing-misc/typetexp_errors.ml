@@ -23,3 +23,11 @@ Error: The constructor C is missing from the upper bound (between '<'
        Hint: Either add `C in the upper bound, or remove it
        from the lower bound.
 |}]
+
+type ('_a) underscored = A of '_a
+[%%expect {|
+Line 1, characters 6-9:
+1 | type ('_a) underscored = A of '_a
+          ^^^
+Error: The type variable name '_a is not allowed in programs
+|}]
