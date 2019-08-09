@@ -402,6 +402,9 @@ OCaml 4.09.0
   caml_call_gc
   (Tom Kelly, review by Xavier Leroy)
 
+- #8864, #8865: Fix native compilation of left shift by (word_size - 1)
+  (Vincent Laviron, report by Murilo Giacometti Rocha, review by Xavier Leroy)
+
 OCaml 4.08 maintenance branch:
 ------------------------------
 
