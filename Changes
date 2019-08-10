@@ -37,6 +37,9 @@ Working version
 - #8774: New implementation of Env.make_copy_of_types
   (Alain Frisch, review by Thomas Refis, Leo White and Jacques Garrigue)
 
+- #7924: Use a variant instead of an int in Bad_variance exception
+  (Rian Douglas, review by Gabriel Scherer)
+
 
 ### Code generation and optimizations:
 
