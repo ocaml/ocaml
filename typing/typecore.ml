@@ -34,7 +34,6 @@ type type_forcing_context =
   | Assert_condition
   | Sequence_left_hand_side
   | When_guard
-  | Application of expression
 
 type type_expected = {
   ty: type_expr;
@@ -3806,7 +3805,6 @@ and type_application env funct sargs =
     tvar || List.mem l ls
   in
   let ignored = ref [] in
-  let explanation = Application funct in
   let rec type_unknown_args
       (args :
       (Asttypes.arg_label * (unit -> Typedtree.expression) option) list)
@@ -3853,7 +3851,7 @@ and type_application env funct sargs =
         in
         let optional = is_optional l1 in
         let arg1 () =
-          let arg1 = type_expect env sarg1 (mk_expected ~explanation ty1) in
+          let arg1 = type_expect env sarg1 (mk_expected ty1) in
           if optional then
             unify_exp env arg1 (type_option(newvar()));
           arg1
@@ -3905,7 +3903,7 @@ and type_application env funct sargs =
                               Apply_wrong_label(l', ty_fun')))
                 else
                   ([], more_sargs,
-                   Some (fun () -> type_argument ~explanation env sarg0 ty ty0))
+                   Some (fun () -> type_argument env sarg0 ty ty0))
             | _ ->
                 assert false
           end else try
@@ -3929,14 +3927,13 @@ and type_application env funct sargs =
                 (Warnings.Nonoptional_label (Printtyp.string_of_label l));
             sargs, more_sargs,
             if not optional || is_optional l' then
-              Some (fun () -> type_argument ~explanation env sarg0 ty ty0)
+              Some (fun () -> type_argument env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc
                 (Warnings.Not_principal "using an optional argument here");
-              Some (fun () ->
-                option_some env (type_argument ~explanation env sarg0
-                                   (extract_option_type env ty)
-                                   (extract_option_type env ty0)))
+              Some (fun () -> option_some env (type_argument env sarg0
+                                             (extract_option_type env ty)
+                                             (extract_option_type env ty0)))
             end
           with Not_found ->
             sargs, more_sargs,
@@ -4695,55 +4692,6 @@ let report_pattern_type_clash_hints pat diff =
   | Some (Tpat_constant const) -> report_literal_type_constraint const diff
   | _ -> []
 
-(* Hint when using int operators (eg. `+`)
-   on other kind of integer and floats *)
-let report_numeric_operator_clash_hints ~loc actual_type operator =
-  let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
-  let stdlib_qualified mod_ val_ = Path.Pdot (Path.Pdot (stdlib, mod_), val_) in
-  let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
-  let expecting_qualified name =
-    let qualified = stdlib_qualified name in
-    if is_op "+" then Some (qualified "add")
-    else if is_op "-" then Some (qualified "sub")
-    else if is_op "*" then Some (qualified "mul")
-    else if is_op "/" then Some (qualified "div")
-    else if is_op "mod" then Some (qualified "rem")
-    else None
-  in
-  let expecting_float () =
-    let qualified id = Path.Pdot (stdlib, id) in
-    if is_op "+" then Some (qualified "+.")
-    else if is_op "-" then Some (qualified "-.")
-    else if is_op "*" then Some (qualified "*.")
-    else if is_op "/" then Some (qualified "/.")
-    else if is_op "mod" then Some (stdlib_qualified "Float" "rem")
-    else None
-  in
-  let expecting_op =
-    if Path.same actual_type Predef.path_int32 then
-      expecting_qualified "Int32"
-    else if Path.same actual_type Predef.path_int64 then
-      expecting_qualified "Int64"
-    else if Path.same actual_type Predef.path_nativeint then
-      expecting_qualified "Nativeint"
-    else if Path.same actual_type Predef.path_float then
-      expecting_float ()
-    else None
-  in
-  match expecting_op with
-  | Some op ->
-      [ Location.msg ~loc "@[Hint:@ Did you mean to use `%a'?@]"
-          Printtyp.path op ]
-  | None -> []
-
-(* Returns a list of `Location.msg` *)
-let report_application_clash_hints diff expl =
-  match expl, diff with
-  | Some (Application { exp_desc = Texp_ident (p, _, _); exp_loc = loc; _ }),
-    Some Unification_trace.{ got = { t = { desc = Tconstr (typ, [], _) } } } ->
-      report_numeric_operator_clash_hints ~loc typ p
-  | _ -> []
-
 let report_type_expected_explanation expl ppf =
   let because expl_str = fprintf ppf "@ because it is in %s" expl_str in
   match expl with
@@ -4767,7 +4715,6 @@ let report_type_expected_explanation expl ppf =
       because "the left-hand side of a sequence"
   | When_guard ->
       because "a when-guard"
-  | Application _ -> ()
 
 let report_type_expected_explanation_opt expl ppf =
   match expl with
@@ -4825,11 +4772,7 @@ let report_error ~loc env = function
       ) ()
   | Expr_type_clash (trace, explanation, exp) ->
       let diff = type_clash_of_trace trace in
-      let sub = List.concat [
-          report_application_clash_hints diff explanation;
-          report_expr_type_clash_hints exp diff;
-        ]
-      in
+      let sub = report_expr_type_clash_hints exp diff in
       Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           ~type_expected_explanation:
