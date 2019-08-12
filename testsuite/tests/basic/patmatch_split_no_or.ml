@@ -43,6 +43,8 @@ val last_is_vars : bool * bool -> int = <fun>
 
 (******************************************************************************)
 
+(* Check that the [| _, false, true -> 12] gets raised. *)
+
 type t = ..
 type t += A | B of unit | C of bool * int;;
 [%%expect{|

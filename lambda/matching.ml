@@ -1221,7 +1221,14 @@ and split_no_or cls args def k =
     | [ ((ps, _) as cl) ] when List.for_all group_var ps && rev_yes <> [] ->
         (* This enables an extra division in some frequent cases:
                last row is made of variables only
-           Cf the first part of testsuite/tests/basic/patmatch_split_no_or.ml *)
+
+           Splitting a matrix there creates two default environments (instead of
+           one for the non-split matrix), the first of which often gets
+           specialized away by further refinement, and the second one jumping
+           directly to the catch-all case -- this produces better code.
+
+           This optimisation is tested in the first part of
+           testsuite/tests/basic/patmatch_split_no_or.ml *)
         collect group_discr rev_yes (cl :: rev_no) []
     | ((p :: _, _) as cl) :: rem ->
         if can_group group_discr p && safe_before cl rev_no then
