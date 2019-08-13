@@ -1028,6 +1028,15 @@ let is_or p =
   | Tpat_or _ -> true
   | _ -> false
 
+let rec omega_like p =
+  match p.pat_desc with
+  | Tpat_any
+  | Tpat_var _ ->
+      true
+  | Tpat_alias (p, _, _) -> omega_like p
+  | Tpat_or (p1, p2, _) -> omega_like p1 || omega_like p2
+  | _ -> false
+
 let equiv_pat p q = le_pat p q && le_pat q p
 
 let rec extract_equiv_head p l =
@@ -1218,10 +1227,17 @@ and split_no_or cls args def k =
     collect discr [] [] cls
   and collect group_discr rev_yes rev_no = function
     | ([], _) :: _ -> assert false
-    | [ ((ps, _) as cl) ] when List.for_all group_var ps && rev_yes <> [] ->
+    | [ ((ps, _) as cl) ] when rev_yes <> [] && List.for_all omega_like ps ->
         (* This enables an extra division in some frequent cases:
                last row is made of variables only
-           Cf the first part of testsuite/tests/basic/patmatch_split_no_or.ml *)
+
+           Splitting a matrix there creates two default environments (instead of
+           one for the non-split matrix), the first of which often gets
+           specialized away by further refinement, and the second one jumping
+           directly to the catch-all case -- this produces better code.
+
+           This optimisation is tested in the first part of
+           testsuite/tests/basic/patmatch_split_no_or.ml *)
         collect group_discr rev_yes (cl :: rev_no) []
     | ((p :: _, _) as cl) :: rem ->
         if can_group group_discr p && safe_before cl rev_no then
