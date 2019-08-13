@@ -28,7 +28,7 @@
     the documentation on module type [S], below.
 *)
 
-module L = Linearize
+module L = Linear
 
 (** The type of caller-defined contextual state associated with subranges.
     This may be used to track information throughout the range-computing
@@ -81,7 +81,7 @@ module type S_functor = sig
   module Index : Identifiable.S
 
   (** The module [Key] corresponds to the identifiers that define the ranges in
-      [Linearize] instructions. Each instruction should have two sets of keys,
+      [Linear] instructions. Each instruction should have two sets of keys,
       [available_before] and [available_across], with accessor functions of
       these names being provided to retrieve them. The notion of "availability"
       is not prescribed. The availability sets are used to compute subranges
@@ -158,7 +158,7 @@ end
 (** This module type is the result type of the [Compute_ranges.Make] functor.
 
     The _ranges_ being computed are composed of contiguous _subranges_ delimited
-    by two labels (of type [Linearize.label]). These labels will be added by
+    by two labels (of type [Linear.label]). These labels will be added by
     this pass to the code being inspected, which is why the [create] function in
     the result of the functor returns not only the ranges but also the updated
     function with the labels added. The [start_pos_offset] and [end_pos_offset]
@@ -199,7 +199,7 @@ module type S = sig
     val info : t -> Subrange_info.t
 
     (** The label at the start of the range. *)
-    val start_pos : t -> Linearize.label
+    val start_pos : t -> Linear.label
 
     (** How many bytes from the label at [start_pos] the range actually
         commences.  If this value is zero, then the first byte of the range
@@ -207,7 +207,7 @@ module type S = sig
     val start_pos_offset : t -> int
 
     (** The label at the end of the range. *)
-    val end_pos : t -> Linearize.label
+    val end_pos : t -> Linear.label
 
     (** Like [start_pos_offset], but analogously for the end of the range. (The
         sense is not inverted; a positive [end_pos_offset] means the range ends
@@ -232,7 +232,7 @@ module type S = sig
         cross an extremity of any other range. (This should be satisfied in
         typical uses because the offsets are typically zero or one.) If there
         are no ranges supplied then [None] is returned. *)
-    val estimate_lowest_address : t -> (Linearize.label * int) option
+    val estimate_lowest_address : t -> (Linear.label * int) option
 
     (** Fold over all subranges within the given range. *)
     val fold
@@ -251,7 +251,7 @@ module type S = sig
   (** Compute ranges for the code in the given linearized function
       declaration, returning the ranges as a value of type [t] and the
       rewritten code that must go forward for emission. *)
-  val create : Linearize.fundecl -> t * Linearize.fundecl
+  val create : Linear.fundecl -> t * Linear.fundecl
 
   (** Iterate through ranges.  Each range is associated with an index. *)
   val iter : t -> f:(Index.t -> Range.t -> unit) -> unit

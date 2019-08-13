@@ -16,7 +16,7 @@
 (* Instruction scheduling *)
 
 type code_dag_node =
-  { instr: Linearize.instruction;
+  { instr: Linear.instruction;
     delay: int;
     mutable sons: (code_dag_node * int) list;
     mutable date: int;
@@ -43,7 +43,7 @@ class virtual scheduler_generic : object
   method is_checkbound : Mach.operation -> bool
       (* Says whether the given operation is a checkbound *)
   (* Entry point *)
-  method schedule_fundecl : Linearize.fundecl -> Linearize.fundecl
+  method schedule_fundecl : Linear.fundecl -> Linear.fundecl
 end
 
 val reset : unit -> unit

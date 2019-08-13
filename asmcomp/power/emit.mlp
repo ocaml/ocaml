@@ -21,7 +21,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 (* Reserved space at bottom of stack *)

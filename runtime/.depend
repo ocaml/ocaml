@@ -7,7 +7,7 @@ alloc_b.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_b.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -363,7 +363,7 @@ alloc_bd.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h 
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_bd.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -724,7 +724,7 @@ alloc_bi.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h 
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_bi.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -1080,7 +1080,7 @@ alloc_bpic.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_bpic.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -1436,7 +1436,7 @@ alloc_n.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_n.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -1789,7 +1789,7 @@ alloc_nd.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h 
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_nd.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -2147,7 +2147,7 @@ alloc_ni.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h 
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_ni.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
@@ -2500,7 +2500,7 @@ alloc_npic.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/custom.h \
  caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/address_class.h caml/domain.h caml/mlvalues.h \
- caml/stacks.h caml/memory.h
+ caml/stacks.h caml/memory.h caml/signals.h
 array_npic.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl caml/fail.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \

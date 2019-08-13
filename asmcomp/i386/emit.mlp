@@ -22,7 +22,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 module String = Misc.Stdlib.String
 
@@ -912,7 +912,7 @@ let rec emit_all fallthrough i =
   | _ ->
       emit_instr fallthrough i;
       emit_all
-        (system = S_win32 || Linearize.has_fallthrough i.desc)
+        (system = S_win32 || Linear.has_fallthrough i.desc)
         i.next
 
 (* Emission of a function declaration *)

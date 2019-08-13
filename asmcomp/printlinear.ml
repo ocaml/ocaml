@@ -18,7 +18,7 @@
 open Format
 open Mach
 open Printmach
-open Linearize
+open Linear
 
 let label ppf l =
   Format.fprintf ppf "L%i" l
