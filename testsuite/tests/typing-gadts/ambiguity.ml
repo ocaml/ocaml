@@ -221,8 +221,18 @@ let foo p (e : (T.t, T.u) eq) (x : T.t) (y : T.u) =
 module type S = module type of M ;;
 [%%expect{|
 module M : sig val r : '_weak1 list ref end
-val foo : bool -> (T.t, T.u) eq -> T.t -> T.u -> unit = <fun>
-module type S = sig val r : T.u list ref end
+Line 12, characters 25-26:
+12 |     let module O : N.S = M in
+                              ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig val r : '_weak1 list ref end
+       is not included in
+         N.S
+       Values do not match:
+         val r : '_weak1 list ref
+       is not included in
+         val r : T.u list ref
 |}]
 
 module M = struct
@@ -242,6 +252,16 @@ let foo p (e : (T.u, T.t) eq) (x : T.t) (y : T.u) =
 module type S = module type of M ;;
 [%%expect{|
 module M : sig val r : '_weak2 list ref end
-val foo : bool -> (T.u, T.t) eq -> T.t -> T.u -> unit = <fun>
-module type S = sig val r : T.t list ref end
+Line 12, characters 25-26:
+12 |     let module O : N.S = M in
+                              ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig val r : '_weak2 list ref end
+       is not included in
+         N.S
+       Values do not match:
+         val r : '_weak2 list ref
+       is not included in
+         val r : T.t list ref
 |}]
