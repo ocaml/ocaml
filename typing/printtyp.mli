@@ -103,8 +103,16 @@ val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
 val extension_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
+(* Prints extension constructor with the type signature:
+     type ('a, 'b) bar += A of float
+*)
+
 val extension_only_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
+(* Prints only extension constructor without type signature:
+     A of float
+*)
+
 val tree_of_module:
     Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit
