@@ -126,7 +126,8 @@ let rec push_defaults loc bindings cases partial =
       let param = Typecore.name_cases "param" cases in
       let desc =
         {val_type = pat.pat_type; val_kind = Val_reg;
-         val_attributes = []; Types.val_loc = Location.none; }
+         val_attributes = []; Types.val_loc = Location.none;
+         val_uid = Types.Uid.internal_not_actually_unique; }
       in
       let env = Env.add_value param desc exp.exp_env in
       let name = Ident.name param in

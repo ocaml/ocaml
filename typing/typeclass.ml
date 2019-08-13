@@ -263,7 +263,8 @@ let enter_met_env ?check loc lab kind unbound_kind ty val_env met_env par_env =
   let (id, met_env) =
     Env.enter_value ?check lab
       {val_type = ty; val_kind = kind;
-       val_attributes = []; Types.val_loc = loc} met_env
+       val_attributes = []; Types.val_loc = loc;
+       val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()); } met_env
   in
   (id, val_env, met_env, par_env)
 
@@ -1194,6 +1195,7 @@ and class_expr_aux cl_num val_env met_env scl =
                                                                cl_num);
                 val_attributes = [];
                 Types.val_loc = vd.Types.val_loc;
+                val_uid = vd.val_uid;
                }
              in
              let id' = Ident.create_local (Ident.name id) in
@@ -1286,7 +1288,7 @@ let rec approx_description ct =
 
 (*******************************)
 
-let temp_abbrev loc env id arity =
+let temp_abbrev loc env id arity uid =
   let params = ref [] in
   for _i = 1 to arity do
     params := Ctype.newvar () :: !params
@@ -1306,17 +1308,18 @@ let temp_abbrev loc env id arity =
        type_attributes = []; (* or keep attrs from the class decl? *)
        type_immediate = false;
        type_unboxed = unboxed_false_default_false;
+       type_uid = uid;
       }
       env
   in
   (!params, ty, env)
 
 let initial_env define_class approx
-    (res, env) (cl, id, ty_id, obj_id, cl_id) =
+    (res, env) (cl, id, ty_id, obj_id, cl_id, uid) =
   (* Temporary abbreviations *)
   let arity = List.length cl.pci_params in
-  let (obj_params, obj_ty, env) = temp_abbrev cl.pci_loc env obj_id arity in
-  let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity in
+  let (obj_params, obj_ty, env) = temp_abbrev cl.pci_loc env obj_id arity uid in
+  let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity uid in
 
   (* Temporary type for the class constructor *)
   let constr_type = approx cl.pci_expr in
@@ -1340,6 +1343,7 @@ let initial_env define_class approx
        end;
      cty_loc = Location.none;
      cty_attributes = [];
+     cty_uid = uid;
     }
   in
   let env =
@@ -1350,6 +1354,7 @@ let initial_env define_class approx
        clty_path = unbound_class;
        clty_loc = Location.none;
        clty_attributes = [];
+       clty_uid = uid;
       }
       (
         if define_class then
@@ -1480,6 +1485,7 @@ let class_infos define_class kind
      clty_path = Path.Pident obj_id;
      clty_loc = cl.pci_loc;
      clty_attributes = cl.pci_attributes;
+     clty_uid = dummy_class.cty_uid;
     }
   and clty =
     {cty_params = params; cty_type = typ;
@@ -1492,6 +1498,7 @@ let class_infos define_class kind
        end;
      cty_loc = cl.pci_loc;
      cty_attributes = cl.pci_attributes;
+     cty_uid = dummy_class.cty_uid;
     }
   in
   dummy_class.cty_type <- typ;
@@ -1529,6 +1536,7 @@ let class_infos define_class kind
      clty_path = Path.Pident obj_id;
      clty_loc = cl.pci_loc;
      clty_attributes = cl.pci_attributes;
+     clty_uid = dummy_class.cty_uid;
     }
   and clty =
     {cty_params = params'; cty_type = typ';
@@ -1541,6 +1549,7 @@ let class_infos define_class kind
        end;
      cty_loc = cl.pci_loc;
      cty_attributes = cl.pci_attributes;
+     cty_uid = dummy_class.cty_uid;
     }
   in
   let obj_abbr =
@@ -1556,6 +1565,7 @@ let class_infos define_class kind
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
      type_unboxed = unboxed_false_default_false;
+     type_uid = dummy_class.cty_uid;
     }
   in
   let (cl_params, cl_ty) =
@@ -1576,6 +1586,7 @@ let class_infos define_class kind
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
      type_unboxed = unboxed_false_default_false;
+     type_uid = dummy_class.cty_uid;
     }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
@@ -1732,7 +1743,9 @@ let type_classes define_class approx kind env cls =
           Ident.create_scoped ~scope cl.pci_name.txt,
           Ident.create_scoped ~scope cl.pci_name.txt,
           Ident.create_scoped ~scope cl.pci_name.txt,
-          Ident.create_scoped ~scope ("#" ^ cl.pci_name.txt)))
+          Ident.create_scoped ~scope ("#" ^ cl.pci_name.txt),
+          Uid.mk ~current_unit:(Env.get_unit_name ())
+         ))
       cls
   in
   Ctype.begin_class_def ();

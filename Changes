@@ -74,6 +74,9 @@ Working version
   "*").
   (Thomas Refis, review by ...)
 
+- #8934: Stop relying on location to track usage
+  (Thomas Refis, review by ...)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.

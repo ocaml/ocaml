@@ -240,6 +240,19 @@ module TypeOps : sig
   val hash : t -> int
 end
 
+(* *)
+
+module Uid : sig
+  type t
+
+  val mk : current_unit:string -> t
+  val of_compilation_unit_id : Ident.t -> t
+  val of_predef_id : Ident.t -> t
+  val internal_not_actually_unique : t
+
+  val for_actual_declaration : t -> bool
+end
+
 (* Maps of methods and instance variables *)
 
 module Meths : Map.S with type key = string
@@ -252,7 +265,8 @@ type value_description =
     val_kind: value_kind;
     val_loc: Location.t;
     val_attributes: Parsetree.attributes;
-   }
+    val_uid: Uid.t;
+  }
 
 and value_kind =
     Val_reg                             (* Regular value *)
@@ -301,6 +315,7 @@ type type_declaration =
     type_attributes: Parsetree.attributes;
     type_immediate: bool; (* true iff type should not be a pointer *)
     type_unboxed: unboxed_status;
+    type_uid: Uid.t;
   }
 
 and type_kind =
@@ -323,6 +338,7 @@ and label_declaration =
     ld_type: type_expr;
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
+    ld_uid: Uid.t;
   }
 
 and constructor_declaration =
@@ -332,6 +348,7 @@ and constructor_declaration =
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
+    cd_uid: Uid.t;
   }
 
 and constructor_arguments =
@@ -353,15 +370,16 @@ val unboxed_true_default_false : unboxed_status
 val unboxed_true_default_true : unboxed_status
 
 type extension_constructor =
-    {
-      ext_type_path: Path.t;
-      ext_type_params: type_expr list;
-      ext_args: constructor_arguments;
-      ext_ret_type: type_expr option;
-      ext_private: private_flag;
-      ext_loc: Location.t;
-      ext_attributes: Parsetree.attributes;
-    }
+  {
+    ext_type_path: Path.t;
+    ext_type_params: type_expr list;
+    ext_args: constructor_arguments;
+    ext_ret_type: type_expr option;
+    ext_private: private_flag;
+    ext_loc: Location.t;
+    ext_attributes: Parsetree.attributes;
+    ext_uid: Uid.t;
+  }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -392,6 +410,7 @@ type class_declaration =
     cty_variance: Variance.t list;
     cty_loc: Location.t;
     cty_attributes: Parsetree.attributes;
+    cty_uid: Uid.t;
   }
 
 type class_type_declaration =
@@ -401,6 +420,7 @@ type class_type_declaration =
     clty_variance: Variance.t list;
     clty_loc: Location.t;
     clty_attributes: Parsetree.attributes;
+    clty_uid: Uid.t;
   }
 
 (* Type expressions for the module language *)
@@ -440,6 +460,7 @@ and module_declaration =
     md_type: module_type;
     md_attributes: Parsetree.attributes;
     md_loc: Location.t;
+    md_uid: Uid.t;
   }
 
 and modtype_declaration =
@@ -447,6 +468,7 @@ and modtype_declaration =
     mtd_type: module_type option;  (* None: abstract *)
     mtd_attributes: Parsetree.attributes;
     mtd_loc: Location.t;
+    mtd_uid: Uid.t;
   }
 
 and rec_status =
@@ -478,6 +500,7 @@ type constructor_description =
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
     cstr_inlined: type_declaration option;
+    cstr_uid: Uid.t;
    }
 
 and constructor_tag =
@@ -505,6 +528,7 @@ type label_description =
     lbl_private: private_flag;          (* Read-only field? *)
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
+    lbl_uid: Uid.t;
   }
 
 (** Extracts the list of "value" identifiers bound by a signature.
