@@ -302,7 +302,7 @@ method select_push exp =
   | _ -> (Ispecific(Ipush), exp)
 
 method! mark_c_tailcall =
-  Proc.contains_calls := true
+  Selectgen.contains_calls := true
 
 method! emit_extcall_args env args =
   let rec size_pushes = function

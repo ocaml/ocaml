@@ -220,4 +220,6 @@ let fundecl f =
     fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
     fun_spacetime_shape = f.fun_spacetime_shape;
+    fun_num_stack_slots = f.fun_num_stack_slots;
+    fun_contains_calls = f.fun_contains_calls;
   }

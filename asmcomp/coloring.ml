@@ -49,7 +49,7 @@ let allocate_registers() =
     let cl = Proc.register_class reg in
     if reg.spill then begin
       (* Preallocate the registers in the stack *)
-      let nslots = Proc.num_stack_slots.(cl) in
+      let nslots = Reloadgen.num_stack_slots.(cl) in
       let conflict = Array.make nslots false in
       List.iter
         (fun r ->
@@ -61,7 +61,7 @@ let allocate_registers() =
       let slot = ref 0 in
       while !slot < nslots && conflict.(!slot) do incr slot done;
       reg.loc <- Stack(Local !slot);
-      if !slot >= nslots then Proc.num_stack_slots.(cl) <- !slot + 1
+      if !slot >= nslots then Reloadgen.num_stack_slots.(cl) <- !slot + 1
     end else if reg.degree < Proc.num_available_registers.(cl) then
       unconstrained := reg :: !unconstrained
     else begin
@@ -163,7 +163,7 @@ let allocate_registers() =
                                 if start >= num_regs then 0 else start)
     end else begin
       (* Sorry, we must put the pseudoreg in a stack location *)
-      let nslots = Proc.num_stack_slots.(cl) in
+      let nslots = Reloadgen.num_stack_slots.(cl) in
       let score = Array.make nslots 0 in
       (* Compute the scores as for registers *)
       List.iter
@@ -206,7 +206,7 @@ let allocate_registers() =
       else begin
         (* Allocate a new stack slot *)
         reg.loc <- Stack(Local nslots);
-        Proc.num_stack_slots.(cl) <- nslots + 1
+        Reloadgen.num_stack_slots.(cl) <- nslots + 1
       end
     end;
     (* Cancel the preferences of this register so that they don't influence
@@ -215,7 +215,7 @@ let allocate_registers() =
 
   (* Reset the stack slot counts *)
   for i = 0 to Proc.num_register_classes - 1 do
-    Proc.num_stack_slots.(i) <- 0;
+    Reloadgen.num_stack_slots.(i) <- 0;
   done;
 
   (* First pass: preallocate spill registers and split remaining regs

@@ -73,8 +73,8 @@ let rec release_expired_inactive ci pos = function
 
 let allocate_stack_slot i =
   let cl = Proc.register_class i.reg in
-  let ss = Proc.num_stack_slots.(cl) in
-  Proc.num_stack_slots.(cl) <- succ ss;
+  let ss = Reloadgen.num_stack_slots.(cl) in
+  Reloadgen.num_stack_slots.(cl) <- succ ss;
   i.reg.loc <- Stack(Local ss);
   i.reg.spill <- true
 
@@ -187,7 +187,7 @@ let allocate_registers() =
       ci_active = [];
       ci_inactive = []
     };
-    Proc.num_stack_slots.(cl) <- 0
+    Reloadgen.num_stack_slots.(cl) <- 0
   done;
   (* Add all fixed intervals (sorted by end position) *)
   List.iter

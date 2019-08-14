@@ -19,6 +19,8 @@ open Misc
 open Reg
 open Mach
 
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
 let insert_move src dst next =
   if src.loc = dst.loc
   then next
@@ -128,6 +130,9 @@ method fundecl f =
   let new_body = self#reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_codegen_options = f.fun_codegen_options;
-    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape},
+    fun_dbg  = f.fun_dbg; fun_spacetime_shape = f.fun_spacetime_shape;
+    fun_contains_calls = f.fun_contains_calls;
+    fun_num_stack_slots = Array.copy num_stack_slots;
+   },
    redo_regalloc)
 end

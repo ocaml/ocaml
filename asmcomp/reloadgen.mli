@@ -25,3 +25,5 @@ class reload_generic : object
   method fundecl : Mach.fundecl -> Mach.fundecl * bool
     (* The entry point *)
 end
+
+val num_stack_slots: int array
