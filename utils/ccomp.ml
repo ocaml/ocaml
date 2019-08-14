@@ -58,9 +58,9 @@ let display_msvc_output file name =
   try
     let first = input_line c in
     if first <> Filename.basename name then
-      print_string first;
+      print_endline first;
     while true do
-      print_string (input_line c)
+      print_endline (input_line c)
     done
   with _ ->
     close_in c;
