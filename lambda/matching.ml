@@ -1489,59 +1489,38 @@ and precompile_or argo (cls : Simple.clause list) ors args def k =
     },
     k )
 
+let dbg_split_and_precompile pm next nexts =
+  if
+    dbg
+    && (nexts <> []
+       ||
+       match next with
+       | PmOr _ -> true
+       | _ -> false
+       )
+  then (
+    Format.eprintf "** SPLIT **\n";
+    pretty_hc_pm pm;
+    pretty_precompiled_res next nexts
+  )
+
 let split_and_precompile_nonempty argo pm =
   let pm =
     { pm with cases = List.map (half_simplify_nonempty pm.args) pm.cases }
   in
   let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
-  if
-    dbg
-    && (nexts <> []
-       ||
-       match next with
-       | PmOr _ -> true
-       | _ -> false
-       )
-  then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_hc_pm pm;
-    pretty_precompiled_res next nexts
-  );
+  dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
 let split_and_precompile_simplified pm =
   let { me = next }, nexts = split_no_or pm.cases pm.args pm.default [] in
-  if
-    dbg
-    && (nexts <> []
-       ||
-       match next with
-       | PmOr _ -> true
-       | _ -> false
-       )
-  then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_sc_pm pm;
-    pretty_precompiled_res next nexts
-  );
+  dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
 let split_and_precompile argo pm =
   let pm = { pm with cases = half_simplify_cases pm.args pm.cases } in
   let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
-  if
-    dbg
-    && (nexts <> []
-       ||
-       match next with
-       | PmOr _ -> true
-       | _ -> false
-       )
-  then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_hc_pm pm;
-    pretty_precompiled_res next nexts
-  );
+  dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
 (* General divide functions *)
