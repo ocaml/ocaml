@@ -157,6 +157,7 @@ module HSL = HofM(MSL)
 (* Specific functorial hashes *)
 
 module HS2 = Hashtbl.Make(SS)
+module HS3 = Hashtbl.Make(String)
 module HI2 = Hashtbl.Make(SI)
 
 (* Specific weak functorial hashes *)
@@ -170,6 +171,7 @@ module WSA = Ephemeron.Kn.Make(SS)
 
 module TS1 = Test(HS1)(MS)
 module TS2 = Test(HS2)(MS)
+module TS3 = Test(HS3)(MS)
 module TI1 = Test(HI1)(MI)
 module TI2 = Test(HI2)(MI)
 module TSP = Test(HSP)(MSP)
@@ -246,6 +248,8 @@ let _ =
   TS1.test d;
   printf "-- Strings, functorial interface\n%!";
   TS2.test d;
+  printf "-- Strings, functorial(String) interface\n%!";
+  TS3.test d;
   printf "-- Pairs of strings\n%!";
   TSP.test (pair_data d);
   printf "-- Lists of strings\n%!";

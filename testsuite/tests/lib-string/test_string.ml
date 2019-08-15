@@ -40,6 +40,11 @@ let () =
   done
 ;;
 
+
+let () =
+  assert((Hashtbl.hash raw_string) = (String.hash raw_string))
+;;
+
 (* GPR#805/815/833 *)
 
 let ()  =
