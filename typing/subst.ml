@@ -173,6 +173,7 @@ let rec typexp copy_scope s ty =
       not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm in
     (* Make a stub *)
     let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
+    ty'.scope <- ty.scope;
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin if has_fixed_row then

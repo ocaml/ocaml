@@ -255,6 +255,9 @@ OCaml 4.09.0
 - #8864, #8865: Fix native compilation of left shift by (word_size - 1)
   (Vincent Laviron, report by Murilo Giacometti Rocha, review by Xavier Leroy)
 
+- #8862, #8871: subst: preserve scopes
+  (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
 OCaml 4.08 maintenance branch:
 ------------------------------
 
