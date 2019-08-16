@@ -150,8 +150,9 @@ let rec compose_coercions c1 c2 =
           let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
           ids1
       in
-      Tcoerce_structure
-        (List.map
+      Tcoerce_structure (
+          runtime_fields1 @ runtime_fields2,
+          List.map
           (function (p1, Tcoerce_primitive _) as x ->
                       x (* (p1, Tcoerce_primitive p) *)
                   | (p1, c1) ->
