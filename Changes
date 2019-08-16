@@ -149,6 +149,9 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
+- #8862, #8871: subst: preserve scopes
+  (Thomas Refis, report by Leo White)
+
 OCaml 4.09.0
 ------------
 
