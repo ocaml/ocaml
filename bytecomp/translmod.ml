@@ -88,11 +88,12 @@ let rec apply_coercion loc strict restr arg =
   match restr with
     Tcoerce_none ->
       arg
-  | Tcoerce_structure(pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+
       name_lambda strict arg (fun id ->
         let get_field pos = Lprim(Pfield (pos, Fld_na (*TODO*)),[Lvar id], loc) in
         let lam =
-          Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
+          Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
                 List.map (apply_coercion_field loc get_field) pos_cc_list, loc)
         in
         wrap_id_pos_list loc id_pos_list get_field lam)
@@ -138,15 +139,16 @@ let rec compose_coercions c1 c2 =
   match (c1, c2) with
     (Tcoerce_none, c2) -> c2
   | (c1, Tcoerce_none) -> c1
-  | (Tcoerce_structure (pc1, ids1), Tcoerce_structure (pc2, ids2)) ->
+  | (Tcoerce_structure (runtime_fields1, pc1, ids1), Tcoerce_structure (runtime_fields2, pc2, ids2)) ->
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
           let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
           ids1
       in
-      Tcoerce_structure
-        (List.map
+      Tcoerce_structure (
+          runtime_fields1 @ runtime_fields2,
+          List.map
           (function (p1, Tcoerce_primitive _) as x ->
                       x (* (p1, Tcoerce_primitive p) *)
                   | (p1, c1) ->
@@ -410,7 +412,7 @@ and transl_structure loc fields cc rootpath = function
                          export_identifiers :=  id :: !export_identifiers);
                       (Lvar id :: acc) end) fields [] , loc
                  )
-      | Tcoerce_structure(pos_cc_list, id_pos_list) ->
+      | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
           List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
@@ -419,21 +421,21 @@ and transl_structure loc fields cc rootpath = function
           let v = Array.of_list (List.rev fields) in
           let get_field pos = Lvar v.(pos)
           and ids = List.fold_right IdentSet.add fields IdentSet.empty in
-          let (result, names) = List.fold_right
-              (fun  (pos, cc) (code, name) ->
+          let result = List.fold_right
+              (fun  (pos, cc) code ->
                  begin match cc with
                  | Tcoerce_primitive (id,p) -> 
                      (if is_top rootpath then 
                         export_identifiers := id:: !export_identifiers);
-                     (transl_primitive Location.none p :: code, p.Primitive.prim_name ::name)
+                     transl_primitive Location.none p :: code
                  | _ -> 
                      (if is_top rootpath then 
                         export_identifiers :=  v.(pos) :: !export_identifiers);
-                     (apply_coercion loc Strict cc (get_field pos) :: code, v.(pos).Ident.name :: name)
+                     apply_coercion loc Strict cc (get_field pos) :: code
                  end)
-              pos_cc_list ([], [])in 
+              pos_cc_list [] in
           let lam =
-            (Lprim(Pmakeblock(0, Blk_module (Some names), Immutable),
+            (Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
                    result, loc))
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
@@ -780,7 +782,7 @@ let build_ident_map restr idlist more_ids =
     match restr with
         Tcoerce_none ->
           natural_map 0 Ident.empty [] idlist
-      | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
+      | Tcoerce_structure (_runtime_fields, pos_cc_list, _id_pos_list) ->
               (* ignore _id_pos_list as the ids are already bound *)
         let idarray = Array.of_list idlist in
         let rec export_map pos map prims undef = function
@@ -968,7 +970,7 @@ let transl_store_package component_names target_name coercion =
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id], Location.none))
          0 component_names)
-  | Tcoerce_structure (pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure (_runtime_fields, pos_cc_list, id_pos_list) ->
       let components =
         Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), List.map get_component component_names, Location.none)
       in

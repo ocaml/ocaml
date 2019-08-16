@@ -171,7 +171,7 @@ let rec print_coercion ppf c =
   let pr fmt = Format.fprintf ppf fmt in
   match c with
     Tcoerce_none -> pr "id"
-  | Tcoerce_structure (fl, nl) ->
+  | Tcoerce_structure (_, fl, nl) ->
       pr "@[<2>struct@ %a@ %a@]"
         (print_list print_coercion2) fl
         (print_list print_coercion3) nl
@@ -193,7 +193,7 @@ and print_coercion3 ppf (i, n, c) =
 
 (* Simplify a structure coercion *)
 
-let simplify_structure_coercion cc id_pos_list =
+let simplify_structure_coercion runtime_fields cc id_pos_list =
   let rec is_identity_coercion pos = function
   | [] ->
       true
@@ -201,7 +201,7 @@ let simplify_structure_coercion cc id_pos_list =
       n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
   if is_identity_coercion 0 cc
   then Tcoerce_none
-  else Tcoerce_structure (cc, id_pos_list)
+  else Tcoerce_structure (runtime_fields, cc, id_pos_list)
 
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
@@ -288,6 +288,18 @@ and signatures env cxt subst sig1 sig2 =
             ((id,pos,Tcoerce_none)::l , pos+1)
         | item -> (l, if is_runtime_component item then pos+1 else pos))
       ([], 0) sig1 in
+
+  let runtime_fields =
+    let get_id = function
+      | Sig_value (i,_)
+      | Sig_module (i,_,_)
+      | Sig_typext (i,_,_)
+      | Sig_modtype(i,_)
+      | Sig_class (i,_,_)
+      | Sig_class_type(i,_,_)
+      | Sig_type(i,_,_) -> Ident.name i in
+      sig2 |> (List.filter is_runtime_component) |> (List.map get_id) in
+
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
@@ -318,9 +330,9 @@ and signatures env cxt subst sig1 sig2 =
                 signature_components env new_env cxt subst (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
-                simplify_structure_coercion cc id_pos_list
+                simplify_structure_coercion runtime_fields cc id_pos_list
               else
-                Tcoerce_structure (cc, id_pos_list)
+                Tcoerce_structure (runtime_fields, cc, id_pos_list)
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
