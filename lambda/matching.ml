@@ -1028,8 +1028,6 @@ let half_simplify_nonempty args (cls : Typedtree.pattern Non_empty_clause.t) :
 let half_simplify_clause args (cls : Typedtree.pattern list clause) =
   cls |> Non_empty_clause.of_initial |> half_simplify_nonempty args
 
-let half_simplify_cases args cls = List.map (half_simplify_clause args) cls
-
 (* Once matchings are *fully* simplified, one can easily find
    their nature. *)
 
@@ -1214,7 +1212,7 @@ let as_matrix cases =
     Some precompilation of or-patterns and
     variable pattern occurs. Mostly this means that bindings
     are performed now,  being replaced by let-bindings
-    in actions (cf. half_simplify_cases).
+    in actions (cf. Half_simple.of_clause).
 
     Additionally, if the match argument is a variable, matchings whose
     first column is made of variables only are split further
@@ -1368,6 +1366,10 @@ and precompile_var args cls def k =
             List.map
               (fun ((p, ps), act) ->
                 assert (group_var p);
+
+                (* we learned by pattern-matching on [args]
+                   that [p::ps] has at least two arguments,
+                   so [ps] must be non-empty *)
                 half_simplify_clause var_args (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
@@ -1503,24 +1505,21 @@ let dbg_split_and_precompile pm next nexts =
     pretty_precompiled_res next nexts
   )
 
-let split_and_precompile_nonempty argo pm =
-  let pm =
-    { pm with cases = List.map (half_simplify_nonempty pm.args) pm.cases }
-  in
-  let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
-  dbg_split_and_precompile pm next nexts;
-  (next, nexts)
-
 let split_and_precompile_simplified pm =
   let { me = next }, nexts = split_no_or pm.cases pm.args pm.default [] in
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
-let split_and_precompile argo pm =
-  let pm = { pm with cases = half_simplify_cases pm.args pm.cases } in
+let split_and_precompile_half_simplified argo pm =
   let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
+
+let split_and_precompile argo pm =
+  let pm =
+    { pm with cases = List.map (half_simplify_clause pm.args) pm.cases }
+  in
+  split_and_precompile_half_simplified argo pm
 
 (* General divide functions *)
 
@@ -3184,9 +3183,11 @@ let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
         (event_branch repr action, Jumps.empty)
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
-      let first_match, rem =
-        split_and_precompile (Some v) { m with args = (newarg, Alias) :: argl }
-      in
+      let args = (newarg, Alias) :: argl in
+      let cases = List.map Non_empty_clause.of_initial m.cases in
+      let cases = List.map (half_simplify_nonempty args) cases in
+      let m = { m with args; cases } in
+      let first_match, rem = split_and_precompile_half_simplified (Some v) m in
       let lam, total =
         comp_match_handlers
           (( if dbg then
@@ -3200,14 +3201,14 @@ let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
       (bind_check str v arg lam, total)
   | _ -> assert false
 
-and compile_simplified repr partial ctx (m : Simple.clause pattern_matching) =
+and compile_match_simplified repr partial ctx
+    (m : Simple.clause pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = ((Lvar v as arg), str) :: argl } ->
-      (* Not sure we need to do anything with arg/v *)
-      let first_match, rem =
-        split_and_precompile_simplified { m with args = (arg, Alias) :: argl }
-      in
+      let args = (arg, Alias) :: argl in
+      let m = { m with args } in
+      let first_match, rem = split_and_precompile_simplified m in
       let lam, total =
         comp_match_handlers
           (( if dbg then
@@ -3221,16 +3222,16 @@ and compile_simplified repr partial ctx (m : Simple.clause pattern_matching) =
       (bind_check str v arg lam, total)
   | _ -> assert false
 
-and compile_half_compiled repr partial ctx
+and compile_match_nonempty repr partial ctx
     (m : Typedtree.pattern Non_empty_clause.t pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = ((Lvar v as arg), str) :: argl } ->
       (* Not sure we need to do anything with arg/v *)
-      let first_match, rem =
-        split_and_precompile_nonempty (Some v)
-          { m with args = (arg, Alias) :: argl }
-      in
+      let args = (arg, Alias) :: argl in
+      let cases = List.map (half_simplify_nonempty args) m.cases in
+      let m = { m with args; cases } in
+      let first_match, rem = split_and_precompile_half_simplified (Some v) m in
       let lam, total =
         comp_match_handlers
           (( if dbg then
@@ -3323,7 +3324,7 @@ and do_compile_matching repr partial ctx pmh =
       in
       (lam, Jumps.map Context.rshift total)
   | PmOr { body; handlers } ->
-      let lam, total = compile_simplified repr partial ctx body in
+      let lam, total = compile_match_simplified repr partial ctx body in
       compile_orhandlers (compile_match repr partial) lam total ctx handlers
 
 and compile_no_test divide up_ctx repr partial ctx to_match =
@@ -3711,9 +3712,9 @@ let flatten_precompiled size args pmh =
 
 let compile_flattened repr partial ctx pmh =
   match pmh with
-  | FPm pm -> compile_half_compiled repr partial ctx pm
+  | FPm pm -> compile_match_nonempty repr partial ctx pm
   | FPmOr { body = b; handlers = hs } ->
-      let lam, total = compile_half_compiled repr partial ctx b in
+      let lam, total = compile_match_nonempty repr partial ctx b in
       compile_orhandlers (compile_match repr partial) lam total ctx hs
 
 let do_for_multiple_match loc paraml pat_act_list partial =
