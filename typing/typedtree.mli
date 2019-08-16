@@ -240,7 +240,8 @@ and value_binding =
 
 and module_coercion =
     Tcoerce_none
-  | Tcoerce_structure of (int * module_coercion) list *
+  | Tcoerce_structure of string list * (* runtime fields *)
+                         (int * module_coercion) list *
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of Ident.t * Primitive.description
