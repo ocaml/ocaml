@@ -216,8 +216,6 @@ end = struct
   let erase p = { p with pat_desc = erase_desc p.pat_desc }
 end
 
-let omega_ : [> `Any ] pattern_data = { Parmatch.omega with pat_desc = `Any }
-
 module Half_simple : sig
   (** Half-simplified patterns are patterns where:
         - records are expanded so that they possess all fields
@@ -1027,11 +1025,12 @@ let half_simplify_cases ~arg cls = List.map (half_simplify_clause ~arg) cls
 
 let rec what_is_cases ~skip_any cases =
   match cases with
-  | [] -> omega_
+  | [] -> Pattern_head.omega
   | ((p, _), _) :: rem -> (
-      match Pattern_head.desc (Simple.head p) with
+      let head = Simple.head p in
+      match Pattern_head.desc head with
       | Any when skip_any -> what_is_cases ~skip_any rem
-      | _ -> p
+      | _ -> head
     )
 
 let what_is_first_case = what_is_cases ~skip_any:false
@@ -1287,7 +1286,7 @@ and split_no_or cls args def k =
      different heads match different values), but this is handled by the
      [can_group] function. *)
   let rec split (cls : Simple.clause list) =
-    let discr = Simple.head (what_is_first_case cls) in
+    let discr = what_is_first_case cls in
     collect discr [] [] cls
   and collect group_discr rev_yes rev_no = function
     | [ (((p, ps), _) as cl) ]
@@ -2764,7 +2763,7 @@ let split_extension_cases tag_lambda_list =
   in
   split_rec tag_lambda_list
 
-let combine_constructor loc arg ex_pat cstr partial ctx def
+let combine_constructor loc arg pat_env cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   match cstr.cstr_tag with
   | Cstr_extension _ ->
@@ -2790,7 +2789,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
               let tests =
                 List.fold_right
                   (fun (path, act) rem ->
-                    let ext = transl_extension_path loc ex_pat.pat_env path in
+                    let ext = transl_extension_path loc pat_env path in
                     Lifthenelse
                       (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
                   nonconsts default
@@ -2799,7 +2798,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
         in
         List.fold_right
           (fun (path, act) rem ->
-            let ext = transl_extension_path loc ex_pat.pat_env path in
+            let ext = transl_extension_path loc pat_env path in
             Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem))
           consts nonconst_lambda
       in
@@ -3269,48 +3268,46 @@ and do_compile_matching repr partial ctx pmh =
             *)
             assert false
       in
-      let pat = what_is_cases pm.cases in
-      let ph = Simple.head pat in
-      let pat = General.erase pat in
+      let ph = what_is_cases pm.cases in
+      let pomega = Pattern_head.to_omega_pattern ph in
+      let ploc = Pattern_head.loc ph in
       match Pattern_head.desc ph with
       | Any -> compile_no_test divide_var Context.rshift repr partial ctx pm
       | Tuple l ->
-          compile_no_test
-            (divide_tuple l (normalize_pat pat))
-            Context.combine repr partial ctx pm
+          compile_no_test (divide_tuple l pomega) Context.combine repr partial
+            ctx pm
       | Record [] -> assert false
       | Record (lbl :: _) ->
           compile_no_test
-            (divide_record lbl.lbl_all (normalize_pat pat))
+            (divide_record lbl.lbl_all pomega)
             Context.combine repr partial ctx pm
       | Constant cst ->
           compile_test
             (compile_match repr partial)
             partial divide_constant
-            (combine_constant pat.pat_loc arg cst partial)
+            (combine_constant ploc arg cst partial)
             ctx pm
       | Construct cstr ->
           compile_test
             (compile_match repr partial)
             partial divide_constructor
-            (combine_constructor pat.pat_loc arg pat cstr partial)
+            (combine_constructor ploc arg (Pattern_head.env ph) cstr partial)
             ctx pm
       | Array _ ->
-          let kind = Typeopt.array_pattern_kind pat in
+          let kind = Typeopt.array_pattern_kind pomega in
           compile_test
             (compile_match repr partial)
             partial (divide_array kind)
-            (combine_array pat.pat_loc arg kind partial)
+            (combine_array ploc arg kind partial)
             ctx pm
       | Lazy ->
-          compile_no_test
-            (divide_lazy (normalize_pat pat))
-            Context.combine repr partial ctx pm
+          compile_no_test (divide_lazy pomega) Context.combine repr partial ctx
+            pm
       | Variant { cstr_row = row } ->
           compile_test
             (compile_match repr partial)
             partial (divide_variant !row)
-            (combine_variant pat.pat_loc !row arg partial)
+            (combine_variant ploc !row arg partial)
             ctx pm
     )
   | PmVar { inside = pmh } ->
