@@ -50,7 +50,11 @@ Error: Signature mismatch:
          type u = A of t/1
        is not included in
          type u = A of t/2
-       The types for constructor A are not equal.
+       Constructors do not match:
+         A of t/1
+       is not compatible with:
+         A of t/2
+       The types are not equal.
        Line 4, characters 9-19:
          Definition of type t/1
        Line 2, characters 2-11:
@@ -113,7 +117,11 @@ Error: Signature mismatch:
          type t = A of T/1.t
        is not included in
          type t = A of T/2.t
-       The types for constructor A are not equal.
+       Constructors do not match:
+         A of T/1.t
+       is not compatible with:
+         A of T/2.t
+       The types are not equal.
        Line 5, characters 6-34:
          Definition of module T/1
        Line 2, characters 2-30:

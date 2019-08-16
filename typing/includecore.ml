@@ -135,29 +135,37 @@ let choose_other ord first second =
   | Second -> choose First first second
 
 type label_mismatch =
-  | Type of Ident.t
-  | Mutability of Ident.t
+  | Type
+  | Mutability of position
 
 type record_mismatch =
-  | Label_mismatch of label_mismatch
+  | Label_mismatch of Types.label_declaration
+                      * Types.label_declaration
+                      * label_mismatch
   | Label_names of int * Ident.t * Ident.t
   | Label_missing of position * Ident.t
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
-  | Type of Ident.t
-  | Arity of Ident.t
+  | Type
+  | Arity
   | Inline_record of record_mismatch
+  | Kind of position
   | Explicit_return_type of position
 
 type variant_mismatch =
-  | Constructor_mismatch of constructor_mismatch
+  | Constructor_mismatch of Types.constructor_declaration
+                            * Types.constructor_declaration
+                            * constructor_mismatch
   | Constructor_names of int * Ident.t * Ident.t
   | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Constructor_privacy
-  | Constructor_mismatch of constructor_mismatch
+  | Constructor_mismatch of Ident.t
+                            * Types.extension_constructor
+                            * Types.extension_constructor
+                            * constructor_mismatch
 
 type type_mismatch =
   | Arity
@@ -171,17 +179,25 @@ type type_mismatch =
   | Unboxed_representation of position
   | Immediate
 
-let report_label_mismatch ppf err =
+let report_label_mismatch first second ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : label_mismatch) with
-  | Type s -> pr "The types for field %s are not equal." (Ident.name s)
-  | Mutability s ->
-      pr "The mutability of field %s is different." (Ident.name s)
+  | Type -> pr "The types are not equal."
+  | Mutability ord ->
+      pr "%s is mutable and %s is not."
+        (String.capitalize_ascii  (choose ord first second))
+        (choose_other ord first second)
 
 let report_record_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
-  match (err : record_mismatch) with
-  | Label_mismatch err -> report_label_mismatch ppf err
+  match err with
+  | Label_mismatch (l1, l2, err) ->
+      pr
+        "@[<hv>Fields do not match:@;<1 2>%a@ is not compatible with:\
+         @;<1 2>%a@ %a"
+        Printtyp.label l1
+        Printtyp.label l2
+        (report_label_mismatch first second) err
   | Label_names (n, name1, name2) ->
       pr "@[<hv>Fields number %i have different names, %s and %s.@]"
         n (Ident.name name1) (Ident.name name2)
@@ -196,9 +212,13 @@ let report_record_mismatch first second decl ppf err =
 let report_constructor_mismatch first second decl ppf err =
   let pr fmt  = Format.fprintf ppf fmt in
   match (err : constructor_mismatch) with
-  | Type s -> pr "The types for constructor %s are not equal." (Ident.name s)
-  | Arity s -> pr "The arities for constructor %s differ." (Ident.name s)
+  | Type -> pr "The types are not equal."
+  | Arity -> pr "They have different arities."
   | Inline_record err -> report_record_mismatch first second decl ppf err
+  | Kind ord ->
+      pr "%s uses inline records and %s doesn't."
+        (String.capitalize_ascii (choose ord first second))
+        (choose_other ord first second)
   | Explicit_return_type ord ->
       pr "%s has explicit return type and %s doesn't."
         (String.capitalize_ascii (choose ord first second))
@@ -207,8 +227,13 @@ let report_constructor_mismatch first second decl ppf err =
 let report_variant_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : variant_mismatch) with
-  | Constructor_mismatch err ->
-    report_constructor_mismatch first second decl ppf err
+  | Constructor_mismatch (c1, c2, err) ->
+      pr
+        "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
+         @;<1 2>%a@ %a"
+        Printtyp.constructor c1
+        Printtyp.constructor c2
+        (report_constructor_mismatch first second decl) err
   | Constructor_names (n, name1, name2) ->
       pr "Constructors number %i have different names, %s and %s."
         n (Ident.name name1) (Ident.name name2)
@@ -220,8 +245,12 @@ let report_extension_constructor_mismatch first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : extension_constructor_mismatch) with
   | Constructor_privacy -> pr "A private type would be revealed."
-  | Constructor_mismatch err ->
-    report_constructor_mismatch first second decl ppf err
+  | Constructor_mismatch (id, ext1, ext2, err) ->
+      pr "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
+          @;<1 2>%a@ %a@]"
+        (Printtyp.extension_only_constructor id) ext1
+        (Printtyp.extension_only_constructor id) ext2
+        (report_constructor_mismatch first second decl) err
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -245,31 +274,32 @@ let report_type_mismatch first second decl ppf err =
   if err = Manifest then () else
   Format.fprintf ppf "@ %a" (report_type_mismatch0 first second decl) err
 
-let rec compare_constructor_arguments ~loc env cstr params1 params2 arg1 arg2 =
+let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
   match arg1, arg2 with
   | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
       if List.length arg1 <> List.length arg2 then
-        Some (Arity cstr : constructor_mismatch)
+        Some (Arity : constructor_mismatch)
       else if
         (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
         Ctype.equal env true (params1 @ arg1) (params2 @ arg2)
-      then None else Some (Type cstr)
+      then None else Some Type
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
       Option.map
         (fun rec_err -> Inline_record rec_err)
         (compare_records env ~loc params1 params2 0 l1 l2)
-  | Types.Cstr_record _, _ | _, Types.Cstr_record _ -> Some (Type cstr)
+  | Types.Cstr_record _, _ -> Some (Kind First : constructor_mismatch)
+  | _, Types.Cstr_record _ -> Some (Kind Second : constructor_mismatch)
 
-and compare_constructors ~loc env cstr params1 params2 res1 res2 args1 args2 =
+and compare_constructors ~loc env params1 params2 res1 res2 args1 args2 =
   match res1, res2 with
   | Some r1, Some r2 ->
       if Ctype.equal env true [r1] [r2] then
-        compare_constructor_arguments ~loc env cstr [r1] [r2] args1 args2
-      else Some (Type cstr)
+        compare_constructor_arguments ~loc env [r1] [r2] args1 args2
+      else Some Type
   | Some _, None -> Some (Explicit_return_type First)
   | None, Some _ -> Some (Explicit_return_type Second)
   | None, None ->
-      compare_constructor_arguments ~loc env cstr params1 params2 args1 args2
+      compare_constructor_arguments ~loc env params1 params2 args1 args2
 
 and compare_variants ~loc env params1 params2 n
     (cstrs1 : Types.constructor_declaration list)
@@ -288,9 +318,10 @@ and compare_variants ~loc env params1 params2 n
           loc
           cd1.cd_attributes cd2.cd_attributes
           (Ident.name cd1.cd_id);
-        match compare_constructors ~loc env cd1.cd_id params1 params2
+        match compare_constructors ~loc env params1 params2
                 cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
-        | Some r -> Some (Constructor_mismatch r : variant_mismatch)
+        | Some r ->
+            Some ((Constructor_mismatch (cd1, cd2, r)) : variant_mismatch)
         | None -> compare_variants ~loc env params1 params2 (n+1) rem1 rem2
       end
 
@@ -298,11 +329,13 @@ and compare_labels env params1 params2
       (ld1 : Types.label_declaration)
       (ld2 : Types.label_declaration) =
       if ld1.ld_mutable <> ld2.ld_mutable
-      then Some (Mutability ld1.ld_id)
+      then
+        let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
+        Some (Mutability  ord)
       else
         if Ctype.equal env true (ld1.ld_type::params1) (ld2.ld_type::params2)
         then None
-        else Some (Type ld1.ld_id : label_mismatch)
+        else Some (Type : label_mismatch)
 
 and compare_records ~loc env params1 params2 n
     (labels1 : Types.label_declaration list)
@@ -322,7 +355,7 @@ and compare_records ~loc env params1 params2 n
           ld1.ld_attributes ld2.ld_attributes
           (Ident.name ld1.ld_id);
         match compare_labels env params1 params2 ld1 ld2 with
-        | Some r -> Some (Label_mismatch r)
+        | Some r -> Some (Label_mismatch (ld1, ld2, r))
         (* add arguments to the parameters, cf. PR#7378 *)
         | None -> compare_records ~loc env
                     (ld1.ld_type::params1) (ld2.ld_type::params2)
@@ -456,15 +489,15 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
   in
   if not (Ctype.equal env true (ty1 :: ext1.ext_type_params)
                                (ty2 :: ext2.ext_type_params))
-  then Some (Constructor_mismatch (Type id))
+  then Some (Constructor_mismatch (id, ext1, ext2, Type))
   else
     let r =
-      compare_constructors ~loc env id ext1.ext_type_params ext2.ext_type_params
+      compare_constructors ~loc env ext1.ext_type_params ext2.ext_type_params
         ext1.ext_ret_type ext2.ext_ret_type
         ext1.ext_args ext2.ext_args
     in
     match r with
-    | Some r -> Some (Constructor_mismatch r)
+    | Some r -> Some (Constructor_mismatch (id, ext1, ext2, r))
     | None -> match ext1.ext_private, ext2.ext_private with
         Private, Public -> Some Constructor_privacy
       | _, _ -> None

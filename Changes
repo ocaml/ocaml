@@ -10,6 +10,11 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #8844: Printing faulty constructors, inline records fields and their types
+  during type mismatches. Also slightly changed other type mismatches error
+  output.
+  (Mekhrubon Turaev, review by Florian Angeletti, Leo White)
+
 - #8828: Added abstractions for variants, records, constructors, fields and
   extension constructor types mismatch.
   (Mekhrubon Turaev, review by Florian Angeletti, Leo White and Gabriel Scherer)

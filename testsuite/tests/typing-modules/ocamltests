@@ -19,3 +19,6 @@ printing.ml
 recursive.ml
 Test.ml
 unroll_private_abbrev.ml
+records_errors_test.ml
+variants_errors_test.ml
+extension_constructors_errors_test.ml
