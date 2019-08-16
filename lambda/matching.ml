@@ -3190,17 +3190,7 @@ and compile_match_nonempty repr partial ctx
       let m = { m with args; cases } in
       let first_match, rem =
         split_and_precompile_half_simplified ~arg:(Some v) m in
-      let lam, total =
-        comp_match_handlers
-          (( if dbg then
-             do_compile_matching_pr
-           else
-             do_compile_matching
-           )
-             repr)
-          partial ctx first_match rem
-      in
-      (bind_check str v arg lam, total)
+      combine_handlers repr partial ctx (v, str, arg) first_match rem
   | _ -> assert false
 
 and compile_match_simplified repr partial ctx
@@ -3211,18 +3201,21 @@ and compile_match_simplified repr partial ctx
       let args = (arg, Alias) :: argl in
       let m = { m with args } in
       let first_match, rem = split_and_precompile_simplified m in
-      let lam, total =
-        comp_match_handlers
-          (( if dbg then
-             do_compile_matching_pr
-           else
-             do_compile_matching
-           )
-             repr)
-          partial ctx first_match rem
-      in
-      (bind_check str v arg lam, total)
+      combine_handlers repr partial ctx (v, str, arg) first_match rem
   | _ -> assert false
+
+and combine_handlers repr partial ctx (v, str, arg) first_match rem =
+  let lam, total =
+    comp_match_handlers
+      (( if dbg then
+         do_compile_matching_pr
+       else
+         do_compile_matching
+       )
+         repr)
+      partial ctx first_match rem
+  in
+  (bind_check str v arg lam, total)
 
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr repr partial ctx x =
