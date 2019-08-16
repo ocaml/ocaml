@@ -3139,7 +3139,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
 (* To find reasonable names for variables *)
 
 let rec name_pattern default = function
-  | (pat :: _, _) :: rem -> (
+  | ((pat, _), _) :: rem -> (
       match pat.pat_desc with
       | Tpat_var (id, _) -> id
       | Tpat_alias (_, id, _) -> id
@@ -3166,9 +3166,8 @@ let arg_to_var arg cls =
 *)
 
 let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
-  match m with
-  | { cases = []; args = [] } -> comp_exit ctx m
-  | { cases = ([], action) :: rem } ->
+  match m.cases with
+  | ([], action) :: rem ->
       if is_guarded action then
         let lambda, total =
           compile_match None partial ctx { m with cases = rem }
@@ -3176,11 +3175,18 @@ let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
         (event_branch repr (patch_guarded lambda action), total)
       else
         (event_branch repr action, Jumps.empty)
+  | nonempty_cases ->
+      compile_match_nonempty repr partial ctx
+        { m with cases = List.map Non_empty_clause.of_initial nonempty_cases }
+
+and compile_match_nonempty repr partial ctx
+    (m : Typedtree.pattern Non_empty_clause.t pattern_matching) =
+  match m with
+  | { cases = []; args = [] } -> comp_exit ctx m
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
       let args = (newarg, Alias) :: argl in
-      let cases = List.map Non_empty_clause.of_initial m.cases in
-      let cases = List.map (half_simplify_nonempty ~arg:newarg) cases in
+      let cases = List.map (half_simplify_nonempty ~arg:newarg) m.cases in
       let m = { m with args; cases } in
       let first_match, rem =
         split_and_precompile_half_simplified ~arg:(Some v) m in
@@ -3205,29 +3211,6 @@ and compile_match_simplified repr partial ctx
       let args = (arg, Alias) :: argl in
       let m = { m with args } in
       let first_match, rem = split_and_precompile_simplified m in
-      let lam, total =
-        comp_match_handlers
-          (( if dbg then
-             do_compile_matching_pr
-           else
-             do_compile_matching
-           )
-             repr)
-          partial ctx first_match rem
-      in
-      (bind_check str v arg lam, total)
-  | _ -> assert false
-
-and compile_match_nonempty repr partial ctx
-    (m : Typedtree.pattern Non_empty_clause.t pattern_matching) =
-  match m with
-  | { cases = []; args = [] } -> comp_exit ctx m
-  | { args = ((Lvar v as arg), str) :: argl } ->
-      let args = (arg, Alias) :: argl in
-      let cases = List.map (half_simplify_nonempty ~arg) m.cases in
-      let m = { m with args; cases } in
-      let first_match, rem =
-        split_and_precompile_half_simplified ~arg:(Some v) m in
       let lam, total =
         comp_match_handlers
           (( if dbg then
