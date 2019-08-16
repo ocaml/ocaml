@@ -594,8 +594,6 @@ end = struct
   let union pss qss = get_mins Row.le (pss @ qss)
 end
 
-exception OrPat
-
 let rec flatten_pat_line size p k =
   match p.pat_desc with
   | Tpat_any -> omegas size :: k
@@ -677,16 +675,61 @@ end = struct
           match p.pat_desc with
           | Tpat_alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
           | Tpat_var _ -> filter_rec ((omega :: ps) :: rem)
+          | Tpat_or (p1, p2, _) -> (
+              match arity with
+              | 0 -> (
+                  (* if K has arity 0, specializing ((K|K)::rem)
+                     returns just (rem): if either sides works,
+                     no need to keep the other. *)
+                  match filter_rec [ p1 :: ps ] with
+                  | [] -> filter_rec ((p2 :: ps) :: rem)
+                  | matches -> matches @ filter_rec rem
+                )
+              | 1 -> (
+                  (* if K has arity 1, specializing (K p | K q) :: rem
+                     can be expressed as (p | q) :: rem: even if both
+                     sides of an or-pattern match, we can compress the
+                     output in a single row, instead of duplicating
+                     the row.
+
+                     In particular, we respect the invariant that
+                     a single-row input list produces either an empty list
+                     or a single-row output list. *)
+                  match (filter_rec [ p1 :: ps ], filter_rec [ p2 :: ps ]) with
+                  | [], row
+                  | row, [] ->
+                      row @ filter_rec rem
+                  | [ (arg1 :: _) ], [ (arg2 :: _) ] ->
+                      (* the output for the row (p1|p2)::ps is of size 1,
+                          respecting the invariant *)
+                      ({ arg1 with
+                         pat_desc = Tpat_or (arg1, arg2, None);
+                         pat_loc = Location.none
+                       }
+                      :: ps
+                      )
+                      :: filter_rec rem
+                  | _ :: _ :: _, _
+                  | _, _ :: _ :: _ ->
+                      (* canot happen from the invariant above *)
+                      assert false
+                  | [ [] ], _
+                  | _, [ [] ] ->
+                      (* cannot happen: in the arity-1 case an output row
+                          must have as many elements as its input row *)
+                      assert false
+                )
+              | _ ->
+                  (* we cannot preserve the or-pattern as in the arity-1 case,
+                     because we cannot express
+                        (K (p1, .., pn) | K (q1, .. qn))
+                     as (p1 .. pn | q1 .. qn) *)
+                  filter_rec ((p1 :: ps) :: (p2 :: ps) :: rem)
+            )
           | _ -> (
               let rem = filter_rec rem in
               match matcher p ps with
               | exception NoMatch -> rem
-              | exception OrPat -> (
-                  match p.pat_desc with
-                  | Tpat_or (p1, p2, _) ->
-                      filter_rec ((p1 :: ps) :: (p2 :: ps) :: rem)
-                  | _ -> assert false
-                )
               | specialized ->
                   assert (List.length specialized = List.length ps + arity);
                   specialized :: rem
@@ -1581,8 +1624,7 @@ let divide_line make_ctx make get_args discr ctx
 
    - matcher functions are arguments to Default_environment.specialize (for
    default handlers)
-   They may raise NoMatch or OrPat and perform the full
-   matching (selection + arguments).
+   They may raise NoMatch and perform the full matching (selection + arguments).
 
    - get_args and get_key are for the compiled matrices, note that
    selection and getting arguments are separated.
@@ -1591,11 +1633,8 @@ let divide_line make_ctx make get_args discr ctx
    new  ``pattern_matching'' records.
 *)
 
-let rec matcher_const cst p rem =
+let matcher_const cst p rem =
   match p.pat_desc with
-  | Tpat_or (p1, p2, _) -> (
-      try matcher_const cst p1 rem with NoMatch -> matcher_const cst p2 rem
-    )
   | Tpat_constant c1 when const_compare c1 cst = 0 -> rem
   | Tpat_any -> rem
   | _ -> raise NoMatch
@@ -1655,64 +1694,12 @@ let get_args_constr p rem =
        This comparison is performed by Types.may_equal_constr.
 *)
 
-let matcher_constr cstr =
-  match cstr.cstr_arity with
-  | 0 ->
-      let rec matcher_rec q rem =
-        match q.pat_desc with
-        | Tpat_or (p1, p2, _) -> (
-            try matcher_rec p1 rem with NoMatch -> matcher_rec p2 rem
-          )
-        | Tpat_construct (_, cstr', []) when Types.may_equal_constr cstr cstr'
-          ->
-            rem
-        | Tpat_any -> rem
-        | _ -> raise NoMatch
-      in
-      matcher_rec
-  | 1 ->
-      let rec matcher_rec q rem =
-        match q.pat_desc with
-        | Tpat_or (p1, p2, _) -> (
-            (* if both sides of the or-pattern match the head constructor,
-            (K p1 | K p2) :: rem
-          return (p1 | p2) :: rem *)
-            let r1 = try Some (matcher_rec p1 rem) with NoMatch -> None
-            and r2 = try Some (matcher_rec p2 rem) with NoMatch -> None in
-            match (r1, r2) with
-            | None, None -> raise NoMatch
-            | Some r1, None -> r1
-            | None, Some r2 -> r2
-            | Some (a1 :: _), Some (a2 :: _) ->
-                { a1 with
-                  pat_loc = Location.none;
-                  pat_desc = Tpat_or (a1, a2, None)
-                }
-                :: rem
-            | _, _ -> assert false
-          )
-        | Tpat_construct (_, cstr', [ arg ])
-          when Types.may_equal_constr cstr cstr' ->
-            arg :: rem
-        | Tpat_any -> omega :: rem
-        | _ -> raise NoMatch
-      in
-      matcher_rec
-  | _ -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_or (_, _, _) ->
-            (* we cannot preserve the or-pattern as in the arity-1 case,
-               because we cannot express
-                 (K (p1, .., pn) | K (q1, .. qn))
-               as (p1 .. pn | q1 .. qn) *)
-            raise OrPat
-        | Tpat_construct (_, cstr', args)
-          when Types.may_equal_constr cstr cstr' ->
-            args @ rem
-        | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
-        | _ -> raise NoMatch
-    )
+let matcher_constr cstr q rem =
+  match q.pat_desc with
+  | Tpat_construct (_, cstr', args) when Types.may_equal_constr cstr cstr' ->
+      args @ rem
+  | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
+  | _ -> raise NoMatch
 
 let make_constr_matching p def ctx = function
   | [] -> fatal_error "Matching.make_constr_matching"
@@ -1746,12 +1733,8 @@ let divide_constructor ctx pm =
 
 (* Matching against a variant *)
 
-let rec matcher_variant_const lab p rem =
+let matcher_variant_const lab p rem =
   match p.pat_desc with
-  | Tpat_or (p1, p2, _) -> (
-      try matcher_variant_const lab p1 rem
-      with NoMatch -> matcher_variant_const lab p2 rem
-    )
   | Tpat_variant (lab1, _, _) when lab1 = lab -> rem
   | Tpat_any -> rem
   | _ -> raise NoMatch
@@ -1769,7 +1752,6 @@ let make_variant_matching_constant p lab def ctx = function
 
 let matcher_variant_nonconst lab p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_variant (lab1, Some arg, _) when lab1 = lab -> arg :: rem
   | Tpat_any -> omega :: rem
   | _ -> raise NoMatch
@@ -1847,7 +1829,6 @@ let get_arg_lazy p rem =
 
 let matcher_lazy p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_any
   | Tpat_var _ ->
       omega :: rem
@@ -2008,7 +1989,6 @@ let get_args_tuple arity p rem =
 
 let matcher_tuple arity p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_any
   | Tpat_var _ ->
       omegas arity @ rem
@@ -2051,7 +2031,6 @@ let get_args_record num_fields p rem =
 
 let matcher_record num_fields p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_any
   | Tpat_var _ ->
       record_matching_line num_fields [] @ rem
@@ -2111,7 +2090,6 @@ let get_args_array p rem =
 
 let matcher_array len p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_array args when List.length args = len -> args @ rem
   | Tpat_any -> Parmatch.omegas len @ rem
   | _ -> raise NoMatch
