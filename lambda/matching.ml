@@ -1143,10 +1143,6 @@ let pm_free_variables { cases } =
     cases Ident.Set.empty
 
 (* Basic grouping predicates *)
-let head_as_constr head =
-  match Pattern_head.desc head with
-  | Construct cstr -> cstr
-  | _ -> fatal_error "Matching.head_as_constr"
 
 let can_group discr pat =
   match (Pattern_head.desc discr, Pattern_head.desc (Simple.head pat)) with
@@ -1625,6 +1621,22 @@ type cell = {
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
 
+let make_matching get_expr_args head def ctx = function
+  | [] -> fatal_error "Matching.make_matching"
+  | arg :: rem ->
+      let def = Default_environment.specialize head def
+      and args = get_expr_args head arg rem
+      and ctx = Context.specialize head ctx in
+      { pm = { cases = []; args; default = def }; ctx; discr = head }
+
+let make_line_matching get_expr_args head def = function
+  | [] -> fatal_error "Matching.make_line_matching"
+  | arg :: rem ->
+      { cases = [];
+        args = get_expr_args head arg rem;
+        default = Default_environment.specialize head def
+      }
+
 type 'a division = {
   args : (lambda * let_kind) list;
   cells : ('a * cell) list
@@ -1643,13 +1655,15 @@ let add_in_div make_matching_fun eq_key key patl_action division =
   in
   { division with cells }
 
-let divide make eq_key get_key get_args ctx
+let divide get_expr_args eq_key get_key get_pat_args ctx
     (pm : Simple.clause pattern_matching) =
   let add ((p, patl), action) division =
     let ph = Simple.head p in
     let p = General.erase p in
-    add_in_div (make ph pm.default ctx) eq_key (get_key p)
-      (get_args p patl, action)
+    add_in_div
+      (make_matching get_expr_args ph pm.default ctx)
+      eq_key (get_key p)
+      (get_pat_args p patl, action)
       division
   in
   List.fold_right add pm.cases { args = pm.args; cells = [] }
@@ -1658,25 +1672,33 @@ let add_line patl_action pm =
   pm.cases <- patl_action :: pm.cases;
   pm
 
-let divide_line make_ctx make get_args discr ctx
+let divide_line make_ctx get_expr_args get_pat_args discr ctx
     (pm : Simple.clause pattern_matching) =
   let add ((p, patl), action) submatrix =
     let p = General.erase p in
-    add_line (get_args p patl, action) submatrix
+    add_line (get_pat_args p patl, action) submatrix
   in
-  let pm = List.fold_right add pm.cases (make pm.default pm.args) in
+  let pm =
+    List.fold_right add pm.cases
+      (make_line_matching get_expr_args discr pm.default pm.args)
+  in
   { pm; ctx = make_ctx ctx; discr }
+
+let drop_pat_arg _p rem = rem
+let drop_expr_arg _head _arg rem = rem
 
 (* Then come various functions,
    There is one set of functions per matching style
    (constants, constructors etc.)
 
-   - get_args and get_key are for the compiled matrices, note that
-   selection and getting arguments are separated.
+   - get_{expr,pat}_args and get_key are for the compiled matrices,
+     note that selection and getting arguments are separated.
 
    - make_*_matching combines the previous functions for producing
    new  ``pattern_matching'' records.
 *)
+
+(* Matching against a constant *)
 
 let get_key_constant caller = function
   | { pat_desc = Tpat_constant cst } -> cst
@@ -1685,94 +1707,68 @@ let get_key_constant caller = function
       pretty_pat p;
       assert false
 
-let get_args_constant _ rem = rem
-
-let make_constant_matching head def ctx = function
-  | [] -> fatal_error "Matching.make_constant_matching"
-  | _ :: argl ->
-      let def = Default_environment.specialize head def
-      and ctx = Context.specialize head ctx in
-      { pm = { cases = []; args = argl; default = def }; ctx; discr = head }
+let get_pat_args_constant = drop_pat_arg
+let get_expr_args_constant = drop_expr_arg
 
 let divide_constant ctx m =
-  divide make_constant_matching
+  divide
+    get_expr_args_constant
     (fun c d -> const_compare c d = 0)
     (get_key_constant "divide")
-    get_args_constant ctx m
+    get_pat_args_constant ctx m
 
 (* Matching against a constructor *)
-
-let make_field_args loc binding_kind arg first_pos last_pos argl =
-  let rec make_args pos =
-    if pos > last_pos then
-      argl
-    else
-      (Lprim (Pfield pos, [ arg ], loc), binding_kind) :: make_args (pos + 1)
-  in
-  make_args first_pos
 
 let get_key_constr = function
   | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr.cstr_tag
   | _ -> assert false
 
-let get_args_constr p rem =
+let get_pat_args_constr p rem =
   match p with
   | { pat_desc = Tpat_construct (_, _, args) } -> args @ rem
   | _ -> assert false
 
-let make_constr_matching ~scopes head def ctx = function
-  | [] -> fatal_error "Matching.make_constr_matching"
-  | (arg, _mut) :: argl ->
-      let cstr = head_as_constr head in
-      let loc = head_loc ~scopes head in
-      let newargs =
-        if cstr.cstr_inlined <> None then
-          (arg, Alias) :: argl
-        else
-          match cstr.cstr_tag with
-          | Cstr_constant _
-          | Cstr_block _ ->
-              make_field_args loc Alias arg 0 (cstr.cstr_arity - 1) argl
-          | Cstr_unboxed -> (arg, Alias) :: argl
-          | Cstr_extension _ ->
-              make_field_args loc Alias arg 1 cstr.cstr_arity argl
-      in
-      { pm =
-          { cases = [];
-            args = newargs;
-            default = Default_environment.specialize head def
-          };
-        ctx = Context.specialize head ctx;
-        discr = head
-      }
+let get_expr_args_constr ~scopes head (arg, _mut) rem =
+  let cstr =
+    match Pattern_head.desc head with
+    | Construct cstr -> cstr
+    | _ -> fatal_error "Matching.get_expr_args_constr"
+  in
+  let loc = head_loc ~scopes head in
+  let make_field_accesses binding_kind first_pos last_pos argl =
+    let rec make_args pos =
+      if pos > last_pos then
+        argl
+      else
+        (Lprim (Pfield pos, [ arg ], loc), binding_kind) :: make_args (pos + 1)
+    in
+    make_args first_pos
+  in
+  if cstr.cstr_inlined <> None then
+    (arg, Alias) :: rem
+  else
+    match cstr.cstr_tag with
+    | Cstr_constant _
+    | Cstr_block _ ->
+        make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
+    | Cstr_unboxed -> (arg, Alias) :: rem
+    | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
 
 let divide_constructor ~scopes ctx pm =
-  divide (make_constr_matching ~scopes) ( = )
-    get_key_constr get_args_constr ctx pm
+  divide
+    (get_expr_args_constr ~scopes)
+    ( = )
+    get_key_constr
+    get_pat_args_constr
+    ctx pm
 
 (* Matching against a variant *)
 
-let make_variant_matching_constant head def ctx = function
-  | [] -> fatal_error "Matching.make_variant_matching_constant"
-  | _ :: argl ->
-      let def = Default_environment.specialize head def
-      and ctx = Context.specialize head ctx in
-      { pm = { cases = []; args = argl; default = def }; ctx; discr = head }
+let get_expr_args_variant_constant = drop_expr_arg
 
-let make_variant_matching_nonconst ~scopes head def ctx = function
-  | [] -> fatal_error "Matching.make_variant_matching_nonconst"
-  | (arg, _mut) :: argl ->
-      let def = Default_environment.specialize head def
-      and loc = head_loc ~scopes head
-      and ctx = Context.specialize head ctx in
-      { pm =
-          { cases = [];
-            args = (Lprim (Pfield 1, [ arg ], loc), Alias) :: argl;
-            default = def
-          };
-        ctx;
-        discr = head
-      }
+let get_expr_args_variant_nonconst ~scopes head (arg, _mut) rem =
+  let loc = head_loc ~scopes head in
+  (Lprim (Pfield 1, [ arg ], loc), Alias) :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
   let row = Btype.row_repr row in
@@ -1796,11 +1792,13 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
           match pato with
           | None ->
               add_in_div
-                (make_variant_matching_constant head def ctx)
+                (make_matching get_expr_args_variant_constant head def ctx)
                 ( = ) (Cstr_constant tag) (patl, action) variants
           | Some pat ->
               add_in_div
-                (make_variant_matching_nonconst ~scopes head def ctx)
+                (make_matching
+                   (get_expr_args_variant_nonconst ~scopes)
+                   head def ctx)
                 ( = ) (Cstr_block tag)
                 (pat :: patl, action)
                 variants
@@ -1813,23 +1811,19 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
   *)
 
 (* Matching against a variable *)
-let get_args_var _p rem = rem
 
-let make_var_matching def = function
-  | [] -> fatal_error "Matching.make_var_matching"
-  | _ :: argl ->
-      { cases = [];
-        args = argl;
-        default = Default_environment.specialize Pattern_head.omega def
-      }
+let get_pat_args_var = drop_pat_arg
+let get_expr_args_var = drop_expr_arg
 
 let divide_var ctx pm =
-  divide_line Context.lshift make_var_matching get_args_var Pattern_head.omega
-    ctx pm
+  divide_line Context.lshift
+    get_expr_args_var
+    get_pat_args_var
+    Pattern_head.omega ctx pm
 
 (* Matching and forcing a lazy value *)
 
-let get_arg_lazy p rem =
+let get_pat_args_lazy p rem =
   match p with
   | { pat_desc = Tpat_any } -> omega :: rem
   | { pat_desc = Tpat_lazy arg } -> arg :: rem
@@ -1968,46 +1962,41 @@ let inline_lazy_force arg loc =
          tables (~ 250 elts); conditionals are better *)
     inline_lazy_force_cond arg loc
 
-let make_lazy_matching head def = function
-  | [] -> fatal_error "Matching.make_lazy_matching"
-  | (arg, _mut) :: argl ->
-      { cases = [];
-        args = (inline_lazy_force arg Loc_unknown, Strict) :: argl;
-        default = Default_environment.specialize head def
-      }
+let get_expr_args_lazy ~scopes head (arg, _mut) rem =
+  let loc = head_loc ~scopes head in
+  (inline_lazy_force arg loc, Strict) :: rem
 
-let divide_lazy p ctx pm =
-  divide_line (Context.specialize p) (make_lazy_matching p) get_arg_lazy p ctx
-    pm
+let divide_lazy ~scopes head ctx pm =
+  divide_line (Context.specialize head)
+    (get_expr_args_lazy ~scopes)
+    get_pat_args_lazy
+    head ctx pm
 
 (* Matching against a tuple pattern *)
 
-let get_args_tuple arity p rem =
+let get_pat_args_tuple arity p rem =
   match p with
   | { pat_desc = Tpat_any } -> omegas arity @ rem
   | { pat_desc = Tpat_tuple args } -> args @ rem
   | _ -> assert false
 
-let make_tuple_matching ~scopes head def = function
-  | [] -> fatal_error "Matching.make_tuple_matching"
-  | (arg, _mut) :: argl ->
-      let loc = head_loc ~scopes head in
-      let arity = Pattern_head.arity head in
-      let rec make_args pos =
-        if pos >= arity then
-          argl
-        else
-          (Lprim (Pfield pos, [ arg ], loc), Alias) :: make_args (pos + 1)
-      in
-      { cases = [];
-        args = make_args 0;
-        default = Default_environment.specialize head def
-      }
+let get_expr_args_tuple ~scopes head (arg, _mut) rem =
+  let loc = head_loc ~scopes head in
+  let arity = Pattern_head.arity head in
+  let rec make_args pos =
+    if pos >= arity then
+      rem
+    else
+      (Lprim (Pfield pos, [ arg ], loc), Alias) :: make_args (pos + 1)
+  in
+  make_args 0
 
 let divide_tuple ~scopes head ctx pm =
   let arity = Pattern_head.arity head in
-  divide_line (Context.specialize head) (make_tuple_matching ~scopes head)
-    (get_args_tuple arity) head ctx pm
+  divide_line (Context.specialize head)
+    (get_expr_args_tuple ~scopes)
+    (get_pat_args_tuple arity)
+    head ctx pm
 
 (* Matching against a record pattern *)
 
@@ -2016,55 +2005,56 @@ let record_matching_line num_fields lbl_pat_list =
   List.iter (fun (_, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
   Array.to_list patv
 
-let get_args_record num_fields p rem =
+let get_pat_args_record num_fields p rem =
   match p with
   | { pat_desc = Tpat_any } -> record_matching_line num_fields [] @ rem
   | { pat_desc = Tpat_record (lbl_pat_list, _) } ->
       record_matching_line num_fields lbl_pat_list @ rem
   | _ -> assert false
 
-let make_record_matching ~scopes head all_labels def = function
-  | [] -> fatal_error "Matching.make_record_matching"
-  | (arg, _mut) :: argl ->
-      let loc = head_loc ~scopes head in
-      let rec make_args pos =
-        if pos >= Array.length all_labels then
-          argl
-        else
-          let lbl = all_labels.(pos) in
-          let access =
-            match lbl.lbl_repres with
-            | Record_regular
-            | Record_inlined _ ->
-                Lprim (Pfield lbl.lbl_pos, [ arg ], loc)
-            | Record_unboxed _ -> arg
-            | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [ arg ], loc)
-            | Record_extension _ ->
-                Lprim (Pfield (lbl.lbl_pos + 1), [ arg ], loc)
-          in
-          let str =
-            match lbl.lbl_mut with
-            | Immutable -> Alias
-            | Mutable -> StrictOpt
-          in
-          (access, str) :: make_args (pos + 1)
+let get_expr_args_record ~scopes head (arg, _mut) rem =
+  let loc = head_loc ~scopes head in
+  let all_labels =
+    match Pattern_head.desc head with
+    | Record (lbl :: _) -> lbl.lbl_all
+    | Record []
+    | _ ->
+        assert false
+  in
+  let rec make_args pos =
+    if pos >= Array.length all_labels then
+      rem
+    else
+      let lbl = all_labels.(pos) in
+      let access =
+        match lbl.lbl_repres with
+        | Record_regular
+        | Record_inlined _ ->
+            Lprim (Pfield lbl.lbl_pos, [ arg ], loc)
+        | Record_unboxed _ -> arg
+        | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [ arg ], loc)
+        | Record_extension _ -> Lprim (Pfield (lbl.lbl_pos + 1), [ arg ], loc)
       in
-      (* There is some redundancy in the expansions here, [head] is
-         expanded here and again in matcher. Without the expansion
-         here there would be a risk of the arity being computed
-         incorrectly by Default_environment.specialize. It would be
-         nicer to have a type-level distinction between expanded heads
-         and non-expanded heads, to be able to reason confidently on
-         when expansions must happen. *)
-      let head = expand_record_head head in
-      let def = Default_environment.specialize head def in
-      { cases = []; args = make_args 0; default = def }
+      let str =
+        match lbl.lbl_mut with
+        | Immutable -> Alias
+        | Mutable -> StrictOpt
+      in
+      (access, str) :: make_args (pos + 1)
+  in
+  make_args 0
 
-let divide_record ~scopes all_labels head ctx pm =
-  let get_args = get_args_record (Array.length all_labels) in
+let divide_record all_labels ~scopes head ctx pm =
+  (* There is some redundancy in the expansions here, [head] is
+     expanded here and again in the matcher. It would be
+     nicer to have a type-level distinction between expanded heads
+     and non-expanded heads, to be able to reason confidently on
+     when expansions must happen. *)
+  let head = expand_record_head head in
   divide_line (Context.specialize head)
-    (make_record_matching ~scopes head all_labels)
-    get_args head ctx pm
+    (get_expr_args_record ~scopes)
+    (get_pat_args_record (Array.length all_labels))
+    head ctx pm
 
 (* Matching against an array pattern *)
 
@@ -2072,41 +2062,35 @@ let get_key_array = function
   | { pat_desc = Tpat_array patl } -> List.length patl
   | _ -> assert false
 
-let get_args_array p rem =
+let get_pat_args_array p rem =
   match p with
   | { pat_desc = Tpat_array patl } -> patl @ rem
   | _ -> assert false
 
-let make_array_matching ~scopes kind head def ctx = function
-  | [] -> fatal_error "Matching.make_array_matching"
-  | (arg, _mut) :: argl ->
-      let len =
-        match Pattern_head.desc head with
-        | Array len -> len
-        | _ -> assert false
-      in
-      let loc = head_loc ~scopes head in
-      let rec make_args pos =
-        if pos >= len then
-          argl
-        else
-          ( Lprim
-              ( Parrayrefu kind,
-                [ arg; Lconst (Const_base (Const_int pos)) ],
-                loc ),
-            StrictOpt )
-          :: make_args (pos + 1)
-      in
-      let def = Default_environment.specialize head def
-      and ctx = Context.specialize head ctx in
-      { pm = { cases = []; args = make_args 0; default = def };
-        ctx;
-        discr = head
-      }
+let get_expr_args_array ~scopes kind head (arg, _mut) rem =
+  let len =
+    match Pattern_head.desc head with
+    | Array len -> len
+    | _ -> assert false
+  in
+  let loc = head_loc ~scopes head in
+  let rec make_args pos =
+    if pos >= len then
+      rem
+    else
+      ( Lprim
+          (Parrayrefu kind, [ arg; Lconst (Const_base (Const_int pos)) ], loc),
+        StrictOpt )
+      :: make_args (pos + 1)
+  in
+  make_args 0
 
 let divide_array ~scopes kind ctx pm =
-  divide (make_array_matching ~scopes kind) ( = )
-    get_key_array get_args_array ctx pm
+  divide
+    (get_expr_args_array ~scopes kind)
+    ( = )
+    get_key_array get_pat_args_array
+    ctx pm
 
 (*
    Specific string test sequence
@@ -3239,9 +3223,12 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       let ploc = head_loc ~scopes ph in
       match Pattern_head.desc ph with
       | Any ->
-          compile_no_test ~scopes divide_var Context.rshift repr partial ctx pm
+          compile_no_test ~scopes
+            divide_var
+            Context.rshift repr partial ctx pm
       | Tuple _ ->
-          compile_no_test ~scopes (divide_tuple ~scopes ph)
+          compile_no_test ~scopes
+            (divide_tuple ~scopes ph)
             Context.combine repr partial ctx pm
       | Record [] -> assert false
       | Record (lbl :: _) ->
@@ -3270,7 +3257,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
             ctx pm
       | Lazy ->
           compile_no_test ~scopes
-            (divide_lazy ph)
+            (divide_lazy ~scopes ph)
             Context.combine repr partial ctx pm
       | Variant { cstr_row = row } ->
           compile_test
