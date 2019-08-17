@@ -485,7 +485,7 @@ module Context : sig
 
   val eprintf : t -> unit
 
-  val specialize : pattern -> t -> t
+  val specialize : Pattern_head.t -> t -> t
 
   val lshift : t -> t
 
@@ -564,8 +564,7 @@ end = struct
 
   let combine ctx = List.map Row.combine ctx
 
-  let specialize q ctx =
-    let qh = fst (Pattern_head.deconstruct q) in
+  let specialize head ctx =
     let non_empty = function
       | { Row.left = _; right = [] } ->
           fatal_error "Matching.Context.specialize"
@@ -583,9 +582,12 @@ end = struct
           | `Var _ -> filter_rec ((left, omega, right) :: rem)
           | #simple_view as view -> (
               let p = { p with pat_desc = view } in
-              match matcher qh p right with
+              match matcher head p right with
               | exception NoMatch -> filter_rec rem
-              | right -> { Row.left = q :: left; right } :: filter_rec rem
+              | right ->
+                  let left = Pattern_head.to_omega_pattern head :: left in
+                  { Row.left; right }
+                  :: filter_rec rem
             )
         )
     in
@@ -1137,9 +1139,10 @@ let pm_free_variables { cases } =
     cases Ident.Set.empty
 
 (* Basic grouping predicates *)
-let pat_as_constr = function
-  | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr
-  | _ -> fatal_error "Matching.pat_as_constr"
+let head_as_constr head =
+  match Pattern_head.desc head with
+  | Construct cstr -> cstr
+  | _ -> fatal_error "Matching.head_as_constr"
 
 let can_group discr pat =
   match (Pattern_head.desc discr, Pattern_head.desc (Simple.head pat)) with
@@ -1613,7 +1616,7 @@ let split_and_precompile ~arg_id ~arg_lambda pm =
 type cell = {
   pm : initial_clause pattern_matching;
   ctx : Context.t;
-  discr : pattern
+  discr : Pattern_head.t
 }
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
@@ -1639,8 +1642,9 @@ let add_in_div make_matching_fun eq_key key patl_action division =
 let divide make eq_key get_key get_args ctx
     (pm : Simple.clause pattern_matching) =
   let add ((p, patl), action) division =
+    let ph = Simple.head p in
     let p = General.erase p in
-    add_in_div (make p pm.default ctx) eq_key (get_key p)
+    add_in_div (make ph pm.default ctx) eq_key (get_key p)
       (get_args p patl, action)
       division
   in
@@ -1679,17 +1683,12 @@ let get_key_constant caller = function
 
 let get_args_constant _ rem = rem
 
-let matcher_of_pattern p = fst (Pattern_head.deconstruct p)
-
-let make_constant_matching p def ctx = function
+let make_constant_matching head def ctx = function
   | [] -> fatal_error "Matching.make_constant_matching"
   | _ :: argl ->
-      let def = Default_environment.specialize (matcher_of_pattern p) def
-      and ctx = Context.specialize p ctx in
-      { pm = { cases = []; args = argl; default = def };
-        ctx;
-        discr = normalize_pat p
-      }
+      let def = Default_environment.specialize head def
+      and ctx = Context.specialize head ctx in
+      { pm = { cases = []; args = argl; default = def }; ctx; discr = head }
 
 let divide_constant ctx m =
   divide make_constant_matching
@@ -1717,10 +1716,11 @@ let get_args_constr p rem =
   | { pat_desc = Tpat_construct (_, _, args) } -> args @ rem
   | _ -> assert false
 
-let make_constr_matching ~scopes p def ctx = function
+let make_constr_matching ~scopes head def ctx = function
   | [] -> fatal_error "Matching.make_constr_matching"
   | (arg, _mut) :: argl ->
-      let cstr = pat_as_constr p in
+      let cstr = head_as_constr head in
+      let loc = of_location ~scopes (Pattern_head.loc head) in
       let newargs =
         if cstr.cstr_inlined <> None then
           (arg, Alias) :: argl
@@ -1728,20 +1728,18 @@ let make_constr_matching ~scopes p def ctx = function
           match cstr.cstr_tag with
           | Cstr_constant _
           | Cstr_block _ ->
-              make_field_args (of_location ~scopes p.pat_loc)
-                Alias arg 0 (cstr.cstr_arity - 1) argl
+              make_field_args loc Alias arg 0 (cstr.cstr_arity - 1) argl
           | Cstr_unboxed -> (arg, Alias) :: argl
           | Cstr_extension _ ->
-              make_field_args (of_location ~scopes p.pat_loc)
-                Alias arg 1 cstr.cstr_arity argl
+              make_field_args loc Alias arg 1 cstr.cstr_arity argl
       in
       { pm =
           { cases = [];
             args = newargs;
-            default = Default_environment.specialize (matcher_of_pattern p) def
+            default = Default_environment.specialize head def
           };
-        ctx = Context.specialize p ctx;
-        discr = normalize_pat p
+        ctx = Context.specialize head ctx;
+        discr = head
       }
 
 let divide_constructor ~scopes ctx pm =
@@ -1750,30 +1748,26 @@ let divide_constructor ~scopes ctx pm =
 
 (* Matching against a variant *)
 
-let make_variant_matching_constant p def ctx = function
+let make_variant_matching_constant head def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_constant"
   | _ :: argl ->
-      let def = Default_environment.specialize (matcher_of_pattern p) def
-      and ctx = Context.specialize p ctx in
-      { pm = { cases = []; args = argl; default = def };
-        ctx;
-        discr = normalize_pat p
-      }
+      let def = Default_environment.specialize head def
+      and ctx = Context.specialize head ctx in
+      { pm = { cases = []; args = argl; default = def }; ctx; discr = head }
 
-let make_variant_matching_nonconst ~scopes p def ctx = function
+let make_variant_matching_nonconst ~scopes head def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_nonconst"
   | (arg, _mut) :: argl ->
-      let def = Default_environment.specialize (matcher_of_pattern p) def
-      and ctx = Context.specialize p ctx
-      and loc = of_location ~scopes p.pat_loc in
+      let def = Default_environment.specialize head def
+      and loc = of_location ~scopes (Pattern_head.loc head)
+      and ctx = Context.specialize head ctx in
       { pm =
           { cases = [];
-            args = (Lprim (Pfield 1, [ arg ], loc), Alias)
-                   :: argl;
+            args = (Lprim (Pfield 1, [ arg ], loc), Alias) :: argl;
             default = def
           };
         ctx;
-        discr = normalize_pat p
+        discr = head
       }
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
@@ -1786,7 +1780,7 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
           | `Variant (lab, pato, _) -> lab, pato
           | _ -> assert false
         in
-        let p = General.erase p in
+        let head = Simple.head p in
         let variants = divide rem in
         if
           try Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
@@ -1798,11 +1792,11 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
           match pato with
           | None ->
               add_in_div
-                (make_variant_matching_constant p def ctx)
+                (make_variant_matching_constant head def ctx)
                 ( = ) (Cstr_constant tag) (patl, action) variants
           | Some pat ->
               add_in_div
-                (make_variant_matching_nonconst ~scopes p def ctx)
+                (make_variant_matching_nonconst ~scopes head def ctx)
                 ( = ) (Cstr_block tag)
                 (pat :: patl, action)
                 variants
@@ -1826,7 +1820,8 @@ let make_var_matching def = function
       }
 
 let divide_var ctx pm =
-  divide_line Context.lshift make_var_matching get_args_var omega ctx pm
+  divide_line Context.lshift make_var_matching get_args_var Pattern_head.omega
+    ctx pm
 
 (* Matching and forcing a lazy value *)
 
@@ -1969,12 +1964,12 @@ let inline_lazy_force arg loc =
          tables (~ 250 elts); conditionals are better *)
     inline_lazy_force_cond arg loc
 
-let make_lazy_matching p def = function
+let make_lazy_matching head def = function
   | [] -> fatal_error "Matching.make_lazy_matching"
   | (arg, _mut) :: argl ->
       { cases = [];
         args = (inline_lazy_force arg Loc_unknown, Strict) :: argl;
-        default = Default_environment.specialize (matcher_of_pattern p) def
+        default = Default_environment.specialize head def
       }
 
 let divide_lazy p ctx pm =
@@ -1989,9 +1984,11 @@ let get_args_tuple arity p rem =
   | { pat_desc = Tpat_tuple args } -> args @ rem
   | _ -> assert false
 
-let make_tuple_matching p loc arity def = function
+let make_tuple_matching ~scopes head def = function
   | [] -> fatal_error "Matching.make_tuple_matching"
   | (arg, _mut) :: argl ->
+      let loc = of_location ~scopes (Pattern_head.loc head) in
+      let arity = Pattern_head.arity head in
       let rec make_args pos =
         if pos >= arity then
           argl
@@ -2000,13 +1997,13 @@ let make_tuple_matching p loc arity def = function
       in
       { cases = [];
         args = make_args 0;
-        default = Default_environment.specialize (matcher_of_pattern p) def
+        default = Default_environment.specialize head def
       }
 
-let divide_tuple ~scopes arity p ctx pm =
-  divide_line (Context.specialize p)
-    (make_tuple_matching p (of_location ~scopes p.pat_loc) arity)
-    (get_args_tuple arity) p ctx pm
+let divide_tuple ~scopes head ctx pm =
+  let arity = Pattern_head.arity head in
+  divide_line (Context.specialize head) (make_tuple_matching ~scopes head)
+    (get_args_tuple arity) head ctx pm
 
 (* Matching against a record pattern *)
 
@@ -2022,9 +2019,10 @@ let get_args_record num_fields p rem =
       record_matching_line num_fields lbl_pat_list @ rem
   | _ -> assert false
 
-let make_record_matching p loc all_labels def = function
+let make_record_matching ~scopes head all_labels def = function
   | [] -> fatal_error "Matching.make_record_matching"
   | (arg, _mut) :: argl ->
+      let loc = of_location ~scopes (Pattern_head.loc head) in
       let rec make_args pos =
         if pos >= Array.length all_labels then
           argl
@@ -2047,15 +2045,15 @@ let make_record_matching p loc all_labels def = function
           in
           (access, str) :: make_args (pos + 1)
       in
-      let p = expand_record p in
-      let def = Default_environment.specialize (matcher_of_pattern p) def in
+      let head = expand_record_head head in
+      let def = Default_environment.specialize head def in
       { cases = []; args = make_args 0; default = def }
 
-let divide_record ~scopes all_labels p ctx pm =
+let divide_record ~scopes all_labels head ctx pm =
   let get_args = get_args_record (Array.length all_labels) in
-  divide_line (Context.specialize p)
-    (make_record_matching p (of_location ~scopes p.pat_loc) all_labels)
-    get_args p ctx pm
+  divide_line (Context.specialize head)
+    (make_record_matching ~scopes head all_labels)
+    get_args head ctx pm
 
 (* Matching against an array pattern *)
 
@@ -2068,10 +2066,15 @@ let get_args_array p rem =
   | { pat_desc = Tpat_array patl } -> patl @ rem
   | _ -> assert false
 
-let make_array_matching ~scopes kind p def ctx = function
+let make_array_matching ~scopes kind head def ctx = function
   | [] -> fatal_error "Matching.make_array_matching"
   | (arg, _mut) :: argl ->
-      let len = get_key_array p in
+      let len =
+        match Pattern_head.desc head with
+        | Array len -> len
+        | _ -> assert false
+      in
+      let loc = of_location ~scopes (Pattern_head.loc head) in
       let rec make_args pos =
         if pos >= len then
           argl
@@ -2079,15 +2082,15 @@ let make_array_matching ~scopes kind p def ctx = function
           ( Lprim
               ( Parrayrefu kind,
                 [ arg; Lconst (Const_base (Const_int pos)) ],
-                (of_location ~scopes p.pat_loc) ),
+                loc ),
             StrictOpt )
           :: make_args (pos + 1)
       in
-      let def = Default_environment.specialize (matcher_of_pattern p) def
-      and ctx = Context.specialize p ctx in
+      let def = Default_environment.specialize head def
+      and ctx = Context.specialize head ctx in
       { pm = { cases = []; args = make_args 0; default = def };
         ctx;
-        discr = normalize_pat p
+        discr = head
       }
 
 let divide_array ~scopes kind ctx pm =
@@ -2972,7 +2975,9 @@ let compile_list compile_fun division =
             let c_rem, total, new_discrs =
               c_rec (Jumps.map Context.combine total1 :: totals) rem
             in
-            ((key, lambda1) :: c_rem, total, cell.discr :: new_discrs)
+            ( (key, lambda1) :: c_rem,
+              total,
+              Pattern_head.to_omega_pattern cell.discr :: new_discrs )
           with Unused -> c_rec totals rem
       )
   in
@@ -3223,14 +3228,14 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       let ploc = Pattern_head.loc ph in
       match Pattern_head.desc ph with
       | Any ->
-         compile_no_test ~scopes divide_var Context.rshift repr partial ctx pm
-      | Tuple l ->
-          compile_no_test ~scopes (divide_tuple ~scopes l pomega)
+          compile_no_test ~scopes divide_var Context.rshift repr partial ctx pm
+      | Tuple _ ->
+          compile_no_test ~scopes (divide_tuple ~scopes ph)
             Context.combine repr partial ctx pm
       | Record [] -> assert false
       | Record (lbl :: _) ->
           compile_no_test ~scopes
-            (divide_record ~scopes lbl.lbl_all pomega)
+            (divide_record ~scopes lbl.lbl_all ph)
             Context.combine repr partial ctx pm
       | Constant cst ->
           compile_test
@@ -3254,7 +3259,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
             ctx pm
       | Lazy ->
           compile_no_test ~scopes
-            (divide_lazy pomega)
+            (divide_lazy ph)
             Context.combine repr partial ctx pm
       | Variant { cstr_row = row } ->
           compile_test
