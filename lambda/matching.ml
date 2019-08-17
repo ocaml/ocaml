@@ -673,19 +673,19 @@ end = struct
   let specialize_matrix arity matcher pss =
     let rec filter_rec = function
       | [] -> []
-      | (p :: ps) :: rem -> (
+      | (p, ps) :: rem -> (
           let p = General.view p in
           match p.pat_desc with
-          | `Alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
-          | `Var _ -> filter_rec ((omega :: ps) :: rem)
+          | `Alias (p, _, _) -> filter_rec ((p, ps) :: rem)
+          | `Var _ -> filter_rec ((omega, ps) :: rem)
           | `Or (p1, p2, _) -> (
               match arity with
               | 0 -> (
                   (* if K has arity 0, specializing ((K|K)::rem)
                      returns just (rem): if either sides works,
                      no need to keep the other. *)
-                  match filter_rec [ p1 :: ps ] with
-                  | [] -> filter_rec ((p2 :: ps) :: rem)
+                  match filter_rec [ (p1, ps) ] with
+                  | [] -> filter_rec ((p2, ps) :: rem)
                   | matches -> matches @ filter_rec rem
                 )
               | 1 -> (
@@ -698,7 +698,7 @@ end = struct
                      In particular, we respect the invariant that
                      a single-row input list produces either an empty list
                      or a single-row output list. *)
-                  match (filter_rec [ p1 :: ps ], filter_rec [ p2 :: ps ]) with
+                  match (filter_rec [ (p1, ps) ], filter_rec [ (p2, ps) ]) with
                   | [], row
                   | row, [] ->
                       row @ filter_rec rem
@@ -727,7 +727,7 @@ end = struct
                      because we cannot express
                         (K (p1, .., pn) | K (q1, .. qn))
                      as (p1 .. pn | q1 .. qn) *)
-                  filter_rec ((p1 :: ps) :: (p2 :: ps) :: rem)
+                  filter_rec ((p1, ps) :: (p2, ps) :: rem)
             )
           | #simple_view as view -> (
               let p = { p with pat_desc = view } in
@@ -739,9 +739,6 @@ end = struct
                   specialized :: rem
             )
         )
-      | _ ->
-          pretty_matrix Format.err_formatter pss;
-          fatal_error "Matching.Default_environment.specialize_matrix"
     in
     filter_rec pss
 
@@ -750,6 +747,13 @@ end = struct
       | [] -> []
       | ([ [] ], i) :: _ -> [ ([ [] ], i) ]
       | (pss, i) :: rem -> (
+          (* we already handled the empty-row case
+             so we know that all rows in pss are non-empty *)
+          let non_empty = function
+            | [] -> assert false
+            | p :: ps -> (p, ps)
+          in
+          let pss = List.map non_empty pss in
           let rem = make_rec rem in
           match specialize_matrix arity matcher pss with
           | [] -> rem
