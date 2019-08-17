@@ -639,7 +639,8 @@ module Default_environment : sig
 
   val cons : matrix -> int -> t -> t
 
-  val specialize : int -> (pattern -> pattern list -> pattern list) -> t -> t
+  val specialize :
+    int -> (Simple.pattern -> pattern list -> pattern list) -> t -> t
 
   val pop_column : t -> t
 
@@ -667,12 +668,15 @@ end = struct
 
   let specialize_matrix arity matcher pss =
     let rec filter_rec = function
+      | [] -> []
       | (p :: ps) :: rem -> (
+          let p = General.view p in
           match p.pat_desc with
-          | Tpat_alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
-          | Tpat_var _ -> filter_rec ((omega :: ps) :: rem)
-          | Tpat_or (p1, p2, _) -> filter_rec_or p1 p2 ps rem
-          | _ -> (
+          | `Alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
+          | `Var _ -> filter_rec ((omega :: ps) :: rem)
+          | `Or (p1, p2, _) -> filter_rec_or p1 p2 ps rem
+          | #simple_view as view -> (
+              let p = { p with pat_desc = view } in
               match matcher p ps with
               | exception NoMatch -> filter_rec rem
               | specialized ->
@@ -680,7 +684,6 @@ end = struct
                   specialized :: filter_rec rem
             )
         )
-      | [] -> []
       | _ ->
           pretty_matrix Format.err_formatter pss;
           fatal_error "Matching.Default_environment.specialize_matrix"
@@ -767,7 +770,7 @@ end = struct
 
   let pop_compat p def =
     let compat_matcher q rem =
-      if may_compat p q then
+      if may_compat p (General.erase q) then
         rem
       else
         raise NoMatch
@@ -1637,8 +1640,8 @@ let divide_line make_ctx make get_args discr ctx
 
 let matcher_const cst p rem =
   match p.pat_desc with
-  | Tpat_constant c1 when const_compare c1 cst = 0 -> rem
-  | Tpat_any -> rem
+  | `Constant c1 when const_compare c1 cst = 0 -> rem
+  | `Any -> rem
   | _ -> raise NoMatch
 
 let get_key_constant caller = function
@@ -1698,9 +1701,9 @@ let get_args_constr p rem =
 
 let matcher_constr cstr q rem =
   match q.pat_desc with
-  | Tpat_construct (_, cstr', args) when Types.may_equal_constr cstr cstr' ->
+  | `Construct (_, cstr', args) when Types.may_equal_constr cstr cstr' ->
       args @ rem
-  | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
+  | `Any -> Parmatch.omegas cstr.cstr_arity @ rem
   | _ -> raise NoMatch
 
 let make_constr_matching ~scopes p def ctx = function
@@ -1740,8 +1743,8 @@ let divide_constructor ~scopes ctx pm =
 
 let matcher_variant_const lab p rem =
   match p.pat_desc with
-  | Tpat_variant (lab1, _, _) when lab1 = lab -> rem
-  | Tpat_any -> rem
+  | `Variant (lab1, _, _) when lab1 = lab -> rem
+  | `Any -> rem
   | _ -> raise NoMatch
 
 let make_variant_matching_constant p lab def ctx = function
@@ -1757,8 +1760,8 @@ let make_variant_matching_constant p lab def ctx = function
 
 let matcher_variant_nonconst lab p rem =
   match p.pat_desc with
-  | Tpat_variant (lab1, Some arg, _) when lab1 = lab -> arg :: rem
-  | Tpat_any -> omega :: rem
+  | `Variant (lab1, Some arg, _) when lab1 = lab -> arg :: rem
+  | `Any -> omega :: rem
   | _ -> raise NoMatch
 
 let make_variant_matching_nonconst ~scopes p lab def ctx = function
@@ -1840,10 +1843,8 @@ let get_arg_lazy p rem =
 
 let matcher_lazy p rem =
   match p.pat_desc with
-  | Tpat_any
-  | Tpat_var _ ->
-      omega :: rem
-  | Tpat_lazy arg -> arg :: rem
+  | `Any -> omega :: rem
+  | `Lazy arg -> arg :: rem
   | _ -> raise NoMatch
 
 (* Inlining the tag tests before calling the primitive that works on
@@ -2000,10 +2001,8 @@ let get_args_tuple arity p rem =
 
 let matcher_tuple arity p rem =
   match p.pat_desc with
-  | Tpat_any
-  | Tpat_var _ ->
-      omegas arity @ rem
-  | Tpat_tuple args when List.length args = arity -> args @ rem
+  | `Any -> omegas arity @ rem
+  | `Tuple args when List.length args = arity -> args @ rem
   | _ -> raise NoMatch
 
 let make_tuple_matching loc arity def = function
@@ -2042,11 +2041,9 @@ let get_args_record num_fields p rem =
 
 let matcher_record num_fields p rem =
   match p.pat_desc with
-  | Tpat_any
-  | Tpat_var _ ->
-      record_matching_line num_fields [] @ rem
-  | Tpat_record ([], _) when num_fields = 0 -> rem
-  | Tpat_record (((_, lbl, _) :: _ as lbl_pat_list), _)
+  | `Any -> record_matching_line num_fields [] @ rem
+  | `Record ([], _) when num_fields = 0 -> rem
+  | `Record (((_, lbl, _) :: _ as lbl_pat_list), _)
     when Array.length lbl.lbl_all = num_fields ->
       record_matching_line num_fields lbl_pat_list @ rem
   | _ -> raise NoMatch
@@ -2101,8 +2098,8 @@ let get_args_array p rem =
 
 let matcher_array len p rem =
   match p.pat_desc with
-  | Tpat_array args when List.length args = len -> args @ rem
-  | Tpat_any -> Parmatch.omegas len @ rem
+  | `Array args when List.length args = len -> args @ rem
+  | `Any -> Parmatch.omegas len @ rem
   | _ -> raise NoMatch
 
 let make_array_matching ~scopes kind p def ctx = function
