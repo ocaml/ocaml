@@ -128,10 +128,6 @@ let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam;
   Format.flush_str_formatter ()
 
-let all_record_labels = function
-  | [] -> fatal_error "Matching.all_record_labels"
-  | { lbl_all } :: _ -> Array.to_list lbl_all
-
 let all_record_args lbls =
   match lbls with
   | [] -> fatal_error "Matching.all_record_args"
@@ -419,6 +415,61 @@ let rec rev_split_at n ps =
 
 exception NoMatch
 
+let matcher discr (p : Simple.pattern) rem =
+  let discr = expand_record_head discr in
+  let p = expand_record_simple p in
+  let omegas = omegas (Pattern_head.arity discr) in
+  let ph, args = Pattern_head.deconstruct (General.erase p) in
+  let yes () = args @ rem in
+  let no () = raise NoMatch in
+  let yesif b =
+    if b then
+      yes ()
+    else
+      no ()
+  in
+  match (Pattern_head.desc discr, Pattern_head.desc ph) with
+  | Any, _ -> rem
+  | ( ( Constant _ | Construct _ | Variant _ | Lazy | Array _ | Record _
+      | Tuple _ ),
+      Any ) ->
+      omegas @ rem
+  | Constant cst, Constant cst' -> yesif (const_compare cst cst' = 0)
+  | Constant _, (Construct _ | Variant _ | Lazy | Array _ | Record _ | Tuple _)
+    ->
+      no ()
+  | Construct cstr, Construct cstr' ->
+      (* NB: may_equal_constr considers (potential) constructor rebinding;
+          Types.may_equal_constr does check that the arities are the same,
+          preserving row-size coherence. *)
+      yesif (Types.may_equal_constr cstr cstr')
+  | Construct _, (Constant _ | Variant _ | Lazy | Array _ | Record _ | Tuple _)
+    ->
+      no ()
+  | Variant { tag; has_arg }, Variant { tag = tag'; has_arg = has_arg' } ->
+      yesif (tag = tag' && has_arg = has_arg')
+  | Variant _, (Constant _ | Construct _ | Lazy | Array _ | Record _ | Tuple _)
+    ->
+      no ()
+  | Array n1, Array n2 -> yesif (n1 = n2)
+  | Array _, (Constant _ | Construct _ | Variant _ | Lazy | Record _ | Tuple _)
+    ->
+      no ()
+  | Tuple n1, Tuple n2 -> yesif (n1 = n2)
+  | Tuple _, (Constant _ | Construct _ | Variant _ | Lazy | Array _ | Record _)
+    ->
+      no ()
+  | Record l, Record l' ->
+      (* we already expanded the record fully *)
+      yesif (List.length l = List.length l')
+  | Record _, (Constant _ | Construct _ | Variant _ | Lazy | Array _ | Tuple _)
+    ->
+      no ()
+  | Lazy, Lazy -> yes ()
+  | Lazy, (Constant _ | Construct _ | Variant _ | Array _ | Record _ | Tuple _)
+    ->
+      no ()
+
 let ncols = function
   | [] -> 0
   | ps :: _ -> List.length ps
@@ -513,43 +564,6 @@ end = struct
 
   let combine ctx = List.map Row.combine ctx
 
-  let ctx_matcher ph (q : Simple.pattern) rem =
-    let ph = expand_record_head ph in
-    let omegas = omegas (Pattern_head.arity ph) in
-    let qh, args =
-      Pattern_head.deconstruct (General.erase (expand_record_simple q))
-    in
-    let yes () = args @ rem in
-    let no () = raise NoMatch in
-    let yesif b =
-      if b then
-        yes ()
-      else
-        no ()
-    in
-    match (Pattern_head.desc ph, Pattern_head.desc qh) with
-    | Any, _ -> rem
-    | _, Any -> omegas @ rem
-    | Construct cstr, Construct cstr' ->
-        (* NB: may_equal_constr considers (potential) constructor rebinding *)
-        yesif (Types.may_equal_constr cstr cstr')
-    | Construct _, _ -> no ()
-    | Constant cst, Constant cst' -> yesif (const_compare cst cst' = 0)
-    | Constant _, _ -> no ()
-    | Variant { tag; has_arg }, Variant { tag = tag'; has_arg = has_arg' } ->
-        yesif (tag = tag' && has_arg = has_arg')
-    | Variant _, _ -> no ()
-    | Array n1, Array n2 -> yesif (n1 = n2)
-    | Array _, _ -> no ()
-    | Tuple n1, Tuple n2 -> yesif (n1 = n2)
-    | Tuple _, _ -> no ()
-    | Record l, Record l' ->
-        (* we called expand_record on both arguments so l, l' are full *)
-        yesif (List.length l = List.length l')
-    | Record _, _ -> no ()
-    | Lazy, Lazy -> yes ()
-    | Lazy, _ -> no ()
-
   let specialize q ctx =
     let qh = fst (Pattern_head.deconstruct q) in
     let non_empty = function
@@ -569,7 +583,7 @@ end = struct
           | `Var _ -> filter_rec ((left, omega, right) :: rem)
           | #simple_view as view -> (
               let p = { p with pat_desc = view } in
-              match ctx_matcher qh p right with
+              match matcher qh p right with
               | exception NoMatch -> filter_rec rem
               | right -> { Row.left = q :: left; right } :: filter_rec rem
             )
@@ -605,61 +619,6 @@ end = struct
 
   let union pss qss = get_mins Row.le (pss @ qss)
 end
-
-let matcher discr p rem =
-  let ph, args =
-    General.erase p |> expand_record |> Pattern_head.deconstruct
-  in
-  let omegas = omegas (Pattern_head.arity discr) in
-  let yes () = args @ rem in
-  let no () = raise NoMatch in
-  let yesif b =
-    if b then
-      yes ()
-    else
-      no ()
-  in
-  match (Pattern_head.desc discr, Pattern_head.desc ph) with
-  | Any, _ -> rem
-  | ( ( Constant _ | Construct _ | Variant _ | Lazy | Array _ | Record _
-      | Tuple _ ),
-      Any ) ->
-      omegas @ rem
-  | Constant cst, Constant cst' -> yesif (const_compare cst cst' = 0)
-  | Constant _, (Construct _ | Variant _ | Lazy | Array _ | Record _ | Tuple _)
-    ->
-      no ()
-  | Construct cstr, Construct cstr' ->
-      (* NB: may_equal_constr considers (potential) constructor rebinding;
-          Types.may_equal_constr does check that the arities are the same,
-          preserving row-size coherence. *)
-      yesif (Types.may_equal_constr cstr cstr')
-  | Construct _, (Constant _ | Variant _ | Lazy | Array _ | Record _ | Tuple _)
-    ->
-      no ()
-  | Variant { tag; has_arg }, Variant { tag = tag'; has_arg = has_arg' } ->
-      yesif (tag = tag' && has_arg = has_arg')
-  | Variant _, (Constant _ | Construct _ | Lazy | Array _ | Record _ | Tuple _)
-    ->
-      no ()
-  | Array n1, Array n2 -> yesif (n1 = n2)
-  | Array _, (Constant _ | Construct _ | Variant _ | Lazy | Record _ | Tuple _)
-    ->
-      no ()
-  | Tuple n1, Tuple n2 -> yesif (n1 = n2)
-  | Tuple _, (Constant _ | Construct _ | Variant _ | Lazy | Array _ | Record _)
-    ->
-      no ()
-  | Record l, Record l' ->
-      (* we already expanded the record fully *)
-      yesif (List.length l = List.length l')
-  | Record _, (Constant _ | Construct _ | Variant _ | Lazy | Array _ | Tuple _)
-    ->
-      no ()
-  | Lazy, Lazy -> yes ()
-  | Lazy, (Constant _ | Construct _ | Variant _ | Array _ | Record _ | Tuple _)
-    ->
-      no ()
 
 let rec flatten_pat_line size p k =
   match p.pat_desc with
