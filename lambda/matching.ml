@@ -151,6 +151,13 @@ let rec expand_record p =
   | Tpat_alias (p, _, _) -> expand_record p
   | _ -> p
 
+let expand_record_head head =
+  match Pattern_head.desc head with
+  | Record _ ->
+      head |> Pattern_head.to_omega_pattern |> expand_record
+      |> Pattern_head.deconstruct |> fst
+  | _ -> head
+
 type 'a clause = 'a * lambda
 
 module Non_empty_clause = struct
@@ -388,6 +395,12 @@ end = struct
     explode (p : Half_simple.pattern :> General.pattern) [] rem
 end
 
+let expand_record_simple : Simple.pattern -> Simple.pattern =
+ fun p ->
+  match p.pat_desc with
+  | `Record (l, _) -> { p with pat_desc = `Record (all_record_args l, Closed) }
+  | _ -> p
+
 type initial_clause = pattern list clause
 
 type matrix = pattern list list
@@ -500,13 +513,13 @@ end = struct
 
   let combine ctx = List.map Row.combine ctx
 
-  let ctx_matcher p q rem =
-    let ph, omegas =
-      let ph, p_args = Pattern_head.deconstruct (expand_record p) in
-      (ph, List.map (fun _ -> omega) p_args)
+  let ctx_matcher ph (q : Simple.pattern) rem =
+    let ph = expand_record_head ph in
+    let omegas = omegas (Pattern_head.arity ph) in
+    let qh, args =
+      Pattern_head.deconstruct (General.erase (expand_record_simple q))
     in
-    let qh, args = Pattern_head.deconstruct (expand_record q) in
-    let yes () = (p, args @ rem) in
+    let yes () = args @ rem in
     let no () = raise NoMatch in
     let yesif b =
       if b then
@@ -515,8 +528,8 @@ end = struct
         no ()
     in
     match (Pattern_head.desc ph, Pattern_head.desc qh) with
-    | Any, _ -> fatal_error "Matching.Context.matcher"
-    | _, Any -> (p, omegas @ rem)
+    | Any, _ -> rem
+    | _, Any -> omegas @ rem
     | Construct cstr, Construct cstr' ->
         (* NB: may_equal_constr considers (potential) constructor rebinding *)
         yesif (Types.may_equal_constr cstr cstr')
@@ -538,30 +551,29 @@ end = struct
     | Lazy, _ -> no ()
 
   let specialize q ctx =
-    let matcher = ctx_matcher q in
-    let rec filter_rec : t -> t = function
-      | ({ right = p :: ps } as l) :: rem -> (
+    let qh = fst (Pattern_head.deconstruct q) in
+    let non_empty = function
+      | { Row.left = _; right = [] } ->
+          fatal_error "Matching.Context.specialize"
+      | { Row.left; right = p :: ps } -> (left, p, ps)
+    in
+    let ctx = List.map non_empty ctx in
+    let rec filter_rec = function
+      | [] -> []
+      | (left, p, right) :: rem -> (
+          let p = General.view p in
           match p.pat_desc with
-          | Tpat_or (p1, p2, _) ->
-              filter_rec
-                ({ l with right = p1 :: ps }
-                :: { l with
-                     Row.right (* disam not principal, OK *) = p2 :: ps
-                   }
-                :: rem
-                )
-          | Tpat_alias (p, _, _) ->
-              filter_rec ({ l with right = p :: ps } :: rem)
-          | Tpat_var _ -> filter_rec ({ l with right = omega :: ps } :: rem)
-          | _ -> (
-              match matcher p ps with
+          | `Or (p1, p2, _) ->
+              filter_rec ((left, p1, right) :: (left, p2, right) :: rem)
+          | `Alias (p, _, _) -> filter_rec ((left, p, right) :: rem)
+          | `Var _ -> filter_rec ((left, omega, right) :: rem)
+          | #simple_view as view -> (
+              let p = { p with pat_desc = view } in
+              match ctx_matcher qh p right with
               | exception NoMatch -> filter_rec rem
-              | to_left, right ->
-                  { left = to_left :: l.left; right } :: filter_rec rem
+              | right -> { Row.left = q :: left; right } :: filter_rec rem
             )
         )
-      | [] -> []
-      | _ -> fatal_error "Matching.Context.specialize"
     in
     filter_rec ctx
 
