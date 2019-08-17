@@ -549,11 +549,10 @@ end = struct
               filter_rec ({ l with right = p :: ps } :: rem)
           | Tpat_var _ -> filter_rec ({ l with right = omega :: ps } :: rem)
           | _ -> (
-              let rem = filter_rec rem in
-              try
-                let to_left, right = matcher p ps in
-                { left = to_left :: l.left; right } :: rem
-              with NoMatch -> rem
+              match matcher p ps with
+              | exception NoMatch -> filter_rec rem
+              | to_left, right ->
+                  { left = to_left :: l.left; right } :: filter_rec rem
             )
         )
       | [] -> []
@@ -674,18 +673,17 @@ end = struct
           | Tpat_alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
           | Tpat_var _ -> filter_rec ((omega :: ps) :: rem)
           | _ -> (
-              let rem = filter_rec rem in
               match matcher p ps with
-              | exception NoMatch -> rem
+              | exception NoMatch -> filter_rec rem
               | exception OrPat -> (
                   match p.pat_desc with
                   | Tpat_or (p1, p2, _) ->
-                      filter_rec [ p1 :: ps; p2 :: ps ] @ rem
+                      filter_rec ((p1 :: ps) :: (p2 :: ps) :: rem)
                   | _ -> assert false
                 )
               | specialized ->
                   assert (List.length specialized = List.length ps + arity);
-                  specialized :: rem
+                  specialized :: filter_rec rem
             )
         )
       | [] -> []
@@ -700,11 +698,10 @@ end = struct
       | [] -> []
       | ([ [] ], i) :: _ -> [ ([ [] ], i) ]
       | (pss, i) :: rem -> (
-          let rem = make_rec rem in
           match specialize_matrix arity matcher pss with
-          | [] -> rem
+          | [] -> make_rec rem
           | [] :: _ -> [ ([ [] ], i) ]
-          | pss -> (pss, i) :: rem
+          | pss -> (pss, i) :: make_rec rem
         )
     in
     make_rec env
