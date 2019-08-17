@@ -684,7 +684,7 @@ end = struct
               | exception OrPat -> (
                   match p.pat_desc with
                   | Tpat_or (p1, p2, _) ->
-                      filter_rec [ p1 :: ps; p2 :: ps ] @ rem
+                      filter_rec ((p1 :: ps) :: (p2 :: ps) :: rem)
                   | _ -> assert false
                 )
               | specialized ->
