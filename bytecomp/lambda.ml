@@ -39,6 +39,8 @@ type tag_info =
   | Blk_na
   | Blk_some
   | Blk_some_not_nested
+  | Blk_lazy_general
+  | Blk_lazy_forward
     
 let default_tag_info : tag_info = Blk_na
 

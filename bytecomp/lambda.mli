@@ -41,7 +41,9 @@ type tag_info =
   | Blk_na
   | Blk_some
   | Blk_some_not_nested (* ['a option] where ['a] can not inhabit a non-like value *)
-    
+  | Blk_lazy_general  
+  | Blk_lazy_forward
+  
 val default_tag_info : tag_info
 
 val ref_tag_info : tag_info

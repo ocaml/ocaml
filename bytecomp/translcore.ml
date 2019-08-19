@@ -1117,14 +1117,14 @@ and transl_exp0 e =
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
-          Lprim(Pmakeblock(Obj.forward_tag, Lambda.default_tag_info, Immutable), [transl_exp e], e.exp_loc)
+          Lprim(Pmakeblock(Obj.forward_tag, Lambda.Blk_lazy_forward, Immutable), [transl_exp e], e.exp_loc)
       | Texp_ident(_, _, _) -> (* according to the type *)
           begin match e.exp_type.desc with
           (* the following may represent a float/forward/lazy: need a
              forward_tag *)
           | Tvar _ | Tlink _ | Tsubst _ | Tunivar _
           | Tpoly(_,_) | Tfield(_,_,_,_) ->
-              Lprim(Pmakeblock(Obj.forward_tag, Lambda.default_tag_info, Immutable), [transl_exp e], e.exp_loc)
+              Lprim(Pmakeblock(Obj.forward_tag, Lambda.Blk_lazy_forward, Immutable), [transl_exp e], e.exp_loc)
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
           | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil
@@ -1146,12 +1146,12 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_int64
               then transl_exp e
               else
-                Lprim(Pmakeblock(Obj.forward_tag, Lambda.default_tag_info, Immutable), [transl_exp e], e.exp_loc)
+                Lprim(Pmakeblock(Obj.forward_tag, Lambda.Blk_lazy_forward, Immutable), [transl_exp e], e.exp_loc)
           end
       (* other cases compile to a lazy block holding a function *)
       | _ ->
           let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
-          Lprim(Pmakeblock(Config.lazy_tag, Lambda.default_tag_info, Mutable), [fn], e.exp_loc)
+          Lprim(Pmakeblock(Config.lazy_tag, Lambda.Blk_lazy_general, Mutable), [fn], e.exp_loc)
       end
   | Texp_object (cs, meths) ->
       let cty = cs.cstr_type in
