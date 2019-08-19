@@ -135,7 +135,8 @@ let all_record_args lbls =
   | (_, { lbl_all }, _) :: _ ->
       let t =
         Array.map
-          (fun lbl -> (mknoloc (Longident.Lident "?temp?"), lbl, omega))
+          (fun lbl ->
+            (mknoloc (Longident.Lident "?temp?"), lbl, Patterns.omega))
           lbl_all
       in
       List.iter (fun ((_, lbl, _) as x) -> t.(lbl.lbl_pos) <- x) lbls;
@@ -149,14 +150,14 @@ let rec expand_record p =
   | _ -> p
 
 let expand_record_head head =
-  match Pattern_head.desc head with
+  match Patterns.Head.desc head with
   | Record _ ->
-      head |> Pattern_head.to_omega_pattern |> expand_record
-      |> Pattern_head.deconstruct |> fst
+      head |> Patterns.Head.to_omega_pattern |> expand_record
+      |> Patterns.Head.deconstruct |> fst
   | _ -> head
 
 let head_loc ~scopes head =
-  Scoped_location.of_location ~scopes (Pattern_head.loc head)
+  Scoped_location.of_location ~scopes (Patterns.Head.loc head)
 
 type 'a clause = 'a * lambda
 
@@ -296,7 +297,7 @@ end = struct
       in
       match p.pat_desc with
       | `Any -> stop p `Any
-      | `Var (id, s) -> continue p (`Alias (omega, id, s))
+      | `Var (id, s) -> continue p (`Alias (Patterns.omega, id, s))
       | `Alias (p, id, _) ->
           let k = Typeopt.value_kind p.pat_env p.pat_type in
           aux
@@ -326,7 +327,7 @@ module Simple : sig
 
   type clause = pattern Non_empty_clause.t
 
-  val head : pattern -> Pattern_head.t
+  val head : pattern -> Patterns.Head.t
 
   val explode_or_pat :
     Half_simple.pattern * Typedtree.pattern list ->
@@ -341,7 +342,7 @@ end = struct
   type clause = pattern Non_empty_clause.t
 
   let head p =
-    fst (Pattern_head.deconstruct (General.erase (p :> General.pattern)))
+    fst (Patterns.Head.deconstruct (General.erase (p :> General.pattern)))
 
   let alpha env (p : pattern) : pattern =
     let alpha_pat env p = Typedtree.alpha_pat env p in
@@ -384,7 +385,7 @@ end = struct
       | `Alias (p, id, _) -> split_explode p (id :: aliases) rem
       | `Var (id, str) ->
           explode
-            { p with pat_desc = `Alias (Parmatch.omega, id, str) }
+            { p with pat_desc = `Alias (Patterns.omega, id, str) }
             aliases rem
       | #simple_view as view ->
           let env = mk_alpha_env arg aliases vars in
@@ -405,7 +406,7 @@ type initial_clause = pattern list clause
 
 type matrix = pattern list list
 
-let add_omega_column pss = List.map (fun ps -> omega :: ps) pss
+let add_omega_column pss = List.map (fun ps -> Patterns.omega :: ps) pss
 
 let rec rev_split_at n ps =
   if n <= 0 then
@@ -422,8 +423,8 @@ exception NoMatch
 let matcher discr (p : Simple.pattern) rem =
   let discr = expand_record_head discr in
   let p = expand_record_simple p in
-  let omegas = omegas (Pattern_head.arity discr) in
-  let ph, args = Pattern_head.deconstruct (General.erase p) in
+  let omegas = Patterns.(omegas (Head.arity discr)) in
+  let ph, args = Patterns.Head.deconstruct (General.erase p) in
   let yes () = args @ rem in
   let no () = raise NoMatch in
   let yesif b =
@@ -432,7 +433,7 @@ let matcher discr (p : Simple.pattern) rem =
     else
       no ()
   in
-  match (Pattern_head.desc discr, Pattern_head.desc ph) with
+  match (Patterns.Head.desc discr, Patterns.Head.desc ph) with
   | Any, _ -> rem
   | ( ( Constant _ | Construct _ | Variant _ | Lazy | Array _ | Record _
       | Tuple _ ),
@@ -489,7 +490,7 @@ module Context : sig
 
   val eprintf : t -> unit
 
-  val specialize : Pattern_head.t -> t -> t
+  val specialize : Patterns.Head.t -> t -> t
 
   val lshift : t -> t
 
@@ -522,7 +523,7 @@ end = struct
 
     let lforget { left; right } =
       match right with
-      | _ :: xs -> { left = omega :: left; right = xs }
+      | _ :: xs -> { left = Patterns.omega :: left; right = xs }
       | _ -> assert false
 
     let rshift { left; right } =
@@ -547,7 +548,7 @@ end = struct
 
   let empty = []
 
-  let start n : t = [ { left = []; right = omegas n } ]
+  let start n : t = [ { left = []; right = Patterns.omegas n } ]
 
   let is_empty = function
     | [] -> true
@@ -583,13 +584,13 @@ end = struct
           | `Or (p1, p2, _) ->
               filter_rec ((left, p1, right) :: (left, p2, right) :: rem)
           | `Alias (p, _, _) -> filter_rec ((left, p, right) :: rem)
-          | `Var _ -> filter_rec ((left, omega, right) :: rem)
+          | `Var _ -> filter_rec ((left, Patterns.omega, right) :: rem)
           | #simple_view as view -> (
               let p = { p with pat_desc = view } in
               match matcher head p right with
               | exception NoMatch -> filter_rec rem
               | right ->
-                  let left = Pattern_head.to_omega_pattern head :: left in
+                  let left = Patterns.Head.to_omega_pattern head :: left in
                   { Row.left; right }
                   :: filter_rec rem
             )
@@ -628,7 +629,7 @@ end
 
 let rec flatten_pat_line size p k =
   match p.pat_desc with
-  | Tpat_any -> omegas size :: k
+  | Tpat_any -> Patterns.omegas size :: k
   | Tpat_tuple args -> args :: k
   | Tpat_or (p1, p2, _) ->
       flatten_pat_line size p1 (flatten_pat_line size p2 k)
@@ -675,7 +676,7 @@ module Default_environment : sig
 
   val cons : matrix -> int -> t -> t
 
-  val specialize : Pattern_head.t -> t -> t
+  val specialize : Patterns.Head.t -> t -> t
 
   val pop_column : t -> t
 
@@ -708,7 +709,7 @@ end = struct
           let p = General.view p in
           match p.pat_desc with
           | `Alias (p, _, _) -> filter_rec ((p, ps) :: rem)
-          | `Var _ -> filter_rec ((omega, ps) :: rem)
+          | `Var _ -> filter_rec ((Patterns.omega, ps) :: rem)
           | `Or (p1, p2, _) -> filter_rec_or p1 p2 ps rem
           | #simple_view as view -> (
               let p = { p with pat_desc = view } in
@@ -806,7 +807,7 @@ end = struct
     make_rec env
 
   let specialize head def =
-    specialize_ (Pattern_head.arity head) (matcher head) def
+    specialize_ (Patterns.Head.arity head) (matcher head) def
 
   let pop_column def = specialize_ 0 (fun _p rem -> rem) def
 
@@ -1125,10 +1126,10 @@ let half_simplify_clause ~arg (cls : Typedtree.pattern list clause) =
 
 let rec what_is_cases ~skip_any cases =
   match cases with
-  | [] -> Pattern_head.omega
+  | [] -> Patterns.Head.omega
   | ((p, _), _) :: rem -> (
       let head = Simple.head p in
-      match Pattern_head.desc head with
+      match Patterns.Head.desc head with
       | Any when skip_any -> what_is_cases ~skip_any rem
       | _ -> head
     )
@@ -1145,7 +1146,7 @@ let pm_free_variables { cases } =
 (* Basic grouping predicates *)
 
 let can_group discr pat =
-  match (Pattern_head.desc discr, Pattern_head.desc (Simple.head pat)) with
+  match (Patterns.Head.desc discr, Patterns.Head.desc (Simple.head pat)) with
   | Any, Any
   | Constant (Const_int _), Constant (Const_int _)
   | Constant (Const_char _), Constant (Const_char _)
@@ -1193,7 +1194,7 @@ let rec omega_like p =
   | _ -> false
 
 let simple_omega_like p =
-  match Pattern_head.desc (Simple.head p) with
+  match Patterns.Head.desc (Simple.head p) with
   | Any -> true
   | _ -> false
 
@@ -1413,7 +1414,7 @@ and split_no_or cls args def k =
         insert_split group_discr yes no def k
   and insert_split group_discr yes no def k =
     let precompile_group =
-      match Pattern_head.desc group_discr with
+      match Patterns.Head.desc group_discr with
       | Any -> precompile_var
       | _ -> do_not_precompile
     in
@@ -1426,7 +1427,7 @@ and split_no_or cls args def k =
           (Default_environment.cons matrix idef def)
           ((idef, next) :: nexts)
   and should_split group_discr =
-    match Pattern_head.desc group_discr with
+    match Patterns.Head.desc group_discr with
     | Construct { cstr_tag = Cstr_extension _ } ->
         (* it is unlikely that we will raise anything, so we split now *)
         true
@@ -1548,7 +1549,7 @@ and precompile_or argo (cls : Simple.clause list) ors args def k =
                      (id, Typeopt.value_kind orp.pat_env ty))
             in
             let or_num = next_raise_count () in
-            let new_patl = Parmatch.omega_list patl in
+            let new_patl = Patterns.omega_list patl in
             let mk_new_action ~vars =
               Lstaticraise (or_num, List.map (fun v -> Lvar v) vars)
             in
@@ -1616,7 +1617,7 @@ let split_and_precompile ~arg_id ~arg_lambda pm =
 type cell = {
   pm : initial_clause pattern_matching;
   ctx : Context.t;
-  discr : Pattern_head.t
+  discr : Patterns.Head.t
 }
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
@@ -1730,7 +1731,7 @@ let get_pat_args_constr p rem =
 
 let get_expr_args_constr ~scopes head (arg, _mut) rem =
   let cstr =
-    match Pattern_head.desc head with
+    match Patterns.Head.desc head with
     | Construct cstr -> cstr
     | _ -> fatal_error "Matching.get_expr_args_constr"
   in
@@ -1819,13 +1820,13 @@ let divide_var ctx pm =
   divide_line Context.lshift
     get_expr_args_var
     get_pat_args_var
-    Pattern_head.omega ctx pm
+    Patterns.Head.omega ctx pm
 
 (* Matching and forcing a lazy value *)
 
 let get_pat_args_lazy p rem =
   match p with
-  | { pat_desc = Tpat_any } -> omega :: rem
+  | { pat_desc = Tpat_any } -> Patterns.omega :: rem
   | { pat_desc = Tpat_lazy arg } -> arg :: rem
   | _ -> assert false
 
@@ -1976,13 +1977,13 @@ let divide_lazy ~scopes head ctx pm =
 
 let get_pat_args_tuple arity p rem =
   match p with
-  | { pat_desc = Tpat_any } -> omegas arity @ rem
+  | { pat_desc = Tpat_any } -> Patterns.omegas arity @ rem
   | { pat_desc = Tpat_tuple args } -> args @ rem
   | _ -> assert false
 
 let get_expr_args_tuple ~scopes head (arg, _mut) rem =
   let loc = head_loc ~scopes head in
-  let arity = Pattern_head.arity head in
+  let arity = Patterns.Head.arity head in
   let rec make_args pos =
     if pos >= arity then
       rem
@@ -1992,7 +1993,7 @@ let get_expr_args_tuple ~scopes head (arg, _mut) rem =
   make_args 0
 
 let divide_tuple ~scopes head ctx pm =
-  let arity = Pattern_head.arity head in
+  let arity = Patterns.Head.arity head in
   divide_line (Context.specialize head)
     (get_expr_args_tuple ~scopes)
     (get_pat_args_tuple arity)
@@ -2001,7 +2002,7 @@ let divide_tuple ~scopes head ctx pm =
 (* Matching against a record pattern *)
 
 let record_matching_line num_fields lbl_pat_list =
-  let patv = Array.make num_fields omega in
+  let patv = Array.make num_fields Patterns.omega in
   List.iter (fun (_, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
   Array.to_list patv
 
@@ -2015,7 +2016,7 @@ let get_pat_args_record num_fields p rem =
 let get_expr_args_record ~scopes head (arg, _mut) rem =
   let loc = head_loc ~scopes head in
   let all_labels =
-    match Pattern_head.desc head with
+    match Patterns.Head.desc head with
     | Record (lbl :: _) -> lbl.lbl_all
     | Record []
     | _ ->
@@ -2069,7 +2070,7 @@ let get_pat_args_array p rem =
 
 let get_expr_args_array ~scopes kind head (arg, _mut) rem =
   let len =
-    match Pattern_head.desc head with
+    match Patterns.Head.desc head with
     | Array len -> len
     | _ -> assert false
   in
@@ -2972,7 +2973,7 @@ let compile_list compile_fun division =
             in
             ( (key, lambda1) :: c_rem,
               total,
-              Pattern_head.to_omega_pattern cell.discr :: new_discrs )
+              Patterns.Head.to_omega_pattern cell.discr :: new_discrs )
           with Unused -> c_rec totals rem
       )
   in
@@ -3219,9 +3220,9 @@ and do_compile_matching ~scopes repr partial ctx pmh =
             assert false
       in
       let ph = what_is_cases pm.cases in
-      let pomega = Pattern_head.to_omega_pattern ph in
+      let pomega = Patterns.Head.to_omega_pattern ph in
       let ploc = head_loc ~scopes ph in
-      match Pattern_head.desc ph with
+      match Patterns.Head.desc ph with
       | Any ->
           compile_no_test ~scopes
             divide_var
@@ -3246,7 +3247,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
             (compile_match ~scopes repr partial)
             partial (divide_constructor ~scopes)
             (combine_constructor ploc arg
-               (Pattern_head.env ph) cstr partial)
+               (Patterns.Head.env ph) cstr partial)
             ctx pm
       | Array _ ->
           let kind = Typeopt.array_pattern_kind pomega in
@@ -3385,7 +3386,8 @@ let compile_matching ~scopes repr handler_fun arg pat_act_list partial =
       let pm =
         { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
           args = [ (arg, Strict) ];
-          default = Default_environment.(cons [ [ omega ] ] raise_num empty)
+          default =
+            Default_environment.(cons [ [ Patterns.omega ] ] raise_num empty)
         }
       in
       try
@@ -3609,11 +3611,11 @@ let for_let ~scopes loc param pat body =
 let for_tupled_function ~scopes loc paraml pats_act_list partial =
   let partial = check_partial_list pats_act_list partial in
   let raise_num = next_raise_count () in
-  let omegas = [ List.map (fun _ -> omega) paraml ] in
+  let omega_params = [ Patterns.omega_list paraml ] in
   let pm =
     { cases = pats_act_list;
       args = List.map (fun id -> (Lvar id, Strict)) paraml;
-      default = Default_environment.(cons omegas raise_num empty)
+      default = Default_environment.(cons omega_params raise_num empty)
     }
   in
   try
@@ -3627,7 +3629,7 @@ let for_tupled_function ~scopes loc paraml pats_act_list partial =
 let flatten_pattern size p =
   match p.pat_desc with
   | Tpat_tuple args -> args
-  | Tpat_any -> omegas size
+  | Tpat_any -> Patterns.omegas size
   | _ -> raise Cannot_flatten
 
 let flatten_cases size cases =
@@ -3685,7 +3687,9 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
       match partial with
       | Partial ->
           let raise_num = next_raise_count () in
-          (raise_num, Default_environment.(cons [ [ omega ] ] raise_num empty))
+          ( raise_num,
+            Default_environment.(cons [ [ Patterns.omega ] ] raise_num empty)
+          )
       | Total -> (-1, Default_environment.empty)
     in
     let loc = Scoped_location.of_location ~scopes loc in
