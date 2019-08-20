@@ -32,3 +32,10 @@ module M = struct
 end
 
 module O = M.N
+
+(***************)
+
+let () =
+  (* M is unused, but no warning is emitted. *)
+  let module M = struct end in
+  ()
