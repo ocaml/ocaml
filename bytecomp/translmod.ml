@@ -497,7 +497,7 @@ and transl_structure loc fields cc rootpath = function
         [] ->
           transl_structure loc newfields cc rootpath rem
       | id :: ids ->
-          Llet(Alias, id, Lprim(Pfield (pos, Fld_na), [Lvar mid], incl.incl_loc),
+          Llet(Alias, id, Lprim(Pfield (pos, Fld_module (Ident.name id)), [Lvar mid], incl.incl_loc),
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
