@@ -89,7 +89,7 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
-let enter_type rec_flag env sdecl id =
+let enter_type rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
     | Asttypes.Nonrecursive ->
@@ -122,6 +122,7 @@ let enter_type rec_flag env sdecl id =
       type_attributes = sdecl.ptype_attributes;
       type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
+      type_uid = uid;
     }
   in
   add_type ~check:true id decl env
@@ -229,7 +230,8 @@ let transl_labels env closed lbls =
           ld_mutable = ld.ld_mutable;
           ld_type = ty;
           ld_loc = ld.ld_loc;
-          ld_attributes = ld.ld_attributes
+          ld_attributes = ld.ld_attributes;
+          ld_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
          }
       )
       lbls in
@@ -272,7 +274,7 @@ let make_constructor env type_path type_params sargs sret_type =
       widen z;
       targs, Some tret_type, args, Some ret_type
 
-let transl_declaration env sdecl id =
+let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
@@ -365,7 +367,8 @@ let transl_declaration env sdecl id =
               cd_args = args;
               cd_res = ret_type;
               cd_loc = scstr.pcd_loc;
-              cd_attributes = scstr.pcd_attributes }
+              cd_attributes = scstr.pcd_attributes;
+              cd_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
           in
             tcstr, cstr
         in
@@ -408,6 +411,7 @@ let transl_declaration env sdecl id =
         type_attributes = sdecl.ptype_attributes;
         type_immediate = Unknown;
         type_unboxed = unboxed_status;
+        type_uid = uid;
       } in
 
   (* Check constraints *)
@@ -824,18 +828,20 @@ let transl_type_decl env rec_flag sdecl_list =
 
   (* Create identifiers. *)
   let scope = Ctype.create_scope () in
-  let id_list =
-    List.map (fun sdecl -> Ident.create_scoped ~scope sdecl.ptype_name.txt)
-      sdecl_list
+  let ids_list =
+    List.map (fun sdecl ->
+      Ident.create_scoped ~scope sdecl.ptype_name.txt,
+      Uid.mk ~current_unit:(Env.get_unit_name ())
+    ) sdecl_list
   in
   Ctype.begin_def();
   (* Enter types. *)
   let temp_env =
-    List.fold_left2 (enter_type rec_flag) env sdecl_list id_list in
+    List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
   (* Translate each declaration. *)
   let current_slot = ref None in
   let warn_unused = Warnings.is_active (Warnings.Unused_type_declaration "") in
-  let id_slots id =
+  let ids_slots (id, _uid as ids) =
     match rec_flag with
     | Asttypes.Recursive when warn_unused ->
         (* See typecore.ml for a description of the algorithm used
@@ -853,9 +859,9 @@ let transl_type_decl env rec_flag sdecl_list =
                    (get_ref slot);
                  old_callback ()
           );
-        id, Some slot
+        ids, Some slot
     | Asttypes.Recursive | Asttypes.Nonrecursive ->
-        id, None
+        ids, None
   in
   let transl_declaration name_sdecl (id, slot) =
     current_slot := slot;
@@ -864,7 +870,7 @@ let transl_type_decl env rec_flag sdecl_list =
       (fun () -> transl_declaration temp_env name_sdecl id)
   in
   let tdecls =
-    List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
+    List.map2 transl_declaration sdecl_list (List.map ids_slots ids_list) in
   let decls =
     List.map (fun tdecl -> (tdecl.typ_id, tdecl.typ_type)) tdecls in
   current_slot := None;
@@ -877,16 +883,16 @@ let transl_type_decl env rec_flag sdecl_list =
     | Asttypes.Nonrecursive -> ()
     | Asttypes.Recursive ->
       List.iter2
-        (fun id sdecl -> update_type temp_env new_env id sdecl.ptype_loc)
-        id_list sdecl_list
+        (fun (id, _) sdecl -> update_type temp_env new_env id sdecl.ptype_loc)
+        ids_list sdecl_list
   end;
   (* Generalize type declarations. *)
   Ctype.end_def();
   List.iter (fun (_, decl) -> generalize_decl decl) decls;
   (* Check for ill-formed abbrevs *)
   let id_loc_list =
-    List.map2 (fun id sdecl -> (id, sdecl.ptype_loc))
-      id_list sdecl_list
+    List.map2 (fun (id, _) sdecl -> (id, sdecl.ptype_loc))
+      ids_list sdecl_list
   in
   List.iter (fun (id, decl) ->
     check_well_founded_manifest new_env (List.assoc id id_loc_list)
@@ -1045,7 +1051,9 @@ let transl_extension_constructor env type_path type_params
       ext_ret_type = ret_type;
       ext_private = priv;
       Types.ext_loc = sext.pext_loc;
-      Types.ext_attributes = sext.pext_attributes; }
+      Types.ext_attributes = sext.pext_attributes;
+      ext_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+    }
   in
     { ext_id = id;
       ext_name = sext.pext_name;
@@ -1309,7 +1317,9 @@ let transl_value_decl env loc valdecl =
   match valdecl.pval_prim with
     [] when Env.is_in_signature env ->
       { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes }
+        val_attributes = valdecl.pval_attributes;
+        val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      }
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
   | _ ->
@@ -1337,7 +1347,9 @@ let transl_value_decl env loc valdecl =
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
       check_unboxable env loc ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes }
+        val_attributes = valdecl.pval_attributes;
+        val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      }
   in
   let (id, newenv) =
     Env.enter_value valdecl.pval_name.txt v env
@@ -1420,6 +1432,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_attributes = sdecl.ptype_attributes;
       type_immediate = Unknown;
       type_unboxed;
+      type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
     }
   in
   begin match row_path with None -> ()
@@ -1473,6 +1486,7 @@ let abstract_type_decl arity =
       type_attributes = [];
       type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
+      type_uid = Uid.internal_not_actually_unique;
      } in
   Ctype.end_def();
   generalize_decl decl;

@@ -1262,6 +1262,7 @@ let new_declaration expansion_scope manifest =
     type_attributes = [];
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
+    type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
   }
 
 let existential_name cstr ty = match repr ty with
@@ -4678,6 +4679,7 @@ let nondep_type_decl env mid is_covariant decl =
       type_attributes = decl.type_attributes;
       type_immediate = decl.type_immediate;
       type_unboxed = decl.type_unboxed;
+      type_uid = decl.type_uid;
     }
   with Nondep_cannot_erase _ as exn ->
     clear_hash ();
@@ -4714,6 +4716,7 @@ let nondep_extension_constructor env ids ext =
         ext_private = ext.ext_private;
         ext_attributes = ext.ext_attributes;
         ext_loc = ext.ext_loc;
+        ext_uid = ext.ext_uid;
       }
   with Nondep_cannot_erase _ as exn ->
     clear_hash ();
@@ -4757,6 +4760,7 @@ let nondep_class_declaration env ids decl =
         end;
       cty_loc = decl.cty_loc;
       cty_attributes = decl.cty_attributes;
+      cty_uid = decl.cty_uid;
     }
   in
   clear_hash ();
@@ -4771,6 +4775,7 @@ let nondep_cltype_declaration env ids decl =
       clty_path = decl.clty_path;
       clty_loc = decl.clty_loc;
       clty_attributes = decl.clty_attributes;
+      clty_uid = decl.clty_uid;
     }
   in
   clear_hash ();

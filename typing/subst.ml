@@ -263,6 +263,7 @@ let label_declaration copy_scope s l =
     ld_type = typexp copy_scope s l.ld_type;
     ld_loc = loc s l.ld_loc;
     ld_attributes = attrs s l.ld_attributes;
+    ld_uid = l.ld_uid;
   }
 
 let constructor_arguments copy_scope s = function
@@ -278,6 +279,7 @@ let constructor_declaration copy_scope s c =
     cd_res = Option.map (typexp copy_scope s) c.cd_res;
     cd_loc = loc s c.cd_loc;
     cd_attributes = attrs s c.cd_attributes;
+    cd_uid = c.cd_uid;
   }
 
 let type_declaration' copy_scope s decl =
@@ -307,6 +309,7 @@ let type_declaration' copy_scope s decl =
     type_attributes = attrs s decl.type_attributes;
     type_immediate = decl.type_immediate;
     type_unboxed = decl.type_unboxed;
+    type_uid = decl.type_uid;
   }
 
 let type_declaration s decl =
@@ -347,6 +350,7 @@ let class_declaration' copy_scope s decl =
       end;
     cty_loc = loc s decl.cty_loc;
     cty_attributes = attrs s decl.cty_attributes;
+    cty_uid = decl.cty_uid;
   }
 
 let class_declaration s decl =
@@ -359,6 +363,7 @@ let cltype_declaration' copy_scope s decl =
     clty_path = type_path s decl.clty_path;
     clty_loc = loc s decl.clty_loc;
     clty_attributes = attrs s decl.clty_attributes;
+    clty_uid = decl.clty_uid;
   }
 
 let cltype_declaration s decl =
@@ -372,6 +377,7 @@ let value_description' copy_scope s descr =
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
     val_attributes = attrs s descr.val_attributes;
+    val_uid = descr.val_uid;
    }
 
 let value_description s descr =
@@ -384,7 +390,9 @@ let extension_constructor' copy_scope s ext =
     ext_ret_type = Option.map (typexp copy_scope s) ext.ext_ret_type;
     ext_private = ext.ext_private;
     ext_attributes = attrs s ext.ext_attributes;
-    ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
+    ext_loc = if s.for_saving then Location.none else ext.ext_loc;
+    ext_uid = ext.ext_uid;
+  }
 
 let extension_constructor s ext =
   For_copy.with_scope
@@ -506,6 +514,7 @@ and module_declaration scoping s decl =
     md_type = modtype scoping s decl.md_type;
     md_attributes = attrs s decl.md_attributes;
     md_loc = loc s decl.md_loc;
+    md_uid = decl.md_uid;
   }
 
 and modtype_declaration scoping s decl  =
@@ -513,6 +522,7 @@ and modtype_declaration scoping s decl  =
     mtd_type = Option.map (modtype scoping s) decl.mtd_type;
     mtd_attributes = attrs s decl.mtd_attributes;
     mtd_loc = loc s decl.mtd_loc;
+    mtd_uid = decl.mtd_uid;
   }
 
 

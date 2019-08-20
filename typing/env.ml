@@ -648,7 +648,8 @@ let strengthen =
          aliasable:bool -> t -> module_type -> Path.t -> module_type)
 
 let md md_type =
-  {md_type; md_attributes=[]; md_loc=Location.none}
+  {md_type; md_attributes=[]; md_loc=Location.none
+  ;md_uid = Uid.internal_not_actually_unique}
 
 (* Print addresses *)
 
@@ -1499,7 +1500,10 @@ let rec components_of_module_maker
             Datarepr.set_row_name final_decl
               (Subst.type_path prefixing_sub (Path.Pident id));
             let constructors =
-              List.map snd (Datarepr.constructors_of_type path final_decl) in
+              List.map snd
+                (Datarepr.constructors_of_type ~current_unit:(get_unit_name ())
+                   path final_decl)
+            in
             let labels =
               List.map snd (Datarepr.labels_of_type path final_decl) in
             let tda =
@@ -1521,7 +1525,10 @@ let rec components_of_module_maker
             env := store_type_infos id fresh_decl !env
         | Sig_typext(id, ext, _, _) ->
             let ext' = Subst.extension_constructor sub ext in
-            let descr = Datarepr.extension_descr path ext' in
+            let descr =
+              Datarepr.extension_descr ~current_unit:(get_unit_name ()) path
+                ext'
+            in
             let addr = next_address () in
             let cda = { cda_description = descr; cda_address = Some addr } in
             c.comp_constrs <- add_to_tbl (Ident.name id) cda c.comp_constrs
@@ -1643,7 +1650,10 @@ and store_type ~check id info env =
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
   let path = Pident id in
-  let constructors = Datarepr.constructors_of_type path info in
+  let constructors =
+    Datarepr.constructors_of_type path info
+      ~current_unit:(get_unit_name ())
+  in
   let labels = Datarepr.labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels) in
   let tda = { tda_declaration = info; tda_descriptions = descrs } in
@@ -1697,7 +1707,9 @@ and store_type_infos id info env =
 
 and store_extension ~check id addr ext env =
   let loc = ext.ext_loc in
-  let cstr = Datarepr.extension_descr (Pident id) ext in
+  let cstr =
+    Datarepr.extension_descr ~current_unit:(get_unit_name ()) (Pident id) ext
+  in
   let cda = { cda_description = cstr; cda_address = Some addr } in
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, false, false))

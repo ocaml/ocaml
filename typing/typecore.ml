@@ -1867,6 +1867,7 @@ let add_pattern_variables ?check ?check_as env pv =
        Env.add_value ?check pv_id
          {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
           val_attributes = pv_attributes;
+          val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
          } env
     )
     pv env
@@ -1907,23 +1908,38 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   end;
   List.iter (fun f -> f()) (get_ref pattern_force);
   if is_optional l then unify_pat (ref val_env) pat (type_option (newvar ()));
-  let (pv, met_env) =
+  let (pv, val_env, met_env) =
     List.fold_right
-      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} (pv, env) ->
+      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes}
+        (pv, val_env, met_env) ->
          let check s =
            if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
-         let id' = Ident.create_local (Ident.name pv_id) in
-         ((id', pv_id, pv_type)::pv,
-          Env.add_value id' {val_type = pv_type;
-                             val_kind = Val_ivar (Immutable, cl_num);
-                             val_attributes = pv_attributes;
-                             Types.val_loc = pv_loc;
-                            } ~check
-            env))
-      !pattern_variables ([], met_env)
+         let id' = Ident.rename pv_id in
+         let val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+         let val_env =
+          Env.add_value pv_id
+            { val_type = pv_type
+            ; val_kind = Val_reg
+            ; val_attributes = pv_attributes
+            ; val_loc = pv_loc
+            ; val_uid
+            }
+            val_env
+         in
+         let met_env =
+          Env.add_value id' ~check
+            { val_type = pv_type
+            ; val_kind = Val_ivar (Immutable, cl_num)
+            ; val_attributes = pv_attributes
+            ; val_loc = pv_loc
+            ; val_uid
+            }
+            met_env
+         in
+         ((id', pv_id, pv_type)::pv, val_env, met_env))
+      !pattern_variables ([], val_env, met_env)
   in
-  let val_env = add_pattern_variables val_env (get_ref pattern_variables) in
   (pat, pv, val_env, met_env)
 
 let type_self_pattern cl_num privty val_env met_env par_env spat =
@@ -1947,12 +1963,13 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
            (val_env, met_env, par_env) ->
          let name = Ident.name pv_id in
          (Env.enter_unbound_value name Val_unbound_self val_env,
-          Env.add_value pv_id {val_type = pv_type;
-                               val_kind =
-                                 Val_self (meths, vars, cl_num, privty);
-                               val_attributes = pv_attributes;
-                               Types.val_loc = pv_loc;
-                              }
+          Env.add_value pv_id
+            {val_type = pv_type;
+             val_kind = Val_self (meths, vars, cl_num, privty);
+             val_attributes = pv_attributes;
+             val_loc = pv_loc;
+             val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+            }
             ~check:(fun s -> if pv_as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
@@ -2997,9 +3014,13 @@ and type_expect_
         match param.ppat_desc with
         | Ppat_any -> Ident.create_local "_for", env
         | Ppat_var {txt} ->
-            Env.enter_value txt {val_type = instance Predef.type_int;
-                                 val_attributes = [];
-                                 val_kind = Val_reg; Types.val_loc = loc; } env
+            Env.enter_value txt
+              {val_type = instance Predef.type_int;
+               val_attributes = [];
+               val_kind = Val_reg;
+               val_loc = loc;
+               val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+              } env
               ~check:(fun s -> Warnings.Unused_for_index s)
         | _ ->
             raise (Error (param.ppat_loc, env, Invalid_for_loop_index))
@@ -3154,7 +3175,9 @@ and type_expect_
                     {val_type = method_type;
                      val_kind = Val_reg;
                      val_attributes = [];
-                     Types.val_loc = Location.none}
+                     val_loc = Location.none;
+                     val_uid = Uid.internal_not_actually_unique;
+                    }
                   in
                   let exp_env = Env.add_value method_id method_desc env in
                   let exp =
@@ -3319,7 +3342,8 @@ and type_expect_
       in
       let scope = create_scope () in
       let md =
-        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc }
+        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc;
+          md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()); }
       in
       let (id, new_env) =
         match name.txt with
@@ -3459,6 +3483,7 @@ and type_expect_
         type_attributes = [];
         type_immediate = Unknown;
         type_unboxed = unboxed_false_default_false;
+        type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
       }
       in
       let scope = create_scope () in
@@ -4097,7 +4122,9 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         let desc =
           { val_type = ty; val_kind = Val_reg;
             val_attributes = [];
-            Types.val_loc = Location.none}
+            val_loc = Location.none;
+            val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+          }
         in
         let exp_env = Env.add_value id desc env in
         {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
