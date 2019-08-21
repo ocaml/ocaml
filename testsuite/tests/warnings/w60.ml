@@ -36,6 +36,6 @@ module O = M.N
 (***************)
 
 let () =
-  (* M is unused, but no warning is emitted. *)
+  (* M is unused, but no warning was emitted before 4.10. *)
   let module M = struct end in
   ()

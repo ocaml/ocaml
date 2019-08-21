@@ -87,7 +87,6 @@ and lift_lets_named_with_free_variables
     var, named
 
 and lift_lets_named _var (named:Flambda.named) ~toplevel : Flambda.named =
-  let module W = Flambda.With_free_variables in
   match named with
   | Expr e ->
     Expr (lift_lets_expr e ~toplevel)

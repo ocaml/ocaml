@@ -2000,7 +2000,7 @@ let create_package_type loc env (p, l) =
    let open Ast_helper in
    List.fold_left
      (fun sexp (name, loc) ->
-       Exp.letmodule ~loc:sexp.pexp_loc
+        Exp.letmodule ~loc:{ sexp.pexp_loc with loc_ghost = true }
          ~attrs:[Attr.mk (mknoloc "#modulepat") (PStr [])]
          name
          (Mod.unpack ~loc
@@ -2984,8 +2984,11 @@ and type_expect_
         | _ -> Mp_present
       in
       let scope = create_scope () in
+      let md =
+        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc }
+      in
       let (id, new_env) =
-        Env.enter_module ~scope name.txt pres modl.mod_type env
+        Env.enter_module_declaration ~scope name.txt pres md env
       in
       Typetexp.widen context;
       (* ideally, we should catch Expr_type_clash errors
