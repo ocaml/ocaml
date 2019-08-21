@@ -2074,6 +2074,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
                   } ->
+        let outer_scope = Ctype.get_current_level () in
         let scope = Ctype.create_scope () in
         let modl =
           Builtin_attributes.warning_scope attrs
@@ -2094,7 +2095,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           }
         in
         (*prerr_endline (Ident.unique_toplevel_name id);*)
-        Mtype.lower_nongen (scope - 1) md.md_type;
+        Mtype.lower_nongen outer_scope md.md_type;
         let id, newenv =
           Env.enter_module_declaration ~scope name.txt pres md env
         in
