@@ -916,3 +916,32 @@ Line 2, characters 8-52:
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of recursive class expression is not allowed
 |}];;
+
+class a = object val x = 3 val y = x + 2 end;;
+[%%expect{|
+Line 1, characters 35-36:
+1 | class a = object val x = 3 val y = x + 2 end;;
+                                       ^
+Error: The instance variable x
+       cannot be accessed from the definition of another instance variable
+|}];;
+
+class a = object (self) val x = self#m method m = 3 end;;
+[%%expect{|
+Line 1, characters 32-36:
+1 | class a = object (self) val x = self#m method m = 3 end;;
+                                    ^^^^
+Error: The self variable self
+       cannot be accessed from the definition of an instance variable
+|}];;
+
+class a = object method m = 3 end
+class b = object inherit a as super val x = super#m end;;
+[%%expect{|
+class a : object method m : int end
+Line 2, characters 44-49:
+2 | class b = object inherit a as super val x = super#m end;;
+                                                ^^^^^
+Error: The ancestor variable super
+       cannot be accessed from the definition of an instance variable
+|}];;

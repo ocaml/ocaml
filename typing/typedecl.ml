@@ -508,9 +508,11 @@ let transl_declaration env sdecl id =
     Ctype.end_def ();
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
-      let p =
-        try Env.lookup_type (Longident.Lident(Ident.name id ^ "#row")) env
-        with Not_found -> assert false in
+      let p, _ =
+        try Env.find_type_by_name
+              (Longident.Lident(Ident.name id ^ "#row")) env
+        with Not_found -> assert false
+      in
       set_fixed_row env sdecl.ptype_loc p decl
     end;
   (* Check for cyclic abbreviations *)
@@ -888,10 +890,15 @@ let transl_type_decl env rec_flag sdecl_list =
   let sdecl_list =
     List.map
       (fun sdecl ->
-        let ptype_name =
-          mkloc (sdecl.ptype_name.txt ^"#row") sdecl.ptype_name.loc in
+         let ptype_name =
+           let loc = { sdecl.ptype_name.loc with Location.loc_ghost = true } in
+           mkloc (sdecl.ptype_name.txt ^"#row") loc
+         in
+         let ptype_kind = Ptype_abstract in
+         let ptype_manifest = None in
+         let ptype_loc = { sdecl.ptype_loc with Location.loc_ghost = true } in
         {sdecl with
-         ptype_name; ptype_kind = Ptype_abstract; ptype_manifest = None})
+           ptype_name; ptype_kind; ptype_manifest; ptype_loc })
       fixed_types
     @ sdecl_list
   in
@@ -1023,12 +1030,8 @@ let transl_extension_constructor env type_path type_params
         in
           args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
-        let cdescr = Typetexp.find_constructor env lid.loc lid.txt in
-        let usage =
-          if cdescr.cstr_private = Private || priv = Public
-          then Env.Positive else Env.Privatize
-        in
-        Env.mark_constructor usage env (Longident.last lid.txt) cdescr;
+        let usage = if priv = Public then Env.Positive else Env.Privatize in
+        let cdescr = Env.lookup_constructor ~loc:lid.loc usage lid.txt env in
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
@@ -1136,9 +1139,9 @@ let transl_extension_constructor env type_path type_params
 let transl_type_extension extend env loc styext =
   reset_type_variables();
   Ctype.begin_def();
-  let (type_path, type_decl) =
+  let type_path, type_decl =
     let lid = styext.ptyext_path in
-    Typetexp.find_type env lid.loc lid.txt
+    Env.lookup_type ~loc:lid.loc lid.txt env
   in
   begin
     match type_decl.type_kind with

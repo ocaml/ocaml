@@ -48,21 +48,21 @@ type t =
 #warnings "@3";;
 let x =
 Foo ();;
-(* "Foo ()": the whole construct, with arguments, is deprecated *)
+
 [%%expect{|
 type t = Foo of unit | Bar
-Line 6, characters 0-6:
+Line 6, characters 0-3:
 6 | Foo ();;
-    ^^^^^^
+    ^^^
 Error (alert deprecated): Foo
 |}];;
 function
 Foo _ -> () | Bar -> ();;
-(* "Foo _", the whole construct is deprecated *)
+
 [%%expect{|
-Line 2, characters 0-5:
+Line 2, characters 0-3:
 2 | Foo _ -> () | Bar -> ();;
-    ^^^^^
+    ^^^
 Error (alert deprecated): Foo
 |}];;
 

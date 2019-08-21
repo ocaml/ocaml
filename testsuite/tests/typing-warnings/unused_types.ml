@@ -40,11 +40,132 @@ Line 3, characters 2-27:
 3 |   type unused = A of unused
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
-Line 3, characters 2-27:
+Line 3, characters 16-27:
 3 |   type unused = A of unused
-      ^^^^^^^^^^^^^^^^^^^^^^^^^
+                    ^^^^^^^^^^^
 Warning 37: unused constructor A.
 module Unused_rec : sig  end
+|}]
+
+module Used_constructor : sig
+  type t
+  val t : t
+end = struct
+  type t = T
+  let t = T
+end
+;;
+[%%expect {|
+module Used_constructor : sig type t val t : t end
+|}]
+
+module Unused_constructor : sig
+  type t
+end = struct
+  type t = T
+end
+;;
+[%%expect {|
+Line 4, characters 11-12:
+4 |   type t = T
+               ^
+Warning 37: unused constructor T.
+module Unused_constructor : sig type t end
+|}]
+
+module Unused_constructor_outside_patterns : sig
+  type t
+  val nothing : t -> unit
+end = struct
+  type t = T
+  let nothing = function
+    | T -> ()
+end
+;;
+[%%expect {|
+Line 5, characters 11-12:
+5 |   type t = T
+               ^
+Warning 37: constructor T is never used to build values.
+(However, this constructor appears in patterns.)
+module Unused_constructor_outside_patterns :
+  sig type t val nothing : t -> unit end
+|}]
+
+module Unused_constructor_exported_private : sig
+  type t = private T
+end = struct
+  type t = T
+end
+;;
+[%%expect {|
+Line 4, characters 11-12:
+4 |   type t = T
+               ^
+Warning 37: constructor T is never used to build values.
+Its type is exported as a private type.
+module Unused_constructor_exported_private : sig type t = private T end
+|}]
+
+module Used_private_constructor : sig
+  type t
+  val nothing : t -> unit
+end = struct
+  type t = private T
+  let nothing = function
+    | T -> ()
+end
+;;
+[%%expect {|
+module Used_private_constructor : sig type t val nothing : t -> unit end
+|}]
+
+module Unused_private_constructor : sig
+  type t
+end = struct
+  type t = private T
+end
+;;
+[%%expect {|
+Line 4, characters 19-20:
+4 |   type t = private T
+                       ^
+Warning 37: unused constructor T.
+module Unused_private_constructor : sig type t end
+|}]
+
+module Exported_private_constructor : sig
+  type t = private T
+end = struct
+  type t = private T
+end
+;;
+[%%expect {|
+module Exported_private_constructor : sig type t = private T end
+|}]
+
+module Used_exception : sig
+  val e : exn
+end = struct
+  exception Somebody_uses_me
+  let e = Somebody_uses_me
+end
+;;
+[%%expect {|
+module Used_exception : sig val e : exn end
+|}]
+
+module Used_extension_constructor : sig
+  type t
+  val t : t
+end = struct
+  type t = ..
+  type t += Somebody_uses_me
+  let t = Somebody_uses_me
+end
+;;
+[%%expect {|
+module Used_extension_constructor : sig type t val t : t end
 |}]
 
 module Unused_exception : sig
@@ -114,7 +235,7 @@ module Unused_extension_outside_patterns :
   sig type t = .. val falsity : t -> bool end
 |}]
 
-module Unused_private_exception : sig
+module Unused_exception_exported_private : sig
   type exn += private Private_exn
 end = struct
   exception Private_exn
@@ -126,10 +247,11 @@ Line 4, characters 2-23:
       ^^^^^^^^^^^^^^^^^^^^^
 Warning 38: exception Private_exn is never used to build values.
 It is exported or rebound as a private extension.
-module Unused_private_exception : sig type exn += private Private_exn end
+module Unused_exception_exported_private :
+  sig type exn += private Private_exn end
 |}]
 
-module Unused_private_extension : sig
+module Unused_extension_exported_private : sig
   type t = ..
   type t += private Private_ext
 end = struct
@@ -143,9 +265,52 @@ Line 6, characters 12-23:
                 ^^^^^^^^^^^
 Warning 38: extension constructor Private_ext is never used to build values.
 It is exported or rebound as a private extension.
-module Unused_private_extension :
+module Unused_extension_exported_private :
   sig type t = .. type t += private Private_ext end
 |}]
+
+module Used_private_extension : sig
+  type t
+  val nothing : t -> unit
+end = struct
+  type t = ..
+  type t += private Private_ext
+  let nothing = function
+    | Private_ext | _ -> ()
+end
+;;
+[%%expect {|
+module Used_private_extension : sig type t val nothing : t -> unit end
+|}]
+
+module Unused_private_extension : sig
+  type t
+end = struct
+  type t = ..
+  type t += private Private_ext
+end
+;;
+[%%expect {|
+Line 5, characters 20-31:
+5 |   type t += private Private_ext
+                        ^^^^^^^^^^^
+Warning 38: unused extension constructor Private_ext
+module Unused_private_extension : sig type t end
+|}]
+
+module Exported_private_extension : sig
+  type t = ..
+  type t += private Private_ext
+end = struct
+  type t = ..
+  type t += private Private_ext
+end
+;;
+[%%expect {|
+module Exported_private_extension :
+  sig type t = .. type t += private Private_ext end
+|}]
+
 
 module Pr7438 : sig
 end = struct
@@ -162,9 +327,9 @@ end = struct
   type t = A [@@warning "-34"]
 end;;
 [%%expect {|
-Line 3, characters 2-30:
+Line 3, characters 11-12:
 3 |   type t = A [@@warning "-34"]
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               ^
 Warning 37: unused constructor A.
 module Unused_type_disable_warning : sig  end
 |}]

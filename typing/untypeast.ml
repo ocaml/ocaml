@@ -108,11 +108,8 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 let fresh_name s env =
   let rec aux i =
     let name = s ^ Int.to_string i in
-    try
-      let _ = Env.lookup_value (Lident name) env in
-      name
-    with
-      | Not_found -> aux (i+1)
+    if Env.bound_value name env then aux (i+1)
+    else name
   in
   aux 0
 

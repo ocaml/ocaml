@@ -2420,8 +2420,7 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
      environment. However no operation which cares about levels/scopes is going
      to happen while this module exists.
      The only operations that happen are:
-     - Env.lookup_type
-     - Env.find_type
+     - Env.find_type_by_name
      - nondep_instance
      None of which check the scope.
 
@@ -2435,23 +2434,22 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
     | n :: nl, (n2, _ as nt2) :: ntl' when n >= n2 ->
         nt2 :: complete (if n = n2 then nl else nl1) ntl'
     | n :: nl, _ ->
-        try
-          let path =
-            Env.lookup_type (concat_longident (Longident.Lident "Pkg") n) env'
-          in
-          match Env.find_type path env' with
-            {type_arity = 0; type_kind = Type_abstract;
-             type_private = Public; type_manifest = Some t2} ->
-               (n, nondep_instance env' lv2 id2 t2) :: complete nl ntl2
-          | {type_arity = 0; type_kind = Type_abstract;
-             type_private = Public; type_manifest = None} when allow_absent ->
-               complete nl ntl2
-          | _ -> raise Exit
-        with
-        | Not_found when allow_absent -> complete nl ntl2
-        | Exit -> raise Not_found
+        let lid = concat_longident (Longident.Lident "Pkg") n in
+        match Env.find_type_by_name lid env' with
+        | (_, {type_arity = 0; type_kind = Type_abstract;
+               type_private = Public; type_manifest = Some t2}) ->
+            (n, nondep_instance env' lv2 id2 t2) :: complete nl ntl2
+        | (_, {type_arity = 0; type_kind = Type_abstract;
+               type_private = Public; type_manifest = None})
+          when allow_absent ->
+            complete nl ntl2
+        | _ -> raise Exit
+        | exception Not_found when allow_absent->
+            complete nl ntl2
   in
-  complete nl1 (List.combine nl2 tl2)
+  match complete nl1 (List.combine nl2 tl2) with
+  | res -> res
+  | exception Exit -> raise Not_found
 
 (* raise Not_found rather than Unify if the module types are incompatible *)
 let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
@@ -3942,18 +3940,8 @@ let rec filter_visited = function
 let memq_warn t visited =
   if List.memq t visited then (warn := true; true) else false
 
-let rec lid_of_path ?(hash="") = function
-    Path.Pident id ->
-      Longident.Lident (hash ^ Ident.name id)
-  | Path.Pdot (p1, s) ->
-      Longident.Ldot (lid_of_path p1, hash ^ s)
-  | Path.Papply (p1, p2) ->
-      Longident.Lapply (lid_of_path ~hash p1, lid_of_path p2)
-
 let find_cltype_for_path env p =
-  let cl_path = Env.lookup_type (lid_of_path ~hash:"#" p) env in
-  let cl_abbr = Env.find_type cl_path env in
-
+  let cl_abbr = Env.find_hash_type p env in
   match cl_abbr.type_manifest with
     Some ty ->
       begin match (repr ty).desc with

@@ -918,13 +918,13 @@ module EnvLazy = struct
     | Raise e -> raise e
     | Thunk e ->
       match f e with
-      | None ->
-          x := Done None;
+      | (Error _ as err : _ result) ->
+          x := Done err;
           log := Cons(x, e, !log);
-          None
-      | Some _ as y ->
-          x := Done y;
-          y
+          err
+      | Ok _ as res ->
+          x := Done res;
+          res
       | exception e ->
           x := Raise e;
           raise e

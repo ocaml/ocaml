@@ -197,16 +197,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
 
-    let tree_of_qualified lookup_fun env ty_path name =
+    let tree_of_qualified find env ty_path name =
       match ty_path with
       | Pident _ ->
           Oide_ident name
       | Pdot(p, _s) ->
-          if try
-               match (lookup_fun (Lident (Out_name.print name)) env).desc with
-               | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
-               | _ -> false
-             with Not_found -> false
+          if
+            match (find (Lident (Out_name.print name)) env).desc with
+            | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
+            | _ -> false
+            | exception Not_found -> false
           then Oide_ident name
           else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
       | Papply _ ->
@@ -214,10 +214,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let tree_of_constr =
       tree_of_qualified
-        (fun lid env -> (Env.lookup_constructor lid env).cstr_res)
+        (fun lid env ->
+           (Env.find_constructor_by_name lid env).cstr_res)
 
     and tree_of_label =
-      tree_of_qualified (fun lid env -> (Env.lookup_label lid env).lbl_res)
+      tree_of_qualified
+        (fun lid env ->
+           (Env.find_label_by_name lid env).lbl_res)
 
     (* An abstract type *)
 
@@ -548,7 +551,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       try
         (* Attempt to recover the constructor description for the exn
            from its name *)
-        let cstr = Env.lookup_constructor lid env in
+        let cstr = Env.find_constructor_by_name lid env in
         let path =
           match cstr.cstr_tag with
             Cstr_extension(p, _) -> p
