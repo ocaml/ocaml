@@ -89,14 +89,17 @@ let rec apply_coercion loc strict restr arg =
     Tcoerce_none ->
       arg
   | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
-
+      let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
-        let get_field pos = Lprim(Pfield (pos, Fld_na (*TODO*)),[Lvar id], loc) in
+        let get_field_i i pos =
+          Lprim(Pfield (pos, Fld_module names.(i)),[Lvar id], loc) in
+        let get_field_name name pos =
+          Lprim(Pfield (pos, Fld_module name),[Lvar id], loc) in
         let lam =
           Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
-                List.map (apply_coercion_field loc get_field) pos_cc_list, loc)
+                List.mapi (fun i x -> (apply_coercion_field loc (get_field_i i) x)) pos_cc_list, loc)
         in
-        wrap_id_pos_list loc id_pos_list get_field lam)
+        wrap_id_pos_list loc id_pos_list get_field_name lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
@@ -123,7 +126,7 @@ and wrap_id_pos_list loc id_pos_list get_field lam =
       if IdentSet.mem id' fv then
         let id'' = Ident.create (Ident.name id') in
         (Llet(Alias,id'',
-              apply_coercion loc Alias c (get_field pos),lam),
+              apply_coercion loc Alias c (get_field (Ident.name id') pos),lam),
          Ident.add id' (Lvar id'') s)
       else (lam,s))
       (lam, Ident.empty) id_pos_list
@@ -421,6 +424,7 @@ and transl_structure loc fields cc rootpath = function
           let v = Array.of_list (List.rev fields) in
           let get_field pos = Lvar v.(pos)
           and ids = List.fold_right IdentSet.add fields IdentSet.empty in
+          let get_field_name _name = get_field in
           let result = List.fold_right
               (fun  (pos, cc) code ->
                  begin match cc with
@@ -440,7 +444,7 @@ and transl_structure loc fields cc rootpath = function
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
           in
-          wrap_id_pos_list loc id_pos_list get_field lam
+          wrap_id_pos_list loc id_pos_list get_field_name lam
       | _ ->
           fatal_error "Translmod.transl_structure"
       end
