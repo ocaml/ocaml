@@ -454,3 +454,19 @@ add ssmap;;
 [%%expect{|
 - : SSMap.key -> SSMap.data -> SSMap.map -> SSMap.map = <fun>
 |}];;
+
+(*****)
+
+module type S = sig type t end
+
+let x =
+  (module struct type elt = A type t = elt list end : S with type t = _ list)
+;;
+[%%expect{|
+module type S = sig type t end
+Line 4, characters 10-51:
+4 |   (module struct type elt = A type t = elt list end : S with type t = _ list)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type t in this module cannot be exported.
+       Its type contains local dependencies: %M.elt list
+|}];;
