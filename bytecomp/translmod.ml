@@ -89,6 +89,7 @@ let rec apply_coercion loc strict restr arg =
     Tcoerce_none ->
       arg
   | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+      assert (List.length runtime_fields = List.length pos_cc_list);
       let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
         let get_field_i i pos =
@@ -150,7 +151,7 @@ let rec compose_coercions c1 c2 =
           ids1
       in
       Tcoerce_structure (
-          runtime_fields1 @ runtime_fields2,
+          runtime_fields1,
           List.map
           (function (p1, Tcoerce_primitive _) as x ->
                       x (* (p1, Tcoerce_primitive p) *)
@@ -416,6 +417,7 @@ and transl_structure loc fields cc rootpath = function
                       (Lvar id :: acc) end) fields [] , loc
                  )
       | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+          assert (List.length runtime_fields = List.length pos_cc_list);
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
           List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
