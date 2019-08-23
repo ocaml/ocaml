@@ -34,7 +34,7 @@ type tag_info =
   | Blk_array
   | Blk_variant of string 
   | Blk_record of string array (* when its empty means we dont get such information *)
-  | Blk_module of string list option
+  | Blk_module of string list
   | Blk_extension_slot
   | Blk_na
   | Blk_some

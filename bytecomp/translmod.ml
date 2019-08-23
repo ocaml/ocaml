@@ -96,7 +96,7 @@ let rec apply_coercion loc strict restr arg =
         let get_field_name name pos =
           Lprim(Pfield (pos, Fld_module name),[Lvar id], loc) in
         let lam =
-          Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
+          Lprim(Pmakeblock(0, Blk_module runtime_fields, Immutable),
                 List.mapi (fun i x -> (apply_coercion_field loc (get_field_i i) x)) pos_cc_list, loc)
         in
         wrap_id_pos_list loc id_pos_list get_field_name lam)
@@ -409,7 +409,7 @@ and transl_structure loc fields cc rootpath = function
         Tcoerce_none ->
           let fields =  List.rev fields in
           let field_names = List.map (fun id -> id.Ident.name) fields in
-          Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names) , Immutable),
+          Lprim(Pmakeblock(0, Lambda.Blk_module field_names, Immutable),
                 List.fold_right (fun id acc -> begin
                       (if is_top rootpath then 
                          export_identifiers :=  id :: !export_identifiers);
@@ -439,7 +439,7 @@ and transl_structure loc fields cc rootpath = function
                  end)
               pos_cc_list [] in
           let lam =
-            (Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
+            (Lprim(Pmakeblock(0, Blk_module runtime_fields, Immutable),
                    result, loc))
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
