@@ -46,11 +46,9 @@ sig
   val unit : t -> Compilation_unit.t
 end
 
-(** If applied generatively, i.e. [Id(struct end)], creates a new type
-    of identifiers. *)
-module Id : functor (E : sig end) -> Id
+module Id () : Id
 
 module UnitId :
-  functor (Id : Id) ->
+  Id ->
   functor (Compilation_unit : Identifiable.Thing) ->
     UnitId with module Compilation_unit := Compilation_unit

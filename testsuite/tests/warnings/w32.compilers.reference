@@ -1,3 +1,15 @@
+File "w32.mli", line 12, characters 10-11:
+12 | module F (X : sig val x : int end) : sig end
+               ^
+Warning 67: unused functor parameter X.
+File "w32.mli", line 14, characters 10-11:
+14 | module G (X : sig val x : int end) : sig end
+               ^
+Warning 67: unused functor parameter X.
+File "w32.mli", line 16, characters 10-11:
+16 | module H (X : sig val x : int end) : sig val x : int end
+               ^
+Warning 67: unused functor parameter X.
 File "w32.ml", line 40, characters 24-25:
 40 | let[@warning "-32"] rec q x = x
                              ^
@@ -61,6 +73,10 @@ File "w32.ml", line 63, characters 18-29:
 63 | module F (X : sig val x : int end) = struct end
                        ^^^^^^^^^^^
 Warning 32: unused value x.
+File "w32.ml", line 63, characters 10-11:
+63 | module F (X : sig val x : int end) = struct end
+               ^
+Warning 60: unused module X.
 File "w32.ml", line 65, characters 18-29:
 65 | module G (X : sig val x : int end) = X
                        ^^^^^^^^^^^

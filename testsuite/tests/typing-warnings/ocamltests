@@ -11,6 +11,7 @@ pr7261.ml
 pr7297.ml
 pr7553.ml
 records.ml
+unused_functor_parameter.ml
 unused_rec.ml
 unused_types.ml
 open_warnings.ml

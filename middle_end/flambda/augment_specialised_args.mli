@@ -48,7 +48,7 @@ module type S = sig
     -> What_to_specialise.t
 end
 
-module Make (T : S) : sig
+module Make (_ : S) : sig
   (** [duplicate_function] should be
       [Inline_and_simplify.duplicate_function]. *)
   val rewrite_set_of_closures

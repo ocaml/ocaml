@@ -172,6 +172,9 @@ Working version
 - #8885: Warn about unused local modules
   (Thomas Refis, review by Alain Frisch)
 
+- #8891: Warn about unused functor parameters
+  (Thomas Refis, review by ...)
+
 ### Build system:
 
 - #8650: ensure that "make" variables are defined before use;
