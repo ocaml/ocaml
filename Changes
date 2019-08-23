@@ -45,6 +45,8 @@ Working version
 - #7924: Use a variant instead of an int in Bad_variance exception
   (Rian Douglas, review by Gabriel Scherer)
 
+- #8890: in -dtimings output, show time spent in C linker clearly
+  (Valentin Gatien-Baron)
 
 ### Code generation and optimizations:
 
