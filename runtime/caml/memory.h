@@ -36,6 +36,13 @@
 extern "C" {
 #endif
 
+#ifdef CAML_NAME_SPACE
+#define Caml_state_field(field) Caml_state->field
+#else
+#define Caml_state_field(field) Caml_state->_##field
+#endif
+
+
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO
@@ -223,16 +230,16 @@ extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags);
   CAMLassert ((wosize) >= 1);                                          \
   CAMLassert ((tag_t) (tag) < 256);                                    \
   CAMLassert ((wosize) <= Max_young_wosize);                           \
-  Caml_state->young_ptr -= Whsize_wosize (wosize);                     \
-  if (Caml_state->young_ptr < Caml_state->young_limit) {               \
+  Caml_state_field(young_ptr) -= Whsize_wosize (wosize);               \
+  if (Caml_state_field(young_ptr) < Caml_state_field(young_limit)) {   \
     Setup_for_gc;                                                      \
     caml_alloc_small_dispatch((tag), (wosize),                         \
                               (track) | Alloc_small_origin);           \
     Restore_after_gc;                                                  \
   }                                                                    \
-  Hd_hp (Caml_state->young_ptr) =                                      \
+  Hd_hp (Caml_state_field(young_ptr)) =                                \
     Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo); \
-  (result) = Val_hp (Caml_state->young_ptr);                           \
+  (result) = Val_hp (Caml_state_field(young_ptr));                     \
   DEBUG_clear ((result), (wosize));                                    \
 }while(0)
 
@@ -304,7 +311,7 @@ struct caml__roots_block {
 */
 
 #define CAMLparam0() \
-  struct caml__roots_block *caml__frame = Caml_state->local_roots
+  struct caml__roots_block *caml__frame = Caml_state_field(local_roots)
 
 #define CAMLparam1(x) \
   CAMLparam0 (); \
@@ -356,8 +363,8 @@ struct caml__roots_block {
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
     (void) caml__frame, \
-    (caml__roots_##x.next = Caml_state->local_roots), \
-    (Caml_state->local_roots = &caml__roots_##x), \
+    (caml__roots_##x.next = Caml_state_field(local_roots)), \
+    (Caml_state_field(local_roots) = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables [0] = &x), \
@@ -368,8 +375,8 @@ struct caml__roots_block {
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
     (void) caml__frame, \
-    (caml__roots_##x.next = Caml_state->local_roots), \
-    (Caml_state->local_roots = &caml__roots_##x), \
+    (caml__roots_##x.next = Caml_state_field(local_roots)), \
+    (Caml_state_field(local_roots) = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 2), \
     (caml__roots_##x.tables [0] = &x), \
@@ -381,8 +388,8 @@ struct caml__roots_block {
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
     (void) caml__frame, \
-    (caml__roots_##x.next = Caml_state->local_roots), \
-    (Caml_state->local_roots = &caml__roots_##x), \
+    (caml__roots_##x.next = Caml_state_field(local_roots)), \
+    (Caml_state_field(local_roots) = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 3), \
     (caml__roots_##x.tables [0] = &x), \
@@ -395,8 +402,8 @@ struct caml__roots_block {
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
     (void) caml__frame, \
-    (caml__roots_##x.next = Caml_state->local_roots), \
-    (Caml_state->local_roots = &caml__roots_##x), \
+    (caml__roots_##x.next = Caml_state_field(local_roots)), \
+    (Caml_state_field(local_roots) = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 4), \
     (caml__roots_##x.tables [0] = &x), \
@@ -410,8 +417,8 @@ struct caml__roots_block {
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = ( \
     (void) caml__frame, \
-    (caml__roots_##x.next = Caml_state->local_roots), \
-    (Caml_state->local_roots = &caml__roots_##x), \
+    (caml__roots_##x.next = Caml_state_field(local_roots)), \
+    (Caml_state_field(local_roots) = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 5), \
     (caml__roots_##x.tables [0] = &x), \
@@ -426,8 +433,8 @@ struct caml__roots_block {
   struct caml__roots_block caml__roots_##x; \
   CAMLunused_start int caml__dummy_##x = (     \
     (void) caml__frame, \
-    (caml__roots_##x.next = Caml_state->local_roots), \
-    (Caml_state->local_roots = &caml__roots_##x), \
+    (caml__roots_##x.next = Caml_state_field(local_roots)), \
+    (Caml_state_field(local_roots) = &caml__roots_##x), \
     (caml__roots_##x.nitems = (size)), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables[0] = &(x[0])), \
@@ -463,7 +470,7 @@ struct caml__roots_block {
   CAMLxparamN (x, (size))
 
 
-#define CAMLdrop Caml_state->local_roots = caml__frame
+#define CAMLdrop Caml_state_field(local_roots) = caml__frame
 
 #define CAMLreturn0 do{ \
   CAMLdrop; \
@@ -512,16 +519,16 @@ struct caml__roots_block {
 
 #define Begin_roots1(r0) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = Caml_state->local_roots; \
-  Caml_state->local_roots = &caml__roots_block; \
+  caml__roots_block.next = Caml_state_field(local_roots); \
+  Caml_state_field(local_roots) = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = &(r0);
 
 #define Begin_roots2(r0, r1) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = Caml_state->local_roots; \
-  Caml_state->local_roots = &caml__roots_block; \
+  caml__roots_block.next = Caml_state_field(local_roots); \
+  Caml_state_field(local_roots) = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 2; \
   caml__roots_block.tables[0] = &(r0); \
@@ -529,8 +536,8 @@ struct caml__roots_block {
 
 #define Begin_roots3(r0, r1, r2) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = Caml_state->local_roots; \
-  Caml_state->local_roots = &caml__roots_block; \
+  caml__roots_block.next = Caml_state_field(local_roots); \
+  Caml_state_field(local_roots) = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 3; \
   caml__roots_block.tables[0] = &(r0); \
@@ -539,8 +546,8 @@ struct caml__roots_block {
 
 #define Begin_roots4(r0, r1, r2, r3) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = Caml_state->local_roots; \
-  Caml_state->local_roots = &caml__roots_block; \
+  caml__roots_block.next = Caml_state_field(local_roots); \
+  Caml_state_field(local_roots) = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 4; \
   caml__roots_block.tables[0] = &(r0); \
@@ -550,8 +557,8 @@ struct caml__roots_block {
 
 #define Begin_roots5(r0, r1, r2, r3, r4) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = Caml_state->local_roots; \
-  Caml_state->local_roots = &caml__roots_block; \
+  caml__roots_block.next = Caml_state_field(local_roots); \
+  Caml_state_field(local_roots) = &caml__roots_block; \
   caml__roots_block.nitems = 1; \
   caml__roots_block.ntables = 5; \
   caml__roots_block.tables[0] = &(r0); \
@@ -562,13 +569,13 @@ struct caml__roots_block {
 
 #define Begin_roots_block(table, size) { \
   struct caml__roots_block caml__roots_block; \
-  caml__roots_block.next = Caml_state->local_roots; \
-  Caml_state->local_roots = &caml__roots_block; \
+  caml__roots_block.next = Caml_state_field(local_roots); \
+  Caml_state_field(local_roots) = &caml__roots_block; \
   caml__roots_block.nitems = (size); \
   caml__roots_block.ntables = 1; \
   caml__roots_block.tables[0] = (table);
 
-#define End_roots() Caml_state->local_roots = caml__roots_block.next; }
+#define End_roots() Caml_state_field(local_roots) = caml__roots_block.next; }
 
 
 /* [caml_register_global_root] registers a global C variable as a memory root

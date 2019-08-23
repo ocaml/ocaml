@@ -21,21 +21,15 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-#ifndef CAML_NAME_SPACE
-/* These macros are defined in compatibility.h. We undefine them to avoid name
- * clashes with caml_domain_state fields. The fields are redefined at the end
- * of this file. */
-#undef young_ptr
-#undef young_limit
-#undef young_start
-#undef young_end
-#undef local_roots
-#endif
-
 /* This structure sits in the TLS area and is also accessed efficiently
  * via native code, which is why the indices are important */
+
 typedef struct {
+#ifdef CAML_NAME_SPACE
 #define DOMAIN_STATE(type, name) CAMLalign(8) type name;
+#else
+#define DOMAIN_STATE(type, name) CAMLalign(8) type _##name;
+#endif
 #include "domain_state.tbl"
 #undef DOMAIN_STATE
 } caml_domain_state;
@@ -55,13 +49,5 @@ CAML_STATIC_ASSERT(
    ) * 8);
 
 CAMLextern caml_domain_state* Caml_state;
-
-#ifndef CAML_NAME_SPACE
-#define young_start (Caml_state->young_start)
-#define young_end (Caml_state->young_end)
-#define young_ptr (Caml_state->young_ptr)
-#define young_limit (Caml_state->young_limit)
-#define local_roots (Caml_state->local_roots)
-#endif
 
 #endif /* CAML_STATE_H */
