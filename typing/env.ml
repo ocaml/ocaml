@@ -1553,7 +1553,7 @@ let rec components_of_module_maker
             c.comp_modules <-
               NameMap.add (Ident.name id) mda c.comp_modules;
             env :=
-              store_module ~freshening_sub ~check:false id addr pres md !env
+              store_module ~freshening_sub ~check:None id addr pres md !env
         | Sig_modtype(id, decl, _) ->
             let fresh_decl =
               (* the fresh_decl is only going in the local temporary env, and
@@ -1722,9 +1722,7 @@ and store_extension ~check id addr ext env =
 
 and store_module ~check ~freshening_sub id addr presence md env =
   let loc = md.md_loc in
-  if check then
-    check_usage loc id (fun s -> Warnings.Unused_module s)
-      module_declarations;
+  Option.iter (fun f -> check_usage loc id f module_declarations) check;
   let alerts = Builtin_attributes.alerts_of_attrs md.md_attributes in
   let module_decl_lazy =
     match freshening_sub with
@@ -1815,6 +1813,14 @@ and add_extension ~check id ext env =
   store_extension ~check id addr ext env
 
 and add_module_declaration ?(arg=false) ~check id presence md env =
+  let check =
+    if not check then
+      None
+    else if arg && is_in_signature env then
+      Some (fun s -> Warnings.Unused_functor_parameter s)
+    else
+      Some (fun s -> Warnings.Unused_module s)
+  in
   let addr = module_declaration_address env id presence md in
   let env = store_module ~freshening_sub:None ~check id addr presence md env in
   if arg then add_functor_arg id env else env
