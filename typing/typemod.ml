@@ -1485,7 +1485,9 @@ and transl_modtype_decl names env pmtd =
 
 and transl_modtype_decl_aux names env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
-  let tmty = Option.map (transl_modtype env) pmtd_type in
+  let tmty =
+    Option.map (transl_modtype (Env.in_signature true env)) pmtd_type
+  in
   let decl =
     {
      Types.mtd_type=Option.map (fun t -> t.mty_type) tmty;

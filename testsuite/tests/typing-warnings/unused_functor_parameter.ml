@@ -17,7 +17,7 @@ module type S = functor (Unused : sig end) -> sig end;;
 Line 1, characters 25-31:
 1 | module type S = functor (Unused : sig end) -> sig end;;
                              ^^^^^^
-Warning 60: unused module Unused.
+Warning 67: unused functor parameter Unused.
 module type S = functor (Unused : sig end) -> sig end
 |}]
 
