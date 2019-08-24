@@ -49,5 +49,10 @@ CAML_STATIC_ASSERT(
    ) * 8);
 
 CAMLextern caml_domain_state* Caml_state;
+#ifdef CAML_NAME_SPACE
+#define Caml_state_field(field) Caml_state->field
+#else
+#define Caml_state_field(field) Caml_state->_##field
+#endif
 
 #endif /* CAML_STATE_H */

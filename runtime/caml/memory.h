@@ -18,7 +18,7 @@
 #ifndef CAML_MEMORY_H
 #define CAML_MEMORY_H
 
-#ifndef CAML_NAME_SPACE
+#ifndef CAML_INTERNALS
 #include "compatibility.h"
 #endif
 #include "config.h"
@@ -35,14 +35,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifdef CAML_NAME_SPACE
-#define Caml_state_field(field) Caml_state->field
-#else
-#define Caml_state_field(field) Caml_state->_##field
-#endif
-
-
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO

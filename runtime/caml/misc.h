@@ -409,15 +409,15 @@ extern struct caml_instr_block *caml_instr_log;
 
 /* Allocate the data block for a given name.
    [t] must have been declared with [CAML_INSTR_DECLARE]. */
-#define CAML_INSTR_ALLOC(t) do{                                       \
-    if (Caml_state->stat_minor_collections >= caml_instr_starttime    \
-        && Caml_state->stat_minor_collections < caml_instr_stoptime){ \
-      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block));   \
-      t->index = 0;                                                   \
-      t->tag[0] = "";                                                 \
-      t->next = caml_instr_log;                                       \
-      caml_instr_log = t;                                             \
-    }                                                                 \
+#define CAML_INSTR_ALLOC(t) do{                                             \
+    if (Caml_state_field(stat_minor_collections) >= caml_instr_starttime    \
+        && Caml_state_field(stat_minor_collections) < caml_instr_stoptime){ \
+      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block));         \
+      t->index = 0;                                                         \
+      t->tag[0] = "";                                                       \
+      t->next = caml_instr_log;                                             \
+      caml_instr_log = t;                                                   \
+    }                                                                       \
   }while(0)
 
 /* Allocate the data block and start the timer.
