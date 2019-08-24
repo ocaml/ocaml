@@ -161,14 +161,18 @@ let head_loc ~scopes head =
 
 type 'a clause = 'a * lambda
 
-module Non_empty_clause = struct
-  type 'a t = ('a * Typedtree.pattern list) clause
+let map_on_row f (row, action) = (f row, action)
+
+let map_on_rows f = List.map (map_on_row f)
+
+module Non_empty_row = struct
+  type 'a t = 'a * Typedtree.pattern list
 
   let of_initial = function
-    | [], _ -> assert false
-    | pat :: patl, act -> ((pat, patl), act)
+    | [] -> assert false
+    | pat :: patl -> (pat, patl)
 
-  let map_first f ((p, patl), act) = ((f p, patl), act)
+  let map_first f (p, patl) = (f p, patl)
 end
 
 type simple_view =
@@ -193,7 +197,7 @@ type general_view =
 module General : sig
   type pattern = general_view pattern_data
 
-  type clause = pattern Non_empty_clause.t
+  type nonrec clause = pattern Non_empty_row.t clause
 
   val view : Typedtree.pattern -> pattern
 
@@ -201,7 +205,7 @@ module General : sig
 end = struct
   type pattern = general_view pattern_data
 
-  type clause = pattern Non_empty_clause.t
+  type nonrec clause = pattern Non_empty_row.t clause
 
   let view_desc = function
     | Tpat_any -> `Any
@@ -260,13 +264,13 @@ module Half_simple : sig
 
   type pattern = half_simple_view pattern_data
 
-  type clause = pattern Non_empty_clause.t
+  type nonrec clause = pattern Non_empty_row.t clause
 
   val of_clause : arg:lambda -> General.clause -> clause
 end = struct
   type pattern = half_simple_view pattern_data
 
-  type clause = pattern Non_empty_clause.t
+  type nonrec clause = pattern Non_empty_row.t clause
 
   let rec simpl_under_orpat p =
     match p.pat_desc with
@@ -325,7 +329,7 @@ exception Cannot_flatten
 module Simple : sig
   type pattern = simple_view pattern_data
 
-  type clause = pattern Non_empty_clause.t
+  type nonrec clause = pattern Non_empty_row.t clause
 
   val head : pattern -> Patterns.Head.t
 
@@ -339,7 +343,7 @@ module Simple : sig
 end = struct
   type pattern = simple_view pattern_data
 
-  type clause = pattern Non_empty_clause.t
+  type nonrec clause = pattern Non_empty_row.t clause
 
   let head p =
     fst (Patterns.Head.deconstruct (General.erase (p :> General.pattern)))
@@ -957,7 +961,7 @@ type handler = {
 }
 
 type 'head_pat pm_or_compiled = {
-  body : 'head_pat Non_empty_clause.t pattern_matching;
+  body : 'head_pat Non_empty_row.t clause pattern_matching;
   handlers : handler list;
   or_matrix : matrix
 }
@@ -1114,12 +1118,16 @@ let safe_before ((p, ps), act_p) l =
       || not (may_compats (General.erase p :: ps) (General.erase q :: qs)))
     l
 
-let half_simplify_nonempty ~arg (cls : Typedtree.pattern Non_empty_clause.t) :
-    Half_simple.clause =
-  cls |> Non_empty_clause.map_first General.view |> Half_simple.of_clause ~arg
+let half_simplify_nonempty ~arg (cls : Typedtree.pattern Non_empty_row.t clause)
+  : Half_simple.clause =
+  cls
+  |> map_on_row (Non_empty_row.map_first General.view)
+  |> Half_simple.of_clause ~arg
 
 let half_simplify_clause ~arg (cls : Typedtree.pattern list clause) =
-  cls |> Non_empty_clause.of_initial |> half_simplify_nonempty ~arg
+  cls
+  |> map_on_row Non_empty_row.of_initial
+  |> half_simplify_nonempty ~arg
 
 (* Once matchings are *fully* simplified, one can easily find
    their nature. *)
@@ -3148,10 +3156,10 @@ let rec compile_match ~scopes repr partial ctx
         (event_branch repr action, Jumps.empty)
   | nonempty_cases ->
       compile_match_nonempty ~scopes repr partial ctx
-        { m with cases = List.map Non_empty_clause.of_initial nonempty_cases }
+        { m with cases = map_on_rows Non_empty_row.of_initial nonempty_cases }
 
 and compile_match_nonempty ~scopes repr partial ctx
-    (m : Typedtree.pattern Non_empty_clause.t pattern_matching) =
+    (m : Typedtree.pattern Non_empty_row.t clause pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = (arg, str) :: argl } ->
@@ -3654,7 +3662,7 @@ let flatten_handler size handler =
 
 type pm_flattened =
   | FPmOr of pattern pm_or_compiled
-  | FPm of pattern Non_empty_clause.t pattern_matching
+  | FPm of pattern Non_empty_row.t clause pattern_matching
 
 let flatten_precompiled size args pmh =
   match pmh with
