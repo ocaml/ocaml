@@ -88,7 +88,7 @@ let rec apply_coercion loc strict restr arg =
   match restr with
     Tcoerce_none ->
       arg
-  | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure(pos_cc_list, id_pos_list, runtime_fields) ->
       assert (List.length runtime_fields = List.length pos_cc_list);
       let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
@@ -143,7 +143,7 @@ let rec compose_coercions c1 c2 =
   match (c1, c2) with
     (Tcoerce_none, c2) -> c2
   | (c1, Tcoerce_none) -> c1
-  | (Tcoerce_structure (runtime_fields1, pc1, ids1), Tcoerce_structure (runtime_fields2, pc2, ids2)) ->
+  | (Tcoerce_structure (pc1, ids1, runtime_fields1), Tcoerce_structure (pc2, ids2, runtime_fields)) ->
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
@@ -151,14 +151,14 @@ let rec compose_coercions c1 c2 =
           ids1
       in
       Tcoerce_structure (
-          runtime_fields1,
           List.map
           (function (p1, Tcoerce_primitive _) as x ->
                       x (* (p1, Tcoerce_primitive p) *)
                   | (p1, c1) ->
                       let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
              pc1,
-         ids1 @ ids2)
+         ids1 @ ids2,
+         runtime_fields1)
   | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
       Tcoerce_functor(compose_coercions arg2 arg1,
                       compose_coercions res1 res2)
@@ -416,7 +416,7 @@ and transl_structure loc fields cc rootpath = function
                          export_identifiers :=  id :: !export_identifiers);
                       (Lvar id :: acc) end) fields [] , loc
                  )
-      | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+      | Tcoerce_structure(pos_cc_list, id_pos_list, runtime_fields) ->
           assert (List.length runtime_fields = List.length pos_cc_list);
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
@@ -788,7 +788,7 @@ let build_ident_map restr idlist more_ids =
     match restr with
         Tcoerce_none ->
           natural_map 0 Ident.empty [] idlist
-      | Tcoerce_structure (_runtime_fields, pos_cc_list, _id_pos_list) ->
+      | Tcoerce_structure (pos_cc_list, _id_pos_list, _runtime_fields) ->
               (* ignore _id_pos_list as the ids are already bound *)
         let idarray = Array.of_list idlist in
         let rec export_map pos map prims undef = function
@@ -976,7 +976,7 @@ let transl_store_package component_names target_name coercion =
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id], Location.none))
          0 component_names)
-  | Tcoerce_structure (_runtime_fields, pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure (pos_cc_list, id_pos_list, _runtime_fields) ->
       let components =
         Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), List.map get_component component_names, Location.none)
       in

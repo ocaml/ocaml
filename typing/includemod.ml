@@ -171,7 +171,7 @@ let rec print_coercion ppf c =
   let pr fmt = Format.fprintf ppf fmt in
   match c with
     Tcoerce_none -> pr "id"
-  | Tcoerce_structure (_, fl, nl) ->
+  | Tcoerce_structure (fl, nl, _) ->
       pr "@[<2>struct@ %a@ %a@]"
         (print_list print_coercion2) fl
         (print_list print_coercion3) nl
@@ -201,7 +201,7 @@ let simplify_structure_coercion runtime_fields cc id_pos_list =
       n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
   if is_identity_coercion 0 cc
   then Tcoerce_none
-  else Tcoerce_structure (runtime_fields, cc, id_pos_list)
+  else Tcoerce_structure (cc, id_pos_list, runtime_fields)
 
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
@@ -332,7 +332,7 @@ and signatures env cxt subst sig1 sig2 =
               if len1 = len2 then (* see PR#5098 *)
                 simplify_structure_coercion runtime_fields cc id_pos_list
               else
-                Tcoerce_structure (runtime_fields, cc, id_pos_list)
+                Tcoerce_structure (cc, id_pos_list, runtime_fields)
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
