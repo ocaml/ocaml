@@ -66,13 +66,25 @@ let main () =
       end
     end;
     readenv ppf Before_link;
+    let module P = Clflags.Compiler_pass in
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;
                       compile_only; output_c_object]) > 1
     then
-      fatal "Please specify at most one of -pack, -a, -shared, -c, \
+    begin
+      match !stop_after with
+      | None ->
+        fatal "Please specify at most one of -pack, -a, -shared, -c, \
              -output-obj";
+      | Some ((P.Parsing | P.Typing | P.Scheduling) as p) ->
+        assert (P.is_compilation_pass p);
+        Printf.ksprintf fatal
+          "Options -i and -stop-after (%s) \
+           are  incompatible with -pack, -a, -shared, -output-obj"
+          (String.concat "|"
+             (Clflags.Compiler_pass.stop_after_pass_names ~native:true))
+    end;
     if !make_archive then begin
       Compmisc.init_path ();
       let target = extract_output !output_name in
