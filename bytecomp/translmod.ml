@@ -108,7 +108,7 @@ let rec apply_coercion loc strict restr arg =
           apply_coercion loc Strict cc_res
             (Lapply(Lvar id, [apply_coercion loc Alias cc_arg (Lvar param)],
                    Location.none))))
-  | Tcoerce_primitive (_,p) ->
+  | Tcoerce_primitive (p, _) ->
       transl_primitive Location.none p
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
@@ -430,7 +430,7 @@ and transl_structure loc fields cc rootpath = function
           let result = List.fold_right
               (fun  (pos, cc) code ->
                  begin match cc with
-                 | Tcoerce_primitive (id,p) -> 
+                 | Tcoerce_primitive (p, id) -> 
                      (if is_top rootpath then 
                         export_identifiers := id:: !export_identifiers);
                      transl_primitive Location.none p :: code
@@ -794,7 +794,7 @@ let build_ident_map restr idlist more_ids =
         let rec export_map pos map prims undef = function
         [] ->
           natural_map pos map prims undef
-          | (source_pos, Tcoerce_primitive (_,p)) :: rem ->
+          | (source_pos, Tcoerce_primitive (p, _)) :: rem ->
             export_map (pos + 1) map ((pos, p) :: prims) undef rem
           | (source_pos, cc) :: rem ->
             let id = idarray.(source_pos) in

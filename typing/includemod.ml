@@ -179,7 +179,7 @@ let rec print_coercion ppf c =
       pr "@[<2>functor@ (%a)@ (%a)@]"
         print_coercion inp
         print_coercion out
-  | Tcoerce_primitive (_,pd) ->
+  | Tcoerce_primitive (pd, _) ->
       pr "prim %s" pd.Primitive.prim_name
   | Tcoerce_alias (p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
