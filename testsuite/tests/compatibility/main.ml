@@ -1,9 +1,9 @@
 (* TEST
 modules = "stub.c"
-* setup-ocamlc.byte-build-env
+* pass
 ** bytecode
 ** native
-* setup-ocamlc.byte-build-env
+* pass
 flags = "-ccopt -DCAML_NAME_SPACE"
 ** bytecode
 ** native
