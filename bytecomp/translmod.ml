@@ -151,7 +151,6 @@ let rec compose_coercions c1 c2 =
           ids1
       in
       Tcoerce_structure (
-          runtime_fields1,
           List.map
           (function (p1, Tcoerce_primitive _) as x ->
                       x (* (p1, Tcoerce_primitive p) *)
