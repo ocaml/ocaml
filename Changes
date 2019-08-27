@@ -338,6 +338,10 @@ Working version
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
+- #8892, #8895: fix the definition of Is_young when CAML_INTERNALS is not
+  defined.
+  (David Allsopp)
+
 OCaml 4.09 maintenance branch:
 ------------------------------
 
