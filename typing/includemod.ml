@@ -298,7 +298,8 @@ and signatures env cxt subst sig1 sig2 =
       | Sig_class (i,_,_)
       | Sig_class_type(i,_,_)
       | Sig_type(i,_,_) -> Ident.name i in
-      sig2 |> (List.filter is_runtime_component) |> (List.map get_id) in
+     List.fold_right (fun item fields ->
+        if is_runtime_component item then get_id item :: fields else fields) sig2 [] in
 
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
