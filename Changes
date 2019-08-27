@@ -77,7 +77,7 @@ Working version
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
-- #8691: Allocation functions are now guaranteed not to trigger any
+- #8691, #8897: Allocation functions are now guaranteed not to trigger any
    OCaml callback when called from C.
    (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
 

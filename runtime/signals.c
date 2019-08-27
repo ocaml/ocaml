@@ -289,6 +289,15 @@ void caml_request_minor_gc (void)
   caml_set_something_to_do();
 }
 
+value caml_check_gc_without_async_callbacks(value extra_root)
+{
+  CAMLparam1 (extra_root);
+  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc){
+    CAML_INSTR_INT ("force_minor/check_gc_without_async_callbacks@", 1);
+    caml_gc_dispatch();
+  }
+  CAMLreturn (extra_root);
+}
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
