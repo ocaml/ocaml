@@ -742,12 +742,12 @@ let emit_instr i =
         end else begin
           match abi with
           | ELF32 ->
-            `	addis	28, 0, {emit_upper emit_symbol func}\n`;
-            `	addi	28, 28, {emit_lower emit_symbol func}\n`;
+            `	addis	25, 0, {emit_upper emit_symbol func}\n`;
+            `	addi	25, 25, {emit_lower emit_symbol func}\n`;
             emit_call "caml_c_call";
             record_frame i.live false i.dbg
           | ELF64v1 | ELF64v2 ->
-            emit_tocload emit_gpr 28 (TocSym func);
+            emit_tocload emit_gpr 25 (TocSym func);
             emit_call "caml_c_call";
             record_frame i.live false i.dbg;
             `	nop\n`
@@ -1007,11 +1007,23 @@ let emit_instr i =
         adjust_stack_offset (-trap_size)
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Lambda.Raise_regular ->
+            `	li	0, 0\n`;
+            let backtrace_pos =
+              Domainstate.(idx_of_field Domain_backtrace_pos)
+            in
+            begin match abi with
+            | ELF32 -> `	stw	0, {emit_int (backtrace_pos * 8)}(28)\n`
+            | _ -> `	std	0, {emit_int (backtrace_pos * 8)}(28)\n`
+            end;
             emit_call "caml_raise_exn";
             record_frame Reg.Set.empty true i.dbg;
             emit_call_nop()
-        | Cmm.Raise_notrace ->
+        | Lambda.Raise_reraise ->
+            emit_call "caml_raise_exn";
+            record_frame Reg.Set.empty true i.dbg;
+            emit_call_nop()
+        | Lambda.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
             `	mr	1, 29\n`;
             `	mtctr   0\n`;

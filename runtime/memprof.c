@@ -45,9 +45,9 @@ static intnat callstack_size = 0;
 static value memprof_callback = Val_unit;
 
 /* Pointer to the word following the next sample in the minor
-   heap. Equals [caml_young_alloc_start] if no sampling is planned in
+   heap. Equals [Caml_state->young_alloc_start] if no sampling is planned in
    the current minor heap.
-   Invariant: [caml_memprof_young_trigger <= caml_young_ptr].
+   Invariant: [caml_memprof_young_trigger <= Caml_state->young_ptr].
  */
 value* caml_memprof_young_trigger;
 
@@ -380,10 +380,10 @@ void caml_memprof_track_alloc_shr(value block)
    heap. */
 static void shift_sample(uintnat n)
 {
-  if (caml_memprof_young_trigger - caml_young_alloc_start > n)
+  if (caml_memprof_young_trigger - Caml_state->young_alloc_start > n)
     caml_memprof_young_trigger -= n;
   else
-    caml_memprof_young_trigger = caml_young_alloc_start;
+    caml_memprof_young_trigger = Caml_state->young_alloc_start;
   caml_update_young_limit();
 }
 
@@ -397,13 +397,13 @@ void caml_memprof_renew_minor_sample(void)
 {
 
   if (lambda == 0) /* No trigger in the current minor heap. */
-    caml_memprof_young_trigger = caml_young_alloc_start;
+    caml_memprof_young_trigger = Caml_state->young_alloc_start;
   else {
     uintnat geom = mt_generate_geom();
-    if (caml_young_ptr - caml_young_alloc_start < geom)
+    if(Caml_state->young_ptr - Caml_state->young_alloc_start < geom)
       /* No trigger in the current minor heap. */
-      caml_memprof_young_trigger = caml_young_alloc_start;
-    caml_memprof_young_trigger = caml_young_ptr - (geom - 1);
+      caml_memprof_young_trigger = Caml_state->young_alloc_start;
+    caml_memprof_young_trigger = Caml_state->young_ptr - (geom - 1);
   }
 
   caml_update_young_limit();
@@ -425,16 +425,18 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
   }
 
   /* If [lambda == 0], then [caml_memprof_young_trigger] should be
-     equal to [caml_young_alloc_start]. But this function is only
-     called with [caml_young_alloc_start <= caml_young_ptr <
+     equal to [Caml_state->young_alloc_start]. But this function is only
+     called with [Caml_state->young_alloc_start <= Caml_state->young_ptr <
      caml_memprof_young_trigger], which is contradictory. */
   CAMLassert(lambda > 0);
 
   occurrences =
-    mt_generate_binom(caml_memprof_young_trigger - 1 - caml_young_ptr) + 1;
+    mt_generate_binom(caml_memprof_young_trigger - 1
+                      - Caml_state->young_ptr) + 1;
 
   if (!from_caml) {
-    register_postponed_callback(Val_hp(caml_young_ptr), occurrences, Minor);
+    register_postponed_callback(Val_hp(Caml_state->young_ptr), occurrences,
+                                Minor);
     caml_memprof_renew_minor_sample();
     CAMLreturn0;
   }
@@ -448,7 +450,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
 
   /* Restore the minor heap in a valid state for calling the callback.
      We should not call the GC before these two instructions. */
-  caml_young_ptr += whsize;
+  Caml_state->young_ptr += whsize;
   caml_memprof_renew_minor_sample();
 
   /* Empty the queue to make sure callbacks are called in the right
@@ -460,14 +462,14 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
 
   /* We can now restore the minor heap in the state needed by
      [Alloc_small_aux]. */
-  if (caml_young_ptr - whsize < caml_young_trigger) {
+  if (Caml_state->young_ptr - whsize < Caml_state->young_trigger) {
     CAML_INSTR_INT ("force_minor/memprof@", 1);
     caml_gc_dispatch();
   }
 
   /* Re-allocate the block in the minor heap. We should not call the
      GC after this. */
-  caml_young_ptr -= whsize;
+  Caml_state->young_ptr -= whsize;
 
   /* Make sure this block is not going to be sampled again. */
   shift_sample(whsize);
@@ -480,7 +482,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
             the block. In only checks that the block is young.
           - The allocation and initialization happens right after returning
             from [caml_memprof_track_young]. */
-    caml_ephemeron_set_key(Field(ephe, 0), 0, Val_hp(caml_young_ptr));
+    caml_ephemeron_set_key(Field(ephe, 0), 0, Val_hp(Caml_state->young_ptr));
   }
 
   /* /!\ Since the heap is in an invalid state before initialization,

@@ -31,14 +31,9 @@
 /* The table of debug information fragments */
 struct ext_table caml_debug_info;
 
-CAMLexport int32_t caml_backtrace_active = 0;
-CAMLexport int32_t caml_backtrace_pos = 0;
-CAMLexport backtrace_slot * caml_backtrace_buffer = NULL;
-CAMLexport value caml_backtrace_last_exn = Val_unit;
-
 void caml_init_backtrace(void)
 {
-  caml_register_global_root(&caml_backtrace_last_exn);
+  caml_register_global_root(&Caml_state->backtrace_last_exn);
 }
 
 /* Start or stop the backtrace machinery */
@@ -46,14 +41,14 @@ CAMLprim value caml_record_backtrace(value vflag)
 {
   int flag = Int_val(vflag);
 
-  if (flag != caml_backtrace_active) {
-    caml_backtrace_active = flag;
-    caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = Val_unit;
-    /* Note: We do lazy initialization of caml_backtrace_buffer when
+  if (flag != Caml_state->backtrace_active) {
+    Caml_state->backtrace_active = flag;
+    Caml_state->backtrace_pos = 0;
+    Caml_state->backtrace_last_exn = Val_unit;
+    /* Note: We do lazy initialization of Caml_state->backtrace_buffer when
        needed in order to simplify the interface with the thread
        library (thread creation doesn't need to allocate
-       caml_backtrace_buffer). So we don't have to allocate it here.
+       Caml_state->backtrace_buffer). So we don't have to allocate it here.
     */
   }
   return Val_unit;
@@ -62,7 +57,7 @@ CAMLprim value caml_record_backtrace(value vflag)
 /* Return the status of the backtrace machinery */
 CAMLprim value caml_backtrace_status(value vunit)
 {
-  return Val_bool(caml_backtrace_active);
+  return Val_bool(Caml_state->backtrace_active);
 }
 
 /* Print location information -- same behavior as in Printexc
@@ -120,8 +115,8 @@ CAMLexport void caml_print_exception_backtrace(void)
     return;
   }
 
-  for (i = 0; i < caml_backtrace_pos; i++) {
-    for (dbg = caml_debuginfo_extract(caml_backtrace_buffer[i]);
+  for (i = 0; i < Caml_state->backtrace_pos; i++) {
+    for (dbg = caml_debuginfo_extract(Caml_state->backtrace_buffer[i]);
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
     {
@@ -142,28 +137,28 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
      if the finalizer raises then catches an exception).  We choose to ignore
      any such finalizer backtraces and return the original one. */
 
-  if (!caml_backtrace_active ||
-      caml_backtrace_buffer == NULL ||
-      caml_backtrace_pos == 0) {
+  if (!Caml_state->backtrace_active ||
+      Caml_state->backtrace_buffer == NULL ||
+      Caml_state->backtrace_pos == 0) {
     res = caml_alloc(0, 0);
   }
   else {
-    backtrace_slot saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
-    int saved_caml_backtrace_pos;
+    backtrace_slot saved_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
+    int saved_backtrace_pos;
     intnat i;
 
-    saved_caml_backtrace_pos = caml_backtrace_pos;
+    saved_backtrace_pos = Caml_state->backtrace_pos;
 
-    if (saved_caml_backtrace_pos > BACKTRACE_BUFFER_SIZE) {
-      saved_caml_backtrace_pos = BACKTRACE_BUFFER_SIZE;
+    if (saved_backtrace_pos > BACKTRACE_BUFFER_SIZE) {
+      saved_backtrace_pos = BACKTRACE_BUFFER_SIZE;
     }
 
-    memcpy(saved_caml_backtrace_buffer, caml_backtrace_buffer,
-           saved_caml_backtrace_pos * sizeof(backtrace_slot));
+    memcpy(saved_backtrace_buffer, Caml_state->backtrace_buffer,
+           saved_backtrace_pos * sizeof(backtrace_slot));
 
-    res = caml_alloc(saved_caml_backtrace_pos, 0);
-    for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      Field(res, i) = Val_backtrace_slot(saved_caml_backtrace_buffer[i]);
+    res = caml_alloc(saved_backtrace_pos, 0);
+    for (i = 0; i < saved_backtrace_pos; i++) {
+      Field(res, i) = Val_backtrace_slot(saved_backtrace_buffer[i]);
     }
   }
 
@@ -178,7 +173,7 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   intnat i;
   mlsize_t bt_size;
 
-  caml_backtrace_last_exn = exn;
+  Caml_state->backtrace_last_exn = exn;
 
   bt_size = Wosize_val(backtrace);
   if(bt_size > BACKTRACE_BUFFER_SIZE){
@@ -188,18 +183,19 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   /* We don't allocate if the backtrace is empty (no -g or backtrace
      not activated) */
   if(bt_size == 0){
-    caml_backtrace_pos = 0;
+    Caml_state->backtrace_pos = 0;
     return Val_unit;
   }
 
   /* Allocate if needed and copy the backtrace buffer */
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+  if (Caml_state->backtrace_buffer == NULL &&
+      caml_alloc_backtrace_buffer() == -1) {
     return Val_unit;
   }
 
-  caml_backtrace_pos = bt_size;
-  for(i=0; i < caml_backtrace_pos; i++){
-    caml_backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
+  Caml_state->backtrace_pos = bt_size;
+  for(i=0; i < Caml_state->backtrace_pos; i++){
+    Caml_state->backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
   }
 
   return Val_unit;

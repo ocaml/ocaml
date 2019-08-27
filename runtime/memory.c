@@ -335,7 +335,7 @@ int caml_add_to_heap (char *m)
 
   caml_gc_message (0x04, "Growing heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                   (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
+     (Bsize_wsize (Caml_state->stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
@@ -353,12 +353,12 @@ int caml_add_to_heap (char *m)
     Chunk_next (m) = cur;
     *last = m;
 
-    ++ caml_stat_heap_chunks;
+    ++ Caml_state->stat_heap_chunks;
   }
 
-  caml_stat_heap_wsz += Wsize_bsize (Chunk_size (m));
-  if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
-    caml_stat_top_heap_wsz = caml_stat_heap_wsz;
+  Caml_state->stat_heap_wsz += Wsize_bsize (Chunk_size (m));
+  if (Caml_state->stat_heap_wsz > Caml_state->stat_top_heap_wsz){
+    Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
   }
   return 0;
 }
@@ -437,10 +437,10 @@ void caml_shrink_heap (char *chunk)
   */
   if (chunk == caml_heap_start) return;
 
-  caml_stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
+  Caml_state->stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
   caml_gc_message (0x04, "Shrinking heap to %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
-                   caml_stat_heap_wsz / 1024);
+                   Caml_state->stat_heap_wsz / 1024);
 
 #ifdef DEBUG
   {
@@ -451,7 +451,7 @@ void caml_shrink_heap (char *chunk)
   }
 #endif
 
-  -- caml_stat_heap_chunks;
+  -- Caml_state->stat_heap_chunks;
 
   /* Remove [chunk] from the list of chunks. */
   cp = &caml_heap_start;
@@ -496,7 +496,7 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
     if (new_block == NULL) {
       if (!raise_oom)
         return 0;
-      else if (caml_in_minor_collection)
+      else if (Caml_state->in_minor_collection)
         caml_fatal_error ("out of memory");
       else
         caml_raise_out_of_memory ();
@@ -521,7 +521,7 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
     == Make_header_with_profinfo (wosize, tag, caml_allocation_color (hp),
                                   profinfo));
   caml_allocated_words += Whsize_wosize (wosize);
-  if (caml_allocated_words > caml_minor_heap_wsz){
+  if (caml_allocated_words > Caml_state->minor_heap_wsz){
     CAML_INSTR_INT ("request_major/alloc_shr@", 1);
     caml_request_major_slice ();
   }
@@ -648,7 +648,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   CAMLassert(Is_in_heap_or_young(fp));
   *fp = val;
   if (!Is_young((value)fp) && Is_block (val) && Is_young (val)) {
-    add_to_ref_table (&caml_ref_table, fp);
+    add_to_ref_table (Caml_state->ref_table, fp);
   }
 }
 
@@ -701,7 +701,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
     }
     /* Check for condition 1. */
     if (Is_block(val) && Is_young(val)) {
-      add_to_ref_table (&caml_ref_table, fp);
+      add_to_ref_table (Caml_state->ref_table, fp);
     }
   }
 }

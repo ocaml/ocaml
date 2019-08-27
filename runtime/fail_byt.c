@@ -30,15 +30,12 @@
 #include "caml/signals.h"
 #include "caml/stacks.h"
 
-CAMLexport struct longjmp_buffer * caml_external_raise = NULL;
-value caml_exn_bucket;
-
 CAMLexport void caml_raise(value v)
 {
   Unlock_exn();
-  caml_exn_bucket = v;
-  if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);
-  siglongjmp(caml_external_raise->buf, 1);
+  Caml_state->exn_bucket = v;
+  if (Caml_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  siglongjmp(Caml_state->external_raise->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)

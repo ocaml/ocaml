@@ -19,6 +19,7 @@
 #include "caml/backtrace.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
+#include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/io.h"
 #include "caml/memory.h"
@@ -70,15 +71,15 @@ struct caml_thread_descr {
 /* The infos on threads (allocated via caml_stat_alloc()) */
 
 struct caml_thread_struct {
-  value descr;                  /* The heap-allocated descriptor (root) */
+  value descr;              /* The heap-allocated descriptor (root) */
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
-  char * top_of_stack;          /* Top of stack for this thread (approx.) */
-  char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
-  uintnat last_retaddr;         /* Saved value of caml_last_return_address */
-  value * gc_regs;              /* Saved value of caml_gc_regs */
-  char * exception_pointer;     /* Saved value of caml_exception_pointer */
+  char * top_of_stack;      /* Top of stack for this thread (approx.) */
+  char * bottom_of_stack;   /* Saved value of Caml_state->bottom_of_stack */
+  uintnat last_retaddr;     /* Saved value of Caml_state->last_return_address */
+  value * gc_regs;          /* Saved value of Caml_state->gc_regs */
+  char * exception_pointer; /* Saved value of Caml_state->exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * exit_buf; /* For thread exit */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
@@ -88,17 +89,18 @@ struct caml_thread_struct {
   value* spacetime_finaliser_trie_root;
 #endif
 #else
-  value * stack_low;         /* The execution stack for this thread */
+  value * stack_low; /* The execution stack for this thread */
   value * stack_high;
   value * stack_threshold;
-  value * sp;                /* Saved value of caml_extern_sp for this thread */
-  value * trapsp;            /* Saved value of caml_trapsp for this thread */
-  struct caml__roots_block * local_roots; /* Saved value of caml_local_roots */
-  struct longjmp_buffer * external_raise; /* Saved caml_external_raise */
+  value * sp;        /* Saved value of Caml_state->extern_sp for this thread */
+  value * trapsp;    /* Saved value of Caml_state->trapsp for this thread */
+  /* Saved value of Caml_state->local_roots */
+  struct caml__roots_block * local_roots;
+  struct longjmp_buffer * external_raise; /* Saved Caml_state->external_raise */
 #endif
-  int backtrace_pos;         /* Saved caml_backtrace_pos */
-  backtrace_slot * backtrace_buffer; /* Saved caml_backtrace_buffer */
-  value backtrace_last_exn;  /* Saved caml_backtrace_last_exn (root) */
+  int backtrace_pos; /* Saved Caml_state->backtrace_pos */
+  backtrace_slot * backtrace_buffer; /* Saved Caml_state->backtrace_buffer */
+  value backtrace_last_exn;  /* Saved Caml_state->backtrace_last_exn (root) */
   int memprof_suspended;     /* Saved caml_memprof_suspended */
 };
 
@@ -173,12 +175,11 @@ static void caml_thread_scan_roots(scanning_action action)
 static inline void caml_thread_save_runtime_state(void)
 {
 #ifdef NATIVE_CODE
-  curr_thread->top_of_stack = caml_top_of_stack;
-  curr_thread->bottom_of_stack = caml_bottom_of_stack;
-  curr_thread->last_retaddr = caml_last_return_address;
-  curr_thread->gc_regs = caml_gc_regs;
-  curr_thread->exception_pointer = caml_exception_pointer;
-  curr_thread->local_roots = caml_local_roots;
+  curr_thread->top_of_stack = Caml_state->top_of_stack;
+  curr_thread->bottom_of_stack = Caml_state->bottom_of_stack;
+  curr_thread->last_retaddr = Caml_state->last_return_address;
+  curr_thread->gc_regs = Caml_state->gc_regs;
+  curr_thread->exception_pointer = Caml_state->exception_pointer;
 #ifdef WITH_SPACETIME
   curr_thread->spacetime_trie_node_ptr
     = caml_spacetime_trie_node_ptr;
@@ -186,29 +187,28 @@ static inline void caml_thread_save_runtime_state(void)
     = caml_spacetime_finaliser_trie_root;
 #endif
 #else
-  curr_thread->stack_low = caml_stack_low;
-  curr_thread->stack_high = caml_stack_high;
-  curr_thread->stack_threshold = caml_stack_threshold;
-  curr_thread->sp = caml_extern_sp;
-  curr_thread->trapsp = caml_trapsp;
-  curr_thread->local_roots = caml_local_roots;
-  curr_thread->external_raise = caml_external_raise;
+  curr_thread->stack_low = Caml_state->stack_low;
+  curr_thread->stack_high = Caml_state->stack_high;
+  curr_thread->stack_threshold = Caml_state->stack_threshold;
+  curr_thread->sp = Caml_state->extern_sp;
+  curr_thread->trapsp = Caml_state->trapsp;
+  curr_thread->external_raise = Caml_state->external_raise;
 #endif
-  curr_thread->backtrace_pos = caml_backtrace_pos;
-  curr_thread->backtrace_buffer = caml_backtrace_buffer;
-  curr_thread->backtrace_last_exn = caml_backtrace_last_exn;
+  curr_thread->local_roots = Caml_state->local_roots;
+  curr_thread->backtrace_pos = Caml_state->backtrace_pos;
+  curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
+  curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
   curr_thread->memprof_suspended = caml_memprof_suspended;
 }
 
 static inline void caml_thread_restore_runtime_state(void)
 {
 #ifdef NATIVE_CODE
-  caml_top_of_stack = curr_thread->top_of_stack;
-  caml_bottom_of_stack= curr_thread->bottom_of_stack;
-  caml_last_return_address = curr_thread->last_retaddr;
-  caml_gc_regs = curr_thread->gc_regs;
-  caml_exception_pointer = curr_thread->exception_pointer;
-  caml_local_roots = curr_thread->local_roots;
+  Caml_state->top_of_stack = curr_thread->top_of_stack;
+  Caml_state->bottom_of_stack= curr_thread->bottom_of_stack;
+  Caml_state->last_return_address = curr_thread->last_retaddr;
+  Caml_state->gc_regs = curr_thread->gc_regs;
+  Caml_state->exception_pointer = curr_thread->exception_pointer;
 #ifdef WITH_SPACETIME
   caml_spacetime_trie_node_ptr
     = curr_thread->spacetime_trie_node_ptr;
@@ -216,17 +216,17 @@ static inline void caml_thread_restore_runtime_state(void)
     = curr_thread->spacetime_finaliser_trie_root;
 #endif
 #else
-  caml_stack_low = curr_thread->stack_low;
-  caml_stack_high = curr_thread->stack_high;
-  caml_stack_threshold = curr_thread->stack_threshold;
-  caml_extern_sp = curr_thread->sp;
-  caml_trapsp = curr_thread->trapsp;
-  caml_local_roots = curr_thread->local_roots;
-  caml_external_raise = curr_thread->external_raise;
+  Caml_state->stack_low = curr_thread->stack_low;
+  Caml_state->stack_high = curr_thread->stack_high;
+  Caml_state->stack_threshold = curr_thread->stack_threshold;
+  Caml_state->extern_sp = curr_thread->sp;
+  Caml_state->trapsp = curr_thread->trapsp;
+  Caml_state->external_raise = curr_thread->external_raise;
 #endif
-  caml_backtrace_pos = curr_thread->backtrace_pos;
-  caml_backtrace_buffer = curr_thread->backtrace_buffer;
-  caml_backtrace_last_exn = curr_thread->backtrace_last_exn;
+  Caml_state->local_roots = curr_thread->local_roots;
+  Caml_state->backtrace_pos = curr_thread->backtrace_pos;
+  Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
+  Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
   caml_memprof_suspended = curr_thread->memprof_suspended;
 }
 
@@ -701,7 +701,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
   caml_stat_free(msg);
-  if (caml_backtrace_active) caml_print_exception_backtrace();
+  if (Caml_state->backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
 }

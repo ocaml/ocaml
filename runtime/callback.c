@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "caml/callback.h"
+#include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
@@ -71,22 +72,23 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 
   CAMLassert(narg + 4 <= 256);
 
-  caml_extern_sp -= narg + 4;
-  for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
+  Caml_state->extern_sp -= narg + 4;
+  for (i = 0; i < narg; i++) Caml_state->extern_sp[i] = args[i]; /* arguments */
 #ifndef LOCAL_CALLBACK_BYTECODE
-  caml_extern_sp[narg] = (value) (callback_code + 4); /* return address */
-  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
-  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
-  caml_extern_sp[narg + 3] = closure;
+  Caml_state->extern_sp[narg] = (value)(callback_code + 4); /* return address */
+  Caml_state->extern_sp[narg + 1] = Val_unit;    /* environment */
+  Caml_state->extern_sp[narg + 2] = Val_long(0); /* extra args */
+  Caml_state->extern_sp[narg + 3] = closure;
   Init_callback();
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
   res = caml_interprete(callback_code, sizeof(callback_code));
 #else /*have LOCAL_CALLBACK_BYTECODE*/
-  caml_extern_sp[narg] = (value) (local_callback_code + 4); /* return address */
-  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
-  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
-  caml_extern_sp[narg + 3] = closure;
+  /* return address */
+  Caml_state->extern_sp[narg] = (value) (local_callback_code + 4);
+  Caml_state->extern_sp[narg + 1] = Val_unit;    /* environment */
+  Caml_state->extern_sp[narg + 2] = Val_long(0); /* extra args */
+  Caml_state->extern_sp[narg + 3] = closure;
   local_callback_code[0] = ACC;
   local_callback_code[1] = narg + 3;
   local_callback_code[2] = APPLY;
@@ -100,7 +102,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   res = caml_interprete(local_callback_code, sizeof(local_callback_code));
   caml_release_bytecode(local_callback_code, sizeof(local_callback_code));
 #endif /*LOCAL_CALLBACK_BYTECODE*/
-  if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#3419 */
+  if (Is_exception_result(res)) Caml_state->extern_sp += narg + 4; /* PR#3419 */
   return res;
 }
 
@@ -131,7 +133,31 @@ CAMLexport value caml_callback3_exn(value closure,
 
 #else
 
-/* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
+/* Native-code callbacks. */
+
+typedef value (callback_stub)(caml_domain_state* state, value closure,
+                              value* args);
+
+callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
+
+CAMLexport value caml_callback_exn(value closure, value arg)
+{
+  return caml_callback_asm(Caml_state, closure, &arg);
+}
+
+CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
+{
+  value args[] = {arg1, arg2};
+  return caml_callback2_asm(Caml_state, closure, args);
+}
+
+CAMLexport value caml_callback3_exn(value closure,
+                                    value arg1, value arg2, value arg3)
+{
+  value args[] = {arg1, arg2, arg3};
+  return caml_callback3_asm(Caml_state, closure, args);
+}
+
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {

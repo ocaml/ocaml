@@ -573,7 +573,7 @@ static void intern_rec(value *dest)
 
         if (ops->finalize != NULL && Is_young(v)) {
           /* Remember that the block has a finalizer. */
-          add_to_custom_table (&caml_custom_table, v, 0, 1);
+          add_to_custom_table (Caml_state->custom_table, v, 0, 1);
         }
 
         intern_dest += 1 + size;

@@ -33,7 +33,8 @@ let word_addressed = false
     x0 - x15              general purpose (caller-save)
     x16, x17              temporaries (used by call veeners)
     x18                   platform register (reserved)
-    x19 - x25             general purpose (callee-save)
+    x19 - x24             general purpose (callee-save)
+    x25                   domain state pointer
     x26                   trap pointer
     x27                   alloc pointer
     x28                   alloc limit
@@ -49,8 +50,8 @@ let word_addressed = false
 let int_reg_name =
   [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";
      "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15";
-     "x19"; "x20"; "x21"; "x22"; "x23"; "x24"; "x25";
-     "x26"; "x27"; "x28"; "x16"; "x17" |]
+     "x19"; "x20"; "x21"; "x22"; "x23"; "x24";
+     "x25"; "x26"; "x27"; "x28"; "x16"; "x17" |]
 
 let float_reg_name =
   [| "d0";  "d1";  "d2";  "d3";  "d4";  "d5";  "d6";  "d7";
@@ -66,7 +67,7 @@ let register_class r =
   | Float -> 1
 
 let num_available_registers =
-  [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
+  [| 22; 32 |] (* first 22 int regs allocatable; all float regs allocatable *)
 
 let first_available_register =
   [| 0; 100 |]
@@ -177,8 +178,8 @@ let loc_exn_bucket = phys_reg 0
 let int_dwarf_reg_numbers =
   [| 0; 1; 2; 3; 4; 5; 6; 7;
      8; 9; 10; 11; 12; 13; 14; 15;
-     19; 20; 21; 22; 23; 24; 25;
-     26; 27; 28; 16; 17;
+     19; 20; 21; 22; 23; 24;
+     25; 26; 27; 28; 16; 17;
   |]
 
 let float_dwarf_reg_numbers =
@@ -229,15 +230,15 @@ let destroyed_at_reloadretaddr = [| |]
 
 let safe_register_pressure = function
   | Iextcall _ -> 8
-  | Ialloc _ -> 25
-  | _ -> 26
+  | Ialloc _ -> 24
+  | _ -> 25
 
 let max_register_pressure = function
   | Iextcall _ -> [| 10; 8 |]
-  | Ialloc _ -> [| 25; 32 |]
+  | Ialloc _ -> [| 24; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _, _) -> [| 26; 31 |]
-  | _ -> [| 26; 32 |]
+  | Iload(Single, _) | Istore(Single, _, _) -> [| 25; 31 |]
+  | _ -> [| 25; 32 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)

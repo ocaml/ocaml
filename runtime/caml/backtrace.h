@@ -30,63 +30,49 @@
  *
  * Backtrace generation is split in multiple steps.
  * The lowest-level one, done by [backtrace_byt.c] and
- * [backtrace_nat.c] just fills the [caml_backtrace_buffer]
+ * [backtrace_nat.c] just fills the [Caml_state->backtrace_buffer]
  * variable each time a frame is unwinded.
  * At that point, we don't know whether the backtrace will be useful or not so
  * this code should be as fast as possible.
  *
  * If the backtrace happens to be useful, later passes will read
- * [caml_backtrace_buffer] and turn it into a [raw_backtrace] and then a
+ * [Caml_state->backtrace_buffer] and turn it into a [raw_backtrace] and then a
  * [backtrace].
  * This is done in [backtrace.c] and [stdlib/printexc.ml].
  *
  * Content of buffers
  * ------------------
  *
- * [caml_backtrace_buffer] (really cheap)
+ * [Caml_state->backtrace_buffer] (really cheap)
  *   Backend and process image dependent, abstracted by C-type backtrace_slot.
  * [raw_backtrace] (cheap)
  *   OCaml values of abstract type [Printexc.raw_backtrace_slot],
  *   still backend and process image dependent (unsafe to marshal).
  * [backtrace] (more expensive)
  *   OCaml values of algebraic data-type [Printexc.backtrace_slot]
- */
-
-/* Non zero iff backtraces are recorded.
- * One should use to change this variable [caml_record_backtrace].
- */
-CAMLextern int caml_backtrace_active;
-
-/* The [backtrace_slot] type represents values stored in the
- * [caml_backtrace_buffer].  In bytecode, it is the same as a
- * [code_t], in native code it as a [frame_descr *].  The difference
- * doesn't matter for code outside [backtrace_{byt,nat}.c],
- * so it is just exposed as a [backtrace_slot].
- */
-typedef void * backtrace_slot;
-
-/* The [caml_backtrace_buffer] and [caml_backtrace_last_exn]
- * variables are valid only if [caml_backtrace_active != 0].
+ *
+ * [Caml_state->backtrace_active] is non zero iff backtraces are recorded.
+ * This variable must be changed with [caml_record_backtrace].
+ *
+ * The [Caml_state->backtrace_buffer] and [Caml_state->backtrace_last_exn]
+ * variables are valid only if [Caml_state->backtrace_active != 0].
  *
  * They are part of the state specific to each thread, and threading libraries
  * are responsible for copying them on context switch.
  * See [otherlibs/systhreads/st_stubs.c] and [otherlibs/threads/scheduler.c].
- */
-
-/* [caml_backtrace_buffer] is filled by runtime when unwinding stack.
- * It is an array ranging from [0] to [caml_backtrace_pos - 1].
- * [caml_backtrace_pos] is always zero if [!caml_backtrace_active].
+ *
+ *
+ * [Caml_state->backtrace_buffer] is filled by runtime when unwinding stack. It
+ * is an array ranging from [0] to [Caml_state->backtrace_pos - 1].
+ * [Caml_state->backtrace_pos] is always zero if
+ * [!Caml_state->backtrace_active].
  *
  * Its maximum size is determined by [BACKTRACE_BUFFER_SIZE] from
  * [backtrace_prim.h], but this shouldn't affect users.
- */
-CAMLextern backtrace_slot * caml_backtrace_buffer;
-CAMLextern int caml_backtrace_pos;
-
-/* [caml_backtrace_last_exn] stores the last exception value that was raised,
- * iff [caml_backtrace_active != 0].
- * It is tested for equality to determine whether a raise is a re-raise of the
- * same exception.
+ *
+ * [Caml_state->backtrace_last_exn] stores the last exception value that was
+ * raised, iff [Caml_state->backtrace_active != 0]. It is tested for equality
+ * to determine whether a raise is a re-raise of the same exception.
  *
  * FIXME: this shouldn't matter anymore. Since OCaml 4.02, non-parameterized
  * exceptions are constant, so physical equality is no longer appropriate.
@@ -95,7 +81,6 @@ CAMLextern int caml_backtrace_pos;
  *   interpreter;
  * - directly resetting [caml_backtrace_pos] to 0 in native runtimes for raise.
  */
-CAMLextern value caml_backtrace_last_exn;
 
 /* [caml_record_backtrace] toggle backtrace recording on and off.
  * This function can be called at runtime by user-code, or during

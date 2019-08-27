@@ -31,8 +31,6 @@
 
 /* Roots registered from C functions */
 
-struct caml__roots_block *caml_local_roots = NULL;
-
 void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
@@ -220,10 +218,6 @@ void caml_unregister_frametable(intnat *table) {
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
-char * caml_top_of_stack;
-char * caml_bottom_of_stack = NULL; /* no stack initially */
-uintnat caml_last_return_address = 1; /* not in OCaml code initially */
-value * caml_gc_regs;
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
 static link * caml_dyn_globals = NULL;
@@ -271,9 +265,9 @@ void caml_oldify_local_roots (void)
   }
 
   /* The stack and local roots */
-  sp = caml_bottom_of_stack;
-  retaddr = caml_last_return_address;
-  regs = caml_gc_regs;
+  sp = Caml_state->bottom_of_stack;
+  retaddr = Caml_state->last_return_address;
+  regs = Caml_state->gc_regs;
   if (sp != NULL) {
     while (1) {
       /* Find the descriptor corresponding to the return address */
@@ -316,7 +310,7 @@ void caml_oldify_local_roots (void)
     }
   }
   /* Local C roots */
-  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
+  for (lr = Caml_state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
@@ -414,8 +408,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   }
   CAML_INSTR_TIME (tmr, "major_roots/dynamic_global");
   /* The stack and local roots */
-  caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
-                      caml_gc_regs, caml_local_roots);
+  caml_do_local_roots(f, Caml_state->bottom_of_stack,
+                      Caml_state->last_return_address, Caml_state->gc_regs,
+                      Caml_state->local_roots);
   CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
@@ -499,7 +494,8 @@ uintnat (*caml_stack_usage_hook)(void) = NULL;
 uintnat caml_stack_usage (void)
 {
   uintnat sz;
-  sz = (value *) caml_top_of_stack - (value *) caml_bottom_of_stack;
+  sz = (value *) Caml_state->top_of_stack -
+       (value *) Caml_state->bottom_of_stack;
   if (caml_stack_usage_hook != NULL)
     sz += (*caml_stack_usage_hook)();
   return sz;

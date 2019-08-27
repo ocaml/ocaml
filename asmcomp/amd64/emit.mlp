@@ -154,6 +154,9 @@ let load_symbol_addr s arg =
   else
     I.mov (sym (emit_symbol s)) arg
 
+let domain_field f =
+  mem64 QWORD (Domainstate.idx_of_field f * 8) R14
+
 (* Output a label *)
 
 let emit_label lbl =
@@ -594,8 +597,7 @@ let emit_instr fallthrough i =
              If we do the same for Win64, we probably need to change
              amd64nt.asm accordingly.
           *)
-          load_symbol_addr "caml_young_ptr" r11;
-          I.mov (mem64 QWORD 0 R11) r15
+          I.mov (domain_field Domainstate.Domain_young_ptr) r15
         end
       end else begin
         emit_call func;
@@ -654,24 +656,7 @@ let emit_instr fallthrough i =
         let lbl_redo = new_label() in
         def_label lbl_redo;
         I.sub (int n) r15;
-        let spacetime_node_hole_ptr_is_in_rax =
-          Config.spacetime && (i.arg.(0).loc = Reg 0)
-        in
-        if !Clflags.dlcode then begin
-          (* When using Spacetime, %rax might be the node pointer, so we
-             must take care not to clobber it.  (Whilst we can tell the
-             register allocator that %rax is destroyed by Ialloc, we can't
-             force that the argument (the node pointer) is not in %rax.) *)
-          if spacetime_node_hole_ptr_is_in_rax then begin
-            I.push rax
-          end;
-          load_symbol_addr "caml_young_limit" rax;
-          I.cmp (mem64 QWORD 0 RAX) r15;
-          if spacetime_node_hole_ptr_is_in_rax then begin
-            I.pop rax  (* this does not affect the flags *)
-          end
-        end else
-          I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
+        I.cmp (domain_field Domainstate.Domain_young_limit) r15;
         let lbl_call_gc = new_label() in
         let dbg =
           if not Config.spacetime then Debuginfo.none
@@ -887,15 +872,15 @@ let emit_instr fallthrough i =
         else
           I.mov (sym (emit_label s)) arg
       in
-      cfi_adjust_cfa_offset 16;
-      I.sub (int 16) rsp;
+      load_label_addr lbl_handler r11;
+      I.push r11;
+      cfi_adjust_cfa_offset 8;
+      I.push (domain_field Domainstate.Domain_exception_pointer);
+      cfi_adjust_cfa_offset 8;
+      I.mov rsp (domain_field Domainstate.Domain_exception_pointer);
       stack_offset := !stack_offset + 16;
-      I.mov r14 (mem64 QWORD 0 RSP);
-      load_label_addr lbl_handler r14;
-      I.mov r14 (mem64 QWORD 8 RSP);
-      I.mov rsp r14
   | Lpoptrap ->
-      I.pop r14;
+      I.pop (domain_field Domainstate.Domain_exception_pointer);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
@@ -905,12 +890,16 @@ let emit_instr fallthrough i =
          [caml_reraise_exn].  The only function called that might affect the
          trie is [caml_stash_backtrace], and it does not. *)
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_regular ->
+          I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Cmm.Raise_notrace ->
-          I.mov r14 rsp;
-          I.pop r14;
+      | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty true i.dbg
+      | Lambda.Raise_notrace ->
+          I.mov (domain_field Domainstate.Domain_exception_pointer) rsp;
+          I.pop (domain_field Domainstate.Domain_exception_pointer);
           I.pop r11;
           I.jmp r11
       end
@@ -999,9 +988,6 @@ let begin_assembly() =
   float_constants := [];
   all_functions := [];
   if system = S_win64 then begin
-    D.extrn "caml_young_ptr" QWORD;
-    D.extrn "caml_young_limit" QWORD;
-    D.extrn "caml_exception_pointer" QWORD;
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_call_gc1" NEAR;
     D.extrn "caml_call_gc2" NEAR;

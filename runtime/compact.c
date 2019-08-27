@@ -418,7 +418,7 @@ static void do_compaction (void)
       ch = Chunk_next (ch);
     }
   }
-  ++ caml_stat_compactions;
+  ++ Caml_state->stat_compactions;
   caml_gc_message (0x10, "done.\n");
 }
 
@@ -429,10 +429,13 @@ void caml_compact_heap (void)
   uintnat target_wsz, live;
   CAML_INSTR_SETUP(tmr, "compact");
 
-  CAMLassert (caml_young_ptr == caml_young_alloc_end);
-  CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
-  CAMLassert (caml_ephe_ref_table.ptr == caml_ephe_ref_table.base);
-  CAMLassert (caml_custom_table.ptr == caml_custom_table.base);
+  CAMLassert (Caml_state->young_ptr == Caml_state->young_alloc_end);
+  CAMLassert (Caml_state->ref_table->ptr ==
+              Caml_state->ref_table->base);
+  CAMLassert (Caml_state->ephe_ref_table->ptr ==
+              Caml_state->ephe_ref_table->base);
+  CAMLassert (Caml_state->custom_table->ptr ==
+              Caml_state->custom_table->base);
 
   do_compaction ();
   CAML_INSTR_TIME (tmr, "compact/main");
@@ -461,18 +464,18 @@ void caml_compact_heap (void)
 
      We recompact if target_wsz < heap_size / 2
   */
-  live = caml_stat_heap_wsz - caml_fl_cur_wsz;
+  live = Caml_state->stat_heap_wsz - caml_fl_cur_wsz;
   target_wsz = live + caml_percent_free * (live / 100 + 1)
                  + Wsize_bsize (Page_size);
   target_wsz = caml_clip_heap_chunk_wsz (target_wsz);
 
 #ifdef HAS_HUGE_PAGES
   if (caml_use_huge_pages
-      && Bsize_wsize (caml_stat_heap_wsz) <= HUGE_PAGE_SIZE)
+      && Bsize_wsize (Caml_state->stat_heap_wsz) <= HUGE_PAGE_SIZE)
     return;
 #endif
 
-  if (target_wsz < caml_stat_heap_wsz / 2){
+  if (target_wsz < Caml_state->stat_heap_wsz / 2){
     /* Recompact. */
     char *chunk;
 
@@ -492,15 +495,15 @@ void caml_compact_heap (void)
     }
     Chunk_next (chunk) = caml_heap_start;
     caml_heap_start = chunk;
-    ++ caml_stat_heap_chunks;
-    caml_stat_heap_wsz += Wsize_bsize (Chunk_size (chunk));
-    if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
-      caml_stat_top_heap_wsz = caml_stat_heap_wsz;
+    ++ Caml_state->stat_heap_chunks;
+    Caml_state->stat_heap_wsz += Wsize_bsize (Chunk_size (chunk));
+    if (Caml_state->stat_heap_wsz > Caml_state->stat_top_heap_wsz){
+      Caml_state->stat_top_heap_wsz = Caml_state->stat_heap_wsz;
     }
     do_compaction ();
-    CAMLassert (caml_stat_heap_chunks == 1);
+    CAMLassert (Caml_state->stat_heap_chunks == 1);
     CAMLassert (Chunk_next (caml_heap_start) == NULL);
-    CAMLassert (caml_stat_heap_wsz == Wsize_bsize (Chunk_size (chunk)));
+    CAMLassert (Caml_state->stat_heap_wsz == Wsize_bsize (Chunk_size (chunk)));
     CAML_INSTR_TIME (tmr, "compact/recompact");
   }
 }
@@ -511,29 +514,29 @@ void caml_compact_heap_maybe (void)
          FW = fl_size_at_phase_change + 3 * (caml_fl_cur_wsz
                                              - caml_fl_wsz_at_phase_change)
          FW = 3 * caml_fl_cur_wsz - 2 * caml_fl_wsz_at_phase_change
-     Estimated live words:      LW = caml_stat_heap_wsz - FW
+     Estimated live words:      LW = Caml_state->stat_heap_wsz - FW
      Estimated free percentage: FP = 100 * FW / LW
      We compact the heap if FP > caml_percent_max
   */
   double fw, fp;
   CAMLassert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
-  if (caml_stat_major_collections < 3) return;
-  if (caml_stat_heap_wsz <= 2 * caml_clip_heap_chunk_wsz (0)) return;
+  if (Caml_state->stat_major_collections < 3) return;
+  if (Caml_state->stat_heap_wsz <= 2 * caml_clip_heap_chunk_wsz (0)) return;
 
 #ifdef HAS_HUGE_PAGES
   if (caml_use_huge_pages
-      && Bsize_wsize (caml_stat_heap_wsz) <= HUGE_PAGE_SIZE)
+      && Bsize_wsize (Caml_state->stat_heap_wsz) <= HUGE_PAGE_SIZE)
     return;
 #endif
 
   fw = 3.0 * caml_fl_cur_wsz - 2.0 * caml_fl_wsz_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_wsz;
 
-  if (fw >= caml_stat_heap_wsz){
+  if (fw >= Caml_state->stat_heap_wsz){
     fp = 1000000.0;
   }else{
-    fp = 100.0 * fw / (caml_stat_heap_wsz - fw);
+    fp = 100.0 * fw / (Caml_state->stat_heap_wsz - fw);
     if (fp > 1000000.0) fp = 1000000.0;
   }
   caml_gc_message (0x200, "FL size at phase change = %"
@@ -551,7 +554,7 @@ void caml_compact_heap_maybe (void)
     caml_finish_major_cycle ();
 
     fw = caml_fl_cur_wsz;
-    fp = 100.0 * fw / (caml_stat_heap_wsz - fw);
+    fp = 100.0 * fw / (Caml_state->stat_heap_wsz - fw);
     caml_gc_message (0x200, "Measured overhead: %"
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                      (uintnat) fp);

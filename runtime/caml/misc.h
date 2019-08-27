@@ -83,6 +83,37 @@ typedef char * addr;
 #define CAMLweakdef
 #endif
 
+/* Alignment */
+#ifdef __GNUC__
+#define CAMLalign(n) __attribute__((aligned(n)))
+#elif _MSC_VER >= 1500
+#define CAMLalign(n) __declspec(align(n))
+#else
+#error "How do I align values on this platform?"
+#endif
+
+/* CAMLunused is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     CAMLunused foo;
+   you should prefer
+     CAMLunused_start foo CAMLunused_end;
+   which supports both GCC/Clang and MSVC.
+*/
+#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+  #define CAMLunused_start __attribute__ ((unused))
+  #define CAMLunused_end
+  #define CAMLunused __attribute__ ((unused))
+#elif _MSC_VER >= 1500
+  #define CAMLunused_start  __pragma( warning (push) )           \
+    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_end __pragma( warning (pop))
+  #define CAMLunused
+#else
+  #define CAMLunused_start
+  #define CAMLunused_end
+  #define CAMLunused
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -94,6 +125,14 @@ typedef void (*caml_timing_hook) (void);
 extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
 extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
 extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+
+#define CAML_STATIC_ASSERT_3(b, l) \
+  CAMLunused_start \
+    char static_assertion_failure_line_##l[(b) ? 1 : -1] \
+  CAMLunused_end
+
+#define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
+#define CAML_STATIC_ASSERT(b) CAML_STATIC_ASSERT_2(b, __LINE__)
 
 /* Windows Unicode support (rest below - char_os is needed earlier) */
 
@@ -353,7 +392,6 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #include <time.h>
 #include <stdio.h>
 
-extern intnat caml_stat_minor_collections;
 extern intnat caml_instr_starttime, caml_instr_stoptime;
 
 struct caml_instr_block {
@@ -371,15 +409,15 @@ extern struct caml_instr_block *caml_instr_log;
 
 /* Allocate the data block for a given name.
    [t] must have been declared with [CAML_INSTR_DECLARE]. */
-#define CAML_INSTR_ALLOC(t) do{                                     \
-    if (caml_stat_minor_collections >= caml_instr_starttime         \
-        && caml_stat_minor_collections < caml_instr_stoptime){      \
-      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block)); \
-      t->index = 0;                                                 \
-      t->tag[0] = "";                                               \
-      t->next = caml_instr_log;                                     \
-      caml_instr_log = t;                                           \
-    }                                                               \
+#define CAML_INSTR_ALLOC(t) do{                                             \
+    if (Caml_state_field(stat_minor_collections) >= caml_instr_starttime    \
+        && Caml_state_field(stat_minor_collections) < caml_instr_stoptime){ \
+      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block));         \
+      t->index = 0;                                                         \
+      t->tag[0] = "";                                                       \
+      t->next = caml_instr_log;                                             \
+      caml_instr_log = t;                                                   \
+    }                                                                       \
   }while(0)
 
 /* Allocate the data block and start the timer.
@@ -467,6 +505,14 @@ extern struct ext_table caml_code_fragments_table;
 int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
 
 #endif /* CAML_INTERNALS */
+
+/* The [backtrace_slot] type represents values stored in the
+ * [caml_backtrace_buffer].  In bytecode, it is the same as a
+ * [code_t], in native code it as a [frame_descr *].  The difference
+ * doesn't matter for code outside [backtrace_{byt,nat}.c],
+ * so it is just exposed as a [void *].
+ */
+typedef void * backtrace_slot;
 
 #ifdef __cplusplus
 }

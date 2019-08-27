@@ -189,7 +189,7 @@ static void do_set (value ar, mlsize_t offset, value v)
     value old = Field (ar, offset);
     Field (ar, offset) = v;
     if (!(Is_block (old) && Is_young (old))){
-      add_to_ephe_ref_table (&caml_ephe_ref_table, ar, offset);
+      add_to_ephe_ref_table (Caml_state->ephe_ref_table, ar, offset);
     }
   }else{
     Field (ar, offset) = v;

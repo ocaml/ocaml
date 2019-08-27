@@ -430,7 +430,8 @@ let emit_instr i =
             gc_frame_lbl = lbl_frame } :: !call_gc_sites;
         `{emit_label lbl_redo}:`;
         `	lay	{emit_reg i.res.(0)}, {emit_int(-n+8)}(%r11)\n`;
-        `	clgr	{emit_reg i.res.(0)}, %r10\n`;
+        let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+        `	clg	{emit_reg i.res.(0)}, {emit_int offset}(%r10)\n`;
         `	brcl	12, {emit_label lbl_call_gc}\n`;
                                                  (* less than or equal *)
         `	lay	%r11, -8({emit_reg i.res.(0)})\n`
@@ -629,10 +630,16 @@ let emit_instr i =
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Lambda.Raise_regular->
+          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
+          `	lghi	%r1, 0\n`;
+          `	stg	%r1, {emit_int offset}(%r10)\n`;
           emit_call "caml_raise_exn";
           `{record_frame Reg.Set.empty true i.dbg}\n`
-        | Cmm.Raise_notrace ->
+        | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          `{record_frame Reg.Set.empty true i.dbg}\n`
+        | Lambda.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
           `	lg	%r13, {emit_int size_addr}(%r15)\n`;

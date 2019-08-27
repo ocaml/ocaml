@@ -30,7 +30,6 @@ struct compare_item { value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
-CAMLexport int caml_compare_unordered;
 
 struct compare_stack {
   struct compare_item init_stack[COMPARE_STACK_INIT_SIZE];
@@ -140,9 +139,9 @@ static intnat do_compare_val(struct compare_stack* stk,
           int res;
           int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
           if (compare == NULL) break;  /* for backward compatibility */
-          caml_compare_unordered = 0;
+          Caml_state->compare_unordered = 0;
           res = compare(v1, v2);
-          if (caml_compare_unordered && !total) return UNORDERED;
+          if (Caml_state->compare_unordered && !total) return UNORDERED;
           if (res != 0) return res;
           goto next_item;
         }
@@ -163,9 +162,9 @@ static intnat do_compare_val(struct compare_stack* stk,
           int res;
           int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
           if (compare == NULL) break;  /* for backward compatibility */
-          caml_compare_unordered = 0;
+          Caml_state->compare_unordered = 0;
           res = compare(v1, v2);
-          if (caml_compare_unordered && !total) return UNORDERED;
+          if (Caml_state->compare_unordered && !total) return UNORDERED;
           if (res != 0) return res;
           goto next_item;
         }
@@ -261,9 +260,9 @@ static intnat do_compare_val(struct compare_stack* stk,
         compare_free_stack(stk);
         caml_invalid_argument("compare: abstract value");
       }
-      caml_compare_unordered = 0;
+      Caml_state->compare_unordered = 0;
       res = compare(v1, v2);
-      if (caml_compare_unordered && !total) return UNORDERED;
+      if (Caml_state->compare_unordered && !total) return UNORDERED;
       if (res != 0) return res;
       break;
     }

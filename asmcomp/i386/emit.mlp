@@ -137,6 +137,12 @@ let register_name r =
 
 let sym32 ?ofs s = mem_sym ?ofs DWORD (emit_symbol s)
 
+let domain_field f r =
+  mem32 DWORD (Domainstate.idx_of_field f * 8) r
+
+let load_domain_state r =
+  I.mov (sym32 "Caml_state") r
+
 let reg = function
   | { loc = Reg r } -> register_name r
   | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
@@ -609,13 +615,14 @@ let emit_instr fallthrough i =
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
-        I.mov (sym32 "caml_young_ptr") eax;
+        load_domain_state ebx;
+        I.mov (domain_field Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
-        I.cmp (sym32 "caml_young_limit") eax;
+        I.cmp (domain_field Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live false Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.mov eax (sym32 "caml_young_ptr");
+        I.mov eax (domain_field Domain_young_ptr RBX);
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
@@ -865,23 +872,34 @@ let emit_instr fallthrough i =
       I.push (label lbl_handler);
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
-      I.push (sym32 "caml_exception_pointer");
+      load_domain_state edx;
+      I.push (domain_field Domain_exception_pointer RDX);
       cfi_adjust_cfa_offset trap_frame_size;
-      I.mov esp (sym32 "caml_exception_pointer");
+      I.mov esp (domain_field Domain_exception_pointer RDX);
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
-      I.pop (sym32 "caml_exception_pointer");
-      I.add (int (trap_frame_size - 4)) esp;
+      I.mov edx (mem32 DWORD 4 RSP);
+      load_domain_state edx;
+      I.pop (domain_field Domain_exception_pointer RDX);
+      I.pop edx;
+      if trap_frame_size > 8 then
+        I.add (int (trap_frame_size - 8)) esp;
       cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_regular ->
+          load_domain_state ebx;
+          I.mov (int 0) (domain_field Domain_backtrace_pos RBX);
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Cmm.Raise_notrace ->
-          I.mov (sym32 "caml_exception_pointer") esp;
-          I.pop (sym32 "caml_exception_pointer");
+      | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty true i.dbg
+      | Lambda.Raise_notrace ->
+          load_domain_state ebx;
+          I.mov (domain_field Domain_exception_pointer RBX) esp;
+          I.pop (domain_field Domain_exception_pointer RBX);
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
           I.pop ebx;
@@ -958,9 +976,6 @@ let begin_assembly() =
   if system = S_win32 then begin
     D.mode386 ();
     D.model "FLAT";
-    D.extrn "_caml_young_ptr" DWORD;
-    D.extrn "_caml_young_limit" DWORD;
-    D.extrn "_caml_exception_pointer" DWORD;
     D.extrn "_caml_extra_params" DWORD;
     D.extrn "_caml_call_gc" PROC;
     D.extrn "_caml_c_call" PROC;
@@ -970,6 +985,7 @@ let begin_assembly() =
     D.extrn "_caml_alloc3" PROC;
     D.extrn "_caml_ml_array_bound_error" PROC;
     D.extrn "_caml_raise_exn" PROC;
+    D.extrn "_Caml_state" DWORD;
   end;
 
   D.data ();

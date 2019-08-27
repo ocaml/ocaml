@@ -49,9 +49,7 @@ G(call_gen_code):
 G(caml_c_call):
         jmp     *%eax
 
-        .comm   G(caml_exception_pointer), 4
-        .comm   G(young_ptr), 4
-        .comm   G(young_start), 4
+        .comm   G(Caml_state), 4
 
 /* Some tests are designed to cause registers to spill; on
  * x86 we require the caml_extra_params symbol from the RTS. */

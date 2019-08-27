@@ -26,7 +26,7 @@ BYTECODE_C_SOURCES := $(addsuffix .c, \
   signals_byt printexc backtrace_byt backtrace compare ints \
   floats str array io extern intern hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak compact finalise custom dynlink \
-  spacetime_byt afl $(UNIX_OR_WIN32) bigarray main memprof)
+  spacetime_byt afl $(UNIX_OR_WIN32) bigarray main memprof domain)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
   startup_aux startup_nat main fail_nat roots_nat signals \
@@ -35,7 +35,7 @@ NATIVE_C_SOURCES := $(addsuffix .c, \
   lexing $(UNIX_OR_WIN32) printexc callback weak compact finalise custom \
   globroots backtrace_nat backtrace dynlink_nat debugger meta \
   dynlink clambda_checks spacetime_nat spacetime_snapshot afl bigarray \
-  memprof)
+  memprof domain)
 
 # The other_files variable stores the list of files whose dependencies
 # should be computed by `make depend` although they do not need to be
@@ -190,7 +190,7 @@ ifneq "$(BYTECODE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(BYTECODE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
 endif
 	mkdir -p "$(INSTALL_INCDIR)"
-	$(INSTALL_DATA) caml/*.h "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) caml/domain_state.tbl caml/*.h "$(INSTALL_INCDIR)"
 
 .PHONY: installopt
 installopt:
@@ -203,7 +203,7 @@ endif
 clean:
 	rm -f $(PROGRAMS) *.$(O) *.$(A) *.$(SO) ld.conf
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
-	rm -f caml/version.h
+	rm -f caml/version.h domain_state*.inc
 
 .PHONY: distclean
 distclean: clean
@@ -358,7 +358,16 @@ $(foreach object_type,$(subst %,,$(object_types)), \
 %_libasmrunpic.o: %.S
 	$(ASPP) $(ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
 
-%.obj: %.asm
+domain_state64.inc: caml/domain_state.tbl gen_domain_state64_inc.awk
+	awk -f gen_domain_state64_inc.awk $< > $@
+
+domain_state32.inc: caml/domain_state.tbl gen_domain_state32_inc.awk
+	awk -f gen_domain_state32_inc.awk $< > $@
+
+amd64nt.obj: amd64nt.asm domain_state64.inc
+	$(ASM)$@ $(ASMFLAGS) $<
+
+i386nt.obj: i386nt.asm domain_state32.inc
 	$(ASM)$@ $(ASMFLAGS) $<
 
 %_libasmrunpic.obj: %.asm

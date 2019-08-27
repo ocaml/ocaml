@@ -77,14 +77,12 @@ DEPINCLUDES=$(INCLUDES)
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
-  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
-  utils/clflags.cmo utils/profile.cmo \
-  utils/load_path.cmo \
-  utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-  utils/consistbl.cmo \
-  utils/strongly_connected_components.cmo \
-  utils/targetint.cmo \
-  utils/int_replace_polymorphic_compare.cmo
+	utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
+	utils/clflags.cmo utils/profile.cmo utils/load_path.cmo \
+	utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
+	utils/consistbl.cmo utils/strongly_connected_components.cmo \
+	utils/targetint.cmo utils/int_replace_polymorphic_compare.cmo \
+	utils/domainstate.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
@@ -338,12 +336,18 @@ reconfigure:
 	./configure $(CONFIGURE_ARGS)
 endif
 
+utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
+	$(CPP) -I runtime/caml $< > $@
+
+utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
+	$(CPP) -I runtime/caml $< > $@
+
 .PHONY: partialclean
 partialclean::
-	rm -f utils/config.ml
+	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend
-beforedepend:: utils/config.ml
+beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 # Start up the system from the distribution compiler
 .PHONY: coldstart

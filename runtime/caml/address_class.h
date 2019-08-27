@@ -27,7 +27,8 @@
 
 #define Is_young(val) \
   (CAMLassert (Is_block (val)), \
-   (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
+   (addr)(val) < (addr)Caml_state_field(young_end) && \
+   (addr)(val) > (addr)Caml_state_field(young_start))
 
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)
 
@@ -46,7 +47,6 @@
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
 
-extern value *caml_young_start, *caml_young_end;
 extern char * caml_code_area_start, * caml_code_area_end;
 
 #define Not_in_heap 0

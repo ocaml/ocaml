@@ -44,7 +44,7 @@ let win64 = Arch.win64
     r10         10
     r11         11
     rbp         12
-    r14         trap pointer
+    r14         domain state pointer
     r15         allocation pointer
 
   xmm0 - xmm15  100 - 115  *)
@@ -325,6 +325,7 @@ let destroyed_at_oper = function
   | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
       [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
+  | Itrywith _ -> [| r11 |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)

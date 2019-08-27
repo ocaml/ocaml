@@ -33,8 +33,6 @@ extern "C" {
 #ifdef CAML_INTERNALS
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
-extern int volatile caml_requested_major_slice;
-extern int volatile caml_requested_minor_gc;
 
 void caml_update_young_limit(void);
 void caml_request_major_slice (void);

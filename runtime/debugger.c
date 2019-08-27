@@ -238,7 +238,7 @@ void caml_debugger_init(void)
   }
   open_connection();
   caml_debugger_in_use = 1;
-  caml_trap_barrier = caml_stack_high;
+  Caml_state->trap_barrier = Caml_state->stack_high;
 }
 
 static value getval(struct channel *chan)
@@ -259,15 +259,15 @@ static void safe_output_value(struct channel *chan, value val)
   struct longjmp_buffer raise_buf, * saved_external_raise;
 
   /* Catch exceptions raised by [caml_output_val] */
-  saved_external_raise = caml_external_raise;
+  saved_external_raise = Caml_state->external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
-    caml_external_raise = &raise_buf;
+    Caml_state->external_raise = &raise_buf;
     caml_output_val(chan, val, marshal_flags);
   } else {
     /* Send wrong magic number, will cause [caml_input_value] to fail */
     caml_really_putblock(chan, "\000\000\000\000", 4);
   }
-  caml_external_raise = saved_external_raise;
+  Caml_state->external_raise = saved_external_raise;
 }
 
 struct breakpoint {
@@ -381,7 +381,7 @@ void caml_debugger(enum event_kind event, value param)
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
   /* Reset current frame */
-  frame = caml_extern_sp + 1;
+  frame = Caml_state->extern_sp + 1;
 
   /* Report the event to the debugger */
   switch(event) {
@@ -423,7 +423,7 @@ void caml_debugger(enum event_kind event, value param)
   }
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
-    caml_putword(dbg_out, caml_stack_high - frame);
+    caml_putword(dbg_out, Caml_state->stack_high - frame);
     found = caml_find_code_fragment((char*) Pc(frame), &frag, &cf);
     CAMLassert(found);
     caml_putword(dbg_out, frag);
@@ -484,11 +484,11 @@ void caml_debugger(enum event_kind event, value param)
 #endif
       break;
     case REQ_INITIAL_FRAME:
-      frame = caml_extern_sp + 1;
+      frame = Caml_state->extern_sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
-      caml_putword(dbg_out, caml_stack_high - frame);
-      if (frame < caml_stack_high &&
+      caml_putword(dbg_out, Caml_state->stack_high - frame);
+      if (frame < Caml_state->stack_high &&
           caml_find_code_fragment((char*) Pc(frame), &frag, &cf)) {
         caml_putword(dbg_out, frag);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
@@ -500,17 +500,17 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_SET_FRAME:
       i = caml_getword(dbg_in);
-      frame = caml_stack_high - i;
+      frame = Caml_state->stack_high - i;
       break;
     case REQ_UP_FRAME:
       i = caml_getword(dbg_in);
       newframe = frame + Extra_args(frame) + i + 3;
-      if (newframe >= caml_stack_high ||
+      if (newframe >= Caml_state->stack_high ||
           !caml_find_code_fragment((char*) Pc(newframe), &frag, &cf)) {
         caml_putword(dbg_out, -1);
       } else {
         frame = newframe;
-        caml_putword(dbg_out, caml_stack_high - frame);
+        caml_putword(dbg_out, Caml_state->stack_high - frame);
         caml_putword(dbg_out, frag);
         caml_putword(dbg_out, (char*) Pc(frame) - cf->code_start);
       }
@@ -518,7 +518,7 @@ void caml_debugger(enum event_kind event, value param)
       break;
     case REQ_SET_TRAP_BARRIER:
       i = caml_getword(dbg_in);
-      caml_trap_barrier = caml_stack_high - i;
+      Caml_state->trap_barrier = Caml_state->stack_high - i;
       break;
     case REQ_GET_LOCAL:
       i = caml_getword(dbg_in);
@@ -536,7 +536,7 @@ void caml_debugger(enum event_kind event, value param)
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
-      putval(dbg_out, *caml_extern_sp);
+      putval(dbg_out, *Caml_state->extern_sp);
       caml_flush(dbg_out);
       break;
     case REQ_GET_HEADER:

@@ -86,13 +86,13 @@ void caml_garbage_collection(void)
      be correctly implemented.
   */
   caml_memprof_renew_minor_sample();
-  if (caml_requested_major_slice || caml_requested_minor_gc ||
-      caml_young_ptr - caml_young_trigger < Max_young_whsize){
+  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc ||
+      Caml_state->young_ptr - Caml_state->young_trigger < Max_young_whsize){
     caml_gc_dispatch ();
   }
 
 #ifdef WITH_SPACETIME
-  if (caml_young_ptr == caml_young_alloc_end) {
+  if (Caml_state->young_ptr == Caml_state->young_alloc_end) {
     caml_spacetime_automatic_snapshot();
   }
 #endif
@@ -114,12 +114,12 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
     caml_enter_blocking_section_hook();
   } else {
     caml_record_signal(sig);
-  /* Some ports cache [caml_young_limit] in a register.
+  /* Some ports cache [Caml_state->young_limit] in a register.
      Use the signal context to modify that register too, but only if
      we are inside OCaml code (not inside C code). */
 #if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
     if (Is_in_code_area(CONTEXT_PC))
-      CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
+      CONTEXT_YOUNG_LIMIT = (context_reg) Caml_state->young_limit;
 #endif
   }
   errno = saved_errno;
@@ -182,10 +182,10 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
     caml_sigmask_hook(SIG_UNBLOCK, &mask, NULL);
   }
 #endif
-  caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-  caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
-  caml_bottom_of_stack = (char *) CONTEXT_SP;
-  caml_last_return_address = (uintnat) CONTEXT_PC;
+  Caml_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+  Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
+  Caml_state->bottom_of_stack = (char *) CONTEXT_SP;
+  Caml_state->last_return_address = (uintnat) CONTEXT_PC;
   caml_array_bound_error();
 }
 #endif
@@ -207,7 +207,7 @@ static char sig_alt_stack[SIGSTKSZ];
 #endif
 
 #ifdef RETURN_AFTER_STACK_OVERFLOW
-extern void caml_stack_overflow(void);
+extern void caml_stack_overflow(caml_domain_state*);
 #endif
 
 DECLARE_SIGNAL_HANDLER(segv_handler)
@@ -234,6 +234,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
        handler, we jump to the asm function [caml_stack_overflow]
        (from $ARCH.S). */
 #ifdef CONTEXT_PC
+    CONTEXT_C_ARG_1 = (context_reg) Caml_state;
     CONTEXT_PC = (context_reg) &caml_stack_overflow;
 #else
 #error "CONTEXT_PC must be defined if RETURN_AFTER_STACK_OVERFLOW is"
@@ -241,8 +242,8 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #else
     /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
-    caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-    caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
+    Caml_state->exception_pointer == (char *) CONTEXT_EXCEPTION_POINTER;
+    Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
 #endif
     caml_raise_stack_overflow();
 #endif
