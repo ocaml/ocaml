@@ -19,7 +19,7 @@ type shape =
   | Function
   | Lazy
   | Class
-  | Module of shape array
+  | Module of (shape * string) array
   | Value of Obj.t
 
 val init_mod: string * int * int -> shape -> Obj.t
