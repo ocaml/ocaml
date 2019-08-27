@@ -143,7 +143,7 @@ let rec compose_coercions c1 c2 =
   match (c1, c2) with
     (Tcoerce_none, c2) -> c2
   | (c1, Tcoerce_none) -> c1
-  | (Tcoerce_structure (pc1, ids1, runtime_fields1), Tcoerce_structure (pc2, ids2, runtime_fields)) ->
+  | (Tcoerce_structure (pc1, ids1, runtime_fields1), Tcoerce_structure (pc2, ids2, _runtime_fields2)) ->
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->

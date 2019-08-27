@@ -193,7 +193,7 @@ and print_coercion3 ppf (i, n, c) =
 
 (* Simplify a structure coercion *)
 
-let simplify_structure_coercion runtime_fields cc id_pos_list =
+let simplify_structure_coercion cc id_pos_list runtime_fields =
   let rec is_identity_coercion pos = function
   | [] ->
       true
@@ -330,7 +330,7 @@ and signatures env cxt subst sig1 sig2 =
                 signature_components env new_env cxt subst (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
-                simplify_structure_coercion runtime_fields cc id_pos_list
+                simplify_structure_coercion cc id_pos_list runtime_fields
               else
                 Tcoerce_structure (cc, id_pos_list, runtime_fields)
           | _  -> raise(Error unpaired)
