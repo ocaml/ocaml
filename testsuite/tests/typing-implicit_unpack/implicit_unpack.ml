@@ -470,3 +470,31 @@ Line 4, characters 10-51:
 Error: The type t in this module cannot be exported.
        Its type contains local dependencies: %M.elt list
 |}];;
+
+type 'a s = (module S with type t = 'a);;
+[%%expect{|
+type 'a s = (module S with type t = 'a)
+|}];;
+
+let x : 'a s = (module struct type t = int end);;
+[%%expect{|
+val x : int s = <module>
+|}];;
+
+let x : 'a s = (module struct type t = A end);;
+[%%expect{|
+Line 1, characters 23-44:
+1 | let x : 'a s = (module struct type t = A end);;
+                           ^^^^^^^^^^^^^^^^^^^^^
+Error: The type t in this module cannot be exported.
+       Its type contains local dependencies: %M.t
+|}];;
+
+let x : 'a s = (module struct end);;
+[%%expect{|
+Line 1, characters 23-33:
+1 | let x : 'a s = (module struct end);;
+                           ^^^^^^^^^^
+Error: The type t in this module cannot be exported.
+       Its type contains local dependencies: %M.t
+|}];;
