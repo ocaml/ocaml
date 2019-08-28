@@ -4,7 +4,7 @@
 #include "caml/memory.h"
 
 const char* strs[] = { "foo", "bar", 0 };
-value test(value ref)
+value stub(value ref)
 {
   CAMLparam1(ref);
   CAMLlocal2(x, y);

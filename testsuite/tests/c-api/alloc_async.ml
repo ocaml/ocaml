@@ -2,7 +2,7 @@
    modules = "alloc_async_stubs.c"
 *)
 
-external test : int ref -> unit = "test"
+external test : int ref -> unit = "stub"
 
 let f () =
   let r = ref 42 in
