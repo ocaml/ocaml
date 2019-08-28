@@ -29,7 +29,8 @@
  (action
    (with-stdout-to %{targets}
      (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"))))
+       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"
+       ))))
 
 (rule
  (targets domainstate.mli)
@@ -40,4 +41,5 @@
  (action
    (with-stdout-to %{targets}
      (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"))))
+       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"
+       ))))
