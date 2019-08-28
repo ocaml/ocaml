@@ -266,15 +266,14 @@ let set_mode_pattern ~generate ~injective ~allow_recursive f =
 
 (*** Checks for type definitions ***)
 
-let rec in_current_module = function
-  | Path.Pident _ -> true
-  | Path.Pdot _ | Path.Papply _ -> false
-  | Path.Pextra_ty (p, _) -> in_current_module p
-
 let in_pervasives p =
-  in_current_module p &&
-  try ignore (Env.find_type p Env.initial); true
-  with Not_found -> false
+  match p with
+  | Path.Pident _ -> begin
+      match Env.find_type p Env.initial with
+      | _ -> true
+      | exception Not_found -> false
+    end
+  | Path.Pdot _ | Path.Papply _ | Path.Pextra_ty _ -> false
 
 let is_datatype decl=
   match decl.type_kind with
@@ -2138,9 +2137,8 @@ let find_expansion_scope env path =
   | { type_manifest = None ; _ } | exception Not_found -> generic_level
   | decl -> decl.type_expansion_scope
 
-let non_aliasable p decl =
-  (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
+let non_aliasable p =
+  in_pervasives p
 
 let is_instantiable env p =
   try
@@ -2149,7 +2147,7 @@ let is_instantiable env p =
     decl.type_private = Public &&
     decl.type_arity = 0 &&
     decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    not (non_aliasable p)
   with Not_found -> false
 
 
@@ -2217,7 +2215,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then
+              if non_aliasable p || is_datatype decl then
                 raise Incompatible
             with Not_found -> ()
             end
@@ -2306,8 +2304,6 @@ and mcomp_row type_pairs env row1 row2 =
 
 and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
-    let decl = Env.find_type p1 env in
-    let decl' = Env.find_type p2 env in
     if compatible_paths p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
@@ -2316,9 +2312,11 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
+    end else if non_aliasable p1 && non_aliasable p2 then begin
       raise Incompatible
-    else
+    end else begin
+      let decl = Env.find_type p1 env in
+      let decl' = Env.find_type p2 env in
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2329,9 +2327,10 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
       | Type_abstract, Type_abstract -> ()
-      | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract when not (non_aliasable p2 decl') -> ()
+      | Type_abstract, _ when not (non_aliasable p1)-> ()
+      | _, Type_abstract when not (non_aliasable p2) -> ()
       | _ -> raise Incompatible
+    end
   with Not_found -> ()
 
 and mcomp_type_option type_pairs env t t' =
@@ -2708,7 +2707,7 @@ and unify3 env t1 t1' t2 t2' =
             set_mode_pattern ~generate:!equations_generation ~injective:false
               ~allow_recursive:!allow_recursive_equation
               (fun () -> unify_list env tl1 tl2)
-          else if in_current_module p1 (* || in_pervasives p1 *)
+          else if in_pervasives p1
                || List.exists (expands_to_datatype !env) [t1'; t1; t2]
           then
             unify_list env tl1 tl2

@@ -26,6 +26,12 @@ end
 [%%expect {|
 type _ is_int = Int : int is_int
 module F : functor (X : sig end) -> sig type t val int : t is_int end
+Line 16, characters 4-22:
+16 |     fun (Error s) -> s
+         ^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Ok Int
 module Foo :
   sig
     type t
@@ -49,6 +55,12 @@ module Bar = struct
 
 end
 [%%expect {|
+Line 8, characters 4-22:
+8 |     fun (Error s) -> s
+        ^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Ok Int
 module Bar :
   sig
     module M : sig type t = int val int : int is_int end
