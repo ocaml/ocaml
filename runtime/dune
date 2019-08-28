@@ -33,7 +33,7 @@
           io.c extern.c intern.c hash.c sys.c meta.c parsing.c gc_ctrl.c md5.c
           obj.c lexing.c callback.c debugger.c weak.c compact.c finalise.c
           custom.c dynlink.c spacetime_byt.c afl.c unix.c win32.c bigarray.c
-          main.c)
+          main.c memprof.c domain.c)
  (action
    (progn
      (bash "touch .depend") ; hack.
