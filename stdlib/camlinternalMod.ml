@@ -15,7 +15,7 @@ type shape =
   | Function
   | Lazy
   | Class
-  | Module of (shape * string) array
+  | Module of shape array
   | Value of Obj.t
 
 let rec init_mod loc shape =
@@ -32,7 +32,7 @@ let rec init_mod loc shape =
   | Class ->
       Obj.repr (CamlinternalOO.dummy_class loc)
   | Module comps ->
-      Obj.repr (Array.map (fun (s,_) -> init_mod loc s) comps)
+      Obj.repr (Array.map (init_mod loc) comps)
   | Value v ->
       v
 
@@ -65,6 +65,6 @@ let rec update_mod shape o n =
   | Module comps ->
       assert (Obj.tag n = 0 && Obj.size n >= Array.length comps);
       for i = 0 to Array.length comps - 1 do
-        update_mod (fst comps.(i)) (Obj.field o i) (Obj.field n i)
+        update_mod comps.(i) (Obj.field o i) (Obj.field n i)
       done
   | Value v -> () (* the value is already there *)

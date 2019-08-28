@@ -229,8 +229,10 @@ let undefined_location loc =
                       Const_base(Const_int char)]))
 
 let init_shape modl =
-  let add_name x name =
-    Const_block (0, Lambda.default_tag_info, [x; Const_base (Const_string (name, None))]) in
+  let add_name x id =
+    if !Clflags.bs_only then
+      Const_block (0, Lambda.default_tag_info, [x; Const_base (Const_string (Ident.name id, None))])
+    else x in
   let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
       Mty_ident _ ->
@@ -252,18 +254,18 @@ let init_shape modl =
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
               Const_pointer (1, Lambda.default_pointer_info) (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
-        (add_name init_v (Ident.name id)) :: init_shape_struct env rem
+        (add_name init_v id) :: init_shape_struct env rem
     | Sig_type(id, tdecl, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext(id, ext, _) :: rem ->
         raise Not_found
     | Sig_module(id, md, _) :: rem ->
-        (add_name (init_shape_mod env md.md_type) (Ident.name id)) ::
+        (add_name (init_shape_mod env md.md_type) id) ::
         init_shape_struct (Env.add_module_declaration id md env) rem
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class(id, cdecl, _) :: rem ->
-        (add_name (Const_pointer (2, Lambda.default_pointer_info)) (Ident.name id)) (* camlinternalMod.Class *)
+        (add_name (Const_pointer (2, Lambda.default_pointer_info)) id) (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type(id, ctyp, _) :: rem ->
         init_shape_struct env rem
