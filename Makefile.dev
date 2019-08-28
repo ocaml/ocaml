@@ -45,4 +45,4 @@ list-all-asts:
 	@for f in $(AST_FILES); do echo "'$$f'"; done
 
 partialclean::
-	rm -f $(AST_FILES)
+	@rm -f $(AST_FILES)
