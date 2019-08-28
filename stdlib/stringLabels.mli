@@ -493,6 +493,17 @@ val get_int32_ne : string -> int -> int32
     @since 4.13.0
 *)
 
+val hash : t -> int
+(** An unseeded hash function for strings, with the same output value as
+    {!Hashtbl.hash}.
+    @since 4.10.0 *)
+
+val seeded_hash : int -> t -> int
+(** A seeded hash function for strings, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows the module [StringLabels]
+    to be passed as argument to the functor {!Hashtbl.MakeSeeded}.
+    @since 4.10.0 *)
+
 val get_int32_be : string -> int -> int32
 (** [get_int32_be b i] is [b]'s big-endian 32-bit integer
     starting at character index [i].

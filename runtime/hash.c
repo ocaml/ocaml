@@ -297,7 +297,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   return Val_int(h & 0x3FFFFFFFU);
 }
 
-CAMLprim value caml_hash_string(value seed, value string)
+CAMLprim value caml_string_hash(value seed, value string)
 {
   uint32_t h;
   h = Int_val(seed);

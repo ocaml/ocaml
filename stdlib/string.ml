@@ -222,7 +222,7 @@ let ends_with ~suffix s =
     else aux (i + 1)
   in diff >= 0 && aux 0
 
-external seeded_hash_param : int -> 'a -> int = "caml_hash_string" [@@noalloc]
+external seeded_hash_param : int -> 'a -> int = "caml_string_hash" [@@noalloc]
 let hash x = seeded_hash_param 0 x
 let seeded_hash seed x = seeded_hash_param seed x
 
