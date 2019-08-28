@@ -43,6 +43,28 @@ exception Division_by_zero = Division_by_zero
 exception Sys_blocked_io = Sys_blocked_io
 exception Undefined_recursive_module = Undefined_recursive_module
 
+type raw_backtrace
+external get_raw_backtrace:
+  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+
+exception Finally_raised of exn
+
+(* cannot depend on Fun *)
+let protect ~(finally : unit -> unit) work =
+  let finally_no_exn () =
+    try finally () with e ->
+      let bt = get_raw_backtrace () in
+      raise_with_backtrace (Finally_raised e) bt
+  in
+  match work () with
+  | result -> finally_no_exn () ; result
+  | exception work_exn ->
+      let work_bt = get_raw_backtrace () in
+      finally_no_exn () ;
+      raise_with_backtrace work_exn work_bt
+
 let protect_apply_ f g x =
   protect ~finally:(fun () -> g x) (fun () -> f x)
 
