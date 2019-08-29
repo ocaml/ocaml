@@ -246,6 +246,9 @@ Working version
   (Stéphane Glondu, Nicolás Ojeda Bär, review by Jérémie Dimino and Daniel
   Bünzli)
 
+- #8891: Warn about unused functor parameters
+  (Thomas Refis, review by ...)
+
 ### Build system:
 
 - #8650: ensure that "make" variables are defined before use;
