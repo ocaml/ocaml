@@ -141,6 +141,9 @@ Working version
       has been defined as private
   (Leo White, review by Thomas Refis)
 
+- #8885: Warn about unused local modules
+  (Thomas Refis, review by Alain Frisch)
+
 ### Build system:
 
 - #8650: ensure that "make" variables are defined before use;
