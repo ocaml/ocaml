@@ -468,10 +468,12 @@ let rec print_out_functor funct ppf =
       match name, funct with
       | "_", true ->
           fprintf ppf "->@ %a ->@ %a"
-            print_out_module_type mty_arg (print_out_functor false) mty_res
+            print_simple_out_module_type mty_arg
+            (print_out_functor false) mty_res
       | "_", false ->
           fprintf ppf "%a ->@ %a"
-            print_out_module_type mty_arg (print_out_functor false) mty_res
+            print_simple_out_module_type mty_arg
+            (print_out_functor false) mty_res
       | name, true ->
           fprintf ppf "(%s : %a) %a" name
             print_out_module_type mty_arg (print_out_functor true) mty_res
@@ -482,12 +484,13 @@ let rec print_out_functor funct ppf =
   | m ->
       if funct then fprintf ppf "->@ %a" print_out_module_type m
       else print_out_module_type ppf m
-
-and print_out_module_type ppf =
+and print_out_module_type ppf = function
+  | Omty_functor _ as t -> fprintf ppf "@[<2>%a@]" (print_out_functor false) t
+  | t -> print_simple_out_module_type ppf t
+and print_simple_out_module_type ppf =
   function
     Omty_abstract -> ()
-  | Omty_functor _ as t ->
-      fprintf ppf "@[<2>%a@]" (print_out_functor false) t
+  | Omty_functor _ as t -> fprintf ppf "(%a)" print_out_module_type t
   | Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
       fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" !out_signature sg
