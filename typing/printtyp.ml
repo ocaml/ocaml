@@ -253,7 +253,9 @@ let pervasives name = "Stdlib." ^ name
 
 let map = Array.make Namespace.size M.empty
 let get namespace = map.(Namespace.id namespace)
-let set namespace x = map.(Namespace.id namespace) <- x
+let add_to namespace l =
+  let id = Namespace.id namespace in
+  map.(id) <- List.fold_left (fun m (k,x) -> M.add k x m) map.(id) l
 
 (* Names used in recursive definitions are not considered when determining
    if a name is already attributed in the current environment.
@@ -275,11 +277,11 @@ let pervasives_name namespace name =
       let hid, map = add_hid_id id' Ident.Map.empty in
       Out_name.set r (human_unique hid id');
       Conflicts.collect_explanation namespace hid id';
-      set namespace @@ M.add name (Need_unique_name map) (get namespace);
+      add_to namespace [name, Need_unique_name map];
       Out_name.create (pervasives name)
   | exception Not_found ->
       let r = Out_name.create name in
-      set namespace @@ M.add name (Associated_to_pervasives r) (get namespace);
+      add_to namespace [name, Associated_to_pervasives r];
       r
 
 (** Lookup for preexisting named item within the current {!printing_env} *)
@@ -311,15 +313,15 @@ let ident_name_simple namespace id =
   | Temporarily_associated_to(id', n, r') ->
       let hint, new_tmp = name_for_anonymous_functor_arg n () in
       let r = Out_name.create name in
-      set namespace
-      @@ M.add name (Uniquely_associated_to (id,r))
-      @@ M.add new_tmp (Temporarily_associated_to (id',hint,r'))
-      @@ get namespace ;
+      add_to namespace
+        [ name, Uniquely_associated_to (id,r);
+          new_tmp, Temporarily_associated_to (id',hint,r')
+        ];
       r
   | Need_unique_name map ->
       let hid, m = find_hid id map in
       Conflicts.collect_explanation namespace hid id;
-      set namespace @@ M.add name (Need_unique_name m) (get namespace);
+      add_to namespace [name, Need_unique_name m];
       Out_name.create (human_unique hid id)
   | Uniquely_associated_to (id',r) ->
       let hid', m = find_hid id' Ident.Map.empty in
@@ -327,12 +329,12 @@ let ident_name_simple namespace id =
       Out_name.set r (human_unique hid' id');
       List.iter (fun (id,hid) -> Conflicts.collect_explanation namespace hid id)
         [id, hid; id', hid' ];
-      set namespace @@ M.add name (Need_unique_name m) (get namespace);
+      add_to namespace [name, Need_unique_name m];
       Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
       Out_name.set r ("Stdlib." ^ Out_name.print r);
       let hid, m = find_hid id Ident.Map.empty in
-      set namespace @@ M.add name (Need_unique_name m) (get namespace);
+      add_to namespace [name, Need_unique_name m];
       Out_name.create (human_unique hid id)
   | Anonymous_functor_args {counter; args} ->
       begin match Ident.Map.find id args with
@@ -343,17 +345,14 @@ let ident_name_simple namespace id =
           Out_name.set r expanded_name;
           let () =
             let args = Ident.Map.add id (true, r) args in
-            set namespace
-            @@ M.add expanded_name (Uniquely_associated_to (id,r))
-            @@ M.add name (Anonymous_functor_args {counter; args})
-            @@ get namespace in
+            add_to namespace
+              [ expanded_name, Uniquely_associated_to (id,r);
+                name, Anonymous_functor_args {counter; args} ] in
           r
       | exception Not_found ->
           let r = Out_name.create name in
           let args = Ident.Map.add id (false, r) args in
-          set namespace
-          @@ M.add name (Anonymous_functor_args {args; counter})
-          @@ get namespace;
+          add_to namespace [ name, Anonymous_functor_args {args; counter} ];
           r
       end
   | exception Not_found ->
@@ -363,7 +362,7 @@ let ident_name_simple namespace id =
           Anonymous_functor_args {args; counter=0 }
         else Uniquely_associated_to (id,r)
       in
-        set namespace @@ M.add name init (get namespace);
+        add_to namespace [ name, init ];
         r
 
 (** Same as {!ident_name_simple} but lookup to existing named identifiers
