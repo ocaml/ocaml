@@ -465,7 +465,7 @@ let rec print_out_functor funct ppf =
       if funct then fprintf ppf "() %a" (print_out_functor true) mty_res
       else fprintf ppf "functor@ () %a" (print_out_functor true) mty_res
   | Omty_functor (name, Some mty_arg, mty_res) -> begin
-      match name, funct with
+      match name.printed_name, funct with
       | "_", true ->
           fprintf ppf "->@ %a ->@ %a"
             print_out_module_type mty_arg (print_out_functor false) mty_res

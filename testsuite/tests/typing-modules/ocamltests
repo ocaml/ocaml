@@ -1,5 +1,6 @@
 aliases.ml
 applicative_functor_type.ml
+deanonymized_functor_args.ml
 firstclass.ml
 generative.ml
 illegal_permutation.ml

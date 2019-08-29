@@ -223,6 +223,21 @@ type mapping =
   (** [Associated_to_pervasives out_name] is used when the item
       [Stdlib.$name] has been associated to the name [$name].
       Upon a conflict, this name will be expanded to ["Stdlib." ^ name ] *)
+  | Anonymous_functor_args of
+      { counter: int; args: (bool * out_name) Ident.Map.t }
+  (** Anonymous functor arguments must be named if they are ever referred to:
+      this can happen when strengthening a functor argument. For instance,
+      the type of
+      {[ Id(X:A->sig type t end) = X ]}
+      should be printed as
+      {[ Id: functor (X:A -> sig type t end)(A:A) -> sig type t = X(A).t end]}
+      The [counter] parameter keeps an approximate count of which [Arg_$n] name
+      is free in the current argument.
+      The boolean in the elements of the [args] tracks if the argument was
+      referred to and thus expanded.
+ *)
+  | Temporarily_associated_to of Ident.t * int * out_name
+  (** Names are only temporarily lent to anonymous functor arguments *)
 
 let hid_start = 0
 
@@ -253,7 +268,9 @@ let pervasives_name namespace name =
   if not !enabled then Out_name.create name else
   match M.find name (get namespace) with
   | Associated_to_pervasives r -> r
-  | Need_unique_name _ -> Out_name.create (pervasives name)
+  | Need_unique_name _ | Anonymous_functor_args _
+  | Temporarily_associated_to _ ->
+      Out_name.create (pervasives name)
   | Uniquely_associated_to (id',r) ->
       let hid, map = add_hid_id id' Ident.Map.empty in
       Out_name.set r (human_unique hid id');
@@ -273,12 +290,31 @@ let env_ident namespace name =
   | _ -> None
   | exception Not_found -> None
 
+let name_for_anonymous_functor_arg hint () =
+  let rec search counter =
+    let name = Format.sprintf "Arg_%d" counter in
+    match Namespace.lookup Module name with
+    | _ -> search (counter+1)
+    | exception Not_found ->
+        match M.find_opt name (get Module) with
+        | None -> counter+1, name
+        | _ -> search (counter+1) in
+  search hint
+
 (** Associate a name to the identifier [id] within [namespace] *)
 let ident_name_simple namespace id =
   if not !enabled then Out_name.create (Ident.name id) else
   let name = Ident.name id in
   match M.find name (get namespace) with
-  | Uniquely_associated_to (id',r) when Ident.same id id' ->
+  | Uniquely_associated_to (id',r) | Temporarily_associated_to (id',_,r)
+    when Ident.same id id' -> r
+  | Temporarily_associated_to(id', n, r') ->
+      let hint, new_tmp = name_for_anonymous_functor_arg n () in
+      let r = Out_name.create name in
+      set namespace
+      @@ M.add name (Uniquely_associated_to (id,r))
+      @@ M.add new_tmp (Temporarily_associated_to (id',hint,r'))
+      @@ get namespace ;
       r
   | Need_unique_name map ->
       let hid, m = find_hid id map in
@@ -298,11 +334,37 @@ let ident_name_simple namespace id =
       let hid, m = find_hid id Ident.Map.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
+  | Anonymous_functor_args {counter; args} ->
+      begin match Ident.Map.find id args with
+      | true, r -> r
+      | false, r ->
+          let counter, expanded_name =
+            name_for_anonymous_functor_arg counter () in
+          Out_name.set r expanded_name;
+          let () =
+            let args = Ident.Map.add id (true, r) args in
+            set namespace
+            @@ M.add expanded_name (Uniquely_associated_to (id,r))
+            @@ M.add name (Anonymous_functor_args {counter; args})
+            @@ get namespace in
+          r
+      | exception Not_found ->
+          let r = Out_name.create name in
+          let args = Ident.Map.add id (false, r) args in
+          set namespace
+          @@ M.add name (Anonymous_functor_args {args; counter})
+          @@ get namespace;
+          r
+      end
   | exception Not_found ->
       let r = Out_name.create name in
-      set namespace
-      @@ M.add name (Uniquely_associated_to (id,r) ) (get namespace);
-      r
+      let init = if namespace = Module && name = "_" then
+          let args = Ident.Map.singleton id (false, r) in
+          Anonymous_functor_args {args; counter=0 }
+        else Uniquely_associated_to (id,r)
+      in
+        set namespace @@ M.add name init (get namespace);
+        r
 
 (** Same as {!ident_name_simple} but lookup to existing named identifiers
     in the current {!printing_env} *)
@@ -322,10 +384,21 @@ let with_local_context f =
   Array.iteri (Array.set map) old;
   r
 
+let with_functor_arg_name id f =
+  match Ident.name id with
+  | "_" ->
+      with_local_context( fun () ->
+          let name = ident_name_simple Module id in
+          f name
+        )
+  | name -> f (Out_name.create name)
+
+
 end
 let ident_name = Naming_context.ident_name
 let reset_naming_context = Naming_context.reset
 let with_local_context = Naming_context.with_local_context
+let with_functor_arg_name = Naming_context.with_functor_arg_name
 
 let ident ppf id = pp_print_string ppf
     (Out_name.print (Naming_context.ident_name_simple Other id))
@@ -1633,14 +1706,17 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       Omty_signature (if ellipsis then [Osig_ellipsis]
                       else tree_of_signature sg)
   | Mty_functor(param, ty_arg, ty_res) ->
-      let res =
-        match ty_arg with None -> tree_of_modtype ~ellipsis ty_res
-        | Some mty ->
-            wrap_env (Env.add_module ~arg:true param Mp_present mty)
-                     (tree_of_modtype ~ellipsis) ty_res
-      in
-      Omty_functor (Ident.name param,
-                    Option.map (tree_of_modtype ~ellipsis:false) ty_arg, res)
+      with_functor_arg_name param ( fun arg_name ->
+          let res =
+            match ty_arg with
+            | None -> tree_of_modtype ~ellipsis ty_res
+            | Some mty ->
+                wrap_env (Env.add_module ~arg:true param Mp_present mty)
+                  (tree_of_modtype ~ellipsis) ty_res
+          in
+          let arg_ty = Option.map (tree_of_modtype ~ellipsis:false) ty_arg in
+          Omty_functor (arg_name, arg_ty, res)
+        )
   | Mty_alias p ->
       Omty_alias (tree_of_path Module p)
 
