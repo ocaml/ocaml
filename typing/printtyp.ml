@@ -316,9 +316,16 @@ let ident_name namespace id =
 let reset () =
   Array.iteri ( fun i _ -> map.(i) <- M.empty ) map
 
+let with_local_context f =
+  let old = Array.copy map in
+  let r = f () in
+  Array.iteri (Array.set map) old;
+  r
+
 end
 let ident_name = Naming_context.ident_name
 let reset_naming_context = Naming_context.reset
+let with_local_context = Naming_context.with_local_context
 
 let ident ppf id = pp_print_string ppf
     (Out_name.print (Naming_context.ident_name_simple Other id))
@@ -1647,8 +1654,7 @@ and tree_of_signature_rec env' in_type_group = function
       let (sg, rem) = filter_rem_sig item rem in
       hide_rec_items items;
       protect_rec_items items;
-      reset_naming_context ();
-      let trees = trees_of_sigitem item in
+      let trees = with_local_context (fun () -> trees_of_sigitem item) in
       let env' = Env.add_signature (item :: sg) env' in
       trees @ tree_of_signature_rec env' in_type_group rem
 
@@ -1717,8 +1723,7 @@ let print_items showval env x =
       let (sg, rem) = filter_rem_sig item rem in
       hide_rec_items items;
       protect_rec_items items;
-      reset_naming_context ();
-      let trees = trees_of_sigitem item in
+      let trees = with_local_context (fun () -> trees_of_sigitem item) in
       List.map (fun d -> (d, showval env item)) trees @
       print showval in_type_group (Env.add_signature (item :: sg) env) rem in
   print showval false env x
