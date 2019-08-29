@@ -30,6 +30,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
+#include "caml/memprof.h"
 
 /* Pointers into the minor heap.
    [Caml_state->young_base]

@@ -106,9 +106,8 @@ Working version
 
 - #8634: Statistical memory profiling provided by the Gc.Memprof
    module.
-   Incomplete version: does not sample
-     - objects allocated in the minor heap in native mode,
-     - objects allocated by de-marshalling.
+   Incomplete version: does not sample objects allocated in the minor
+   heap in native mode
    (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
     Damien Doligez)
 
