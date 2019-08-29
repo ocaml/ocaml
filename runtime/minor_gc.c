@@ -472,7 +472,7 @@ CAMLexport void caml_gc_dispatch (void)
 }
 
 /* Called by [Alloc_small] when [Caml_state->young_ptr] reaches
-   [caml_young_limit]. We have to either call memprof or the gc. */
+   [caml_young_limit]. We may have to either call memprof or the gc. */
 void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
 {
   /* Async callbacks may fill the minor heap again, so we need a while

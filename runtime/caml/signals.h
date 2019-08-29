@@ -42,6 +42,7 @@ CAMLextern int caml_rev_convert_signal_number (int);
 void caml_execute_signal(int signal_number, int in_signal_handler);
 void caml_record_signal(int signal_number);
 void caml_set_something_to_do (void);
+value caml_check_gc_without_async_callbacks(value root);
 void caml_raise_in_async_callback (value exc);
 void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
