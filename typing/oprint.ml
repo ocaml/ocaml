@@ -473,10 +473,10 @@ let rec print_out_functor funct ppf =
           fprintf ppf "%a ->@ %a"
             print_out_module_type mty_arg (print_out_functor false) mty_res
       | name, true ->
-          fprintf ppf "(%s : %a) %a" name
+          fprintf ppf "(%s : %a)@ %a" name
             print_out_module_type mty_arg (print_out_functor true) mty_res
       | name, false ->
-            fprintf ppf "functor@ (%s : %a) %a" name
+            fprintf ppf "functor@ (%s : %a)@ %a" name
               print_out_module_type mty_arg (print_out_functor true) mty_res
     end
   | m ->

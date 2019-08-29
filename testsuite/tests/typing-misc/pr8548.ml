@@ -112,7 +112,8 @@ module Assume :
                            range -> 'a
                        end
                    end
-             end) ->
+             end)
+    ->
     sig
       module Point : sig type t end
       module Test_range :
