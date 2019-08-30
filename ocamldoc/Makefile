@@ -44,24 +44,37 @@ OCAMLPP=-pp 'sh ./remove_DEBUG'
 MKDIR=mkdir -p
 CP=cp
 OCAMLDOC=ocamldoc
+OCAMLDOC_OPT=$(OCAMLDOC).opt
 
 # TODO: clarify whether the following really needs to be that complicated
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(TARGET)" "$(HOST)"
     ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-      OCAMLDOC_RUN=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
+      OCAMLDOC_RUN_BYTE=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
     else
-      OCAMLDOC_RUN=./$(OCAMLDOC)
+# if shared-libraries are not supported, unix.cma and str.cma
+# are compiled with -custom, so ocamldoc also uses -custom,
+# and (ocamlrun ocamldoc) does not work.
+      OCAMLDOC_RUN_BYTE=./$(OCAMLDOC)
     endif
   else
-    OCAMLDOC_RUN=$(OCAMLRUN) ./$(OCAMLDOC)
+    OCAMLDOC_RUN_BYTE=$(OCAMLRUN) ./$(OCAMLDOC)
   endif
 else # Windows
-  OCAMLDOC_RUN = \
+  OCAMLDOC_RUN_BYTE = \
     CAML_LD_LIBRARY_PATH="$(ROOTDIR)/otherlibs/win32unix;$(ROOTDIR)/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
 endif
 
-OCAMLDOC_OPT=$(OCAMLDOC).opt
+OCAMLDOC_RUN_OPT=./$(OCAMLDOC_OPT)
+
+OCAMLDOC_RUN_PLUGINS=$(OCAMLDOC_RUN_BYTE)
+
+ifeq "$(wildcard $(OCAMLDOC_OPT))" ""
+  OCAMLDOC_RUN=$(OCAMLDOC_RUN_BYTE)
+else
+  OCAMLDOC_RUN=$(OCAMLDOC_RUN_OPT)
+endif
+
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
@@ -170,9 +183,7 @@ LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
 
 .PHONY: all
-all: lib exe generators manpages
-
-manpages: generators
+all: lib exe generators
 
 .PHONY: exe
 exe: $(OCAMLDOC)
@@ -343,7 +354,7 @@ test:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
 	$(MKDIR) $@-custom
-	$(OCAMLDOC_RUN) -colorize-code -sort -d $@-custom $(INCLUDES) \
+	$(OCAMLDOC_RUN_PLUGINS) -colorize-code -sort -d $@-custom $(INCLUDES) \
 	-g generators/odoc_literate.cmo -g generators/odoc_todo.cmo \
 	-load $@/ocamldoc.odoc -v
 
@@ -362,11 +373,6 @@ test_stdlib_code:
 	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
 	$(ROOTDIR)/otherlibs/str/str.ml
-
-.PHONY: test_framed
-test_framed:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 .PHONY: test_latex
 test_latex:
@@ -446,7 +452,7 @@ stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
 .PHONY: autotest_stdlib
 autotest_stdlib:
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
+	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
 	$(ROOTDIR)/stdlib/*.mli \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
