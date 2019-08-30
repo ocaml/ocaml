@@ -37,8 +37,8 @@ module Make1 :
     (T' : sig
             module Term0 : Termsig.Term0.S
             module T : sig module Id : sig  end end
-          end) ->
-    sig module T : sig module Id : sig  end val u : int end end
+          end)
+    -> sig module T : sig module Id : sig  end val u : int end end
 |}]
 
 module Make2 (T' : Termsig.Term.S) = struct
@@ -54,7 +54,8 @@ module Make2 :
     (T' : sig
             module Term0 : Termsig.Term0.S
             module T : sig module Id : sig  end end
-          end) ->
+          end)
+    ->
     sig
       module T : sig module Id : sig  end module Id2 = Id val u : int end
     end
@@ -74,7 +75,8 @@ module Make3 :
     (T' : sig
             module Term0 : Termsig.Term0.S
             module T : sig module Id : sig  end end
-          end) ->
+          end)
+    ->
     sig
       module T : sig module Id : sig  end module Id2 = Id val u : int end
     end
@@ -98,8 +100,8 @@ module Make1 :
     (T' : sig
             module Term0 : sig module Id : sig  end end
             module T : sig module Id : sig  end end
-          end) ->
-    sig module Id : sig  end module Id2 = Id end
+          end)
+    -> sig module Id : sig  end module Id2 = Id end
 |}]
 
 module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
@@ -136,7 +138,8 @@ module Make3 :
     (T' : sig
             module Term0 : sig module Id : sig  end end
             module T : sig module Id : sig  end end
-          end) ->
+          end)
+    ->
     sig
       module T : sig module Id : sig  end module Id2 = Id val u : int end
     end
@@ -190,8 +193,8 @@ module Make1 :
             module Term0 : sig module Id : sig  end end
             module T : sig module Id : sig  end end
             type t = MkT(T).t
-          end) ->
-    sig module Id : sig  end module Id2 = Id type t = T'.t end
+          end)
+    -> sig module Id : sig  end module Id2 = Id type t = T'.t end
 module IS :
   sig
     module Term0 : sig module Id : sig val x : string end end
@@ -287,7 +290,8 @@ module F :
            module T : sig type t = int val compare : t -> t -> int end
            type t = E of (MkT(T).t, MkT(T).t) eq
            type u = t = E of (MkT(Term0).t, MkT(T).t) eq
-         end) ->
+         end)
+    ->
     sig
       module Term0 : sig type t = int val compare : t -> t -> int end
       module T : sig type t = int val compare : t -> t -> int end
