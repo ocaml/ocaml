@@ -4831,15 +4831,13 @@ and type_let
                              ((if !some_used then check_strict else check) name)
                       );
                   Env.set_value_used_callback
-                    name vd
+                    vd
                     (fun () ->
                        match !current_slot with
                        | Some slot ->
-                         slot := (name, vd) :: !slot; rec_needed := true
+                         slot := vd.val_uid :: !slot; rec_needed := true
                        | None ->
-                         List.iter
-                           (fun (name, vd) -> Env.mark_value_used name vd)
-                           (get_ref slot);
+                         List.iter Env.mark_value_used (get_ref slot);
                          used := true;
                          some_used := true
                     )

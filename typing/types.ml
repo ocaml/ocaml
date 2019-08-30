@@ -105,6 +105,10 @@ module Uid = struct
     Predef (Ident.name id)
 
   let internal_not_actually_unique = Internal
+
+  let for_actual_declaration = function
+    | Item _ -> true
+    | _ -> false
 end
 
 (* Maps of methods and instance variables *)

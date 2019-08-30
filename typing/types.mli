@@ -249,6 +249,8 @@ module Uid : sig
   val of_compilation_unit_id : Ident.t -> t
   val of_predef_id : Ident.t -> t
   val internal_not_actually_unique : t
+
+  val for_actual_declaration : t -> bool
 end
 
 (* Maps of methods and instance variables *)

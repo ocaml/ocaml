@@ -848,15 +848,13 @@ let transl_type_decl env rec_flag sdecl_list =
              to detect unused declarations in a set of recursive definitions. *)
         let slot = ref [] in
         let td = Env.find_type (Path.Pident id) temp_env in
-        let name = Ident.name id in
         Env.set_type_used_callback
-          name td
+          td
           (fun old_callback ->
              match !current_slot with
-             | Some slot -> slot := (name, td) :: !slot
+             | Some slot -> slot := td.type_uid :: !slot
              | None ->
-                 List.iter (fun (name, d) -> Env.mark_type_used name d)
-                   (get_ref slot);
+                 List.iter Env.mark_type_used (get_ref slot);
                  old_callback ()
           );
         ids, Some slot
@@ -1374,7 +1372,7 @@ let transl_value_decl env loc valdecl =
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 let transl_with_constraint env id row_path orig_decl sdecl =
-  Env.mark_type_used (Ident.name id) orig_decl;
+  Env.mark_type_used orig_decl.type_uid;
   reset_type_variables();
   Ctype.begin_def();
   let tparams = make_params env sdecl.ptype_params in

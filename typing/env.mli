@@ -129,15 +129,15 @@ val add_required_global: Ident.t -> unit
 val has_local_constraints: t -> bool
 
 (* Mark definitions as used *)
-val mark_value_used: string -> value_description -> unit
-val mark_module_used: string -> Location.t -> unit
-val mark_type_used: string -> type_declaration -> unit
+val mark_value_used: Uid.t -> unit
+val mark_module_used: Uid.t -> unit
+val mark_type_used: Uid.t -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> string -> constructor_declaration -> unit
+    constructor_usage -> constructor_declaration -> unit
 val mark_extension_used:
-    constructor_usage -> string -> extension_constructor -> unit
+    constructor_usage -> extension_constructor -> unit
 
 (* Lookup by long identifiers *)
 
@@ -405,9 +405,9 @@ val in_signature: bool -> t -> t
 val is_in_signature: t -> bool
 
 val set_value_used_callback:
-    string -> value_description -> (unit -> unit) -> unit
+    value_description -> (unit -> unit) -> unit
 val set_type_used_callback:
-    string -> type_declaration -> ((unit -> unit) -> unit) -> unit
+    type_declaration -> ((unit -> unit) -> unit) -> unit
 
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_functor_application:
