@@ -459,38 +459,42 @@ let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
 
-let rec print_out_functor funct ppf =
-  function
-    Omty_functor (_, None, mty_res) ->
-      if funct then fprintf ppf "() %a" (print_out_functor true) mty_res
-      else fprintf ppf "functor@ () %a" (print_out_functor true) mty_res
-  | Omty_functor (name, Some mty_arg, mty_res) -> begin
-      match name, funct with
-      | "_", true ->
-          fprintf ppf "->@ %a ->@ %a"
-            print_simple_out_module_type mty_arg
-            (print_out_functor false) mty_res
-      | "_", false ->
+let rec print_out_module_type ppf mty =
+  print_out_functor ppf mty
+and print_out_functor ppf = function
+  | Omty_functor _ as t ->
+     let rec print_functor ppf = function
+       | Omty_functor ("_", Some mty_arg, mty_res) ->
           fprintf ppf "%a ->@ %a"
             print_simple_out_module_type mty_arg
-            (print_out_functor false) mty_res
-      | name, true ->
-          fprintf ppf "(%s : %a)@ %a" name
-            print_out_module_type mty_arg (print_out_functor true) mty_res
-      | name, false ->
-            fprintf ppf "functor@ (%s : %a)@ %a" name
-              print_out_module_type mty_arg (print_out_functor true) mty_res
-    end
-  | m ->
-      if funct then fprintf ppf "->@ %a" print_out_module_type m
-      else print_out_module_type ppf m
-and print_out_module_type ppf = function
-  | Omty_functor _ as t -> fprintf ppf "@[<2>%a@]" (print_out_functor false) t
+            print_functor mty_res
+       | Omty_functor _ as non_anonymous_functor ->
+          let rec split_args acc = function
+            | Omty_functor (name, mty_arg, mty_res)
+                 when name <> "_" ->
+               split_args ((name, mty_arg) :: acc) mty_res
+            | rest -> (List.rev acc, rest)
+          in
+          let print_arg ppf = function
+            | (_, None) ->
+               fprintf ppf "()"
+            | (name, Some mty) ->
+               fprintf ppf "(%s : %a)"
+                 name
+                 print_out_module_type mty
+          in
+          let (args, rest) = split_args [] non_anonymous_functor in
+          fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"
+            (pp_print_list ~pp_sep:pp_print_space print_arg) args
+            print_functor rest
+       | non_functor ->
+          print_simple_out_module_type ppf non_functor
+     in
+     fprintf ppf "@[<2>%a@]" print_functor t
   | t -> print_simple_out_module_type ppf t
 and print_simple_out_module_type ppf =
   function
     Omty_abstract -> ()
-  | Omty_functor _ as t -> fprintf ppf "(%a)" print_out_module_type t
   | Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
      begin match sg with
@@ -499,6 +503,8 @@ and print_simple_out_module_type ppf =
           fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_out_signature sg
      end
   | Omty_alias id -> fprintf ppf "(module %a)" print_ident id
+  | Omty_functor _ as non_simple ->
+     fprintf ppf "(%a)" print_out_module_type non_simple
 and print_out_signature ppf =
   function
     [] -> ()
