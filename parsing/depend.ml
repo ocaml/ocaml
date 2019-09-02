@@ -283,9 +283,15 @@ and add_modtype bv mty =
     Pmty_ident l -> add bv l
   | Pmty_alias l -> add_module_path bv l
   | Pmty_signature s -> add_signature bv s
-  | Pmty_functor(id, mty1, mty2) ->
-      Option.iter (add_modtype bv) mty1;
-      add_modtype (String.Map.add id.txt bound bv) mty2
+  | Pmty_functor(arg_opt, mty2) ->
+      let bv =
+        match arg_opt with
+        | None -> bv
+        | Some (id, mty1) ->
+          add_modtype bv mty1;
+          String.Map.add id.txt bound bv
+      in
+      add_modtype bv mty2
   | Pmty_with(mty, cstrl) ->
       add_modtype bv mty;
       List.iter
@@ -397,9 +403,15 @@ and add_module_expr bv modl =
   match modl.pmod_desc with
     Pmod_ident l -> add_module_path bv l
   | Pmod_structure s -> ignore (add_structure bv s)
-  | Pmod_functor(id, mty, modl) ->
-      Option.iter (add_modtype bv) mty;
-      add_module_expr (String.Map.add id.txt bound bv) modl
+  | Pmod_functor(arg_opt, modl) ->
+      let bv =
+        match arg_opt with
+        | None -> bv
+        | Some (id, mty) ->
+          add_modtype bv mty;
+          String.Map.add id.txt bound bv
+      in
+      add_module_expr bv modl
   | Pmod_apply(mod1, mod2) ->
       add_module_expr bv mod1; add_module_expr bv mod2
   | Pmod_constraint(modl, mty) ->

@@ -397,7 +397,7 @@ let merge_functors mexp coercion root_path =
   let rec merge mexp coercion path acc inline_attribute =
     let finished = acc, mexp, path, coercion, inline_attribute in
     match mexp.mod_desc with
-    | Tmod_functor (param, _, _, body) ->
+    | Tmod_functor (param, body) ->
       let inline_attribute' =
         Translattribute.get_inline_attribute mexp.mod_attributes
       in
@@ -409,7 +409,11 @@ let merge_functors mexp coercion root_path =
         | _ -> fatal_error "Translmod.merge_functors: bad coercion"
       in
       let loc = mexp.mod_loc in
-      let path = functor_path path param in
+      let path, param =
+        match param with
+        | None -> None, Ident.create_local "*"
+        | Some (id, _, _) -> functor_path path id, id
+      in
       let inline_attribute =
         merge_inline_attributes inline_attribute inline_attribute' loc
       in

@@ -61,9 +61,6 @@ let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
 let is_Tconstr = function {desc=Tconstr _} -> true | _ -> false
 
 let dummy_method = "*dummy method*"
-let default_mty = function
-    Some mty -> mty
-  | None -> Mty_signature []
 
 (**** Definitions for backtracking ****)
 
@@ -403,8 +400,8 @@ let type_iterators =
       Mty_ident p
     | Mty_alias p -> it.it_path p
     | Mty_signature sg -> it.it_signature it sg
-    | Mty_functor (_, mto, mt) ->
-        Option.iter (it.it_module_type it) mto;
+    | Mty_functor (mto, mt) ->
+        Option.iter (fun (_, mt) -> it.it_module_type it mt) mto;
         it.it_module_type it mt
   and it_class_type it = function
       Cty_constr (p, tyl, cty) ->

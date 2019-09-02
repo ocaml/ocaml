@@ -1622,15 +1622,16 @@ let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_signature sg ->
       Omty_signature (if ellipsis then [Osig_ellipsis]
                       else tree_of_signature sg)
-  | Mty_functor(param, ty_arg, ty_res) ->
-      let res =
-        match ty_arg with None -> tree_of_modtype ~ellipsis ty_res
-        | Some mty ->
-            wrap_env (Env.add_module ~arg:true param Mp_present mty)
-                     (tree_of_modtype ~ellipsis) ty_res
+  | Mty_functor(param, ty_res) ->
+      let param, res =
+        match param with
+        | None -> None, tree_of_modtype ~ellipsis ty_res
+        | Some (param, ty_arg) ->
+          Some (Ident.name param, tree_of_modtype ~ellipsis:false ty_arg),
+          wrap_env (Env.add_module ~arg:true param Mp_present ty_arg)
+            (tree_of_modtype ~ellipsis) ty_res
       in
-      Omty_functor (Ident.name param,
-                    Option.map (tree_of_modtype ~ellipsis:false) ty_arg, res)
+      Omty_functor (param, res)
   | Mty_alias p ->
       Omty_alias (tree_of_path Module p)
 

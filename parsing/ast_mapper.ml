@@ -260,9 +260,11 @@ module MT = struct
     | Pmty_ident s -> ident ~loc ~attrs (map_loc sub s)
     | Pmty_alias s -> alias ~loc ~attrs (map_loc sub s)
     | Pmty_signature sg -> signature ~loc ~attrs (sub.signature sub sg)
-    | Pmty_functor (s, mt1, mt2) ->
-        functor_ ~loc ~attrs (map_loc sub s)
-          (Option.map (sub.module_type sub) mt1)
+    | Pmty_functor (arg_opt, mt2) ->
+        functor_ ~loc ~attrs
+          (Option.map (fun (s, mt1) ->
+             map_loc sub s,
+             sub.module_type sub mt1) arg_opt)
           (sub.module_type sub mt2)
     | Pmty_with (mt, l) ->
         with_ ~loc ~attrs (sub.module_type sub mt)
@@ -318,9 +320,11 @@ module M = struct
     match desc with
     | Pmod_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pmod_structure str -> structure ~loc ~attrs (sub.structure sub str)
-    | Pmod_functor (arg, arg_ty, body) ->
-        functor_ ~loc ~attrs (map_loc sub arg)
-          (Option.map (sub.module_type sub) arg_ty)
+    | Pmod_functor (arg_opt, body) ->
+        functor_ ~loc ~attrs
+          (Option.map
+             (fun (arg, arg_ty) -> map_loc sub arg, sub.module_type sub arg_ty)
+             arg_opt)
           (sub.module_expr sub body)
     | Pmod_apply (m1, m2) ->
         apply ~loc ~attrs (sub.module_expr sub m1) (sub.module_expr sub m2)

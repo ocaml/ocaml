@@ -294,8 +294,8 @@ let module_type sub {mty_desc; mty_env; _} =
   | Tmty_ident _      -> ()
   | Tmty_alias _      -> ()
   | Tmty_signature sg -> sub.signature sub sg
-  | Tmty_functor (_, _, mtype1, mtype2) ->
-      Option.iter (sub.module_type sub) mtype1;
+  | Tmty_functor (arg, mtype2) ->
+      Option.iter (fun (_, _, mtype1) -> sub.module_type sub mtype1) arg;
       sub.module_type sub mtype2
   | Tmty_with (mtype, list) ->
       sub.module_type sub mtype;
@@ -332,8 +332,8 @@ let module_expr sub {mod_desc; mod_env; _} =
   match mod_desc with
   | Tmod_ident _      -> ()
   | Tmod_structure st -> sub.structure sub st
-  | Tmod_functor (_, _, mtype, mexpr) ->
-      Option.iter (sub.module_type sub) mtype;
+  | Tmod_functor (arg, mexpr) ->
+      Option.iter (fun (_, _, mtype) -> sub.module_type sub mtype) arg;
       sub.module_expr sub mexpr
   | Tmod_apply (mexp1, mexp2, c) ->
       sub.module_expr sub mexp1;

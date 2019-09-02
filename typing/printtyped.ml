@@ -668,9 +668,12 @@ and module_type i ppf x =
   | Tmty_signature (s) ->
       line i ppf "Tmty_signature\n";
       signature i ppf s;
-  | Tmty_functor (s, _, mt1, mt2) ->
+  | Tmty_functor (None, mt2) ->
+      line i ppf "Tmty_functor ()\n";
+      module_type i ppf mt2;
+  | Tmty_functor (Some (s, _, mt1), mt2) ->
       line i ppf "Tmty_functor \"%a\"\n" fmt_ident s;
-      Option.iter (module_type i ppf) mt1;
+      module_type i ppf mt1;
       module_type i ppf mt2;
   | Tmty_with (mt, l) ->
       line i ppf "Tmty_with\n";
@@ -768,9 +771,12 @@ and module_expr i ppf x =
   | Tmod_structure (s) ->
       line i ppf "Tmod_structure\n";
       structure i ppf s;
-  | Tmod_functor (s, _, mt, me) ->
+  | Tmod_functor (None, me) ->
+      line i ppf "Tmod_functor ()\n";
+      module_expr i ppf me;
+  | Tmod_functor (Some (s, _, mt), me) ->
       line i ppf "Tmod_functor \"%a\"\n" fmt_ident s;
-      Option.iter (module_type i ppf) mt;
+      module_type i ppf mt;
       module_expr i ppf me;
   | Tmod_apply (me1, me2, _) ->
       line i ppf "Tmod_apply\n";

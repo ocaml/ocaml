@@ -243,9 +243,11 @@ module MT = struct
     | Pmty_ident s -> iter_loc sub s
     | Pmty_alias s -> iter_loc sub s
     | Pmty_signature sg -> sub.signature sub sg
-    | Pmty_functor (s, mt1, mt2) ->
-        iter_loc sub s;
-        iter_opt (sub.module_type sub) mt1;
+    | Pmty_functor (arg_opt, mt2) ->
+        iter_opt (fun (arg, arg_ty) ->
+          iter_loc sub arg;
+          sub.module_type sub arg_ty
+        ) arg_opt;
         sub.module_type sub mt2
     | Pmty_with (mt, l) ->
         sub.module_type sub mt;
@@ -298,9 +300,11 @@ module M = struct
     match desc with
     | Pmod_ident x -> iter_loc sub x
     | Pmod_structure str -> sub.structure sub str
-    | Pmod_functor (arg, arg_ty, body) ->
-        iter_loc sub arg;
-        iter_opt (sub.module_type sub) arg_ty;
+    | Pmod_functor (arg_opt, body) ->
+        iter_opt (fun (arg, arg_ty) ->
+          iter_loc sub arg;
+          sub.module_type sub arg_ty
+        ) arg_opt;
         sub.module_expr sub body
     | Pmod_apply (m1, m2) ->
         sub.module_expr sub m1; sub.module_expr sub m2

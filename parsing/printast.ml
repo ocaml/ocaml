@@ -662,9 +662,12 @@ and module_type i ppf x =
   | Pmty_signature (s) ->
       line i ppf "Pmty_signature\n";
       signature i ppf s;
-  | Pmty_functor (s, mt1, mt2) ->
+  | Pmty_functor (None, mt2) ->
+      line i ppf "Pmty_functor ()\n";
+      module_type i ppf mt2;
+  | Pmty_functor (Some (s, mt1), mt2) ->
       line i ppf "Pmty_functor %a\n" fmt_string_loc s;
-      Option.iter (module_type i ppf) mt1;
+      module_type i ppf mt1;
       module_type i ppf mt2;
   | Pmty_with (mt, l) ->
       line i ppf "Pmty_with\n";
@@ -765,9 +768,12 @@ and module_expr i ppf x =
   | Pmod_structure (s) ->
       line i ppf "Pmod_structure\n";
       structure i ppf s;
-  | Pmod_functor (s, mt, me) ->
+  | Pmod_functor (None, me) ->
+      line i ppf "Pmod_functor ()\n";
+      module_expr i ppf me;
+  | Pmod_functor (Some (s, mt), me) ->
       line i ppf "Pmod_functor %a\n" fmt_string_loc s;
-      Option.iter (module_type i ppf) mt;
+      module_type i ppf mt;
       module_expr i ppf me;
   | Pmod_apply (me1, me2) ->
       line i ppf "Pmod_apply\n";

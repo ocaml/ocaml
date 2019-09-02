@@ -412,7 +412,7 @@ type visibility =
 type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
-  | Mty_functor of Ident.t * module_type option * module_type
+  | Mty_functor of (Ident.t * module_type) option * module_type
   | Mty_alias of Path.t
 
 and module_presence =

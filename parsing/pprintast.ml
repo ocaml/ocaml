@@ -1025,9 +1025,9 @@ and module_type ctxt f x =
       (attributes ctxt) x.pmty_attributes
   end else
     match x.pmty_desc with
-    | Pmty_functor (_, None, mt2) ->
+    | Pmty_functor (None, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" (module_type ctxt) mt2
-    | Pmty_functor (s, Some mt1, mt2) ->
+    | Pmty_functor (Some (s, mt1), mt2) ->
         if s.txt = "_" then
           pp f "@[<hov2>%a@ ->@ %a@]"
             (module_type1 ctxt) mt1 (module_type ctxt) mt2
@@ -1174,9 +1174,9 @@ and module_expr ctxt f x =
           (module_type ctxt) mt
     | Pmod_ident (li) ->
         pp f "%a" longident_loc li;
-    | Pmod_functor (_, None, me) ->
+    | Pmod_functor (None, me) ->
         pp f "functor ()@;->@;%a" (module_expr ctxt) me
-    | Pmod_functor (s, Some mt, me) ->
+    | Pmod_functor (Some (s, mt), me) ->
         pp f "functor@ (%s@ :@ %a)@;->@;%a"
           s.txt (module_type ctxt) mt (module_expr ctxt) me
     | Pmod_apply (me1, me2) ->
@@ -1303,9 +1303,11 @@ and structure_item ctxt f x =
   | Pstr_exception ed -> exception_declaration ctxt f ed
   | Pstr_module x ->
       let rec module_helper = function
-        | {pmod_desc=Pmod_functor(s,mt,me'); pmod_attributes = []} ->
-            if mt = None then pp f "()"
-            else Option.iter (pp f "(%s:%a)" s.txt (module_type ctxt)) mt;
+        | {pmod_desc=Pmod_functor(arg_opt,me'); pmod_attributes = []} ->
+            begin match arg_opt with
+            | None -> pp f "()"
+            | Some (s, mt) -> pp f "(%s:%a)" s.txt (module_type ctxt) mt
+            end;
             module_helper me'
         | me -> me
       in

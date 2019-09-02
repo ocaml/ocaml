@@ -854,7 +854,7 @@ and modexp : Typedtree.module_expr -> term_judg =
       path pth
     | Tmod_structure s ->
       structure s
-    | Tmod_functor (_, _, _, e) ->
+    | Tmod_functor (_, e) ->
       modexp e << Delay
     | Tmod_apply (f, p, _) ->
       join [

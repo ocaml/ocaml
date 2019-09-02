@@ -41,7 +41,10 @@ type symptom =
   | Invalid_module_alias of Path.t
 
 type pos =
-    Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
+  | Module of Ident.t
+  | Modtype of Ident.t
+  | Arg of Ident.t
+  | Body of Ident.t option
 type error = pos list * Env.t * symptom
 
 exception Error of error list
@@ -294,14 +297,14 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
       try_modtypes2 ~loc env ~mark cxt mty1 (Subst.modtype Keep subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
       signatures ~loc env ~mark cxt subst sig1 sig2
-  | (Mty_functor(param1, None, res1), Mty_functor(_param2, None, res2)) ->
+  | (Mty_functor(None, res1), Mty_functor(None, res2)) ->
     begin
-      match modtypes ~loc env ~mark (Body param1::cxt) subst res1 res2 with
+      match modtypes ~loc env ~mark (Body None::cxt) subst res1 res2 with
       | Tcoerce_none -> Tcoerce_none
       | cc -> Tcoerce_functor (Tcoerce_none, cc)
     end
-  | (Mty_functor(param1, Some arg1, res1),
-     Mty_functor(param2, Some arg2, res2)) ->
+  | (Mty_functor(Some (param1, arg1), res1),
+     Mty_functor(Some (param2, arg2), res2)) ->
       let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
         modtypes ~loc env ~mark:(negate_mark mark)
@@ -309,7 +312,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
       in
       let cc_res =
         modtypes ~loc (Env.add_module param1 Mp_present arg2' env) ~mark
-          (Body param1::cxt)
+          (Body (Some param1)::cxt)
           (Subst.add_module param2 (Path.Pident param1) subst)
           res1 res2
       in
@@ -661,8 +664,10 @@ module Illegal_permutation = struct
         | Sig_module (id, _, md,_,_) -> find env (Module id :: ctx) q md.md_type
         | _ -> raise Not_found
         end
-    | Mty_functor(x,Some mt,_), InArg :: q -> find env (Arg x :: ctx) q mt
-    | Mty_functor(x,_,mt), InBody :: q -> find env (Body x :: ctx) q mt
+    | Mty_functor(Some (x,mt),_), InArg :: q -> find env (Arg x :: ctx) q mt
+    | Mty_functor(arg_opt,mt), InBody :: q ->
+      let param = Option.map fst arg_opt in
+      find env (Body param :: ctx) q mt
     | _ -> raise Not_found
 
   let find env path mt = find env [] path mt
@@ -730,9 +735,9 @@ and args ppf = function
       fprintf ppf "(%a :@ %a) : ..." Printtyp.ident x context_mty rem
   | cxt ->
       fprintf ppf " :@ %a" context_mty cxt
-and argname x =
-  let s = Ident.name x in
-  if s = "*" then "" else s
+and argname = function
+  | None -> ""
+  | Some id -> Ident.name id
 
 let alt_context ppf cxt =
   if cxt = [] then () else

@@ -1132,11 +1132,11 @@ parse_pattern:
 
 functor_arg:
     (* An anonymous and untyped argument. *)
-    x = mkrhs(LPAREN RPAREN {"*"})
-      { x, None }
+    LPAREN RPAREN
+      { None }
   | (* An argument accompanied with an explicit type. *)
     LPAREN x = mkrhs(functor_arg_name) COLON mty = module_type RPAREN
-      { x, Some mty }
+      { Some (x, mty) }
 ;
 
 functor_arg_name:
@@ -1164,8 +1164,8 @@ module_expr:
       { unclosed "struct" $loc($1) "end" $loc($4) }
   | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
       { wrap_mod_attrs ~loc:$sloc attrs (
-          List.fold_left (fun acc (x, mty) ->
-            mkmod ~loc:$sloc (Pmod_functor (x, mty, acc))
+          List.fold_left (fun acc arg ->
+            mkmod ~loc:$sloc (Pmod_functor (arg, acc))
           ) me args
         ) }
   | me = paren_module_expr
@@ -1325,8 +1325,7 @@ module_binding_body:
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
     | arg = functor_arg body = module_binding_body
-        { let (x, mty) = arg in
-          Pmod_functor(x, mty, body) }
+        { Pmod_functor(arg, body) }
   ) { $1 }
 ;
 
@@ -1459,8 +1458,8 @@ module_type:
     MINUSGREATER mty = module_type
       %prec below_WITH
       { wrap_mty_attrs ~loc:$sloc attrs (
-          List.fold_left (fun acc (x, mty) ->
-            mkmty ~loc:$sloc (Pmty_functor (x, mty, acc))
+          List.fold_left (fun acc arg ->
+            mkmty ~loc:$sloc (Pmty_functor (arg, acc))
           ) mty args
         ) }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
@@ -1476,7 +1475,7 @@ module_type:
         { Pmty_ident $1 }
     | module_type MINUSGREATER module_type
         %prec below_WITH
-        { Pmty_functor(mknoloc "_", Some $1, $3) }
+        { Pmty_functor(Some (mknoloc "_", $1), $3) }
     | module_type WITH separated_nonempty_llist(AND, with_constraint)
         { Pmty_with($1, $3) }
 /*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
@@ -1567,8 +1566,7 @@ module_declaration_body:
       { mty }
   | mkmty(
       arg = functor_arg body = module_declaration_body
-        { let (x, mty) = arg in
-          Pmty_functor(x, mty, body) }
+        { Pmty_functor(arg, body) }
     )
     { $1 }
 ;

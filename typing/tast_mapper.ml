@@ -433,11 +433,10 @@ let module_type sub x =
     | Tmty_ident _
     | Tmty_alias _ as d -> d
     | Tmty_signature sg -> Tmty_signature (sub.signature sub sg)
-    | Tmty_functor (id, s, mtype1, mtype2) ->
+    | Tmty_functor (arg, mtype2) ->
         Tmty_functor (
-          id,
-          s,
-          Option.map (sub.module_type sub) mtype1,
+          Option.map
+            (fun (id, s, mtype1) -> id, s, sub.module_type sub mtype1) arg,
           sub.module_type sub mtype2
         )
     | Tmty_with (mtype, list) ->
@@ -484,11 +483,10 @@ let module_expr sub x =
     match x.mod_desc with
     | Tmod_ident _ as d -> d
     | Tmod_structure st -> Tmod_structure (sub.structure sub st)
-    | Tmod_functor (id, s, mtype, mexpr) ->
+    | Tmod_functor (arg, mexpr) ->
         Tmod_functor (
-          id,
-          s,
-          Option.map (sub.module_type sub) mtype,
+          Option.map
+            (fun (id, s, mtype) -> id, s, sub.module_type sub mtype) arg,
           sub.module_expr sub mexpr
         )
     | Tmod_apply (mexp1, mexp2, c) ->
