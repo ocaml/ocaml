@@ -224,7 +224,7 @@ module type empty = sig  end
 let f (x:int) = ()
 let x = f (module struct end)
 [%%expect {|
-module type empty = sig  end
+module type empty = sig end
 val f : int -> unit = <fun>
 Line 3, characters 10-29:
 3 | let x = f (module struct end)

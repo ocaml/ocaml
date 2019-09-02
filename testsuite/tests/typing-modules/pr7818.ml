@@ -19,7 +19,7 @@ end;;
 [%%expect{|
 module Termsig :
   sig
-    module Term0 : sig module type S = sig module Id : sig  end end end
+    module Term0 : sig module type S = sig module Id : sig end end end
     module Term :
       sig module type S = sig module Term0 : Term0.S module T = Term0 end end
   end
@@ -36,9 +36,9 @@ module Make1 :
   functor
     (T' : sig
             module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig  end end
+            module T : sig module Id : sig end end
           end)
-    -> sig module T : sig module Id : sig  end val u : int end end
+    -> sig module T : sig module Id : sig end val u : int end end
 |}]
 
 module Make2 (T' : Termsig.Term.S) = struct
@@ -53,11 +53,11 @@ module Make2 :
   functor
     (T' : sig
             module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig  end end
+            module T : sig module Id : sig end end
           end)
     ->
     sig
-      module T : sig module Id : sig  end module Id2 = Id val u : int end
+      module T : sig module Id : sig end module Id2 = Id val u : int end
     end
 |}]
 
@@ -74,11 +74,11 @@ module Make3 :
   functor
     (T' : sig
             module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig  end end
+            module T : sig module Id : sig end end
           end)
     ->
     sig
-      module T : sig module Id : sig  end module Id2 = Id val u : int end
+      module T : sig module Id : sig end module Id2 = Id val u : int end
     end
 |}]
 
@@ -94,14 +94,14 @@ module Make1 (T' : S)  = struct
 end;;
 [%%expect{|
 module type S =
-  sig module Term0 : sig module Id : sig  end end module T = Term0 end
+  sig module Term0 : sig module Id : sig end end module T = Term0 end
 module Make1 :
   functor
     (T' : sig
-            module Term0 : sig module Id : sig  end end
-            module T : sig module Id : sig  end end
+            module Term0 : sig module Id : sig end end
+            module T : sig module Id : sig end end
           end)
-    -> sig module Id : sig  end module Id2 = Id end
+    -> sig module Id : sig end module Id2 = Id end
 |}]
 
 module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
@@ -117,7 +117,7 @@ Lines 2-5, characters 57-3:
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
-         sig module Id : sig  end module Id2 = Id end
+         sig module Id : sig end module Id2 = Id end
        is not included in
          sig module Id2 = T'.Term0.Id end
        In module Id2:
@@ -136,12 +136,12 @@ end;;
 module Make3 :
   functor
     (T' : sig
-            module Term0 : sig module Id : sig  end end
-            module T : sig module Id : sig  end end
+            module Term0 : sig module Id : sig end end
+            module T : sig module Id : sig end end
           end)
     ->
     sig
-      module T : sig module Id : sig  end module Id2 = Id val u : int end
+      module T : sig module Id : sig end module Id2 = Id val u : int end
     end
 |}]
 
@@ -150,7 +150,7 @@ module M = Make1 (struct module Term0 =
   struct module Id = struct let x = "a" end end module T = Term0 end);;
 M.Id.x;;
 [%%expect{|
-module M : sig module Id : sig  end module Id2 = Id end
+module M : sig module Id : sig end module Id2 = Id end
 Line 3, characters 0-6:
 3 | M.Id.x;;
     ^^^^^^
@@ -180,28 +180,28 @@ end;;
 
 module M = Make1(IS);;
 [%%expect{|
-module MkT : functor (X : sig  end) -> sig type t end
+module MkT : functor (X : sig end) -> sig type t end
 module type S =
   sig
-    module Term0 : sig module Id : sig  end end
+    module Term0 : sig module Id : sig end end
     module T = Term0
     type t = MkT(T).t
   end
 module Make1 :
   functor
     (T' : sig
-            module Term0 : sig module Id : sig  end end
-            module T : sig module Id : sig  end end
+            module Term0 : sig module Id : sig end end
+            module T : sig module Id : sig end end
             type t = MkT(T).t
           end)
-    -> sig module Id : sig  end module Id2 = Id type t = T'.t end
+    -> sig module Id : sig end module Id2 = Id type t = T'.t end
 module IS :
   sig
     module Term0 : sig module Id : sig val x : string end end
     module T = Term0
     type t = MkT(T).t
   end
-module M : sig module Id : sig  end module Id2 = Id type t = IS.t end
+module M : sig module Id : sig end module Id2 = Id type t = IS.t end
 |}]
 
 

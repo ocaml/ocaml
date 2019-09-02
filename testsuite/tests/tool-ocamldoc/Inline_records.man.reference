@@ -7,7 +7,7 @@ Module   Inline_records
 Module
 .BI "Inline_records"
  : 
-.B sig  end
+.B sig end
 
 .sp
 This test focuses on the printing of documentation for inline record

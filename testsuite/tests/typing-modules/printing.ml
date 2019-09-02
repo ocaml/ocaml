@@ -44,5 +44,5 @@ module type C
 module type D
 module type E
 module type F
-module Test : functor (X : (A -> (B -> C) -> D) -> E -> F) -> sig  end
+module Test : functor (X : (A -> (B -> C) -> D) -> E -> F) -> sig end
 |}]
