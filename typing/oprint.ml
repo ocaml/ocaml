@@ -459,6 +459,42 @@ let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
 
+(* For anonymous functor arguments, the logic to choose between
+   the long-form
+     functor (_ : S) -> ...
+   and the short-form
+     S -> ...
+   is as follows: if we are already printing long-form functor arguments,
+   we use the long form unless all remaining functor arguments can use
+   the short form. (Otherwise use the short form.)
+
+   For example,
+     functor (X : S1) (_ : S2) (Y : S3) (_ : S4) (_ : S5) -> sig end
+   will get printed as
+     functor (X : S1) (_ : S2) (Y : S3) -> S4 -> S5 -> sig end
+
+   but
+     functor (_ : S1) (_ : S2) (Y : S3) (_ : S4) (_ : S5) -> sig end
+   gets printed as
+     S1 -> S2 -> functor (Y : S3) -> S4 -> S5 -> sig end
+*)
+
+(* take a module type that may be a functor type,
+   and return the longest prefix list of arguments
+   that should be printed in long form. *)
+let collect_functor_arguments mty =
+  let rec split_args acc = function
+    | Omty_functor (name, mty_arg, mty_res) as func_mty
+         when not (only_anonymous_args func_mty) ->
+       split_args ((name, mty_arg) :: acc) mty_res
+    | rest -> (List.rev acc, rest)
+  and only_anonymous_args = function
+    | Omty_functor (name, _, mty_res) ->
+       name = "_" && only_anonymous_args mty_res
+    | _ -> true
+  in
+  split_args [] mty
+
 let rec print_out_module_type ppf mty =
   print_out_functor ppf mty
 and print_out_functor ppf = function
@@ -469,12 +505,7 @@ and print_out_functor ppf = function
             print_simple_out_module_type mty_arg
             print_functor mty_res
        | Omty_functor _ as non_anonymous_functor ->
-          let rec split_args acc = function
-            | Omty_functor (name, mty_arg, mty_res)
-                 when name <> "_" ->
-               split_args ((name, mty_arg) :: acc) mty_res
-            | rest -> (List.rev acc, rest)
-          in
+          let (args, rest) = collect_functor_arguments non_anonymous_functor in
           let print_arg ppf = function
             | (_, None) ->
                fprintf ppf "()"
@@ -483,7 +514,6 @@ and print_out_functor ppf = function
                  name
                  print_out_module_type mty
           in
-          let (args, rest) = split_args [] non_anonymous_functor in
           fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"
             (pp_print_list ~pp_sep:pp_print_space print_arg) args
             print_functor rest
