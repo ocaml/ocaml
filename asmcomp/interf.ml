@@ -149,6 +149,8 @@ let build_graph fundecl =
 
   let rec prefer weight i =
     let weight = max 1 weight in
+    (* Avoid overflow of weight and spill_cost *)
+    let weight = min 1000 weight in
     add_spill_cost weight i.arg;
     add_spill_cost weight i.res;
     match i.desc with
@@ -181,11 +183,9 @@ let build_graph fundecl =
         List.iter (fun (_nfail, handler) ->
             let weight =
               match rec_flag with
-              | Cmm.Recursive ->
-                  (* Avoid overflow of weight and spill_cost *)
-                  if weight < 1000 then 8 * weight else weight
-              | Cmm.Nonrecursive ->
-                  weight in
+              | Cmm.Recursive -> 8 * weight
+              | Cmm.Nonrecursive -> weight
+            in
             prefer weight handler) handlers;
         prefer weight i.next
     | Iexit _ ->
