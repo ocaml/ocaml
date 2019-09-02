@@ -216,15 +216,17 @@ let subst_type env t =
 
 let subst_module_type env t =
   let rec iter t =
+    let open Types in
     match t with
-      Types.Mty_ident p ->
+      Mty_ident p ->
         let new_p = Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
-        Types.Mty_ident new_p
-    | Types.Mty_alias _
-    | Types.Mty_signature _ ->
+        Mty_ident new_p
+    | Mty_alias _
+    | Mty_signature _ ->
         t
-    | Types.Mty_functor (id, mt1, mt2) ->
-        Types.Mty_functor (id, Option.map iter mt1, iter mt2)
+    | Mty_functor (Unit, mt) -> Mty_functor (Unit, iter mt)
+    | Mty_functor (Named (name, mt1), mt2) ->
+      Mty_functor (Named (name, iter mt1), iter mt2)
   in
   iter t
 

@@ -484,14 +484,15 @@ let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
    that should be printed in long form. *)
 let collect_functor_arguments mty =
   let rec collect_args acc = function
-    | Omty_functor (name, mty_arg, mty_res) ->
-       collect_args ((name, mty_arg) :: acc) mty_res
+    | Omty_functor (param, mty_res) ->
+       collect_args (param :: acc) mty_res
     | non_functor -> (acc, non_functor)
   in
   let rec uncollect_anonymous_suffix acc rest = match acc with
-      | ("_", mty_arg) :: acc ->
-         uncollect_anonymous_suffix acc (Omty_functor ("_", mty_arg, rest))
-      | (_, _) :: _ | [] ->
+      | Some (None, mty_arg) :: acc ->
+          uncollect_anonymous_suffix acc
+            (Omty_functor (Some (None, mty_arg), rest))
+      | _ :: _ | [] ->
          (acc, rest)
   in
   let (acc, non_functor) = collect_args [] mty in
@@ -503,18 +504,18 @@ let rec print_out_module_type ppf mty =
 and print_out_functor ppf = function
   | Omty_functor _ as t ->
      let rec print_functor ppf = function
-       | Omty_functor ("_", Some mty_arg, mty_res) ->
+       | Omty_functor (Some (None, mty_arg), mty_res) ->
           fprintf ppf "%a ->@ %a"
             print_simple_out_module_type mty_arg
             print_functor mty_res
        | Omty_functor _ as non_anonymous_functor ->
           let (args, rest) = collect_functor_arguments non_anonymous_functor in
           let print_arg ppf = function
-            | (_, None) ->
+            | None ->
                fprintf ppf "()"
-            | (name, Some mty) ->
+            | Some (param, mty) ->
                fprintf ppf "(%s : %a)"
-                 name
+                 (Option.value param ~default:"_")
                  print_out_module_type mty
           in
           fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"

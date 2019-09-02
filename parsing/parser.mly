@@ -1132,20 +1132,20 @@ parse_pattern:
 
 functor_arg:
     (* An anonymous and untyped argument. *)
-    x = mkrhs(LPAREN RPAREN {"*"})
-      { x, None }
+    LPAREN RPAREN
+      { Unit }
   | (* An argument accompanied with an explicit type. *)
-    LPAREN x = mkrhs(functor_arg_name) COLON mty = module_type RPAREN
-      { x, Some mty }
+    LPAREN x = mkrhs(module_name) COLON mty = module_type RPAREN
+      { Named (x, mty) }
 ;
 
-functor_arg_name:
+module_name:
     (* A named argument. *)
     x = UIDENT
-      { x }
+      { Some x }
   | (* An anonymous argument. *)
     UNDERSCORE
-      { "_" }
+      { None }
 ;
 
 (* -------------------------------------------------------------------------- *)
@@ -1164,8 +1164,8 @@ module_expr:
       { unclosed "struct" $loc($1) "end" $loc($4) }
   | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
       { wrap_mod_attrs ~loc:$sloc attrs (
-          List.fold_left (fun acc (x, mty) ->
-            mkmod ~loc:$sloc (Pmod_functor (x, mty, acc))
+          List.fold_left (fun acc arg ->
+            mkmod ~loc:$sloc (Pmod_functor (arg, acc))
           ) me args
         ) }
   | me = paren_module_expr
@@ -1307,13 +1307,13 @@ structure_item:
 %inline module_binding:
   MODULE
   ext = ext attrs1 = attributes
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   body = module_binding_body
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let loc = make_loc $sloc in
       let attrs = attrs1 @ attrs2 in
-      let body = Mb.mk uid body ~attrs ~loc ~docs in
+      let body = Mb.mk name body ~attrs ~loc ~docs in
       Pstr_module body, ext }
 ;
 
@@ -1325,8 +1325,7 @@ module_binding_body:
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
     | arg = functor_arg body = module_binding_body
-        { let (x, mty) = arg in
-          Pmod_functor(x, mty, body) }
+        { Pmod_functor(arg, body) }
   ) { $1 }
 ;
 
@@ -1342,7 +1341,7 @@ module_binding_body:
   ext = ext
   attrs1 = attributes
   REC
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   body = module_binding_body
   attrs2 = post_item_attributes
   {
@@ -1350,7 +1349,7 @@ module_binding_body:
     let attrs = attrs1 @ attrs2 in
     let docs = symbol_docs $sloc in
     ext,
-    Mb.mk uid body ~attrs ~loc ~docs
+    Mb.mk name body ~attrs ~loc ~docs
   }
 ;
 
@@ -1358,7 +1357,7 @@ module_binding_body:
 %inline and_module_binding:
   AND
   attrs1 = attributes
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   body = module_binding_body
   attrs2 = post_item_attributes
   {
@@ -1366,7 +1365,7 @@ module_binding_body:
     let attrs = attrs1 @ attrs2 in
     let docs = symbol_docs $sloc in
     let text = symbol_text $symbolstartpos in
-    Mb.mk uid body ~attrs ~loc ~text ~docs
+    Mb.mk name body ~attrs ~loc ~text ~docs
   }
 ;
 
@@ -1459,8 +1458,8 @@ module_type:
     MINUSGREATER mty = module_type
       %prec below_WITH
       { wrap_mty_attrs ~loc:$sloc attrs (
-          List.fold_left (fun acc (x, mty) ->
-            mkmty ~loc:$sloc (Pmty_functor (x, mty, acc))
+          List.fold_left (fun acc arg ->
+            mkmty ~loc:$sloc (Pmty_functor (arg, acc))
           ) mty args
         ) }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
@@ -1476,7 +1475,7 @@ module_type:
         { Pmty_ident $1 }
     | module_type MINUSGREATER module_type
         %prec below_WITH
-        { Pmty_functor(mknoloc "_", Some $1, $3) }
+        { Pmty_functor(Named (mknoloc None, $1), $3) }
     | module_type WITH separated_nonempty_llist(AND, with_constraint)
         { Pmty_with($1, $3) }
 /*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
@@ -1550,14 +1549,14 @@ signature_item:
 %inline module_declaration:
   MODULE
   ext = ext attrs1 = attributes
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   body = module_declaration_body
   attrs2 = post_item_attributes
   {
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Md.mk uid body ~attrs ~loc ~docs, ext
+    Md.mk name body ~attrs ~loc ~docs, ext
   }
 ;
 
@@ -1567,8 +1566,7 @@ module_declaration_body:
       { mty }
   | mkmty(
       arg = functor_arg body = module_declaration_body
-        { let (x, mty) = arg in
-          Pmty_functor(x, mty, body) }
+        { Pmty_functor(arg, body) }
     )
     { $1 }
 ;
@@ -1577,7 +1575,7 @@ module_declaration_body:
 %inline module_alias:
   MODULE
   ext = ext attrs1 = attributes
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   EQUAL
   body = module_expr_alias
   attrs2 = post_item_attributes
@@ -1585,7 +1583,7 @@ module_declaration_body:
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Md.mk uid body ~attrs ~loc ~docs, ext
+    Md.mk name body ~attrs ~loc ~docs, ext
   }
 ;
 %inline module_expr_alias:
@@ -1620,7 +1618,7 @@ module_subst:
   ext = ext
   attrs1 = attributes
   REC
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   COLON
   mty = module_type
   attrs2 = post_item_attributes
@@ -1628,13 +1626,13 @@ module_subst:
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    ext, Md.mk uid mty ~attrs ~loc ~docs
+    ext, Md.mk name mty ~attrs ~loc ~docs
   }
 ;
 %inline and_module_declaration:
   AND
   attrs1 = attributes
-  uid = mkrhs(UIDENT)
+  name = mkrhs(module_name)
   COLON
   mty = module_type
   attrs2 = post_item_attributes
@@ -1643,7 +1641,7 @@ module_subst:
     let docs = symbol_docs $sloc in
     let loc = make_loc $sloc in
     let text = symbol_text $symbolstartpos in
-    Md.mk uid mty ~attrs ~loc ~text ~docs
+    Md.mk name mty ~attrs ~loc ~text ~docs
   }
 ;
 
@@ -2131,7 +2129,7 @@ expr:
      { not_expecting $loc($1) "wildcard \"_\"" }
 ;
 %inline expr_attrs:
-  | LET MODULE ext_attributes mkrhs(UIDENT) module_binding_body IN seq_expr
+  | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
       { Pexp_letmodule($4, $5, $7), $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
       { Pexp_letexception($4, $6), $3 }
@@ -2625,9 +2623,9 @@ simple_pattern_not_ident:
       { reloc_pat ~loc:$sloc $2 }
   | simple_delimited_pattern
       { $1 }
-  | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
+  | LPAREN MODULE ext_attributes mkrhs(module_name) RPAREN
       { mkpat_attrs ~loc:$sloc (Ppat_unpack $4) $3 }
-  | LPAREN MODULE ext_attributes mkrhs(UIDENT) COLON package_type RPAREN
+  | LPAREN MODULE ext_attributes mkrhs(module_name) COLON package_type RPAREN
       { mkpat_attrs ~loc:$sloc
           (Ppat_constraint(mkpat ~loc:$sloc (Ppat_unpack $4), $6))
           $3 }
@@ -2667,7 +2665,7 @@ simple_pattern_not_ident:
       { unclosed "(" $loc($1) ")" $loc($5) }
   | LPAREN pattern COLON error
       { expecting $loc($4) "type" }
-  | LPAREN MODULE ext_attributes UIDENT COLON package_type
+  | LPAREN MODULE ext_attributes module_name COLON package_type
     error
       { unclosed "(" $loc($1) ")" $loc($7) }
   | extension

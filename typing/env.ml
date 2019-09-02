@@ -443,8 +443,8 @@ and structure_components = {
 }
 
 and functor_components = {
-  fcomp_param: Ident.t;                 (* Formal parameter *)
-  fcomp_arg: module_type option;        (* Argument signature *)
+  fcomp_arg: functor_parameter;
+  (* Formal parameter and argument signature *)
   fcomp_res: module_type;               (* Result signature *)
   fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
   fcomp_subst_cache: (Path.t, module_type) Hashtbl.t
@@ -821,9 +821,13 @@ let modtype_of_functor_appl fcomp p1 p2 =
       with Not_found ->
         let scope = Path.scope (Papply(p1, p2)) in
         let mty =
-          Subst.modtype (Rescope scope)
-            (Subst.add_module fcomp.fcomp_param p2 Subst.identity)
-            mty
+          let subst =
+            match fcomp.fcomp_arg with
+            | Unit
+            | Named (None, _) -> Subst.identity
+            | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
+          in
+          Subst.modtype (Rescope scope) subst mty
         in
         Hashtbl.add fcomp.fcomp_subst_cache p2 mty;
         mty
@@ -1577,16 +1581,19 @@ let rec components_of_module_maker
               NameMap.add (Ident.name id) decl' c.comp_cltypes)
         items_and_paths;
         Ok (Structure_comps c)
-  | Mty_functor(param, ty_arg, ty_res) ->
+  | Mty_functor(arg, ty_res) ->
       let sub =
         may_subst Subst.compose cm_freshening_subst cm_prefixing_subst
       in
       let scoping = Subst.Rescope (Path.scope cm_path) in
         Ok (Functor_comps {
-          fcomp_param = param;
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
-          fcomp_arg = Option.map (Subst.modtype scoping sub) ty_arg;
+          fcomp_arg =
+            (match arg with
+            | Unit -> Unit
+            | Named (param, ty_arg) ->
+              Named (param, Subst.modtype scoping sub ty_arg));
           fcomp_res = Subst.modtype scoping sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
@@ -1762,7 +1769,12 @@ let components_of_functor_appl ~loc f env p1 p2 =
     Hashtbl.find f.fcomp_cache p2
   with Not_found ->
     let p = Papply(p1, p2) in
-    let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
+    let sub =
+      match f.fcomp_arg with
+      | Unit
+      | Named (None, _) -> Subst.identity
+      | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
+    in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
     let mty = Subst.modtype (Rescope (Path.scope p)) sub f.fcomp_res in
@@ -2409,9 +2421,9 @@ and lookup_functor_components ~errors ~use ~loc lid env =
   match get_components_res comps with
   | Ok (Functor_comps fcomps) -> begin
       match fcomps.fcomp_arg with
-      | None -> (* PR#7611 *)
+      | Unit -> (* PR#7611 *)
           may_lookup_error errors loc env (Generative_used_as_applicative lid)
-      | Some arg -> path, fcomps, arg
+      | Named (_, arg) -> path, fcomps, arg
     end
   | Ok (Structure_comps _) ->
       may_lookup_error errors loc env (Structure_used_as_functor lid)
