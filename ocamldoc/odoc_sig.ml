@@ -1543,28 +1543,30 @@ module Analyser =
                raise (Failure "Parsetree.Pmty_signature signature but not Types.Mty_signature signat")
           )
 
-      | Parsetree.Pmty_functor (_, pmodule_type2, module_type2) ->
+      | Parsetree.Pmty_functor (param2, module_type2) ->
           (
-           let loc = match pmodule_type2 with None -> Location.none
-                     | Some pmty -> pmty.Parsetree.pmty_loc in
+           let loc = match param2 with None -> Location.none
+                     | Some (_, pmty) -> pmty.Parsetree.pmty_loc in
            let loc_start = Loc.start loc in
            let loc_end = Loc.end_ loc in
            let mp_type_code = get_string_of_file loc_start loc_end in
            print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            match sig_module_type with
-             Types.Mty_functor (ident, param_module_type, body_module_type) ->
-               let mp_kind =
-                 match pmodule_type2, param_module_type with
-                   Some pmty, Some mty ->
+             Types.Mty_functor (param, body_module_type) ->
+               let mp_name, mp_kind =
+                 match param2, param with
+                   Some (_, pmty), Some (ident, mty) ->
+                     Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
-                 | _ -> Module_type_struct []
+                 | _ -> "*", Module_type_struct []
                in
                let param =
                  {
-                   mp_name = Name.from_ident ident ;
+                   mp_name = mp_name;
                    mp_type =
-                    Option.map (Odoc_env.subst_module_type env)
-                      param_module_type;
+                     Option.map
+                       (fun (_, mty) -> Odoc_env.subst_module_type env mty)
+                      param;
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;
                  }
@@ -1638,27 +1640,28 @@ module Analyser =
                (* if we're here something's wrong *)
                raise (Failure "Parsetree.Pmty_signature signature but not Types.Mty_signature signat")
           )
-      | Parsetree.Pmty_functor (_, pmodule_type2,module_type2) (* of string * module_type * module_type *) ->
+      | Parsetree.Pmty_functor (param2,module_type2) (* of string * module_type * module_type *) ->
           (
            match sig_module_type with
-             Types.Mty_functor (ident, param_module_type, body_module_type) ->
-               let loc = match pmodule_type2 with None -> Location.none
-                     | Some pmty -> pmty.Parsetree.pmty_loc in
+             Types.Mty_functor (param, body_module_type) ->
+               let loc = match param2 with None -> Location.none
+                     | Some (_, pmty) -> pmty.Parsetree.pmty_loc in
                let loc_start = Loc.start loc in
                let loc_end = Loc.end_ loc in
                let mp_type_code = get_string_of_file loc_start loc_end in
                print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
-               let mp_kind =
-                 match pmodule_type2, param_module_type with
-                   Some pmty, Some mty ->
+               let mp_name, mp_kind =
+                 match param2, param with
+                   Some (_, pmty), Some (ident, mty) ->
+                     Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
-                 | _ -> Module_type_struct []
+                 | _ -> "*", Module_type_struct []
                in
                let param =
                  {
-                   mp_name = Name.from_ident ident ;
+                   mp_name;
                    mp_type = Option.map
-                    (Odoc_env.subst_module_type env) param_module_type ;
+                     (fun (_, mty) -> Odoc_env.subst_module_type env mty) param;
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;
                  }

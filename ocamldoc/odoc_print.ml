@@ -62,8 +62,9 @@ let simpl_module_type ?code t =
            None -> Types.Mty_signature []
          | Some s -> raise (Use_code s)
         )
-    | Types.Mty_functor (id, mt1, mt2) ->
-        Types.Mty_functor (id, Option.map iter mt1, iter mt2)
+    | Types.Mty_functor (param, mt2) ->
+      Types.Mty_functor
+        (Option.map (fun (id, mt1) -> id, iter mt1) param, iter mt2)
   in
   iter t
 

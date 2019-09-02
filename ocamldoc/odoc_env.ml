@@ -223,8 +223,9 @@ let subst_module_type env t =
     | Types.Mty_alias _
     | Types.Mty_signature _ ->
         t
-    | Types.Mty_functor (id, mt1, mt2) ->
-        Types.Mty_functor (id, Option.map iter mt1, iter mt2)
+    | Types.Mty_functor (param, mt2) ->
+      Types.Mty_functor
+        (Option.map (fun (id, mt1) -> id, iter mt1) param, iter mt2)
   in
   iter t
 

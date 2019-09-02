@@ -1709,29 +1709,32 @@ module Analyser =
           let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
           { m_base with m_kind = Module_struct elements2 }
 
-      | (Parsetree.Pmod_functor (_, pmodule_type, p_module_expr2),
-         Typedtree.Tmod_functor (ident, _, mtyp, tt_module_expr2)) ->
-           let loc = match pmodule_type with None -> Location.none
-                     | Some pmty -> pmty.Parsetree.pmty_loc in
+      | (Parsetree.Pmod_functor (param2, p_module_expr2),
+         Typedtree.Tmod_functor (param, tt_module_expr2)) ->
+           let loc, mp_name, mp_kind, mp_type =
+             match param2, param with
+             | None, None -> Location.none, "*", Module_type_struct [], None
+             | Some (_, pmty), Some (ident, _, mty) ->
+               let loc =  pmty.Parsetree.pmty_loc in
+               let mp_name = Name.from_ident ident in
+               let mp_kind =
+                 Sig.analyse_module_type_kind env current_module_name pmty
+                   mty.mty_type
+               in
+               let mp_type = Odoc_env.subst_module_type env mty.mty_type in
+               loc, mp_name, mp_kind, Some mp_type
+             | _, _ -> assert false
+           in
            let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
            let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
            let mp_type_code = get_string_of_file loc_start loc_end in
            print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
-           let mp_name = Name.from_ident ident in
-           let mp_kind =
-             match pmodule_type, mtyp with
-               Some pmty, Some mty ->
-                 Sig.analyse_module_type_kind env current_module_name pmty
-                   mty.mty_type
-             | _ -> Module_type_struct []
-           in
            let param =
              {
-               mp_name = mp_name ;
-               mp_type = Option.map
-                (fun m -> Odoc_env.subst_module_type env m.mty_type) mtyp ;
+               mp_name ;
+               mp_type ;
                mp_type_code = mp_type_code ;
-               mp_kind = mp_kind ;
+               mp_kind ;
              }
            in
            let dummy_complete_name = (*Name.concat "__"*) param.mp_name in
