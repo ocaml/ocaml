@@ -170,12 +170,12 @@ let build_graph fundecl =
     | Iop _ ->
         prefer weight i.next
     | Iifthenelse(_tst, ifso, ifnot) ->
-        prefer (weight / 2) ifso;
-        prefer (weight / 2) ifnot;
+        prefer weight ifso;
+        prefer weight ifnot;
         prefer weight i.next
     | Iswitch(_index, cases) ->
         for i = 0 to Array.length cases - 1 do
-          prefer (weight / 2) cases.(i)
+          prefer weight cases.(i)
         done;
         prefer weight i.next
     | Icatch(rec_flag, handlers, body) ->
