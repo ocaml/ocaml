@@ -148,6 +148,7 @@ let build_graph fundecl =
   (* Compute preferences and spill costs *)
 
   let rec prefer weight i =
+    let weight = max 1 weight in
     add_spill_cost weight i.arg;
     add_spill_cost weight i.res;
     match i.desc with
