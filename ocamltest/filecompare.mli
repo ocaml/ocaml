@@ -46,3 +46,5 @@ val check_file : ?tool:tool -> files -> result
 val cmp_result_of_exitcode : string -> int -> result
 
 val diff : files -> (string, string) Stdlib.result
+
+val promote : files -> ignore -> unit
