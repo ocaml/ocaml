@@ -175,6 +175,9 @@ Working version
   pretty-printing boxes.
   (Oxana Kostikova, review by Gabriel Scherer)
 
+- #8914: clarify the warning on unboxable types used in external primitives (61)
+  (Gabriel Scherer, review by Florian Angeletti, report on the Discourse forum)
+
 ### Bug fixes:
 
 - #8622: Don't generate #! headers over 127 characters.
