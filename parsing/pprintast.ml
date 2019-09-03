@@ -704,7 +704,8 @@ and expression ctxt f x =
         pp f "@[<hov2>{<%a>}@]"
           (list string_x_expression  ~sep:";"  )  l;
     | Pexp_letmodule (s, me, e) ->
-        pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]" s.txt
+        pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]"
+          (Option.value s.txt ~default:"_")
           (module_expr reset_ctxt) me (expression ctxt) e
     | Pexp_letexception (cd, e) ->
         pp f "@[<hov2>let@ exception@ %a@ in@ %a@]"
@@ -1025,15 +1026,17 @@ and module_type ctxt f x =
       (attributes ctxt) x.pmty_attributes
   end else
     match x.pmty_desc with
-    | Pmty_functor (None, mt2) ->
+    | Pmty_functor (Unit, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" (module_type ctxt) mt2
-    | Pmty_functor (Some (s, mt1), mt2) ->
-        if s.txt = "_" then
-          pp f "@[<hov2>%a@ ->@ %a@]"
-            (module_type1 ctxt) mt1 (module_type ctxt) mt2
-        else
-          pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
-            (module_type ctxt) mt1 (module_type ctxt) mt2
+    | Pmty_functor (Named (s, mt1), mt2) ->
+        begin match s.txt with
+        | None ->
+            pp f "@[<hov2>%a@ ->@ %a@]"
+              (module_type1 ctxt) mt1 (module_type ctxt) mt2
+        | Some name ->
+            pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" name
+              (module_type ctxt) mt1 (module_type ctxt) mt2
+        end
     | Pmty_with (mt, []) -> module_type ctxt f mt
     | Pmty_with (mt, l) ->
         let with_constraint f = function
@@ -1107,12 +1110,13 @@ and signature_item ctxt f x : unit =
       end
   | Psig_module ({pmd_type={pmty_desc=Pmty_alias alias;
                             pmty_attributes=[]; _};_} as pmd) ->
-      pp f "@[<hov>module@ %s@ =@ %a@]%a" pmd.pmd_name.txt
+      pp f "@[<hov>module@ %s@ =@ %a@]%a"
+        (Option.value pmd.pmd_name.txt ~default:"_")
         longident_loc alias
         (item_attributes ctxt) pmd.pmd_attributes
   | Psig_module pmd ->
       pp f "@[<hov>module@ %s@ :@ %a@]%a"
-        pmd.pmd_name.txt
+        (Option.value pmd.pmd_name.txt ~default:"_")
         (module_type ctxt) pmd.pmd_type
         (item_attributes ctxt) pmd.pmd_attributes
   | Psig_modsubst pms ->
@@ -1145,11 +1149,13 @@ and signature_item ctxt f x : unit =
         | [] -> () ;
         | pmd :: tl ->
             if not first then
-              pp f "@ @[<hov2>and@ %s:@ %a@]%a" pmd.pmd_name.txt
+              pp f "@ @[<hov2>and@ %s:@ %a@]%a"
+                (Option.value pmd.pmd_name.txt ~default:"_")
                 (module_type1 ctxt) pmd.pmd_type
                 (item_attributes ctxt) pmd.pmd_attributes
             else
-              pp f "@[<hov2>module@ rec@ %s:@ %a@]%a" pmd.pmd_name.txt
+              pp f "@[<hov2>module@ rec@ %s:@ %a@]%a"
+                (Option.value pmd.pmd_name.txt ~default:"_")
                 (module_type1 ctxt) pmd.pmd_type
                 (item_attributes ctxt) pmd.pmd_attributes;
             string_x_module_type_list f ~first:false tl
@@ -1174,11 +1180,12 @@ and module_expr ctxt f x =
           (module_type ctxt) mt
     | Pmod_ident (li) ->
         pp f "%a" longident_loc li;
-    | Pmod_functor (None, me) ->
+    | Pmod_functor (Unit, me) ->
         pp f "functor ()@;->@;%a" (module_expr ctxt) me
-    | Pmod_functor (Some (s, mt), me) ->
+    | Pmod_functor (Named (s, mt), me) ->
         pp f "functor@ (%s@ :@ %a)@;->@;%a"
-          s.txt (module_type ctxt) mt (module_expr ctxt) me
+          (Option.value s.txt ~default:"_")
+          (module_type ctxt) mt (module_expr ctxt) me
     | Pmod_apply (me1, me2) ->
         pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
         (* Cf: #7200 *)
@@ -1305,14 +1312,16 @@ and structure_item ctxt f x =
       let rec module_helper = function
         | {pmod_desc=Pmod_functor(arg_opt,me'); pmod_attributes = []} ->
             begin match arg_opt with
-            | None -> pp f "()"
-            | Some (s, mt) -> pp f "(%s:%a)" s.txt (module_type ctxt) mt
+            | Unit -> pp f "()"
+            | Named (s, mt) ->
+              pp f "(%s:%a)" (Option.value s.txt ~default:"_")
+                (module_type ctxt) mt
             end;
             module_helper me'
         | me -> me
       in
       pp f "@[<hov2>module %s%a@]%a"
-        x.pmb_name.txt
+        (Option.value x.pmb_name.txt ~default:"_")
         (fun f me ->
            let me = module_helper me in
            match me with
@@ -1391,7 +1400,8 @@ and structure_item ctxt f x =
   | Pstr_recmodule decls -> (* 3.07 *)
       let aux f = function
         | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) ->
-            pp f "@[<hov2>@ and@ %s:%a@ =@ %a@]%a" pmb.pmb_name.txt
+            pp f "@[<hov2>@ and@ %s:%a@ =@ %a@]%a"
+              (Option.value pmb.pmb_name.txt ~default:"_")
               (module_type ctxt) typ
               (module_expr ctxt) expr
               (item_attributes ctxt) pmb.pmb_attributes
@@ -1403,7 +1413,7 @@ and structure_item ctxt f x =
       begin match decls with
       | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) :: l2 ->
           pp f "@[<hv>@[<hov2>module@ rec@ %s:%a@ =@ %a@]%a@ %a@]"
-            pmb.pmb_name.txt
+            (Option.value pmb.pmb_name.txt ~default:"_")
             (module_type ctxt) typ
             (module_expr ctxt) expr
             (item_attributes ctxt) pmb.pmb_attributes

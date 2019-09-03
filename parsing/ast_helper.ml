@@ -24,6 +24,7 @@ type loc = Location.t
 
 type lid = Longident.t with_loc
 type str = string with_loc
+type str_opt = string option with_loc
 type attrs = attribute list
 
 let default_loc = ref Location.none

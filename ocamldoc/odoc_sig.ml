@@ -491,10 +491,11 @@ module Analyser =
           | [] -> acc
           | types -> take_item (Parsetree.Psig_type (rf, types)))
         | Parsetree.Psig_modsubst _ -> acc
-        | Parsetree.Psig_module ({Parsetree.pmd_name=name;
+        | Parsetree.Psig_module {Parsetree.pmd_name={ txt = None }} -> acc
+        | Parsetree.Psig_module ({Parsetree.pmd_name={txt = Some name };
                                              pmd_type=module_type} as r)
           as m ->
-           begin match Name.Map.find name.txt erased with
+           begin match Name.Map.find name erased with
            | exception Not_found -> take_item m
            | `Removed -> acc
            | `Constrained constraints ->
@@ -507,9 +508,15 @@ module Analyser =
         | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
           if is_erased name.txt erased then acc else take_item m
         | Parsetree.Psig_recmodule mods ->
-          (match List.filter (fun pmd -> not (is_erased pmd.Parsetree.pmd_name.txt erased)) mods with
-          | [] -> acc
-          | mods -> take_item (Parsetree.Psig_recmodule mods)))
+          (match List.filter
+                   (fun pmd ->
+                      match pmd.Parsetree.pmd_name.txt with
+                      | None -> false
+                      | Some name -> not (is_erased name erased))
+                   mods
+           with
+           | [] -> acc
+           | mods -> take_item (Parsetree.Psig_recmodule mods)))
         signature []
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
@@ -1141,13 +1148,16 @@ module Analyser =
         | Parsetree.Psig_modsubst _ -> (* FIXME *)
             (0, env, [])
 
-        | Parsetree.Psig_module {Parsetree.pmd_name=name; pmd_type=module_type} ->
-            let complete_name = Name.concat current_module_name name.txt in
+        | Parsetree.Psig_module {Parsetree.pmd_name={txt=None}} ->
+            (0, env, [])
+
+        | Parsetree.Psig_module {Parsetree.pmd_name={txt=Some name}; pmd_type=module_type} ->
+            let complete_name = Name.concat current_module_name name in
             (* get the module type in the signature by the module name *)
             let sig_module_type =
-              try Signature_search.search_module table name.txt
+              try Signature_search.search_module table name
               with Not_found ->
-                raise (Failure (Odoc_messages.module_not_found current_module_name name.txt))
+                raise (Failure (Odoc_messages.module_not_found current_module_name name))
             in
             let module_kind = analyse_module_kind env complete_name module_type sig_module_type in
             let code_intf =
@@ -1193,31 +1203,60 @@ module Analyser =
             let new_env =
               List.fold_left
                 (fun acc_env {Parsetree.pmd_name={txt=name}} ->
-                  let complete_name = Name.concat current_module_name name in
-                  let e = Odoc_env.add_module acc_env complete_name in
-                  (* get the information for the module in the signature *)
-                  let sig_module_type =
-                    try Signature_search.search_module table name
-                    with Not_found ->
-                      raise (Failure (Odoc_messages.module_not_found current_module_name name))
-                  in
-                  match sig_module_type with
-                    (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
-                    Types.Mty_signature s ->
-                      Odoc_env.add_signature e complete_name ~rel: name s
-                  | _ ->
-                      print_DEBUG "not a Tmty_signature";
-                      e
-                )
-                env
-                decls
+                   match name with
+                   | None -> acc_env
+                   | Some name ->
+                      let complete_name = Name.concat current_module_name name in
+                      let e = Odoc_env.add_module acc_env complete_name in
+                      (* get the information for the module in the signature *)
+                      let sig_module_type =
+                        try Signature_search.search_module table name
+                        with Not_found ->
+                          raise (Failure (Odoc_messages.module_not_found current_module_name name))
+                      in
+                      match sig_module_type with
+                        (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
+                        Types.Mty_signature s ->
+                          Odoc_env.add_signature e complete_name ~rel: name s
+                      | _ ->
+                          print_DEBUG "not a Tmty_signature";
+                          e
+                    )
+                    env
+                    decls
             in
             let rec f ?(first=false) acc_maybe_more last_pos name_mtype_list =
               match name_mtype_list with
                 [] ->
                   (acc_maybe_more, [])
-              | {Parsetree.pmd_name=name; pmd_type=modtype} :: q ->
-                  let complete_name = Name.concat current_module_name name.txt in
+              | {Parsetree.pmd_name={txt = None}; pmd_type=modtype} :: q ->
+                  let loc = modtype.Parsetree.pmty_loc in
+                  let loc_start = Loc.start loc in
+                  let loc_end = Loc.end_ loc in
+                  let _, ele_comments =
+                    if first then (None, [])
+                    else get_comments_in_module last_pos loc_start
+                  in
+                  let pos_limit2 =
+                    match q with
+                      [] -> pos_limit
+                    | _ :: _ -> Loc.start loc
+                  in
+                  let (maybe_more, _) =
+                    My_ir.just_after_special
+                      !file_name
+                      (get_string_of_file loc_end pos_limit2)
+                  in
+
+                  let (maybe_more2, eles) = f
+                      maybe_more
+                      (loc_end + maybe_more)
+                      q
+                  in
+                  (maybe_more2, ele_comments @ eles)
+
+              | {Parsetree.pmd_name={txt = Some name}; pmd_type=modtype} :: q ->
+                  let complete_name = Name.concat current_module_name name in
                   let loc = modtype.Parsetree.pmty_loc in
                   let loc_start = Loc.start loc in
                   let loc_end = Loc.end_ loc in
@@ -1236,9 +1275,9 @@ module Analyser =
                   in
                   (* get the information for the module in the signature *)
                   let sig_module_type =
-                    try Signature_search.search_module table name.txt
+                    try Signature_search.search_module table name
                     with Not_found ->
-                      raise (Failure (Odoc_messages.module_not_found current_module_name name.txt))
+                      raise (Failure (Odoc_messages.module_not_found current_module_name name))
                   in
                   (* associate the comments to each constructor and build the [Type.t_type] *)
                   let module_kind = analyse_module_kind new_env complete_name modtype sig_module_type in
@@ -1545,8 +1584,8 @@ module Analyser =
 
       | Parsetree.Pmty_functor (param2, module_type2) ->
           (
-           let loc = match param2 with None -> Location.none
-                     | Some (_, pmty) -> pmty.Parsetree.pmty_loc in
+           let loc = match param2 with Parsetree.Unit -> Location.none
+                     | Parsetree.Named (_, pmty) -> pmty.Parsetree.pmty_loc in
            let loc_start = Loc.start loc in
            let loc_end = Loc.end_ loc in
            let mp_type_code = get_string_of_file loc_start loc_end in
@@ -1555,7 +1594,7 @@ module Analyser =
              Types.Mty_functor (param, body_module_type) ->
                let mp_name, mp_kind =
                  match param2, param with
-                   Some (_, pmty), Some (ident, mty) ->
+                   Parsetree.Named (_, pmty), Types.Named (ident, mty) ->
                      Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
                  | _ -> "*", Module_type_struct []
@@ -1564,9 +1603,10 @@ module Analyser =
                  {
                    mp_name = mp_name;
                    mp_type =
-                     Option.map
-                       (fun (_, mty) -> Odoc_env.subst_module_type env mty)
-                      param;
+                     (match param with
+                      | Types.Unit -> None
+                      | Types.Named (_, mty) ->
+                        Some (Odoc_env.subst_module_type env mty));
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;
                  }
@@ -1644,15 +1684,15 @@ module Analyser =
           (
            match sig_module_type with
              Types.Mty_functor (param, body_module_type) ->
-               let loc = match param2 with None -> Location.none
-                     | Some (_, pmty) -> pmty.Parsetree.pmty_loc in
+               let loc = match param2 with Parsetree.Unit -> Location.none
+                     | Parsetree.Named (_, pmty) -> pmty.Parsetree.pmty_loc in
                let loc_start = Loc.start loc in
                let loc_end = Loc.end_ loc in
                let mp_type_code = get_string_of_file loc_start loc_end in
                print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
                let mp_name, mp_kind =
                  match param2, param with
-                   Some (_, pmty), Some (ident, mty) ->
+                   Parsetree.Named (_, pmty), Types.Named (ident, mty) ->
                      Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
                  | _ -> "*", Module_type_struct []
@@ -1660,8 +1700,10 @@ module Analyser =
                let param =
                  {
                    mp_name;
-                   mp_type = Option.map
-                     (fun (_, mty) -> Odoc_env.subst_module_type env mty) param;
+                   mp_type =
+                     (match param with
+                      | Types.Unit -> None
+                      | Types.Named(_, mty) -> Some (Odoc_env.subst_module_type env mty));
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;
                  }

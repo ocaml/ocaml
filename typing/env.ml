@@ -443,7 +443,7 @@ and structure_components = {
 }
 
 and functor_components = {
-  fcomp_arg: (Ident.t * module_type) option;
+  fcomp_arg: functor_parameter;
   (* Formal parameter and argument signature *)
   fcomp_res: module_type;               (* Result signature *)
   fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
@@ -823,8 +823,8 @@ let modtype_of_functor_appl fcomp p1 p2 =
         let mty =
           let subst =
             match fcomp.fcomp_arg with
-            | None -> Subst.identity
-            | Some (param, _) -> Subst.add_module param p2 Subst.identity
+            | Unit -> Subst.identity
+            | Named (param, _) -> Subst.add_module param p2 Subst.identity
           in
           Subst.modtype (Rescope scope) subst mty
         in
@@ -1589,8 +1589,10 @@ let rec components_of_module_maker
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
           fcomp_arg =
-            Option.map (fun (param, ty_arg) ->
-              param, Subst.modtype scoping sub ty_arg) arg;
+            (match arg with
+            | Unit -> Unit
+            | Named (param, ty_arg) ->
+              Named (param, Subst.modtype scoping sub ty_arg));
           fcomp_res = Subst.modtype scoping sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
@@ -1768,8 +1770,8 @@ let components_of_functor_appl ~loc f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub =
       match f.fcomp_arg with
-      | None -> Subst.identity
-      | Some (param, _) -> Subst.add_module param p2 Subst.identity
+      | Unit -> Subst.identity
+      | Named (param, _) -> Subst.add_module param p2 Subst.identity
     in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
@@ -2417,9 +2419,9 @@ and lookup_functor_components ~errors ~use ~loc lid env =
   match get_components_res comps with
   | Ok (Functor_comps fcomps) -> begin
       match fcomps.fcomp_arg with
-      | None -> (* PR#7611 *)
+      | Unit -> (* PR#7611 *)
           may_lookup_error errors loc env (Generative_used_as_applicative lid)
-      | Some (_, arg) -> path, fcomps, arg
+      | Named (_, arg) -> path, fcomps, arg
     end
   | Ok (Structure_comps _) ->
       may_lookup_error errors loc env (Structure_used_as_functor lid)

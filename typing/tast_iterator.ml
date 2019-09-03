@@ -288,6 +288,10 @@ let signature_item sub {sig_desc; sig_env; _} =
 let class_description sub x =
   class_infos sub (sub.class_type sub) x
 
+let functor_parameter sub = function
+  | Unit -> ()
+  | Named (_, _, mtype) -> sub.module_type sub mtype
+
 let module_type sub {mty_desc; mty_env; _} =
   sub.env sub mty_env;
   match mty_desc with
@@ -295,7 +299,7 @@ let module_type sub {mty_desc; mty_env; _} =
   | Tmty_alias _      -> ()
   | Tmty_signature sg -> sub.signature sub sg
   | Tmty_functor (arg, mtype2) ->
-      Option.iter (fun (_, _, mtype1) -> sub.module_type sub mtype1) arg;
+      functor_parameter sub arg;
       sub.module_type sub mtype2
   | Tmty_with (mtype, list) ->
       sub.module_type sub mtype;
@@ -333,7 +337,7 @@ let module_expr sub {mod_desc; mod_env; _} =
   | Tmod_ident _      -> ()
   | Tmod_structure st -> sub.structure sub st
   | Tmod_functor (arg, mexpr) ->
-      Option.iter (fun (_, _, mtype) -> sub.module_type sub mtype) arg;
+      functor_parameter sub arg;
       sub.module_expr sub mexpr
   | Tmod_apply (mexp1, mexp2, c) ->
       sub.module_expr sub mexp1;

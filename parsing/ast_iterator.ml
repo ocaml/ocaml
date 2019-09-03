@@ -233,6 +233,12 @@ module CT = struct
     List.iter (sub.class_type_field sub) pcsig_fields
 end
 
+let iter_functor_param sub = function
+  | Unit -> ()
+  | Named (name, mty) ->
+    iter_loc sub name;
+    sub.module_type sub mty
+
 module MT = struct
   (* Type expressions for the module language *)
 
@@ -243,11 +249,8 @@ module MT = struct
     | Pmty_ident s -> iter_loc sub s
     | Pmty_alias s -> iter_loc sub s
     | Pmty_signature sg -> sub.signature sub sg
-    | Pmty_functor (arg_opt, mt2) ->
-        iter_opt (fun (arg, arg_ty) ->
-          iter_loc sub arg;
-          sub.module_type sub arg_ty
-        ) arg_opt;
+    | Pmty_functor (param, mt2) ->
+        iter_functor_param sub param;
         sub.module_type sub mt2
     | Pmty_with (mt, l) ->
         sub.module_type sub mt;
@@ -300,11 +303,8 @@ module M = struct
     match desc with
     | Pmod_ident x -> iter_loc sub x
     | Pmod_structure str -> sub.structure sub str
-    | Pmod_functor (arg_opt, body) ->
-        iter_opt (fun (arg, arg_ty) ->
-          iter_loc sub arg;
-          sub.module_type sub arg_ty
-        ) arg_opt;
+    | Pmod_functor (param, body) ->
+        iter_functor_param sub param;
         sub.module_expr sub body
     | Pmod_apply (m1, m2) ->
         sub.module_expr sub m1; sub.module_expr sub m2

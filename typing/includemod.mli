@@ -79,8 +79,8 @@ type symptom =
 type pos =
   | Module of Ident.t
   | Modtype of Ident.t
-  | Arg of Ident.t
-  | Body of Ident.t option
+  | Arg of functor_parameter
+  | Body of functor_parameter
 type error = pos list * Env.t * symptom
 
 exception Error of error list

@@ -37,8 +37,9 @@ let rec strengthen ~aliasable env mty p =
   match scrape env mty with
     Mty_signature sg ->
       Mty_signature(strengthen_sig ~aliasable env sg p)
-  | Mty_functor(Some (param, arg), res) when !Clflags.applicative_functors ->
-      Mty_functor(Some (param, arg),
+  | Mty_functor(Named (param, arg), res)
+    when !Clflags.applicative_functors ->
+      Mty_functor(Named (param, arg),
         strengthen ~aliasable:false env res (Papply(p, Pident param)))
   | mty ->
       mty
@@ -170,13 +171,13 @@ let rec nondep_mty_with_presence env va ids pres mty =
   | Mty_signature sg ->
       let mty = Mty_signature(nondep_sig env va ids sg) in
       pres, mty
-  | Mty_functor(None, res) ->
-      pres, Mty_functor(None, nondep_mty env va ids res)
-  | Mty_functor(Some (param, arg), res) ->
+  | Mty_functor(Unit, res) ->
+      pres, Mty_functor(Unit, nondep_mty env va ids res)
+  | Mty_functor(Named (param, arg), res) ->
       let var_inv =
         match va with Co -> Contra | Contra -> Co | Strict -> Strict in
       let mty =
-        Mty_functor(Some (param, nondep_mty env var_inv ids arg),
+        Mty_functor(Named (param, nondep_mty env var_inv ids arg),
                     nondep_mty
                       (Env.add_module ~arg:true param Mp_present arg env)
                       va ids res)

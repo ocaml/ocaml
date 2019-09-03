@@ -489,9 +489,9 @@ let collect_functor_arguments mty =
     | non_functor -> (acc, non_functor)
   in
   let rec uncollect_anonymous_suffix acc rest = match acc with
-      | Some ("_", mty_arg) :: acc ->
+      | Some (None, mty_arg) :: acc ->
           uncollect_anonymous_suffix acc
-            (Omty_functor (Some ("_", mty_arg), rest))
+            (Omty_functor (Some (None, mty_arg), rest))
       | _ :: _ | [] ->
          (acc, rest)
   in
@@ -504,7 +504,7 @@ let rec print_out_module_type ppf mty =
 and print_out_functor ppf = function
   | Omty_functor _ as t ->
      let rec print_functor ppf = function
-       | Omty_functor (Some ("_", mty_arg), mty_res) ->
+       | Omty_functor (Some (None, mty_arg), mty_res) ->
           fprintf ppf "%a ->@ %a"
             print_simple_out_module_type mty_arg
             print_functor mty_res
@@ -513,9 +513,9 @@ and print_out_functor ppf = function
           let print_arg ppf = function
             | None ->
                fprintf ppf "()"
-            | Some (name, mty) ->
+            | Some (param, mty) ->
                fprintf ppf "(%s : %a)"
-                 name
+                 (Option.value param ~default:"_")
                  print_out_module_type mty
           in
           fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"

@@ -458,11 +458,11 @@ let rec modtype scoping s = function
       end
   | Mty_signature sg ->
       Mty_signature(signature scoping s sg)
-  | Mty_functor(None, res) ->
-      Mty_functor(None, modtype scoping s res)
-  | Mty_functor(Some (id, arg), res) ->
+  | Mty_functor(Unit, res) ->
+      Mty_functor(Unit, modtype scoping s res)
+  | Mty_functor(Named (id, arg), res) ->
       let id' = Ident.rename id in
-      Mty_functor(Some (id', (modtype scoping s) arg),
+      Mty_functor(Named (id', (modtype scoping s) arg),
                   modtype scoping (add_module id (Pident id') s) res)
   | Mty_alias p ->
       Mty_alias (module_path s p)

@@ -43,6 +43,10 @@ let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x.txt;;
 
 let fmt_ident = Ident.print
 
+let fmt_modname f = function
+  | None -> fprintf f "_";
+  | Some id -> Ident.print f id
+
 let rec fmt_path_aux f x =
   match x with
   | Path.Pident (s) -> fprintf f "%a" fmt_ident s;
@@ -389,7 +393,7 @@ and expression i ppf x =
       line i ppf "Texp_override\n";
       list i string_x_expression ppf l;
   | Texp_letmodule (s, _, _, me, e) ->
-      line i ppf "Texp_letmodule \"%a\"\n" fmt_ident s;
+      line i ppf "Texp_letmodule \"%a\"\n" fmt_modname s;
       module_expr i ppf me;
       expression i ppf e;
   | Texp_letexception (cd, e) ->
@@ -668,11 +672,11 @@ and module_type i ppf x =
   | Tmty_signature (s) ->
       line i ppf "Tmty_signature\n";
       signature i ppf s;
-  | Tmty_functor (None, mt2) ->
+  | Tmty_functor (Unit, mt2) ->
       line i ppf "Tmty_functor ()\n";
       module_type i ppf mt2;
-  | Tmty_functor (Some (s, _, mt1), mt2) ->
-      line i ppf "Tmty_functor \"%a\"\n" fmt_ident s;
+  | Tmty_functor (Named (s, _, mt1), mt2) ->
+      line i ppf "Tmty_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt1;
       module_type i ppf mt2;
   | Tmty_with (mt, l) ->
@@ -705,7 +709,7 @@ and signature_item i ppf x =
       line i ppf "Tsig_exception\n";
       type_exception i ppf ext
   | Tsig_module md ->
-      line i ppf "Tsig_module \"%a\"\n" fmt_ident md.md_id;
+      line i ppf "Tsig_module \"%a\"\n" fmt_modname md.md_id;
       attributes i ppf md.md_attributes;
       module_type i ppf md.md_type
   | Tsig_modsubst ms ->
@@ -738,12 +742,12 @@ and signature_item i ppf x =
       attribute i ppf "Tsig_attribute" a
 
 and module_declaration i ppf md =
-  line i ppf "%a" fmt_ident md.md_id;
+  line i ppf "%a" fmt_modname md.md_id;
   attributes i ppf md.md_attributes;
   module_type (i+1) ppf md.md_type;
 
 and module_binding i ppf x =
-  line i ppf "%a\n" fmt_ident x.mb_id;
+  line i ppf "%a\n" fmt_modname x.mb_id;
   attributes i ppf x.mb_attributes;
   module_expr (i+1) ppf x.mb_expr
 
@@ -771,11 +775,11 @@ and module_expr i ppf x =
   | Tmod_structure (s) ->
       line i ppf "Tmod_structure\n";
       structure i ppf s;
-  | Tmod_functor (None, me) ->
+  | Tmod_functor (Unit, me) ->
       line i ppf "Tmod_functor ()\n";
       module_expr i ppf me;
-  | Tmod_functor (Some (s, _, mt), me) ->
-      line i ppf "Tmod_functor \"%a\"\n" fmt_ident s;
+  | Tmod_functor (Named (s, _, mt), me) ->
+      line i ppf "Tmod_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt;
       module_expr i ppf me;
   | Tmod_apply (me1, me2, _) ->

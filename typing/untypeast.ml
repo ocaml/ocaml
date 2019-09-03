@@ -599,6 +599,11 @@ let class_declaration sub = class_infos sub.class_expr sub
 let class_description sub = class_infos sub.class_type sub
 let class_type_declaration sub = class_infos sub.class_type sub
 
+let functor_parameter sub : functor_parameter -> Parsetree.functor_parameter =
+  function
+  | Unit -> Unit
+  | Named (_, name, mtype) -> Named (name, sub.module_type sub mtype)
+
 let module_type sub mty =
   let loc = sub.location sub mty.mty_loc in
   let attrs = sub.attributes sub mty.mty_attributes in
@@ -607,10 +612,7 @@ let module_type sub mty =
     | Tmty_alias (_path, lid) -> Pmty_alias (map_loc sub lid)
     | Tmty_signature sg -> Pmty_signature (sub.signature sub sg)
     | Tmty_functor (arg, mtype2) ->
-        Pmty_functor (
-          Option.map
-            (fun (_, name, mtype1) -> name, sub.module_type sub mtype1) arg,
-          sub.module_type sub mtype2)
+        Pmty_functor (functor_parameter sub arg, sub.module_type sub mtype2)
     | Tmty_with (mtype, list) ->
         Pmty_with (sub.module_type sub mtype,
           List.map (sub.with_constraint sub) list)
@@ -641,10 +643,8 @@ let module_expr sub mexpr =
             Tmod_ident (_p, lid) -> Pmod_ident (map_loc sub lid)
           | Tmod_structure st -> Pmod_structure (sub.structure sub st)
           | Tmod_functor (arg, mexpr) ->
-              Pmod_functor (
-                Option.map
-                  (fun (_, name, mtype) -> name, sub.module_type sub mtype) arg,
-                sub.module_expr sub mexpr)
+              Pmod_functor
+                (functor_parameter sub arg, sub.module_expr sub mexpr)
           | Tmod_apply (mexp1, mexp2, _) ->
               Pmod_apply (sub.module_expr sub mexp1, sub.module_expr sub mexp2)
           | Tmod_constraint (mexpr, _, Tmodtype_explicit mtype, _) ->
