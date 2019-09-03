@@ -48,6 +48,10 @@ Working version
 - #8890: in -dtimings output, show time spent in C linker clearly
   (Valentin Gatien-Baron)
 
+- #8913: ocamltest: improve 'promote' implementation to take
+  skipped lines/bytes into account
+  (Gabriel Scherer, review by Sébastien Hinderer)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.

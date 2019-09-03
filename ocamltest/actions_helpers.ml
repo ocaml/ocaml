@@ -287,8 +287,12 @@ let check_output kind_of_output output_variable reference_variable log
     Filecompare.reference_filename = reference_filename;
     Filecompare.output_filename = output_filename
   } in
+  let ignore_header_conf = {
+      Filecompare.lines = skip_lines;
+      Filecompare.bytes = skip_bytes;
+    } in
   let tool =
-    Filecompare.(make_cmp_tool ~ignore:{lines=skip_lines;bytes=skip_bytes}) in
+    Filecompare.make_cmp_tool ~ignore:ignore_header_conf in
   match Filecompare.check_file ~tool files with
     | Filecompare.Same -> (Result.pass, env)
     | Filecompare.Different ->
@@ -303,7 +307,7 @@ let check_output kind_of_output output_variable reference_variable log
       then begin
         Printf.fprintf log "Promoting %s output %s to reference %s\n%!"
           kind_of_output output_filename reference_filename;
-        Sys.copy_file output_filename reference_filename;
+        Filecompare.promote files ignore_header_conf;
       end;
       (Result.fail_with_reason reason, env)
     | Filecompare.Unexpected_output ->
