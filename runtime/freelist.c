@@ -1546,9 +1546,25 @@ static header_t *bf_allocate (mlsize_t wosz)
         }
         Next_small (Val_hp (p)) = Val_NULL;
         /* Put the chain in the free list. */
-        bf_small_fl[wosz].free = Next_small (Val_hp (big));
-        bf_small_fl[wosz].merge = &bf_small_fl[wosz].free;
-        set_map (wosz);
+        if (bf_small_fl[wosz].free == Val_NULL){
+          /* Normal case, the free list is empty. */
+          bf_small_fl[wosz].free = Next_small (Val_hp (big));
+          bf_small_fl[wosz].merge = &bf_small_fl[wosz].free;
+          set_map (wosz);
+        }else{
+          /* The call to [bf_allocate_from_tree] above has inserted a
+             single (black) block in the free list. */
+          CAMLassert (Next_small (bf_small_fl[wosz].free) == Val_NULL);
+          CAMLassert (Color_val (bf_small_fl[wosz].free) == Caml_black);
+          CAMLassert (bf_small_map & (1 << (wosz - 1)));
+          CAMLassert (Bp_val (bf_small_fl[wosz].free) < Bp_val (big));
+            /* The block inserted by [bf_allocate_from_tree] must be before
+               [big] because of the way [bf_split] works. */
+          Hd_val (bf_small_fl[wosz].free) =
+            Make_header (wosz, Abstract_tag, Caml_blue);
+          Next_small (bf_small_fl[wosz].free) = Next_small (Val_hp (big));
+          bf_small_fl[wosz].merge = &bf_small_fl[wosz].free;
+        }
         caml_fl_cur_wsz += Whsize_wosize (wosz) * (BF_PREALLOC_NUM - 1);
 #if FREELIST_DEBUG
         bf_check ();
