@@ -48,6 +48,9 @@ Working version
 - #8890: in -dtimings output, show time spent in C linker clearly
   (Valentin Gatien-Baron)
 
+- #8910, #8911: minor improvements to the printing of module types
+  (Gabriel Scherer, review by Florian Angeletti)
+
 - #8913: ocamltest: improve 'promote' implementation to take
   skipped lines/bytes into account
   (Gabriel Scherer, review by Sébastien Hinderer)
