@@ -493,7 +493,11 @@ and print_simple_out_module_type ppf =
   | Omty_functor _ as t -> fprintf ppf "(%a)" print_out_module_type t
   | Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
-      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" !out_signature sg
+     begin match sg with
+       | [] -> fprintf ppf "sig end"
+       | sg ->
+          fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_out_signature sg
+     end
   | Omty_alias id -> fprintf ppf "(module %a)" print_ident id
 and print_out_signature ppf =
   function

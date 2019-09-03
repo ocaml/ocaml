@@ -122,7 +122,7 @@ module type S' = sig val f : M.exp -> M.arg end
 
 module type S = sig type 'a t end with type 'a t := unit
 [%%expect {|
-module type S = sig  end
+module type S = sig end
 |}]
 
 module type S = sig
@@ -336,7 +336,7 @@ Lines 2-5, characters 17-25:
 5 | end with type M2.t := int
 Error: This `with' constraint on M2.t makes the applicative functor
        type Id(M2).t ill-typed in the constrained signature:
-       Modules do not match: sig  end is not included in sig type t end
+       Modules do not match: sig end is not included in sig type t end
        The type `t' is required but not provided
 |}]
 
@@ -356,7 +356,7 @@ module type S = sig
 end with module M.N := A
 [%%expect {|
 module A : sig module P : sig type t val x : int end end
-module type S = sig module M : sig  end type t = A.P.t end
+module type S = sig module M : sig end type t = A.P.t end
 |}]
 
 (* Same as for types, not all substitutions are accepted *)

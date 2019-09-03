@@ -122,7 +122,7 @@ module M = struct end;;
 type t = F(M).t;;
 [%%expect{|
 module F : functor () -> sig type t end
-module M : sig  end
+module M : sig end
 Line 3, characters 9-15:
 3 | type t = F(M).t;;
              ^^^^^^
@@ -139,7 +139,7 @@ module Fix2 :
   functor (F : T -> T) ->
     sig
       module rec Fixed : sig type t = F(Fixed).t end
-      module R : functor (X : sig  end) -> sig type t = Fixed.t end
+      module R : functor (X : sig end) -> sig type t = Fixed.t end
     end
 Line 5, characters 11-26:
 5 | let f (x : Fix2(Id).R(M).t) = x;;

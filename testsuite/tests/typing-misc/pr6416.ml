@@ -78,14 +78,14 @@ Lines 4-7, characters 4-7:
 7 |     end
 Error: Signature mismatch:
        Modules do not match:
-         sig module type s module A : functor (X : s) -> sig  end end
+         sig module type s module A : functor (X : s) -> sig end end
        is not included in
-         sig module A : functor (X : s) -> sig  end end
+         sig module A : functor (X : s) -> sig end end
        In module A:
        Modules do not match:
-         functor (X : s/1) -> sig  end
+         functor (X : s/1) -> sig end
        is not included in
-         functor (X : s/2) -> sig  end
+         functor (X : s/2) -> sig end
        At position module A(X : <here>) : ...
        Modules do not match: s/2 is not included in s/1
        Line 5, characters 6-19:
@@ -403,7 +403,7 @@ let add_extra_info arg = arg.Foo.info.doc
 [%%expect{|
 module Bar : sig type info = { doc : unit; } end
 module Foo : sig type t = { info : Bar.info; } end
-module Bar : sig  end
+module Bar : sig end
 Line 8, characters 38-41:
 8 | let add_extra_info arg = arg.Foo.info.doc
                                           ^^^

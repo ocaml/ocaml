@@ -88,7 +88,7 @@ module type AcceptAnd = sig
   and u := int * int
 end;;
 [%%expect{|
-module type AcceptAnd = sig  end
+module type AcceptAnd = sig end
 |}]
 
 module type RejectAnd = sig
