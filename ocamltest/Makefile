@@ -221,7 +221,7 @@ ocamltest.opt$(EXE): $(native_modules)
 	$(ocamllex) $(OCAMLLEX_FLAGS) $<
 
 %.$(O): %.c
-	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -c $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed \
