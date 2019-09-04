@@ -17,18 +17,17 @@ let[@inline never] allocate_lists len cnt =
 let check_distrib len cnt rate =
   Printf.printf "check_distrib %d %d %f\n%!" len cnt rate;
   let smp = ref 0 in
-  start {
-      sampling_rate = rate;
-      callstack_size = 10;
-      callback = fun info ->
-        assert (info.kind = Minor);
-        if info.tag = 0 then begin (* Exclude noise such as spurious closures. *)
-          assert (info.size = 2);
-          assert (info.n_samples > 0);
-          smp := !smp + info.n_samples
-        end;
-        None
-    };
+  start ~callstack_size:10
+        ~major_alloc_callback:(fun _ -> assert false)
+        ~minor_alloc_callback:(fun info ->
+          if info.tag = 0 then begin (* Exclude noise such as spurious closures. *)
+            assert (info.size = 2);
+            assert (info.n_samples > 0);
+            assert (not info.unmarshalled);
+            smp := !smp + info.n_samples;
+          end;
+          None)
+        ~sampling_rate:rate ();
   allocate_lists len cnt;
   stop ();
 
@@ -59,13 +58,12 @@ let () =
 let[@inline never] check_callstack () =
   Printf.printf "check_callstack\n%!";
   let callstack = ref None in
-  start {
-      sampling_rate = 1.;
-      callstack_size = 10;
-      callback = fun info ->
-        if info.tag = 0 then callstack := Some info.callstack;
-        None
-    };
+  start ~callstack_size:10
+        ~minor_alloc_callback:(fun info ->
+           if info.tag = 0 then callstack := Some info.callstack;
+           None
+        )
+        ~sampling_rate:1. ();
   allocate_lists 1000000 1;
   stop ();
   match !callstack with

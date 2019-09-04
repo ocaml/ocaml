@@ -32,6 +32,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
+#include "caml/memprof.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 #define NATIVE_CODE_AND_NO_NAKED_POINTERS
@@ -498,6 +499,7 @@ static void mark_slice (intnat work)
             this cycle. Start clean phase. */
         caml_gc_phase = Phase_clean;
         caml_final_update_clean_phase ();
+        caml_memprof_update_clean_phase ();
         if (caml_ephe_list_head != (value) NULL){
           /* Initialise the clean phase. */
           ephes_to_check = &caml_ephe_list_head;

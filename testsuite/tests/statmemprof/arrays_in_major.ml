@@ -17,52 +17,84 @@ let[@inline never] allocate_arrays lo hi cnt keep =
 
 let check_nosample () =
   Printf.printf "check_nosample\n%!";
-  start {
-      sampling_rate = 0.;
-      callstack_size = 10;
-      callback = fun _ ->
-        Printf.printf "Callback called with sampling_rate = 0\n";
-        assert(false)
-  };
+  let cb _ =
+    Printf.printf "Callback called with sampling_rate = 0\n";
+    assert(false)
+  in
+  start ~callstack_size:10 ~minor_alloc_callback:cb ~major_alloc_callback:cb
+        ~sampling_rate:0. ();
   allocate_arrays 300 3000 1 false
 
 let () = check_nosample ()
 
-let check_ephe_full_major () =
-  Printf.printf "check_ephe_full_major\n%!";
-  let ephes = ref [] in
-  start {
-    sampling_rate = 0.01;
-    callstack_size = 10;
-    callback = fun _ ->
-      let res = Ephemeron.K1.create () in
-      ephes := res :: !ephes;
-      Some res
-  };
+let check_counts_full_major force_promote =
+  Printf.printf "check_counts_full_major\n%!";
+  let nalloc_minor = ref 0 in
+  let nalloc_major = ref 0 in
+  let enable = ref true in
+  let npromote = ref 0 in
+  let ndealloc_minor = ref 0 in
+  let ndealloc_major = ref 0 in
+  start ~callstack_size:10
+        ~minor_alloc_callback:(fun _ ->
+          if !enable then begin
+              incr nalloc_minor;
+              Some ()
+          end else
+            None)
+        ~major_alloc_callback:(fun _ ->
+           if !enable then begin
+             incr nalloc_major;
+             Some ()
+           end else
+             None)
+        ~promote_callback:(fun _ ->
+           incr npromote;
+           Some ())
+        ~minor_dealloc_callback:(fun _ -> incr ndealloc_minor)
+        ~major_dealloc_callback:(fun _ -> incr ndealloc_major)
+        ~sampling_rate:0.01 ();
   allocate_arrays 300 3000 1 true;
-  stop ();
-  List.iter (fun e -> assert (Ephemeron.K1.check_key e)) !ephes;
-  Gc.full_major ();
-  List.iter (fun e -> assert (Ephemeron.K1.check_key e)) !ephes;
-  root := [];
-  Gc.full_major ();
-  List.iter (fun e -> assert (not (Ephemeron.K1.check_key e))) !ephes
+  enable := false;
+  assert (!ndealloc_minor = 0 && !ndealloc_major = 0);
+  if force_promote then begin
+    Gc.full_major ();
+    assert (!ndealloc_minor = 0 && !ndealloc_major = 0 &&
+            !npromote = !nalloc_minor);
+    root := [];
+    Gc.full_major ();
+    assert (!ndealloc_minor = 0 &&
+            !ndealloc_major = !nalloc_minor + !nalloc_major);
+  end else begin
+    root := [];
+    Gc.minor ();
+    Gc.full_major ();
+    Gc.full_major ();
+    assert (!nalloc_minor = !ndealloc_minor + !npromote &&
+            !ndealloc_major = !npromote + !nalloc_major)
+  end;
+  stop ()
 
-let () = check_ephe_full_major ()
+let () =
+  check_counts_full_major false;
+  check_counts_full_major true
 
 let check_no_nested () =
   Printf.printf "check_no_nested\n%!";
   let in_callback = ref false in
-  start {
-      sampling_rate = 1.;
-      callstack_size = 10;
-      callback = fun _ ->
-        assert (not !in_callback);
-        in_callback := true;
-        allocate_arrays 300 300 100 false;
-        in_callback := false;
-        None
-  };
+  let cb _ =
+    assert (not !in_callback);
+    in_callback := true;
+    allocate_arrays 300 300 100 false;
+    in_callback := false;
+    ()
+  in
+  let cb' _ = cb (); Some () in
+  start ~callstack_size:10
+        ~minor_alloc_callback:cb' ~major_alloc_callback:cb'
+        ~promote_callback:cb' ~minor_dealloc_callback:cb
+        ~major_dealloc_callback:cb
+        ~sampling_rate:1. ();
   allocate_arrays 300 300 100 false;
   stop ()
 
@@ -71,19 +103,16 @@ let () = check_no_nested ()
 let check_distrib lo hi cnt rate =
   Printf.printf "check_distrib %d %d %d %f\n%!" lo hi cnt rate;
   let smp = ref 0 in
-  start {
-      sampling_rate = rate;
-      callstack_size = 10;
-      callback = fun info ->
-        (* We also allocate the list constructor in the minor heap. *)
-        if info.kind = Major then begin
-          assert (info.tag = 0);
-          assert (info.size >= lo && info.size <= hi);
-          assert (info.n_samples > 0);
-          smp := !smp + info.n_samples
-        end;
-        None
-    };
+  start ~callstack_size:10
+        ~major_alloc_callback:(fun info ->
+           assert (info.tag = 0);
+           assert (info.size >= lo && info.size <= hi);
+           assert (info.n_samples > 0);
+           assert (not info.unmarshalled);
+           smp := !smp + info.n_samples;
+           None
+        )
+        ~sampling_rate:rate ();
   allocate_arrays lo hi cnt false;
   stop ();
 
@@ -113,13 +142,12 @@ let () =
 let[@inline never] check_callstack () =
   Printf.printf "check_callstack\n%!";
   let callstack = ref None in
-  start {
-      sampling_rate = 1.;
-      callstack_size = 10;
-      callback = fun info ->
-        if info.kind = Major then callstack := Some info.callstack;
-        None
-    };
+  start ~callstack_size:10
+        ~major_alloc_callback:(fun info ->
+           callstack := Some info.callstack;
+           None
+        )
+        ~sampling_rate:1. ();
   allocate_arrays 300 300 100 false;
   stop ();
   match !callstack with

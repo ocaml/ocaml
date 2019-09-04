@@ -1,5 +1,6 @@
 check_nosample
-check_ephe_full_major
+check_counts_full_major
+check_counts_full_major
 check_no_nested
 check_distrib 2 3000 3 0.000010
 check_distrib 2 3000 1 0.000100
@@ -9,6 +10,6 @@ check_distrib 300000 300000 20 0.100000
 check_callstack
 Raised by primitive operation at file "marshal.ml", line 61, characters 9-35
 Called from file "intern.ml", line 32, characters 14-35
-Called from file "intern.ml", line 160, characters 2-25
-Called from file "intern.ml", line 166, characters 9-27
+Called from file "intern.ml", line 185, characters 2-25
+Called from file "intern.ml", line 191, characters 9-27
 OK !

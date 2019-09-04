@@ -228,6 +228,7 @@ static inline void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
   caml_memprof_suspended = curr_thread->memprof_suspended;
+  caml_memprof_check_action_pending();
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */

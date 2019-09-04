@@ -392,6 +392,8 @@ void caml_empty_minor_heap (void)
     }
     /* Update the OCaml finalise_last values */
     caml_final_update_minor_roots();
+    /* Trigger memprofs callbacks for blocks in the minor heap. */
+    caml_memprof_minor_update();
     /* Run custom block finalisation of dead minor values */
     for (elt = Caml_state->custom_table->base;
          elt < Caml_state->custom_table->ptr; elt++){

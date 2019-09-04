@@ -334,7 +334,7 @@ void caml_oldify_local_roots (void)
   /* Finalised values */
   caml_final_oldify_young_roots ();
   /* Memprof */
-  caml_memprof_scan_roots (&caml_oldify_one);
+  caml_memprof_oldify_young_roots ();
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
@@ -432,7 +432,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   caml_final_do_roots (f);
   CAML_INSTR_TIME (tmr, "major_roots/finalised");
   /* Memprof */
-  caml_memprof_scan_roots (f);
+  caml_memprof_do_roots (f);
   CAML_INSTR_TIME (tmr, "major_roots/memprof");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);

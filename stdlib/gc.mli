@@ -420,84 +420,93 @@ val create_alarm : (unit -> unit) -> alarm
 
 val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
-   to [a].  Calling [delete_alarm a] again has no effect. *)
+   to [a]. Calling [delete_alarm a] again has no effect. *)
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
    allocated word has a probability of being sampled equal to a
-   configurable sampling rate. Since blocks are composed of several
-   words, a block can potentially be sampled several times. When a
-   block is sampled (i.e., it contains at least one sample word), a
-   user-defined callback is called.
+   configurable sampling rate. Once a block is sampled, it becomes
+   tracked. A tracked block triggers a user-defined callback as soon
+   as it is allocated, promoted or deallocated.
+
+   Since blocks are composed of several words, a block can potentially
+   be sampled several times. If a block is sampled several times, then
+   each of the callback is called once for each event of this block:
+   the multiplicity is given in the [n_samples] field of the
+   [allocation] structure.
 
    This engine makes it possible to implement a low-overhead memory
-   profiler as an OCaml library. *)
+   profiler as an OCaml library.
+
+   Note: this API is EXPERIMENTAL. It may change without prior
+   notice. *)
 module Memprof :
   sig
-    type alloc_kind =
-      | Minor
-      | Major
-      | Unmarshalled
-    (** Allocation kinds
-        - [Minor] : the allocation took place in the minor heap.
-        - [Major] : the allocation took place in the major heap.
-        - [Unmarshalled] : the allocation happened while unmarshalling. *)
+    type allocation = private
+      { n_samples : int;
+        (** The number of samples in this block (>= 1). *)
 
-    type sample_info = {
-        n_samples: int;
-        (** The number of samples in this block. Always >= 1, it is
-           sampled according to a binomial distribution whose
-           parameters are the size of the block (including the header)
-           and the sampling rate. Hence, it is in average equal to the
-           size of the block multiplied by the sampling rate. *)
-        kind: alloc_kind;
-        (** The kind of the allocation. *)
-        tag: int;
-        (** The tag of the allocated block. *)
-        size: int;
-        (** The size of the allocated block, in words (excluding the
-            header). *)
-        callstack: Printexc.raw_backtrace;
+        size : int;
+        (** The size of the block, in words, excluding the header. *)
+
+        tag : int;
+        (** The tag of the block. *)
+
+        unmarshalled : bool;
+        (** Whether the block comes from unmarshalling. *)
+
+        callstack : Printexc.raw_backtrace
         (** The callstack for the allocation. *)
-    }
-    (** The meta data passed at each callback.  *)
+      }
+    (** The type of metadata associated with allocations. This is the
+       type of records passed to the callback triggered by the
+       sampling of an allocation. *)
 
-    type 'a callback = sample_info -> (Obj.t, 'a) Ephemeron.K1.t option
-    (** [callback] is the type of callbacks launched by the sampling
-       engine. A callback returns an option over an ephemeron whose
-       key is set to the allocated block for further tracking. After
-       the callback returns, the key of the ephemeron should not be
-       read, since this would change its reachability properties.
+    val start :
+      sampling_rate:float ->
+      ?callstack_size:int ->
+      ?minor_alloc_callback:(allocation -> 'minor option) ->
+      ?major_alloc_callback:(allocation -> 'major option) ->
+      ?promote_callback:('minor -> 'major option) ->
+      ?minor_dealloc_callback:('minor -> unit) ->
+      ?major_dealloc_callback:('major -> unit) ->
+      unit -> unit
+    (** Start the sampling with the given parameters. If another
+       sampling is already running, it is stopped and all the
+       previously tracked blocks are discarded.
 
-       The sampling is temporarily disabled when calling the callback
-       for the current thread. So it does not need to be reentrant if
-       the program is single-threaded. However, if threads are used, it is
-       possible that a context switch occurs during a callback, in
-       which case reentrancy has to be taken into account.
+       The parameter [sampling_rate] is the sampling rate in samples
+       per word (including headers). Usually, with cheap callbacks, a
+       rate of 1e-4 has no visible effect on performance, and 1e-3
+       causes the program to run a few percent slower
+
+       The parameter [callstack_size] is the length of the callstack
+       recorded at every sample. Its default is [max_int].
+
+       The parameters *[_callback] are functions called when an event
+       occurs on a sampled block. If such a callback returns [None],
+       then the tracking of this particular block is cancelled. If
+       they return [Some v], then the value [v] will be passed to the
+       next callback for this block. Default callbacks simply return
+       [None] or [()].
+
+       The sampling is temporarily disabled when calling a callback
+       for the current thread. So they do not need to be reentrant if
+       the program is single-threaded. However, if threads are used,
+       it is possible that a context switch occurs during a callback,
+       in this case the callback functions must be reentrant.
 
        Note that the callback can be postponed slightly after the
-       actual allocation. Therefore, the context of the callback may
-       be slightly different than expected.
+       actual event. The callstack passed to the callback is always
+       accurate, but the program state may have evolved.
 
-       In addition, note that calling [start] or [stop] in a callback
-       can lead to losses of samples. *)
+       Calling [Thread.exit] in a callback is currently unsafe and
+       can result in undefined behavior.
 
-    type 'a ctrl = {
-        sampling_rate : float;
-        (** The sampling rate in samples per word (including headers).
-           Usually, with cheap callbacks, a rate of 0.001 has no
-           visible effect on performance, and 0.01 causes the program
-           to run a few percent slower. *)
-        callstack_size : int;
-        (** The length of the callstack recorded at every sample. *)
-        callback : 'a callback
-        (** The callback to be called at every sample. *)
-    }
-    (** Control data for the sampling engine.  *)
-
-    val start : 'a ctrl -> unit
-    (** Start the sampling with the given parameters. If another
-        sampling is already running, it is stopped. *)
+       Calling [start] or [stop] in a callback can lead to callbacks
+       not being called even though some events happened. *)
 
     val stop : unit -> unit
-    (** Stop the sampling. *)
+    (** Stop the sampling. This function does not allocate memory,
+        but tries to run the postponed callbacks for already allocated
+        memory blocks (of course, these callbacks may allocate). *)
 end
