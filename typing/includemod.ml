@@ -303,17 +303,24 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
       | Tcoerce_none -> Tcoerce_none
       | cc -> Tcoerce_functor (Tcoerce_none, cc)
     end
-  | (Mty_functor(Named (p1, arg1) as arg, res1),
-     Mty_functor(Named (p2, arg2), res2)) ->
+  | (Mty_functor(Named (param1, arg1) as arg, res1),
+     Mty_functor(Named (param2, arg2), res2)) ->
       let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
         modtypes ~loc env ~mark:(negate_mark mark)
           (Arg arg::cxt) Subst.identity arg2' arg1
       in
-      let cc_res =
-        modtypes ~loc (Env.add_module p1 Mp_present arg2' env) ~mark
-          (Body arg::cxt) (Subst.add_module p2 (Pident p1) subst) res1 res2
+      let env =
+        match param1 with
+        | None -> env
+        | Some p1 -> Env.add_module p1 Mp_present arg2' env
       in
+      let subst =
+        match param1, param2 with
+        | Some p1, Some p2 -> Subst.add_module p2 (Path.Pident p1) subst
+        | _, _ -> subst
+      in
+      let cc_res = modtypes ~loc env ~mark (Body arg::cxt) subst res1 res2 in
       begin match (cc_arg, cc_res) with
           (Tcoerce_none, Tcoerce_none) -> Tcoerce_none
         | _ -> Tcoerce_functor(cc_arg, cc_res)
@@ -735,7 +742,8 @@ and args ppf = function
       fprintf ppf " :@ %a" context_mty cxt
 and argname = function
   | Unit -> ""
-  | Named (id, _) -> Ident.name id
+  | Named (None, _) -> "_"
+  | Named (Some id, _) -> Ident.name id
 
 let alt_context ppf cxt =
   if cxt = [] then () else

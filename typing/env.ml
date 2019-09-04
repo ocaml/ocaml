@@ -823,8 +823,9 @@ let modtype_of_functor_appl fcomp p1 p2 =
         let mty =
           let subst =
             match fcomp.fcomp_arg with
-            | Unit -> Subst.identity
-            | Named (param, _) -> Subst.add_module param p2 Subst.identity
+            | Unit
+            | Named (None, _) -> Subst.identity
+            | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
           in
           Subst.modtype (Rescope scope) subst mty
         in
@@ -1770,8 +1771,9 @@ let components_of_functor_appl ~loc f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub =
       match f.fcomp_arg with
-      | Unit -> Subst.identity
-      | Named (param, _) -> Subst.add_module param p2 Subst.identity
+      | Unit
+      | Named (None, _) -> Subst.identity
+      | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
     in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)

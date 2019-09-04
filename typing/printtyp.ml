@@ -1626,12 +1626,13 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       let param, res =
         match param with
         | Unit -> None, tree_of_modtype ~ellipsis ty_res
-        | Named (id, ty_arg) ->
-          let env = Env.add_module ~arg:true id Mp_present ty_arg in
-          let name =
-            match Ident.name id with
-            | "_" -> None
-            | s -> Some s
+        | Named (param, ty_arg) ->
+          let name, env =
+            match param with
+            | None -> None, fun env -> env
+            | Some id ->
+                Some (Ident.name id),
+                Env.add_module ~arg:true id Mp_present ty_arg
           in
           Some (name, tree_of_modtype ~ellipsis:false ty_arg),
           wrap_env env (tree_of_modtype ~ellipsis) ty_res

@@ -311,9 +311,12 @@ let iterator_with_env env =
       let env_before = !env in
       begin match param with
       | Unit -> ()
-      | Named (id, mty_arg) ->
+      | Named (param, mty_arg) ->
         self.Btype.it_module_type self mty_arg;
-        env := lazy (Env.add_module ~arg:true id Mp_present
+        match param with
+        | None -> ()
+        | Some id ->
+          env := lazy (Env.add_module ~arg:true id Mp_present
                        mty_arg (Lazy.force env_before))
       end;
       self.Btype.it_module_type self mty_body;
@@ -695,13 +698,15 @@ let rec approx_modtype env smty =
         | Unit -> Types.Unit, env
         | Named (param, sarg) ->
           let arg = approx_modtype env sarg in
-          let rarg = Mtype.scrape_for_functor_arg env arg in
-          let scope = Ctype.create_scope () in
-          let name = Option.value param.txt ~default:"_" in
-          let (id, newenv) =
-            Env.enter_module ~scope ~arg:true name Mp_present rarg env
-          in
-          Types.Named (id, arg), newenv
+          match param.txt with
+          | None -> Types.Named (None, arg), env
+          | Some name ->
+            let rarg = Mtype.scrape_for_functor_arg env arg in
+            let scope = Ctype.create_scope () in
+            let (id, newenv) =
+              Env.enter_module ~scope ~arg:true name Mp_present rarg env
+            in
+            Types.Named (Some id, arg), newenv
       in
       let res = approx_modtype newenv sres in
       Mty_functor(param, res)
@@ -1136,25 +1141,18 @@ and transl_modtype_aux env smty =
         | Unit -> Unit, Types.Unit, env
         | Named (param, sarg) ->
           let arg = transl_modtype_functor_arg env sarg in
-          let scope = Ctype.create_scope () in
-          let (param_id, sg_id, newenv) =
+          let (id, newenv) =
             match param.txt with
-            | None ->
-              let id, newenv =
-                Env.enter_module ~scope ~arg:true "_" Mp_present arg.mty_type
-                  env
-              in
-              None, id, newenv
+            | None -> None, env
             | Some name ->
+              let scope = Ctype.create_scope () in
               let id, newenv =
                 Env.enter_module ~scope ~arg:true name Mp_present arg.mty_type
                   env
               in
-              Some id, id, newenv
+              Some id, newenv
           in
-          Named (param_id, param, arg),
-          Types.Named (sg_id, arg.mty_type),
-          newenv
+          Named (id, param, arg), Types.Named (id, arg.mty_type), newenv
       in
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (t_arg, res))
@@ -1607,11 +1605,12 @@ let rec closed_modtype env = function
   | Mty_signature sg ->
       let env = Env.add_signature sg env in
       List.for_all (closed_signature_item env) sg
-  | Mty_functor(param, body) ->
+  | Mty_functor(arg_opt, body) ->
       let env =
-        match param with
-        | Unit -> env
-        | Named (id, param) ->
+        match arg_opt with
+        | Unit
+        | Named (None, _) -> env
+        | Named (Some id, param) ->
             Env.add_module ~arg:true id Mp_present param env
       in
       closed_modtype env body
@@ -1897,25 +1896,17 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         | Named (name, smty) ->
           let mty = transl_modtype_functor_arg env smty in
           let scope = Ctype.create_scope () in
-          let (param_id, sg_id, newenv) =
+          let (id, newenv) =
             match name.txt with
-            | None ->
-              let id, newenv =
-                Env.enter_module ~scope ~arg:true "_" Mp_present mty.mty_type
-                  env
-              in
-              Some id, id, newenv
+            | None -> None, env
             | Some name ->
               let id, newenv =
                 Env.enter_module ~scope ~arg:true name Mp_present mty.mty_type
                   env
               in
-              Some id, id, newenv
+              Some id, newenv
           in
-          Named (param_id, name, mty),
-          Types.Named (sg_id, mty.mty_type),
-          newenv,
-          true
+          Named (id, name, mty), Types.Named (id, mty.mty_type), newenv, true
       in
       let body = type_module sttn funct_body None newenv sbody in
       rm { mod_desc = Tmod_functor(t_arg, body);
@@ -1952,19 +1943,30 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
             match path with
             | Some path ->
                 let scope = Ctype.create_scope () in
-                Subst.modtype (Rescope scope)
-                  (Subst.add_module param path Subst.identity) mty_res
+                let subst =
+                  match param with
+                  | None -> Subst.identity
+                  | Some p -> Subst.add_module p path Subst.identity
+                in
+                Subst.modtype (Rescope scope) subst mty_res
             | None ->
                 let env =
-                  Env.add_module ~arg:true param Mp_present arg.mod_type env
+                  match param with
+                  | None -> env
+                  | Some param ->
+                    Env.add_module ~arg:true param Mp_present arg.mod_type env
                 in
+                (* FIXME: I doubt the following is needed if param is None *)
                 check_well_formed_module env smod.pmod_loc
                   "the signature of this functor application" mty_res;
                 let nondep_mty =
-                  try Mtype.nondep_supertype env [param] mty_res
-                  with Ctype.Nondep_cannot_erase _ ->
-                    raise(Error(smod.pmod_loc, env,
-                                Cannot_eliminate_dependency mty_functor))
+                  match param with
+                  | None -> mty_res
+                  | Some param ->
+                    try Mtype.nondep_supertype env [param] mty_res
+                    with Ctype.Nondep_cannot_erase _ ->
+                      raise(Error(smod.pmod_loc, env,
+                                  Cannot_eliminate_dependency mty_functor))
                 in
                 begin match
                   Includemod.modtypes ~loc:smod.pmod_loc env mty_res nondep_mty

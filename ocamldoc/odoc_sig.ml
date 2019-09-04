@@ -1594,7 +1594,7 @@ module Analyser =
              Types.Mty_functor (param, body_module_type) ->
                let mp_name, mp_kind =
                  match param2, param with
-                   Parsetree.Named (_, pmty), Types.Named (ident, mty) ->
+                   Parsetree.Named (_, pmty), Types.Named (Some ident, mty) ->
                      Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
                  | _ -> "*", Module_type_struct []
@@ -1692,7 +1692,7 @@ module Analyser =
                print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
                let mp_name, mp_kind =
                  match param2, param with
-                   Parsetree.Named (_, pmty), Types.Named (ident, mty) ->
+                   Parsetree.Named (_, pmty), Types.Named (Some ident, mty) ->
                      Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
                  | _ -> "*", Module_type_struct []
