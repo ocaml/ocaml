@@ -483,17 +483,20 @@ let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
    and return the longest prefix list of arguments
    that should be printed in long form. *)
 let collect_functor_arguments mty =
-  let rec split_args acc = function
-    | Omty_functor (name, mty_arg, mty_res) as func_mty
-         when not (only_anonymous_args func_mty) ->
-       split_args ((name, mty_arg) :: acc) mty_res
-    | rest -> (List.rev acc, rest)
-  and only_anonymous_args = function
-    | Omty_functor (name, _, mty_res) ->
-       name = "_" && only_anonymous_args mty_res
-    | _ -> true
+  let rec collect_args acc = function
+    | Omty_functor (name, mty_arg, mty_res) ->
+       collect_args ((name, mty_arg) :: acc) mty_res
+    | non_functor -> (acc, non_functor)
   in
-  split_args [] mty
+  let rec uncollect_anonymous_suffix acc rest = match acc with
+      | ("_", mty_arg) :: acc ->
+         uncollect_anonymous_suffix acc (Omty_functor ("_", mty_arg, rest))
+      | (_, _) :: _ | [] ->
+         (acc, rest)
+  in
+  let (acc, non_functor) = collect_args [] mty in
+  let (acc, rest) = uncollect_anonymous_suffix acc non_functor in
+  (List.rev acc, rest)
 
 let rec print_out_module_type ppf mty =
   print_out_functor ppf mty
