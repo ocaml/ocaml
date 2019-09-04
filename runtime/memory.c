@@ -806,6 +806,8 @@ CAMLexport void caml_stat_destroy_pool(void)
       free(pool);
       pool = next;
     }
+
+    pool = NULL;
   }
 }
 
