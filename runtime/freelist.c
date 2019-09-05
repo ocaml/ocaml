@@ -1037,6 +1037,12 @@ static void bf_check (void)
 
 #endif /* DEBUG || FREELIST_DEBUG */
 
+#if FREELIST_DEBUG
+#define FREELIST_DEBUG_bf_check() bf_check ()
+#else
+#define FREELIST_DEBUG_bf_check()
+#endif
+
 /**************************************************************************/
 /* splay trees */
 
@@ -1541,16 +1547,12 @@ static header_t *bf_allocate (mlsize_t wosz)
       bf_small_fl[wosz].free = Next_small (bf_small_fl[wosz].free);
       if (bf_small_fl[wosz].free == Val_NULL) unset_map (wosz);
       caml_fl_cur_wsz -= Whsize_wosize (wosz);
-#if FREELIST_DEBUG
-      bf_check ();
-#endif
+      FREELIST_DEBUG_bf_check ();
       return Hp_val (block);
     }else{
       /* allocate from the next available size */
       mlsize_t s = ffs (bf_small_map & ~ ((1 << wosz) - 1));
-#if FREELIST_DEBUG
-      bf_check ();
-#endif
+      FREELIST_DEBUG_bf_check ();
       if (s != 0){
         block = bf_small_fl[s].free;
         CAMLassert (block != Val_NULL);
@@ -1561,9 +1563,7 @@ static header_t *bf_allocate (mlsize_t wosz)
         if (bf_small_fl[s].free == Val_NULL) unset_map (s);
         result = bf_split_small (wosz, block);
         if (s > Whsize_wosize (wosz)) bf_insert_fragment_small (block);
-#if FREELIST_DEBUG
-        bf_check ();
-#endif
+        FREELIST_DEBUG_bf_check ();
         return result;
       }
     }
@@ -1578,18 +1578,11 @@ static header_t *bf_allocate (mlsize_t wosz)
 
     /* Allocate from the tree and update [bf_large_least]. */
     result = bf_allocate_from_tree (wosz, 1);
-#if FREELIST_DEBUG
-    bf_check ();
-#endif
+    FREELIST_DEBUG_bf_check ();
     return result;
   }else{
-#if FREELIST_DEBUG
-    bf_check ();
-#endif
     result = bf_allocate_from_tree (wosz, 0);
-#if FREELIST_DEBUG
-    bf_check ();
-#endif
+    FREELIST_DEBUG_bf_check ();
     return result;
   }
 }
@@ -1721,9 +1714,7 @@ static header_t *bf_merge_block (value bp, char *limit)
     Hd_val (start) = Make_header (0, 0, Caml_white);
     caml_fl_cur_wsz -= Whsize_wosize (0);
   }
-#if FREELIST_DEBUG
-  bf_check ();
-#endif
+  FREELIST_DEBUG_bf_check ();
   return Hp_val (cur);
 }
 
