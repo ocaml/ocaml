@@ -310,15 +310,17 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
         modtypes ~loc env ~mark:(negate_mark mark)
           (Arg arg::cxt) Subst.identity arg2' arg1
       in
-      let env =
-        match param1 with
-        | None -> env
-        | Some p1 -> Env.add_module p1 Mp_present arg2' env
-      in
-      let subst =
+      let env, subst =
         match param1, param2 with
-        | Some p1, Some p2 -> Subst.add_module p2 (Path.Pident p1) subst
-        | _, _ -> subst
+        | Some p1, Some p2 ->
+            Env.add_module p1 Mp_present arg2' env,
+            Subst.add_module p2 (Path.Pident p1) subst
+        | None, Some p2 ->
+            Env.add_module p2 Mp_present arg2' env, subst
+        | Some p1, None ->
+            Env.add_module p1 Mp_present arg2' env, subst
+        | None, None ->
+            env, subst
       in
       let cc_res = modtypes ~loc env ~mark (Body arg::cxt) subst res1 res2 in
       begin match (cc_arg, cc_res) with
