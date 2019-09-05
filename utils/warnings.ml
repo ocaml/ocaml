@@ -604,10 +604,14 @@ let message = function
   | Unused_module s -> "unused module " ^ s ^ "."
   | Unboxable_type_in_prim_decl t ->
       Printf.sprintf
-        "This primitive declaration uses type %s, which is unannotated and\n\
-         unboxable. The representation of such types may change in future\n\
-         versions. You should annotate the declaration of %s with [@@boxed]\n\
-         or [@@unboxed]." t t
+        "This primitive declaration uses type %s, whose representation\n\
+         may be either boxed or unboxed. Without an annotation to indicate\n\
+         which representation is intended, the boxed representation has been\n\
+         selected by default. This default choice may change in future\n\
+         versions of the compiler, breaking the primitive implementation.\n\
+         You should explicitly annotate the declaration of %s\n\
+         with [@@boxed] or [@@unboxed], so that its external interface\n\
+         remains stable in the future." t t
   | Constraint_on_gadt ->
       "Type constraints do not apply to GADT cases of variant types."
   | Erroneous_printed_signature s ->
