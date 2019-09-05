@@ -907,6 +907,11 @@ static inline mlsize_t bf_large_wosize (struct large_free_block *n) {
 }
 
 static struct large_free_block *bf_large_tree;
+static struct large_free_block *bf_large_least;
+/* [bf_large_least] is either NULL or a pointer to the smallest (leftmost)
+   block in the tree. In this latter case, the block must be alone in its
+   doubly-linked list (i.e. have [isnode] true and [prev] and [next] NULL)
+*/
 
 /* Auxiliary functions for bitmap */
 
@@ -963,7 +968,7 @@ static asize_t bf_check_subtree (large_free_block *p)
   if (p == NULL) return 0;
 
   wosz = bf_large_wosize(p);
-  CAMLassert (p->isnode);
+  CAMLassert (p->isnode == 1);
   total_size += bf_check_subtree (p->left);
   CAMLassert (wosz > BF_NUM_SMALL);
   CAMLassert (wosz > bf_check_cur_size);
@@ -972,7 +977,7 @@ static asize_t bf_check_subtree (large_free_block *p)
   while (1){
     CAMLassert (bf_large_wosize (cur) == wosz);
     CAMLassert (Color_val ((value) cur) == Caml_blue);
-    CAMLassert (cur == p || ! cur->isnode);
+    CAMLassert ((cur == p && cur->isnode == 1) || cur->isnode == 0);
     total_size += Whsize_wosize (wosz);
     next = cur->next;
     CAMLassert (next->prev == cur);
@@ -1019,6 +1024,15 @@ static void bf_check (void)
   total_size += bf_check_subtree (bf_large_tree);
   /* check the total free set size */
   CAMLassert (total_size == caml_fl_cur_wsz);
+  /* check the smallest-block pointer */
+  if (bf_large_least != NULL){
+    large_free_block *x = bf_large_tree;
+    while (x->left != NULL) x = x->left;
+    CAMLassert (x == bf_large_least);
+    CAMLassert (x->isnode == 1);
+    CAMLassert (x->prev == x);
+    CAMLassert (x->next == x);
+  }
 }
 
 #endif /* DEBUG || FREELIST_DEBUG */
@@ -1208,6 +1222,7 @@ static void bf_remove_node (large_free_block **p)
   x = *p;
   INSTR_alloc_jump (1);
   if (x == NULL) return;
+  if (x == bf_large_least) bf_large_least = NULL;
   l = x->left;
   r = x->right;
   INSTR_alloc_jump (2);
@@ -1230,9 +1245,21 @@ static void bf_remove_node (large_free_block **p)
 */
 static void bf_insert_block (large_free_block *n)
 {
-  large_free_block **p = bf_search (bf_large_wosize (n));
+  mlsize_t sz = bf_large_wosize (n);
+  large_free_block **p = bf_search (sz);
   large_free_block *x = *p;
   INSTR_alloc_jump (1);
+
+  if (bf_large_least != NULL){
+    mlsize_t least_sz = bf_large_wosize (bf_large_least);
+    if (sz < least_sz){
+      CAMLassert (x == NULL);
+      bf_large_least = n;
+    }else if (sz == least_sz){
+      CAMLassert (x == bf_large_least);
+      bf_large_least = NULL;
+    }
+  }
 
   CAMLassert (Color_val ((value) n) == Caml_blue);
   CAMLassert (Wosize_val ((value) n) > BF_NUM_SMALL);
@@ -1244,7 +1271,7 @@ static void bf_insert_block (large_free_block *n)
     *p = n;
   }else{
     /* insert at tail of doubly-linked list */
-    CAMLassert (x->isnode);
+    CAMLassert (x->isnode == 1);
     n->isnode = 0;
 #ifdef DEBUG
     n->left = n->right = (large_free_block *) Debug_free_unused;
@@ -1254,7 +1281,7 @@ static void bf_insert_block (large_free_block *n)
     x->prev->next = n;
     x->prev = n;
     INSTR_alloc_jump (2);
-    bf_splay (bf_large_wosize (n));
+    bf_splay (sz);
   }
 }
 
@@ -1431,9 +1458,13 @@ static header_t *bf_split (mlsize_t wosz, value v)
 
 /* Allocate from a large block at [p]. If the node is single and the remaining
    size is greater than [bound], it stays at the same place in the tree.
+   If [set_least] is true, [wosz] is guaranteed to be [<= BF_NUM_SMALL], so
+   the block is (one of the) smallest in the tree.
+   In this case, the large block becomes (or remains) the smallest
+   in the tree and we set the [bf_large_least] pointer.
 */
 static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
-                                      mlsize_t bound)
+                                      mlsize_t bound, int set_least)
 {
   large_free_block *n = *p;
   large_free_block *b;
@@ -1441,8 +1472,12 @@ static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
 
   CAMLassert (bf_large_wosize (n) >= wosz);
   if (n->next == n){
-    if (bf_large_wosize (n) > bound + wosz + 1){
+    if (bf_large_wosize (n) > bound + Whsize_wosize (wosz)){
       /* TODO splay at [n]? if the remainder is larger than [wosz]? */
+      if (set_least){
+        CAMLassert (bound == BF_NUM_SMALL);
+        bf_large_least = n;
+      }
       return bf_split (wosz, (value) n);
     }else{
       bf_remove_node (p);
@@ -1452,23 +1487,30 @@ static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
     }
   }else{
     b = n->next;
+    CAMLassert (bf_large_wosize (b) == bf_large_wosize (n));
     n->next = b->next;
     b->next->prev = n;
     result = bf_split (wosz, (value) b);
     /* TODO: splay at [n] if the remainder is smaller than [wosz] */
     bf_insert_fragment ((value) b);
+    if (set_least){
+      CAMLassert (bound == BF_NUM_SMALL);
+      if (bf_large_wosize (b) > BF_NUM_SMALL){
+        bf_large_least = b;
+      }
+    }
     return result;
   }
 }
 
-static header_t *bf_allocate_from_tree (mlsize_t wosz)
+static header_t *bf_allocate_from_tree (mlsize_t wosz, int set_least)
 {
   large_free_block **n;
   mlsize_t bound;
 
   n = bf_search_best (wosz, &bound);
   if (n == NULL) return NULL;
-  return bf_alloc_from_large (wosz, n, bound);
+  return bf_alloc_from_large (wosz, n, bound, set_least);
 }
 
 static header_t *bf_allocate (mlsize_t wosz)
@@ -1525,65 +1567,26 @@ static header_t *bf_allocate (mlsize_t wosz)
         return result;
       }
     }
-    /* Failed to find a suitable small block: allocate from the tree. */
-    {
-      header_t *big, *p, *q;
-      int i;
-      /* First, try allocating a run of blocks to preload the freelist. */
-      big = bf_allocate_from_tree
-              (Wosize_whsize (BF_PREALLOC_NUM * Whsize_wosize (wosz)));
-      if (big != NULL){
-        p = big;
-        /* Chain the blocks. */
-        i = 0;
-        while (1){
-          *p = Make_header (wosz, 0, Caml_blue);
-          q = (header_t *) &Field (Val_hp (p), wosz);
-          Next_small (Val_hp (p)) = Val_hp (q);
-          ++i;
-          if (i >= BF_PREALLOC_NUM) break;
-          p = q;
-        }
-        Next_small (Val_hp (p)) = Val_NULL;
-        /* Put the chain in the free list. */
-        if (bf_small_fl[wosz].free == Val_NULL){
-          /* Normal case, the free list is empty. */
-          bf_small_fl[wosz].free = Next_small (Val_hp (big));
-          bf_small_fl[wosz].merge = &bf_small_fl[wosz].free;
-          set_map (wosz);
-        }else{
-          /* The call to [bf_allocate_from_tree] above has inserted a
-             single (black) block in the free list. */
-          CAMLassert (Next_small (bf_small_fl[wosz].free) == Val_NULL);
-          CAMLassert (Color_val (bf_small_fl[wosz].free) == Caml_black);
-          CAMLassert (bf_small_map & (1 << (wosz - 1)));
-          CAMLassert (Bp_val (bf_small_fl[wosz].free) < Bp_val (big));
-            /* The block inserted by [bf_allocate_from_tree] must be before
-               [big] because of the way [bf_split] works. */
-          Hd_val (bf_small_fl[wosz].free) =
-            Make_header (wosz, Abstract_tag, Caml_blue);
-          Next_small (bf_small_fl[wosz].free) = Next_small (Val_hp (big));
-          bf_small_fl[wosz].merge = &bf_small_fl[wosz].free;
-        }
-        caml_fl_cur_wsz += Whsize_wosize (wosz) * (BF_PREALLOC_NUM - 1);
-#if FREELIST_DEBUG
-        bf_check ();
-#endif
-        return big;
-      }else{
-        /* Can't allocate many blocks at once, try just one. */
-        result = bf_allocate_from_tree (wosz);
-#if FREELIST_DEBUG
-        bf_check ();
-#endif
-        return result;
-      }
+    /* Failed to find a suitable small block: try [bf_large_least]. */
+    if (bf_large_least != NULL
+        && bf_large_wosize (bf_large_least)
+           > BF_NUM_SMALL + Whsize_wosize (wosz)){
+      result = bf_split (wosz, (value) bf_large_least);
+      CAMLassert (Color_val ((value) bf_large_least) == Caml_blue);
+      return result;
     }
+
+    /* Allocate from the tree and update [bf_large_least]. */
+    result = bf_allocate_from_tree (wosz, 1);
+#if FREELIST_DEBUG
+    bf_check ();
+#endif
+    return result;
   }else{
 #if FREELIST_DEBUG
     bf_check ();
 #endif
-    result = bf_allocate_from_tree (wosz);
+    result = bf_allocate_from_tree (wosz, 0);
 #if FREELIST_DEBUG
     bf_check ();
 #endif
@@ -1640,6 +1643,7 @@ static void bf_reset (void)
   }
   bf_small_map = 0;
   bf_large_tree = NULL;
+  bf_large_least = NULL;
   caml_fl_cur_wsz = 0;
   bf_init_merge ();
 }
