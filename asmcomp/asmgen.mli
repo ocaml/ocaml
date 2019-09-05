@@ -35,6 +35,9 @@ val compile_implementation
   -> Lambda.program
   -> unit
 
+val compile_implementation_linear :
+    string -> progname:string -> unit
+
 val compile_phrase :
     ppf_dump:Format.formatter -> Cmm.phrase -> unit
 

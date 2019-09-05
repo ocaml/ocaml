@@ -100,6 +100,15 @@ let module_of_filename inputfile outputprefix =
   name
 ;;
 
+(* Check that start_from pass is before stop_after *)
+let check_pass_order () =
+  match !start_from, !stop_after with
+  | None, _ | _, None -> ();
+  | Some start, Some stop ->
+    if (Compiler_pass.compare stop start) < 0 then
+      fatal "When using \"-stop-after <last>\" and \"-start-from <first>\", \
+             <first> last must be before <last>"
+
 type filename = string
 
 type readenv_position =
@@ -467,6 +476,21 @@ let read_one_param ppf position name v =
       end
     end
 
+   | "start-from" ->
+     let module P = Clflags.Compiler_pass in
+     let passes = P.available_pass_names
+                    ~filter:P.can_start_from
+                    ~native:!native_code in
+     begin match List.find_opt (String.equal v) passes with
+     | None ->
+       Printf.ksprintf (print_error ppf)
+         "bad value %s for option \"start-from\" (expected one of: %s)"
+         v (String.concat ", " passes)
+     | Some v ->
+       let pass = Option.get (P.of_string v)  in
+       Clflags.start_from := Some pass
+     end
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
@@ -612,14 +636,67 @@ type deferred_action =
 let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
+let check_ir name =
+  let check_suffix () =
+    let ext = Filename.extension name in
+    let ext_len = String.length ext in
+    if ext_len <= 0 then
+      None
+    else begin
+      List.find_opt (fun ir ->
+        let s = Compiler_ir.extension ir in
+        (* check whether [ext] starts with [s]  *)
+        let s_len = String.length s in
+        s_len <= ext_len && s = String.sub ext 0 s_len)
+        Compiler_ir.all
+    end
+  in
+  let check_magic () =
+    let ic = open_in_bin name in
+    Misc.try_finally
+      (fun () ->
+         let len = String.length Config.linear_magic_number in
+         try
+           let buffer = really_input_string ic len in
+           List.find_opt (fun ir ->
+             let magic = Compiler_ir.magic ir in
+             assert (String.length magic = len);
+             if buffer = magic then true
+             else if String.sub buffer 0 9 = String.sub magic 0 9 then
+               Misc.fatal_errorf "OCaml and %s have incompatible versions"
+                 name ()
+             else false)
+             Compiler_ir.all
+         with End_of_file -> None
+      )
+      ~always:(fun () -> close_in ic)
+  in
+  let ir = match check_suffix () with
+    | Some ir -> Some ir
+    | None -> check_magic ()
+  in match ir with
+  | None -> false
+  | Some Linear ->
+    if not (should_start_from Compiler_pass.Emit) then
+      if (!start_from = None) then
+        raise(Arg.Bad("Format of the input file " ^ name
+                      ^ " requires -start-from emit."))
+      else
+        raise(Arg.Bad("Format of the input file " ^ name ^
+                      " is incompatible with the given -start-from <pass>."));
+    true
+
 let process_action
     (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
+  let impl name =
+    readenv ppf (Before_compile name);
+    let opref = output_prefix name in
+    implementation ~source_file:name ~output_prefix:opref;
+    objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
+  in
   match action with
   | ProcessImplementation name ->
-      readenv ppf (Before_compile name);
-      let opref = output_prefix name in
-      implementation ~source_file:name ~output_prefix:opref;
-      objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
+      impl name
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
@@ -645,6 +722,8 @@ let process_action
         ccobjs := name :: !ccobjs
       else if not !native_code && Filename.check_suffix name Config.ext_dll then
         dllibs := name :: !dllibs
+      else if check_ir name then
+        impl name
       else
         raise(Arg.Bad("don't know what to do with " ^ name))
 
@@ -696,6 +775,7 @@ let process_deferred_actions env =
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
+  check_pass_order ();
   stop_early :=
     !compile_only ||
     !print_types ||

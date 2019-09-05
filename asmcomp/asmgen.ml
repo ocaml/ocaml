@@ -234,6 +234,27 @@ let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
       in
       end_gen_implementation ?toplevel ~ppf_dump clambda_with_constants)
 
+let linear_gen_implementation filename =
+  let open Linear_format in
+  let linear_unit_info,_ = restore filename in
+  let emit_item = function
+    | Data dl -> emit_data dl
+    | Func f -> emit_fundecl f
+  in
+  emit_begin_assembly ();
+  Profile.record "Emit" (List.iter emit_item) linear_unit_info.items;
+  emit_end_assembly ()
+
+let compile_implementation_linear prefixname ~progname =
+  let asmfile =
+    if !keep_asm_file || !Emitaux.binary_backend_available
+    then prefixname ^ ext_asm
+    else Filename.temp_file "camlasm" ext_asm
+  in
+  compile_unit prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () ->
+      linear_gen_implementation progname)
+
 (* Error report *)
 
 let report_error ppf = function

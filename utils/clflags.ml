@@ -417,10 +417,13 @@ let unboxed_types = ref false
 (* This is used by the -save-ir-after option. *)
 module Compiler_ir = struct
   type t = Linear
+
+  (* Filename extensions are a convension, but not required. Any filename works,
+     as long as the file starts with the correct magic number. *)
   let extension t =
     let ext =
     match t with
-    | Linear -> "linear"
+      | Linear -> "linear"
     in
     ".cmir-" ^ ext
 
@@ -441,32 +444,37 @@ module Compiler_pass = struct
      - the manpages in man/ocaml{c,opt}.m
      - the manual manual/manual/cmds/unified-options.etex
   *)
-  type t = Parsing | Typing | Scheduling
+  type t = Parsing | Typing | Scheduling | Emit
 
   let to_string = function
     | Parsing -> "parsing"
     | Typing -> "typing"
     | Scheduling -> "scheduling"
+    | Emit -> "emit"
 
   let of_string = function
     | "parsing" -> Some Parsing
     | "typing" -> Some Typing
     | "scheduling" -> Some Scheduling
+    | "emit" -> Some Emit
     | _ -> None
 
   let rank = function
     | Parsing -> 0
     | Typing -> 1
     | Scheduling -> 50
+    | Emit -> 60
 
   let passes = [
     Parsing;
     Typing;
     Scheduling;
+    Emit;
   ]
   let is_compilation_pass _ = true
   let is_native_only = function
     | Scheduling -> true
+    | Emit -> true
     | _ -> false
 
   let enabled is_native t = not (is_native_only t) || is_native
@@ -474,11 +482,18 @@ module Compiler_pass = struct
     | Scheduling -> true
     | _ -> false
 
+  let can_start_from = function
+    | Parsing | Typing | Emit -> true
+    | Scheduling -> false
+
   let available_pass_names ~filter ~native =
     passes
     |> List.filter (enabled native)
     |> List.filter filter
     |> List.map to_string
+
+  let compare a b =
+    compare (rank a) (rank b)
 end
 
 let stop_after = ref None (* -stop-after *)
@@ -504,6 +519,16 @@ let set_save_ir_after pass enabled =
       other_passes
   in
   save_ir_after := new_passes
+
+let start_from = ref None (* -start-from *)
+
+let should_start_from pass =
+  match !start_from with
+  | None -> pass = Compiler_pass.Parsing
+  | Some start ->
+    let start = Compiler_pass.rank start in
+    let cur = Compiler_pass.rank pass in
+    start = cur
 
 module String = Misc.Stdlib.String
 
