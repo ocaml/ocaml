@@ -36,21 +36,19 @@ let rebuild_let (defs : def list) (body : Flambda.t) =
 let rec extract_let_expr (acc:def list) (let_expr:Flambda.let_expr) :
   def list * Flambda.t Flambda.With_free_variables.t =
   let module W = Flambda.With_free_variables in
-  match let_expr with
-  | { var = v1; defining_expr = Expr (Let let2); _ } ->
-    let acc, body2 = extract_let_expr acc let2 in
-    let acc = Immutable(v1, W.expr body2) :: acc in
-    let body = W.of_body_of_let let_expr in
-    extract acc body
-  | { var = v1; defining_expr = Expr (Let_mutable let_mut); _ } ->
-    let acc, body2 = extract_let_mutable acc let_mut in
-    let acc = Immutable(v1, W.expr body2) :: acc in
-    let body = W.of_body_of_let let_expr in
-    extract acc body
-  | { var = v; _ } ->
-    let acc = Immutable(v, W.of_defining_expr_of_let let_expr) :: acc in
-    let body = W.of_body_of_let let_expr in
-    extract acc body
+  let acc =
+    match let_expr with
+    | { var = v1; defining_expr = Expr (Let let2); _ } ->
+        let acc, body2 = extract_let_expr acc let2 in
+        Immutable(v1, W.expr body2) :: acc
+    | { var = v1; defining_expr = Expr (Let_mutable let_mut); _ } ->
+        let acc, body2 = extract_let_mutable acc let_mut in
+        Immutable(v1, W.expr body2) :: acc
+    | { var = v; _ } ->
+        Immutable(v, W.of_defining_expr_of_let let_expr) :: acc
+  in
+  let body = W.of_body_of_let let_expr in
+  extract acc body
 
 and extract_let_mutable acc (let_mut : Flambda.let_mutable) =
   let module W = Flambda.With_free_variables in
