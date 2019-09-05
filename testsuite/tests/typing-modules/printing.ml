@@ -46,3 +46,13 @@ module type E
 module type F
 module Test : functor (X : (A -> (B -> C) -> D) -> E -> F) -> sig end
 |}]
+
+(* test reprinting of functors *)
+module type LongFunctor1 = functor (X : A) () (_ : B) () -> C -> D -> sig end
+[%%expect {|
+module type LongFunctor1 = functor (X : A) () (_ : B) () -> C -> D -> sig end
+|}]
+module type LongFunctor2 = functor (_ : A) () (_ : B) () -> C -> D -> sig end
+[%%expect {|
+module type LongFunctor2 = A -> functor () (_ : B) () -> C -> D -> sig end
+|}]
