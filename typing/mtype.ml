@@ -176,16 +176,19 @@ let rec nondep_mty_with_presence env va ids pres mty =
   | Mty_signature sg ->
       let mty = Mty_signature(nondep_sig env va ids sg) in
       pres, mty
-  | Mty_functor(Unit | Named (None, _) as param, res) ->
-      pres, Mty_functor(param, nondep_mty env va ids res)
-  | Mty_functor(Named (Some param, arg), res) ->
+  | Mty_functor(Unit, res) ->
+      pres, Mty_functor(Unit, nondep_mty env va ids res)
+  | Mty_functor(Named (param, arg), res) ->
       let var_inv =
         match va with Co -> Contra | Contra -> Co | Strict -> Strict in
+      let res_env =
+        match param with
+        | None -> env
+        | Some param -> Env.add_module ~arg:true param Mp_present arg env
+      in
       let mty =
-        Mty_functor(Named (Some param, nondep_mty env var_inv ids arg),
-                    nondep_mty
-                      (Env.add_module ~arg:true param Mp_present arg env)
-                      va ids res)
+        Mty_functor(Named (param, nondep_mty env var_inv ids arg),
+                    nondep_mty res_env va ids res)
       in
       pres, mty
 
