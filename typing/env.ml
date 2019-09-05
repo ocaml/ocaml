@@ -679,6 +679,11 @@ and lookup_module ~load lid env : Path.t =
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
+#if true then                  
+        | Mty_alias (Path.Pident id) ->   
+          if !Clflags.bs_only && not !Clflags.transparent_modules then 
+            find_pers_struct (Ident.name id) |> ignore 
+#end            
         | _ -> ()
         end;
         p
