@@ -3,10 +3,17 @@ flags = "-c -nostdlib -nopervasives -dlambda -dno-unique-ids"
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 *** check-ocamlc.byte-output
+compiler_reference = "${test_source_directory}/anonymous.ocamlc.reference"
 
 * setup-ocamlopt.byte-build-env
 ** ocamlopt.byte
-*** check-ocamlopt.byte-output
+*** no-flambda
+**** check-ocamlopt.byte-output
+compiler_reference = "${test_source_directory}/anonymous.ocamlopt.reference"
+*** flambda
+**** check-ocamlc.byte-output
+compiler_reference =
+   "${test_source_directory}/anonymous.ocamlopt.flambda.reference"
 *)
 
 module _ = struct
@@ -30,3 +37,7 @@ end = struct
 
   let x = "foo", "bar"
 end
+
+module type S
+
+let f (module _ : S) = ()

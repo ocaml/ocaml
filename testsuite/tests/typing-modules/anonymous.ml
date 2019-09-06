@@ -31,3 +31,9 @@ end
 module type S =
   sig module rec A : sig type t = B/2.t end and B : sig type t end end
 |}]
+
+let f (module _ : S) = ()
+;;
+[%%expect{|
+val f : (module S) -> unit = <fun>
+|}]
