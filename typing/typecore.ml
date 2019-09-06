@@ -1893,7 +1893,11 @@ let type_pattern_list
   in
   let patl = List.map2 type_pat spatl expected_tys in
   let pvs = get_ref pattern_variables in
-  let unpacks = get_ref module_variables in
+  let unpacks =
+    List.map (fun (name, loc) ->
+      name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
+    ) (get_ref module_variables)
+  in
   let new_env = add_pattern_variables !new_env pvs in
   (patl, new_env, get_ref pattern_force, pvs, unpacks)
 
@@ -2342,20 +2346,6 @@ let create_package_type loc env (p, l) =
   in
    (s, fields, ty)
 
- let wrap_unpacks sexp unpacks =
-   let open Ast_helper in
-   List.fold_left
-     (fun sexp (name, loc) ->
-        Exp.letmodule ~loc:{ sexp.pexp_loc with loc_ghost = true }
-         ~attrs:[Attr.mk (mknoloc "#modulepat") (PStr [])]
-         { name with txt = Some name.txt }
-         (Mod.unpack ~loc
-            (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
-                                            name.loc)))
-         sexp
-     )
-    sexp unpacks
-
 (* Helpers for type_cases *)
 
 let contains_variant_either ty =
@@ -2617,9 +2607,7 @@ and type_expect_
       in
       let (pat_exp_list, new_env, unpacks) =
         type_let existential_context env rec_flag spat_sexp_list scp true in
-      let body =
-        type_expect new_env (wrap_unpacks sbody unpacks)
-          ty_expected_explained in
+      let body = type_unpacks new_env unpacks sbody ty_expected_explained in
       let () =
         if rec_flag = Recursive then
           check_recursive_bindings env pat_exp_list
@@ -4470,6 +4458,59 @@ and type_statement ?explanation env sexp =
     exp
   end
 
+and type_unpacks ?in_function env unpacks sbody expected_ty =
+  let ty = newvar() in
+  (* remember original level *)
+  let extended_env, tunpacks =
+    List.fold_left (fun (env, unpacks) (name, loc, uid) ->
+      begin_def ();
+      let context = Typetexp.narrow () in
+      let modl =
+        !type_module env
+          Ast_helper.(
+            Mod.unpack ~loc
+              (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
+                                          name.loc)))
+      in
+      Mtype.lower_nongen ty.level modl.mod_type;
+      let pres =
+        match modl.mod_type with
+        | Mty_alias _ -> Mp_absent
+        | _ -> Mp_present
+      in
+      let scope = create_scope () in
+      let md =
+        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc;
+          md_uid = uid; }
+      in
+      let (id, env) =
+        Env.enter_module_declaration ~scope name.txt pres md env
+      in
+      Typetexp.widen context;
+      env, (id, name, pres, modl) :: unpacks
+    ) (env, []) unpacks
+  in
+  (* ideally, we should catch Expr_type_clash errors
+     in type_expect triggered by escaping identifiers from the local module
+     and refine them into Scoping_let_module errors
+  *)
+  let body = type_expect ?in_function extended_env sbody expected_ty in
+  let exp_loc = { body.exp_loc with loc_ghost = true } in
+  let exp_attributes = [Ast_helper.Attr.mk (mknoloc "#modulepat") (PStr [])] in
+  List.fold_left (fun body (id, name, pres, modl) ->
+    (* go back to parent level *)
+    end_def ();
+    Ctype.unify_var extended_env ty body.exp_type;
+    re {
+      exp_desc = Texp_letmodule(Some id, { name with txt = Some name.txt },
+                                pres, modl, body);
+      exp_loc;
+      exp_attributes;
+      exp_extra = [];
+      exp_type = ty;
+      exp_env = env }
+  ) body tunpacks
+
 (* Typing of match cases *)
 and type_cases
     : type k . k pattern_category ->
@@ -4599,7 +4640,11 @@ and type_cases
             ~check:(fun s -> Warnings.Unused_var_strict s)
             ~check_as:(fun s -> Warnings.Unused_var s)
         in
-        let sexp = wrap_unpacks pc_rhs unpacks in
+        let unpacks =
+          List.map (fun (name, loc) ->
+            name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
+          ) unpacks
+        in
         let ty_res' =
           if !Clflags.principal then begin
             begin_def ();
@@ -4621,11 +4666,12 @@ and type_cases
           | None -> None
           | Some scond ->
               Some
-                (type_expect ext_env (wrap_unpacks scond unpacks)
+                (type_unpacks ext_env unpacks scond
                    (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
-          type_expect ?in_function ext_env sexp (mk_expected ty_res') in
+          type_unpacks ?in_function ext_env unpacks pc_rhs (mk_expected ty_res')
+        in
         {
          c_lhs = pat;
          c_guard = guard;
@@ -4851,8 +4897,6 @@ and type_let
   let exp_list =
     List.map2
       (fun {pvb_expr=sexp; pvb_attributes; _} (pat, slot) ->
-        let sexp =
-          if rec_flag = Recursive then wrap_unpacks sexp unpacks else sexp in
         if is_recursive then current_slot := slot;
         match pat.pat_type.desc with
         | Tpoly (ty, tl) ->
@@ -4863,14 +4907,21 @@ and type_let
               generalize_structure ty'
             end;
             let exp =
-              Builtin_attributes.warning_scope pvb_attributes
-                  (fun () -> type_expect exp_env sexp (mk_expected ty'))
+              Builtin_attributes.warning_scope pvb_attributes (fun () ->
+                if rec_flag = Recursive then
+                  type_unpacks exp_env unpacks sexp (mk_expected ty')
+                else
+                  type_expect exp_env sexp (mk_expected ty')
+              )
             in
             exp, Some vars
         | _ ->
             let exp =
-              Builtin_attributes.warning_scope pvb_attributes
-                (fun () -> type_expect exp_env sexp (mk_expected pat.pat_type))
+              Builtin_attributes.warning_scope pvb_attributes (fun () ->
+                  if rec_flag = Recursive then
+                    type_unpacks exp_env unpacks sexp (mk_expected pat.pat_type)
+                  else
+                    type_expect exp_env sexp (mk_expected pat.pat_type))
             in
             exp, None)
       spat_sexp_list pat_slot_list in

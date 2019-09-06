@@ -333,10 +333,6 @@ Lines 2-3, characters 4-24:
 3 |   | _,(module M:S),(_,1)...................
 Warning 57: Ambiguous or-pattern variables under guard;
 variable M may match different arguments. (See manual section 9.5)
-Line 2, characters 12-13:
-2 |   | (module M:S),_,(1,_)
-                ^
-Warning 60: unused module M.
 val ambiguous__module_variable :
   (module S) * (module S) * (int * int) -> bool -> int = <fun>
 |}]
@@ -347,10 +343,6 @@ let not_ambiguous__module_variable x b =  match x with
   | _ -> 2
 ;;
 [%%expect {|
-Line 2, characters 12-13:
-2 |   | (module M:S),_,(1,_)
-                ^
-Warning 60: unused module M.
 Line 2, characters 12-13:
 2 |   | (module M:S),_,(1,_)
                 ^

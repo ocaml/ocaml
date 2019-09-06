@@ -1,4 +1,0 @@
-File "fstclassmod.ml", line 172, characters 17-18:
-172 |   | Some (module M : S3) when M.x ->1
-                       ^
-Error (warning 60): unused module M.
