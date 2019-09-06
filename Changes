@@ -78,6 +78,9 @@ Working version
 - #2321: Eliminate dead ICatch handlers
   (Greta Yorsh, review by Pierre Chambart and Vincent Laviron)
 
+- #8919: lift mutable lets along with immutable ones
+  (Leo White, review by Pierre Chambart)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
