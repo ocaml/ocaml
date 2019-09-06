@@ -1665,14 +1665,19 @@ type rec_item_group =
 
 
 let group_syntactic_items x =
-  let rec group acc = function
+  let rec group ~ghosts ~acc = function
     | Sig_class _ as src :: ctydecl :: tydecl1 :: tydecl2 :: rem ->
-        group ({src; ghosts = [ctydecl; tydecl1; tydecl2]}::acc) rem
+        let s_elt = {src; ghosts=ghosts @ [ctydecl; tydecl1; tydecl2]} in
+        remove_row (s_elt :: acc) rem
     | Sig_class_type _ as src :: tydecl1 :: tydecl2 :: rem ->
-        group ({src; ghosts = [tydecl1; tydecl2]}::acc) rem
-    | src :: rem -> group ({src; ghosts=[]}::acc) rem
-    | [] -> List.rev acc in
-  group [] x
+        remove_row ({src; ghosts = ghosts @ [tydecl1; tydecl2]}::acc) rem
+    | src :: rem -> remove_row ({src; ghosts} :: acc) rem
+    | [] -> List.rev acc
+  and remove_row acc = function
+    | Sig_type(id,_,_,_) as row :: rest when is_row_name (Ident.name id) ->
+        group ~ghosts:[row] ~acc rest
+    | rest -> group ~ghosts:[] ~acc rest in
+  remove_row [] x
 
 let add_sigitem env x =
   Env.add_signature (x.src :: x.ghosts) env
@@ -1745,42 +1750,40 @@ and tree_of_signature_rec : 'r. (_->_->'r) -> _ -> _ -> 'r list
 and trees_of_recursive_sigitem_group env group =
   let display x =
     reset_naming_context ();
-    List.map (fun y -> x.src,y) (trees_of_sigitem x.src) in
+    x.src, tree_of_sigitem x.src in
   match group with
-  | Not_rec x -> add_sigitem env x, display x
+  | Not_rec x -> add_sigitem env x, [display x]
   | Rec_group (ids,items) ->
       let is_type = match items with
         | {src=Sig_type _; _ } :: _ -> true
         | _ -> false  in
       List.iter Naming_context.add_protected ids;
       if is_type then hide_rec_items ids;
-      let r = List.flatten (List.map display items) in
+      let r = List.map display items in
       Naming_context.reset_protected ();
       List.fold_left add_sigitem env items,
       r
 
-and trees_of_sigitem = function
+and tree_of_sigitem = function
   | Sig_value(id, decl, _) ->
-      [tree_of_value_description id decl]
-  | Sig_type(id, _, _, _) when is_row_name (Ident.name id) ->
-      []
+      tree_of_value_description id decl
   | Sig_type(id, decl, rs, _) ->
-      [tree_of_type_declaration id decl rs]
+      tree_of_type_declaration id decl rs
   | Sig_typext(id, ext, es, _) ->
-      [tree_of_extension_constructor id ext es]
+      tree_of_extension_constructor id ext es
   | Sig_module(id, _, md, rs, _) ->
       let ellipsis =
         List.exists (function
           | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
           | _ -> false)
           md.md_attributes in
-      [tree_of_module id md.md_type rs ~ellipsis]
+      tree_of_module id md.md_type rs ~ellipsis
   | Sig_modtype(id, decl, _) ->
-      [tree_of_modtype_declaration id decl]
+      tree_of_modtype_declaration id decl
   | Sig_class(id, decl, rs, _) ->
-      [tree_of_class_declaration id decl rs]
+      tree_of_class_declaration id decl rs
   | Sig_class_type(id, decl, rs, _) ->
-      [tree_of_cltype_declaration id decl rs]
+      tree_of_cltype_declaration id decl rs
 
 and tree_of_modtype_declaration id decl =
   let mty =
