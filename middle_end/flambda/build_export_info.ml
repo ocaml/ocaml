@@ -399,13 +399,16 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     aliased_symbol = None;
   }
 
-let approx_of_constant_defining_value_block_field env
+let approx_of_constant_defining_value_block_field env rec_syms
       (c : Flambda.constant_defining_value_block_field) : Export_info.approx =
   match c with
-  | Symbol s -> Value_symbol s
+  | Symbol s ->
+      if List.exists (fun sym -> Symbol.equal s sym) rec_syms
+      then Value_unknown
+      else Value_symbol s
   | Const c -> Value_id (Env.new_descr env (descr_of_constant c))
 
-let describe_constant_defining_value env export_id symbol
+let describe_constant_defining_value env rec_syms export_id symbol
       (const : Flambda.constant_defining_value) =
   let env =
     (* Assignments of variables to export IDs are local to each constant
@@ -418,7 +421,9 @@ let describe_constant_defining_value env export_id symbol
     Env.record_descr env export_id descr
   | Block (tag, fields) ->
     let approxs =
-      List.map (approx_of_constant_defining_value_block_field env) fields
+      List.map
+        (approx_of_constant_defining_value_block_field env rec_syms)
+        fields
     in
     Env.record_descr env export_id (Value_block (tag, Array.of_list approxs))
   | Set_of_closures set_of_closures ->
@@ -468,14 +473,14 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
     match program with
     | Let_symbol (symbol, constant_defining_value, program) ->
       let id, env = Env.Global.new_symbol env symbol in
-      describe_constant_defining_value env id symbol constant_defining_value;
+      describe_constant_defining_value env [] id symbol constant_defining_value;
       loop env program
     | Let_rec_symbol (defs, program) ->
-      let env, defs =
-        List.fold_left (fun (env, defs) (symbol, def) ->
+      let env, defs, rec_syms =
+        List.fold_left (fun (env, defs, rec_syms) (symbol, def) ->
             let id, env = Env.Global.new_symbol env symbol in
-            env, ((id, symbol, def) :: defs))
-          (env, []) defs
+            env, ((id, symbol, def) :: defs), symbol :: rec_syms)
+          (env, [], []) defs
       in
       (* [Project_closure]s are separated to be handled last.  They are the
          only values that need a description for their argument. *)
@@ -486,10 +491,10 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
           defs
       in
       List.iter (fun (id, symbol, def) ->
-          describe_constant_defining_value env id symbol def)
+          describe_constant_defining_value env rec_syms id symbol def)
         other_constants;
       List.iter (fun (id, symbol, def) ->
-          describe_constant_defining_value env id symbol def)
+          describe_constant_defining_value env rec_syms id symbol def)
         project_closures;
       loop env program
     | Initialize_symbol (symbol, tag, fields, program) ->
