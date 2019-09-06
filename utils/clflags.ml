@@ -38,6 +38,8 @@ module Float_arg_helper = Arg_helper.Make (struct
   end
 end)
 
+exception ForbiddenValue of string
+
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
@@ -167,10 +169,18 @@ let with_runtime = ref true;;         (* -with-runtime *)
 
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref true               (* -keep-locs *)
-let unsafe_string =
-  if Config.safe_string then ref false
-  else ref (not Config.default_safe_string)
-                                   (* -safe-string / -unsafe-string *)
+
+let get_unsafe_string, set_unsafe_string = (* -safe-string / -unsafe-string *)
+  if Config.safe_string then
+    (fun () -> false),
+    (function
+      | false -> ()
+      | true -> raise (ForbiddenValue
+                         "OCaml has been configured with -force-safe-string: \
+                          unsafe-string is not available"))
+  else
+    let r = ref (not Config.default_safe_string) in
+    (fun () -> !r), (fun v -> r := v)
 
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)

@@ -103,7 +103,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _runtime_variant s = runtime_variant := s
   let _with_runtime = set with_runtime
   let _without_runtime = unset with_runtime
-  let _safe_string = unset unsafe_string
+  let _safe_string () = set_unsafe_string false
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
   let _no_strict_sequence = unset strict_sequence
@@ -114,7 +114,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = unset unboxed_types
   let _unsafe = set unsafe
-  let _unsafe_string = set unsafe_string
+  let _unsafe_string () = set_unsafe_string true
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
   let _v () = print_version_and_library "compiler"
