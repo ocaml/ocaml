@@ -238,7 +238,7 @@ and pattern_desc =
         (* #tconst *)
   | Ppat_lazy of pattern
         (* lazy P *)
-  | Ppat_unpack of string loc
+  | Ppat_unpack of string option loc
         (* (module P)
            Note: (module P : S) is represented as
            Ppat_constraint(Ppat_unpack, Ptyp_package)

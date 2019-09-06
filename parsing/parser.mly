@@ -2623,9 +2623,9 @@ simple_pattern_not_ident:
       { reloc_pat ~loc:$sloc $2 }
   | simple_delimited_pattern
       { $1 }
-  | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
+  | LPAREN MODULE ext_attributes mkrhs(module_name) RPAREN
       { mkpat_attrs ~loc:$sloc (Ppat_unpack $4) $3 }
-  | LPAREN MODULE ext_attributes mkrhs(UIDENT) COLON package_type RPAREN
+  | LPAREN MODULE ext_attributes mkrhs(module_name) COLON package_type RPAREN
       { mkpat_attrs ~loc:$sloc
           (Ppat_constraint(mkpat ~loc:$sloc (Ppat_unpack $4), $6))
           $3 }
@@ -2665,7 +2665,7 @@ simple_pattern_not_ident:
       { unclosed "(" $loc($1) ")" $loc($5) }
   | LPAREN pattern COLON error
       { expecting $loc($4) "type" }
-  | LPAREN MODULE ext_attributes UIDENT COLON package_type
+  | LPAREN MODULE ext_attributes module_name COLON package_type
     error
       { unclosed "(" $loc($1) ")" $loc($7) }
   | extension

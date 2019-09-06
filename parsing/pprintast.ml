@@ -442,8 +442,10 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_var ({txt = txt;_}) -> protect_ident f txt
     | Ppat_array l ->
         pp f "@[<2>[|%a|]@]"  (list (pattern1 ctxt) ~sep:";") l
-    | Ppat_unpack (s) ->
-        pp f "(module@ %s)@ " s.txt
+    | Ppat_unpack { txt = None } ->
+        pp f "(module@ _)@ "
+    | Ppat_unpack { txt = Some s } ->
+        pp f "(module@ %s)@ " s
     | Ppat_type li ->
         pp f "#%a" longident_loc li
     | Ppat_record (l, closed) ->

@@ -1068,14 +1068,26 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_unpack name ->
       assert (constrs = None);
       let t = instance expected_ty in
-      let id = enter_variable loc name t ~is_module:true sp.ppat_attributes in
-      rp k {
-        pat_desc = Tpat_var (id, name);
-        pat_loc = sp.ppat_loc;
-        pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
-        pat_type = t;
-        pat_attributes = [];
-        pat_env = !env }
+      begin match name.txt with
+      | None ->
+          rp k {
+            pat_desc = Tpat_any;
+            pat_loc = sp.ppat_loc;
+            pat_extra=[Tpat_unpack, name.loc, sp.ppat_attributes];
+            pat_type = t;
+            pat_attributes = [];
+            pat_env = !env }
+      | Some s ->
+          let v = { name with txt = s } in
+          let id = enter_variable loc v t ~is_module:true sp.ppat_attributes in
+          rp k {
+            pat_desc = Tpat_var (id, v);
+            pat_loc = sp.ppat_loc;
+            pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
+            pat_type = t;
+            pat_attributes = [];
+            pat_env = !env }
+      end
   | Ppat_constraint(
       {ppat_desc=Ppat_var name; ppat_loc=lloc; ppat_attributes = attrs},
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
