@@ -15,6 +15,8 @@ Working version
   use String_val as a char* instead of const char*
   (Kate Deplaix)
 
+- #6662, #8908: Add "module _ = X" syntax
+  (Thomas Refis, review by Gabriel Radanne)
 
 ### Internal/compiler-libs changes:
 
@@ -69,6 +71,11 @@ Working version
 - #8913: ocamltest: improve 'promote' implementation to take
   skipped lines/bytes into account
   (Gabriel Scherer, review by Sébastien Hinderer)
+
+- #8908: Use an option instead of a string for module names ("_" becomes None),
+  and a dedicated type for functor parameters: "()" maps to "Unit" (instead of
+  "*").
+  (Thomas Refis, review by Gabriel Radanne)
 
 - #8928: Move contains_calls and num_stack_slots from Proc to Mach.fundecl
   (Greta Yorsh, review by Florian Angeletti and Vincent Laviron)
