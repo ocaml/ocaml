@@ -52,7 +52,6 @@ module Env : sig
 
     val symbol_to_export_id_map : t -> Export_id.t Symbol.Map.t
     val export_id_to_descr_map : t -> Export_info.descr Export_id.Map.t
-
   end
 
   (** Creates a new environment, sharing the mapping from export IDs to
@@ -440,9 +439,7 @@ let describe_constant_defining_value env export_id symbol
     Env.record_descr env export_id descr
   | Block (tag, fields) ->
     let approxs =
-      List.map
-        (approx_of_constant_defining_value_block_field env)
-        fields
+      List.map (approx_of_constant_defining_value_block_field env) fields
     in
     Env.record_descr env export_id (Value_block (tag, Array.of_list approxs))
   | Set_of_closures set_of_closures ->
