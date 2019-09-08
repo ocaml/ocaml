@@ -220,6 +220,8 @@ type meth_kind = Self | Public of public_info | Cached
 
 type shared_code = (int * int) list
 
+type switch_names = {consts: string array; blocks: string array}
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -228,7 +230,7 @@ type lambda =
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t 
-  | Lswitch of lambda * lambda_switch
+  | Lswitch of lambda * lambda_switch * switch_names
   | Lstringswitch of lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
@@ -303,8 +305,8 @@ let make_key e =
         Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es,_) ->
         Lprim (p,tr_recs env es, Location.none)
-    | Lswitch (e,sw) ->
-        Lswitch (tr_rec env e,tr_sw env sw)
+    | Lswitch (e,sw,names) ->
+        Lswitch (tr_rec env e,tr_sw env sw,names)
     | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
@@ -384,7 +386,7 @@ let iter f = function
       List.iter (fun (id, exp) -> f exp) decl
   | Lprim(p, args, _loc) ->
       List.iter f args
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, _names) ->
       f arg;
       List.iter (fun (key, case) -> f case) sw.sw_consts;
       List.iter (fun (key, case) -> f case) sw.sw_blocks;
@@ -525,11 +527,12 @@ let subst_lambda s lam =
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, names) ->
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction = subst_opt  sw.sw_failaction; })
+                       sw_failaction = subst_opt  sw.sw_failaction; },
+              names)
   | Lstringswitch (arg,cases,default,loc) ->
       Lstringswitch
         (subst arg,List.map subst_strcase cases,subst_opt default, loc)

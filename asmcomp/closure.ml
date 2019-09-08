@@ -937,7 +937,7 @@ let rec close fenv cenv = function
   | Lprim(p, args, _) ->
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) Debuginfo.none
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, _names) ->
       let fn fail =
         let (uarg, _) = close fenv cenv arg in
         let const_index, const_actions, fconst =

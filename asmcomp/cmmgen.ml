@@ -1101,7 +1101,7 @@ struct
   let make_isout h arg =  Cop (Ccmpa Clt, [h ; arg])
   let make_isin h arg =  Cop (Ccmpa Cge, [h ; arg])
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch arg cases actions = Cswitch (arg,cases,actions)
+  let make_switch arg cases actions _names = Cswitch (arg,cases,actions)
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
@@ -1183,7 +1183,7 @@ let transl_int_switch arg low high cases default = match cases with
         SwitcherBlocks.zyva
           (low,high)
           a
-          (Array.of_list inters) store)
+          (Array.of_list inters) store {consts=[||]; blocks=[||]})
 
 
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
@@ -2157,7 +2157,7 @@ and transl_switch arg index cases = match Array.length cases with
             SwitcherBlocks.zyva
               (0,n_index-1)
               a
-              (Array.of_list inters) store)
+              (Array.of_list inters) store {consts=[||]; blocks=[||]})
 
 and transl_letrec bindings cont =
   let bsz =

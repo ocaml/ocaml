@@ -80,7 +80,7 @@ module type S =
       make_switch arg cases acts
       NB:  cases is in the value form *)
     val make_switch :
-        act -> int array -> act array -> act
+        act -> int array -> act array -> Lambda.switch_names -> act
    (* Build last minute sharing of action stuff *)
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
@@ -107,6 +107,7 @@ module Make :
            Arg.act ->
            (int * int * int) array ->
            Arg.act t_store ->
+           Lambda.switch_names ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
