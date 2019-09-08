@@ -31,7 +31,7 @@ let init_path ?(dir="") () =
     !last_include_dirs @ dirs @ Config.flexdll_dirs @ !first_include_dirs
   in
   let exp_dirs =
-    List.map (Misc.expand_directory Config.standard_library) dirs in
+    List.concat (List.map (Misc.expand_directory Config.ocamlpath) dirs) in
   Load_path.init (dir :: List.rev_append exp_dirs (Clflags.std_include_dir ()));
   Env.reset_cache ()
 

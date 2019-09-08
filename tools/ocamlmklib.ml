@@ -279,8 +279,8 @@ let transl_path s =
 
 let flexdll_dirs =
   let dirs =
-    let expand = Misc.expand_directory Config.standard_library in
-    List.map expand Config.flexdll_dirs
+    let expand = Misc.expand_directory Config.ocamlpath in
+    List.concat (List.map expand Config.flexdll_dirs)
   in
   let f dir =
     let dir =

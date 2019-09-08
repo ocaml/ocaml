@@ -286,14 +286,12 @@ let remove_file filename =
   with Sys_error _msg ->
     ()
 
-(* Expand a -I option: if it starts with +, make it relative to the standard
-   library directory *)
-
-let expand_directory alt s =
-  if String.length s > 0 && s.[0] = '+'
-  then Filename.concat alt
-                       (String.sub s 1 (String.length s - 1))
-  else s
+let expand_directory alts s =
+  match String.length s > 0 && s.[0] = '+' with
+  | false -> [s]
+  | true ->
+      let rel = String.sub s 1 (String.length s - 1) in
+      List.map (fun alt -> Filename.concat alt rel) alts
 
 let path_separator =
   match Sys.os_type with

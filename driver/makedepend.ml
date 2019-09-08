@@ -79,9 +79,12 @@ let add_to_list li s =
   li := s :: !li
 
 let add_to_load_path dir =
-  let dir = Misc.expand_directory Config.standard_library dir in
-  let contents = readdir dir in
-  add_to_list load_path (dir, contents)
+  let dirs = Misc.expand_directory Config.ocamlpath dir in
+  let add dir =
+    let contents = readdir dir in
+    add_to_list load_path (dir, contents)
+  in
+  List.iter add dirs
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then

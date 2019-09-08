@@ -187,9 +187,9 @@ val find_in_path_uncap: string list -> string -> string
            to match. *)
 val remove_file: string -> unit
         (* Delete the given file if it exists. Never raise an error. *)
-val expand_directory: string -> string -> string
-        (* [expand_directory alt file] eventually expands a [+] at the
-           beginning of file into [alt] (an alternate root directory) *)
+val expand_directory: string list -> string -> string list
+        (* [expand_directory alt file] expands a potential [+] at the
+           beginning of [file] into [alts] (alternate root directories) *)
 
 val split_path_contents: ?sep:char -> string -> string list
 (* [split_path_contents ?sep s] interprets [s] as the value of a "PATH"-like

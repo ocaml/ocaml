@@ -33,27 +33,33 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 (* To add a directory to the load path *)
 
 let dir_directory s =
-  let d = expand_directory Config.standard_library s in
-  let dir = Load_path.Dir.create d in
-  Load_path.add dir;
-  toplevel_env :=
-    Stdlib.String.Set.fold
-      (fun name env ->
-         Env.add_persistent_structure (Ident.create_persistent name) env)
-      (Env.persistent_structures_of_dir dir)
-      !toplevel_env
+  let dirs = expand_directory Config.ocamlpath s in
+  let add d =
+    let dir = Load_path.Dir.create d in
+    Load_path.add dir;
+    toplevel_env :=
+      Stdlib.String.Set.fold
+        (fun name env ->
+           Env.add_persistent_structure (Ident.create_persistent name) env)
+        (Env.persistent_structures_of_dir dir)
+        !toplevel_env
+  in
+  List.iter add dirs
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
-  let d = expand_directory Config.standard_library s in
-  let keep id =
-    match Load_path.find_uncap (Ident.name id ^ ".cmi") with
-    | exception Not_found -> true
-    | fn -> Filename.dirname fn <> d
+  let dirs = expand_directory Config.ocamlpath s in
+  let rem d =
+    let keep id =
+      match Load_path.find_uncap (Ident.name id ^ ".cmi") with
+      | exception Not_found -> true
+      | fn -> Filename.dirname fn <> d
+    in
+    toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
+    Load_path.remove_dir s
   in
-  toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
-  Load_path.remove_dir s
+  List.iter rem dirs
 
 let _ =
   Hashtbl.add directive_table "remove_directory"
