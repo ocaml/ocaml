@@ -28,6 +28,13 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
+let ocamlpath = match Sys.getenv "OCAMLPATH" with
+  | exception Not_found -> [standard_library]
+  | p ->
+      let sep = if Sys.win32 then ';' else ':' in
+      let non_empty s = not (String.equal "" s) in
+      List.find_all non_empty (String.split_on_char sep p)
+
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"
@@ -161,6 +168,7 @@ let configuration_variables =
   p "version" version;
   p "standard_library_default" standard_library_default;
   p "standard_library" standard_library;
+  p "ocamlpath" (String.concat (if Sys.win32 then ";" else ":") ocamlpath);
   p "ccomp_type" ccomp_type;
   p "c_compiler" c_compiler;
   p "ocamlc_cflags" ocamlc_cflags;

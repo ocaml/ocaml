@@ -26,6 +26,10 @@ val version: string
 val standard_library: string
 (** The directory containing the standard libraries *)
 
+val ocamlpath: string list
+(** The compiler file search path as defined by the [OCAMLPATH] environment
+    variable. *)
+
 val ccomp_type: string
 (** The "kind" of the C compiler, assembler and linker used: one of
     "cc" (for Unix-style C compilers)
