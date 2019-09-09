@@ -106,7 +106,7 @@ module type S =
    val make_isout : act -> act -> act
    val make_isin : act -> act -> act
    val make_if : act -> act -> act -> act
-   val make_switch : act -> int array -> act array -> Lambda.switch_names -> act
+   val make_switch : act -> int array -> act array -> Lambda.switch_names option -> act
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
  end

@@ -240,7 +240,7 @@ type lambda =
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch * switch_names
+  | Lswitch of lambda * lambda_switch * switch_names option
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of lambda * (string * lambda) list * lambda option * Location.t

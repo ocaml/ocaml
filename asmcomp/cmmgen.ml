@@ -1183,7 +1183,7 @@ let transl_int_switch arg low high cases default = match cases with
         SwitcherBlocks.zyva
           (low,high)
           a
-          (Array.of_list inters) store {consts=[||]; blocks=[||]})
+          (Array.of_list inters) store None)
 
 
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
@@ -2157,7 +2157,7 @@ and transl_switch arg index cases = match Array.length cases with
             SwitcherBlocks.zyva
               (0,n_index-1)
               a
-              (Array.of_list inters) store {consts=[||]; blocks=[||]})
+              (Array.of_list inters) store None)
 
 and transl_letrec bindings cont =
   let bsz =

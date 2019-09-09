@@ -230,7 +230,7 @@ type lambda =
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t 
-  | Lswitch of lambda * lambda_switch * switch_names
+  | Lswitch of lambda * lambda_switch * switch_names option
   | Lstringswitch of lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda

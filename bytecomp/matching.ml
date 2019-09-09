@@ -1608,7 +1608,7 @@ let inline_lazy_force_switch arg loc =
                    (Obj.lazy_tag,
                     Lapply(force_fun, [varg], loc)) ];
                sw_failaction = Some varg },
-               {consts=[||]; blocks=[||]} ))))
+               None ))))
 
 let inline_lazy_force arg loc =
   if !Clflags.bs_only then
@@ -2883,7 +2883,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (divide_record lbl.lbl_all (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_constant cst ->
-      let names = {consts=[||]; blocks=[||]} in
+      let names = Some {consts=[||]; blocks=[||]} in
       compile_test
         (compile_match repr partial) partial
         divide_constant
@@ -2902,16 +2902,16 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
                 ([], []) cstrs in
               let names = {consts = consts |> List.rev |> Array.of_list;
                            blocks = blocks |> List.rev |> Array.of_list } in
-              names
+              Some names
             | Type_abstract ->
               (* Format.eprintf "XXX Type_abstract@."; *)
-              {consts=[||]; blocks=[||]}
+              Some {consts=[||]; blocks=[||]}
             | Type_record _ ->
               (* Format.eprintf "XXX Type_record@."; *)
-              {consts=[||]; blocks=[||]}
+              Some {consts=[||]; blocks=[||]}
             | Type_open ->
               (* Format.eprintf "XXX Type_open@."; *)
-              {consts=[||]; blocks=[||]} in
+              Some {consts=[||]; blocks=[||]} in
           names
         | _ -> assert false in
       compile_test
@@ -2919,7 +2919,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         divide_constructor (combine_constructor names pat.pat_loc arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
-      let names = {consts=[||]; blocks=[||]} in
+      let names = Some {consts=[||]; blocks=[||]} in
       let kind = Typeopt.array_pattern_kind pat in
       compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array names pat.pat_loc arg kind partial)
@@ -2929,7 +2929,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (divide_lazy (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_variant(lab, _, row) ->
-      let names = {consts=[||]; blocks=[||]} in
+      let names = Some {consts=[||]; blocks=[||]} in
       compile_test (compile_match repr partial) partial
         (divide_variant !row)
         (combine_variant names pat.pat_loc !row arg partial)
