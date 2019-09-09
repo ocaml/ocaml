@@ -2890,22 +2890,36 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (combine_constant names pat.pat_loc arg cst partial)
         ctx pm
   | Tpat_construct (_, cstr, pats) ->
-      let names = match (Btype.repr pat.pat_type).desc with
-        | Tconstr (path, types, _) ->
+      let names_from_type_variant cstrs =
+        let (consts, blocks) = List.fold_left
+          (fun (consts, blocks) cstr ->
+            if cstr.Types.cd_args = []
+            then (Ident.name cstr.Types.cd_id :: consts, blocks)
+            else (consts, Ident.name cstr.Types.cd_id :: blocks))
+          ([], []) cstrs in
+        Some {consts = consts |> List.rev |> Array.of_list;
+              blocks = blocks |> List.rev |> Array.of_list } in
+
+
+      (* let names = match (Btype.repr pat.pat_type).desc with
+        | Tconstr (path, _, _) ->
           let names = match (Env.find_type path pat.pat_env).type_kind with
             | Type_variant cstrs ->
-              let (consts, blocks) = List.fold_left
-                (fun (consts, blocks) cstr ->
-                  if cstr.Types.cd_args = []
-                  then (Ident.name cstr.Types.cd_id :: consts, blocks)
-                  else (consts, Ident.name cstr.Types.cd_id :: blocks))
-                ([], []) cstrs in
-              let names = {consts = consts |> List.rev |> Array.of_list;
-                           blocks = blocks |> List.rev |> Array.of_list } in
-              Some names
+              names_from_type_variant cstrs
             | Type_abstract ->
-              (* Format.eprintf "XXX Type_abstract@."; *)
-              Some {consts=[||]; blocks=[||]}
+              (match (Env.find_type path pat.pat_env).type_manifest with
+                | None -> Some {consts=[||]; blocks=[||]}
+                | Some t ->
+                  match (Ctype.unalias t).desc with
+                    | Tconstr (path1, _, _) ->
+                      (* Format.eprintf "XXX path:%s@." (Path.name path);
+                      Format.eprintf "XXX path1:%s@." (Path.name path1); *)
+                      let names = match (Env.find_type path1 pat.pat_env).type_kind with
+                        | Type_variant cstrs1 ->
+                          names_from_type_variant cstrs1
+                        | _ -> Some {consts=[||]; blocks=[||]} in
+                      names
+                    | _ -> Some {consts=[||]; blocks=[||]})
             | Type_record _ ->
               (* Format.eprintf "XXX Type_record@."; *)
               Some {consts=[||]; blocks=[||]}
@@ -2913,7 +2927,36 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
               (* Format.eprintf "XXX Type_open@."; *)
               Some {consts=[||]; blocks=[||]} in
           names
+        | _ -> assert false in *)
+
+
+      let names = match (Btype.repr pat.pat_type).desc with
+        | Tconstr (path, _, _) ->
+          let names = match Env.find_type path pat.pat_env with
+            | {type_kind = Type_variant cstrs} ->
+              names_from_type_variant cstrs
+            | {type_kind = Type_abstract; type_manifest = Some t} ->
+              ( match (Ctype.unalias t).desc with
+                | Tconstr (path1, _, _) ->
+                  (* Format.eprintf "XXX path:%s@." (Path.name path);
+                  Format.eprintf "XXX path1:%s@." (Path.name path1); *)
+                  ( match Env.find_type path1 pat.pat_env with
+                    | {type_kind = Type_variant cstrs1} ->
+                      names_from_type_variant cstrs1
+                    | _ -> Some {consts=[||]; blocks=[||]})
+                | _ -> Some {consts=[||]; blocks=[||]})
+            | {type_kind = Type_abstract; type_manifest = None} ->
+              (* Format.eprintf "XXX Type_abstract@."; *)
+              Some {consts=[||]; blocks=[||]}
+            | {type_kind = Type_record _} ->
+              (* Format.eprintf "XXX Type_record@."; *)
+              Some {consts=[||]; blocks=[||]}
+            | {type_kind = Type_open } ->
+              (* Format.eprintf "XXX Type_open@."; *)
+              Some {consts=[||]; blocks=[||]} in
+          names
         | _ -> assert false in
+
       compile_test
         (compile_match repr partial) partial
         divide_constructor (combine_constructor names pat.pat_loc arg pat cstr partial)
