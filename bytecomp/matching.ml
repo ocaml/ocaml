@@ -2900,36 +2900,6 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         Some {consts = consts |> List.rev |> Array.of_list;
               blocks = blocks |> List.rev |> Array.of_list } in
 
-
-      (* let names = match (Btype.repr pat.pat_type).desc with
-        | Tconstr (path, _, _) ->
-          let names = match (Env.find_type path pat.pat_env).type_kind with
-            | Type_variant cstrs ->
-              names_from_type_variant cstrs
-            | Type_abstract ->
-              (match (Env.find_type path pat.pat_env).type_manifest with
-                | None -> Some {consts=[||]; blocks=[||]}
-                | Some t ->
-                  match (Ctype.unalias t).desc with
-                    | Tconstr (path1, _, _) ->
-                      (* Format.eprintf "XXX path:%s@." (Path.name path);
-                      Format.eprintf "XXX path1:%s@." (Path.name path1); *)
-                      let names = match (Env.find_type path1 pat.pat_env).type_kind with
-                        | Type_variant cstrs1 ->
-                          names_from_type_variant cstrs1
-                        | _ -> Some {consts=[||]; blocks=[||]} in
-                      names
-                    | _ -> Some {consts=[||]; blocks=[||]})
-            | Type_record _ ->
-              (* Format.eprintf "XXX Type_record@."; *)
-              Some {consts=[||]; blocks=[||]}
-            | Type_open ->
-              (* Format.eprintf "XXX Type_open@."; *)
-              Some {consts=[||]; blocks=[||]} in
-          names
-        | _ -> assert false in *)
-
-
       let names = match (Btype.repr pat.pat_type).desc with
         | Tconstr (path, _, _) ->
           let names = match Env.find_type path pat.pat_env with
