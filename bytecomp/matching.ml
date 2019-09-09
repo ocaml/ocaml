@@ -2883,7 +2883,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (divide_record lbl.lbl_all (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_constant cst ->
-      let names = Some {consts=[||]; blocks=[||]} in
+      let names = None in
       compile_test
         (compile_match repr partial) partial
         divide_constant
@@ -2919,7 +2919,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         divide_constructor (combine_constructor names pat.pat_loc arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
-      let names = Some {consts=[||]; blocks=[||]} in
+      let names = None in
       let kind = Typeopt.array_pattern_kind pat in
       compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array names pat.pat_loc arg kind partial)
@@ -2929,7 +2929,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (divide_lazy (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_variant(lab, _, row) ->
-      let names = Some {consts=[||]; blocks=[||]} in
+      let names = None in
       compile_test (compile_match repr partial) partial
         (divide_variant !row)
         (combine_variant names pat.pat_loc !row arg partial)
