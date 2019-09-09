@@ -1,5 +1,6 @@
 (* TEST
    include testing
+   compare_programs = "false"
 *)
 
 (*

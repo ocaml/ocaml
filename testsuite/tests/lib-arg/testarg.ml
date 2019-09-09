@@ -1,4 +1,5 @@
 (* TEST
+   compare_programs = "false"
 *)
 
 let current = ref 0;;
