@@ -27,12 +27,7 @@ module Head : sig
     | Array of int
     | Lazy
 
-  type t
-
-  val desc : t -> desc
-  val env : t -> Env.t
-  val loc : t -> Location.t
-  val typ : t -> Types.type_expr
+  type t = desc pattern_data
 
   val arity : t -> int
 
@@ -43,13 +38,6 @@ module Head : sig
 
   (** reconstructs a pattern, putting wildcards as sub-patterns. *)
   val to_omega_pattern : t -> pattern
-
-  val make
-    :  loc:Location.t
-    -> typ:Types.type_expr
-    -> env:Env.t
-    -> desc
-    -> t
 
   val omega : t
 

@@ -150,14 +150,14 @@ let rec expand_record p =
   | _ -> p
 
 let expand_record_head head =
-  match Patterns.Head.desc head with
-  | Record _ ->
+  match head.pat_desc with
+  | Patterns.Head.Record _ ->
       head |> Patterns.Head.to_omega_pattern |> expand_record
       |> Patterns.Head.deconstruct |> fst
   | _ -> head
 
 let head_loc ~scopes head =
-  Scoped_location.of_location ~scopes (Patterns.Head.loc head)
+  Scoped_location.of_location ~scopes head.pat_loc
 
 type 'a clause = 'a * lambda
 
@@ -437,7 +437,8 @@ let matcher discr (p : Simple.pattern) rem =
     else
       no ()
   in
-  match (Patterns.Head.desc discr, Patterns.Head.desc ph) with
+  let open Patterns.Head in
+  match (discr.pat_desc, ph.pat_desc) with
   | Any, _ -> rem
   | ( ( Constant _ | Construct _ | Variant _ | Lazy | Array _ | Record _
       | Tuple _ ),
@@ -1137,8 +1138,8 @@ let rec what_is_cases ~skip_any cases =
   | [] -> Patterns.Head.omega
   | ((p, _), _) :: rem -> (
       let head = Simple.head p in
-      match Patterns.Head.desc head with
-      | Any when skip_any -> what_is_cases ~skip_any rem
+      match head.pat_desc with
+      | Patterns.Head.Any when skip_any -> what_is_cases ~skip_any rem
       | _ -> head
     )
 
@@ -1154,7 +1155,8 @@ let pm_free_variables { cases } =
 (* Basic grouping predicates *)
 
 let can_group discr pat =
-  match (Patterns.Head.desc discr, Patterns.Head.desc (Simple.head pat)) with
+  let open Patterns.Head in
+  match (discr.pat_desc, (Simple.head pat).pat_desc) with
   | Any, Any
   | Constant (Const_int _), Constant (Const_int _)
   | Constant (Const_char _), Constant (Const_char _)
@@ -1202,7 +1204,7 @@ let rec omega_like p =
   | _ -> false
 
 let simple_omega_like p =
-  match Patterns.Head.desc (Simple.head p) with
+  match (Simple.head p).pat_desc with
   | Any -> true
   | _ -> false
 
@@ -1422,8 +1424,8 @@ and split_no_or cls args def k =
         insert_split group_discr yes no def k
   and insert_split group_discr yes no def k =
     let precompile_group =
-      match Patterns.Head.desc group_discr with
-      | Any -> precompile_var
+      match group_discr.pat_desc with
+      | Patterns.Head.Any -> precompile_var
       | _ -> do_not_precompile
     in
     match no with
@@ -1435,8 +1437,8 @@ and split_no_or cls args def k =
           (Default_environment.cons matrix idef def)
           ((idef, next) :: nexts)
   and should_split group_discr =
-    match Patterns.Head.desc group_discr with
-    | Construct { cstr_tag = Cstr_extension _ } ->
+    match group_discr.pat_desc with
+    | Patterns.Head.Construct { cstr_tag = Cstr_extension _ } ->
         (* it is unlikely that we will raise anything, so we split now *)
         true
     | _ -> false
@@ -1739,8 +1741,8 @@ let get_pat_args_constr p rem =
 
 let get_expr_args_constr ~scopes head (arg, _mut) rem =
   let cstr =
-    match Patterns.Head.desc head with
-    | Construct cstr -> cstr
+    match head.pat_desc with
+    | Patterns.Head.Construct cstr -> cstr
     | _ -> fatal_error "Matching.get_expr_args_constr"
   in
   let loc = head_loc ~scopes head in
@@ -2024,7 +2026,8 @@ let get_pat_args_record num_fields p rem =
 let get_expr_args_record ~scopes head (arg, _mut) rem =
   let loc = head_loc ~scopes head in
   let all_labels =
-    match Patterns.Head.desc head with
+    let open Patterns.Head in
+    match head.pat_desc with
     | Record (lbl :: _) -> lbl.lbl_all
     | Record []
     | _ ->
@@ -2078,7 +2081,8 @@ let get_pat_args_array p rem =
 
 let get_expr_args_array ~scopes kind head (arg, _mut) rem =
   let len =
-    match Patterns.Head.desc head with
+    let open Patterns.Head in
+    match head.pat_desc with
     | Array len -> len
     | _ -> assert false
   in
@@ -3230,7 +3234,8 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       let ph = what_is_cases pm.cases in
       let pomega = Patterns.Head.to_omega_pattern ph in
       let ploc = head_loc ~scopes ph in
-      match Patterns.Head.desc ph with
+      let open Patterns.Head in
+      match ph.pat_desc with
       | Any ->
           compile_no_test ~scopes
             divide_var
@@ -3254,8 +3259,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
           compile_test
             (compile_match ~scopes repr partial)
             partial (divide_constructor ~scopes)
-            (combine_constructor ploc arg
-               (Patterns.Head.env ph) cstr partial)
+            (combine_constructor ploc arg ph.pat_env cstr partial)
             ctx pm
       | Array _ ->
           let kind = Typeopt.array_pattern_kind pomega in

@@ -117,8 +117,9 @@ let extra_pat =
    check that every other head pattern in the column is coherent with that one.
 *)
 let all_coherent column =
+  let open Patterns.Head in
   let coherent_heads hp1 hp2 =
-    match Patterns.Head.desc hp1, Patterns.Head.desc hp2 with
+    match hp1.pat_desc, hp2.pat_desc with
     | Construct c, Construct c' ->
       c.cstr_consts = c'.cstr_consts
       && c.cstr_nonconsts = c'.cstr_nonconsts
@@ -151,11 +152,11 @@ let all_coherent column =
     | _, _ -> false
   in
   match
-    List.find (fun head_pat ->
-      match Patterns.Head.desc head_pat with
-      | Any -> false
-      | _ -> true
-    ) column
+    List.find
+      (function
+       | { pat_desc = Any } -> false
+       | _ -> true)
+      column
   with
   | exception Not_found ->
     (* only omegas on the column: the column is coherent. *)
@@ -233,8 +234,8 @@ let first_column simplified_matrix =
 let is_absent tag row = Btype.row_field tag !row = Rabsent
 
 let is_absent_pat d =
-  match Patterns.Head.desc d with
-  | Variant { tag; cstr_row; _ } -> is_absent tag cstr_row
+  match d.pat_desc with
+  | Patterns.Head.Variant { tag; cstr_row; _ } -> is_absent tag cstr_row
   | _ -> false
 
 let const_compare x y =
@@ -353,7 +354,8 @@ let get_constructor_type_path ty tenv =
 
 (* Check top matching *)
 let simple_match d h =
-  match Patterns.Head.desc d, Patterns.Head.desc h with
+  let open Patterns.Head in
+  match d.pat_desc, h.pat_desc with
   | Construct c1, Construct c2 ->
       Types.equal_tag c1.cstr_tag c2.cstr_tag
   | Variant { tag = t1; _ }, Variant { tag = t2 } ->
@@ -369,10 +371,12 @@ let simple_match d h =
 
 
 (* extract record fields as a whole *)
-let record_arg ph = match Patterns.Head.desc ph with
-| Any -> []
-| Record args -> args
-| _ -> fatal_error "Parmatch.as_record"
+let record_arg ph =
+  let open Patterns.Head in
+  match ph.pat_desc with
+  | Any -> []
+  | Record args -> args
+  | _ -> fatal_error "Parmatch.as_record"
 
 
 let extract_fields lbls arg =
@@ -384,26 +388,28 @@ let extract_fields lbls arg =
   List.map (fun lbl -> get_field lbl.lbl_pos arg) lbls
 
 (* Build argument list when p2 >= p1, where p1 is a simple pattern *)
-let simple_match_args discr head args = match Patterns.Head.desc head with
-| Constant _ -> []
-| Construct _
-| Variant _
-| Tuple _
-| Array _
-| Lazy -> args
-| Record lbls ->  extract_fields (record_arg discr) (List.combine lbls args)
-| Any ->
-    begin match Patterns.Head.desc discr with
-    | Construct cstr -> omegas cstr.cstr_arity
-    | Variant { has_arg = true }
-    | Lazy -> [omega]
-    | Record lbls ->  omega_list lbls
-    | Array len
-    | Tuple len -> omegas len
-    | Variant { has_arg = false }
-    | Any
-    | Constant _ -> []
-    end
+let simple_match_args discr head args =
+  let open Patterns.Head in
+  match head.pat_desc with
+  | Constant _ -> []
+  | Construct _
+  | Variant _
+  | Tuple _
+  | Array _
+  | Lazy -> args
+  | Record lbls ->  extract_fields (record_arg discr) (List.combine lbls args)
+  | Any ->
+      begin match discr.pat_desc with
+      | Construct cstr -> Patterns.omegas cstr.cstr_arity
+      | Variant { has_arg = true }
+      | Lazy -> [Patterns.omega]
+      | Record lbls ->  omega_list lbls
+      | Array len
+      | Tuple len -> Patterns.omegas len
+      | Variant { has_arg = false }
+      | Any
+      | Constant _ -> []
+      end
 
 (* Consider a pattern matrix whose first column has been simplified to contain
    only _ or a head constructor
@@ -433,10 +439,11 @@ let simple_match_args discr head args = match Patterns.Head.desc head with
    stop and return our accumulator.
 *)
 let discr_pat q pss =
+  let open Patterns.Head in
   let rec refine_pat acc = function
     | [] -> acc
     | ((head, _), _) :: rows ->
-      match Patterns.Head.desc head with
+      match head.pat_desc with
       | Any -> refine_pat acc rows
       | Tuple _ | Lazy -> head
       | Record lbls ->
@@ -454,15 +461,12 @@ let discr_pat q pss =
               lbl :: r
           ) lbls (record_arg acc)
         in
-        let d =
-          let open Patterns.Head in
-          make ~loc:(loc head) ~typ:(typ head) ~env:(env head) (Record fields)
-        in
+        let d = { head with pat_desc = Record fields } in
         refine_pat d rows
       | _ -> acc
   in
-  let q, _ = Patterns.Head.deconstruct q in
-  match Patterns.Head.desc q with
+  let q, _ = deconstruct q in
+  match q.pat_desc with
   (* short-circuiting: clearly if we have anything other than [Record] or
      [Any] to start with, we're not going to be able refine at all. So
      there's no point going over the matrix. *)
@@ -653,8 +657,8 @@ let build_specialized_submatrices ~extend_row discr rows =
   let rec form_groups constr_groups omega_tails = function
     | [] -> (constr_groups, omega_tails)
     | ((head, args), tail) :: rest ->
-        match Patterns.Head.desc head with
-        | Any ->
+        match head.pat_desc with
+        | Patterns.Head.Any ->
             (* note that calling insert_omega here would be wrong
                as some groups may not have been formed yet, if the
                first row with this head pattern comes after in the list *)
@@ -666,7 +670,8 @@ let build_specialized_submatrices ~extend_row discr rows =
 
   let constr_groups, omega_tails =
     let initial_constr_group =
-      match Patterns.Head.desc discr with
+      let open Patterns.Head in
+      match discr.pat_desc with
       | Record _ | Tuple _ | Lazy ->
         (* [discr] comes from [discr_pat], and in this case subsumes any of the
            patterns we could find on the first column of [rows]. So it is better
@@ -700,8 +705,8 @@ let set_last a =
 let mark_partial =
   let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty in
   List.map (fun ((hp, _), _ as ps) ->
-    match Patterns.Head.desc hp with
-    | Any -> ps
+    match hp.pat_desc with
+    | Patterns.Head.Any -> ps
     | _ -> set_last zero ps
   )
 
@@ -733,7 +738,8 @@ let close_variant env row =
 let full_match closing env =  match env with
 | [] -> false
 | (discr, _) :: _ ->
-  match Patterns.Head.desc discr with
+  let open Patterns.Head in
+  match discr.pat_desc with
   | Any -> assert false
   | Construct { cstr_tag = Cstr_extension _ ; _ } -> false
   | Construct c -> List.length env = c.cstr_consts + c.cstr_nonconsts
@@ -741,7 +747,7 @@ let full_match closing env =  match env with
       let fields =
         List.map
           (fun (d, _) ->
-            match Patterns.Head.desc d with
+            match d.pat_desc with
             | Variant { tag } -> tag
             | _ -> assert false)
           env
@@ -778,11 +784,10 @@ let should_extend ext env = match ext with
 | Some ext -> begin match env with
   | [] -> assert false
   | (p,_)::_ ->
-      begin match Patterns.Head.desc p with
+      let open Patterns.Head in
+      begin match p.pat_desc with
       | Construct {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)} ->
-          let path =
-            get_constructor_type_path (Patterns.Head.typ p) (Patterns.Head.env p)
-          in
+          let path = get_constructor_type_path p.pat_type p.pat_env in
           Path.same path ext
       | Construct {cstr_tag=(Cstr_extension _)} -> false
       | Constant _ | Tuple _ | Variant _ | Record _ | Array _ | Lazy -> false
@@ -880,9 +885,10 @@ let rec get_variant_constructors env ty =
 
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags =
-  let c = match Patterns.Head.desc p with Construct c -> c | _ -> assert false in
+  let open Patterns.Head in
+  let c = match p.pat_desc with Construct c -> c | _ -> assert false in
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-  let constrs = get_variant_constructors (Patterns.Head.env p) c.cstr_res in
+  let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
     List.filter
       (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
@@ -892,10 +898,11 @@ let complete_constrs p all_tags =
   const @ nonconst
 
 let build_other_constrs env p =
-  match Patterns.Head.desc p with
+  let open Patterns.Head in
+  match p.pat_desc with
   | Construct { cstr_tag = Cstr_constant _ | Cstr_block _ } ->
       let get_tag q =
-        match Patterns.Head.desc q with
+        match q.pat_desc with
         | Construct c -> c.cstr_tag
         | _ -> fatal_error "Parmatch.get_tag" in
       let all_tags =  List.map (fun (p,_) -> get_tag p) env in
@@ -911,11 +918,11 @@ let complete_constrs p all_tags =
 (* Auxiliary for build_other *)
 
 let build_other_constant proj make first next p env =
-  let all = List.map (fun (p, _) -> proj (Patterns.Head.desc p)) env in
+  let all = List.map (fun (p, _) -> proj p.pat_desc) env in
   let rec try_const i =
     if List.mem i all
     then try_const (next i)
-    else make_pat (make i) (Patterns.Head.typ p) (Patterns.Head.env p)
+    else make_pat (make i) p.pat_type p.pat_env
   in try_const first
 
 (*
@@ -929,19 +936,18 @@ let build_other ext env =
   match env with
   | [] -> omega
   | (d, _) :: _ ->
-      match Patterns.Head.desc d with
+      let open Patterns.Head in
+      match d.pat_desc with
       | Construct { cstr_tag = Cstr_extension _ } ->
           (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
           make_pat
             (Tpat_var (Ident.create_local "*extension*",
-                       {txt="*extension*"; loc = Patterns.Head.loc d}))
+                       {txt="*extension*"; loc = d.pat_loc}))
             Ctype.none Env.empty
       | Construct _ ->
           begin match ext with
           | Some ext ->
-              if Path.same ext
-                   (get_constructor_type_path
-                      (Patterns.Head.typ d) (Patterns.Head.env d))
+              if Path.same ext (get_constructor_type_path d.pat_type d.pat_env)
               then
                 extra_pat
               else
@@ -953,15 +959,14 @@ let build_other ext env =
           let tags =
             List.map
               (fun (d, _) ->
-                match Patterns.Head.desc d with
+                match d.pat_desc with
                 | Variant { tag } -> tag
                 | _ -> assert false)
               env
             in
             let make_other_pat tag const =
-              let arg = if const then None else Some omega in
-              make_pat (Tpat_variant(tag, arg, cstr_row))
-                (Patterns.Head.typ d) (Patterns.Head.env d)
+              let arg = if const then None else Some Patterns.omega in
+              make_pat (Tpat_variant(tag, arg, cstr_row)) d.pat_type d.pat_env
             in
             let row = type_row () in
             begin match
@@ -985,14 +990,13 @@ let build_other ext env =
             | pat::other_pats ->
                 List.fold_left
                   (fun p_res pat ->
-                    make_pat (Tpat_or (pat, p_res, None))
-                      (Patterns.Head.typ d) (Patterns.Head.env d))
+                    make_pat (Tpat_or (pat, p_res, None)) d.pat_type d.pat_env)
                   pat other_pats
             end
       | Constant Const_char _ ->
           let all_chars =
             List.map
-              (fun (p,_) -> match Patterns.Head.desc p with
+              (fun (p,_) -> match p.pat_desc with
               | Constant (Const_char c) -> c
               | _ -> assert false)
               env
@@ -1004,11 +1008,10 @@ let build_other ext env =
               if List.mem ci all_chars then
                 find_other (i+1) imax
               else
-                make_pat (Tpat_constant (Const_char ci))
-                  (Patterns.Head.typ d) (Patterns.Head.env d)
+                make_pat (Tpat_constant (Const_char ci)) d.pat_type d.pat_env
           in
           let rec try_chars = function
-            | [] -> omega
+            | [] -> Patterns.omega
             | (c1,c2) :: rest ->
                 try
                   find_other (Char.code c1) (Char.code c2)
@@ -1055,18 +1058,16 @@ let build_other ext env =
       | Array _ ->
           let all_lengths =
             List.map
-              (fun (p,_) -> match Patterns.Head.desc p with
+              (fun (p,_) -> match p.pat_desc with
               | Array len -> len
               | _ -> assert false)
               env in
           let rec try_arrays l =
             if List.mem l all_lengths then try_arrays (l+1)
             else
-              make_pat
-                (Tpat_array (omegas l))
-                (Patterns.Head.typ d) (Patterns.Head.env d) in
+              make_pat (Tpat_array (omegas l)) d.pat_type d.pat_env in
           try_arrays 0
-      | _ -> omega
+      | _ -> Patterns.omega
 
 let rec has_instance p = match p.pat_desc with
   | Tpat_variant (l,_,r) when is_absent l r -> false
@@ -1197,13 +1198,13 @@ let rec list_satisfying_vectors pss qs =
                   )
                 in
                 if full_match false constrs then for_constrs () else
-                begin match Patterns.Head.desc p with
+                begin match p.pat_desc with
                 | Construct _ ->
                     (* activate this code for checking non-gadt constructors *)
                     wild default (build_other_constrs constrs p)
                     @ for_constrs ()
                 | _ ->
-                    wild default omega
+                    wild default Patterns.omega
                 end
           end
       | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
@@ -1437,7 +1438,7 @@ let rec pressure_variants tdefs = function
               | [], _
               | _, None -> ()
               | (d, _) :: _, Some env ->
-                match Patterns.Head.desc d with
+                match d.pat_desc with
                 | Variant { type_row; _ } ->
                   let row = type_row () in
                   if Btype.row_fixed row
