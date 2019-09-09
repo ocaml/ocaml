@@ -2,6 +2,8 @@ open Asttypes
 open Types
 open Typedtree
 
+(* useful pattern auxiliary functions *)
+
 let omega = {
   pat_desc = Tpat_any;
   pat_loc = Location.none;
@@ -15,6 +17,95 @@ let rec omegas i =
   if i <= 0 then [] else omega :: omegas (i-1)
 
 let omega_list l = List.map (fun _ -> omega) l
+
+(* "views" on patterns are polymorphic variants
+   that allow to restrict the set of pattern constructors
+   statically allowed at a particular place *)
+
+type simple_view = [
+  | `Any
+  | `Constant of constant
+  | `Tuple of pattern list
+  | `Construct of Longident.t loc * constructor_description * pattern list
+  | `Variant of label * pattern option * row_desc ref
+  | `Record of (Longident.t loc * label_description * pattern) list * closed_flag
+  | `Array of pattern list
+  | `Lazy of pattern
+]
+
+type half_simple_view = [
+  | simple_view
+  | `Or of pattern * pattern * row_desc option
+]
+type general_view = [
+  | half_simple_view
+  | `Var of Ident.t * string loc
+  | `Alias of pattern * Ident.t * string loc
+]
+
+module Non_empty_row = struct
+  type 'a t = 'a * Typedtree.pattern list
+
+  let of_initial = function
+    | [] -> assert false
+    | pat :: patl -> (pat, patl)
+
+  let map_first f (p, patl) = (f p, patl)
+end
+
+module General : sig
+  type pattern = general_view pattern_data
+  
+  val view : Typedtree.pattern -> pattern
+  val erase : [< general_view ] pattern_data -> Typedtree.pattern
+end = struct
+  type pattern = general_view pattern_data
+  
+  let view_desc = function
+    | Tpat_any ->
+       `Any
+    | Tpat_var (id, str) ->
+       `Var (id, str)
+    | Tpat_alias (p, id, str) ->
+       `Alias (p, id, str)
+    | Tpat_constant cst ->
+       `Constant cst
+    | Tpat_tuple ps ->
+       `Tuple ps
+    | Tpat_construct (cstr, cstr_descr, args) ->
+       `Construct (cstr, cstr_descr, args)
+    | Tpat_variant (cstr, arg, row_desc) ->
+       `Variant (cstr, arg, row_desc)
+    | Tpat_record (fields, closed) ->
+       `Record (fields, closed)
+    | Tpat_array ps -> `Array ps
+    | Tpat_or (p, q, row_desc) -> `Or (p, q, row_desc)
+    | Tpat_lazy p -> `Lazy p
+
+  let view p : pattern =
+    { p with pat_desc = view_desc p.pat_desc }
+
+  let erase_desc = function
+    | `Any -> Tpat_any
+    | `Var (id, str) -> Tpat_var (id, str)
+    | `Alias (p, id, str) -> Tpat_alias (p, id, str)
+    | `Constant cst -> Tpat_constant cst
+    | `Tuple ps -> Tpat_tuple ps
+    | `Construct (cstr, cst_descr, args) ->
+       Tpat_construct (cstr, cst_descr, args)
+    | `Variant (cstr, arg, row_desc) ->
+       Tpat_variant (cstr, arg, row_desc)
+    | `Record (fields, closed) ->
+       Tpat_record (fields, closed)
+    | `Array ps -> Tpat_array ps
+    | `Or (p, q, row_desc) -> Tpat_or (p, q, row_desc)
+    | `Lazy p -> Tpat_lazy p
+
+  let erase p =
+    { p with pat_desc = erase_desc p.pat_desc }
+end
+
+(* the head constructor of a simple pattern *)
 
 module Head : sig
   type desc =

@@ -11,6 +11,43 @@ val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
 (** [List.map (fun _ -> omega)] *)
 
+type simple_view = [
+  | `Any
+  | `Constant of constant
+  | `Tuple of pattern list
+  | `Construct of Longident.t loc * constructor_description * pattern list
+  | `Variant of label * pattern option * row_desc ref
+  | `Record of (Longident.t loc * label_description * pattern) list * closed_flag
+  | `Array of pattern list
+  | `Lazy of pattern
+]
+
+type half_simple_view = [
+  | simple_view
+  | `Or of pattern * pattern * row_desc option
+]
+type general_view = [
+  | half_simple_view
+  | `Var of Ident.t * string loc
+  | `Alias of pattern * Ident.t * string loc
+]
+
+module Non_empty_row : sig
+  type 'a t = 'a * Typedtree.pattern list
+
+  val of_initial : Typedtree.pattern list -> Typedtree.pattern t
+  (** 'assert false' on empty rows *)
+
+  val map_first : ('a -> 'b) -> 'a t -> 'b t
+end
+
+module General : sig
+  type pattern = general_view pattern_data
+
+  val view : Typedtree.pattern -> pattern
+  val erase : [< general_view ] pattern_data -> Typedtree.pattern
+end
+
 module Head : sig
   type desc =
     | Any
