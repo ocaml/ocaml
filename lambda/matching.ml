@@ -167,12 +167,6 @@ let map_on_rows f = List.map (map_on_row f)
 
 module Non_empty_row = Patterns.Non_empty_row
 
-type simple_view = Patterns.simple_view
-
-type half_simple_view = Patterns.half_simple_view
-
-type general_view = Patterns.general_view
-
 module General = struct
   include Patterns.General
 
@@ -180,6 +174,7 @@ module General = struct
 end
 
 module Half_simple : sig
+  include module type of Patterns.Half_simple
   (** Half-simplified patterns are patterns where:
         - records are expanded so that they possess all fields
         - aliases are removed and replaced by bindings in actions.
@@ -201,13 +196,11 @@ module Half_simple : sig
       In particular, or-patterns may still occur in the leading column,
       so this is only a "half-simplification". *)
 
-  type pattern = half_simple_view pattern_data
-
   type nonrec clause = pattern Non_empty_row.t clause
 
   val of_clause : arg:lambda -> General.clause -> clause
 end = struct
-  type pattern = half_simple_view pattern_data
+  include Patterns.Half_simple
 
   type nonrec clause = pattern Non_empty_row.t clause
 
@@ -232,10 +225,10 @@ end = struct
   (* Explode or-patterns and turn aliases into bindings in actions *)
   let of_clause ~arg cl =
     let rec aux (((p, patl), action) : General.clause) : clause =
-      let continue p (view : general_view) : clause =
+      let continue p (view : General.view) : clause =
         aux (({ p with pat_desc = view }, patl), action)
       in
-      let stop p (view : half_simple_view) : clause =
+      let stop p (view : view) : clause =
         (({ p with pat_desc = view }, patl), action)
       in
       match p.pat_desc with
@@ -266,7 +259,7 @@ end
 exception Cannot_flatten
 
 module Simple : sig
-  type pattern = simple_view pattern_data
+  include module type of Patterns.Simple
 
   type nonrec clause = pattern Non_empty_row.t clause
 
@@ -280,12 +273,11 @@ module Simple : sig
     clause list ->
     clause list
 end = struct
-  type pattern = simple_view pattern_data
+  include Patterns.Simple
 
   type nonrec clause = pattern Non_empty_row.t clause
 
-  let head p =
-    fst (Patterns.Head.deconstruct (General.erase (p :> General.pattern)))
+  let head p = fst (Patterns.Head.deconstruct (Patterns.General.erase p))
 
   let alpha env (p : pattern) : pattern =
     let alpha_pat env p = Typedtree.alpha_pat env p in
@@ -330,7 +322,7 @@ end = struct
           explode
             { p with pat_desc = `Alias (Patterns.omega, id, str) }
             aliases rem
-      | #simple_view as view ->
+      | #view as view ->
           let env = mk_alpha_env arg aliases vars in
           ( (alpha env { p with pat_desc = view }, patl),
             mk_action ~vars:(List.map snd env) )
@@ -529,7 +521,7 @@ end = struct
               filter_rec ((left, p1, right) :: (left, p2, right) :: rem)
           | `Alias (p, _, _) -> filter_rec ((left, p, right) :: rem)
           | `Var _ -> filter_rec ((left, Patterns.omega, right) :: rem)
-          | #simple_view as view -> (
+          | #Simple.view as view -> (
               let p = { p with pat_desc = view } in
               match matcher head p right with
               | exception NoMatch -> filter_rec rem
@@ -655,7 +647,7 @@ end = struct
           | `Alias (p, _, _) -> filter_rec ((p, ps) :: rem)
           | `Var _ -> filter_rec ((Patterns.omega, ps) :: rem)
           | `Or (p1, p2, _) -> filter_rec_or p1 p2 ps rem
-          | #simple_view as view -> (
+          | #Simple.view as view -> (
               let p = { p with pat_desc = view } in
               match matcher p ps with
               | exception NoMatch -> filter_rec rem
@@ -1291,7 +1283,7 @@ let rec split_or argo (cls : Half_simple.clause list) args def =
         do_split rev_before rev_ors (cl :: rev_no) rem
     | (((p, ps), act) as cl) :: rem -> (
         match p.pat_desc with
-        | #simple_view as view when safe_before cl rev_ors ->
+        | #Simple.view as view when safe_before cl rev_ors ->
             do_split
               ((({ p with pat_desc = view }, ps), act) :: rev_before)
               rev_ors rev_no rem
@@ -1469,7 +1461,7 @@ and precompile_or argo (cls : Simple.clause list) ors args def k =
     | [] -> ([], [])
     | ((p, patl), action) :: rem -> (
         match p.pat_desc with
-        | #simple_view as view ->
+        | #Simple.view as view ->
             let new_ord, new_to_catch = do_cases rem in
             ( (({ p with pat_desc = view }, patl), action) :: new_ord,
               new_to_catch )
