@@ -240,7 +240,7 @@ type lambda =
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch * switch_names option
+  | Lswitch of lambda * lambda_switch
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of lambda * (string * lambda) list * lambda option * Location.t
@@ -261,7 +261,8 @@ and lambda_switch =
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
-    sw_failaction : lambda option}      (* Action to take if failure *)
+    sw_failaction : lambda option;      (* Action to take if failure *)
+    sw_names: switch_names option }
 and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
