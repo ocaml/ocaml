@@ -2900,31 +2900,28 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         Some {consts = consts |> List.rev |> Array.of_list;
               blocks = blocks |> List.rev |> Array.of_list } in
 
+      let rec resolve_path n path =
+        match Env.find_type path pat.pat_env with
+        | {type_kind = Type_variant cstrs} ->
+          names_from_type_variant cstrs
+        | {type_kind = Type_abstract; type_manifest = Some t} ->
+          ( match (Ctype.unalias t).desc with
+            | Tconstr (pathn, _, _) ->
+              (* Format.eprintf "XXX path%d:%s path%d:%s@." n (Path.name path) (n+1) (Path.name pathn); *)
+              resolve_path (n+1) pathn
+            | _ -> assert false)
+        | {type_kind = Type_abstract; type_manifest = None} ->
+          (* Format.eprintf "XXX Type_abstract@."; *)
+          Some {consts=[||]; blocks=[||]}
+        | {type_kind = Type_record _} ->
+          (* Format.eprintf "XXX Type_record@."; *)
+          Some {consts=[||]; blocks=[||]}
+        | {type_kind = Type_open } ->
+          (* Format.eprintf "XXX Type_open@."; *)
+          Some {consts=[||]; blocks=[||]} in
+
       let names = match (Btype.repr pat.pat_type).desc with
-        | Tconstr (path, _, _) ->
-          let names = match Env.find_type path pat.pat_env with
-            | {type_kind = Type_variant cstrs} ->
-              names_from_type_variant cstrs
-            | {type_kind = Type_abstract; type_manifest = Some t} ->
-              ( match (Ctype.unalias t).desc with
-                | Tconstr (path1, _, _) ->
-                  (* Format.eprintf "XXX path:%s@." (Path.name path);
-                  Format.eprintf "XXX path1:%s@." (Path.name path1); *)
-                  ( match Env.find_type path1 pat.pat_env with
-                    | {type_kind = Type_variant cstrs1} ->
-                      names_from_type_variant cstrs1
-                    | _ -> Some {consts=[||]; blocks=[||]})
-                | _ -> Some {consts=[||]; blocks=[||]})
-            | {type_kind = Type_abstract; type_manifest = None} ->
-              (* Format.eprintf "XXX Type_abstract@."; *)
-              Some {consts=[||]; blocks=[||]}
-            | {type_kind = Type_record _} ->
-              (* Format.eprintf "XXX Type_record@."; *)
-              Some {consts=[||]; blocks=[||]}
-            | {type_kind = Type_open } ->
-              (* Format.eprintf "XXX Type_open@."; *)
-              Some {consts=[||]; blocks=[||]} in
-          names
+        | Tconstr (path, _, _) -> resolve_path 0 path
         | _ -> assert false in
 
       compile_test
