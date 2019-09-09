@@ -38,7 +38,7 @@ module Env : sig
 
   val new_unit_descr : t -> Export_id.t
 
-  val is_recursive_symbol : t -> Symbol.t -> bool
+  val is_symbol_being_defined : t -> Symbol.t -> bool
 
   module Global : sig
     (* "Global" as in "without local variable bindings". *)
@@ -47,8 +47,7 @@ module Env : sig
     val create_empty : unit -> t
 
     val add_symbol : t -> Symbol.t -> Export_id.t -> t
-    val new_symbol : t -> Symbol.t -> is_recursive:bool -> Export_id.t * t
-    val reset_recursive_symbols : t -> t
+    val new_symbol : t -> Symbol.t -> Export_id.t * t
 
     val symbol_to_export_id_map : t -> Export_id.t Symbol.Map.t
     val export_id_to_descr_map : t -> Export_info.descr Export_id.Map.t
@@ -56,14 +55,13 @@ module Env : sig
 
   (** Creates a new environment, sharing the mapping from export IDs to
       export descriptions with the given global environment. *)
-  val empty_of_global : Global.t -> t
+  val empty_of_global : symbols_being_defined:Symbol.Set.t -> Global.t -> t
 end = struct
   let fresh_id () = Export_id.create (Compilenv.current_unit ())
 
   module Global = struct
     type t =
       { sym : Export_id.t Symbol.Map.t;
-        rec_symbols : Symbol.Set.t;
         (* Note that [ex_table]s themselves are shared (hence [ref] and not
            [mutable]). *)
         ex_table : Export_info.descr Export_id.Map.t ref;
@@ -72,7 +70,6 @@ end = struct
 
     let create_empty () =
       { sym = Symbol.Map.empty;
-        rec_symbols = Symbol.Set.empty;
         ex_table = ref Export_id.Map.empty;
         closure_table = ref Closure_id.Map.empty;
       }
@@ -85,17 +82,9 @@ end = struct
       end;
       { t with sym = Symbol.Map.add sym export_id t.sym }
 
-    let new_symbol t sym ~is_recursive =
+    let new_symbol t sym =
       let export_id = fresh_id () in
-      let t =
-        if is_recursive then
-          { t with rec_symbols = Symbol.Set.add sym t.rec_symbols; }
-        else t
-      in
       export_id, add_symbol t sym export_id
-
-    let reset_recursive_symbols t =
-      { t with rec_symbols = Symbol.Set.empty; }
 
     let symbol_to_export_id_map t = t.sym
     let export_id_to_descr_map t = !(t.ex_table)
@@ -106,15 +95,15 @@ end = struct
   type t =
     { var : Export_info.approx Variable.Map.t;
       sym : Export_id.t Symbol.Map.t;
-      rec_symbols : Symbol.Set.t;
+      symbols_being_defined : Symbol.Set.t;
       ex_table : Export_info.descr Export_id.Map.t ref;
       closure_table: Export_id.t Closure_id.Map.t ref;
     }
 
-  let empty_of_global (env : Global.t) =
+  let empty_of_global ~symbols_being_defined (env : Global.t) =
     { var = Variable.Map.empty;
       sym = env.sym;
-      rec_symbols = env.rec_symbols;
+      symbols_being_defined;
       ex_table = env.ex_table;
       closure_table = env.closure_table;
     }
@@ -204,8 +193,8 @@ end = struct
     try Variable.Map.find var t.var with
     | Not_found -> Value_unknown
 
-  let is_recursive_symbol t sym =
-    Symbol.Set.mem sym t.rec_symbols
+  let is_symbol_being_defined t sym =
+    Symbol.Set.mem sym t.symbols_being_defined
 end
 
 let descr_of_constant (c : Flambda.const) : Export_info.descr =
@@ -421,17 +410,17 @@ let approx_of_constant_defining_value_block_field env
       (c : Flambda.constant_defining_value_block_field) : Export_info.approx =
   match c with
   | Symbol s ->
-      if Env.is_recursive_symbol env s
+      if Env.is_symbol_being_defined env s
       then Value_unknown
       else Value_symbol s
   | Const c -> Value_id (Env.new_descr env (descr_of_constant c))
 
 let describe_constant_defining_value env export_id symbol
-      (const : Flambda.constant_defining_value) =
+      ~symbols_being_defined (const : Flambda.constant_defining_value) =
   let env =
     (* Assignments of variables to export IDs are local to each constant
        defining value. *)
-    Env.empty_of_global env
+    Env.empty_of_global ~symbols_being_defined env
   in
   match const with
   | Allocated_const alloc_const ->
@@ -488,13 +477,15 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
   let rec loop env (program : Flambda.program_body) =
     match program with
     | Let_symbol (symbol, constant_defining_value, program) ->
-      let id, env = Env.Global.new_symbol env symbol ~is_recursive:false in
-      describe_constant_defining_value env id symbol constant_defining_value;
+      let id, env = Env.Global.new_symbol env symbol in
+      describe_constant_defining_value env id symbol
+        ~symbols_being_defined:(Symbol.Set.singleton symbol)
+        constant_defining_value;
       loop env program
     | Let_rec_symbol (defs, program) ->
       let env, defs =
         List.fold_left (fun (env, defs) (symbol, def) ->
-            let id, env = Env.Global.new_symbol env symbol ~is_recursive:true in
+            let id, env = Env.Global.new_symbol env symbol in
             env, ((id, symbol, def) :: defs))
           (env, []) defs
       in
@@ -506,19 +497,25 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
             | _ -> false)
           defs
       in
+      let symbols_being_defined =
+        Symbol.Set.of_list (List.map (fun (_, sym, _) -> sym) defs)
+      in
       List.iter (fun (id, symbol, def) ->
-          describe_constant_defining_value env id symbol def)
+          describe_constant_defining_value env id symbol
+            ~symbols_being_defined def)
         other_constants;
       List.iter (fun (id, symbol, def) ->
-          describe_constant_defining_value env id symbol def)
+          describe_constant_defining_value env id symbol
+            ~symbols_being_defined def)
         project_closures;
-      loop (Env.Global.reset_recursive_symbols env) program
+      loop env program
     | Initialize_symbol (symbol, tag, fields, program) ->
       let id =
         let env =
           (* Assignments of variables to export IDs are local to each
              [Initialize_symbol] construction. *)
-          Env.empty_of_global env
+          Env.empty_of_global
+            ~symbols_being_defined:(Symbol.Set.singleton symbol) env
         in
         let field_approxs = List.map (approx_of_expr env) fields in
         let descr : Export_info.descr =
