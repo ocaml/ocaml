@@ -18,31 +18,6 @@ let rec omegas i =
 
 let omega_list l = List.map (fun _ -> omega) l
 
-(* "views" on patterns are polymorphic variants
-   that allow to restrict the set of pattern constructors
-   statically allowed at a particular place *)
-
-type simple_view = [
-  | `Any
-  | `Constant of constant
-  | `Tuple of pattern list
-  | `Construct of Longident.t loc * constructor_description * pattern list
-  | `Variant of label * pattern option * row_desc ref
-  | `Record of (Longident.t loc * label_description * pattern) list * closed_flag
-  | `Array of pattern list
-  | `Lazy of pattern
-]
-
-type half_simple_view = [
-  | simple_view
-  | `Or of pattern * pattern * row_desc option
-]
-type general_view = [
-  | half_simple_view
-  | `Var of Ident.t * string loc
-  | `Alias of pattern * Ident.t * string loc
-]
-
 module Non_empty_row = struct
   type 'a t = 'a * Typedtree.pattern list
 
@@ -53,13 +28,43 @@ module Non_empty_row = struct
   let map_first f (p, patl) = (f p, patl)
 end
 
-module General : sig
-  type pattern = general_view pattern_data
-  
-  val view : Typedtree.pattern -> pattern
-  val erase : [< general_view ] pattern_data -> Typedtree.pattern
-end = struct
-  type pattern = general_view pattern_data
+(* "views" on patterns are polymorphic variants
+   that allow to restrict the set of pattern constructors
+   statically allowed at a particular place *)
+
+module Simple = struct
+  type view = [
+    | `Any
+    | `Constant of constant
+    | `Tuple of pattern list
+    | `Construct of
+        Longident.t loc * constructor_description * pattern list
+    | `Variant of label * pattern option * row_desc ref
+    | `Record of
+        (Longident.t loc * label_description * pattern) list * closed_flag
+    | `Array of pattern list
+    | `Lazy of pattern
+  ]
+
+  type pattern = view pattern_data
+end
+
+module Half_simple = struct
+  type view = [
+    | Simple.view
+    | `Or of pattern * pattern * row_desc option
+  ]
+
+  type pattern = view pattern_data
+end
+
+module General = struct
+  type view = [
+    | Half_simple.view
+    | `Var of Ident.t * string loc
+    | `Alias of pattern * Ident.t * string loc
+  ]
+  type pattern = view pattern_data
   
   let view_desc = function
     | Tpat_any ->
@@ -101,7 +106,7 @@ end = struct
     | `Or (p, q, row_desc) -> Tpat_or (p, q, row_desc)
     | `Lazy p -> Tpat_lazy p
 
-  let erase p =
+  let erase p : Typedtree.pattern =
     { p with pat_desc = erase_desc p.pat_desc }
 end
 
