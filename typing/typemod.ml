@@ -1832,6 +1832,22 @@ let modtype_of_package env loc p nl tl =
       else raise(Error(loc, env, Signature_expected))
   | exception Not_found -> assert false
 
+let type_unpack ~loc env exp =
+  match Ctype.expand_head env exp.exp_type with
+  | {desc = Tpackage (p, nl, tl)} ->
+      if List.exists (fun t -> Ctype.free_variables t <> []) tl then
+        raise (Error (loc, env, Incomplete_packed_module exp.exp_type));
+      if !Clflags.principal &&
+         not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
+      then
+        Location.prerr_warning loc
+          (Warnings.Not_principal "this module unpacking");
+      modtype_of_package env loc p nl tl
+  | {desc = Tvar _} ->
+      raise (Typecore.Error (loc, env, Typecore.Cannot_infer_signature))
+  | _ ->
+      raise (Error(loc, env, Not_a_packed_module exp.exp_type))
+
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
     let ntl =
@@ -2049,24 +2065,7 @@ and type_module_aux ~alias ~strengthen ~funct_body ~anchor env smod =
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
       end;
-      let mty =
-        match Ctype.expand_head env exp.exp_type with
-          {desc = Tpackage (p, nl, tl)} ->
-            if List.exists (fun t -> Ctype.free_variables t <> []) tl then
-              raise (Error (smod.pmod_loc, env,
-                            Incomplete_packed_module exp.exp_type));
-            if !Clflags.principal &&
-              not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
-            then
-              Location.prerr_warning smod.pmod_loc
-                (Warnings.Not_principal "this module unpacking");
-            modtype_of_package env smod.pmod_loc p nl tl
-        | {desc = Tvar _} ->
-            raise (Typecore.Error
-                     (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
-        | _ ->
-            raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
-      in
+      let mty = type_unpack ~loc:smod.pmod_loc env exp in
       if funct_body && Mtype.contains_type env mty then
         raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       rm { mod_desc = Tmod_unpack(exp, mty);
