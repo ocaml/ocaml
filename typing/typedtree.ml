@@ -38,7 +38,6 @@ and pat_extra =
   | Tpat_constraint of core_type
   | Tpat_type of Path.t * Longident.t loc
   | Tpat_open of Path.t * Longident.t loc * Env.t
-  | Tpat_unpack
 
 and pattern_desc =
     Tpat_any
@@ -56,6 +55,7 @@ and pattern_desc =
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
   | Tpat_exception of pattern
+  | Tpat_unpack of Ident.t option * string option loc * Types.module_type
 
 and expression =
   { exp_desc: expression_desc;
@@ -605,6 +605,7 @@ let iter_pattern_desc f = function
   | Tpat_exception p -> f p
   | Tpat_any
   | Tpat_var _
+  | Tpat_unpack _
   | Tpat_constant _ -> ()
 
 let map_pattern_desc f d =
@@ -626,6 +627,7 @@ let map_pattern_desc f d =
   | Tpat_or (p1,p2,path) ->
       Tpat_or (f p1, f p2, path)
   | Tpat_var _
+  | Tpat_unpack _
   | Tpat_constant _
   | Tpat_any
   | Tpat_variant (_,None,_) -> d
@@ -637,6 +639,9 @@ let idents = ref([]: (Ident.t * string loc * Types.type_expr) list)
 let rec bound_idents pat =
   match pat.pat_desc with
   | Tpat_var (id,s) -> idents := (id,s,pat.pat_type) :: !idents
+  | Tpat_unpack (Some id, s, _) ->
+    let s = { s with txt = Option.get s.txt } in
+    idents := (id,s,pat.pat_type) :: !idents
   | Tpat_alias(p, id, s) ->
       bound_idents p; idents := (id,s,pat.pat_type) :: !idents
   | Tpat_or(p1, _, _) ->
@@ -682,6 +687,10 @@ let rec alpha_pat env p = match p.pat_desc with
     with
     | Not_found -> new_p
     end
+| Tpat_unpack (Some id, s, mty) ->
+    {p with pat_desc =
+     try Tpat_unpack (Some (alpha_var env id), s, mty) with
+     | Not_found -> Tpat_any}
 | d ->
     {p with pat_desc = map_pattern_desc (alpha_pat env) d}
 

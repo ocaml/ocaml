@@ -2176,6 +2176,9 @@ let mark_cltype_used uid =
 let set_value_used_callback vd callback =
   Hashtbl.add value_declarations vd.val_uid callback
 
+let set_module_used_callback md callback =
+  Hashtbl.replace module_declarations md.md_uid callback
+
 let set_type_used_callback td callback =
   if Uid.for_actual_declaration td.type_uid then
     let old =

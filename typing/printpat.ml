@@ -37,8 +37,6 @@ let rec pretty_val ppf v =
   match v.pat_extra with
       (cstr, _loc, _attrs) :: rem ->
         begin match cstr with
-          | Tpat_unpack ->
-            fprintf ppf "@[(module %a)@]" pretty_val { v with pat_extra = rem }
           | Tpat_constraint _ ->
             fprintf ppf "@[(%a : _)@]" pretty_val { v with pat_extra = rem }
           | Tpat_type _ ->
@@ -95,6 +93,10 @@ let rec pretty_val ppf v =
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
+  | Tpat_unpack (None, _, _)->
+      fprintf ppf "@[(module _)@]"
+  | Tpat_unpack (Some x, _, _)->
+      fprintf ppf "@[(module %s)@]" (Ident.name x)
 
 and pretty_car ppf v = match v.pat_desc with
 | Tpat_construct (_,cstr, [_ ; _])

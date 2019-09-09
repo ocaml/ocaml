@@ -841,6 +841,12 @@ let half_simplify_cases args cls =
         | Tpat_var (id, s) ->
             let p = { pat with pat_desc = Tpat_alias (omega, id, s) } in
             simpl_clause (p :: patl, action)
+        | Tpat_unpack (None, _, _) ->
+            (omega :: patl, action)
+        | Tpat_unpack (Some id, s, _) ->
+            let s = { s with txt = Option.get s.txt } in
+            let p = { pat with pat_desc = Tpat_alias (omega, id, s) } in
+            simpl_clause (p :: patl, action)
         | Tpat_alias (p, id, _) ->
             let arg =
               match args with
@@ -3226,7 +3232,8 @@ let find_in_pat pred =
     | Tpat_constant _
     | Tpat_var _
     | Tpat_any
-    | Tpat_variant (_, None, _) ->
+    | Tpat_variant (_, None, _)
+    | Tpat_unpack _ ->
         false
     | Tpat_exception _ -> assert false
   in
@@ -3242,6 +3249,7 @@ let is_lazy_pat = function
   | Tpat_array _
   | Tpat_or _
   | Tpat_constant _
+  | Tpat_unpack _
   | Tpat_var _
   | Tpat_any ->
       false
@@ -3266,6 +3274,7 @@ let have_mutable_field p =
   | Tpat_array _
   | Tpat_or _
   | Tpat_constant _
+  | Tpat_unpack _
   | Tpat_var _
   | Tpat_any ->
       false

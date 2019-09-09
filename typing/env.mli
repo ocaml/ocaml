@@ -404,6 +404,8 @@ val is_in_signature: t -> bool
 
 val set_value_used_callback:
     value_description -> (unit -> unit) -> unit
+val set_module_used_callback:
+    module_declaration -> (unit -> unit) -> unit
 val set_type_used_callback:
     type_declaration -> ((unit -> unit) -> unit) -> unit
 

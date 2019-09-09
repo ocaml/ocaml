@@ -1832,13 +1832,13 @@ let modtype_of_package env loc p nl tl =
       else raise(Error(loc, env, Signature_expected))
   | exception Not_found -> assert false
 
-let type_unpack ~loc env exp =
-  match Ctype.expand_head env exp.exp_type with
+let type_unpack ~loc env expected_ty =
+  match Ctype.expand_head env expected_ty with
   | {desc = Tpackage (p, nl, tl)} ->
       if List.exists (fun t -> Ctype.free_variables t <> []) tl then
-        raise (Error (loc, env, Incomplete_packed_module exp.exp_type));
+        raise (Error (loc, env, Incomplete_packed_module expected_ty));
       if !Clflags.principal &&
-         not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
+         not (Typecore.generalizable (Btype.generic_level-1) expected_ty)
       then
         Location.prerr_warning loc
           (Warnings.Not_principal "this module unpacking");
@@ -1846,7 +1846,7 @@ let type_unpack ~loc env exp =
   | {desc = Tvar _} ->
       raise (Typecore.Error (loc, env, Typecore.Cannot_infer_signature))
   | _ ->
-      raise (Error(loc, env, Not_a_packed_module exp.exp_type))
+      raise (Error(loc, env, Not_a_packed_module expected_ty))
 
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
@@ -2065,7 +2065,7 @@ and type_module_aux ~alias ~strengthen ~funct_body ~anchor env smod =
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
       end;
-      let mty = type_unpack ~loc:smod.pmod_loc env exp in
+      let mty = type_unpack ~loc:smod.pmod_loc env exp.exp_type in
       if funct_body && Mtype.contains_type env mty then
         raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       rm { mod_desc = Tmod_unpack(exp, mty);
@@ -2563,6 +2563,7 @@ let type_open_descr ?used_slot env od =
 
 let () =
   Typecore.type_module := type_module_alias;
+  Typecore.type_unpack := type_unpack;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open_ ?toplevel:None;

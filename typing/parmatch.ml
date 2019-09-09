@@ -113,7 +113,8 @@ end = struct
   let deconstruct q =
     let rec deconstruct_desc = function
       | Tpat_any
-      | Tpat_var _ -> Any, []
+      | Tpat_var _
+      | Tpat_unpack _ -> Any, []
       | Tpat_constant c -> Constant c, []
       | Tpat_alias (p,_,_) -> deconstruct_desc p.pat_desc
       | Tpat_tuple args ->
@@ -1221,7 +1222,8 @@ let build_other ext env =
 
 let rec has_instance p = match p.pat_desc with
   | Tpat_variant (l,_,r) when is_absent l r -> false
-  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> true
+  | Tpat_any | Tpat_var _ | Tpat_unpack _ | Tpat_constant _
+  | Tpat_variant (_,None,_) -> true
   | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) -> has_instance p
   | Tpat_or (p1,p2,_) -> has_instance p1 || has_instance p2
   | Tpat_construct (_,_,ps) | Tpat_tuple ps | Tpat_array ps ->
@@ -2020,7 +2022,8 @@ module Conv = struct
       | Tpat_var (_, ({txt="*extension*"} as nm)) -> (* PR#7330 *)
           mkpat (Ppat_var nm)
       | Tpat_any
-      | Tpat_var _ ->
+      | Tpat_var _
+      | Tpat_unpack _ ->
           mkpat Ppat_any
       | Tpat_constant c ->
           mkpat (Ppat_constant (Untypeast.constant c))
@@ -2169,7 +2172,11 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
       collect_paths_from_pat
       (if extendable_path path then add_path path r else r)
       ps
-| Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
+| Tpat_any
+| Tpat_var _
+| Tpat_constant _
+| Tpat_variant (_,None,_)
+| Tpat_unpack _ -> r
 | Tpat_tuple ps | Tpat_array ps
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
     List.fold_left collect_paths_from_pat r ps
@@ -2297,7 +2304,7 @@ let inactive ~partial pat =
         match pat.pat_desc with
         | Tpat_lazy _ | Tpat_array _ ->
           false
-        | Tpat_any | Tpat_var _ | Tpat_variant (_, None, _) ->
+        | Tpat_any | Tpat_var _ | Tpat_unpack _ | Tpat_variant (_, None, _) ->
             true
         | Tpat_constant c -> begin
             match c with
@@ -2429,7 +2436,8 @@ let simplify_head_amb_pat head_bound_variables varsets ~add_column p ps k =
     match p.pat_desc with
     | Tpat_alias (p,x,_) ->
       simpl (Ident.Set.add x head_bound_variables) varsets p ps k
-    | Tpat_var (x,_) ->
+    | Tpat_var (x,_)
+    | Tpat_unpack (Some x,_,_) ->
       let rest_of_the_row =
         { row = ps; varsets = Ident.Set.add x head_bound_variables :: varsets; }
       in
@@ -2559,31 +2567,10 @@ let pattern_stable_vars ns p =
        [Positive {varsets = []; row = [p]}] ns)
 
 (* All identifier paths that appear in an expression that occurs
-   as a clause right hand side or guard.
-
-  The function is rather complex due to the compilation of
-  unpack patterns by introducing code in rhs expressions
-  and **guards**.
-
-  For pattern (module M:S)  -> e the code is
-  let module M_mod = unpack M .. in e
-
-  Hence M is "free" in e iff M_mod is free in e.
-
-  Not doing so will yield excessive  warning in
-  (module (M:S) } ...) when true -> ....
-  as M is always present in
-  let module M_mod = unpack M .. in true
-*)
+   as a clause right hand side or guard. *)
 
 let all_rhs_idents exp =
   let ids = ref Ident.Set.empty in
-(* Very hackish, detect unpack pattern  compilation
-   and perform "indirect check for them" *)
-  let is_unpack exp =
-      List.exists
-        (fun attr -> attr.Parsetree.attr_name.txt = "#modulepat")
-        exp.exp_attributes in
   let open Tast_iterator in
   let expr_iter iter exp =
     (match exp.exp_desc with
@@ -2591,21 +2578,6 @@ let all_rhs_idents exp =
         List.iter (fun id -> ids := Ident.Set.add id !ids) (Path.heads path)
       (* Use default iterator methods for rest of match.*)
       | _ -> Tast_iterator.default_iterator.expr iter exp);
-
-    if is_unpack exp then begin match exp.exp_desc with
-    | Texp_letmodule
-        (id_mod,_,_,
-         {mod_desc=
-          Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
-         _) ->
-           assert (Ident.Set.mem id_exp !ids) ;
-           begin match id_mod with
-           | Some id_mod when not (Ident.Set.mem id_mod !ids) ->
-             ids := Ident.Set.remove id_exp !ids
-           | _ -> ()
-           end
-    | _ -> assert false
-    end
   in
   let iterator = {Tast_iterator.default_iterator with expr = expr_iter} in
   iterator.expr iterator exp;
