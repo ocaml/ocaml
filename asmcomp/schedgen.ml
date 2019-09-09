@@ -17,7 +17,7 @@
 
 open Reg
 open Mach
-open Linearize
+open Linear
 
 (* Representation of the code DAG. *)
 

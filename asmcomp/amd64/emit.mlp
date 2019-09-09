@@ -21,7 +21,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 open X86_ast
@@ -909,7 +909,7 @@ let rec emit_all fallthrough i =
   | Lend -> ()
   | _ ->
       emit_instr fallthrough i;
-      emit_all (Linearize.has_fallthrough i.desc) i.next
+      emit_all (Linear.has_fallthrough i.desc) i.next
 
 let all_functions = ref []
 

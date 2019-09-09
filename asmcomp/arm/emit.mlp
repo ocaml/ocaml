@@ -23,7 +23,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 (* Tradeoff between code size and code speed *)

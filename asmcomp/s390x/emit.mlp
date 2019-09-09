@@ -22,7 +22,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 (* Layout of the stack.  The stack is kept 8-aligned. *)

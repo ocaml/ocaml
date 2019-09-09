@@ -15,4 +15,4 @@
 
 (* Instruction scheduling *)
 
-val fundecl: Linearize.fundecl -> Linearize.fundecl
+val fundecl: Linear.fundecl -> Linear.fundecl
