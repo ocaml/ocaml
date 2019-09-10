@@ -563,13 +563,10 @@ and set_args_erase_mutable q r = do_set_args ~erase_mutable:true q r
  *)
 let simplify_head_pat ~add_column p ps k =
   let rec simplify_head_pat p ps k =
-    match p.pat_desc with
-    | Tpat_alias (p,_,_) ->
-        (* We have to handle aliases here, because there can be or-patterns
-           underneath, that [Patterns.Head.deconstruct] won't handle. *)
-        simplify_head_pat p ps k
-    | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-    | _ -> add_column (Patterns.Head.deconstruct p) ps k
+    match Patterns.General.(view p |> strip_vars).pat_desc with
+    | `Or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+    | #Patterns.Simple.view as view ->
+       add_column (Patterns.Head.deconstruct { p with pat_desc = view }) ps k
   in simplify_head_pat p ps k
 
 let rec simplify_first_col = function
@@ -694,7 +691,7 @@ let build_specialized_submatrices ~extend_row discr rows =
 let set_last a =
   let rec loop = function
     | [] -> assert false
-    | [_] -> [a]
+    | [_] -> [Patterns.General.erase a]
     | x::l -> x :: loop l
   in
   function
@@ -703,7 +700,7 @@ let set_last a =
 
 (* mark constructor lines for failure when they are incomplete *)
 let mark_partial =
-  let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty in
+  let zero = make_pat (`Constant (Const_int 0)) Ctype.none Env.empty in
   List.map (fun ((hp, _), _ as ps) ->
     match hp.pat_desc with
     | Patterns.Head.Any -> ps
@@ -1112,39 +1109,40 @@ let rec satisfiable pss qs = match pss with
 | _  ->
     match qs with
     | [] -> false
-    | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
-        satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
-    | {pat_desc = Tpat_alias(q,_,_)}::qs ->
-          satisfiable pss (q::qs)
-    | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-        let pss = simplify_first_col pss in
-        if not (all_coherent (first_column pss)) then
-          false
-        else begin
-          let { default; constrs } =
-            let q0 = discr_pat omega pss in
-            build_specialized_submatrices ~extend_row:(@) q0 pss in
-          if not (full_match false constrs) then
-            satisfiable default qs
-          else
-            List.exists
-              (fun (p,pss) ->
-                 not (is_absent_pat p) &&
-                 satisfiable pss
-                   (simple_match_args p Patterns.Head.omega [] @ qs))
-              constrs
-        end
-    | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
-        let pss = simplify_first_col pss in
-        let hq, qargs = Patterns.Head.deconstruct q in
-        if not (all_coherent (hq :: first_column pss)) then
-          false
-        else begin
-          let q0 = discr_pat q pss in
-          satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
-            (simple_match_args q0 hq qargs @ qs)
-        end
+       match Patterns.General.(view q |> strip_vars).pat_desc with
+       | `Or(q1,q2,_) ->
+          satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
+       | `Any ->
+          let pss = simplify_first_col pss in
+          if not (all_coherent (first_column pss)) then
+            false
+          else begin
+            let { default; constrs } =
+              let q0 = discr_pat Patterns.Simple.omega pss in
+              build_specialized_submatrices ~extend_row:(@) q0 pss in
+            if not (full_match false constrs) then
+              satisfiable default qs
+            else
+              List.exists
+                (fun (p,pss) ->
+                   not (is_absent_pat p) &&
+                   satisfiable pss
+                     (simple_match_args p Patterns.Head.omega [] @ qs))
+                constrs
+          end
+       | `Variant (l,_,r) when is_absent l r -> false
+       | #Patterns.Simple.view as view ->
+          let q = { q with pat_desc = view } in
+          let pss = simplify_first_col pss in
+          let hq, qargs = Patterns.Head.deconstruct q in
+          if not (all_coherent (hq :: first_column pss)) then
+            false
+          else begin
+              let q0 = discr_pat q pss in
+              satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
+                (simple_match_args q0 hq qargs @ qs)
+            end
 
 (* While [satisfiable] only checks whether the last row of [pss + qs] is
    satisfiable, this function returns the (possibly empty) list of vectors [es]
@@ -1162,53 +1160,54 @@ let rec list_satisfying_vectors pss qs =
   | _  ->
       match qs with
       | [] -> []
-      | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
-          list_satisfying_vectors pss (q1::qs) @
-          list_satisfying_vectors pss (q2::qs)
-      | {pat_desc = Tpat_alias(q,_,_)}::qs ->
-          list_satisfying_vectors pss (q::qs)
-      | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-          let pss = simplify_first_col pss in
-          if not (all_coherent (first_column pss)) then
-            []
-          else begin
-            let q0 = discr_pat omega pss in
-            let wild default_matrix p =
-              List.map (fun qs -> p::qs)
-                (list_satisfying_vectors default_matrix qs)
-            in
-            match build_specialized_submatrices ~extend_row:(@) q0 pss with
-            | { default; constrs = [] } ->
-                (* first column of pss is made of variables only *)
-                wild default omega
-            | { default; constrs = ((p,_)::_ as constrs) } ->
-                let for_constrs () =
-                  List.flatten (
-                    List.map (fun (p,pss) ->
-                      if is_absent_pat p then
-                        []
-                      else
-                        let witnesses =
-                          list_satisfying_vectors pss
-                            (simple_match_args p Patterns.Head.omega [] @ qs)
-                        in
-                        let p = Patterns.Head.to_omega_pattern p in
-                        List.map (set_args p) witnesses
-                    ) constrs
-                  )
-                in
-                if full_match false constrs then for_constrs () else
-                begin match p.pat_desc with
-                | Construct _ ->
-                    (* activate this code for checking non-gadt constructors *)
-                    wild default (build_other_constrs constrs p)
-                    @ for_constrs ()
-                | _ ->
-                    wild default Patterns.omega
-                end
+      | q :: qs ->
+         match Patterns.General.(view q |> strip_vars).pat_desc with
+         | `Or(q1,q2,_) ->
+            list_satisfying_vectors pss (q1::qs) @
+            list_satisfying_vectors pss (q2::qs)
+         | `Any ->
+            let pss = simplify_first_col pss in
+            if not (all_coherent (first_column pss)) then
+              []
+            else begin
+              let q0 = discr_pat Patterns.Simple.omega pss in
+              let wild default_matrix p =
+                List.map (fun qs -> p::qs)
+                  (list_satisfying_vectors default_matrix qs)
+              in
+              match build_specialized_submatrices ~extend_row:(@) q0 pss with
+              | { default; constrs = [] } ->
+                  (* first column of pss is made of variables only *)
+                  wild default omega
+              | { default; constrs = ((p,_)::_ as constrs) } ->
+                  let for_constrs () =
+                    List.flatten (
+                      List.map (fun (p,pss) ->
+                        if is_absent_pat p then
+                          []
+                        else
+                          let witnesses =
+                            list_satisfying_vectors pss
+                              (simple_match_args p Patterns.Head.omega [] @ qs)
+                          in
+                          let p = Patterns.Head.to_omega_pattern p in
+                          List.map (set_args p) witnesses
+                      ) constrs
+                    )
+                  in
+                  if full_match false constrs then for_constrs () else
+                  begin match p.pat_desc with
+                  | Construct _ ->
+                      (* activate this code for checking non-gadt constructors *)
+                      wild default (build_other_constrs constrs p)
+                      @ for_constrs ()
+                  | _ ->
+                      wild default Patterns.omega
+                  end
           end
-      | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
-      | q::qs ->
+      | `Variant (l, _, r) when is_absent l r -> []
+      | #Patterns.Simple.view as view ->
+          let q = { q with pat_desc = view } in
           let hq, qargs = Patterns.Head.deconstruct q in
           let pss = simplify_first_col pss in
           if not (all_coherent (hq :: first_column pss)) then
@@ -1237,19 +1236,17 @@ let rec do_match pss qs = match qs with
     | []::_ -> true
     | _ -> false
     end
-| q::qs -> match q with
-  | {pat_desc = Tpat_or (q1,q2,_)} ->
+| q::qs -> match Patterns.General.(view q |> strip_vars).pat_desc with
+  | `Or (q1,q2,_) ->
       do_match pss (q1::qs) || do_match pss (q2::qs)
-  | {pat_desc = Tpat_any} ->
+  | `Any ->
       let rec remove_first_column = function
         | (_::ps)::rem -> ps::remove_first_column rem
         | _ -> []
       in
       do_match (remove_first_column pss) qs
-  | _ ->
-      (* [q] is generated by us, it doesn't come from the source. So we know
-         it's not of the form [P as name].
-         Therefore there is no risk of [deconstruct] raising. *)
+  | #Patterns.Simple.view as view ->
+      let q = { q with pat_desc = view } in
       let q0, qargs = Patterns.Head.deconstruct q in
       let pss = simplify_first_col pss in
       (* [pss] will (or won't) match [q0 :: qs] regardless of the coherence of
@@ -1323,7 +1320,7 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
          If [exhaust] has been called by [do_check_fragile], then it is possible
          we might fail to warn the user that the matching is fragile. See for
          example testsuite/tests/warnings/w04_failure.ml. *)
-      let q0 = discr_pat omega pss in
+      let q0 = discr_pat Patterns.Simple.omega pss in
       match build_specialized_submatrices ~extend_row:(@) q0 pss with
       | { default; constrs = [] } ->
           (* first column of pss is made of variables only *)
@@ -1403,7 +1400,7 @@ let rec pressure_variants tdefs = function
       if not (all_coherent (first_column pss)) then
         true
       else begin
-        let q0 = discr_pat omega pss in
+        let q0 = discr_pat Patterns.Simple.omega pss in
         match build_specialized_submatrices ~extend_row:(@) q0 pss with
         | { default; constrs = [] } -> pressure_variants tdefs default
         | { default; constrs } ->
@@ -1494,15 +1491,10 @@ let make_row ps = {ors=[] ; no_ors=[]; active=ps}
 let make_rows pss = List.map make_row pss
 
 
-(* Useful to detect and expand  or pats inside as pats *)
-let rec unalias p = match p.pat_desc with
-| Tpat_alias (p,_,_) -> unalias p
-| _ -> p
-
-
-let is_var p = match (unalias p).pat_desc with
-| Tpat_any|Tpat_var _ -> true
-| _                   -> false
+(* Useful to detect and expand or pats inside as pats *)
+let is_var p = match Patterns.General.(view p |> strip_vars).pat_desc with
+| `Any -> true
+| _    -> false
 
 let is_var_column rs =
   List.for_all
@@ -1616,41 +1608,41 @@ let rec every_satisfiables pss qs = match qs.active with
           Used
     end
 | q::rem ->
-    let uq = unalias q in
-    begin match uq.pat_desc with
-    | Tpat_any | Tpat_var _ ->
+    begin match Patterns.General.(view q |> strip_vars).pat_desc with
+    | `Any ->
         if is_var_column pss then
-(* forget about ``all-variable''  columns now *)
+          (* forget about ``all-variable''  columns now *)
           every_satisfiables (remove_column pss) (remove qs)
         else
-(* otherwise this is direct food for satisfiable *)
+          (* otherwise this is direct food for satisfiable *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
-    | Tpat_or (q1,q2,_) ->
+    | `Or (q1,q2,_) ->
         if
           q1.pat_loc.Location.loc_ghost &&
           q2.pat_loc.Location.loc_ghost
         then
-(* syntactically generated or-pats should not be expanded *)
+          (* syntactically generated or-pats should not be expanded *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
         else
-(* this is a real or-pattern *)
+          (* this is a real or-pattern *)
           every_satisfiables (push_or_column pss) (push_or qs)
-    | Tpat_variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
+    | `Variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
         Unused
-    | _ ->
-(* standard case, filter matrix *)
+    | #Patterns.Simple.view as view ->
+        let q = { q with pat_desc = view } in
+        (* standard case, filter matrix *)
         let pss = simplify_first_usefulness_col pss in
-        let huq, args = Patterns.Head.deconstruct uq in
+        let hq, args = Patterns.Head.deconstruct q in
         (* The handling of incoherent matrices is kept in line with
            [satisfiable] *)
-        if not (all_coherent (huq :: first_column pss)) then
+        if not (all_coherent (hq :: first_column pss)) then
           Unused
         else begin
           let q0 = discr_pat q pss in
           every_satisfiables
             (build_specialized_submatrix q0 pss
               ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
-            {qs with active=simple_match_args q0 huq args @ rem}
+            {qs with active=simple_match_args q0 hq args @ rem}
         end
     end
 
@@ -2287,19 +2279,19 @@ type amb_row = { row : pattern list ; varsets : Ident.Set.t list; }
 
 let simplify_head_amb_pat head_bound_variables varsets ~add_column p ps k =
   let rec simpl head_bound_variables varsets p ps k =
-    match p.pat_desc with
-    | Tpat_alias (p,x,_) ->
+    match (Patterns.General.view p).pat_desc with
+    | `Alias (p,x,_) ->
       simpl (Ident.Set.add x head_bound_variables) varsets p ps k
-    | Tpat_var (x,_) ->
+    | `Var (x, _) ->
       let rest_of_the_row =
         { row = ps; varsets = Ident.Set.add x head_bound_variables :: varsets; }
       in
-      add_column (Patterns.Head.deconstruct omega) rest_of_the_row k
-    | Tpat_or (p1,p2,_) ->
+      add_column (Patterns.Head.deconstruct Patterns.Simple.omega) rest_of_the_row k
+    | `Or (p1,p2,_) ->
       simpl head_bound_variables varsets p1 ps
         (simpl head_bound_variables varsets p2 ps k)
-    | _ ->
-      add_column (Patterns.Head.deconstruct p)
+    | #Patterns.Simple.view as view ->
+      add_column (Patterns.Head.deconstruct { p with pat_desc = view })
         { row = ps; varsets = head_bound_variables :: varsets; } k
   in simpl head_bound_variables varsets p ps k
 
@@ -2401,7 +2393,7 @@ let rec matrix_stable_vars m = match m with
             let extend_row columns = function
               | Negative r -> Negative (columns @ r)
               | Positive r -> Positive { r with row = columns @ r.row } in
-            let q0 = discr_pat omega m in
+            let q0 = discr_pat Patterns.Simple.omega m in
             let { default; constrs } =
               build_specialized_submatrices ~extend_row q0 m in
             let non_default = List.map snd constrs in

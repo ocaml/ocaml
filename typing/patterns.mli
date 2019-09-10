@@ -34,6 +34,8 @@ module Simple : sig
     | `Lazy of pattern
   ]
   type pattern = view pattern_data
+
+  val omega : [> view ] pattern_data
 end
 
 module Half_simple : sig
@@ -54,6 +56,10 @@ module General : sig
 
   val view : Typedtree.pattern -> pattern
   val erase : [< view ] pattern_data -> Typedtree.pattern
+
+  val strip_vars : pattern -> Half_simple.pattern
+
+  val assert_simple : pattern -> Simple.pattern
 end
 
 module Head : sig
@@ -79,7 +85,7 @@ module Head : sig
   (** [deconstruct p] returns the head of [p] and the list of sub patterns.
 
       @raises [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)
-  val deconstruct : pattern -> t * pattern list
+  val deconstruct : Simple.pattern -> t * pattern list
 
   (** reconstructs a pattern, putting wildcards as sub-patterns. *)
   val to_omega_pattern : t -> pattern

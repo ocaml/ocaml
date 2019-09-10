@@ -142,19 +142,13 @@ let all_record_args lbls =
       List.iter (fun ((_, lbl, _) as x) -> t.(lbl.lbl_pos) <- x) lbls;
       Array.to_list t
 
-let rec expand_record p =
-  match p.pat_desc with
-  | Tpat_record (l, _) ->
-      { p with pat_desc = Tpat_record (all_record_args l, Closed) }
-  | Tpat_alias (p, _, _) -> expand_record p
-  | _ -> p
-
-let expand_record_head head =
-  match head.pat_desc with
-  | Patterns.Head.Record _ ->
-      head |> Patterns.Head.to_omega_pattern |> expand_record
-      |> Patterns.Head.deconstruct |> fst
-  | _ -> head
+let expand_record_head h =
+  let open Patterns.Head in
+  match h.pat_desc with
+  | Record [] -> fatal_error "Matching.expand_record_head"
+  | Record ({ lbl_all } :: _) ->
+      { h with pat_desc = Record (Array.to_list lbl_all) }
+  | _ -> h
 
 let head_loc ~scopes head =
   Scoped_location.of_location ~scopes head.pat_loc
@@ -277,7 +271,7 @@ end = struct
 
   type nonrec clause = pattern Non_empty_row.t clause
 
-  let head p = fst (Patterns.Head.deconstruct (Patterns.General.erase p))
+  let head p = fst (Patterns.Head.deconstruct p)
 
   let alpha env (p : pattern) : pattern =
     let alpha_pat env p = Typedtree.alpha_pat env p in
@@ -359,7 +353,7 @@ let matcher discr (p : Simple.pattern) rem =
   let discr = expand_record_head discr in
   let p = expand_record_simple p in
   let omegas = Patterns.(omegas (Head.arity discr)) in
-  let ph, args = Patterns.Head.deconstruct (General.erase p) in
+  let ph, args = Patterns.Head.deconstruct p in
   let yes () = args @ rem in
   let no () = raise NoMatch in
   let yesif b =
@@ -2505,8 +2499,9 @@ let rec list_as_pat = function
 
 let complete_pats_constrs = function
   | p :: _ as pats ->
+      let p_simple = General.(view p |> assert_simple) in
       List.map (pat_of_constr p)
-        (complete_constrs p (List.map get_key_constr pats))
+        (complete_constrs p_simple (List.map get_key_constr pats))
   | _ -> assert false
 
 (*
