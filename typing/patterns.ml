@@ -47,6 +47,8 @@ module Simple = struct
   ]
 
   type pattern = view pattern_data
+
+  let omega = { omega with pat_desc = `Any }
 end
 
 module Half_simple = struct
@@ -108,6 +110,17 @@ module General = struct
 
   let erase p : Typedtree.pattern =
     { p with pat_desc = erase_desc p.pat_desc }
+
+  let rec strip_vars (p : pattern) : Half_simple.pattern =
+    match p.pat_desc with
+    | `Alias (p, _, _) -> strip_vars (view p)
+    | `Var _ -> { p with pat_desc = `Any }
+    | #Half_simple.view as view -> { p with pat_desc = view }
+
+  let assert_simple (p : pattern) : Simple.pattern =
+    match strip_vars p with
+    | {pat_desc = `Or _; _} -> failwith "Patterns.assert_simple"
+    | {pat_desc = #Simple.view; _} as p -> p
 end
 
 (* the head constructor of a simple pattern *)
@@ -130,10 +143,8 @@ module Head : sig
 
   val arity : t -> int
 
-  (** [deconstruct p] returns the head of [p] and the list of sub patterns.
-
-      @raises [Invalid_arg _] if [p] is an or-pattern.  *)
-  val deconstruct : pattern -> t * pattern list
+  (** [deconstruct p] returns the head of [p] and the list of sub patterns. *)
+  val deconstruct : Simple.pattern -> t * pattern list
 
   (** reconstructs a pattern, putting wildcards as sub-patterns. *)
   val to_omega_pattern : t -> pattern
@@ -157,17 +168,15 @@ end = struct
 
   type t = desc pattern_data
 
-  let deconstruct q =
-    let rec deconstruct_desc = function
-      | Tpat_any
-      | Tpat_var _ -> Any, []
-      | Tpat_constant c -> Constant c, []
-      | Tpat_alias (p,_,_) -> deconstruct_desc p.pat_desc
-      | Tpat_tuple args ->
+  let deconstruct (q : Simple.pattern) =
+    let deconstruct_desc = function
+      | `Any -> Any, []
+      | `Constant c -> Constant c, []
+      | `Tuple args ->
           Tuple (List.length args), args
-      | Tpat_construct (_, c, args) ->
+      | `Construct (_, c, args) ->
           Construct c, args
-      | Tpat_variant (tag, arg, cstr_row) ->
+      | `Variant (tag, arg, cstr_row) ->
           let has_arg, pats =
             match arg with
             | None -> false, []
@@ -179,15 +188,14 @@ end = struct
               | _ -> assert false
           in
           Variant {tag; has_arg; cstr_row; type_row}, pats
-      | Tpat_array args ->
+      | `Array args ->
           Array (List.length args), args
-      | Tpat_record (largs, _) ->
+      | `Record (largs, _) ->
           let lbls = List.map (fun (_,lbl,_) -> lbl) largs in
           let pats = List.map (fun (_,_,pat) -> pat) largs in
           Record lbls, pats
-      | Tpat_lazy p ->
+      | `Lazy p ->
           Lazy, [p]
-      | Tpat_or _ -> invalid_arg "Parmatch.Pattern_head.deconstruct: (P | Q)"
     in
     let desc, pats = deconstruct_desc q.pat_desc in
     { q with pat_desc = desc }, pats

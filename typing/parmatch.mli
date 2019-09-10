@@ -19,7 +19,7 @@ open Asttypes
 open Typedtree
 open Types
 
-val normalize_pat : pattern -> pattern
+val normalize_pat : Patterns.Simple.pattern -> pattern
 (** Keep only the "head" of a pattern: all arguments are replaced by [omega], so
     are variables. *)
 
@@ -71,7 +71,7 @@ val set_args_erase_mutable : pattern -> pattern list -> pattern list
 
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
-    pattern -> constructor_tag list -> constructor_description  list
+    Patterns.Simple.pattern -> constructor_tag list -> constructor_description  list
 
 (** [ppat_of_type] builds an untyped pattern from its expected type,
     for explosion of wildcard patterns in Typecore.type_pat.
