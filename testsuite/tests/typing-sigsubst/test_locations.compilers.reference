@@ -2,14 +2,7 @@ File "test_loc_type_eq.ml", line 1, characters 49-76:
 1 | module M : Test_functor.S with type elt = unit = Test_functor.Apply (String)
                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
-       Modules do not match:
-         sig
-           type elt = String.t
-           type t = Test_functor.Apply(String).t
-           val create : elt -> t
-         end
-       is not included in
-         sig type elt = unit type t val create : elt -> t end
+       ...
        Type declarations do not match:
          type elt = String.t
        is not included in
