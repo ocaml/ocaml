@@ -406,11 +406,7 @@ let enter_variable ?module_type ?(is_as_variable=false) loc name ty
      pv_as_var = is_as_variable;
      pv_mty = module_type;
      pv_attributes = attrs} :: !pattern_variables;
-  if Option.is_some module_type then begin
-    (* Note: unpack patterns enter a variable of the same name *)
-    if not !allow_modules then
-      raise (Error (loc, Env.empty, Modules_not_allowed))
-  end else begin
+  if Option.is_none module_type then begin
     (* moved to genannot *)
     Option.iter
       (fun s -> Stypes.record (Stypes.An_ident (name.loc, name.txt, s)))
@@ -1082,6 +1078,8 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_env = !env }
   | Ppat_unpack name ->
       assert (constrs = None);
+      if not !allow_modules then
+        raise (Error (loc, Env.empty, Modules_not_allowed));
       let t = instance expected_ty in
       let original_level = get_gadt_equations_level () in
       begin_def ();
