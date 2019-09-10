@@ -206,9 +206,6 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
-- #8862, #8871: subst: preserve scopes
-  (Thomas Refis, report by Leo White)
-
 - #8875: fix missing newlines in the output from MSVC invocation.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
@@ -470,6 +467,9 @@ OCaml 4.09.0
 
 - #8864, #8865: Fix native compilation of left shift by (word_size - 1)
   (Vincent Laviron, report by Murilo Giacometti Rocha, review by Xavier Leroy)
+
+- #8862, #8871: subst: preserve scopes
+  (Thomas Refis, report by Leo White)
 
 OCaml 4.08 maintenance branch:
 ------------------------------
