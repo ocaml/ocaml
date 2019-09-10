@@ -821,7 +821,7 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k sw_names =
     end ;
     if i > 0 then zyva (i-1) (ir-1) in
 
-  zyva (len-1) (n_clusters-1);
+  zyva (len-1) (n_clusters-1) ;
   let acts = Array.make !index (fun _ -> assert false) in
   Hashtbl.iter (fun _ (i,act) -> acts.(i) <- act) t ;
   {cases = r ; actions = acts}
