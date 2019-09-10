@@ -2913,12 +2913,13 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
             | _ -> assert false)
         | {type_kind = Type_abstract; type_manifest = None} ->
           (* Format.eprintf "XXX Type_abstract@."; *)
-          Some {consts=[||]; blocks=[||]}
+          assert false
         | {type_kind = Type_record _} ->
           (* Format.eprintf "XXX Type_record@."; *)
-          Some {consts=[||]; blocks=[||]}
+          assert false
         | {type_kind = Type_open } ->
-          (* Format.eprintf "XXX Type_open@."; *)
+          (* Exceptions *)
+          (* Format.eprintf "XXX Type_open %s.@." cstr.cstr_name; *)
           Some {consts=[||]; blocks=[||]} in
 
       let names = match (Btype.repr pat.pat_type).desc with
