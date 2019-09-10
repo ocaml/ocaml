@@ -1517,8 +1517,8 @@ Optional Features:
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
                           headers for profiling info
-  --enable-force-safe-string
-                          force strings to be safe
+  --disable-force-safe-string
+                          do not force strings to be safe
   --disable-flat-float-array
                           do not use flat float arrays
   --disable-function-sections
@@ -3151,9 +3151,11 @@ fi
 # explicitly passed.
 #
 # The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string DEFAULT_STRING=unsafe. OCaml 4.06
-# and later use --disable-force-safe-string DEFAULT_STRING=safe. We
-# expect --enable-force-safe-string to become the default in the future.
+# to --disable-force-safe-string DEFAULT_STRING=unsafe. With OCaml 4.06
+# and older was equivalent to --disable-force-safe-string DEFAULT_STRING=safe.
+# With OCaml 4.10 and later use --enable-force-safe-string DEFAULT_STRING=safe.
+# We expect the --disable-force-safe-string and DEFAULT_STRING=unsafe options
+# to be removed in the future.
 
 # Check whether --enable-force-safe-string was given.
 if test "${enable_force_safe_string+set}" = set; then :
@@ -16590,12 +16592,12 @@ else
   afl=false
 fi
 
-if test x"$enable_force_safe_string" = "xyes"; then :
+if test x"$enable_force_safe_string" = "xno"; then :
   $as_echo "#define CAML_SAFE_STRING 1" >>confdefs.h
 
-  force_safe_string=true
-else
   force_safe_string=false
+else
+  force_safe_string=true
 fi
 
 if test x"$DEFAULT_STRING" = "xunsafe"; then :

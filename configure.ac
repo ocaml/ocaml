@@ -338,13 +338,15 @@ AC_ARG_VAR([WINDOWS_UNICODE_MODE],
 # explicitly passed.
 #
 # The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string DEFAULT_STRING=unsafe. OCaml 4.06
-# and later use --disable-force-safe-string DEFAULT_STRING=safe. We
-# expect --enable-force-safe-string to become the default in the future.
+# to --disable-force-safe-string DEFAULT_STRING=unsafe. With OCaml 4.06
+# and older was equivalent to --disable-force-safe-string DEFAULT_STRING=safe.
+# With OCaml 4.10 and later use --enable-force-safe-string DEFAULT_STRING=safe.
+# We expect the --disable-force-safe-string and DEFAULT_STRING=unsafe options
+# to be removed in the future.
 
 AC_ARG_ENABLE([force-safe-string],
-  [AS_HELP_STRING([--enable-force-safe-string],
-    [force strings to be safe])])
+  [AS_HELP_STRING([--disable-force-safe-string],
+    [do not force strings to be safe])])
 
 AC_ARG_VAR([DEFAULT_STRING],
   [whether strings should be safe (default) or unsafe])
@@ -1658,10 +1660,10 @@ AS_IF([test x"$with_afl" = "xyes"],
   [afl=true],
   [afl=false])
 
-AS_IF([test x"$enable_force_safe_string" = "xyes"],
+AS_IF([test x"$enable_force_safe_string" = "xno"],
   [AC_DEFINE([CAML_SAFE_STRING])
-  force_safe_string=true],
-  [force_safe_string=false])
+  force_safe_string=false],
+  [force_safe_string=true])
 
 AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
   [default_safe_string=false],

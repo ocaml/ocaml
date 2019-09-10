@@ -8,6 +8,14 @@ Working version
 - #7557, #1726: multi-indices for extended indexing operators
   (Florian Angeletti, review by Gabriel Radanne)
 
+* #1859: --enable-force-safe-string is now the default. This can be
+  overridden at configure time only (introduced by 4.04 in 2016).
+  Unless --disable-force-safe-string is used at configure time, this
+  breaks code that use the '-unsafe-string' argument and C stubs that
+  use String_val as a char* instead of const char*
+  (Kate Deplaix)
+
+
 ### Internal/compiler-libs changes:
 
 - #8844: Printing faulty constructors, inline records fields and their types
