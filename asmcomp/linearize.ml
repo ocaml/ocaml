@@ -108,8 +108,6 @@ let add_branch lbl n =
   else
     discard_dead_code n
 
-let contains_calls = ref false
-
 let try_depth = ref 0
 
 (* Association list: exit handler -> (handler label, try-nesting factor) *)
@@ -135,7 +133,7 @@ let local_exit k =
   snd (find_exit_label_try_depth k) = !try_depth
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
-
+let linear i n contains_calls =
 let rec linear i n =
   match i.Mach.desc with
     Iend -> n
@@ -151,7 +149,7 @@ let rec linear i n =
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
-      if !contains_calls
+      if contains_calls
       then cons_instr Lreloadretaddr n1
       else n1
   | Iifthenelse(test, ifso, ifnot) ->
@@ -261,6 +259,7 @@ let rec linear i n =
 
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
+in linear i n
 
 let add_prologue first_insn prologue_required =
   (* The prologue needs to come after any [Iname_for_debugger] operations that
@@ -323,9 +322,10 @@ let add_prologue first_insn prologue_required =
 
 let fundecl f =
   let fun_prologue_required = Proc.prologue_required f in
-  contains_calls := f.Mach.fun_contains_calls;
+  let contains_calls = f.Mach.fun_contains_calls in
   let fun_tailrec_entry_point_label, fun_body =
-    add_prologue (linear f.Mach.fun_body end_instr) fun_prologue_required
+    add_prologue (linear f.Mach.fun_body end_instr contains_calls)
+      fun_prologue_required
   in
   { fun_name = f.Mach.fun_name;
     fun_body;
@@ -333,7 +333,7 @@ let fundecl f =
     fun_dbg  = f.Mach.fun_dbg;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
     fun_tailrec_entry_point_label;
-    fun_contains_calls = !contains_calls;
+    fun_contains_calls = contains_calls;
     fun_num_stack_slots = f.Mach.fun_num_stack_slots;
     fun_frame_required = Proc.frame_required f;
     fun_prologue_required;
