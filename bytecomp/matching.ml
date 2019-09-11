@@ -2910,17 +2910,11 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
             | Tconstr (pathn, _, _) ->
               (* Format.eprintf "XXX path%d:%s path%d:%s@." n (Path.name path) (n+1) (Path.name pathn); *)
               resolve_path (n+1) pathn
-            | _ -> assert false)
+            | _ -> None)
         | {type_kind = Type_abstract; type_manifest = None} ->
-          (* Format.eprintf "XXX Type_abstract@."; *)
-          assert false
-        | {type_kind = Type_record _} ->
-          (* Format.eprintf "XXX Type_record@."; *)
-          assert false
-        | {type_kind = Type_open } ->
-          (* Exceptions *)
-          (* Format.eprintf "XXX Type_open %s.@." cstr.cstr_name; *)
-          Some {consts=[||]; blocks=[||]} in
+          None
+        | {type_kind = Type_record _ | Type_open (* Exceptions *) } ->          
+          None in
 
       let names = match (Btype.repr pat.pat_type).desc with
         | Tconstr (path, _, _) -> resolve_path 0 path
