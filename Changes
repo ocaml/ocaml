@@ -262,6 +262,10 @@ OCaml 4.09.0
 - #8862, #8871: subst: preserve scopes
   (Thomas Refis, report by Leo White, review by Jacques Garrigue)
 
+- #8921, #8924: Fix stack overflow with Flambda
+  (Vincent Laviron, review by Pierre Chambart and Leo White,
+   report by Aleksandr Kuzmenko)
+
 OCaml 4.08 maintenance branch:
 ------------------------------
 
