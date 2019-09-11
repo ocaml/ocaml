@@ -1,15 +1,430 @@
+accept.$(O): accept.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/signals.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
+bind.$(O): bind.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ unixsupport.h socketaddr.h ../../runtime/caml/misc.h
+channels.$(O): channels.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/io.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h unixsupport.h
+close.$(O): close.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h \
+ ../../runtime/caml/io.h
+close_on.$(O): close_on.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h
+connect.$(O): connect.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
+createprocess.$(O): createprocess.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h unixsupport.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h
+dup.$(O): dup.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ unixsupport.h
+dup2.$(O): dup2.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ unixsupport.h
+errmsg.$(O): errmsg.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h unixsupport.h
+envir.$(O): envir.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h
+getpeername.$(O): getpeername.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
+getpid.$(O): getpid.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h
+getsockname.$(O): getsockname.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
+gettimeofday.$(O): gettimeofday.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h unixsupport.h
+isatty.$(O): isatty.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ unixsupport.h
+link.$(O): link.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+listen.$(O): listen.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h
+lockf.$(O): lockf.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h unixsupport.h ../../runtime/caml/signals.h
+lseek.$(O): lseek.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h unixsupport.h
+nonblock.$(O): nonblock.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h
+mkdir.$(O): mkdir.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ ../../runtime/caml/memory.h unixsupport.h
+mmap.$(O): mmap.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/bigarray.h ../../runtime/caml/fail.h \
+ ../../runtime/caml/io.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/sys.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h unixsupport.h
+open.$(O): open.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/memory.h \
+ unixsupport.h
+pipe.$(O): pipe.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/alloc.h unixsupport.h
+read.$(O): read.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/signals.h unixsupport.h
+readlink.$(O): readlink.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+rename.$(O): rename.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ ../../runtime/caml/memory.h unixsupport.h
+select.$(O): select.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/fail.h \
+ ../../runtime/caml/signals.h winworker.h unixsupport.h windbug.h \
+ winlist.h
+sendrecv.$(O): sendrecv.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/signals.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
+shutdown.$(O): shutdown.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h
+sleep.$(O): sleep.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h
+socket.$(O): socket.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h unixsupport.h
+sockopt.$(O): sockopt.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/fail.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
+startup.$(O): startup.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h winworker.h \
+ unixsupport.h windbug.h
+stat.$(O): stat.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h ../unix/cst2constr.h
+symlink.$(O): symlink.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+system.$(O): system.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
+times.$(O): times.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h unixsupport.h
+unixsupport.$(O): unixsupport.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/callback.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/custom.h unixsupport.h \
+ ../unix/cst2constr.h
+windir.$(O): windir.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
+winwait.$(O): winwait.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/signals.h unixsupport.h
+write.$(O): write.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/signals.h unixsupport.h
+winlist.$(O): winlist.c winlist.h
+winworker.$(O): winworker.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/signals.h winworker.h \
+ unixsupport.h winlist.h windbug.h
 windbug.$(O): windbug.c windbug.h
+utimes.$(O): utimes.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+access.$(O): access.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+addrofstr.$(O): addrofstr.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
+chdir.$(O): chdir.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+chmod.$(O): chmod.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
 cst2constr.$(O): cst2constr.c ../../runtime/caml/mlvalues.h \
-  ../../runtime/caml/config.h ../../runtime/caml/m.h \
-  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
-  ../../runtime/caml/fail.h ../unix/cst2constr.h
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/mlvalues.h \
+ ../unix/cst2constr.h
+cstringv.$(O): cstringv.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
+execv.$(O): execv.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
+execve.$(O): execve.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
+execvp.$(O): execvp.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+exit.$(O): exit.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ unixsupport.h
+getaddrinfo.$(O): getaddrinfo.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/misc.h ../../runtime/caml/signals.h unixsupport.h \
+ ../unix/cst2constr.h socketaddr.h
+getcwd.$(O): getcwd.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ unixsupport.h
+gethost.$(O): gethost.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/signals.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
+gethostname.$(O): gethostname.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h unixsupport.h
+getnameinfo.$(O): getnameinfo.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/signals.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
+getproto.$(O): getproto.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h unixsupport.h
+getserv.$(O): getserv.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h unixsupport.h
+gmtime.$(O): gmtime.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h unixsupport.h
 mmap_ba.$(O): mmap_ba.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
-  ../../runtime/caml/config.h ../../runtime/caml/m.h \
-  ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
-  ../../runtime/caml/bigarray.h ../../runtime/caml/custom.h \
-  ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
-  ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
-  ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/bigarray.h ../../runtime/caml/custom.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ ../../runtime/caml/misc.h
+putenv.$(O): putenv.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
+ ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
+rmdir.$(O): rmdir.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+socketaddr.$(O): socketaddr.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/memory.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
+strofaddr.$(O): strofaddr.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/fail.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
+time.$(O): time.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h unixsupport.h
+unlink.$(O): unlink.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/gc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/major_gc.h \
+ ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
+ ../../runtime/caml/address_class.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+fsync.$(O): fsync.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h
 unix.cmo : \
     unix.cmi
 unix.cmx : \
