@@ -209,6 +209,10 @@ Working version
 - #8875: fix missing newlines in the output from MSVC invocation.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #8921, #8924: Fix stack overflow with Flambda
+  (Vincent Laviron, review by Pierre Chambart and Leo White,
+   report by Aleksandr Kuzmenko)
+
 OCaml 4.09.0
 ------------
 
