@@ -2820,6 +2820,9 @@ let arg_to_var arg cls = match arg with
     let v = name_pattern "match" cls in
     v,Lvar v
 
+(* To be set by Lam_compile *)
+let names_from_construct_pattern : (pattern -> switch_names option) ref =
+  ref (fun _ -> assert false)
 
 (*
   The main compilation function.
@@ -2891,38 +2894,12 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (combine_constant names pat.pat_loc arg cst partial)
         ctx pm
   | Tpat_construct (_, cstr, pats) ->
-      let names_from_type_variant cstrs =
-        let (consts, blocks) = List.fold_left
-          (fun (consts, blocks) cstr ->
-            if cstr.Types.cd_args = []
-            then (Ident.name cstr.Types.cd_id :: consts, blocks)
-            else (consts, Ident.name cstr.Types.cd_id :: blocks))
-          ([], []) cstrs in
-        Some {consts = consts |> List.rev |> Array.of_list;
-              blocks = blocks |> List.rev |> Array.of_list } in
-
-      let rec resolve_path n path =
-        match Env.find_type path pat.pat_env with
-        | {type_kind = Type_variant cstrs} ->
-          names_from_type_variant cstrs
-        | {type_kind = Type_abstract; type_manifest = Some t} ->
-          ( match (Ctype.unalias t).desc with
-            | Tconstr (pathn, _, _) ->
-              (* Format.eprintf "XXX path%d:%s path%d:%s@." n (Path.name path) (n+1) (Path.name pathn); *)
-              resolve_path (n+1) pathn
-            | _ -> None)
-        | {type_kind = Type_abstract; type_manifest = None} ->
-          None
-        | {type_kind = Type_record _ | Type_open (* Exceptions *) } ->          
-          None in
-
-      let names = match (Btype.repr pat.pat_type).desc with
-        | Tconstr (path, _, _) -> resolve_path 0 path
-        | _ -> assert false in
-
+      let sw_names = if !Clflags.bs_only
+        then !names_from_construct_pattern pat
+        else None in
       compile_test
         (compile_match repr partial) partial
-        divide_constructor (combine_constructor names pat.pat_loc arg pat cstr partial)
+        divide_constructor (combine_constructor sw_names pat.pat_loc arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
       let names = None in
