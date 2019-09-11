@@ -266,8 +266,9 @@ val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module:
   ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
-val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
-  module_presence -> module_declaration -> t -> t
+val add_module_declaration:
+  ?arg:bool -> ?check:(string -> Warnings.t) -> Ident.t -> module_presence ->
+    module_declaration -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
@@ -404,6 +405,8 @@ val is_in_signature: t -> bool
 
 val set_value_used_callback:
     value_description -> (unit -> unit) -> unit
+val set_module_used_callback:
+    module_declaration -> (unit -> unit) -> unit
 val set_type_used_callback:
     type_declaration -> ((unit -> unit) -> unit) -> unit
 

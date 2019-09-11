@@ -137,7 +137,10 @@ f m 1 (module struct let x = 2 end);;
 
 let (module M) = m in M.x;;
 [%%expect{|
-- : int = 3
+Line 1, characters 4-14:
+1 | let (module M) = m in M.x;;
+        ^^^^^^^^^^
+Error: The signature for this packaged module couldn't be inferred.
 |}];;
 
 let (module M) = m;; (* Error: only allowed in [let .. in] *)

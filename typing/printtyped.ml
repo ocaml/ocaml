@@ -227,10 +227,6 @@ and pattern i ppf x =
   attributes i ppf x.pat_attributes;
   let i = i+1 in
   match x.pat_extra with
-    | (Tpat_unpack, _, attrs) :: rem ->
-        line i ppf "Tpat_unpack\n";
-        attributes i ppf attrs;
-        pattern i ppf { x with pat_extra = rem }
     | (Tpat_constraint cty, _, attrs) :: rem ->
         line i ppf "Tpat_constraint\n";
         attributes i ppf attrs;
@@ -248,6 +244,8 @@ and pattern i ppf x =
   match x.pat_desc with
   | Tpat_any -> line i ppf "Tpat_any\n";
   | Tpat_var (s,_) -> line i ppf "Tpat_var \"%a\"\n" fmt_ident s;
+  | Tpat_unpack (None,_,_) -> line i ppf "Tpat_unpack \"_\"\n";
+  | Tpat_unpack (Some s,_,_) -> line i ppf "Tpat_unpack \"%a\"\n" fmt_ident s;
   | Tpat_alias (p, s,_) ->
       line i ppf "Tpat_alias \"%a\"\n" fmt_ident s;
       pattern i ppf p;

@@ -56,10 +56,6 @@ and pat_extra =
                            branches of [tconst].
          *)
   | Tpat_open of Path.t * Longident.t loc * Env.t
-  | Tpat_unpack
-        (** (module P)     { pat_desc  = Tpat_var "P"
-                           ; pat_extra = (Tpat_unpack, _, _) :: ... }
-         *)
 
 and pattern_desc =
     Tpat_any
@@ -107,6 +103,9 @@ and pattern_desc =
         (** lazy P *)
   | Tpat_exception of pattern
         (** exception P *)
+  | Tpat_unpack of Ident.t option * string option loc * Types.module_type
+        (** (module _)     (None)
+            (module M)     (Some "M") *)
 
 and expression =
   { exp_desc: expression_desc;

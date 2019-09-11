@@ -296,10 +296,6 @@ let pattern sub pat =
   let attrs = sub.attributes sub pat.pat_attributes in
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, loc, _attrs]; pat_desc = Tpat_any; _ } ->
-        Ppat_unpack { txt = None; loc  }
-    | { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } ->
-        Ppat_unpack { name with txt = Some name.txt }
     | { pat_extra=[Tpat_type (_path, lid), _, _attrs]; _ } ->
         Ppat_type (map_loc sub lid)
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
@@ -325,6 +321,8 @@ let pattern sub pat =
          when pat_loc = pat.pat_loc ->
        Ppat_var name
 
+    | Tpat_unpack (_, strloc, _) ->
+        Ppat_unpack strloc
     | Tpat_alias (pat, _id, name) ->
         Ppat_alias (sub.pat sub pat, name)
     | Tpat_constant cst -> Ppat_constant (constant cst)

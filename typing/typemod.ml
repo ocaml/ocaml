@@ -795,8 +795,8 @@ and approx_sig env ssg =
           in
           let newenv =
             List.fold_left
-              (fun env (id, md) -> Env.add_module_declaration ~check:false
-                  id Mp_present md env)
+              (fun env (id, md) ->
+                 Env.add_module_declaration id Mp_present md env)
               env decls
           in
           map_rec
@@ -1832,6 +1832,22 @@ let modtype_of_package env loc p nl tl =
       else raise(Error(loc, env, Signature_expected))
   | exception Not_found -> assert false
 
+let type_unpack ~loc env expected_ty =
+  match Ctype.expand_head env expected_ty with
+  | {desc = Tpackage (p, nl, tl)} ->
+      if List.exists (fun t -> Ctype.free_variables t <> []) tl then
+        raise (Error (loc, env, Incomplete_packed_module expected_ty));
+      if !Clflags.principal &&
+         not (Typecore.generalizable (Btype.generic_level-1) expected_ty)
+      then
+        Location.prerr_warning loc
+          (Warnings.Not_principal "this module unpacking");
+      modtype_of_package env loc p nl tl
+  | {desc = Tvar _} ->
+      raise (Typecore.Error (loc, env, Typecore.Cannot_infer_signature))
+  | _ ->
+      raise (Error(loc, env, Not_a_packed_module expected_ty))
+
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
     let ntl =
@@ -1862,11 +1878,11 @@ let wrap_constraint env mark arg mty explicit =
 
 (* Type a module value expression *)
 
-let rec type_module ?(alias=false) sttn funct_body anchor env smod =
+let rec type_module ?(alias=false) ~strengthen ~funct_body ~anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
-    (fun () -> type_module_aux ~alias sttn funct_body anchor env smod)
+    (fun () -> type_module_aux ~alias ~strengthen ~funct_body ~anchor env smod)
 
-and type_module_aux ~alias sttn funct_body anchor env smod =
+and type_module_aux ~alias ~strengthen ~funct_body ~anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let path =
@@ -1890,11 +1906,11 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                 Tmod_constraint (md, mty, Tmodtype_implicit,
                                  Tcoerce_alias (env, path, Tcoerce_none));
               mod_type =
-                if sttn then Mtype.strengthen ~aliasable:true env mty p1
+                if strengthen then Mtype.strengthen ~aliasable:true env mty p1
                 else mty }
         | mty ->
             let mty =
-              if sttn then Mtype.strengthen ~aliasable env mty path
+              if strengthen then Mtype.strengthen ~aliasable env mty path
               else mty
             in
             { md with mod_type = mty }
@@ -1939,17 +1955,23 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           in
           Named (id, param, mty), Types.Named (id, mty.mty_type), newenv, true
       in
-      let body = type_module sttn funct_body None newenv sbody in
+      let body =
+        type_module ~strengthen ~funct_body ~anchor:None newenv sbody
+      in
       rm { mod_desc = Tmod_functor(t_arg, body);
            mod_type = Mty_functor(ty_arg, body.mod_type);
            mod_env = env;
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
-      let arg = type_module true funct_body None env sarg in
+      let arg =
+        type_module ~strengthen:true ~funct_body ~anchor:None env sarg
+      in
       let path = path_of_module arg in
       let funct =
-        type_module (sttn && path <> None) funct_body None env sfunct in
+        type_module ~strengthen:(strengthen && path <> None) ~funct_body
+          ~anchor:None env sfunct
+      in
       begin match Env.scrape_alias env funct.mod_type with
       | Mty_functor (Unit, mty_res) ->
           if sarg.pmod_desc <> Pmod_structure [] then
@@ -2026,7 +2048,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
       end
   | Pmod_constraint(sarg, smty) ->
-      let arg = type_module ~alias true funct_body anchor env sarg in
+      let arg = type_module ~alias ~strengthen:true ~funct_body ~anchor env sarg in
       let mty = transl_modtype env smty in
       let md =
         wrap_constraint env true arg mty.mty_type (Tmodtype_explicit mty)
@@ -2043,24 +2065,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
       end;
-      let mty =
-        match Ctype.expand_head env exp.exp_type with
-          {desc = Tpackage (p, nl, tl)} ->
-            if List.exists (fun t -> Ctype.free_variables t <> []) tl then
-              raise (Error (smod.pmod_loc, env,
-                            Incomplete_packed_module exp.exp_type));
-            if !Clflags.principal &&
-              not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
-            then
-              Location.prerr_warning smod.pmod_loc
-                (Warnings.Not_principal "this module unpacking");
-            modtype_of_package env smod.pmod_loc p nl tl
-        | {desc = Tvar _} ->
-            raise (Typecore.Error
-                     (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
-        | _ ->
-            raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
-      in
+      let mty = type_unpack ~loc:smod.pmod_loc env exp.exp_type in
       if funct_body && Mtype.contains_type env mty then
         raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       rm { mod_desc = Tmod_unpack(exp, mty);
@@ -2100,7 +2105,9 @@ and type_open_decl_aux ?used_slot ?toplevel funct_body names env od =
     } in
     open_descr, [], newenv
   | _ ->
-    let md = type_module true funct_body None env od.popen_expr in
+    let md =
+      type_module ~strengthen:true ~funct_body ~anchor:None env od.popen_expr
+    in
     let scope = Ctype.create_scope () in
     let sg, newenv =
       Env.enter_signature ~scope (extract_sig_open env md.mod_loc md.mod_type)
@@ -2214,8 +2221,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let modl =
           Builtin_attributes.warning_scope attrs
             (fun () ->
-               type_module ~alias:true true funct_body
-                 (anchor_submodule name.txt anchor) env smodl
+               type_module ~alias:true ~strengthen:true ~funct_body
+                 ~anchor:(anchor_submodule name.txt anchor) env smodl
             )
         in
         let pres =
@@ -2283,8 +2290,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                let modl =
                  Builtin_attributes.warning_scope attrs
                    (fun () ->
-                      type_module true funct_body (anchor_recmodule id)
-                        newenv smodl
+                      type_module ~strengthen:true ~funct_body
+                        ~anchor:(anchor_recmodule id) newenv smodl
                    )
                in
                let mty' =
@@ -2306,7 +2313,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                        md_uid = uid;
                      }
                    in
-                   Env.add_module_declaration ~check:true
+                   Env.add_module_declaration
+                     ~check:(fun s -> Warnings.Unused_module s)
                      id Mp_present mdecl env
             )
             env decls
@@ -2403,8 +2411,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_include sincl ->
         let smodl = sincl.pincl_mod in
         let modl =
-          Builtin_attributes.warning_scope sincl.pincl_attributes
-            (fun () -> type_module true funct_body None env smodl)
+          Builtin_attributes.warning_scope sincl.pincl_attributes (fun () ->
+            type_module ~strengthen:true ~funct_body ~anchor:None env smodl
+          )
         in
         let scope = Ctype.create_scope () in
         (* Rename all identifiers bound by this signature to avoid clashes *)
@@ -2457,8 +2466,10 @@ let type_toplevel_phrase env s =
     type_structure ~toplevel:true false None env s Location.none in
   (str, sg, to_remove_from_sg, env)
 
-let type_module_alias = type_module ~alias:true true false None
-let type_module = type_module true false None
+let type_module_alias =
+  type_module ~alias:true ~strengthen:true ~funct_body:false ~anchor:None
+let type_module =
+  type_module ~alias:false ~strengthen:true ~funct_body:false ~anchor:None
 let type_structure = type_structure false None
 
 (* Normalize types in a signature *)
@@ -2553,6 +2564,7 @@ let type_open_descr ?used_slot env od =
 
 let () =
   Typecore.type_module := type_module_alias;
+  Typecore.type_unpack := type_unpack;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open_ ?toplevel:None;

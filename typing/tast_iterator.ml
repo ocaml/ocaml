@@ -152,7 +152,6 @@ let extension_constructor sub {ext_kind; _} =
 let pat sub {pat_extra; pat_desc; pat_env; _} =
   let extra = function
     | Tpat_type _ -> ()
-    | Tpat_unpack -> ()
     | Tpat_open (_, _, env) -> sub.env sub env
     | Tpat_constraint ct -> sub.typ sub ct
   in
@@ -161,6 +160,7 @@ let pat sub {pat_extra; pat_desc; pat_env; _} =
   match pat_desc with
   | Tpat_any  -> ()
   | Tpat_var _ -> ()
+  | Tpat_unpack _ -> ()
   | Tpat_constant _ -> ()
   | Tpat_tuple l -> List.iter (sub.pat sub) l
   | Tpat_construct (_, _, l) -> List.iter (sub.pat sub) l

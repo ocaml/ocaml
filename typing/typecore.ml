@@ -116,11 +116,14 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-(* Forward declaration, to be filled in by Typemod.type_module *)
+(* Forward declaration, to be filled in by Typemod *)
 
 let type_module =
   ref ((fun _env _md -> assert false) :
        Env.t -> Parsetree.module_expr -> Typedtree.module_expr)
+let type_unpack =
+  ref ((fun ~loc:_ _env _ty -> assert false) :
+         loc:Location.t -> Env.t -> Types.type_expr -> Types.module_type)
 
 (* Forward declaration, to be filled in by Typemod.type_open *)
 
@@ -356,54 +359,54 @@ type pattern_variable =
     pv_type: type_expr;
     pv_loc: Location.t;
     pv_as_var: bool;
+    pv_mty: Types.module_type option;
     pv_attributes: attributes;
   }
-
-type module_variable =
-  string loc * Location.t
 
 let pattern_variables = ref ([] : pattern_variable list)
 let pattern_force = ref ([] : (unit -> unit) list)
 let pattern_scope = ref (None : Annot.ident option);;
 let allow_modules = ref false
-let module_variables = ref ([] : module_variable list)
 let reset_pattern scope allow =
   pattern_variables := [];
   pattern_force := [];
   pattern_scope := scope;
   allow_modules := allow;
-  module_variables := [];
 ;;
 
 let maybe_add_pattern_variables_ghost loc_let env pv =
-  List.fold_right
-    (fun {pv_id; _} env ->
-       let name = Ident.name pv_id in
-       if Env.bound_value name env then env
-       else begin
-         Env.enter_unbound_value name
-           (Val_unbound_ghost_recursive loc_let) env
-       end
-    ) pv env
+  List.fold_right (fun {pv_id; pv_mty; _} env ->
+    let name = Ident.name pv_id in
+    match pv_mty with
+    | None when not (Env.bound_value name env) ->
+        Env.enter_unbound_value name
+          (Val_unbound_ghost_recursive loc_let) env
+    | _ -> env
+  ) pv env
 
-let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
+let enter_variable ?module_type ?(is_as_variable=false) loc name ty
     attrs =
   if List.exists (fun {pv_id; _} -> Ident.name pv_id = name.txt)
       !pattern_variables
   then raise(Error(loc, Env.empty, Multiply_bound_variable name.txt));
-  let id = Ident.create_local name.txt in
+  let id =
+    match module_type with
+    | None ->
+        (* values are not scoped *)
+        Ident.create_local name.txt
+    | Some _ ->
+        (* modules are scoped to the match. *)
+        let scope = get_gadt_equations_level () in
+        Ident.create_scoped ~scope name.txt
+  in
   pattern_variables :=
     {pv_id = id;
      pv_type = ty;
      pv_loc = loc;
      pv_as_var = is_as_variable;
+     pv_mty = module_type;
      pv_attributes = attrs} :: !pattern_variables;
-  if is_module then begin
-    (* Note: unpack patterns enter a variable of the same name *)
-    if not !allow_modules then
-      raise (Error (loc, Env.empty, Modules_not_allowed));
-    module_variables := (name, loc) :: !module_variables
-  end else begin
+  if Option.is_none module_type then begin
     (* moved to genannot *)
     Option.iter
       (fun s -> Stypes.record (Stypes.An_ident (name.loc, name.txt, s)))
@@ -501,7 +504,7 @@ let rec build_as_type env p =
           let row = row_repr row in
           newty (Tvariant{row with row_closed=false; row_more=newvar()})
       end
-  | Tpat_any | Tpat_var _ | Tpat_constant _
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_unpack _
   | Tpat_array _ | Tpat_lazy _ | Tpat_exception _ -> p.pat_type
 
 let build_or_pat env loc lid =
@@ -969,7 +972,6 @@ type half_typed_case =
     untyped_case: Parsetree.case;
     branch_env: Env.t;
     pat_vars: pattern_variable list;
-    unpacks: module_variable list;
     contains_gadt: bool; }
 
 let rec has_literal_pattern p = match p.ppat_desc with
@@ -1076,23 +1078,35 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_env = !env }
   | Ppat_unpack name ->
       assert (constrs = None);
+      if not !allow_modules then
+        raise (Error (loc, Env.empty, Modules_not_allowed));
       let t = instance expected_ty in
+      let original_level = get_gadt_equations_level () in
+      begin_def ();
+      let context = Typetexp.narrow () in
+      let mty = !type_unpack ~loc !env expected_ty in
+      Mtype.lower_nongen original_level mty;
+      Typetexp.widen context;
+      end_def ();
+      (* go back to original level *)
       begin match name.txt with
       | None ->
           rp k {
-            pat_desc = Tpat_any;
+            pat_desc = Tpat_unpack (None, name, mty);
             pat_loc = sp.ppat_loc;
-            pat_extra=[Tpat_unpack, name.loc, sp.ppat_attributes];
+            pat_extra=[];
             pat_type = t;
             pat_attributes = [];
             pat_env = !env }
       | Some s ->
           let v = { name with txt = s } in
-          let id = enter_variable loc v t ~is_module:true sp.ppat_attributes in
+          let id =
+            enter_variable name.loc v t ~module_type:mty sp.ppat_attributes
+          in
           rp k {
-            pat_desc = Tpat_var (id, v);
+            pat_desc = Tpat_unpack (Some id, name, mty);
             pat_loc = sp.ppat_loc;
-            pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
+            pat_extra=[];
             pat_type = t;
             pat_attributes = [];
             pat_env = !env }
@@ -1365,7 +1379,6 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       begin match
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
-        let initial_module_variables = !module_variables in
         let equation_level = !gadt_equations_level in
         let outter_lev = get_current_level () in
         (* introduce a new scope *)
@@ -1378,9 +1391,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
                       ~env:env1 (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
-        let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
-        module_variables := initial_module_variables;
         let env2 = ref !env in
         let p2 =
           try Some (type_pat ~exception_allowed ~mode:Inside_or sp2 expected_ty
@@ -1404,7 +1415,6 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         let alpha_env =
           enter_orpat_variables loc !env p1_variables p2_variables in
         pattern_variables := p1_variables;
-        module_variables := p1_module_variables;
         { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
           pat_loc = loc; pat_extra=[];
           pat_type = instance expected_ty;
@@ -1542,13 +1552,21 @@ let iter_pattern_variables_type f : pattern_variable list -> unit =
 
 let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
-    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} env ->
+    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes; pv_mty} env ->
        let check = if pv_as_var then check_as else check in
-       Env.add_value ?check pv_id
-         {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
-          val_attributes = pv_attributes;
-          val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
-         } env
+       match pv_mty with
+       | None ->
+           Env.add_value ?check pv_id
+             {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
+              val_attributes = pv_attributes;
+              val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+             } env
+       | Some mty ->
+           let md =
+             { md_type = mty; md_attributes=[]; md_loc = pv_loc
+             ; md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+           in
+           Env.add_module_declaration ?check pv_id Mp_present md env
     )
     pv env
 
@@ -1557,8 +1575,7 @@ let type_pattern ?exception_allowed ~lev env spat scope expected_ty =
   let new_env = ref env in
   let pat = type_pat ?exception_allowed ~lev new_env spat expected_ty in
   let pvs = get_ref pattern_variables in
-  let unpacks = get_ref module_variables in
-  (pat, !new_env, get_ref pattern_force, pvs, unpacks)
+  (pat, !new_env, get_ref pattern_force, pvs)
 
 let type_pattern_list no_existentials env spatl scope expected_tys allow =
   reset_pattern scope allow;
@@ -1571,13 +1588,8 @@ let type_pattern_list no_existentials env spatl scope expected_tys allow =
   in
   let patl = List.map2 type_pat spatl expected_tys in
   let pvs = get_ref pattern_variables in
-  let unpacks =
-    List.map (fun (name, loc) ->
-      name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
-    ) (get_ref module_variables)
-  in
   let new_env = add_pattern_variables !new_env pvs in
-  (patl, new_env, get_ref pattern_force, pvs, unpacks)
+  (patl, new_env, get_ref pattern_force, pvs)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern None false;
@@ -1591,32 +1603,48 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, val_env, met_env) =
     List.fold_right
-      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes}
+      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes; pv_mty}
         (pv, val_env, met_env) ->
          let check s =
            if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
          let id' = Ident.rename pv_id in
-         let val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+         let uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
          let val_env =
-          Env.add_value pv_id
-            { val_type = pv_type
-            ; val_kind = Val_reg
-            ; val_attributes = pv_attributes
-            ; val_loc = pv_loc
-            ; val_uid
-            }
-            val_env
+           match pv_mty with
+           | None ->
+              Env.add_value pv_id
+                { val_type = pv_type
+                ; val_kind = Val_reg
+                ; val_attributes = pv_attributes
+                ; val_loc = pv_loc
+                ; val_uid = uid
+                }
+                val_env
+           | Some mty ->
+               let md =
+                 { md_type = mty; md_attributes=[]; md_loc = pv_loc
+                 ; md_uid = uid }
+               in
+               Env.add_module_declaration pv_id Mp_present md val_env
          in
          let met_env =
-          Env.add_value id' ~check
-            { val_type = pv_type
-            ; val_kind = Val_ivar (Immutable, cl_num)
-            ; val_attributes = pv_attributes
-            ; val_loc = pv_loc
-            ; val_uid
-            }
-            met_env
+           match pv_mty with
+           | None ->
+               Env.add_value id' ~check
+                 { val_type = pv_type
+                 ; val_kind = Val_ivar (Immutable, cl_num)
+                 ; val_attributes = pv_attributes
+                 ; val_loc = pv_loc
+                 ; val_uid = uid
+                 }
+                 met_env
+           | Some mty ->
+               let md =
+                 { md_type = mty; md_attributes=[]; md_loc = pv_loc
+                 ; md_uid = uid }
+               in
+               Env.add_module_declaration ~check pv_id Mp_present md met_env
          in
          ((id', pv_id, pv_type)::pv, val_env, met_env))
       !pattern_variables ([], val_env, met_env)
@@ -2283,9 +2311,9 @@ and type_expect_
         | _, Recursive -> Some (Annot.Idef loc)
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
-      let (pat_exp_list, new_env, unpacks) =
+      let (pat_exp_list, new_env) =
         type_let existential_context env rec_flag spat_sexp_list scp true in
-      let body = type_unpacks new_env unpacks sbody ty_expected_explained in
+      let body = type_expect new_env sbody ty_expected_explained in
       let () =
         if rec_flag = Recursive then
           check_recursive_bindings env pat_exp_list
@@ -4128,59 +4156,6 @@ and type_statement ?explanation env sexp =
     exp
   end
 
-and type_unpacks ?in_function env unpacks sbody expected_ty =
-  let ty = newvar() in
-  (* remember original level *)
-  let extended_env, tunpacks =
-    List.fold_left (fun (env, unpacks) (name, loc, uid) ->
-      begin_def ();
-      let context = Typetexp.narrow () in
-      let modl =
-        !type_module env
-          Ast_helper.(
-            Mod.unpack ~loc
-              (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
-                                          name.loc)))
-      in
-      Mtype.lower_nongen ty.level modl.mod_type;
-      let pres =
-        match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
-        | _ -> Mp_present
-      in
-      let scope = create_scope () in
-      let md =
-        { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc;
-          md_uid = uid; }
-      in
-      let (id, env) =
-        Env.enter_module_declaration ~scope name.txt pres md env
-      in
-      Typetexp.widen context;
-      env, (id, name, pres, modl) :: unpacks
-    ) (env, []) unpacks
-  in
-  (* ideally, we should catch Expr_type_clash errors
-     in type_expect triggered by escaping identifiers from the local module
-     and refine them into Scoping_let_module errors
-  *)
-  let body = type_expect ?in_function extended_env sbody expected_ty in
-  let exp_loc = { body.exp_loc with loc_ghost = true } in
-  let exp_attributes = [Ast_helper.Attr.mk (mknoloc "#modulepat") (PStr [])] in
-  List.fold_left (fun body (id, name, pres, modl) ->
-    (* go back to parent level *)
-    end_def ();
-    Ctype.unify_var extended_env ty body.exp_type;
-    re {
-      exp_desc = Texp_letmodule(Some id, { name with txt = Some name.txt },
-                                pres, modl, body);
-      exp_loc;
-      exp_attributes;
-      exp_extra = [];
-      exp_type = ty;
-      exp_env = env }
-  ) body tunpacks
-
 (* Typing of match cases *)
 and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
       loc caselist =
@@ -4206,7 +4181,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
   in
   let outer_level = get_current_level () in
   let lev =
-    if may_contain_gadts then begin_def ();
+    begin_def ();
     get_current_level ()
   in
   let take_partial_instance =
@@ -4232,7 +4207,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
         let ty_arg = instance ?partial:take_partial_instance ty_arg in
         end_def ();
         generalize_structure ty_arg;
-        let (pat, ext_env, force, pvs, unpacks) =
+        let (pat, ext_env, force, pvs) =
           type_pattern ?exception_allowed ~lev env pc_lhs scope ty_arg
         in
         pattern_force := force @ !pattern_force;
@@ -4250,7 +4225,6 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
           untyped_case = case;
           branch_env = ext_env;
           pat_vars = pvs;
-          unpacks;
           contains_gadt = contains_gadt pat; }
         )
       caselist in
@@ -4292,7 +4266,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map
-      (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
+      (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs;
              untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
              contains_gadt; _ }  ->
         let ext_env =
@@ -4305,11 +4279,6 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
           add_pattern_variables ext_env pvs
             ~check:(fun s -> Warnings.Unused_var_strict s)
             ~check_as:(fun s -> Warnings.Unused_var s)
-        in
-        let unpacks =
-          List.map (fun (name, loc) ->
-            name, loc, Uid.mk ~current_unit:(Env.get_unit_name ())
-          ) unpacks
         in
         let ty_res' =
           if !Clflags.principal then begin
@@ -4332,11 +4301,11 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
           | None -> None
           | Some scond ->
               Some
-                (type_unpacks ext_env unpacks scond
+                (type_expect ext_env scond
                    (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
-          type_unpacks ?in_function ext_env unpacks pc_rhs (mk_expected ty_res')
+          type_expect ?in_function ext_env pc_rhs (mk_expected ty_res')
         in
         {
          c_lhs = pat;
@@ -4382,11 +4351,9 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
   else
     (* Check for unused cases, do not delay because of gadts *)
     unused_check false;
-  if may_contain_gadts then begin
-    end_def ();
-    (* Ensure that existential types do not escape *)
-    unify_exp_types loc env (instance ty_res) (newvar ()) ;
-  end;
+  end_def ();
+  (* Ensure that existential types do not escape *)
+  unify_exp_types loc env (instance ty_res) (newvar ()) ;
   cases, partial
 
 (* Typing of let bindings *)
@@ -4427,7 +4394,7 @@ and type_let
         | _ -> spat)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
-  let (pat_list, new_env, force, pvs, unpacks) =
+  let (pat_list, new_env, force, pvs) =
     type_pattern_list existential_context env spatl scope nvs allow in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
@@ -4527,29 +4494,57 @@ and type_let
              let slot = ref [] in
              List.iter
                (fun id ->
-                  let vd = Env.find_value (Path.Pident id) new_env in
-                  (* note: Env.find_value does not trigger the value_used
-                           event *)
                   let name = Ident.name id in
+                  let path = Path.Pident id in
                   let used = ref false in
-                  if not (name = "" || name.[0] = '_' || name.[0] = '#') then
+                  (* FIXME *)
+                  if (name <> "" && match name.[0] with 'A' .. 'Z' -> true | _ ->
+                    false)  then
+                    let md =
+                      try Env.find_module path new_env
+                      with _ -> fatal_error name
+                    in
+                    (* note: Env.find_module does not trigger the module_used
+                             event *)
                     add_delayed_check
                       (fun () ->
                          if not !used then
-                           Location.prerr_warning vd.Types.val_loc
+                           Location.prerr_warning md.Types.md_loc
                              ((if !some_used then check_strict else check) name)
                       );
-                  Env.set_value_used_callback
-                    vd
-                    (fun () ->
-                       match !current_slot with
-                       | Some slot ->
-                         slot := vd.val_uid :: !slot; rec_needed := true
-                       | None ->
-                         List.iter Env.mark_value_used (get_ref slot);
-                         used := true;
-                         some_used := true
-                    )
+                    Env.set_module_used_callback
+                      md
+                      (fun () ->
+                         match !current_slot with
+                         | Some slot ->
+                           slot := md.md_uid :: !slot; rec_needed := true
+                         | None ->
+                           List.iter Env.mark_module_used (get_ref slot);
+                           used := true;
+                           some_used := true
+                      )
+                  else
+                    let vd = Env.find_value path new_env in
+                    (* note: Env.find_value does not trigger the value_used
+                             event *)
+                    if not (name = "" || name.[0] = '_' || name.[0] = '#') then
+                      add_delayed_check
+                        (fun () ->
+                           if not !used then
+                             Location.prerr_warning vd.Types.val_loc
+                               ((if !some_used then check_strict else check) name)
+                        );
+                    Env.set_value_used_callback
+                      vd
+                      (fun () ->
+                         match !current_slot with
+                         | Some slot ->
+                           slot := vd.val_uid :: !slot; rec_needed := true
+                         | None ->
+                           List.iter Env.mark_value_used (get_ref slot);
+                           used := true;
+                           some_used := true
+                      )
                )
                (Typedtree.pat_bound_idents pat);
              pat, Some slot
@@ -4572,10 +4567,7 @@ and type_let
             end;
             let exp =
               Builtin_attributes.warning_scope pvb_attributes (fun () ->
-                if rec_flag = Recursive then
-                  type_unpacks exp_env unpacks sexp (mk_expected ty')
-                else
-                  type_expect exp_env sexp (mk_expected ty')
+                type_expect exp_env sexp (mk_expected ty')
               )
             in
             end_def ();
@@ -4583,10 +4575,7 @@ and type_let
             {exp with exp_type = instance exp.exp_type}
         | _ ->
             Builtin_attributes.warning_scope pvb_attributes (fun () ->
-                if rec_flag = Recursive then
-                  type_unpacks exp_env unpacks sexp (mk_expected pat.pat_type)
-                else
-                  type_expect exp_env sexp (mk_expected pat.pat_type)))
+              type_expect exp_env sexp (mk_expected pat.pat_type)))
       spat_sexp_list pat_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed then begin
@@ -4634,8 +4623,10 @@ and type_let
   if is_recursive then
     List.iter
       (fun {vb_pat=pat} -> match pat.pat_desc with
-           Tpat_var _ -> ()
-         | Tpat_alias ({pat_desc=Tpat_any}, _, _) -> ()
+           Tpat_var _
+         | Tpat_alias ({pat_desc=Tpat_any}, _, _) (* pretty sure that's the old
+                                                     Tpat_unpack. *)
+         | Tpat_unpack _ -> ()
          | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
       l;
   List.iter (function
@@ -4644,7 +4635,7 @@ and type_let
                                       | _ -> false) pat_extra) then
             check_partial_application false vb_expr
       | _ -> ()) l;
-  (l, new_env, unpacks)
+  (l, new_env)
 
 and type_andops env sarg sands expected_ty =
   let rec loop env let_sarg rev_sands expected_ty =
@@ -4694,7 +4685,7 @@ and type_andops env sarg sands expected_ty =
 
 let type_binding env rec_flag spat_sexp_list scope =
   Typetexp.reset_type_variables();
-  let (pat_exp_list, new_env, _unpacks) =
+  let (pat_exp_list, new_env) =
     type_let
       ~check:(fun s -> Warnings.Unused_value_declaration s)
       ~check_strict:(fun s -> Warnings.Unused_value_declaration s)
@@ -4704,7 +4695,7 @@ let type_binding env rec_flag spat_sexp_list scope =
   (pat_exp_list, new_env)
 
 let type_let existential_ctx env rec_flag spat_sexp_list scope =
-  let (pat_exp_list, new_env, _unpacks) =
+  let (pat_exp_list, new_env) =
     type_let existential_ctx env rec_flag spat_sexp_list scope false in
   (pat_exp_list, new_env)
 

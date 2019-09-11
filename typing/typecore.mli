@@ -186,8 +186,10 @@ exception Error_forward of Location.error
 val report_error: loc:Location.t -> Env.t -> error -> Location.error
  (** @deprecated.  Use {!Location.error_of_exn}, {!Location.print_report}. *)
 
-(* Forward declaration, to be filled in by Typemod.type_module *)
+(* Forward declaration, to be filled in by Typemod *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
+val type_unpack:
+  (loc:Location.t -> Env.t -> Types.type_expr -> Types.module_type) ref
 (* Forward declaration, to be filled in by Typemod.type_open *)
 val type_open:
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
