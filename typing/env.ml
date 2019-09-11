@@ -1833,15 +1833,7 @@ and add_extension ~check id ext env =
   let addr = extension_declaration_address env id ext in
   store_extension ~check id addr ext env
 
-and add_module_declaration ?(arg=false) ~check id presence md env =
-  let check =
-    if not check then
-      None
-    else if arg && is_in_signature env then
-      Some (fun s -> Warnings.Unused_functor_parameter s)
-    else
-      Some (fun s -> Warnings.Unused_module s)
-  in
+and add_module_declaration ?(arg=false) ?check id presence md env =
   let addr = module_declaration_address env id presence md in
   let env = store_module ~freshening_sub:None ~check id addr presence md env in
   if arg then add_functor_arg id env else env
@@ -1857,7 +1849,7 @@ and add_cltype id ty env =
   store_cltype id ty env
 
 let add_module ?arg id presence mty env =
-  add_module_declaration ~check:false ?arg id presence (md mty) env
+  add_module_declaration ?arg id presence (md mty) env
 
 let add_local_type path info env =
   { env with
@@ -1883,9 +1875,15 @@ let enter_extension ~scope name ext env =
   let env = store_extension ~check:true id addr ext env in
   (id, env)
 
-let enter_module_declaration ~scope ?arg s presence md env =
+let enter_module_declaration ~scope ?(arg=false) s presence md env =
   let id = Ident.create_scoped ~scope s in
-  (id, add_module_declaration ?arg ~check:true id presence md env)
+  let check =
+    if arg && is_in_signature env then
+      (fun s -> Warnings.Unused_functor_parameter s)
+    else
+      (fun s -> Warnings.Unused_module s)
+  in
+  (id, add_module_declaration ~arg ~check id presence md env)
 
 let enter_modtype ~scope name mtd env =
   let id = Ident.create_scoped ~scope name in
@@ -1914,7 +1912,7 @@ let add_item comp env =
   | Sig_type(id, decl, _, _)  -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _, _) -> add_extension ~check:false id ext env
   | Sig_module(id, presence, md, _, _) ->
-      add_module_declaration ~check:false id presence md env
+      add_module_declaration id presence md env
   | Sig_modtype(id, decl, _)  -> add_modtype id decl env
   | Sig_class(id, decl, _, _) -> add_class id decl env
   | Sig_class_type(id, decl, _, _) -> add_cltype id decl env

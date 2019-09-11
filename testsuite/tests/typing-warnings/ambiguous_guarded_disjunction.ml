@@ -346,7 +346,7 @@ let not_ambiguous__module_variable x b =  match x with
 Line 2, characters 12-13:
 2 |   | (module M:S),_,(1,_)
                 ^
-Warning 60: unused module M.
+Warning 27: unused variable M.
 val not_ambiguous__module_variable :
   (module S) * (module S) * (int * int) -> bool -> int = <fun>
 |}]

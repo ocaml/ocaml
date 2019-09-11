@@ -259,12 +259,10 @@ let init_shape id modl =
         raise (Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid}))
     | Sig_module(id, Mp_present, md, _, _) :: rem ->
         init_shape_mod id md.md_loc env md.md_type ::
-        init_shape_struct (Env.add_module_declaration ~check:false
-                             id Mp_present md env) rem
+        init_shape_struct (Env.add_module_declaration id Mp_present md env) rem
     | Sig_module(id, Mp_absent, md, _, _) :: rem ->
         init_shape_struct
-          (Env.add_module_declaration ~check:false
-                             id Mp_absent md env) rem
+          (Env.add_module_declaration id Mp_absent md env) rem
     | Sig_modtype(id, minfo, _) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->

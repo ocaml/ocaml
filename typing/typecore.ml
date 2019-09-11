@@ -1566,8 +1566,7 @@ let add_pattern_variables ?check ?check_as env pv =
              { md_type = mty; md_attributes=[]; md_loc = pv_loc
              ; md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
            in
-           Env.add_module_declaration ~check:true (* FIXME *) pv_id
-             Mp_present md env
+           Env.add_module_declaration ?check pv_id Mp_present md env
     )
     pv env
 
@@ -1627,8 +1626,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
                  { md_type = mty; md_attributes=[]; md_loc = pv_loc
                  ; md_uid = uid }
                in
-               Env.add_module_declaration ~check:false (* FIXME *) pv_id
-                 Mp_present md val_env
+               Env.add_module_declaration pv_id Mp_present md val_env
          in
          let met_env =
            match pv_mty with
@@ -1646,8 +1644,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
                  { md_type = mty; md_attributes=[]; md_loc = pv_loc
                  ; md_uid = uid }
                in
-               Env.add_module_declaration ~check:true (* FIXME *) pv_id
-                 Mp_present md met_env
+               Env.add_module_declaration ~check pv_id Mp_present md met_env
          in
          ((id', pv_id, pv_type)::pv, val_env, met_env))
       !pattern_variables ([], val_env, met_env)
