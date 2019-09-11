@@ -2178,16 +2178,7 @@ let mark_cltype_used uid =
   | exception Not_found -> ()
 
 let set_value_used_callback vd callback =
-  try
-    let old = Hashtbl.find value_declarations vd.val_uid in
-    Hashtbl.replace value_declarations vd.val_uid
-      (fun () -> old (); callback ())
-      (* this is to support cases like:
-               let x = let x = 1 in x in x
-         where the two declarations have the same location
-         (e.g. resulting from Camlp4 expansion of grammar entries) *)
-  with Not_found ->
-    Hashtbl.add value_declarations vd.val_uid callback
+  Hashtbl.add value_declarations vd.val_uid callback
 
 let set_type_used_callback td callback =
   if Uid.for_actual_declaration td.type_uid then
