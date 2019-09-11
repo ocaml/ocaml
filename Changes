@@ -239,6 +239,10 @@ OCaml 4.09.0
 - #8701, #8725: Variance of constrained parameters causes principality issues
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
+- #8777(partial): fix position information in some polymorphic variant
+  error messages about missing tags
+  (Florian Angeletti, review by Thomas Refis)
+
 - #8779, more cautious variance computation to avoid missing cmis
   (Florian Angeletti, report by Antonio Nuno Monteiro, review by Leo White)
 
