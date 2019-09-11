@@ -124,6 +124,7 @@ module Unification_trace = struct
         Incompatible_fields { name; diff = swap_diff diff}
     | Obj (Missing_field(pos,s)) -> Obj(Missing_field(swap_position pos,s))
     | Obj (Abstract_row pos) -> Obj(Abstract_row (swap_position pos))
+    | Variant (No_tags(pos,f)) -> Variant (No_tags(swap_position pos,f))
     | x -> x
   let swap x = List.map swap_elt x
 
