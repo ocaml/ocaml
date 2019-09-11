@@ -53,5 +53,5 @@ method! reload_operation op arg res =
       argres'
 end
 
-let fundecl f =
-  (new reload)#fundecl f
+let fundecl f num_stack_slots =
+  (new reload)#fundecl f num_stack_slots

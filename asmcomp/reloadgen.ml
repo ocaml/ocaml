@@ -19,8 +19,6 @@ open Misc
 open Reg
 open Mach
 
-let num_stack_slots = Array.make Proc.num_register_classes 0
-
 let insert_move src dst next =
   if src.loc = dst.loc
   then next
@@ -125,7 +123,7 @@ method private reload i =
       instr_cons (Itrywith(self#reload body, self#reload handler)) [||] [||]
         (self#reload i.next)
 
-method fundecl f =
+method fundecl f num_stack_slots =
   redo_regalloc <- false;
   let new_body = self#reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
