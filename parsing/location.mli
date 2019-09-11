@@ -73,6 +73,11 @@ val mkloc : 'a -> t -> 'a loc
 
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
+(* Used by the Error Reporting Code if [!input_name] is
+   //toplevel// [!input_phrase_buffer] is Some buf
+   where buf is the last toplevel phrase and otherwise
+   [!input_phrase_buffer] is None *)
+val input_phrase_buffer: Buffer.t option ref
 
 
 (** {1 Toplevel-specific functions} *)

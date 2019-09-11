@@ -438,6 +438,10 @@ OCaml 4.09.0
    Thomas Refis, Armaël Guéneau, Gabriel Scherer, David Allsopp)
 - #3249: ocamlmklib should reject .cmxa files
   (Xavier Leroy)
+- #7925, #8611: fix error highlighting for exceptionally
+  long toplevel phrases
+  (Kyle Miller, reported by Armaël Guéneau, review by Armaël Guéneau
+   and Nicolás Ojeda Bär)
 - #7937, #2287: fix uncaught Unify exception when looking for type
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
