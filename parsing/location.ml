@@ -604,8 +604,9 @@ let lines_around_from_current_input ~start_pos ~end_pos =
   match !input_lexbuf, !input_phrase_buffer, !input_name with
   | _, Some pb, "//toplevel//" ->
       begin match lines_around_from_phrasebuf pb ~start_pos ~end_pos with
-      | [] -> (* Couldn't get input from phrase buffer, raise an error *)
-          assert false
+      | [] -> (* Could not read the input from the phrase buffer. This is likely
+                 a sign that we were given a buggy location. *)
+          []
       | lines ->
           lines
       end
