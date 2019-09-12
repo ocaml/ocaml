@@ -67,6 +67,9 @@ Working version
   skipped lines/bytes into account
   (Gabriel Scherer, review by Sébastien Hinderer)
 
+- #8928: Move contains_calls and num_stack_slots from Proc to Mach.fundecl
+  (Greta Yorsh, review by Florian Angeletti and Vincent Laviron)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.

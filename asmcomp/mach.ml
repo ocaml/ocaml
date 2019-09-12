@@ -100,6 +100,8 @@ type fundecl =
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
+    fun_num_stack_slots: int array;
+    fun_contains_calls: bool;
   }
 
 let rec dummy_instr =
