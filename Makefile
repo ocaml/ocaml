@@ -172,9 +172,9 @@ ASMCOMP=\
   asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
   asmcomp/liveness.cmo \
   asmcomp/spill.cmo asmcomp/split.cmo \
-  asmcomp/reloadgen.cmo asmcomp/reload.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo \
   asmcomp/linscan.cmo \
+  asmcomp/reloadgen.cmo asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
   asmcomp/linear.cmo asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
