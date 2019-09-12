@@ -181,8 +181,10 @@ class virtual selector_generic : object
 
   val mutable instr_seq : Mach.instruction
 
+  (* [contains_calls] is declared as a reference instance variable,
+     instead of a mutable boolean instance variable,
+     because the traversal uses functional object copies. *)
+  val contains_calls : bool ref
 end
 
 val reset : unit -> unit
-
-val contains_calls : bool ref

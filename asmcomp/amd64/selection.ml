@@ -259,7 +259,7 @@ method select_floatarith commutative regular_op mem_op args =
       assert false
 
 method! mark_c_tailcall =
-  Selectgen.contains_calls := true
+  contains_calls := true
 
 (* Deal with register constraints *)
 
