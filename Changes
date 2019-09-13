@@ -3,28 +3,6 @@ OCaml 4.09.0
 
 (Changes that can break existing programs are marked with a "*")
 
-### Code generation and optimizations:
-
-- #2278: Remove native code generation support for 32-bit Intel macOS,
-  iOS and other Darwin targets.
-  (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
-
-- #8547: Optimize matches that are an affine function of the input.
-  (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
-
-
-- #1904, #7931: Add FreeBSD/aarch64 support
-  (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
-   and Xavier Leroy)
-
-- #8507: Shorten symbol names of anonymous functions in Flambda mode
-  (the directory portions are now hidden)
-  (Mark Shinwell, review by Nicolás Ojeda Bär)
-
-- #8681, #8699, #8712: Fix code generation with nested let rec of functions.
-  (Stephen Dolan, Leo White, Gabriel Scherer and Pierre Chambart,
-   review by Gabriel Scherer, reports by Alexey Solovyev and Jonathan French)
-
 ### Runtime system:
 
 * #1725, #2279: Deprecate Obj.set_tag and Obj.truncate
@@ -128,12 +106,27 @@ OCaml 4.09.0
   of an extensible variant type
   (Guillaume Bury, review by many fine eyes)
 
-### Tools:
+### Code generation and optimizations:
 
-- #2221: ocamldep will now correctly allow a .ml file in an include directory
-  that appears first in the search order to shadow a .mli appearing in a later
-  include directory.
-  (Nicolás Ojeda Bär, review by Florian Angeletti)
+- #2278: Remove native code generation support for 32-bit Intel macOS,
+  iOS and other Darwin targets.
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
+
+- #8547: Optimize matches that are an affine function of the input.
+  (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
+
+
+- #1904, #7931: Add FreeBSD/aarch64 support
+  (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
+   and Xavier Leroy)
+
+- #8507: Shorten symbol names of anonymous functions in Flambda mode
+  (the directory portions are now hidden)
+  (Mark Shinwell, review by Nicolás Ojeda Bär)
+
+- #8681, #8699, #8712: Fix code generation with nested let rec of functions.
+  (Stephen Dolan, Leo White, Gabriel Scherer and Pierre Chambart,
+   review by Gabriel Scherer, reports by Alexey Solovyev and Jonathan French)
 
 ### Manual and documentation:
 
@@ -146,6 +139,13 @@ OCaml 4.09.0
 
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
+
+### Tools:
+
+- #2221: ocamldep will now correctly allow a .ml file in an include directory
+  that appears first in the search order to shadow a .mli appearing in a later
+  include directory.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 
