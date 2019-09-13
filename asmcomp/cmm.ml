@@ -212,7 +212,7 @@ let reset () =
   label_counter := 99
 
 let iter_shallow_tail f = function
-  | Clet(_id, _exp, body) ->
+  | Clet(_, _, body) | Cphantom_let (_, _, body) ->
       f body;
       true
   | Cifthenelse(_cond, _dbg_cond, e1, _dbg_e1, e2, _dbg_e2) ->
@@ -235,12 +235,24 @@ let iter_shallow_tail f = function
       true
   | Cexit _ | Cop (Craise _, _, _) ->
       true
-  | _ ->
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _
+  | Cblockheader _
+  | Cvar _
+  | Cassign _
+  | Ctuple _
+  | Cop _ ->
       false
 
 let rec map_tail f = function
   | Clet(id, exp, body) ->
       Clet(id, exp, map_tail f body)
+  | Cphantom_let(id, exp, body) ->
+      Cphantom_let (id, exp, map_tail f body)
   | Cifthenelse(cond, dbg_cond, e1, dbg_e1, e2, dbg_e2) ->
       Cifthenelse
         (
@@ -259,5 +271,15 @@ let rec map_tail f = function
       Ctrywith(map_tail f e1, id, map_tail f e2, dbg)
   | Cexit _ | Cop (Craise _, _, _) as cmm ->
       cmm
-  | c ->
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _
+  | Cblockheader _
+  | Cvar _
+  | Cassign _
+  | Ctuple _
+  | Cop _ as c ->
       f c

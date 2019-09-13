@@ -64,11 +64,9 @@ let add_unboxed_id id unboxed_id bn env =
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
 
-let constants_tbl = Hashtbl.create 16
-
 let structured_constant_of_sym s =
   match Compilenv.structured_constant_of_symbol s with
-  | None -> Hashtbl.find_opt constants_tbl s
+  | None -> Cmmgen_state.get_structured_constant s
   | Some _ as r -> r
 
 (* Local binding of complex expressions *)
@@ -3379,12 +3377,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
 let compunit (ulam, preallocated_blocks, constants) =
   assert (Cmmgen_state.no_more_functions ());
   let dbg = Debuginfo.none in
-  Hashtbl.clear constants_tbl;
-  List.iter
-    (fun {symbol; definition; exported =_} ->
-       Hashtbl.add constants_tbl symbol definition
-    )
-    constants;
+  Cmmgen_state.set_structured_constants constants;
   let init_code =
     if !Clflags.afl_instrument then
       Afl_instrument.instrument_initialiser (transl empty_env ulam)
@@ -3406,7 +3399,7 @@ let compunit (ulam, preallocated_blocks, constants) =
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_clambda_constants constants c1 in
   let c3 = transl_all_functions c2 in
-  Hashtbl.clear constants_tbl;
+  Cmmgen_state.set_structured_constants [];
   let c4 = emit_preallocated_blocks preallocated_blocks c3 in
   emit_cmm_data_items_for_constants c4
 

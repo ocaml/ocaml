@@ -28,6 +28,7 @@ type constant =
 type t = {
   mutable constants : constant S.Map.t;
   mutable data_items : Cmm.data_item list list;
+  structured_constants : (string,  Clambda.ustructured_constant) Hashtbl.t;
   functions : Clambda.ufunction Queue.t;
 }
 
@@ -35,6 +36,7 @@ let empty = {
   constants = S.Map.empty;
   data_items = [];
   functions = Queue.create ();
+  structured_constants = Hashtbl.create 16;
 }
 
 let state = empty
@@ -65,3 +67,14 @@ let next_function () =
 
 let no_more_functions () =
   Queue.is_empty state.functions
+
+let set_structured_constants l =
+  Hashtbl.clear state.structured_constants;
+  List.iter
+    (fun (c : Clambda.preallocated_constant) ->
+       Hashtbl.add state.structured_constants c.symbol c.definition
+    )
+    l
+
+let get_structured_constant s =
+  Hashtbl.find_opt state.structured_constants s
