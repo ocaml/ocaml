@@ -243,6 +243,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
 	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
 	  -e 's|@@OBJEXT@@|$(O)|' \
+	  -e 's|@@ASMEXT@@|$(S)|' \
 	  -e 's|@@NATIVE_DYNLINK@@|$(NATDYNLINK)|' \
 	  -e 's|@@SHARED_LIBRARY_CFLAGS@@|$(SHAREDLIB_CFLAGS)|' \
 	  -e 's|@@SHAREDOBJEXT@@|$(SO)|' \
