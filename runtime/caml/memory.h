@@ -215,6 +215,7 @@ enum caml_alloc_small_flags {
 };
 
 extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags);
+// Do not call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_C
 #define Alloc_small_aux(result, wosize, tag, profinfo, track) do {     \
   CAMLassert ((wosize) >= 1);                                          \

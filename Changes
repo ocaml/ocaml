@@ -119,9 +119,11 @@ Working version
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)
 
-- #8691, #8897: Allocation functions are now guaranteed not to trigger any
-   OCaml callback when called from C.
-   (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
+* #8691, #8897: Allocation functions are now guaranteed not to trigger any
+   OCaml callback when called from C. In long-running C functions,
+   this can be replaced with calls to caml_check_urgent_gc.
+   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
+    Guillaume Munch-Maccagnoni)
 
 - #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
   the new hook caml_fatal_error_hook.
