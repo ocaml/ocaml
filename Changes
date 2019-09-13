@@ -125,6 +125,10 @@ Working version
 
 ### Standard library:
 
+- #8832: List.find_map : ('a -> 'b option) -> 'a list -> 'b option
+  (Gabriel Scherer, review by Jeremy Yallop, Nicolás Ojeda Bär
+   and Daniel Bünzli)
+
 - #8657: Optimization in [Array.make] when initializing with unboxed
    or young values.
    (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
