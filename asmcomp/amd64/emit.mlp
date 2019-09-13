@@ -67,27 +67,30 @@ let emit_debug_info dbg =
 
 let fp = Config.with_frame_pointers
 
+(* Record calls to the GC -- we've moved them out of the way *)
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label;                    (* Label of frame descriptor *)
   }
 
+(* Record calls to caml_ml_array_bound_error.
+   In -g mode, or when using Spacetime profiling, we maintain one call to
+   caml_ml_array_bound_error per bound check site.  Without -g, we can share
+   a single call. *)
 type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
     bd_frame: label;                    (* Label of frame descriptor *)
     (* As for [gc_call]. *)
   }
 
-(* Environment *)
-type env = {
+(* Environment for emitting a function *)
+type per_function_env = {
   f : fundecl;
   stack_offset : int;
   call_gc_sites : gc_call list;
   bound_error_sites : bound_error_call list;
-  bound_error_call : int;
-  symbols_defined : String.Set.t;
-  symbols_used : String.Set.t;
+  bound_error_call : label option;
 }
 
 let mk_env f =
@@ -96,12 +99,8 @@ let mk_env f =
     stack_offset = 0;
     call_gc_sites = [];
     bound_error_sites = [];
-    bound_error_call = 0;
-    symbols_defined = String.Set.empty;
-    symbols_used = String.Set.empty;
+    bound_error_call = None;
   }
-
-(* Tradeoff between code size and code speed *)
 
 let frame_size env =                     (* includes return address *)
   if env.f.fun_frame_required then begin
@@ -278,19 +277,11 @@ let record_frame live dbg env =
   let lbl = record_frame_label live dbg env in
   def_label lbl
 
-let call_gc_sites = ref ([] : gc_call list)
-
 let emit_call_gc gc ~env =
   def_label gc.gc_lbl;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
-
-
-(* Record calls to caml_ml_array_bound_error.
-   In -g mode we maintain one call to
-   caml_ml_array_bound_error per bound check site.  Without -g, we can share
-   a single call. *)
 
 let bound_error_label dbg env =
   if !Clflags.debug then begin
@@ -301,12 +292,12 @@ let bound_error_label dbg env =
     let env = { env with bound_error_sites } in
     (lbl_bound_error, env)
   end else begin
-    let env =
-      if env.bound_error_call = 0 then
-        { env with bound_error_call = new_label() }
-      else env
-    in
-    (env.bound_error_call, env)
+    match env.bound_error_call with
+    | None ->
+      let lbl = new_label () in
+      let env = { env with bound_error_call = Some lbl } in
+      lbl, env
+    | Some lbl -> lbl, env
   end
 
 let emit_call_bound_error env bd =
@@ -316,10 +307,11 @@ let emit_call_bound_error env bd =
 
 let emit_call_bound_errors env =
   List.iter (emit_call_bound_error env) env.bound_error_sites;
-  if env.bound_error_call > 0 then begin
-    def_label env.bound_error_call;
+  match env.bound_error_call with
+  | Some lbl ->
+    def_label lbl;
     emit_call "caml_ml_array_bound_error"
-  end
+  | None -> ()
 
 (* Names for instructions *)
 
