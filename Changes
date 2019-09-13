@@ -275,8 +275,8 @@ OCaml 4.09.0
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
-OCaml 4.08 maintenance branch:
-------------------------------
+OCaml 4.08.1 (5 August 2019)
+----------------------------
 
 ### Bug fixes:
 
