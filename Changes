@@ -496,8 +496,8 @@ OCaml 4.09.0
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
-OCaml 4.08 maintenance branch:
-------------------------------
+OCaml 4.08.1 (5 August 2019)
+----------------------------
 
 ### Bug fixes:
 
@@ -519,6 +519,9 @@ OCaml 4.08 maintenance branch:
 - #8830: configure script: fix tool prefix detection and Debian's armhf
   detection
   (Stéphane Glondu, review by David Allsopp)
+
+- #8843, #8841: fix use of off_t on 32-bit systems.
+  (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
 OCaml 4.08.0 (13 June 2019)
 ---------------------------
