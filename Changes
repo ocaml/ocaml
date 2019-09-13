@@ -201,6 +201,11 @@ Working version
 
 ### Bug fixes:
 
+- #7925, #8611: fix error highlighting for exceptionally
+  long toplevel phrases
+  (Kyle Miller, reported by Armaël Guéneau, review by Armaël Guéneau
+   and Nicolás Ojeda Bär)
+
 - #8622: Don't generate #! headers over 127 characters.
   (David Allsopp, review by Xavier Leroy and Stephen Dolan)
 
@@ -441,10 +446,6 @@ OCaml 4.09.0
    Thomas Refis, Armaël Guéneau, Gabriel Scherer, David Allsopp)
 - #3249: ocamlmklib should reject .cmxa files
   (Xavier Leroy)
-- #7925, #8611: fix error highlighting for exceptionally
-  long toplevel phrases
-  (Kyle Miller, reported by Armaël Guéneau, review by Armaël Guéneau
-   and Nicolás Ojeda Bär)
 - #7937, #2287: fix uncaught Unify exception when looking for type
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
@@ -463,6 +464,10 @@ OCaml 4.09.0
 - #8701, #8725: Variance of constrained parameters causes principality issues
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
+- #8777(partial): fix position information in some polymorphic variant
+  error messages about missing tags
+  (Florian Angeletti, review by Thomas Refis)
+
 - #8779, more cautious variance computation to avoid missing cmis
   (Florian Angeletti, report by Antonio Nuno Monteiro, review by Leo White)
 
@@ -480,7 +485,11 @@ OCaml 4.09.0
   (Vincent Laviron, report by Murilo Giacometti Rocha, review by Xavier Leroy)
 
 - #8862, #8871: subst: preserve scopes
-  (Thomas Refis, report by Leo White)
+  (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
+- #8921, #8924: Fix stack overflow with Flambda
+  (Vincent Laviron, review by Pierre Chambart and Leo White,
+   report by Aleksandr Kuzmenko)
 
 OCaml 4.08 maintenance branch:
 ------------------------------
