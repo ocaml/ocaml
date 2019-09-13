@@ -82,4 +82,6 @@ STDLIB_MODULES=\
   $(P)moreLabels \
   $(P)stdLabels \
   $(P)spacetime \
-  $(P)bigarray
+  $(P)bigarray \
+  $(P)in_channel \
+  $(P)out_channel
