@@ -789,7 +789,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
     while ((ret = unw_step(&cur)) > 0) {
       unw_word_t ip;
       unw_get_reg(&cur, UNW_REG_IP, &ip);
-      if (caml_last_return_address == (uintnat) ip) {
+      if (Caml_state->last_return_address == (uintnat) ip) {
         break;
       }
       else {
@@ -824,7 +824,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
   for (frame = frames->size - 1; frame >= innermost_frame; frame--) {
     c_node_type expected_type;
     void* pc = frames->contents[frame];
-    CAMLassert (pc != (void*) caml_last_return_address);
+    CAMLassert (pc != (void*) Caml_state->last_return_address);
 
     if (!for_allocation) {
       expected_type = CALL;
