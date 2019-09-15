@@ -62,19 +62,18 @@ let fix_slash s =
   we must use a cache instead of calling Sys.readdir too often. *)
 let dirs = ref String.Map.empty
 let readdir dir =
-  try
-    String.Map.find dir !dirs
-  with Not_found ->
-    let contents =
-      try
-        Sys.readdir dir
-      with Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-        Error_occurred.set ();
-        [||]
-    in
-    dirs := String.Map.add dir contents !dirs;
-    contents
+  match String.Map.find dir !dirs with
+  | dir -> dir
+  | exception Not_found ->
+      let contents =
+        try if Sys.file_exists dir then Sys.readdir dir else [||] with
+        | Sys_error msg ->
+            Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+            Error_occurred.set ();
+            [||]
+      in
+      dirs := String.Map.add dir contents !dirs;
+      contents
 
 let add_to_list li s =
   li := s :: !li
