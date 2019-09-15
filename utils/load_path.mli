@@ -38,6 +38,10 @@ val get_paths : unit -> string list
 (** Return the list of directories passed to [add_dir] so far, in
     reverse order. *)
 
+val get_existing_paths : unit -> string list
+(** [get_existing_paths] is like {!get_paths} but returns only those
+    directories that do exist on the file system. *)
+
 val find : string -> string
 (** Locate a file in the load path. Raise [Not_found] if the file
     cannot be found. This function is optimized for the case where the
@@ -56,9 +60,13 @@ module Dir : sig
 
   val path : t -> string
 
+  val exists : t -> bool
+  (** [exists d] is [true] if directory [d] exists on the file system. *)
+
   val files : t -> string list
-  (** All the files in that directory. This doesn't include files in
-      sub-directories of this directory. *)
+  (** [files d] is the list of file and directory names (not paths)
+      found in directory [d]. This is the empty list if [exists d]
+      is [false]. *)
 end
 
 val add : Dir.t -> unit

@@ -23,10 +23,12 @@ let files_uncap : registry = ref SMap.empty
 module Dir = struct
   type t = {
     path : string;
+    exists : bool;
     files : string list;
   }
 
   let path t = t.path
+  let exists t = t.exists
   let files t = t.files
 
   (* For backward compatibility reason, simulate the behavior of
@@ -34,12 +36,13 @@ module Dir = struct
      + treat [""] as the current directory. *)
   let readdir_compat dir =
     try
-      Sys.readdir (if dir = "" then Filename.current_dir_name else dir)
+      true, Sys.readdir (if dir = "" then Filename.current_dir_name else dir)
     with Sys_error _ ->
-      [||]
+      false, [||]
 
   let create path =
-    { path; files = Array.to_list (readdir_compat path) }
+    let exists, files = readdir_compat path in
+    { path; exists; files = Array.to_list files }
 end
 
 let dirs = ref []
@@ -51,6 +54,9 @@ let reset () =
 
 let get () = !dirs
 let get_paths () = List.map Dir.path !dirs
+let get_existing_paths () =
+  let existing_path d = if Dir.exists d then Some (Dir.path d) else None in
+  List.filter_map existing_path !dirs
 
 let add dir =
   let add_file base =
