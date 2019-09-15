@@ -192,7 +192,7 @@ let call_linker mode output_name files extra =
         Printf.sprintf "%s%s %s %s %s"
           Config.native_pack_linker
           (Filename.quote output_name)
-          (quote_prefixed l_prefix (Load_path.get_paths ()))
+          (quote_prefixed l_prefix (Load_path.get_existing_paths ()))
           (quote_files (remove_Wl files))
           extra
       else
@@ -206,7 +206,7 @@ let call_linker mode output_name files extra =
           )
           (Filename.quote output_name)
           ""  (*(Clflags.std_include_flag "-I")*)
-          (quote_prefixed "-L" (Load_path.get_paths ()))
+          (quote_prefixed "-L" (Load_path.get_existing_paths ()))
           (String.concat " " (List.rev !Clflags.all_ccopts))
           (quote_files files)
           extra

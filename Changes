@@ -122,6 +122,9 @@ Working version
   specified and `dir` does not exist; be silent and exit with `0`.
   (Daniel Bünzli, review by XXXX)
 
+* #XXXX: Only pass search directories that do exist to the C linker.
+  (Daniel Bünzli, review by XXXX)
+
 * #6792, #8654 ocamldebug now supports program using Dynlink. This
    breaks compatibility with emacs modes.
    (Whitequark and Jacques-Henri Jourdan, review by Gabriel Scherer
