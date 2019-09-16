@@ -65,7 +65,8 @@ let rhs_loc n = {
 
 let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
-
+let set_input_name name =
+  if name <> "" then input_name := name
 (* Terminal info *)
 
 let status = ref Terminfo.Uninitialised

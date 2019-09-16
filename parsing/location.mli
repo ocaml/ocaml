@@ -48,6 +48,7 @@ val symbol_gloc: unit -> t
 val rhs_loc: int -> t
 
 val input_name: string ref
+val set_input_name: string -> unit 
 val input_lexbuf: Lexing.lexbuf option ref
 
 val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)

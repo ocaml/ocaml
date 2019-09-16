@@ -100,5 +100,5 @@ let implementation ppf sourcefile outputprefix =
     raise x
 
 let c_file name =
-  Location.input_name := name;
+  Location.set_input_name  name;
   if Ccomp.compile_file name <> 0 then exit 2
