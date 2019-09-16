@@ -5,7 +5,6 @@ compile_only = "true"
 * no-flambda
 ** setup-ocamlopt.byte-build-env
 *** ocamlopt.byte
-ocamlopt_byte_exit_status = "2"
 **** check-ocamlopt.byte-output
 
 *)
