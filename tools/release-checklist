@@ -23,13 +23,13 @@ and the OCamlLabs folks (for OPAM testing).
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 
-export WORKTREE=~/o/4.08
-  # must be the git worktree for the branch you are releasing
-
 export MAJOR=4
 export MINOR=08
 export BUGFIX=0
-export PLUSEXT=+beta3
+export PLUSEXT=
+
+export WORKTREE=~/o/\$MAJOR.\$MINOR
+  # must be the git worktree for the branch you are releasing
 
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
@@ -110,23 +110,35 @@ make tests
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
 # Update ocaml-variants.opam file to depend on the new version of ocaml.
-git add VERSION Changes ocaml-variants.opam
+./autogen
+git add VERSION Changes ocaml-variants.opam configure
 git commit -m "last commit before tagging $VERSION"
 # update VERSION with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
+# Update ocaml-variants.opam with new version.
+# Update the copyright year in the manual.
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
-git commit -m "change VERSION for $VERSION" -a
+git commit -m "release $VERSION" -a
 git tag -m "release $VERSION" $VERSION
 
 # for production releases, change the VERSION file into (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
-git commit -m "increment version number after tagging $VERSION" VERSION
+# Revert ocaml-variants.opam to its "trunk" version.
+./autogen
+git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
 git push
 git push --tags
 ```
+
+## 5.1: create the release on github (only for a production release)
+
+open https://github.com/ocaml/ocaml/releases
+# and click "Draft a new release"
+# for a minor release, the description is:
+ Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
 
 ## 6: create OPAM switches
@@ -134,54 +146,9 @@ git push --tags
 Create OPAM switches for the new version, copying the particular
 switch configuration choices from the previous version.
 
-We currently use a semi-automated process, copying and batch-editing
-the compiler descriptions from the last release. The instructions
-below assume an opam1 repository organization, an opam2 repository
-will have a different layout.
-
-From a branch of the opam-repository, in `compilers/$MAJOR.$MINOR.$BUGFIX`:
-
-```
-cd .../opam-repository/packages/ocaml-variants
-# copy foo+rc2+... switches into foo+rc3+...
-OLD_DIRS=*+rc2*
-VER="s/+rc2/+rc3/g"
-
-NEW_DIRS=""
-for f in $OLD_DIRS; do NEW_DIRS="$NEW_DIRS $(echo $f | sed $VER)"; done
-echo $NEW_DIRS # for checking
-
-for f in $OLD_DIRS; do
-    mkdir -p $(echo $f | sed $VER)
-    for file in $f/*; do
-      cp $file $(echo $file | sed $VER)
-      # we copy the file, but their content still corresponds to the old version
-    done
-    git add $(echo $f | sed $VER)
-done
-
-git status
-  # inspect the new filenames
-
-for f in $NEW_DIRS; do sed -i $VER $f/*; done
-git diff # inspect the result of this last change
-
-git add $NEW_DIRS
-
-# the strings below work on .descr files,
-# they may need to be adapted
-for f in $NEW_DIRS; do
-  sed -i "s/rc2/rc3/g" $f/*
-  sed -i "s/Second release candidate/Third release candidate/g" $f/*
-done
-git diff # inspect the result of this last change
-
-git add $NEW_DIRS
-
-git diff --cached # inspect the complete result
-
-git commit -m "OPAM switches for $VERSION"
-```
+Do not forget to add/update the checksum field for the tarballs in the
+"url" section of the opam files. Use opam-lint before sending the pull
+request.
 
 ## 7: build the release archives
 
@@ -294,12 +261,14 @@ source /tmp/env-$USER.sh
 cd $WEB_PATH/caml/pub/docs
 mkdir -p manual-ocaml-$BRANCH
 cd manual-ocaml-$BRANCH
+rm -fR htmlman ocaml-$BRANCH-refman-html.tar.gz
 wget http://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$BRANCH-refman-html.tar.gz
 tar -xzvf ocaml-$BRANCH-refman-html.tar.gz # this extracts into htmlman/
-cp -r htmlman/* . # move HTML content to docs/manual-caml-$BRANCH
-rm -fR htmlman
+/bin/cp -r htmlman/* . # move HTML content to docs/manual-caml-$BRANCH
+rm -fR htmlman ocaml-$BRANCH-refman-html.tar.gz
 
 cd $WEB_PATH/caml/pub/docs
+rm manual-ocaml
 ln -sf manual-ocaml-$BRANCH manual-ocaml
 ```
 
@@ -349,16 +318,32 @@ Happy hacking,
 ```
 Dear OCaml users,
 
-The release of OCaml version <version> is imminent.  We have
-created a <release candidate/beta version> for your testing pleasure.  Please
-download the sources, compile, install, and test your favourite
-software with it.  Then let me know whether it works for you.
+The release of OCaml version $MAJOR.$MINOR.$BUGFIX is imminent.  We have
+created a release candidate that you can test.
 
-We want to know about any show-stopping bugs, especially in the
-compilation and installation phases.
+The source code is available at these addresses:
 
-This <release candidate/beta version> is available as source code at this
-address: < http://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ >
+ https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
+ https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/$VERSION.tar.gz
+
+The compiler can also be installed as an OPAM switch with one of the
+following commands.
+
+opam switch create ocaml-variants.$VERSION --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
+
+or
+
+opam switch create ocaml-variants.$VERSION+<VARIANT> --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
+
+ where you replace <VARIANT> with one of these:
+   afl
+   default_unsafe_string
+   flambda
+   fp
+   fp+flambda
+
+We want to know about all bugs. Please report them here:
+ https://github.com/ocaml/ocaml/issues
 
 Happy hacking,
 
@@ -372,23 +357,23 @@ Happy hacking,
 ```
 Dear OCaml users,
 
-The release of OCaml 4.08.0 is approaching. We have created
+The release of OCaml $MAJOR.$MINOR.$BUGFIX is approaching. We have created
 a beta version to help you adapt your software to the new features
 ahead of the release.
 
 The source code is available at these addresses:
 
- https://github.com/ocaml/ocaml/archive/4.08.0+beta1.tar.gz
- https://caml.inria.fr/pub/distrib/ocaml-4.08/ocaml-4.08.0+beta1.tar.gz
+ https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
+ https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/$VERSION.tar.gz
 
 The compiler can also be installed as an OPAM switch with one of the
 following commands.
 
-opam switch create ocaml-variants.4.08.0+beta1 --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
+opam switch create ocaml-variants.$VERSION --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
 
 or
 
-opam switch create ocaml-variants.4.08.0+beta1+<VARIANT> --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
+opam switch create ocaml-variants.$VERSION+<VARIANT> --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
 
  where you replace <VARIANT> with one of these:
    afl

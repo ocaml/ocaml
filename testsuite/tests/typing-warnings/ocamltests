@@ -14,3 +14,4 @@ records.ml
 unused_rec.ml
 unused_types.ml
 open_warnings.ml
+never_returns.ml

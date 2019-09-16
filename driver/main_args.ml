@@ -94,6 +94,18 @@ let mk_dllpath f =
   "<dir>  Add <dir> to the run-time search path for shared libraries"
 ;;
 
+let mk_function_sections f =
+  if Config.function_sections then
+    "-function-sections",  Arg.Unit f,
+    " Generate each function in a separate section if target supports it"
+  else
+    let err () =
+      raise (Arg.Bad "OCaml has been configured without support for \
+                      -function-sections")
+    in
+    "-function-sections", Arg.Unit err, " (option not available)"
+;;
+
 let mk_stop_after f =
   "-stop-after", Arg.Symbol (Clflags.Compiler_pass.pass_names, f),
   " Stop after the given compilation pass."
@@ -452,6 +464,16 @@ let mk_remove_unused_arguments f =
 let mk_runtime_variant f =
   "-runtime-variant", Arg.String f,
   "<str>  Use the <str> variant of the run-time system"
+;;
+
+let mk_with_runtime f =
+  "-with-runtime", Arg.Unit f,
+  "Include the runtime system in the generated program (default)"
+;;
+
+let mk_without_runtime f =
+  "-without-runtime", Arg.Unit f,
+  "Do not include the runtime system in the generated program."
 ;;
 
 let mk_S f =
@@ -930,6 +952,8 @@ module type Compiler_options = sig
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _with_runtime : unit -> unit
+  val _without_runtime : unit -> unit
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
@@ -1056,6 +1080,7 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _dinterval : unit -> unit
+  val _function_sections : unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1144,6 +1169,8 @@ struct
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
     mk_runtime_variant F._runtime_variant;
+    mk_with_runtime F._with_runtime;
+    mk_without_runtime F._without_runtime;
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
@@ -1275,6 +1302,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
+    mk_function_sections F._function_sections;
     mk_stop_after F._stop_after;
     mk_i F._i;
     mk_I F._I;
@@ -1332,6 +1360,8 @@ struct
     mk_remove_unused_arguments F._remove_unused_arguments;
     mk_rounds F._rounds;
     mk_runtime_variant F._runtime_variant;
+    mk_with_runtime F._with_runtime;
+    mk_without_runtime F._without_runtime;
     mk_S F._S;
     mk_safe_string F._safe_string;
     mk_shared F._shared;

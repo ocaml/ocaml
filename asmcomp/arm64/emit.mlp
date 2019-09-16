@@ -495,6 +495,7 @@ module BR = Branch_relaxation.Make (struct
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
     | Lentertrap -> 0
+    | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 4
     | Lpoptrap -> 1
     | Lraise k ->
@@ -561,6 +562,15 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
     end;
     `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
   end
+
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then begin
+    `	.section .text.caml.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
+  end
+  else
+    `	.text\n`
 
 (* Output the assembly code for an instruction *)
 
@@ -866,6 +876,11 @@ let emit_instr i =
 *)
     | Lentertrap ->
         ()
+    | Ladjust_trap_depth { delta_traps } ->
+        (* each trap occupies 16 bytes on the stack *)
+        let delta = 16 * delta_traps in
+        cfi_adjust_cfa_offset delta;
+        stack_offset := !stack_offset + delta
     | Lpushtrap { lbl_handler; } ->
         `	adr	{emit_reg reg_tmp1}, {emit_label lbl_handler}\n`;
         stack_offset := !stack_offset + 16;
@@ -904,7 +919,7 @@ let fundecl fundecl =
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];
-  `	.text\n`;
+  emit_named_text_section !function_name;
   `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
@@ -968,13 +983,13 @@ let begin_assembly() =
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  `	.text\n`;
+  emit_named_text_section lbl_begin;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  `	.text\n`;
+  emit_named_text_section lbl_end;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in

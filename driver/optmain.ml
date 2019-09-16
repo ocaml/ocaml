@@ -56,6 +56,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _config = Misc.show_config_and_exit
   let _config_var = Misc.show_config_variable_and_exit
   let _for_pack s = for_package := Some s
+  let _function_sections () =
+    assert (Config.function_sections);
+    first_ccopts := "-ffunction-sections" :: !first_ccopts;
+    function_sections := true
   let _g = set debug
   let _i () =
     print_types := true;
@@ -181,6 +185,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _no_rectypes = clear recursive_types
   let _remove_unused_arguments = set remove_unused_arguments
   let _runtime_variant s = runtime_variant := s
+  let _with_runtime = set with_runtime
+  let _without_runtime = clear with_runtime
   let _safe_string = clear unsafe_string
   let _short_paths = clear real_paths
   let _strict_sequence = set strict_sequence

@@ -19,6 +19,7 @@
 #define CAML_WEAK_H
 
 #include "mlvalues.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {

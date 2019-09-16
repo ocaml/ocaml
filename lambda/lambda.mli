@@ -268,6 +268,8 @@ type lambda =
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
+(* Lifthenelse (e, t, f) evaluates t if e evaluates to 0, and
+   evaluates f if e evaluates to any other value *)
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda

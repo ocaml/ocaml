@@ -184,7 +184,7 @@ ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/boot/ocamlc -depend
 depflags := -slash
 depincludes :=
 
-ocamllex := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/lex/ocamllex
+ocamllex := $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/boot/ocamllex
 
 ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
 
@@ -257,6 +257,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	  -e 's|@@CFLAGS@@|$(OC_CFLAGS)|' \
 	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
 	  -e 's|@@WINDOWS_UNICODE@@|$(WINDOWS_UNICODE)|' \
+	  -e 's|@@FUNCTION_SECTIONS@@|$(FUNCTION_SECTIONS)|' \
 	  $< > $@
 
 .PHONY: clean

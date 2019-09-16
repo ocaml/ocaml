@@ -329,6 +329,25 @@ let simplify_exits lam =
    Assumes |args| = |params|.
 *)
 
+let exact_application {kind; params; _} args =
+  match kind with
+  | Curried ->
+      if List.length params <> List.length args
+      then None
+      else Some args
+  | Tupled ->
+      begin match args with
+      | [Lprim(Pmakeblock _, tupled_args, _)] ->
+          if List.length params <> List.length tupled_args
+          then None
+          else Some tupled_args
+      | [Lconst(Const_block (_, const_args))] ->
+          if List.length params <> List.length const_args
+          then None
+          else Some (List.map (fun cst -> Lconst cst) const_args)
+      | _ -> None
+      end
+
 let beta_reduce params body args =
   List.fold_left2 (fun l (param, kind) arg -> Llet(Strict, kind, param, arg, l))
                   body params args
@@ -383,15 +402,17 @@ let simplify_lets lam =
   | Lconst _ -> ()
   | Lvar v ->
       use_var bv v 1
-  | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
-    when optimize && List.length params = List.length args ->
-      count bv (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
-           ap_args = [Lprim(Pmakeblock _, args, _)]}
-    when optimize && List.length params = List.length args ->
-      count bv (beta_reduce params body args)
-  | Lapply{ap_func = l1; ap_args = ll} ->
-      count bv l1; List.iter (count bv) ll
+  | Lapply{ap_func = ll; ap_args = args} ->
+      let no_opt () = count bv ll; List.iter (count bv) args in
+      begin match ll with
+      | Lfunction lf when optimize ->
+          begin match exact_application lf args with
+          | None -> no_opt ()
+          | Some exact_args ->
+              count bv (beta_reduce lf.params lf.body exact_args)
+          end
+      | _ -> no_opt ()
+      end
   | Lfunction {body} ->
       count Ident.Map.empty body
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
@@ -477,15 +498,19 @@ let simplify_lets lam =
         l
       end
   | Lconst _ as l -> l
-  | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
-    when optimize && List.length params = List.length args ->
-      simplif (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
-           ap_args = [Lprim(Pmakeblock _, args, _)]}
-    when optimize && List.length params = List.length args ->
-      simplif (beta_reduce params body args)
-  | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
-                                 ap_args = List.map simplif ap.ap_args}
+  | Lapply ({ap_func = ll; ap_args = args} as ap) ->
+      let no_opt () =
+        Lapply {ap with ap_func = simplif ap.ap_func;
+                        ap_args = List.map simplif ap.ap_args} in
+      begin match ll with
+      | Lfunction lf when optimize ->
+          begin match exact_application lf args with
+          | None -> no_opt ()
+          | Some exact_args ->
+              simplif (beta_reduce lf.params lf.body exact_args)
+          end
+      | _ -> no_opt ()
+      end
   | Lfunction{kind; params; return=return1; body = l; attr; loc} ->
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; return=return2; body; attr; loc}
@@ -729,7 +754,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
 
 type slot =
   {
-    nargs: int;
+    func: lfunction;
     mutable scope: lambda option;
   }
 
@@ -762,9 +787,8 @@ let simplify_local_functions lam =
       -> false
   in
   let rec tail = function
-    | Llet (_str, _kind, id, Lfunction lf, cont)
-      when Lambda.function_is_curried lf && enabled lf.attr ->
-        let r = {nargs=List.length lf.params; scope=None} in
+    | Llet (_str, _kind, id, Lfunction lf, cont) when enabled lf.attr ->
+        let r = {func = lf; scope = None} in
         Hashtbl.add slots id r;
         tail cont;
         begin match Hashtbl.find_opt slots id with
@@ -787,7 +811,8 @@ let simplify_local_functions lam =
         end
     | Lapply {ap_func = Lvar id; ap_args; _} ->
         begin match Hashtbl.find_opt slots id with
-        | Some {nargs; _} when nargs <> List.length ap_args ->
+        | Some {func; _}
+          when exact_application func ap_args = None ->
             (* Wrong arity *)
             Hashtbl.remove slots id
         | Some {scope = Some scope; _} when scope != !current_scope ->
@@ -822,7 +847,13 @@ let simplify_local_functions lam =
       | Llet (_, _, id, _, cont) when Hashtbl.mem static_id id ->
           rewrite cont
       | Lapply {ap_func = Lvar id; ap_args; _} when Hashtbl.mem static_id id ->
-          Lstaticraise (Hashtbl.find static_id id, List.map rewrite ap_args)
+         let st = Hashtbl.find static_id id in
+         let slot = Hashtbl.find slots id in
+         begin match exact_application slot.func ap_args with
+           | None -> assert false
+           | Some exact_args ->
+              Lstaticraise (st, List.map rewrite exact_args)
+         end
       | lam ->
           Lambda.shallow_map rewrite lam
     in

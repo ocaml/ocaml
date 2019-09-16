@@ -1056,6 +1056,13 @@ Show the description of all available warning numbers.
 .B \-where
 Print the location of the standard library, then exit.
 .TP
+.B \-with-runtime
+Include the runtime system in the generated program. This is the default.
+.TP
+.B \-without-runtime
+The compiler does not include the runtime system (nor a reference to it) in the
+generated program; it must be supplied separately.
+.TP
 .BI \- \ file
 Process
 .I file

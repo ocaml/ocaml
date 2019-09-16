@@ -440,10 +440,12 @@ module Memprof :
        possible that a context switch occurs during a callback, in
        which case reentrancy has to be taken into account.
 
-       Note that when the callback kind is [Major], the callback can
-       be postponed after the actual allocation. Therefore, the
-       context of the callback may be slightly different than
-       expected. This should not happen if no C binding is used. *)
+       Note that the callback can be postponed slightly after the
+       actual allocation. Therefore, the context of the callback may
+       be slightly different than expected.
+
+       In addition, note that calling [start] or [stop] in a callback
+       can lead to losses of samples. *)
 
     type 'a ctrl = {
         sampling_rate : float;

@@ -430,6 +430,7 @@ extern uintnat caml_instr_alloc_jump;
 /* Do a minor collection or a slice of major collection, call finalisation
    functions, etc.
    Leave enough room in the minor heap to allocate at least one object.
+   Guaranteed not to call any OCaml callback.
 */
 CAMLexport void caml_gc_dispatch (void)
 {
@@ -451,21 +452,6 @@ CAMLexport void caml_gc_dispatch (void)
     /* The minor heap is empty, we can start a major collection. */
     if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/minor");
-
-    caml_final_do_calls ();
-    CAML_INSTR_TIME (tmr, "dispatch/finalizers");
-
-    while (caml_young_ptr - caml_young_alloc_start < Max_young_whsize){
-      /* The finalizers or the hooks have filled up the minor heap, we must
-         repeat the minor collection. */
-      caml_requested_minor_gc = 0;
-      caml_young_trigger = caml_young_alloc_mid;
-      caml_update_young_limit();
-      caml_empty_minor_heap ();
-      /* The minor heap is empty, we can start a major collection. */
-      if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
-      CAML_INSTR_TIME (tmr, "dispatch/finalizers_minor");
-    }
   }
   if (trigger != caml_young_alloc_start || caml_requested_major_slice){
     /* The minor heap is half-full, do a major GC slice. */
@@ -479,17 +465,20 @@ CAMLexport void caml_gc_dispatch (void)
 
 /* Called by [Alloc_small] when [caml_young_ptr] reaches [caml_young_limit].
    We have to either call memprof or the gc. */
-void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int track)
+void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
 {
-  if (caml_young_ptr < caml_young_trigger){
+  /* Async callbacks may fill the minor heap again, so we need a while
+     loop here. */
+  while (caml_young_ptr < caml_young_trigger){
     caml_young_ptr += Whsize_wosize (wosize);
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
+    if(flags & CAML_FROM_CAML) caml_check_urgent_gc (Val_unit);
     caml_young_ptr -= Whsize_wosize (wosize);
   }
   if(caml_young_ptr < caml_memprof_young_trigger){
-    if(track) {
-      caml_memprof_track_young((tag), (wosize));
+    if(flags & CAML_DO_TRACK) {
+      caml_memprof_track_young(tag, wosize, flags & CAML_FROM_CAML);
       /* Until the allocation actually takes place, the heap is in an invalid
          state (see comments in [caml_memprof_track_young]). Hence, very little
          heap operations are allowed before the actual allocation.
@@ -509,17 +498,6 @@ CAMLexport void caml_minor_collection (void)
 {
   caml_requested_minor_gc = 1;
   caml_gc_dispatch ();
-}
-
-CAMLexport value caml_check_urgent_gc (value extra_root)
-{
-  CAMLparam1 (extra_root);
-  if (caml_requested_major_slice || caml_requested_minor_gc){
-    CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
-    caml_gc_dispatch();
-  }
-  caml_memprof_handle_postponed();
-  CAMLreturn (extra_root);
 }
 
 static void realloc_generic_table

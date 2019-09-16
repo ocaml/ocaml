@@ -211,7 +211,13 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int track);
+enum caml_alloc_small_flags {
+  CAML_DONT_TRACK = 0, CAML_DO_TRACK = 1,
+  CAML_FROM_C = 0,     CAML_FROM_CAML = 2
+};
+
+extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags);
+#define Alloc_small_origin CAML_FROM_C
 #define Alloc_small_aux(result, wosize, tag, profinfo, track) do {     \
   CAMLassert ((wosize) >= 1);                                          \
   CAMLassert ((tag_t) (tag) < 256);                                    \
@@ -219,7 +225,8 @@ extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int track);
   caml_young_ptr -= Whsize_wosize (wosize);                            \
   if (caml_young_ptr < caml_young_limit) {                             \
     Setup_for_gc;                                                      \
-    caml_alloc_small_dispatch((tag), (wosize), (track));               \
+    caml_alloc_small_dispatch((tag), (wosize),                         \
+                              (track) | Alloc_small_origin);           \
     Restore_after_gc;                                                  \
   }                                                                    \
   Hd_hp (caml_young_ptr) =                                             \
@@ -229,7 +236,7 @@ extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int track);
 }while(0)
 
 #define Alloc_small_with_profinfo(result, wosize, tag, profinfo) \
-  Alloc_small_aux(result, wosize, tag, profinfo, 1)
+  Alloc_small_aux(result, wosize, tag, profinfo, CAML_DO_TRACK)
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 
@@ -240,14 +247,14 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
     caml_spacetime_my_profinfo(NULL, wosize))
 #define Alloc_small_no_track(result, wosize, tag) \
   Alloc_small_aux(result, wosize, tag, \
-    caml_spacetime_my_profinfo(NULL, wosize), 0)
+    caml_spacetime_my_profinfo(NULL, wosize), CAML_DONT_TRACK)
 
 #else
 
 #define Alloc_small(result, wosize, tag) \
   Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
 #define Alloc_small_no_track(result, wosize, tag) \
-  Alloc_small_aux(result, wosize, tag, (uintnat) 0, 0)
+  Alloc_small_aux(result, wosize, tag, (uintnat) 0, CAML_DONT_TRACK)
 
 #endif
 

@@ -559,7 +559,7 @@ After parsing, pipe the abstract syntax tree through the preprocessor
 \var{command}. The module "Ast_mapper", described in
 \ifouthtml
 chapter~\ref{c:parsinglib}:
-\ahref{libref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
+\ahref{compilerlibref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
 \else section~\ref{Ast-underscoremapper}\fi,
 implements the external interface of a preprocessor.
 
@@ -778,6 +778,17 @@ Show the description of all available warning numbers.
 \item["-where"]
 Print the location of the standard library, then exit.
 }%notop
+
+\notop{%
+\item["-with-runtime"]
+Include the runtime system in the generated program. This is the default.
+}
+
+\notop{%
+\item["-without-runtime"]
+The compiler does not include the runtime system (nor a reference to it) in the
+generated program; it must be supplied separately.
+}
 
 \item["-" \var{file}]
 \notop{Process \var{file} as a file name, even if it starts with a dash ("-")

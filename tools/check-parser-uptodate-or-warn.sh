@@ -38,14 +38,14 @@ fi
 mtime() {
   if test -z "$MTIME"
   then echo 0
-  else $MTIME $1
+  else $MTIME "$1"
   fi
 }
 
 # The check itself
 SOURCE_MTIME=$(mtime parsing/parser.mly)
 GENERATED_MTIME=$(mtime boot/menhir/parser.ml)
-if test $SOURCE_MTIME -gt $(( $GENERATED_MTIME + 10 ))
+if test "$SOURCE_MTIME" -gt $(( GENERATED_MTIME + 10 ))
 then
   echo
   tput setaf 3; tput bold; printf "Warning: "; tput sgr0

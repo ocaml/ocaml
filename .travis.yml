@@ -18,7 +18,7 @@ sudo: false
 language: c
 git:
   submodules: false
-script: bash -e tools/ci/travis/travis-ci.sh
+script: tools/ci/travis/travis-ci.sh
 matrix:
   include:
   - env: CI_KIND=build XARCH=i386

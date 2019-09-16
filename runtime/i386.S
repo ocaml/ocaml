@@ -44,10 +44,29 @@
 #define FUNCTION_ALIGN 2
 #endif
 
+#if defined(FUNCTION_SECTIONS)
+#if defined(SYS_macosx) || defined(SYS_mingw) || defined(SYS_cygwin)
+#define TEXT_SECTION(name)
+#else
+#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#endif
+#else
+#define TEXT_SECTION(name)
+#endif
+
 #define FUNCTION(name) \
+        TEXT_SECTION(caml.##name); \
         .globl G(name); \
         .align FUNCTION_ALIGN; \
         G(name):
+
+#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) || defined(SYS_gnu)
+#define ENDFUNCTION(name) \
+        .type name,@function; \
+        .size name, . - name
+#else
+#define ENDFUNCTION(name)
+#endif
 
 #ifdef ASM_CFI_SUPPORTED
 #define CFI_STARTPROC .cfi_startproc
@@ -64,8 +83,17 @@
 #define ALIGN_STACK(amount) subl $ amount, %esp ; CFI_ADJUST(amount)
 #define UNDO_ALIGN_STACK(amount) addl $ amount, %esp ; CFI_ADJUST(-amount)
 
-/* Allocation */
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl  G(caml_hot__code_begin)
+G(caml_hot__code_begin):
 
+        TEXT_SECTION(caml_hot__code_end)
+        .globl  G(caml_hot__code_end)
+G(caml_hot__code_end):
+#endif
+
+/* Allocation */
         .text
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
@@ -108,6 +136,7 @@ LBL(105):
     /* Return to caller */
         ret
         CFI_ENDPROC
+        ENDFUNCTION(caml_call_gc)
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
@@ -127,6 +156,7 @@ LBL(100):
         UNDO_ALIGN_STACK(12)
         jmp     G(caml_alloc1)
         CFI_ENDPROC
+        ENDFUNCTION(caml_alloc1)
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
@@ -146,6 +176,7 @@ LBL(101):
         UNDO_ALIGN_STACK(12)
         jmp     G(caml_alloc2)
         CFI_ENDPROC
+        ENDFUNCTION(caml_alloc2)
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
@@ -165,6 +196,7 @@ LBL(102):
         UNDO_ALIGN_STACK(12)
         jmp     G(caml_alloc3)
         CFI_ENDPROC
+        ENDFUNCTION(caml_alloc3)
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
@@ -188,6 +220,7 @@ LBL(103):
         popl    %eax; CFI_ADJUST(-4)    /* recover desired size */
         jmp     G(caml_allocN)
         CFI_ENDPROC
+        ENDFUNCTION(caml_allocN)
 
 /* Call a C function from OCaml */
 
@@ -208,6 +241,7 @@ FUNCTION(caml_c_call)
     /* Call the function (address in %eax) */
         jmp     *%eax
         CFI_ENDPROC
+        ENDFUNCTION(caml_c_call)
 
 /* Start the OCaml program */
 
@@ -256,6 +290,7 @@ LBL(108):
         orl     $2, %eax
         jmp     LBL(109)
         CFI_ENDPROC
+        ENDFUNCTION(caml_start_program)
 
 /* Raise an exception from OCaml */
 
@@ -284,6 +319,7 @@ LBL(110):
         UNDO_ALIGN_STACK(8)
         ret
         CFI_ENDPROC
+        ENDFUNCTION(caml_raise_exn)
 
 /* Raise an exception from C */
 
@@ -310,6 +346,7 @@ LBL(112):
         UNDO_ALIGN_STACK(8)
         ret
         CFI_ENDPROC
+        ENDFUNCTION(caml_raise_exception)
 
 /* Callback from C to OCaml */
 
@@ -326,6 +363,7 @@ FUNCTION(caml_callback_exn)
         movl    0(%ebx), %esi    /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
+        ENDFUNCTION(caml_callback_exn)
 
 FUNCTION(caml_callback2_exn)
         CFI_STARTPROC
@@ -341,6 +379,7 @@ FUNCTION(caml_callback2_exn)
         movl    $ G(caml_apply2), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
+        ENDFUNCTION(caml_callback2_exn)
 
 FUNCTION(caml_callback3_exn)
         CFI_STARTPROC
@@ -357,6 +396,7 @@ FUNCTION(caml_callback3_exn)
         movl    $ G(caml_apply3), %esi   /* code pointer */
         jmp     LBL(106)
         CFI_ENDPROC
+        ENDFUNCTION(caml_callback3_exn)
 
 FUNCTION(caml_ml_array_bound_error)
         CFI_STARTPROC
@@ -379,6 +419,7 @@ FUNCTION(caml_ml_array_bound_error)
     /* Branch to [caml_array_bound_error] (never returns) */
         call    G(caml_array_bound_error)
         CFI_ENDPROC
+        ENDFUNCTION(caml_ml_array_bound_error)
 
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
