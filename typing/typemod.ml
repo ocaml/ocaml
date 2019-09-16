@@ -1925,9 +1925,6 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
             raise (Error (sfunct.pmod_loc, env, Apply_generative));
           if funct_body && Mtype.contains_type env funct.mod_type then
             raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
-          (* FIXME: is this even needed? *)
-          check_well_formed_module env smod.pmod_loc
-            "the signature of this functor application" mty_res;
           rm { mod_desc = Tmod_apply(funct, arg, Tcoerce_none);
                mod_type = mty_res;
                mod_env = env;
@@ -1950,23 +1947,20 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                 in
                 Subst.modtype (Rescope scope) subst mty_res
             | None ->
-                let env =
+                let env, nondep_mty =
                   match param with
-                  | None -> env
+                  | None -> env, mty_res
                   | Some param ->
-                    Env.add_module ~arg:true param Mp_present arg.mod_type env
-                in
-                (* FIXME: I doubt the following is needed if param is None *)
-                check_well_formed_module env smod.pmod_loc
-                  "the signature of this functor application" mty_res;
-                let nondep_mty =
-                  match param with
-                  | None -> mty_res
-                  | Some param ->
-                    try Mtype.nondep_supertype env [param] mty_res
-                    with Ctype.Nondep_cannot_erase _ ->
-                      raise(Error(smod.pmod_loc, env,
-                                  Cannot_eliminate_dependency mty_functor))
+                      let env =
+                        Env.add_module ~arg:true param Mp_present arg.mod_type
+                          env
+                      in
+                      check_well_formed_module env smod.pmod_loc
+                        "the signature of this functor application" mty_res;
+                      try env, Mtype.nondep_supertype env [param] mty_res
+                      with Ctype.Nondep_cannot_erase _ ->
+                        raise(Error(smod.pmod_loc, env,
+                                    Cannot_eliminate_dependency mty_functor))
                 in
                 begin match
                   Includemod.modtypes ~loc:smod.pmod_loc env mty_res nondep_mty
