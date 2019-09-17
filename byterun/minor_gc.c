@@ -81,9 +81,10 @@ static void clear_table (struct generic_table *tbl)
 
 struct caml_minor_tables* caml_alloc_minor_tables()
 {
-  struct caml_minor_tables* r =
-    caml_stat_alloc(sizeof(struct caml_minor_tables));
-  memset(r, 0, sizeof(*r));
+  struct caml_minor_tables *r =
+      caml_stat_alloc_noexc(sizeof(struct caml_minor_tables));
+  if(r != NULL)
+    memset(r, 0, sizeof(*r));
   return r;
 }
 
@@ -104,7 +105,9 @@ void caml_set_minor_heap_size (asize_t wsize)
   struct caml_minor_tables *r = domain_state->minor_tables;
   if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
-  caml_reallocate_minor_heap(wsize);
+  if(caml_reallocate_minor_heap(wsize) < 0) {
+    caml_fatal_error("Fatal error: No memory for minor heap");
+  }
 
   reset_table ((struct generic_table *)&r->major_ref);
   reset_table ((struct generic_table *)&r->minor_ref);

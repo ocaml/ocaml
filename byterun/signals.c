@@ -79,15 +79,19 @@ void caml_record_signal(int signal_number)
   caml_interrupt_self();
 }
 
-void caml_init_signal_stack()
+int caml_init_signal_stack()
 {
 #ifdef POSIX_SIGNALS
   stack_t stk;
   stk.ss_flags = 0;
   stk.ss_size = SIGSTKSZ;
-  stk.ss_sp = caml_stat_alloc(stk.ss_size);
+  stk.ss_sp = caml_stat_alloc_noexc(stk.ss_size);
+  if(stk.ss_sp == NULL) {
+    return -1;
+  }
   if (sigaltstack(&stk, NULL) < 0) {
-    caml_fatal_error_arg("Could not allocate signal stack: %s", strerror(errno));
+    caml_stat_free(stk.ss_sp);
+    return -1;
   }
 
   /* gprof installs a signal handler for SIGPROF.
@@ -105,6 +109,7 @@ void caml_init_signal_stack()
     }
   }
 #endif
+  return 0;
 }
 
 void caml_free_signal_stack()

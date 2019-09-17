@@ -1357,9 +1357,17 @@ static void mark_stack_prune (struct mark_stack* stk)
   caml_plat_unlock(&pools_to_rescan_lock);
 }
 
-void caml_init_major_gc(caml_domain_state* d) {
-  Caml_state->mark_stack = caml_stat_alloc(sizeof(struct mark_stack));
-  Caml_state->mark_stack->stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(mark_entry));
+int caml_init_major_gc(caml_domain_state* d) {
+  Caml_state->mark_stack = caml_stat_alloc_noexc(sizeof(struct mark_stack));
+  if(Caml_state->mark_stack == NULL) {
+    return -1;
+  }
+  Caml_state->mark_stack->stack = caml_stat_alloc_noexc(MARK_STACK_SIZE * sizeof(mark_entry));
+  if(Caml_state->mark_stack->stack == NULL) {
+    caml_stat_free(Caml_state->mark_stack);
+    Caml_state->mark_stack = NULL;
+    return -1;
+  }
   Caml_state->mark_stack->count = 0;
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
@@ -1367,9 +1375,23 @@ void caml_init_major_gc(caml_domain_state* d) {
   d->stealing = 0;
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
+  if(d->final_info == NULL) {
+    caml_stat_free(Caml_state->mark_stack->stack);
+    caml_stat_free(Caml_state->mark_stack);
+    return -1;
+  }
   d->ephe_info = caml_alloc_ephe_info();
+  if(d->ephe_info == NULL) {
+    caml_stat_free(d->final_info);
+    caml_stat_free(Caml_state->mark_stack->stack);
+    caml_stat_free(Caml_state->mark_stack);
+    d->final_info = NULL;
+    Caml_state->mark_stack = NULL;
+    return -1;
+  }
   atomic_fetch_add(&num_domains_to_final_update_first, 1);
   atomic_fetch_add(&num_domains_to_final_update_last, 1);
+  return 0;
 }
 
 void caml_teardown_major_gc() {

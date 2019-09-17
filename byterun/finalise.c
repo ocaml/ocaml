@@ -373,7 +373,8 @@ CAMLprim value caml_final_release (value unit)
 struct caml_final_info* caml_alloc_final_info ()
 {
   struct caml_final_info* f =
-    caml_stat_alloc (sizeof(struct caml_final_info));
-  memset (f, 0, sizeof(struct caml_final_info));
+    caml_stat_alloc_noexc (sizeof(struct caml_final_info));
+  if(f != NULL)
+    memset (f, 0, sizeof(struct caml_final_info));
   return f;
 }
