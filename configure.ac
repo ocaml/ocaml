@@ -1458,7 +1458,7 @@ AS_IF([test x"$enable_systhreads" = "xno"],
 ## libbfd
 
 AC_CHECK_HEADER([bfd.h],
-  [libbfd_ling=""
+  [libbfd_link=""
   AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd"])
   AS_IF([test -z "$libbfd_link"],
     [AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd -ldl"], [], [-ldl])])
