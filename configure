@@ -720,6 +720,7 @@ asm_cfi_supported
 AS
 ASPP
 bfd_ldlibs
+bfd_ldflags
 bfd_cppflags
 x_libraries
 x_includes
@@ -2781,6 +2782,7 @@ VERSION=4.10.0+dev0-2019-04-23
 
 
  # TODO: rename this variable
+
 
 
 
