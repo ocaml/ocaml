@@ -720,7 +720,7 @@ asm_cfi_supported
 AS
 ASPP
 bfd_ldlibs
-libbfd_include
+bfd_cppflags
 x_libraries
 x_includes
 pthread_link
