@@ -90,18 +90,14 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 */
 static void check_global_data(char const *exception_name)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception %s\n", exception_name);
-    exit(2);
-  }
+  if (caml_global_data == 0)
+    caml_fatal_user_error("exception %s", exception_name);
 }
 
 static void check_global_data_param(char const *exception_name, char const *msg)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception %s(\"%s\")\n", exception_name, msg);
-    exit(2);
-  }
+  if (caml_global_data == 0)
+    caml_fatal_user_error("exception %s(\"%s\")", exception_name, msg);
 }
 
 static inline value caml_get_failwith_tag (char const *msg)
