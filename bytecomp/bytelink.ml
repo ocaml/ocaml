@@ -654,7 +654,7 @@ let link objfiles output_name =
            append_bytecode bytecode_name exec_name
       )
   end else begin
-    let basename = Filename.chop_extension output_name in
+    let basename = Filename.remove_extension output_name in
     let c_file, stable_name =
       if !Clflags.output_complete_object
          && not (Filename.check_suffix output_name ".c")
@@ -674,8 +674,12 @@ let link objfiles output_name =
     Misc.try_finally
       ~always:(fun () -> List.iter remove_file !temps)
       (fun () ->
-         link_bytecode_as_c tolink c_file false;
-         if not (Filename.check_suffix output_name ".c") then begin
+         link_bytecode_as_c tolink c_file !Clflags.output_complete_executable;
+         if !Clflags.output_complete_executable then begin
+           temps := c_file :: !temps;
+           if not (build_custom_runtime c_file output_name) then
+             raise(Error Custom_runtime)
+         end else if not (Filename.check_suffix output_name ".c") then begin
            temps := c_file :: !temps;
            if Ccomp.compile_file ~output:obj_file ?stable_name c_file <> 0 then
              raise(Error Custom_runtime);
