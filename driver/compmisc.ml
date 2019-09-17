@@ -23,9 +23,10 @@ open Compenv
 
 let init_path ?(dir="") () =
   let dirs =
-    if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
-    else
-      !Clflags.include_dirs
+    let dirs = !Clflags.include_dirs in
+    if !Clflags.use_threads
+    then Filename.concat Config.standard_library "threads" :: dirs
+    else dirs
   in
   let dirs =
     !last_include_dirs @ dirs @ Config.flexdll_dirs @ !first_include_dirs

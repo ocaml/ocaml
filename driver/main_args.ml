@@ -511,7 +511,7 @@ let mk_strict_sequence f =
 
 let mk_thread f =
   "-thread", Arg.Unit f,
-  " (deprecated) same as -I +threads"
+  " (deprecated) same as -I $(ocamlc -where)/threads"
 ;;
 
 let mk_dtimings f =
