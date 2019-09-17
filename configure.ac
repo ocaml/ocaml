@@ -132,7 +132,7 @@ AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
 AC_SUBST([libbfd_include])
-AC_SUBST([libbfd_link])
+AC_SUBST([bfd_ldlibs])
 AC_SUBST([ASPP])
 AC_SUBST([AS])
 AC_SUBST([asm_cfi_supported])
@@ -1458,21 +1458,21 @@ AS_IF([test x"$enable_systhreads" = "xno"],
 ## libbfd
 
 AC_CHECK_HEADER([bfd.h],
-  [libbfd_link=""
-  AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd"])
-  AS_IF([test -z "$libbfd_link"],
-    [AC_CHECK_LIB([bfd], [bfd_openr], [libbfd_link="-lbfd -ldl"], [], [-ldl])])
-  AS_IF([test -z "$libbfd_link"],
+  [bfd_ldlibs=""
+  AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd"])
+  AS_IF([test -z "$bfd_ldlibs"],
+    [AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd -ldl"], [], [-ldl])])
+  AS_IF([test -z "$bfd_ldlibs"],
     [AC_CHECK_LIB([bfd], [bfd_openr],
-      [libbfd_link="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
-  AS_IF([test -z "$libbfd_link"],
+      [bfd_ldlibs="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
+  AS_IF([test -z "$bfd_ldlibs"],
     [AC_CHECK_LIB([bfd], [bfd_openr],
-      [libbfd_link="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
-  AS_IF([test -z "$libbfd_link"],
+      [bfd_ldlibs="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
+  AS_IF([test -z "$bfd_ldlibs"],
     [AC_CHECK_LIB([bfd], [bfd_openr],
-      [libbfd_link="-lbfd -ldl -liberty -lz -lintl"], [],
+      [bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"], [],
       [-ldl -liberty -lz -lintl])])
-  AS_IF([test -n "$libbfd_link"],
+  AS_IF([test -n "$bfd_ldlibs"],
     [AC_DEFINE([HAS_LIBBFD])],
     [AC_MSG_NOTICE(m4_normalize([
       BFD library not found, 'objinfo' will be unable to display

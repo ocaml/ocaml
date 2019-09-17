@@ -268,7 +268,7 @@ DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
 objinfo_helper$(EXE): objinfo_helper.$(O)
-	$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$@ $< $(LIBBFD_LINK)
+	$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$@ $< $(BFD_LDLIBS)
 
 objinfo_helper.$(O): $(ROOTDIR)/runtime/caml/s.h
 

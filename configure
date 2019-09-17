@@ -719,7 +719,7 @@ sharedlib_cflags
 asm_cfi_supported
 AS
 ASPP
-libbfd_link
+bfd_ldlibs
 libbfd_include
 x_libraries
 x_includes
@@ -15869,7 +15869,7 @@ fi
 
 ac_fn_c_check_header_mongrel "$LINENO" "bfd.h" "ac_cv_header_bfd_h" "$ac_includes_default"
 if test "x$ac_cv_header_bfd_h" = xyes; then :
-  libbfd_link=""
+  bfd_ldlibs=""
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -15907,10 +15907,10 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd"
+  bfd_ldlibs="-lbfd"
 fi
 
-  if test -z "$libbfd_link"; then :
+  if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -15948,11 +15948,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl"
+  bfd_ldlibs="-lbfd -ldl"
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
+  if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -15990,11 +15990,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl -liberty"
+  bfd_ldlibs="-lbfd -ldl -liberty"
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
+  if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -16032,11 +16032,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl -liberty -lz"
+  bfd_ldlibs="-lbfd -ldl -liberty -lz"
 fi
 
 fi
-  if test -z "$libbfd_link"; then :
+  if test -z "$bfd_ldlibs"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
@@ -16074,11 +16074,11 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  libbfd_link="-lbfd -ldl -liberty -lz -lintl"
+  bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"
 fi
 
 fi
-  if test -n "$libbfd_link"; then :
+  if test -n "$bfd_ldlibs"; then :
   $as_echo "#define HAS_LIBBFD 1" >>confdefs.h
 
 else
