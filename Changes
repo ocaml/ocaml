@@ -503,6 +503,9 @@ OCaml 4.09.0
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
+- #8944: Fix "open struct .. end" on clambda backend
+  (Thomas Refis, review by Leo White, report by Damon Wang and Mark Shinwell)
+
 OCaml 4.08.1 (5 August 2019)
 ----------------------------
 
