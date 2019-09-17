@@ -127,7 +127,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
   return Wsize_bsize(bs);
 }
 
-void caml_reallocate_minor_heap(asize_t wsize)
+int caml_reallocate_minor_heap(asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
   Assert(domain_state->young_ptr == domain_state->young_end);
@@ -141,8 +141,7 @@ void caml_reallocate_minor_heap(asize_t wsize)
   wsize = caml_norm_minor_heap_size(wsize);
 
   if (!caml_mem_commit((void*)domain_self->minor_heap_area, Bsize_wsize(wsize))) {
-    /* FIXME: handle this gracefully */
-    caml_fatal_error("Fatal error: No memory for minor heap\n");
+    return -1;
   }
 
 #ifdef DEBUG
@@ -157,6 +156,7 @@ void caml_reallocate_minor_heap(asize_t wsize)
   domain_state->young_start = (char*)domain_self->minor_heap_area;
   domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
   domain_state->young_ptr = domain_state->young_end;
+  return 0;
 }
 
 /* must be run on the domain's thread */
@@ -200,8 +200,8 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     }
     caml_plat_unlock(&s->lock);
   }
-
   if (d) {
+
     d->state.internals = d;
     domain_self = d;
     SET_Caml_state((void*)(d->tls_area));
@@ -213,31 +213,69 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->unique_id = d->interruptor.unique_id;
     d->state.state = domain_state;
 
-    /* FIXME: code below does not handle failure to allocate memory
-       early in a domain's lifetime correctly */
-
-    caml_init_signal_stack();
+    if (caml_init_signal_stack() < 0) {
+      goto init_signal_stack_failure;
+    }
 
     domain_state->young_start = domain_state->young_end =
       domain_state->young_ptr = 0;
     domain_state->minor_tables = caml_alloc_minor_tables();
+    if(domain_state->minor_tables == NULL) {
+      goto alloc_minor_tables_failure;
+    }
 
     d->state.state->shared_heap = caml_init_shared_heap();
-    caml_init_major_gc(domain_state);
-    caml_reallocate_minor_heap(initial_minor_heap_wsize);
-    Caml_state->current_stack = caml_alloc_main_stack (Stack_size/sizeof(value));
-    Caml_state->read_fault_ret_val = caml_create_root(Val_unit);
+    if(d->state.state->shared_heap == NULL) {
+      goto init_shared_heap_failure;
+    }
+
+    if (caml_init_major_gc(domain_state) < 0) {
+      goto init_major_gc_failure;
+    }
+
+    if(caml_reallocate_minor_heap(initial_minor_heap_wsize) < 0) {
+      goto reallocate_minor_heap_failure;
+    }
+
+    Caml_state->current_stack =
+        caml_alloc_main_stack(Stack_size / sizeof(value));
+    if(Caml_state->current_stack == NULL) {
+      goto alloc_main_stack_failure;
+    }
+
+    Caml_state->read_fault_ret_val = caml_create_root_noexc(Val_unit);
+    if(Caml_state->read_fault_ret_val == NULL) {
+      goto create_root_failure;
+    }
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
     domain_state->external_raise = NULL;
     domain_state->trap_sp_off = 1;
 #endif
-    caml_ev_resume();
+    goto domain_init_complete;
+
+create_root_failure:
+  if(Caml_state->current_stack != NULL)
+    caml_free_stack(Caml_state->current_stack);
+alloc_main_stack_failure:
+reallocate_minor_heap_failure:
+  caml_teardown_major_gc();
+init_major_gc_failure:
+  caml_teardown_shared_heap(d->state.state->shared_heap);
+init_shared_heap_failure:
+  caml_free_minor_tables(domain_state->minor_tables);
+  domain_state->minor_tables = NULL;
+alloc_minor_tables_failure:
+  caml_free_signal_stack();
+init_signal_stack_failure:
+  domain_self = NULL;
+
+domain_init_complete:
+  caml_ev_resume();
   }
   caml_plat_unlock(&all_domains_lock);
 }
-
 
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;

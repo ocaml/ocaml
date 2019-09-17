@@ -37,6 +37,7 @@ extern "C" {
 #endif
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
+CAMLextern value caml_alloc_shr_noexc(mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO
 CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
 CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
@@ -567,6 +568,7 @@ struct caml__roots_block {
    with [caml_read_root] and [caml_modify_root]. */
 
 CAMLextern caml_root caml_create_root (value);
+CAMLextern caml_root caml_create_root_noexc(value);
 
 /* [caml_delete_root] deletes a root created by caml_create_root */
 

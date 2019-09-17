@@ -39,8 +39,9 @@ value caml_ephe_none = (value)&caml_dummy[1];
 struct caml_ephe_info* caml_alloc_ephe_info ()
 {
   struct caml_ephe_info* e =
-    caml_stat_alloc (sizeof(struct caml_ephe_info));
-  memset (e, 0, sizeof(struct caml_ephe_info));
+    caml_stat_alloc_noexc (sizeof(struct caml_ephe_info));
+  if(e != NULL)
+    memset (e, 0, sizeof(struct caml_ephe_info));
   return e;
 }
 

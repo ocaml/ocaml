@@ -79,18 +79,20 @@ struct caml_heap_state* caml_init_shared_heap() {
   int i;
   struct caml_heap_state* heap;
 
-  heap = caml_stat_alloc(sizeof(struct caml_heap_state));
-  heap->free_pools = 0;
-  heap->num_free_pools = 0;
-  for (i = 0; i<NUM_SIZECLASSES; i++) {
-    heap->avail_pools[i] = heap->full_pools[i] =
-      heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
+  heap = caml_stat_alloc_noexc(sizeof(struct caml_heap_state));
+  if(heap != NULL) {
+    heap->free_pools = 0;
+    heap->num_free_pools = 0;
+    for (i = 0; i<NUM_SIZECLASSES; i++) {
+      heap->avail_pools[i] = heap->full_pools[i] =
+        heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
+    }
+    heap->next_to_sweep = 0;
+    heap->swept_large = 0;
+    heap->unswept_large = 0;
+    heap->owner = caml_domain_self();
+    memset(&heap->stats, 0, sizeof(heap->stats));
   }
-  heap->next_to_sweep = 0;
-  heap->swept_large = 0;
-  heap->unswept_large = 0;
-  heap->owner = caml_domain_self();
-  memset(&heap->stats, 0, sizeof(heap->stats));
   return heap;
 }
 

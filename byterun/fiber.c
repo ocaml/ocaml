@@ -33,8 +33,9 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
                           sizeof(value) * wosize +
                           8 /* for alignment */ +
                           sizeof(struct stack_handler));
-  if (stack == NULL)
+  if (stack == NULL) {
     return NULL;
+  }
 
   /* Ensure 16-byte alignment because some architectures require it */
   hand = (struct stack_handler*)
@@ -316,7 +317,6 @@ struct stack_info* caml_alloc_main_stack (uintnat init_size)
 {
   struct stack_info* stk =
     alloc_stack_noexc(init_size, Val_unit, Val_unit,  Val_unit);
-  if (!stk) caml_raise_out_of_memory();
   return stk;
 }
 
