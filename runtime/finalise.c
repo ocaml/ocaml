@@ -81,7 +81,7 @@ static void alloc_to_do (int size)
   if (to_do_tl == NULL){
     to_do_hd = result;
     to_do_tl = result;
-    if(!running_finalisation_function) caml_set_something_to_do();
+    if(!running_finalisation_function) caml_set_action_pending();
   }else{
     CAMLassert (to_do_tl->next == NULL);
     to_do_tl->next = result;
