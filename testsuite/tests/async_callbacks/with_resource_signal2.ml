@@ -36,38 +36,7 @@ let with_unblock f x =
     (* END ATOMIC *)
 
 let with_resource ~acquire ~(release : _ -> unit) work x =
-  let resource_ref = ref None in
-  let initialise () = resource_ref := Some (acquire x) in
-  let borrow () =
-    match !resource_ref with
-    | None -> assert false
-    | Some res -> res
-  in
-  let release_ref_no_exn () =
-    Printexc.catch release (borrow ())
-  in
-  match mask initialise () ; work (borrow ()) with
-  | (* BEGIN ATOMIC *) result -> (
-      (* Sys.mask inlined for bytecode polling behaviour *)
-      let old_mask = set_mask_prim Mask_uninterruptible in
-      release_ref_no_exn () ;
-      unset_mask_prim old_mask ;
-      (* END ATOMIC *)
-      result
-    )
-  | (* BEGIN ATOMIC *) exception e -> (
-      if !resource_ref = None then raise e
-      else (
-        (* Sys.mask inlined for bytecode polling behaviour *)
-        let old_mask = set_mask_prim Mask_uninterruptible in
-        let work_bt = Printexc.get_raw_backtrace () in
-        mask release_ref_no_exn () ;
-        unset_mask_prim old_mask ;
-        Printexc.raise_with_backtrace e work_bt
-        (* END ATOMIC *)
-      )
-    )
-
+  Fun.with_resource ~acquire x ~scope:work ~release
 
 (* control *)
 let check_block_signal () =

@@ -55,6 +55,12 @@ Working version
 - #9582: Add Array.{find_opt,find_map,split,combine}.
   (Nicolás Ojeda Bär, review by Daniel Bünzli and Gabriel Scherer)
 
+- #8962: Add `Fun.with_resource ~acquire ~release` for defining
+   scoped combinators for resource management which are safe even in
+   the event of asynchronous exceptions, similar to
+   [Control.Exception.bracket] in GHC.
+   (Guillaume Munch-Maccagnoni, review by TODO)
+
 ### Other libraries:
 
 * #10084: Unix.open_process_args* functions now look up the program in the PATH.

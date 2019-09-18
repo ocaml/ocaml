@@ -36,3 +36,52 @@ let protect ~(finally : unit -> unit) work =
       let work_bt = Printexc.get_raw_backtrace () in
       finally_no_exn () ;
       Printexc.raise_with_backtrace work_exn work_bt
+
+external uncaught_exception_in_destructor : exn -> 'a
+  = "caml_uncaught_exception_in_destructor"
+
+type _mask_kind = Mask_none | Mask_uninterruptible | Mask_nonpreemptible
+
+external set_mask : _mask_kind -> _mask_kind = "caml_sys_set_mask" [@@noalloc]
+external unset_mask : _mask_kind -> unit = "caml_sys_unset_mask" [@@noalloc]
+
+let with_resource ~acquire x ~scope ~(release : _ -> unit) =
+  (* we inline Sys.mask to avoid allocations *)
+  let release_no_exn (* BEGIN ATOMIC *) ~release resource =
+    let old_mask = set_mask Mask_uninterruptible in
+    (* END ATOMIC *)
+    match release resource with
+    | () -> unset_mask old_mask
+    | exception e -> (
+        (* BEGIN ATOMIC *)
+        unset_mask old_mask ;
+        uncaught_exception_in_destructor e
+        (* END ATOMIC *)
+      )
+  in
+  let old_mask = set_mask Mask_uninterruptible in
+  (* asynchronous exceptions are turned off *)
+  let resource =
+    try acquire x
+    with e -> (
+        (* BEGIN ATOMIC *)
+        unset_mask old_mask ;
+        raise e
+        (* END ATOMIC *)
+      )
+  in
+  match
+    unset_mask old_mask ;
+    scope resource
+  with
+  | (* BEGIN ATOMIC *) result -> (
+      release_no_exn ~release resource ;
+      (* END ATOMIC *)
+      result
+    )
+  | (* BEGIN ATOMIC *) exception e -> (
+      let work_bt = Printexc.get_raw_backtrace () in
+      release_no_exn ~release resource ;
+      Printexc.raise_with_backtrace e work_bt
+      (* END ATOMIC *)
+    )
