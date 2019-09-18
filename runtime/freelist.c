@@ -882,7 +882,7 @@ static struct {
   value free;
   value *merge;
 } bf_small_fl [BF_NUM_SMALL + 1];
-int bf_small_map = 0;
+static int bf_small_map = 0;
 
 /* Small free blocks have only one pointer to the next block.
    Large free blocks have 5 fields:
