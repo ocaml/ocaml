@@ -195,20 +195,26 @@ let rec prepare_letrec
     (lam:Lambda.lambda)
     (letrec:letrec) =
   match lam with
-  | Lfunction funct ->
-      (match current_let with
-       | Some current_let when Ident.Set.mem current_let.ident recursive_set ->
-           { letrec with functions =
-                           (current_let.ident, funct) :: letrec.functions }
-       | Some current_let ->
-           (* If the currently bound function does not depend on any
-              recursive variable *)
-           let pre ~tail : Lambda.lambda =
-             Llet (current_let.let_kind, current_let.value_kind,
-                   current_let.ident, lam, letrec.pre ~tail)
-           in
-           { letrec with pre }
-       | None -> letrec) (* dead code *)
+  | Lfunction funct -> begin
+      match current_let with
+      | Some current_let when Ident.Set.mem current_let.ident recursive_set ->
+          { letrec with functions =
+                          (current_let.ident, funct) :: letrec.functions }
+      | Some current_let ->
+          (* If the currently bound function does not depend on any
+             recursive variable *)
+          let pre ~tail : Lambda.lambda =
+            Llet (current_let.let_kind, current_let.value_kind,
+                  current_let.ident, lam, letrec.pre ~tail)
+          in
+          { letrec with pre }
+      | None ->
+          (* dead code, but keep it as Lsequence for now *)
+          let pre ~tail : Lambda.lambda =
+            Lsequence (Lfunction funct, letrec.pre ~tail)
+          in
+          { letrec with pre }
+    end
   | Lprim ((Pmakeblock _ | Pmakearray (_, _) | Pduprecord (_, _)) as prim, args, dbg)
     when not (List.for_all is_simple args) ->
       (* If there are some non-trivial expressions as arguments, we
@@ -289,7 +295,7 @@ let rec prepare_letrec
         { letrec with pre }
       else begin
         let free_vars_body = Lambda.free_variables body in
-        (* This is infrequent enought for not caring
+        (* This is infrequent enough for not caring
            about performances *)
         assert(not (Ident.Set.mem id free_vars_body));
         (* It is not used, we only keep the effect *)
@@ -529,7 +535,7 @@ let rec prepare_letrec
           Printlambda.lambda lam;
         (* raise Bug; *)
       end;
-      (* assert(Ident.Set.is_empty (Ident.Set.inter free_vars recursive_set)); *)
+      (* assert(Ident.Set.disjoint free_vars recursive_set); *)
       let pre = match current_let with
         | Some cl -> fun ~tail : Lambda.lambda ->
             Llet (cl.let_kind, cl.value_kind, cl.ident, lam, letrec.pre ~tail)

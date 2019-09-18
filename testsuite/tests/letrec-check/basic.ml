@@ -398,3 +398,15 @@ val a : int list = [0; 1; <cycle>]
 val b : int list = [1; 0; <cycle>]
 val f : int -> int = <fun>
 |}]
+
+let rec okay =
+  let rec x = let r = "bar" in ref r
+  and y = fun s -> ignore xx; ref s
+  and _z = fun s -> y s
+  and xx = let k = 0 in k::yy
+  and yy = 1::xx
+  in
+  ref ("foo" ^ ! (y !x));;
+[%%expect{|
+val okay : string ref = {contents = "foobar"}
+|}]
