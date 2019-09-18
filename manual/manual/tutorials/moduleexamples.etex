@@ -85,8 +85,9 @@ Two constructions are available for this purpose:
 \end{caml_example}
 and
 \begin{caml_example}{toplevel}
-  PrioQueue.(insert empty 1 "hello");;
+  let PrioQueue.(Node _ | Empty) = PrioQueue.(insert empty 1 "hello");;
 \end{caml_example}
+Note that in patterns, only the second form is available.
 In the second form, when the body of a local open is itself delimited
 by parentheses, braces or bracket, the parentheses of the local open
 can be omitted. For instance,
