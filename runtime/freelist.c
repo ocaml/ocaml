@@ -873,11 +873,6 @@ static void ff_make_free_blocks
 */
 #define BF_NUM_SMALL 16
 
-/* How many blocks to pre-allocate at once for a small free list when
-   it and all the larger ones are empty.
-   100 should be a good number to amortize the overhead. */
-#define BF_PREALLOC_NUM 100
-
 static struct {
   value free;
   value *merge;
@@ -910,7 +905,8 @@ static struct large_free_block *bf_large_tree;
 static struct large_free_block *bf_large_least;
 /* [bf_large_least] is either NULL or a pointer to the smallest (leftmost)
    block in the tree. In this latter case, the block must be alone in its
-   doubly-linked list (i.e. have [isnode] true and [prev] and [next] NULL)
+   doubly-linked list (i.e. have [isnode] true and [prev] and [next]
+   both pointing back to this block)
 */
 
 /* Auxiliary functions for bitmap */
@@ -919,12 +915,13 @@ static struct large_free_block *bf_large_least;
 #ifdef HAS_FFS
 /* Nothing to do */
 #elif defined(HAS_BITSCANFORWARD)
+#include <intrin.h>
 static inline int ffs (int x)
 {
   unsigned long index;
   unsigned char result;
   result = _BitScanForward (&index, (unsigned long) x);
-  return (int) index + result;
+  return result ? (int) index + 1 : 0;
 }
 #else
 static inline int ffs (int x)
@@ -1078,7 +1075,7 @@ static large_free_block **bf_search (mlsize_t wosz)
 }
 
 /* Search for the least node that is large enough to accomodate the given
-   size. Return in [next_lower] an upper bound on the size of the
+   size. Return in [next_lower] an upper bound on either the size of the
    next-lower node in the tree, or BF_NUM_SMALL if there is no such node.
 */
 static large_free_block **bf_search_best (mlsize_t wosz, mlsize_t *next_lower)
@@ -1310,9 +1307,9 @@ static int bf_is_in_tree (large_free_block *b)
 
 /**************************************************************************/
 
-/* Add back a fragment into a small free list. The block must be small
+/* Add back a remnant into a small free list. The block must be small
    and black and its tag must be abstract. */
-static void bf_insert_fragment_small (value v)
+static void bf_insert_remnant_small (value v)
 {
   mlsize_t wosz = Wosize_val (v);
 
@@ -1327,13 +1324,13 @@ static void bf_insert_fragment_small (value v)
   set_map (wosz);
 }
 
-/* Add back a fragment into the free set. The block must have the
+/* Add back a remnant into the free set. The block must have the
    appropriate color:
    White if it is a fragment (wosize = 0)
    Black if it is a small block (0 < wosize <= BF_NUM_SMALL)
    Blue if it is a large block (BF_NUM_SMALL < wosize)
 */
-static void bf_insert_fragment (value v)
+static void bf_insert_remnant (value v)
 {
   mlsize_t wosz = Wosize_val (v);
 
@@ -1341,7 +1338,7 @@ static void bf_insert_fragment (value v)
     CAMLassert (Color_val (v) == Caml_white);
   }else if (wosz <= BF_NUM_SMALL){
     CAMLassert (Color_val (v) == Caml_black);
-    bf_insert_fragment_small (v);
+    bf_insert_remnant_small (v);
   }else{
     CAMLassert (Color_val (v) == Caml_blue);
     bf_insert_block ((large_free_block *) v);
@@ -1439,7 +1436,7 @@ static header_t *bf_split_small (mlsize_t wosz, value v)
 /* Split the given block, return a new block of the given size.
    The original block is at the same address but its size is changed.
    Its color and tag are changed as appropriate for calling the
-   insert_fragment* functions.
+   insert_remnant* functions.
 */
 static header_t *bf_split (mlsize_t wosz, value v)
 {
@@ -1479,7 +1476,7 @@ static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
   CAMLassert (bf_large_wosize (n) >= wosz);
   if (n->next == n){
     if (bf_large_wosize (n) > bound + Whsize_wosize (wosz)){
-      /* TODO splay at [n]? if the remainder is larger than [wosz]? */
+      /* TODO splay at [n]? if the remnant is larger than [wosz]? */
       if (set_least){
         CAMLassert (bound == BF_NUM_SMALL);
         bf_large_least = n;
@@ -1488,7 +1485,7 @@ static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
     }else{
       bf_remove_node (p);
       result = bf_split (wosz, (value) n);
-      bf_insert_fragment ((value) n);
+      bf_insert_remnant ((value) n);
       return result;
     }
   }else{
@@ -1497,8 +1494,8 @@ static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
     n->next = b->next;
     b->next->prev = n;
     result = bf_split (wosz, (value) b);
-    /* TODO: splay at [n] if the remainder is smaller than [wosz] */
-    bf_insert_fragment ((value) b);
+    /* TODO: splay at [n] if the remnant is smaller than [wosz] */
+    bf_insert_remnant ((value) b);
     if (set_least){
       CAMLassert (bound == BF_NUM_SMALL);
       if (bf_large_wosize (b) > BF_NUM_SMALL){
@@ -1562,7 +1559,7 @@ static header_t *bf_allocate (mlsize_t wosz)
         bf_small_fl[s].free = Next_small (bf_small_fl[s].free);
         if (bf_small_fl[s].free == Val_NULL) unset_map (s);
         result = bf_split_small (wosz, block);
-        if (s > Whsize_wosize (wosz)) bf_insert_fragment_small (block);
+        if (s > Whsize_wosize (wosz)) bf_insert_remnant_small (block);
         FREELIST_DEBUG_bf_check ();
         return result;
       }
@@ -1601,7 +1598,7 @@ static void bf_init_merge (void)
   caml_fl_merge = Val_NULL;
 
   for (i = 1; i <= BF_NUM_SMALL; i++){
-    /* At the beginning of each small free list is a segment of fragments
+    /* At the beginning of each small free list is a segment of remnants
        that were pushed back to the list after splitting. These are either
        black or white, and they are not in order. We need to remove them
        from the list for coalescing to work. We set them white so they
@@ -1718,7 +1715,7 @@ static void bf_add_blocks (value bp)
       bf_insert_block ((large_free_block *) bp);
     }else{
       Hd_val (bp) = Blackhd_hd (Hd_val (bp));
-      bf_insert_fragment_small (bp);
+      bf_insert_remnant_small (bp);
     }
     bp = next;
   }
@@ -1747,7 +1744,7 @@ static void bf_make_free_blocks (value *p, mlsize_t size, int do_merge,
         color = Caml_blue;
       }
       *(header_t *)p = Make_header (wosz, Abstract_tag, color);
-      bf_insert_fragment (Val_hp (p));
+      bf_insert_remnant (Val_hp (p));
     }else{
       *(header_t *)p = Make_header (Wosize_whsize (sz), 0, color);
     }
