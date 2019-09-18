@@ -1658,38 +1658,27 @@ static header_t *bf_merge_block (value bp, char *limit)
   }
   cur = bp;
   while (1){
-    /* We don't want to coalesce runs of blue blocks because the allocation
-       code creates such runs that we want to preserve, while garbage
-       collection never creates such runs.
-
-       This is a 2-state automaton that recognizes the regexp (w|wb)+
-       knowing that we start with a white block. */
-  st_white:
-    CAMLassert (Color_val (cur) == Caml_white);
+    /* This slightly convoluted loop is just going over the run of
+       white or blue blocks, doing the right thing for each color, and
+       stopping on a gray or black block or when limit is passed.
+       It is convoluted because we start knowing that the first block
+       is white. */
+  white:
     if (Tag_val (cur) == Custom_tag){
       void (*final_fun)(value) = Custom_ops_val(cur)->finalize;
       if (final_fun != NULL) final_fun(cur);
     }
     caml_fl_cur_wsz += Whsize_val (cur);
+  next:
     cur = Next_in_mem (cur);
     if ((char *) cur > limit) goto end_of_run;
     switch (Color_val (cur)){
-    case Caml_white: goto st_white;
-    case Caml_blue: goto st_blue;
-    case Caml_gray: case Caml_black: goto end_of_run;
+    case Caml_white: goto white;
+    case Caml_blue: bf_remove (cur); goto next;
+    case Caml_gray:
+    case Caml_black:
+      goto end_of_run;
     }
-    CAMLassert (0);
-  st_blue:
-    CAMLassert (Color_val (cur) == Caml_blue);
-    bf_remove (cur);
-    cur = Next_in_mem (cur);
-    if ((char *) cur > limit) goto end_of_run;
-    switch (Color_val (cur)){
-    case Caml_white: goto st_white;
-    case Caml_blue: goto end_of_run;
-    case Caml_gray: case Caml_black: goto end_of_run;
-    }
-    CAMLassert (0);
   }
  end_of_run:
   wosz = Wosize_whsize ((value *) cur - (value *) start);
