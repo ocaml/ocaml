@@ -46,15 +46,6 @@ type test =
   | Ioddtest
   | Ieventest
 
-type alloc_dbginfo =
-  { alloc_words : int;
-    alloc_dbg : Debuginfo.t }
-(** Due to Comballoc, a single Ialloc instruction may combine several
-    unrelated allocations. Their Debuginfo.t (which may differ) are stored
-    as a list of alloc_dbginfo. This list is in order of increasing memory
-    address, which is the reverse of the original allocation order. Later
-    allocations are consed to the front of this list by Comballoc. *)
-
 type operation =
     Imove
   | Ispill
@@ -72,7 +63,7 @@ type operation =
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of { bytes : int; label_after_call_gc : label option;
-      dbginfo : alloc_dbginfo list; spacetime_index : int; }
+      dbginfo : Debuginfo.alloc_dbginfo; spacetime_index : int; }
     (** For Spacetime only, Ialloc instructions take one argument, being the
         pointer to the trie node for the current function. *)
   | Iintop of integer_operation

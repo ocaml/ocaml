@@ -106,7 +106,7 @@ let emit_float32_directive directive x =
 (* Record live pointers at call points *)
 
 type frame_debuginfo =
-  | Dbg_alloc of Mach.alloc_dbginfo list
+  | Dbg_alloc of Debuginfo.alloc_dbginfo
   | Dbg_raise of Debuginfo.t
   | Dbg_other of Debuginfo.t
 
@@ -175,9 +175,10 @@ let emit_frames a =
       | Dbg_other d | Dbg_raise d ->
         if Debuginfo.is_none d then 0 else 1
       | Dbg_alloc dbgs ->
-        if List.for_all (fun d ->
-          Debuginfo.is_none d.Mach.alloc_dbg) dbgs
-        then 2 else 3
+        if !Clflags.debug && not Config.spacetime &&
+           List.exists (fun d ->
+             not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
+        then 3 else 2
     in
     a.efa_code_label fd.fd_lbl;
     a.efa_16 (fd.fd_frame_size + flags);
@@ -195,7 +196,7 @@ let emit_frames a =
     | Dbg_alloc dbg ->
       assert (List.length dbg < 256);
       a.efa_8 (List.length dbg);
-      List.iter (fun Mach.{alloc_words;_} ->
+      List.iter (fun Debuginfo.{alloc_words;_} ->
         (* Possible allocations range between 2 and 257 *)
         assert (2 <= alloc_words &&
                 alloc_words - 1 <= Config.max_young_wosize &&
@@ -203,7 +204,7 @@ let emit_frames a =
         a.efa_8 (alloc_words - 2)) dbg;
       if flags = 3 then begin
         a.efa_align 4;
-        List.iter (fun Mach.{alloc_dbg; _} ->
+        List.iter (fun Debuginfo.{alloc_dbg; _} ->
           if Debuginfo.is_none alloc_dbg then
             a.efa_32 Int32.zero
           else

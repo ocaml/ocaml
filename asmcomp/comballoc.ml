@@ -18,9 +18,9 @@
 open Mach
 
 type pending_alloc =
-  { reg: Reg.t;       (* register holding the result of the last allocation *)
-    dbginfos: alloc_dbginfo list; (* debug info for each pending allocation *)
-    totalsz: int }                  (* amount to be allocated in this block *)
+  { reg: Reg.t;         (* register holding the result of the last allocation *)
+    dbginfos: Debuginfo.alloc_dbginfo;   (* debug info for each pending alloc *)
+    totalsz: int }                    (* amount to be allocated in this block *)
 
 type allocation_state =
     No_alloc
