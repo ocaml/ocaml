@@ -1,5 +1,8 @@
-OCaml 4.09.0
-------------
+OCaml 4.09 maintenance branch:
+------------------------------
+
+OCaml 4.09.0 (19 September 2019):
+---------------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
