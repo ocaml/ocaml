@@ -225,8 +225,11 @@ Working version
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
-OCaml 4.09.0
-------------
+OCaml 4.09 maintenance branch:
+------------------------------
+
+OCaml 4.09.0 (19 September 2019):
+---------------------------------
 
 ### Runtime system:
 
