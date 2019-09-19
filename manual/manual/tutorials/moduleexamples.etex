@@ -99,7 +99,7 @@ becomes
 \begin{caml_example}{toplevel}
   PrioQueue.[insert empty 1 "hello"];;
 \end{caml_example}
-This second form also works inside pattern matching:
+This second form also works for patterns:
 \begin{caml_example}{toplevel}
   let at_most_one_element x = match x with
   | PrioQueue.( Empty| Node (_,_, Empty,Empty) ) -> true
