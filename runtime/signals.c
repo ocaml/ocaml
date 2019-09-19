@@ -337,6 +337,18 @@ CAMLexport void caml_process_pending_actions(void)
   caml_raise_if_exception(exn);
 }
 
+/* [ int -> unit ]. Pretend that the signal [signal_number] is
+   received. This is meant for testing. */
+CAMLprim value caml_sys_record_signal(value signal_number)
+{
+  int sig = caml_convert_signal_number(Int_val(signal_number));
+  if (caml_signal_handlers == 0 || !Is_block(Field(caml_signal_handlers, sig)))
+    caml_invalid_argument("caml_sys_record_signal: no signal handler "
+                          "installed for this signal");
+  caml_record_signal(sig);
+  return Val_unit;
+}
+
 /* OS-independent numbering of signals */
 
 #ifndef SIGABRT
