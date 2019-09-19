@@ -85,9 +85,8 @@ Two constructions are available for this purpose:
 \end{caml_example}
 and
 \begin{caml_example}{toplevel}
-  let PrioQueue.(Node _ | Empty) = PrioQueue.(insert empty 1 "hello");;
+  PrioQueue.(insert empty 1 "hello");;
 \end{caml_example}
-Note that in patterns, only the second form is available.
 In the second form, when the body of a local open is itself delimited
 by parentheses, braces or bracket, the parentheses of the local open
 can be omitted. For instance,
@@ -99,6 +98,12 @@ can be omitted. For instance,
 becomes
 \begin{caml_example}{toplevel}
   PrioQueue.[insert empty 1 "hello"];;
+\end{caml_example}
+This second form also works inside pattern matching:
+\begin{caml_example}{toplevel}
+  let at_most_one_element x = match x with
+  | PrioQueue.( Empty| Node (_,_, Empty,Empty) ) -> true
+  | _ -> false ;;
 \end{caml_example}
 
 It is also possible to copy the components of a module inside
