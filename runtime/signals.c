@@ -26,6 +26,7 @@
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/printexc.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
@@ -37,30 +38,44 @@
 #define NSIG 64
 #endif
 
-/* When an action is pending, either [action_pending] is 1, or
-   there is a function currently running which will end by either
-   executing all actions, or set [action_pending] back to 1. We
-   set it to 0 when starting executing all callbacks.
 
-   In the case there are two different callbacks (say, a signal and a
-   finaliser) arriving at the same time, then the processing of one
-   awaits the return of the other. In case of long-running callbacks,
-   we may want to run the second one without waiting the end of the
-   first one. We do this by provoking an additional polling every
-   minor collection and every major slice. To guarantee a low latency
-   for signals, we avoid delaying signal handlers in that case by
-   calling them first.
+/* [action_pending] is the minimum mask level under which there is no
+   action to execute; in other words there might be an action to
+   execute if action_pending > Caml_state->mask_async_callbacks.
+
+   More specifically:
+
+   - When a non-raising action might be pending, either
+     [action_pending] is equal to CAML_MASK_NONPREEMPTIBLE, or it is
+     about to be executed.
+
+   - When a possibly-raising asynchronous callback might be pending,
+     either [action_pending] is greater or equal to
+     CAML_MASK_UNINTERRUPTIBLE, or it is about to be executed.
+
+   In the case where there are two different callbacks (say, a signal
+   and a finaliser) arriving at the same time, then the processing of
+   one awaits the return of the other. In case of long-running
+   callbacks, we may want to run the second one without waiting the
+   end of the first one. We do this by provoking an additional polling
+   at every minor collection and every major slice. To guarantee a low
+   latency for signals, we avoid delaying signal handlers in that case
+   by calling them first.
+
+   Races are avoided by never increasing [action_pending] to something
+   else than CAML_MASK_NONPREEMTIBLE (at worst, a redundant and
+   innocuous polling happens), and only decreasing [action_pending]
+   before executing the corresponding actions.
 
    FIXME: We could get into caml_process_pending_actions when
    action_pending is seen as set but not caml_pending_signals,
    making us miss the signal.
 */
-static int volatile action_pending = 0;
+static caml_mask_kind volatile action_pending = CAML_MASK_NONE;
 
 /* The set of pending signals (received but not yet processed) */
-
-static intnat volatile signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
+static caml_mask_kind pending_signals_mask[NSIG];
 
 #ifdef POSIX_SIGNALS
 /* This wrapper makes [sigprocmask] compatible with
@@ -76,38 +91,44 @@ CAMLexport int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *)
   = sigprocmask_wrapper;
 #endif
 
-static int check_for_pending_signals(void)
+static int check_for_pending_signals(caml_mask_kind mask)
 {
   int i;
   for (i = 0; i < NSIG; i++) {
-    if (caml_pending_signals[i]) return 1;
+    if (caml_pending_signals[i] && pending_signals_mask[i] > mask) return 1;
   }
   return 0;
 }
 
-/* Execute all pending signals */
+/* Caches the result of check_for_pending_signals(CAML_MASK_NONE) */
+static intnat volatile signals_are_pending = 0;
 
-CAMLexport value caml_process_pending_signals_exn(void)
+/* Execute all pending signals for that mask level */
+
+static value process_pending_signals_exn(caml_mask_kind mask)
 {
   int i;
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
 
-  if(!signals_are_pending)
+  if (!signals_are_pending)
     return Val_unit;
-  signals_are_pending = 0;
+
+  if (mask == CAML_MASK_NONE)
+    signals_are_pending = 0;
 
   /* Check that there is indeed a pending signal before issuing the
      syscall in [caml_sigmask_hook]. */
-  if (!check_for_pending_signals())
+  if (!check_for_pending_signals(mask))
     return Val_unit;
 
 #ifdef POSIX_SIGNALS
   caml_sigmask_hook(/* dummy */ SIG_BLOCK, NULL, &set);
 #endif
   for (i = 0; i < NSIG; i++) {
-    if (!caml_pending_signals[i])
+    caml_mask_kind signal_level = pending_signals_mask[i];
+    if (!caml_pending_signals[i] || signal_level <= mask)
       continue;
 #ifdef POSIX_SIGNALS
     if(sigismember(&set, i))
@@ -116,14 +137,26 @@ CAMLexport value caml_process_pending_signals_exn(void)
     caml_pending_signals[i] = 0;
     {
       value exn = caml_execute_signal_exn(i, 0);
-      if (Is_exception_result(exn)) return exn;
+      if (Is_exception_result(exn)) {
+        if (signal_level == CAML_MASK_NONPREEMPTIBLE) {
+          caml_fatal_uncaught_exception(exn);
+        } else {
+          return exn;
+        }
+      }
     }
   }
   return Val_unit;
 }
 
+CAMLexport value caml_process_pending_signals_exn(void)
+{
+  return process_pending_signals_exn(Caml_state->mask_async_callbacks);
+}
+
 static void notify_action()
 {
+  if (!caml_check_pending_actions()) return;
   Caml_state->young_limit = Caml_state->young_alloc_end;
 }
 
@@ -131,7 +164,7 @@ CAMLno_tsan /* When called from [caml_record_signal], these memory
                accesses may not be synchronized. */
 void caml_set_action_pending(void)
 {
-  action_pending = 1;
+  action_pending = CAML_MASK_NONPREEMPTIBLE;
 
   /* When this function is called without [caml_c_call] (e.g., in
      [caml_modify]), this is only moderately effective on ports that cache
@@ -150,6 +183,7 @@ void caml_set_action_pending(void)
 CAMLno_tsan
 CAMLexport void caml_record_signal(int signal_number)
 {
+  if (signal_number < 0 || signal_number >= NSIG) return;
   caml_pending_signals[signal_number] = 1;
   signals_are_pending = 1;
   caml_set_action_pending();
@@ -177,7 +211,7 @@ CAMLexport void caml_enter_blocking_section(void)
     /* Process all pending signals now */
     caml_raise_if_exception(caml_process_pending_signals_exn());
     caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
+    /* Check if some signal is arrived meanwhile.
        If none, done; otherwise, try again */
     if (! signals_are_pending) break;
     caml_leave_blocking_section_hook ();
@@ -196,19 +230,18 @@ CAMLexport void caml_leave_blocking_section(void)
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
 
-  /* Some other thread may have switched
-     [signals_are_pending] to 0 even though there are still
-     pending signals (masked in the other thread). To handle this
-     case, we force re-examination of all signals by setting it back
-     to 1.
+  /* Some other thread may have switched [signals_are_pending] to 0
+     even though there are still pending signals (masked in the other
+     thread, in the sense of POSIX signal masks). To handle this case,
+     we force re-examination of all signals by setting it back to 1.
 
      Another case where this is necessary (even in a single threaded
-     setting) is when the blocking section unmasks a pending signal:
-     If the signal is pending and masked but has already been
+     setting) is when the blocking section (POSIX-)unmasks a pending
+     signal: If the signal is pending and masked but has already been
      examined by [caml_process_pending_signals_exn], then
-     [signals_are_pending] is 0 but the signal needs to be
-     handled at this point. */
-  if (check_for_pending_signals()) {
+     [signals_are_pending] is 0 but the signal needs to be handled at
+     this point. */
+  if (check_for_pending_signals(CAML_MASK_NONE)) {
     signals_are_pending = 1;
     caml_set_action_pending();
   }
@@ -216,9 +249,43 @@ CAMLexport void caml_leave_blocking_section(void)
   errno = saved_errno;
 }
 
+CAMLexport caml_mask_kind caml_mask(caml_mask_kind new_mask)
+{
+  caml_mask_kind old_mask = Caml_state->mask_async_callbacks;
+  if (old_mask < new_mask) {
+    Caml_state->mask_async_callbacks = new_mask;
+  }
+  return old_mask;
+}
+
+CAMLexport void caml_unmask(caml_mask_kind old_mask)
+{
+  CAMLassert(old_mask <= Caml_state->mask_async_callbacks);
+  if (Caml_state->mask_async_callbacks != old_mask) {
+    Caml_state->mask_async_callbacks = old_mask;
+    notify_action();
+  }
+}
+
 /* Execute a signal handler immediately */
 
 static value caml_signal_handlers = 0;
+
+static value execute_with_mask_exn(value handler, int signal_number)
+{
+  value sig = Val_int(caml_rev_convert_signal_number(signal_number));
+  value res;
+  CAMLassert(Is_block(handler));
+  if (pending_signals_mask[signal_number] > CAML_MASK_UNINTERRUPTIBLE) {
+    caml_mask_kind old_mask = caml_mask(CAML_MASK_UNINTERRUPTIBLE);
+    res = caml_callback_exn(handler, sig);
+    caml_unmask(old_mask);
+  } else {
+    res = caml_callback_exn(handler, sig);
+  }
+  return res;
+}
+
 
 value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 {
@@ -233,9 +300,7 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
   caml_sigmask_hook(SIG_BLOCK, &nsigs, &sigs);
 #endif
   handler = Field(caml_signal_handlers, signal_number);
-    res = caml_callback_exn(
-             handler,
-             Val_int(caml_rev_convert_signal_number(signal_number)));
+  res = execute_with_mask_exn(handler, signal_number);
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -267,47 +332,57 @@ void caml_update_young_limit (void)
 
   Caml_state->young_limit = Caml_state->young_limit_c;
 
-  if (action_pending)
-    notify_action();
+  notify_action();
 }
 
 /* Arrange for a garbage collection to be performed as soon as possible */
 
+static void set_urgent_gc(void)
+{
+  action_pending = CAML_MASK_NONPREEMPTIBLE;
+  caml_update_young_limit();
+}
+
 void caml_request_major_slice (void)
 {
   Caml_state->requested_major_slice = 1;
-  caml_set_action_pending();
-  // update Caml_state->young_limit_c
-  caml_update_young_limit();
+  set_urgent_gc();
 }
 
 void caml_request_minor_gc (void)
 {
   Caml_state->requested_minor_gc = 1;
-  caml_set_action_pending();
-  // update Caml_state->young_limit_c
-  caml_update_young_limit();
+  set_urgent_gc();
 }
 
 CAMLno_tsan /* The access to [action_pending] is not synchronized. */
 int caml_check_pending_actions()
 {
-  return action_pending;
+  return action_pending > Caml_state->mask_async_callbacks;
 }
 
+// Execute actions according to the mask, independently of the value
+// of action_pending.
 value caml_do_pending_actions_exn(void)
 {
   value exn;
+  caml_mask_kind mask = Caml_state->mask_async_callbacks;
 
-  action_pending = 0;
+  action_pending = (action_pending > mask) ? mask : action_pending;
 
   // Do any pending minor collection or major slice
   caml_check_urgent_gc(Val_unit);
-
   caml_update_young_limit();
+  if (mask == CAML_MASK_NONPREEMPTIBLE) return Val_unit;
+
+  // Execute non-raising signals
+  process_pending_signals_exn(CAML_MASK_UNINTERRUPTIBLE);
+  if (mask == CAML_MASK_UNINTERRUPTIBLE) return Val_unit;
+
+  // Now execute other async callbacks
 
   // Call signal handlers first (see documentation of action_pending).
-  exn = caml_process_pending_signals_exn();
+  exn = process_pending_signals_exn(CAML_MASK_NONE);
   if (Is_exception_result(exn)) goto exception;
 
   // Call memprof callbacks
@@ -332,7 +407,7 @@ exception:
 CAMLno_tsan /* The access to [action_pending] is not synchronized. */
 Caml_inline value process_pending_actions_with_root_exn(value extra_root)
 {
-  if (action_pending) {
+  if (caml_check_pending_actions()) {
     CAMLparam1(extra_root);
     value exn = caml_do_pending_actions_exn();
     if (Is_exception_result(exn))
@@ -497,6 +572,9 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   sig = caml_convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
+
+  pending_signals_mask[sig] = CAML_MASK_UNINTERRUPTIBLE;
+
   switch(action) {
   case Val_int(0):              /* Signal_default */
     act = 0;

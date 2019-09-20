@@ -83,6 +83,8 @@ void caml_init_domain ()
   Caml_state->requested_major_slice = 0;
   Caml_state->requested_minor_gc = 0;
 
+  Caml_state->mask_async_callbacks = CAML_MASK_NONE;
+
   Caml_state->eventlog_enabled = 0;
   Caml_state->eventlog_paused = 0;
   Caml_state->eventlog_startup_pid = 0;

@@ -328,6 +328,13 @@ extern double caml_log1p(double);
 
 #endif /* _WIN32 */
 
+/* For signal.h. This is needed in domain_state.h. */
+
+typedef enum {
+  CAML_MASK_NONE,
+  CAML_MASK_UNINTERRUPTIBLE,
+  CAML_MASK_NONPREEMPTIBLE
+} caml_mask_kind;
 
 /* Data structures */
 

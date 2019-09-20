@@ -30,6 +30,12 @@ Working version
 - #10101: Add -help/--help option to ocamlrun.
   (David Allsopp, review by Xavier Leroy)
 
+- #8961: Add a runtime flag to disable/enable the processing of
+  asynchronous callbacks (finalisers, signal handlers, memprof
+  callbacks) on a per-thread basis. New C functions caml_mask and
+  caml_unmask. (Guillaume Munch-Maccagnoni, suggestion and advice by
+  Stephen Dolan, review by TODO)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
