@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*           Pierre Chambart and Vincent Laviron, OCamlPro                *)
+(*      Pierre Chambart, Vincent Laviron and Louis Gesbert, OCamlPro      *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2018 OCamlPro SAS                                          *)
@@ -203,7 +203,8 @@ let rec prepare_letrec
           { letrec with pre }
       | None -> dead_code lam letrec
     end
-  | Lprim ((Pmakeblock _ | Pmakearray (_, _) | Pduprecord (_, _)) as prim, args, dbg)
+  | Lprim ((Pmakeblock _ | Pmakearray (_, _) | Pduprecord (_, _))
+           as prim, args, dbg)
     when not (List.for_all is_simple args) ->
       (* If there are some non-trivial expressions as arguments, we
          first extract the arguments (to let-bound variables) before
@@ -270,7 +271,8 @@ let rec prepare_letrec
   | Llet (Variable, _, _, _, _) ->
       (* This is not supposed to appear at this point *)
       assert false
-  | Llet ((Strict | Alias | StrictOpt) as let_kind, value_kind, id, def, body) ->
+  | Llet ((Strict | Alias | StrictOpt) as let_kind, value_kind, id, def, body)
+    ->
       let letbound = Ident.Set.add id letrec.letbound in
       let letrec = { letrec with letbound } in
       let free_vars = Lambda.free_variables def in
@@ -610,5 +612,3 @@ let preallocate_letrec ~bindings ~body =
        Llet (Strict, Pgenval, id,
              Lprim (Pccall desc, [size], Location.none), body))
     body_with_initialization bindings
-
-

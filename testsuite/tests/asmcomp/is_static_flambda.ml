@@ -62,12 +62,12 @@ let () =
  *   and g1 a = E (f1 a, l2)
  *   and l1 = E (f1, l2)
  *   and l2 = E (g1, l1) in
- * 
+ *
  *   assert(is_in_static_data f1);
  *   assert(is_in_static_data g1);
  *   assert(is_in_static_data l1);
  *   assert(is_in_static_data l2)
- * 
+ *
  * let () = (i [@inlined never]) () *)
 
 module type P = module type of Stdlib

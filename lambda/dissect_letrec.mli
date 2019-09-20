@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*           Pierre Chambart and Vincent Laviron, OCamlPro                *)
+(*      Pierre Chambart, Vincent Laviron and Louis Gesbert, OCamlPro      *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2018 OCamlPro SAS                                          *)
