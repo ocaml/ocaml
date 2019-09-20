@@ -234,6 +234,10 @@ Working version
 OCaml 4.09 maintenance branch:
 ------------------------------
 
+- #8953, #8954: Fix error submessages in the toplevel: do not display
+  dummy locations
+  (Armaël Guéneau, review by Gabriel Scherer)
+
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------
 
