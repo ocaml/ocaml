@@ -156,6 +156,12 @@ Working version
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
   (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
 
+### Manual and documentation:
+
+- #8950: manual, move local opens in pattern out of the extension chapter
+  (Florian Angeletti, review and suggestion by Gabriel Scherer)
+
+
 ### Compiler user-interface and warnings:
 
 - #8833: Hint for (type) redefinitions in toplevel session
