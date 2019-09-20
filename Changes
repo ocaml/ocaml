@@ -29,6 +29,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #8970: separate value patterns (matching on values) from computation patterns
+  (matching on the effects of a copmutation) in the typedtree.
+  (Gabriel Scherer, review by Jacques Garrigue and Alain Frisch)
+
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)
 

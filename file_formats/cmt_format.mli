@@ -44,7 +44,7 @@ and binary_part =
   | Partial_structure of structure
   | Partial_structure_item of structure_item
   | Partial_expression of expression
-  | Partial_pattern of pattern
+  | Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
   | Partial_class_expr of class_expr
   | Partial_signature of signature
   | Partial_signature_item of signature_item
