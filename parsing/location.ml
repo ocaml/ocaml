@@ -752,7 +752,8 @@ let terminfo_toplevel_printer (lb: lexbuf): report_printer =
   in
   let pp_main_loc _ _ _ _ = () in
   let pp_submsg_loc _ _ ppf loc =
-    Format.fprintf ppf "%a:@ " print_loc loc in
+    if not loc.loc_ghost then
+      Format.fprintf ppf "%a:@ " print_loc loc in
   { batch_mode_printer with pp; pp_main_loc; pp_submsg_loc }
 
 let best_toplevel_printer () =
