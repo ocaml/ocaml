@@ -38,8 +38,9 @@ let create fn arg =
       try
         fn arg; ()
       with exn ->
-             flush stdout; flush stderr;
-             thread_uncaught_exception exn)
+        (try flush stdout with _ -> ()) ;
+        (try flush stderr with _ -> ()) ;
+        thread_uncaught_exception exn )
 
 (* Thread.kill is currently not implemented due to problems with
    cleanup handlers on several platforms *)
