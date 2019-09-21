@@ -126,7 +126,9 @@ CAMLexport void caml_print_exception_backtrace(void)
   }
 }
 
-/* Get a copy of the latest backtrace */
+/* Get a copy of the latest backtrace. This is called in exception
+   handlers, so do not raise any exception including Out_of_memory.
+ */
 CAMLprim value caml_get_exception_raw_backtrace(value unit)
 {
   CAMLparam0();
@@ -156,9 +158,23 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
     memcpy(saved_backtrace_buffer, Caml_state->backtrace_buffer,
            saved_backtrace_pos * sizeof(backtrace_slot));
 
-    res = caml_alloc(saved_backtrace_pos, 0);
-    for (i = 0; i < saved_backtrace_pos; i++) {
-      Field(res, i) = Val_backtrace_slot(saved_backtrace_buffer[i]);
+    // Make sure that allocation does not raise
+    if (saved_backtrace_pos <= Max_young_wosize)
+      // Minor allocation, fails with fatal_error instead of
+      // an Out_of_memory exception
+      res = caml_alloc_small(saved_backtrace_pos, 0);
+    else
+      res = caml_alloc_shr_no_track_noexc(saved_backtrace_pos, 0);
+
+    if (res == 0) {
+      // out of memory
+      res = caml_alloc(0,0);
+    } else {
+      /* [Val_backtrace_slot(...)] is always a long, no need to call
+         [caml_initialize]. */
+      for (i = 0; i < saved_backtrace_pos; i++) {
+        Field(res, i) = Val_backtrace_slot(saved_backtrace_buffer[i]);
+      }
     }
   }
 

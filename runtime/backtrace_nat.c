@@ -130,7 +130,7 @@ void caml_current_callstack_write(value trace) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     CAMLassert(descr != NULL);
     /* [Val_backtrace_slot(...)] is always a long, no need to call
-       [caml_modify]. */
+       [caml_modify] or [caml_initialize]. */
     Field(trace, trace_pos) = Val_backtrace_slot((backtrace_slot) descr);
   }
 }

@@ -178,6 +178,11 @@ Working version
   (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
    Gabriel Scherer)
 
+- #8964: Printexc.get_raw_backtrace is now guaranteed not to raise any
+   exception.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer, sliquister,
+   and Xavier Leroy)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.

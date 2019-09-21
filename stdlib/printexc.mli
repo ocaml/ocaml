@@ -130,6 +130,9 @@ val get_raw_backtrace: unit -> raw_backtrace
     backtrace that [Printexc.print_backtrace] would print, but in
     a raw format. Same restriction usage than {!print_backtrace}.
 
+    Since 4.10, it is guaranteed not to raise any exception including
+    asynchronous ones.
+
     @since 4.01.0
 *)
 
