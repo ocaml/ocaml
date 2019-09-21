@@ -155,8 +155,8 @@ static void call_registered_value(char* name)
 CAMLexport void caml_shutdown(void)
 {
   if (startup_count <= 0)
-    caml_fatal_error("a call to caml_shutdown has no "
-                     "corresponding call to caml_startup");
+    caml_fatal_user_error("a call to caml_shutdown has no "
+                          "corresponding call to caml_startup");
 
   /* Do nothing unless it's the last call remaining */
   startup_count--;

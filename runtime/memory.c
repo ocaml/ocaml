@@ -486,7 +486,7 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
       if (!raise_oom)
         return 0;
       else if (Caml_state->in_minor_collection)
-        caml_fatal_error ("out of memory");
+        caml_fatal_user_error ("out of memory");
       else
         caml_raise_out_of_memory ();
     }
@@ -769,7 +769,7 @@ CAMLexport void caml_stat_create_pool(void)
   if (pool == NULL) {
     pool = malloc(SIZEOF_POOL_BLOCK);
     if (pool == NULL)
-      caml_fatal_error("out of memory");
+      caml_fatal_user_error("out of memory");
 #ifdef DEBUG
     pool->magic = Debug_pool_magic;
 #endif
