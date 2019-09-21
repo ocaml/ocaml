@@ -1464,7 +1464,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       if not exception_allowed then
         raise (Error (loc, !env, Exception_pattern_disallowed))
       else begin
-        let p_exn = type_pat p Predef.type_exn k in
+        type_pat p Predef.type_exn (fun p_exn ->
         rp k {
           pat_desc = Tpat_exception p_exn;
           pat_loc = sp.ppat_loc;
@@ -1472,7 +1472,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
           pat_type = expected_ty;
           pat_env = !env;
           pat_attributes = sp.ppat_attributes;
-        }
+        })
       end
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
