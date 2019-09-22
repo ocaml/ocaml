@@ -202,6 +202,10 @@ type t = string
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
 
+external seeded_hash_param : int -> 'a -> int = "caml_string_hash" [@@noalloc]
+let unseeded_hash x = seeded_hash_param 0 x
+let hash seed x = seeded_hash_param seed x
+
 let split_on_char sep s =
   let r = ref [] in
   let j = ref (length s) in
