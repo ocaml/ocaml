@@ -61,3 +61,11 @@ else
   ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
   ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
 endif
+
+# The rule to compile C files
+
+# This rule is similar to GNU make's implicit rule, except that it is more
+# general (it supports both .o and .obj)
+
+%.$(O): %.c
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

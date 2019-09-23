@@ -164,8 +164,9 @@ PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
 
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
-LIBBFD_LINK=@libbfd_link@
-LIBBFD_INCLUDE=@libbfd_include@
+BFD_CPPFLAGS=@bfd_cppflags@
+BFD_LDFLAGS=@bfd_ldflags@
+BFD_LDLIBS=@bfd_ldlibs@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
