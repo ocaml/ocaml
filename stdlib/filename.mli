@@ -118,6 +118,10 @@ val dirname : string -> string
    This function conforms to the specification of POSIX.1-2008 for the
    [dirname] utility. *)
 
+val null : string
+(** [null] is ["/dev/null"] on POSIX and ["NUL"] on Windows. It represents a
+    file on the OS that discards all writes and returns end of file on reads. *)
+
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
    fresh temporary file in the temporary directory.
