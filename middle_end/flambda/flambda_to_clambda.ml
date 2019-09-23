@@ -16,14 +16,22 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+module CO = Closure_offsets
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
 type 'a for_one_or_more_units = {
-  fun_offset_table : int Closure_id.Map.t;
-  fv_offset_table : int Var_within_closure.Map.t;
+  project_closure_indexes : CO.Project_closure_index.t Closure_id.Map.t;
+  move_within_set_of_closures_indexes : CO.Closure_index.t Closure_id.Map.t;
+  fv_offsets : int Var_within_closure.Map.t Closure_id.Map.t;
   constant_closures : Closure_id.Set.t;
   closures: Closure_id.Set.t;
+}
+
+type select_closure_index = {
+  from_arity : int;
+  from_index : int;
+  closure_index : int;
 }
 
 type t = {
@@ -36,30 +44,76 @@ type t = {
     Clambda.ustructured_constant Symbol.Map.t;
 }
 
-let get_fun_offset t closure_id =
-  let fun_offset_table =
-    if Closure_id.in_compilation_unit closure_id (Compilenv.current_unit ())
-    then
-      t.current_unit.fun_offset_table
-    else
-      t.imported_units.fun_offset_table
-  in
-  try Closure_id.Map.find closure_id fun_offset_table
-  with Not_found ->
-    Misc.fatal_errorf "Flambda_to_clambda: missing offset for closure %a"
-      Closure_id.print closure_id
+let in_current_unit closure_id =
+  Closure_id.in_compilation_unit closure_id (Compilenv.current_unit ())
 
-let get_fv_offset t var_within_closure =
-  let fv_offset_table =
-    if Var_within_closure.in_compilation_unit var_within_closure
-        (Compilenv.current_unit ())
-    then t.current_unit.fv_offset_table
-    else t.imported_units.fv_offset_table
+let get_project_closure_index t closure_id : select_closure_index =
+  let indexes =
+    if in_current_unit closure_id
+    then t.current_unit.project_closure_indexes
+    else t.imported_units.project_closure_indexes
   in
-  try Var_within_closure.Map.find var_within_closure fv_offset_table
+  let ({ arity_of_first_function; closure_index; }
+         : CO.Project_closure_index.t) =
+    try Closure_id.Map.find closure_id indexes
+    with Not_found ->
+      Misc.fatal_errorf "Flambda_to_clambda: missing project-closure \
+          index for closure %a"
+        Closure_id.print closure_id
+  in
+  { from_arity = arity_of_first_function;
+    from_index = 0;
+    closure_index;
+  }
+
+let get_move_within_set_of_closures_index t ~start_from ~move_to
+      : select_closure_index =
+  assert ((in_current_unit start_from) = (in_current_unit move_to));
+  let indexes =
+    if in_current_unit start_from
+    then t.current_unit.move_within_set_of_closures_indexes
+    else t.imported_units.move_within_set_of_closures_indexes
+  in
+  let ({ arity = from_arity; closure_index = from_index; }
+         : CO.Closure_index.t) =
+    try Closure_id.Map.find start_from indexes
+    with Not_found ->
+      Misc.fatal_errorf "Flambda_to_clambda: missing [start_from] \
+          move-within-set-of-closures index for closure %a"
+        Closure_id.print start_from
+  in
+  let ({ arity = _; closure_index; } : CO.Closure_index.t) =
+    try Closure_id.Map.find move_to indexes
+    with Not_found ->
+      Misc.fatal_errorf "Flambda_to_clambda: missing [move_to] \
+          move-within-set-of-closures index for closure %a"
+        Closure_id.print move_to
+  in
+  { from_arity;
+    from_index;
+    closure_index;
+  }
+
+let get_var_within_closure_index t closure_id closure_var =
+  let fv_offsets =
+    if in_current_unit closure_id
+    then t.current_unit.fv_offsets
+    else t.imported_units.fv_offsets
+  in
+  let closure_var_map =
+    try Closure_id.Map.find closure_id fv_offsets
+    with Not_found ->
+      Misc.fatal_errorf "Flambda_to_clambda: missing map for closure ID %a \
+          and closure variable %a"
+        Closure_id.print closure_id
+        Var_within_closure.print closure_var
+  in
+  try Var_within_closure.Map.find closure_var closure_var_map
   with Not_found ->
-    Misc.fatal_errorf "Flambda_to_clambda: missing offset for variable %a"
-      Var_within_closure.print var_within_closure
+    Misc.fatal_errorf "Flambda_to_clambda: missing offset for closure ID %a \
+        and closure variable %a"
+      Closure_id.print closure_id
+      Var_within_closure.print closure_var
 
 let is_function_constant t closure_id =
   if Closure_id.Set.mem closure_id t.current_unit.closures then
@@ -198,9 +252,9 @@ let subst_var env var : Clambda.ulambda =
 
 let subst_vars env vars = List.map (subst_var env) vars
 
-let build_uoffset ulam offset : Clambda.ulambda =
-  if offset = 0 then ulam
-  else Uoffset (ulam, offset)
+let build_select_closure ~from ~from_index ~from_arity ~closure_index
+      : Clambda.ulambda =
+  Uselect_closure { from; from_index; from_arity; closure_index; }
 
 let to_clambda_allocated_constant (const : Allocated_const.t)
       : Clambda.ustructured_constant =
@@ -237,6 +291,10 @@ let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   match flam with
   | Var var -> subst_var env var
+  | Let { var; defining_expr = Set_of_closures set_of_closures; body; _ } ->
+    let bound_var, env_body = Env.add_fresh_ident env var in
+    let body = to_clambda t env_body body in
+    to_clambda_set_of_closures t env set_of_closures ~bound_var ~body
   | Let { var; defining_expr; body; _ } ->
     (* TODO: synthesize proper value_kind *)
     let id, env_body = Env.add_fresh_ident env var in
@@ -374,30 +432,33 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
     end
   | Read_symbol_field (symbol, field) ->
     Uprim (Pfield field, [to_clambda_symbol env symbol], Debuginfo.none)
-  | Set_of_closures set_of_closures ->
-    to_clambda_set_of_closures t env set_of_closures
+  | Set_of_closures _ -> Misc.fatal_error "Handled in [to_clambda]"
   | Project_closure { set_of_closures; closure_id } ->
-    (* Note that we must use [build_uoffset] to ensure that we do not generate
-       a [Uoffset] construction in the event that the offset is zero, otherwise
-       we might break pattern matches in Cmmgen (in particular for the
-       compilation of "let rec"). *)
+    let { from_arity; from_index; closure_index; } =
+      get_project_closure_index t closure_id
+    in
     check_closure t (
-      build_uoffset
-        (check_closure t (subst_var env set_of_closures)
+      build_select_closure
+        ~from:(check_closure t (subst_var env set_of_closures)
            (Flambda.Expr (Var set_of_closures)))
-        (get_fun_offset t closure_id))
+        ~from_index
+        ~from_arity
+        ~closure_index)
       named
   | Move_within_set_of_closures { closure; start_from; move_to } ->
-    check_closure t (build_uoffset
-      (check_closure t (subst_var env closure)
-         (Flambda.Expr (Var closure)))
-      ((get_fun_offset t move_to) - (get_fun_offset t start_from)))
+    let { from_arity; from_index; closure_index; } =
+      get_move_within_set_of_closures_index t ~start_from ~move_to
+    in
+    check_closure t (build_select_closure
+        ~from:(check_closure t (subst_var env closure)
+           (Flambda.Expr (Var closure)))
+        ~from_index
+        ~from_arity
+        ~closure_index)
       named
-  | Project_var { closure; var; closure_id } ->
+  | Project_var { closure; var; closure_id; } ->
     let ulam = subst_var env closure in
-    let fun_offset = get_fun_offset t closure_id in
-    let var_offset = get_fv_offset t var in
-    let pos = var_offset - fun_offset in
+    let pos = get_var_within_closure_index t closure_id var in
     Uprim (Pfield pos,
       [check_field t (check_closure t ulam (Expr (Var closure)))
          pos (Some named)],
@@ -459,42 +520,23 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
   in
   Udirect_apply (label, uargs, dbg)
 
-(* Describe how to build a runtime closure block that corresponds to the
-   given Flambda set of closures.
-
-   For instance the closure for the following set of closures:
-
-     let rec fun_a x =
-       if x <= 0 then 0 else fun_b (x-1) v1
-     and fun_b x y =
-       if x <= 0 then 0 else v1 + v2 + y + fun_a (x-1)
-
-   will be represented in memory as:
-
-     [ closure header; fun_a;
-       1; infix header; fun caml_curry_2;
-       2; fun_b; v1; v2 ]
-
-   fun_a and fun_b will take an additional parameter 'env' to
-   access their closure.  It will be arranged such that in the body
-   of each function the env parameter points to its own code
-   pointer.  For example, in fun_b it will be shifted by 3 words.
-
-   Hence accessing v1 in the body of fun_a is accessing the
-   6th field of 'env' and in the body of fun_b the 1st field.
-*)
+(* Describe how to build runtime closure block(s) that correspond(s) to the
+   given Flambda set of closures. *)
 and to_clambda_set_of_closures t env
-      (({ function_decls; free_vars } : Flambda.set_of_closures)
-        as set_of_closures) : Clambda.ulambda =
+      ({ function_decls; free_vars } : Flambda.set_of_closures)
+      ~bound_var ~body : Clambda.ulambda =
   let all_functions = Variable.Map.bindings function_decls.funs in
   let env_var = V.create_local "env" in
-  let to_clambda_function
-        (closure_id, (function_decl : Flambda.function_declaration))
-        : Clambda.ufunction =
-    let closure_id = Closure_id.wrap closure_id in
-    let fun_offset =
-      Closure_id.Map.find closure_id t.current_unit.fun_offset_table
-    in
+  let env' =
+    List.fold_left (fun env' (fun_var, _) ->
+        let _, env' = Env.add_fresh_ident env' fun_var in
+        env')
+      env
+      all_functions
+  in
+  let to_clambda_function ~from_index
+        (fun_var, (function_decl : Flambda.function_declaration)) =
+    let closure_id = Closure_id.wrap fun_var in
     let env =
       (* Inside the body of the function, we cannot access variables
          declared outside, so start with a suitably clean environment.
@@ -503,19 +545,10 @@ and to_clambda_set_of_closures t env
       let env = Env.keep_only_symbols env in
       (* Add the Clambda expressions for the free variables of the function
          to the environment. *)
-      let add_env_free_variable id _ env =
-        let var_offset =
-          try
-            Var_within_closure.Map.find
-              (Var_within_closure.wrap id) t.current_unit.fv_offset_table
-          with Not_found ->
-            Misc.fatal_errorf "Clambda.to_clambda_set_of_closures: offset for \
-                free variable %a is unknown.  Set of closures: %a"
-              Variable.print id
-              Flambda.print_set_of_closures set_of_closures
-        in
-        let pos = var_offset - fun_offset in
-        Env.add_subst env id
+      let add_env_free_variable var _ env =
+        let clos_var = Var_within_closure.wrap var in
+        let pos = get_var_within_closure_index t closure_id clos_var in
+        Env.add_subst env var
           (Uprim (Pfield pos, [Clambda.Uvar env_var], Debuginfo.none))
       in
       let env = Variable.Map.fold add_env_free_variable free_vars env in
@@ -523,15 +556,21 @@ and to_clambda_set_of_closures t env
          set of closures to the environment.  The various functions may be
          retrieved by moving within the runtime closure, starting from the
          current function's closure. *)
-      let add_env_function pos env (id, _) =
-        let offset =
-          Closure_id.Map.find (Closure_id.wrap id)
-            t.current_unit.fun_offset_table
+      let add_env_function env (move_to, _) =
+        let { from_arity; closure_index; } =
+          get_move_within_set_of_closures_index t
+            ~start_from:closure_id ~move_to:(Closure_id.wrap move_to)
         in
-        let exp : Clambda.ulambda = Uoffset (Uvar env_var, offset - pos) in
-        Env.add_subst env id exp
+        let expr =
+          build_select_closure
+            ~from:(Clambda.Uvar env_var)
+            ~from_index
+            ~from_arity
+            ~closure_index
+        in
+        Env.add_subst env move_to expr
       in
-      List.fold_left (add_env_function fun_offset) env all_functions
+      List.fold_left add_env_function env all_functions
     in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
@@ -539,40 +578,71 @@ and to_clambda_set_of_closures t env
           env, id :: params)
         function_decl.params (env, [])
     in
-    { label = Compilenv.function_label closure_id;
-      arity = Flambda_utils.function_arity function_decl;
-      params =
-        List.map
-          (fun var -> VP.create var, Lambda.Pgenval)
-          (params @ [env_var]);
-      return = Lambda.Pgenval;
-      body = to_clambda t env_body function_decl.body;
-      dbg = function_decl.dbg;
-      env = Some env_var;
-    }
+    let ufunction : Clambda.ufunction =
+      { label = Compilenv.function_label closure_id;
+        arity = Flambda_utils.function_arity function_decl;
+        params =
+          List.map
+            (fun var -> VP.create var, Lambda.Pgenval)
+            (params @ [env_var]);
+        return = Lambda.Pgenval;
+        body = to_clambda t env_body function_decl.body;
+        dbg = function_decl.dbg;
+        env = Some env_var;
+      }
+    in
+    (VP.create (Env.ident_for_var_exn env' fun_var), ufunction), from_index + 1
   in
-  let funs = List.map to_clambda_function all_functions in
+  let _, funs_rev =
+    List.fold_left (fun (from_index, funs_rev) func ->
+          let result, from_index = to_clambda_function ~from_index func in
+          from_index, result :: funs_rev)
+      (0, [])
+      all_functions
+  in
+  let funs = List.rev funs_rev in
   let free_vars =
     Variable.Map.bindings (Variable.Map.map (
       fun (free_var : Flambda.specialised_to) ->
         subst_var env free_var.var) free_vars)
   in
-  Uclosure (funs, List.map snd free_vars)
+  (* CR mshinwell: What is supposed to happen if [funs] is empty?  (In
+     particular what must [bound_var] be bound to?) *)
+  match all_functions with
+  | [] -> Misc.fatal_error "Not yet implemented"
+  | (first_fun_var, _)::_ ->
+    Ulet_set_of_closures (funs, List.map snd free_vars,
+      (* The "set of closures variable" ([bound_var]) points at the "first"
+         closure in the set. *)
+      let bound_var = VP.create bound_var in
+      let first_fun_var = Env.ident_for_var_exn env' first_fun_var in
+      Ulet (Immutable, Pgenval, bound_var, Uvar first_fun_var,
+        body))
 
 and to_clambda_closed_set_of_closures t env symbol
       ({ function_decls; } : Flambda.set_of_closures)
       : Clambda.ustructured_constant =
   let functions = Variable.Map.bindings function_decls.funs in
-  let to_clambda_function (id, (function_decl : Flambda.function_declaration))
-        : Clambda.ufunction =
+  let closure_symbols, _ =
+    List.fold_left (fun (closure_symbols, is_first) (fun_var, _decl) ->
+          let symbol =
+            (* The "first" function gets the "set of closures symbol". *)
+            if is_first then symbol
+            else Compilenv.closure_symbol (Closure_id.wrap fun_var)
+          in
+          Variable.Map.add fun_var symbol closure_symbols, false)
+      (Variable.Map.empty, true)
+      functions
+  in
+  let to_clambda_function
+        (fun_var, (function_decl : Flambda.function_declaration)) =
     (* All that we need in the environment, for translating one closure from
        a closed set of closures, is the substitutions for variables bound to
        the various closures in the set.  Such closures will always be
        referenced via symbols. *)
     let env =
       List.fold_left (fun env (var, _) ->
-          let closure_id = Closure_id.wrap var in
-          let symbol = Compilenv.closure_symbol closure_id in
+          let symbol = Variable.Map.find var closure_symbols in
           Env.add_subst env var (to_clambda_symbol env symbol))
         (Env.keep_only_symbols env)
         functions
@@ -587,18 +657,25 @@ and to_clambda_closed_set_of_closures t env symbol
       Un_anf.apply ~ppf_dump:t.ppf_dump ~what:symbol
         (to_clambda t env_body function_decl.body)
     in
-    { label = Compilenv.function_label (Closure_id.wrap id);
-      arity = Flambda_utils.function_arity function_decl;
-      params = List.map (fun var -> VP.create var, Lambda.Pgenval) params;
-      return = Lambda.Pgenval;
-      body;
-      dbg = function_decl.dbg;
-      env = None;
-    }
+    let ufunction : Clambda.ufunction =
+      { label = Compilenv.function_label (Closure_id.wrap fun_var);
+        arity = Flambda_utils.function_arity function_decl;
+        params = List.map (fun var -> VP.create var, Lambda.Pgenval) params;
+        return = Lambda.Pgenval;
+        body;
+        dbg = function_decl.dbg;
+        env = None;
+      }
+    in
+    let closure_symbol =
+      Variable.Map.find fun_var closure_symbols
+      |> Symbol.label
+      |> Linkage_name.to_string
+    in
+    closure_symbol, ufunction
   in
-  let ufunct = List.map to_clambda_function functions in
-  let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
-  Uconst_closure (ufunct, closure_lbl, [])
+  let symbols_and_ufunctions = List.map to_clambda_function functions in
+  Uconst_set_of_closures (symbols_and_ufunctions, [])
 
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let fields =
@@ -724,9 +801,11 @@ let convert ~ppf_dump (program, exported_transient) : result =
     let constant_closures =
       Flambda_utils.all_lifted_constant_closures program
     in
-    let offsets = Closure_offsets.compute program in
-    { fun_offset_table = offsets.function_offsets;
-      fv_offset_table = offsets.free_variable_offsets;
+    let offsets = CO.compute program in
+    { project_closure_indexes = offsets.project_closure_indexes;
+      move_within_set_of_closures_indexes
+        = offsets.move_within_set_of_closures_indexes;
+      fv_offsets = offsets.free_variable_offsets;
       constant_closures;
       closures;
     }
@@ -745,8 +824,10 @@ let convert ~ppf_dump (program, exported_transient) : result =
         imported.sets_of_closures
         Closure_id.Set.empty
     in
-    { fun_offset_table = imported.offset_fun;
-      fv_offset_table = imported.offset_fv;
+    { project_closure_indexes = imported.project_closure_indexes;
+      move_within_set_of_closures_indexes
+        = imported.move_within_set_of_closures_indexes;
+      fv_offsets = imported.fv_offsets;
       constant_closures = imported.constant_closures;
       closures;
     }
@@ -768,10 +849,14 @@ let convert ~ppf_dump (program, exported_transient) : result =
   let exported =
     Export_info.t_of_transient exported_transient
       ~program
-      ~local_offset_fun:current_unit.fun_offset_table
-      ~local_offset_fv:current_unit.fv_offset_table
-      ~imported_offset_fun:imported_units.fun_offset_table
-      ~imported_offset_fv:imported_units.fv_offset_table
+      ~local_project_closure_indexes:current_unit.project_closure_indexes
+      ~local_move_within_set_of_closures_indexes:
+        current_unit.move_within_set_of_closures_indexes
+      ~local_fv_offsets:current_unit.fv_offsets
+      ~imported_project_closure_indexes:imported_units.project_closure_indexes
+      ~imported_move_within_set_of_closures_indexes:
+        imported_units.move_within_set_of_closures_indexes
+      ~imported_fv_offsets:imported_units.fv_offsets
       ~constant_closures:current_unit.constant_closures
   in
   { expr; preallocated_blocks; structured_constants; exported; }

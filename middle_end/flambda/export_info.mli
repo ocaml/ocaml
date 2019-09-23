@@ -86,10 +86,11 @@ type t = private {
   (** Structure of exported values. *)
   symbol_id : Export_id.t Symbol.Map.t;
   (** Associates symbols and values. *)
-  offset_fun : int Closure_id.Map.t;
-  (** Positions of function pointers in their closures. *)
-  offset_fv : int Var_within_closure.Map.t;
-  (** Positions of value pointers in their closures. *)
+  project_closure_indexes
+    : Closure_offsets.Project_closure_index.t Closure_id.Map.t;
+  move_within_set_of_closures_indexes
+    : Closure_offsets.Closure_index.t Closure_id.Map.t;
+  fv_offsets : int Var_within_closure.Map.t Closure_id.Map.t;
   constant_closures : Closure_id.Set.t;
   (* CR-soon mshinwell for pchambart: Add comment *)
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
@@ -123,8 +124,11 @@ val create
    : sets_of_closures:(A.function_declarations Set_of_closures_id.Map.t)
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
-  -> offset_fun:int Closure_id.Map.t
-  -> offset_fv:int Var_within_closure.Map.t
+  -> project_closure_indexes
+       : Closure_offsets.Project_closure_index.t Closure_id.Map.t
+  -> move_within_set_of_closures_indexes
+       : Closure_offsets.Closure_index.t Closure_id.Map.t
+  -> fv_offsets : int Var_within_closure.Map.t Closure_id.Map.t
   -> constant_closures:Closure_id.Set.t
   -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
   -> recursive:Variable.Set.t Set_of_closures_id.Map.t
@@ -154,10 +158,16 @@ val create_transient
 val t_of_transient
    : transient
   -> program: Flambda.program
-  -> local_offset_fun:int Closure_id.Map.t
-  -> local_offset_fv:int Var_within_closure.Map.t
-  -> imported_offset_fun:int Closure_id.Map.t
-  -> imported_offset_fv:int Var_within_closure.Map.t
+  -> local_project_closure_indexes
+       : Closure_offsets.Project_closure_index.t Closure_id.Map.t
+  -> local_move_within_set_of_closures_indexes
+       : Closure_offsets.Closure_index.t Closure_id.Map.t
+  -> local_fv_offsets : int Var_within_closure.Map.t Closure_id.Map.t
+  -> imported_project_closure_indexes
+       : Closure_offsets.Project_closure_index.t Closure_id.Map.t
+  -> imported_move_within_set_of_closures_indexes
+       : Closure_offsets.Closure_index.t Closure_id.Map.t
+  -> imported_fv_offsets : int Var_within_closure.Map.t Closure_id.Map.t
   -> constant_closures:Closure_id.Set.t
   -> t
 

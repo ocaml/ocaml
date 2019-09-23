@@ -144,8 +144,11 @@ type t = {
   sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   symbol_id : Export_id.t Symbol.Map.t;
-  offset_fun : int Closure_id.Map.t;
-  offset_fv : int Var_within_closure.Map.t;
+  project_closure_indexes
+    : Closure_offsets.Project_closure_index.t Closure_id.Map.t;
+  move_within_set_of_closures_indexes
+    : Closure_offsets.Closure_index.t Closure_id.Map.t;
+  fv_offsets : int Var_within_closure.Map.t Closure_id.Map.t;
   constant_closures : Closure_id.Set.t;
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
   recursive : Variable.Set.t Set_of_closures_id.Map.t;
@@ -167,8 +170,9 @@ let empty : t = {
   sets_of_closures = Set_of_closures_id.Map.empty;
   values = Compilation_unit.Map.empty;
   symbol_id = Symbol.Map.empty;
-  offset_fun = Closure_id.Map.empty;
-  offset_fv = Var_within_closure.Map.empty;
+  project_closure_indexes = Closure_id.Map.empty;
+  move_within_set_of_closures_indexes = Closure_id.Map.empty;
+  fv_offsets = Closure_id.Map.empty;
   constant_closures = Closure_id.Set.empty;
   invariant_params = Set_of_closures_id.Map.empty;
   recursive = Set_of_closures_id.Map.empty;
@@ -193,13 +197,14 @@ let opaque_transient ~compilation_unit ~root_symbol : transient =
   }
 
 let create ~sets_of_closures ~values ~symbol_id
-      ~offset_fun ~offset_fv ~constant_closures
-      ~invariant_params ~recursive =
+      ~project_closure_indexes ~move_within_set_of_closures_indexes
+      ~fv_offsets ~constant_closures ~invariant_params ~recursive =
   { sets_of_closures;
     values;
     symbol_id;
-    offset_fun;
-    offset_fv;
+    project_closure_indexes;
+    move_within_set_of_closures_indexes;
+    fv_offsets;
     constant_closures;
     invariant_params;
     recursive;
@@ -223,41 +228,79 @@ let create_transient
 
 let t_of_transient transient
       ~program:_
-      ~local_offset_fun ~local_offset_fv
-      ~imported_offset_fun ~imported_offset_fv
+      ~local_project_closure_indexes
+      ~local_move_within_set_of_closures_indexes
+      ~local_fv_offsets
+      ~imported_project_closure_indexes
+      ~imported_move_within_set_of_closures_indexes
+      ~imported_fv_offsets
       ~constant_closures =
-  let offset_fun =
-    let fold_map set =
-      Closure_id.Map.fold (fun key value unchanged ->
-        if Closure_id.Set.mem key set then
-          Closure_id.Map.add key value unchanged
-        else
-          unchanged)
-    in
-    Closure_id.Map.empty
-    |> fold_map transient.relevant_local_closure_ids local_offset_fun
-    |> fold_map transient.relevant_imported_closure_ids imported_offset_fun
+  let fold_closure_map set =
+    Closure_id.Map.fold (fun key value unchanged ->
+      if Closure_id.Set.mem key set then
+        Closure_id.Map.add key value unchanged
+      else
+        unchanged)
   in
-  let offset_fv =
-    let fold_map set =
-      Var_within_closure.Map.fold (fun key value unchanged ->
-        if Var_within_closure.Set.mem key set then
-          Var_within_closure.Map.add key value unchanged
-        else
-          unchanged)
+  let fold_clos_var_map set =
+    Var_within_closure.Map.fold (fun key value unchanged ->
+      if Var_within_closure.Set.mem key set then
+        Var_within_closure.Map.add key value unchanged
+      else
+        unchanged)
+  in
+  let project_closure_indexes =
+    Closure_id.Map.empty
+    |> fold_closure_map transient.relevant_local_closure_ids
+         local_project_closure_indexes
+    |> fold_closure_map transient.relevant_imported_closure_ids
+         imported_project_closure_indexes
+  in
+  let move_within_set_of_closures_indexes =
+    Closure_id.Map.empty
+    |> fold_closure_map transient.relevant_local_closure_ids
+         local_move_within_set_of_closures_indexes
+    |> fold_closure_map transient.relevant_imported_closure_ids
+         imported_move_within_set_of_closures_indexes
+  in
+  let fv_offsets =
+    let local_fv_offsets =
+      Closure_id.Map.empty
+      |> fold_closure_map transient.relevant_local_closure_ids
+           local_fv_offsets
     in
-    Var_within_closure.Map.empty
-    |> fold_map transient.relevant_local_vars_within_closure local_offset_fv
-    |> fold_map transient.relevant_imported_vars_within_closure
-         imported_offset_fv
+    let imported_fv_offsets =
+      Closure_id.Map.empty
+      |> fold_closure_map transient.relevant_imported_closure_ids
+           imported_fv_offsets
+    in
+    Closure_id.Map.merge
+      (fun _closure_id local_fv_offsets imported_fv_offsets ->
+        let local_fv_offsets =
+          Option.value local_fv_offsets ~default:Var_within_closure.Map.empty
+        in
+        let imported_fv_offsets =
+          Option.value imported_fv_offsets ~default:Var_within_closure.Map.empty
+        in
+        let fv_offsets =
+          Var_within_closure.Map.empty
+          |> fold_clos_var_map transient.relevant_local_vars_within_closure
+               local_fv_offsets
+          |> fold_clos_var_map transient.relevant_imported_vars_within_closure
+               imported_fv_offsets
+        in
+        Some fv_offsets)
+      local_fv_offsets
+      imported_fv_offsets
   in
   { sets_of_closures = transient.sets_of_closures;
     values = transient.values;
     symbol_id = transient.symbol_id;
     invariant_params = transient.invariant_params;
     recursive = transient.recursive;
-    offset_fun;
-    offset_fv;
+    project_closure_indexes;
+    move_within_set_of_closures_indexes;
+    fv_offsets;
     constant_closures;
   }
 
@@ -272,7 +315,6 @@ let merge (t1 : t) (t2 : t) : t =
           Some (Export_id.Map.disjoint_union ?eq map1 map2))
       map1 map2
   in
-  let int_eq (i : int) j = i = j in
   { values = eidmap_disjoint_union ~eq:equal_descr t1.values t2.values;
     sets_of_closures =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
@@ -280,10 +322,33 @@ let merge (t1 : t) (t2 : t) : t =
     symbol_id =
       Symbol.Map.disjoint_union ~print:Export_id.print t1.symbol_id
         t2.symbol_id;
-    offset_fun = Closure_id.Map.disjoint_union
-        ~eq:int_eq t1.offset_fun t2.offset_fun;
-    offset_fv = Var_within_closure.Map.disjoint_union
-        ~eq:int_eq t1.offset_fv t2.offset_fv;
+    project_closure_indexes =
+      Closure_id.Map.disjoint_union
+        ~eq:Closure_offsets.Project_closure_index.equal
+        t1.project_closure_indexes
+        t2.project_closure_indexes;
+    move_within_set_of_closures_indexes =
+      Closure_id.Map.disjoint_union
+        ~eq:Closure_offsets.Closure_index.equal
+        t1.move_within_set_of_closures_indexes
+        t2.move_within_set_of_closures_indexes;
+    fv_offsets =
+      Closure_id.Map.merge (fun _closure_id fv_offsets1 fv_offsets2 ->
+          let fv_offsets1 =
+            Option.value fv_offsets1 ~default:Var_within_closure.Map.empty
+          in
+          let fv_offsets2 =
+            Option.value fv_offsets2 ~default:Var_within_closure.Map.empty
+          in
+          let fv_offsets =
+            Var_within_closure.Map.disjoint_union
+              ~eq:Numbers.Int.equal
+              fv_offsets1
+              fv_offsets2
+          in
+          Some fv_offsets)
+        t1.fv_offsets
+        t2.fv_offsets;
     constant_closures =
       Closure_id.Set.union t1.constant_closures t2.constant_closures;
     invariant_params =
@@ -532,14 +597,26 @@ let print_approx ppf ((t : t), symbols) =
   print_approx_components ppf ~symbol_id ~values symbols
 
 let print_offsets ppf (t : t) =
-  Format.fprintf ppf "@[<v 2>offset_fun:@ ";
-  Closure_id.Map.iter (fun cid off ->
-      Format.fprintf ppf "%a -> %i@ "
-        Closure_id.print cid off) t.offset_fun;
-  Format.fprintf ppf "@]@ @[<v 2>offset_fv:@ ";
-  Var_within_closure.Map.iter (fun vid off ->
-      Format.fprintf ppf "%a -> %i@ "
-        Var_within_closure.print vid off) t.offset_fv;
+  Format.fprintf ppf "@[<v 2>project_closure_indexes:@ ";
+  Closure_id.Map.iter (fun cid index ->
+      Format.fprintf ppf "%a -> %a@ "
+        Closure_id.print cid
+        Closure_offsets.Project_closure_index.print index)
+    t.project_closure_indexes;
+  Format.fprintf ppf "@]@ @[<v 2>move_within_set_of_closures_indexes:@ ";
+  Closure_id.Map.iter (fun cid index ->
+      Format.fprintf ppf "%a -> %a@ "
+        Closure_id.print cid
+        Closure_offsets.Closure_index.print index)
+    t.move_within_set_of_closures_indexes;
+  Format.fprintf ppf "@]@ @[<v 2>fv_offsets:@ ";
+  Closure_id.Map.iter (fun closure_id by_clos_var ->
+      Format.fprintf ppf "Closure %a:@ " Closure_id.print closure_id;
+      Var_within_closure.Map.iter (fun clos_var off ->
+          Format.fprintf ppf "%a -> %i@ "
+            Var_within_closure.print clos_var off)
+        by_clos_var)
+    t.fv_offsets;
   Format.fprintf ppf "@]@ "
 
 let print_functions ppf (t : t) =

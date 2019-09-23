@@ -29,7 +29,7 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
+  | Uconst_set_of_closures of (string * ufunction) list * uconstant list
 
 and uconstant =
   | Uconst_ref of string * ustructured_constant option
@@ -60,8 +60,14 @@ and ulambda =
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
-  | Uclosure of ufunction list * ulambda list
-  | Uoffset of ulambda * int
+  | Ulet_set_of_closures of (Backend_var.With_provenance.t * ufunction) list
+      * ulambda list * ulambda
+  | Uselect_closure of {
+      from : ulambda;
+      from_arity : int;
+      from_index : int;
+      closure_index : int;
+    }
   | Ulet of mutable_flag * value_kind * Backend_var.With_provenance.t
       * ulambda * ulambda
   | Uphantom_let of Backend_var.With_provenance.t

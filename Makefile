@@ -233,7 +233,6 @@ MIDDLE_END_FLAMBDA=\
   middle_end/flambda/flambda_invariants.cmo \
   middle_end/flambda/traverse_for_exported_symbols.cmo \
   middle_end/flambda/build_export_info.cmo \
-  middle_end/flambda/closure_offsets.cmo \
   middle_end/flambda/un_anf.cmo \
   middle_end/flambda/flambda_to_clambda.cmo \
   middle_end/flambda/flambda_middle_end.cmo
@@ -273,6 +272,7 @@ MIDDLE_END=\
   middle_end/flambda/effect_analysis.cmo \
   middle_end/flambda/inlining_cost.cmo \
   middle_end/flambda/simple_value_approx.cmo \
+  middle_end/flambda/closure_offsets.cmo \
   middle_end/flambda/export_info.cmo \
   middle_end/flambda/export_info_for_pack.cmo \
   middle_end/compilenv.cmo \

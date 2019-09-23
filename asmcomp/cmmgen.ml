@@ -106,7 +106,6 @@ let block_header tag sz =
 let black_block_header tag sz = Nativeint.logor (block_header tag sz) caml_black
 let white_closure_header sz = block_header Obj.closure_tag sz
 let black_closure_header sz = black_block_header Obj.closure_tag sz
-let infix_header ofs = block_header Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
 let floatarray_header len =
   (* Zero-sized float arrays have tag zero for consistency with
@@ -127,7 +126,6 @@ let caml_int64_ops = "caml_int64_ops"
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
 let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
 let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
-let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
 let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
 let alloc_boxedint64_header dbg = Cblockheader (boxedint64_header, dbg)
 let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
@@ -866,37 +864,55 @@ let make_checkbound dbg = function
   | args ->
       Cop(Ccheckbound, args, dbg)
 
-(* To compile "let rec" over values *)
+(* Computation of the size of closures *)
 
-let fundecls_size fundecls =
-  let sz = ref (-1) in
-  List.iter
-    (fun f ->
-       let indirect_call_code_pointer_size =
-         match f.arity with
-         | 0 | 1 -> 0
-           (* arity 1 does not need an indirect call handler.
-              arity 0 cannot be indirect called *)
-         | _ -> 1
-           (* For other arities there is an indirect call handler.
-              if arity >= 2 it is caml_curry...
-              if arity < 0 it is caml_tuplify... *)
-       in
-       sz := !sz + 1 + 2 + indirect_call_code_pointer_size)
-    fundecls;
-  !sz
+let closure_size fundecl ~num_closures_in_set ~num_clos_vars =
+  (* CR mshinwell: think again about [num_closures_in_set] being zero? *)
+  (if fundecl.arity = 0 || fundecl.arity = 1 then 2 else 3)
+    + (num_closures_in_set - 1)
+    + num_clos_vars
+
+(* To compile "let rec" over values *)
 
 type rhs_kind =
   | RHS_block of int
-  | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
+  | RHS_closure of {
+      self_size : int;
+      all_in_set : int Numbers.Int.Map.t;
+    }
   | RHS_nonrec
 ;;
 let rec expr_size env = function
   | Uvar id ->
-      begin try V.find_same id env with Not_found -> RHS_nonrec end
-  | Uclosure(fundecls, clos_vars) ->
-      RHS_block (fundecls_size fundecls + List.length clos_vars)
+      begin match V.find_same id env with
+      | exception Not_found -> RHS_nonrec
+      | size -> size
+      end
+  | Ulet_set_of_closures (ids_and_fundecls, clos_vars, body) ->
+      let num_closures_in_set = List.length ids_and_fundecls in
+      let num_clos_vars = List.length clos_vars in
+      let all_in_set, all_in_set_by_var, _index =
+        List.fold_left
+          (fun (all_in_set, all_in_set_by_var, index) (id, fundecl) ->
+            let num_fields =
+              closure_size fundecl ~num_closures_in_set ~num_clos_vars
+            in
+            let all_in_set_by_var =
+              V.add (VP.var id) num_fields all_in_set_by_var
+            in
+            let all_in_set = Numbers.Int.Map.add index num_fields all_in_set in
+            all_in_set, all_in_set_by_var, index + 1)
+          (Numbers.Int.Map.empty, V.empty, 0)
+          ids_and_fundecls
+      in
+      let env =
+        V.fold_all (fun var self_size env ->
+            V.add var (RHS_closure { self_size; all_in_set; }) env)
+          all_in_set_by_var
+          env
+      in
+      expr_size env body
   | Ulet(_str, _kind, id, exp, body) ->
       expr_size (V.add (VP.var id) (expr_size env exp) env) body
   | Uletrec(bindings, body) ->
@@ -930,11 +946,21 @@ let rec expr_size env = function
       expr_size env closure
   | Usequence(_exp, exp') ->
       expr_size env exp'
-  | Uoffset (exp, offset) ->
-      (match expr_size env exp with
-      | RHS_block blocksize -> RHS_infix { blocksize; offset }
+  | (Uselect_closure { from; from_arity = _; closure_index; }) as expr ->
+      begin match expr_size env from with
+      | RHS_closure { self_size = _; all_in_set; } ->
+        begin match Numbers.Int.Map.find closure_index all_in_set with
+        | exception Not_found ->
+          Misc.fatal_errorf "[Uselect_closure] has invalid closure index:@ %a"
+            Printclambda.clambda expr
+        | self_size -> RHS_closure { self_size; all_in_set; }
+        end
       | RHS_nonrec -> RHS_nonrec
-      | _ -> assert false)
+      | RHS_block _ | RHS_floatblock _ ->
+        Misc.fatal_errorf "[Uselect_closure] can only be applied to \
+            closures:@ %a"
+          Printclambda.clambda expr
+      end
   | _ -> RHS_nonrec
 
 (* Record application and currying functions *)
@@ -1000,9 +1026,13 @@ let rec emit_structured_constant (sym, is_global) cst cont =
   | Uconst_float_array fields ->
       emit_block sym is_global (floatarray_header (List.length fields))
         (Misc.map_end (fun f -> Cdouble f) fields cont)
-  | Uconst_closure(fundecls, lbl, fv) ->
-      Cmmgen_state.add_constant lbl (Const_closure (is_global, fundecls, fv));
-      List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
+  | Uconst_set_of_closures (symbols_and_fundecls, env) ->
+      let all_symbols_in_set = List.map fst symbols_and_fundecls in
+      List.iter (fun (symbol, fundecl) ->
+        Cmmgen_state.add_constant symbol
+          (Const_closure (is_global, fundecl, env, all_symbols_in_set));
+        Cmmgen_state.add_function fundecl)
+        symbols_and_fundecls;
       cont
 
 and emit_constant cst cont =
@@ -1965,50 +1995,101 @@ let rec transl env e =
       end
   | Uconst sc ->
       transl_constant Debuginfo.none sc
-  | Uclosure(fundecls, []) ->
-      let sym = Compilenv.new_const_symbol() in
-      Cmmgen_state.add_constant sym (Const_closure (Local, fundecls, []));
-      List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
-      let dbg =
-        match fundecls with
-        | [] -> Debuginfo.none
-        | fundecl::_ -> fundecl.dbg
+  | Ulet_set_of_closures (ids_and_fundecls, [], body) ->
+      let symbols =
+        List.map (fun _ -> Compilenv.new_const_symbol ()) ids_and_fundecls
       in
-      Cconst_symbol (sym, dbg)
-  | Uclosure(fundecls, clos_vars) ->
-      let rec transl_fundecls pos = function
-          [] ->
-            List.map (transl env) clos_vars
-        | f :: rem ->
-            Cmmgen_state.add_function f;
-            let dbg = f.dbg in
-            let without_header =
-              if f.arity = 1 || f.arity = 0 then
-                Cconst_symbol (f.label, dbg) ::
-                int_const dbg f.arity ::
-                transl_fundecls (pos + 3) rem
-              else
-                Cconst_symbol (curry_function f.arity, dbg) ::
-                int_const dbg f.arity ::
-                Cconst_symbol (f.label, dbg) ::
-                transl_fundecls (pos + 4) rem
-            in
-            if pos = 0 then without_header
-            else (alloc_infix_header pos f.dbg) :: without_header
+      List.fold_left2 (fun expr (id, fundecl) sym ->
+          Cmmgen_state.add_constant sym
+            (Const_closure (Local, fundecl, [], symbols));
+          Cmmgen_state.add_function fundecl;
+          Clet (id, Cconst_symbol (sym, Debuginfo.none), expr))
+        (transl env body)
+        (List.rev ids_and_fundecls) (List.rev symbols)
+  | Ulet_set_of_closures (ids_and_fundecls, clos_vars, body) ->
+      let symbols =
+        List.map (fun _ -> Compilenv.new_const_symbol ()) ids_and_fundecls
       in
-      let dbg =
-        match fundecls with
-        | [] -> Debuginfo.none
-        | fundecl::_ -> fundecl.dbg
-      in
-      make_alloc dbg Obj.closure_tag (transl_fundecls 0 fundecls)
-  | Uoffset(arg, offset) ->
-      (* produces a valid Caml value, pointing just after an infix header *)
-      let ptr = transl env arg in
       let dbg = Debuginfo.none in
-      if offset = 0
-      then ptr
-      else Cop(Caddv, [ptr; Cconst_int(offset * size_addr, dbg)], dbg)
+      let ids_and_fundecls_rev = List.rev ids_and_fundecls in
+      let patch_closures_then_body =
+        List.fold_left (fun expr (id, fundecl) ->
+            let id = VP.var id in
+            let starting_field =
+              if fundecl.arity = 0 || fundecl.arity = 1 then 2 else 3
+            in
+            let _, expr =
+              List.fold_left (fun (field, expr) (other_id, _other_fundecl) ->
+                  let other_id = VP.var other_id in
+                  if V.same id other_id then field, expr
+                  else begin
+                    assert (field >= starting_field);
+                    let expr =
+                      Csequence (
+                        Cop (Cextcall ("caml_modify", typ_void, false, None),
+                          [field_address (Cvar id) field dbg; Cvar other_id],
+                          dbg),
+                        expr)
+                    in
+                    field - 1, expr
+                  end)
+                (starting_field + List.length ids_and_fundecls - 2, expr)
+                ids_and_fundecls_rev
+            in
+            expr)
+          (transl env body)
+          ids_and_fundecls_rev
+      in
+      List.fold_left2 (fun expr (id, fundecl) sym ->
+          Cmmgen_state.add_constant sym
+            (Const_closure (Local, fundecl, [], symbols));
+          Cmmgen_state.add_function fundecl;
+          let first_closure_fields =
+            if fundecl.arity = 0 || fundecl.arity = 1 then
+              [ Cconst_symbol (fundecl.label, dbg);
+                int_const dbg fundecl.arity;
+              ]
+            else
+              [ Cconst_symbol (curry_function fundecl.arity, dbg);
+                int_const dbg fundecl.arity;
+                Cconst_symbol (fundecl.label, dbg);
+              ]
+          in
+          let clos_vars = List.map (transl env) clos_vars in
+          let closure_fields =
+            let to_patch =
+              match ids_and_fundecls with
+              | [] -> []
+              | _::to_patch ->
+                List.map (fun _ -> Cconst_pointer (0, dbg)) to_patch
+            in
+            first_closure_fields @ to_patch @ clos_vars
+          in
+          let closure = make_alloc fundecl.dbg Obj.closure_tag closure_fields in
+          Clet (id, closure, expr))
+        patch_closures_then_body
+        ids_and_fundecls_rev (List.rev symbols)
+  | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+      let closure = transl env from in
+      if from_index = closure_index then closure
+      else
+        let dbg = Debuginfo.none in
+        let starting_field =
+          if from_arity = 0 || from_arity = 1 then 2 else 3
+        in
+        let closure_index =
+          if closure_index < from_index then closure_index
+          else closure_index - 1
+        in
+        assert (closure_index >= 0);
+        let field_addr =
+          Cop (Caddv, [
+              closure;
+              Cconst_int ((starting_field + closure_index) * size_addr, dbg);
+            ], dbg)
+        in
+        (* CR mshinwell: Think more about whether this needs to be [Mutable] *)
+        Cop (Cload (Word_val, Mutable), [field_addr], dbg)
   | Udirect_apply(lbl, args, dbg) ->
       Cop(Capply typ_val,
         Cconst_symbol (lbl, dbg) :: List.map (transl env) args,
@@ -3142,25 +3223,24 @@ and transl_letrec env bindings cont =
     | (id, _exp, RHS_block sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy" [int_const dbg sz],
           init_blocks rem)
-    | (id, _exp, RHS_infix { blocksize; offset}) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy_infix"
-             [int_const dbg blocksize; int_const dbg offset],
-             init_blocks rem)
     | (id, _exp, RHS_floatblock sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
+          init_blocks rem)
+    | (id, _exp, RHS_closure { self_size; }) :: rem ->
+        Clet(id, op_alloc "caml_alloc_dummy" [int_const dbg self_size],
           init_blocks rem)
     | (id, _exp, RHS_nonrec) :: rem ->
         Clet (id, Cconst_int (0, dbg), init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
     | (_id, _exp,
-       (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
+       (RHS_block _ | RHS_floatblock _ | RHS_closure _)) :: rem ->
         fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
         Clet(id, transl env exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
-    | (id, exp, (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
+    | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_closure _)) :: rem ->
         let op =
           Cop(Cextcall("caml_update_dummy", typ_void, false, None),
               [Cvar (VP.var id); transl env exp], dbg) in
@@ -3208,52 +3288,36 @@ let rec transl_all_functions already_translated cont =
 
 (* Emit constant closures *)
 
-let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
-  let closure_symbol f =
+let emit_constant_closure symbol_and_global fundecl clos_vars
+      ~all_symbols_in_set cont =
+  let flambda_closure_symbol =
     if Config.flambda then
-      cdefine_symbol (f.label ^ "_closure", global_symb)
+      cdefine_symbol (fundecl.label ^ "_closure", snd symbol_and_global)
     else
       []
   in
-  match fundecls with
-    [] ->
-      (* This should probably not happen: dead code has normally been
-         eliminated and a closure cannot be accessed without going through
-         a [Project_closure], which depends on the function. *)
-      assert (clos_vars = []);
-      cdefine_symbol symb @
-        List.fold_right emit_constant clos_vars cont
-  | f1 :: remainder ->
-      let rec emit_others pos = function
-          [] ->
-            List.fold_right emit_constant clos_vars cont
-      | f2 :: rem ->
-          if f2.arity = 1 || f2.arity = 0 then
-            Cint(infix_header pos) ::
-            (closure_symbol f2) @
-            Csymbol_address f2.label ::
-            cint_const f2.arity ::
-            emit_others (pos + 3) rem
-          else
-            Cint(infix_header pos) ::
-            (closure_symbol f2) @
-            Csymbol_address(curry_function f2.arity) ::
-            cint_const f2.arity ::
-            Csymbol_address f2.label ::
-            emit_others (pos + 4) rem in
-      Cint(black_closure_header (fundecls_size fundecls
-                                 + List.length clos_vars)) ::
-      cdefine_symbol symb @
-      (closure_symbol f1) @
-      if f1.arity = 1 || f1.arity = 0 then
-        Csymbol_address f1.label ::
-        cint_const f1.arity ::
-        emit_others 3 remainder
-      else
-        Csymbol_address(curry_function f1.arity) ::
-        cint_const f1.arity ::
-        Csymbol_address f1.label ::
-        emit_others 4 remainder
+  let first_closure_fields =
+    if fundecl.arity = 0 || fundecl.arity = 1 then
+      [ Csymbol_address fundecl.label;
+        cint_const fundecl.arity;
+      ]
+    else
+      [ Csymbol_address (curry_function fundecl.arity);
+        cint_const fundecl.arity;
+        Csymbol_address fundecl.label;
+      ]
+  in
+  let all_symbols_in_set =
+    List.filter_map (fun sym ->
+        if String.equal (fst symbol_and_global) sym then None
+        else Some (Csymbol_address sym)) all_symbols_in_set
+  in
+  let clos_vars = List.fold_right emit_constant clos_vars cont in
+  let closure_fields = first_closure_fields @ all_symbols_in_set @ clos_vars in
+  let num_fields = List.length closure_fields in
+  let header = Cint (black_closure_header num_fields) in
+  let define_symbol = cdefine_symbol symbol_and_global in
+  header :: flambda_closure_symbol @ define_symbol @ closure_fields
 
 (* Emit constant blocks *)
 
@@ -3283,9 +3347,10 @@ let emit_cmm_data_items_for_constants cont =
   let c = ref cont in
   String.Map.iter (fun symbol (cst : Cmmgen_state.constant) ->
       match cst with
-      | Const_closure (global, fundecls, clos_vars) ->
+      | Const_closure (global, fundecl, clos_vars, all_symbols_in_set) ->
           let cmm =
-            emit_constant_closure (symbol, global) fundecls clos_vars []
+            emit_constant_closure (symbol, global) fundecl clos_vars
+              ~all_symbols_in_set []
           in
           c := (Cdata cmm) :: !c
       | Const_table (global, elems) ->

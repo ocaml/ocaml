@@ -101,10 +101,11 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       loop func;
       List.iter loop args;
       ignore_debuginfo dbg
-    | Uclosure (functions, captured_variables) ->
+    | Ulet_set_of_closures (ids_and_functions, captured_variables, body) ->
       List.iter loop captured_variables;
-      List.iter (fun (
-        { Clambda. label; arity; params; return; body; dbg; env; } as clos) ->
+      List.iter (fun (var,
+        ({ Clambda. label; arity; params; return; body; dbg; env; } as clos)) ->
+          ignore_var_with_provenance var;
           (match closure_environment_var clos with
            | None -> ()
            | Some env_var ->
@@ -117,10 +118,13 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
           loop body;
           ignore_debuginfo dbg;
           ignore_var_option env)
-        functions
-    | Uoffset (expr, offset) ->
-      loop expr;
-      ignore_int offset
+        ids_and_functions;
+      loop body
+    | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+      loop from;
+      ignore_int from_index;
+      ignore_int from_arity;
+      ignore_int closure_index
     | Ulet (_let_kind, _value_kind, _var, def, body) ->
       loop def;
       loop body
@@ -275,24 +279,29 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
     | Ugeneric_apply (func, args, dbg) ->
       examine_argument_list (args @ [func]);
       ignore_debuginfo dbg
-    | Uclosure (functions, captured_variables) ->
+    | Ulet_set_of_closures (ids_and_functions, captured_variables, body) ->
       ignore_ulambda_list captured_variables;
-      (* Start a new let stack for speed. *)
-      List.iter (fun {Clambda. label; arity; params; return; body; dbg; env} ->
+      List.iter (fun (var,
+        {Clambda. label; arity; params; return; body; dbg; env}) ->
+          ignore_var_with_provenance var;
           ignore_function_label label;
           ignore_int arity;
           ignore_params_with_value_kind params;
           ignore_value_kind return;
+          (* Start a new let stack for speed. *)
           let_stack := [];
           loop body;
           let_stack := [];
           ignore_debuginfo dbg;
           ignore_var_option env)
-        functions
-    | Uoffset (expr, offset) ->
-      (* [expr] should usually be a variable. *)
-      examine_argument_list [expr];
-      ignore_int offset
+        ids_and_functions;
+      loop body
+    | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+      (* [from] should usually be a variable. *)
+      examine_argument_list [from];
+      ignore_int from_index;
+      ignore_int from_arity;
+      ignore_int closure_index;
     | Ulet (_let_kind, _value_kind, var, def, body) ->
       let var = VP.var var in
       begin match def with
@@ -443,22 +452,28 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
     let func = substitute_let_moveable is_let_moveable env func in
     let args = substitute_let_moveable_list is_let_moveable env args in
     Ugeneric_apply (func, args, dbg)
-  | Uclosure (functions, variables_bound_by_the_closure) ->
-    let functions =
-      List.map (fun (ufunction : Clambda.ufunction) ->
-          { ufunction with
-            body = substitute_let_moveable is_let_moveable env ufunction.body;
-          })
-        functions
+  | Ulet_set_of_closures (ids_and_functions, variables_bound_by_the_closure,
+      body) ->
+    let ids_and_functions =
+      List.map (fun (id, (ufunction : Clambda.ufunction)) ->
+          let ufunction =
+            { ufunction with
+              body = substitute_let_moveable is_let_moveable env ufunction.body;
+            }
+          in
+          id, ufunction)
+        ids_and_functions
     in
     let variables_bound_by_the_closure =
       substitute_let_moveable_list is_let_moveable env
         variables_bound_by_the_closure
     in
-    Uclosure (functions, variables_bound_by_the_closure)
-  | Uoffset (clam, n) ->
-    let clam = substitute_let_moveable is_let_moveable env clam in
-    Uoffset (clam, n)
+    let body = substitute_let_moveable is_let_moveable env body in
+    Ulet_set_of_closures (ids_and_functions,
+      variables_bound_by_the_closure, body)
+  | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+    let from = substitute_let_moveable is_let_moveable env from in
+    Uselect_closure { from; from_index; from_arity; closure_index; }
   | Ulet (let_kind, value_kind, var, def, body) ->
     let def = substitute_let_moveable is_let_moveable env def in
     if V.Set.mem (VP.var var) is_let_moveable then
@@ -637,21 +652,30 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
     let func = un_anf var_info env func in
     let args = un_anf_list var_info env args in
     Ugeneric_apply (func, args, dbg), Fixed
-  | Uclosure (functions, variables_bound_by_the_closure) ->
-    let functions =
-      List.map (fun (ufunction : Clambda.ufunction) ->
-          { ufunction with
-            body = un_anf var_info env ufunction.body;
-          })
-        functions
+  | Ulet_set_of_closures (ids_and_functions, variables_bound_by_the_closure,
+      body) ->
+    let ids_and_functions =
+      List.map (fun (id, (ufunction : Clambda.ufunction)) ->
+          let ufunction =
+            { ufunction with
+              body = un_anf var_info env ufunction.body;
+            }
+          in
+          id, ufunction)
+        ids_and_functions
     in
     let variables_bound_by_the_closure =
       un_anf_list var_info env variables_bound_by_the_closure
     in
-    Uclosure (functions, variables_bound_by_the_closure), Fixed
-  | Uoffset (clam, n) ->
-    let clam, moveable = un_anf_and_moveable var_info env clam in
-    Uoffset (clam, n), both_moveable Moveable moveable
+    let body, _body_moveable = un_anf_and_moveable var_info env body in
+    (* CR mshinwell: Is [Fixed] the right thing? *)
+    Ulet_set_of_closures (ids_and_functions, variables_bound_by_the_closure,
+        body),
+      Fixed
+  | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+    let from, moveable = un_anf_and_moveable var_info env from in
+    Uselect_closure { from; from_index; from_arity; closure_index; },
+      both_moveable Moveable moveable
   | Ulet (_let_kind, _value_kind, var, def, Uvar var')
       when V.same (VP.var var) var' ->
     un_anf_and_moveable var_info env def

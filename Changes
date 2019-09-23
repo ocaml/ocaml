@@ -103,6 +103,9 @@ Working version
   be immediate only on 64 bit platforms
   (Jérémie Dimino, review by Vladimir Keleshev)
 
+- #8984: New closure layout
+  (Mark Shinwell)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.

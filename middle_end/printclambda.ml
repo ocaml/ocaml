@@ -51,12 +51,17 @@ let rec structured_constant ppf = function
       List.iter (fun f -> fprintf ppf ",%F" f) fl;
       fprintf ppf ")"
   | Uconst_string s -> fprintf ppf "%S" s
-  | Uconst_closure(clos, sym, fv) ->
+  | Uconst_set_of_closures (symbols_and_closures, env) ->
       let funs ppf =
-        List.iter (fprintf ppf "@ %a" one_fun) in
+        List.iter (fun (sym, func) ->
+          fprintf ppf "@ (%s@ %a)" sym one_fun func)
+      in
       let sconsts ppf scl =
-        List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl in
-      fprintf ppf "@[<2>(const_closure%a %s@ %a)@]" funs clos sym sconsts fv
+        List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl
+      in
+      fprintf ppf "@[<2>(const_closure%a @ %a)@]"
+        funs symbols_and_closures
+        sconsts env
 
 and one_fun ppf f =
   let idents ppf =
@@ -109,13 +114,28 @@ and lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
-  | Uclosure(clos, fv) ->
-      let funs ppf =
-        List.iter (fprintf ppf "@ @[<2>%a@]" one_fun) in
-      let lams ppf =
-        List.iter (fprintf ppf "@ %a" lam) in
-      fprintf ppf "@[<2>(closure@ %a %a)@]" funs clos lams fv
-  | Uoffset(l,i) -> fprintf ppf "@[<2>(offset %a %d)@]" lam l i
+  | Ulet_set_of_closures(ids_and_fundecls, clos_vars, body) ->
+      let funs ppf ids_and_fundecls =
+        List.iter (fun (id, fundecl) ->
+            fprintf ppf "@ @[<2>(%a = %a)@]"
+              VP.print id
+              one_fun fundecl)
+          ids_and_fundecls
+      in
+      fprintf ppf "@[<2>(let_set_of_closures@ (%a)@ (env (%a))@ %a)@]"
+        funs ids_and_fundecls
+        (Format.pp_print_list ~pp_sep:Format.pp_print_space lam) clos_vars
+        lam body
+  | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+      fprintf ppf "@[<2>(select_closure@ \
+          (from@ %a)@ \
+          (from_index@ %d)@ \
+          (from_arity@ %d)@ \
+          (closure_index@ %d)@]"
+        lam from
+        from_index
+        from_arity
+        closure_index
   | Ulet(mut, kind, id, arg, body) ->
       let rec letbody ul = match ul with
         | Ulet(mut, kind, id, arg, body) ->

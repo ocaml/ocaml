@@ -4,7 +4,6 @@ function_in_ref.ml
 if_in_if.ml
 morematch.ml
 opaque_prim.ml
-pr1271.ml
 pr2719.ml
 pr6216.ml
 record_evaluation_order.ml

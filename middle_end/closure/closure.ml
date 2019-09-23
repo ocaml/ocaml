@@ -73,8 +73,11 @@ let occurs_var var u =
     | Uconst _ -> false
     | Udirect_apply(_lbl, args, _) -> List.exists occurs args
     | Ugeneric_apply(funct, args, _) -> occurs funct || List.exists occurs args
-    | Uclosure(_fundecls, clos) -> List.exists occurs clos
-    | Uoffset(u, _ofs) -> occurs u
+    | Ulet_set_of_closures(_fundecls, clos, body) ->
+        List.exists occurs clos || occurs body
+    | Uselect_closure { from; from_index = _; from_arity = _;
+          closure_index = _; } ->
+        occurs from
     | Ulet(_str, _kind, _id, def, body) -> occurs def || occurs body
     | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec(decls, body) ->
@@ -158,10 +161,11 @@ let lambda_smaller lam threshold =
         size := !size + 4; lambda_list_size args
     | Ugeneric_apply(fn, args, _) ->
         size := !size + 6; lambda_size fn; lambda_list_size args
-    | Uclosure _ ->
+    | Ulet_set_of_closures _ ->
         raise Exit (* inlining would duplicate function definitions *)
-    | Uoffset(lam, _ofs) ->
-        incr size; lambda_size lam
+    | Uselect_closure { from; from_index = _; from_arity = _;
+          closure_index = _; } ->
+        incr size; lambda_size from
     | Ulet(_str, _kind, _id, lam, body) ->
         lambda_size lam; lambda_size body
     | Uphantom_let _ -> no_phantom_lets ()
@@ -225,7 +229,9 @@ let rec is_pure = function
     Uvar _ -> true
   | Uconst _ -> true
   | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure args
-  | Uoffset(arg, _) -> is_pure arg
+  | Uselect_closure { from; from_index = _; from_arity = _;
+        closure_index = _; } ->
+      is_pure from
   | Ulet(Immutable, _, _var, def, body) ->
       is_pure def && is_pure body
   | _ -> false
@@ -557,17 +563,32 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
       let dbg = subst_debuginfo loc dbg in
       Ugeneric_apply(substitute loc st sb rn fn,
                      List.map (substitute loc st sb rn) args, dbg)
-  | Uclosure(defs, env) ->
+  | Ulet_set_of_closures(defs, env, body) ->
       (* Question: should we rename function labels as well?  Otherwise,
          there is a risk that function labels are not globally unique.
          This should not happen in the current system because:
-         - Inlined function bodies contain no Uclosure nodes
+         - Inlined function bodies contain no Ulet_set_of_closures nodes
            (cf. function [lambda_smaller])
          - When we substitute offsets for idents bound by let rec
            in [close], case [Lletrec], we discard the original
            let rec body and use only the substituted term. *)
-      Uclosure(defs, List.map (substitute loc st sb rn) env)
-  | Uoffset(u, ofs) -> Uoffset(substitute loc st sb rn u, ofs)
+      let body_sb, defs =
+        List.fold_left (fun (body_sb, defs) (id, fundecl) ->
+            let id' = VP.rename id in
+            let body_sb =
+              V.Map.add (VP.var id) (Uvar (VP.var id')) body_sb
+            in
+            let defs = (id', fundecl) :: defs in
+            body_sb, defs)
+          (sb, [])
+          (List.rev defs)
+      in
+      Ulet_set_of_closures (defs,
+        List.map (substitute loc st sb rn) env,
+        substitute loc st body_sb rn body)
+  | Uselect_closure { from; from_index; from_arity; closure_index; } ->
+      let from = substitute loc st sb rn from in
+      Uselect_closure { from; from_index; from_arity; closure_index; }
   | Ulet(str, kind, id, u1, u2) ->
       let id' = VP.rename id in
       Ulet(str, kind, id', substitute loc st sb rn u1,
@@ -703,8 +724,8 @@ let is_simple_argument = function
   | Uvar _  | Uconst _ -> true
   | _ -> false
 
-let no_effects = function
-  | Uclosure _ -> true
+let rec no_effects = function
+  | Ulet_set_of_closures (_defs, _env, body) -> no_effects body
   | u -> is_pure u
 
 let rec bind_params_rec loc fpc subst params args body =
@@ -878,7 +899,6 @@ let rec close ({ backend; fenv; cenv } as env) lam =
       make_const (transl cst)
   | Lfunction _ as funct ->
       close_one_function env (Ident.create_local "fun") funct
-
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
@@ -990,22 +1010,12 @@ let rec close ({ backend; fenv; cenv } as env) lam =
            defs
       then begin
         (* Simple case: only function definitions *)
-        let (clos, infos) = close_functions env defs in
-        let clos_ident = V.create_local "clos" in
-        let fenv_body =
-          List.fold_right
-            (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)
-            infos fenv in
-        let (ubody, approx) = close { backend; fenv = fenv_body; cenv } body in
-        let sb =
-          List.fold_right
-            (fun (id, pos, _approx) sb ->
-              V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
-            infos V.Map.empty in
-        (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
-              substitute Location.none (backend, !Clflags.float_const_prop) sb
-                None ubody),
-         approx)
+        close_functions env defs ~make_body:(fun infos ->
+          let fenv_body =
+            List.fold_right
+              (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)
+              infos fenv in
+          close { backend; fenv = fenv_body; cenv } body)
       end else begin
         (* General case: recursive definition of values *)
         let rec clos_defs = function
@@ -1177,14 +1187,13 @@ and close_list_approx env = function
       (ulam :: ulams, approx :: approxs)
 
 and close_named env id = function
-    Lfunction _ as funct ->
-      close_one_function env id funct
+    Lfunction _ as funct -> close_one_function env id funct
   | lam ->
       close env lam
 
 (* Build a shared closure for a set of mutually recursive functions *)
 
-and close_functions { backend; fenv; cenv } fun_defs =
+and close_functions { backend; fenv; cenv } fun_defs ~make_body =
   let fun_defs =
     List.flatten
       (List.map
@@ -1232,29 +1241,35 @@ and close_functions { backend; fenv; cenv } fun_defs =
       (fun (id, _params, _return, _body, fundesc, _dbg) fenv ->
         V.Map.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
-  (* Determine the offsets of each function's closure in the shared block *)
-  let env_pos = ref (-1) in
-  let clos_offsets =
-    List.map
-      (fun (_id, _params, _return, _body, fundesc, _dbg) ->
-        let pos = !env_pos + 1 in
-        env_pos := !env_pos + 1 + (if fundesc.fun_arity <> 1 then 3 else 2);
-        pos)
-      uncurried_defs in
-  let fv_pos = !env_pos in
   (* This reference will be set to false if the hypothesis that a function
      does not use its environment parameter is invalidated. *)
   let useless_env = ref initially_closed in
+  let num_fundecls = List.length uncurried_defs in
   (* Translate each function definition *)
-  let clos_fundef (id, params, return, body, fundesc, dbg) env_pos =
+  let clos_fundef (id, params, return, body, fundesc, dbg) closure_index =
     let env_param = V.create_local "env" in
-    let cenv_fv =
-      build_closure_env env_param (fv_pos - env_pos) fv in
-    let cenv_body =
-      List.fold_right2
-        (fun (id, _params, _return, _body, _fundesc, _dbg) pos env ->
-          V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
-        uncurried_defs clos_offsets cenv_fv in
+    let fv_pos =
+      (if fundesc.fun_arity = 0 || fundesc.fun_arity = 1 then 2 else 3)
+        + (num_fundecls - 1)
+    in
+    let cenv_fv = build_closure_env env_param fv_pos fv in
+    let cenv_body, _ =
+      List.fold_left
+        (fun (env, other_closure_index)
+             (id, _params, _return, _body, _fundesc, _dbg) ->
+          let env =
+            V.Map.add id (Uselect_closure {
+                from = Uvar env_param;
+                from_index = closure_index;
+                from_arity = List.length params;
+                closure_index = other_closure_index;
+              })
+              env
+          in
+          env, other_closure_index + 1)
+        (cenv_fv, 0)
+        uncurried_defs
+    in
     let (ubody, approx) =
       close { backend; fenv = fenv_rec; cenv = cenv_body } body
     in
@@ -1296,15 +1311,26 @@ and close_functions { backend; fenv; cenv } fun_defs =
       | Unroll _ -> assert false
     in
     let fun_params = List.map (fun (var, _) -> VP.create var) fun_params in
-    if lambda_smaller ubody threshold
-    then fundesc.fun_inline <- Some(fun_params, ubody);
-
-    (f, (id, env_pos, Value_closure(fundesc, approx))) in
+    if lambda_smaller ubody threshold then begin
+      fundesc.fun_inline <- Some(fun_params, ubody)
+    end;
+    ((id, f), (id, closure_index, Value_closure(fundesc, approx)))
+  in
+  let translate_defs defs =
+    let _index, result =
+      List.fold_left (fun (index, result) fundef ->
+          let translated = clos_fundef fundef index in
+          index + 1, translated :: result)
+        (0, [])
+        defs
+    in
+    List.rev result
+  in
   (* Translate all function definitions. *)
   let clos_info_list =
     if initially_closed then begin
       let snap = Compilenv.snapshot () in
-      try List.map2 clos_fundef uncurried_defs clos_offsets
+      try translate_defs uncurried_defs
       with NotClosed ->
       (* If the hypothesis that the environment parameters are useless has been
          invalidated, then set [fun_closed] to false in all descriptions and
@@ -1317,25 +1343,34 @@ and close_functions { backend; fenv; cenv } fun_defs =
           )
           uncurried_defs;
         useless_env := false;
-        List.map2 clos_fundef uncurried_defs clos_offsets
+        translate_defs uncurried_defs
     end else
       (* Excessive closure nesting: assume environment parameter is used *)
-        List.map2 clos_fundef uncurried_defs clos_offsets
-    in
+      translate_defs uncurried_defs
+  in
   (* Update nesting depth *)
   decr function_nesting_depth;
-  (* Return the Uclosure node and the list of all identifiers defined,
-     with offsets and approximations. *)
+  (* Return the Ulet_set_of_closures node and the list of all identifiers
+     defined, with offsets and approximations. *)
   let (clos, infos) = List.split clos_info_list in
   let fv = if !useless_env then [] else fv in
-  (Uclosure(clos, List.map (close_var { backend; fenv; cenv }) fv), infos)
+  let env = List.map (close_var { backend; fenv; cenv }) fv in
+  let clos = List.map (fun (id, def) -> VP.create id, def) clos in
+  let body, approx = make_body infos in
+  let term = Ulet_set_of_closures (clos, env, body) in
+  term, approx
 
 (* Same, for one non-recursive function *)
 
 and close_one_function env id funct =
-  match close_functions env [id, funct] with
-  | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
-  | _ -> fatal_error "Closure.close_one_function"
+  close_functions env [id, funct] ~make_body:(fun infos ->
+    match infos with
+    | (i, _, approx) :: _ when id = i -> Uvar id, approx
+    | _ ->
+      Misc.fatal_errorf "Closure.close_one_function %a: received (%a)"
+        V.print id
+        (Format.pp_print_list ~pp_sep:Format.pp_print_space V.print)
+        (List.map (fun (id, _, _) -> id) infos))
 
 (* Close a switch *)
 
@@ -1412,16 +1447,19 @@ let collect_exported_structured_constants a =
     | Uconst_float _ | Uconst_int32 _
     | Uconst_int64 _ | Uconst_nativeint _
     | Uconst_float_array _ | Uconst_string _ -> ()
-    | Uconst_closure _ -> assert false (* Cannot be generated *)
+    | Uconst_set_of_closures _ -> assert false (* Cannot be generated *)
   and ulam = function
     | Uvar _ -> ()
     | Uconst c -> const c
     | Udirect_apply (_, ul, _) -> List.iter ulam ul
     | Ugeneric_apply (u, ul, _) -> ulam u; List.iter ulam ul
-    | Uclosure (fl, ul) ->
-        List.iter (fun f -> ulam f.body) fl;
-        List.iter ulam ul
-    | Uoffset(u, _) -> ulam u
+    | Ulet_set_of_closures (ids_and_fundecls, env, body) ->
+        List.iter (fun (_id, f) -> ulam f.body) ids_and_fundecls;
+        List.iter ulam env;
+        ulam body
+    | Uselect_closure { from; from_index = _; from_arity = _;
+          closure_index = _; } ->
+        ulam from
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
     | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
