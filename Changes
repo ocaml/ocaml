@@ -92,6 +92,10 @@ Working version
 - #8919: lift mutable lets along with immutable ones
   (Leo White, review by Pierre Chambart)
 
+- #8958: Optmimise match cases that return a non-mutable block that is equal to
+  a matched block (flambda)
+  (Mark Shinwell and Louis Gesbert)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
