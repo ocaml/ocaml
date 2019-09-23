@@ -195,6 +195,9 @@ Working version
   (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
    Gabriel Scherer)
 
+- #8971: Add `Filename.null`, the conventional name of the "null" device.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Alain Frisch)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
