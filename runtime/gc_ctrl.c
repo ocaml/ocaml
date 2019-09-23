@@ -630,9 +630,6 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
   caml_instr_init ();
-  if (caml_init_alloc_for_heap () != 0){
-    caml_fatal_error ("cannot initialize heap: mmap failed");
-  }
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("cannot initialize page table");
   }
