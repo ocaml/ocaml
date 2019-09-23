@@ -268,12 +268,12 @@ DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
 objinfo_helper$(EXE): objinfo_helper.$(O)
-	$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$@ $< $(LIBBFD_LINK)
+	$(CC) $(BFD_LDFLAGS) $(OC_CFLAGS) $(OUTPUTEXE)$@ $< $(BFD_LDLIBS)
 
 objinfo_helper.$(O): $(ROOTDIR)/runtime/caml/s.h
 
 objinfo_helper.$(O): \
-  OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE)
+  OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(DEF_SYMBOL_PREFIX) $(BFD_CPPFLAGS)
 
 OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \

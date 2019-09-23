@@ -197,6 +197,9 @@ Working version
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
+- #8947: fix/improve support for the BFD library
+  (Sébastien Hinderer, review by Damien Doligez)
+
 ### Compiler user-interface and warnings:
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
