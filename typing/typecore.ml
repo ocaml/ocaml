@@ -998,40 +998,48 @@ let check_scope_escape loc env level ty =
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace, None)))
 
-(* type_pat propagates the expected type as well as maps for
-   constructors and labels.
-   Unification may update the typing environment. *)
-(* map <> None => called from parmatch: backtrack on or-patterns
-   explode > 0 => explode Ppat_any for gadts *)
-type map =
-    { constrs: (string, Types.constructor_description) Hashtbl.t;
-      labels: (string, Types.label_description) Hashtbl.t }
-let rec type_pat : ?exception_allowed:bool -> map:map option ->
-  no_existentials:existential_restriction option -> mode:type_pat_mode ->
-  explode:int -> env:Env.t ref ->
-  Parsetree.pattern -> type_expr -> (pattern -> 'a) -> 'a =
-  fun ?(exception_allowed=false) ~map ~no_existentials
-          ~mode ~explode ~env sp expected_ty k ->
+type pattern_typing_params = {
+  exception_allowed: bool;
+
+  (* map <> None => called from parmatch: backtrack on or-patterns *)
+  map: pattern_names_map option;
+
+  no_existentials: existential_restriction option;
+  mode: type_pat_mode;
+
+  (* explode > 0 => explode Ppat_any for gadts *)
+  explode: int;
+}
+
+(* maps for constructors and labels *)
+and pattern_names_map = {
+  constrs: (string, Types.constructor_description) Hashtbl.t;
+  labels: (string, Types.label_description) Hashtbl.t;
+}
+
+
+let rec type_pat params ~env sp expected_ty k =
   Builtin_attributes.warning_scope sp.ppat_attributes
     (fun () ->
-       type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
-         ~explode ~env sp expected_ty k
+       type_pat_aux params ~env sp expected_ty k
     )
 
-and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
-      ~explode ~env sp expected_ty k =
-  let mode' = if mode = Splitting_or then Normal else mode in
-  let type_pat ?(exception_allowed=false) ?(map=map)
-        ?(mode=mode') ?(explode=explode) ?(env=env) =
-    type_pat ~exception_allowed ~map ~no_existentials ~mode ~explode ~env
-  in
+and type_pat_aux params ~env sp expected_ty k =
+  let child_params =
+    let mode = if params.mode = Splitting_or then Normal else params.mode in
+    { params with mode } in
+  let type_pat ?(exception_allowed=false) ?(env=env) params =
+    type_pat
+      { params with
+        exception_allowed = params.exception_allowed && exception_allowed }
+      ~env in
   let loc = sp.ppat_loc in
   let rup k x =
-    if map = None then (ignore (rp x));
+    if params.map = None then (ignore (rp x));
     unify_pat !env x (instance expected_ty);
     k x
   in
-  let rp k x : pattern = if map = None then k (rp x) else k x in
+  let rp k x : pattern = if params.map = None then k (rp x) else k x in
   match sp.ppat_desc with
     Ppat_any ->
       let k' d = rp k {
@@ -1041,6 +1049,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
       in
+      let explode = params.explode in
       if explode > 0 then
         let (sp, constrs, labels) =
           try
@@ -1048,13 +1057,14 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
           with Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
         in
         if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
-        if mode = Inside_or then raise Need_backtrack else
+        if params.mode = Inside_or then raise Need_backtrack else
         let explode =
           match sp.ppat_desc with
             Parsetree.Ppat_or _ -> explode - 5
           | _ -> explode - 1
         in
-        type_pat ~map:(Some {constrs;labels}) ~explode sp expected_ty k
+        let map = Some { constrs; labels } in
+        type_pat { child_params with explode; map } sp expected_ty k
       else k' Tpat_any
   | Ppat_var name ->
       let ty = instance expected_ty in
@@ -1071,7 +1081,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_unpack name ->
-      assert (map = None);
+      assert (params.map = None);
       let t = instance expected_ty in
       let id = enter_variable loc name t ~is_module:true sp.ppat_attributes in
       rp k {
@@ -1085,7 +1095,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       {ppat_desc=Ppat_var name; ppat_loc=lloc; ppat_attributes = attrs},
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
-      assert (map = None);
+      assert (params.map = None);
       let cty, force = Typetexp.transl_simple_type_delayed !env sty in
       let ty = cty.ctyp_type in
       unify_pat_types lloc !env ty (instance expected_ty);
@@ -1108,8 +1118,8 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       | _ -> assert false
       end
   | Ppat_alias(sq, name) ->
-      assert (map = None);
-      type_pat sq expected_ty (fun q ->
+      assert (params.map = None);
+      type_pat child_params sq expected_ty (fun q ->
         begin_def ();
         let ty_var = build_as_type !env q in
         end_def ();
@@ -1143,7 +1153,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
       let p = {p with ppat_loc=loc} in
-      type_pat ~explode:0 p expected_ty k
+      type_pat { child_params with explode = 0 } p expected_ty k
         (* TODO: record 'extra' to remember about interval *)
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
@@ -1156,7 +1166,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       end_def ();
       generalize_structure expected_ty;
       unify_pat_types loc !env ty expected_ty;
-      map_fold_cont (fun (p,t) -> type_pat p t) spl_ann (fun pl ->
+      map_fold_cont (fun (p,t) -> type_pat child_params p t) spl_ann (fun pl ->
         rp k {
         pat_desc = Tpat_tuple pl;
         pat_loc = loc; pat_extra=[];
@@ -1171,8 +1181,8 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         with Not_found -> None
       in
       let candidates =
-        match lid.txt, map with
-          Longident.Lident s, Some {constrs} when Hashtbl.mem constrs s ->
+        match lid.txt, params.map with
+          Longident.Lident s, Some {constrs; _} when Hashtbl.mem constrs s ->
             Ok [Hashtbl.find constrs s, (fun () -> ())]
         | _ ->
             Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env
@@ -1182,9 +1192,10 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
           (mk_expected expected_ty)
           (Constructor.disambiguate Env.Pattern lid !env opath) candidates
       in
-      if constr.cstr_generalized && map <> None && mode = Inside_or
+      if constr.cstr_generalized
+         && params.map <> None && params.mode = Inside_or
       then raise Need_backtrack;
-      begin match no_existentials, constr.cstr_existentials with
+      begin match params.no_existentials, constr.cstr_existentials with
       | None, _ | _, [] -> ()
       | Some r, (_ :: _ as exs)  ->
           let exs = List.map (Ctype.existential_name constr) exs in
@@ -1224,7 +1235,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      if not constr.cstr_generalized || no_existentials <> None
+      if not constr.cstr_generalized || params.no_existentials <> None
       then unify_pat_types loc !env ty_res expected_ty
       else unify_pat_types_gadt loc env ty_res expected_ty;
       end_def ();
@@ -1246,8 +1257,10 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       in
       if constr.cstr_inlined <> None then List.iter check_non_escaping sargs;
 
-      map_fold_cont (fun (p,t) -> type_pat p t) (List.combine sargs ty_args)
-      (fun args ->
+      map_fold_cont
+        (fun (p,t) -> type_pat child_params p t)
+        (List.combine sargs ty_args)
+        (fun args ->
         rp k {
           pat_desc=Tpat_construct(lid, constr, args);
           pat_loc = loc; pat_extra=[];
@@ -1269,7 +1282,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       generalize_structure expected_ty;
       (* PR#7404: allow some_private_tag blindly, as it would not unify with
          the abstract row variable *)
-      if l = Parmatch.some_private_tag then assert (map <> None)
+      if l = Parmatch.some_private_tag then assert (params.map <> None)
       else unify_pat_types loc !env (newgenty (Tvariant row)) expected_ty;
       let k arg =
         rp k {
@@ -1281,7 +1294,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       in begin
         (* PR#6235: propagate type information *)
         match sarg, arg_type with
-          Some p, [ty] -> type_pat p ty (fun p -> k (Some p))
+          Some p, [ty] -> type_pat child_params p ty (fun p -> k (Some p))
         | _            -> k None
       end
   | Ppat_record(lid_sp_list, closed) ->
@@ -1308,7 +1321,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         end_def ();
         generalize_structure ty_res;
         generalize_structure ty_arg;
-        type_pat sarg ty_arg (fun arg ->
+        type_pat child_params sarg ty_arg (fun arg ->
           k (label_lid, label, arg))
       in
       let k' k lbl_pat_list =
@@ -1320,16 +1333,17 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
       in
-      let labels = Option.map (fun m -> m.labels) map in
-      if map = None then
-        k (wrap_disambiguate "This record pattern is expected to have"
-             (mk_expected expected_ty)
-             (type_label_a_list ?labels loc false !env type_label_pat opath
-                lid_sp_list)
-             (k' (fun x -> x)))
-      else
-        type_label_a_list ?labels loc false !env type_label_pat opath
-          lid_sp_list (k' k)
+      begin match params.map with
+      | None ->
+         k (wrap_disambiguate "This record pattern is expected to have"
+              (mk_expected expected_ty)
+              (type_label_a_list loc false !env type_label_pat opath
+                 lid_sp_list)
+              (k' (fun x -> x)))
+      | Some {labels; _} ->
+         type_label_a_list ~labels loc false !env type_label_pat opath
+           lid_sp_list (k' k)
+      end
   | Ppat_array spl ->
       let ty_elt = newgenvar() in
       begin_def ();
@@ -1338,7 +1352,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       generalize_structure expected_ty;
       unify_pat_types
         loc !env (Predef.type_array ty_elt) expected_ty;
-      map_fold_cont (fun p -> type_pat p ty_elt) spl (fun pl ->
+      map_fold_cont (fun p -> type_pat child_params p ty_elt) spl (fun pl ->
         rp k {
         pat_desc = Tpat_array pl;
         pat_loc = loc; pat_extra=[];
@@ -1347,6 +1361,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
       let state = save_state env in
+      let mode = params.mode in
       begin match
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
@@ -1359,8 +1374,9 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         gadt_equations_level := Some lev;
         let env1 = ref !env in
         let p1 =
-          try Some (type_pat ~exception_allowed ~mode:Inside_or sp1 expected_ty
-                      ~env:env1 (fun x -> x))
+          try Some (type_pat ~exception_allowed:true
+                      { child_params with mode = Inside_or }
+                      sp1 expected_ty ~env:env1 (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
@@ -1368,8 +1384,9 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
         module_variables := initial_module_variables;
         let env2 = ref !env in
         let p2 =
-          try Some (type_pat ~exception_allowed ~mode:Inside_or sp2 expected_ty
-                      ~env:env2 (fun x -> x))
+          try Some (type_pat ~exception_allowed:true
+                      { child_params with mode = Inside_or }
+                      sp2 expected_ty ~env:env2 (fun x -> x))
           with Need_backtrack -> None in
         end_def ();
         gadt_equations_level := equation_level;
@@ -1397,21 +1414,24 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
           pat_env = !env }
       with
         p -> rp k p
-      | exception Need_backtrack when mode <> Inside_or ->
-          assert (map <> None);
+      | exception Need_backtrack when params.mode <> Inside_or ->
+          let mode = params.mode in
+          assert (params.map <> None);
           set_state state env;
           let mode =
             if mode = Split_or then mode else Splitting_or in
-          try type_pat ~exception_allowed ~mode sp1 expected_ty k
+          try type_pat ~exception_allowed:true
+                { child_params with mode } sp1 expected_ty k
           with Error _ ->
             set_state state env;
-            type_pat ~exception_allowed ~mode sp2 expected_ty k
+            type_pat ~exception_allowed:true
+              { child_params with mode } sp2 expected_ty k
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
       unify_pat_types loc !env (Predef.type_lazy_t nv) expected_ty;
       (* do not explode under lazy: PR#7421 *)
-      type_pat ~explode:0 sp1 nv (fun p1 ->
+      type_pat { child_params with explode = 0 } sp1 nv (fun p1 ->
         rp k {
         pat_desc = Tpat_lazy p1;
         pat_loc = loc; pat_extra=[];
@@ -1427,7 +1447,7 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       generalize_structure ty;
       let ty, expected_ty' = instance ty, ty in
       unify_pat_types loc !env ty (instance expected_ty);
-      type_pat ~exception_allowed sp expected_ty' (fun p ->
+      type_pat ~exception_allowed:true params sp expected_ty' (fun p ->
         (*Format.printf "%a@.%a@."
           Printtyp.raw_type_expr ty
           Printtyp.raw_type_expr p.pat_type;*)
@@ -1453,16 +1473,17 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
       let path, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc lid in
       let new_env = ref new_env in
-      type_pat ~exception_allowed ~env:new_env p expected_ty ( fun p ->
-        env := Env.copy_local !env ~from:!new_env;
-        k { p with pat_extra =( Tpat_open (path,lid,!new_env),
-                            loc, sp.ppat_attributes) :: p.pat_extra }
+      type_pat ~exception_allowed:true params
+        ~env:new_env p expected_ty ( fun p ->
+          env := Env.copy_local !env ~from:!new_env;
+          k { p with pat_extra =( Tpat_open (path,lid,!new_env),
+                                  loc, sp.ppat_attributes) :: p.pat_extra }
       )
   | Ppat_exception p ->
-      if not exception_allowed then
+      if not params.exception_allowed then
         raise (Error (loc, !env, Exception_pattern_disallowed))
       else begin
-        type_pat p Predef.type_exn (fun p_exn ->
+        type_pat child_params p Predef.type_exn (fun p_exn ->
         rp k {
           pat_desc = Tpat_exception p_exn;
           pat_loc = sp.ppat_loc;
@@ -1475,12 +1496,19 @@ and type_pat_aux ~exception_allowed ~map ~no_existentials ~mode
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-let type_pat ?exception_allowed ?no_existentials ?map ?(mode=Normal)
+let type_pat ?(exception_allowed=false)
+    ?no_existentials ?map ?(mode=Normal)
     ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
   Misc.protect_refs [Misc.R (gadt_equations_level, Some lev)] (fun () ->
       let r =
-        type_pat ?exception_allowed ~no_existentials ~map ~mode
-          ~explode ~env sp expected_ty (fun x -> x)
+        let params = {
+            exception_allowed;
+            map;
+            no_existentials;
+            mode;
+            explode
+          } in
+        type_pat params ~env sp expected_ty (fun x -> x)
       in
       iter_pattern (fun p -> p.pat_env <- !env) r;
       r
@@ -1495,7 +1523,7 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     reset_pattern None true;
     let typed_p =
       Ctype.with_passive_variants
-        (type_pat ~lev ~map:{constrs;labels} ?mode ?explode env p)
+        (type_pat ~lev ~map:{constrs; labels} ?mode ?explode env p)
         expected_ty
     in
     set_state state env;
