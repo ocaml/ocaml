@@ -92,6 +92,10 @@ Working version
 - #8919: lift mutable lets along with immutable ones
   (Leo White, review by Pierre Chambart)
 
+- #8806: Add an [@@immediate64] attribute for types that are known to
+  be immediate only on 64 bit platforms
+  (Jérémie Dimino, review by Vladimir Keleshev)
+
 - #8958: Optmimise match cases that return a non-mutable block that is equal to
   a matched block (flambda)
   (Mark Shinwell and Louis Gesbert)
@@ -160,6 +164,12 @@ Working version
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
   (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
 
+### Manual and documentation:
+
+- #8950: manual, move local opens in pattern out of the extension chapter
+  (Florian Angeletti, review and suggestion by Gabriel Scherer)
+
+
 ### Compiler user-interface and warnings:
 
 - #8833: Hint for (type) redefinitions in toplevel session
@@ -195,6 +205,9 @@ Working version
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
+- #8947: fix/improve support for the BFD library
+  (Sébastien Hinderer, review by Damien Doligez)
+
 ### Compiler user-interface and warnings:
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
@@ -229,8 +242,15 @@ Working version
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
-OCaml 4.09.0
-------------
+OCaml 4.09 maintenance branch:
+------------------------------
+
+- #8953, #8954: Fix error submessages in the toplevel: do not display
+  dummy locations
+  (Armaël Guéneau, review by Gabriel Scherer)
+
+OCaml 4.09.0 (19 September 2019):
+---------------------------------
 
 ### Runtime system:
 

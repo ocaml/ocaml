@@ -89,7 +89,7 @@ let constructor_args priv cd_args cd_res path rep =
           type_expansion_scope = Btype.lowest_level;
           type_loc = Location.none;
           type_attributes = [];
-          type_immediate = false;
+          type_immediate = Unknown;
           type_unboxed;
         }
       in
