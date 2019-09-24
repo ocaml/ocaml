@@ -144,6 +144,7 @@ module Exp:
     val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option
                    -> expression
+    val construct_fun: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option
                  -> expression
     val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list
