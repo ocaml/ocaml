@@ -819,55 +819,6 @@ class c () = object method virtual m : int method private m = 1 end;;
 class c : unit -> object method m : int end
 |}];;
 
-(* Marshaling (cf. PR#5436) *)
-
-let r = ref 0;;
-[%%expect{|
-val r : int ref = {contents = 0}
-|}];;
-let id o = Oo.id o - !r;;
-[%%expect{|
-val id : < .. > -> int = <fun>
-|}];;
-r := Oo.id (object end);;
-[%%expect{|
-- : unit = ()
-|}];;
-id (object end);;
-[%%expect{|
-- : int = 1
-|}];;
-id (object end);;
-[%%expect{|
-- : int = 2
-|}];;
-let o = object end in
-  let s = Marshal.to_string o [] in
-  let o' : < > = Marshal.from_string s 0 in
-  let o'' : < > = Marshal.from_string s 0 in
-  (id o, id o', id o'');;
-[%%expect{|
-- : int * int * int = (3, 4, 5)
-|}];;
-
-let o = object val x = 33 method m = x end in
-  let s = Marshal.to_string o [Marshal.Closures] in
-  let o' : <m:int> = Marshal.from_string s 0 in
-  let o'' : <m:int> = Marshal.from_string s 0 in
-  (id o, id o', id o'', o#m, o'#m);;
-[%%expect{|
-- : int * int * int * int * int = (6, 7, 8, 33, 33)
-|}];;
-
-let o = object val x = 33 val y = 44 method m = x end in
-  let s = Marshal.to_string (o,o) [Marshal.Closures] in
-  let (o1, o2) : (<m:int> * <m:int>) = Marshal.from_string s 0 in
-  let (o3, o4) : (<m:int> * <m:int>) = Marshal.from_string s 0 in
-  (id o, id o1, id o2, id o3, id o4, o#m, o1#m);;
-[%%expect{|
-- : int * int * int * int * int * int * int = (9, 10, 10, 11, 11, 33, 33)
-|}];;
-
 (* Recursion (cf. PR#5291) *)
 
 class a = let _ = new b in object end
