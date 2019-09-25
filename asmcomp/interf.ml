@@ -124,15 +124,14 @@ let build_graph fundecl =
       float arguments in integer registers, PR#6227.) *)
 
   let add_pref weight r1 r2 =
-    if weight > 0 then begin
-      let i = r1.stamp and j = r2.stamp in
-      if i <> j
-      && r1.loc = Unknown
-      && Proc.register_class r1 = Proc.register_class r2
-      && (let p = if i < j then (i, j) else (j, i) in
-          not (IntPairSet.mem p !mat))
-      then r1.prefer <- (r2, weight) :: r1.prefer
-    end in
+    let i = r1.stamp and j = r2.stamp in
+    if i <> j
+    && r1.loc = Unknown
+    && Proc.register_class r1 = Proc.register_class r2
+    && (let p = if i < j then (i, j) else (j, i) in
+        not (IntPairSet.mem p !mat))
+    then r1.prefer <- (r2, weight) :: r1.prefer
+  in
 
   (* Add a mutual preference between two regs *)
   let add_mutual_pref weight r1 r2 =
@@ -148,7 +147,7 @@ let build_graph fundecl =
   (* Compute preferences and spill costs *)
 
   let rec prefer weight i =
-    let weight = max 1 weight in
+    assert (weight > 0);
     (* Avoid overflow of weight and spill_cost *)
     let weight = min 1000 weight in
     add_spill_cost weight i.arg;
