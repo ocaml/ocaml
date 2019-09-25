@@ -187,7 +187,7 @@ let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
   let diff_commandline =
     Filename.quote_command "diff" ~stdout:temporary_file
-      [ "-u";
+      [ "--strip-trailing-cr"; "-u";
         files.reference_filename;
         files.output_filename ]
   in
