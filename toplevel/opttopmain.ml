@@ -183,7 +183,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _labels = clear classic
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
-  let _dlinscan = set use_linscan
   let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _noassert = set noassert
@@ -195,7 +194,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _no_principal = clear principal
-  let _real_paths = set real_paths
   let _rectypes = set recursive_types
   let _no_rectypes = clear recursive_types
   let _strict_sequence = set strict_sequence
