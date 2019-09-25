@@ -186,6 +186,11 @@ Working version
 - #8885: Warn about unused local modules
   (Thomas Refis, review by Alain Frisch)
 
+- #8872: Add ocamlc option "-output-complete-exe" to build a self-contained
+  binary for bytecode programs, containing the runtime and C stubs.
+  (Stéphane Glondu, Nicolás Ojeda Bär, review by Jérémie Dimino and Daniel
+  Bünzli)
+
 ### Build system:
 
 - #8650: ensure that "make" variables are defined before use;

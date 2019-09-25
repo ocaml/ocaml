@@ -496,6 +496,15 @@ This option can also be used to produce a \comp{C source file (".c" extension)
 or a} compiled shared/dynamic library (".so" extension, ".dll" under Windows).
 }%notop
 
+\comp{%
+\item["-output-complete-exe"]
+Build a self-contained executable by linking a C object file containing the
+bytecode program, the OCaml runtime system and any other static C code given to
+"ocamlc". The resulting effect is similar to "-custom", except that the bytecode
+is embedded in the C code so it is no longer accessible to tools such as
+"ocamldebug". On the other hand, the resulting binary is resistant to "strip".
+}%comp
+
 \nat{%
 \item["-pack"]
 Build an object file (".cmx" and ".o"/".obj" files) and its associated compiled
