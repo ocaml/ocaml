@@ -24,7 +24,10 @@
 # seconds after boot/menhir/parser.ml.
 
 # mtime(): access a file's last modification time as a timestamp,
-# using either GNU coreutils' stat --format, or BSD/macos stat -f.
+# using either
+#  GNU coreutils' stat --format, or
+#  busybox's stat -c, or
+#  BSD/macos stat -f.
 # Default to 0 if 'stat' is not available.
 
 stat . 2>/dev/null 1>/dev/null
@@ -32,7 +35,9 @@ if test $? != 0
 then MTIME=""
 elif test -n "$(stat --version 2>/dev/null | grep coreutils)"
 then MTIME="stat --format %Y"
-else MTIME="stat -f %m"
+elif test -n "$(stat 2>&1 | grep busybox)"
+then MTIME="stat -c %Y"
+else MTIME="stat -f %m" # BSD stat?
 fi
 
 mtime() {
