@@ -131,6 +131,13 @@ Working version
    (Whitequark and Jacques-Henri Jourdan, review by Gabriel Scherer
     and Xavier Clerc)
 
+* #8834, `ocaml`: adhere to the XDG base directory specification to
+  locate an `.ocamlinit` file. Reads an `$XDG_CONFIG_HOME/ocaml/init.ml`
+  file before trying to lookup `~/.ocamlinit`. On Windows the behaviour
+  is unchanged.
+  (Daniel C. Bünzli, review by David Allsopp, Armaël Guéneau and
+   Nicolás Ojeda Bär)
+
 ### Standard library:
 
 - #8832: List.find_map : ('a -> 'b option) -> 'a list -> 'b option
