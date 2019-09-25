@@ -157,7 +157,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _no_insn_sched = clear insn_sched
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
   let _no_unbox_specialised_args = clear unbox_specialised_args
-  let _o s = output_name := Some s
   let _o2 () =
     default_simplify_rounds := 2;
     use_inlining_arguments_set o2_arguments;
@@ -183,7 +182,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _labels = clear classic
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
-  let _dlinscan = set use_linscan
   let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _noassert = set noassert
@@ -195,7 +193,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _no_principal = clear principal
-  let _real_paths = set real_paths
   let _rectypes = set recursive_types
   let _no_rectypes = clear recursive_types
   let _strict_sequence = set strict_sequence
@@ -240,7 +237,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _dreload = set dump_reload
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
-  let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
