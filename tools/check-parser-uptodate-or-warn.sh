@@ -53,7 +53,12 @@ mtime() {
 # The check itself
 SOURCE_MTIME=$(mtime parsing/parser.mly)
 GENERATED_MTIME=$(mtime boot/menhir/parser.ml)
-if test -n "$SOURCE_MTIME" -a -n "$GENERATED_MTIME" -a "$SOURCE_MTIME" -gt $(( GENERATED_MTIME + 10 ))
+if test -z "$SOURCE_MTIME" -o -z "$GENERATED_MTIME"
+then
+  echo
+  tput setaf 3; tput bold; printf "Warning: "; tput sgr0
+  echo "Failed to check if boot/menhir/parser.ml is up-to-date."
+elif test "$SOURCE_MTIME" -gt $(( GENERATED_MTIME + 10 ))
 then
   echo
   tput setaf 3; tput bold; printf "Warning: "; tput sgr0
