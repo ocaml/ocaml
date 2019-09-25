@@ -547,8 +547,9 @@ and transl_structure loc fields cc rootpath final_env = function
           Lsequence(transl_exp expr, body), size
       | Tstr_value(rec_flag, pat_expr_list) ->
           (* Translate bindings first *)
-          let mk_lam_let =  transl_let rec_flag pat_expr_list in
-          let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
+          let mk_lam_let = transl_let rec_flag pat_expr_list in
+          let ext_fields =
+            List.rev_append (let_bound_idents pat_expr_list) fields in
           (* Then, translate remainder of struct *)
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem

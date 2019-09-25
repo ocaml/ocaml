@@ -70,8 +70,11 @@ Working version
 - #8928: Move contains_calls and num_stack_slots from Proc to Mach.fundecl
   (Greta Yorsh, review by Florian Angeletti and Vincent Laviron)
 
-- #8968: refactor the generic pattern-traversal functions
-  in Typecore and Typedtree.
+- #8959, #8960, #8968: minor refactorings in the typing of patterns:
+  + refactor the {let,pat}_bound_idents* functions
+  + minor bugfix in type_pat
+  + refactor the generic pattern-traversal functions
+    in Typecore and Typedtree
   (Gabriel Scherer, review by Thomas Refis)
 
 ### Code generation and optimizations:
