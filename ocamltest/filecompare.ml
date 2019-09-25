@@ -61,25 +61,51 @@ type files = {
 
 let read_text_file lines_to_drop fn =
   Sys.with_input_file ~bin:true fn @@ fun ic ->
-  let drop_cr s =
-    let l = String.length s in
-    if l > 0 && s.[l - 1] = '\r' then String.sub s 0 (l - 1)
-    else raise Exit
-  in
-  let rec drop k =
-    if k = 0 then
-      loop []
-    else
-      let stop = try ignore (input_line ic); false with End_of_file -> true in
-      if stop then [] else drop (k-1)
-  and loop acc =
-    match input_line ic with
-    | s -> loop (s :: acc)
-    | exception End_of_file ->
-        try List.rev_map drop_cr acc
-        with Exit -> List.rev acc
-  in
-  drop lines_to_drop
+    let ic_len = in_channel_length ic in
+    let rec loop is_crlf drop acc =
+      match input_line ic with
+      | s ->
+          let at_eof = pos_in ic = ic_len in
+          let last_char =
+            if at_eof then
+              let () = seek_in ic (ic_len - 1) in
+              input_char ic
+            else
+              '\n' in
+          let l = String.length s in
+          let is_crlf =
+            is_crlf && (last_char <> '\n' || l > 0 && s.[l - 1] = '\r')
+          in
+            if drop > 0 then
+              loop is_crlf (drop - 1) []
+            else if at_eof then
+              if is_crlf then
+                let s =
+                  if last_char = '\n' then
+                    s ^ "\n"
+                  else
+                    (* If there's no EOL at EOF, then s cannot be empty *)
+                    String.sub s 0 (l - 1) ^ "\r" ^ String.sub s (l - 1) 1
+                in
+                  let strip_cr s =
+                    let l = String.length s in
+                    String.sub s 0 (l - 2) ^ String.sub s (l - 1) 1
+                  in
+                    List.rev_map strip_cr (s::acc)
+              else
+                let s =
+                  if last_char = '\n' then
+                    s ^ "\n"
+                  else
+                    s
+                in
+                  List.rev (s::acc)
+            else
+              loop is_crlf 0 ((s ^ "\n")::acc)
+      | exception End_of_file ->
+          []
+    in
+      loop true lines_to_drop []
 
 let compare_text_files dropped_lines file1 file2 =
   if read_text_file 0 file1 = read_text_file dropped_lines file2 then
