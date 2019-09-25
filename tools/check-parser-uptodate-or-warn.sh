@@ -33,7 +33,7 @@ fi
 # using either
 #  GNU coreutils' stat --format, or
 #  busybox's stat -c, or
-#  BSD/macos stat -f.
+#  BSD/macOS stat -f.
 # Default to 0 if 'stat' is not available.
 
 stat . 2>/dev/null 1>/dev/null
