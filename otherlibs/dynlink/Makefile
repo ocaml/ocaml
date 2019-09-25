@@ -120,7 +120,7 @@ COMPILERLIBS_SOURCES=\
 # provide .ml files for .mli-only modules---without this, such modules do
 # not seem to be located by the type checker inside bytecode packs.
 
-$(LOCAL_SRC)/Makefile: $(LOCAL_SRC)/Makefile.copy-sources
+$(LOCAL_SRC)/Makefile: $(LOCAL_SRC)/Makefile.copy-sources Makefile
 	cp -f $< $@
 	for ml in $(COMPILERLIBS_SOURCES); do \
           echo "$(LOCAL_SRC)/$$(basename $$ml): $(ROOTDIR)/$$ml" \
