@@ -2,7 +2,7 @@
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
-/*             Jacques-Henri Joudan, projet Gallium, INRIA Paris          */
+/*            Jacques-Henri Jourdan, projet Gallium, INRIA Paris          */
 /*                                                                        */
 /*   Copyright 2016 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
