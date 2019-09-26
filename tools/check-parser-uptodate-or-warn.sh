@@ -15,6 +15,9 @@
 #*                                                                        *
 #**************************************************************************
 
+# stop early if we are not on a development version
+grep -Fq '+dev' VERSION || exit 0
+
 # We try to warn if the user edits parsing/parser.mly but forgets to
 # rebuild the generated parser. Our heuristic is to use the file
 # modification timestamp, but just testing
@@ -24,15 +27,20 @@
 # seconds after boot/menhir/parser.ml.
 
 # mtime(): access a file's last modification time as a timestamp,
-# using either GNU coreutils' stat --format, or BSD/macos stat -f.
+# using either
+#  GNU coreutils' stat --format, or
+#  busybox's stat -c, or
+#  BSD/macOS stat -f.
 # Default to 0 if 'stat' is not available.
 
 stat . 2>/dev/null 1>/dev/null
 if test $? != 0
 then MTIME=""
-elif test -n "$(stat --version 2>/dev/null | grep coreutils)"
+elif stat --version 2>/dev/null | grep -Fq 'coreutils'
 then MTIME="stat --format %Y"
-else MTIME="stat -f %m"
+elif stat 2>&1 | grep -Fq 'busybox'
+then MTIME="stat -c %Y"
+else MTIME="stat -f %m" # BSD stat?
 fi
 
 mtime() {
@@ -45,7 +53,12 @@ mtime() {
 # The check itself
 SOURCE_MTIME=$(mtime parsing/parser.mly)
 GENERATED_MTIME=$(mtime boot/menhir/parser.ml)
-if test $SOURCE_MTIME -gt $(( $GENERATED_MTIME + 10 ))
+if test -z "$SOURCE_MTIME" -o -z "$GENERATED_MTIME"
+then
+  echo
+  tput setaf 3; tput bold; printf "Warning: "; tput sgr0
+  echo "Failed to check if boot/menhir/parser.ml is up-to-date."
+elif test "$SOURCE_MTIME" -gt $(( GENERATED_MTIME + 10 ))
 then
   echo
   tput setaf 3; tput bold; printf "Warning: "; tput sgr0
