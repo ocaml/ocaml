@@ -91,7 +91,7 @@ Ptop_def
                 Pexp_ident "payload" (//toplevel//[2,1+22]..[2,1+29])
           ]
         ptyext_constructor =
-          extension_constructor (//toplevel//[2,1+0]..[2,1+30])
+          extension_constructor (//toplevel//[2,1+0]..[2,1+13])
             pext_name = "Exn"
             pext_kind =
               Pext_decl
@@ -104,11 +104,11 @@ Ptop_def
   [
     structure_item (//toplevel//[4,17+0]..[4,17+50])
       Pstr_modtype "F" (//toplevel//[4,17+12]..[4,17+13])
-        module_type (//toplevel//[4,17+16]..[4,17+50])
+        module_type (//toplevel//[4,17+24]..[4,17+50])
           Pmty_functor "A" (//toplevel//[4,17+25]..[4,17+26])
           module_type (//toplevel//[4,17+29]..[4,17+30])
             Pmty_ident "S" (//toplevel//[4,17+29]..[4,17+30])
-          module_type (//toplevel//[4,17+16]..[4,17+50])
+          module_type (//toplevel//[4,17+32]..[4,17+50])
             Pmty_functor "B" (//toplevel//[4,17+33]..[4,17+34])
             module_type (//toplevel//[4,17+37]..[4,17+38])
               Pmty_ident "S" (//toplevel//[4,17+37]..[4,17+38])
@@ -123,11 +123,11 @@ Ptop_def
     structure_item (//toplevel//[2,1+0]..[2,1+48])
       Pstr_module
       "F" (//toplevel//[2,1+7]..[2,1+8])
-        module_expr (//toplevel//[2,1+11]..[2,1+48])
+        module_expr (//toplevel//[2,1+19]..[2,1+48])
           Pmod_functor "A" (//toplevel//[2,1+20]..[2,1+21])
           module_type (//toplevel//[2,1+24]..[2,1+25])
             Pmty_ident "S" (//toplevel//[2,1+24]..[2,1+25])
-          module_expr (//toplevel//[2,1+11]..[2,1+48])
+          module_expr (//toplevel//[2,1+27]..[2,1+48])
             Pmod_functor "B" (//toplevel//[2,1+28]..[2,1+29])
             module_type (//toplevel//[2,1+32]..[2,1+33])
               Pmty_ident "S" (//toplevel//[2,1+32]..[2,1+33])
@@ -360,8 +360,8 @@ Ptop_def
               Pexp_record
               [
                 "contents" (//toplevel//[4,17+19]..[4,17+27])
-                  expression (//toplevel//[4,17+19]..[4,17+27])
-                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27])
+                  expression (//toplevel//[4,17+19]..[4,17+27]) ghost
+                    Pexp_ident "contents" (//toplevel//[4,17+19]..[4,17+27]) ghost
               ]
               None
       ]
@@ -413,8 +413,8 @@ Ptop_def
                 "contents" (//toplevel//[2,1+19]..[2,1+27])
                   expression (//toplevel//[2,1+19]..[2,1+33]) ghost
                     Pexp_constraint
-                    expression (//toplevel//[2,1+19]..[2,1+33])
-                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27])
+                    expression (//toplevel//[2,1+19]..[2,1+33]) ghost
+                      Pexp_ident "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
                     core_type (//toplevel//[2,1+30]..[2,1+33])
                       Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
                       []
@@ -440,8 +440,8 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27])
-                      pattern (//toplevel//[2,1+19]..[2,1+27])
-                        Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
+                      pattern (//toplevel//[2,1+19]..[2,1+27]) ghost
+                        Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
                   ]
                 expression (//toplevel//[2,1+33]..[2,1+41])
                   Pexp_ident "contents" (//toplevel//[2,1+33]..[2,1+41])
@@ -466,10 +466,10 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27])
-                      pattern (//toplevel//[2,1+19]..[2,1+33])
+                      pattern (//toplevel//[2,1+19]..[2,1+33]) ghost
                         Ppat_constraint
-                        pattern (//toplevel//[2,1+19]..[2,1+33])
-                          Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27])
+                        pattern (//toplevel//[2,1+19]..[2,1+33]) ghost
+                          Ppat_var "contents" (//toplevel//[2,1+19]..[2,1+27]) ghost
                         core_type (//toplevel//[2,1+30]..[2,1+33])
                           Ptyp_constr "int" (//toplevel//[2,1+30]..[2,1+33])
                           []
@@ -497,7 +497,7 @@ Ptop_def
                   Ppat_record Closed
                   [
                     "contents" (//toplevel//[2,1+19]..[2,1+27])
-                      pattern (//toplevel//[2,1+19]..[2,1+37])
+                      pattern (//toplevel//[2,1+19]..[2,1+37]) ghost
                         Ppat_constraint
                         pattern (//toplevel//[2,1+36]..[2,1+37])
                           Ppat_var "i" (//toplevel//[2,1+36]..[2,1+37])
@@ -524,7 +524,7 @@ Ptop_def
             Pexp_open Fresh
             module_expr (//toplevel//[4,19+8]..[4,19+9])
               Pmod_ident "M" (//toplevel//[4,19+8]..[4,19+9])
-            expression (//toplevel//[4,19+8]..[4,19+26])
+            expression (//toplevel//[4,19+10]..[4,19+26])
               Pexp_record
               [
                 "contents" (//toplevel//[4,19+12]..[4,19+20])
@@ -548,7 +548,7 @@ Ptop_def
             Pexp_open Fresh
             module_expr (//toplevel//[2,1+8]..[2,1+9])
               Pmod_ident "M" (//toplevel//[2,1+8]..[2,1+9])
-            expression (//toplevel//[2,1+8]..[2,1+18])
+            expression (//toplevel//[2,1+10]..[2,1+18])
               Pexp_construct "::" (//toplevel//[2,1+12]..[2,1+18]) ghost
               Some
                 expression (//toplevel//[2,1+12]..[2,1+18]) ghost
@@ -866,7 +866,7 @@ Ptop_def
       Pstr_eval
       expression (//toplevel//[4,27+0]..[4,27+6])
         Pexp_apply
-        expression (//toplevel//[4,27+0]..[4,27+6])
+        expression (//toplevel//[4,27+0]..[4,27+6]) ghost
           Pexp_ident ".@()" (//toplevel//[4,27+0]..[4,27+6]) ghost
         [
           <arg>
@@ -887,7 +887,7 @@ Ptop_def
       Pstr_eval
       expression (//toplevel//[1,0+0]..[1,0+11])
         Pexp_apply
-        expression (//toplevel//[1,0+0]..[1,0+11])
+        expression (//toplevel//[1,0+0]..[1,0+11]) ghost
           Pexp_ident ".@()<-" (//toplevel//[1,0+0]..[1,0+11]) ghost
         [
           <arg>
@@ -912,7 +912,7 @@ Ptop_def
       Pstr_eval
       expression (//toplevel//[2,1+0]..[2,1+7])
         Pexp_apply
-        expression (//toplevel//[2,1+0]..[2,1+7])
+        expression (//toplevel//[2,1+0]..[2,1+7]) ghost
           Pexp_ident ".%.{}" (//toplevel//[2,1+0]..[2,1+7]) ghost
         [
           <arg>
@@ -933,7 +933,7 @@ Ptop_def
       Pstr_eval
       expression (//toplevel//[1,0+0]..[1,0+12])
         Pexp_apply
-        expression (//toplevel//[1,0+0]..[1,0+12])
+        expression (//toplevel//[1,0+0]..[1,0+12]) ghost
           Pexp_ident ".%.{}<-" (//toplevel//[1,0+0]..[1,0+12]) ghost
         [
           <arg>
@@ -958,7 +958,7 @@ Ptop_def
       Pstr_eval
       expression (//toplevel//[2,1+0]..[2,1+7])
         Pexp_apply
-        expression (//toplevel//[2,1+0]..[2,1+7])
+        expression (//toplevel//[2,1+0]..[2,1+7]) ghost
           Pexp_ident ".%.[]" (//toplevel//[2,1+0]..[2,1+7]) ghost
         [
           <arg>
@@ -979,7 +979,7 @@ Ptop_def
       Pstr_eval
       expression (//toplevel//[1,0+0]..[1,0+12])
         Pexp_apply
-        expression (//toplevel//[1,0+0]..[1,0+12])
+        expression (//toplevel//[1,0+0]..[1,0+12]) ghost
           Pexp_ident ".%.[]<-" (//toplevel//[1,0+0]..[1,0+12]) ghost
         [
           <arg>
@@ -1012,7 +1012,7 @@ Ptop_def
               <case>
                 pattern (//toplevel//[4,28+17]..[4,28+31])
                   Ppat_constraint
-                  pattern (//toplevel//[4,28+17]..[4,28+31])
+                  pattern (//toplevel//[4,28+25]..[4,28+26])
                     Ppat_unpack "M" (//toplevel//[4,28+25]..[4,28+26])
                   core_type (//toplevel//[4,28+29]..[4,28+30])
                     Ptyp_package "S" (//toplevel//[4,28+29]..[4,28+30])

@@ -5,7 +5,7 @@
       attribute "foo"
         []
       ptyext_constructor =
-        extension_constructor (attributes.ml[8,120+0]..[8,120+28])
+        extension_constructor (attributes.ml[8,120+0]..[8,120+20])
           attribute "foo"
             []
           pext_name = "Foo"
@@ -19,7 +19,7 @@
       attribute "foo"
         []
       ptyext_constructor =
-        extension_constructor (attributes.ml[10,150+0]..[10,150+44])
+        extension_constructor (attributes.ml[10,150+0]..[10,150+36])
           attribute "foo"
             []
           pext_name = "Bar"
@@ -150,7 +150,7 @@
               attribute "foo"
                 []
               ptyext_constructor =
-                extension_constructor (attributes.ml[37,450+2]..[37,450+46])
+                extension_constructor (attributes.ml[37,450+2]..[37,450+38])
                   attribute "foo"
                     []
                   pext_name = "Bar"
