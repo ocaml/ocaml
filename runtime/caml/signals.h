@@ -44,14 +44,12 @@ void caml_record_signal(int signal_number);
 void caml_set_something_to_do (void);
 value caml_check_gc_without_async_callbacks(value root);
 void caml_raise_in_async_callback (value exc);
-void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
 void caml_setup_stack_overflow_detection(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
 CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
-CAMLextern void (* volatile caml_async_action_hook)(void);
 #ifdef POSIX_SIGNALS
 CAMLextern int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *);
 #endif
