@@ -87,6 +87,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #8990: amd64: Emit 32bit registers for Iconst_int when we can
+  (Xavier Clerc, Tom Kelly and Mark Shinwell, review by Xavier Leroy)
+
 - #8672: Optimise Switch code generation on booleans.
   (Stephen Dolan, review by Pierre Chambart)
 
