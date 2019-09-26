@@ -103,6 +103,12 @@ Working version
   be immediate only on 64 bit platforms
   (Jérémie Dimino, review by Vladimir Keleshev)
 
+- #8909: Graph coloring register allocator: the weights put on
+  preference edges should not be divided by 2 in branches of
+  conditional constructs, because it is not good for performance
+  and because it leads to ignoring preference edges with 0 weight.
+  (Eric Stavarache, review by Xavier Leroy)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
