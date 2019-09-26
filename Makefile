@@ -1093,10 +1093,10 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 
 parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
   tools/check-parser-uptodate-or-warn.sh
-	@tools/check-parser-uptodate-or-warn.sh
-	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+	@-tools/check-parser-uptodate-or-warn.sh
+	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 parsing/parser.mli: boot/menhir/parser.mli
-	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 
 beforedepend:: parsing/camlinternalMenhirLib.ml \
   parsing/camlinternalMenhirLib.mli \

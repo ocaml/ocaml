@@ -267,6 +267,9 @@ Working version
   (Vincent Laviron, review by Pierre Chambart and Leo White,
    report by Aleksandr Kuzmenko)
 
+- #8965, #8979: Alpine build failure caused by check-parser-uptodate-or-warn.sh
+  (Gabriel Scherer and David Allsopp, report by Anton Kochkov)
+
 OCaml 4.09 maintenance branch:
 ------------------------------
 
