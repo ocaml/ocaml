@@ -302,8 +302,14 @@ is invoked, it will read phrases from an initialization file before
 giving control to the user. The default file is
 .B .ocamlinit
 in the current directory if it exists, otherwise
+.B XDG_CONFIG_HOME/ocaml/init.ml
+according to the XDG base directory specification lookup if it exists (on
+Windows this is skipped), otherwise
 .B .ocamlinit
-in the user's home directory. You can specify a different initialization file
+in the user's home directory (
+.B HOME
+variable).
+You can specify a different initialization file
 by using the
 .BI \-init \ file
 option, and disable initialization files by using the
@@ -327,7 +333,10 @@ When printing error messages, the toplevel system
 attempts to underline visually the location of the error. It
 consults the TERM variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
-
+.TP
+.B XDG_CONFIG_HOME HOME
+.B .ocamlinit
+lookup procedure (see above).
 .SH SEE ALSO
 .BR ocamlc (1), \ ocamlopt (1), \ ocamlrun (1).
 .br

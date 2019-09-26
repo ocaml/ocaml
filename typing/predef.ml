@@ -127,11 +127,11 @@ let decl_abstr =
    type_is_newtype = false;
    type_expansion_scope = lowest_level;
    type_attributes = [];
-   type_immediate = false;
+   type_immediate = Unknown;
    type_unboxed = unboxed_false_default_false;
   }
 
-let decl_abstr_imm = {decl_abstr with type_immediate = true}
+let decl_abstr_imm = {decl_abstr with type_immediate = Always}
 
 let cstr id args =
   {
@@ -153,11 +153,11 @@ let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
-     type_immediate = true}
+     type_immediate = Always}
   and decl_unit =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_void []]);
-     type_immediate = true}
+     type_immediate = Always}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}

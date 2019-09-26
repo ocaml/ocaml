@@ -1,5 +1,6 @@
 (* TEST
    include testing
+   compare_programs = "false" (* See https://github.com/ocaml/ocaml/pull/8853 *)
 *)
 
 (*

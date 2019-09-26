@@ -134,7 +134,9 @@ case "${OCAML_ARCH}" in
   bsd)
     make=gmake
   ;;
-  macos) ;;
+  macos)
+    confoptions="$confoptions --with-bfd "
+  ;;
   linux)
     check_make_alldepend=true
   ;;

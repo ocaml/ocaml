@@ -544,17 +544,42 @@ let _ =
   Clflags.dlcode := true;
   ()
 
+let find_ocamlinit () =
+  let ocamlinit = ".ocamlinit" in
+  if Sys.file_exists ocamlinit then Some ocamlinit else
+  let getenv var = match Sys.getenv var with
+    | exception Not_found -> None | "" -> None | v -> Some v
+  in
+  let exists_in_dir dir file = match dir with
+    | None -> None
+    | Some dir ->
+        let file = Filename.concat dir file in
+        if Sys.file_exists file then Some file else None
+  in
+  let home_dir () = getenv "HOME" in
+  let config_dir () =
+    if Sys.win32 then None else
+    match getenv "XDG_CONFIG_HOME" with
+    | Some _ as v -> v
+    | None ->
+        match home_dir () with
+        | None -> None
+        | Some dir -> Some (Filename.concat dir ".config")
+  in
+  let init_ml = Filename.concat "ocaml" "init.ml" in
+  match exists_in_dir (config_dir ()) init_ml with
+  | Some _ as v -> v
+  | None -> exists_in_dir (home_dir ()) ocamlinit
+
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
   | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
               else fprintf ppf "Init file not found: \"%s\".@." f
   | None ->
-     if Sys.file_exists ".ocamlinit" then ignore (use_silently ppf ".ocamlinit")
-     else try
-       let home_init = Filename.concat (Sys.getenv "HOME") ".ocamlinit" in
-       if Sys.file_exists home_init then ignore (use_silently ppf home_init)
-     with Not_found -> ()
+      match find_ocamlinit () with
+      | None -> ()
+      | Some file -> ignore (use_silently ppf file)
 ;;
 
 let set_paths () =

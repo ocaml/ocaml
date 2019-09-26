@@ -1200,7 +1200,7 @@ and class_expr_aux cl_num val_env met_env scl =
              ((id', expr)
               :: vals,
               Env.add_value id' desc met_env))
-          (let_bound_idents_with_loc defs)
+          (let_bound_idents_full defs)
           ([], met_env)
       in
       let cl = class_expr cl_num val_env met_env scl' in
@@ -1304,7 +1304,7 @@ let temp_abbrev loc env id arity =
        type_expansion_scope = Btype.lowest_level;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
-       type_immediate = false;
+       type_immediate = Unknown;
        type_unboxed = unboxed_false_default_false;
       }
       env
@@ -1554,7 +1554,7 @@ let class_infos define_class kind
      type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
-     type_immediate = false;
+     type_immediate = Unknown;
      type_unboxed = unboxed_false_default_false;
     }
   in
@@ -1574,7 +1574,7 @@ let class_infos define_class kind
      type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
-     type_immediate = false;
+     type_immediate = Unknown;
      type_unboxed = unboxed_false_default_false;
     }
   in

@@ -22,7 +22,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 module String = Misc.Stdlib.String
 
@@ -56,6 +56,9 @@ let fastcode_flag = ref true
 let stack_offset = ref 0
 
 (* Layout of the stack frame *)
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
 
 let frame_size () =                     (* includes return address *)
   let sz =
@@ -490,7 +493,7 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    assert (Proc.prologue_required ());
+    assert (!prologue_required);
     let n = frame_size() - 4 in
     if n > 0 then  begin
       I.sub (int n) esp;
@@ -912,7 +915,7 @@ let rec emit_all fallthrough i =
   | _ ->
       emit_instr fallthrough i;
       emit_all
-        (system = S_win32 || Linearize.has_fallthrough i.desc)
+        (system = S_win32 || Linear.has_fallthrough i.desc)
         i.next
 
 (* Emission of a function declaration *)
@@ -925,6 +928,10 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
   emit_named_text_section !function_name;
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);

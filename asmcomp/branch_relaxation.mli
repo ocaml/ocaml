@@ -18,7 +18,7 @@
 
 module Make (T : Branch_relaxation_intf.S) : sig
   val relax
-     : Linearize.instruction
+     : Linear.instruction
     (* [max_offset_of_out_of_line_code] specifies the furthest distance,
        measured from the first address immediately after the last instruction
        of the function, that may be branched to from within the function in

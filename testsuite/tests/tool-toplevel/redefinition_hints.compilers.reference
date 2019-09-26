@@ -1,11 +1,11 @@
-module Empty : sig  end
+module Empty : sig end
 type u = A
 type v = B
-module type S = sig  end
+module type S = sig end
 val m : (module S) = <module>
 module M : sig type 'a t = X of 'a end
 val x : (u * v * (module S)) M.t = M.X (A, B, <module>)
-module type S = sig  end
+module type S = sig end
 val m : (module S) = <module>
 type u = A
 type v = B

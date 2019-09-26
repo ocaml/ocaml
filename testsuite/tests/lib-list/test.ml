@@ -26,6 +26,13 @@ let () =
   assert (not (List.exists (fun a -> a > 9) l));
   assert (List.exists (fun _ -> true) l);
 
+  begin
+    let f ~limit a = if a >= limit then Some (a, limit) else None in
+    assert (List.find_map (f ~limit:3) [] = None);
+    assert (List.find_map (f ~limit:3) l = Some (3, 3));
+    assert (List.find_map (f ~limit:30) l = None);
+  end;
+
   assert (List.compare_lengths [] [] = 0);
   assert (List.compare_lengths [1;2] ['a';'b'] = 0);
   assert (List.compare_lengths [] [1;2] < 0);

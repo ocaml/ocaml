@@ -37,7 +37,6 @@ type type_forcing_context =
   | Assert_condition
   | Sequence_left_hand_side
   | When_guard
-  | Application of Typedtree.expression
 
 (* The combination of a type and a "type forcing context". The intent is that it
    describes a type that is "expected" (required) by the context. If unifying
@@ -105,7 +104,6 @@ val type_argument:
 val option_some: Env.t -> Typedtree.expression -> Typedtree.expression
 val option_none: Env.t -> type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
-val iter_pattern: (Typedtree.pattern -> unit) -> Typedtree.pattern -> unit
 val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit

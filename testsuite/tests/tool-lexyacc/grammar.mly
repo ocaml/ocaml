@@ -3,6 +3,11 @@
 %{
 open Syntax
 open Gram_aux
+
+(* test f' '"' *)
+let () =
+  let f' = ignore in
+  f' '"'
 %}
 
 %token <string> Tident

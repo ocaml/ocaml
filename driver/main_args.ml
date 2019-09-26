@@ -412,6 +412,11 @@ let mk_output_complete_obj f =
   " Output an object file, including runtime, instead of an executable"
 ;;
 
+let mk_output_complete_exe f =
+  "-output-complete-exe", Arg.Unit f,
+  " Output a self-contained executable, including runtime and C stubs"
+;;
+
 let mk_p f =
   "-p", Arg.Unit f, " (no longer supported)"
 ;;
@@ -999,6 +1004,7 @@ module type Bytecomp_options = sig
   val _make_runtime : unit -> unit
   val _vmthread : unit -> unit
   val _use_runtime : string -> unit
+  val _output_complete_exe : unit -> unit
 
   val _dinstr : unit -> unit
   val _dcamlprimc : unit -> unit
@@ -1160,6 +1166,7 @@ struct
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
+    mk_output_complete_exe F._output_complete_exe;
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;

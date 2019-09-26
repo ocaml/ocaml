@@ -18,6 +18,7 @@
 ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
@@ -58,9 +59,3 @@ skeleton.$(O): defs.h
 symtab.$(O): defs.h
 verbose.$(O): defs.h
 warshall.$(O): defs.h
-
-# The following rule is similar to make's default one, except that it
-# also works for .obj files.
-
-%.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

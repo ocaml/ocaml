@@ -16,4 +16,4 @@
 
 (* Linear scan register allocation. *)
 
-val allocate_registers: unit -> unit
+val allocate_registers: unit -> int array

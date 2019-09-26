@@ -66,9 +66,12 @@ its contents are read as a sequence of OCaml phrases
 and executed as per the "#use" directive
 described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
-If the current directory does not contain an ".ocamlinit" file, but
-the user's home directory (environment variable "HOME") does, the
-latter is read and executed as described below.
+If the current directory does not contain an ".ocamlinit" file,
+the file "XDG_CONFIG_HOME/ocaml/init.ml" is looked up according
+to the XDG base directory specification and used instead (on Windows
+this is skipped). If that file doesn't exist then an [.ocamlinit] file
+in the users' home directory (determined via environment variable "HOME") is
+used if existing.
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
@@ -132,7 +135,8 @@ attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 
-\item["HOME"] Directory where the ".ocamlinit" file is searched.
+\item["XDG_CONFIG_HOME", "HOME"]
+".ocamlinit" lookup procedure (see above).
 \end{options}
 \end{unix}
 

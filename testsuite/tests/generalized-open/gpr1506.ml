@@ -77,7 +77,7 @@ Line 3, characters 7-20:
 3 |   open M(struct end)
            ^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
-       functor (X : sig  end) -> sig  end
+       functor (X : sig end) -> sig end
 |}]
 
 open struct
@@ -298,7 +298,7 @@ module N = struct
     assert(y = 1)
 end
 [%%expect{|
-module N : sig  end
+module N : sig end
 |}]
 
 module M = struct
@@ -314,7 +314,7 @@ module M = struct
   end
 end
 [%%expect{|
-module M : sig  end
+module M : sig end
 |}]
 
 (* It was decided to not allow this anymore *)
@@ -385,5 +385,5 @@ Line 1, characters 20-53:
 1 | let f () = let open functor(X: sig end) -> struct end in ();;
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
-       functor (X : sig  end) -> sig  end
+       functor (X : sig end) -> sig end
 |}]
