@@ -8,6 +8,10 @@ OCaml 4.09 maintenance branch:
 - #8965, #8979: Alpine build failure caused by check-parser-uptodate-or-warn.sh
   (Gabriel Scherer and David Allsopp, report by Anton Kochkov)
 
+- #8985, #8986: fix generation of the primitives when the locale collation is
+  incompatible with C.
+  (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
+
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------
 
