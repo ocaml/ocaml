@@ -24,7 +24,7 @@ let (counters : (string, int) Hashtbl.t) = Hashtbl.create 10
 let get_logfile_name base =
   let n = try Hashtbl.find counters base with Not_found -> 1 in
   let filename = Printf.sprintf "strace-%s_%d.log" base n in
-  Hashtbl.add counters base (n+1);
+  Hashtbl.replace counters base (n+1);
   filename
 
 let _ =

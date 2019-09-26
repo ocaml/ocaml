@@ -115,7 +115,7 @@ let run_cmd
       in
       let strace_flags = Environments.safe_lookup Strace.strace_flags env in
       let strace_cmd =
-        ["strace -f -o"; strace_logfile; strace_flags]
+        ["strace"; "-f"; "-o"; strace_logfile; strace_flags]
       in
       strace_cmd @ original_cmd
     end else original_cmd
