@@ -113,8 +113,6 @@ let test tst ppf arg =
   | Ieventest -> fprintf ppf "%a & 1 == 0" reg arg.(0)
   | Ioddtest -> fprintf ppf "%a & 1 == 1" reg arg.(0)
 
-let print_live = ref false
-
 let operation op arg ppf res =
   if Array.length res > 0 then fprintf ppf "%a := " regs res;
   match op with
@@ -169,7 +167,7 @@ let operation op arg ppf res =
       Arch.print_specific_operation reg op ppf arg
 
 let rec instr ppf i =
-  if !print_live then begin
+  if !Clflags.dump_live then begin
     fprintf ppf "@[<1>{%a" regsetaddr i.live;
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";
