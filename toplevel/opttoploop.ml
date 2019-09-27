@@ -257,7 +257,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   else
     Asmgen.compile_implementation_flambda
       ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
-      (Flambda_middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
+      (Flambda_middle_end.middle_end ~ppf_dump:ppf ~prefixname:fn ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
