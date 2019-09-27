@@ -30,8 +30,17 @@
 extern "C" {
 #endif
 
-CAMLextern void caml_enter_blocking_section (void);
-CAMLextern void caml_leave_blocking_section (void);
+CAMLextern void caml_enter_blocking_section (void); // raises
+CAMLextern void caml_leave_blocking_section (void); // raises
+
+CAMLextern value caml_enter_blocking_section_exn (void);
+/* Same as [caml_enter_blocking_section], but return the exception if
+   any. The runtime lock is held upon return if and only if the result
+   satisfies Is_exception_result. */
+
+CAMLextern value caml_leave_blocking_section_exn (void);
+/* Same as [caml_leave_blocking_section], but return the exception if
+   any. The runtime lock is held upon return in all cases. */
 
 CAMLextern void caml_process_pending_actions (void);
 /* Checks for pending actions and executes them. This includes pending
