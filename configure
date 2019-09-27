@@ -16778,9 +16778,9 @@ case $host in #(
 esac
 
 if test x"$enable_stdlib_manpages" != "xno"; then :
-  stdlib_manpages=manpages
+  stdlib_manpages=true
 else
-  stdlib_manpages=
+  stdlib_manpages=false
 fi
 
 cat >confcache <<\_ACEOF

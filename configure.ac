@@ -1788,6 +1788,6 @@ AS_CASE([$host],
     AC_DEFINE([HAS_NICE])])
 
 AS_IF([test x"$enable_stdlib_manpages" != "xno"],
-  [stdlib_manpages=manpages],[stdlib_manpages=])
+  [stdlib_manpages=true],[stdlib_manpages=false])
 
 AC_OUTPUT
