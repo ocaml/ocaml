@@ -1051,6 +1051,7 @@ module type Optcommon_options = sig
   val _insn_sched : unit -> unit
   val _no_insn_sched : unit -> unit
   val _linscan : unit -> unit
+  val _no_float_const_prop : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -1083,7 +1084,6 @@ module type Optcomp_options = sig
   include Core_options
   include Compiler_options
   include Optcommon_options
-  val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
   val _pp : string -> unit
@@ -1471,6 +1471,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_linscan F._linscan;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
+    mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
     mk_nolabels F._nolabels;
@@ -1765,6 +1766,7 @@ module Default = struct
     let _insn_sched = set insn_sched
     let _no_insn_sched = clear insn_sched
     let _linscan = set use_linscan
+    let _no_float_const_prop = clear float_const_prop
     let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
     let _no_unbox_specialised_args = clear unbox_specialised_args
     (* CR-someday mshinwell: should stop e.g. -O2 -classic-inlining
@@ -1894,7 +1896,6 @@ module Default = struct
       assert Config.function_sections;
       first_ccopts := ("-ffunction-sections" :: (!first_ccopts));
       function_sections := true
-    let _no_float_const_prop = clear float_const_prop
     let _nodynlink = clear dlcode
     let _output_complete_obj () =
       set output_c_object (); set output_complete_object ()

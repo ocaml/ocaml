@@ -190,6 +190,7 @@ module type Optcommon_options = sig
   val _insn_sched : unit -> unit
   val _no_insn_sched : unit -> unit
   val _linscan : unit -> unit
+  val _no_float_const_prop : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -222,7 +223,6 @@ module type Optcomp_options = sig
   include Core_options
   include Compiler_options
   include Optcommon_options
-  val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
   val _pp : string -> unit
