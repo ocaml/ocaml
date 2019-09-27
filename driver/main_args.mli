@@ -216,6 +216,7 @@ module type Optcommon_options = sig
   val _dreload : unit -> unit
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
+  val _dinterval : unit -> unit
   val _dstartup :  unit -> unit
 end;;
 
@@ -230,7 +231,6 @@ module type Optcomp_options = sig
   val _shared : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
-  val _dinterval : unit -> unit
   val _function_sections : unit -> unit
 end;;
 

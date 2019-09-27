@@ -1077,6 +1077,7 @@ module type Optcommon_options = sig
   val _dreload : unit -> unit
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
+  val _dinterval : unit -> unit
   val _dstartup :  unit -> unit
 end;;
 
@@ -1091,7 +1092,6 @@ module type Optcomp_options = sig
   val _shared : unit -> unit
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
-  val _dinterval : unit -> unit
   val _function_sections : unit -> unit
 end;;
 
@@ -1539,6 +1539,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dreload F._dreload;
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
+    mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
   ]
@@ -1708,6 +1709,7 @@ module Default = struct
     let _dflambda_no_invariants = clear flambda_invariant_checks
     let _dflambda_verbose () =
       set dump_flambda (); set dump_flambda_verbose ()
+    let _dinterval = set dump_interval
     let _dinterf = set dump_interf
     let _dlinear = set dump_linear
     let _dlive () = dump_live := true
@@ -1891,7 +1893,6 @@ module Default = struct
     include Compiler
     let _afl_inst_ratio n = afl_inst_ratio := n
     let _afl_instrument = set afl_instrument
-    let _dinterval = set dump_interval
     let _function_sections () =
       assert Config.function_sections;
       first_ccopts := ("-ffunction-sections" :: (!first_ccopts));
