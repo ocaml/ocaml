@@ -74,7 +74,6 @@ odoc_analyse.cmi : \
     odoc_module.cmo \
     odoc_global.cmi
 odoc_args.cmo : \
-    ../utils/warnings.cmi \
     odoc_types.cmi \
     odoc_texi.cmo \
     odoc_messages.cmo \
@@ -87,11 +86,8 @@ odoc_args.cmo : \
     odoc_config.cmi \
     ../driver/main_args.cmi \
     ../utils/config.cmi \
-    ../driver/compenv.cmi \
-    ../utils/clflags.cmi \
     odoc_args.cmi
 odoc_args.cmx : \
-    ../utils/warnings.cmx \
     odoc_types.cmx \
     odoc_texi.cmx \
     odoc_messages.cmx \
@@ -104,8 +100,6 @@ odoc_args.cmx : \
     odoc_config.cmx \
     ../driver/main_args.cmx \
     ../utils/config.cmx \
-    ../driver/compenv.cmx \
-    ../utils/clflags.cmx \
     odoc_args.cmi
 odoc_args.cmi : \
     odoc_gen.cmi

@@ -197,46 +197,10 @@ let anonymous f =
   Odoc_global.files := !Odoc_global.files @ [sf]
 
 module Options = Main_args.Make_ocamldoc_options(struct
-  let set r () = r := true
-  let unset r () = r := false
-  let _absname = set Clflags.absname
-  let _alert = Warnings.parse_alert_option
-  let _I s = Odoc_global.include_dirs := s :: !Odoc_global.include_dirs
-  let _impl s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Impl_file s]
-  let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
-  let _intf_suffix s = Config.interface_suffix := s
-  let _labels = unset Clflags.classic
-  let _alias_deps = unset Clflags.transparent_modules
-  let _no_alias_deps = set Clflags.transparent_modules
-  let _app_funct = set Clflags.applicative_functors
-  let _no_app_funct = unset Clflags.applicative_functors
-  let _noassert = set Clflags.noassert
-  let _nolabels = set Clflags.classic
-  let _nostdlib = set Clflags.no_std_include
-  let _open s = Clflags.open_modules := s :: !Clflags.open_modules
-  let _pp s = Clflags.preprocessor := Some s
-  let _ppx s = Clflags.all_ppx := s :: !Clflags.all_ppx
-  let _principal = set Clflags.principal
-  let _no_principal = unset Clflags.principal
-  let _rectypes = set Clflags.recursive_types
-  let _no_rectypes = unset Clflags.recursive_types
-  let _safe_string = unset Clflags.unsafe_string
-  let _short_paths = unset Clflags.real_paths
-  let _strict_sequence = set Clflags.strict_sequence
-  let _no_strict_sequence = unset Clflags.strict_sequence
-  let _strict_formats = set Clflags.strict_formats
-  let _no_strict_formats = unset Clflags.strict_formats
-  let _thread = set Clflags.use_threads
-  let _vmthread = ignore
-  let _unboxed_types = set Clflags.unboxed_types
-  let _no_unboxed_types = unset Clflags.unboxed_types
-  let _unsafe_string = set Clflags.unsafe_string
-  let _v () = Compenv.print_version_and_library "documentation generator"
-  let _version = Compenv.print_version_string
-  let _vnum = Compenv.print_version_string
-  let _w = (Warnings.parse_options false)
-  let _verbose = set Clflags.verbose
-  let anonymous = anonymous
+    include Main_args.Default.Odoc_args
+    let _I s = Odoc_global.include_dirs := s :: !Odoc_global.include_dirs
+    let _impl s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Impl_file s]
+    let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
 end)
 
 (** The default option list *)

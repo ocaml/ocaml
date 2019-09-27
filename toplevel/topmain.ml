@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Clflags
 open Compenv
 
 let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
@@ -81,15 +80,6 @@ let file_argument name =
       else exit 2
     end
 
-let print_version () =
-  Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
-  exit 0;
-;;
-
-let print_version_num () =
-  Printf.printf "%s\n" Sys.ocaml_version;
-  exit 0;
-;;
 
 let wrap_expand f s =
   let start = !current in
@@ -98,63 +88,11 @@ let wrap_expand f s =
   arr
 
 module Options = Main_args.Make_bytetop_options (struct
-  let set r () = r := true
-  let clear r () = r := false
-
-  let _absname = set Clflags.absname
-  let _alert = Warnings.parse_alert_option
-  let _I dir = include_dirs := dir :: !include_dirs
-  let _init s = init_file := Some s
-  let _noinit = set noinit
-  let _labels = clear classic
-  let _alias_deps = clear transparent_modules
-  let _no_alias_deps = set transparent_modules
-  let _app_funct = set applicative_functors
-  let _no_app_funct = clear applicative_functors
-  let _noassert = set noassert
-  let _nolabels = set classic
-  let _noprompt = set noprompt
-  let _nopromptcont = set nopromptcont
-  let _nostdlib = set no_std_include
-  let _nopervasives = set nopervasives
-  let _open s = open_modules := s :: !open_modules
-  let _ppx s = first_ppx := s :: !first_ppx
-  let _principal = set principal
-  let _no_principal = clear principal
-  let _rectypes = set recursive_types
-  let _no_rectypes = clear recursive_types
-  let _safe_string = clear unsafe_string
-  let _short_paths = clear real_paths
-  let _stdin () = file_argument ""
-  let _strict_sequence = set strict_sequence
-  let _no_strict_sequence = clear strict_sequence
-  let _strict_formats = set strict_formats
-  let _no_strict_formats = clear strict_formats
-  let _unboxed_types = set unboxed_types
-  let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set unsafe
-  let _unsafe_string = set unsafe_string
-  let _version () = print_version ()
-  let _vnum () = print_version_num ()
-  let _no_version = set noversion
-  let _w s = Warnings.parse_options false s
-  let _warn_error s = Warnings.parse_options true s
-  let _warn_help = Warnings.help_warnings
-  let _dparsetree = set dump_parsetree
-  let _dtypedtree = set dump_typedtree
-  let _dno_unique_ids = clear unique_ids
-  let _dunique_ids = set unique_ids
-  let _dsource = set dump_source
-  let _drawlambda = set dump_rawlambda
-  let _dlambda = set dump_lambda
-  let _dinstr = set dump_instr
-  let _color = Misc.set_or_ignore color_reader.parse color
-  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
-
-  let _args = wrap_expand Arg.read_arg
-  let _args0 = wrap_expand Arg.read_arg0
-
-  let anonymous s = file_argument s
+    include Main_args.Default.Topmain
+    let _stdin () = file_argument ""
+    let _args = wrap_expand Arg.read_arg
+    let _args0 = wrap_expand Arg.read_arg0
+    let anonymous s = file_argument s
 end);;
 
 let () =

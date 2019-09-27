@@ -16,8 +16,6 @@
 (* ATTENTION ! When you add or modify a parsing or typing option, do not forget
   to update ocamldoc options too, in odoc_args.ml. *)
 
-
-
 module type Common_options = sig
   val _absname : unit -> unit
   val _alert : string -> unit
@@ -274,3 +272,11 @@ val options_with_command_line_syntax
   : (string * Arg.spec * string) list
   -> string list ref
   -> (string * Arg.spec * string) list
+
+module Default: sig
+  module Topmain: Bytetop_options
+  module Opttopmain: Opttop_options
+  module Main: Bytecomp_options
+  module Optmain: Optcomp_options
+  module Odoc_args: Ocamldoc_options
+end
