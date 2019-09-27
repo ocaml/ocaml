@@ -230,27 +230,12 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _vmthread = ignore
   let _unboxed_types = set Clflags.unboxed_types
   let _no_unboxed_types = unset Clflags.unboxed_types
-  let _unsafe () = assert false
   let _unsafe_string = set Clflags.unsafe_string
   let _v () = Compenv.print_version_and_library "documentation generator"
   let _version = Compenv.print_version_string
   let _vnum = Compenv.print_version_string
   let _w = (Warnings.parse_options false)
-  let _warn_error _ = assert false
-  let _warn_help _ = assert false
-  let _where = Compenv.print_standard_library
   let _verbose = set Clflags.verbose
-  let _nopervasives = set Clflags.nopervasives
-  let _dno_unique_ids = unset Clflags.unique_ids
-  let _dunique_ids = set Clflags.unique_ids
-  let _dsource = set Clflags.dump_source
-  let _dparsetree = set Clflags.dump_parsetree
-  let _dtypedtree = set Clflags.dump_typedtree
-  let _drawlambda = set Clflags.dump_rawlambda
-  let _dlambda = set Clflags.dump_lambda
-  let _dflambda = set Clflags.dump_flambda
-  let _dinstr = set Clflags.dump_instr
-  let _dcamlprimc = set Clflags.keep_camlprimc_file
   let anonymous = anonymous
 end)
 
