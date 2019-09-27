@@ -147,9 +147,6 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dsource = set dump_source
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
-  let _dflambda = set dump_flambda
-  let _dtimings () = profile_columns := [ `Time ]
-  let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
   let _color = Misc.set_or_ignore color_reader.parse color
   let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
