@@ -50,6 +50,14 @@ module List = struct
   let rec concatmap f = function
     | [] -> []
     | x::xs -> (f x) @ (concatmap f xs)
+
+  let rec drop_first n l =
+    if n = 0 then
+      l
+    else
+      match l with
+      | _::xs -> drop_first (n - 1) xs
+      | [] -> []
 end
 
 module String = struct

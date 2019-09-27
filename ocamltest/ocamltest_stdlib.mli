@@ -36,6 +36,7 @@ end
 module List : sig
   include module type of List
   val concatmap : ('a -> 'b list) -> 'a list -> 'b list
+  val drop_first : int -> 'a list -> 'a list
 end
 
 module String : sig
