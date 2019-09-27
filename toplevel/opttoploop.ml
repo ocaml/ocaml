@@ -262,7 +262,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     else Closure_middle_end.lambda_to_clambda
   in
   Asmgen.compile_implementation ~toplevel:need_symbol
-    ~backend ~filename ~prefixname:""
+    ~backend ~filename ~prefixname:filename
     ~middle_end ~ppf_dump:ppf program;
   Asmlink.call_linker_shared [filename ^ ext_obj] dll;
   Sys.remove (filename ^ ext_obj);
