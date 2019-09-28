@@ -136,8 +136,6 @@ static void default_fatal_uncaught_exception(value exn, int output_stderr)
   caml_stat_free(msg);
 }
 
-int caml_abort_on_uncaught_exn = 0; /* see afl.c */
-
 void caml_fatal_uncaught_exception(value exn)
 {
   const value *handle_uncaught_exception;
@@ -161,9 +159,5 @@ void caml_fatal_uncaught_exception(value exn)
   else
     default_fatal_uncaught_exception(exn, output_stderr);
   /* Terminate the process */
-  if (caml_abort_on_uncaught_exn) {
-    abort();
-  } else {
-    exit(2);
-  }
+  exit(2);
 }
