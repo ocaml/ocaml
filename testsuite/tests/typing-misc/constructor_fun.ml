@@ -46,6 +46,14 @@ let _ = constr ~a:2 ~b:3.;;
 - : t = Constr {a = 2; b = 3.}
 |}]
 
+(* Gadt *)
+type _ t = Constr : int * int -> int t
+let constr = (Constr);;
+[%%expect{|
+type _ t = Constr : int * int -> int t
+val constr : int -> int -> int t = <fun>
+|}]
+
 (** Disabled *)
 
 let some = Some;;
@@ -71,6 +79,6 @@ let constr = Constr;;
 Line 1, characters 13-19:
 1 | let constr = Constr;;
                  ^^^^^^
-Error: The constructor Constr expects 1 argument(s),
+Error: The constructor Constr expects 2 argument(s),
        but is applied here to 0 argument(s)
 |}]
