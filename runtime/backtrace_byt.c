@@ -222,14 +222,6 @@ CAMLprim value caml_remove_debug_info(code_t start)
   CAMLreturn(Val_unit);
 }
 
-int caml_alloc_backtrace_buffer(void){
-  CAMLassert(Caml_state->backtrace_pos == 0);
-  Caml_state->backtrace_buffer =
-    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-  if (Caml_state->backtrace_buffer == NULL) return -1;
-  return 0;
-}
-
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 

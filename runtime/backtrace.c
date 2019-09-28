@@ -181,6 +181,15 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLreturn(res);
 }
 
+int caml_alloc_backtrace_buffer(void)
+{
+  CAMLassert(Caml_state->backtrace_pos == 0);
+  Caml_state->backtrace_buffer =
+    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+  if (Caml_state->backtrace_buffer == NULL) return -1;
+  return 0;
+}
+
 /* Copy back a backtrace and exception to the global state.
    This function should be used only with Printexc.raw_backtrace */
 /* noalloc (caml value): so no CAMLparam* CAMLreturn* */
