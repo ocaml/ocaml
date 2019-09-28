@@ -3079,6 +3079,11 @@ OCaml 4.05.0 (13 Jul 2017):
 
 ### Standard library:
 
+- #1229: Add functions to Format module for printing strings conditionally
+  on line breaks.
+  (Josh Berdine, Guillaume Petiot,
+   review by Richard Bonichon, Gabriel Scherer and Vladimir Keleshev)
+
 - #6975, #902: Truncate function added to stdlib Buffer module
   (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
 
