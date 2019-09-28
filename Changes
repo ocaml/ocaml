@@ -18,6 +18,16 @@ Working version
 - #6662, #8908: Add "module _ = X" syntax
   (Thomas Refis, review by Gabriel Radanne)
 
+- #8993: New C functions caml_process_pending_actions{,_exn} in
+  caml/signals.h, intended for executing all pending actions inside
+  long-running C functions (requested minor and major collections,
+  signal handlers, finalisers, and memprof callbacks). The function
+  caml_process_pending_actions_exn returns any exception arising
+  during their execution, allowing resources to be cleaned-up before
+  re-raising.
+  (Guillaume Munch-Maccagnoni, review by Jacques-Henri Jourdan,
+   Stephen Dolan, and Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #8844: Printing faulty constructors, inline records fields and their types
