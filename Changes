@@ -77,6 +77,11 @@ Working version
     in Typecore and Typedtree
   (Gabriel Scherer, review by Thomas Refis)
 
+- #8975: "ocamltests" files are no longer required or used by
+  "ocamltest". Instead, any text file in the testsuite directory containing a
+  valid "TEST" block will be automatically included in the testsuite.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.
