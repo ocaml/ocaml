@@ -20,64 +20,66 @@
 
 P ?= stdlib__
 
+# Modules should be listed in dependency order.
+
 STDLIB_MODULES=\
-  $(P)spacetime \
-  $(P)arg \
-  $(P)array \
-  $(P)arrayLabels \
-  $(P)bigarray \
-  $(P)bool \
-  $(P)buffer \
-  $(P)bytes \
-  $(P)bytesLabels \
-  $(P)callback \
-  camlinternalFormat \
   camlinternalFormatBasics \
-  camlinternalLazy \
-  camlinternalMod \
-  camlinternalOO \
+  stdlib \
+  $(P)pervasives \
+  $(P)seq \
+  $(P)option \
+  $(P)result \
+  $(P)bool \
   $(P)char \
-  $(P)complex \
-  $(P)digest \
-  $(P)ephemeron \
-  $(P)filename \
+  $(P)uchar \
+  $(P)sys \
+  $(P)list \
+  $(P)bytes \
+  $(P)string \
+  $(P)unit \
+  $(P)marshal \
+  $(P)obj \
+  $(P)array \
   $(P)float \
-  $(P)format \
-  $(P)fun \
-  $(P)gc \
-  $(P)genlex \
-  $(P)hashtbl \
   $(P)int \
   $(P)int32 \
   $(P)int64 \
-  $(P)lazy \
-  $(P)lexing \
-  $(P)list \
-  $(P)listLabels \
-  $(P)map \
-  $(P)marshal \
-  $(P)moreLabels \
   $(P)nativeint \
-  $(P)obj \
-  $(P)oo \
-  $(P)option \
+  $(P)lexing \
   $(P)parsing \
-  $(P)pervasives \
-  $(P)printexc \
-  $(P)printf \
-  $(P)queue \
-  $(P)random \
-  $(P)result \
-  $(P)scanf \
-  $(P)seq \
   $(P)set \
+  $(P)map \
   $(P)stack \
-  $(P)stdLabels \
-  stdlib \
+  $(P)queue \
+  camlinternalLazy \
+  $(P)lazy \
   $(P)stream \
-  $(P)string \
+  $(P)buffer \
+  camlinternalFormat \
+  $(P)printf \
+  $(P)arg \
+  $(P)printexc \
+  $(P)fun \
+  $(P)gc \
+  $(P)digest \
+  $(P)random \
+  $(P)hashtbl \
+  $(P)weak \
+  $(P)format \
+  $(P)scanf \
+  $(P)callback \
+  camlinternalOO \
+  $(P)oo \
+  camlinternalMod \
+  $(P)genlex \
+  $(P)ephemeron \
+  $(P)filename \
+  $(P)complex \
+  $(P)arrayLabels \
+  $(P)listLabels \
+  $(P)bytesLabels \
   $(P)stringLabels \
-  $(P)sys \
-  $(P)uchar \
-  $(P)unit \
-  $(P)weak
+  $(P)moreLabels \
+  $(P)stdLabels \
+  $(P)spacetime \
+  $(P)bigarray
