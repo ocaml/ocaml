@@ -233,6 +233,22 @@ Additionally, there are some developer specific targets in link:Makefile.dev[].
 These targets are automatically available when working in a Git clone of the
 repository, but are not available from a tarball.
 
+=== Automatic configure options
+
+If you have options to `configure` which you always (or at least frequently)
+use, it's possible to store them in Git, and `configure` will automatically add
+them. For example, you may wish to avoid building the debug runtime by default
+while developing, in which case you can issue
+`git config --global ocaml.configure '--disable-debug-runtime'`. The `configure`
+script will alert you that it has picked up this option and added it _before_
+any options you specified for `configure`.
+
+Options are added before those passed on the command line, so it's possible to
+override them, for example `./configure --enable-debug-runtime` will build the
+debug runtime, since the enable flag appears after the disable flag. You can
+also use the full power of Git's `config` command and have options specific to
+particular clone or worktree.
+
 === Bootstrapping
 
 The OCaml compiler is bootstrapped. This means that
