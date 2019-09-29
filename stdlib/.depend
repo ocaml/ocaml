@@ -324,6 +324,20 @@ stdlib__hashtbl.cmx : \
     stdlib__hashtbl.cmi
 stdlib__hashtbl.cmi : \
     stdlib__seq.cmi
+stdlib__in_channel.cmo : \
+    stdlib__seq.cmi \
+    stdlib__option.cmi \
+    stdlib__list.cmi \
+    stdlib__fun.cmi \
+    stdlib__in_channel.cmi
+stdlib__in_channel.cmx : \
+    stdlib__seq.cmx \
+    stdlib__option.cmx \
+    stdlib__list.cmx \
+    stdlib__fun.cmx \
+    stdlib__in_channel.cmi
+stdlib__in_channel.cmi : \
+    stdlib__seq.cmi
 stdlib__int.cmo : \
     stdlib.cmi \
     stdlib__int.cmi
@@ -455,6 +469,15 @@ stdlib__option.cmx : \
     stdlib__option.cmi
 stdlib__option.cmi : \
     stdlib__seq.cmi
+stdlib__out_channel.cmo : \
+    stdlib__list.cmi \
+    stdlib__fun.cmi \
+    stdlib__out_channel.cmi
+stdlib__out_channel.cmx : \
+    stdlib__list.cmx \
+    stdlib__fun.cmx \
+    stdlib__out_channel.cmi
+stdlib__out_channel.cmi :
 stdlib__parsing.cmo : \
     stdlib__obj.cmi \
     stdlib__lexing.cmi \
