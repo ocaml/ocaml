@@ -304,11 +304,9 @@ endif
 utils/config.ml: utils/config.mlp Makefile.config utils/Makefile Makefile
 	$(MAKE) -C utils config.ml
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: reconfigure
 reconfigure:
 	./configure $(CONFIGURE_ARGS)
-endif
 
 .PHONY: partialclean
 partialclean::
