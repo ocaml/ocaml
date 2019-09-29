@@ -266,7 +266,9 @@ Working version
   (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
 
 - #8995: allow developers to specify frequently-used configure options in
-  Git (ocaml.configure option) See HACKING.adoc for further details.
+  Git (ocaml.configure option) and a directory for host-specific, shareable
+  config.cache files (ocaml.configure-cache option). See HACKING.adoc for
+  further details.
   (David Allsopp, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
