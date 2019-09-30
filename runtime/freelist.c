@@ -1318,7 +1318,9 @@ static void bf_insert_remnant_small (value v)
 
   CAMLassert (Color_val (v) == Caml_white);
   CAMLassert (wosz <= BF_NUM_SMALL);
-  if (wosz != 0 && (char *) Hp_val (v) < (char *) caml_gc_sweep_hp){
+  if (wosz != 0
+      && (caml_gc_phase != Phase_sweep
+          || (char *) Hp_val (v) < (char *) caml_gc_sweep_hp)){
     caml_fl_cur_wsz += Whsize_wosize (wosz);
     Next_small (v) = bf_small_fl[wosz].free;
     bf_small_fl[wosz].free = v;
@@ -1434,7 +1436,7 @@ static header_t *bf_split_small (mlsize_t wosz, value v)
 
   CAMLassert (Wosize_val (v) > wosz);
   caml_fl_cur_wsz -= blocksz;
-  Hd_val (v) = Make_header (Wosize_whsize (remwhsz), 0, Caml_white);
+  Hd_val (v) = Make_header (Wosize_whsize (remwhsz), Abstract_tag, Caml_white);
   return (header_t *) &Field (v, Wosize_whsize (remwhsz));
 }
 
@@ -1457,7 +1459,7 @@ static header_t *bf_split (mlsize_t wosz, value v)
   caml_fl_cur_wsz -= Whsize_hd (hd);
   if (remwhsz <= Whsize_wosize (BF_NUM_SMALL)){
     /* Same as bf_split_small. */
-    Hd_val (v) = Make_header (Wosize_whsize (remwhsz), 0, Caml_white);
+    Hd_val (v) = Make_header (Wosize_whsize(remwhsz), Abstract_tag, Caml_white);
   }else{
     Hd_val (v) = Make_header (Wosize_whsize (remwhsz), 0, Caml_blue);
   }
