@@ -237,6 +237,9 @@ Working version
 - #8947: fix/improve support for the BFD library
   (Sébastien Hinderer, review by Damien Doligez)
 
+- #8951: let make's default target build the compiler
+  (Sébastien Hinderer, review by )
+
 - #8985, #8986: fix generation of the primitives when the locale collation is
   incompatible with C.
   (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)

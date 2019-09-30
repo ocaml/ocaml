@@ -113,6 +113,9 @@ RPATH=@rpath@
 
 ############# Configuration for the native-code compiler
 
+### Whether the native compiler has been enabled or not
+NATIVE_COMPILER=@native_compiler@
+
 ### Name of architecture for the native-code compiler
 ### Currently supported:
 ###

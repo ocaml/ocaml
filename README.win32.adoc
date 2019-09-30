@@ -191,7 +191,7 @@ the top-level of the OCaml distribution by running:
 
   eval $(tools/msvs-promote-path)
 
-If you forget to do this, `make world.opt` will fail relatively
+If you forget to do this, `make` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
 Now run:
@@ -208,7 +208,7 @@ which indicates where to install everything.
 
 Finally, use `make` to build the system, e.g.
 
-        make world.opt
+        make
         make install
 
 After installing, it is not necessary to keep the Cygwin installation (although
@@ -275,7 +275,7 @@ which indicates where to install everything.
 
 Finally, use `make` to build the system, e.g.
 
-        make world.opt
+        make
         make install
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
@@ -314,10 +314,10 @@ done in one of three ways:
   git submodule update --init
 
 OCaml is then compiled as normal for the port you require, except that before
-compiling `world`, you must compile `flexdll`, i.e.:
+building the compiler itself, you must compile `flexdll`, i.e.:
 
   make flexdll
-  make world.opt
+  make
   make flexlink.opt
   make install
 
