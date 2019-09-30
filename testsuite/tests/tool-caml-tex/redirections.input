@@ -1,0 +1,10 @@
+\begin{caml_example}{toplevel}
+[@@@warning "+A"];;
+1 + 2. [@@expect error];;
+let f x = () [@@expect warning 27];;
+\end{caml_example}
+
+\begin{caml_example}{toplevel}
+Format.printf "Hello@.";
+print_endline "world";;
+\end{caml_example}

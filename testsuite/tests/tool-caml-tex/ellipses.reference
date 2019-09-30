@@ -1,15 +1,3 @@
-(* TEST
-   reference="${test_source_directory}/ellipses.reference"
-   output="ellipses.output"
-   script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
-  * hasstr
-  ** native-compiler
-  *** shared-libraries
-  **** script with unix,str
-  ***** check-program-output
-*)
-
 \camlexample{verbatim}
 \caml\camlinput\?let start = 0
 \?\ldots

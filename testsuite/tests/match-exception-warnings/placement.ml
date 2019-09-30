@@ -59,9 +59,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 7-18:
-    with exception _ -> ()
-         ^^^^^^^^^^^
+Line 3, characters 7-18:
+3 |   with exception _ -> ()
+           ^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -73,9 +73,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 4-17:
-    | (exception _) as _pat -> ()
-      ^^^^^^^^^^^^^
+Line 3, characters 4-17:
+3 |   | (exception _) as _pat -> ()
+        ^^^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -86,9 +86,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 8-19:
-    | (_, exception _, _) -> ()
-          ^^^^^^^^^^^
+Line 3, characters 8-19:
+3 |   | (_, exception _, _) -> ()
+            ^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -100,9 +100,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 9-22:
-    | lazy (exception _) -> ()
-           ^^^^^^^^^^^^^
+Line 3, characters 9-22:
+3 |   | lazy (exception _) -> ()
+             ^^^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -113,9 +113,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 17-28:
-    | { contents = exception _ } -> ()
-                   ^^^^^^^^^^^
+Line 3, characters 17-28:
+3 |   | { contents = exception _ } -> ()
+                     ^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -126,9 +126,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 7-18:
-    | [| exception _ |] -> ()
-         ^^^^^^^^^^^
+Line 3, characters 7-18:
+3 |   | [| exception _ |] -> ()
+           ^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -139,9 +139,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 9-22:
-    | Some (exception _) -> ()
-           ^^^^^^^^^^^^^
+Line 3, characters 9-22:
+3 |   | Some (exception _) -> ()
+             ^^^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -152,9 +152,9 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 7-20:
-    | `A (exception _) -> ()
-         ^^^^^^^^^^^^^
+Line 3, characters 7-20:
+3 |   | `A (exception _) -> ()
+           ^^^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 ;;
@@ -165,8 +165,8 @@ let f = function
 ;;
 
 [%%expect{|
-Line _, characters 4-15:
-    | exception _ -> ()
-      ^^^^^^^^^^^
+Line 2, characters 4-15:
+2 |   | exception _ -> ()
+        ^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]

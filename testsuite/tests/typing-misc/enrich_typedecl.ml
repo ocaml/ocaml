@@ -13,15 +13,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-97:
-  ......struct
-    type t = A | B
-
-    let f (x : t) =
-      match x with
-      | A -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type t = A | B
+ 5 |
+ 6 |   let f (x : t) =
+ 7 |     match x with
+ 8 |     | A -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A.t = A | B val f : t -> unit end
@@ -44,15 +44,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-110:
-  ......struct
-    type 'a t = A of 'a | B
-
-    let f (x : _ t) =
-      match x with
-      | A _ -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type 'a t = A of 'a | B
+ 5 |
+ 6 |   let f (x : _ t) =
+ 7 |     match x with
+ 8 |     | A _ -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a B.t = A of 'a | B val f : 'a t -> unit end
@@ -75,15 +75,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-110:
-  ......struct
-    type 'a t = A of 'a | B
-
-    let f (x : _ t) =
-      match x with
-      | A _ -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type 'a t = A of 'a | B
+ 5 |
+ 6 |   let f (x : _ t) =
+ 7 |     match x with
+ 8 |     | A _ -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a C.t = A of 'a | B val f : 'a t -> unit end
@@ -108,15 +108,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-110:
-  ......struct
-    type 'a t = A of 'a | B
-
-    let f (x : _ t) =
-      match x with
-      | A _ -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type 'a t = A of 'a | B
+ 5 |
+ 6 |   let f (x : _ t) =
+ 7 |     match x with
+ 8 |     | A _ -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a D.t = A of 'a | B val f : 'a t -> unit end
@@ -139,15 +139,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-110:
-  ......struct
-    type 'a t = A of 'a | B
-
-    let f (x : _ t) =
-      match x with
-      | A _ -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type 'a t = A of 'a | B
+ 5 |
+ 6 |   let f (x : _ t) =
+ 7 |     match x with
+ 8 |     | A _ -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a E.t = A of 'a | B val f : 'a t -> unit end
@@ -170,15 +170,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-110:
-  ......struct
-    type 'a t = A of 'a | B
-
-    let f (x : _ t) =
-      match x with
-      | A _ -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type 'a t = A of 'a | B
+ 5 |
+ 6 |   let f (x : _ t) =
+ 7 |     match x with
+ 8 |     | A _ -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a E2.t = A of 'a | B val f : 'a t -> unit end
@@ -201,15 +201,15 @@ end = struct
     | B -> ()
 end;;
 [%%expect{|
-Line _, characters 6-110:
-  ......struct
-    type 'a t = A of 'a | B
-
-    let f (x : _ t) =
-      match x with
-      | A _ -> ()
-      | B -> ()
-  end..
+Lines 3-10, characters 6-3:
+ 3 | ......struct
+ 4 |   type 'a t = A of 'a | B
+ 5 |
+ 6 |   let f (x : _ t) =
+ 7 |     match x with
+ 8 |     | A _ -> ()
+ 9 |     | B -> ()
+10 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = 'a E3.t = A of 'a | B val f : 'a t -> unit end
@@ -232,14 +232,14 @@ end = struct
   let coerce : 'a 'b. ('a, 'b) t -> ('a, 'b) F.t = fun x -> x
 end;;
 [%%expect{|
-Line _, characters 6-201:
-  ......struct
-    type ('a, 'b) t = Foo of 'b
-
-    (* this function typechecks properly, which means that we've added the
-       manisfest. *)
-    let coerce : 'a 'b. ('a, 'b) t -> ('a, 'b) F.t = fun x -> x
-  end..
+Lines 3-9, characters 6-3:
+3 | ......struct
+4 |   type ('a, 'b) t = Foo of 'b
+5 |
+6 |   (* this function typechecks properly, which means that we've added the
+7 |      manisfest. *)
+8 |   let coerce : 'a 'b. ('a, 'b) t -> ('a, 'b) F.t = fun x -> x
+9 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -252,5 +252,9 @@ Error: Signature mismatch:
          type ('a, 'b) t = ('a, 'b) F.t = Foo of 'b
        is not included in
          type ('a, 'b) t = Foo of 'a
-       The types for field Foo are not equal.
+       Constructors do not match:
+         Foo of 'b
+       is not compatible with:
+         Foo of 'a
+       The types are not equal.
 |}];;
