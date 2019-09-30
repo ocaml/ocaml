@@ -82,6 +82,9 @@ Working version
   valid "TEST" block will be automatically included in the testsuite.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Sébastien Hinderer)
 
+- #8992: share argument implementations between executables
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #8672: Optimise Switch code generation on booleans.
