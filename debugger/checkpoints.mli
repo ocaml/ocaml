@@ -42,8 +42,9 @@ type checkpoint =
    mutable c_state : checkpoint_state;
    mutable c_parent : checkpoint;
    mutable c_breakpoint_version : int;
-   mutable c_breakpoints : (int * int ref) list;
-   mutable c_trap_barrier : int}
+   mutable c_breakpoints : (pc * int ref) list;
+   mutable c_trap_barrier : int;
+   mutable c_code_fragments : int list}
 
 (*** Pseudo-checkpoint `root'. ***)
 (* --- Parents of all checkpoints which have no parent. *)
@@ -55,5 +56,5 @@ val current_checkpoint : checkpoint ref
 
 val current_time : unit -> int64
 val current_report : unit -> report option
-val current_pc : unit -> int option
-val current_pc_sp : unit -> (int * int) option
+val current_pc : unit -> pc option
+val current_pc_sp : unit -> (pc * int) option

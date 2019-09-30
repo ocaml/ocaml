@@ -26,8 +26,7 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/stacks.h"
-
-CAMLexport struct caml__roots_block *caml_local_roots = NULL;
+#include "caml/memprof.h"
 
 CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
@@ -42,11 +41,11 @@ void caml_oldify_local_roots (void)
   intnat i, j;
 
   /* The stack */
-  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
+  for (sp = Caml_state->extern_sp; sp < Caml_state->stack_high; sp++) {
     caml_oldify_one (*sp, sp);
   }
   /* Local C roots */  /* FIXME do the old-frame trick ? */
-  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
+  for (lr = Caml_state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
@@ -58,6 +57,8 @@ void caml_oldify_local_roots (void)
   caml_scan_global_young_roots(&caml_oldify_one);
   /* Finalised values */
   caml_final_oldify_young_roots ();
+  /* Memprof */
+  caml_memprof_scan_roots (&caml_oldify_one);
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
@@ -85,7 +86,8 @@ void caml_do_roots (scanning_action f, int do_globals)
   f(caml_global_data, &caml_global_data);
   CAML_INSTR_TIME (tmr, "major_roots/global");
   /* The stack and the local C roots */
-  caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
+  caml_do_local_roots(f, Caml_state->extern_sp, Caml_state->stack_high,
+                      Caml_state->local_roots);
   CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
@@ -93,6 +95,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   /* Finalised values */
   caml_final_do_roots (f);
   CAML_INSTR_TIME (tmr, "major_roots/finalised");
+  /* Memprof */
+  caml_memprof_scan_roots (f);
+  CAML_INSTR_TIME (tmr, "major_roots/memprof");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
   CAML_INSTR_TIME (tmr, "major_roots/hook");

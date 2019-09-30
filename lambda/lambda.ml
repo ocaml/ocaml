@@ -656,7 +656,7 @@ let transl_prim mod_name name =
   let pers = Ident.create_persistent mod_name in
   let env = Env.add_persistent_structure pers Env.empty in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
-  match Env.lookup_value lid env with
+  match Env.find_value_by_name lid env with
   | path, _ -> transl_value_path Location.none env path
   | exception Not_found ->
       fatal_error ("Primitive " ^ name ^ " not found.")
@@ -678,7 +678,6 @@ let subst update_env s lam =
     let remove_list l s =
       List.fold_left (fun s (id, _kind) -> Ident.Map.remove id s) s l
     in
-    let module M = Ident.Map in
     match lam with
     | Lvar id as l ->
         begin try Ident.Map.find id s with Not_found -> l end
@@ -783,14 +782,14 @@ let shallow_map f = function
                  sw_consts = List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
                  sw_numblocks = sw.sw_numblocks;
                  sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
-                 sw_failaction = Misc.may_map f sw.sw_failaction;
+                 sw_failaction = Option.map f sw.sw_failaction;
                },
                loc)
   | Lstringswitch (e, sw, default, loc) ->
       Lstringswitch (
         f e,
         List.map (fun (s, e) -> (s, f e)) sw,
-        Misc.may_map f default,
+        Option.map f default,
         loc)
   | Lstaticraise (i, args) ->
       Lstaticraise (i, List.map f args)
@@ -881,6 +880,11 @@ let merge_inline_attributes attr1 attr2 =
   | _, _ ->
     if attr1 = attr2 then Some attr1
     else None
+
+let function_is_curried func =
+  match func.kind with
+  | Curried -> true
+  | Tupled -> false
 
 let reset () =
   raise_count := 0

@@ -25,7 +25,7 @@ type symptom =
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch
   | Extension_constructors of Ident.t * extension_constructor
-        * extension_constructor * Includecore.type_mismatch
+        * extension_constructor * Includecore.extension_constructor_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation of Types.module_type * Typedtree.module_coercion
@@ -45,6 +45,7 @@ type pos =
 type error = pos list * Env.t * symptom
 
 exception Error of error list
+exception Apply_error of Location.t * Path.t * Path.t * error list
 
 type mark =
   | Mark_both
@@ -543,9 +544,15 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
            (Mtype.strengthen ~aliasable env mty1 path1) mty2)
 
 let () =
-  Env.check_modtype_inclusion := (fun ~loc a b c d ->
-    try (check_modtype_inclusion ~loc a b c d : unit)
-    with Error _ -> raise Not_found)
+  Env.check_functor_application :=
+    (fun ~errors ~loc env mty1 path1 mty2 path2 ->
+       try
+         check_modtype_inclusion ~loc env mty1 path1 mty2
+       with Error errs ->
+         if errors then
+           raise (Apply_error(loc, path1, path2, errs))
+         else
+           raise Not_found)
 
 (* Check that an implementation of a compilation unit meets its
    interface. *)
@@ -760,20 +767,20 @@ let include_err env ppf = function
         "is not included in"
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id d2 Trec_first)
-        show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration") err
+        show_locs (d1.type_loc, d2.type_loc)
   | Extension_constructors(id, x1, x2, err) ->
-      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
         "Extension declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id x1 Text_first)
         "is not included in"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id x2 Text_first)
-        show_locs (x1.ext_loc, x2.ext_loc)
-        (Includecore.report_type_mismatch
+        (Includecore.report_extension_constructor_mismatch
            "the first" "the second" "declaration") err
+        show_locs (x1.ext_loc, x2.ext_loc)
   | Module_types(mty1, mty2)->
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \
@@ -839,7 +846,11 @@ let report_error ppf errs =
   let print_errs ppf = List.iter (include_err' ppf) in
   Printtyp.Conflicts.reset();
   fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
-    Printtyp.Conflicts.print
+    Printtyp.Conflicts.print_explanations
+
+let report_apply_error p1 p2 ppf errs =
+  fprintf ppf "@[The type of %a does not match %a's parameter@ %a@]"
+    Printtyp.path p1 Printtyp.path p2 report_error errs
 
 (* We could do a better job to split the individual error items
    as sub-messages of the main interface mismatch on the whole unit. *)
@@ -847,5 +858,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Apply_error(loc, p1, p2, err) ->
+          Some (Location.error_of_printer ~loc (report_apply_error p1 p2) err)
       | _ -> None
     )

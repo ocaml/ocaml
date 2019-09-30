@@ -27,6 +27,9 @@
 extern "C" {
 #endif
 
+/* It is guaranteed that these allocation functions will not trigger
+   any OCaml callback such as finalizers or signal handlers. */
+
 CAMLextern value caml_alloc (mlsize_t wosize, tag_t);
 CAMLextern value caml_alloc_small (mlsize_t wosize, tag_t);
 CAMLextern value caml_alloc_tuple (mlsize_t wosize);

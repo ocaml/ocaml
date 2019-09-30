@@ -14,8 +14,8 @@ module type S' = sig type s = int end
 module type S = sig module rec M : sig end and N : sig end end;;
 module type S' = S with module M := String;;
 [%%expect{|
-module type S = sig module rec M : sig  end and N : sig  end end
-module type S' = sig module rec N : sig  end end
+module type S = sig module rec M : sig end and N : sig end end
+module type S' = sig module rec N : sig end end
 |}];;
 
 (* with module type *)
@@ -95,7 +95,11 @@ Line 3, characters 23-33:
 3 | module type B = A with type t = u;; (* fail *)
                            ^^^^^^^^^^
 Error: This variant or record definition does not match that of type u
-       The types for field X are not equal.
+       Constructors do not match:
+         X of bool
+       is not compatible with:
+         X of int
+       The types are not equal.
 |}];;
 
 (* PR#5815 *)
@@ -115,7 +119,7 @@ Error: Multiple definition of the extension constructor name Foo.
 module F(X : sig end) = struct let x = 3 end;;
 F.x;; (* fail *)
 [%%expect{|
-module F : functor (X : sig  end) -> sig val x : int end
+module F : functor (X : sig end) -> sig val x : int end
 Line 2, characters 0-3:
 2 | F.x;; (* fail *)
     ^^^
@@ -141,7 +145,11 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E
-       The arities for field E differ.
+       Constructors do not match:
+         E of int
+       is not compatible with:
+         E
+       They have different arities.
 |}];;
 
 module M : sig type t += E of char end = struct type t += E of int end;;
@@ -158,7 +166,11 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of char
-       The types for field E are not equal.
+       Constructors do not match:
+         E of int
+       is not compatible with:
+         E of char
+       The types are not equal.
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;
@@ -193,5 +205,9 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of { x : int; }
-       The types for field E are not equal.
+       Constructors do not match:
+         E of int
+       is not compatible with:
+         E of { x : int; }
+       The second uses inline records and the first doesn't.
 |}];;

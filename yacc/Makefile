@@ -18,12 +18,19 @@
 ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
+ifeq "$(UNIX_OR_WIN32)" "win32"
+WSTR_OBJ = wstr
+else
+WSTR_OBJ =
+endif
+
 ocamlyacc_SOURCES := $(addsuffix .c,\
-  closure error lalr lr0 main mkpar output reader skeleton symtab verbose \
-  warshall)
+  $(WSTR_OBJ) closure error lalr lr0 main mkpar output reader skeleton \
+  symtab verbose warshall)
 
 ocamlyacc_OBJECTS := $(ocamlyacc_SOURCES:.c=.$(O))
 
@@ -31,12 +38,8 @@ generated_files := ocamlyacc$(EXE) $(ocamlyacc_OBJECTS)  version.h
 
 all: ocamlyacc$(EXE)
 
-ifeq ($(TOOLCHAIN),cc)
-MKEXE_ANSI=$(MKEXE)
-endif
-
 ocamlyacc$(EXE): $(ocamlyacc_OBJECTS)
-	$(MKEXE_ANSI) -o $@ $^ $(EXTRALIBS)
+	$(MKEXE) -o $@ $^ $(EXTRALIBS)
 
 version.h : $(ROOTDIR)/VERSION
 	echo "#define OCAML_VERSION \"`sed -e 1q $< | tr -d '\r'`\"" > $@
@@ -58,9 +61,3 @@ skeleton.$(O): defs.h
 symtab.$(O): defs.h
 verbose.$(O): defs.h
 warshall.$(O): defs.h
-
-# The following rule is similar to make's default one, except that it
-# also works for .obj files.
-
-%.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

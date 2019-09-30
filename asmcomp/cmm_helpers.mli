@@ -162,7 +162,6 @@ val mk_not : Debuginfo.t -> expression -> expression
 val create_loop : expression -> Debuginfo.t -> expression
 
 (** Exception raising *)
-val raise_regular : Debuginfo.t -> expression -> expression
 val raise_symbol : Debuginfo.t -> string -> expression
 
 (** Convert a tagged integer into a raw integer with boolean meaning *)
@@ -171,13 +170,6 @@ val test_bool : Debuginfo.t -> expression -> expression
 (** Float boxing and unboxing *)
 val box_float : Debuginfo.t -> expression -> expression
 val unbox_float : Debuginfo.t -> expression -> expression
-
-(** Map the given function over a Ccatch expression's handlers and body *)
-val map_ccatch :
-  (expression -> expression) -> rec_flag ->
-  (int * (Backend_var.With_provenance.t * machtype) list * expression
-   * Debuginfo.t) list ->
-  expression -> expression
 
 (** Complex number creation and access *)
 val box_complex : Debuginfo.t -> expression -> expression -> expression
@@ -380,7 +372,7 @@ val box_int_gen :
 
 (** Unbox a given boxed integer *)
 val unbox_int :
-  Primitive.boxed_integer -> expression -> Debuginfo.t -> expression
+  Debuginfo.t -> Primitive.boxed_integer -> expression -> expression
 
 (** Used to prepare 32-bit integers on 64-bit platforms for a lsr operation *)
 val make_unsigned_int :

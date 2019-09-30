@@ -14,7 +14,11 @@ pr7726.ml
 pr7787.ml
 pr7818.ml
 pr7851.ml
+pr8810.ml
 printing.ml
 recursive.ml
 Test.ml
 unroll_private_abbrev.ml
+records_errors_test.ml
+variants_errors_test.ml
+extension_constructors_errors_test.ml

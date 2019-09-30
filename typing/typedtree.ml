@@ -15,7 +15,6 @@
 
 (* Abstract syntax tree after typing *)
 
-open Misc
 open Asttypes
 open Types
 
@@ -588,11 +587,11 @@ and 'a class_infos =
 
 (* Auxiliary functions over the a.s.t. *)
 
-let iter_pattern_desc f = function
+let shallow_iter_pattern_desc f = function
   | Tpat_alias(p, _, _) -> f p
   | Tpat_tuple patl -> List.iter f patl
   | Tpat_construct(_, _, patl) -> List.iter f patl
-  | Tpat_variant(_, pat, _) -> may f pat
+  | Tpat_variant(_, pat, _) -> Option.iter f pat
   | Tpat_record (lbl_pat_list, _) ->
       List.iter (fun (_, _, pat) -> f pat) lbl_pat_list
   | Tpat_array patl -> List.iter f patl
@@ -603,7 +602,7 @@ let iter_pattern_desc f = function
   | Tpat_var _
   | Tpat_constant _ -> ()
 
-let map_pattern_desc f d =
+let shallow_map_pattern_desc f d =
   match d with
   | Tpat_alias (p1, id, s) ->
       Tpat_alias (f p1, id, s)
@@ -626,43 +625,56 @@ let map_pattern_desc f d =
   | Tpat_any
   | Tpat_variant (_,None,_) -> d
 
+let rec iter_pattern f p =
+  f p;
+  shallow_iter_pattern_desc (iter_pattern f) p.pat_desc
+
+let exists_pattern f p =
+  let exception Found in
+  let raiser f x = if (f x) then raise Found else () in
+  match iter_pattern (raiser f) p with
+  | exception Found -> true
+  | () -> false
+
 (* List the identifiers bound by a pattern or a let *)
 
-let idents = ref([]: (Ident.t * string loc * Types.type_expr) list)
-
-let rec bound_idents pat =
+let rec iter_bound_idents f pat =
   match pat.pat_desc with
-  | Tpat_var (id,s) -> idents := (id,s,pat.pat_type) :: !idents
+  | Tpat_var (id,s) ->
+     f (id,s,pat.pat_type)
   | Tpat_alias(p, id, s) ->
-      bound_idents p; idents := (id,s,pat.pat_type) :: !idents
+      iter_bound_idents f p;
+      f (id,s,pat.pat_type)
   | Tpat_or(p1, _, _) ->
-      (* Invariant : both arguments binds the same variables *)
-      bound_idents p1
-  | d -> iter_pattern_desc bound_idents d
+      (* Invariant : both arguments bind the same variables *)
+      iter_bound_idents f p1
+  | d ->
+     shallow_iter_pattern_desc (iter_bound_idents f) d
+
+let rev_pat_bound_idents_full pat =
+  let idents_full = ref [] in
+  let add id_full = idents_full := id_full :: !idents_full in
+  iter_bound_idents add pat;
+  !idents_full
+
+let rev_only_idents idents_full =
+  List.rev_map (fun (id,_,_) -> id) idents_full
 
 let pat_bound_idents_full pat =
-  idents := [];
-  bound_idents pat;
-  let res = !idents in
-  idents := [];
-  res
-
+  List.rev (rev_pat_bound_idents_full pat)
 let pat_bound_idents pat =
-  List.map (fun (id,_,_) -> id) (pat_bound_idents_full pat)
+  rev_only_idents (rev_pat_bound_idents_full pat)
 
-let rev_let_bound_idents_with_loc bindings =
-  idents := [];
-  List.iter (fun vb -> bound_idents vb.vb_pat) bindings;
-  let res = !idents in idents := []; res
+let rev_let_bound_idents_full bindings =
+  let idents_full = ref [] in
+  let add id_full = idents_full := id_full :: !idents_full in
+  List.iter (fun vb -> iter_bound_idents add vb.vb_pat) bindings;
+  !idents_full
 
-let let_bound_idents_with_loc pat_expr_list =
-  List.rev(rev_let_bound_idents_with_loc pat_expr_list)
-
-let rev_let_bound_idents pat =
-  List.map (fun (id,_,_) -> id) (rev_let_bound_idents_with_loc pat)
-
+let let_bound_idents_full bindings =
+  List.rev (rev_let_bound_idents_full bindings)
 let let_bound_idents pat =
-  List.map (fun (id,_,_) -> id) (let_bound_idents_with_loc pat)
+  rev_only_idents (rev_let_bound_idents_full pat)
 
 let alpha_var env id = List.assoc id env
 
@@ -679,7 +691,7 @@ let rec alpha_pat env p = match p.pat_desc with
     | Not_found -> new_p
     end
 | d ->
-    {p with pat_desc = map_pattern_desc (alpha_pat env) d}
+    {p with pat_desc = shallow_map_pattern_desc (alpha_pat env) d}
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc

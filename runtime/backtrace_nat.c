@@ -66,10 +66,10 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 }
 
 int caml_alloc_backtrace_buffer(void){
-  CAMLassert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer =
+  CAMLassert(Caml_state->backtrace_pos == 0);
+  Caml_state->backtrace_buffer =
     caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
-  if (caml_backtrace_buffer == NULL) return -1;
+  if (Caml_state->backtrace_buffer == NULL) return -1;
   return 0;
 }
 
@@ -81,12 +81,13 @@ int caml_alloc_backtrace_buffer(void){
    [caml_get_current_callstack] was implemented. */
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
-  if (exn != caml_backtrace_last_exn) {
-    caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = exn;
+  if (exn != Caml_state->backtrace_last_exn) {
+    Caml_state->backtrace_pos = 0;
+    Caml_state->backtrace_last_exn = exn;
   }
 
-  if (caml_backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1)
+  if (Caml_state->backtrace_buffer == NULL &&
+      caml_alloc_backtrace_buffer() == -1)
     return;
 
   /* iterate on each frame  */
@@ -94,8 +95,9 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
-    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-    caml_backtrace_buffer[caml_backtrace_pos++] = (backtrace_slot) descr;
+    if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+    Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] =
+      (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
     if (sp > trapsp) return;
@@ -104,8 +106,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 
 intnat caml_current_callstack_size(intnat max_frames) {
   intnat trace_size = 0;
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
+  uintnat pc = Caml_state->last_return_address;
+  char * sp = Caml_state->bottom_of_stack;
 
   while (1) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
@@ -113,15 +115,15 @@ intnat caml_current_callstack_size(intnat max_frames) {
     if (trace_size >= max_frames) break;
     ++trace_size;
 
-    if (sp > caml_top_of_stack) break;
+    if (sp > Caml_state->top_of_stack) break;
   }
 
   return trace_size;
 }
 
 void caml_current_callstack_write(value trace) {
-  uintnat pc = caml_last_return_address;
-  char * sp = caml_bottom_of_stack;
+  uintnat pc = Caml_state->last_return_address;
+  char * sp = Caml_state->bottom_of_stack;
   intnat trace_pos, trace_size = Wosize_val(trace);
 
   for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {

@@ -290,7 +290,7 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
   let approx_set_of_closures =
     { descr = Value_set_of_closures value_set_of_closures;
       var = set_of_closures_var;
-      symbol = Misc.may_map (fun s -> s, None) set_of_closures_symbol;
+      symbol = Option.map (fun s -> s, None) set_of_closures_symbol;
     }
   in
   let value_closure =

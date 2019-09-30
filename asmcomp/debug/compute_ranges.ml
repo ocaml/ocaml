@@ -16,7 +16,7 @@
 
 open! Int_replace_polymorphic_compare
 
-module L = Linearize
+module L = Linear
 
 module Make (S : Compute_ranges_intf.S_functor) = struct
   module Subrange_state = S.Subrange_state
@@ -39,7 +39,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       subrange_info : Subrange_info.t;
     }
 
-    let create ~(start_insn : Linearize.instruction)
+    let create ~(start_insn : L.instruction)
           ~start_pos ~start_pos_offset
           ~end_pos ~end_pos_offset
           ~subrange_info =
@@ -456,7 +456,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Lend -> first_insn
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
-    | Lentertrap | Lpushtrap _ | Lpoptrap | Lraise _ ->
+    | Lentertrap | Lpushtrap _ | Lpoptrap | Ladjust_trap_depth _
+    | Lraise _ ->
       let subrange_state =
         Subrange_state.advance_over_instruction subrange_state insn
       in

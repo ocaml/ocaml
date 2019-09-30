@@ -22,7 +22,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 module String = Misc.Stdlib.String
 
@@ -56,6 +56,9 @@ let fastcode_flag = ref true
 let stack_offset = ref 0
 
 (* Layout of the stack frame *)
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
 
 let frame_size () =                     (* includes return address *)
   let sz =
@@ -136,6 +139,12 @@ let register_name r =
   else Regf (float_reg_name.(r - 100))
 
 let sym32 ?ofs s = mem_sym ?ofs DWORD (emit_symbol s)
+
+let domain_field f r =
+  mem32 DWORD (Domainstate.idx_of_field f * 8) r
+
+let load_domain_state r =
+  I.mov (sym32 "Caml_state") r
 
 let reg = function
   | { loc = Reg r } -> register_name r
@@ -461,6 +470,17 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then
+    begin match system with
+    | S_macosx | S_mingw | S_cygwin | S_win32 -> D.text ()
+    | _ -> D.section [ ".text.caml."^(emit_symbol func_name) ]
+             (Some "ax") ["@progbits"]
+    end
+  else D.text ()
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -473,7 +493,7 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    assert (Proc.prologue_required ());
+    assert (!prologue_required);
     let n = frame_size() - 4 in
     if n > 0 then  begin
       I.sub (int n) esp;
@@ -598,13 +618,14 @@ let emit_instr fallthrough i =
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
-        I.mov (sym32 "caml_young_ptr") eax;
+        load_domain_state ebx;
+        I.mov (domain_field Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
-        I.cmp (sym32 "caml_young_limit") eax;
+        I.cmp (domain_field Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live false Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.mov eax (sym32 "caml_young_ptr");
+        I.mov eax (domain_field Domain_young_ptr RBX);
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
@@ -833,7 +854,7 @@ let emit_instr fallthrough i =
       end;
       begin match lbl2 with
         None -> ()
-      | Some lbl -> I.jg (label lbl)
+      | Some lbl -> I.ja (label lbl)
       end
   | Lswitch jumptbl ->
       let lbl = new_label() in
@@ -843,30 +864,45 @@ let emit_instr fallthrough i =
       for i = 0 to Array.length jumptbl - 1 do
         D.long (ConstLabel (emit_label jumptbl.(i)))
       done;
-      D.text ()
+      emit_named_text_section !function_name
   | Lentertrap ->
       ()
+  | Ladjust_trap_depth { delta_traps } ->
+      let delta = trap_frame_size * delta_traps in
+      cfi_adjust_cfa_offset delta;
+      stack_offset := !stack_offset + delta
   | Lpushtrap { lbl_handler; } ->
       I.push (label lbl_handler);
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
-      I.push (sym32 "caml_exception_pointer");
+      load_domain_state edx;
+      I.push (domain_field Domain_exception_pointer RDX);
       cfi_adjust_cfa_offset trap_frame_size;
-      I.mov esp (sym32 "caml_exception_pointer");
+      I.mov esp (domain_field Domain_exception_pointer RDX);
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
-      I.pop (sym32 "caml_exception_pointer");
-      I.add (int (trap_frame_size - 4)) esp;
+      I.mov edx (mem32 DWORD 4 RSP);
+      load_domain_state edx;
+      I.pop (domain_field Domain_exception_pointer RDX);
+      I.pop edx;
+      if trap_frame_size > 8 then
+        I.add (int (trap_frame_size - 8)) esp;
       cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_regular ->
+          load_domain_state ebx;
+          I.mov (int 0) (domain_field Domain_backtrace_pos RBX);
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Cmm.Raise_notrace ->
-          I.mov (sym32 "caml_exception_pointer") esp;
-          I.pop (sym32 "caml_exception_pointer");
+      | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty true i.dbg
+      | Lambda.Raise_notrace ->
+          load_domain_state ebx;
+          I.mov (domain_field Domain_exception_pointer RBX) esp;
+          I.pop (domain_field Domain_exception_pointer RBX);
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
           I.pop ebx;
@@ -879,7 +915,7 @@ let rec emit_all fallthrough i =
   | _ ->
       emit_instr fallthrough i;
       emit_all
-        (system = S_win32 || Linearize.has_fallthrough i.desc)
+        (system = S_win32 || Linear.has_fallthrough i.desc)
         i.next
 
 (* Emission of a function declaration *)
@@ -892,7 +928,11 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
-  D.text ();
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
+  emit_named_text_section !function_name;
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);
   D.global (emit_symbol fundecl.fun_name);
@@ -943,9 +983,6 @@ let begin_assembly() =
   if system = S_win32 then begin
     D.mode386 ();
     D.model "FLAT";
-    D.extrn "_caml_young_ptr" DWORD;
-    D.extrn "_caml_young_limit" DWORD;
-    D.extrn "_caml_exception_pointer" DWORD;
     D.extrn "_caml_extra_params" DWORD;
     D.extrn "_caml_call_gc" PROC;
     D.extrn "_caml_c_call" PROC;
@@ -955,12 +992,12 @@ let begin_assembly() =
     D.extrn "_caml_alloc3" PROC;
     D.extrn "_caml_ml_array_bound_error" PROC;
     D.extrn "_caml_raise_exn" PROC;
+    D.extrn "_Caml_state" DWORD;
   end;
 
   D.data ();
   emit_global_label "data_begin";
-
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin"
 
 let end_assembly() =
@@ -969,8 +1006,7 @@ let end_assembly() =
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  D.text ();
-
+  emit_named_text_section (Compilenv.make_symbol (Some "code_end"));
   emit_global_label "code_end";
 
   D.data ();

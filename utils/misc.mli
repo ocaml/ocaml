@@ -76,8 +76,6 @@ val list_remove: 'a -> 'a list -> 'a list
            element equal to [x] removed. *)
 val split_last: 'a list -> 'a list * 'a
         (* Return the last element and the other elements of the given list. *)
-val may: ('a -> unit) -> 'a option -> unit
-val may_map: ('a -> 'b) -> 'a option -> 'b option
 
 type ref_and_value = R : 'a ref * 'a -> ref_and_value
 
@@ -143,8 +141,6 @@ module Stdlib : sig
 
   module Option : sig
     type 'a t = 'a option
-
-    val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
 
     val print
        : (Format.formatter -> 'a -> unit)
@@ -479,11 +475,13 @@ module EnvLazy: sig
   val create_forced : 'b -> ('a, 'b) t
   val create_failed : exn -> ('a, 'b) t
 
-  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns
-     [None] then [t] is recorded in [log]. [backtrack log] will then reset all
-     the recorded [t]s back to their original state. *)
+  (* [force_logged log f t] is equivalent to [force f t] but if [f]
+     returns [Error _] then [t] is recorded in [log]. [backtrack log]
+     will then reset all the recorded [t]s back to their original
+     state. *)
   val log : unit -> log
-  val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
+  val force_logged :
+    log -> ('a -> ('b, 'c) result) -> ('a,('b, 'c) result) t -> ('b, 'c) result
   val backtrack : log -> unit
 
 end

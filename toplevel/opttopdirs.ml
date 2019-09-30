@@ -125,11 +125,15 @@ type 'a printer_type_old = 'a -> unit
 
 let match_printer_type ppf desc typename =
   let printer_type =
-    try
-      Env.lookup_type (Ldot(Lident "Opttopdirs", typename)) !toplevel_env
-    with Not_found ->
-      fprintf ppf "Cannot find type Topdirs.%s.@." typename;
-      raise Exit in
+    match
+      Env.find_type_by_name
+        (Ldot(Lident "Opttopdirs", typename)) !toplevel_env
+    with
+    | (path, _) -> path
+    | exception Not_found ->
+        fprintf ppf "Cannot find type Topdirs.%s.@." typename;
+        raise Exit
+  in
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
@@ -140,21 +144,21 @@ let match_printer_type ppf desc typename =
   ty_arg
 
 let find_printer_type ppf lid =
-  try
-    let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type ppf desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type ppf desc "printer_type_old", true) in
-    (ty_arg, path, is_old_style)
-  with
-  | Not_found ->
+  match Env.find_value_by_name lid !toplevel_env with
+  | (path, desc) -> begin
+    match match_printer_type ppf desc "printer_type_new" with
+    | ty_arg -> (ty_arg, path, false)
+    | exception Ctype.Unify _ -> begin
+        match match_printer_type ppf desc "printer_type_old" with
+        | ty_arg -> (ty_arg, path, true)
+        | exception Ctype.Unify _ ->
+            fprintf ppf "%a has a wrong type for a printing function.@."
+              Printtyp.longident lid;
+            raise Exit
+      end
+  end
+  | exception Not_found ->
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
-      raise Exit
-  | Ctype.Unify _ ->
-      fprintf ppf "%a has a wrong type for a printing function.@."
-      Printtyp.longident lid;
       raise Exit
 
 let dir_install_printer ppf lid =

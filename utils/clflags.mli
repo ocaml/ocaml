@@ -85,6 +85,7 @@ val no_check_prims : bool ref
 val bytecode_compatible_32 : bool ref
 val output_c_object : bool ref
 val output_complete_object : bool ref
+val output_complete_executable : bool ref
 val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
@@ -185,6 +186,7 @@ val shared : bool ref
 val dlcode : bool ref
 val pic_code : bool ref
 val runtime_variant : string ref
+val with_runtime : bool ref
 val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
@@ -205,6 +207,7 @@ val dump_flambda_verbose : bool ref
 val classic_inlining : bool ref
 val afl_instrument : bool ref
 val afl_inst_ratio : int ref
+val function_sections : bool ref
 
 val all_passes : string list ref
 val dumped_pass : string -> bool

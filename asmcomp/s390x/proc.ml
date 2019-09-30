@@ -35,7 +35,7 @@ let word_addressed = false
     2 - 5               function arguments and results (volatile)
     6                   function arguments and results (preserved by C)
     7 - 9               general purpose, preserved by C
-    10                  allocation limit (preserved by C)
+    10                  domain state pointer (preserved by C)
     11                  allocation pointer (preserved by C)
     12                  general purpose  (preserved by C)
     13                  trap pointer (preserved by C)
@@ -225,16 +225,13 @@ let op_is_pure = function
 
 (* Layout of the stack *)
 
-let num_stack_slots = [| 0; 0 |]
-let contains_calls = ref false
+let frame_required fd =
+  fd.fun_contains_calls
+    || fd.fun_num_stack_slots.(0) > 0
+    || fd.fun_num_stack_slots.(1) > 0
 
-let frame_required () =
-  !contains_calls
-    || num_stack_slots.(0) > 0
-    || num_stack_slots.(1) > 0
-
-let prologue_required () =
-  frame_required ()
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 

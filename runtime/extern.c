@@ -610,9 +610,13 @@ static void extern_rec(value v)
     }
     }
   }
-  else if ((cf = caml_extern_find_code((char *) v)) != NULL) {
+  else if (caml_find_code_fragment((char*) v, NULL, &cf)) {
     if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
+    if (! cf->digest_computed) {
+      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+      cf->digest_computed = 1;
+    }
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
     writeblock((const char *)cf->digest, 16);
   } else {
@@ -734,7 +738,7 @@ CAMLprim value caml_output_value_to_bytes(value v, value flags)
   memcpy(&Byte(res, ofs), header, header_len);
   ofs += header_len;
   while (blk != NULL) {
-    int n = blk->end - blk->data;
+    intnat n = blk->end - blk->data;
     memcpy(&Byte(res, ofs), blk->data, n);
     ofs += n;
     nextblk = blk->next;
@@ -800,7 +804,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   memcpy(res, header, header_len);
   res += header_len;
   for (blk = extern_output_first; blk != NULL; blk = blk->next) {
-    int n = blk->end - blk->data;
+    intnat n = blk->end - blk->data;
     memcpy(res, blk->data, n);
     res += n;
   }
@@ -928,20 +932,4 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
     extern_ptr = q;
   }
 #endif
-}
-
-/* Find where a code pointer comes from */
-
-CAMLexport struct code_fragment * caml_extern_find_code(char *addr)
-{
-  int i;
-  for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
-    struct code_fragment * cf = caml_code_fragments_table.contents[i];
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
-    if (cf->code_start <= addr && addr < cf->code_end) return cf;
-  }
-  return NULL;
 }

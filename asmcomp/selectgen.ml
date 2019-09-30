@@ -78,6 +78,18 @@ let oper_result_type = function
 (* Infer the size in bytes of the result of an expression whose evaluation
    may be deferred (cf. [emit_parts]). *)
 
+let size_component = function
+  | Val | Addr -> Arch.size_addr
+  | Int -> Arch.size_int
+  | Float -> Arch.size_float
+
+let size_machtype mty =
+  let size = ref 0 in
+  for i = 0 to Array.length mty - 1 do
+    size := !size + size_component mty.(i)
+  done;
+  !size
+
 let size_expr (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _ -> Arch.size_int
@@ -372,9 +384,10 @@ method select_store is_assign addr arg =
   (Istore(Word_val, addr, is_assign), arg)
 
 (* call marking methods, documented in selectgen.mli *)
+val contains_calls = ref false
 
 method mark_call =
-  Proc.contains_calls := true
+  contains_calls := true
 
 method mark_tailcall = ()
 
@@ -391,8 +404,9 @@ method mark_instr = function
       self#mark_c_tailcall (* caml_ml_array_bound_error *)
   | Iraise raise_kind ->
     begin match raise_kind with
-      | Cmm.Raise_notrace -> ()
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_notrace -> ()
+      | Lambda.Raise_regular
+      | Lambda.Raise_reraise ->
           (* PR#6239 *)
           (* caml_stash_backtrace; we #mark_call rather than
              #mark_c_tailcall to get a good stack backtrace *)
@@ -1203,7 +1217,6 @@ method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_ ~env =
 method initial_env () = env_empty
 
 method emit_fundecl f =
-  Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
   let rargs =
     List.map
@@ -1242,6 +1255,8 @@ method emit_fundecl f =
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
+    fun_num_stack_slots = Array.make Proc.num_register_classes 0;
+    fun_contains_calls = !contains_calls;
   }
 
 end

@@ -14,14 +14,12 @@ flags = "-thread \
          -principal \
          -alias-deps \
          -unboxed-types \
-         -safe-string \
          -ppx ${program}"
 **** ocamlc.byte
 module = "test.ml"
 flags = "-g \
          -no-alias-deps \
          -no-unboxed-types \
-         -unsafe-string \
          -ppx ${program}"
 ***** check-ocamlc.byte-output
 *)

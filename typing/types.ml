@@ -45,9 +45,10 @@ and row_desc =
       row_more: type_expr;
       row_bound: unit;
       row_closed: bool;
-      row_fixed: bool;
+      row_fixed: fixed_explanation option;
       row_name: (Path.t * type_expr list) option }
-
+and fixed_explanation =
+  | Univar of type_expr | Fixed_private | Reified of Path.t | Rigid
 and row_field =
     Rpresent of type_expr option
   | Reither of bool * type_expr list * bool * row_field option ref
@@ -103,11 +104,6 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound of value_unbound_reason (* Unbound variable *)
-
-and value_unbound_reason =
-  | Val_unbound_instance_variable
-  | Val_unbound_ghost_recursive
 
 (* Variance *)
 
@@ -153,7 +149,7 @@ type type_declaration =
     type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: bool;
+    type_immediate: Type_immediacy.t;
     type_unboxed: unboxed_status;
  }
 

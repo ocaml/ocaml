@@ -182,11 +182,6 @@ module Stdlib = struct
   module Option = struct
     type 'a t = 'a option
 
-    let value_default f ~default a =
-      match a with
-      | None -> default
-      | Some a -> f a
-
     let print print_contents ppf t =
       match t with
       | None -> Format.pp_print_string ppf "None"
@@ -241,9 +236,6 @@ module Stdlib = struct
 
   external compare : 'a -> 'a -> int = "%compare"
 end
-
-let may = Option.iter
-let may_map = Option.map
 
 (* File functions *)
 
@@ -394,7 +386,7 @@ let no_overflow_mul a b =
   not ((a = min_int && b < 0) || (b <> 0 && (a * b) / b <> a))
 
 let no_overflow_lsl a k =
-  0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
+  0 <= k && k < Sys.word_size - 1 && min_int asr k <= a && a <= max_int asr k
 
 module Int_literal_converter = struct
   (* To convert integer literals, allowing max_int + 1 (PR#4210) *)
@@ -926,13 +918,13 @@ module EnvLazy = struct
     | Raise e -> raise e
     | Thunk e ->
       match f e with
-      | None ->
-          x := Done None;
+      | (Error _ as err : _ result) ->
+          x := Done err;
           log := Cons(x, e, !log);
-          None
-      | Some _ as y ->
-          x := Done y;
-          y
+          err
+      | Ok _ as res ->
+          x := Done res;
+          res
       | exception e ->
           x := Raise e;
           raise e

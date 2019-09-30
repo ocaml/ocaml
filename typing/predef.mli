@@ -57,6 +57,14 @@ val path_match_failure: Path.t
 val path_assert_failure : Path.t
 val path_undefined_recursive_module : Path.t
 
+val ident_false : Ident.t
+val ident_true : Ident.t
+val ident_void : Ident.t
+val ident_nil : Ident.t
+val ident_cons : Ident.t
+val ident_none : Ident.t
+val ident_some : Ident.t
+
 (* To build the initial environment. Since there is a nasty mutual
    recursion between predef and env, we break it by parameterizing
    over Env.t, Env.add_type and Env.add_extension. *)

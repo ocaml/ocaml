@@ -19,6 +19,7 @@
 #define CAML_WEAK_H
 
 #include "mlvalues.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -183,7 +184,7 @@ static inline void caml_ephe_clean (value v){
           }else{
             Field (v, i) = child = f;
             if (Is_block (f) && Is_young (f))
-              add_to_ephe_ref_table(&caml_ephe_ref_table, v, i);
+              add_to_ephe_ref_table(Caml_state_field(ephe_ref_table), v, i);
             goto ephemeron_again;
           }
         }

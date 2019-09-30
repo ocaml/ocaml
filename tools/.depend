@@ -32,7 +32,7 @@ cmt2annot.cmo : \
     ../typing/untypeast.cmi \
     ../typing/types.cmi \
     ../typing/typedtree.cmi \
-    ../typing/tast_mapper.cmi \
+    ../typing/tast_iterator.cmi \
     ../typing/stypes.cmi \
     ../parsing/pprintast.cmi \
     ../typing/path.cmi \
@@ -49,7 +49,7 @@ cmt2annot.cmx : \
     ../typing/untypeast.cmx \
     ../typing/types.cmx \
     ../typing/typedtree.cmx \
-    ../typing/tast_mapper.cmx \
+    ../typing/tast_iterator.cmx \
     ../typing/stypes.cmx \
     ../parsing/pprintast.cmx \
     ../typing/path.cmx \

@@ -131,3 +131,25 @@ let ocaml_version = "%%VERSION%%"
 (* Optimization *)
 
 external opaque_identity : 'a -> 'a = "%opaque"
+
+module Immediate64 = struct
+  module type Non_immediate = sig
+    type t
+  end
+  module type Immediate = sig
+    type t [@@immediate]
+  end
+
+  module Make(Immediate : Immediate)(Non_immediate : Non_immediate) = struct
+    type t [@@immediate64]
+    type 'a repr =
+      | Immediate : Immediate.t repr
+      | Non_immediate : Non_immediate.t repr
+    external magic : _ repr -> t repr = "%identity"
+    let repr =
+      if word_size = 64 then
+        magic Immediate
+      else
+        magic Non_immediate
+  end
+end

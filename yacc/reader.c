@@ -49,8 +49,6 @@ bucket **plhs;
 int name_pool_size;
 char *name_pool;
 
-char line_format[] = "# %d \"%s\"\n";
-
 static unsigned char caml_ident_start[32] =
 "\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
 static unsigned char caml_ident_body[32] =
@@ -234,6 +232,14 @@ int process_apostrophe(FILE *const f)
             && cptr[4] == '\'') {
         fwrite(cptr, 1, 5, f);
         cptr += 5;
+    } else if (cptr[0] == '\\'
+            && cptr[1] == 'o'
+            && cptr[2] >= '0' && cptr[2] <= '3'
+            && cptr[3] >= '0' && cptr[3] <= '7'
+            && cptr[4] >= '0' && cptr[4] <= '7'
+            && cptr[5] == '\'') {
+        fwrite(cptr, 1, 6, f);
+        cptr += 6;
     } else if (cptr[0] == '\\' && cptr[2] == '\'') {
         fwrite(cptr, 1, 3, f);
         cptr += 3;
@@ -362,6 +368,9 @@ static void process_comment(FILE *const f) {
                 process_open_curly_bracket(f);
                 continue;
             default:
+                if (In_bitmap(caml_ident_start, c)) {
+                  while (In_bitmap(caml_ident_body, *cptr)) cptr++;
+                }
                 continue;
             }
         }
@@ -554,7 +563,7 @@ void copy_text(void)
         if (line == 0)
             unterminated_text(t_lineno, t_line, t_cptr);
     }
-    fprintf(f, line_format, lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name_disp);
 
 loop:
     c = *cptr++;
@@ -600,6 +609,12 @@ loop:
         goto loop;
     default:
         putc(c, f);
+        if (In_bitmap(caml_ident_start, c)) {
+          while (In_bitmap(caml_ident_body, *cptr)) {
+            putc(*cptr, f);
+            cptr++;
+          }
+        }
         need_newline = 1;
         goto loop;
     }
@@ -1271,7 +1286,7 @@ void copy_action(void)
                 item->name);
     }
     fprintf(f, "    Obj.repr(\n");
-    fprintf(f, line_format, lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name_disp);
     for (i = 0; i < cptr - line; i++) fputc(' ', f);
     fputc ('(', f);
 
@@ -1805,8 +1820,8 @@ void print_grammar(void)
 
 void reader(void)
 {
-    virtual_input_file_name = substring (input_file_name, 0,
-                                         strlen (input_file_name));
+    virtual_input_file_name = caml_stat_strdup_of_os(input_file_name);
+    if (!virtual_input_file_name) no_space();
     create_symbol_table();
     read_declarations();
     output_token_type();

@@ -1630,7 +1630,6 @@ let rec simplify_program_body env r (program : Flambda.program_body)
     let approx =
       A.augment_with_symbol (A.value_block tag (Array.of_list approxs)) symbol
     in
-    let module Backend = (val (E.backend env) : Backend_intf.S) in
     let env = E.add_symbol env symbol approx in
     let program, r = simplify_program_body env r program in
     Initialize_symbol (symbol, tag, fields, program), r

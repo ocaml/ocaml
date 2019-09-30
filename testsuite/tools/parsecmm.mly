@@ -127,7 +127,7 @@ let access_array base numelt size =
 %token OR
 %token <int> POINTER
 %token PROJ
-%token <Cmm.raise_kind> RAISE
+%token <Lambda.raise_kind> RAISE
 %token RBRACKET
 %token RPAREN
 %token SEQ
@@ -222,15 +222,19 @@ expr:
       { Cifthenelse($3, debuginfo (), $4, debuginfo (), $5, debuginfo ()) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
-      { let body =
+      {
+        let lbl0 = Lambda.next_raise_count () in
+        let lbl1 = Lambda.next_raise_count () in
+        let body =
           match $3 with
             Cconst_int (x, _) when x <> 0 -> $4
-          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (), (Cexit(0,[])),
+          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (),
+                             (Cexit(lbl0,[])),
                              debuginfo ()) in
-        Ccatch(Nonrecursive, [0, [],
+        Ccatch(Nonrecursive, [lbl0, [], Ctuple [], debuginfo ()],
           Ccatch(Recursive,
-            [1, [], Csequence(body, Cexit(1, [])), debuginfo ()],
-            Cexit(1, [])), debuginfo ()], Ctuple []) }
+            [lbl1, [], Csequence(body, Cexit(lbl1, [])), debuginfo ()],
+            Cexit(lbl1, []))) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
@@ -242,25 +246,32 @@ expr:
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
-      { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
+      { let open Asttypes in
+        Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
+      { let open Asttypes in
+        Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
           Debuginfo.none) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload (Word_int, Mutable), [access_array $3 $4 Arch.size_int],
+      { let open Asttypes in
+        Cop(Cload (Word_int, Mutable), [access_array $3 $4 Arch.size_int],
           Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
-      { Cop(Cload (Double_u, Mutable), [access_array $3 $4 Arch.size_float],
+      { let open Asttypes in
+        Cop(Cload (Double_u, Mutable), [access_array $3 $4 Arch.size_float],
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
-      { Cop(Cstore (Word_val, Assignment),
+      { let open Lambda in
+        Cop(Cstore (Word_val, Assignment),
             [access_array $3 $4 Arch.size_addr; $5], Debuginfo.none) }
   | LPAREN INTASET expr expr expr RPAREN
-      { Cop(Cstore (Word_int, Assignment),
+      { let open Lambda in
+        Cop(Cstore (Word_int, Assignment),
             [access_array $3 $4 Arch.size_int; $5], Debuginfo.none) }
   | LPAREN FLOATASET expr expr expr RPAREN
-      { Cop(Cstore (Double_u, Assignment),
+      { let open Lambda in
+        Cop(Cstore (Double_u, Assignment),
             [access_array $3 $4 Arch.size_float; $5], Debuginfo.none) }
 ;
 exprlist:
@@ -293,14 +304,14 @@ chunk:
   | VAL                         { Word_val }
 ;
 unaryop:
-    LOAD chunk                  { Cload ($2, Mutable) }
+    LOAD chunk                  { Cload ($2, Asttypes.Mutable) }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise $1 }
   | ABSF                        { Cabsf }
 ;
 binaryop:
-    STORE chunk                 { Cstore ($2, Assignment) }
+    STORE chunk                 { Cstore ($2, Lambda.Assignment) }
   | ADDI                        { Caddi }
   | SUBI                        { Csubi }
   | STAR                        { Cmuli }

@@ -22,6 +22,6 @@ class reload_generic : object
   method makereg : Reg.t -> Reg.t
     (* Can be overridden to avoid creating new registers of some class
        (i.e. if all "registers" of that class are actually on stack) *)
-  method fundecl : Mach.fundecl -> Mach.fundecl * bool
+  method fundecl : Mach.fundecl -> int array -> Mach.fundecl * bool
     (* The entry point *)
 end

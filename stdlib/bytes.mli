@@ -130,8 +130,8 @@ val blit : bytes -> int -> bytes -> int -> int -> unit
     do not designate a valid range of [dst]. *)
 
 val blit_string : string -> int -> bytes -> int -> int -> unit
-(** [blit src srcoff dst dstoff len] copies [len] bytes from string
-    [src], starting at index [srcoff], to byte sequence [dst],
+(** [blit_string src srcoff dst dstoff len] copies [len] bytes from
+    string [src], starting at index [srcoff], to byte sequence [dst],
     starting at index [dstoff].
 
     Raise [Invalid_argument] if [srcoff] and [len] do not
@@ -218,7 +218,7 @@ val index_from : bytes -> int -> char -> int
     Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
 val index_from_opt: bytes -> int -> char -> int option
-(** [index_from _opts i c] returns the index of the first occurrence of
+(** [index_from_opt s i c] returns the index of the first occurrence of
     byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
     after position [i].
     [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].

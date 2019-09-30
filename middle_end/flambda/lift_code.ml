@@ -19,36 +19,50 @@ open! Int_replace_polymorphic_compare
 
 type lifter = Flambda.program -> Flambda.program
 
-let rebuild_let
-    (defs : (Variable.t * Flambda.named Flambda.With_free_variables.t) list)
-    (body : Flambda.t) =
+type def =
+  | Immutable of Variable.t * Flambda.named Flambda.With_free_variables.t
+  | Mutable of Mutable_variable.t * Variable.t * Lambda.value_kind
+
+let rebuild_let (defs : def list) (body : Flambda.t) =
   let module W = Flambda.With_free_variables in
-  List.fold_left (fun body (var, def) ->
-      W.create_let_reusing_defining_expr var def body)
+  List.fold_left (fun body def ->
+    match def with
+    | Immutable(var, def) ->
+        W.create_let_reusing_defining_expr var def body
+    | Mutable(var, initial_value, contents_kind) ->
+        Flambda.Let_mutable {var; initial_value; contents_kind; body})
     body defs
 
-let rec extract_lets
-    (acc:(Variable.t * Flambda.named Flambda.With_free_variables.t) list)
-    (let_expr:Flambda.let_expr) :
-  (Variable.t * Flambda.named Flambda.With_free_variables.t) list *
-  Flambda.t Flambda.With_free_variables.t =
+let rec extract_let_expr (acc:def list) (let_expr:Flambda.let_expr) :
+  def list * Flambda.t Flambda.With_free_variables.t =
   let module W = Flambda.With_free_variables in
-  match let_expr with
-  | { var = v1; defining_expr = Expr (Let let2); _ } ->
-    let acc, body2 = extract_lets acc let2 in
-    let acc = (v1, W.expr body2) :: acc in
-    let body = W.of_body_of_let let_expr in
-    extract acc body
-  | { var = v; _ } ->
-    let acc = (v, W.of_defining_expr_of_let let_expr) :: acc in
-    let body = W.of_body_of_let let_expr in
-    extract acc body
+  let acc =
+    match let_expr with
+    | { var = v1; defining_expr = Expr (Let let2); _ } ->
+        let acc, body2 = extract_let_expr acc let2 in
+        Immutable(v1, W.expr body2) :: acc
+    | { var = v1; defining_expr = Expr (Let_mutable let_mut); _ } ->
+        let acc, body2 = extract_let_mutable acc let_mut in
+        Immutable(v1, W.expr body2) :: acc
+    | { var = v; _ } ->
+        Immutable(v, W.of_defining_expr_of_let let_expr) :: acc
+  in
+  let body = W.of_body_of_let let_expr in
+  extract acc body
+
+and extract_let_mutable acc (let_mut : Flambda.let_mutable) =
+  let module W = Flambda.With_free_variables in
+  let { Flambda.var; initial_value; contents_kind; body } = let_mut in
+  let acc = Mutable(var, initial_value, contents_kind) :: acc in
+  extract acc (W.of_expr body)
 
 and extract acc (expr : Flambda.t Flambda.With_free_variables.t) =
   let module W = Flambda.With_free_variables in
   match W.contents expr with
   | Let let_expr ->
-    extract_lets acc let_expr
+    extract_let_expr acc let_expr
+  | Let_mutable let_mutable ->
+    extract_let_mutable acc let_mutable
   | _ ->
     acc, expr
 
@@ -56,10 +70,13 @@ let rec lift_lets_expr (expr:Flambda.t) ~toplevel : Flambda.t =
   let module W = Flambda.With_free_variables in
   match expr with
   | Let let_expr ->
-    let defs, body = extract_lets [] let_expr in
-    let rev_defs =
-      List.rev_map (lift_lets_named_with_free_variables ~toplevel) defs
-    in
+    let defs, body = extract_let_expr [] let_expr in
+    let rev_defs = List.rev_map (lift_lets_def ~toplevel) defs in
+    let body = lift_lets_expr (W.contents body) ~toplevel in
+    rebuild_let (List.rev rev_defs) body
+  | Let_mutable let_mut ->
+    let defs, body = extract_let_mutable [] let_mut in
+    let rev_defs = List.rev_map (lift_lets_def ~toplevel) defs in
     let body = lift_lets_expr (W.contents body) ~toplevel in
     rebuild_let (List.rev rev_defs) body
   | e ->
@@ -68,26 +85,28 @@ let rec lift_lets_expr (expr:Flambda.t) ~toplevel : Flambda.t =
       (lift_lets_named ~toplevel)
       e
 
-and lift_lets_named_with_free_variables
-    ((var, named):Variable.t * Flambda.named Flambda.With_free_variables.t)
-      ~toplevel : Variable.t * Flambda.named Flambda.With_free_variables.t =
+and lift_lets_def def ~toplevel =
   let module W = Flambda.With_free_variables in
-  match W.contents named with
-  | Expr e ->
-    var, W.expr (W.of_expr (lift_lets_expr e ~toplevel))
-  | Set_of_closures set when not toplevel ->
-    var,
-    W.of_named
-      (Set_of_closures
-         (Flambda_iterators.map_function_bodies
-            ~f:(lift_lets_expr ~toplevel) set))
-  | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
-  | Read_symbol_field (_, _) | Project_closure _ | Move_within_set_of_closures _
-  | Project_var _ | Prim _ | Set_of_closures _ ->
-    var, named
+  match def with
+  | Mutable _ -> def
+  | Immutable(var, named) ->
+    let named =
+      match W.contents named with
+      | Expr e -> W.expr (W.of_expr (lift_lets_expr e ~toplevel))
+      | Set_of_closures set when not toplevel ->
+        W.of_named
+          (Set_of_closures
+             (Flambda_iterators.map_function_bodies
+                ~f:(lift_lets_expr ~toplevel) set))
+      | Symbol _ | Const _ | Allocated_const _ | Read_mutable _
+      | Read_symbol_field (_, _) | Project_closure _
+      | Move_within_set_of_closures _ | Project_var _
+      | Prim _ | Set_of_closures _ ->
+        named
+    in
+    Immutable(var, named)
 
 and lift_lets_named _var (named:Flambda.named) ~toplevel : Flambda.named =
-  let module W = Flambda.With_free_variables in
   match named with
   | Expr e ->
     Expr (lift_lets_expr e ~toplevel)

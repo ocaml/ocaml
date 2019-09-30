@@ -92,6 +92,9 @@ module Options = Main_args.Make_bytecomp_options (struct
     output_c_object := true;
     output_complete_object := true;
     custom_runtime := true
+  let _output_complete_exe () =
+    _output_complete_obj ();
+    output_complete_executable := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
@@ -101,6 +104,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _rectypes = set recursive_types
   let _no_rectypes = unset recursive_types
   let _runtime_variant s = runtime_variant := s
+  let _with_runtime = set with_runtime
+  let _without_runtime = unset with_runtime
   let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
@@ -207,7 +212,7 @@ let main () =
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =
-        if !output_c_object then
+        if !output_c_object && not !output_complete_executable then
           let s = extract_output !output_name in
           if (Filename.check_suffix s Config.ext_obj
             || Filename.check_suffix s Config.ext_dll

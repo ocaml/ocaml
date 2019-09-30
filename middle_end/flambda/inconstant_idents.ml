@@ -286,12 +286,12 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
-      Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
+      Option.iter (fun l -> mark_loop ~toplevel [] l) sw.failaction
     | String_switch (arg,sw,def) ->
       mark_curr curr;
       mark_var arg curr;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
-      Misc.may (fun l -> mark_loop ~toplevel [] l) def
+      Option.iter (fun l -> mark_loop ~toplevel [] l) def
     | Send { kind = _; meth; obj; args; dbg = _; } ->
       mark_curr curr;
       mark_var meth curr;

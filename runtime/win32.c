@@ -334,8 +334,7 @@ static void expand_pattern(wchar_t * arg);
 
 static void out_of_memory(void)
 {
-  fprintf(stderr, "Out of memory while expanding command line\n");
-  exit(2);
+  caml_fatal_error("out of memory while expanding command line");
 }
 
 static void store_argument(wchar_t * arg)
@@ -561,8 +560,6 @@ static LONG CALLBACK
 }
 
 #else
-extern char *caml_exception_pointer;
-extern value *caml_young_ptr;
 
 /* Do not use the macro from address_class.h here. */
 #undef Is_in_code_area
@@ -590,8 +587,7 @@ static LONG CALLBACK
       faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
 
       /* refresh runtime parameters from registers */
-      caml_exception_pointer =  (char *) ctx->R14;
-      caml_young_ptr         = (value *) ctx->R15;
+      Caml_state->young_ptr = (value *) ctx->R15;
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
       alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);

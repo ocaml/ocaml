@@ -72,7 +72,10 @@ let rec apply_coercion loc strict restr arg =
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
       name_lambda strict arg (fun id ->
-        let get_field pos = Lprim(Pfield pos,[Lvar id], loc) in
+        let get_field pos =
+          if pos < 0 then lambda_unit
+          else Lprim(Pfield pos,[Lvar id], loc)
+        in
         let lam =
           Lprim(Pmakeblock(0, Immutable, None),
                 List.map (apply_coercion_field loc get_field) pos_cc_list,
@@ -544,8 +547,9 @@ and transl_structure loc fields cc rootpath final_env = function
           Lsequence(transl_exp expr, body), size
       | Tstr_value(rec_flag, pat_expr_list) ->
           (* Translate bindings first *)
-          let mk_lam_let =  transl_let rec_flag pat_expr_list in
-          let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
+          let mk_lam_let = transl_let rec_flag pat_expr_list in
+          let ext_fields =
+            List.rev_append (let_bound_idents pat_expr_list) fields in
           (* Then, translate remainder of struct *)
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem
@@ -1101,7 +1105,8 @@ let transl_store_structure glob map prims aliases str =
                 let ids0 = bound_value_identifiers od.open_bound_items in
                 let subst = !transl_store_subst in
                 let rec store_idents pos = function
-                  | [] -> transl_store rootpath subst cont rem
+                  | [] ->
+                    transl_store rootpath (add_idents true ids0 subst) cont rem
                   | id :: idl ->
                       Llet(Alias, Pgenval, id, Lvar ids.(pos),
                            Lsequence(store_ident od.open_loc id,

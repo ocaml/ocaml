@@ -22,9 +22,12 @@ pattern:
   | char-literal '..' char-literal
   | 'lazy' pattern
   | 'exception' pattern
+  | module-path '.(' pattern ')'
+  | module-path '.[' pattern ']'
+  | module-path '.[|' pattern '|]'
+  | module-path '.{' pattern '}'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s:local-opens]{local opens},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:attributes]{attributes} and
 \hyperref[s:extension-nodes]{extension nodes}.
@@ -225,3 +228,18 @@ call.
 A pattern match must contain at least one value case. It is an error if
 all cases are exceptions, because there would be no code to handle
 the return of a value.
+
+\subsubsection*{Local opens for patterns}
+\ikwd{open\@\texttt{open}} \label{s:local-opens-pattern}
+(Introduced in OCaml 4.04)
+
+For patterns, local opens are limited to the
+@module-path'.('pattern')'@ construction. This
+construction locally opens the module referred to by the module path
+@module-path@ in the scope of the pattern @pattern@.
+
+When the body of a local open pattern is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For example, @module-path'.['pattern']'@ is equivalent to
+@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
+equivalent to @module-path'.([|' pattern '|])'@.

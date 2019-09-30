@@ -16,8 +16,7 @@
 # This makefile provides variables for using the in-tree compiler,
 # interpreter, lexer and other associated tools. It is intended to be
 # included within other makefiles.
-# See testsuite/makefiles/Makefile.common, manual/tools/Makefile and
-# manual/manual/tutorials/Makefile as examples.
+# See manual/tools/Makefile and manual/manual/tutorials/Makefile as examples.
 # Note that these makefile should define the $(TOPDIR) variable on their
 # own.
 
@@ -49,6 +48,9 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   PATH, and Cygwin will translate it to Windows syntax.
 
 include $(TOPDIR)/Makefile.config
+
+# Make sure USE_RUNTIME is defined
+USE_RUNTIME ?=
 
 ifneq ($(USE_RUNTIME),)
 #Check USE_RUNTIME value

@@ -27,6 +27,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/stacks.h"
+#include "caml/signals.h"
 
 #define Setup_for_gc
 #define Restore_after_gc
@@ -52,7 +53,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
-    result = caml_check_urgent_gc (result);
+    result = caml_check_gc_without_async_callbacks (result);
   }
   return result;
 }
@@ -102,7 +103,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
     Alloc_small (result, wosize, String_tag);
   }else{
     result = caml_alloc_shr (wosize, String_tag);
-    result = caml_check_urgent_gc (result);
+    result = caml_check_gc_without_async_callbacks (result);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
@@ -174,7 +175,7 @@ value caml_alloc_float_array(mlsize_t len)
       Alloc_small (result, wosize, Double_array_tag);
   }else {
     result = caml_alloc_shr (wosize, Double_array_tag);
-    result = caml_check_urgent_gc (result);
+    result = caml_check_gc_without_async_callbacks (result);
   }
   return result;
 #else
@@ -222,23 +223,49 @@ CAMLprim value caml_alloc_dummy_float (value size)
   return caml_alloc (wosize, 0);
 }
 
+CAMLprim value caml_alloc_dummy_infix(value vsize, value voffset)
+{
+  mlsize_t wosize = Long_val(vsize), offset = Long_val(voffset);
+  value v = caml_alloc(wosize, Closure_tag);
+  if (offset > 0) {
+    v += Bsize_wsize(offset);
+    Hd_val(v) = Make_header(offset, Infix_tag, Caml_white);
+  }
+  return v;
+}
+
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {
   mlsize_t size, i;
   tag_t tag;
 
-  size = Wosize_val(newval);
   tag = Tag_val (newval);
-  CAMLassert (size == Wosize_val(dummy));
-  CAMLassert (tag < No_scan_tag || tag == Double_array_tag);
 
-  Tag_val(dummy) = tag;
   if (tag == Double_array_tag){
+    CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
+    CAMLassert (Tag_val(dummy) != Infix_tag);
+    Tag_val(dummy) = Double_array_tag;
     size = Wosize_val (newval) / Double_wosize;
-    for (i = 0; i < size; i++){
+    for (i = 0; i < size; i++) {
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
     }
-  }else{
+  } else if (tag == Infix_tag) {
+    value clos = newval - Infix_offset_hd(Hd_val(newval));
+    CAMLassert (Tag_val(clos) == Closure_tag);
+    CAMLassert (Tag_val(dummy) == Infix_tag);
+    CAMLassert (Infix_offset_val(dummy) == Infix_offset_val(newval));
+    dummy = dummy - Infix_offset_val(dummy);
+    size = Wosize_val(clos);
+    CAMLassert (size == Wosize_val(dummy));
+    for (i = 0; i < size; i++) {
+      caml_modify (&Field(dummy, i), Field(clos, i));
+    }
+  } else {
+    CAMLassert (tag < No_scan_tag);
+    CAMLassert (Tag_val(dummy) != Infix_tag);
+    Tag_val(dummy) = tag;
+    size = Wosize_val(newval);
+    CAMLassert (size == Wosize_val(dummy));
     for (i = 0; i < size; i++){
       caml_modify (&Field(dummy, i), Field(newval, i));
     }

@@ -37,7 +37,6 @@ type type_forcing_context =
   | Assert_condition
   | Sequence_left_hand_side
   | When_guard
-  | Application of Typedtree.expression
 
 (* The combination of a type and a "type forcing context". The intent is that it
    describes a type that is "expected" (required) by the context. If unifying
@@ -102,10 +101,9 @@ val type_argument:
         Env.t -> Parsetree.expression ->
         type_expr -> type_expr -> Typedtree.expression
 
-val option_some: Typedtree.expression -> Typedtree.expression
-val option_none: type_expr -> Location.t -> Typedtree.expression
+val option_some: Env.t -> Typedtree.expression -> Typedtree.expression
+val option_none: Env.t -> type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
-val iter_pattern: (Typedtree.pattern -> unit) -> Typedtree.pattern -> unit
 val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
@@ -144,7 +142,7 @@ type error =
   | Private_label of Longident.t * type_expr
   | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
-  | Instance_variable_not_mutable of bool * string
+  | Instance_variable_not_mutable of string
   | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
   | Outside_class
   | Value_multiply_overridden of string
@@ -153,7 +151,6 @@ type error =
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
-  | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * Ctype.Unification_trace.t

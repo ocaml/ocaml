@@ -102,11 +102,11 @@ let include_err ppf =
   | CM_Hide_virtual (k, lab) ->
       fprintf ppf "@[The virtual %s %s cannot be hidden@]" k lab
   | CM_Public_method lab ->
-      fprintf ppf "@[The public method %s cannot become private" lab
+      fprintf ppf "@[The public method %s cannot become private@]" lab
   | CM_Virtual_method lab ->
-      fprintf ppf "@[The virtual method %s cannot become concrete" lab
+      fprintf ppf "@[The virtual method %s cannot become concrete@]" lab
   | CM_Private_method lab ->
-      fprintf ppf "The private method %s cannot become public" lab
+      fprintf ppf "@[The private method %s cannot become public@]" lab
 
 let report_error ppf = function
   |  [] -> ()

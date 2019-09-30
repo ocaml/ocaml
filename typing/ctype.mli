@@ -37,10 +37,17 @@ module Unification_trace: sig
     | Equation of 'a
 
    (** Errors for polymorphic variants *)
+
+  type fixed_row_case =
+    | Cannot_be_closed
+    | Cannot_add_tags of string list
+
   type variant =
     | No_intersection
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
+    | Fixed_row of position * fixed_row_case * fixed_explanation
+    (** Fixed row types,  e.g. ['a. [> `X] as 'a] *)
 
   type obj =
     | Missing_field of position * string
@@ -142,7 +149,6 @@ val set_object_name:
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
-val lid_of_path: ?hash:string -> Path.t -> Longident.t
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
@@ -352,6 +358,8 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
 val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
+
+val immediacy : Env.t -> type_expr -> Type_immediacy.t
 
 val maybe_pointer_type : Env.t -> type_expr -> bool
        (* True if type is possibly pointer, false if definitely not a pointer *)

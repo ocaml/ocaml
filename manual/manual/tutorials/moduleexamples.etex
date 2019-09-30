@@ -99,6 +99,12 @@ becomes
 \begin{caml_example}{toplevel}
   PrioQueue.[insert empty 1 "hello"];;
 \end{caml_example}
+This second form also works for patterns:
+\begin{caml_example}{toplevel}
+  let at_most_one_element x = match x with
+  | PrioQueue.( Empty| Node (_,_, Empty,Empty) ) -> true
+  | _ -> false ;;
+\end{caml_example}
 
 It is also possible to copy the components of a module inside
 another module by using an "include" statement. This can be

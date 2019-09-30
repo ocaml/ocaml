@@ -58,6 +58,7 @@ and no_check_prims = ref false          (* -no-check-prims *)
 and bytecode_compatible_32 = ref false  (* -compat-32 *)
 and output_c_object = ref false         (* -output-obj *)
 and output_complete_object = ref false  (* -output-complete-obj *)
+and output_complete_executable = ref false  (* -output-complete-exe *)
 and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
@@ -163,6 +164,7 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | _       -> false)
 
 let runtime_variant = ref "";;      (* -runtime-variant *)
+let with_runtime = ref true;;         (* -with-runtime *)
 
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref true               (* -keep-locs *)
@@ -176,6 +178,8 @@ let inlining_report = ref false    (* -inlining-report *)
 
 let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
 let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
+
+let function_sections = ref false      (* -function-sections *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)

@@ -70,6 +70,10 @@ let string_header len =
 let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
+let caml_nativeint_ops = "caml_nativeint_ops"
+let caml_int32_ops = "caml_int32_ops"
+let caml_int64_ops = "caml_int64_ops"
+
 
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
 let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
@@ -372,15 +376,8 @@ let validate d m p =
   ucompare2 twoszp md < 0 && ucompare2 md (add2 twoszp twop1) <= 0
 *)
 
-let raise_regular dbg exc =
-  Csequence(
-    Cop(Cstore (Thirtytwo_signed, Lambda.Assignment),
-        [(Cconst_symbol ("caml_backtrace_pos", dbg));
-         Cconst_int (0, dbg)], dbg),
-      Cop(Craise Raise_withtrace,[exc], dbg))
-
 let raise_symbol dbg symb =
-  raise_regular dbg (Cconst_symbol (symb, dbg))
+  Cop(Craise Lambda.Raise_regular, [Cconst_symbol (symb, dbg)], dbg)
 
 let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -525,31 +522,21 @@ let test_bool dbg cmm =
 
 let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 
-let map_ccatch f rec_flag handlers body =
-  let handlers = List.map
-      (fun (n, ids, handler, dbg) -> (n, ids, f handler, dbg))
-      handlers in
-  Ccatch(rec_flag, handlers, f body)
-
-let rec unbox_float dbg cmm =
-  match cmm with
-  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header ->
-      c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_float dbg e1,
-        ifnot_dbg, unbox_float dbg e2,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
-  | Cswitch(e, tbl, el, dbg') ->
-    Cswitch(e, tbl,
-      Array.map (fun (expr, dbg) -> unbox_float dbg expr, dbg) el, dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-    map_ccatch (unbox_float dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, dbg) ->
-      Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
-  | c -> Cop(Cload (Double_u, Immutable), [c], dbg)
+let unbox_float dbg =
+  map_tail
+    (function
+      | Cop(Calloc, [Cblockheader (hdr, _); c], _)
+        when Nativeint.equal hdr float_header ->
+          c
+      | Cconst_symbol (s, _dbg) as cmm ->
+          begin match Cmmgen_state.structured_constant_of_sym s with
+          | Some (Uconst_float x) ->
+              Cconst_float (x, dbg) (* or keep _dbg? *)
+          | _ ->
+              Cop(Cload (Double_u, Immutable), [cmm], dbg)
+          end
+      | cmm -> Cop(Cload (Double_u, Immutable), [cmm], dbg)
+    )
 
 (* Complex *)
 
@@ -580,7 +567,8 @@ let rec remove_unit = function
         Array.map (fun (case, dbg) -> remove_unit case, dbg) cases,
         dbg)
   | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch remove_unit rec_flag handlers body
+      let map_h (n, ids, handler, dbg) = (n, ids, remove_unit handler, dbg) in
+      Ccatch(rec_flag, List.map map_h handlers, remove_unit body)
   | Ctrywith(body, exn, handler, dbg) ->
       Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
   | Clet(id, c1, c2) ->
@@ -945,10 +933,6 @@ let bigarray_set unsafe elt_kind layout b args newval dbg =
 
 (* Boxed integers *)
 
-let caml_nativeint_ops = "caml_nativeint_ops"
-let caml_int32_ops = "caml_int32_ops"
-let caml_int64_ops = "caml_int64_ops"
-
 let operations_boxed_int (bi : Primitive.boxed_integer) =
   match bi with
     Pnativeint -> caml_nativeint_ops
@@ -991,50 +975,62 @@ let alloc_matches_boxed_int bi ~hdr ~ops =
         && String.equal sym caml_int64_ops
   | (Pnativeint | Pint32 | Pint64), _, _ -> false
 
-let rec unbox_int bi arg dbg =
-  match arg with
-    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int (32, _)], dbg')],
-      _dbg)
-    when bi = Primitive.Pint32 && size_int = 8 && big_endian
-      && alloc_matches_boxed_int bi ~hdr ~ops ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg');
-        Cconst_int (32, dbg)],
-        dbg)
-  | Cop(Calloc, [hdr; ops; contents], _dbg)
-    when bi = Primitive.Pint32 && size_int = 8 && not big_endian
-      && alloc_matches_boxed_int bi ~hdr ~ops ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg);
-        Cconst_int (32, dbg)],
-        dbg)
-  | Cop(Calloc, [hdr; ops; contents], _dbg)
-    when alloc_matches_boxed_int bi ~hdr ~ops ->
-      contents
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_int bi e1 ifso_dbg,
-        ifnot_dbg, unbox_int bi e2 ifnot_dbg,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
-  | Cswitch(e, tbl, el, dbg') ->
-      Cswitch(e, tbl,
-        Array.map (fun (e, dbg) -> unbox_int bi e dbg, dbg) el,
-        dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, handler_dbg) ->
-      Ctrywith(unbox_int bi e1 dbg, id,
-        unbox_int bi e2 handler_dbg, handler_dbg)
-  | _ ->
-      if size_int = 4 && bi = Primitive.Pint64 then
-        split_int64_for_32bit_target arg dbg
-      else
-        Cop(
-          Cload((if bi = Primitive.Pint32 then Thirtytwo_signed else Word_int),
-                Mutable),
-          [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+let unbox_int dbg bi =
+  let default arg =
+    if size_int = 4 && bi = Primitive.Pint64 then
+      split_int64_for_32bit_target arg dbg
+    else
+      Cop(
+        Cload((if bi = Primitive.Pint32 then Thirtytwo_signed else Word_int),
+              Immutable),
+        [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+  in
+  map_tail
+    (function
+      | Cop(Calloc,
+            [hdr; ops;
+             Cop(Clsl, [contents; Cconst_int (32, _)], dbg')], _dbg)
+        when bi = Primitive.Pint32 && size_int = 8 && big_endian
+             && alloc_matches_boxed_int bi ~hdr ~ops ->
+          (* Force sign-extension of low 32 bits *)
+          Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg');
+                     Cconst_int (32, dbg)],
+              dbg)
+      | Cop(Calloc,
+            [hdr; ops; contents], _dbg)
+        when bi = Primitive.Pint32 && size_int = 8 && not big_endian
+             && alloc_matches_boxed_int bi ~hdr ~ops ->
+          (* Force sign-extension of low 32 bits *)
+          Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg);
+                     Cconst_int (32, dbg)],
+              dbg)
+      | Cop(Calloc, [hdr; ops; contents], _dbg)
+        when alloc_matches_boxed_int bi ~hdr ~ops ->
+          contents
+      | Cconst_symbol (s, _dbg) as cmm ->
+          begin match Cmmgen_state.structured_constant_of_sym s, bi with
+          | Some (Uconst_nativeint n), Primitive.Pnativeint ->
+              Cconst_natint (n, dbg)
+          | Some (Uconst_int32 n), Primitive.Pint32 ->
+              Cconst_natint (Nativeint.of_int32 n, dbg)
+          | Some (Uconst_int64 n), Primitive.Pint64 ->
+              if size_int = 8 then
+                Cconst_natint (Int64.to_nativeint n, dbg)
+              else
+                let low = Int64.to_nativeint n in
+                let high =
+                  Int64.to_nativeint (Int64.shift_right_logical n 32)
+                in
+                if big_endian then
+                  Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
+                else
+                  Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
+          | _ ->
+              default cmm
+          end
+      | cmm ->
+          default cmm
+    )
 
 let make_unsigned_int bi arg dbg =
   if bi = Primitive.Pint32 && size_int = 8
@@ -2039,18 +2035,11 @@ let int_as_pointer arg dbg =
   Cop(Caddi, [arg; Cconst_int (-1, dbg)], dbg)
   (* always a pointer outside the heap *)
 
-let raise_prim rkind arg dbg =
-  if !Clflags.debug then begin
-    match (rkind : Lambda.raise_kind) with
-    | Raise_notrace ->
-        Cop (Craise Raise_notrace, [arg], dbg)
-    | Raise_reraise ->
-        Cop (Craise Raise_withtrace, [arg], dbg)
-    | Raise_regular ->
-        raise_regular dbg arg
-  end
+let raise_prim raise_kind arg dbg =
+  if !Clflags.debug then
+    Cop (Craise raise_kind, [arg], dbg)
   else
-    Cop (Craise Raise_notrace, [arg], dbg)
+    Cop (Craise Lambda.Raise_notrace, [arg], dbg)
 
 let negint arg dbg =
   Cop(Csubi, [Cconst_int (2, dbg); arg], dbg)

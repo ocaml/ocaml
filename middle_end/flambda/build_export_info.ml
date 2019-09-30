@@ -38,6 +38,8 @@ module Env : sig
 
   val new_unit_descr : t -> Export_id.t
 
+  val is_symbol_being_defined : t -> Symbol.t -> bool
+
   module Global : sig
     (* "Global" as in "without local variable bindings". *)
     type t
@@ -53,7 +55,7 @@ module Env : sig
 
   (** Creates a new environment, sharing the mapping from export IDs to
       export descriptions with the given global environment. *)
-  val empty_of_global : Global.t -> t
+  val empty_of_global : symbols_being_defined:Symbol.Set.t -> Global.t -> t
 end = struct
   let fresh_id () = Export_id.create (Compilenv.current_unit ())
 
@@ -93,13 +95,15 @@ end = struct
   type t =
     { var : Export_info.approx Variable.Map.t;
       sym : Export_id.t Symbol.Map.t;
+      symbols_being_defined : Symbol.Set.t;
       ex_table : Export_info.descr Export_id.Map.t ref;
       closure_table: Export_id.t Closure_id.Map.t ref;
     }
 
-  let empty_of_global (env : Global.t) =
+  let empty_of_global ~symbols_being_defined (env : Global.t) =
     { var = Variable.Map.empty;
       sym = env.sym;
+      symbols_being_defined;
       ex_table = env.ex_table;
       closure_table = env.closure_table;
     }
@@ -188,6 +192,9 @@ end = struct
   let find_approx t var : Export_info.approx =
     try Variable.Map.find var t.var with
     | Not_found -> Value_unknown
+
+  let is_symbol_being_defined t sym =
+    Symbol.Set.mem sym t.symbols_being_defined
 end
 
 let descr_of_constant (c : Flambda.const) : Export_info.descr =
@@ -402,15 +409,18 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
 let approx_of_constant_defining_value_block_field env
       (c : Flambda.constant_defining_value_block_field) : Export_info.approx =
   match c with
-  | Symbol s -> Value_symbol s
+  | Symbol s ->
+      if Env.is_symbol_being_defined env s
+      then Value_unknown
+      else Value_symbol s
   | Const c -> Value_id (Env.new_descr env (descr_of_constant c))
 
 let describe_constant_defining_value env export_id symbol
-      (const : Flambda.constant_defining_value) =
+      ~symbols_being_defined (const : Flambda.constant_defining_value) =
   let env =
     (* Assignments of variables to export IDs are local to each constant
        defining value. *)
-    Env.empty_of_global env
+    Env.empty_of_global ~symbols_being_defined env
   in
   match const with
   | Allocated_const alloc_const ->
@@ -468,7 +478,9 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
     match program with
     | Let_symbol (symbol, constant_defining_value, program) ->
       let id, env = Env.Global.new_symbol env symbol in
-      describe_constant_defining_value env id symbol constant_defining_value;
+      describe_constant_defining_value env id symbol
+        ~symbols_being_defined:(Symbol.Set.singleton symbol)
+        constant_defining_value;
       loop env program
     | Let_rec_symbol (defs, program) ->
       let env, defs =
@@ -485,11 +497,16 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
             | _ -> false)
           defs
       in
+      let symbols_being_defined =
+        Symbol.Set.of_list (List.map (fun (_, sym, _) -> sym) defs)
+      in
       List.iter (fun (id, symbol, def) ->
-          describe_constant_defining_value env id symbol def)
+          describe_constant_defining_value env id symbol
+            ~symbols_being_defined def)
         other_constants;
       List.iter (fun (id, symbol, def) ->
-          describe_constant_defining_value env id symbol def)
+          describe_constant_defining_value env id symbol
+            ~symbols_being_defined def)
         project_closures;
       loop env program
     | Initialize_symbol (symbol, tag, fields, program) ->
@@ -497,7 +514,8 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
         let env =
           (* Assignments of variables to export IDs are local to each
              [Initialize_symbol] construction. *)
-          Env.empty_of_global env
+          Env.empty_of_global
+            ~symbols_being_defined:(Symbol.Set.singleton symbol) env
         in
         let field_approxs = List.map (approx_of_expr env) fields in
         let descr : Export_info.descr =

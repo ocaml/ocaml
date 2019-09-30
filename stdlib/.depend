@@ -211,6 +211,7 @@ stdlib__filename.cmo : \
     stdlib__string.cmi \
     stdlib__random.cmi \
     stdlib__printf.cmi \
+    stdlib__list.cmi \
     stdlib__lazy.cmi \
     stdlib__buffer.cmi \
     stdlib__filename.cmi
@@ -219,6 +220,7 @@ stdlib__filename.cmx : \
     stdlib__string.cmx \
     stdlib__random.cmx \
     stdlib__printf.cmx \
+    stdlib__list.cmx \
     stdlib__lazy.cmx \
     stdlib__buffer.cmx \
     stdlib__filename.cmi

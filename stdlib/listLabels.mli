@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = 'a list = [] | (::) of 'a * 'a list
+type 'a t = 'a list = [] | (::) of 'a * 'a list (**)
 (** An alias for the type of lists. *)
 
 (** List operations.
@@ -234,6 +234,13 @@ val find_opt: f:('a -> bool) -> 'a list -> 'a option
    Returns [None] if there is no value that satisfies [p] in the
    list [l].
    @since 4.05 *)
+
+val find_map: f:('a -> 'b option) -> 'a list -> 'b option
+(** [find_map f l] applies [f] to the elements of [l] in order,
+    and returns the first result of the form [Some v], or [None]
+    if none exist.
+    @since 4.10.0
+*)
 
 val filter : f:('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]

@@ -27,8 +27,8 @@
      sigact.sa_flags = SA_SIGINFO
 
   typedef greg_t context_reg;
+  #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
-  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.gregs[REG_CR2])
 
@@ -55,8 +55,8 @@
 
   typedef unsigned long long context_reg;
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
+  #define CONTEXT_C_ARG_1 (CONTEXT_STATE.CONTEXT_REG(rdi))
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(rip))
-  #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.CONTEXT_REG(r14))
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.CONTEXT_REG(r15))
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(rsp))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
@@ -137,7 +137,7 @@
 
   typedef greg_t context_reg;
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
-  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
+  #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -153,7 +153,7 @@
  sigact.sa_flags = SA_SIGINFO
 
  #define CONTEXT_PC (context->sc_rip)
- #define CONTEXT_EXCEPTION_POINTER (context->sc_r14)
+ #define CONTEXT_C_ARG_1 (context->sc_rdi)
  #define CONTEXT_YOUNG_PTR (context->sc_r15)
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -170,7 +170,7 @@
  sigact.sa_flags = SA_SIGINFO
 
  #define CONTEXT_PC (_UC_MACHINE_PC(context))
- #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
+ #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 

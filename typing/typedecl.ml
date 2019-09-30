@@ -113,7 +113,7 @@ let enter_type rec_flag env sdecl id =
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = false;
+      type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
     }
   in
@@ -129,8 +129,10 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-let get_unboxed_type_representation =
-  Typedecl_unboxed.get_unboxed_type_representation
+let get_unboxed_type_representation env ty =
+  match Typedecl_unboxed.get_unboxed_type_representation env ty with
+  | Typedecl_unboxed.This x -> Some x
+  | _ -> None
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
@@ -167,7 +169,7 @@ let set_fixed_row env loc p decl =
     match tm.desc with
       Tvariant row ->
         let row = Btype.row_repr row in
-        tm.desc <- Tvariant {row with row_fixed = true};
+        tm.desc <- Tvariant {row with row_fixed = Some Fixed_private};
         if Btype.static_row row then Btype.newgenty Tnil
         else row.row_more
     | Tobject (ty, _) ->
@@ -493,7 +495,7 @@ let transl_declaration env sdecl id =
         type_expansion_scope = Btype.lowest_level;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
-        type_immediate = false;
+        type_immediate = Unknown;
         type_unboxed = unboxed_status;
       } in
 
@@ -508,9 +510,11 @@ let transl_declaration env sdecl id =
     Ctype.end_def ();
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
-      let p =
-        try Env.lookup_type (Longident.Lident(Ident.name id ^ "#row")) env
-        with Not_found -> assert false in
+      let p, _ =
+        try Env.find_type_by_name
+              (Longident.Lident(Ident.name id ^ "#row")) env
+        with Not_found -> assert false
+      in
       set_fixed_row env sdecl.ptype_loc p decl
     end;
   (* Check for cyclic abbreviations *)
@@ -718,16 +722,16 @@ let check_well_founded env loc path to_check ty =
     in
     match ty.desc with
     | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
-        if to_check p then may raise arg_exn
+        if to_check p then Option.iter raise arg_exn
         else Btype.iter_type_expr (check ty0 TypeSet.empty) ty;
         begin try
           let ty' = Ctype.try_expand_once_opt env ty in
           let ty0 = if TypeSet.is_empty parents then ty else ty0 in
           check ty0 (TypeSet.add ty parents) ty'
         with
-          Ctype.Cannot_expand -> may raise arg_exn
+          Ctype.Cannot_expand -> Option.iter raise arg_exn
         end
-    | _ -> may raise arg_exn
+    | _ -> Option.iter raise arg_exn
   in
   let snap = Btype.snapshot () in
   try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
@@ -797,7 +801,7 @@ let check_recursion env loc path decl to_check =
           Btype.iter_type_expr (check_regular cpath args prev_exp) ty
     end in
 
-  Misc.may
+  Option.iter
     (fun body ->
       let (args, body) =
         Ctype.instance_parameterized_type
@@ -888,10 +892,15 @@ let transl_type_decl env rec_flag sdecl_list =
   let sdecl_list =
     List.map
       (fun sdecl ->
-        let ptype_name =
-          mkloc (sdecl.ptype_name.txt ^"#row") sdecl.ptype_name.loc in
+         let ptype_name =
+           let loc = { sdecl.ptype_name.loc with Location.loc_ghost = true } in
+           mkloc (sdecl.ptype_name.txt ^"#row") loc
+         in
+         let ptype_kind = Ptype_abstract in
+         let ptype_manifest = None in
+         let ptype_loc = { sdecl.ptype_loc with Location.loc_ghost = true } in
         {sdecl with
-         ptype_name; ptype_kind = Ptype_abstract; ptype_manifest = None})
+           ptype_name; ptype_kind; ptype_manifest; ptype_loc })
       fixed_types
     @ sdecl_list
   in
@@ -1023,12 +1032,8 @@ let transl_extension_constructor env type_path type_params
         in
           args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
-        let cdescr = Typetexp.find_constructor env lid.loc lid.txt in
-        let usage =
-          if cdescr.cstr_private = Private || priv = Public
-          then Env.Positive else Env.Privatize
-        in
-        Env.mark_constructor usage env (Longident.last lid.txt) cdescr;
+        let usage = if priv = Public then Env.Positive else Env.Privatize in
+        let cdescr = Env.lookup_constructor ~loc:lid.loc usage lid.txt env in
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
@@ -1136,9 +1141,9 @@ let transl_extension_constructor env type_path type_params
 let transl_type_extension extend env loc styext =
   reset_type_variables();
   Ctype.begin_def();
-  let (type_path, type_decl) =
+  let type_path, type_decl =
     let lid = styext.ptyext_path in
-    Typetexp.find_type env lid.loc lid.txt
+    Env.lookup_type ~loc:lid.loc lid.txt env
   in
   begin
     match type_decl.type_kind with
@@ -1196,7 +1201,7 @@ let transl_type_extension extend env loc styext =
   List.iter
     (fun ext ->
        Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-       may Ctype.generalize ext.ext_type.ext_ret_type)
+       Option.iter Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
   (* Check that all type variables are closed *)
   List.iter
@@ -1250,7 +1255,7 @@ let transl_exception env sext =
   Ctype.end_def();
   (* Generalize types *)
   Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-  may Ctype.generalize ext.ext_type.ext_ret_type;
+  Option.iter Ctype.generalize ext.ext_type.ext_ret_type;
   (* Check that all type variables are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
     Some ty ->
@@ -1489,7 +1494,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = false;
+      type_immediate = Unknown;
       type_unboxed;
     }
   in
@@ -1541,7 +1546,7 @@ let abstract_type_decl arity =
       type_expansion_scope = Btype.lowest_level;
       type_loc = Location.none;
       type_attributes = [];
-      type_immediate = false;
+      type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
      } in
   Ctype.end_def();
@@ -1721,8 +1726,8 @@ let report_error ppf = function
   | Rebind_wrong_type (lid, env, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
-          fprintf ppf "The constructor %a@ has type"
-            Printtyp.longident lid)
+           fprintf ppf "The constructor %a@ has type"
+             Printtyp.longident lid)
         (function ppf ->
            fprintf ppf "but was expected to be of type")
   | Rebind_mismatch (lid, p, p') ->
@@ -1754,27 +1759,29 @@ let report_error ppf = function
         | 3 when not teen -> "rd"
         | _ -> "th"
       in
-      (* FIXME: this test below is horrible, use a proper variant *)
-      if n = -1 then
-        fprintf ppf "@[%s@ %s@ It"
-          "In this definition, a type variable has a variance that"
-          "is not reflected by its occurrence in type parameters."
-      else if n = -2 then
-        fprintf ppf "@[%s@ %s@]"
-          "In this definition, a type variable cannot be deduced"
-          "from the type parameters."
-      else if n = -3 then
-        fprintf ppf "@[%s@ %s@ It"
-          "In this definition, a type variable has a variance that"
-          "cannot be deduced from the type parameters."
-      else
-        fprintf ppf "@[%s@ %s@ The %d%s type parameter"
-          "In this definition, expected parameter"
-          "variances are not satisfied."
-          n (suffix n);
-      if n <> -2 then
-        fprintf ppf " was expected to be %s,@ but it is %s.@]"
-          (variance v2) (variance v1)
+      (match n with
+       | Variance_not_reflected ->
+           fprintf ppf "@[%s@ %s@ It"
+             "In this definition, a type variable has a variance that"
+             "is not reflected by its occurrence in type parameters."
+       | No_variable ->
+           fprintf ppf "@[%s@ %s@]"
+             "In this definition, a type variable cannot be deduced"
+             "from the type parameters."
+       | Variance_not_deducible ->
+           fprintf ppf "@[%s@ %s@ It"
+             "In this definition, a type variable has a variance that"
+             "cannot be deduced from the type parameters."
+       | Variance_not_satisfied n ->
+           fprintf ppf "@[%s@ %s@ The %d%s type parameter"
+             "In this definition, expected parameter"
+             "variances are not satisfied."
+             n (suffix n));
+      (match n with
+       | No_variable -> ()
+       | _ ->
+           fprintf ppf " was expected to be %s,@ but it is %s.@]"
+             (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
@@ -1789,20 +1796,25 @@ let report_error ppf = function
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
       fprintf ppf "@[Don't know how to unbox this type.@ \
-                    Only float, int32, int64 and nativeint can be unboxed.@]"
+                   Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
       fprintf ppf "@[Don't know how to untag this type.@ \
                    Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
         "@[The attribute '%s' should be attached to@ \
-           a direct argument or result of the primitive,@ \
-           it should not occur deeply into its type.@]"
+         a direct argument or result of the primitive,@ \
+         it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
-  | Immediacy Typedecl_immediacy.Bad_immediate_attribute ->
-      fprintf ppf "@[%s@ %s@]"
-        "Types marked with the immediate attribute must be"
-        "non-pointer types like int or bool"
+  | Immediacy (Typedecl_immediacy.Bad_immediacy_attribute violation) ->
+      fprintf ppf "@[%a@]" Format.pp_print_text
+        (match violation with
+         | Type_immediacy.Violation.Not_always_immediate ->
+             "Types marked with the immediate attribute must be \
+              non-pointer types like int or bool."
+         | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
+             "Types marked with the immediate64 attribute must be \
+              produced using the Stdlib.Sys.Immediate64.Make functor.")
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
   | Wrong_unboxed_type_float ->

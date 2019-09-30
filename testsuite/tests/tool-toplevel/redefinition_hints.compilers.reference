@@ -1,0 +1,40 @@
+module Empty : sig end
+type u = A
+type v = B
+module type S = sig end
+val m : (module S) = <module>
+module M : sig type 'a t = X of 'a end
+val x : (u * v * (module S)) M.t = M.X (A, B, <module>)
+module type S = sig end
+val m : (module S) = <module>
+type u = A
+type v = B
+module M : sig type 'a t = X of 'a end
+val y : (u * v * (module S)) M.t = M.X (A, B, <module>)
+Line 2, characters 4-5:
+2 | x = y;;
+        ^
+Error: This expression has type (u/1 * v/1 * (module S/1)) M/1.t
+       but an expression was expected of type
+         (u/2 * v/2 * (module S/2)) M/2.t
+       Hint: The types v and u have been defined multiple times in this
+         toplevel session. Some toplevel values still refer to old versions
+         of those types. Did you try to redefine them?
+       Hint: The module M has been defined multiple times in this toplevel
+         session. Some toplevel values still refer to old versions of this
+         module. Did you try to redefine them?
+       Hint: The module type S has been defined multiple times in this
+         toplevel session. Some toplevel values still refer to old versions
+         of this module type. Did you try to redefine them?
+type a = A
+val a : a = A
+type a = A
+val b : a = A
+Line 2, characters 4-5:
+2 | a = b;;
+        ^
+Error: This expression has type a/1 but an expression was expected of type
+         a/2
+       Hint: The type a has been defined multiple times in this toplevel
+         session. Some toplevel values still refer to old versions of this
+         type. Did you try to redefine them?

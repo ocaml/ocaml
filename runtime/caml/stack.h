@@ -107,11 +107,6 @@ extern uintnat caml_stack_usage (void);
 extern uintnat (*caml_stack_usage_hook)(void);
 
 /* Declaration of variables used in the asm code */
-extern char * caml_top_of_stack;
-extern char * caml_bottom_of_stack;
-extern uintnat caml_last_return_address;
-extern value * caml_gc_regs;
-extern char * caml_exception_pointer;
 extern value * caml_globals[];
 extern char caml_globals_map[];
 extern intnat caml_globals_inited;

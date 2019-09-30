@@ -55,6 +55,11 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
+ifeq "$(FUNCTION_SECTIONS)" "true"
+OPTCOMPFLAGS= -function-sections
+else
+OPTCOMPFLAGS=
+endif
 LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -72,14 +77,12 @@ DEPINCLUDES=$(INCLUDES)
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
-  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
-  utils/clflags.cmo utils/profile.cmo \
-  utils/load_path.cmo \
-  utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-  utils/consistbl.cmo \
-  utils/strongly_connected_components.cmo \
-  utils/targetint.cmo \
-  utils/int_replace_polymorphic_compare.cmo
+	utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
+	utils/clflags.cmo utils/profile.cmo utils/load_path.cmo \
+	utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
+	utils/consistbl.cmo utils/strongly_connected_components.cmo \
+	utils/targetint.cmo utils/int_replace_polymorphic_compare.cmo \
+	utils/domainstate.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
@@ -91,7 +94,7 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/builtin_attributes.cmo parsing/ast_invariants.cmo parsing/depend.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
-  typing/primitive.cmo typing/types.cmo \
+  typing/primitive.cmo typing/type_immediacy.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo file_formats/cmi_format.cmo \
@@ -174,7 +177,7 @@ ASMCOMP=\
   asmcomp/linscan.cmo \
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
-  asmcomp/printlinear.cmo asmcomp/linearize.cmo \
+  asmcomp/linear.cmo asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
   asmcomp/debug/compute_ranges_intf.cmo \
   asmcomp/debug/compute_ranges.cmo \
@@ -325,21 +328,25 @@ endif
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp Makefile.config utils/Makefile Makefile
+utils/config.ml: utils/config.mlp Makefile.config utils/Makefile
 	$(MAKE) -C utils config.ml
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: reconfigure
 reconfigure:
 	./configure $(CONFIGURE_ARGS)
-endif
+
+utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
+	$(CPP) -I runtime/caml $< > $@
+
+utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
+	$(CPP) -I runtime/caml $< > $@
 
 .PHONY: partialclean
 partialclean::
-	rm -f utils/config.ml
+	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend
-beforedepend:: utils/config.ml
+beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 # Start up the system from the distribution compiler
 .PHONY: coldstart
@@ -423,6 +430,9 @@ opt.opt: checknative
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
 	  ocamltest.opt
+ifneq "$(WITH_OCAMLDOC)" ""
+	$(MAKE) manpages
+endif
 
 # Core bootstrapping cycle
 .PHONY: coreboot
@@ -450,6 +460,9 @@ coreboot:
 all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
+ifneq "$(WITH_OCAMLDOC)" ""
+	$(MAKE) manpages
+endif
 
 # Bootstrap and rebuild the whole system.
 # The compilation of ocaml will fail if the runtime has changed.
@@ -499,11 +512,12 @@ flexdll: flexdll/Makefile flexlink
 flexlink: flexdll/Makefile
 	$(MAKE) -C runtime BOOTSTRAPPING_FLEXLINK=yes ocamlrun$(EXE)
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
-	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
+	$(MAKE) -C stdlib COMPILER=../boot/ocamlc \
+	                  $(filter-out *.cmi,$(LIBFILES))
+	cd stdlib && cp $(LIBFILES) ../boot/
 	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
 	  CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
-	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
+	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot" \
 	  flexlink.exe
 	$(MAKE) -C runtime clean
 	$(MAKE) partialclean
@@ -514,7 +528,8 @@ flexlink.opt:
 	mv flexlink.exe flexlink && \
 	($(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
 	           OCAML_CONFIG_FILE=../Makefile.config \
-	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe || \
+	           OCAMLOPT="../ocamlopt.opt -nostdlib -I ../stdlib" \
+	           flexlink.exe || \
 	 (mv flexlink flexlink.exe && false)) && \
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
@@ -524,8 +539,7 @@ INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 .PHONY: install-flexdll
 install-flexdll:
-	cat stdlib/camlheader flexdll/flexlink.exe > \
-	  "$(INSTALL_BINDIR)/flexlink.exe"
+	$(INSTALL_PROG) flexdll/flexlink.exe "$(INSTALL_BINDIR)/flexlink$(EXE)"
 ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
 	$(INSTALL_DATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
     "$(INSTALL_BINDIR)/"
@@ -603,9 +617,9 @@ endif
 # from an previous installation of OCaml before otherlibs/num was removed.
 	rm -f "$(INSTALL_LIBDIR)"/num.cm?
 # End transitional
-	if test -n "$(WITH_OCAMLDOC)"; then \
-	  $(MAKE) -C ocamldoc install; \
-	fi
+ifneq "$(WITH_OCAMLDOC)" ""
+	$(MAKE) -C ocamldoc install
+endif
 	if test -n "$(WITH_DEBUGGER)"; then \
 	  $(MAKE) -C debugger install; \
 	fi
@@ -648,6 +662,9 @@ endif
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    asmcomp/debug/*.cmi \
+	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    middle_end/*.cmt middle_end/*.cmti \
@@ -670,13 +687,17 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	    asmcomp/*.cmt asmcomp/*.cmti \
 	    asmcomp/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    asmcomp/debug/*.cmt asmcomp/debug/*.cmti \
+	    asmcomp/debug/*.mli \
+	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
 	    compilerlibs/ocamloptcomp.cma $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
-	if test -n "$(WITH_OCAMLDOC)"; then \
-	  $(MAKE) -C ocamldoc installopt; \
-	fi
+ifneq "$(WITH_OCAMLDOC)" ""
+	$(MAKE) -C ocamldoc installopt
+endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
@@ -714,6 +735,7 @@ installoptopt:
            middle_end/closure/*.cmx \
            middle_end/flambda/*.cmx \
            middle_end/flambda/base_types/*.cmx \
+	   asmcomp/debug/*.cmx \
           "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
@@ -748,6 +770,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   toplevel/*.ml middle_end/*.ml middle_end/closure/*.ml \
      middle_end/flambda/*.ml middle_end/flambda/base_types/*.ml \
 	   asmcomp/*.ml \
+	   asmcmp/debug/*.ml \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 
@@ -1021,7 +1044,7 @@ partialclean::
 # The lexer and parser generators
 
 .PHONY: ocamllex
-ocamllex: ocamlyacc ocamlc
+ocamllex: ocamlyacc
 	$(MAKE) -C lex all
 
 .PHONY: ocamllex.opt
@@ -1069,11 +1092,14 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 
 parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
   tools/check-parser-uptodate-or-warn.sh
-	@tools/check-parser-uptodate-or-warn.sh
-	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+	@-tools/check-parser-uptodate-or-warn.sh
+	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 parsing/parser.mli: boot/menhir/parser.mli
-	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+	sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 
+beforedepend:: parsing/camlinternalMenhirLib.ml \
+  parsing/camlinternalMenhirLib.mli \
+	parsing/parser.ml parsing/parser.mli
 
 partialclean:: partialclean-menhir
 
@@ -1104,6 +1130,10 @@ partialclean::
 html_doc: ocamldoc
 	$(MAKE) -C ocamldoc $@
 	@echo "documentation is in ./ocamldoc/stdlib_html/"
+
+.PHONY: manpages
+manpages:
+	$(MAKE) -C ocamldoc $@
 
 partialclean::
 	$(MAKE) -C ocamldoc clean
@@ -1267,34 +1297,9 @@ partialclean::
 
 beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
-# Testing the parser -- see parsing/HACKING.adoc
-
-SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli' | grep -v boot/menhir/parser)
-
-AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
-
-build-all-asts: $(AST_FILES)
-
-CAMLC_DPARSETREE := \
-	$(CAMLRUN) ./ocamlc -nostdlib -nopervasives \
-	  -stop-after parsing -dparsetree
-
-%.ml.ast: %.ml ocamlc
-	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
-# `|| exit 0` : some source files will fail to parse
-# (for example, they are meant as toplevel scripts
-# rather than source files, or are parse-error tests),
-# we ignore the failure in that case
-
-%.mli.ast: %.mli ocamlc
-	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
-
-.PHONY: list-all-asts
-list-all-asts:
-	@for f in $(AST_FILES); do echo "'$$f'"; done
-
-partialclean::
-	rm -f $(AST_FILES)
+ifneq "$(wildcard .git)" ""
+include Makefile.dev
+endif
 
 # Default rules
 
@@ -1307,7 +1312,7 @@ partialclean::
 	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \

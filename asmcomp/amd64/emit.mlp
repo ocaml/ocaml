@@ -21,7 +21,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 open X86_ast
@@ -70,12 +70,17 @@ let fp = Config.with_frame_pointers
 
 let fastcode_flag = ref true
 
+(* Layout of the stack frame *)
 let stack_offset = ref 0
 
-(* Layout of the stack frame *)
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
+
+let frame_required = ref false
 
 let frame_size () =                     (* includes return address *)
-  if frame_required() then begin
+  if !frame_required then begin
     let sz =
       (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
        + (if fp then 8 else 0))
@@ -153,6 +158,9 @@ let load_symbol_addr s arg =
     I.lea (mem64_rip NONE (emit_symbol s)) arg
   else
     I.mov (sym (emit_symbol s)) arg
+
+let domain_field f =
+  mem64 QWORD (Domainstate.idx_of_field f * 8) R14
 
 (* Output a label *)
 
@@ -439,7 +447,7 @@ let emit_float_test cmp i lbl =
 (* Deallocate the stack frame before a return or tail call *)
 
 let output_epilogue f =
-  if frame_required() then begin
+  if !frame_required then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
@@ -478,6 +486,26 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+(* Output .text section directive, or named .text.caml.<name> if enabled and
+   supported on the target system. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then
+    begin match system with
+    | S_macosx
+    (* Names of section segments in macosx are restricted to 16 characters,
+       but function names are often longer, especially anonymous functions. *)
+    | S_win64 | S_mingw64 | S_cygwin
+    (* Win systems provide named text sections, but configure on these
+       systems does not support function sections. *)
+      ->  assert false
+    | _ -> D.section
+             [ ".text.caml."^(emit_symbol func_name) ]
+             (Some "ax")
+             ["@progbits"]
+    end
+  else D.text ()
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -491,13 +519,13 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    assert (Proc.prologue_required ());
+    assert (!prologue_required);
     if fp then begin
       I.push rbp;
       cfi_adjust_cfa_offset 8;
       I.mov rsp rbp;
     end;
-    if frame_required() then begin
+    if !frame_required then begin
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0
       then begin
@@ -574,8 +602,7 @@ let emit_instr fallthrough i =
              If we do the same for Win64, we probably need to change
              amd64nt.asm accordingly.
           *)
-          load_symbol_addr "caml_young_ptr" r11;
-          I.mov (mem64 QWORD 0 R11) r15
+          I.mov (domain_field Domainstate.Domain_young_ptr) r15
         end
       end else begin
         emit_call func;
@@ -634,24 +661,7 @@ let emit_instr fallthrough i =
         let lbl_redo = new_label() in
         def_label lbl_redo;
         I.sub (int n) r15;
-        let spacetime_node_hole_ptr_is_in_rax =
-          Config.spacetime && (i.arg.(0).loc = Reg 0)
-        in
-        if !Clflags.dlcode then begin
-          (* When using Spacetime, %rax might be the node pointer, so we
-             must take care not to clobber it.  (Whilst we can tell the
-             register allocator that %rax is destroyed by Ialloc, we can't
-             force that the argument (the node pointer) is not in %rax.) *)
-          if spacetime_node_hole_ptr_is_in_rax then begin
-            I.push rax
-          end;
-          load_symbol_addr "caml_young_limit" rax;
-          I.cmp (mem64 QWORD 0 RAX) r15;
-          if spacetime_node_hole_ptr_is_in_rax then begin
-            I.pop rax  (* this does not affect the flags *)
-          end
-        end else
-          I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit")) r15;
+        I.cmp (domain_field Domainstate.Domain_young_limit) r15;
         let lbl_call_gc = new_label() in
         let dbg =
           if not Config.spacetime then Debuginfo.none
@@ -821,7 +831,7 @@ let emit_instr fallthrough i =
       end;
       begin match lbl2 with
       | None -> ()
-      | Some lbl -> I.jg (label lbl)
+      | Some lbl -> I.ja (label lbl)
       end
   | Lswitch jumptbl ->
       let lbl = emit_label (new_label()) in
@@ -852,9 +862,14 @@ let emit_instr fallthrough i =
         D.long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
                          ConstLabel lbl))
       done;
-      D.text ()
+      emit_named_text_section !function_name
   | Lentertrap ->
       ()
+  | Ladjust_trap_depth { delta_traps; } ->
+      (* each trap occupies 16 bytes on the stack *)
+      let delta = 16 * delta_traps in
+      cfi_adjust_cfa_offset delta;
+      stack_offset := !stack_offset + delta
   | Lpushtrap { lbl_handler; } ->
       let load_label_addr s arg =
         if !Clflags.pic_code then
@@ -862,15 +877,15 @@ let emit_instr fallthrough i =
         else
           I.mov (sym (emit_label s)) arg
       in
-      cfi_adjust_cfa_offset 16;
-      I.sub (int 16) rsp;
+      load_label_addr lbl_handler r11;
+      I.push r11;
+      cfi_adjust_cfa_offset 8;
+      I.push (domain_field Domainstate.Domain_exception_pointer);
+      cfi_adjust_cfa_offset 8;
+      I.mov rsp (domain_field Domainstate.Domain_exception_pointer);
       stack_offset := !stack_offset + 16;
-      I.mov r14 (mem64 QWORD 0 RSP);
-      load_label_addr lbl_handler r14;
-      I.mov r14 (mem64 QWORD 8 RSP);
-      I.mov rsp r14
   | Lpoptrap ->
-      I.pop r14;
+      I.pop (domain_field Domainstate.Domain_exception_pointer);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
@@ -880,12 +895,16 @@ let emit_instr fallthrough i =
          [caml_reraise_exn].  The only function called that might affect the
          trie is [caml_stash_backtrace], and it does not. *)
       begin match k with
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_regular ->
+          I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
-      | Cmm.Raise_notrace ->
-          I.mov r14 rsp;
-          I.pop r14;
+      | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty true i.dbg
+      | Lambda.Raise_notrace ->
+          I.mov (domain_field Domainstate.Domain_exception_pointer) rsp;
+          I.pop (domain_field Domainstate.Domain_exception_pointer);
           I.pop r11;
           I.jmp r11
       end
@@ -895,7 +914,7 @@ let rec emit_all fallthrough i =
   | Lend -> ()
   | _ ->
       emit_instr fallthrough i;
-      emit_all (Linearize.has_fallthrough i.desc) i.next
+      emit_all (Linear.has_fallthrough i.desc) i.next
 
 let all_functions = ref []
 
@@ -909,8 +928,13 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
+  frame_required := fundecl.fun_frame_required;
   all_functions := fundecl :: !all_functions;
-  D.text ();
+  emit_named_text_section !function_name;
   D.align 16;
   add_def_symbol fundecl.fun_name;
   if system = S_macosx
@@ -926,7 +950,7 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
-  if frame_required() then begin
+  if !frame_required then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
     then begin
@@ -962,6 +986,7 @@ let emit_item = function
 
 let data l =
   D.data ();
+  D.align 8;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
@@ -973,9 +998,6 @@ let begin_assembly() =
   float_constants := [];
   all_functions := [];
   if system = S_win64 then begin
-    D.extrn "caml_young_ptr" QWORD;
-    D.extrn "caml_young_limit" QWORD;
-    D.extrn "caml_exception_pointer" QWORD;
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_call_gc1" NEAR;
     D.extrn "caml_call_gc2" NEAR;
@@ -1011,7 +1033,7 @@ let begin_assembly() =
   D.data ();
   emit_global_label "data_begin";
 
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin";
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
@@ -1061,7 +1083,7 @@ let end_assembly() =
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_end"));
   if system = S_macosx then I.nop ();
   (* suppress "ld warning: atom sorting error" *)
 

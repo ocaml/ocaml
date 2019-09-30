@@ -713,13 +713,16 @@ and 'a class_infos =
 
 (* Auxiliary functions over the a.s.t. *)
 
-val iter_pattern_desc: (pattern -> unit) -> pattern_desc -> unit
-val map_pattern_desc: (pattern -> pattern) -> pattern_desc -> pattern_desc
+val shallow_iter_pattern_desc:
+  (pattern -> unit) -> pattern_desc -> unit
+val shallow_map_pattern_desc:
+  (pattern -> pattern) -> pattern_desc -> pattern_desc
+
+val iter_pattern: (pattern -> unit) -> pattern -> unit
+val exists_pattern: (pattern -> bool) -> pattern -> bool
 
 val let_bound_idents: value_binding list -> Ident.t list
-val rev_let_bound_idents: value_binding list -> Ident.t list
-
-val let_bound_idents_with_loc:
+val let_bound_idents_full:
     value_binding list -> (Ident.t * string loc * type_expr) list
 
 (** Alpha conversion of patterns *)

@@ -22,12 +22,18 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 (* Layout of the stack.  The stack is kept 8-aligned. *)
 
 let stack_offset = ref 0
+
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
+
+let contains_calls = ref false
 
 let frame_size () =
   let size =
@@ -308,7 +314,7 @@ let emit_instr i =
     match i.desc with
       Lend -> ()
     | Lprologue ->
-      assert (Proc.prologue_required ());
+      assert (!prologue_required);
       let n = frame_size() in
       emit_stack_adjust n;
       if !contains_calls then
@@ -430,7 +436,8 @@ let emit_instr i =
             gc_frame_lbl = lbl_frame } :: !call_gc_sites;
         `{emit_label lbl_redo}:`;
         `	lay	{emit_reg i.res.(0)}, {emit_int(-n+8)}(%r11)\n`;
-        `	clgr	{emit_reg i.res.(0)}, %r10\n`;
+        let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+        `	clg	{emit_reg i.res.(0)}, {emit_int offset}(%r10)\n`;
         `	brcl	12, {emit_label lbl_call_gc}\n`;
                                                  (* less than or equal *)
         `	lay	%r11, -8({emit_reg i.res.(0)})\n`
@@ -611,6 +618,11 @@ let emit_instr i =
         emit_string code_space
     | Lentertrap ->
         ()
+    | Ladjust_trap_depth { delta_traps } ->
+        (* each trap occupies 16 bytes on the stack *)
+        let delta = 16 * delta_traps in
+        emit_stack_adjust delta;
+        stack_offset := !stack_offset + delta
     | Lpushtrap { lbl_handler; } ->
         stack_offset := !stack_offset + 16;
         emit_stack_adjust 16;
@@ -624,10 +636,16 @@ let emit_instr i =
         stack_offset := !stack_offset - 16
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Lambda.Raise_regular->
+          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
+          `	lghi	%r1, 0\n`;
+          `	stg	%r1, {emit_int offset}(%r10)\n`;
           emit_call "caml_raise_exn";
           `{record_frame Reg.Set.empty true i.dbg}\n`
-        | Cmm.Raise_notrace ->
+        | Lambda.Raise_reraise ->
+          emit_call "caml_raise_exn";
+          `{record_frame Reg.Set.empty true i.dbg}\n`
+        | Lambda.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
           `	lg	%r13, {emit_int size_addr}(%r15)\n`;
@@ -656,6 +674,11 @@ let fundecl fundecl =
   bound_error_call := 0;
   float_literals := [];
   int_literals := [];
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
+  contains_calls := fundecl.fun_contains_calls;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   emit_debug_info fundecl.fun_dbg;
   `	.type	{emit_symbol fundecl.fun_name}, @function\n`;

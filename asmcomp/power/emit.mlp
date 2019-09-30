@@ -21,7 +21,7 @@ open Arch
 open Proc
 open Reg
 open Mach
-open Linearize
+open Linear
 open Emitaux
 
 (* Reserved space at bottom of stack *)
@@ -35,6 +35,12 @@ let reserved_stack_space =
 (* Layout of the stack.  The stack is kept 16-aligned. *)
 
 let stack_offset = ref 0
+
+let num_stack_slots = Array.make Proc.num_register_classes 0
+
+let prologue_required = ref false
+
+let contains_calls = ref false
 
 let frame_size () =
   let size =
@@ -535,6 +541,7 @@ module BR = Branch_relaxation.Make (struct
         + (if lbl2 = None then 0 else 1)
     | Lswitch _ -> size 7 (5 + tocload_size()) (5 + tocload_size())
     | Lentertrap -> size 0 (tocload_size()) (tocload_size())
+    | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> size 5 (4 + tocload_size()) (4 + tocload_size())
     | Lpoptrap -> 2
     | Lraise _ -> 6
@@ -556,7 +563,7 @@ let emit_instr i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      assert (Proc.prologue_required ());
+      assert (!prologue_required);
       let n = frame_size() in
       if n > 0 then begin
         `	addi	1, 1, {emit_int(-n)}\n`;
@@ -741,12 +748,12 @@ let emit_instr i =
         end else begin
           match abi with
           | ELF32 ->
-            `	addis	28, 0, {emit_upper emit_symbol func}\n`;
-            `	addi	28, 28, {emit_lower emit_symbol func}\n`;
+            `	addis	25, 0, {emit_upper emit_symbol func}\n`;
+            `	addi	25, 25, {emit_lower emit_symbol func}\n`;
             emit_call "caml_c_call";
             record_frame i.live false i.dbg
           | ELF64v1 | ELF64v2 ->
-            emit_tocload emit_gpr 28 (TocSym func);
+            emit_tocload emit_gpr 25 (TocSym func);
             emit_call "caml_c_call";
             record_frame i.live false i.dbg;
             `	nop\n`
@@ -981,6 +988,8 @@ let emit_instr i =
         | ELF32 -> ()
         | ELF64v1 | ELF64v2 -> emit_reload_toc()
         end
+    | Ladjust_trap_depth { delta_traps } ->
+        adjust_stack_offset (trap_size * delta_traps)
     | Lpushtrap { lbl_handler; } ->
         begin match abi with
         | ELF32 ->
@@ -1004,11 +1013,23 @@ let emit_instr i =
         adjust_stack_offset (-trap_size)
     | Lraise k ->
         begin match k with
-        | Cmm.Raise_withtrace ->
+        | Lambda.Raise_regular ->
+            `	li	0, 0\n`;
+            let backtrace_pos =
+              Domainstate.(idx_of_field Domain_backtrace_pos)
+            in
+            begin match abi with
+            | ELF32 -> `	stw	0, {emit_int (backtrace_pos * 8)}(28)\n`
+            | _ -> `	std	0, {emit_int (backtrace_pos * 8)}(28)\n`
+            end;
             emit_call "caml_raise_exn";
             record_frame Reg.Set.empty true i.dbg;
             emit_call_nop()
-        | Cmm.Raise_notrace ->
+        | Lambda.Raise_reraise ->
+            emit_call "caml_raise_exn";
+            record_frame Reg.Set.empty true i.dbg;
+            emit_call_nop()
+        | Lambda.Raise_notrace ->
             `	{emit_string lg}	0, {emit_int trap_handler_offset}(29)\n`;
             `	mr	1, 29\n`;
             `	mtctr   0\n`;
@@ -1033,6 +1054,11 @@ let fundecl fundecl =
   call_gc_labels := IntMap.empty;
   float_literals := [];
   jumptables := []; jumptables_lbl := -1;
+  for i = 0 to Proc.num_register_classes - 1 do
+    num_stack_slots.(i) <- fundecl.fun_num_stack_slots.(i);
+  done;
+  prologue_required := fundecl.fun_prologue_required;
+  contains_calls := fundecl.fun_contains_calls;
   begin match abi with
   | ELF32 ->
     emit_string code_space;

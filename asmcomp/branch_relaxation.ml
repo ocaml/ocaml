@@ -15,7 +15,7 @@
 (**************************************************************************)
 
 open Mach
-open Linearize
+open Linear
 
 module Make (T : Branch_relaxation_intf.S) = struct
   let label_map code =
@@ -45,7 +45,7 @@ module Make (T : Branch_relaxation_intf.S) = struct
     | Some branch ->
       let max_branch_offset =
         (* Remember to cut some slack for multi-word instructions (in the
-           [Linearize] sense of the word) where the branch can be anywhere in
+           [Linear] sense of the word) where the branch can be anywhere in
            the middle.  12 words of slack is plenty. *)
         T.Cond_branch.max_displacement branch - 12
       in

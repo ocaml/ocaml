@@ -47,6 +47,8 @@
 #include "compatibility.h"
 #endif
 
+#ifndef CAML_CONFIG_H_NO_TYPEDEFS
+
 #include <stddef.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
@@ -138,6 +140,8 @@ typedef uint64_t uintnat;
 #else
 #error "No integer type available to represent pointers"
 #endif
+
+#endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 
 /* Endianness of floats */
 

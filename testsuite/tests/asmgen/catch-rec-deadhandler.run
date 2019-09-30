@@ -1,0 +1,5 @@
+#!/bin/sh
+
+exec > "${output}" 2>&1
+
+grep -E "catch |with\(|and\(|exit\(" "${compiler_output}"

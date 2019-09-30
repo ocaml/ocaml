@@ -70,7 +70,10 @@ extern double caml_major_work_credit;
 extern double caml_gc_clock;
 
 /* [caml_major_gc_hook] is called just between the end of the mark
-   phase and the beginning of the sweep phase of the major GC */
+   phase and the beginning of the sweep phase of the major GC.
+
+   This hook must not allocate, change any heap value, nor
+   call OCaml code. */
 CAMLextern void (*caml_major_gc_hook)(void);
 
 void caml_init_major_heap (asize_t);           /* size in bytes */

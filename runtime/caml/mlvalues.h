@@ -64,6 +64,8 @@ typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
 
+#include "domain_state.h"
+
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
 #define Is_block(x)  (((x) & 1) == 0)

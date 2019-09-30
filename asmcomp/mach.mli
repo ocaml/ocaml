@@ -100,7 +100,7 @@ and instruction_desc =
   | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
-  | Iraise of Cmm.raise_kind
+  | Iraise of Lambda.raise_kind
 
 type spacetime_part_of_shape =
   | Direct_call_point of { callee : string; (* the symbol *) }
@@ -122,6 +122,8 @@ type fundecl =
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
+    fun_num_stack_slots: int array;
+    fun_contains_calls: bool;
   }
 
 val dummy_instr: instruction

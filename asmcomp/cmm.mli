@@ -55,8 +55,6 @@ val typ_addr: machtype
 val typ_int: machtype
 val typ_float: machtype
 
-val size_component: machtype_component -> int
-
 (** Least upper bound of two [machtype_component]s. *)
 val lub_component
    : machtype_component
@@ -69,8 +67,6 @@ val ge_component
    : machtype_component
   -> machtype_component
   -> bool
-
-val size_machtype: machtype -> int
 
 type integer_comparison = Lambda.integer_comparison =
   | Ceq | Cne | Clt | Cgt | Cle | Cge
@@ -86,10 +82,6 @@ val swap_float_comparison: float_comparison -> float_comparison
 
 type label = int
 val new_label: unit -> label
-
-type raise_kind =
-  | Raise_withtrace
-  | Raise_notrace
 
 type rec_flag = Nonrecursive | Recursive
 
@@ -149,7 +141,7 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of float_comparison
-  | Craise of raise_kind
+  | Craise of Lambda.raise_kind
   | Ccheckbound
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its
@@ -219,3 +211,18 @@ val ccatch :
   -> expression
 
 val reset : unit -> unit
+
+val iter_shallow_tail: (expression -> unit) -> expression -> bool
+  (** Either apply the callback to all immediate sub-expressions that
+      can produce the final result for the expression and return
+      [true], or do nothing and return [false].  Note that the notion
+      of "tail" sub-expression used here does not match the one used
+      to trigger tail calls; in particular, try...with handlers are
+      considered to be in tail position (because their result become
+      the final result for the expression).  *)
+
+val map_tail: (expression -> expression) -> expression -> expression
+  (** Apply the transformation to an expression, trying to push it
+      to all inner sub-expressions that can produce the final result.
+      Same disclaimer as for [iter_shallow_tail] about the notion
+      of "tail" sub-expression. *)

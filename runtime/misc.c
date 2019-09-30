@@ -76,15 +76,21 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
+void (*caml_fatal_error_hook) (char *msg, va_list args) = NULL;
+
 CAMLexport void caml_fatal_error (char *msg, ...)
 {
   va_list ap;
   va_start(ap, msg);
-  fprintf (stderr, "Fatal error: ");
-  vfprintf (stderr, msg, ap);
+  if(caml_fatal_error_hook != NULL) {
+    caml_fatal_error_hook(msg, ap);
+  } else {
+    fprintf (stderr, "Fatal error: ");
+    vfprintf (stderr, msg, ap);
+    fprintf (stderr, "\n");
+  }
   va_end(ap);
-  fprintf (stderr, "\n");
-  exit(2);
+  abort();
 }
 
 /* If you change the caml_ext_table* functions, also update
@@ -281,3 +287,19 @@ void caml_instr_atexit (void)
   }
 }
 #endif /* CAML_INSTR */
+
+int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf)
+{
+  struct code_fragment *cfi;
+  int i;
+
+  for (i = 0; i < caml_code_fragments_table.size; i++) {
+    cfi = (struct code_fragment *) caml_code_fragments_table.contents[i];
+    if ((char*) pc >= cfi->code_start && (char*) pc < cfi->code_end) {
+      if (index != NULL) *index = i;
+      if (cf != NULL) *cf = cfi;
+      return 1;
+    }
+  }
+  return 0;
+}

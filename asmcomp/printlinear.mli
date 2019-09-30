@@ -16,7 +16,7 @@
 (* Pretty-printing of linearized machine code *)
 
 open Format
-open Linearize
+open Linear
 
 val instr: formatter -> instruction -> unit
 val fundecl: formatter -> fundecl -> unit

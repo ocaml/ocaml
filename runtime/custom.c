@@ -54,14 +54,15 @@ static value alloc_custom_gen (struct custom_operations * ops,
       }
       /* The remaining [mem_minor] will be counted if the block survives a
          minor GC */
-      add_to_custom_table (&caml_custom_table, result, mem_minor, max_major);
+      add_to_custom_table (Caml_state->custom_table, result,
+                           mem_minor, max_major);
       /* Keep track of extra resources held by custom block in
          minor heap. */
       if (mem_minor != 0) {
         if (max_minor == 0) max_minor = 1;
-        caml_extra_heap_resources_minor +=
+        Caml_state->extra_heap_resources_minor +=
           (double) mem_minor / (double) max_minor;
-        if (caml_extra_heap_resources_minor > 1.0) {
+        if (Caml_state->extra_heap_resources_minor > 1.0) {
           caml_request_minor_gc ();
           caml_gc_dispatch ();
         }
@@ -91,10 +92,10 @@ CAMLexport value caml_alloc_custom_mem(struct custom_operations * ops,
   mlsize_t mem_minor =
     mem < caml_custom_minor_max_bsz ? mem : caml_custom_minor_max_bsz;
   return alloc_custom_gen (ops, bsz, mem,
-                           Bsize_wsize (caml_stat_heap_wsz) / 150
+                           Bsize_wsize (Caml_state->stat_heap_wsz) / 150
                            * caml_custom_major_ratio,
                            mem_minor,
-                           Bsize_wsize (caml_minor_heap_wsz) / 100
+                           Bsize_wsize (Caml_state->minor_heap_wsz) / 100
                            * caml_custom_major_ratio);
 }
 
