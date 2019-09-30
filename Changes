@@ -257,6 +257,10 @@ Working version
 
 ### Bug fixes:
 
+- #6922, #8955: Fix regression with -principal type inference for inherited
+  methods, allowing to compile ocamldoc with -principal
+  (Jacques Garrigue, review by Leo White)
+
 - #7925, #8611: fix error highlighting for exceptionally
   long toplevel phrases
   (Kyle Miller, reported by Armaël Guéneau, review by Armaël Guéneau

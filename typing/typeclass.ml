@@ -834,8 +834,7 @@ and class_structure cl_num final val_env met_env loc
 
   (* Check that the binder has a correct type *)
   let ty =
-    if final then Ctype.newty (Tobject (Ctype.newvar(), ref None))
-    else self_type in
+    if final then Ctype.newobj (Ctype.newvar()) else self_type in
   begin try Ctype.unify val_env public_self ty with
     Ctype.Unify _ ->
       raise(Error(spat.ppat_loc, val_env, Pattern_type_clash public_self))
@@ -865,7 +864,7 @@ and class_structure cl_num final val_env met_env loc
            str
       )
   in
-  Ctype.unify val_env self_type (Ctype.newvar ());
+  Ctype.unify val_env self_type (Ctype.newvar ()); (* useless ? *)
   let sign =
     {csig_self = public_self;
      csig_vars = Vars.map (fun (_id, mut, vr, ty) -> (mut, vr, ty)) !vars;
@@ -875,6 +874,11 @@ and class_structure cl_num final val_env met_env loc
   let priv_meths =
     List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind <> Fpresent)
       methods in
+  (* ensure that inherited methods are listed too *)
+  List.iter (fun (met, _kind, _ty) ->
+      if Meths.mem met !meths then () else
+      ignore (Ctype.filter_self_method val_env met Private meths self_type))
+    methods;
   if final then begin
     (* Unify private_self and a copy of self_type. self_type will not
        be modified after this point *)
