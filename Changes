@@ -184,6 +184,9 @@ Working version
 - #8716: Optimize [Array.fill] and [Hashtbl.clear] with a new runtime primitive
   (Alain Frisch, review by David Allsopp, Stephen Dolan and Damien Doligez)
 
+- #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list
+  (Gabriel Scherer, review by Daniel Bünzli and Thomas Refis)
+
 - #8530: List.sort: avoid duplicate work by chop
   (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
    Gabriel Scherer)
