@@ -46,6 +46,21 @@ type env = {
   environment_param : V.t option;
 }
 
+(* notify_catch associates to each catch handler a callback
+   which will be passed the list of arguments of each
+   staticfail instruction pointing to that handler. This
+   allows transl_catch to observe concrete arguments passed to each
+   handler parameter and decide whether to unbox them accordingly.
+
+   Other ways to achieve the same result would be to either (1) traverse
+   the body of the catch block after translation (this would be costly
+   and could easily lead to quadratric behavior) or (2) return
+   a description of arguments passed to each catch handler as an extra
+   value to be threaded through all transl_* functions (this would be
+   quite heavy, and probably less efficient that the callback approach).
+*)
+
+
 let empty_env =
   {
     unboxed_ids = V.empty;
@@ -2305,10 +2320,7 @@ let rec transl env e =
 and transl_catch env nfail ids body handler dbg =
   let ids = List.map (fun (id, kind) -> (id, kind, ref No_result)) ids in
   (* Translate the body, and while doing so, collect the "unboxing type" for
-     each argument.  One could also do the translation and then traverse
-     the translated body to collect the information, but this would force
-     another traversal of the body (even when no unboxing is required).
-  *)
+     each argument.  *)
   let report args =
     List.iter2
       (fun (_id, kind, u) c ->
