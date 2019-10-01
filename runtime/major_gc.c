@@ -608,9 +608,7 @@ static char *mark_slice_name[] = {
   /* 9 */ NULL,
   /* 10 */  "major/mark_roots",
   /* 11 */  "major/mark_main",
-  /* 12 */  "major/mark_weak1",
-  /* 13 */  "major/mark_weak2",
-  /* 14 */  "major/mark_final",
+  /* 12 */  "major/mark_final",
 };
 #endif
 
