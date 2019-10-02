@@ -130,6 +130,10 @@ Working version
 * #8691, #8897: Allocation functions are now guaranteed not to trigger any
    OCaml callback when called from C. In long-running C functions,
    this can be replaced with calls to caml_check_urgent_gc.
+   Side effect of this change: in bytecode mode, polling for
+   asynchronous callbacks is perfomed at every minor heap allocation,
+   in addition to function calls and loops as in previous OCaml
+   releases.
    (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
     Guillaume Munch-Maccagnoni)
 
