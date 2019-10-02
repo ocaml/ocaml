@@ -946,7 +946,6 @@ let set_state s env =
 (* type_pat does not generate local constraints inside or patterns *)
 type type_pat_mode =
   | Normal
-  | Splitting_or   (* splitting an or-pattern *)
   | Inside_or      (* inside a non-split or-pattern *)
   | Split_or       (* always split or-patterns *)
 
@@ -998,6 +997,16 @@ let check_scope_escape loc env level ty =
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace, None)))
 
+(** Find the first alternative in the tree of or-patterns for which
+   [f] does not raise an error. If all fail, the last error is
+   propagated *)
+let rec find_valid_alternative f pat =
+  match pat.ppat_desc with
+  | Ppat_or(p1,p2) ->
+      (try find_valid_alternative f p1
+       with Error _ -> find_valid_alternative f p2)
+  | _ -> f pat
+
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
    Unification may update the typing environment. *)
@@ -1013,9 +1022,8 @@ let rec type_pat ?(exception_allowed=false) ~constrs ~labels ~no_existentials
 
 and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       ~explode ~env sp expected_ty k =
-  let mode' = if mode = Splitting_or then Normal else mode in
   let type_pat ?(exception_allowed=false) ?(constrs=constrs) ?(labels=labels)
-        ?(mode=mode') ?(explode=explode) ?(env=env) =
+        ?(mode=mode) ?(explode=explode) ?(env=env) =
     type_pat ~exception_allowed ~constrs ~labels ~no_existentials ~mode ~explode
       ~env
   in
@@ -1342,7 +1350,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_or(sp1, sp2) ->
       let state = save_state env in
       begin match
-        if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
+        if mode = Split_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let equation_level = !gadt_equations_level in
@@ -1393,13 +1401,10 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         p -> rp k p
       | exception Need_backtrack when mode <> Inside_or ->
           assert (constrs <> None);
-          set_state state env;
-          let mode =
-            if mode = Split_or then mode else Splitting_or in
-          try type_pat ~exception_allowed ~mode sp1 expected_ty k
-          with Error _ ->
+          let try_pat pat =
             set_state state env;
-            type_pat ~exception_allowed ~mode sp2 expected_ty k
+            type_pat ~exception_allowed ~mode pat expected_ty k in
+          find_valid_alternative try_pat sp
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
