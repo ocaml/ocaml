@@ -272,7 +272,8 @@ let mk_not dbg cmm =
       | _ ->
         (* 0 -> 3, 1 -> 1 *)
         Cop(Csubi,
-            [Cconst_int (3, dbg); Cop(Clsl, [c; Cconst_int (1, dbg)], dbg)], dbg)
+            [Cconst_int (3, dbg); Cop(Clsl, [c; Cconst_int (1, dbg)], dbg)],
+            dbg)
     end
   | Cconst_int (3, _) -> Cconst_int (1, dbg)
   | Cconst_int (1, _) -> Cconst_int (3, dbg)
@@ -2005,7 +2006,7 @@ module Int = Numbers.Int
 
 let default_apply = Int.Set.add 2 (Int.Set.add 3 Int.Set.empty)
   (* These apply funs are always present in the main program because
-     the run-time system needs them (cf. asmrun/<arch>.S) . *)
+     the run-time system needs them (cf. runtime/<arch>.S) . *)
 
 let generic_functions shared units =
   let (apply,send,curry) =
@@ -2044,11 +2045,7 @@ let raise_prim raise_kind arg dbg =
 let negint arg dbg =
   Cop(Csubi, [Cconst_int (2, dbg); arg], dbg)
 
-let offsetint n arg dbg =
-  if Misc.no_overflow_lsl n 1 then
-    add_const arg (n lsl 1) dbg
-  else
-    decr_int (add_int arg (int_const dbg n) dbg) dbg
+(* [offsetint] moved down to reuse add_int_caml *)
 
 let offsetref n arg dbg =
   return_unit dbg
@@ -2141,6 +2138,13 @@ let setfloatfield n init arg1 arg2 dbg =
 
 let add_int_caml arg1 arg2 dbg =
   decr_int (add_int arg1 arg2 dbg) dbg
+
+(* Unary primitive delayed to reuse add_int_caml *)
+let offsetint n arg dbg =
+  if Misc.no_overflow_lsl n 1 then
+    add_const arg (n lsl 1) dbg
+  else
+    add_int_caml arg (int_const dbg n) dbg
 
 let sub_int_caml arg1 arg2 dbg =
   incr_int (sub_int arg1 arg2 dbg) dbg

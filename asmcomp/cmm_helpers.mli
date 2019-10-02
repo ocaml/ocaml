@@ -214,10 +214,6 @@ val get_size : expression -> Debuginfo.t -> expression
 
 (** Arrays *)
 
-(* TODO: remove from mli? *)
-val log2_size_addr : int
-val log2_size_float : int
-
 val wordsize_shift : int
 val numfloat_shift : int
 
@@ -235,10 +231,6 @@ val is_addr_array_ptr : expression -> Debuginfo.t -> expression
 val addr_array_length : expression -> Debuginfo.t -> expression
 val float_array_length : expression -> Debuginfo.t -> expression
 
-(* TODO: remove after objects have been moved *)
-val lsl_const : expression -> int -> Debuginfo.t -> expression
-
-(* TODO: consider removing from mli ? *)
 (** From the implementation of [array_indexing ?typ log2size ptr ofs dbg] :
    Produces a pointer to the element of the array [ptr] on the position [ofs]
    with the given element [log2size] log2 element size. [ofs] is given as a
@@ -444,15 +436,7 @@ val bswap16 : unary_primitive
 
 type binary_primitive = expression -> expression -> Debuginfo.t -> expression
 
-(* val pfield_computed : binary_primitive *)
-(* Equivalent to addr_array_ref *)
-
 type assignment_kind = Caml_modify | Caml_initialize | Simple
-
-(** TODO: remove after setcomputedfield *)
-val assignment_kind :
- Lambda.immediate_or_pointer -> Lambda.initialization_or_assignment ->
- assignment_kind
 
 (** [setfield offset value_is_ptr init ptr value dbg] *)
 val setfield :
@@ -655,8 +639,8 @@ val emit_float_array_constant :
 val fundecls_size : Clambda.ufunction list -> int
 
 val emit_constant_closure :
-  (string * Cmmgen_state.is_global) -> Clambda.ufunction list -> data_item list ->
-  data_item list -> data_item list
+  (string * Cmmgen_state.is_global) -> Clambda.ufunction list ->
+  data_item list -> data_item list -> data_item list
 
 val emit_preallocated_blocks :
   Clambda.preallocated_block list -> phrase list -> phrase list
