@@ -2659,7 +2659,8 @@ and type_expect_
   | Pexp_construct(lid, sarg) ->
       type_construct env loc lid sarg ty_expected_explained sexp.pexp_attributes
   | Pexp_construct_fun lid ->
-      type_construct_maybe_fun env loc lid ty_expected_explained sexp.pexp_attributes
+      type_construct_maybe_fun env loc lid ty_expected_explained
+        sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
       let ty_expected0 = instance ty_expected in
