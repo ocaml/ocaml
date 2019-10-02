@@ -998,15 +998,16 @@ let check_scope_escape loc env level ty =
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace, None)))
 
+type pattern_names_map =
+    { constrs: (string, Types.constructor_description) Hashtbl.t;
+      labels: (string, Types.label_description) Hashtbl.t }
+
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
    Unification may update the typing environment. *)
 (* map <> None => called from parmatch: backtrack on or-patterns
    explode > 0 => explode Ppat_any for gadts *)
-type map =
-    { constrs: (string, Types.constructor_description) Hashtbl.t;
-      labels: (string, Types.label_description) Hashtbl.t }
-let rec type_pat : ?exception_allowed:bool -> map:map option ->
+let rec type_pat : ?exception_allowed:bool -> map:pattern_names_map option ->
   no_existentials:existential_restriction option -> mode:type_pat_mode ->
   explode:int -> env:Env.t ref ->
   Parsetree.pattern -> type_expr -> (pattern -> 'a) -> 'a =
