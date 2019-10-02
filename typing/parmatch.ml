@@ -45,10 +45,10 @@ let omega_list l = List.map (fun _ -> omega) l
 module Pattern_head : sig
   type desc =
     | Any
-    | Construct of constructor_description
+    | Construct of Longident.t * constructor_description
     | Constant of constant
     | Tuple of int
-    | Record of label_description list
+    | Record of (Longident.t * label_description) list
     | Variant of
         { tag: label; has_arg: bool;
           cstr_row: row_desc ref;
@@ -85,10 +85,10 @@ module Pattern_head : sig
 end = struct
   type desc =
     | Any
-    | Construct of constructor_description
+    | Construct of Longident.t * constructor_description
     | Constant of constant
     | Tuple of int
-    | Record of label_description list
+    | Record of (Longident.t * label_description) list
     | Variant of
         { tag: label;
           has_arg: bool;
@@ -118,8 +118,8 @@ end = struct
       | Tpat_alias (p,_,_) -> deconstruct_desc p.pat_desc
       | Tpat_tuple args ->
           Tuple (List.length args), args
-      | Tpat_construct (_, c, args) ->
-          Construct c, args
+      | Tpat_construct (lid, c, args) ->
+        Construct (lid.txt, c), args
       | Tpat_variant (tag, arg, cstr_row) ->
           let has_arg, pats =
             match arg with
@@ -135,7 +135,7 @@ end = struct
       | Tpat_array args ->
           Array (List.length args), args
       | Tpat_record (largs, _) ->
-          let lbls = List.map (fun (_,lbl,_) -> lbl) largs in
+          let lbls = List.map (fun (lid,lbl,_) -> lid.txt, lbl) largs in
           let pats = List.map (fun (_,_,pat) -> pat) largs in
           Record lbls, pats
       | Tpat_lazy p ->
@@ -156,17 +156,17 @@ end = struct
       | Constant c -> Tpat_constant c
       | Tuple n -> Tpat_tuple (omegas n)
       | Array n -> Tpat_array (omegas n)
-      | Construct c ->
-          let lid_loc = Location.mkloc (Longident.Lident c.cstr_name) t.loc in
+      | Construct (lid, c) ->
+          let lid_loc = Location.mkloc lid t.loc in
           Tpat_construct (lid_loc, c, omegas c.cstr_arity)
       | Variant { tag; has_arg; cstr_row } ->
           let arg_opt = if has_arg then Some omega else None in
           Tpat_variant (tag, arg_opt, cstr_row)
       | Record lbls ->
           let lst =
-            List.map (fun lbl ->
+            List.map (fun (lid, lbl) ->
               let lid_loc =
-                Location.mkloc (Longident.Lident lbl.lbl_name) t.loc
+                Location.mkloc lid t.loc
               in
               (lid_loc, lbl, omega)
             ) lbls
@@ -273,7 +273,7 @@ let normalize_pat p = Pattern_head.(to_omega_pattern @@ fst @@ deconstruct p)
 let all_coherent column =
   let coherent_heads hp1 hp2 =
     match Pattern_head.desc hp1, Pattern_head.desc hp2 with
-    | Construct c, Construct c' ->
+    | Construct (_, c), Construct (_, c') ->
       c.cstr_consts = c'.cstr_consts
       && c.cstr_nonconsts = c'.cstr_nonconsts
     | Constant c1, Constant c2 -> begin
@@ -294,7 +294,7 @@ let all_coherent column =
           | Const_string _), _ -> false
       end
     | Tuple l1, Tuple l2 -> l1 = l2
-    | Record (lbl1 :: _), Record (lbl2 :: _) ->
+    | Record ((_, lbl1) :: _), Record ((_, lbl2) :: _) ->
       Array.length lbl1.lbl_all = Array.length lbl2.lbl_all
     | Any, _
     | _, Any
@@ -508,7 +508,7 @@ let get_constructor_type_path ty tenv =
 (* Check top matching *)
 let simple_match d h =
   match Pattern_head.desc d, Pattern_head.desc h with
-  | Construct c1, Construct c2 ->
+  | Construct (_, c1), Construct (_, c2) ->
       Types.equal_tag c1.cstr_tag c2.cstr_tag
   | Variant { tag = t1; _ }, Variant { tag = t2 } ->
       t1 = t2
@@ -535,7 +535,7 @@ let extract_fields lbls arg =
     | _, p -> p
     | exception Not_found -> omega
   in
-  List.map (fun lbl -> get_field lbl.lbl_pos arg) lbls
+  List.map (fun (_, lbl) -> get_field lbl.lbl_pos arg) lbls
 
 (* Build argument list when p2 >= p1, where p1 is a simple pattern *)
 let simple_match_args discr head args = match Pattern_head.desc head with
@@ -545,10 +545,12 @@ let simple_match_args discr head args = match Pattern_head.desc head with
 | Tuple _
 | Array _
 | Lazy -> args
-| Record lbls ->  extract_fields (record_arg discr) (List.combine lbls args)
+| Record lst ->
+    let lbls = List.map snd lst in
+    extract_fields (record_arg discr) (List.combine lbls args)
 | Any ->
     begin match Pattern_head.desc discr with
-    | Construct cstr -> omegas cstr.cstr_arity
+    | Construct (_, cstr) -> omegas cstr.cstr_arity
     | Variant { has_arg = true }
     | Lazy -> [omega]
     | Record lbls ->  omega_list lbls
@@ -601,11 +603,11 @@ let discr_pat q pss =
            However it makes the witness we generate for the exhaustivity warning
            less pretty. *)
         let fields =
-          List.fold_right (fun lbl r ->
-            if List.exists (fun l -> l.lbl_pos = lbl.lbl_pos) r then
+          List.fold_right (fun (_ , lbl as x) r ->
+            if List.exists (fun (_, l) -> l.lbl_pos = lbl.lbl_pos) r then
               r
             else
-              lbl :: r
+              x :: r
           ) lbls (record_arg acc)
         in
         let d =
@@ -889,8 +891,8 @@ let full_match closing env =  match env with
 | (discr, _) :: _ ->
   match Pattern_head.desc discr with
   | Any -> assert false
-  | Construct { cstr_tag = Cstr_extension _ ; _ } -> false
-  | Construct c -> List.length env = c.cstr_consts + c.cstr_nonconsts
+  | Construct (_, { cstr_tag = Cstr_extension _ ; _ }) -> false
+  | Construct (_, c) -> List.length env = c.cstr_consts + c.cstr_nonconsts
   | Variant { type_row; _ } ->
       let fields =
         List.map
@@ -933,12 +935,12 @@ let should_extend ext env = match ext with
   | [] -> assert false
   | (p,_)::_ ->
       begin match Pattern_head.desc p with
-      | Construct {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)} ->
+      | Construct (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)}) ->
           let path =
             get_constructor_type_path (Pattern_head.typ p) (Pattern_head.env p)
           in
           Path.same path ext
-      | Construct {cstr_tag=(Cstr_extension _)} -> false
+      | Construct (_, {cstr_tag=(Cstr_extension _)}) -> false
       | Constant _ | Tuple _ | Variant _ | Record _ | Array _ | Lazy -> false
       | Any -> assert false
       end
@@ -975,9 +977,9 @@ let complete_tags nconsts nconstrs tags =
 
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
+  let lid = Longident.Lident cstr.cstr_name in
   {ex_pat with pat_desc =
-   Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
-                   cstr, omegas cstr.cstr_arity)}
+   Tpat_construct (mknoloc lid, cstr, omegas cstr.cstr_arity)}
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
@@ -1005,7 +1007,8 @@ let pats_of_type ?(always=false) env ty =
           let labels = snd (Env.find_type_descrs path env) in
           let fields =
             List.map (fun ld ->
-              mknoloc (Longident.Lident "?pat_of_label?"), ld, omega)
+              let lid = Longident.Lident ld.lbl_name in
+              mknoloc lid, ld, omega)
               labels
           in
           [make_pat (Tpat_record (fields, Closed)) ty env]
@@ -1033,7 +1036,11 @@ let rec get_variant_constructors env ty =
 
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags =
-  let c = match Pattern_head.desc p with Construct c -> c | _ -> assert false in
+  let c =
+    match Pattern_head.desc p with
+    | Construct (_, c) -> c
+    | _ -> assert false
+  in
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors (Pattern_head.env p) c.cstr_res in
   let others =
@@ -1046,10 +1053,10 @@ let complete_constrs p all_tags =
 
 let build_other_constrs env p =
   match Pattern_head.desc p with
-  | Construct { cstr_tag = Cstr_constant _ | Cstr_block _ } ->
+  | Construct (_, { cstr_tag = Cstr_constant _ | Cstr_block _ }) ->
       let get_tag q =
         match Pattern_head.desc q with
-        | Construct c -> c.cstr_tag
+        | Construct (_, c) -> c.cstr_tag
         | _ -> fatal_error "Parmatch.get_tag" in
       let all_tags =  List.map (fun (p,_) -> get_tag p) env in
       pat_of_constrs p (complete_constrs p all_tags)
@@ -1083,7 +1090,7 @@ let build_other ext env =
   | [] -> omega
   | (d, _) :: _ ->
       match Pattern_head.desc d with
-      | Construct { cstr_tag = Cstr_extension _ } ->
+      | Construct (_, { cstr_tag = Cstr_extension _ }) ->
           (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
           make_pat
             (Tpat_var (Ident.create_local "*extension*",
@@ -2004,15 +2011,7 @@ module Conv = struct
   open Parsetree
   let mkpat desc = Ast_helper.Pat.mk desc
 
-  let name_counter = ref 0
-  let fresh name =
-    let current = !name_counter in
-    name_counter := !name_counter + 1;
-    "#$" ^ name ^ Int.to_string current
-
   let conv typed =
-    let constrs = Hashtbl.create 7 in
-    let labels = Hashtbl.create 7 in
     let rec loop pat =
       match pat.pat_desc with
         Tpat_or (pa,pb,_) ->
@@ -2027,27 +2026,20 @@ module Conv = struct
       | Tpat_alias (p,_,_) -> loop p
       | Tpat_tuple lst ->
           mkpat (Ppat_tuple (List.map loop lst))
-      | Tpat_construct (cstr_lid, cstr, lst) ->
-          let id = fresh cstr.cstr_name in
-          let lid = { cstr_lid with txt = Longident.Lident id } in
-          Hashtbl.add constrs id cstr;
+      | Tpat_construct (cstr_lid, _, lst) ->
           let arg =
             match List.map loop lst with
             | []  -> None
             | [p] -> Some p
             | lst -> Some (mkpat (Ppat_tuple lst))
           in
-          mkpat (Ppat_construct(lid, arg))
+          mkpat (Ppat_construct(cstr_lid, arg))
       | Tpat_variant(label,p_opt,_row_desc) ->
           let arg = Option.map loop p_opt in
           mkpat (Ppat_variant(label, arg))
       | Tpat_record (subpatterns, _closed_flag) ->
           let fields =
-            List.map
-              (fun (_, lbl, p) ->
-                let id = fresh lbl.lbl_name in
-                Hashtbl.add labels id lbl;
-                (mknoloc (Longident.Lident id), loop p))
+            List.map (fun (lbl_lid, _, p) -> (lbl_lid, loop p))
               subpatterns
           in
           mkpat (Ppat_record (fields, Open))
@@ -2058,8 +2050,7 @@ module Conv = struct
       | Tpat_exception _ ->
           assert false
     in
-    let ps = loop typed in
-    (ps, constrs, labels)
+    loop typed
 end
 
 
@@ -2076,7 +2067,7 @@ let ppat_of_type env ty =
   match pats_of_type env ty with
   | [] -> raise Empty
   | [{pat_desc = Tpat_any}] ->
-      (Conv.mkpat Parsetree.Ppat_any, Hashtbl.create 0, Hashtbl.create 0)
+      Conv.mkpat Parsetree.Ppat_any
   | pats ->
       Conv.conv (orify_many pats)
 
@@ -2102,8 +2093,8 @@ let do_check_partial ~pred loc casel pss = match pss with
     | No_matching_value -> Total
     | Witnesses [u] ->
         let v =
-          let (pattern,constrs,labels) = Conv.conv u in
-          let u' = pred constrs labels pattern in
+          let pattern = Conv.conv u in
+          let u' = pred pattern in
           (* pretty_pat u;
           begin match u' with
             None -> prerr_endline ": impossible"
@@ -2253,9 +2244,9 @@ let check_unused pred casel =
                   List.map (function [u] -> u | _ -> assert false) sfs in
                 let u = orify_many sfs in
                 (*Format.eprintf "%a@." pretty_val u;*)
-                let (pattern,constrs,labels) = Conv.conv u in
+                let pattern = Conv.conv u in
                 let pattern = {pattern with Parsetree.ppat_loc = q.pat_loc} in
-                match pred refute constrs labels pattern with
+                match pred refute pattern with
                   None when not refute ->
                     Location.prerr_warning q.pat_loc Warnings.Unreachable_case;
                     Used

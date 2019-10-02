@@ -84,24 +84,13 @@ val complete_constrs :
 
 (** [ppat_of_type] builds an untyped or-pattern from its expected type.
      May raise [Empty] when [type_expr] is an empty variant *)
-val ppat_of_type :
-    Env.t -> type_expr ->
-    Parsetree.pattern *
-    (string, constructor_description) Hashtbl.t *
-    (string, label_description) Hashtbl.t
+val ppat_of_type : Env.t -> type_expr -> Parsetree.pattern
 
 val pressure_variants: Env.t -> pattern list -> unit
 val check_partial:
-    ((string, constructor_description) Hashtbl.t ->
-     (string, label_description) Hashtbl.t ->
-     Parsetree.pattern -> pattern option) ->
-    Location.t -> case list -> partial
+    (Parsetree.pattern -> pattern option) -> Location.t -> case list -> partial
 val check_unused:
-    (bool ->
-     (string, constructor_description) Hashtbl.t ->
-     (string, label_description) Hashtbl.t ->
-     Parsetree.pattern -> pattern option) ->
-    case list -> unit
+    (bool -> Parsetree.pattern -> pattern option) -> case list -> unit
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool

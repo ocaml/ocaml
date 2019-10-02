@@ -153,8 +153,10 @@ let () =
 ;;
 [%%expect {|
 val eval : 't Exterior.Gadt.t -> 't = <fun>
-Right function print
-Right function print
+Line 11, characters 18-44:
+11 |       | Exterior.(Gadt.Bool Gadt.Boolean.{b}), _ , true -> print(); true
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Unbound module Gadt
 |}
 ]
 (* existential type *)
