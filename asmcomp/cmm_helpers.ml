@@ -642,9 +642,9 @@ let is_addr_array_hdr hdr dbg =
 let is_addr_array_ptr ptr dbg =
   Cop(Ccmpi Cne, [get_tag ptr dbg; floatarray_tag dbg], dbg)
 
-let addr_array_length hdr dbg =
+let addr_array_length_shifted hdr dbg =
   Cop(Clsr, [hdr; Cconst_int (wordsize_shift, dbg)], dbg)
-let float_array_length hdr dbg =
+let float_array_length_shifted hdr dbg =
   Cop(Clsr, [hdr; Cconst_int (numfloat_shift, dbg)], dbg)
 
 let lsl_const c n dbg =
@@ -2076,9 +2076,9 @@ let arraylength kind arg dbg =
       in
       Cop(Cor, [len; Cconst_int (1, dbg)], dbg)
   | Paddrarray | Pintarray ->
-      Cop(Cor, [addr_array_length hdr dbg; Cconst_int (1, dbg)], dbg)
+      Cop(Cor, [addr_array_length_shifted hdr dbg; Cconst_int (1, dbg)], dbg)
   | Pfloatarray ->
-      Cop(Cor, [float_array_length hdr dbg; Cconst_int (1, dbg)], dbg)
+      Cop(Cor, [float_array_length_shifted hdr dbg; Cconst_int (1, dbg)], dbg)
 
 let bbswap bi arg dbg =
   let prim = match (bi : Primitive.boxed_integer) with
@@ -2258,40 +2258,49 @@ let arrayref_safe kind arg1 arg2 dbg =
       bind "arr" arg1 (fun arr ->
       bind "header" (get_header_without_profinfo arr dbg) (fun hdr ->
         if wordsize_shift = numfloat_shift then
-          Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                    Cifthenelse(is_addr_array_hdr hdr dbg,
-                                dbg,
-                                addr_array_ref arr idx dbg,
-                                dbg,
-                                float_array_ref arr idx dbg,
-                                dbg))
+          Csequence(
+            make_checkbound dbg [addr_array_length_shifted hdr dbg; idx],
+            Cifthenelse(is_addr_array_hdr hdr dbg,
+                        dbg,
+                        addr_array_ref arr idx dbg,
+                        dbg,
+                        float_array_ref arr idx dbg,
+                        dbg))
         else
           Cifthenelse(is_addr_array_hdr hdr dbg,
             dbg,
-            Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                      addr_array_ref arr idx dbg),
+            Csequence(
+              make_checkbound dbg [addr_array_length_shifted hdr dbg; idx],
+              addr_array_ref arr idx dbg),
             dbg,
-            Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
-                      float_array_ref arr idx dbg),
+            Csequence(
+              make_checkbound dbg [float_array_length_shifted hdr dbg; idx],
+              float_array_ref arr idx dbg),
             dbg))))
       | Paddrarray ->
           bind "index" arg2 (fun idx ->
           bind "arr" arg1 (fun arr ->
-            Csequence(make_checkbound dbg [
-              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                      addr_array_ref arr idx dbg)))
+            Csequence(
+              make_checkbound dbg [
+                addr_array_length_shifted
+                  (get_header_without_profinfo arr dbg) dbg; idx],
+              addr_array_ref arr idx dbg)))
       | Pintarray ->
           bind "index" arg2 (fun idx ->
           bind "arr" arg1 (fun arr ->
-            Csequence(make_checkbound dbg [
-              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                      int_array_ref arr idx dbg)))
+            Csequence(
+              make_checkbound dbg [
+                addr_array_length_shifted
+                  (get_header_without_profinfo arr dbg) dbg; idx],
+              int_array_ref arr idx dbg)))
       | Pfloatarray ->
           box_float dbg (
             bind "index" arg2 (fun idx ->
             bind "arr" arg1 (fun arr ->
-              Csequence(make_checkbound dbg
-                [float_array_length(get_header_without_profinfo arr dbg) dbg;
+              Csequence(
+                make_checkbound dbg [
+                  float_array_length_shifted
+                    (get_header_without_profinfo arr dbg) dbg;
                   idx],
                 unboxed_float_array_ref arr idx dbg))))
 
@@ -2351,46 +2360,59 @@ let arrayset_safe kind arg1 arg2 arg3 dbg =
       bind "arr" arg1 (fun arr ->
       bind "header" (get_header_without_profinfo arr dbg) (fun hdr ->
         if wordsize_shift = numfloat_shift then
-          Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                    Cifthenelse(is_addr_array_hdr hdr dbg,
-                                dbg,
-                                addr_array_set arr idx newval dbg,
-                                dbg,
-                                float_array_set arr idx
-                                                (unbox_float dbg newval)
-                                                dbg,
-                                dbg))
+          Csequence(
+            make_checkbound dbg [addr_array_length_shifted hdr dbg; idx],
+            Cifthenelse(is_addr_array_hdr hdr dbg,
+                        dbg,
+                        addr_array_set arr idx newval dbg,
+                        dbg,
+                        float_array_set arr idx
+                          (unbox_float dbg newval)
+                          dbg,
+                        dbg))
         else
-          Cifthenelse(is_addr_array_hdr hdr dbg,
+          Cifthenelse(
+            is_addr_array_hdr hdr dbg,
             dbg,
-            Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                      addr_array_set arr idx newval dbg),
+            Csequence(
+              make_checkbound dbg [addr_array_length_shifted hdr dbg; idx],
+              addr_array_set arr idx newval dbg),
             dbg,
-            Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
-                      float_array_set arr idx
-                                      (unbox_float dbg newval) dbg),
+            Csequence(
+              make_checkbound dbg [float_array_length_shifted hdr dbg; idx],
+              float_array_set arr idx
+                (unbox_float dbg newval) dbg),
             dbg)))))
   | Paddrarray ->
       bind "newval" arg3 (fun newval ->
       bind "index" arg2 (fun idx ->
       bind "arr" arg1 (fun arr ->
-        Csequence(make_checkbound dbg [
-          addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                  addr_array_set arr idx newval dbg))))
+        Csequence(
+          make_checkbound dbg [
+            addr_array_length_shifted
+              (get_header_without_profinfo arr dbg) dbg;
+            idx],
+          addr_array_set arr idx newval dbg))))
   | Pintarray ->
       bind "newval" arg3 (fun newval ->
       bind "index" arg2 (fun idx ->
       bind "arr" arg1 (fun arr ->
-        Csequence(make_checkbound dbg [
-          addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                  int_array_set arr idx newval dbg))))
+        Csequence(
+          make_checkbound dbg [
+            addr_array_length_shifted
+              (get_header_without_profinfo arr dbg) dbg;
+            idx],
+          int_array_set arr idx newval dbg))))
   | Pfloatarray ->
       bind_load "newval" arg3 (fun newval ->
       bind "index" arg2 (fun idx ->
       bind "arr" arg1 (fun arr ->
-        Csequence(make_checkbound dbg [
-          float_array_length (get_header_without_profinfo arr dbg) dbg;idx],
-                  float_array_set arr idx newval dbg))))
+        Csequence(
+          make_checkbound dbg [
+            float_array_length_shifted
+              (get_header_without_profinfo arr dbg) dbg;
+            idx],
+          float_array_set arr idx newval dbg))))
   )
 
 let bytes_set size unsafe arg1 arg2 arg3 dbg =

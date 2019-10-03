@@ -59,7 +59,7 @@ val floatarray_header : int -> nativeint
 (** Header for a string (or bytes) of the given length *)
 val string_header : int -> nativeint
 
-(** Boxed integers headers *)
+(** Boxed integer headers *)
 val boxedint32_header : nativeint
 val boxedint64_header : nativeint
 val boxedintnat_header : nativeint
@@ -114,7 +114,7 @@ val mod_int :
   expression -> expression -> Lambda.is_safe -> Debuginfo.t -> expression
 
 (** Integer tagging
-    [tag_int] and [force_tag_int] are functionnaly equivalent, but
+    [tag_int] and [force_tag_int] are functionally equivalent, but
     produce syntactically different expressions ([tag_int] produces
     an addition, while [force_tag_int] produces a logical or).
     The difference marks the fact that the shift operation in [tag_int]
@@ -228,17 +228,17 @@ val is_addr_array_ptr : expression -> Debuginfo.t -> expression
     comparing it to a caml integer.
     Assumes the header does not have any profiling info
     (as returned by get_header_without_profinfo) *)
-val addr_array_length : expression -> Debuginfo.t -> expression
-val float_array_length : expression -> Debuginfo.t -> expression
+val addr_array_length_shifted : expression -> Debuginfo.t -> expression
+val float_array_length_shifted : expression -> Debuginfo.t -> expression
 
-(** From the implementation of [array_indexing ?typ log2size ptr ofs dbg] :
-   Produces a pointer to the element of the array [ptr] on the position [ofs]
-   with the given element [log2size] log2 element size. [ofs] is given as a
-   tagged int expression.
-   The optional ?typ argument is the C-- type of the result.
-   By default, it is Addr, meaning we are constructing a derived pointer
-   into the heap.  If we know the pointer is outside the heap
-   (this is the case for bigarray indexing), we give type Int instead. *)
+(** For [array_indexing ?typ log2size ptr ofs dbg] :
+    Produces a pointer to the element of the array [ptr] on the position [ofs]
+    with the given element [log2size] log2 element size. [ofs] is given as a
+    tagged int expression.
+    The optional ?typ argument is the C-- type of the result.
+    By default, it is Addr, meaning we are constructing a derived pointer
+    into the heap.  If we know the pointer is outside the heap
+    (this is the case for bigarray indexing), we give type Int instead. *)
 val array_indexing :
   ?typ:machtype_component -> int -> expression -> expression -> Debuginfo.t ->
   expression
@@ -259,7 +259,6 @@ val int_array_set :
   expression -> expression -> expression -> Debuginfo.t -> expression
 val float_array_set :
   expression -> expression -> expression -> Debuginfo.t -> expression
-
 
 (** Strings *)
 
@@ -302,11 +301,7 @@ val make_float_alloc : Debuginfo.t -> int -> expression list -> expression
 
 (** Bounds checking *)
 
-(** Generate a [Ccheckbound] term
-    [Ccheckbounds] takes two arguments : first the bound to check against,
-    then the index.
-    It results in a bounds error if the index is greater than or equal to
-    the bound. *)
+(** Generate a [Ccheckbound] term *)
 val make_checkbound : Debuginfo.t -> expression list -> expression
 
 (** [check_bound safety access_size dbg length a2 k] prefixes expression [k]
@@ -324,9 +319,9 @@ val check_bound :
     ensure its presence in the set of defined symbols *)
 val apply_function_sym : int -> string
 
-(** If [n] is positive, get the symbol for the generic curryfication with
+(** If [n] is positive, get the symbol for the generic currying wrapper with
     [n] arguments, and ensure its presence in the set of defined symbols.
-    Otherwise, do the same for the generic tuplification with [-n] arguments. *)
+    Otherwise, do the same for the generic tuple wrapper with [-n] arguments. *)
 val curry_function_sym : int -> string
 
 (** Bigarrays *)
@@ -358,7 +353,7 @@ val caml_nativeint_ops : string
 val caml_int32_ops : string
 val caml_int64_ops : string
 
-(** Box a given integer into a block, without sharing of constants *)
+(** Box a given integer, without sharing of constants *)
 val box_int_gen :
   Debuginfo.t -> Primitive.boxed_integer -> expression -> expression
 
@@ -414,16 +409,16 @@ val int_as_pointer : unary_primitive
 (** Raise primitive *)
 val raise_prim : Lambda.raise_kind -> unary_primitive
 
-(** Unary negation of a caml integer *)
+(** Unary negation of an OCaml integer *)
 val negint : unary_primitive
 
-(** Add a fixed number to a caml integer *)
+(** Add a constant number to an OCaml integer *)
 val offsetint : int -> unary_primitive
 
-(** Add a fixed number to a caml integer reference *)
+(** Add a constant number to an OCaml integer reference *)
 val offsetref : int -> unary_primitive
 
-(** Return the length of the array argument, as a caml integer *)
+(** Return the length of the array argument, as an OCaml integer *)
 val arraylength : Lambda.array_kind -> unary_primitive
 
 (** Byte swap primitive
@@ -448,7 +443,7 @@ val setfield :
 val setfloatfield :
   int -> Lambda.initialization_or_assignment -> binary_primitive
 
-(** Operations on caml integers *)
+(** Operations on OCaml integers *)
 val add_int_caml : binary_primitive
 val sub_int_caml : binary_primitive
 val mul_int_caml : binary_primitive
@@ -462,7 +457,7 @@ val lsr_int_caml : binary_primitive
 val asr_int_caml : binary_primitive
 val int_comp_caml : Lambda.integer_comparison -> binary_primitive
 
-(** String, Bytes and Bigstrings *)
+(** Strings, Bytes and Bigstrings *)
 
 (** Regular string/bytes access. Args: string/bytes, index *)
 val stringref_unsafe : binary_primitive
@@ -536,17 +531,17 @@ val strmatch_compile :
   Debuginfo.t -> expression -> expression option ->
   (string * expression) list -> expression
 
-(** From transl (clambda expressions) *)
+(** Closures and function applications *)
 
 (** Adds a constant offset to a pointer (for infix access) *)
 val ptr_offset : expression -> int -> Debuginfo.t -> expression
 
-(** Direct application of a symbol *)
+(** Direct application of a function via a symbol *)
 val direct_apply : string -> expression list -> Debuginfo.t -> expression
 
-(** Generic application of a function to one or several arguments
-    The mutable_flag argument annotates the code pointer load
-    from the closure. The original implementation uses a mutable load by
+(** Generic application of a function to one or several arguments.
+    The mutable_flag argument annotates the loading of the code pointer
+    from the closure. The Cmmgen code uses a mutable load by
     default, with a special case when the load is from (the first function of)
     the currently defined closure. *)
 val generic_apply :
@@ -593,7 +588,7 @@ val frame_table: string list -> phrase
     from the given compilation units *)
 val spacetime_shapes: string list -> phrase
 
-(** Generate the tables for respectively data and code positions of the given
+(** Generate the tables for data and code positions respectively of the given
     compilation units *)
 val data_segment_table: string list -> phrase
 val code_segment_table: string list -> phrase
@@ -616,7 +611,7 @@ val emit_block :
   (string * Cmmgen_state.is_global) -> nativeint -> data_item list ->
   data_item list
 
-(** Emit specific kinds of constant block as data items *)
+(** Emit specific kinds of constant blocks as data items *)
 val emit_float_constant :
   (string * Cmmgen_state.is_global) -> float -> data_item list ->
   data_item list
