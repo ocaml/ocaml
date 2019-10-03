@@ -12,10 +12,10 @@ To add a new module, you must:
 
 * Create new `.mli` and `.ml` files for the modules, obviously.
 
-* Define the module in `stdlib/stdlib.mli`, `stdlib/stdlib.ml` in the section of
-  the code commented, "MODULE ALIASES". Please maintain the same style as the
-  rest of the code, in particular the alphabetical ordering and whitespace
-  alignment of module aliases.
+* Define the module in `stdlib/stdlib.mli` and `stdlib/stdlib.ml` in
+  the section of the code commented "MODULE ALIASES". Please maintain
+  the same style as the rest of the code, in particular the
+  alphabetical ordering and whitespace alignment of module aliases.
 
 * Add `$(P)module_name` to the definition of `STDLIB_MODULES` in
   `stdlib/StdlibModules`. You must keep the list sorted in dependency order.

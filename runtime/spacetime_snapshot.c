@@ -108,17 +108,18 @@ static value take_gc_stats(void)
   v_stats = allocate_outside_heap(sizeof(gc_stats));
   stats = (gc_stats*) v_stats;
 
-  stats->minor_words = Val_long(caml_stat_minor_words);
-  stats->promoted_words = Val_long(caml_stat_promoted_words);
+  stats->minor_words = Val_long(Caml_state->stat_minor_words);
+  stats->promoted_words = Val_long(Caml_state->stat_promoted_words);
   stats->major_words =
-    Val_long(((uintnat) caml_stat_major_words)
+    Val_long(((uintnat) Caml_state->stat_major_words)
              + ((uintnat) caml_allocated_words));
-  stats->minor_collections = Val_long(caml_stat_minor_collections);
-  stats->major_collections = Val_long(caml_stat_major_collections);
-  stats->heap_words = Val_long(caml_stat_heap_wsz / sizeof(value));
-  stats->heap_chunks = Val_long(caml_stat_heap_chunks);
-  stats->compactions = Val_long(caml_stat_compactions);
-  stats->top_heap_words = Val_long(caml_stat_top_heap_wsz / sizeof(value));
+  stats->minor_collections = Val_long(Caml_state->stat_minor_collections);
+  stats->major_collections = Val_long(Caml_state->stat_major_collections);
+  stats->heap_words = Val_long(Caml_state->stat_heap_wsz / sizeof(value));
+  stats->heap_chunks = Val_long(Caml_state->stat_heap_chunks);
+  stats->compactions = Val_long(Caml_state->stat_compactions);
+  stats->top_heap_words =
+    Val_long(Caml_state->stat_top_heap_wsz / sizeof(value));
 
   return v_stats;
 }

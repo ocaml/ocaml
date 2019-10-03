@@ -142,7 +142,7 @@ FUNCTION(caml_call_gc)
         stp     d26, d27, [sp, 352]
         stp     d28, d29, [sp, 368]
         stp     d30, d31, [sp, 384]
-    /* Store pointer to saved integer registers in caml_gc_regs */
+    /* Store pointer to saved integer registers in Caml_state->gc_regs */
         add     TMP, sp, #16
         str     TMP, Caml_state(gc_regs)
     /* Save current allocation pointer for debugging purposes */
@@ -197,9 +197,9 @@ FUNCTION(caml_alloc1)
     /* Record the lowest address of the caller's stack frame.  This is the
        address immediately above the pair of words (x29 and x30) we just
        pushed.  Those must not be included since otherwise the distance from
-       [caml_bottom_of_stack] to the highest address in the caller's stack
-       frame won't match the frame size contained in the relevant frame
-       descriptor. */
+       [Caml_state->bottom_of_stack] to the highest address in the caller's
+       stack frame won't match the frame size contained in the relevant
+       frame descriptor. */
         add     x29, sp, #16
         str     x29, Caml_state(bottom_of_stack)
         add     x29, sp, #0

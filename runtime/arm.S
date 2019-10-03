@@ -153,7 +153,7 @@ FUNCTION(caml_call_gc)
 #else
         CFI_OFFSET(lr, -4)
 #endif
-    /* Store pointer to saved integer registers in caml_gc_regs */
+    /* Store pointer to saved integer registers in Caml_state->gc_regs */
         str     sp, Caml_state(gc_regs)
     /* Save current allocation pointer for debugging purposes */
         str     alloc_ptr, Caml_state(young_ptr)

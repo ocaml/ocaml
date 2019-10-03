@@ -59,7 +59,7 @@
  *
  * They are part of the state specific to each thread, and threading libraries
  * are responsible for copying them on context switch.
- * See [otherlibs/systhreads/st_stubs.c] and [otherlibs/threads/scheduler.c].
+ * See [otherlibs/systhreads/st_stubs.c].
  *
  *
  * [Caml_state->backtrace_buffer] is filled by runtime when unwinding stack. It
@@ -79,7 +79,8 @@
  * raise and re-raise are distinguished by:
  * - passing reraise = 1 to [caml_stash_backtrace] (see below) in the bytecode
  *   interpreter;
- * - directly resetting [caml_backtrace_pos] to 0 in native runtimes for raise.
+ * - directly resetting [Caml_state->backtrace_pos] to 0 in native
+     runtimes for raise.
  */
 
 /* [caml_record_backtrace] toggle backtrace recording on and off.
