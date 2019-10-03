@@ -648,6 +648,10 @@ OCaml 4.11
   avoiding a problem with x87 excess precision in Float.round.
   (Xavier Leroy, review by Sébastien Hinderer)
 
+- #9011: Allow linking .cmxa files with no units on MSVC by not requiring the
+  .lib file to be present.
+  (David Allsopp, report by Dimitry Bely, review by Xavier Leroy)
+
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 
