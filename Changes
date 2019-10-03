@@ -373,6 +373,9 @@ OCaml 4.09.0 (19 September 2019):
 - #2165: better unboxing heuristics for let-bound identifiers
   (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
 
+- #8735: unbox across static handlers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 * #2276: Remove support for compiler plugins and hooks (also adds
