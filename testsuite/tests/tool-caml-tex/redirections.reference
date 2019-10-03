@@ -1,20 +1,3 @@
-(* TEST
-   reference="${test_source_directory}/redirections.reference"
-   output="redirections.output"
-   script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
-  * hasstr
-  ** native-compiler
-  *** shared-libraries
-  **** script with unix,str
-  ***** check-program-output
-  *** no-shared-libraries
-  **** script with unix,str
-   script = "${ocamlsrcdir}/tools/caml-tex \
-   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
-  ***** check-program-output
-*)
-
 \camlexample{toplevel}
 \caml\camlinput\?[@@@warning "+A"];;
 \endcamlinput\endcaml

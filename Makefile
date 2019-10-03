@@ -124,8 +124,8 @@ COMP=\
   bytecomp/meta.cmo bytecomp/opcodes.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo \
   bytecomp/symtable.cmo \
-  driver/pparse.cmo driver/main_args.cmo \
-  driver/compenv.cmo driver/compmisc.cmo \
+  driver/pparse.cmo driver/compenv.cmo \
+  driver/main_args.cmo driver/compmisc.cmo \
   driver/makedepend.cmo \
   driver/compile_common.cmo
 

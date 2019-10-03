@@ -91,8 +91,8 @@ all:
 .PHONY: new-without-report
 new-without-report: lib tools
 	@rm -f $(failstamp)
-	@(for file in `$(find) tests -name ocamltests`; do \
-	  dir=`dirname $$file`; \
+	@(IFS=$$(printf "\r\n"); \
+	$(ocamltest) -find-test-dirs tests | while read dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV="" OCAMLTESTFLAGS=""; \
@@ -187,7 +187,7 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@if [ -f $(DIR)/ocamltests ]; then \
+	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
@@ -204,12 +204,12 @@ exec-one:
 exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
-	@file=$(DIR)/ocamltests; \
-	(IFS=$$(printf "\r\n"); while read testfile || [ -n "$$testfile" ]; do \
+	@(IFS=$$(printf "\r\n"); \
+	$(ocamltest) -list-tests $(DIR) | while read testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
-	done < $$file) || echo directory "$(DIR)" >>$(failstamp)
+	done) || echo directory "$(DIR)" >>$(failstamp)
 
 .PHONY: clean-one
 clean-one:
@@ -233,7 +233,7 @@ promote:
 	  echo "Directory '$(DIR)' does not exist."; \
 	  exit 1; \
 	fi
-	@if [ -f $(DIR)/ocamltests ]; then \
+	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
 	    OCAMLTESTFLAGS="-promote"; \

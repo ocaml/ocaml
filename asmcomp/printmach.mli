@@ -29,5 +29,3 @@ val phase: string -> formatter -> Mach.fundecl -> unit
 val interferences: formatter -> unit -> unit
 val intervals: formatter -> unit -> unit
 val preferences: formatter -> unit -> unit
-
-val print_live: bool ref
