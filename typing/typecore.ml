@@ -1012,6 +1012,8 @@ let rec find_valid_alternative f pat =
    Unification may update the typing environment. *)
 (* constrs <> None => called from parmatch: backtrack on or-patterns
    explode > 0 => explode Ppat_any for gadts *)
+(* Need_backtrack exceptions are raised in the [Inside_or] mode to backtrack
+   to the outermost or-pattern *)
 let rec type_pat ?(exception_allowed=false) ~constrs ~labels ~no_existentials
           ~mode ~explode ~env sp expected_ty k =
   Builtin_attributes.warning_scope sp.ppat_attributes
@@ -1349,8 +1351,11 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
       let state = save_state env in
-      begin match
-        if mode = Split_or then raise Need_backtrack;
+      let split_or sp =
+        assert (constrs <> None);
+        let typ pat = type_pat ~exception_allowed pat expected_ty k in
+        find_valid_alternative (fun pat -> set_state state env; typ pat) sp in
+      if mode = Split_or then split_or sp else begin
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let equation_level = !gadt_equations_level in
@@ -1384,27 +1389,22 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         List.iter (fun { pv_type; pv_loc; _ } ->
           check_scope_escape pv_loc !env2 outter_lev pv_type
         ) p2_variables;
-        match p1, p2 with
-          None, None -> raise Need_backtrack
-        | Some p, None | None, Some p -> p (* no variables in this case *)
+        begin match p1, p2 with
+        | None, None ->
+            if mode = Inside_or then raise Need_backtrack else split_or sp
+        | Some p, None | None, Some p -> rp k p (* no variables in this case *)
         | Some p1, Some p2 ->
         let alpha_env =
           enter_orpat_variables loc !env p1_variables p2_variables in
         pattern_variables := p1_variables;
         module_variables := p1_module_variables;
-        { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
-          pat_loc = loc; pat_extra=[];
-          pat_type = instance expected_ty;
-          pat_attributes = sp.ppat_attributes;
-          pat_env = !env }
-      with
-        p -> rp k p
-      | exception Need_backtrack when mode <> Inside_or ->
-          assert (constrs <> None);
-          let try_pat pat =
-            set_state state env;
-            type_pat ~exception_allowed ~mode pat expected_ty k in
-          find_valid_alternative try_pat sp
+        rp k { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
+               pat_loc = loc;
+               pat_extra=[];
+               pat_type = instance expected_ty;
+               pat_attributes = sp.ppat_attributes;
+               pat_env = !env }
+        end
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
