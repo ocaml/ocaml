@@ -70,20 +70,13 @@ for guidance on how to edit the generated files by hand.
 
 From the top directory, do:
 
-        make world.opt
-+
-if your platform is supported by the native-code compiler (as reported during
-   the auto-configuration), or
+        make
 
-        make world
-+
-if not.
-
-This builds the OCaml bytecode compiler for the first time.  This phase is
+This builds the OCaml compiler for the first time.  This phase is
 fairly verbose; consider redirecting the output to a file:
 
-        make world > log.world 2>&1     # in sh
-        make world >& log.world         # in csh
+        make > make.log 2>&1     # in sh
+        make >& make.log         # in csh
 
 == (Optional) Running the testsuite
 

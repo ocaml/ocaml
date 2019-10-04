@@ -40,7 +40,7 @@ codegen_OBJECTS = $(addsuffix .cmo,\
 
 tools := $(expect_PROG)
 
-ifneq "$(ARCH)" "none"
+ifeq "$(NATIVE_COMPILER)" "true"
 tools += $(codegen_PROG)
 ifneq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # The asmgen tests are not ported to MSVC64 yet
