@@ -93,7 +93,7 @@ case "$1" in
 
     set_configuration msvc "$OCAMLROOT-msvc32" -WX
 
-    run 'make world' make world
+    run 'make coldstart byteall' make coldstart byteall
     run 'make runtimeopt' make runtimeopt
     run 'make -C otherlibs/systhreads libthreadsnat.lib' \
          make -C otherlibs/systhreads libthreadsnat.lib
@@ -135,13 +135,14 @@ case "$1" in
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \
-        "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+        "make -C ../$BUILD_PREFIX-mingw32 flexdll all" \
         "../$BUILD_PREFIX-mingw32/build.log" |
           sed -e 's/\d027\[K//g' \
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
     else
-      run 'make world' make world
+      run 'make coldstart' make coldstart
+      run 'make byteall' make byteall
       run 'make bootstrap' make bootstrap
       run 'make opt' make opt
       run 'make opt.opt' make opt.opt

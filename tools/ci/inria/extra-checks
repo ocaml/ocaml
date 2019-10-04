@@ -130,7 +130,8 @@ instdir="$HOME/ocaml-tmp-install-$$"
 ./configure --prefix "$instdir"
 
 # Build the system without using world.opt
-make $jobs world
+make $jobs coldstart
+make $jobs byteall
 make $jobs opt
 make $jobs opt.opt
 make install
@@ -180,7 +181,7 @@ set_config_var OC_CFLAGS "-O1 \
 
 OCAMLRUNPARAM="c=1" \
 LSAN_OPTIONS="suppressions=$(pwd)/tools/ci/inria/lsan-suppr.txt" \
-make $jobs world.opt
+make $jobs all
 
 # Run the testsuite.
 # The suppressed leak detections related to ocamlyacc mess up the output
@@ -205,7 +206,7 @@ set_config_var OC_CFLAGS "-O1 \
 -fsanitize=thread"
 
 # Build the system
-make $jobs world.opt
+make $jobs all
 
 # Run the testsuite.
 # ThreadSanitizer complains about fork() in threaded programs,
@@ -243,5 +244,6 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 # export MSAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer
 
 # # Build the system (bytecode only) and test
-# make $jobs world
+# make $jobs coldstart
+# make $jobs byteall
 # $run_testsuite

@@ -20,11 +20,18 @@ ROOTDIR = .
 include Makefile.config
 include Makefile.common
 
-.PHONY: defaultentry
-ifeq "$(NATIVE_COMPILER)" "true"
-defaultentry: world.opt
+.PHONY: all
+ifeq "$(wildcard boot/initialised)" ""
+# Compile everything for the first time
+all: coldstart
+  ifeq "$(NATIVE_COMPILER)" "true"
+	$(MAKE) opt.opt
+  else
+	$(MAKE) byteall
+  endif
 else
-defaultentry: world
+# boot/ is already assembled, so check the system is up-to-date only
+all: byteall
 endif
 
 MKDIR=mkdir -p
@@ -349,6 +356,7 @@ coldstart:
 	  CAMLC='$$(BOOT_OCAMLC) -use-prims ../runtime/primitives' all
 	cd stdlib; cp $(LIBFILES) ../boot
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
+	@touch boot/initialised
 
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
@@ -448,8 +456,8 @@ coreboot:
 
 # Recompile the system using the bootstrap compiler
 
-.PHONY: all
-all: coreall
+.PHONY: byteall
+byteall: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 ifneq "$(WITH_OCAMLDOC)" ""
@@ -463,17 +471,23 @@ endif
 bootstrap: coreboot
 	$(MAKE) all
 
-# Compile everything the first time
+# Old targets for compiling everything for the first time
 
 .PHONY: world
 world: coldstart
 	$(MAKE) all
+	@echo
+	@echo "$(MAKE) world and $(MAKE) world.opt are deprecated"
+	@echo "You may now simply issue $(MAKE) or $(MAKE) all"
 
 # Compile also native code compiler and libraries, fast
 .PHONY: world.opt
 world.opt: checknative
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
+	@echo
+	@echo "$(MAKE) world and $(MAKE) world.opt are deprecated"
+	@echo "You may now simply issue $(MAKE) or $(MAKE) all"
 
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
@@ -1327,7 +1341,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	boot/*.cm* boot/libcamlrun.$(A) boot/ocamlc.opt
+	boot/*.cm* boot/libcamlrun.$(A) boot/ocamlc.opt boot/initialised
 	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc

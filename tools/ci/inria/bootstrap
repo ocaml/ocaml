@@ -235,7 +235,8 @@ if $flambda; then
 fi
 eval "./configure $build $host --prefix='$instdir' $confoptions"
 
-$make world
+$make coldstart
+$make byteall
 
 change_exe_magic_number "CI-bootstrap"
 

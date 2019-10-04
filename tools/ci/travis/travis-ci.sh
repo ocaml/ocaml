@@ -125,15 +125,8 @@ EOF
   esac
 
   export PATH=$PREFIX/bin:$PATH
-  if [ "$MIN_BUILD" = "1" ] ; then
-    if $MAKE world.opt ; then
-      echo "world.opt is not supposed to work!"
-      exit 1
-    else
-      $MAKE world
-    fi
-  else
-    $MAKE world.opt
+  $MAKE all
+  if [ "$MIN_BUILD" != "1" ] ; then
     $MAKE ocamlnat
   fi
   cd testsuite
@@ -154,7 +147,7 @@ EOF
     $MAKE manual-pregen
   fi
   # check_all_arches checks tries to compile all backends in place,
-  # we would need to redo (small parts of) world.opt afterwards to
+  # we would need to redo (small parts of) opt.opt afterwards to
   # use the compiler again
   $MAKE check_all_arches
   # check that the 'clean' target also works

@@ -25,10 +25,10 @@ Here is how to perform a change that requires a bootstrap:
    \*.cm* files of the standard library. This stable state can be reached
    by running
 
-        make world
+        make coldstart byteall
 +
-(Actually, running `make coldstart` should be enough but `make world` is
-safer. Similarly, `make world.opt` will also bring you to such a stable
+(Actually, running `make coldstart` should be enough also building `byteall` is
+safer. Similarly, `make coldstart opt.opt` will also bring you to such a stable
 state but builds more things than actually required.)
 
 4. Now, and only now, edit the sources. Changes here may include adding,

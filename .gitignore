@@ -68,6 +68,7 @@ _build
 /boot/ocamlrun
 /boot/camlheader
 /boot/ocamlc.opt
+/boot/initialised
 
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
