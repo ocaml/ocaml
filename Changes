@@ -30,6 +30,9 @@ Working version
 - #7927, #8527: Replace long tuples into records in typeclass.ml
   (Ulugbek Abdullaev, review by David Allsopp and Gabriel Scherer)
 
+- #1963: split cmmgen into generic Cmm helpers and clambda transformations
+  (Vincent Laviron, review by Mark Shinwell)
+
 - #1901: Fix lexing of character literals in comments
   (Pieter Goetschalckx, review by Damien Doligez)
 

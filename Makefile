@@ -157,6 +157,7 @@ ASMCOMP=\
   asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo \
   asmcomp/cmmgen_state.cmo \
+  asmcomp/cmm_helpers.cmo \
   asmcomp/cmmgen.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
