@@ -230,6 +230,7 @@ eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
 if $make_native; then
   $make $jobs --warn-undefined-variables world.opt
+  $make $jobs --warn-undefined-variables ocamlnat
   if $check_make_alldepend; then $make --warn-undefined-variables alldepend; fi
 else
   $make $jobs --warn-undefined-variables world
