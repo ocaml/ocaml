@@ -256,7 +256,7 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez)
 
 - #8951: let make's default target build the compiler
-  (Sébastien Hinderer, review by )
+  (Sébastien Hinderer, review by David Allsopp)
 
 - #8985, #8986: fix generation of the primitives when the locale collation is
   incompatible with C.
