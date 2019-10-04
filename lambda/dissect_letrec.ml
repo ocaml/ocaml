@@ -17,13 +17,6 @@
 open Asttypes
 open Lambda
 
-let debug x =
-  match Sys.getenv "DISSECT_DEBUG" with
-  | "" | "0" | exception Not_found ->
-      Format.ifprintf Format.std_formatter x
-  | _ ->
-      Format.fprintf Format.std_formatter x
-
 (* Converts let-rec containing values into an initialization then
    assignment sequence.
 
@@ -424,8 +417,6 @@ let rec prepare_letrec
              Ident.Set.fold (fun from -> Ident.Map.add from id)
                substitute_from letrec.substitution
            in
-           debug "ADD SUBST: %a => %a@."
-             Ident.print cl.ident Ident.print id;
            let letbound = Ident.Set.add cl.ident letrec.letbound in
            { letrec with substitution; letbound }
        | None -> dead_code lam letrec)
@@ -494,9 +485,6 @@ let rec prepare_letrec
       { letrec with pre }
 
 let dissect_letrec ~bindings ~body =
-
-  debug "dissect@ %a@.@."
-    Printlambda.lambda (Lletrec (bindings, Lconst (Const_pointer 0)));
 
   let letbound =
     Ident.Set.of_list (List.map fst bindings)
@@ -568,14 +556,6 @@ let dissect_letrec ~bindings ~body =
       with_constants
   in
 
-  (* let substituted =
-   *   List.fold_left (fun body (id, _) ->
-   *       Llet (Strict, Pgenval, id, Lconst (Const_pointer 99999), body))
-   *     substituted bindings
-   * in *)
-
-  debug "dissected@ %a@.@."
-    Printlambda.lambda substituted;
   substituted
 
 type dissected =
