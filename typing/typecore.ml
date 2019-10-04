@@ -1165,14 +1165,13 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
             Some (p0, p, true)
         with Not_found -> None
       in
-      let candidates =
-        match lid.txt, constrs with
-          Longident.Lident s, Some constrs when Hashtbl.mem constrs s ->
-            Ok [Hashtbl.find constrs s, (fun () -> ())]
-        | _ ->
-            Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env
-      in
       let constr =
+        match lid.txt, constrs with
+          Longident.Lident s, Some constrs ->
+            assert (Hashtbl.mem constrs s); Hashtbl.find constrs s
+        | _ ->
+        let candidates =
+          Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env in
         wrap_disambiguate "This variant pattern is expected to have"
           (mk_expected expected_ty)
           (Constructor.disambiguate Env.Pattern lid !env opath) candidates
