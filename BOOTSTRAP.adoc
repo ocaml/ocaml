@@ -25,9 +25,9 @@ Here is how to perform a change that requires a bootstrap:
    \*.cm* files of the standard library. This stable state can be reached
    by running
 
-        make coldstart byteall
+        make coldstart allbyte
 +
-(Actually, running `make coldstart` should be enough also building `byteall` is
+(Actually, running `make coldstart` should be enough also building `allbyte` is
 safer. Similarly, `make coldstart opt.opt` will also bring you to such a stable
 state but builds more things than actually required.)
 

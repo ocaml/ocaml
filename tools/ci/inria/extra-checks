@@ -131,7 +131,7 @@ instdir="$HOME/ocaml-tmp-install-$$"
 
 # Build the system without using world.opt
 make $jobs coldstart
-make $jobs byteall
+make $jobs allbyte
 make $jobs opt
 make $jobs opt.opt
 make install
@@ -245,5 +245,5 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 
 # # Build the system (bytecode only) and test
 # make $jobs coldstart
-# make $jobs byteall
+# make $jobs allbyte
 # $run_testsuite

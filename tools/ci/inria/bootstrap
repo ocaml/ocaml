@@ -236,7 +236,7 @@ fi
 eval "./configure $build $host --prefix='$instdir' $confoptions"
 
 $make coldstart
-$make byteall
+$make allbyte
 
 change_exe_magic_number "CI-bootstrap"
 

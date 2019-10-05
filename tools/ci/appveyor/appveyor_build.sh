@@ -93,7 +93,7 @@ case "$1" in
 
     set_configuration msvc "$OCAMLROOT-msvc32" -WX
 
-    run 'make coldstart byteall' make coldstart byteall
+    run 'make coldstart allbyte' make coldstart allbyte
     run 'make runtimeopt' make runtimeopt
     run 'make -C otherlibs/systhreads libthreadsnat.lib' \
          make -C otherlibs/systhreads libthreadsnat.lib
@@ -142,7 +142,7 @@ case "$1" in
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
     else
       run 'make coldstart' make coldstart
-      run 'make byteall' make byteall
+      run 'make allbyte' make allbyte
       run 'make bootstrap' make bootstrap
       run 'make opt' make opt
       run 'make opt.opt' make opt.opt

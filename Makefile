@@ -27,11 +27,11 @@ all: coldstart
   ifeq "$(NATIVE_COMPILER)" "true"
 	$(MAKE) opt.opt
   else
-	$(MAKE) byteall
+	$(MAKE) allbyte
   endif
 else
 # boot/ is already assembled, so check the system is up-to-date only
-all: byteall
+all: allbyte
 endif
 
 MKDIR=mkdir -p
@@ -456,8 +456,8 @@ coreboot:
 
 # Recompile the system using the bootstrap compiler
 
-.PHONY: byteall
-byteall: coreall
+.PHONY: allbyte
+allbyte: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 ifneq "$(WITH_OCAMLDOC)" ""
