@@ -27,8 +27,8 @@ Here is how to perform a change that requires a bootstrap:
 
         make coldstart allbyte
 +
-(Actually, running `make coldstart` should be enough also building `allbyte` is
-safer. Similarly, `make coldstart opt.opt` will also bring you to such a stable
+(Actually, running `make coldstart` should be enough also running `allbyte` is
+safer. Similarly, `make all` will also bring you to such a stable
 state but builds more things than actually required.)
 
 4. Now, and only now, edit the sources. Changes here may include adding,
