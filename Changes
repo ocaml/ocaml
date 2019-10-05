@@ -296,6 +296,10 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
+- #8792, #9018: Possible (latent) bug in Ctype.normalize_type
+  removed incrimined Btype.log_type, replaced by Btype.set_type
+  (Jacques Garrigue, report by Alain Frisch, review by Thomas Refis)
+
 - #8855, #8858: Links for tools not created when installing with
   --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
   ocamldep link not created)
