@@ -486,8 +486,9 @@ world.opt: checknative
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
 	@echo
-	@echo "$(MAKE) world and $(MAKE) world.opt are deprecated"
-	@echo "You may now simply issue $(MAKE) or $(MAKE) all"
+	@echo "$(MAKE) world.opt is deprecated; use $(MAKE) all \
+or even just $(MAKE)"
+	@echo "To rebuild the .opt tools, use $(MAKE) opt.opt"
 
 # FlexDLL sources missing error messages
 # Different git mechanism displayed depending on whether this source tree came
