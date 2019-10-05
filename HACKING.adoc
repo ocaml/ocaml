@@ -233,6 +233,39 @@ Additionally, there are some developer specific targets in link:Makefile.dev[].
 These targets are automatically available when working in a Git clone of the
 repository, but are not available from a tarball.
 
+=== Automatic configure options
+
+If you have options to `configure` which you always (or at least frequently)
+use, it's possible to store them in Git, and `configure` will automatically add
+them. For example, you may wish to avoid building the debug runtime by default
+while developing, in which case you can issue
+`git config --global ocaml.configure '--disable-debug-runtime'`. The `configure`
+script will alert you that it has picked up this option and added it _before_
+any options you specified for `configure`.
+
+Options are added before those passed on the command line, so it's possible to
+override them, for example `./configure --enable-debug-runtime` will build the
+debug runtime, since the enable flag appears after the disable flag. You can
+also use the full power of Git's `config` command and have options specific to
+particular clone or worktree.
+
+=== Speeding up configure
+
+`configure` includes the standard `-C` option which caches various test results
+in the file `config.cache` and can use those results to avoid running tests in
+subsequent invocations. This mechanism works fine, except that it is easy to
+clean the cache by mistake (e.g. with `git clean -dfX`). The cache is also
+host-specific which means the file has to be deleted if you run `configure` with
+a new `--host` value (this is quite common on Windows, where `configure` is
+also quite slow to run).
+
+You can elect to have host-specific cache files by issuing
+`git config --global ocaml.configure-cache .`. The `configure` script will now
+automatically create `ocaml-host.cache` (e.g. `ocaml-x86_64-pc-windows.cache`,
+or `ocaml-default.cache`). If you work with multiple worktrees, you can share
+these cache files by issuing `git config --global ocaml.configure-cache ..`. The
+directory is interpreted _relative_ to the `configure` script.
+
 === Bootstrapping
 
 The OCaml compiler is bootstrapped. This means that
