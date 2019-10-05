@@ -358,6 +358,9 @@ coldstart:
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
 	@touch boot/initialised
 
+boot/initialised:
+	$(MAKE) coldstart
+
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
 coreall: runtime
@@ -474,11 +477,8 @@ bootstrap: coreboot
 # Old targets for compiling everything for the first time
 
 .PHONY: world
-world: coldstart
+world: boot/initialised
 	$(MAKE) all
-	@echo
-	@echo "$(MAKE) world and $(MAKE) world.opt are deprecated"
-	@echo "You may now simply issue $(MAKE) or $(MAKE) all"
 
 # Compile also native code compiler and libraries, fast
 .PHONY: world.opt

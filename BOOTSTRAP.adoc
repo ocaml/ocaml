@@ -25,11 +25,12 @@ Here is how to perform a change that requires a bootstrap:
    \*.cm* files of the standard library. This stable state can be reached
    by running
 
-        make coldstart allbyte
+        make world
 +
-(Actually, running `make coldstart` should be enough also running `allbyte` is
+(Actually, running `make coldstart` should be enough but `make world` is
 safer. Similarly, `make all` will also bring you to such a stable
-state but builds more things than actually required.)
+state but builds more things than actually required, if the native compiler
+enabled.)
 
 4. Now, and only now, edit the sources. Changes here may include adding,
    removing or renaming a primitive in the runtime, changing the magic
