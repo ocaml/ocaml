@@ -737,7 +737,7 @@ let link_type ty ty' =
   | _ -> ()
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
-let set_type ty td =
+let set_type_desc ty td =
   if td != ty.desc then begin
     log_type ty;
     ty.desc <- td

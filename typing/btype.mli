@@ -227,7 +227,7 @@ val undo_compress: snapshot -> unit
 val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
            value if there is an active snapshot *)
-val set_type:  type_expr -> type_desc -> unit
+val set_type_desc: type_expr -> type_desc -> unit
         (* Set directly the desc field, without sharing *)
 val set_level: type_expr -> int -> unit
 val set_scope: type_expr -> int -> unit

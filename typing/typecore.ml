@@ -1886,7 +1886,7 @@ let check_univars env expans kind exp ty_expected vars =
         generalize t;
         match t.desc with
           Tvar name when t.level = generic_level ->
-            set_type t (Tunivar name); true
+            set_type_desc t (Tunivar name); true
         | _ -> false)
       vars in
   if List.length vars = List.length vars' then () else

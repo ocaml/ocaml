@@ -848,7 +848,7 @@ let rec update_level env level expand ty =
     | Tpackage (p, nl, tl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
-        set_type ty (Tpackage (p', nl, tl));
+        set_type_desc ty (Tpackage (p', nl, tl));
         update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
@@ -858,7 +858,7 @@ let rec update_level env level expand ty =
         let row = row_repr row in
         begin match row.row_name with
         | Some (p, _tl) when level < Path.scope p ->
-            set_type ty (Tvariant {row with row_name = None})
+            set_type_desc ty (Tvariant {row with row_name = None})
         | _ -> ()
         end;
         set_level ty level;
@@ -2750,7 +2750,7 @@ and unify_list env tl1 tl2 =
 and make_rowvar level use1 rest1 use2 rest2  =
   let set_name ty name =
     match ty.desc with
-      Tvar None -> set_type ty (Tvar name)
+      Tvar None -> set_type_desc ty (Tvar name)
     | _ -> ()
   in
   let name =
@@ -2790,8 +2790,8 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
       )
       pairs
   with exn ->
-    set_type rest1 d1;
-    set_type rest2 d2;
+    set_type_desc rest1 d1;
+    set_type_desc rest2 d2;
     raise exn
 
 and unify_kind k1 k2 =
@@ -2901,7 +2901,7 @@ and unify_row env row1 row2 =
       if is_Tvar rm then link_type rm (newty2 rm.level Tnil)
     end
   with exn ->
-    set_type rm1 md1; set_type rm2 md2; raise exn
+    set_type_desc rm1 md1; set_type_desc rm2 md2; raise exn
   end
 
 and unify_row_field env fixed1 fixed2 more l f1 f2 =
@@ -4443,7 +4443,7 @@ let rec normalize_type_rec env visited ty =
       match tm.desc with (* PR#7348 *)
         Tconstr (Path.Pdot(m,i), tl, _abbrev) ->
           let i' = String.sub i 0 (String.length i - 4) in
-          set_type ty (Tconstr(Path.Pdot(m,i'), tl, ref Mnil))
+          set_type_desc ty (Tconstr(Path.Pdot(m,i'), tl, ref Mnil))
       | _ -> assert false
     else match ty.desc with
     | Tvariant row ->
@@ -4467,7 +4467,7 @@ let rec normalize_type_rec env visited ty =
       let fields =
         List.sort (fun (p,_) (q,_) -> compare p q)
           (List.filter (fun (_,fi) -> fi <> Rabsent) fields) in
-      set_type ty (Tvariant {row with row_fields = fields})
+      set_type_desc ty (Tvariant {row with row_fields = fields})
     | Tobject (fi, nm) ->
         begin match !nm with
         | None -> ()
@@ -4480,7 +4480,7 @@ let rec normalize_type_rec env visited ty =
             | Tvar _ | Tunivar _ ->
                 if v' != v then set_name nm (Some (n, v' :: l))
             | Tnil ->
-                set_type ty (Tconstr (n, l, ref Mnil))
+                set_type_desc ty (Tconstr (n, l, ref Mnil))
             | _ -> set_name nm None
             end
         | _ ->
@@ -4490,7 +4490,7 @@ let rec normalize_type_rec env visited ty =
         if fi.level < lowest_level then () else
         let fields, row = flatten_fields fi in
         let fi' = build_fields fi.level fields row in
-        set_type fi fi'.desc
+        set_type_desc fi fi'.desc
     | _ -> ()
     end;
     iter_type_expr (normalize_type_rec env visited) ty
