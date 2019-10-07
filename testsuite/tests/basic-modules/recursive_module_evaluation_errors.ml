@@ -63,24 +63,23 @@ end = struct
 end
 and B: sig val value: unit end = struct let value = A.f () end
 [%%expect {|
-Lines 4-7, characters 6-3:
-4 | ......struct
-5 |   module F(X:sig end) = struct end
-6 |   let f () = B.value
-7 | end
-Error: Cannot safely evaluate the definition of the following cycle
-       of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.2).
-Line 2, characters 2-41:
-2 |   module F: functor(X:sig end) -> sig end
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Module A defines an unsafe functor, F .
-Line 8, characters 11-26:
-8 | and B: sig val value: unit end = struct let value = A.f () end
-               ^^^^^^^^^^^^^^^
-  Module B defines an unsafe value, value .
+Exception: Undefined_recursive_module ("", 4, 6).
 |}]
 
+module rec A: sig
+  module F: functor(X:sig end) -> sig end
+  val f: unit -> unit
+end = struct
+  module F(X:sig end) = struct end
+  let f () = B.value
+end
+and B: sig val value: unit end = struct
+  module M = A.F (struct end)
+  let value = ()
+end
+[%%expect{|
+Exception: Undefined_recursive_module ("", 4, 6).
+|}]
 
 module F(X: sig module type t module M: t end) = struct
   module rec A: sig
@@ -116,4 +115,22 @@ module rec M: sig val f: unit -> int end = struct let f () = N.x end
 and N:sig val x: int end = struct let x = M.f () end;;
 [%%expect {|
 Exception: Undefined_recursive_module ("", 1, 43).
+|}]
+
+module rec M : sig
+  module F (P : sig end) : sig
+    val f : int -> int
+  end
+end = struct
+  module F (P : sig end) = struct
+    let f n = n + 1
+  end
+
+  module G (Q : sig end) = struct
+    module X = M.F (struct end)
+  end
+end
+[%%expect{|
+module rec M :
+  sig module F : functor (P : sig end) -> sig val f : int -> int end end
 |}]

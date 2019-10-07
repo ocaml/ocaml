@@ -28,7 +28,6 @@ open Translclass
 
 type unsafe_component =
   | Unsafe_module_binding
-  | Unsafe_functor
   | Unsafe_non_function
   | Unsafe_typext
 
@@ -222,8 +221,7 @@ let init_shape id modl =
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Mty_functor _ ->
-        (* can we do better? *)
-        raise (Initialization_failure {reason=Unsafe_functor;loc;subid})
+        Const_pointer 0 (* camlinternalMod.Function *)
   and init_shape_struct env sg =
     match sg with
       [] -> []
@@ -1529,7 +1527,6 @@ let explanation_submsg (id, {reason;loc;subid}) =
     Location.mkloc printer loc in
   match reason with
   | Unsafe_module_binding -> print "Module %s defines an unsafe module, %s ."
-  | Unsafe_functor -> print "Module %s defines an unsafe functor, %s ."
   | Unsafe_typext ->
       print "Module %s defines an unsafe extension constructor, %s ."
   | Unsafe_non_function -> print "Module %s defines an unsafe value, %s ."

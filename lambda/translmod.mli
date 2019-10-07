@@ -44,7 +44,6 @@ val primitive_declarations: Primitive.description list ref
 
 type unsafe_component =
   | Unsafe_module_binding
-  | Unsafe_functor
   | Unsafe_non_function
   | Unsafe_typext
 
