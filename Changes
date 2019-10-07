@@ -88,6 +88,9 @@ Working version
 - #8992: share argument implementations between executables
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #9015: fix fatal error in pprint_ast (#8789)
+  (Damien Doligez, review by ...)
+
 ### Code generation and optimizations:
 
 - #8990: amd64: Emit 32bit registers for Iconst_int when we can
