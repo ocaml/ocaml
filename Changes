@@ -99,6 +99,10 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Thomas Refis and Gabriel Scherer)
 
+- #9030: clarify and document the parameter space of type_pat
+  (Gabriel Scherer and Florian Angeletti and Jacques Garrigue,
+   review by Florian Angeletti and Thomas Refis)
+
 - #8975: "ocamltests" files are no longer required or used by
   "ocamltest". Instead, any text file in the testsuite directory containing a
   valid "TEST" block will be automatically included in the testsuite.
