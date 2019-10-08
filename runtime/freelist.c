@@ -1780,7 +1780,7 @@ typedef enum caml_policy_t {
   policy_best_fit = 2,
 } caml_policy_t;
 
-caml_policy_t caml_allocation_policy = policy_next_fit;
+uintnat caml_allocation_policy = policy_next_fit;
 
 /* These pointers are changed when switching between allocation
    policies. */
