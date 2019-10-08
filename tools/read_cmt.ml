@@ -97,6 +97,38 @@ let print_info cmt =
   end;
   ()
 
+let generate_ml target_filename filename cmt =
+  let (printer, ext) =
+    match cmt.Cmt_format.cmt_annots with
+      | Cmt_format.Implementation typedtree ->
+          (fun ppf -> Pprintast.structure ppf
+                                        (Untypeast.untype_structure typedtree)),
+          ".ml"
+      | Cmt_format.Interface typedtree ->
+          (fun ppf -> Pprintast.signature ppf
+                                        (Untypeast.untype_signature typedtree)),
+          ".mli"
+      | _ ->
+        Printf.fprintf stderr "File was generated with an error\n%!";
+          exit 2
+  in
+  let target_filename = match target_filename with
+      None -> Some (filename ^ ext)
+    | Some "-" -> None
+    | Some _ -> target_filename
+  in
+  let oc = match target_filename with
+      None -> None
+    | Some filename -> Some (open_out filename) in
+  let ppf = match oc with
+      None -> Format.std_formatter
+    | Some oc -> Format.formatter_of_out_channel oc in
+  printer ppf;
+  Format.pp_print_flush ppf ();
+  match oc with
+      None -> flush stdout
+    | Some oc -> close_out oc
+
 let main () =
   Clflags.annotations := true;
 
@@ -110,7 +142,7 @@ let main () =
       if !gen_annot then
         Cmt2annot.gen_annot ~save_cmt_info: !save_cmt_info
           !target_filename filename cmt;
-      if !gen_ml then Cmt2annot.gen_ml !target_filename filename cmt;
+      if !gen_ml then generate_ml !target_filename filename cmt;
       if !print_info_arg || not (!gen_ml || !gen_annot) then print_info cmt;
     end else begin
       Printf.fprintf stderr

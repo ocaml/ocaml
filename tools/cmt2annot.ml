@@ -223,35 +223,3 @@ let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
   | Partial_interface _ ->
       Printf.fprintf stderr "File was generated with an error\n%!";
       exit 2
-
-let gen_ml target_filename filename cmt =
-  let (printer, ext) =
-    match cmt.Cmt_format.cmt_annots with
-      | Cmt_format.Implementation typedtree ->
-          (fun ppf -> Pprintast.structure ppf
-                                        (Untypeast.untype_structure typedtree)),
-          ".ml"
-      | Cmt_format.Interface typedtree ->
-          (fun ppf -> Pprintast.signature ppf
-                                        (Untypeast.untype_signature typedtree)),
-          ".mli"
-      | _ ->
-        Printf.fprintf stderr "File was generated with an error\n%!";
-          exit 2
-  in
-  let target_filename = match target_filename with
-      None -> Some (filename ^ ext)
-    | Some "-" -> None
-    | Some _ -> target_filename
-  in
-  let oc = match target_filename with
-      None -> None
-    | Some filename -> Some (open_out filename) in
-  let ppf = match oc with
-      None -> Format.std_formatter
-    | Some oc -> Format.formatter_of_out_channel oc in
-  printer ppf;
-  Format.pp_print_flush ppf ();
-  match oc with
-      None -> flush stdout
-    | Some oc -> close_out oc
