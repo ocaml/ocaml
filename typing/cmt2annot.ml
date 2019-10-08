@@ -76,11 +76,7 @@ let rec iterator ~scope rebuild_env =
         let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
         let env =
           if rebuild_env then
-            try
-              Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
-            with Envaux.Error err ->
-              Format.eprintf "%a@." Envaux.report_error err;
-              exit 2
+            Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
           else
             exp.exp_env
         in
@@ -211,15 +207,8 @@ let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
   | Implementation typedtree ->
       iter.structure iter typedtree;
       Stypes.dump target_filename
-  | Interface _ ->
-      Printf.eprintf "Cannot generate annotations for interface file\n%!";
-      exit 2
   | Partial_implementation parts ->
       Array.iter (binary_part iter) parts;
       Stypes.dump target_filename
-  | Packed _ ->
-      Printf.fprintf stderr "Packed files not yet supported\n%!";
-      Stypes.dump target_filename
-  | Partial_interface _ ->
-      Printf.fprintf stderr "File was generated with an error\n%!";
-      exit 2
+  | Interface _ | Packed _ | Partial_interface _ ->
+      ()
