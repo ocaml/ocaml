@@ -27,7 +27,7 @@ external get : 'a array -> int -> 'a = "%array_safe_get"
    The last element has number [ArrayLabels.length a - 1].
    You can also write [a.(n)] instead of [ArrayLabels.get a n].
 
-   Raise [Invalid_argument]
+   @raise Invalid_argument
    if [n] is outside the range 0 to [(ArrayLabels.length a - 1)]. *)
 
 external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
@@ -35,7 +35,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    element number [n] with [x].
    You can also write [a.(n) <- x] instead of [ArrayLabels.set a n x].
 
-   Raise [Invalid_argument]
+   @raise Invalid_argument
    if [n] is outside the range 0 to [ArrayLabels.length a - 1]. *)
 
 external make : int -> 'a -> 'a array = "caml_make_vect"
@@ -47,13 +47,13 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    of the array, and modifying [x] through one of the array entries
    will modify all other entries at the same time.
 
-   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
+   @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
   [@@ocaml.deprecated "Use Array.make instead."]
-(** @deprecated [Array.create] is an alias for {!Array.make}. *)
+(** @deprecated [Array.create] is an alias for {!make}. *)
 
 val init : int -> f:(int -> 'a) -> 'a array
 (** [ArrayLabels.init n ~f] returns a fresh array of length [n],
@@ -61,7 +61,7 @@ val init : int -> f:(int -> 'a) -> 'a array
    In other terms, [ArrayLabels.init n ~f] tabulates the results of [f]
    applied to the integers [0] to [n-1].
 
-   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
+   @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
    If the return type of [f] is [float], then the maximum
    size is only [Sys.max_array_length / 2].*)
 
@@ -73,29 +73,29 @@ val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
    The element ([x,y]) of a matrix [m] is accessed
    with the notation [m.(x).(y)].
 
-   Raise [Invalid_argument] if [dimx] or [dimy] is negative or
+   @raise Invalid_argument if [dimx] or [dimy] is negative or
    greater than {!Sys.max_array_length}.
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
 
 val create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-  [@@ocaml.deprecated "Use ArrayLabels.make_matrix instead."]
-(** @deprecated [ArrayLabels.create_matrix] is an alias for
-   {!ArrayLabels.make_matrix}. *)
+  [@@ocaml.deprecated "Use Array.make_matrix instead."]
+(** @deprecated [Array.create_matrix] is an alias for
+   {!make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
 (** [Array.append v1 v2] returns a fresh array containing the
    concatenation of the arrays [v1] and [v2]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as {!Array.append}, but concatenates a list of arrays. *)
+(** Same as {!append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> pos:int -> len:int -> 'a array
 (** [ArrayLabels.sub a ~pos ~len] returns a fresh array of length [len],
    containing the elements number [pos] to [pos + len - 1]
    of array [a].
 
-   Raise [Invalid_argument] if [pos] and [len] do not
+   @raise Invalid_argument if [pos] and [len] do not
    designate a valid subarray of [a]; that is, if
    [pos < 0], or [len < 0], or [pos + len > Array.length a]. *)
 
@@ -107,7 +107,7 @@ val fill : 'a array -> pos:int -> len:int -> 'a -> unit
 (** [ArrayLabels.fill a ~pos ~len x] modifies the array [a] in place,
    storing [x] in elements number [pos] to [pos + len - 1].
 
-   Raise [Invalid_argument] if [pos] and [len] do not
+   @raise Invalid_argument if [pos] and [len] do not
    designate a valid subarray of [a]. *)
 
 val blit :
@@ -119,7 +119,7 @@ val blit :
    [src] and [dst] are the same array, and the source and
    destination chunks overlap.
 
-   Raise [Invalid_argument] if [src_pos] and [len] do not
+   @raise Invalid_argument if [src_pos] and [len] do not
    designate a valid subarray of [src], or if [dst_pos] and [len] do not
    designate a valid subarray of [dst]. *)
 
@@ -167,14 +167,14 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
 val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [ArrayLabels.iter2 ~f a b] applies function [f] to all the elements of [a]
    and [b].
-   Raise [Invalid_argument] if the arrays are not the same size.
+   @raise Invalid_argument if the arrays are not the same size.
    @since 4.05.0 *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 (** [ArrayLabels.map2 ~f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
-   Raise [Invalid_argument] if the arrays are not the same size.
+   @raise Invalid_argument if the arrays are not the same size.
    @since 4.05.0 *)
 
 
@@ -211,7 +211,7 @@ external create_float: int -> float array = "caml_make_float_vect"
 val make_float: int -> float array
   [@@ocaml.deprecated "Use Array.create_float instead."]
 (** @deprecated [Array.make_float] is an alias for
-    {!Array.create_float}. *)
+    {!create_float}. *)
 
 
 (** {1 Sorting} *)
