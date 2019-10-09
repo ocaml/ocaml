@@ -1768,11 +1768,11 @@ static void bf_make_free_blocks (value *p, mlsize_t size, int do_merge,
 
 /*********************** policy selection *****************************/
 
-typedef enum caml_policy_t {
+enum {
   policy_next_fit = 0,
   policy_first_fit = 1,
   policy_best_fit = 2,
-} caml_policy_t;
+};
 
 uintnat caml_allocation_policy = policy_next_fit;
 
