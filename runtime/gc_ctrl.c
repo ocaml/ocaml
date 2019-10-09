@@ -501,7 +501,6 @@ CAMLprim value caml_gc_set(value v)
     caml_compact_heap (newpolicy);
     caml_gc_message (0x20, "New allocation policy: %"
                      ARCH_INTNAT_PRINTF_FORMAT "u\n", newpolicy);
-    caml_final_do_calls ();
   }
 
   /* Minor heap size comes last because it can raise [Out_of_memory]. */
@@ -511,6 +510,9 @@ CAMLprim value caml_gc_set(value v)
     caml_set_minor_heap_size (Bsize_wsize (newminwsz));
   }
   CAML_INSTR_TIME (tmr, "explicit/gc_set");
+
+  /* The compaction may have triggered some finalizers that we need to call. */
+  caml_check_urgent_gc (Val_unit);
 
   return Val_unit;
 }
