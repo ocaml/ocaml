@@ -1408,7 +1408,8 @@ and structure_item ctxt f x =
               (module_expr ctxt) expr
               (item_attributes ctxt) pmb.pmb_attributes
         | pmb ->
-            pp f "@[<hov2>@ and@ %s@ =@ %a@]%a" pmb.pmb_name.txt
+            pp f "@[<hov2>@ and@ %s@ =@ %a@]%a"
+              (Option.value pmb.pmb_name.txt ~default:"_")
               (module_expr ctxt) pmb.pmb_expr
               (item_attributes ctxt) pmb.pmb_attributes
       in
@@ -1422,7 +1423,7 @@ and structure_item ctxt f x =
             (fun f l2 -> List.iter (aux f) l2) l2
       | pmb :: l2 ->
           pp f "@[<hv>@[<hov2>module@ rec@ %s@ =@ %a@]%a@ %a@]"
-            pmb.pmb_name.txt
+            (Option.value pmb.pmb_name.txt ~default:"_")
             (module_expr ctxt) pmb.pmb_expr
             (item_attributes ctxt) pmb.pmb_attributes
             (fun f l2 -> List.iter (aux f) l2) l2
