@@ -423,7 +423,8 @@ CAMLprim value caml_final_release (value unit)
 {
   running_finalisation_function = 0;
   /* Some finalisers might be waiting. */
-  caml_final_do_calls();
+  if (to_do_tl != NULL)
+    caml_set_action_pending();
   return Val_unit;
 }
 

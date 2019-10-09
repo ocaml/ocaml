@@ -31,10 +31,12 @@
 #include "caml/io.h"
 #include "caml/md5.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
 #include "caml/reverse.h"
-#include "caml/memprof.h"
+#include "caml/signals.h"
+
 
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
@@ -702,7 +704,8 @@ static value intern_end(value res, mlsize_t whsize) {
   if(block != NULL)
     caml_memprof_track_interned(block, blockend);
 
-  return caml_check_urgent_gc(res);
+  // Give gc a chance to run, and run memprof callbacks
+  return caml_check_urgent_gc_and_callbacks(res);
 }
 
 /* Parsing the header */
