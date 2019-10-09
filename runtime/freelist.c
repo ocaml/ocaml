@@ -116,19 +116,17 @@ static value nf_last = Val_NULL; /* Last block in the list.  Only valid
 #if defined (DEBUG) || FREELIST_DEBUG
 static void nf_check (void)
 {
-  value cur, prev;
+  value cur;
   int prev_found = 0, merge_found = 0;
   uintnat size_found = 0;
 
-  prev = Nf_head;
-  cur = Next_small (prev);
+  cur = Next_small (Nf_head);
   while (cur != Val_NULL){
     size_found += Whsize_bp (cur);
     CAMLassert (Is_in_heap (cur));
     if (cur == nf_prev) prev_found = 1;
     if (cur == caml_fl_merge) merge_found = 1;
-    prev = cur;
-    cur = Next_small (prev);
+    cur = Next_small (cur);
   }
   CAMLassert (prev_found || nf_prev == Nf_head);
   CAMLassert (merge_found || caml_fl_merge == Nf_head);
@@ -151,8 +149,7 @@ static void nf_check (void)
    it is located in the high-address words of the free block, so that
    the linking of the free-list does not change in case 2.
 */
-static header_t *nf_allocate_block (mlsize_t wh_sz, int flpi, value prev,
-                                    value cur)
+static header_t *nf_allocate_block (mlsize_t wh_sz, value prev, value cur)
 {
   header_t h = Hd_bp (cur);
   CAMLassert (Whsize_hd (h) >= wh_sz);
@@ -199,7 +196,7 @@ static header_t *nf_allocate (mlsize_t wo_sz)
     while (cur != Val_NULL){
       CAMLassert (Is_in_heap (cur));
       if (Wosize_bp (cur) >= wo_sz){
-        return nf_allocate_block (Whsize_wosize (wo_sz), 0, prev, cur);
+        return nf_allocate_block (Whsize_wosize (wo_sz), prev, cur);
       }
       prev = cur;
       cur = Next_small (prev);
@@ -213,7 +210,7 @@ static header_t *nf_allocate (mlsize_t wo_sz)
     cur = Next_small (prev);
     while (prev != nf_prev){
       if (Wosize_bp (cur) >= wo_sz){
-        return nf_allocate_block (Whsize_wosize (wo_sz), 0, prev, cur);
+        return nf_allocate_block (Whsize_wosize (wo_sz), prev, cur);
       }
       prev = cur;
       cur = Next_small (prev);
@@ -370,7 +367,6 @@ static void nf_add_blocks (value bp)
     cur = Next_small (prev);
     while (cur != Val_NULL && Bp_val (cur) < Bp_val (bp)){
       CAMLassert (Bp_val (prev) < Bp_val (bp) || prev == Nf_head);
-      /* XXX TODO: extend flp on the fly */
       prev = cur;
       cur = Next_small (prev);
     }
@@ -429,13 +425,12 @@ static value ff_last = Val_NULL; /* Last block in the list.  Only valid
 #if defined (DEBUG) || FREELIST_DEBUG
 static void ff_check (void)
 {
-  value cur, prev;
+  value cur;
   int flp_found = 0, merge_found = 0;
   uintnat size_found = 0;
   int sz = 0;
 
-  prev = Ff_head;
-  cur = Next_small (prev);
+  cur = Next_small (Ff_head);
   while (cur != Val_NULL){
     size_found += Whsize_bp (cur);
     CAMLassert (Is_in_heap (cur));
@@ -450,8 +445,7 @@ static void ff_check (void)
       }
     }
     if (cur == caml_fl_merge) merge_found = 1;
-    prev = cur;
-    cur = Next_small (prev);
+    cur = Next_small (cur);
   }
   CAMLassert (flp_found == flp_size);
   CAMLassert (merge_found || caml_fl_merge == Ff_head);
