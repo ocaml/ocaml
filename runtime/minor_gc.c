@@ -477,15 +477,32 @@ CAMLexport void caml_gc_dispatch (void)
    the gc. */
 void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
 {
-  /* Async callbacks may fill the minor heap again, so we need a while
-     loop here. */
-  while (Caml_state->young_ptr < Caml_state->young_trigger){
-    Caml_state->young_ptr += Whsize_wosize (wosize);
+  intnat whsize = Whsize_wosize (wosize);
+
+  /* First, we un-do the allocation performed in [Alloc_small] */
+  Caml_state->young_ptr += whsize;
+
+  while(1) {
+    /* We might be here because of an async callback / urgent GC
+       request. Take the opportunity to do what has been requested. */
+    if (flags & CAML_FROM_CAML) caml_check_urgent_gc (Val_unit);
+    else caml_check_gc_without_async_callbacks(Val_unit);
+
+    /* Now, there might be enough room in the minor heap to do our
+       allocation. */
+    if (Caml_state->young_ptr - whsize >= Caml_state->young_trigger)
+      break;
+
+    /* If not, then empty the minor heap, and check again for async
+       callbacks. */
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
-    if(flags & CAML_FROM_CAML) caml_check_urgent_gc (Val_unit);
-    Caml_state->young_ptr -= Whsize_wosize (wosize);
   }
+
+  /* Re-do the allocation: we now have enough space in the minor heap. */
+  Caml_state->young_ptr -= whsize;
+
+  /* Check if the allocated block has been sampled by memprof. */
   if(Caml_state->young_ptr < caml_memprof_young_trigger){
     if(flags & CAML_DO_TRACK) {
       caml_memprof_track_young(tag, wosize, flags & CAML_FROM_CAML);
