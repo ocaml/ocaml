@@ -61,7 +61,6 @@ struct to_do {
 
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
-int caml_final_to_do = 0;
 /*
   to_do_hd: head of the list of finalisation functions that can be run.
   to_do_tl: tail of the list of finalisation functions that can be run.
