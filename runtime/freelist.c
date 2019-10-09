@@ -1737,7 +1737,7 @@ static void bf_add_blocks (value bp)
       caml_fl_cur_wsz += Whsize_wosize (wosz);
       bf_insert_block ((large_free_block *) bp);
     }else{
-      Hd_val (bp) = Whitehd_hd (Hd_val (bp));
+      Hd_val (bp) = Make_header (wosz, Abstract_tag, Caml_white);
       bf_insert_remnant_small (bp);
     }
     bp = next;
