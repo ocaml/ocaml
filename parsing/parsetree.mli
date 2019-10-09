@@ -239,7 +239,9 @@ and pattern_desc =
   | Ppat_lazy of pattern
         (* lazy P *)
   | Ppat_unpack of string option loc
-        (* (module P)
+        (* (module P)        Some "P"
+           (module _)        None
+
            Note: (module P : S) is represented as
            Ppat_constraint(Ppat_unpack, Ptyp_package)
          *)
@@ -726,7 +728,10 @@ and module_type_desc =
 
 and functor_parameter =
   | Unit
+        (* () *)
   | Named of string option loc * module_type
+        (* (X : MT)          Some X, MT
+           (_ : MT)          None, MT *)
 
 and signature = signature_item list
 
