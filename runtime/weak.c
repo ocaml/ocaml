@@ -409,8 +409,7 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
       CAML_INSTR_INT ("force_minor/weak@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
+      caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
       elt = caml_alloc (Wosize_val (v), Tag_val (v));
@@ -465,8 +464,7 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
       CAML_INSTR_INT ("force_minor/weak@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
+      caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
       elt = caml_alloc (Wosize_val (v), Tag_val (v));

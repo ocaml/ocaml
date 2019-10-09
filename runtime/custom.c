@@ -62,10 +62,8 @@ static value alloc_custom_gen (struct custom_operations * ops,
         if (max_minor == 0) max_minor = 1;
         Caml_state->extra_heap_resources_minor +=
           (double) mem_minor / (double) max_minor;
-        if (Caml_state->extra_heap_resources_minor > 1.0) {
-          caml_request_minor_gc ();
-          caml_gc_dispatch ();
-        }
+        if (Caml_state->extra_heap_resources_minor > 1.0)
+          caml_minor_collection ();
       }
     }
   } else {

@@ -520,8 +520,8 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   }
 }
 
-/* For backward compatibility with Lablgtk: do a minor collection to
-   ensure that the minor heap is empty.
+/* Exported for backward compatibility with Lablgtk: do a minor
+   collection to ensure that the minor heap is empty.
 */
 CAMLexport void caml_minor_collection (void)
 {
