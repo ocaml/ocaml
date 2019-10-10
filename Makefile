@@ -486,7 +486,7 @@ world.opt: checknative
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
 	@echo
-	@echo "$(MAKE) world.opt is deprecated; use $(MAKE) all \
+	@echo "$(MAKE) world.opt is deprecated; you can now use $(MAKE) all \
 or even just $(MAKE)"
 	@echo "To rebuild the .opt tools, use $(MAKE) opt.opt"
 

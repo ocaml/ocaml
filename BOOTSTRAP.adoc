@@ -29,7 +29,7 @@ Here is how to perform a change that requires a bootstrap:
 +
 (Actually, running `make coldstart` should be enough but `make world` is
 safer. Similarly, `make all` will also bring you to such a stable
-state but builds more things than actually required, if the native compiler
+state but builds more things than actually required, if the native compiler is
 enabled.)
 
 4. Now, and only now, edit the sources. Changes here may include adding,
