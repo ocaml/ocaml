@@ -995,7 +995,15 @@ static void bf_check (void)
     int col = 0;
     int merge_found = 0;
 
-    if (bf_small_fl[i].merge == &bf_small_fl[i].free) merge_found = 1;
+    if (bf_small_fl[i].merge == &bf_small_fl[i].free){
+      merge_found = 1;
+    }else{
+      CAMLassert (caml_gc_phase != Phase_sweep
+                  || caml_fl_merge == Val_NULL
+                  || Val_bp (bf_small_fl[i].merge) < caml_fl_merge);
+    }
+    CAMLassert (*bf_small_fl[i].merge == Val_NULL
+                || Color_val (*bf_small_fl[i].merge) == Caml_blue);
     if (bf_small_fl[i].free != Val_NULL) map |= 1 << (i-1);
     for (b = bf_small_fl[i].free; b != Val_NULL; b = Next_small (b)){
       if (bf_small_fl[i].merge == &Next_small (b)) merge_found = 1;
@@ -1010,9 +1018,13 @@ static void bf_check (void)
         CAMLassert (Color_val (b) == Caml_white);
       }
     }
-    CAMLassert (merge_found);
+    if (caml_gc_phase == Phase_sweep) CAMLassert (merge_found);
   }
   CAMLassert (map == bf_small_map);
+  /* check [caml_fl_merge] */
+  CAMLassert (caml_gc_phase != Phase_sweep
+              || caml_fl_merge == Val_NULL
+              || Hp_val (caml_fl_merge) < (header_t *) caml_gc_sweep_hp);
   /* check the tree */
   bf_check_cur_size = 0;
   total_size += bf_check_subtree (bf_large_tree);
@@ -1655,7 +1667,7 @@ static void bf_reset (void)
 
   for (i = 1; i <= BF_NUM_SMALL; i++){
     bf_small_fl[i].free = Val_NULL;
-    bf_small_fl[i].merge = &(bf_small_fl[i].free);
+    bf_small_fl[i].merge = &bf_small_fl[i].free;
   }
   bf_small_map = 0;
   bf_large_tree = NULL;
