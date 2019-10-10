@@ -165,43 +165,8 @@ let binary_part iter x =
   | Partial_signature_item x -> iter.signature_item iter x
   | Partial_module_type x -> iter.module_type iter x
 
-(* Save cmt information as faked annotations, attached to
-   Location.none, on top of the .annot file. Only when -save-cmt-info is
-   provided to ocaml_cmt.
-*)
-let record_cmt_info cmt =
-  let location_none = {
-    Location.none with Location.loc_ghost = false }
-  in
-  let location_file file = {
-    Location.none with
-      Location.loc_start = {
-        Location.none.Location.loc_start with
-          Lexing.pos_fname = file }}
-  in
-  let record_info name value =
-    let ident = Printf.sprintf ".%s" name in
-    Stypes.record (Stypes.An_ident (location_none, ident,
-                                    Annot.Idef (location_file value)))
-  in
+let gen_annot target_filename cmt =
   let open Cmt_format in
-  (* record in reverse order to get them in correct order... *)
-  List.iter (fun dir -> record_info "include" dir) (List.rev cmt.cmt_loadpath);
-  record_info "chdir" cmt.cmt_builddir;
-  (match cmt.cmt_sourcefile with
-    None -> () | Some file -> record_info "source" file)
-
-let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
-  let open Cmt_format in
-  Envaux.reset_cache ();
-  List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
-  let target_filename =
-    match target_filename with
-    | None -> Some (filename ^ ".annot")
-    | Some "-" -> None
-    | Some _ -> target_filename
-  in
-  if save_cmt_info then record_cmt_info cmt;
   let iter = iterator ~scope:Location.none cmt.cmt_use_summaries in
   match cmt.cmt_annots with
   | Implementation typedtree ->
