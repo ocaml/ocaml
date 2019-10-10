@@ -79,9 +79,6 @@ consensus for all of them.
 - Track "string literals" in the type-checker, which often act as
   magic "internal" names which should be avoided.
 
-- Get rid of -annot.
-  (see Nicolas' PR)
-
 - Consider storing warning settings (+other context) as part of `Env.t`?
 
 - Parse attributes understood (e.g. the deprecated attribute) by the
