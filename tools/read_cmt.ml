@@ -177,6 +177,7 @@ let main () =
         Envaux.reset_cache ();
         List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
         Cmt2annot.gen_annot target_filename
+          ~sourcefile:cmt.cmt_sourcefile
           ~use_summaries:cmt.cmt_use_summaries
           cmt.cmt_annots
       end;
