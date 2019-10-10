@@ -111,7 +111,7 @@ static struct {
 
 static value nf_prev = Nf_head;  /* Current allocation pointer. */
 static value nf_last = Val_NULL; /* Last block in the list.  Only valid
-                                  just after [caml_fl_allocate] returns NULL. */
+                                    just after [nf_allocate] returns NULL. */
 
 #if defined (DEBUG) || FREELIST_DEBUG
 static void nf_check (void)
@@ -164,7 +164,7 @@ static header_t *nf_allocate_block (mlsize_t wh_sz, value prev, value cur)
 #endif
       /* In case 1, the following creates the empty block correctly.
          In case 0, it gives an invalid header to the block.  The function
-         calling [caml_fl_allocate] will overwrite it. */
+         calling [nf_allocate] will overwrite it. */
     Hd_op (cur) = Make_header (0, 0, Caml_white);
   }else{                                                        /* Case 2. */
     caml_fl_cur_wsz -= wh_sz;
@@ -336,8 +336,8 @@ static header_t *nf_merge_block (value bp, char *limit)
 
 /* This is a heap extension.  We have to insert it in the right place
    in the free-list.
-   [caml_fl_add_blocks] can only be called right after a call to
-   [caml_fl_allocate] that returned Val_NULL.
+   [nf_add_blocks] can only be called right after a call to
+   [nf_allocate] that returned Val_NULL.
    Most of the heap extensions are expected to be at the end of the
    free list.  (This depends on the implementation of [malloc].)
 
@@ -419,7 +419,7 @@ static struct {
 
 #define Ff_head (Val_bp (&(ff_sentinel.first_field)))
 static value ff_last = Val_NULL; /* Last block in the list.  Only valid
-                                  just after [caml_fl_allocate] returns NULL. */
+                                    just after [ff_allocate] returns NULL. */
 
 
 #if defined (DEBUG) || FREELIST_DEBUG
@@ -483,7 +483,7 @@ static header_t *ff_allocate_block (mlsize_t wh_sz, int flpi, value prev,
 #endif
       /* In case 1, the following creates the empty block correctly.
          In case 0, it gives an invalid header to the block.  The function
-         calling [caml_fl_allocate] will overwrite it. */
+         calling [ff_allocate] will overwrite it. */
     Hd_op (cur) = Make_header (0, 0, Caml_white);
     if (flpi + 1 < flp_size && flp[flpi + 1] == cur){
       flp[flpi + 1] = prev;
@@ -867,6 +867,9 @@ static void ff_make_free_blocks
 */
 #define BF_NUM_SMALL 16
 
+/* Note that indexing into [bf_small_fl] starts at 1, so the first entry
+   in this array is unused.
+*/
 static struct {
   value free;
   value *merge;
@@ -905,7 +908,7 @@ static struct large_free_block *bf_large_least;
 
 /* Auxiliary functions for bitmap */
 
-/* Find first bit set in a word. */
+/* Find first (i.e. least significant) bit set in a word. */
 #ifdef HAS_FFS
 /* Nothing to do */
 #elif defined(HAS_BITSCANFORWARD)
@@ -1305,6 +1308,13 @@ static int bf_is_in_tree (large_free_block *b)
    and white (or a 0-size fragment).
    The block may be left out of the list depending on the sweeper's state.
    The free list size is updated accordingly.
+
+   The block will be left out of the list if the GC is in its Sweep phase
+   and the block is in the still-to-be-swept region because every block of
+   the free list encountered by the sweeper must be blue and linked in
+   its proper place in the increasing-addresses order of the list. This is
+   to ensure that coalescing is always done when two or more free blocks
+   are adjacent.
 */
 static void bf_insert_remnant_small (value v)
 {
@@ -1463,8 +1473,8 @@ static header_t *bf_split (mlsize_t wosz, value v)
 /* Allocate from a large block at [p]. If the node is single and the remaining
    size is greater than [bound], it stays at the same place in the tree.
    If [set_least] is true, [wosz] is guaranteed to be [<= BF_NUM_SMALL], so
-   the block is (one of the) smallest in the tree.
-   In this case, the large block becomes (or remains) the smallest
+   the block has the smallest size in the tree.
+   In this case, the large block becomes (or remains) the single smallest
    in the tree and we set the [bf_large_least] pointer.
 */
 static header_t *bf_alloc_from_large (mlsize_t wosz, large_free_block **p,
