@@ -65,41 +65,29 @@ type cmt_infos = {
 type error =
     Not_a_typedtree of string
 
-let need_to_clear_env =
-  try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
-  with Not_found -> true
-
-let keep_only_summary = Env.keep_only_summary
-
-open Tast_mapper
+open Tast_iterator
 
 let cenv =
-  {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
+  {Tast_iterator.default_iterator with
+   env = fun _sub env -> Env.keep_only_summary env}
 
 let clear_part = function
-  | Partial_structure s -> Partial_structure (cenv.structure cenv s)
-  | Partial_structure_item s ->
-      Partial_structure_item (cenv.structure_item cenv s)
-  | Partial_expression e -> Partial_expression (cenv.expr cenv e)
-  | Partial_pattern p -> Partial_pattern (cenv.pat cenv p)
-  | Partial_class_expr ce -> Partial_class_expr (cenv.class_expr cenv ce)
-  | Partial_signature s -> Partial_signature (cenv.signature cenv s)
-  | Partial_signature_item s ->
-      Partial_signature_item (cenv.signature_item cenv s)
-  | Partial_module_type s -> Partial_module_type (cenv.module_type cenv s)
+  | Partial_structure s -> cenv.structure cenv s
+  | Partial_structure_item s -> cenv.structure_item cenv s
+  | Partial_expression e -> cenv.expr cenv e
+  | Partial_pattern p -> cenv.pat cenv p
+  | Partial_class_expr ce -> cenv.class_expr cenv ce
+  | Partial_signature s -> cenv.signature cenv s
+  | Partial_signature_item s -> cenv.signature_item cenv s
+  | Partial_module_type s -> cenv.module_type cenv s
 
 let clear_env binary_annots =
-  if need_to_clear_env then
-    match binary_annots with
-    | Implementation s -> Implementation (cenv.structure cenv s)
-    | Interface s -> Interface (cenv.signature cenv s)
-    | Packed _ -> binary_annots
-    | Partial_implementation array ->
-        Partial_implementation (Array.map clear_part array)
-    | Partial_interface array ->
-        Partial_interface (Array.map clear_part array)
-
-  else binary_annots
+  match binary_annots with
+  | Implementation s -> cenv.structure cenv s
+  | Interface s -> cenv.signature cenv s
+  | Packed _ -> ()
+  | Partial_implementation array -> Array.iter clear_part array
+  | Partial_interface array -> Array.iter clear_part array
 
 exception Error of error
 
@@ -173,22 +161,28 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi =
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
          let source_digest = Option.map Digest.file sourcefile in
-         let cmt = {
-           cmt_modname = modname;
-           cmt_annots = clear_env binary_annots;
-           cmt_value_dependencies = !value_deps;
-           cmt_comments = Lexer.comments ();
-           cmt_args = Sys.argv;
-           cmt_sourcefile = sourcefile;
-           cmt_builddir = Location.rewrite_absolute_path (Sys.getcwd ());
-           cmt_loadpath = Load_path.get_paths ();
-           cmt_source_digest = source_digest;
-           cmt_initial_env = if need_to_clear_env then
-               keep_only_summary initial_env else initial_env;
-           cmt_imports = List.sort compare (Env.imports ());
-           cmt_interface_digest = this_crc;
-           cmt_use_summaries = need_to_clear_env;
-         } in
-         output_cmt oc cmt)
+         Fun.protect
+           ~finally:Env.restore_full_env
+           (fun () ->
+              Env.keep_only_summary initial_env;
+              clear_env binary_annots;
+              let cmt = {
+                cmt_modname = modname;
+                cmt_annots = binary_annots;
+                cmt_value_dependencies = !value_deps;
+                cmt_comments = Lexer.comments ();
+                cmt_args = Sys.argv;
+                cmt_sourcefile = sourcefile;
+                cmt_builddir = Location.rewrite_absolute_path (Sys.getcwd ());
+                cmt_loadpath = Load_path.get_paths ();
+                cmt_source_digest = source_digest;
+                cmt_initial_env = initial_env;
+                cmt_imports = List.sort compare (Env.imports ());
+                cmt_interface_digest = this_crc;
+                cmt_use_summaries = true; (* TODO: drop field *)
+              } in
+              output_cmt oc cmt
+           )
+       )
   end;
   clear ()

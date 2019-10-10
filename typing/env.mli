@@ -380,7 +380,9 @@ val summary: t -> summary
    except the summary. The initial environment can be rebuilt from the
    summary, using Envaux.env_of_only_summary. *)
 
-val keep_only_summary : t -> t
+val keep_only_summary : t -> unit
+val restore_full_env : unit -> unit
+
 val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 
 (* Error report *)

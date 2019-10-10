@@ -385,20 +385,21 @@ type type_descriptions =
     constructor_description list * label_description list
 
 let in_signature_flag = 0x01
+let only_summary_flag = 0x02
 
 type t = {
-  values: (value_entry, value_data) IdTbl.t;
-  constrs: constructor_data TycompTbl.t;
-  labels: label_data TycompTbl.t;
-  types: (type_data, type_data) IdTbl.t;
-  modules: (module_entry, module_data) IdTbl.t;
-  modtypes: (modtype_data, modtype_data) IdTbl.t;
-  classes: (class_data, class_data) IdTbl.t;
-  cltypes: (cltype_data, cltype_data) IdTbl.t;
-  functor_args: unit Ident.tbl;
-  summary: summary;
-  local_constraints: type_declaration Path.Map.t;
-  flags: int;
+  mutable values: (value_entry, value_data) IdTbl.t;
+  mutable constrs: constructor_data TycompTbl.t;
+  mutable labels: label_data TycompTbl.t;
+  mutable types: (type_data, type_data) IdTbl.t;
+  mutable modules: (module_entry, module_data) IdTbl.t;
+  mutable modtypes: (modtype_data, modtype_data) IdTbl.t;
+  mutable classes: (class_data, class_data) IdTbl.t;
+  mutable cltypes: (cltype_data, cltype_data) IdTbl.t;
+  mutable functor_args: unit Ident.tbl;
+  mutable summary: summary;
+  mutable local_constraints: type_declaration Path.Map.t;
+  mutable flags: int;
 }
 
 and module_declaration_lazy =
@@ -2964,24 +2965,38 @@ let summary env =
   if Path.Map.is_empty env.local_constraints then env.summary
   else Env_constraints (env.summary, env.local_constraints)
 
-let last_env = ref empty
-let last_reduced_env = ref empty
+let restore_summary_list = ref []
+
+let copy_env
+    ~src:{values; constrs; labels; types; modules; modtypes; classes; cltypes; summary;
+          local_constraints; flags; functor_args}
+    ~dst =
+    dst.flags <- flags;
+    dst.values <- values;
+    dst.constrs <- constrs;
+    dst.labels <- labels;
+    dst.types <- types;
+    dst.modules <- modules;
+    dst.modtypes <- modtypes;
+    dst.classes <- classes;
+    dst.cltypes <- cltypes;
+    dst.functor_args <- functor_args;
+    dst.local_constraints <- local_constraints;
+    dst.summary <- summary
 
 let keep_only_summary env =
-  if !last_env == env then !last_reduced_env
-  else begin
-    let new_env =
-      {
-       empty with
-       summary = env.summary;
-       local_constraints = env.local_constraints;
-       flags = env.flags;
-      }
-    in
-    last_env := env;
-    last_reduced_env := new_env;
-    new_env
+  if env.flags land only_summary_flag = 0 then begin
+    let backup = {env with flags = env.flags} in
+    copy_env ~src:empty ~dst:env;
+    env.flags <- backup.flags lor only_summary_flag;
+    env.summary <- backup.summary;
+    env.local_constraints <- backup.local_constraints;
+    restore_summary_list := (backup, env) :: !restore_summary_list;
   end
+
+let restore_full_env () =
+  List.iter (fun (backup, env) -> copy_env ~src:backup ~dst:env) !restore_summary_list;
+  restore_summary_list := []
 
 
 let env_of_only_summary env_from_summary env =
