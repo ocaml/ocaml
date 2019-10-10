@@ -2624,6 +2624,10 @@ let () =
 
 (* Typecheck an implementation file *)
 
+let gen_annot outputprefix sourcefile annots =
+  Cmt2annot.gen_annot (Some (outputprefix ^ ".annot"))
+    ~sourcefile:(Some sourcefile) ~use_summaries:false annots
+
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   Misc.try_finally (fun () ->
@@ -2640,6 +2644,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (fun () -> fprintf std_formatter "%a@."
               (Printtyp.printed_signature sourcefile) simple_sg
           );
+        gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
         (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
       end else begin
         let sourceintf =
@@ -2660,8 +2665,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (* It is important to run these checks after the inclusion test above,
              so that value declarations which are not used internally but
              exported are not reported as being unused. *)
+          let annots = Cmt_format.Implementation str in
           Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-            (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
+            annots (Some sourcefile) initial_env None;
+          gen_annot outputprefix sourcefile annots;
           (str, coercion)
         end else begin
           let coercion =
@@ -2681,19 +2688,24 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
               Env.save_signature ~alerts
                 simple_sg modulename (outputprefix ^ ".cmi")
             in
+            let annots = Cmt_format.Implementation str in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-              (Cmt_format.Implementation str)
-              (Some sourcefile) initial_env (Some cmi);
+              annots (Some sourcefile) initial_env (Some cmi);
+            gen_annot outputprefix sourcefile annots
           end;
           (str, coercion)
         end
       end
     )
     ~exceptionally:(fun () ->
+        let annots =
+          Cmt_format.Partial_implementation
+            (Array.of_list (Cmt_format.get_saved_types ()))
+        in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-          (Cmt_format.Partial_implementation
-             (Array.of_list (Cmt_format.get_saved_types ())))
-          (Some sourcefile) initial_env None)
+          annots (Some sourcefile) initial_env None;
+        gen_annot outputprefix sourcefile annots
+      )
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
