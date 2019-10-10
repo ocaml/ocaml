@@ -247,7 +247,7 @@ Working version
   Bünzli)
 
 - #8891: Warn about unused functor parameters
-  (Thomas Refis, review by ...)
+  (Thomas Refis, review by Gabriel Radanne)
 
 ### Build system:
 
