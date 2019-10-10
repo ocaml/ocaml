@@ -698,7 +698,7 @@ static void ff_reset (void)
   Next_small (Ff_head) = Val_NULL;
   ff_truncate_flp (Ff_head);
   caml_fl_cur_wsz = 0;
-  caml_fl_init_merge ();
+  ff_init_merge ();
 }
 
 /* Note: the [limit] parameter is unused because we merge blocks one by one. */
