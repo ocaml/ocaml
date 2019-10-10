@@ -301,16 +301,16 @@ value caml_do_pending_actions_exn(void)
 
   caml_update_young_limit();
 
+  // Call signal handlers first
+  exn = caml_process_pending_signals_exn();
+  if (Is_exception_result(exn)) goto exception;
+
   // Call memprof callbacks
   exn = caml_memprof_handle_postponed_exn();
   if (Is_exception_result(exn)) goto exception;
 
   // Call finalisers
   exn = caml_final_do_calls_exn();
-  if (Is_exception_result(exn)) goto exception;
-
-  // Call signal handlers
-  exn = caml_process_pending_signals_exn();
   if (Is_exception_result(exn)) goto exception;
 
   return Val_unit;
