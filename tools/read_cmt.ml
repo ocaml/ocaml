@@ -163,8 +163,9 @@ let main () =
       Filename.check_suffix filename ".cmt" ||
         Filename.check_suffix filename ".cmti"
     then begin
+      let open Cmt_format in
       Compmisc.init_path ();
-      let cmt = Cmt_format.read_cmt filename in
+      let cmt = read_cmt filename in
       if !gen_annot then begin
         if !save_cmt_info then record_cmt_info cmt;
         let target_filename =
@@ -174,8 +175,10 @@ let main () =
           | Some _ as x -> x
         in
         Envaux.reset_cache ();
-        List.iter Load_path.add_dir (List.rev cmt.Cmt_format.cmt_loadpath);
-        Cmt2annot.gen_annot target_filename cmt
+        List.iter Load_path.add_dir (List.rev cmt.cmt_loadpath);
+        Cmt2annot.gen_annot target_filename
+          ~use_summaries:cmt.cmt_use_summaries
+          cmt.cmt_annots
       end;
       if !gen_ml then generate_ml !target_filename filename cmt;
       if !print_info_arg || not (!gen_ml || !gen_annot) then print_info cmt;

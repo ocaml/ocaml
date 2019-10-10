@@ -165,10 +165,10 @@ let binary_part iter x =
   | Partial_signature_item x -> iter.signature_item iter x
   | Partial_module_type x -> iter.module_type iter x
 
-let gen_annot target_filename cmt =
+let gen_annot target_filename ~use_summaries annots =
   let open Cmt_format in
-  let iter = iterator ~scope:Location.none cmt.cmt_use_summaries in
-  match cmt.cmt_annots with
+  let iter = iterator ~scope:Location.none use_summaries in
+  match annots with
   | Implementation typedtree ->
       iter.structure iter typedtree;
       Stypes.dump target_filename
