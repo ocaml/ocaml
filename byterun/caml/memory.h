@@ -395,6 +395,10 @@ struct caml__roots_block {
     0) \
   CAMLunused_end
 
+#define CAMLxparamNextend(x, new_size) \
+  (caml__roots_##x.nitems = (new_size)) \
+  CAMLunused_end
+
 #define CAMLlocal1(x) \
   value x = Val_unit; \
   CAMLxparam1 (x)
