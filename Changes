@@ -141,6 +141,10 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
+- #8670: Fix stack overflow detection with systhreads
+  (Stephen Dolan, review by Xavier Leroy, Anil Madhavapeddy, Gabriel Scherer,
+   Frédéric Bour and Guillaume Munch-Maccagnoni)
+
 * #8711: The major GC hooks are no longer allowed to interact with the
    OCaml heap.
    (Jacques-Henri Jourdan, review by Damien Doligez)

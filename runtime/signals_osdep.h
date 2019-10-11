@@ -29,6 +29,7 @@
   typedef greg_t context_reg;
   #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
+  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.gregs[REG_CR2])
 
@@ -79,6 +80,7 @@
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->uc_mcontext.arm_pc)
+  #define CONTEXT_SP (context->uc_mcontext.arm_sp)
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.arm_fp)
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.arm_r8)
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
@@ -98,6 +100,7 @@
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->uc_mcontext.pc)
+  #define CONTEXT_SP (context->uc_mcontext.sp)
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.regs[26])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.regs[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.fault_address)
@@ -117,6 +120,7 @@
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->uc_mcontext.mc_gpregs.gp_elr)
+  #define CONTEXT_SP (context->uc_mcontext.mc_gpregs.gp_sp)
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.mc_gpregs.gp_x[26])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.mc_gpregs.gp_x[27])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
@@ -138,6 +142,7 @@
   typedef greg_t context_reg;
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
   #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
+  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_RSP])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -154,6 +159,7 @@
 
  #define CONTEXT_PC (context->sc_rip)
  #define CONTEXT_C_ARG_1 (context->sc_rdi)
+ #define CONTEXT_SP (context->sc_rsp)
  #define CONTEXT_YOUNG_PTR (context->sc_r15)
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -171,6 +177,7 @@
 
  #define CONTEXT_PC (_UC_MACHINE_PC(context))
  #define CONTEXT_C_ARG_1 (context->uc_mcontext.gregs[REG_RDI])
+ #define CONTEXT_SP (_UC_MACHINE_SP(context))
  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -186,6 +193,8 @@
      sigact.sa_flags = 0
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) context.cr2)
+  #define CONTEXT_PC (context.eip)
+  #define CONTEXT_SP (context.esp)
 
 /****************** I386, BSD_ELF */
 
@@ -206,8 +215,10 @@
 
  #if defined (__NetBSD__)
   #define CONTEXT_PC (_UC_MACHINE_PC(context))
+  #define CONTEXT_SP (_UC_MACHINE_SP(context))
  #else
   #define CONTEXT_PC (context->sc_eip)
+  #define CONTEXT_SP (context->sc_esp)
  #endif
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -247,6 +258,7 @@
 
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(eip))
+  #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(esp))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, Solaris x86 */

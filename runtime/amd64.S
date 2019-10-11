@@ -290,7 +290,7 @@
 #else
 #  define PREPARE_FOR_C_CALL
 #  define CLEANUP_AFTER_C_CALL
-#  define STACK_PROBE_SIZE 32768
+#  define STACK_PROBE_SIZE 4096
 #endif
 
 /* Registers holding arguments of C functions. */
