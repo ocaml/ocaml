@@ -185,14 +185,18 @@ CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
 CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 {
   CAMLparam4(count, limit, seed, obj);
-  CAMLlocalN(queue, HASH_QUEUE_SIZE); /* Queue of values to examine */
+  
+  value queue[HASH_QUEUE_SIZE];
+  queue[0] = Val_unit;
+  CAMLxparamN(queue, 1);
+
   intnat rd;                    /* Position of first value in queue */
   intnat wr;                    /* One past position of last value in queue */
   intnat sz;                    /* Max number of values to put in queue */
   intnat num;                   /* Max number of meaningful values to see */
   uint32_t h;                   /* Rolling hash */
   CAMLlocal1(v);
-  mlsize_t i, len;
+  mlsize_t i, len, j;
 
   sz = Long_val(limit);
   if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
@@ -272,11 +276,30 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
         h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
-        /* Copy fields into queue, not exceeding the total size [sz] */
-        for (i = 0, len = Wosize_val(v); i < len; i++) {
-          if (wr >= sz) break;
-          caml_read_field(v, i, &queue[wr++]);
+
+        /* Copy fields into queue, not exceeding the total size [sz].
+           We lazily initialise the value array [queue] to avoid having to
+           register a large number of local roots when not necessary.
+        */
+        
+        len = Wosize_val(v);
+
+        /* we may have more fields than the total size [sz] we can use for the hash */
+        j = wr+len > sz ? sz : wr+len;
+
+        /* initialise the new entries in the value array [queue] */
+        for( i = wr ; i < j; i++ ) {
+          queue[i] = Val_unit;
         }
+
+        /* let the GC know about these now too */
+        CAMLxparamNextend(queue, j);
+
+        /* now read the new fields in to the queue */
+        for( i = 0; wr < j; i++, wr++ ) {
+          caml_read_field(v, i, &queue[wr]);
+        }
+
         break;
       }
     }
