@@ -140,6 +140,7 @@ let () = ignore Bug
 
 let lsequence (lam1, lam2) =
   match lam1 with
+  | Lsequence (lam, Lconst (Const_pointer 0)) -> Lsequence (lam, lam2)
   | Lconst (Const_pointer 0) -> lam2
   | _ -> Lsequence (lam1, lam2)
 
@@ -163,12 +164,9 @@ let is_simple (lam:Lambda.lambda) =
 
 let dead_code lam letrec =
   (* Some cases generate code without effects, and bound to nothing. We use this
-     function to insert it as [Lsequence] in [pre], for documentation.
+     function to insert it as [Lsequence] in [effects], for documentation.
      It would be correct to discard and just return [letrec] instead. *)
-  let pre ~tail : Lambda.lambda =
-    Lsequence (lam, letrec.pre ~tail)
-  in
-  { letrec with pre }
+  { letrec with effects = lsequence (lam, letrec.effects) }
 
 (* We desconstruct the let-rec into a description *)
 
