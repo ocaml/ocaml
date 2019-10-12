@@ -219,6 +219,10 @@ packages from an under-modification compiler version.
 Besides the targets listed in link:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
 
+`make allbyte` :: rebuilds the bytecode system after you make a change (this is
+                  preferable, and faster, than running `make world` again; see
+                  link:BOOTSTRAP.adoc[] for further information)
+
 `make runtop` :: builds and runs the ocaml toplevel of the distribution
                           (optionally uses `rlwrap` for readline+history support)
 `make natruntop`:: builds and runs the native ocaml toplevel (experimental)
