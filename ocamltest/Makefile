@@ -19,6 +19,7 @@ ROOTDIR = ..
 
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 ifeq "$(filter str,$(OTHERLIBRARIES))" ""
   str := false
@@ -178,15 +179,15 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
+ocamlc := $(BEST_OCAMLC) $(flags)
 
-ocamlopt := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlopt $(flags)
+ocamlopt :=  $(BEST_OCAMLOPT) $(flags)
 
-ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/boot/ocamlc -depend
+ocamldep := $(BEST_OCAMLDEP)
 depflags := -slash
 depincludes :=
 
-ocamllex := $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/boot/ocamllex
+ocamllex := $(BEST_OCAMLLEX)
 
 ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
 

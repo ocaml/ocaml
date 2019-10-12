@@ -18,12 +18,13 @@
 ROOTDIR=../..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
-CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
-        -I $(ROOTDIR)/stdlib
+CAMLC := $(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT := $(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
+
 OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 

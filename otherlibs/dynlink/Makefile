@@ -23,11 +23,12 @@ ROOTDIR = ../..
 
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
-OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC=$(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT=$(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
