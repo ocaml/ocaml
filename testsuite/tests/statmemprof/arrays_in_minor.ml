@@ -1,10 +1,6 @@
 (* TEST
    flags = "-g"
-   * bytecode
-     reference = "${test_source_directory}/arrays_in_minor.byte.reference"
-   * native
-     reference = "${test_source_directory}/arrays_in_minor.opt.reference"
-     compare_programs = "false"
+   compare_programs = "false"
 *)
 
 open Gc.Memprof

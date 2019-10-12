@@ -1,7 +1,6 @@
 (* TEST
    flags = "-g"
    * bytecode
-     reference = "${test_source_directory}/lists_in_minor.byte.reference"
 *)
 
 open Gc.Memprof
