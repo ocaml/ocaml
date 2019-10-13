@@ -13,7 +13,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** String operations. *)
+(** String operations.
+   This module is intended to be used through {!StdLabels} which would replace
+   {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts
+
+   As an example usage:
+   {[
+      open StdLabels
+
+      let to_upper = String.map ~f:Char.uppercase_ascii
+   ]} *)
 
 external length : string -> int = "%string_length"
 (** Return the length (number of characters) of the given string. *)

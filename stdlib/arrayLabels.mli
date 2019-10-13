@@ -13,10 +13,20 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Array operations
+
+   This module is intended to be used through {!StdLabels} which would replace
+   {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts
+
+   As an example usage:
+   {[
+      open StdLabels
+
+      let everything = Array.create_matrix ~dimx:42 ~dimy:42 42
+   ]} *)
+
 type 'a t = 'a array
 (** An alias for the type of arrays. *)
-
-(** Array operations. *)
 
 external length : 'a array -> int = "%array_length"
 (** Return the length (number of elements) of the given array. *)
