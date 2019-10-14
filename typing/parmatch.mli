@@ -91,6 +91,14 @@ val ppat_of_type :
     (string, label_description) Hashtbl.t
 
 val pressure_variants: Env.t -> pattern list -> unit
+
+(** [check_partial pred loc caselist] and [check_unused refute pred caselist]
+    are called with a function [pred] which will be given counter-examples to
+    typecheck. Those counter-examples were generated, they may contain
+    or-patterns of constructors, and be themselves or-patterns of
+    counter-examples. They return a valid counter-example or [None].
+    [refute] indicates that [check_unused] was called on a refutation clause.
+ *)
 val check_partial:
     ((string, constructor_description) Hashtbl.t ->
      (string, label_description) Hashtbl.t ->
