@@ -489,8 +489,10 @@ let rec transl env e =
           | Pbigarray_int32 -> box_int dbg Pint32 elt
           | Pbigarray_int64 -> box_int dbg Pint64 elt
           | Pbigarray_native_int -> box_int dbg Pnativeint elt
-          | Pbigarray_caml_int -> force_tag_int elt dbg
-          | _ -> tag_int elt dbg
+          | Pbigarray_caml_int -> tag_int elt dbg
+          | Pbigarray_sint8 | Pbigarray_uint8
+          | Pbigarray_sint16 | Pbigarray_uint16 -> tag_int elt dbg
+          | Pbigarray_unknown -> assert false
           end
       | (Pbigarrayset(unsafe, _num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
@@ -505,7 +507,12 @@ let rec transl env e =
             | Pbigarray_int64 -> transl_unbox_int dbg env Pint64 argnewval
             | Pbigarray_native_int ->
                 transl_unbox_int dbg env Pnativeint argnewval
-            | _ -> untag_int (transl env argnewval) dbg)
+            | Pbigarray_caml_int ->
+                untag_int (transl env argnewval) dbg
+            | Pbigarray_sint8 | Pbigarray_uint8
+            | Pbigarray_sint16 | Pbigarray_uint16 ->
+                ignore_high_bit_int (untag_int (transl env argnewval) dbg)
+            | Pbigarray_unknown -> assert false)
             dbg)
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
@@ -813,7 +820,7 @@ and transl_prim_1 env p arg dbg =
   | Pbintofint bi ->
       box_int dbg bi (untag_int (transl env arg) dbg)
   | Pintofbint bi ->
-      force_tag_int (transl_unbox_int dbg env bi arg) dbg
+      tag_int (transl_unbox_int dbg env bi arg) dbg
   | Pcvtbint(bi1, bi2) ->
       box_int dbg bi2 (transl_unbox_int dbg env bi1 arg)
   | Pnegbint bi ->
@@ -823,7 +830,8 @@ and transl_prim_1 env p arg dbg =
   | Pbbswap bi ->
       box_int dbg bi (bbswap bi (transl_unbox_int dbg env bi arg) dbg)
   | Pbswap16 ->
-      tag_int (bswap16 (untag_int (transl env arg) dbg) dbg) dbg
+      tag_int (bswap16 (ignore_high_bit_int (untag_int
+        (transl env arg) dbg)) dbg) dbg
   | (Pfield_computed | Psequand | Psequor
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
@@ -1079,7 +1087,8 @@ and transl_unbox_int_low dbg env bi e =
 
 and transl_unbox_sized size dbg env exp =
   match size with
-  | Sixteen -> untag_int (transl env exp) dbg
+  | Sixteen ->
+     ignore_high_bit_int (untag_int (transl env exp) dbg)
   | Thirty_two -> transl_unbox_int dbg env Pint32 exp
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 

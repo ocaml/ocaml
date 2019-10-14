@@ -193,6 +193,12 @@ let ignore_low_bit_int = function
   | Cop(Cor, [c; Cconst_int (1, _)], _) -> c
   | c -> c
 
+(* removes the 1-bit sign-extension left by untag_int (tag_int c) *)
+let ignore_high_bit_int = function
+    Cop(Casr,
+        [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
+  | c -> c
+
 let lsr_int c1 c2 dbg =
   match c2 with
     Cconst_int (0, _) ->
@@ -222,30 +228,16 @@ let tag_int i dbg =
   | c ->
       incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
 
-let force_tag_int i dbg =
-  match i with
-    Cconst_int (n, _) ->
-      int_const dbg n
-  | Cop(Casr, [c; Cconst_int (n, _)], dbg') when n > 0 ->
-      Cop(Cor, [asr_int c (Cconst_int (n - 1, dbg)) dbg'; Cconst_int (1, dbg)],
-        dbg)
-  | c ->
-      Cop(Cor, [lsl_int c (Cconst_int (1, dbg)) dbg; Cconst_int (1, dbg)], dbg)
-
 let untag_int i dbg =
   match i with
     Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
-      c
   | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
       Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
   | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
       Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
-  | Cop(Cor, [c; Cconst_int (1, _)], _) ->
-      Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
-  | c -> Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
+  | c -> asr_int c (Cconst_int (1, dbg)) dbg
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
   match cond with
@@ -2345,7 +2337,7 @@ let setfield_computed ptr init arg1 arg2 arg3 dbg =
 let bytesset_unsafe arg1 arg2 arg3 dbg =
       return_unit dbg (Cop(Cstore (Byte_unsigned, Assignment),
                       [add_int arg1 (untag_int arg2 dbg) dbg;
-                       untag_int arg3 dbg], dbg))
+                       ignore_high_bit_int (untag_int arg3 dbg)], dbg))
 
 let bytesset_safe arg1 arg2 arg3 dbg =
   return_unit dbg
@@ -2354,7 +2346,8 @@ let bytesset_safe arg1 arg2 arg3 dbg =
         Csequence(
           make_checkbound dbg [string_length str dbg; idx],
           Cop(Cstore (Byte_unsigned, Assignment),
-              [add_int str idx dbg; untag_int arg3 dbg],
+              [add_int str idx dbg;
+               ignore_high_bit_int (untag_int arg3 dbg)],
               dbg)))))
 
 let arrayset_unsafe kind arg1 arg2 arg3 dbg =
