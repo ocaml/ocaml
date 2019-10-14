@@ -1348,7 +1348,7 @@ fun ib fmt readers -> match fmt with
     let c = integer_conversion_of_char (char_of_iconv iconv) in
     let scan width _ ib = scan_int_conversion c width ib in
     pad_prec_scanf ib rest readers pad prec scan (token_int64 c)
-  | Float ((_, Float_F), pad, prec, rest) ->
+  | Float ((_, (Float_F | Float_CF)), pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_caml_float token_float
   | Float ((_, (Float_f | Float_e | Float_E | Float_g | Float_G)),
            pad, prec, rest) ->
