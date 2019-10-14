@@ -19,7 +19,7 @@
 
 (** Construction of dynlink functionality given the platform-specific code. *)
 
-module Make (P : Dynlink_platform_intf.S) : sig
+module Make (_ : Dynlink_platform_intf.S) : sig
   val is_native : bool
   val loadfile : string -> unit
   val loadfile_private : string -> unit

@@ -257,11 +257,11 @@ module type Arg_list = sig
     val list : (string * Arg.spec * string) list
 end;;
 
-module Make_bytecomp_options (F : Bytecomp_options) : Arg_list;;
-module Make_bytetop_options (F : Bytetop_options) : Arg_list;;
-module Make_optcomp_options (F : Optcomp_options) : Arg_list;;
-module Make_opttop_options (F : Opttop_options) : Arg_list;;
-module Make_ocamldoc_options (F : Ocamldoc_options) : Arg_list;;
+module Make_bytecomp_options : Bytecomp_options -> Arg_list;;
+module Make_bytetop_options : Bytetop_options -> Arg_list;;
+module Make_optcomp_options : Optcomp_options -> Arg_list;;
+module Make_opttop_options : Opttop_options -> Arg_list;;
+module Make_ocamldoc_options : Ocamldoc_options -> Arg_list;;
 
 (** [options_with_command_line_syntax options r] returns [options2] that behaves
     like [options], but additionally pushes command line argument on [r] (quoted

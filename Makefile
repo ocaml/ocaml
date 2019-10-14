@@ -1079,7 +1079,8 @@ include Makefile.menhir
 parsing/camlinternalMenhirLib.ml: boot/menhir/menhirLib.ml
 	cp $< $@
 parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
-	cp $< $@
+	echo '[@@@ocaml.warning "-67"]' > $@
+	cat $< >> $@
 
 # Copy parsing/parser.ml from boot/
 

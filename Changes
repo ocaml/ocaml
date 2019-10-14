@@ -259,6 +259,9 @@ Working version
   (Stéphane Glondu, Nicolás Ojeda Bär, review by Jérémie Dimino and Daniel
   Bünzli)
 
+- #8891: Warn about unused functor parameters
+  (Thomas Refis, review by Gabriel Radanne)
+
 ### Build system:
 
 - #8840: use ocaml{c,opt}.opt when available to build internal tools
