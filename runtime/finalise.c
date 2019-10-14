@@ -166,7 +166,7 @@ void caml_final_update_clean_phase (){
 /* Call the finalisation functions for the finalising set.
    Note that this function must be reentrant.
 */
-void caml_final_do_calls (void)
+value caml_final_do_calls_exn (void)
 {
   struct final f;
   value res;
@@ -201,12 +201,12 @@ void caml_final_do_calls (void)
       caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
 #endif
       running_finalisation_function = 0;
-      if (Is_exception_result (res))
-        caml_raise_in_async_callback(Extract_exception(res));
+      if (Is_exception_result (res)) return res;
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
     if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
   }
+  return Val_unit;
 }
 
 /* Call a scanning_action [f] on [x]. */

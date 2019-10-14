@@ -112,7 +112,7 @@ CAMLprim value caml_ephe_create (value len)
 {
   value res = caml_ephemeron_create(Long_val(len));
   // run memprof callbacks
-  return caml_check_urgent_gc_and_callbacks(res);
+  return caml_process_pending_actions_with_root(res);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -294,7 +294,7 @@ static value optionalize(int status, value *x)
   }
   // run memprof callbacks both for the option we are allocating here
   // and the calling function.
-  caml_check_urgent_gc_and_callbacks(Val_unit);
+  caml_process_pending_actions();
   CAMLreturn(res);
 }
 

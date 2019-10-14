@@ -692,7 +692,9 @@ static header_t* intern_add_to_heap(mlsize_t whsize)
   return res;
 }
 
-static value intern_end(value res, mlsize_t whsize) {
+static value intern_end(value res, mlsize_t whsize)
+{
+  CAMLparam1(res);
   header_t *block = intern_add_to_heap(whsize);
   header_t *blockend = intern_dest;
 
@@ -705,7 +707,9 @@ static value intern_end(value res, mlsize_t whsize) {
     caml_memprof_track_interned(block, blockend);
 
   // Give gc a chance to run, and run memprof callbacks
-  return caml_check_urgent_gc_and_callbacks(res);
+  caml_process_pending_actions();
+
+  CAMLreturn(res);
 }
 
 /* Parsing the header */

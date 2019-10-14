@@ -21,10 +21,11 @@
 #include <errno.h>
 #include "caml/config.h"
 #include "caml/memory.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
-#include "caml/finalise.h"
 
 #ifndef NSIG
 #define NSIG 64
@@ -46,7 +47,7 @@ static void handle_signal(int signal_number)
 #endif
   if (signal_number < 0 || signal_number >= NSIG) return;
   if (caml_try_leave_blocking_section_hook()) {
-    caml_execute_signal(signal_number, 1);
+    caml_raise_if_exception(caml_execute_signal_exn(signal_number, 1));
     caml_enter_blocking_section_hook();
   }else{
     caml_record_signal(signal_number);

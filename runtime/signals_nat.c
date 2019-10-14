@@ -91,7 +91,7 @@ void caml_garbage_collection(void)
   }
 #endif
 
-  caml_do_urgent_gc_and_callbacks();
+  caml_raise_if_exception(caml_do_pending_actions_exn());
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
@@ -104,7 +104,7 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
 #endif
   if (sig < 0 || sig >= NSIG) return;
   if (caml_try_leave_blocking_section_hook ()) {
-    caml_execute_signal(sig, 1);
+    caml_raise_if_exception(caml_execute_signal_exn(sig, 1));
     caml_enter_blocking_section_hook();
   } else {
     caml_record_signal(sig);

@@ -487,8 +487,10 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   while(1) {
     /* We might be here because of an async callback / urgent GC
        request. Take the opportunity to do what has been requested. */
-    if (flags & CAML_FROM_CAML) caml_do_urgent_gc_and_callbacks ();
-    else caml_check_urgent_gc (Val_unit);
+    if (flags & CAML_FROM_CAML)
+      caml_raise_if_exception(caml_do_pending_actions_exn ());
+    else
+      caml_check_urgent_gc (Val_unit);
 
     /* Now, there might be enough room in the minor heap to do our
        allocation. */

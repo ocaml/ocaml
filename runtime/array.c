@@ -280,7 +280,7 @@ CAMLprim value caml_floatarray_create(value len)
     result = caml_alloc_shr (wosize, Double_array_tag);
   }
   // Give the GC a chance to run, and run memprof callbacks
-  return caml_check_urgent_gc_and_callbacks (result);
+  return caml_process_pending_actions_with_root (result);
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -331,7 +331,8 @@ CAMLprim value caml_make_vect(value len, value init)
     }
   }
   // Give the GC a chance to run, and run memprof callbacks
-  CAMLreturn (caml_check_urgent_gc_and_callbacks(res));
+  caml_process_pending_actions ();
+  CAMLreturn (res);
 }
 
 /* [len] is a [value] representing number of floats */
@@ -384,7 +385,8 @@ CAMLprim value caml_make_array(value init)
         Store_double_flat_field(res, i, d);
       }
       // run memprof callbacks
-      CAMLreturn (caml_check_urgent_gc_and_callbacks(res));
+      caml_process_pending_actions();
+      CAMLreturn (res);
     }
   }
 #else
@@ -521,8 +523,8 @@ static value caml_array_gather(intnat num_arrays,
 
     /* Many caml_initialize in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to.
-       Run memprof callback for the major allocation. */
-    res = caml_check_urgent_gc_and_callbacks (res);
+       Run memprof callbacks for the major allocation. */
+    res = caml_process_pending_actions_with_root (res);
   }
   CAMLreturn (res);
 }

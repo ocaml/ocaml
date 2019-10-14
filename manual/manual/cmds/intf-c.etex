@@ -1166,18 +1166,39 @@ It would be incorrect to perform
 has taken place since "r" was allocated.
 
 
-\subsection{Asynchronous callbacks}
-\label{caml-check-urgent-gc}
+\subsection{Pending actions and asynchronous exceptions}
+\label{process-pending-actions}
 
-Since 4.10, allocation functions called from C do not call finalisers,
-signal handlers, and memory profiler callbacks, but delays their
-execution. These asychronous callbacks can execute arbitrary OCaml
-code, including raising asynchronous exceptions.
+Since 4.10, allocation functions are guaranteed not to call any OCaml
+callbacks from C, including finalisers and signal handlers, and delay
+their execution instead.
 
-The function \verb"caml_check_urgent_gc" from "memory.h" checks for
-pending signals and executes delayed callbacks. In long-running C
-code, it can be called at safe points with
-\verb"caml_check_urgent_gc(Val_unit)".
+The function \verb"caml_process_pending_actions" from
+"<caml/signals.h>" executes any pending signal handlers and
+finalisers, Memprof callbacks, and requested minor and major garbage
+collections. In particular, it can raise asynchronous exceptions. It
+is recommended to call it regularly at safe points inside long-running
+non-blocking C code.
+
+The variant \verb"caml_process_pending_actions_exn" is provided, that
+returns the exception instead of raising it directly into OCaml code.
+Its result must be tested using {\tt Is_exception_result}, and
+followed by {\tt Extract_exception} if appropriate. It is typically
+used for clean up before re-raising:
+
+\begin{verbatim}
+    CAMLlocal1(exn);
+    ...
+    exn = caml_process_pending_actions_exn();
+    if(Is_exception_result(exn)) {
+      exn = Extract_exception(exn);
+      ...cleanup...
+      caml_raise(exn);
+    }
+\end{verbatim}
+
+Correct use of exceptional return, in particular in the presence of
+garbage collection, is further detailed in Section~\ref{s:callbacks}.
 
 \section{A complete example}
 
@@ -2339,8 +2360,8 @@ resources.  It may block until no other thread uses the OCaml run-time
 system.
 \end{itemize}
 
-These functions check for pending signals by calling asynchronous
-callbacks (section~\ref{caml-check-urgent-gc}) before releasing and
+These functions poll for pending signals by calling asynchronous
+callbacks (section~\ref{process-pending-actions}) before releasing and
 after acquiring the lock. They can therefore execute arbitrary OCaml
 code including raising an asynchronous exception.
 
