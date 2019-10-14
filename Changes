@@ -135,6 +135,10 @@ Working version
   and because it leads to ignoring preference edges with 0 weight.
   (Eric Stavarache, review by Xavier Leroy)
 
+- #9006: int32 code generation improvements
+  (Stephen Dolan, designed with Greta Yorsh, review by Xavier Clerc,
+   Xavier Leroy and Alain Frisch)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
