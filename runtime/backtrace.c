@@ -132,34 +132,17 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLparam0();
   CAMLlocal1(res);
 
-  /* Beware: the allocations below may cause finalizers to be run, and another
-     backtrace---possibly of a different length---to be stashed (for example
-     if the finalizer raises then catches an exception).  We choose to ignore
-     any such finalizer backtraces and return the original one. */
-
   if (!Caml_state->backtrace_active ||
       Caml_state->backtrace_buffer == NULL ||
       Caml_state->backtrace_pos == 0) {
     res = caml_alloc(0, 0);
   }
   else {
-    backtrace_slot saved_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
-    int saved_backtrace_pos;
-    intnat i;
+    intnat i, len = Caml_state->backtrace_pos;
 
-    saved_backtrace_pos = Caml_state->backtrace_pos;
-
-    if (saved_backtrace_pos > BACKTRACE_BUFFER_SIZE) {
-      saved_backtrace_pos = BACKTRACE_BUFFER_SIZE;
-    }
-
-    memcpy(saved_backtrace_buffer, Caml_state->backtrace_buffer,
-           saved_backtrace_pos * sizeof(backtrace_slot));
-
-    res = caml_alloc(saved_backtrace_pos, 0);
-    for (i = 0; i < saved_backtrace_pos; i++) {
-      Field(res, i) = Val_backtrace_slot(saved_backtrace_buffer[i]);
-    }
+    res = caml_alloc(len, 0);
+    for (i = 0; i < len; i++)
+      Field(res, i) = Val_backtrace_slot(Caml_state->backtrace_buffer[i]);
   }
 
   CAMLreturn(res);

@@ -48,7 +48,9 @@ type unsafe_component =
   | Unsafe_non_function
   | Unsafe_typext
 
-type unsafe_info = { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+type unsafe_info =
+  | Unsafe of { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+  | Unnamed
 
 type error =
   Circular_dependency of (Ident.t * unsafe_info) list

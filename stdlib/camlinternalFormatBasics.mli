@@ -26,7 +26,7 @@ type float_flag_conv =
   | Float_flag_ | Float_flag_p | Float_flag_s
 type float_kind_conv =
   | Float_f | Float_e | Float_E | Float_g | Float_G
-  | Float_F | Float_h | Float_H
+  | Float_F | Float_h | Float_H | Float_CF
 type float_conv = float_flag_conv * float_kind_conv
 
 type char_set = string

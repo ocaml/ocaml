@@ -181,7 +181,7 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/317 by T/335
+Error: Illegal shadowing of included module type T/317 by T/334
        Line 2, characters 2-11:
          Module type T/317 came from this include
        Line 3, characters 2-39:
@@ -198,11 +198,11 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/353 by ext/370
+Error: Illegal shadowing of included type ext/352 by ext/369
        Line 2, characters 2-11:
-         Type ext/353 came from this include
+         Type ext/352 came from this include
        Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/353 is shadowed
+         The extension constructor C2 has no valid type if ext/352 is shadowed
 |}]
 
 module type Class = sig

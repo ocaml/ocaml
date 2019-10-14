@@ -946,7 +946,6 @@ let set_state s env =
 (* type_pat does not generate local constraints inside or patterns *)
 type type_pat_mode =
   | Normal
-  | Splitting_or   (* splitting an or-pattern *)
   | Inside_or      (* inside a non-split or-pattern *)
   | Split_or       (* always split or-patterns *)
 
@@ -998,11 +997,23 @@ let check_scope_escape loc env level ty =
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace, None)))
 
+(** Find the first alternative in the tree of or-patterns for which
+   [f] does not raise an error. If all fail, the last error is
+   propagated *)
+let rec find_valid_alternative f pat =
+  match pat.ppat_desc with
+  | Ppat_or(p1,p2) ->
+      (try find_valid_alternative f p1
+       with Error _ -> find_valid_alternative f p2)
+  | _ -> f pat
+
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
    Unification may update the typing environment. *)
 (* constrs <> None => called from parmatch: backtrack on or-patterns
    explode > 0 => explode Ppat_any for gadts *)
+(* Need_backtrack exceptions are raised in the [Inside_or] mode to backtrack
+   to the outermost or-pattern *)
 let rec type_pat ?(exception_allowed=false) ~constrs ~labels ~no_existentials
           ~mode ~explode ~env sp expected_ty k =
   Builtin_attributes.warning_scope sp.ppat_attributes
@@ -1013,9 +1024,8 @@ let rec type_pat ?(exception_allowed=false) ~constrs ~labels ~no_existentials
 
 and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       ~explode ~env sp expected_ty k =
-  let mode' = if mode = Splitting_or then Normal else mode in
   let type_pat ?(exception_allowed=false) ?(constrs=constrs) ?(labels=labels)
-        ?(mode=mode') ?(explode=explode) ?(env=env) =
+        ?(mode=mode) ?(explode=explode) ?(env=env) =
     type_pat ~exception_allowed ~constrs ~labels ~no_existentials ~mode ~explode
       ~env
   in
@@ -1068,14 +1078,26 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_unpack name ->
       assert (constrs = None);
       let t = instance expected_ty in
-      let id = enter_variable loc name t ~is_module:true sp.ppat_attributes in
-      rp k {
-        pat_desc = Tpat_var (id, name);
-        pat_loc = sp.ppat_loc;
-        pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
-        pat_type = t;
-        pat_attributes = [];
-        pat_env = !env }
+      begin match name.txt with
+      | None ->
+          rp k {
+            pat_desc = Tpat_any;
+            pat_loc = sp.ppat_loc;
+            pat_extra=[Tpat_unpack, name.loc, sp.ppat_attributes];
+            pat_type = t;
+            pat_attributes = [];
+            pat_env = !env }
+      | Some s ->
+          let v = { name with txt = s } in
+          let id = enter_variable loc v t ~is_module:true sp.ppat_attributes in
+          rp k {
+            pat_desc = Tpat_var (id, v);
+            pat_loc = sp.ppat_loc;
+            pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
+            pat_type = t;
+            pat_attributes = [];
+            pat_env = !env }
+      end
   | Ppat_constraint(
       {ppat_desc=Ppat_var name; ppat_loc=lloc; ppat_attributes = attrs},
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
@@ -1340,8 +1362,11 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
       let state = save_state env in
-      begin match
-        if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
+      let split_or sp =
+        assert (constrs <> None);
+        let typ pat = type_pat ~exception_allowed pat expected_ty k in
+        find_valid_alternative (fun pat -> set_state state env; typ pat) sp in
+      if mode = Split_or then split_or sp else begin
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let equation_level = !gadt_equations_level in
@@ -1375,30 +1400,22 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         List.iter (fun { pv_type; pv_loc; _ } ->
           check_scope_escape pv_loc !env2 outter_lev pv_type
         ) p2_variables;
-        match p1, p2 with
-          None, None -> raise Need_backtrack
-        | Some p, None | None, Some p -> p (* no variables in this case *)
+        begin match p1, p2 with
+        | None, None ->
+            if mode = Inside_or then raise Need_backtrack else split_or sp
+        | Some p, None | None, Some p -> rp k p (* no variables in this case *)
         | Some p1, Some p2 ->
         let alpha_env =
           enter_orpat_variables loc !env p1_variables p2_variables in
         pattern_variables := p1_variables;
         module_variables := p1_module_variables;
-        { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
-          pat_loc = loc; pat_extra=[];
-          pat_type = instance expected_ty;
-          pat_attributes = sp.ppat_attributes;
-          pat_env = !env }
-      with
-        p -> rp k p
-      | exception Need_backtrack when mode <> Inside_or ->
-          assert (constrs <> None);
-          set_state state env;
-          let mode =
-            if mode = Split_or then mode else Splitting_or in
-          try type_pat ~exception_allowed ~mode sp1 expected_ty k
-          with Error _ ->
-            set_state state env;
-            type_pat ~exception_allowed ~mode sp2 expected_ty k
+        rp k { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
+               pat_loc = loc;
+               pat_extra=[];
+               pat_type = instance expected_ty;
+               pat_attributes = sp.ppat_attributes;
+               pat_env = !env }
+        end
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
@@ -1992,7 +2009,7 @@ let create_package_type loc env (p, l) =
      (fun sexp (name, loc) ->
         Exp.letmodule ~loc:{ sexp.pexp_loc with loc_ghost = true }
          ~attrs:[Attr.mk (mknoloc "#modulepat") (PStr [])]
-         name
+         { name with txt = Some name.txt }
          (Mod.unpack ~loc
             (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
                                             name.loc)))
@@ -2983,7 +3000,11 @@ and type_expect_
         { md_type = modl.mod_type; md_attributes = []; md_loc = name.loc }
       in
       let (id, new_env) =
-        Env.enter_module_declaration ~scope name.txt pres md env
+        match name.txt with
+        | None -> None, env
+        | Some name ->
+          let id, env = Env.enter_module_declaration ~scope name pres md env in
+          Some id, env
       in
       Typetexp.widen context;
       (* ideally, we should catch Expr_type_clash errors
@@ -3481,7 +3502,8 @@ and type_format loc str env =
         | Float_G  -> mk_constr "Float_G"  []
         | Float_h  -> mk_constr "Float_h"  []
         | Float_H  -> mk_constr "Float_H"  []
-        | Float_F  -> mk_constr "Float_F"  [] in
+        | Float_F  -> mk_constr "Float_F"  []
+        | Float_CF -> mk_constr "Float_CF" [] in
         mk_exp_loc (Pexp_tuple [flag; kind])
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []

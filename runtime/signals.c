@@ -107,13 +107,12 @@ CAMLno_tsan /* When called from [caml_record_signal], these memory
 void caml_set_something_to_do(void)
 {
   caml_something_to_do = 1;
-#ifdef NATIVE_CODE
+
   /* When this function is called without [caml_c_call] (e.g., in
      [caml_modify]), this is only moderately effective on ports that cache
      [Caml_state->young_limit] in a register, so it may take a while before the
      register is reloaded from [Caml_state->young_limit]. */
   Caml_state->young_limit = Caml_state->young_alloc_end;
-#endif
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -269,10 +268,8 @@ void caml_update_young_limit (void)
     caml_memprof_young_trigger < Caml_state->young_trigger ?
     Caml_state->young_trigger : caml_memprof_young_trigger;
 
-#ifdef NATIVE_CODE
   if(caml_something_to_do)
     Caml_state->young_limit = Caml_state->young_alloc_end;
-#endif
 }
 
 /* Arrange for a garbage collection to be performed as soon as possible */
@@ -303,9 +300,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
   caml_something_to_do = 0;
-#ifdef NATIVE_CODE
   caml_update_young_limit();
-#endif
   if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc){
     CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
     caml_gc_dispatch();

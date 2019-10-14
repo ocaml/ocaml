@@ -17,3 +17,8 @@ let () = Printf.printf "main thread:\n"
 let () = f3 ()
 let () = Printf.printf "new thread:\n"
 let () = Thread.join (Thread.create f3 ())
+
+let () =
+  Gc.finalise (fun _ -> f0 ()) [|1|];
+  Gc.full_major ();
+  ()

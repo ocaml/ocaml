@@ -26,12 +26,12 @@ module Base_generator : Base = struct
   class generator : doc_generator = object method generate _ = () end
   end;;
 
-module type Base_functor = functor (G: Base) -> Base
-module type Html_functor = functor (G: Odoc_html.Html_generator) -> Odoc_html.Html_generator
-module type Latex_functor = functor (G: Odoc_latex.Latex_generator) -> Odoc_latex.Latex_generator
-module type Texi_functor = functor (G: Odoc_texi.Texi_generator) -> Odoc_texi.Texi_generator
-module type Man_functor = functor (G: Odoc_man.Man_generator) -> Odoc_man.Man_generator
-module type Dot_functor = functor (G: Odoc_dot.Dot_generator) -> Odoc_dot.Dot_generator
+module type Base_functor = Base -> Base
+module type Html_functor = Odoc_html.Html_generator -> Odoc_html.Html_generator
+module type Latex_functor = Odoc_latex.Latex_generator -> Odoc_latex.Latex_generator
+module type Texi_functor = Odoc_texi.Texi_generator -> Odoc_texi.Texi_generator
+module type Man_functor = Odoc_man.Man_generator -> Odoc_man.Man_generator
+module type Dot_functor = Odoc_dot.Dot_generator -> Odoc_dot.Dot_generator
 
 type generator =
   | Html of (module Odoc_html.Html_generator)

@@ -1,10 +1,6 @@
 (* TEST
    flags = "-g"
-   * bytecode
-     reference = "${test_source_directory}/arrays_in_major.byte.reference"
-   * native
-     reference = "${test_source_directory}/arrays_in_major.opt.reference"
-     compare_programs = "false"
+   compare_programs = "false"
 *)
 
 open Gc.Memprof
@@ -117,18 +113,6 @@ let () =
   check_distrib 300 3000 1 0.9;
   check_distrib 300 300 100000 0.1;
   check_distrib 300000 300000 30 0.1
-
-(* FIXME : in bytecode mode, the function [caml_get_current_callstack_impl],
-   which is supposed to capture the current call stack, does not have access
-   to the current value of [pc]. Therefore, depending on how the C call is
-   performed, we may miss the first call stack slot in the captured backtraces.
-   This is the reason why the reference file is different in native and
-   bytecode modes.
-
-   Note that [Printexc.get_callstack] does not suffer from this problem, because
-   this function is actually an automatically generated stub which performs th
-   C call. This is because [Printexc.get_callstack] is not declared as external
-   in the mli file. *)
 
 let[@inline never] check_callstack () =
   Printf.printf "check_callstack\n%!";
