@@ -456,13 +456,13 @@ void caml_shrink_heap (char *chunk)
 
 color_t caml_allocation_color (void *hp)
 {
-  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
-      || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
+  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
+      (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
     return Caml_black;
   }else{
     CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
-                && (addr)hp < (addr)caml_gc_sweep_hp));
+                && (char *)hp < (char *)caml_gc_sweep_hp));
     return Caml_white;
   }
 }
@@ -497,13 +497,13 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
   CAMLassert (Is_in_heap (Val_hp (hp)));
 
   /* Inline expansion of caml_allocation_color. */
-  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean
-      || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
+  if (caml_gc_phase == Phase_mark || caml_gc_phase == Phase_clean ||
+      (caml_gc_phase == Phase_sweep && (char *)hp >= (char *)caml_gc_sweep_hp)){
     Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_black, profinfo);
   }else{
     CAMLassert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
-                && (addr)hp < (addr)caml_gc_sweep_hp));
+                && (char *)hp < (char *)caml_gc_sweep_hp));
     Hd_hp (hp) = Make_header_with_profinfo (wosize, tag, Caml_white, profinfo);
   }
   CAMLassert (Hd_hp (hp)

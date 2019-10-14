@@ -362,7 +362,10 @@ Working version
 
 - #8892, #8895: fix the definition of Is_young when CAML_INTERNALS is not
   defined.
-  (David Allsopp)
+  (David Allsopp, review by Xavier Leroy)
+
+- #8896: deprecate addr typedef in misc.h
+  (David Allsopp, suggestion by Xavier Leroy)
 
 OCaml 4.09 maintenance branch:
 ------------------------------
