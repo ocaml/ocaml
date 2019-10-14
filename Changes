@@ -191,6 +191,10 @@ Working version
 
 ### Standard library:
 
+- #8651: add '%#F' modifier in printf to output OCaml float constants
+  in hexadecimal
+  (Pierre Roux, review by Gabriel Scherer and Xavier Leroy)
+
 - #8832: List.find_map : ('a -> 'b option) -> 'a list -> 'b option
   (Gabriel Scherer, review by Jeremy Yallop, Nicolás Ojeda Bär
    and Daniel Bünzli)
@@ -399,10 +403,6 @@ OCaml 4.09.0 (19 September 2019):
 - #6148, #8596: optimize some buffer operations
   (Damien Doligez, reports by John Whitington and Alain Frisch,
    review by Jeremy Yallop and Gabriel Scherer)
-
-- #8651: add '%#F' modifier in printf to output OCaml float constants
-  in hexadecimal
-  (Pierre Roux, review by Gabriel Scherer and Xavier Leroy)
 
 ### Other libraries:
 
