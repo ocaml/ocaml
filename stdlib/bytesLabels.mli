@@ -16,10 +16,10 @@
 (** Byte sequence operations.
     @since 4.02.0
 
-    This module is intended to be used through {!StdLabels} which would replace
+    This module is intended to be used through {!StdLabels} which replaces
     {!Array}, {!Bytes}, {!List} and {!String} with their labeled counterparts.
 
-    As an example usage:
+    For example:
     {[
        open StdLabels
 
