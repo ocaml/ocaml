@@ -741,7 +741,7 @@ stdlib/libcamlrun.$(A): runtime/libcamlrun.$(A)
 	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
 clean::
 	$(MAKE) -C runtime clean
-	rm -f stdlib/libcamlrun.$(A)
+	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 otherlibs_all := bigarray dynlink raw_spacetime_lib \
   str systhreads unix win32unix
@@ -771,7 +771,7 @@ runtime/libasmrun.$(A): makeruntimeopt ;
 stdlib/libasmrun.$(A): runtime/libasmrun.$(A)
 	cp $< $@
 clean::
-	rm -f stdlib/libasmrun.$(A)
+	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
 
 # The standard library
 
@@ -1010,7 +1010,7 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -o $@ $^
 
 partialclean::
-	rm -f ocamlnat$(EXE)
+	rm -f ocamlnat ocamlnat.exe
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
@@ -1053,8 +1053,8 @@ partialclean::
            lambda middle_end/closure middle_end/flambda \
            middle_end/flambda/base_types asmcomp/debug \
            driver toplevel tools; do \
-	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
-	    $$d/*.$(O) $$d/*.$(SO); \
+	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.s $$d/*.asm \
+	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
 .PHONY: depend
@@ -1068,8 +1068,8 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
-	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	boot/*.cm* boot/libcamlrun.$(A) boot/ocamlc.opt
+	rm -f boot/ocamlrun boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
+	boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.common runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache
 	rm -f config.log config.status libtool

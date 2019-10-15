@@ -246,7 +246,7 @@ $(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
-	rm -f *.cm* *.$(O) *.$(A) *.odoc
+	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
 	rm -f camlheader*
 
 include .depend

@@ -45,7 +45,8 @@ version.h : $(ROOTDIR)/VERSION
 	echo "#define OCAML_VERSION \"`sed -e 1q $< | tr -d '\r'`\"" > $@
 
 clean:
-	rm -f $(generated_files)
+	rm -f ocamlyacc ocamlyacc.exe wstr.o wstr.obj version.h \
+        $(ocamlyacc_SOURCES:.c=.o) $(ocamlyacc_SOURCES:.c=.obj)
 
 depend:
 

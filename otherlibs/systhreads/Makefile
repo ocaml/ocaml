@@ -113,7 +113,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
+	rm -f dllthreads*.so dllthreads*.dll *.a *.lib *.o *.obj
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 

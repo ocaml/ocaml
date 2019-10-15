@@ -64,7 +64,7 @@ install:
 	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
 
 clean::
-	rm -f ocamldebug$(EXE)
+	rm -f ocamldebug ocamldebug.exe
 	rm -f *.cmo *.cmi
 
 .SUFFIXES:
