@@ -666,7 +666,7 @@ and print_out_type_decl kwd ppf td =
     if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()
   in
   let print_ident ppf =
-    Option.iter (fun s -> fprintf ppf " [%@%@unique_id \"%s\"]" s)
+    Option.iter (fun s -> fprintf ppf " [%@%@unique \"%s\"]" s)
       td.otype_ident
   in
   let print_out_tkind ppf = function

@@ -392,13 +392,15 @@ let transl_declaration env sdecl (id, uid) =
       in
     let (tman, man, ident) = match sdecl.ptype_manifest with
         None ->
-        None, None, Builtin_attributes.unique_id sdecl.ptype_attributes
+        None, None,
+        Builtin_attributes.unique (Ident.name id) sdecl.ptype_attributes
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type, None
     in
     let arity = List.length params in
+    let ident = if kind = Type_abstract then ident else None in
     let decl =
       { type_params = params;
         type_arity = arity;
@@ -1417,7 +1419,9 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
   in
   let no_row = not (is_fixed_type sdecl) in
   let (tman, man, ident) =  match sdecl.ptype_manifest with
-      None -> None, None, Builtin_attributes.unique_id sdecl.ptype_attributes
+      None ->
+        None, None,
+        Builtin_attributes.unique (Ident.name id) sdecl.ptype_attributes
     | Some sty ->
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type, None
@@ -1458,6 +1462,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
     else
       Type_abstract, unboxed_false_default_false
   in
+  let ident = if type_kind = Type_abstract then ident else None in
   let new_sig_decl =
     { type_params = params;
       type_arity = arity;
