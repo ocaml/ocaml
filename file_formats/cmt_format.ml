@@ -69,7 +69,7 @@ open Tast_iterator
 
 let cenv =
   {Tast_iterator.default_iterator with
-   env = fun _sub env -> Env.keep_only_summary env}
+   env = fun _sub env -> Env.keep_only_summary ~initial:false env}
 
 let clear_part = function
   | Partial_structure s -> cenv.structure cenv s
@@ -164,7 +164,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi =
          Fun.protect
            ~finally:Env.restore_full_env
            (fun () ->
-              Env.keep_only_summary initial_env;
+              Env.keep_only_summary ~initial:true initial_env;
               clear_env binary_annots;
               let cmt = {
                 cmt_modname = modname;

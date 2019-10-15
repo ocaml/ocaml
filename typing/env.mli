@@ -45,6 +45,7 @@ type summary =
   | Env_persistent of summary * Ident.t
   | Env_value_unbound of summary * string * value_unbound_reason
   | Env_module_unbound of summary * string * module_unbound_reason
+  | Env_initial of {mutable initial: summary}
 
 type address =
   | Aident of Ident.t
@@ -55,6 +56,7 @@ type t
 val empty: t
 val initial_safe_string: t
 val initial_unsafe_string: t
+val mark_initial: t -> t
 val diff: t -> t -> Ident.t list
 val copy_local: from:t -> t -> t
 
@@ -380,7 +382,7 @@ val summary: t -> summary
    except the summary. The initial environment can be rebuilt from the
    summary, using Envaux.env_of_only_summary. *)
 
-val keep_only_summary : t -> unit
+val keep_only_summary : initial:bool -> t -> unit
 val restore_full_env : unit -> unit
 
 val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t

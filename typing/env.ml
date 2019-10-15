@@ -90,6 +90,7 @@ type summary =
   | Env_persistent of summary * Ident.t
   | Env_value_unbound of summary * string * value_unbound_reason
   | Env_module_unbound of summary * string * module_unbound_reason
+  | Env_initial of {mutable initial: summary}
 
 type address =
   | Aident of Ident.t
@@ -589,6 +590,9 @@ let empty = {
   flags = 0;
   functor_args = Ident.empty;
  }
+
+let mark_initial initial =
+  {initial with summary = Env_initial {initial = initial.summary}}
 
 let in_signature b env =
   let flags =
@@ -2953,6 +2957,8 @@ let filter_non_loaded_persistent f env =
           Env_value_unbound (filter_summary s ids, n, r)
       | Env_module_unbound (s, n, r) ->
           Env_module_unbound (filter_summary s ids, n, r)
+      | Env_initial {initial} ->
+          Env_initial {initial = filter_summary initial ids}
   in
   { env with
     modules = remove_ids env.modules to_remove;
@@ -2965,7 +2971,7 @@ let summary env =
   if Path.Map.is_empty env.local_constraints then env.summary
   else Env_constraints (env.summary, env.local_constraints)
 
-let restore_summary_list = ref []
+let restore_summary = ref []
 
 let copy_env
     ~src:{values; constrs; labels; types; modules; modtypes; classes; cltypes; summary;
@@ -2984,19 +2990,51 @@ let copy_env
     dst.local_constraints <- local_constraints;
     dst.summary <- summary
 
-let keep_only_summary env =
+
+let rec filter_summary = function
+  | Env_empty -> Env_empty
+  | Env_value (s, id, vd) -> Env_value (filter_summary s, id, vd)
+  | Env_type (s, id, td) ->  Env_type (filter_summary s, id, td)
+  | Env_extension (s, id, ec) -> Env_extension (filter_summary s, id, ec)
+  | Env_module (s, id, mp, md) -> Env_module (filter_summary s, id, mp, md)
+  | Env_modtype (s, id, md) -> Env_modtype (filter_summary s, id, md)
+  | Env_class (s, id, cd) -> Env_class (filter_summary s, id, cd)
+  | Env_cltype (s, id, ctd) -> Env_cltype (filter_summary s, id, ctd)
+  | Env_open (s, p) -> Env_open (filter_summary s, p)
+  | Env_functor_arg (s, id) -> Env_functor_arg (filter_summary s, id)
+  | Env_constraints (s, cstrs) -> Env_constraints (filter_summary s, cstrs)
+  | Env_copy_types s -> Env_copy_types (filter_summary s)
+  | Env_persistent (s, id) ->
+      let s = filter_summary s in
+      begin match Persistent_env.find_in_cache persistent_env (Ident.name id) with
+      | Some _ -> Env_persistent (s, id)
+      | None -> s
+      end
+  | Env_value_unbound (s, n, r) -> Env_value_unbound (filter_summary s, n, r)
+  | Env_module_unbound (s, n, r) -> Env_module_unbound (filter_summary s, n, r)
+  | Env_initial _ -> assert false
+
+let keep_only_summary ~initial env =
   if env.flags land only_summary_flag = 0 then begin
     let backup = {env with flags = env.flags} in
     copy_env ~src:empty ~dst:env;
     env.flags <- backup.flags lor only_summary_flag;
+    if initial then begin
+      match backup.summary with
+      | Env_initial r ->
+          let old = r.initial in
+          restore_summary := (fun () -> r.initial <- old) :: !restore_summary;
+          r.initial <- filter_summary old
+      | _ -> assert false
+    end;
     env.summary <- backup.summary;
     env.local_constraints <- backup.local_constraints;
-    restore_summary_list := (backup, env) :: !restore_summary_list;
+    restore_summary := (fun () -> copy_env ~src:backup ~dst:env) :: !restore_summary;
   end
 
 let restore_full_env () =
-  List.iter (fun (backup, env) -> copy_env ~src:backup ~dst:env) !restore_summary_list;
-  restore_summary_list := []
+  List.iter (fun f -> f ()) !restore_summary;
+  restore_summary := []
 
 
 let env_of_only_summary env_from_summary env =
