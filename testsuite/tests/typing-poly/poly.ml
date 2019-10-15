@@ -778,7 +778,7 @@ class o = object method x : 'a. ([> `A] as 'a) t -> unit = fun _ -> () end
 ;;
 [%%expect {|
 type 'a t = unit
-class o : object method x : [> `A ] t -> unit end
+class o : object method x : unit -> unit end
 |}];;
 
 class c = object method m = new d () end and d ?(x=0) () = object end;;
@@ -1579,7 +1579,7 @@ let c (f : u -> u) =
 [%%expect{|
 type u
 type 'a t = u
-val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
+val c : (u -> u) -> < apply : 'a. u -> u > = <fun>
 |}]
 
 (* PR#7496 *)

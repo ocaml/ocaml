@@ -28,3 +28,9 @@ module M : sig
 end = struct
   type refer = { poly : 'a 'b 'c . (('b, 'c) #Classdef.cl2 as 'a) }
 end
+
+type refer1 = < poly : 'a 'b 'c . (('b, 'c) #Classdef.cl2 as 'a) >
+type refer2 = < poly : 'a 'b 'c . (('b, 'c) #Classdef.cl2 as 'a) >
+
+(* Now this works too *)
+let f (x : refer1) = (x : refer2)
