@@ -78,7 +78,8 @@ Working version
 
 - #8809: Add a best-fit allocator, which should be much better for
   programs with large heaps.
-  (Damien Doligez, review by ?)
+  (Damien Doligez, review by Stephen Dolan, Jacques-Henri Jourdan,
+   Xavier Leroy, Leo White)
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
