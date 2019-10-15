@@ -212,6 +212,7 @@ static value heap_stats (int returnstats)
 
 #ifdef DEBUG
   caml_final_invariant_check();
+  caml_fl_check ();
 #endif
 
   CAMLassert (heap_chunks == Caml_state->stat_heap_chunks);
@@ -414,7 +415,7 @@ CAMLprim value caml_gc_set(value v)
   uintnat newpf, newpm;
   asize_t newheapincr;
   asize_t newminwsz;
-  uintnat oldpolicy;
+  uintnat newpolicy;
   uintnat new_custom_maj, new_custom_min, new_custom_sz;
   CAML_INSTR_SETUP (tmr, "");
 
@@ -450,12 +451,6 @@ CAMLprim value caml_gc_set(value v)
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_major_heap_increment);
     }
-  }
-  oldpolicy = caml_allocation_policy;
-  caml_set_allocation_policy (Long_val (Field (v, 6)));
-  if (oldpolicy != caml_allocation_policy){
-    caml_gc_message (0x20, "New allocation policy: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u\n", caml_allocation_policy);
   }
 
   /* This field was added in 4.03.0. */
@@ -493,15 +488,32 @@ CAMLprim value caml_gc_set(value v)
     }
   }
 
-    /* Minor heap size comes last because it will trigger a minor collection
-       (thus invalidating [v]) and it can raise [Out_of_memory]. */
+  /* Save field 0 before [v] is invalidated. */
   newminwsz = norm_minsize (Long_val (Field (v, 0)));
+
+  /* Switching allocation policies must trigger a compaction, so it
+     invalidates [v]. */
+  newpolicy = Long_val (Field (v, 6));
+  if (newpolicy != caml_allocation_policy){
+    caml_empty_minor_heap ();
+    caml_finish_major_cycle ();
+    caml_finish_major_cycle ();
+    caml_compact_heap (newpolicy);
+    caml_gc_message (0x20, "New allocation policy: %"
+                     ARCH_INTNAT_PRINTF_FORMAT "u\n", newpolicy);
+  }
+
+  /* Minor heap size comes last because it can raise [Out_of_memory]. */
   if (newminwsz != Caml_state->minor_heap_wsz){
     caml_gc_message (0x20, "New minor heap size: %"
                      ARCH_SIZET_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
     caml_set_minor_heap_size (Bsize_wsize (newminwsz));
   }
   CAML_INSTR_TIME (tmr, "explicit/gc_set");
+
+  /* The compaction may have triggered some finalizers that we need to call. */
+  caml_check_urgent_gc (Val_unit);
+
   return Val_unit;
 }
 
@@ -527,7 +539,7 @@ static void test_and_compact (void)
                    (uintnat) fp);
   if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n");
-    caml_compact_heap ();
+    caml_compact_heap (-1);
   }
 }
 
@@ -579,7 +591,7 @@ CAMLprim value caml_gc_compaction(value v)
   caml_check_urgent_gc (Val_unit);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
-  caml_compact_heap ();
+  caml_compact_heap (-1);
   caml_check_urgent_gc (Val_unit);
   CAML_INSTR_TIME (tmr, "explicit/gc_compact");
   return Val_unit;
