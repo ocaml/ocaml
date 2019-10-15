@@ -143,6 +143,10 @@ Working version
   untag_int (tag_int x) = x in Cmmgen.
   (Stephen Dolan, review by Vincent Laviron and Xavier Leroy)
 
+- #9041: amd64: Avoid stall in sqrtsd by clearing destination.
+  (Stephen Dolan, with thanks to Andrew Hunter, Will Hasenplaugh,
+   Spiros Eliopoulos and Brian Nigito. Review by Xavier Leroy)
+
 ### Runtime system:
 
 - #8809: Add a best-fit allocator, which should be much better for
