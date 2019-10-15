@@ -372,6 +372,9 @@ Working version
 - #8896: deprecate addr typedef in misc.h
   (David Allsopp, suggestion by Xavier Leroy)
 
+- #8981: Fix check for incompatible -c and -o options.
+  (Greta Yorsh, review by Damien Doligez)
+
 OCaml 4.09 maintenance branch:
 ------------------------------
 
