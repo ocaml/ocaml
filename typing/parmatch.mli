@@ -93,10 +93,10 @@ val ppat_of_type :
 val pressure_variants: Env.t -> pattern list -> unit
 
 (** [check_partial pred loc caselist] and [check_unused refute pred caselist]
-    are called with a function [pred] which will be given counter-examples to
-    typecheck. Those counter-examples were generated, they may contain
-    or-patterns of constructors, and be themselves or-patterns of
-    counter-examples. They return a valid counter-example or [None].
+    are called with a function [pred] which will be given counter-example
+    candidates: they may be partially ill-typed, and have to be type-checked
+    to extract a valid counter-example.
+    [pred] returns a valid counter-example or [None].
     [refute] indicates that [check_unused] was called on a refutation clause.
  *)
 val check_partial:
