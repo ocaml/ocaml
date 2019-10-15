@@ -145,7 +145,7 @@ Working version
 
 - #9041: amd64: Avoid stall in sqrtsd by clearing destination.
   (Stephen Dolan, with thanks to Andrew Hunter, Will Hasenplaugh,
-   Spiros Eliopoulos and Brian Nigito. Review by ??)
+   Spiros Eliopoulos and Brian Nigito. Review by Xavier Leroy)
 
 ### Runtime system:
 
