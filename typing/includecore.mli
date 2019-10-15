@@ -53,6 +53,10 @@ type extension_constructor_mismatch =
                             * extension_constructor
                             * constructor_mismatch
 
+type ident_mismatch =
+  | Ident_other of string * string
+  | Ident_added of string
+
 type type_mismatch =
   | Arity
   | Privacy
@@ -64,6 +68,7 @@ type type_mismatch =
   | Variant_mismatch of variant_mismatch
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
+  | Ident_mismatch of ident_mismatch
 
 val value_descriptions:
   loc:Location.t -> Env.t -> string ->

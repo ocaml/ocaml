@@ -1291,6 +1291,7 @@ let new_declaration expansion_scope manifest =
     type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
     type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+    type_ident = None;
   }
 
 let existential_name cstr ty = match repr ty with
@@ -2197,9 +2198,9 @@ let is_newtype env p =
     decl.type_private = Public
   with Not_found -> false
 
-let non_aliasable p decl =
+let non_aliasable _p _decl = false
   (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
+  (* in_current_module p && not decl.type_is_newtype *)
 
 let is_instantiable env p =
   try
@@ -2361,6 +2362,10 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
+    begin match decl.type_ident, decl'.type_ident with
+    | Some id1, Some id2 -> if id1 <> id2 then raise (Unify [])
+    | _ -> ()
+    end;
     if compatible_paths p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
@@ -4730,6 +4735,7 @@ let nondep_type_decl env mid is_covariant decl =
       type_immediate = decl.type_immediate;
       type_unboxed = decl.type_unboxed;
       type_uid = decl.type_uid;
+      type_ident = decl.type_ident;
     }
   with Nondep_cannot_erase _ as exn ->
     clear_hash ();

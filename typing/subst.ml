@@ -310,6 +310,7 @@ let type_declaration' copy_scope s decl =
     type_immediate = decl.type_immediate;
     type_unboxed = decl.type_unboxed;
     type_uid = decl.type_uid;
+    type_ident = decl.type_ident;
   }
 
 let type_declaration s decl =

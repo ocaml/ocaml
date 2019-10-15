@@ -94,6 +94,7 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
           type_immediate = Unknown;
           type_unboxed;
           type_uid = Uid.mk ~current_unit;
+          type_ident = None;
         }
       in
       existentials,
