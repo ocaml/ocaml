@@ -854,7 +854,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
         pc--; /* restart the POPTRAP after processing the signal */
-        goto process_signal;
+        goto process_actions;
       }
       Caml_state->trapsp = Trap_link(sp);
       sp += 4;
@@ -908,12 +908,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (caml_something_to_do) goto process_signal;
+      if (caml_something_to_do) goto process_actions;
       Next;
 
-    process_signal:
+    process_actions:
       Setup_for_event;
-      caml_process_event();
+      caml_check_urgent_gc_and_callbacks(Val_unit);
       Restore_after_event;
       Next;
 

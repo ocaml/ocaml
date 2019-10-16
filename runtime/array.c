@@ -278,9 +278,9 @@ CAMLprim value caml_floatarray_create(value len)
     caml_invalid_argument("Float.Array.create");
   else {
     result = caml_alloc_shr (wosize, Double_array_tag);
-    result = caml_check_urgent_gc (result);
   }
-  return result;
+  // Give the GC a chance to run, and run memprof callbacks
+  return caml_check_urgent_gc_and_callbacks (result);
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -329,10 +329,10 @@ CAMLprim value caml_make_vect(value len, value init)
       /* We now know that [init] is not in the minor heap, so there is
          no need to call [caml_initialize]. */
       for (i = 0; i < size; i++) Field(res, i) = init;
-      res = caml_check_urgent_gc (res);
     }
   }
-  CAMLreturn (res);
+  // Give the GC a chance to run, and run memprof callbacks
+  CAMLreturn (caml_check_urgent_gc_and_callbacks(res));
 }
 
 /* [len] is a [value] representing number of floats */
@@ -379,13 +379,13 @@ CAMLprim value caml_make_array(value init)
         res = caml_alloc_small(wsize, Double_array_tag);
       } else {
         res = caml_alloc_shr(wsize, Double_array_tag);
-        res = caml_check_urgent_gc(res);
       }
       for (i = 0; i < size; i++) {
         double d = Double_val(Field(init, i));
         Store_double_flat_field(res, i, d);
       }
-      CAMLreturn (res);
+      // run memprof callbacks
+      CAMLreturn (caml_check_urgent_gc_and_callbacks(res));
     }
   }
 #else
@@ -521,8 +521,9 @@ static value caml_array_gather(intnat num_arrays,
     CAMLassert(pos == size);
 
     /* Many caml_initialize in a row can create a lot of old-to-young
-       refs.  Give the minor GC a chance to run if it needs to. */
-    res = caml_check_urgent_gc(res);
+       refs.  Give the minor GC a chance to run if it needs to.
+       Run memprof callback for the major allocation. */
+    res = caml_check_urgent_gc_and_callbacks (res);
   }
   CAMLreturn (res);
 }

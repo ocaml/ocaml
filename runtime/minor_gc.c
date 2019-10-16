@@ -52,8 +52,10 @@
          arena.
        - [Caml_state->young_limit] is the pointer that is compared to
          [Caml_state->young_ptr] for allocation. It is either:
-            + [Caml_state->young_alloc_end] if a signal is pending and we are
-              in native code,
+            + [Caml_state->young_alloc_end] if a signal handler or
+              finaliser or memprof callback is pending, or if a major
+              or minor collection has been requested, or an
+              asynchronous callback has just raised an exception,
             + [caml_memprof_young_trigger] if a memprof sample is planned,
             + or [Caml_state->young_trigger].
 */
@@ -485,8 +487,8 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   while(1) {
     /* We might be here because of an async callback / urgent GC
        request. Take the opportunity to do what has been requested. */
-    if (flags & CAML_FROM_CAML) caml_check_urgent_gc (Val_unit);
-    else caml_check_gc_without_async_callbacks(Val_unit);
+    if (flags & CAML_FROM_CAML) caml_do_urgent_gc_and_callbacks ();
+    else caml_check_urgent_gc (Val_unit);
 
     /* Now, there might be enough room in the minor heap to do our
        allocation. */
@@ -525,6 +527,17 @@ CAMLexport void caml_minor_collection (void)
 {
   Caml_state->requested_minor_gc = 1;
   caml_gc_dispatch ();
+}
+
+CAMLexport value caml_check_urgent_gc (value extra_root)
+{
+  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc){
+    CAMLparam1 (extra_root);
+    CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
+    caml_gc_dispatch();
+    CAMLdrop;
+  }
+  return extra_root;
 }
 
 static void realloc_generic_table

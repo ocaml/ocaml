@@ -104,7 +104,7 @@ void caml_process_pending_signals(void)
 
 CAMLno_tsan /* When called from [caml_record_signal], these memory
                accesses may not be synchronized. */
-void caml_set_something_to_do(void)
+void caml_set_action_pending(void)
 {
   caml_something_to_do = 1;
 
@@ -117,16 +117,17 @@ void caml_set_something_to_do(void)
 
 /* Record the delivery of a signal, and arrange for it to be processed
    as soon as possible:
-   - in bytecode: via caml_something_to_do, processed in caml_process_event
-   - in native-code: by playing with the allocation limit, processed
-       in caml_garbage_collection
+   - via caml_something_to_do, processed in
+     caml_check_urgent_gc_and_callbacks.
+   - by playing with the allocation limit, processed in
+     caml_garbage_collection and caml_alloc_small_dispatch.
 */
 
 CAMLno_tsan void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   signals_are_pending = 1;
-  caml_set_something_to_do();
+  caml_set_action_pending();
 }
 
 /* Management of blocking sections. */
@@ -159,16 +160,16 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
    caml_try_leave_blocking_section_default;
 
-CAMLno_tsan /* The read of [caml_something_to_do] is no synchronized. */
+CAMLno_tsan /* The read of [caml_something_to_do] is not synchronized. */
 CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_check_urgent_gc (Val_unit);
+    caml_process_pending_signals ();
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if (! caml_something_to_do) break;
+    if (! signals_are_pending) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -193,7 +194,7 @@ CAMLexport void caml_leave_blocking_section(void)
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   signals_are_pending = 1;
-  caml_check_urgent_gc (Val_unit);
+  caml_process_pending_signals ();
 
   errno = saved_errno;
 }
@@ -277,40 +278,35 @@ void caml_update_young_limit (void)
 void caml_request_major_slice (void)
 {
   Caml_state->requested_major_slice = 1;
-  caml_set_something_to_do();
+  caml_set_action_pending();
 }
 
 void caml_request_minor_gc (void)
 {
   Caml_state->requested_minor_gc = 1;
-  caml_set_something_to_do();
+  caml_set_action_pending();
 }
 
-value caml_check_gc_without_async_callbacks(value extra_root)
+void caml_do_urgent_gc_and_callbacks(void)
 {
-  CAMLparam1 (extra_root);
-  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc){
-    CAML_INSTR_INT ("force_minor/check_gc_without_async_callbacks@", 1);
-    caml_gc_dispatch();
-  }
-  CAMLreturn (extra_root);
-}
-
-CAMLexport value caml_check_urgent_gc (value extra_root)
-{
-  CAMLparam1 (extra_root);
   caml_something_to_do = 0;
+  caml_check_urgent_gc(Val_unit);
   caml_update_young_limit();
-  if (Caml_state->requested_major_slice || Caml_state->requested_minor_gc){
-    CAML_INSTR_INT ("force_minor/check_urgent_gc@", 1);
-    caml_gc_dispatch();
-  }
   caml_memprof_handle_postponed();
   caml_final_do_calls();
   caml_process_pending_signals();
-  CAMLreturn (extra_root);
 }
 
+CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
+value caml_check_urgent_gc_and_callbacks(value extra_root)
+{
+  if (caml_something_to_do) {
+    CAMLparam1(extra_root);
+    caml_do_urgent_gc_and_callbacks();
+    CAMLdrop;
+  }
+  return extra_root;
+}
 
 /* If an exception is raised during an asynchronous callback (i.e.,
    from an OCaml function called in `caml_check_urgent_gc`), then it
@@ -326,7 +322,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
    from `caml_check_urgent_gc`). */
 void caml_raise_in_async_callback (value exc)
 {
-  caml_set_something_to_do();
+  caml_set_action_pending();
   caml_raise(exc);
 }
 

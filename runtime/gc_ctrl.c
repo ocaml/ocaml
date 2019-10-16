@@ -512,7 +512,7 @@ CAMLprim value caml_gc_set(value v)
   CAML_INSTR_TIME (tmr, "explicit/gc_set");
 
   /* The compaction may have triggered some finalizers that we need to call. */
-  caml_check_urgent_gc (Val_unit);
+  caml_do_urgent_gc_and_callbacks ();
 
   return Val_unit;
 }
@@ -522,8 +522,8 @@ CAMLprim value caml_gc_minor(value v)
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
   caml_request_minor_gc ();
-  caml_gc_dispatch ();
-  caml_check_urgent_gc (Val_unit);
+  // call the gc and call finalisers
+  caml_do_urgent_gc_and_callbacks ();
   CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }
@@ -551,7 +551,8 @@ CAMLprim value caml_gc_major(value v)
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   test_and_compact ();
-  caml_check_urgent_gc (Val_unit);
+  // call finalisers
+  caml_do_urgent_gc_and_callbacks ();
   CAML_INSTR_TIME (tmr, "explicit/gc_major");
   return Val_unit;
 }
@@ -563,11 +564,13 @@ CAMLprim value caml_gc_full_major(value v)
   caml_gc_message (0x1, "Full major GC cycle requested\n");
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
-  caml_check_urgent_gc (Val_unit);
+  // call finalisers
+  caml_do_urgent_gc_and_callbacks ();
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   test_and_compact ();
-  caml_check_urgent_gc (Val_unit);
+  // call finalisers
+  caml_do_urgent_gc_and_callbacks ();
   CAML_INSTR_TIME (tmr, "explicit/gc_full_major");
   return Val_unit;
 }
@@ -588,11 +591,13 @@ CAMLprim value caml_gc_compaction(value v)
   caml_gc_message (0x10, "Heap compaction requested\n");
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
-  caml_check_urgent_gc (Val_unit);
+  // call finalisers
+  caml_do_urgent_gc_and_callbacks ();
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   caml_compact_heap (-1);
-  caml_check_urgent_gc (Val_unit);
+  // call finalisers
+  caml_do_urgent_gc_and_callbacks ();
   CAML_INSTR_TIME (tmr, "explicit/gc_compact");
   return Val_unit;
 }

@@ -72,7 +72,7 @@ static value alloc_custom_gen (struct custom_operations * ops,
     result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     caml_adjust_gc_speed(mem, max_major);
-    result = caml_check_urgent_gc(result);
+    caml_check_urgent_gc(Val_unit);
   }
   CAMLreturn(result);
 }

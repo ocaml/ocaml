@@ -323,7 +323,7 @@ static void register_postponed_callback(value block, uintnat occurrences,
   postponed_hd->kind = kind;
   postponed_hd = new_hd;
 
-  if (!caml_memprof_suspended) caml_set_something_to_do();
+  if (!caml_memprof_suspended) caml_set_action_pending();
 }
 
 void caml_memprof_handle_postponed(void)

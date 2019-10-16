@@ -53,7 +53,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
-    result = caml_check_gc_without_async_callbacks (result);
+    result = caml_check_urgent_gc (result);
   }
   return result;
 }
@@ -103,7 +103,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
     Alloc_small (result, wosize, String_tag);
   }else{
     result = caml_alloc_shr (wosize, String_tag);
-    result = caml_check_gc_without_async_callbacks (result);
+    result = caml_check_urgent_gc (result);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
@@ -175,7 +175,7 @@ value caml_alloc_float_array(mlsize_t len)
       Alloc_small (result, wosize, Double_array_tag);
   }else {
     result = caml_alloc_shr (wosize, Double_array_tag);
-    result = caml_check_gc_without_async_callbacks (result);
+    result = caml_check_urgent_gc (result);
   }
   return result;
 #else

@@ -19,7 +19,9 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/backtrace_prim.h"
 #include "caml/config.h"
+#include "caml/debugger.h"
 #include "caml/fail.h"
 #include "caml/fix_code.h"
 #include "caml/interp.h"
@@ -30,9 +32,8 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
+#include "caml/signals.h"
 #include "caml/stacks.h"
-#include "caml/debugger.h"
-#include "caml/backtrace_prim.h"
 
 #ifndef NATIVE_CODE
 
@@ -184,7 +185,8 @@ CAMLprim value caml_realloc_global(value size)
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    caml_global_data = caml_check_urgent_gc(new_global_data);
+    // Give gc a chance to run, and run memprof callbacks
+    caml_global_data = caml_check_urgent_gc_and_callbacks(new_global_data);
   }
   return Val_unit;
 }
@@ -274,7 +276,5 @@ value caml_static_release_bytecode(value prog, value len)
   caml_invalid_argument("Meta.static_release_bytecode");
   return Val_unit; /* not reached */
 }
-
-void (* volatile caml_async_action_hook)(void);
 
 #endif
