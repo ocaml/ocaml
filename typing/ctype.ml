@@ -837,8 +837,18 @@ let rec update_level env level expand ty =
         with Cannot_expand ->
           raise Trace.(Unify [escape(Constructor p)])
         end
-    | Tconstr(_, _ :: _, _) when expand ->
+    | Tconstr(p, (_ :: _ as tl), _) ->
+        let variance =
+          try (Env.find_type p env).type_variance
+          with Not_found -> List.map (fun _ -> Variance.may_inv) tl in
+        let needs_expand =
+          expand ||
+          List.exists2
+            (fun var ty -> var = Variance.null && (repr ty).level > level)
+            variance tl
+        in
         begin try
+          if not needs_expand then raise Cannot_expand;
           link_type ty (!forward_try_expand_once env ty);
           update_level env level expand ty
         with Cannot_expand ->
