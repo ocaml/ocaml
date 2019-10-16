@@ -235,6 +235,10 @@ Working version
 - #8971: Add `Filename.null`, the conventional name of the "null" device.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Alain Frisch)
 
+- #NNN: List.partition_map :
+    ('a -> ('b, 'c) result) -> 'a list -> 'b list * 'c list
+  (Gabriel Scherer, review by ???)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.

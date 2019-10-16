@@ -268,6 +268,15 @@ let partition p l =
   | x :: l -> if p x then part (x :: yes) no l else part yes (x :: no) l in
   part [] [] l
 
+let partition_map p l =
+  let rec part yes no = function
+  | [] -> (rev yes, rev no)
+  | x :: l ->
+     begin match p x with
+       | Ok y -> part (y :: yes) no l
+       | Error n -> part yes (n :: no) l in
+  part [] [] l
+
 let rec split = function
     [] -> ([], [])
   | (x,y)::l ->
