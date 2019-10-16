@@ -432,6 +432,30 @@ module Make(Ord: OrderedType) =
           if c = 0 then v
           else find x (if c < 0 then l else r)
 
+    let rec find_first_opt_aux v0 f = function
+        Empty ->
+          Some v0
+      | Node{l; v; r} ->
+          if f v then
+            find_first_opt_aux v f l
+          else
+            begin match find_first_opt f l with
+              | Some v' -> Some v'
+              | None -> find_first_opt_aux v0 f r
+            end
+
+    and find_first_opt f = function
+        Empty ->
+          None
+      | Node{l; v; r} ->
+          if f v then
+            find_first_opt_aux v f l
+          else
+            begin match find_first_opt f l with
+              | Some v' -> Some v'
+              | None -> find_first_opt f r
+            end
+
     let rec find_first_aux v0 f = function
         Empty ->
           v0
@@ -439,7 +463,10 @@ module Make(Ord: OrderedType) =
           if f v then
             find_first_aux v f l
           else
-            find_first_aux v0 f r
+            begin match find_first_opt f l with
+              | Some v' -> v'
+              | None -> find_first_aux v0 f r
+            end
 
     let rec find_first f = function
         Empty ->
@@ -448,43 +475,10 @@ module Make(Ord: OrderedType) =
           if f v then
             find_first_aux v f l
           else
-            find_first f r
-
-    let rec find_first_opt_aux v0 f = function
-        Empty ->
-          Some v0
-      | Node{l; v; r} ->
-          if f v then
-            find_first_opt_aux v f l
-          else
-            find_first_opt_aux v0 f r
-
-    let rec find_first_opt f = function
-        Empty ->
-          None
-      | Node{l; v; r} ->
-          if f v then
-            find_first_opt_aux v f l
-          else
-            find_first_opt f r
-
-    let rec find_last_aux v0 f = function
-        Empty ->
-          v0
-      | Node{l; v; r} ->
-          if f v then
-            find_last_aux v f r
-          else
-            find_last_aux v0 f l
-
-    let rec find_last f = function
-        Empty ->
-          raise Not_found
-      | Node{l; v; r} ->
-          if f v then
-            find_last_aux v f r
-          else
-            find_last f l
+            begin match find_first_opt f l with
+              | Some v' -> v'
+              | None -> find_first f r
+            end
 
     let rec find_last_opt_aux v0 f = function
         Empty ->
@@ -493,16 +487,46 @@ module Make(Ord: OrderedType) =
           if f v then
             find_last_opt_aux v f r
           else
-            find_last_opt_aux v0 f l
+            begin match find_last_opt f r with
+            | Some v' -> Some v'
+            | None -> find_last_opt_aux v0 f l
+            end
 
-    let rec find_last_opt f = function
+    and find_last_opt f = function
         Empty ->
           None
       | Node{l; v; r} ->
           if f v then
             find_last_opt_aux v f r
           else
-            find_last_opt f l
+            begin match find_last_opt f r with
+              | Some v' -> Some v'
+              | None -> find_last_opt f l
+            end
+
+    let rec find_last_aux v0 f = function
+        Empty ->
+          v0
+      | Node{l; v; r} ->
+          if f v then
+            find_last_aux v f r
+          else
+            begin match find_last_opt f r with
+              | Some v' -> v'
+              | None -> find_last_aux v0 f l
+            end
+
+    let rec find_last f = function
+        Empty ->
+          raise Not_found
+      | Node{l; v; r} ->
+          if f v then
+            find_last_aux v f r
+          else
+            begin match find_last_opt f r with
+              | Some v' -> v'
+              | None -> find_last f l
+            end
 
     let rec find_opt x = function
         Empty -> None
