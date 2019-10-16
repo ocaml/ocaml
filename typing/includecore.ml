@@ -440,7 +440,25 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | Some id1, Some id2 ->
         if id1 = id2 then None else
         Some (Ident_mismatch (Ident_other (id1, id2)))
-    | None, Some id -> Some (Ident_mismatch (Ident_added id))
+    | None, Some id2 ->
+        begin try match decl1.type_manifest with
+        | None -> raise Not_found
+        | Some ty ->
+            match Ctype.expand_head env ty with
+            | {desc=Tconstr (p, tl, _)}
+              when List.for_all
+                  (fun ty1 -> List.exists
+                      (fun ty -> Ctype.equal env false [ty1] [ty]) tl)
+                  decl1.type_params ->
+                begin match Env.find_type p env with
+                | {type_ident = Some id1} ->
+                    if id1 = id2 then None else
+                    Some (Ident_mismatch (Ident_other (id1, id2)))
+                | _ -> raise Not_found
+                end
+            | _ -> raise Not_found
+        with Not_found -> Some (Ident_mismatch (Ident_added id2))
+        end
     | Some id, None
       when decl1.type_kind <> Type_abstract && decl2.type_kind <> Type_abstract
       -> Some (Ident_mismatch (Ident_removed id))  

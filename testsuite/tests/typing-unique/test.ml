@@ -52,6 +52,34 @@ Error: Signature mismatch:
        Unique identifier "M.a" was removed without abstracting the datatype
 |}]
 
+(* we can export an abbreviation of a unique type as unique *)
+module M4 : sig type float_array [@@unique "array"] end =
+  struct type float_array = float array end
+module M5 : sig type 'a my_array [@@unique "array"] end =
+  struct type 'a my_array = 'a array end
+[%%expect{|
+module M4 : sig type float_array [@@unique "array"] end
+module M5 : sig type 'a my_array [@@unique "array"] end
+|}]
+
+(* beware of injectivity *)
+module M6 : sig type 'a my_array [@@unique "array"] end =
+  struct type 'a my_array = float array end
+[%%expect{|
+Line 2, characters 2-43:
+2 |   struct type 'a my_array = float array end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a my_array = float array end
+       is not included in
+         sig type 'a my_array [@@unique "array"] end
+       Type declarations do not match:
+         type 'a my_array = float array
+       is not included in
+         type 'a my_array [@@unique "array"]
+       Unique identifier "array" was not present in original declaration
+|}]
 
 (* Compatibility *)
 
