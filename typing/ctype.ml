@@ -843,9 +843,9 @@ let rec update_level env level expand ty =
           with Not_found -> List.map (fun _ -> Variance.may_inv) tl in
         let needs_expand =
           expand ||
-          List.exists
-            (fun (var, ty) -> var = Variance.null && (repr ty).level > level)
-            (List.combine variance tl)
+          List.exists2
+            (fun var ty -> var = Variance.null && (repr ty).level > level)
+            variance tl
         in
         begin try
           if not needs_expand then raise Cannot_expand;

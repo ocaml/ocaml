@@ -328,7 +328,8 @@ Working version
 ### Bug fixes:
 
 - #5673, #7636: unused type variable causes generalization error
-  (Jacques Garrigue, report by Christophe Raffalli)
+  (Jacques Garrigue, review by Leo White,
+   reports by Jean-Louis Giavitto and Christophe Raffalli)
 
 - #6922, #8955: Fix regression with -principal type inference for inherited
   methods, allowing to compile ocamldoc with -principal
