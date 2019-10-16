@@ -392,13 +392,16 @@ stdlib__lexing.cmi :
 stdlib__list.cmo : \
     stdlib__sys.cmi \
     stdlib__seq.cmi \
+    stdlib__either.cmi \
     stdlib__list.cmi
 stdlib__list.cmx : \
     stdlib__sys.cmx \
     stdlib__seq.cmx \
+    stdlib__either.cmx \
     stdlib__list.cmi
 stdlib__list.cmi : \
-    stdlib__seq.cmi
+    stdlib__seq.cmi \
+    stdlib__either.cmi
 stdlib__listLabels.cmo : \
     stdlib__list.cmi \
     stdlib__listLabels.cmi

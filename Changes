@@ -166,6 +166,10 @@ Working version
   type 'a Either.t = Left of 'a | Right of 'b
   (Gabriel Scherer, review by Daniel Bünzli, Thomas Refis, Jeremy Yallop)
 
+- #9066: List.partition_map :
+    ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
+  (Gabriel Scherer, review by Jeremy Yallop)
+
 - #9587: Arg: new Rest_all spec to get all rest arguments in a list
   (this is similar to Rest, but makes it possible to detect when there
    are no arguments (an empty list) after the rest marker)
