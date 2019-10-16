@@ -158,6 +158,9 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
+- #8667: Limit GC credit to 1.0
+  (Leo White, review by Damien Doligez)
+
 - #8670: Fix stack overflow detection with systhreads
   (Stephen Dolan, review by Xavier Leroy, Anil Madhavapeddy, Gabriel Scherer,
    Frédéric Bour and Guillaume Munch-Maccagnoni)
