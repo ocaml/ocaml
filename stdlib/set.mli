@@ -305,6 +305,9 @@ module type S =
   end
 (** Output signature of the functor {!Set.Make}. *)
 
-module Make (Ord : OrderedType) : S with type elt = Ord.t
+module type S_unique =
+  sig type t [@@unique "Set.Make.t"] include S with type t := t end
+
+module Make (Ord : OrderedType) : S_unique with type elt = Ord.t
 (** Functor building an implementation of the set structure
    given a totally ordered type. *)

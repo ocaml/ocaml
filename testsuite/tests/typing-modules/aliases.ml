@@ -277,8 +277,8 @@ let f (x : StringSet.t) = (x : SSet.t);;
 module S = String
 module StringSet :
   sig
+    type t = Set.Make(String).t [@@unique "Set.Make.t"]
     type elt = String.t
-    type t = Set.Make(String).t
     val empty : t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
@@ -324,8 +324,8 @@ module StringSet :
   end
 module SSet :
   sig
+    type t = Set.Make(S).t [@@unique "Set.Make.t"]
     type elt = S.t
-    type t = Set.Make(S).t
     val empty : t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
@@ -403,8 +403,8 @@ module A :
     module B : sig type t val compare : 'a -> 'b -> int end
     module S :
       sig
+        type t = Set.Make(B).t [@@unique "Set.Make.t"]
         type elt = B.t
-        type t = Set.Make(B).t
         val empty : t
         val is_empty : t -> bool
         val mem : elt -> t -> bool
@@ -534,8 +534,8 @@ end;; (* fail *)
 module Int : sig type t = int val compare : 'a -> 'a -> int end
 module SInt :
   sig
+    type t = Set.Make(Int).t [@@unique "Set.Make.t"]
     type elt = Int.t
-    type t = Set.Make(Int).t
     val empty : t
     val is_empty : t -> bool
     val mem : elt -> t -> bool

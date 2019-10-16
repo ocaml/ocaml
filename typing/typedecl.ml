@@ -400,7 +400,6 @@ let transl_declaration env sdecl (id, uid) =
         Some cty, Some cty.ctyp_type, None
     in
     let arity = List.length params in
-    let ident = if kind = Type_abstract then ident else None in
     let decl =
       { type_params = params;
         type_arity = arity;
@@ -1462,7 +1461,6 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
     else
       Type_abstract, unboxed_false_default_false
   in
-  let ident = if type_kind = Type_abstract then ident else None in
   let new_sig_decl =
     { type_params = params;
       type_arity = arity;

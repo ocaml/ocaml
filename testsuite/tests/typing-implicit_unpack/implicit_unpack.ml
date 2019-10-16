@@ -355,8 +355,8 @@ type ('k, 'd, 'm) map =
 val add : ('k, 'd, 'm) map -> 'k -> 'd -> 'm -> 'm = <fun>
 module SSMap :
   sig
+    type 'a t = 'a Map.Make(String).t [@@unique "Map.Make.t"]
     type key = String.t
-    type 'a t = 'a Map.Make(String).t
     val empty : 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool

@@ -66,6 +66,9 @@ module type S =
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
+module type S_unique =
+  sig type +'a t [@@unique "Map.Make.t"] include S with type 'a t := 'a t end
+
 module Make(Ord: OrderedType) = struct
 
     type key = Ord.t
@@ -73,6 +76,7 @@ module Make(Ord: OrderedType) = struct
     type 'a t =
         Empty
       | Node of {l:'a t; v:key; d:'a; r:'a t; h:int}
+      [@@unique "Map.Make.t"]
 
     let height = function
         Empty -> 0

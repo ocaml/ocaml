@@ -69,10 +69,13 @@ module type S =
     val of_seq : elt Seq.t -> t
   end
 
+module type S_unique =
+  sig type t [@@unique "Set.Make.t"] include S with type t := t end
+
 module Make(Ord: OrderedType) =
   struct
     type elt = Ord.t
-    type t = Empty | Node of {l:t; v:elt; r:t; h:int}
+    type t = Empty | Node of {l:t; v:elt; r:t; h:int} [@@unique "Set.Make.t"]
 
     (* Sets are represented by balanced binary trees (the heights of the
        children differ by at most 2 *)

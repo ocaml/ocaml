@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = { mutable c : 'a list; mutable len : int; }
+type 'a t = { mutable c : 'a list; mutable len : int; } [@@unique "Stack.t"]
 
 exception Empty
 

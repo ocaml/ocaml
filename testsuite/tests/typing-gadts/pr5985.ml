@@ -67,7 +67,7 @@ Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 |}];;
 
-(* It is not OK to allow modules exported by other compilation units *)
+(* It is not OK to pretend an injective abstract type is not injective *)
 type (_,_) eq = Eq : ('a,'a) eq;;
 let eq = Obj.magic Eq;;
 let eq : (('a, 'b) Ephemeron.K1.t, ('c, 'd) Ephemeron.K1.t) eq = eq;;
@@ -82,11 +82,15 @@ Line 4, characters 0-46:
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 |}];;
-(*
 let castT (type a) (type b) (x : a t) (e: (a, b) eq) : b t =
   let Eq = e in (x : b t);;
 let T (x : bool) = castT (T 3) eq;; (* we found a contradiction *)
-*)
+[%%expect{|
+Line 1, characters 35-36:
+1 | let castT (type a) (type b) (x : a t) (e: (a, b) eq) : b t =
+                                       ^
+Error: Unbound type constructor t
+|}]
 
 (* The following signature should not be accepted *)
 module type S = sig

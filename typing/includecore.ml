@@ -170,6 +170,7 @@ type extension_constructor_mismatch =
 type ident_mismatch =
   | Ident_other of string * string
   | Ident_added of string
+  | Ident_removed of string
 
 type type_mismatch =
   | Arity
@@ -266,8 +267,9 @@ let report_ident_mismatch ppf err =
   | Ident_added id ->
       pr "@[<hv>Unique identifier@;<1 2>\"%s\"@ %s@]"
         id "was not present in original declaration"
-
-
+  | Ident_removed id ->
+      pr "@[<hv>Unique identifier@;<1 2>\"%s\"@ %s@]"
+        id "was removed without abstracting the datatype"
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -439,6 +441,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         if id1 = id2 then None else
         Some (Ident_mismatch (Ident_other (id1, id2)))
     | None, Some id -> Some (Ident_mismatch (Ident_added id))
+    | Some id, None
+      when decl1.type_kind <> Type_abstract && decl2.type_kind <> Type_abstract
+      -> Some (Ident_mismatch (Ident_removed id))  
     | _, None -> None
   in
   if err <> None then err else

@@ -22,7 +22,7 @@
    Failure to do so can lead to a crash.
 *)
 
-type !'a t
+type 'a t [@@unique "Queue.t"]
 (** The type of queues containing elements of type ['a]. *)
 
 
