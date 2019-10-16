@@ -982,14 +982,33 @@ invalidate the first argument after it is computed.
 Use the normal C array syntax instead.
 
 \begin{gcrule} Global variables containing values must be registered
-with the garbage collector using the "caml_register_global_root" function.
+with the garbage collector using the "caml_register_global_root" function,
+save that global variables and locations that will only ever contain OCaml
+integers (and never pointers) do not have to be registered.
+
+The same is true for any memory location outside the OCaml heap that contains a
+value and is not guaranteed to be reachable---for as long as it contains such
+value---from either another registered global variable or location, local
+variable declared with "CAMLlocal" or function parameter declared with
+"CAMLparam".
 \end{gcrule}
 
 Registration of a global variable "v" is achieved by calling
-"caml_register_global_root(&v)" just before or just after a valid
-value is stored in "v" for the first time. You must not call any
-of the OCaml runtime functions or macros between registering and
-storing the value.
+"caml_register_global_root(&v)" just before or just after a valid value is
+stored in "v" for the first time; likewise, registration of an arbitrary
+location "p" is achieved by calling "caml_register_global_root(p)".
+
+You must not call any of the OCaml runtime functions or macros between
+registering and storing the value. Neither must you store anything in the
+variable "v" (likewise, the location "p") that is not a valid value.
+
+The registration causes the contents of the variable or memory location to be
+updated by the garbage collector whenever the value in such variable or location
+is moved within the OCaml heap. In the presence of threads care must be taken to
+ensure appropriate synchronisation with the OCaml runtime to avoid a race
+condition against the garbage collector when reading or writing the value. (See
+section
+\ref{s:parallel-execution-long-running-c-code}.)
 
 A registered global variable "v" can be un-registered by calling
 "caml_remove_global_root(&v)".
@@ -2308,6 +2327,7 @@ previously registered, does nothing and returns 0.
 \end{itemize}
 
 \subsection{Parallel execution of long-running C code}
+\label{s:parallel-execution-long-running-c-code}
 
 The OCaml run-time system is not reentrant: at any time, at most one
 thread can be executing OCaml code or C code that uses the OCaml
