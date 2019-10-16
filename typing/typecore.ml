@@ -1032,8 +1032,8 @@ and splitting_mode =
       using backtracking, trying to choose a branch in turn, and to complete
       it into a valid sub-pattern.
 
-      We use this mode when generating exhaustivity counter-examples or
-      to check a refutation clause (p -> .).
+      We use this mode when looking for unused patterns or sub-patterns,
+      in particular to check a refutation clause (p -> .).
     *)
   | Refine_or of { inside_nonsplit_or: bool; }
   (** Only backtrack when needed
