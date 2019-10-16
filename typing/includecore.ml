@@ -262,7 +262,7 @@ let report_ident_mismatch ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
   | Ident_other (id1, id2) ->
-      pr "@[<hv>%s:@;<1 2>\"%s\"@ %s@;<1 2>\"%s\"2]"
+      pr "@[<hv>%s:@;<1 2>\"%s\"@ %s@;<1 2>\"%s\"@]"
         "Unique identifiers do not match" id1 "is not compatible with" id2
   | Ident_added id ->
       pr "@[<hv>Unique identifier@;<1 2>\"%s\"@ %s@]"
@@ -444,7 +444,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         begin try match decl1.type_manifest with
         | None -> raise Not_found
         | Some ty ->
-            match Ctype.expand_head env ty with
+            match Ctype.expand_head_opt env ty with
             | {desc=Tconstr (p, tl, _)}
               when List.for_all
                   (fun ty1 -> List.exists
@@ -461,7 +461,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         end
     | Some id, None
       when decl1.type_kind <> Type_abstract && decl2.type_kind <> Type_abstract
-      -> Some (Ident_mismatch (Ident_removed id))  
+      -> Some (Ident_mismatch (Ident_removed id))
     | _, None -> None
   in
   if err <> None then err else

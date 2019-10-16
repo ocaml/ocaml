@@ -155,3 +155,37 @@ let rec eq : type a. a typ -> a typ -> bool = fun t1 t2 ->
 val eq : 'a typ -> 'a typ -> bool = <fun>
 |}]
 
+(* Typical example *)
+
+module M : sig type b [@@unique "M.b"] end = struct
+  module M1 = struct type a = A [@@unique "M.b"] end
+  type b = M1.a
+end;;
+[%%expect{|
+module M : sig type b [@@unique "M.b"] end
+|}]
+
+module M : sig type b = A [@@unique "M.b"] end = struct
+  module M1 = struct type a = A [@@unique "M.b"] end
+  type b = M1.a = A [@@unique "M.b"]
+end;;
+[%%expect{|
+module M : sig type b = A [@@unique "M.b"] end
+|}]
+
+module M2 : sig type c [@@unique "M.b"] end = struct
+  type c = C [@@unique "M.b"]
+end;;
+[%%expect{|
+module M2 : sig type c [@@unique "M.b"] end
+|}]
+
+(* Private types *)
+
+module M : sig type a [@@unique "M.a"] end = struct
+  type t = T of int [@@unique "M.a"]
+  type a = private t
+end
+[%%expect{|
+module M : sig type a [@@unique "M.a"] end
+|}]

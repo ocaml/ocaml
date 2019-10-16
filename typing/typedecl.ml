@@ -390,14 +390,16 @@ let transl_declaration env sdecl (id, uid) =
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
-    let (tman, man, ident) = match sdecl.ptype_manifest with
-        None ->
-        None, None,
-        Builtin_attributes.unique (Ident.name id) sdecl.ptype_attributes
+    let (tman, man) = match sdecl.ptype_manifest with
+        None -> None, None
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
         let cty = transl_simple_type env no_row sty in
-        Some cty, Some cty.ctyp_type, None
+        Some cty, Some cty.ctyp_type
+    in
+    let ident =
+      if man <> None && kind = Type_abstract then None else
+      Builtin_attributes.unique (Ident.name id) sdecl.ptype_attributes
     in
     let arity = List.length params in
     let decl =
