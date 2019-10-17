@@ -86,6 +86,7 @@ COMPILERLIBS_SOURCES=\
   utils/profile.ml \
   utils/consistbl.ml \
   utils/terminfo.ml \
+  utils/i18n.ml \
   utils/warnings.ml \
   utils/load_path.ml \
   parsing/location.ml \
