@@ -2470,6 +2470,42 @@ let type_module_type_of env smod =
 
 (* For Typecore *)
 
+(* Graft a longident onto a path *)
+let rec extend_path path =
+  fun lid ->
+    match lid with
+    | Lident name -> Pdot(path, name)
+    | Ldot(m, name) -> Pdot(extend_path path m, name)
+    | Lapply _ -> assert false
+
+(* Lookup a type's longident within a signature *)
+let lookup_type_in_sig sg =
+  let types, modules =
+    List.fold_left
+      (fun acc item ->
+         match item with
+         | Sig_type(id, _, _, _) ->
+             let types, modules = acc in
+             let types = String.Map.add (Ident.name id) id types in
+             types, modules
+         | Sig_module(id, _, _, _, _) ->
+             let types, modules = acc in
+             let modules = String.Map.add (Ident.name id) id modules in
+             types, modules
+         | _ -> acc)
+      (String.Map.empty, String.Map.empty) sg
+  in
+  let rec module_path = function
+    | Lident name -> Pident (String.Map.find name modules)
+    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lapply _ -> assert false
+  in
+  fun lid ->
+    match lid with
+    | Lident name -> Pident (String.Map.find name types)
+    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lapply _ -> assert false
+
 let type_package env m p nl =
   (* Same as Pexp_letmodule *)
   (* remember original level *)
@@ -2492,41 +2528,11 @@ let type_package env m p nl =
              spurious escape errors. See examples from PR#6982 in the
              testsuite. This can be removed when such issues are
              fixed. *)
-          let rec path = function
-            | Lident name -> Pdot(mp, name)
-            | Ldot(m, name) -> Pdot(path m, name)
-            | Lapply _ -> assert false
-          in
-          path, env
+          extend_path mp, env
         | _ ->
           let sg = extract_sig_open env modl.mod_loc modl.mod_type in
           let sg, env = Env.enter_signature ~scope sg env in
-          let types, modules =
-            List.fold_left
-              (fun acc item ->
-                 match item with
-                 | Sig_type(id, _, _, _) ->
-                     let types, modules = acc in
-                     let types = String.Map.add (Ident.name id) id types in
-                     types, modules
-                 | Sig_module(id, _, _, _, _) ->
-                     let types, modules = acc in
-                     let modules = String.Map.add (Ident.name id) id modules in
-                     types, modules
-                 | _ -> acc)
-              (String.Map.empty, String.Map.empty) sg
-          in
-          let rec module_path = function
-            | Lident name -> Pident (String.Map.find name modules)
-            | Ldot(m, name) -> Pdot(module_path m, name)
-            | Lapply _ -> assert false
-          in
-          let type_path = function
-            | Lident name -> Pident (String.Map.find name types)
-            | Ldot(m, name) -> Pdot(module_path m, name)
-            | Lapply _ -> assert false
-          in
-          type_path, env
+          lookup_type_in_sig sg, env
       in
       let nl', tl' =
         List.fold_right
