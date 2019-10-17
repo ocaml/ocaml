@@ -158,7 +158,7 @@ val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
-  bool -> bool-> string -> formatter
+  bool -> bool-> I18n.s -> formatter
   -> (type_expr * type_expr) Ctype.Unification_trace.elt list -> unit
 val report_unification_error:
     formatter -> Env.t ->
@@ -167,11 +167,11 @@ val report_unification_error:
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 val report_subtyping_error:
-    formatter -> Env.t -> Ctype.Unification_trace.t -> string
+    formatter -> Env.t -> Ctype.Unification_trace.t -> I18n.s
     -> Ctype.Unification_trace.t -> unit
 val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
-    (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+    ((formatter -> unit) as 'f) -> 'f -> 'f -> unit
 
 (* for toploop *)
 val print_items: (Env.t -> signature_item -> 'a option) ->

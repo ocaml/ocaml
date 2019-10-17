@@ -30,7 +30,7 @@ module String = Misc.Stdlib.String
 (* Print a long identifier *)
 
 let rec longident ppf = function
-  | Lident s -> pp_print_string ppf s
+  | Lident s -> Format.pp_print_string ppf s
   | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
   | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
 
@@ -141,7 +141,7 @@ module Conflicts = struct
           explanations := M.add name explanation !explanations
 
   let pp_explanation ppf r=
-    Format.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
+    I18n.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
       Location.print_loc r.location (Namespace.show r.kind) r.name
 
   let print_located_explanations ppf l =
@@ -155,7 +155,7 @@ module Conflicts = struct
 
 
   let print_toplevel_hint ppf l =
-    let conj ppf () = Format.fprintf ppf " and@ " in
+    let conj ppf () = I18n.fprintf ppf " and@ " in
     let pp_namespace_plural ppf n = Format.fprintf ppf "%as" Namespace.pp n in
     let root_names = List.map (fun r -> r.kind, r.root_name) l in
     let unique_root_names = List.sort_uniq Stdlib.compare root_names in
@@ -167,7 +167,7 @@ module Conflicts = struct
       match names with
       | [] -> ()
       | [namespace, a] ->
-          Format.fprintf ppf
+          I18n.fprintf ppf
         "@ \
          @[<2>Hint: The %a %s has been defined multiple times@ \
          in@ this@ toplevel@ session.@ \
@@ -175,7 +175,7 @@ module Conflicts = struct
          @ Did you try to redefine them?@]"
         Namespace.pp namespace a Namespace.pp namespace
       | (namespace, _) :: _ :: _ ->
-      Format.fprintf ppf
+      I18n.fprintf ppf
         "@ \
          @[<2>Hint: The %a %a have been defined multiple times@ \
          in@ this@ toplevel@ session.@ \
@@ -1835,8 +1835,8 @@ let type_path_expansion ppf = function
 let rec trace fst txt ppf = function
   | {Trace.got; expected} :: rem ->
       if not fst then fprintf ppf "@,";
-      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
-       type_expansion got txt type_expansion expected
+      I18n.fprintf ppf "@[Type@;<1 2>%a@ %a@;<1 2>%a@] %a"
+       type_expansion got I18n.pp txt type_expansion expected
        (trace false txt) rem
   | _ -> ()
 
@@ -1934,53 +1934,62 @@ let explanation_diff env t3 t4 : (Format.formatter -> unit) option =
   | Tarrow (_, ty1, ty2, _), _
     when is_unit env ty1 && unifiable env ty2 t4 ->
       Some (fun ppf ->
-        fprintf ppf
+        I18n.fprintf ppf
           "@,@[Hint: Did you forget to provide `()' as argument?@]")
   | _, Tarrow (_, ty1, ty2, _)
     when is_unit env ty1 && unifiable env t3 ty2 ->
       Some (fun ppf ->
-        fprintf ppf
+        I18n.fprintf ppf
           "@,@[Hint: Did you forget to wrap the expression using \
            `fun () ->'?@]")
   | _ ->
       None
 
-let print_pos ppf = function
-  | Trace.First -> fprintf ppf "first"
-  | Trace.Second -> fprintf ppf "second"
-
 let explain_fixed_row_case ppf = function
-  | Trace.Cannot_be_closed -> Format.fprintf ppf "it cannot be closed"
+  | Trace.Cannot_be_closed -> I18n.fprintf ppf "it cannot be closed"
   | Trace.Cannot_add_tags tags ->
-      Format.fprintf ppf "it may not allow the tag(s) %a"
+      I18n.fprintf ppf "it may not allow the tag(s) %a"
         print_tags tags
 
-let explain_fixed_row pos expl = match expl with
-  | Types.Fixed_private ->
-      dprintf "The %a variant type is private" print_pos pos
-  | Types.Univar x ->
-      dprintf "The %a variant type is bound to the universal type variable %a"
-        print_pos pos type_expr x
-  | Types.Reified p ->
+let explain_fixed_row pos expl = match pos, expl with
+  | Trace.First, Types.Fixed_private ->
+      I18n.dprintf "The first variant type is private"
+  | Trace.Second, Types.Fixed_private ->
+      I18n.dprintf "The second variant type is private"
+  | Trace.First, Types.Univar x ->
+      I18n.dprintf
+        "The first variant type is bound to the universal type variable %a"
+        type_expr x
+  | Trace.Second, Types.Univar x ->
+      I18n.dprintf
+        "The second variant type is bound to the universal type variable %a"
+        type_expr x
+  | Trace.First, Types.Reified p ->
       let p = tree_of_path Type p in
-      dprintf "The %a variant type is bound to %a" print_pos pos
-        !Oprint.out_ident p
-  | Types.Rigid -> ignore
+      I18n.dprintf "The first variant type is bound to %a" !Oprint.out_ident p
+  | Trace.Second, Types.Reified p ->
+      let p = tree_of_path Type p in
+      I18n.dprintf "The second variant type is bound to %a" !Oprint.out_ident p
+  | _, Types.Rigid -> ignore
 
 let explain_variant = function
   | Trace.No_intersection ->
-      Some(dprintf "@,These two variant types have no intersection")
-  | Trace.No_tags(pos,fields) -> Some(
-      dprintf
-        "@,@[The %a variant type does not allow tag(s)@ @[<hov>%a@]@]"
-        print_pos pos
+      Some(I18n.dprintf "@,These two variant types have no intersection")
+  | Trace.No_tags(First,fields) -> Some(
+      I18n.dprintf
+        "@,@[The first variant type does not allow tag(s)@ @[<hov>%a@]@]"
+        print_tags (List.map fst fields)
+    )
+  | Trace.No_tags(Second,fields) -> Some(
+      I18n.dprintf
+        "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
         print_tags (List.map fst fields)
     )
   | Trace.Incompatible_types_for s ->
-      Some(dprintf "@,Types for tag `%s are incompatible" s)
+      Some(I18n.dprintf "@,Types for tag `%s are incompatible" s)
   | Trace.Fixed_row (pos, k, (Univar _ | Reified _ | Fixed_private as e)) ->
       Some (
-        dprintf "@,@[%t,@ %a@]" (explain_fixed_row pos e)
+        I18n.dprintf "@,@[%t,@ %a@]" (explain_fixed_row pos e)
           explain_fixed_row_case k
       )
   | Trace.Fixed_row (_,_, Rigid) ->
@@ -1993,55 +2002,64 @@ let explain_escape intro prev ctx e =
     | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx
     | None -> match e, prev with
       | Trace.Univ _, Some(Trace.Incompatible_fields {name; diff}) ->
-          dprintf "@,@[The method %s has type@ %a,@ \
+          I18n.dprintf "@,@[The method %s has type@ %a,@ \
                    but the expected method type was@ %a@]" name
             type_expr diff.Trace.got type_expr diff.Trace.expected
       | _ -> ignore in
   match e with
   | Trace.Univ u ->  Some(
-      dprintf "%t@,The universal variable %a would escape its scope"
+      I18n.dprintf "%t@,The universal variable %a would escape its scope"
         pre type_expr u)
   | Trace.Constructor p -> Some(
-      dprintf
+      I18n.dprintf
         "%t@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         pre path p
     )
   | Trace.Module_type p -> Some(
-      dprintf
+      I18n.dprintf
         "%t@,@[The module type@;<1 2>%a@ would escape its scope@]"
         pre path p
     )
   | Trace.Equation (_,t) -> Some(
-      dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
+      I18n.dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
         pre type_expr t
         "it would escape the scope of its equation"
     )
   | Trace.Self ->
-      Some (dprintf "%t@,Self type cannot escape its class" pre)
+      Some (I18n.dprintf "%t@,Self type cannot escape its class" pre)
 
 
 let explain_object = function
   | Trace.Self_cannot_be_closed ->
-      Some (dprintf "@,Self type cannot be unified with a closed object type")
-  | Trace.Missing_field (pos,f) ->
-      Some(dprintf "@,@[The %a object type has no method %s@]" print_pos pos f)
-  | Trace.Abstract_row pos -> Some(
-      dprintf
-        "@,@[The %a object type has an abstract row, it cannot be closed@]"
-        print_pos pos
+      Some
+        (I18n.dprintf "@,Self type cannot be unified with a closed object type")
+  | Trace.Missing_field (First,f) -> Some (
+      I18n.dprintf "@,@[The first object type has no method %s@]" f
     )
+  | Trace.Missing_field (Second,f) -> Some (
+      I18n.dprintf "@,@[The second object type has no method %s@]" f
+    )
+  | Trace.Abstract_row First -> Some(
+      I18n.dprintf
+        "@,@[The first object type has an abstract row, it cannot be closed@]"
+    )
+  | Trace.Abstract_row Second -> Some(
+      I18n.dprintf
+        "@,@[The second object type has an abstract row, it cannot be closed@]"
+    )
+
 
 
 let explanation intro prev env = function
   | Trace.Diff { Trace.got = _, s; expected = _,t } -> explanation_diff env s t
   | Trace.Escape {kind;context} -> explain_escape intro prev context kind
   | Trace.Incompatible_fields { name; _ } ->
-        Some(dprintf "@,Types for method %s are incompatible" name)
+        Some(I18n.dprintf "@,Types for method %s are incompatible" name)
   | Trace.Variant v -> explain_variant v
   | Trace.Obj o -> explain_object o
   | Trace.Rec_occur(x,y) ->
       reset_and_mark_loops y;
-      Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
+      Some(I18n.dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             marked_type_expr x marked_type_expr y)
 
 let mismatch intro env trace =
@@ -2059,7 +2077,7 @@ let warn_on_missing_def env ppf t =
       try
         ignore(Env.find_type p env : Types.type_declaration)
       with Not_found ->
-        fprintf ppf
+        I18n.fprintf ppf
           "@,@[%a is abstract because no corresponding cmi file was found \
            in path.@]" path p
     end
@@ -2105,7 +2123,7 @@ let unification_error env tr txt1 ppf txt2 ty_expect_explanation =
          @]"
         head_error
         ty_expect_explanation
-        (trace false "is not compatible with type") tr
+        (trace false (I18n.s "is not compatible with type")) tr
         (explain mis);
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
@@ -2153,9 +2171,9 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
       | _ -> false in
     fprintf ppf "@[<v>%a" (trace true keep_first txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
-    let mis = mismatch (dprintf "Within this type") env tr2 in
-    fprintf ppf "%a%t%t@]"
-      (trace false (mis = None) "is not compatible with type") tr2
+    let mis = mismatch (I18n.dprintf "Within this type") env tr2 in
+    Format.fprintf ppf "%a%t%t@]"
+      (trace false (mis = None) (I18n.s "is not compatible with type")) tr2
       (explain mis)
       Conflicts.print_explanations
   )

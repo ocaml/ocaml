@@ -344,25 +344,26 @@ let save_cmi penv psig pm =
     ~exceptionally:(fun () -> remove_file filename)
 
 let report_error ppf =
-  let open Format in
   function
-  | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
+  | Illegal_renaming(modname, ps_name, filename) -> I18n.fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for@ \
        %s when %s was expected"
       Location.print_filename filename ps_name modname
-  | Inconsistent_import(name, source1, source2) -> fprintf ppf
+  | Inconsistent_import(name, source1, source2) -> I18n.fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"
       Location.print_filename source1 Location.print_filename source2 name
   | Need_recursive_types(import) ->
-      fprintf ppf
-        "@[<hov>Invalid import of %s, which uses recursive types.@ %s@]"
-        import "The compilation flag -rectypes is required"
+      I18n.fprintf ppf
+        "@[<hov>Invalid import of %s, which uses recursive types.@ \
+         The compilation flag -rectypes is required@]"
+        import
   | Depend_on_unsafe_string_unit(import) ->
-      fprintf ppf
-        "@[<hov>Invalid import of %s, compiled with -unsafe-string.@ %s@]"
-        import "This compiler has been configured in strict \
-                                  safe-string mode (-force-safe-string)"
+      I18n.fprintf ppf
+        "@[<hov>Invalid import of %s, compiled with -unsafe-string.@ \
+         This compiler has been configured in strict \
+         safe-string mode (-force-safe-string)@]"
+        import
 
 let () =
   Location.register_error_of_exn

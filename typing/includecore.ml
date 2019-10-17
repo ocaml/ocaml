@@ -124,15 +124,9 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
 
 type position = Ctype.Unification_trace.position = First | Second
 
-let choose ord first second =
-  match ord with
-  | First -> first
-  | Second -> second
-
-let choose_other ord first second =
-  match ord with
-  | First -> choose Second first second
-  | Second -> choose First first second
+type wording =
+  | Declaration (* "the first", "the second", "declaration" *)
+  | Definition (* "the original", "this" "definition" *)
 
 type label_mismatch =
   | Type
@@ -179,106 +173,192 @@ type type_mismatch =
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
-let report_label_mismatch first second ppf err =
-  let pr fmt = Format.fprintf ppf fmt in
-  match (err : label_mismatch) with
-  | Type -> pr "The types are not equal."
-  | Mutability ord ->
-      pr "%s is mutable and %s is not."
-        (String.capitalize_ascii  (choose ord first second))
-        (choose_other ord first second)
 
-let report_record_mismatch first second decl ppf err =
-  let pr fmt = Format.fprintf ppf fmt in
+let report_label_mismatch wording ppf err =
+  match (err : label_mismatch) with
+  | Type -> I18n.fprintf ppf  "The types are not equal."
+  | Mutability ord ->
+      match wording, ord with
+      | Declaration, First ->
+          I18n.fprintf ppf "The first is mutable and the second is not."
+      | Declaration, Second ->
+          I18n.fprintf ppf "The second is mutable and the first is not."
+      | Definition, First ->
+          I18n.fprintf ppf "The original is mutable and this is not."
+      | Definition, Second ->
+          I18n.fprintf ppf "This is mutable and the original is not."
+
+
+let report_record_mismatch wording ppf err =
   match err with
   | Label_mismatch (l1, l2, err) ->
-      pr
+      I18n.fprintf ppf
         "@[<hv>Fields do not match:@;<1 2>%a@ is not compatible with:\
          @;<1 2>%a@ %a"
         Printtyp.label l1
         Printtyp.label l2
-        (report_label_mismatch first second) err
+        (report_label_mismatch wording) err
   | Label_names (n, name1, name2) ->
-      pr "@[<hv>Fields number %i have different names, %s and %s.@]"
+      I18n.fprintf ppf
+        "@[<hv>Fields number %i have different names, %s and %s.@]"
         n (Ident.name name1) (Ident.name name2)
   | Label_missing (ord, s) ->
-      pr "@[<hv>The field %s is only present in %s %s.@]"
-        (Ident.name s) (choose ord first second) decl
+      begin match wording, ord with
+      | Declaration, First ->
+          I18n.fprintf ppf
+            "@[<hv>The field %s is only present in the first declaration.@]"
+            (Ident.name s)
+      | Declaration, Second ->
+          I18n.fprintf ppf
+            "@[<hv>The field %s is only present in the second declaration.@]"
+            (Ident.name s)
+     | Definition, First ->
+          I18n.fprintf ppf
+            "@[<hv>The field %s is only present in the original definition.@]"
+            (Ident.name s)
+      | Definition, Second ->
+          I18n.fprintf ppf
+            "@[<hv>The field %s is only present in this definition.@]"
+            (Ident.name s)
+      end
   | Unboxed_float_representation ord ->
-      pr "@[<hv>Their internal representations differ:@ %s %s %s.@]"
-        (choose ord first second) decl
-        "uses unboxed float representation"
-
-let report_constructor_mismatch first second decl ppf err =
-  let pr fmt  = Format.fprintf ppf fmt in
+      begin match wording, ord with
+      | Declaration, First ->
+          I18n.fprintf ppf
+            "@[<hv>Their internal representations differ:@ \
+             the first declaration uses unboxed float representation.@]"
+      | Declaration, Second ->
+          I18n.fprintf ppf
+            "@[<hv>Their internal representations differ:@ \
+             the second declaration uses unboxed float representation.@]"
+      | Definition, First ->
+          I18n.fprintf ppf
+            "@[<hv>Their internal representations differ:@ \
+             the original definition uses unboxed float representation.@]"
+      | Definition, Second ->
+          I18n.fprintf ppf
+            "@[<hv>Their internal representations differ:@ \
+             this definition uses unboxed float representation.@]"
+      end
+let report_constructor_mismatch wording ppf err =
   match (err : constructor_mismatch) with
-  | Type -> pr "The types are not equal."
-  | Arity -> pr "They have different arities."
-  | Inline_record err -> report_record_mismatch first second decl ppf err
+  | Type -> I18n.fprintf ppf "The types are not equal."
+  | Arity -> I18n.fprintf ppf "They have different arities."
+  | Inline_record err -> report_record_mismatch wording ppf err
   | Kind ord ->
-      pr "%s uses inline records and %s doesn't."
-        (String.capitalize_ascii (choose ord first second))
-        (choose_other ord first second)
+      begin match ord, wording with
+      | First, Declaration ->
+          I18n.fprintf ppf
+            "The first uses inline records and the second doesn't."
+      | Second, Declaration ->
+          I18n.fprintf ppf
+            "The second uses inline records and the first doesn't."
+      | First, Definition ->
+          I18n.fprintf ppf
+            "The original uses inline records and this doesn't."
+      | Second, Definition ->
+          I18n.fprintf ppf
+            "This uses inline records and the original doesn't."
+      end
   | Explicit_return_type ord ->
-      pr "%s has explicit return type and %s doesn't."
-        (String.capitalize_ascii (choose ord first second))
-        (choose_other ord first second)
+      begin match wording, ord with
+      | Declaration, First ->
+          I18n.fprintf ppf
+            "The first has explicit return type and the second doesn't."
+      | Declaration, Second ->
+          I18n.fprintf ppf
+            "The second has explicit return type and the first doesn't."
+     | Definition, First ->
+          I18n.fprintf ppf
+            "The original has explicit return type and this doesn't."
+      | Definition, Second  ->
+          I18n.fprintf ppf
+            "This has explicit return type and the original doesn't."
+     end
 
-let report_variant_mismatch first second decl ppf err =
-  let pr fmt = Format.fprintf ppf fmt in
+let report_variant_mismatch wording ppf err =
   match (err : variant_mismatch) with
   | Constructor_mismatch (c1, c2, err) ->
-      pr
+      I18n.fprintf ppf
         "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
          @;<1 2>%a@ %a"
         Printtyp.constructor c1
         Printtyp.constructor c2
-        (report_constructor_mismatch first second decl) err
+        (report_constructor_mismatch wording) err
   | Constructor_names (n, name1, name2) ->
-      pr "Constructors number %i have different names, %s and %s."
+      I18n.fprintf ppf "Constructors number %i have different names, %s and %s."
         n (Ident.name name1) (Ident.name name2)
   | Constructor_missing (ord, s) ->
-      pr "The constructor %s is only present in %s %s."
-        (Ident.name s) (choose ord first second) decl
+      begin match wording, ord with
+      | Definition, First ->
+          I18n.fprintf ppf
+            "The constructor %s is only present in the original definition."
+            (Ident.name s)
+      | Definition, Second ->
+          I18n.fprintf ppf
+            "The constructor %s is only present in this definition."
+            (Ident.name s)
+      | Declaration, First ->
+          I18n.fprintf ppf
+            "The constructor %s is only present in the first declaration."
+            (Ident.name s)
+      | Declaration, Second ->
+          I18n.fprintf ppf
+            "The constructor %s is only present in the second declaration."
+            (Ident.name s)
+      end
 
-let report_extension_constructor_mismatch first second decl ppf err =
-  let pr fmt = Format.fprintf ppf fmt in
+let report_extension_constructor_mismatch wording ppf err =
   match (err : extension_constructor_mismatch) with
-  | Constructor_privacy -> pr "A private type would be revealed."
+  | Constructor_privacy -> I18n.fprintf ppf "A private type would be revealed."
   | Constructor_mismatch (id, ext1, ext2, err) ->
-      pr "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
+      I18n.fprintf ppf
+        "@[<hv>Constructors do not match:@;<1 2>%a@ is not compatible with:\
           @;<1 2>%a@ %a@]"
         (Printtyp.extension_only_constructor id) ext1
         (Printtyp.extension_only_constructor id) ext2
-        (report_constructor_mismatch first second decl) err
+        (report_constructor_mismatch wording) err
 
-let report_type_mismatch0 first second decl ppf err =
-  let pr fmt = Format.fprintf ppf fmt in
+let report_type_mismatch0 wording ppf err =
   match err with
-  | Arity -> pr "They have different arities."
-  | Privacy -> pr "A private type would be revealed."
-  | Kind -> pr "Their kinds differ."
-  | Constraint -> pr "Their constraints differ."
+  | Arity -> I18n.fprintf ppf "They have different arities."
+  | Privacy -> I18n.fprintf ppf "A private type would be revealed."
+  | Kind -> I18n.fprintf ppf "Their kinds differ."
+  | Constraint -> I18n.fprintf ppf "Their constraints differ."
   | Manifest -> ()
-  | Variance -> pr "Their variances do not agree."
-  | Record_mismatch err -> report_record_mismatch first second decl ppf err
-  | Variant_mismatch err -> report_variant_mismatch first second decl ppf err
+  | Variance -> I18n.fprintf ppf "Their variances do not agree."
+  | Record_mismatch err -> report_record_mismatch wording ppf err
+  | Variant_mismatch err -> report_variant_mismatch wording ppf err
   | Unboxed_representation ord ->
-      pr "Their internal representations differ:@ %s %s %s."
-         (choose ord first second) decl
-         "uses unboxed representation"
+      begin match wording, ord with
+      | Declaration, First ->
+          I18n.fprintf ppf
+            "Their internal representations differ:@ \
+             the first declaration uses unboxed representation."
+      | Declaration, Second ->
+          I18n.fprintf ppf
+            "Their internal representations differ:@ \
+             the second declaration uses unboxed representation."
+      | Definition, First ->
+          I18n.fprintf ppf
+            "Their internal representations differ:@ \
+             the original definition uses unboxed representation."
+      | Definition, Second ->
+          I18n.fprintf ppf
+            "Their internal representations differ:@ \
+             this definition uses unboxed representation."
+      end
   | Immediate violation ->
-      let first = StringLabels.capitalize_ascii first in
       match violation with
       | Type_immediacy.Violation.Not_always_immediate ->
-          pr "%s is not an immediate type." first
+          I18n.fprintf ppf "The first is not an immediate type."
       | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
-          pr "%s is not a type that is always immediate on 64 bit platforms."
-            first
+          I18n.fprintf ppf "The first is not a type@ \
+                            that is always immediate on 64 bit platforms."
 
-let report_type_mismatch first second decl ppf err =
+let report_type_mismatch wording ppf err =
   if err = Manifest then () else
-  Format.fprintf ppf "@ %a" (report_type_mismatch0 first second decl) err
+  Format.fprintf ppf "@ %a" (report_type_mismatch0 wording) err
 
 let rec compare_constructor_arguments ~loc env params1 params2 arg1 arg2 =
   match arg1, arg2 with

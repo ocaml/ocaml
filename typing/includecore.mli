@@ -22,6 +22,10 @@ exception Dont_match
 
 type position = Ctype.Unification_trace.position = First | Second
 
+type wording =
+  | Declaration
+  | Definition
+
 type label_mismatch =
   | Type
   | Mutability of position
@@ -85,6 +89,6 @@ val class_types:
 *)
 
 val report_type_mismatch:
-    string -> string -> string -> Format.formatter -> type_mismatch -> unit
-val report_extension_constructor_mismatch: string -> string -> string ->
+   wording -> Format.formatter -> type_mismatch -> unit
+val report_extension_constructor_mismatch: wording ->
   Format.formatter -> extension_constructor_mismatch -> unit

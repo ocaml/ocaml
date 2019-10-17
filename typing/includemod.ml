@@ -706,27 +706,25 @@ module Illegal_permutation = struct
     try
       let p, k, l = transposition c in
       let ctx, mt = find env p mty in
-      Format.fprintf ppf
+      I18n.fprintf ppf
         "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
          @[For example,@ %a@[the %a@ and the %a are not in the same order@ \
          in the expected and actual module types.@]@]"
         ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
     with Not_found -> (* this should not happen *)
-      Format.fprintf ppf
+      I18n.fprintf ppf
         "Illegal permutation of runtime components in a module type."
 
 end
 
-open Format
-
 let show_loc msg ppf loc =
   let pos = loc.Location.loc_start in
   if List.mem pos.Lexing.pos_fname [""; "_none_"; "//toplevel//"] then ()
-  else fprintf ppf "@\n@[<2>%a:@ %s@]" Location.print_loc loc msg
+  else Format.fprintf ppf "@\n@[<2>%a:@ %a@]" Location.print_loc loc I18n.pp msg
 
 let show_locs ppf (loc1, loc2) =
-  show_loc "Expected declaration" ppf loc2;
-  show_loc "Actual declaration" ppf loc1
+  show_loc (I18n.s "Expected declaration") ppf loc2;
+  show_loc (I18n.s "Actual declaration") ppf loc1
 
 let path_of_context = function
     Module id :: rem ->
@@ -740,27 +738,27 @@ let path_of_context = function
 
 let rec context ppf = function
     Module id :: rem ->
-      fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
+      Format.fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
   | Modtype id :: rem ->
-      fprintf ppf "@[<2>module type %a =@ %a@]"
+      Format.fprintf ppf "@[<2>module type %a =@ %a@]"
         Printtyp.ident id context_mty rem
   | Body x :: rem ->
-      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
+      Format.fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
   | Arg x :: rem ->
-      fprintf ppf "functor (%s : %a) -> ..." (argname x) context_mty rem
+      Format.fprintf ppf "functor (%s : %a) -> ..." (argname x) context_mty rem
   | [] ->
-      fprintf ppf "<here>"
+      Format.fprintf ppf "<here>"
 and context_mty ppf = function
     (Module _ | Modtype _) :: _ as rem ->
-      fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
+      Format.fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
   | cxt -> context ppf cxt
 and args ppf = function
     Body x :: rem ->
-      fprintf ppf "(%s)%a" (argname x) args rem
+      Format.fprintf ppf "(%s)%a" (argname x) args rem
   | Arg x :: rem ->
-      fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
+      Format.fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
   | cxt ->
-      fprintf ppf " :@ %a" context_mty cxt
+      Format.fprintf ppf " :@ %a" context_mty cxt
 and argname = function
   | Unit -> ""
   | Named (None, _) -> "_"
@@ -769,69 +767,67 @@ and argname = function
 let alt_context ppf cxt =
   if cxt = [] then () else
   if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "in module %a,@ " Printtyp.path (path_of_context cxt)
+    I18n.fprintf ppf "in module %a,@ " Printtyp.path (path_of_context cxt)
   else
-    fprintf ppf "@[<hv 2>at position@ %a,@]@ " context cxt
+    I18n.fprintf ppf "@[<hv 2>at position@ %a,@]@ " context cxt
 
 let context ppf cxt =
   if cxt = [] then () else
   if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
+    I18n.fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
   else
-    fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
+    I18n.fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
 
 let include_err env ppf = function
   | Missing_field (id, loc, kind) ->
-      fprintf ppf "The %s `%a' is required but not provided"
+      I18n.fprintf ppf "The %s `%a' is required but not provided"
         kind Printtyp.ident id;
-      show_loc "Expected declaration" ppf loc
+      show_loc (I18n.s "Expected declaration") ppf loc
   | Value_descriptions(id, d1, d2) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
         !Oprint.out_sig_item (Printtyp.tree_of_value_description id d1)
         !Oprint.out_sig_item (Printtyp.tree_of_value_description id d2);
       show_locs ppf (d1.val_loc, d2.val_loc)
   | Type_declarations(id, d1, d2, err) ->
-      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+      I18n.fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id d1 Trec_first)
         "is not included in"
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id d2 Trec_first)
-        (Includecore.report_type_mismatch
-           "the first" "the second" "declaration") err
+        (Includecore.report_type_mismatch Declaration) err
         show_locs (d1.type_loc, d2.type_loc)
   | Extension_constructors(id, x1, x2, err) ->
-      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
-        "Extension declarations do not match"
+      I18n.fprintf ppf "@[<v>@[<hv>Extension declarations do not match:@;<1 2>\
+                        %a@ is not included in@;<1 2>%a@]@ %a%a@]"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id x1 Text_first)
-        "is not included in"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id x2 Text_first)
-        (Includecore.report_extension_constructor_mismatch
-           "the first" "the second" "declaration") err
+        (Includecore.report_extension_constructor_mismatch Declaration) err
         show_locs (x1.ext_loc, x2.ext_loc)
   | Module_types(mty1, mty2)->
-      fprintf ppf
-       "@[<hv 2>Modules do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
+      I18n.fprintf ppf
+        "@[<hv 2>Modules do not match:@ \
+         %a@;<1 -2>is not included in@ %a@]"
       !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
       !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
   | Modtype_infos(id, d1, d2) ->
-      fprintf ppf
-       "@[<hv 2>Module type declarations do not match:@ \
-        %a@;<1 -2>does not match@ %a@]"
+      I18n.fprintf ppf
+        "@[<hv 2>Module type declarations do not match:@ \
+         %a@;<1 -2>does not match@ %a@]"
       !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
       !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
   | Modtype_permutation (mty,c) ->
       Illegal_permutation.pp alt_context env ppf (mty,c)
   | Interface_mismatch(impl_name, intf_name) ->
-      fprintf ppf "@[The implementation %s@ does not match the interface %s:"
+      I18n.fprintf ppf
+        "@[The implementation %s@ does not match the interface %s:"
        impl_name intf_name
   | Class_type_declarations(id, d1, d2, reason) ->
-      fprintf ppf
+      I18n.fprintf ppf
        "@[<hv 2>Class type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
        !Oprint.out_sig_item
@@ -840,22 +836,24 @@ let include_err env ppf = function
        (Printtyp.tree_of_cltype_declaration id d2 Trec_first)
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
-      fprintf ppf
+      I18n.fprintf ppf
        "@[<hv 2>Class declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
       !Oprint.out_sig_item (Printtyp.tree_of_class_declaration id d1 Trec_first)
       !Oprint.out_sig_item (Printtyp.tree_of_class_declaration id d2 Trec_first)
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
-      fprintf ppf "Unbound module type %a" Printtyp.path path
+      I18n.fprintf ppf "Unbound module type %a" Printtyp.path path
   | Unbound_module_path path ->
-      fprintf ppf "Unbound module %a" Printtyp.path path
+      I18n.fprintf ppf "Unbound module %a" Printtyp.path path
   | Invalid_module_alias path ->
-      fprintf ppf "Module %a cannot be aliased" Printtyp.path path
+      I18n.fprintf ppf "Module %a cannot be aliased" Printtyp.path path
 
 let include_err ppf (cxt, env, err) =
   Printtyp.wrap_printing_env ~error:true env (fun () ->
-    fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) (include_err env) err)
+    Format.fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) (include_err env)
+      err
+    )
 
 let buffer = ref Bytes.empty
 let is_big obj =
@@ -872,16 +870,16 @@ let report_error ppf errs =
   let (errs , err) = split_last errs in
   let pe = ref true in
   let include_err' ppf (_,_,obj as err) =
-    if not (is_big obj) then fprintf ppf "%a@ " include_err err
-    else if !pe then (fprintf ppf "...@ "; pe := false)
+    if not (is_big obj) then Format.fprintf ppf "%a@ " include_err err
+    else if !pe then (I18n.fprintf ppf "...@ "); pe := false
   in
   let print_errs ppf = List.iter (include_err' ppf) in
   Printtyp.Conflicts.reset();
-  fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
+  Format.fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
     Printtyp.Conflicts.print_explanations
 
 let report_apply_error p1 p2 ppf errs =
-  fprintf ppf "@[The type of %a does not match %a's parameter@ %a@]"
+  I18n.fprintf ppf "@[The type of %a does not match %a's parameter@ %a@]"
     Printtyp.path p1 Printtyp.path p2 report_error errs
 
 (* We could do a better job to split the individual error items

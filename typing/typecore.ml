@@ -68,6 +68,23 @@ type existential_restriction =
   | In_class_def  (** or in [class c = let ... in ...] *)
   | In_self_pattern (** or in self pattern *)
 
+type polymorphic_kind =
+  | Method
+  | Field_value
+  | Definition
+
+type name_kind =
+  | Constructor
+  | Label
+
+type disambiguation_context =
+  | Record_access
+  | Record_expression
+  | Record_pattern
+  | Variant_expression
+  | Variant_pattern
+
+
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Ctype.Unification_trace.t
@@ -84,7 +101,8 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expected * wrong_name
+  | Wrong_name of
+      disambiguation_context * type_expected * wrong_name
   | Name_type_mismatch of
       Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
@@ -106,7 +124,7 @@ type error =
   | Scoping_let_module of string * type_expr
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
-  | Less_general of string * Ctype.Unification_trace.t
+  | Less_general of polymorphic_kind * Ctype.Unification_trace.t
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
@@ -1496,7 +1514,7 @@ and type_pat_aux
         | _ ->
         let candidates =
           Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env in
-        wrap_disambiguate "This variant pattern is expected to have"
+        wrap_disambiguate Variant_pattern
           (mk_expected expected_ty)
           (Constructor.disambiguate Env.Pattern lid !env expected_type)
           candidates
@@ -1645,7 +1663,7 @@ and type_pat_aux
       let k' pat = rvp k (unif pat) in
       begin match mode with
       | Normal ->
-          k' (wrap_disambiguate "This record pattern is expected to have"
+          k' (wrap_disambiguate Record_pattern
                (mk_expected expected_ty)
                (type_label_a_list loc false !env type_label_pat expected_type
                   lid_sp_list)
@@ -2823,7 +2841,7 @@ and type_expect_
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
-        wrap_disambiguate "This record expression is expected to have"
+        wrap_disambiguate Record_expression
           (mk_expected ty_record)
           (type_label_a_list loc closed env
              (fun e k -> k (type_label_exp true env loc ty_record e))
@@ -3216,9 +3234,9 @@ and type_expect_
             {desc = Tpoly (ty, [])} ->
               instance ty
           | {desc = Tpoly (ty, tl); level = l} ->
-              if !Clflags.principal && l <> generic_level then
-                (let msg = I18n.s "this use of a polymorphic method" in
-                 Location.prerr_warning loc (Warnings.Not_principal msg));
+              (if !Clflags.principal && l <> generic_level then
+                let msg = I18n.s "this use of a polymorphic method" in
+                Location.prerr_warning loc (Warnings.Not_principal msg));
               snd (instance_poly false tl ty)
           | {desc = Tvar _} as ty ->
               let ty' = newvar () in
@@ -3447,7 +3465,7 @@ and type_expect_
             end;
             let exp = type_expect env sbody (mk_expected ty'') in
             end_def ();
-            generalize_and_check_univars env "method" exp ty_expected vars;
+            generalize_and_check_univars env Method exp ty_expected vars;
             { exp with exp_type = instance ty }
         | Tvar _ ->
             let exp = type_exp env sbody in
@@ -3759,7 +3777,7 @@ and type_label_access env srecord lid =
   in
   let labels = Env.lookup_all_labels ~loc:lid.loc lid.txt env in
   let label =
-    wrap_disambiguate "This expression has" (mk_expected ty_exp)
+    wrap_disambiguate Record_access (mk_expected ty_exp)
       (Label.disambiguate () lid env expected_type) labels in
   (record, label, expected_type)
 
@@ -4048,7 +4066,7 @@ and type_label_exp create env loc ty_expected
       else begin
         if maybe_expansive arg then
           lower_contravariant env arg.exp_type;
-        generalize_and_check_univars env "field value" arg label.lbl_arg vars;
+        generalize_and_check_univars env Field_value arg label.lbl_arg vars;
         {arg with exp_type = instance arg.exp_type}
       end
     with exn when maybe_expansive arg -> try
@@ -4062,7 +4080,7 @@ and type_label_exp create env loc ty_expected
       let arg = {arg with exp_type = instance arg.exp_type} in
       unify_exp env arg (instance ty_arg);
       end_def ();
-      generalize_and_check_univars env "field value" arg label.lbl_arg vars;
+      generalize_and_check_univars env Field_value arg label.lbl_arg vars;
       {arg with exp_type = instance arg.exp_type}
     with Error (_, _, Less_general _) as e -> raise e
     | _ -> raise exn    (* In case of failure return the first error *)
@@ -4381,7 +4399,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     Env.lookup_all_constructors ~loc:lid.loc Env.Positive lid.txt env
   in
   let constr =
-    wrap_disambiguate "This variant expression is expected to have"
+    wrap_disambiguate Variant_expression
       ty_expected_explained
       (Constructor.disambiguate Env.Positive lid env expected_type) constrs
   in
@@ -4980,7 +4998,7 @@ and type_let
             so we do it anyway. *)
          generalize exp.exp_type
        | Some vars ->
-         generalize_and_check_univars env "definition" exp pat.pat_type vars)
+         generalize_and_check_univars env Definition exp pat.pat_type vars)
     pat_list exp_list;
   let l = List.combine pat_list exp_list in
   let l =
@@ -5095,8 +5113,6 @@ let spellcheck ppf unbound_name valid_names =
 let spellcheck_idents ppf unbound valid_idents =
   spellcheck ppf (Ident.name unbound) (List.map Ident.name valid_idents)
 
-open Format
-
 let longident = Printtyp.longident
 
 (* Returns the first diff of the trace *)
@@ -5129,7 +5145,8 @@ let report_literal_type_constraint expected_type const =
     else None
   in
   match const_str, suffix with
-  | Some c, Some s -> [ Location.msg "@[Hint: Did you mean `%s%c'?@]" c s ]
+  | Some c, Some s ->
+      [ Location.msg "@[Hint: Did you mean `%s%c'?@]" c s ]
   | _, _ -> []
 
 let report_literal_type_constraint const = function
@@ -5150,28 +5167,29 @@ let report_pattern_type_clash_hints
   | _ -> []
 
 let report_type_expected_explanation expl ppf =
-  let because expl_str = fprintf ppf "@ because it is in %s" expl_str in
+  let because expl_str =
+    I18n.fprintf ppf "@ because it is in %a" I18n.pp expl_str in
   match expl with
   | If_conditional ->
-      because "the condition of an if-statement"
+      because (I18n.s "the condition of an if-statement")
   | If_no_else_branch ->
-      because "the result of a conditional with no else branch"
+      because (I18n.s "the result of a conditional with no else branch")
   | While_loop_conditional ->
-      because "the condition of a while-loop"
+      because (I18n.s "the condition of a while-loop")
   | While_loop_body ->
-      because "the body of a while-loop"
+      because (I18n.s "the body of a while-loop")
   | For_loop_start_index ->
-      because "a for-loop start index"
+      because (I18n.s "a for-loop start index")
   | For_loop_stop_index ->
-      because "a for-loop stop index"
+      because (I18n.s "a for-loop stop index")
   | For_loop_body ->
-      because "the body of a for-loop"
+      because (I18n.s "the body of a for-loop")
   | Assert_condition ->
-      because "the condition of an assertion"
+      because (I18n.s "the condition of an assertion")
   | Sequence_left_hand_side ->
-      because "the left-hand side of a sequence"
+      because (I18n.s "the left-hand side of a sequence")
   | When_guard ->
-      because "a when-guard"
+      because (I18n.s "a when-guard")
 
 let report_type_expected_explanation_opt expl ppf =
   match expl with
@@ -5193,36 +5211,30 @@ let report_error ~loc env = function
        longident lid expected provided
   | Label_mismatch(lid, trace) ->
       report_unification_error ~loc env trace
-        (function ppf ->
-           fprintf ppf "The record field %a@ belongs to the type"
-                   longident lid)
-        (function ppf ->
-           fprintf ppf "but is mixed here with fields of type")
+        (I18n.dprintf "The record field %a@ belongs to the type" longident lid)
+        (I18n.dprintf "but is mixed here with fields of type")
   | Pattern_type_clash (trace, pat) ->
       let diff = type_clash_of_trace trace in
       let sub = report_pattern_type_clash_hints pat diff in
       Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
-          (function ppf ->
-            fprintf ppf "This pattern matches values of type")
-          (function ppf ->
-            fprintf ppf "but a pattern was expected which matches values of \
-                         type");
+          (I18n.dprintf "This pattern matches values of type")
+          (I18n.dprintf
+             "but a pattern was expected which matches values of type"
+          );
       ) ()
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
-        (function ppf ->
-          fprintf ppf "The variable %s on the left-hand side of this \
-                       or-pattern has type" (Ident.name id))
-        (function ppf ->
-          fprintf ppf "but on the right-hand side it has type")
+        (I18n.dprintf
+           "The variable %s on the left-hand side of this or-pattern has type"
+           (Ident.name id))
+        (I18n.dprintf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
-      Location.errorf ~loc
-        "Variable %s is bound several times in this matching"
+      Location.errorf ~loc "Variable %s is bound several times in this matching"
         name
   | Orpat_vars (id, valid_idents) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        fprintf ppf
+        I18n.fprintf ppf
           "Variable %s must occur on both sides of this | pattern"
           (Ident.name id);
         spellcheck_idents ppf id valid_idents
@@ -5234,10 +5246,8 @@ let report_error ~loc env = function
         Printtyp.report_unification_error ppf env trace
           ~type_expected_explanation:
             (report_type_expected_explanation_opt explanation)
-          (function ppf ->
-             fprintf ppf "This expression has type")
-          (function ppf ->
-             fprintf ppf "but an expression was expected of type");
+          (I18n.dprintf "This expression has type")
+          (I18n.dprintf "but an expression was expected of type")
       ) ()
   | Apply_non_function typ ->
       begin match (repr typ).desc with
@@ -5253,65 +5263,87 @@ let report_error ~loc env = function
       end
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
-        | Nolabel -> fprintf ppf "without label"
-        | l -> fprintf ppf "with label %s" (prefixed_label_name l)
+        | Nolabel ->
+            I18n.fprintf ppf "This argument cannot be applied without label"
+        | l -> I18n.fprintf ppf "This argument cannot be applied with label %s"
+                 (prefixed_label_name l)
       in
       Location.errorf ~loc
-        "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
-         This argument cannot be applied %a@]"
+        "@[<2>The function applied to this argument has type@ %a@]\n\
+         %a"
         Printtyp.type_expr ty print_label l
   | Label_multiply_defined s ->
       Location.errorf ~loc "The record field label %s is defined several times"
         s
   | Label_missing labels ->
       let print_labels ppf =
-        List.iter (fun lbl -> fprintf ppf "@ %s" (Ident.name lbl)) in
+        List.iter (fun lbl -> Format.fprintf ppf "@ %s" (Ident.name lbl)) in
       Location.errorf ~loc "@[<hov>Some record fields are undefined:%a@]"
         print_labels labels
   | Label_not_mutable lid ->
       Location.errorf ~loc "The record field %a is not mutable" longident lid
-  | Wrong_name (eorp, ty_expected, { type_path; kind; name; valid_names; }) ->
+  | Wrong_name (eorp, ty_expected, { type_path; kind=_; name; valid_names; }) ->
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.wrap_printing_env ~error:true env (fun () ->
           let { ty; explanation } = ty_expected in
           if Path.is_constructor_typath type_path then begin
-            fprintf ppf
+            I18n.fprintf ppf
               "@[The field %s is not part of the record \
                argument for the %a constructor@]"
               name.txt
               Printtyp.type_path type_path;
-          end else begin
-            fprintf ppf
-              "@[@[<2>%s type@ %a%t@]@ \
-               The %s %s does not belong to type %a@]"
-              eorp Printtyp.type_expr ty
-              (report_type_expected_explanation_opt explanation)
-              (Datatype_kind.label_name kind)
-              name.txt (*kind*) Printtyp.type_path type_path;
-          end;
-          spellcheck ppf name.txt valid_names
+          end else begin (match eorp with
+           | Record_expression ->
+               I18n.fprintf ppf
+                 "@[@[<2>This record expression is expected to have type@ \
+                  %a%t@]@ The field %s does not belong to type %a@]"
+           | Record_access ->
+               I18n.fprintf ppf
+                 "@[@[<2>This expression has type@ %a%t@]@ \
+                  The field %s does not belong to type %a@]"
+           | Record_pattern ->
+               I18n.fprintf ppf
+                 "@[@[<2>This record pattern is expected to have type@ %a%t@]@ \
+                  The field %s does not belong to type %a@]"
+           | Variant_expression ->
+               I18n.fprintf ppf
+                 "@[@[<2>This variant expression is expected to have type@ \
+                  %a%t@]@ The constructor %s does not belong to type %a@]"
+           | Variant_pattern ->
+               I18n.fprintf ppf
+                 "@[@[<2>This variant pattern is expected to have type@ \
+                  %a%t@]@ The constructor %s does not belong to type %a@]"
+          )  Printtyp.type_expr ty
+            (report_type_expected_explanation_opt explanation)
+            name.txt Printtyp.type_path type_path;
+        end;
+        spellcheck ppf name.txt valid_names
       )) ()
   | Name_type_mismatch (kind, lid, tp, tpl) ->
-      let type_name = Datatype_kind.type_name kind in
-      let name = Datatype_kind.label_name kind in
-      Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.report_ambiguous_type_error ppf env tp tpl
-          (function ppf ->
-             fprintf ppf "The %s %a@ belongs to the %s type"
-               name longident lid type_name)
-          (function ppf ->
-             fprintf ppf "The %s %a@ belongs to one of the following %s types:"
-               name longident lid type_name)
-          (function ppf ->
-             fprintf ppf "but a %s was expected belonging to the %s type"
-               name type_name)
-      ) ()
+      let report x y z =
+        Location.error_of_printer ~loc (fun ppf () ->
+            Printtyp.report_ambiguous_type_error ppf env tp tpl
+              (I18n.dprintf x longident lid)
+              (I18n.dprintf y longident lid)
+              (I18n.dprintf z)) () in
+      begin match kind with
+      | Datatype_kind.Record ->
+          report
+            "The field %a@ belongs to the record type"
+            "The field %a@ belongs to one of the following record types:"
+            "but a field was expected belonging to the record type"
+      | Datatype_kind.Variant ->
+          report
+            "The constructor %a@ belongs to the variant type"
+            "The constructor %a@ belongs to one of the following variant types:"
+            "but a constructor was expected belonging to the variant type"
+      end
   | Invalid_format msg ->
       Location.errorf ~loc "%s" msg
   | Undefined_method (ty, me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.wrap_printing_env ~error:true env (fun () ->
-          fprintf ppf
+          I18n.fprintf ppf
             "@[<v>@[This expression has type@;<1 2>%a@]@,\
              It has no method %s@]" Printtyp.type_expr ty me;
           begin match valid_methods with
@@ -5321,7 +5353,7 @@ let report_error ~loc env = function
       )) ()
   | Undefined_inherited_method (me, valid_methods) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        fprintf ppf "This expression has no method %s" me;
+        I18n.fprintf ppf "This expression has no method %s" me;
         spellcheck ppf me valid_methods;
       ) ()
   | Virtual_class cl ->
@@ -5329,14 +5361,15 @@ let report_error ~loc env = function
         longident cl
   | Unbound_instance_variable (var, valid_vars) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        fprintf ppf "Unbound instance variable %s" var;
+        I18n.fprintf ppf "Unbound instance variable %s" var;
         spellcheck ppf var valid_vars;
       ) ()
   | Instance_variable_not_mutable v ->
       Location.errorf ~loc "The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.report_subtyping_error ppf env tr1 "is not a subtype of" tr2
+          Printtyp.report_subtyping_error ppf env tr1
+            (I18n.s "is not a subtype of") tr2
       ) ()
   | Outside_class ->
       Location.errorf ~loc
@@ -5350,22 +5383,21 @@ let report_error ~loc env = function
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
              let ty, ty' = Printtyp.prepare_expansion (ty, ty') in
-             fprintf ppf "This expression cannot be coerced to type@;<1 2>%a;@ \
-                          it has type"
+             I18n.fprintf ppf
+               "This expression cannot be coerced to type@;<1 2>%a;@ \
+                it has type"
              (Printtyp.type_expansion ty) ty')
-          (function ppf ->
-             fprintf ppf "but is here used with type");
+          (I18n.dprintf "but is here used with type");
         if b then
-          fprintf ppf ".@.@[<hov>%s@ %s@ %s@]"
-            "This simple coercion was not fully general."
-            "Hint: Consider using a fully explicit coercion"
-            "of the form: `(foo : ty1 :> ty2)'."
+          I18n.fprintf ppf
+            ".@.@[<hov>This simple coercion was not fully general.@ \
+             Hint: Consider using a fully explicit coercion@ of the form: \
+             `(foo : ty1 :> ty2)'.@]"
       ) ()
   | Too_many_arguments (in_function, ty, explanation) ->
       if in_function then begin
         Location.errorf ~loc
-          "This function expects too many arguments,@ \
-           it should have type@ %a%t"
+          "This function expects too many arguments,@ it should have type@ %a%t"
           Printtyp.type_expr ty
           (report_type_expected_explanation_opt explanation)
       end else begin
@@ -5377,14 +5409,14 @@ let report_error ~loc env = function
       end
   | Abstract_wrong_label (l, ty, explanation) ->
       let label_mark = function
-        | Nolabel -> "but its first argument is not labelled"
-        | l -> sprintf "but its first argument is labelled %s"
+        | Nolabel -> I18n.sprintf "but its first argument is not labelled"
+        | l -> I18n.sprintf "but its first argument is labelled %s"
                        (prefixed_label_name l) in
       Location.errorf ~loc
-        "@[<v>@[<2>This function should have type@ %a%t@]@,%s@]"
+        "@[<v>@[<2>This function should have type@ %a%t@]@,%a@]"
         Printtyp.type_expr ty
         (report_type_expected_explanation_opt explanation)
-        (label_mark l)
+        I18n.pp (label_mark l)
   | Scoping_let_module(id, ty) ->
       Location.errorf ~loc
         "This `let module' expression has type@ %a@ \
@@ -5406,11 +5438,15 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This function is applied to arguments@ \
         in an order different from other calls.@ \
-        This is only allowed when the real type is known."
+         This is only allowed when the real type is known."
   | Less_general (kind, trace) ->
-      report_unification_error ~loc env trace
-        (fun ppf -> fprintf ppf "This %s has type" kind)
-        (fun ppf -> fprintf ppf "which is less general than")
+      let intro = match kind with
+        | Definition -> I18n.dprintf "This definition has type"
+        | Method -> I18n.dprintf "This method has type"
+        | Field_value -> I18n.dprintf "This field value has type"
+      in
+      report_unification_error ~loc env trace intro
+        (I18n.dprintf "which is less general than")
   | Modules_not_allowed ->
       Location.errorf ~loc "Modules are not allowed in this pattern."
   | Cannot_infer_signature ->
@@ -5424,30 +5460,31 @@ let report_error ~loc env = function
       let reason_str =
         match reason with
         | In_class_args ->
-            "Existential types are not allowed in class arguments"
+            I18n.s "Existential types are not allowed in class arguments"
         | In_class_def ->
-            "Existential types are not allowed in bindings inside \
+            I18n.s "Existential types are not allowed in bindings inside \
              class definition"
         | In_self_pattern ->
-            "Existential types are not allowed in self patterns"
+            I18n.s "Existential types are not allowed in self patterns"
         | At_toplevel ->
-            "Existential types are not allowed in toplevel bindings"
+            I18n.s "Existential types are not allowed in toplevel bindings"
         | In_group ->
-            "Existential types are not allowed in \"let ... and ...\" bindings"
+            I18n.s "Existential types are not allowed \
+                    in \"let ... and ...\" bindings"
         | In_rec ->
-            "Existential types are not allowed in recursive bindings"
+            I18n.s "Existential types are not allowed in recursive bindings"
         | With_attributes ->
-            "Existential types are not allowed in presence of attributes"
+            I18n.s "Existential types are not allowed in presence of attributes"
       in
       begin match List.find (fun ty -> ty <> "$" ^ name) types with
       | example ->
           Location.errorf ~loc
-            "%s,@ but this pattern introduces the existential type %s."
-            reason_str example
+            "%a,@ but this pattern introduces the existential type %s."
+            I18n.pp reason_str example
       | exception Not_found ->
           Location.errorf ~loc
-            "%s,@ but the constructor %s introduces existential types."
-            reason_str name
+            "%a,@ but the constructor %s introduces existential types."
+            I18n.pp reason_str name
       end
   | Invalid_interval ->
       Location.errorf ~loc
@@ -5457,33 +5494,31 @@ let report_error ~loc env = function
         "@[Invalid for-loop index: only variables and _ are allowed.@]"
   | No_value_clauses ->
       Location.errorf ~loc
-        "None of the patterns in this 'match' expression match values."
+         "None of the patterns in this 'match' expression match values."
   | Exception_pattern_disallowed ->
       Location.errorf ~loc
-        "@[Exception patterns are not allowed in this position.@]"
+         "@[Exception patterns are not allowed in this position.@]"
   | Mixed_value_and_exception_patterns_under_guard ->
       Location.errorf ~loc
-        "@[Mixing value and exception patterns under when-guards is not \
-         supported.@]"
+        "@[Mixing value and exception patterns under when-guards \
+         is not supported.@]"
   | Inlined_record_escape ->
       Location.errorf ~loc
-        "@[This form is not allowed as the type of the inlined record could \
-         escape.@]"
+        "@[This form is not allowed as the type of the inlined record \
+         could escape.@]"
   | Inlined_record_expected ->
       Location.errorf ~loc
         "@[This constructor expects an inlined record argument.@]"
   | Unrefuted_pattern pat ->
       Location.errorf ~loc
-        "@[%s@ %s@ %a@]"
-        "This match case could not be refuted."
-        "Here is an example of a value that would reach it:"
+        "@[This match case could not be refuted.@ \
+         Here is an example of a value that would reach it:@ %a@]"
         Printpat.top_pretty pat
   | Invalid_extension_constructor_payload ->
       Location.errorf ~loc
         "Invalid [%%extension_constructor] payload, a constructor is expected."
   | Not_an_extension_constructor ->
-      Location.errorf ~loc
-        "This constructor is not an extension constructor."
+      Location.errorf ~loc "This constructor is not an extension constructor."
   | Literal_overflow ty ->
       Location.errorf ~loc
         "Integer literal exceeds the range of representable integers of type %s"
@@ -5495,28 +5530,23 @@ let report_error ~loc env = function
         "Only variables are allowed as left-hand side of `let rec'"
   | Illegal_letrec_expr ->
       Location.errorf ~loc
-        "This kind of expression is not allowed as right-hand side of `let rec'"
+         "This kind of expression is not allowed as \
+          right-hand side of `let rec'"
   | Illegal_class_expr ->
       Location.errorf ~loc
         "This kind of recursive class expression is not allowed"
   | Letop_type_clash(name, trace) ->
       report_unification_error ~loc env trace
-        (function ppf ->
-          fprintf ppf "The operator %s has type" name)
-        (function ppf ->
-          fprintf ppf "but it was expected to have type")
+        (I18n.dprintf "The operator %s has type" name)
+        (I18n.dprintf "but it was expected to have type")
   | Andop_type_clash(name, trace) ->
       report_unification_error ~loc env trace
-        (function ppf ->
-          fprintf ppf "The operator %s has type" name)
-        (function ppf ->
-          fprintf ppf "but it was expected to have type")
+        (I18n.dprintf "The operator %s has type" name)
+        (I18n.dprintf "but it was expected to have type")
   | Bindings_type_clash(trace) ->
       report_unification_error ~loc env trace
-        (function ppf ->
-          fprintf ppf "These bindings have type")
-        (function ppf ->
-          fprintf ppf "but bindings were expected of type")
+        (I18n.dprintf "These bindings have type")
+        (I18n.dprintf "but bindings were expected of type")
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

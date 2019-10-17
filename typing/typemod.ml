@@ -19,7 +19,6 @@ open Path
 open Asttypes
 open Parsetree
 open Types
-open Format
 
 module String = Misc.Stdlib.String
 
@@ -2637,7 +2636,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       if !Clflags.print_types then begin
         Typecore.force_delayed_checks ();
         Printtyp.wrap_printing_env ~error:false initial_env
-          (fun () -> fprintf std_formatter "%a@."
+          (fun () -> Format.fprintf Format.std_formatter "%a@."
               (Printtyp.printed_signature sourcefile) simple_sg
           );
         (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
@@ -2791,26 +2790,26 @@ open Printtyp
 
 let report_error ppf = function
     Cannot_apply mty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[This module is not a functor; it has type@ %a@]" modtype mty
   | Not_included errs ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>Signature mismatch:@ %a@]" Includemod.report_error errs
   | Cannot_eliminate_dependency mty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[This functor has type@ %a@ \
            The parameter cannot be eliminated in the result type.@ \
            Please bind the argument to a module identifier.@]" modtype mty
-  | Signature_expected -> fprintf ppf "This module type is not a signature"
+  | Signature_expected -> I18n.fprintf ppf "This module type is not a signature"
   | Structure_expected mty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[This module is not a structure; it has type@ %a" modtype mty
   | With_no_component lid ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The signature constrained by `with' has no component named %a@]"
         longident lid
   | With_mismatch(lid, explanation) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>\
            @[In this `with' constraint, the new definition of %a@ \
              does not match its original definition@ \
@@ -2818,82 +2817,83 @@ let report_error ppf = function
            %a@]"
         longident lid Includemod.report_error explanation
   | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>\
            @[This `with' constraint on %a makes the applicative functor @ \
              type %s ill-typed in the constrained signature:@]@ \
            %a@]"
         longident lid (Path.name path) Includemod.report_error explanation
   | With_changes_module_alias(lid, id, path) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>\
            @[This `with' constraint on %a changes %s, which is aliased @ \
              in the constrained signature (as %s)@].@]"
         longident lid (Path.name path) (Ident.name id)
   | With_cannot_remove_constrained_type ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>Destructive substitutions are not supported for constrained @ \
               types (other than when replacing a type constructor with @ \
               a type constructor with the same arguments).@]"
   | Repeated_name(kind, name) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[Multiple definition of the %s name %s.@ \
          Names must be unique in a given structure or signature.@]"
         (Sig_component_kind.to_string kind) name
   | Non_generalizable typ ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The type of this expression,@ %a,@ \
            contains type variables that cannot be generalized@]" type_scheme typ
   | Non_generalizable_class (id, desc) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The type of this class,@ %a,@ \
            contains type variables that cannot be generalized@]"
         (class_declaration id) desc
   | Non_generalizable_module mty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The type of this module,@ %a,@ \
            contains type variables that cannot be generalized@]" modtype mty
   | Implementation_is_required intf_name ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The interface %a@ declares values, not just types.@ \
            An implementation must be provided.@]"
         Location.print_filename intf_name
   | Interface_not_compiled intf_name ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[Could not find the .cmi file for interface@ %a.@]"
         Location.print_filename intf_name
   | Not_allowed_in_functor_body ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[This expression creates fresh types.@ %s@]"
         "It is not allowed inside applicative functors."
   | Not_a_packed_module ty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "This expression is not a packed module. It has type@ %a"
         type_expr ty
   | Incomplete_packed_module ty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "The type of this packed module contains variables:@ %a"
         type_expr ty
   | Scoping_pack (lid, ty) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "The type %a in this module cannot be exported.@ " longident lid;
-      fprintf ppf
+      I18n.fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty
   | Recursive_module_require_explicit_type ->
-      fprintf ppf "Recursive modules require an explicit module type."
+      I18n.fprintf ppf "Recursive modules require an explicit module type."
   | Apply_generative ->
-      fprintf ppf "This is a generative functor. It can only be applied to ()"
+      I18n.fprintf ppf
+        "This is a generative functor. It can only be applied to ()"
   | Cannot_scrape_alias p ->
-      fprintf ppf
+      I18n.fprintf ppf
         "This is an alias for module %a, which is missing"
         path p
   | Badly_formed_signature (context, err) ->
-      fprintf ppf "@[In %s:@ %a@]" context Typedecl.report_error err
+      I18n.fprintf ppf "@[In %s:@ %a@]" context Typedecl.report_error err
   | Cannot_hide_id Illegal_shadowing
       { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
         shadower_id; user_id; user_kind; user_loc } ->
       let shadowed_item_kind= Sig_component_kind.to_string shadowed_item_kind in
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>Illegal shadowing of included %s %a by %a@ \
          %a:@;<1 2>%s %a came from this include@ \
          %a:@;<1 2>The %s %s has no valid type if %a is shadowed@]"
@@ -2907,7 +2907,7 @@ let report_error ppf = function
   | Cannot_hide_id Appears_in_signature
       { opened_item_kind; opened_item_id; user_id; user_kind; user_loc } ->
       let opened_item_kind= Sig_component_kind.to_string opened_item_kind in
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>The %s %a introduced by this open appears in the signature@ \
          %a:@;<1 2>The %s %s has no valid type if %a is hidden@]"
         opened_item_kind Ident.print opened_item_id
@@ -2915,7 +2915,7 @@ let report_error ppf = function
         (Sig_component_kind.to_string user_kind) (Ident.name user_id)
         Ident.print opened_item_id
   | Invalid_type_subst_rhs ->
-      fprintf ppf "Only type synonyms are allowed on the right of :="
+      I18n.fprintf ppf "Only type synonyms are allowed on the right of :="
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)
