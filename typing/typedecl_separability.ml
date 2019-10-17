@@ -129,9 +129,6 @@ type error =
   | Non_separable_evar of string option
 
 exception Error of Location.t * error
-(*
-exception Not_separable of { loc: Location.t; evar: string option; }
-*)
 
 (* see the .mli file for explanations on the modes *)
 module Sep = Types.Separability
@@ -184,7 +181,7 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
        while our implementation collects all method types *)
   match (Ctype.repr ty).desc with
   (* these are the important cases,
-     on which immediate_subtypes is called from check_type_expr *)
+     on which immediate_subtypes is called from [check_type] *)
   | Tarrow(_,ty1,ty2,_) ->
       [ty1; ty2]
   | Ttuple(tys)
@@ -200,7 +197,7 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
   | Tvariant(row) ->
       immediate_subtypes_variant_row [] row
 
-  (* the cases below are not called from check_type_expr,
+  (* the cases below are not called from [check_type],
      they are here for completeness *)
   | Tnil | Tfield _ ->
       (* these should only occur under Tobject and not at the toplevel,
@@ -458,7 +455,7 @@ let check_type
     | (Tlink _            , _      ) -> assert false
     (* Impossible case (according to comment in [typing/types.mli]. *)
     | (Tsubst(_)          , _      ) -> assert false
-    (* "Indiferent" case, nothing to do. *)
+    (* "Indifferent" case, the empty context is sufficient. *)
     | (_                  , Ind    ) -> empty
     (* Variable case, add constraint. *)
     | (Tvar(alpha)        , m      ) ->
@@ -479,7 +476,7 @@ let check_type
     | (Tpackage(_,_,_)    , Deepsep) ->
         let tys = immediate_subtypes ty in
         let on_subtype context ty =
-          context ++ check_type (Hyps.guard hyps) ty (compose m Ind) in
+          context ++ check_type (Hyps.guard hyps) ty Deepsep in
         List.fold_left on_subtype empty tys
     (* Polymorphic type, and corresponding polymorphic variable.
 
@@ -538,15 +535,15 @@ let msig_of_external_type decl =
   | Unknown -> worst_msig decl
 
 (** [msig_of_context ~decl_loc constructor context] returns the
-   separability signature of a single-constructor type whose definition
-   is valid in the mode context [context].
+   separability signature of a single-constructor type whose
+   definition is valid in the mode context [context].
 
    Note: A GADT constructor introduces existential type variables, and
-   may also introduce some equalities between the type parameters
-   (or universal type variables) of the type it is constructed and
-   type expressions containing universal and existential variables. In
-   other words, it introduces new type variables in scope, and
-   restricts existing variables by adding equality constraints.
+   may also introduce some equalities between its return type
+   parameters and type expressions containing universal and
+   existential variables. In other words, it introduces new type
+   variables in scope, and restricts existing variables by adding
+   equality constraints.
 
    [msig_of_context] performs the reverse transformation: the context
    [ctx] computed from the argument of the constructor mentions
@@ -564,10 +561,9 @@ let msig_of_external_type decl =
    constraints will validate the separability requirements of the
    modes in the input context [ctx].
 
-   Sometimes no such universal context exists, as an existential type cannot
-   be safely introduced, then this function raises an [Error] exception with
-   a [Non_separable_evar] payload.
-*)
+   Sometimes no such universal context exists, as an existential type
+   cannot be safely introduced, then this function raises an [Error]
+   exception with a [Non_separable_evar] payload.  *)
 let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
     -> context -> Sep.signature =
   fun ~decl_loc ~parameters context ->
@@ -614,7 +610,7 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
       (* fold_right here is necessary to get the mode
          consed to the accumulator in the right order *)
       List.fold_right handle_equation parameters ([], context) in
-    (* After all variable determined by the parameters have been set to Ind
+    (* After all variables determined by the parameters have been set to Ind
        by [handle_equation], all variables remaining in the context are
        purely existential and should not require a stronger mode than Ind. *)
     let check_existential evar mode =
@@ -661,8 +657,13 @@ type prop = Types.Separability.signature
 
 let property : (prop, unit) Typedecl_properties.property =
   let open Typedecl_properties in
-  let eq ts1 ts2 = try List.for_all2 Sep.eq ts1 ts2 with _ -> false in
-  let merge ~prop:_ ~new_prop = new_prop in
+  let eq ts1 ts2 =
+    List.length ts1 = List.length ts2
+    && List.for_all2 Sep.eq ts1 ts2 in
+  let merge ~prop:_ ~new_prop =
+    (* the update function is monotonous: ~new_prop is always
+       more informative than ~prop, which can be ignored *)
+    new_prop in
   let default decl = best_msig decl in
   let compute env decl () = compute_decl env decl in
   let update_decl decl type_separability = { decl with type_separability } in

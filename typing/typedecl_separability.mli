@@ -20,7 +20,7 @@
 
     (Note: This assumption is required for the dynamic float array optimization;
     it is only made if Config.flat_float_array is set,
-    otherwise the code in this module defaults becomes trivial
+    otherwise the code in this module becomes trivial
     -- see {!compute_decl}.)
 
     This soundness requirement could be broken by type declarations mixing
@@ -55,12 +55,13 @@
    In general, the analysis performs a fixpoint computation. It is somewhat
    similar to what is done for inferring the variance of type parameters.
 
-   Our analysis is defined using inference rules "Def; Gamma |- t : m", in
-   which a type expression "t" is checked agains a "mode" "m". This "mode"
-   describes the separability requirement on the type expression (see below
-   for more details). In the inference rules, [Gamma] maps type variables to
-   modes and [Def] records the "mode signature" of the mutually-recursive
-   type declarations that are being checked.
+   Our analysis is defined using inference rules for our judgment
+   [Def; Gamma |- t : m], in which a type expression [t] is checked
+   against a "mode" [m]. This "mode" describes the separability
+   requirement on the type expression (see below for
+   more details). The mode [Gamma] maps type variables to modes and
+   [Def] records the "mode signature" of the mutually-recursive type
+   declarations that are being checked.
 
    The "mode signature" of a type with parameters [('a, 'b) t] is of the
    form [('a : m1, 'b : m2) t], where [m1] and [m2] are modes. Its meaning
