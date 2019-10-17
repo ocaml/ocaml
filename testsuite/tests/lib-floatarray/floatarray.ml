@@ -26,6 +26,7 @@ module type S = sig
   val mapi : (int -> float -> float) -> t -> t
   val fold_left : ('a -> float -> 'a) -> 'a -> t -> 'a
   val fold_right : (float -> 'a -> 'a) -> t -> 'a -> 'a
+  val filter : (float -> bool) -> t -> t
   val iter2 : (float -> float -> unit) -> t -> t -> unit
   val map2 : (float -> float -> float) -> t -> t -> t
   val for_all : (float -> bool) -> t -> bool
@@ -520,6 +521,10 @@ module Test (A : S) : sig end = struct
   in
   let l = [0.; 0.25; -4.; 3.14159265; nan; infinity; neg_infinity; neg_zero] in
   test_structured_io (A.of_list l);
+
+
+  (* [filter] *)
+  assert(A.filter (fun x -> x <= 2.) (A.of_list [1.; 2.; 3.]) = A.of_list [1.; 2.])
 
 end
 

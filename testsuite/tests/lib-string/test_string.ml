@@ -53,3 +53,17 @@ let ()  =
     try ignore (String.concat "" !l); assert false
     with Invalid_argument _ -> ()
   end
+
+
+(* Char.popcount *)
+
+
+let () =
+  let rec popcount = function
+    | 0 -> 0
+    | n when n mod 2 = 1 -> 1 + popcount (n / 2)
+    | n -> popcount (n / 2)
+  in
+  for i = 0 to 255 do
+    assert(popcount i = Char.popcount (Char.chr i))
+  done
