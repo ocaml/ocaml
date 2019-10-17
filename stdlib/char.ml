@@ -80,6 +80,8 @@ let equal (c1: t) (c2: t) = compare c1 c2 = 0
 (* For bitvects: counting the number of bits of a character *)
 
 (*
+   The table below is computed by this piece of code:
+
   let bitcount =
     let bytes = Bytes.create 256 in
     for c = 0 to 255 do
