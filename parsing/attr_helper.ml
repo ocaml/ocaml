@@ -36,13 +36,11 @@ let has_no_payload_attribute alt_names attrs =
   | None   -> false
   | Some _ -> true
 
-open Format
-
 let report_error ppf = function
   | Multiple_attributes name ->
-    fprintf ppf "Too many `%s' attributes" name
+    I18n.fprintf ppf "Too many `%s' attributes" name
   | No_payload_expected name ->
-    fprintf ppf "Attribute `%s' does not accept a payload" name
+    I18n.fprintf ppf "Attribute `%s' does not accept a payload" name
 
 let () =
   Location.register_error_of_exn

@@ -161,7 +161,7 @@ let prepare_error err =
       Location.errorf ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
       Location.errorf ~loc
-        "broken invariant in parsetree: %s" s
+        "broken invariant in parsetree: %a" I18n.pp s
   | Invalid_package_type (loc, s) ->
       Location.errorf ~loc "invalid package type: %s" s
 
