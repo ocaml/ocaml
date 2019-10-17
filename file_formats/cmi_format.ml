@@ -95,19 +95,17 @@ let output_cmi filename oc cmi =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
   | Not_an_interface filename ->
-      fprintf ppf "%a@ is not a compiled interface"
+      I18n.fprintf ppf "%a@ is not a compiled interface"
         Location.print_filename filename
   | Wrong_version_interface (filename, older_newer) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "%a@ is not a compiled interface for this version of OCaml.@.\
          It seems to be for %s version of OCaml."
         Location.print_filename filename older_newer
   | Corrupted_interface filename ->
-      fprintf ppf "Corrupted compiled interface@ %a"
+      I18n.fprintf ppf "Corrupted compiled interface@ %a"
         Location.print_filename filename
 
 let () =
