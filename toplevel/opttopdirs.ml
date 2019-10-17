@@ -79,7 +79,7 @@ let load_file ppf name0 =
     with Not_found -> None
   in
   match name with
-  | None -> fprintf ppf "File not found: %s@." name0; false
+  | None -> I18n.fprintf ppf "File not found: %s@." name0; false
   | Some name ->
     let fn,tmp =
       if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
@@ -97,7 +97,7 @@ let load_file ppf name0 =
       try Dynlink.loadfile fn; true
       with
       | Dynlink.Error err ->
-        fprintf ppf "Error while loading %s: %s.@."
+          I18n.fprintf ppf "Error while loading %s: %s.@."
           name (Dynlink.error_message err);
         false
       | exn ->
@@ -131,7 +131,7 @@ let match_printer_type ppf desc typename =
     with
     | (path, _) -> path
     | exception Not_found ->
-        fprintf ppf "Cannot find type Topdirs.%s.@." typename;
+        I18n.fprintf ppf "Cannot find type Topdirs.%s.@." typename;
         raise Exit
   in
   Ctype.begin_def();
@@ -152,13 +152,13 @@ let find_printer_type ppf lid =
         match match_printer_type ppf desc "printer_type_old" with
         | ty_arg -> (ty_arg, path, true)
         | exception Ctype.Unify _ ->
-            fprintf ppf "%a has a wrong type for a printing function.@."
+            I18n.fprintf ppf "%a has a wrong type for a printing function.@."
               Printtyp.longident lid;
             raise Exit
       end
   end
   | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
+      I18n.fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
 
 let dir_install_printer ppf lid =
@@ -179,7 +179,7 @@ let dir_remove_printer ppf lid =
     begin try
       remove_printer path
     with Not_found ->
-      fprintf ppf "No printer named %a.@." Printtyp.longident lid
+      I18n.fprintf ppf "No printer named %a.@." Printtyp.longident lid
     end
   with Exit -> ()
 
