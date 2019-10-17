@@ -177,15 +177,18 @@ let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
                   (inline_and_simplify.ml line 710). *)
                Location.prerr_warning (Debuginfo.to_location apply.dbg)
                  (Warnings.Inlining_impossible
-                    "[@inlined] attribute was not used on this function \
-                     application (the optimizer did not know what function \
-                     was being applied)")
+                    (I18n.s
+                       "[@inlined] attribute was not used on this function \
+                        application (the optimizer did not know what function \
+                        was being applied)")
+                 )
              | Unroll _ ->
                Location.prerr_warning (Debuginfo.to_location apply.dbg)
                  (Warnings.Inlining_impossible
-                    "[@unroll] attribute was not used on this function \
-                     application (the optimizer did not know what function \
-                     was being applied)"));
+                    (I18n.s
+                       "[@unroll] attribute was not used on this function \
+                        application (the optimizer did not know what function \
+                        was being applied)")));
            if !Clflags.dump_flambda
            then
              Format.fprintf ppf_dump "End of middle end:@ %a@."

@@ -626,7 +626,7 @@ let lines_around_from_current_input ~start_pos ~end_pos =
 type msg = (Format.formatter -> unit) loc
 
 let msg ?(loc = none) fmt =
-  Format.kdprintf (fun txt -> { loc; txt }) fmt
+  I18n.kdprintf (fun txt -> { loc; txt }) fmt
 
 type report_kind =
   | Report_error
@@ -730,13 +730,13 @@ let batch_mode_printer : report_printer =
     ) ()
   in
   let pp_report_kind _self _ ppf = function
-    | Report_error -> Format.fprintf ppf "@{<error>Error@}"
-    | Report_warning w -> Format.fprintf ppf "@{<warning>Warning@} %s" w
+    | Report_error -> I18n.fprintf ppf "@{<error>Error@}"
+    | Report_warning w -> I18n.fprintf ppf "@{<warning>Warning@} %s" w
     | Report_warning_as_error w ->
-        Format.fprintf ppf "@{<error>Error@} (warning %s)" w
+        I18n.fprintf ppf "@{<error>Error@} (warning %s)" w
     | Report_alert w -> Format.fprintf ppf "@{<warning>Alert@} %s" w
     | Report_alert_as_error w ->
-        Format.fprintf ppf "@{<error>Error@} (alert %s)" w
+        I18n.fprintf ppf "@{<error>Error@} (alert %s)" w
   in
   let pp_main_loc self report ppf loc =
     pp_loc self report ppf loc
@@ -815,7 +815,7 @@ let mkerror loc sub txt =
   { kind = Report_error; main = { loc; txt }; sub }
 
 let errorf ?(loc = none) ?(sub = []) =
-  Format.kdprintf (mkerror loc sub)
+  I18n.kdprintf (mkerror loc sub)
 
 let error ?(loc = none) ?(sub = []) msg_str =
   mkerror loc sub (fun ppf -> Format.pp_print_string ppf msg_str)
@@ -834,7 +834,8 @@ let default_warning_alert_reporter report mk (loc: t) w : report option =
   match report w with
   | `Inactive -> None
   | `Active { Warnings.id; message; is_error; sub_locs } ->
-      let msg_of_str str = fun ppf -> Format.pp_print_string ppf str in
+      let msg_of_str str = fun ppf ->
+        Format.pp_print_string ppf (I18n.to_string str) in
       let kind = mk is_error id in
       let main = { loc; txt = msg_of_str message } in
       let sub = List.map (fun (loc, sub_message) ->
@@ -939,4 +940,4 @@ let () =
     )
 
 let raise_errorf ?(loc = none) ?(sub = []) =
-  Format.kdprintf (fun txt -> raise (Error (mkerror loc sub txt)))
+  I18n.kdprintf (fun txt -> raise (Error (mkerror loc sub txt)))

@@ -178,6 +178,8 @@ val pp_print_text: Format.formatter -> s -> unit
 (** {1 Conversion function}
     Convert back-and-forth to standard string *)
 val to_string: s -> string
+
+(**  [raw] breaks localization, uses as little as possible *)
 val raw: string -> s
 
 

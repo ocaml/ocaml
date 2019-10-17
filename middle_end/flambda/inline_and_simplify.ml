@@ -793,20 +793,24 @@ and simplify_partial_application env r ~lhs_of_application
      of type class like thing. *)
   begin match (inline_requested : Lambda.inline_attribute) with
   | Always_inline | Never_inline ->
+      let msg = I18n.s
+        "[@inlined] attributes may not be used on partial applications" in
     Location.prerr_warning (Debuginfo.to_location dbg)
-      (Warnings.Inlining_impossible "[@inlined] attributes may not be used \
-        on partial applications")
+      (Warnings.Inlining_impossible msg)
   | Unroll _ ->
     Location.prerr_warning (Debuginfo.to_location dbg)
-      (Warnings.Inlining_impossible "[@unroll] attributes may not be used \
-        on partial applications")
+      (Warnings.Inlining_impossible
+         (I18n.s "[@unroll] attributes may not be used on partial applications")
+      )
   | Default_inline -> ()
   end;
   begin match (specialise_requested : Lambda.specialise_attribute) with
   | Always_specialise | Never_specialise ->
     Location.prerr_warning (Debuginfo.to_location dbg)
-      (Warnings.Inlining_impossible "[@specialised] attributes may not be used \
-        on partial applications")
+      (Warnings.Inlining_impossible
+         ( I18n.s "[@specialised] attributes may not be used on \
+                   partial applications" )
+      )
   | Default_specialise -> ()
   end;
   let freshened_params =

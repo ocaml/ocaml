@@ -2055,7 +2055,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
               not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
             then
               Location.prerr_warning smod.pmod_loc
-                (Warnings.Not_principal "this module unpacking");
+                (Warnings.Not_principal (I18n.s "this module unpacking"));
             modtype_of_package env smod.pmod_loc p nl tl
         | {desc = Tvar _} ->
             raise (Typecore.Error

@@ -560,20 +560,21 @@ let check_shadowing env = function
     when not (!same_constr env
                 cda1.cda_description.cstr_res
                 cda2.cda_description.cstr_res) ->
-      Some "constructor"
+      Some `Constructor
   | `Label (Some (l1, l2))
     when not (!same_constr env l1.lbl_res l2.lbl_res) ->
-      Some "label"
-  | `Value (Some _) -> Some "value"
-  | `Type (Some _) -> Some "type"
-  | `Module (Some _) | `Component (Some _) -> Some "module"
-  | `Module_type (Some _) -> Some "module type"
-  | `Class (Some _) -> Some "class"
-  | `Class_type (Some _) -> Some "class type"
+      Some `Label
+  | `Value (Some _) -> Some `Value
+  | `Type (Some _) -> Some `Type
+  | `Module (Some _) | `Component (Some _) -> Some `Module
+  | `Module_type (Some _) -> Some `Module_type
+  | `Class (Some _) -> Some `Class
+  | `Class_type (Some _) -> Some `Class_type
   | `Constructor _ | `Label _
   | `Value None | `Type None | `Module None | `Module_type None
   | `Class None | `Class_type None | `Component None ->
       None
+
 
 let subst_modtype_maker (subst, scoping, md) =
   {md with md_type = Subst.modtype scoping subst md.md_type}
@@ -2016,9 +2017,9 @@ let open_signature
   let warn_unused =
     Warnings.is_active unused
   and warn_shadow_id =
-    Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
+    Warnings.is_active (Warnings.Open_shadow_identifier (`Type, ""))
   and warn_shadow_lc =
-    Warnings.is_active (Warnings.Open_shadow_label_constructor ("",""))
+    Warnings.is_active (Warnings.Open_shadow_label_constructor (`Label,""))
   in
   if not toplevel && not loc.Location.loc_ghost
      && (warn_unused || warn_shadow_id || warn_shadow_lc)
@@ -2040,9 +2041,10 @@ let open_signature
           shadowed := (kind, s) :: !shadowed;
           let w =
             match kind with
-            | "label" | "constructor" ->
+            | `Label | `Constructor as kind ->
                 Warnings.Open_shadow_label_constructor (kind, s)
-            | _ -> Warnings.Open_shadow_identifier (kind, s)
+            | #Warnings.shadowed_identifier as kind ->
+                Warnings.Open_shadow_identifier (kind, s)
           in
           Location.prerr_warning loc w
       | _ -> ()
