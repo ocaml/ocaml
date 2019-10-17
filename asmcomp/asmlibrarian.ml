@@ -69,13 +69,11 @@ let create_archive file_list lib_name =
        then raise(Error(Archiver_error archive_name));
     )
 
-open Format
-
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      I18n.fprintf ppf "Cannot find file %s" name
   | Archiver_error name ->
-      fprintf ppf "Error while creating the library %s" name
+      I18n.fprintf ppf "Error while creating the library %s" name
 
 let () =
   Location.register_error_of_exn

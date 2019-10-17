@@ -276,25 +276,24 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
     Illegal_renaming(name, file, id) ->
-      fprintf ppf "Wrong file naming: %a@ contains the code for\
-                   @ %s when %s was expected"
+      I18n.fprintf ppf
+        "Wrong file naming: %a@ contains the code for@ %s when %s was expected"
         Location.print_filename file name id
   | Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %a" ident
+      I18n.fprintf ppf "Forward reference to %s in file %a" ident
         Location.print_filename file
   | Wrong_for_pack(file, path) ->
-      fprintf ppf "File %a@ was not compiled with the `-for-pack %s' option"
-              Location.print_filename file path
+      I18n.fprintf ppf
+        "File %a@ was not compiled with the `-for-pack %s' option"
+        Location.print_filename file path
   | File_not_found file ->
-      fprintf ppf "File %s not found" file
+      I18n.fprintf ppf "File %s not found" file
   | Assembler_error file ->
-      fprintf ppf "Error while assembling %s" file
+      I18n.fprintf ppf "Error while assembling %s" file
   | Linking_error ->
-      fprintf ppf "Error during partial linking"
+      I18n.fprintf ppf "Error during partial linking"
 
 let () =
   Location.register_error_of_exn

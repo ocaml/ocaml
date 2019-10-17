@@ -195,7 +195,7 @@ let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
 
 let report_error ppf = function
   | Assembler_error file ->
-      fprintf ppf "Assembler error, input left in file %a"
+      I18n.fprintf ppf "Assembler error, input left in file %a"
         Location.print_filename file
 
 let () =
