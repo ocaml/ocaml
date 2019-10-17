@@ -324,10 +324,7 @@ let filter p arg =
   let size_arg = length arg in
   if size_arg = 0 then arg else
     (* create the bit vector *)
-    let bv =
-      create
-        (if size_arg land 7 == 0 then size_arg lsr 3
-         else (size_arg lsr 3) + 1) in
+    let bv = create ((size_arg - 1) lsr 3 + 1) in
     (* count elements e such that p(e) *)
     let size_res = ref 0 in
     (* fill bv, one byte at a time *)

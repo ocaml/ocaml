@@ -173,7 +173,7 @@ val filter : f:('a -> bool) -> 'a array -> 'a array
 (** [Array.filter p a] returns the array of elements of [a] that
     satisfy the predicate [p]. The order of the elements in the input
     array is preserved.
-    @since 4.06.0 *)
+    @since 4.10.0 *)
 
 (** {1 Iterators on two arrays} *)
 

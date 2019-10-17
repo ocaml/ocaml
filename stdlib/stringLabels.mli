@@ -128,7 +128,7 @@ val filter : f:(char -> bool) -> string -> string
 (** [String.filter p s] returns the string of characters from [s] that
     satisfy the predicate [p]. The order of the elements in the input
     string is preserved.
-    @since 4.06.0 *)
+    @since 4.10.0 *)
 
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing

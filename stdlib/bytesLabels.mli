@@ -165,7 +165,7 @@ val filter : p:(char -> bool) -> bytes -> bytes
 (** [Bytes.filter p s] returns the sequence of characters of [s] that
     satisfy the predicate [p]. The order of the elements in the input
     sequence is preserved.
-    @since 4.06.0 *)
+    @since 4.10.0 *)
 
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing

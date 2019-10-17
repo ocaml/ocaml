@@ -510,6 +510,12 @@ module Array : sig
       [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
       where [n] is the length of the floatarray [a]. *)
 
+  val filter : (float -> bool) -> t -> t
+  (** [filter p a] returns the array of elements of [a] that
+      satisfy the predicate [p]. The order of the elements in the input
+      array is preserved.
+      @since 4.10.0 *)
+
   (** {2 Iterators on two arrays} *)
 
   val iter2 : (float -> float -> unit) -> t -> t -> unit
@@ -637,6 +643,7 @@ module ArrayLabels : sig
   val mapi : f:(int -> float -> float) -> t -> t
   val fold_left : f:('a -> float -> 'a) -> init:'a -> t -> 'a
   val fold_right : f:(float -> 'a -> 'a) -> t -> init:'a -> 'a
+  val filter : f:(float -> bool) -> t -> t
   val iter2 : f:(float -> float -> unit) -> t -> t -> unit
   val map2 : f:(float -> float -> float) -> t -> t -> t
   val for_all : f:(float -> bool) -> t -> bool

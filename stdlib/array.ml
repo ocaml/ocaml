@@ -345,7 +345,7 @@ let of_seq i =
   let l = Seq.fold_left (fun acc x -> x::acc) [] i in
   of_rev_list l
 
-(* Array.filter and Bytes.filter are almost the same code:
+(* Array.filter, Float.Array.filter, Bytes.filter are almost the same code:
    if one needs to be modified, the other will probably need
    it too *)
 
@@ -353,10 +353,7 @@ let filter p arg =
   let size_arg = length arg in
   if size_arg = 0 then [| |] else
     (* create the bit vector *)
-    let bv =
-      Bytes.create
-        (if size_arg land 7 == 0 then size_arg lsr 3
-         else (size_arg lsr 3) + 1) in
+    let bv = Bytes.create ((size_arg - 1) lsr 3 + 1) in
     (* count elements e such that p(e) *)
     let size_res = ref 0 in
     (* fill bv, one byte at a time *)

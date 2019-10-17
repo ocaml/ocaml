@@ -56,7 +56,7 @@ val popcount : char -> int
 (** Return the number of bits set to 1 in the binary representation of the
     given character (also known as the population count, or the Hamming
     weight).
-    @since 4.06.0 *)
+    @since 4.10.0 *)
 
 type t = char
 (** An alias for the type of characters. *)
