@@ -929,11 +929,9 @@ let () =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
   | Tags (lab1, lab2) ->
-      fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
+      I18n.fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
         lab1 lab2 "Change one of them."
 
 let () =
