@@ -427,6 +427,7 @@ OCaml 4.10.0
 
 - #9051: fix unregistered local root in win32unix/select.c (could result in
   `select` returning file_descr-like values which weren't in the original sets)
+  and correct initialisation of some blocks allocated with caml_alloc_small.
   (David Allsopp, review by Xavier Leroy)
 
 OCaml 4.09 maintenance branch:

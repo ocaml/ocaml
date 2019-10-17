@@ -1264,20 +1264,20 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
                 {
                   iterResult = &(iterSelectData->aResults[i]);
                   l = caml_alloc_small(2, 0);
-                  Store_field(l, 0, find_handle(iterResult, readfds, writefds,
-                                                exceptfds));
+                  Field(l, 0) = find_handle(iterResult, readfds, writefds,
+                                            exceptfds);
                   switch (iterResult->EMode)
                     {
                     case SELECT_MODE_READ:
-                      Store_field(l, 1, read_list);
+                      Field(l, 1) =  read_list;
                       read_list = l;
                       break;
                     case SELECT_MODE_WRITE:
-                      Store_field(l, 1, write_list);
+                      Field(l, 1) = write_list;
                       write_list = l;
                       break;
                     case SELECT_MODE_EXCEPT:
-                      Store_field(l, 1, except_list);
+                      Field(l, 1) = except_list;
                       except_list = l;
                       break;
                     case SELECT_MODE_NONE:
@@ -1320,9 +1320,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
   DEBUG_PRINT("Build final result");
   res = caml_alloc_small(3, 0);
-  Store_field(res, 0, read_list);
-  Store_field(res, 1, write_list);
-  Store_field(res, 2, except_list);
+  Field(res, 0) = read_list;
+  Field(res, 1) = write_list;
+  Field(res, 2) = except_list;
 
   DEBUG_PRINT("out select");
 
