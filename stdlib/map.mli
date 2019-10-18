@@ -159,9 +159,11 @@ module type S =
        (in increasing order), and [d1 ... dN] are the associated data. *)
 
     val fold_descending: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    (** [fold_descending f m a] computes [(f k1 d1 (f k2 d2 ... (f kN dN a)...))],
-        where [k1 ... kN] are the keys of all bindings in [m]
-        (in increasing order), and [d1 ... dN] are the associated data. *)
+
+    (** [fold_descending f m a] computes
+        [(f k1 d1 (f k2 d2 ... (f kN dN a)...))], where [k1 ... kN]
+        are the keys of all bindings in [m] (in increasing order),
+        and [d1 ... dN] are the associated data. *)
 
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     (** [for_all p m] checks if all the bindings of the map
