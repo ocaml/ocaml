@@ -317,7 +317,9 @@ module Make(Ord: OrderedType) = struct
       match m with
         Empty -> accu
       | Node {l; v; d; r} ->
-          fold_ascending f r (f v d (fold_ascending f l accu))
+          let accu = fold_ascending f l accu in
+          let accu = f v d accu in
+          fold_ascending f r accu
 
     let fold = fold_ascending
 
@@ -325,7 +327,9 @@ module Make(Ord: OrderedType) = struct
       match m with
         Empty -> accu
       | Node {l; v; d; r} ->
-          fold_descending f l (f v d (fold_descending f r accu))
+          let accu = fold_descending f r accu in
+          let accu = f v d accu in
+          fold_descending f l accu
 
     let rec for_all p = function
         Empty -> true

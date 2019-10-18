@@ -379,14 +379,20 @@ module Make(Ord: OrderedType) =
     let rec fold_ascending f s accu =
       match s with
         Empty -> accu
-      | Node{l; v; r} -> fold_ascending f r (f v (fold_ascending f l accu))
+      | Node{l; v; r} ->
+          let accu = fold_ascending f l accu in
+          let accu = f v accu in
+          fold_ascending f r accu
 
     let fold = fold_ascending
 
     let rec fold_descending f s accu =
       match s with
         Empty -> accu
-      | Node{l; v; r} -> fold_descending f l (f v (fold_descending f r accu))
+      | Node{l; v; r} ->
+          let accu = fold_descending f r accu in
+          let accu = f v accu in
+          fold_descending f l accu
 
     let rec for_all p = function
         Empty -> true
