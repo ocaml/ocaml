@@ -3,6 +3,11 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+OCaml 4.10.0
+------------
+
+(Changes that can break existing programs are marked with a "*")
+
 ### Language features
 
 - #7557, #1726: multi-indices for extended indexing operators
