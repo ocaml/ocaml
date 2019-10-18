@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+   flags = "-no-strict-sequence"
+*)
 
 [@@@ocaml.warning "-21-5"]
 

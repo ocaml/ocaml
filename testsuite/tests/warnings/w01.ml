@@ -1,6 +1,6 @@
 (* TEST
 
-flags = "-w A"
+flags = "-w A -no-strict-sequence"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

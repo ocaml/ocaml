@@ -13,7 +13,7 @@ let rec allocate_lots m = function
 
 let measure f =
   let a = Gc.minor_words () in
-  f ();
+  ignore (f ());
   let c = Gc.minor_words () in
   c -. a
 

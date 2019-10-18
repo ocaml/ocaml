@@ -312,6 +312,9 @@ Working version
   to complain thanks to type-based disambiguation.
   (Gabriel Scherer)
 
+* #1971: Enable -strict-sequence by default
+  (Armaël Guéneau, review by ?)
+
 ### Build system:
 
 - #8840: use ocaml{c,opt}.opt when available to build internal tools

@@ -1,4 +1,5 @@
 (* TEST
+   flags = "-no-strict-sequence"
    * no-flat-float-array
    ** expect
 *)
