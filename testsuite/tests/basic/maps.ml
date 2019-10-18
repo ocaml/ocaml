@@ -71,5 +71,12 @@ let () =
         "insert",                  (function None -> Some j | Some _ -> Some j);
       ]
     done;
-  done;
-;;
+  done
+
+let () =
+  let l = [0, "A"; 1, "B"; 2, "C"; 3, "D"; 4, "E"; 5, "F"; 6, "G"; 7, "H"; 8, "I"; 9, "J"] in
+  let map = List.fold_right (fun (key, v) map -> IntMap.add key v map) l IntMap.empty in
+  let l1 = IntMap.fold (fun key v accu -> (key, v) :: accu) map [] in
+  let l2 = IntMap.fold_descending (fun key v accu -> (key, v) :: accu) map [] in
+  Printf.printf "%B\n" (List.rev l = l1);
+  Printf.printf "%B\n" (l = l2)

@@ -318,6 +318,7 @@ module type MapT =
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold_descending : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val for_all : (key -> 'a -> bool) -> 'a t -> bool
     val exists : (key -> 'a -> bool) -> 'a t -> bool
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
@@ -369,6 +370,7 @@ module SSMap :
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold_descending : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val for_all : (key -> 'a -> bool) -> 'a t -> bool
     val exists : (key -> 'a -> bool) -> 'a t -> bool
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
