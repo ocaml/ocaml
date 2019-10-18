@@ -54,6 +54,7 @@ struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);
 CAMLextern void caml_gc_dispatch (void);
+CAMLextern void caml_minor_collection (void);
 CAMLextern void garbage_collection (void); /* runtime/signals_nat.c */
 extern void caml_oldify_one (value, value *);
 extern void caml_oldify_mopup (void);

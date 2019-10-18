@@ -64,7 +64,7 @@ CAMLexport int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *)
 
 /* Execute all pending signals */
 
-void caml_process_pending_signals(void)
+value caml_process_pending_signals_exn(void)
 {
   int i;
   int really_pending;
@@ -73,7 +73,7 @@ void caml_process_pending_signals(void)
 #endif
 
   if(!signals_are_pending)
-    return;
+    return Val_unit;
   signals_are_pending = 0;
 
   /* Check that there is indeed a pending signal before issuing the
@@ -85,7 +85,7 @@ void caml_process_pending_signals(void)
       break;
     }
   if(!really_pending)
-    return;
+    return Val_unit;
 
 #ifdef POSIX_SIGNALS
   caml_sigmask_hook(/* dummy */ SIG_BLOCK, NULL, &set);
@@ -98,8 +98,12 @@ void caml_process_pending_signals(void)
       continue;
 #endif
     caml_pending_signals[i] = 0;
-    caml_execute_signal(i, 0);
+    {
+      value exn = caml_execute_signal_exn(i, 0);
+      if (Is_exception_result(exn)) return exn;
+    }
   }
+  return Val_unit;
 }
 
 CAMLno_tsan /* When called from [caml_record_signal], these memory
@@ -118,7 +122,7 @@ void caml_set_action_pending(void)
 /* Record the delivery of a signal, and arrange for it to be processed
    as soon as possible:
    - via caml_something_to_do, processed in
-     caml_check_urgent_gc_and_callbacks.
+     caml_process_pending_actions_exn.
    - by playing with the allocation limit, processed in
      caml_garbage_collection and caml_alloc_small_dispatch.
 */
@@ -165,7 +169,7 @@ CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
-    caml_process_pending_signals ();
+    caml_raise_if_exception(caml_process_pending_signals_exn());
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
@@ -190,11 +194,11 @@ CAMLexport void caml_leave_blocking_section(void)
      Another case where this is necessary (even in a single threaded
      setting) is when the blocking section unmasks a pending signal:
      If the signal is pending and masked but has already been
-     examined by [caml_process_pending_signals], then
+     examined by [caml_process_pending_signals_exn], then
      [signals_are_pending] is 0 but the signal needs to be
      handled at this point. */
   signals_are_pending = 1;
-  caml_process_pending_signals ();
+  caml_raise_if_exception(caml_process_pending_signals_exn());
 
   errno = saved_errno;
 }
@@ -203,7 +207,7 @@ CAMLexport void caml_leave_blocking_section(void)
 
 static value caml_signal_handlers = 0;
 
-void caml_execute_signal(int signal_number, int in_signal_handler)
+value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 {
   value res;
   value handler;
@@ -258,8 +262,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
     caml_sigmask_hook(SIG_SETMASK, &sigs, NULL);
   }
 #endif
-  if (Is_exception_result(res))
-    caml_raise_in_async_callback(Extract_exception(res));
+  return res;
 }
 
 void caml_update_young_limit (void)
@@ -287,43 +290,68 @@ void caml_request_minor_gc (void)
   caml_set_action_pending();
 }
 
-void caml_do_urgent_gc_and_callbacks(void)
+value caml_do_pending_actions_exn(void)
 {
+  value exn;
+
   caml_something_to_do = 0;
+
+  // Do any pending minor collection or major slice
   caml_check_urgent_gc(Val_unit);
+
   caml_update_young_limit();
-  caml_memprof_handle_postponed();
-  caml_final_do_calls();
-  caml_process_pending_signals();
+
+  // Call signal handlers first
+  exn = caml_process_pending_signals_exn();
+  if (Is_exception_result(exn)) goto exception;
+
+  // Call memprof callbacks
+  exn = caml_memprof_handle_postponed_exn();
+  if (Is_exception_result(exn)) goto exception;
+
+  // Call finalisers
+  exn = caml_final_do_calls_exn();
+  if (Is_exception_result(exn)) goto exception;
+
+  return Val_unit;
+
+exception:
+  /* If an exception is raised during an asynchronous callback, then
+     it might be the case that we did not run all the callbacks we
+     needed. Therefore, we set [caml_something_to_do] again in order
+     to force reexamination of callbacks. */
+  caml_set_action_pending();
+  return exn;
 }
 
 CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
-value caml_check_urgent_gc_and_callbacks(value extra_root)
+static inline value process_pending_actions_with_root_exn(value extra_root)
 {
   if (caml_something_to_do) {
     CAMLparam1(extra_root);
-    caml_do_urgent_gc_and_callbacks();
+    value exn = caml_do_pending_actions_exn();
+    if (Is_exception_result(exn))
+      CAMLreturn(exn);
     CAMLdrop;
   }
   return extra_root;
 }
 
-/* If an exception is raised during an asynchronous callback (i.e.,
-   from an OCaml function called in `caml_check_urgent_gc`), then it
-   might be the case that we did not run all the callbacks we needed
-   to run even though [caml_something_to_do] has been reset to 0 at
-   the begining of [caml_check_urgent_gc]. Therefore, we set
-   [caml_something_to_do] in order to force reexamination of
-   callbacks.
-
-   Apart from a reasonable performance penalty (an extra call to
-   `caml_check_urgent_gc`), it is OK to call this function where
-   `caml_raise` would have been more appropriate (i.e., not called
-   from `caml_check_urgent_gc`). */
-void caml_raise_in_async_callback (value exc)
+value caml_process_pending_actions_with_root(value extra_root)
 {
-  caml_set_action_pending();
-  caml_raise(exc);
+  value res = process_pending_actions_with_root_exn(extra_root);
+  return caml_raise_if_exception(res);
+}
+
+CAMLexport value caml_process_pending_actions_exn(void)
+{
+  return process_pending_actions_with_root_exn(Val_unit);
+}
+
+CAMLexport void caml_process_pending_actions(void)
+{
+  value exn = process_pending_actions_with_root_exn(Val_unit);
+  caml_raise_if_exception(exn);
 }
 
 /* OS-independent numbering of signals */
@@ -495,6 +523,6 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
-  caml_process_pending_signals();
+  caml_raise_if_exception(caml_process_pending_signals_exn());
   CAMLreturn (res);
 }

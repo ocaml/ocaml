@@ -30,8 +30,40 @@
 extern "C" {
 #endif
 
+CAMLextern void caml_enter_blocking_section (void);
+CAMLextern void caml_leave_blocking_section (void);
+
+CAMLextern void caml_process_pending_actions (void);
+/* Checks for pending actions and executes them. This includes pending
+   minor and major collections, signal handlers, finalisers, and
+   Memprof callbacks. Assumes that the runtime lock is held. Can raise
+   exceptions asynchronously into OCaml code. */
+
+CAMLextern value caml_process_pending_actions_exn (void);
+/* Same as [caml_process_pending_actions], but returns the exception
+   if any (otherwise returns [Val_unit]). */
+
 #ifdef CAML_INTERNALS
 CAMLextern intnat volatile caml_pending_signals[];
+
+/* When an action is pending, either [caml_something_to_do] is 1, or
+   there is a function currently running which will end by either
+   executing all actions, or set [caml_something_to_do] back to 1. We
+   set it to 0 when starting executing all callbacks.
+
+   In the case there are two different callbacks (say, a signal and a
+   finaliser) arriving at the same time, then the processing of one
+   awaits the return of the other. In case of long-running callbacks,
+   we may want to run the second one without waiting the end of the
+   first one. We do this by provoking an additional polling every
+   minor collection and every major slice. To guarantee a low latency
+   for signals, we avoid delaying signal handlers in that case by
+   calling them first.
+
+   FIXME: We could get into caml_process_pending_actions when
+   caml_something_to_do is seen as set but not caml_pending_signals,
+   making us miss the signal.
+*/
 CAMLextern int volatile caml_something_to_do;
 
 void caml_update_young_limit(void);
@@ -39,13 +71,12 @@ void caml_request_major_slice (void);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
-void caml_execute_signal(int signal_number, int in_signal_handler);
+value caml_execute_signal_exn(int signal_number, int in_signal_handler);
 void caml_record_signal(int signal_number);
-void caml_process_pending_signals(void);
+value caml_process_pending_signals_exn(void);
 void caml_set_action_pending (void);
-void caml_do_urgent_gc_and_callbacks (void);
-value caml_check_urgent_gc_and_callbacks (value extra_root);
-void caml_raise_in_async_callback (value exc);
+value caml_do_pending_actions_exn (void);
+value caml_process_pending_actions_with_root (value extra_root); // raises
 int caml_set_signal_action(int signo, int action);
 void caml_setup_stack_overflow_detection(void);
 
@@ -56,9 +87,6 @@ CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 CAMLextern int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *);
 #endif
 #endif /* CAML_INTERNALS */
-
-CAMLextern void caml_enter_blocking_section (void);
-CAMLextern void caml_leave_blocking_section (void);
 
 #ifdef __cplusplus
 }

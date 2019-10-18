@@ -186,7 +186,8 @@ CAMLprim value caml_realloc_global(value size)
       Field (new_global_data, i) = Val_long (0);
     }
     // Give gc a chance to run, and run memprof callbacks
-    caml_global_data = caml_check_urgent_gc_and_callbacks(new_global_data);
+    caml_global_data = new_global_data;
+    caml_process_pending_actions();
   }
   return Val_unit;
 }

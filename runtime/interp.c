@@ -913,7 +913,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     process_actions:
       Setup_for_event;
-      caml_check_urgent_gc_and_callbacks(Val_unit);
+      caml_process_pending_actions();
       Restore_after_event;
       Next;
 

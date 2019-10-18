@@ -112,7 +112,7 @@ CAMLprim value caml_ephe_create (value len)
 {
   value res = caml_ephemeron_create(Long_val(len));
   // run memprof callbacks
-  return caml_check_urgent_gc_and_callbacks(res);
+  return caml_process_pending_actions_with_root(res);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -294,7 +294,7 @@ static value optionalize(int status, value *x)
   }
   // run memprof callbacks both for the option we are allocating here
   // and the calling function.
-  caml_check_urgent_gc_and_callbacks(Val_unit);
+  caml_process_pending_actions();
   CAMLreturn(res);
 }
 
@@ -409,8 +409,7 @@ CAMLexport int caml_ephemeron_get_key_copy(value ar, mlsize_t offset,
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
       CAML_INSTR_INT ("force_minor/weak@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
+      caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
       elt = caml_alloc (Wosize_val (v), Tag_val (v));
@@ -465,8 +464,7 @@ CAMLexport int caml_ephemeron_get_data_copy (value ar, value *data)
     if(8 == loop){ /** One minor gc must be enough */
       elt = Val_unit;
       CAML_INSTR_INT ("force_minor/weak@", 1);
-      caml_request_minor_gc ();
-      caml_gc_dispatch ();
+      caml_minor_collection ();
     } else {
       /* cases where loop is between 0 to 7 and where loop is equal to 9 */
       elt = caml_alloc (Wosize_val (v), Tag_val (v));

@@ -487,8 +487,17 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   while(1) {
     /* We might be here because of an async callback / urgent GC
        request. Take the opportunity to do what has been requested. */
-    if (flags & CAML_FROM_CAML) caml_do_urgent_gc_and_callbacks ();
-    else caml_check_urgent_gc (Val_unit);
+    if (flags & CAML_FROM_CAML)
+      /* In the case of allocations performed from OCaml, execute
+         asynchronous callbacks. */
+      caml_raise_if_exception(caml_do_pending_actions_exn ());
+    else {
+      caml_check_urgent_gc (Val_unit);
+      /* In the case of long-running C code that regularly polls with
+         caml_process_pending_actions, force a query of all callbacks
+         at every minor collection or major slice. */
+      caml_something_to_do = 1;
+    }
 
     /* Now, there might be enough room in the minor heap to do our
        allocation. */
@@ -520,8 +529,8 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   }
 }
 
-/* For backward compatibility with Lablgtk: do a minor collection to
-   ensure that the minor heap is empty.
+/* Exported for backward compatibility with Lablgtk: do a minor
+   collection to ensure that the minor heap is empty.
 */
 CAMLexport void caml_minor_collection (void)
 {

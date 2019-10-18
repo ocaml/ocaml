@@ -120,7 +120,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
     res = caml_alloc_shr(sz, tg);
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
     // Give gc a chance to run, and run memprof callbacks
-    res = caml_check_urgent_gc_and_callbacks(res);
+    caml_process_pending_actions();
   }
   CAMLreturn (res);
 }
