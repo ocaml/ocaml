@@ -201,6 +201,10 @@ static char sig_alt_stack[SIGSTKSZ];
 extern void caml_stack_overflow(caml_domain_state*);
 #endif
 
+/* Address sanitizer is confused when running the stack overflow
+   handler in an alternate stack. We deactivate it for all the
+   functions used by the stack overflow handler. */
+CAMLno_asan
 DECLARE_SIGNAL_HANDLER(segv_handler)
 {
   struct sigaction act;
