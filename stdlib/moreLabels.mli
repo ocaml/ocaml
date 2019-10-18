@@ -149,6 +149,9 @@ module Map : sig
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
+      val fold_descending :
+          f:(key:key -> data:'a -> 'b -> 'b) ->
+          'a t -> init:'b -> 'b
       val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
       val exists: f:(key -> 'a -> bool) -> 'a t -> bool
       val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t

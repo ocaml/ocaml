@@ -37,6 +37,7 @@ module type S =
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold_descending: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     val exists: (key -> 'a -> bool) -> 'a t -> bool
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
@@ -312,11 +313,19 @@ module Make(Ord: OrderedType) = struct
           let r' = mapi f r in
           Node{l=l'; v; d=d'; r=r'; h}
 
-    let rec fold f m accu =
+    let rec fold_ascending f m accu =
       match m with
         Empty -> accu
       | Node {l; v; d; r} ->
-          fold f r (f v d (fold f l accu))
+          fold_ascending f r (f v d (fold_ascending f l accu))
+
+    let fold = fold_ascending
+
+    let rec fold_descending f m accu =
+      match m with
+        Empty -> accu
+      | Node {l; v; d; r} ->
+          fold_descending f l (f v d (fold_descending f r accu))
 
     let rec for_all p = function
         Empty -> true
