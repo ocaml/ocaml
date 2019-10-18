@@ -202,6 +202,7 @@ module Set : sig
       val iter : f:(elt -> unit) -> t -> unit
       val map : f:(elt -> elt) -> t -> t
       val fold : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+      val fold_descending : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
       val for_all : f:(elt -> bool) -> t -> bool
       val exists : f:(elt -> bool) -> t -> bool
       val filter : f:(elt -> bool) -> t -> t

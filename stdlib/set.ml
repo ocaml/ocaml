@@ -41,6 +41,7 @@ module type S =
     val iter: (elt -> unit) -> t -> unit
     val map: (elt -> elt) -> t -> t
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold_descending: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val for_all: (elt -> bool) -> t -> bool
     val exists: (elt -> bool) -> t -> bool
     val filter: (elt -> bool) -> t -> t
@@ -375,10 +376,17 @@ module Make(Ord: OrderedType) =
         Empty -> ()
       | Node{l; v; r} -> iter f l; f v; iter f r
 
-    let rec fold f s accu =
+    let rec fold_ascending f s accu =
       match s with
         Empty -> accu
-      | Node{l; v; r} -> fold f r (f v (fold f l accu))
+      | Node{l; v; r} -> fold_ascending f r (f v (fold_ascending f l accu))
+
+    let fold = fold_ascending
+
+    let rec fold_descending f s accu =
+      match s with
+        Empty -> accu
+      | Node{l; v; r} -> fold_descending f l (f v (fold_descending f r accu))
 
     let rec for_all p = function
         Empty -> true

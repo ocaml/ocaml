@@ -139,6 +139,10 @@ module type S =
     (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
        where [x1 ... xN] are the elements of [s], in increasing order. *)
 
+    val fold_descending: (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    (** [fold_descending f s a] computes [(f x1 (f x2 ... (f xN a) ...))],
+       where [x1 ... xN] are the elements of [s], in increasing order. *)
+
     val for_all: (elt -> bool) -> t -> bool
     (** [for_all p s] checks if all elements of the set
        satisfy the predicate [p]. *)
