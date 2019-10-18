@@ -70,6 +70,17 @@
 static char magicstr[EXEC_MAGIC_LENGTH+1];
 static int print_magic = 0;
 
+/* Print the specified error message followed by an end-of-line and exit */
+static void error(char *msg, ...)
+{
+  va_list ap;
+  va_start(ap, msg);
+  vfprintf (stderr, msg, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
+  exit(127);
+}
+
 /* Read the trailer of a bytecode file */
 
 static void fixup_endianness_trailer(uint32_t * p)
@@ -299,8 +310,7 @@ static int parse_command_line(char_os **argv)
       exit(0);
       break;
     default:
-      fprintf(stderr, "unknown option %s", caml_stat_strdup_of_os(argv[i]));
-      exit(127);
+      error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
     }
   }
   return i;
@@ -380,31 +390,27 @@ CAMLexport void caml_main(char_os **argv)
   if (fd < 0) {
     pos = parse_command_line(argv);
     if (argv[pos] == 0) {
-      fprintf(stderr, "no bytecode file specified");
-      exit(127);
+      error("no bytecode file specified");
     }
     exe_name = argv[pos];
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      fprintf(stderr, "cannot find file '%s'",
+      error("cannot find file '%s'",
                        caml_stat_strdup_of_os(argv[pos]));
-      exit(127);
       break;
     case BAD_BYTECODE:
-      fprintf(stderr,
+      error(
         "the file '%s' is not a bytecode executable file",
         caml_stat_strdup_of_os(exe_name));
-      exit(127);
       break;
     case WRONG_MAGIC:
-      fprintf(stderr,
+      error(
         "the file '%s' has not the right magic number: "\
         "expected %s, got %s",
         caml_stat_strdup_of_os(exe_name),
         EXEC_MAGIC,
         magicstr);
-      exit(127);
       break;
     }
   }
