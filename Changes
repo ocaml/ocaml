@@ -299,6 +299,12 @@ Working version
 - #8891: Warn about unused functor parameters
   (Thomas Refis, review by Gabriel Radanne)
 
+- #9046: disable warning 30 by default
+  This outdated warning complained on label/constructor name conflicts
+  within a mutually-recursive type declarations; there is now no need
+  to complain thanks to type-based disambiguation.
+  (Gabriel Scherer)
+
 ### Build system:
 
 - #8840: use ocaml{c,opt}.opt when available to build internal tools
