@@ -446,10 +446,12 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         | Some ty ->
             match Ctype.expand_head_opt env ty with
             | {desc=Tconstr (p, tl, _)}
-              when List.for_all
+              when decl1.type_params = []
+              || Ctype.equal env false decl1.type_params tl ->
+              (* when List.for_all
                   (fun ty1 -> List.exists
                       (fun ty -> Ctype.equal env false [ty1] [ty]) tl)
-                  decl1.type_params ->
+                  decl1.type_params -> *)
                 begin match Env.find_type p env with
                 | {type_ident = Some id1} ->
                     if id1 = id2 then None else

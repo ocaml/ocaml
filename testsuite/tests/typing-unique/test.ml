@@ -189,3 +189,109 @@ end
 [%%expect{|
 module M : sig type a [@@unique "M.a"] end
 |}]
+
+
+(* Injectivy for non-unifiable types *)
+
+type (_,_) eq = Eq : ('a,'a) eq
+type 'a t [@@unique "M.t"]
+type 'a u [@@unique "M.t"]
+type v [@@unique "M.t"];;
+[%%expect{|
+type (_, _) eq = Eq : ('a, 'a) eq
+type 'a t [@@unique "M.t"]
+type 'a u [@@unique "M.t"]
+type v [@@unique "M.t"]
+|}]
+
+let f : (int t, bool u) eq option -> int = function None -> 1;;
+[%%expect{|
+val f : (int t, bool u) eq option -> int = <fun>
+|}]
+
+let g : (int t, v) eq option -> int = function None -> 1;;
+[%%expect{|
+Line 1, characters 38-56:
+1 | let g : (int t, v) eq option -> int = function None -> 1;;
+                                          ^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some Eq
+val g : (int t, v) eq option -> int = <fun>
+|}]
+
+module M : sig type x [@@unique "M.t"] end = struct type x = int t end;;
+[%%expect{|
+module M : sig type x [@@unique "M.t"] end
+|}]
+
+module M : sig
+  type 'a t [@@unique "M.t"]
+  type 'a u [@@unique "M.t"]
+end = struct
+  type ('a,'b) s [@@unique "M.t"]
+  type 'a t = ('a,bool) s
+  type 'a u = (int, 'a) s
+end;;
+[%%expect{|
+Lines 4-8, characters 6-3:
+4 | ......struct
+5 |   type ('a,'b) s [@@unique "M.t"]
+6 |   type 'a t = ('a,bool) s
+7 |   type 'a u = (int, 'a) s
+8 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type ('a, 'b) s [@@unique "M.t"]
+           type 'a t = ('a, bool) s
+           type 'a u = (int, 'a) s
+         end
+       is not included in
+         sig type 'a t [@@unique "M.t"] type 'a u [@@unique "M.t"] end
+       Type declarations do not match:
+         type 'a t = ('a, bool) s
+       is not included in
+         type 'a t [@@unique "M.t"]
+       Unique identifier "M.t" was not present in original declaration
+|}]
+
+(* Application to functors *)
+
+module type S = sig
+  type elt
+  type t
+  val create : elt list -> t
+end
+module Set(X : sig type t end) : sig
+  type 'a t1 constraint 'a = X.t [@@unique "Make.t"]
+  include S with type elt = X.t and type t = X.t t1
+end = struct
+  type elt = X.t
+  type 'a t1 = {elems: 'a list} constraint 'a = elt [@@unique "Make.t"]
+  type t = elt t1
+  let create l = {elems=l}
+end;;
+[%%expect{|
+module type S = sig type elt type t val create : elt list -> t end
+module Set :
+  functor (X : sig type t end) ->
+    sig
+      type 'a t1 constraint 'a = X.t [@@unique "Make.t"]
+      type elt = X.t
+      type t = X.t t1
+      val create : elt list -> t
+    end
+|}]
+
+module Int = struct type t = int end
+module Bool = struct type t = bool end;;
+[%%expect{|
+module Int : sig type t = int end
+module Bool : sig type t = bool end
+|}]
+
+let f : (Set(Int).t,Set(Bool).t) eq option -> int = fun None -> 1;;
+[%%expect{|
+val f : (Set(Int).t, Set(Bool).t) eq option -> int = <fun>
+|}]

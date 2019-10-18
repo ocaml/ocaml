@@ -2375,7 +2375,10 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
         && decl.type_ident <> decl'.type_ident then raise (Unify [])
     else if is_datatype decl && is_datatype decl'
         && decl.type_ident <> decl'.type_ident then raise (Unify [])
-    else
+    else begin
+      if non_aliasable decl && decl.type_ident = decl'.type_ident
+      && decl.type_params <> [] && decl'.type_params <> [] then
+        mcomp_list type_pairs env tl1 tl2;
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2391,6 +2394,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       | _, Type_abstract
         when non_aliasable decl || not (non_aliasable decl') -> ()
       | _ -> raise (Unify [])
+    end
   with Not_found -> ()
 
 and mcomp_type_option type_pairs env t t' =
