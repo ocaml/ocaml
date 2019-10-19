@@ -75,7 +75,7 @@ let test f =
   let start = Sys.time() in f ();
   (Sys.time() -. start);;
 [%%expect{|
-val test : (unit -> 'a) -> float = <fun>
+val test : (unit -> unit) -> float = <fun>
 |}];;
 
 let test_foo () =

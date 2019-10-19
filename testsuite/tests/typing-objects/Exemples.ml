@@ -612,13 +612,9 @@ let sort (l : #comparable list) = List.sort (fun x -> x#cmp) l;;
 val sort : (#comparable as 'a) list -> 'a list = <fun>
 |}];;
 let pr l =
-  List.map (fun c -> Format.print_int c#x; Format.print_string " ") l;
+  List.iter (fun c -> Format.print_int c#x; Format.print_string " ") l;
   Format.print_newline ();;
 [%%expect{|
-Line 2, characters 2-69:
-2 |   List.map (fun c -> Format.print_int c#x; Format.print_string " ") l;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 10: this expression should have type unit.
 val pr : < x : int; .. > list -> unit = <fun>
 |}];;
 let l = [new int_comparable 5; (new int_comparable3 2 :> int_comparable);

@@ -747,11 +747,11 @@ Line 1, characters 9-19:
 Error: This alias is bound to type 'a t but is used as an instance of type 'a
        The type variable 'a occurs inside 'a t
 |}];;
-fun (x : 'a t) -> (x : 'a); ();;
+fun (x : 'a t) -> ignore (x : 'a);;
 [%%expect{|
-Line 1, characters 19-20:
-1 | fun (x : 'a t) -> (x : 'a); ();;
-                       ^
+Line 1, characters 26-27:
+1 | fun (x : 'a t) -> ignore (x : 'a);;
+                              ^
 Error: This expression has type 'a t but an expression was expected of type
          'a
        The type variable 'a occurs inside 'a t
@@ -764,12 +764,8 @@ fun (x : 'a t as 'a) -> ();;
 [%%expect{|
 - : ('a t as 'a) -> unit = <fun>
 |}];;
-fun (x : 'a t) -> (x : 'a); ();;
+fun (x : 'a t) -> ignore (x : 'a);;
 [%%expect{|
-Line 1, characters 18-26:
-1 | fun (x : 'a t) -> (x : 'a); ();;
-                      ^^^^^^^^
-Warning 10: this expression should have type unit.
 - : ('a t as 'a) t -> unit = <fun>
 |}];;
 

@@ -15,7 +15,7 @@ let () =
 (* check optimisations *)
 let raw_allocs f =
   let before = Gc.minor_words () in
-  f ();
+  ignore (Sys.opaque_identity (f ()));
   let after = Gc.minor_words () in
   int_of_float (after -. before)
 

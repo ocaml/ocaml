@@ -36,7 +36,7 @@ let create fn arg =
   thread_new
     (fun () ->
       try
-        fn arg; ()
+        ignore (fn arg); ()
       with exn ->
              flush stdout; flush stderr;
              thread_uncaught_exception exn)
