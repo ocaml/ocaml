@@ -602,9 +602,20 @@ static LONG CALLBACK
 }
 #endif /* _WIN64 */
 
+static PVOID caml_stack_overflow_handle;
+
 void caml_win32_overflow_detection(void)
 {
-  AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
+  caml_stack_overflow_handle =
+    AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
+  if (caml_stack_overflow_handle == NULL) {
+    caml_fatal_error("cannot install stack overflow detection");
+  }
+}
+
+void caml_win32_unregister_overflow_detection(void)
+{
+  RemoveVectoredExceptionHandler(caml_stack_overflow_handle);
 }
 
 #endif /* NATIVE_CODE */
