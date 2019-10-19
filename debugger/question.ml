@@ -44,8 +44,8 @@ let yes_or_no message =
           answer
       with
         x ->
-          current_prompt := old_prompt;
-          stop_user_input ();
-          raise x
+          cleanup x (fun () ->
+            current_prompt := old_prompt;
+            stop_user_input ()) ()
   else
     false

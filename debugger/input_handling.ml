@@ -52,8 +52,7 @@ let execute_with_other_controller controller file funct =
         result
     with
       x ->
-        change_controller file old_controller;
-        raise x
+        cleanup x (change_controller file) old_controller
 
 (*** The "Main Loop" ***)
 
@@ -84,8 +83,7 @@ let main_loop () =
       continue_main_loop := old_state
     with
       x ->
-        continue_main_loop := old_state;
-        raise x
+        cleanup x ((:=) continue_main_loop) old_state
 
 (*** Managing user inputs ***)
 

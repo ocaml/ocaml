@@ -576,11 +576,11 @@ let instr_source ppf lexbuf =
         user_channel := old_channel
       with
       | x ->
-          stop_user_input ();
-          close_io io_chan;
-          interactif := old_state;
-          user_channel := old_channel;
-          raise x
+          cleanup x (fun () ->
+            stop_user_input ();
+            close_io io_chan;
+            interactif := old_state;
+            user_channel := old_channel) ()
 
 let instr_set =
   find_variable

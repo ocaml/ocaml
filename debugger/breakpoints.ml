@@ -16,6 +16,7 @@
 
 (******************************* Breakpoints ***************************)
 
+open Primitives
 open Checkpoints
 open Debugcom
 open Instruct
@@ -211,5 +212,4 @@ let exec_with_temporary_breakpoint pc funct =
         Exec.protect remove
       with
         x ->
-          Exec.protect remove;
-          raise x
+          cleanup x Exec.protect remove

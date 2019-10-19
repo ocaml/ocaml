@@ -19,6 +19,11 @@
 (*** Miscellaneous ***)
 exception Out_of_range
 
+let cleanup e f =
+  let bt = Printexc.get_raw_backtrace () in
+  let () = f () in
+  Printexc.raise_with_backtrace e bt
+
 let nothing _ = ()
 
 (*** Operations on lists. ***)

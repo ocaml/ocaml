@@ -16,6 +16,7 @@
 
 (************************** Trap barrier *******************************)
 
+open Primitives
 open Debugcom
 open Checkpoints
 
@@ -44,5 +45,4 @@ let exec_with_trap_barrier trap_barrier funct =
     remove_trap_barrier ()
   with
     x ->
-      remove_trap_barrier ();
-      raise x
+      cleanup x remove_trap_barrier ()

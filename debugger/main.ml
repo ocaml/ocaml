@@ -104,8 +104,7 @@ let rec protect ppf restart loop =
             restart ppf
           end)
   | x ->
-      kill_program ();
-      raise x
+      cleanup x kill_program
 
 let execute_file_if_any () =
   let buffer = Buffer.create 128 in

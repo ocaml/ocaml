@@ -140,6 +140,10 @@ Working version
 
 ### Tools:
 
+- #9057: aid debugging the debugger by preserving backtraces of unhandled
+  exceptions.
+  (David Allsopp, review by Gabriel Scherer)
+
 - #9276: objinfo: cm[x]a print extra C options, objects and dlls in
   the order given on the cli. Follow up to #4949.
   (Daniel Bünzli, review by Gabriel Scherer)
