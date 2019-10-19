@@ -30,6 +30,10 @@
 #include "caml/startup_aux.h"
 
 
+#ifdef _WIN32
+extern void caml_win32_unregister_overflow_detection (void);
+#endif
+
 /* Initialize the atom table */
 
 CAMLexport header_t caml_atom_table[256];
@@ -172,6 +176,9 @@ CAMLexport void caml_shutdown(void)
   caml_free_shared_libs();
 #endif
   caml_stat_destroy_pool();
+#if defined(_WIN32) && defined(NATIVE_CODE)
+  caml_win32_unregister_overflow_detection();
+#endif
 
   shutdown_happened = 1;
 }

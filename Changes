@@ -453,6 +453,10 @@ OCaml 4.10.0
   and correct initialisation of some blocks allocated with caml_alloc_small.
   (David Allsopp, review by Xavier Leroy)
 
+- #9031: Unregister Windows stack overflow handler while shutting
+  the runtime down.
+  (Dmitry Bely, review by David Allsopp)
+
 OCaml 4.09 maintenance branch:
 ------------------------------
 
