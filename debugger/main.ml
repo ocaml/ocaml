@@ -29,7 +29,7 @@ open Primitives
 
 let line_buffer = Lexing.from_function read_user_input
 
-let loop ppf = line_loop ppf line_buffer
+let loop ppf = line_loop ppf line_buffer; stop_user_input ()
 
 let current_duration = ref (-1L)
 
@@ -130,7 +130,8 @@ let execute_file_if_any () =
   let len = Buffer.length buffer in
   if len > 0 then
     let commands = Buffer.sub buffer 0 (pred len) in
-    line_loop Format.std_formatter (Lexing.from_string commands)
+    line_loop Format.std_formatter (Lexing.from_string commands);
+    stop_user_input ()
 
 let toplevel_loop () =
   interactif := false;

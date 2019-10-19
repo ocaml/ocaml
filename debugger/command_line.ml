@@ -210,7 +210,7 @@ let line_loop ppf line_buffer =
       done
     with
     | Exit ->
-        stop_user_input ()
+        ()
 (*    | Sys_error s ->
         error ("System error: " ^ s) *)
 
@@ -571,6 +571,7 @@ let instr_source ppf lexbuf =
         interactif := false;
         user_channel := io_chan;
         line_loop ppf (Lexing.from_function read_user_input);
+        stop_user_input ();
         close_io io_chan;
         interactif := old_state;
         user_channel := old_channel
