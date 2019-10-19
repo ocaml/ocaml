@@ -16,7 +16,6 @@
 
 (******************************* Breakpoints ***************************)
 
-open Primitives
 open Checkpoints
 open Debugcom
 open Instruct
@@ -207,9 +206,4 @@ let exec_with_temporary_breakpoint pc funct =
     in
       Exec.protect (function () -> insert_position pc);
       temporary_breakpoint_position := Some pc;
-      try
-        funct ();
-        Exec.protect remove
-      with
-        x ->
-          cleanup x Exec.protect remove
+      Fun.protect ~finally:(fun () -> Exec.protect remove) funct
