@@ -245,4 +245,4 @@ let main () =
       exit 2
 
 let _ =
-  Printexc.catch (Unix.handle_unix_error main) ()
+  Unix.handle_unix_error main ()
