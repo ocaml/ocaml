@@ -200,6 +200,11 @@ stdlib__digest.cmx : \
     stdlib__bytes.cmx \
     stdlib__digest.cmi
 stdlib__digest.cmi :
+stdlib__either.cmo : \
+    stdlib__either.cmi
+stdlib__either.cmx : \
+    stdlib__either.cmi
+stdlib__either.cmi :
 stdlib__ephemeron.cmo : \
     stdlib__sys.cmi \
     stdlib__seq.cmi \
