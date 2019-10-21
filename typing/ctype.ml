@@ -301,15 +301,24 @@ type unification_mode =
   | Expression (* unification in expression *)
   | Pattern (* unification in pattern which may add local constraints *)
 
+type equations_generation =
+  | Forbidden
+  | Allowed_but_warn_on_non_generic_parts of Location.t
+
 let umode = ref Expression
-let generate_equations = ref false
+let equations_generation = ref Forbidden
 let assume_injective = ref false
 let allow_recursive_equation = ref false
+
+let can_generate_equations () =
+  match !equations_generation with
+  | Forbidden -> false
+  | _ -> true
 
 let set_mode_pattern ~generate ~injective ~allow_recursive f =
   Misc.protect_refs
     [ Misc.R (umode, Pattern);
-      Misc.R (generate_equations, generate);
+      Misc.R (equations_generation, generate);
       Misc.R (assume_injective, injective);
       Misc.R (allow_recursive_equation, allow_recursive);
     ] f
@@ -2103,6 +2112,7 @@ let deep_occur t0 ty =
 *)
 
 let gadt_equations_level = ref None
+let principal_level = ref None
 
 let get_gadt_equations_level () =
   match !gadt_equations_level with
@@ -2420,7 +2430,7 @@ let find_lowest_level ty =
 let find_expansion_scope env path =
   (Env.find_type path env).type_expansion_scope
 
-let add_gadt_equation env source destination =
+let add_gadt_equation ~principally_known env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
   if local_non_recursive_abbrev !env source destination then begin
@@ -2429,6 +2439,12 @@ let add_gadt_equation env source destination =
       max (Path.scope source) (get_gadt_equations_level ())
     in
     let decl = new_declaration expansion_scope (Some destination) in
+    begin match principally_known with
+    | Ok () -> ()
+    | Error loc ->
+      Location.prerr_warning loc
+        (Warnings.Not_principal "This introduction of a GADT equation")
+    end;
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end
@@ -2535,6 +2551,16 @@ let unify1_var env t1 t2 =
   with Unify _ as e ->
     t1.desc <- d1;
     raise e
+
+(* Can only be called when generate_equations is true *)
+let using_only_principal_information t1 t2 =
+  match !equations_generation, !principal_level with
+  | Forbidden, _
+  | _, None -> assert false
+  | Allowed_but_warn_on_non_generic_parts loc, Some lev ->
+    if t1.level >= lev && t2.level >= lev
+    then Ok ()
+    else Error loc
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
@@ -2665,10 +2691,10 @@ and unify3 env t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          if !umode = Expression || not !generate_equations then
+          if !umode = Expression || !equations_generation = Forbidden then
             unify_list env tl1 tl2
           else if !assume_injective then
-            set_mode_pattern ~generate:true ~injective:false
+            set_mode_pattern ~generate:!equations_generation ~injective:false
               ~allow_recursive:!allow_recursive_equation
               (fun () -> unify_list env tl1 tl2)
           else if in_current_module p1 (* || in_pervasives p1 *)
@@ -2683,7 +2709,7 @@ and unify3 env t1 t1' t2 t2' =
             List.iter2
               (fun i (t1, t2) ->
                 if i then unify env t1 t2 else
-                set_mode_pattern ~generate:false ~injective:false
+                set_mode_pattern ~generate:Forbidden ~injective:false
                   ~allow_recursive:!allow_recursive_equation
                   begin fun () ->
                     let snap = snapshot () in
@@ -2695,25 +2721,28 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (path,[],_),
          Tconstr (path',[],_))
         when is_instantiable !env path && is_instantiable !env path'
-        && !generate_equations ->
+        && can_generate_equations () ->
+          let principally_known = using_only_principal_information t1' t2' in
           let source, destination =
             if Path.scope path > Path.scope path'
             then  path , t2'
             else  path', t1'
           in
-          add_gadt_equation env source destination
+          add_gadt_equation ~principally_known env source destination
       | (Tconstr (path,[],_), _)
-        when is_instantiable !env path && !generate_equations ->
+        when is_instantiable !env path && can_generate_equations () ->
+          let principally_known = using_only_principal_information t1' t2' in
           reify env t2';
-          add_gadt_equation env path t2'
+          add_gadt_equation ~principally_known env path t2'
       | (_, Tconstr (path,[],_))
-        when is_instantiable !env path && !generate_equations ->
+        when is_instantiable !env path && can_generate_equations () ->
+          let principally_known = using_only_principal_information t1' t2' in
           reify env t1';
-          add_gadt_equation env path t1'
+          add_gadt_equation ~principally_known env path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
-          if !generate_equations then mcomp !env t1' t2'
+          if can_generate_equations () then mcomp !env t1' t2'
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields env fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
@@ -2735,7 +2764,7 @@ and unify3 env t1 t1' t2 t2' =
               backtrack snap;
               reify env t1';
               reify env t2';
-              if !generate_equations then mcomp !env t1' t2'
+              if can_generate_equations () then mcomp !env t1' t2'
           end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
@@ -3058,12 +3087,17 @@ let unify env ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_trace !env trace))
 
-let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
+let unify_gadt ~loc ~equations_level:lev ~principal_level:plev ~allow_recursive
+    (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
     gadt_equations_level := Some lev;
-    set_mode_pattern ~generate:true ~injective:true ~allow_recursive
-                     (fun () -> unify env ty1 ty2);
+    principal_level := Some plev;
+    set_mode_pattern
+      ~generate:(Allowed_but_warn_on_non_generic_parts loc)
+      ~injective:true
+      ~allow_recursive
+      (fun () -> unify env ty1 ty2);
     gadt_equations_level := None;
     TypePairs.clear unify_eq_set;
   with e ->

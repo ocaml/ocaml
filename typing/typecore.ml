@@ -307,7 +307,9 @@ let unify_pat_types ?(refine = None) loc env ty ty' =
   try
     match refine with
     | Some allow_recursive ->
-        unify_gadt ~equations_level:(get_gadt_equations_level ())
+        unify_gadt ~loc
+          ~equations_level:(get_gadt_equations_level ())
+          ~principal_level:(get_gadt_equations_level ())
           ~allow_recursive env ty ty'
     | None ->
         unify !env ty ty'

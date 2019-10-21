@@ -715,6 +715,10 @@ let bad_location =
 [%%expect{|
 val bad_location : 'a GADT_ordering.is_point -> 'a -> int = <fun>
 |}, Principal{|
+Line 4, characters 11-19:
+4 |       let+ Is_point = is_point
+               ^^^^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
 Line 5, characters 13-14:
 5 |       and+ { x; y } = a in
                  ^

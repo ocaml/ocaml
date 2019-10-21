@@ -42,6 +42,16 @@ let f (type a) t (x : a) =
 ;;
 [%%expect{|
 val f : 'a t -> 'a -> int = <fun>
+|}, Principal{|
+Line 4, characters 4-10:
+4 |   | IntLit, n -> n+1
+        ^^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
+Line 5, characters 4-11:
+5 |   | BoolLit, b -> 1
+        ^^^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
+val f : 'a t -> 'a -> int = <fun>
 |}]
 
 let f (type a) t (x : a) =
@@ -51,6 +61,12 @@ let f (type a) t (x : a) =
   | _, _ -> 1
 ;;
 [%%expect{|
+val f : 'a t -> 'a -> int = <fun>
+|}, Principal{|
+Line 4, characters 4-10:
+4 |   | IntLit, n -> n+1
+        ^^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
 val f : 'a t -> 'a -> int = <fun>
 |}]
 
@@ -121,6 +137,16 @@ let f2 (type x) t1 =
   | AB -> true
   | MAB -> false;;
 [%%expect{|
+val f2 : 'x M.t -> bool = <fun>
+|}, Principal{|
+Line 4, characters 4-6:
+4 |   | AB -> true
+        ^^
+Warning 18: This introduction of a GADT equation is not principal.
+Line 5, characters 4-7:
+5 |   | MAB -> false;;
+        ^^^
+Warning 18: This introduction of a GADT equation is not principal.
 val f2 : 'x M.t -> bool = <fun>
 |}]
 
