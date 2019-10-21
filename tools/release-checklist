@@ -139,6 +139,11 @@ open https://github.com/ocaml/ocaml/releases
 # for a minor release, the description is:
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
+## 5.2: Inria CI
+
+After creating a new branch, add it to the Inria CI list.
+Remove the oldest branch from this list.
+
 
 ## 6: create OPAM packages
 
