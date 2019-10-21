@@ -1000,7 +1000,7 @@ static void bf_check (void)
     }else{
       CAMLassert (caml_gc_phase != Phase_sweep
                   || caml_fl_merge == Val_NULL
-                  || Val_bp (bf_small_fl[i].merge) < caml_fl_merge);
+                  || bf_small_fl[i].merge < &Next_small(caml_fl_merge));
     }
     CAMLassert (*bf_small_fl[i].merge == Val_NULL
                 || Color_val (*bf_small_fl[i].merge) == Caml_blue);
