@@ -29,9 +29,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-/* Basic types and constants */
-
-typedef size_t asize_t;
+/* Deprecation warnings */
 
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
@@ -43,6 +41,30 @@ typedef size_t asize_t;
     typedef __declspec(deprecated) type name
 #else
   #define CAMLdeprecated_typedef(name, type) typedef type name
+#endif
+
+#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L
+
+#define CAML_STRINGIFY(x) #x
+#define CAML_MAKEWARNING1(x) CAML_STRINGIFY(GCC warning x)
+#define CAML_MAKEWARNING2(y) CAML_MAKEWARNING1(#y)
+#define CAML_PREPROWARNING(x) _Pragma(CAML_MAKEWARNING2(x))
+#define CAML_DEPRECATED(name1,name2) \
+  CAML_PREPROWARNING(name1 is deprecated: use name2 instead)
+
+#else
+
+#define CAML_PREPROWARNING(msg)
+#define CAML_DEPRECATED(name1,name2)
+
+#endif
+
+/* Basic types and constants */
+
+typedef size_t asize_t;
+
+#ifndef NULL
+#define NULL 0
 #endif
 
 #ifdef CAML_INTERNALS
