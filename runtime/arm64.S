@@ -101,12 +101,12 @@ caml_system__code_begin:
 
 FUNCTION(caml_call_gc)
         CFI_STARTPROC
+.Lcaml_call_gc:
     /* Record return address */
         str     x30, Caml_state(last_return_address)
     /* Record lowest stack address */
         mov     TMP, sp
         str     TMP, Caml_state(bottom_of_stack)
-.Lcaml_call_gc:
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
         CFI_OFFSET(29, -400)
@@ -187,117 +187,37 @@ FUNCTION(caml_call_gc)
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
-1:      sub     ALLOC_PTR, ALLOC_PTR, #16
+        sub     ALLOC_PTR, ALLOC_PTR, #16
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    2f
+        b.lo    .Lcaml_call_gc
         ret
-2:      add     ALLOC_PTR, ALLOC_PTR, #16
-        stp     x29, x30, [sp, -16]!
-        CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.  This is the
-       address immediately above the pair of words (x29 and x30) we just
-       pushed.  Those must not be included since otherwise the distance from
-       [Caml_state->bottom_of_stack] to the highest address in the caller's
-       stack frame won't match the frame size contained in the relevant
-       frame descriptor. */
-        add     x29, sp, #16
-        str     x29, Caml_state(bottom_of_stack)
-        add     x29, sp, #0
-    /* Record return address */
-        str     x30, Caml_state(last_return_address)
-    /* Call GC */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldp     x29, x30, [sp], 16
-        CFI_ADJUST(-16)
-    /* Try again */
-        b       1b
         CFI_ENDPROC
-        .type   caml_alloc1, %function
         .size   caml_alloc1, .-caml_alloc1
 
-        .align  2
-        .globl  caml_alloc2
-caml_alloc2:
+FUNCTION(caml_alloc2)
         CFI_STARTPROC
-1:      sub     ALLOC_PTR, ALLOC_PTR, #24
+        sub     ALLOC_PTR, ALLOC_PTR, #24
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    2f
+        b.lo    .Lcaml_call_gc
         ret
-2:      add     ALLOC_PTR, ALLOC_PTR, #24
-        stp     x29, x30, [sp, -16]!
-        CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.
-       See comment above. */
-        add     x29, sp, #16
-        str     x29, Caml_state(bottom_of_stack)
-        add     x29, sp, #0
-    /* Record return address */
-        str     x30, Caml_state(last_return_address)
-    /* Call GC */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldp     x29, x30, [sp], 16
-        CFI_ADJUST(-16)
-    /* Try again */
-        b       1b
         CFI_ENDPROC
-        .type   caml_alloc2, %function
         .size   caml_alloc2, .-caml_alloc2
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
-1:      sub     ALLOC_PTR, ALLOC_PTR, #32
+        sub     ALLOC_PTR, ALLOC_PTR, #32
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    2f
+        b.lo    .Lcaml_call_gc
         ret
-2:      add     ALLOC_PTR, ALLOC_PTR, #32
-        stp     x29, x30, [sp, -16]!
-        CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.
-       See comment above. */
-        add     x29, sp, #16
-        str     x29, Caml_state(bottom_of_stack)
-        add     x29, sp, #0
-    /* Record return address */
-        str     x30, Caml_state(last_return_address)
-    /* Call GC */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldp     x29, x30, [sp], 16
-        CFI_ADJUST(-16)
-    /* Try again */
-        b       1b
         CFI_ENDPROC
-        .type   caml_alloc3, %function
         .size   caml_alloc3, .-caml_alloc3
 
-        TEXT_SECTION(caml_allocN)
-        .align  2
-        .globl  caml_allocN
-caml_allocN:
+FUNCTION(caml_allocN)
         CFI_STARTPROC
-1:      sub     ALLOC_PTR, ALLOC_PTR, ARG
+        sub     ALLOC_PTR, ALLOC_PTR, ARG
         cmp     ALLOC_PTR, ALLOC_LIMIT
-        b.lo    2f
+        b.lo    .Lcaml_call_gc
         ret
-2:      add     ALLOC_PTR, ALLOC_PTR, ARG
-        stp     x29, x30, [sp, -16]!
-        CFI_ADJUST(16)
-    /* Record the lowest address of the caller's stack frame.
-       See comment above. */
-        add     x29, sp, #16
-        str     x29, Caml_state(bottom_of_stack)
-        add     x29, sp, #0
-    /* Record return address */
-        str     x30, Caml_state(last_return_address)
-    /* Call GC.  This preserves ARG */
-        bl      .Lcaml_call_gc
-    /* Restore return address */
-        ldp     x29, x30, [sp], 16
-        CFI_ADJUST(-16)
-    /* Try again */
-        b       1b
         CFI_ENDPROC
         .size   caml_allocN, .-caml_allocN
 

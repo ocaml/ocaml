@@ -534,31 +534,27 @@ let assembly_code_for_allocation ~label_after_call_gc i ~n ~far ~dbginfo =
     record_frame_label ?label:label_after_call_gc i.live (Dbg_alloc dbginfo)
   in
   if !fastcode_flag then begin
-    let lbl_redo = new_label() in
+    let lbl_after_alloc = new_label() in
     let lbl_call_gc = new_label() in
     (* n is at most Max_young_whsize * 8, i.e. currently 0x808,
        so it is reasonable to assume n < 0x1_000.  This makes
        the generated code simpler. *)
     assert (16 <= n && n < 0x1_000 && n land 0x7 = 0);
-    (* Instead of checking whether young_ptr - n < young_limit, we check whether
-       young_ptr - (n - 8) <= young_limit. It's equivalent, but this way around
-       we can avoid mutating young_ptr on failed allocations, by doing the
-       calculations in i.res.(0) instead of young_ptr. *)
-    `{emit_label lbl_redo}:`;
-    `	sub	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #{emit_int (n - 8)}\n`;
-    `	cmp	{emit_reg i.res.(0)}, {emit_reg reg_alloc_limit}\n`;
+    `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int n}\n`;
+    `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
     if not far then begin
-      `	b.ls	{emit_label lbl_call_gc}\n`
+      `	b.lo	{emit_label lbl_call_gc}\n`
     end else begin
       let lbl = new_label () in
-      `	b.hi	{emit_label lbl}\n`;
+      `	b.cs	{emit_label lbl}\n`;
       `	b	{emit_label lbl_call_gc}\n`;
       `{emit_label lbl}:\n`
     end;
-    `	sub	{emit_reg reg_alloc_ptr}, {emit_reg i.res.(0)}, #8\n`;
+    `{emit_label lbl_after_alloc}:`;
+    `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
     call_gc_sites :=
       { gc_lbl = lbl_call_gc;
-        gc_return_lbl = lbl_redo;
+        gc_return_lbl = lbl_after_alloc;
         gc_frame_lbl = lbl_frame } :: !call_gc_sites
   end else begin
     begin match n with

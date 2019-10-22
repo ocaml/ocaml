@@ -619,13 +619,13 @@ let emit_instr fallthrough i =
         load_domain_state ebx;
         I.mov (domain_field Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
+        I.mov eax (domain_field Domain_young_ptr RBX);
         I.cmp (domain_field Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
         let lbl_frame =
           record_frame_label ?label:label_after_call_gc
             i.live (Dbg_alloc dbginfo) in
         I.jb (label lbl_call_gc);
-        I.mov eax (domain_field Domain_young_ptr RBX);
         let lbl_after_alloc = new_label() in
         def_label lbl_after_alloc;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));

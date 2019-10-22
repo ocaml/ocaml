@@ -86,8 +86,8 @@ void caml_garbage_collection(void)
   { /* Compute the total allocation size at this point,
        including allocations combined by Comballoc */
     unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
-    int nallocs = *alloc_len++;
-    for (int i = 0; i < nallocs; i++) {
+    int i, nallocs = *alloc_len++;
+    for (i = 0; i < nallocs; i++) {
       /* Since 2 words is the smallest allocation, sizes are
          encoded as (wosize - 2).
          See Emitaux.emit_frames and caml/stack.h */

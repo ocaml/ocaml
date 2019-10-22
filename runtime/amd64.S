@@ -159,15 +159,6 @@
         movq    GREL(dstlabel)(%rip), %r11 ; \
         popq    (%r11);  CFI_ADJUST (-8)
 
-/* Record lowest stack address and return address.  Clobbers %rax. */
-#define RECORD_STACK_FRAME(OFFSET) \
-        pushq   %r11 ; CFI_ADJUST(8); \
-        movq    8+OFFSET(%rsp), %rax ; \
-        movq    %rax, Caml_state(last_return_address) ; \
-        leaq    16+OFFSET(%rsp), %rax ; \
-        movq    %rax, Caml_state(bottom_of_stack) ; \
-        popq    %r11; CFI_ADJUST(-8)
-
 /* Load address of global [label] in register [dst]. */
 #define LEA_VAR(label,dst) \
         movq    GREL(label)(%rip), dst
@@ -196,12 +187,6 @@
 
 #define POP_VAR(dstlabel) \
         popq    G(dstlabel)(%rip); CFI_ADJUST(-8)
-
-#define RECORD_STACK_FRAME(OFFSET) \
-        movq    OFFSET(%rsp), %rax ; \
-        movq    %rax, Caml_state(last_return_address) ; \
-        leaq    8+OFFSET(%rsp), %rax ; \
-        movq    %rax, Caml_state(bottom_of_stack)
 
 #define LEA_VAR(label,dst) \
         leaq    G(label)(%rip), dst
@@ -328,8 +313,12 @@ G(caml_system__code_begin):
 
 FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
-        RECORD_STACK_FRAME(0)
 LBL(caml_call_gc):
+    /* Record lowest stack address and return address. */
+        movq    (%rsp), %rax
+        movq    %rax, Caml_state(last_return_address)
+        leaq    8(%rsp), %rax
+        movq    %rax, Caml_state(bottom_of_stack)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
         subq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(STACK_PROBE_SIZE);
@@ -427,15 +416,7 @@ FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
         subq    $16, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(100)
-        ret
-LBL(100):
-        RECORD_STACK_FRAME(0)
-        ENTER_FUNCTION
-/*        subq    $8, %rsp; CFI_ADJUST (8); */
-        call    LBL(caml_call_gc)
-/*        addq    $8, %rsp; CFI_ADJUST (-8); */
-        LEAVE_FUNCTION
+        jb      LBL(caml_call_gc)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc1))
@@ -444,15 +425,7 @@ FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
         subq    $24, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(101)
-        ret
-LBL(101):
-        RECORD_STACK_FRAME(0)
-        ENTER_FUNCTION
-/*        subq    $8, %rsp; CFI_ADJUST (8); */
-        call    LBL(caml_call_gc)
-/*        addq    $8, %rsp; CFI_ADJUST (-8); */
-        LEAVE_FUNCTION
+        jb      LBL(caml_call_gc)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc2))
@@ -461,15 +434,7 @@ FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
         subq    $32, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(102)
-        ret
-LBL(102):
-        RECORD_STACK_FRAME(0)
-        ENTER_FUNCTION
-/*        subq    $8, %rsp; CFI_ADJUST (8) */
-        call    LBL(caml_call_gc)
-/*        addq    $8, %rsp; CFI_ADJUST (-8) */
-        LEAVE_FUNCTION
+        jb      LBL(caml_call_gc)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc3))
@@ -478,13 +443,7 @@ FUNCTION(G(caml_allocN))
 CFI_STARTPROC
         subq    %rax, %r15
         cmpq    Caml_state(young_limit), %r15
-        jb      LBL(103)
-        ret
-LBL(103):
-        RECORD_STACK_FRAME(0)
-        ENTER_FUNCTION
-        call    LBL(caml_call_gc)
-        LEAVE_FUNCTION
+        jb      LBL(caml_call_gc)
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_allocN))
