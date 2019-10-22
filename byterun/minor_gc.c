@@ -507,13 +507,55 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
 //*****************************************************************************
 
-/* Make sure the minor heap is empty by performing a minor collection
-   if needed.
-*/
 
-void caml_empty_minor_heap_domain (struct domain* domain)
+
+void caml_empty_minor_heap_domain_finalizers (struct domain* domain)
 {
-  CAMLnoalloc;
+  caml_domain_state* domain_state = domain->state;
+  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
+  struct caml_custom_elt *elt;
+  uintnat minor_allocated_bytes = domain_state->young_end - domain_state->young_ptr;
+
+  if (minor_allocated_bytes != 0)
+  {
+    caml_ev_begin("minor_gc/finalisers");
+    caml_final_update_last_minor(domain);
+    /* Run custom block finalisation of dead minor values */
+    for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
+      value v = elt->block;
+      if (Hd_val(v) == 0) {
+        /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
+      } else {
+        /* Block will be freed: call finalisation function, if any */
+        void (*final_fun)(value) = Custom_ops_val(v)->finalize;
+        if (final_fun != NULL) final_fun(v);
+      }
+    }
+    caml_ev_end("minor_gc/finalisers");
+  }
+}
+
+void caml_empty_minor_heap_domain_clear (struct domain* domain)
+{
+  caml_domain_state* domain_state = domain->state;
+  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
+  uintnat minor_allocated_bytes = domain_state->young_end - domain_state->young_ptr;
+
+  caml_final_empty_young(domain);
+
+  if (minor_allocated_bytes != 0)
+  {
+    clear_table ((struct generic_table *)&minor_tables->major_ref);
+    clear_table ((struct generic_table *)&minor_tables->minor_ref);
+    clear_table ((struct generic_table *)&minor_tables->ephe_ref);
+    clear_table ((struct generic_table *)&minor_tables->custom);
+
+    domain_state->young_ptr = domain_state->young_end;
+  }
+}
+
+void caml_empty_minor_heap_promote (struct domain* domain)
+{
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   unsigned rewrite_successes = 0;
@@ -524,7 +566,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   struct oldify_state st = {0};
   value **r;
   struct caml_ephe_ref_elt *re;
-  struct caml_custom_elt *elt;
 
   st.promote_domain = domain;
 
@@ -640,29 +681,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
     caml_ev_end("minor_gc/update_minor_tables");
 
-    caml_ev_begin("minor_gc/finalisers");
-    caml_final_update_last_minor(domain);
-    /* Run custom block finalisation of dead minor values */
-    for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
-      value v = elt->block;
-      if (Hd_val(v) == 0) {
-        /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
-      } else {
-        /* Block will be freed: call finalisation function, if any */
-        void (*final_fun)(value) = Custom_ops_val(v)->finalize;
-        if (final_fun != NULL) final_fun(v);
-      }
-    }
-    caml_final_empty_young(domain);
-    caml_ev_end("minor_gc/finalisers");
-
-
-    clear_table ((struct generic_table *)&minor_tables->major_ref);
-    clear_table ((struct generic_table *)&minor_tables->minor_ref);
-    clear_table ((struct generic_table *)&minor_tables->ephe_ref);
-    clear_table ((struct generic_table *)&minor_tables->custom);
-
-    domain_state->young_ptr = domain_state->young_end;
     domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     domain_state->stat_minor_collections++;
     domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
@@ -673,20 +691,24 @@ void caml_empty_minor_heap_domain (struct domain* domain)
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
                  (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
   }
-  else {
+  else
+  {
     caml_final_empty_young(domain);
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
   }
+}
 
-#ifdef DEBUG
-  {
-    value *p;
-    for (p = (value *) domain_state->young_start;
-         p < (value *) domain_state->young_end; ++p){
-      *p = Debug_free_minor;
-    }
-  }
-#endif
+/* Make sure the minor heap is empty by performing a minor collection
+   if needed.
+*/
+
+void caml_empty_minor_heap_domain (struct domain* domain)
+{
+  CAMLnoalloc;
+
+  caml_empty_minor_heap_promote(domain);
+  caml_empty_minor_heap_domain_finalizers(domain);
+  caml_empty_minor_heap_domain_clear(domain);
 }
 
 void caml_empty_minor_heap ()
