@@ -163,6 +163,13 @@ git commit -m "first commit on branch $VERSION" -a
 git push $VERSION
 ```
 
+Adjust github branch settings:
+
+Go to
+  https://github.com/ocaml/ocaml/settings/branches
+and add a rule for protecting the new branch
+(copy the rights from the previous version)
+
 ## 5.1: create the release on github (only for a production release)
 
 open https://github.com/ocaml/ocaml/releases
