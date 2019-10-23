@@ -896,9 +896,8 @@ static void domain_terminate()
   while (!finished) {
     caml_finish_sweeping();
 
-    caml_try_stw_empty_minor_heap_on_all_domains();
-    /* TODO: is try really acceptable or do we need 'every time'
-    caml_empty_minor_heap (); */
+    caml_empty_my_minor_heap();
+
     caml_finish_marking();
     handover_ephemerons(domain_state);
     handover_finalisers(domain_state);
