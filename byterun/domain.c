@@ -533,6 +533,20 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   caml_ev_end("stw/handler");
 }
 
+/* This runs the passed handler on all running domains but must only be run on *one* domain
+   inside of a global barrier during a stop-the-world phase. */
+void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data) {
+  int i;
+
+  for (i = 0; i < Max_domains; i++) {
+    struct interruptor* interruptor = &all_domains[i].interruptor;
+
+    if( interruptor->running ) {
+      handler(&all_domains[i].state, data);
+    }
+  }
+}
+
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data)
 {
   int i;
@@ -881,6 +895,9 @@ static void domain_terminate()
   s->terminating = 1;
   while (!finished) {
     caml_finish_sweeping();
+
+    caml_try_stw_empty_minor_heap_on_all_domains();
+
     caml_empty_minor_heap();
     caml_finish_marking();
     handover_ephemerons(domain_state);

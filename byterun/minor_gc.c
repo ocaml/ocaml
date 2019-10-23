@@ -401,7 +401,7 @@ static value next_minor_block(caml_domain_state* domain_state, value curr_hp)
   return curr_hp + Bsize_wsize(Whsize_wosize(wsz));
 }
 
-void caml_empty_minor_heap_domain (struct domain* domain);
+void caml_empty_minor_heap_domain (struct domain* domain, void* data);
 
 CAMLexport value caml_promote(struct domain* domain, value root)
 {
@@ -443,7 +443,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   if (percent_to_scan > Percent_to_promote_with_GC) {
     caml_gc_log("caml_promote: forcing minor GC. %%_minor_to_scan=%f", percent_to_scan);
     // ???
-    caml_empty_minor_heap_domain (domain);
+    caml_empty_minor_heap_domain (domain, (void*)0);
   } else {
     caml_do_local_roots (&forward_pointer, st.promote_domain, domain, 1);
     caml_scan_stack (&forward_pointer, st.promote_domain, domain_state->current_stack);
@@ -702,7 +702,7 @@ void caml_empty_minor_heap_promote (struct domain* domain)
    if needed.
 */
 
-void caml_empty_minor_heap_domain (struct domain* domain)
+void caml_empty_minor_heap_domain (struct domain* domain, void* unused)
 {
   CAMLnoalloc;
 
@@ -713,7 +713,27 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 
 void caml_empty_minor_heap ()
 {
-  caml_empty_minor_heap_domain (caml_domain_self());
+  caml_empty_minor_heap_domain (caml_domain_self(), (void*)0);
+}
+
+void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
+{
+  barrier_status b;
+
+  b = caml_global_barrier_begin();
+  if (caml_global_barrier_is_final(b))
+  {
+    caml_gc_log("running stw empty_minor_heap");
+    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain, (void*)0);
+    caml_gc_log("finished stw empty_minor_heap");
+  }
+  caml_global_barrier_end(b);
+}
+
+int caml_try_stw_empty_minor_heap_on_all_domains ()
+{
+  caml_gc_log("requesting stw empty_minor_heap");
+  return caml_try_run_on_all_domains(&caml_stw_empty_minor_heap, (void*)0);
 }
 
 /* Do a minor collection and a slice of major collection, call finalisation
@@ -723,6 +743,8 @@ void caml_empty_minor_heap ()
 CAMLexport void caml_minor_collection (void)
 {
   caml_ev_pause(EV_PAUSE_GC);
+
+  caml_try_stw_empty_minor_heap_on_all_domains();
 
   caml_handle_incoming_interrupts ();
   caml_empty_minor_heap ();
