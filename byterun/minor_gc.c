@@ -509,7 +509,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
 
 
-void caml_empty_minor_heap_domain_finalizers (struct domain* domain)
+void caml_empty_minor_heap_domain_finalizers (struct domain* domain, void* unused)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
@@ -535,7 +535,7 @@ void caml_empty_minor_heap_domain_finalizers (struct domain* domain)
   }
 }
 
-void caml_empty_minor_heap_domain_clear (struct domain* domain)
+void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
@@ -554,7 +554,7 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain)
   }
 }
 
-void caml_empty_minor_heap_promote (struct domain* domain)
+void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
@@ -706,9 +706,9 @@ void caml_empty_minor_heap_domain (struct domain* domain, void* unused)
 {
   CAMLnoalloc;
 
-  caml_empty_minor_heap_promote(domain);
-  caml_empty_minor_heap_domain_finalizers(domain);
-  caml_empty_minor_heap_domain_clear(domain);
+  caml_empty_minor_heap_promote(domain, (void*)0);
+  caml_empty_minor_heap_domain_finalizers(domain, (void*)0);
+  caml_empty_minor_heap_domain_clear(domain, (void*)0);
 }
 
 /* must be called within a STW section */
@@ -719,8 +719,17 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   b = caml_global_barrier_begin();
   if (caml_global_barrier_is_final(b))
   {
-    caml_gc_log("running stw empty_minor_heap");
-    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain, (void*)0);
+    CAMLnoalloc;
+
+    caml_gc_log("running stw empty_minor_heap_promote");
+    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_promote, (void*)0);
+
+    caml_gc_log("running stw empty_minor_heap_domain_finalizers");
+    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
+
+    caml_gc_log("running stw empty_minor_heap_domain_clear");
+    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
+
     caml_gc_log("finished stw empty_minor_heap");
   }
   caml_global_barrier_end(b);
@@ -731,6 +740,17 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
 {
   caml_gc_log("requesting stw empty_minor_heap");
   return caml_try_run_on_all_domains(&caml_stw_empty_minor_heap, (void*)0);
+}
+
+/* must be called outside a STW section, will retry until we have emptied our minor heap */
+void caml_empty_my_minor_heap ()
+{
+  caml_domain_state* domain_state = Caml_state;
+
+  caml_try_stw_empty_minor_heap_on_all_domains();
+
+  if (domain_state->young_end - domain_state->young_ptr > 0)
+    caml_empty_my_minor_heap();
 }
 
 /* Do a minor collection and a slice of major collection, call finalisation
