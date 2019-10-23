@@ -177,10 +177,7 @@ CAMLprim value caml_gc_minor(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
-
-  caml_try_stw_empty_minor_heap_on_all_domains();
-  /* TODO: is try really acceptable or do we need 'every time'
-  caml_empty_minor_heap (); */
+  caml_minor_collection ();
   CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }
