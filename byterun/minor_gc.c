@@ -711,11 +711,7 @@ void caml_empty_minor_heap_domain (struct domain* domain, void* unused)
   caml_empty_minor_heap_domain_clear(domain);
 }
 
-void caml_empty_minor_heap ()
-{
-  caml_empty_minor_heap_domain (caml_domain_self(), (void*)0);
-}
-
+/* must be called within a STW section */
 void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 {
   barrier_status b;
@@ -730,6 +726,7 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   caml_global_barrier_end(b);
 }
 
+/* must be called outside a STW section */
 int caml_try_stw_empty_minor_heap_on_all_domains ()
 {
   caml_gc_log("requesting stw empty_minor_heap");
@@ -744,10 +741,10 @@ CAMLexport void caml_minor_collection (void)
 {
   caml_ev_pause(EV_PAUSE_GC);
 
-  caml_try_stw_empty_minor_heap_on_all_domains();
-
   caml_handle_incoming_interrupts ();
-  caml_empty_minor_heap ();
+  caml_try_stw_empty_minor_heap_on_all_domains();
+  /* TODO: is try really acceptable or do we need 'every time'
+  caml_empty_minor_heap (); */
   caml_handle_incoming_interrupts ();
   caml_major_collection_slice (0, 0);
   caml_final_do_calls();
