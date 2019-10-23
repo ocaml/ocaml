@@ -778,7 +778,6 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
 
   caml_stw_empty_minor_heap(domain, (void*)0);
-  caml_empty_minor_heap();
 
   caml_gc_log("In STW callback");
   caml_ev_begin("major_gc/stw");
@@ -1154,7 +1153,6 @@ static void finish_major_cycle_callback (struct domain* domain, void* arg)
   CAMLassert (domain == caml_domain_self());
 
   caml_stw_empty_minor_heap(domain, (void*)0);
-  caml_empty_minor_heap();
   while (saved_major_cycles == caml_major_cycles_completed) {
     major_collection_slice(10000000, 1, 0);
   }

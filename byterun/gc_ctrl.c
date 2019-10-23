@@ -179,19 +179,20 @@ CAMLprim value caml_gc_minor(value v)
   CAMLassert (v == Val_unit);
 
   caml_try_stw_empty_minor_heap_on_all_domains();
-
-  caml_minor_collection ();
+  /* TODO: is try really acceptable or do we need 'every time'
+  caml_empty_minor_heap (); */
   CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }
 
 CAMLprim value caml_gc_major(value v)
-{                                                    Assert (v == Val_unit);
+{
+  Assert (v == Val_unit);
   caml_gc_log ("Major GC cycle requested");
   caml_ev_pause(EV_PAUSE_GC);
   caml_try_stw_empty_minor_heap_on_all_domains();
-
-  caml_empty_minor_heap ();
+  /* TODO: is try really acceptable or do we need 'every time'
+  caml_empty_minor_heap (); */
   caml_finish_major_cycle();
   caml_final_do_calls ();
   caml_ev_resume();
@@ -207,8 +208,8 @@ CAMLprim value caml_gc_full_major(value v)
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
     caml_try_stw_empty_minor_heap_on_all_domains();
-
-    caml_empty_minor_heap();
+    /* TODO: is try really acceptable or do we need 'every time'
+    caml_empty_minor_heap (); */
     caml_finish_major_cycle();
     caml_final_do_calls ();
   }
@@ -222,7 +223,8 @@ CAMLprim value caml_gc_major_slice (value v)
   CAMLassert (Is_long (v));
   caml_ev_pause(EV_PAUSE_GC);
   caml_try_stw_empty_minor_heap_on_all_domains();
-  caml_empty_minor_heap ();
+  /* TODO: is try really acceptable or do we need 'every time'
+  caml_empty_minor_heap (); */
   res = caml_major_collection_slice(Long_val(v), 0);
   caml_ev_resume();
   caml_handle_gc_interrupt();
