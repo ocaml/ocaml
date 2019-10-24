@@ -121,7 +121,6 @@ struct oldify_state {
   value todo_list;
   uintnat live_bytes;
   struct domain* promote_domain;
-  value oldest_promoted;
 };
 
 static value alloc_shared(mlsize_t wosize, tag_t tag)
@@ -170,6 +169,7 @@ static void oldify_one (void* st_v, value v, value *p)
           domain_state->young_ptr <= domain_state->young_end);
 
  tail_call:
+  /* TODO: want to follow links in all minor heaps */
   if (!(Is_block(v) && is_in_interval((value)Hp_val(v), young_ptr, young_end))) {
     /* not a minor block */
     *p = v;
@@ -193,10 +193,6 @@ static void oldify_one (void* st_v, value v, value *p)
       v -= infix_offset;
     }
   } while (tag == Infix_tag);
-
-  if (((value)Hp_val(v)) > st->oldest_promoted) {
-    st->oldest_promoted = (value)Hp_val(v);
-  }
 
   if (tag == Cont_tag) {
     struct stack_info* stk = Ptr_val(Op_val(v)[0]);
@@ -405,17 +401,9 @@ void caml_empty_minor_heap_domain (struct domain* domain, void* data);
 
 CAMLexport value caml_promote(struct domain* domain, value root)
 {
-  value **r;
-  value iter, f;
-  mlsize_t i;
   caml_domain_state* domain_state = domain->state;
-  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
-  char* young_ptr = domain_state->young_ptr;
-  char* young_end = domain_state->young_end;
-  float percent_to_scan;
   uintnat prev_alloc_words = domain_state->allocated_words;
   struct oldify_state st = {0};
-  struct caml_ephe_ref_elt *re;
 
   /* Integers are already shared */
   if (Is_long(root))
@@ -425,7 +413,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   if (!Is_minor(root))
     return root;
 
-  st.oldest_promoted = (value)domain_state->young_start;
   st.promote_domain = domain;
 
   CAMLassert(caml_owner_of_young_block(root) == domain);
@@ -436,71 +423,10 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   /* FIXME: surely a newly-allocated root is already darkened? */
   caml_darken(0, root, 0);
 
-  percent_to_scan = st.oldest_promoted <= (value)young_ptr ? 0.0 :
-    (((float)(st.oldest_promoted - (value)young_ptr)) * 100.0 /
-     ((value)young_end - (value)domain_state->young_start));
+  /* ctk21: inefficient, but part of refactor to remove caml_promote */
+  caml_gc_log("caml_promote: forcing minor GC. ");
+  caml_empty_minor_heap_domain (domain, (void*)0);
 
-  if (percent_to_scan > Percent_to_promote_with_GC) {
-    caml_gc_log("caml_promote: forcing minor GC. %%_minor_to_scan=%f", percent_to_scan);
-    // ???
-    caml_empty_minor_heap_domain (domain, (void*)0);
-  } else {
-    caml_do_local_roots (&forward_pointer, st.promote_domain, domain, 1);
-    caml_scan_stack (&forward_pointer, st.promote_domain, domain_state->current_stack);
-
-    /* Scan major to young pointers. */
-    for (r = minor_tables->major_ref.base;
-         r < minor_tables->major_ref.ptr; r++) {
-      value old_p = **r;
-      if (Is_block(old_p) && is_in_interval(old_p,young_ptr,young_end)) {
-        value new_p = old_p;
-        forward_pointer (st.promote_domain, new_p, &new_p);
-        if (old_p != new_p) {
-          if (caml_domain_alone())
-            **r = new_p;
-          else
-            atomic_compare_exchange_strong((atomic_value*)*r, &old_p, new_p);
-        }
-      }
-    }
-
-    /* Scan ephemeron ref table */
-    for (re = minor_tables->ephe_ref.base;
-         re < minor_tables->ephe_ref.ptr; re++) {
-      value* key = &Op_val(re->ephe)[re->offset];
-      if (Is_block(*key) && is_in_interval(*key,young_ptr,young_end)) {
-        forward_pointer (st.promote_domain, *key, key);
-      }
-    }
-
-    /* Scan young to young pointers */
-    for (r = minor_tables->minor_ref.base; r < minor_tables->minor_ref.ptr; r++) {
-      forward_pointer (st.promote_domain, **r, *r);
-    }
-
-    /* Scan newer objects */
-    for (iter = (value)young_ptr;
-         iter <= st.oldest_promoted;
-         iter = next_minor_block(domain_state, iter)) {
-      value hd = Hd_hp(iter);
-      value curr = Val_hp(iter);
-      if (hd != 0) {
-        tag_t tag = Tag_hd (hd);
-        if (tag == Cont_tag) {
-          struct stack_info* stk = Ptr_val(Op_val(curr)[0]);
-          if (stk != NULL)
-            caml_scan_stack(&forward_pointer, st.promote_domain, stk);
-        } else if (tag < No_scan_tag) {
-          for (i = 0; i < Wosize_hd (hd); i++) {
-            f = Op_val(curr)[i];
-            if (Is_block(f)) {
-              forward_pointer (st.promote_domain, f,((value*)curr) + i);
-            }
-          }
-        }
-      }
-    }
-  }
   domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
   return root;
 }
