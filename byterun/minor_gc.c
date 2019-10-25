@@ -88,14 +88,22 @@ struct caml_minor_tables* caml_alloc_minor_tables()
   return r;
 }
 
+void reset_minor_tables(struct caml_minor_tables* r)
+{
+  reset_table((struct generic_table *)&r->major_ref);
+  reset_table((struct generic_table *)&r->ephe_ref);
+  reset_table((struct generic_table *)&r->custom);
+#ifdef DEBUG
+  reset_table((struct generic_table *)&r->minor_ref);
+#endif
+}
+
 void caml_free_minor_tables(struct caml_minor_tables* r)
 {
   CAMLassert(r->major_ref.ptr == r->major_ref.base);
   CAMLassert(r->minor_ref.ptr == r->minor_ref.base);
-  reset_table((struct generic_table *)&r->major_ref);
-  reset_table((struct generic_table *)&r->minor_ref);
-  reset_table((struct generic_table *)&r->ephe_ref);
-  reset_table((struct generic_table *)&r->custom);
+
+  reset_minor_tables(r);
   caml_stat_free(r);
 }
 
@@ -109,10 +117,7 @@ void caml_set_minor_heap_size (asize_t wsize)
     caml_fatal_error("Fatal error: No memory for minor heap");
   }
 
-  reset_table ((struct generic_table *)&r->major_ref);
-  reset_table ((struct generic_table *)&r->minor_ref);
-  reset_table ((struct generic_table *)&r->ephe_ref);
-  reset_table((struct generic_table *)&r->custom);
+  reset_minor_tables(r);
 }
 
 //*****************************************************************************
@@ -472,9 +477,11 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   if (minor_allocated_bytes != 0)
   {
     clear_table ((struct generic_table *)&minor_tables->major_ref);
-    clear_table ((struct generic_table *)&minor_tables->minor_ref);
     clear_table ((struct generic_table *)&minor_tables->ephe_ref);
     clear_table ((struct generic_table *)&minor_tables->custom);
+#ifdef DEBUG
+    clear_table ((struct generic_table *)&minor_tables->minor_ref);
+#endif
 
     domain_state->young_ptr = domain_state->young_end;
   }
