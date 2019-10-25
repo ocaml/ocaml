@@ -146,7 +146,11 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
       /* Add to remembered set */
       Ref_table_add(&domain_state->minor_tables->major_ref, Op_val(obj) + field);
     }
-  } else if (Is_young(new_val) && new_val < obj) {
+  }
+#ifdef DEBUG
+  /* minor_ref is only used in debug mode */
+  else if (Is_young(new_val) && new_val < obj)
+  {
 
     /* Both obj and new_val are young and new_val is more recent than obj.
       * If old_val is also young, and younger than obj, then it must be the
@@ -158,6 +162,7 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
     /* Add to remembered set */
     Ref_table_add(&domain_state->minor_tables->minor_ref, Op_val(obj) + field);
   }
+#endif
 }
 
 CAMLexport void caml_modify_field (value obj, int field, value val)

@@ -46,9 +46,12 @@ struct caml_custom_elt {
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
 
 struct caml_minor_tables {
-  struct caml_ref_table major_ref, minor_ref;
+  struct caml_ref_table major_ref;
   struct caml_ephe_ref_table ephe_ref;
   struct caml_custom_table custom;
+#ifdef DEBUG
+  struct caml_ref_table minor_ref;
+#endif
 };
 
 struct domain;
