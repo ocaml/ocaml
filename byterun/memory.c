@@ -209,7 +209,7 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
 
 CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value newval)
 {
-  if (Is_young(obj) || caml_domain_alone()) {
+  if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
     value* p = &Op_val(obj)[field];
     if (*p == oldval) {
@@ -234,7 +234,7 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
 
 CAMLprim value caml_atomic_load (value ref)
 {
-  if (Is_young(ref) || caml_domain_alone()) {
+  if (caml_domain_alone()) {
     return Op_val(ref)[0];
   } else {
     value v;
@@ -251,7 +251,7 @@ CAMLprim value caml_atomic_load (value ref)
 CAMLprim value caml_atomic_exchange (value ref, value v)
 {
   value ret;
-  if (Is_young(ref) || caml_domain_alone()) {
+  if (caml_domain_alone()) {
     ret = Op_val(ref)[0];
     Op_val(ref)[0] = v;
   } else {
@@ -265,7 +265,7 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
 
 CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
 {
-  if (Is_young(ref) || caml_domain_alone()) {
+  if (caml_domain_alone()) {
     value* p = Op_val(ref);
     if (*p == oldv) {
       *p = newv;
@@ -288,7 +288,7 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
 CAMLprim value caml_atomic_fetch_add (value ref, value incr)
 {
   value ret;
-  if (Is_young(ref) || caml_domain_alone()) {
+  if (caml_domain_alone()) {
     value* p = Op_val(ref);
     CAMLassert(Is_long(*p));
     ret = *p;
@@ -327,31 +327,15 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
      for instance, they may copy a byte at a time */
   if (src == dst && srcoff < dstoff) {
     /* copy descending */
-    if (Is_young(dst)) {
-      /* dst is young, we copy fields directly. This cannot create old->young
-         ptrs, nor break incremental GC of the shared heap */
-      for (i = n; i > 0; i--) {
-        Op_val(dst)[dstoff + i - 1] = Op_val(src)[srcoff + i - 1];
-      }
-    } else {
-      for (i = n; i > 0; i--) {
-        caml_read_field(src, srcoff + i - 1, &x);
-        caml_modify_field(dst, dstoff + i - 1, x);
-      }
+    for (i = n; i > 0; i--) {
+      caml_read_field(src, srcoff + i - 1, &x);
+      caml_modify_field(dst, dstoff + i - 1, x);
     }
   } else {
     /* copy ascending */
-    if (Is_young(dst)) {
-      /* see comment above */
-      for (i = 0; i < n; i++) {
-        caml_read_field(src, srcoff + i, &x);
-        Op_val(dst)[dstoff + i] = x;
-      }
-    } else {
-      for (i = 0; i < n; i++) {
-        caml_read_field(src, srcoff + i, &x);
-        caml_modify_field(dst, dstoff + i, x);
-      }
+    for (i = 0; i < n; i++) {
+      caml_read_field(src, srcoff + i, &x);
+      caml_modify_field(dst, dstoff + i, x);
     }
   }
   CAMLreturn0;
