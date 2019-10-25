@@ -127,6 +127,16 @@ Working version
 
 ### Standard library:
 
+- #944: Add some missing C99 float operations.  `Stdlib` now contains
+  the inverse hyperbolic functions `acosh`, `asinh`, and `atanh`.  These
+  functions were also added to module `Stdlib.Float` together with `exp2`,
+  `log2`, `cbrt`, `erf`, and `erfc`.
+  (Markus Mottl, review by David Allsopp, Olivier Andrieu, Florian Angeletti,
+  Nicolás Ojeda Bär, Daniel Bünzli, Fabian @copy, Pascal Cuoq, Damien
+  Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Xavier Leroy, Guillaume
+  Melquiond, Perry E. Metzger, @objmagic, Gabriel Scherer, Mark Shinwell,
+  Bernhard Schommer and Christophe Troestler)
+
 - #9448: Add String.{empty,cat} as dual of Bytes.{empty,cat},
   String.{of,to}_bytes as aliases of Bytes.{to,of}_string,
   Bytes.split_on_char as dual of String.split_on_char, and binary decoding

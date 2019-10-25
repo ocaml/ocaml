@@ -197,8 +197,22 @@ external sqrt : float -> float = "caml_sqrt_float" "sqrt"
 [@@unboxed] [@@noalloc]
 (** Square root. *)
 
+external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"
+  [@@unboxed] [@@noalloc]
+(** Cube root.
+
+    @since 4.13.0
+*)
+
 external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
 (** Exponential. *)
+
+external exp2 : float -> float = "caml_exp2_float" "caml_exp2"
+  [@@unboxed] [@@noalloc]
+(** Base 2 exponential function.
+
+    @since 4.13.0
+*)
 
 external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 (** Natural logarithm. *)
@@ -206,6 +220,13 @@ external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 external log10 : float -> float = "caml_log10_float" "log10"
 [@@unboxed] [@@noalloc]
 (** Base 10 logarithm. *)
+
+external log2 : float -> float = "caml_log2_float" "caml_log2"
+  [@@unboxed] [@@noalloc]
+(** Base 2 logarithm.
+
+    @since 4.13.0
+*)
 
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
 [@@unboxed] [@@noalloc]
@@ -266,6 +287,50 @@ external sinh : float -> float = "caml_sinh_float" "sinh"
 external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
 (** Hyperbolic tangent.  Argument is in radians. *)
+
+external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc cosine.  The argument must fall within the range
+    [[1.0, inf]].
+    Result is in radians and is between [0.0] and [inf].
+
+    @since 4.13.0
+*)
+
+external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc sine.  The argument and result range over the entire
+    real line.
+    Result is in radians.
+
+    @since 4.13.0
+*)
+
+external atanh : float -> float = "caml_atanh_float" "caml_atanh"
+  [@@unboxed] [@@noalloc]
+(** Hyperbolic arc tangent.  The argument must fall within the range
+    [[-1.0, 1.0]].
+    Result is in radians and ranges over the entire real line.
+
+    @since 4.13.0
+*)
+
+external erf : float -> float = "caml_erf_float" "caml_erf"
+  [@@unboxed] [@@noalloc]
+(** Error function.  The argument ranges over the entire real line.
+    The result is always within [[-1.0, 1.0]].
+
+    @since 4.13.0
+*)
+
+external erfc : float -> float = "caml_erfc_float" "caml_erfc"
+  [@@unboxed] [@@noalloc]
+(** Complementary error function ([erfc x = 1.0 -. erf x]).
+    The argument ranges over the entire real line.
+    The result is always within [[-1.0, 1.0]].
+
+    @since 4.13.0
+*)
 
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
                                     [@@unboxed] [@@noalloc]

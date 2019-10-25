@@ -299,6 +299,11 @@ AC_ARG_ENABLE([cfi],
   [AS_HELP_STRING([--disable-cfi],
     [disable the CFI directives in assembly files])])
 
+AC_ARG_ENABLE([imprecise-c99-float-ops],
+  [AS_HELP_STRING([--enable-imprecise-c99-float-ops],
+    [enables potentially imprecise replacement implementations
+     of C99 float ops if unavailable on this platform])])
+
 AC_ARG_ENABLE([installing-source-artifacts],
   [AS_HELP_STRING([--enable-installing-source-artifacts],
     [install *.cmt* and *.mli files])])
@@ -1256,7 +1261,36 @@ AS_CASE([$host],
       AS_CASE([$target],[x86_64-*-cygwin],[],[AC_DEFINE([HAS_WORKING_FMA])])],
       [has_c99_float_ops=false])])
   AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([copysign], [AC_DEFINE([HAS_C99_FLOAT_OPS])])])])
+    [AC_CHECK_FUNC([exp2], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([log2], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([cbrt], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([acosh], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([asinh], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([atanh], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([erf], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([erfc], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([trunc], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([round], [], [has_c99_float_ops=false])])
+  AS_IF([$has_c99_float_ops],
+    [AC_CHECK_FUNC([copysign], [], [has_c99_float_ops=false])])
+  ])
+
+AS_IF([$has_c99_float_ops],
+  [AC_DEFINE([HAS_C99_FLOAT_OPS])],
+  [AS_IF([test x"$enable_imprecise_c99_float_ops" = "xyes" ],
+    [],
+    [AC_MSG_ERROR(m4_normalize([
+      C99 float ops unavailable, enable replacements
+      with --enable-imprecise-c99-float-ops]))])])
 
 ## getrusage
 AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE])])

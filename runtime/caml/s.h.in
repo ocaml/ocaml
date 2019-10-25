@@ -45,7 +45,9 @@
 #undef HAS_C99_FLOAT_OPS
 
 /* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
-   In particular, it should provide expm1(), log1p(), hypot(), copysign(). */
+   In particular, it should provide expm1(), log1p(), hypot(), fma(),
+   exp2(), log2(), cbrt(), acosh(), asinh(), atanh(), erf(), erfc(),
+   trunc(), round(), copysign(). */
 
 #undef HAS_WORKING_FMA
 

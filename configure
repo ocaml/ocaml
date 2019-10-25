@@ -898,6 +898,7 @@ enable_naked_pointers
 enable_naked_pointers_checker
 enable_spacetime
 enable_cfi
+enable_imprecise_c99_float_ops
 enable_installing_source_artifacts
 enable_installing_bytecode_programs
 enable_native_compiler
@@ -1571,6 +1572,10 @@ Optional Features:
   --enable-naked-pointers-checker
                           enable the naked pointers checker
   --disable-cfi           disable the CFI directives in assembly files
+  --enable-imprecise-c99-float-ops
+                          enables potentially imprecise replacement
+                          implementations of C99 float ops if unavailable on
+                          this platform
   --enable-installing-source-artifacts
                           install *.cmt* and *.mli files
   --enable-installing-bytecode-programs
@@ -3215,6 +3220,12 @@ fi
 # Check whether --enable-cfi was given.
 if test "${enable_cfi+set}" = set; then :
   enableval=$enable_cfi;
+fi
+
+
+# Check whether --enable-imprecise-c99-float-ops was given.
+if test "${enable_imprecise_c99_float_ops+set}" = set; then :
+  enableval=$enable_imprecise_c99_float_ops;
 fi
 
 
@@ -14660,14 +14671,117 @@ fi
 
 fi
   if $has_c99_float_ops; then :
-  ac_fn_c_check_func "$LINENO" "copysign" "ac_cv_func_copysign"
-if test "x$ac_cv_func_copysign" = xyes; then :
-  $as_echo "#define HAS_C99_FLOAT_OPS 1" >>confdefs.h
+  ac_fn_c_check_func "$LINENO" "exp2" "ac_cv_func_exp2"
+if test "x$ac_cv_func_exp2" = xyes; then :
 
+else
+  has_c99_float_ops=false
 fi
 
-fi ;;
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "log2" "ac_cv_func_log2"
+if test "x$ac_cv_func_log2" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "cbrt" "ac_cv_func_cbrt"
+if test "x$ac_cv_func_cbrt" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "acosh" "ac_cv_func_acosh"
+if test "x$ac_cv_func_acosh" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "asinh" "ac_cv_func_asinh"
+if test "x$ac_cv_func_asinh" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "atanh" "ac_cv_func_atanh"
+if test "x$ac_cv_func_atanh" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "erf" "ac_cv_func_erf"
+if test "x$ac_cv_func_erf" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "erfc" "ac_cv_func_erfc"
+if test "x$ac_cv_func_erfc" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "trunc" "ac_cv_func_trunc"
+if test "x$ac_cv_func_trunc" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "round" "ac_cv_func_round"
+if test "x$ac_cv_func_round" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+  if $has_c99_float_ops; then :
+  ac_fn_c_check_func "$LINENO" "copysign" "ac_cv_func_copysign"
+if test "x$ac_cv_func_copysign" = xyes; then :
+
+else
+  has_c99_float_ops=false
+fi
+
+fi
+   ;;
 esac
+
+if $has_c99_float_ops; then :
+  $as_echo "#define HAS_C99_FLOAT_OPS 1" >>confdefs.h
+
+else
+  if test x"$enable_imprecise_c99_float_ops" = "xyes" ; then :
+
+else
+  as_fn_error $? "C99 float ops unavailable, enable replacements with --enable-imprecise-c99-float-ops" "$LINENO" 5
+fi
+fi
 
 ## getrusage
 ac_fn_c_check_func "$LINENO" "getrusage" "ac_cv_func_getrusage"
