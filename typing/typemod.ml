@@ -189,7 +189,8 @@ let initial_env ~loc ~safe_string ~initially_opened_module
         (open_module env m, units)
   in
   let env = List.fold_left add_units env units in
-  List.fold_left open_module env open_implicit_modules
+  let env = List.fold_left open_module env open_implicit_modules in
+  Env.mark_initial env
 
 let type_open_descr ?used_slot ?toplevel env sod =
   let (path, newenv) =
