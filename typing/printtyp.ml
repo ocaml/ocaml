@@ -1241,7 +1241,7 @@ let rec tree_of_type_decl id decl =
             and (co, cn) = Variance.get_upper v in
             (if not cn then Covariant else
              if not co then Contravariant else NoVariance),
-            (if inj then Injective else NoInjectivity)
+            (if inj && decl.type_ident = None then Injective else NoInjectivity)
           else (NoVariance, NoInjectivity))
         decl.type_params decl.type_variance
     in

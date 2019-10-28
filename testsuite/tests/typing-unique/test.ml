@@ -83,12 +83,9 @@ Error: Signature mismatch:
 
 (* Compatibility *)
 
+module Lists = struct
 type 'a list1 = [] | (::) of 'a * 'a list1
 type 'a list2 = [] | (::) of 'a * 'a list2 [@@unique "list2"]
-[%%expect{|
-type 'a list1 = [] | (::) of 'a * 'a list1
-type 'a list2 = [] | (::) of 'a * 'a list2 [@@unique "list2"]
-|}]
 
 type _ typ =
   | Int : int typ
@@ -99,17 +96,6 @@ type _ typ =
   | Stack : 'a typ -> 'a Stack.t typ
   | List1 : 'a typ -> 'a list1 typ
   | List2 : 'a typ -> 'a list2 typ ;;
-[%%expect{|
-type _ typ =
-    Int : int typ
-  | Bool : bool typ
-  | List : 'a typ -> 'a List.t typ
-  | Array : 'a typ -> 'a array typ
-  | Queue : 'a typ -> 'a Queue.t typ
-  | Stack : 'a typ -> 'a Stack.t typ
-  | List1 : 'a typ -> 'a list1 typ
-  | List2 : 'a typ -> 'a list2 typ
-|}]
 
 let rec eq : type a. a typ -> a typ -> bool = fun t1 t2 ->
   match t1, t2 with
@@ -121,22 +107,6 @@ let rec eq : type a. a typ -> a typ -> bool = fun t1 t2 ->
   | Array a1, Array a2 -> eq a1 a2
   | Queue a1, Queue a2 -> eq a1 a2
   | Stack a1, Stack a2 -> eq a1 a2;;
-[%%expect{|
-Lines 2-10, characters 2-34:
- 2 | ..match t1, t2 with
- 3 |   | Int, Int -> true
- 4 |   | Bool, Bool -> true
- 5 |   | List a1, List a2 -> eq a1 a2
- 6 |   | List1 a1, List1 a2 -> eq a1 a2
- 7 |   | List2 a1, List2 a2 -> eq a1 a2
- 8 |   | Array a1, Array a2 -> eq a1 a2
- 9 |   | Queue a1, Queue a2 -> eq a1 a2
-10 |   | Stack a1, Stack a2 -> eq a1 a2..
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(List _, List1 _)
-val eq : 'a typ -> 'a typ -> bool = <fun>
-|}]
 
 (* list2 is incompatible with both list and list1 *)
 let rec eq : type a. a typ -> a typ -> bool = fun t1 t2 ->
@@ -150,9 +120,37 @@ let rec eq : type a. a typ -> a typ -> bool = fun t1 t2 ->
   | List2 a1, List2 a2 -> eq a1 a2
   | Array a1, Array a2 -> eq a1 a2
   | Queue a1, Queue a2 -> eq a1 a2
-  | Stack a1, Stack a2 -> eq a1 a2;;
+  | Stack a1, Stack a2 -> eq a1 a2
+end;;
 [%%expect{|
-val eq : 'a typ -> 'a typ -> bool = <fun>
+Lines 16-24, characters 2-34:
+16 | ..match t1, t2 with
+17 |   | Int, Int -> true
+18 |   | Bool, Bool -> true
+19 |   | List a1, List a2 -> eq a1 a2
+20 |   | List1 a1, List1 a2 -> eq a1 a2
+21 |   | List2 a1, List2 a2 -> eq a1 a2
+22 |   | Array a1, Array a2 -> eq a1 a2
+23 |   | Queue a1, Queue a2 -> eq a1 a2
+24 |   | Stack a1, Stack a2 -> eq a1 a2..
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(List _, List1 _)
+module Lists :
+  sig
+    type 'a list1 = [] | (::) of 'a * 'a list1
+    type 'a list2 = [] | (::) of 'a * 'a list2 [@@unique "list2"]
+    type _ typ =
+        Int : int typ
+      | Bool : bool typ
+      | List : 'a typ -> 'a List.t typ
+      | Array : 'a typ -> 'a array typ
+      | Queue : 'a typ -> 'a Queue.t typ
+      | Stack : 'a typ -> 'a Stack.t typ
+      | List1 : 'a typ -> 'a list1 typ
+      | List2 : 'a typ -> 'a list2 typ
+    val eq : 'a typ -> 'a typ -> bool
+  end
 |}]
 
 (* Typical example *)
@@ -214,7 +212,7 @@ let g : (int t, v) eq option -> int = function None -> 1;;
 Line 1, characters 38-56:
 1 | let g : (int t, v) eq option -> int = function None -> 1;;
                                           ^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some Eq
 val g : (int t, v) eq option -> int = <fun>
@@ -294,4 +292,52 @@ module Bool : sig type t = bool end
 let f : (Set(Int).t,Set(Bool).t) eq option -> int = fun None -> 1;;
 [%%expect{|
 val f : (Set(Int).t, Set(Bool).t) eq option -> int = <fun>
+|}]
+
+
+(* More examples *)
+
+(* Failure *)
+module M : sig type +'a t end =
+  struct type 'a t = Nil | Cons of 'a * 'a t end
+type _ ty = M : 'a ty -> 'a M.t ty;;
+[%%expect{|
+module M : sig type +'a t end
+Line 3, characters 0-34:
+3 | type _ ty = M : 'a ty -> 'a M.t ty;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+|}]
+
+(* Workaround *)
+module M : sig type +'a t0  and 'a t = M_t of 'a t0 end =
+  struct type 'a t0 = Nil | Cons of 'a * 'a t0 and 'a t = M_t of 'a t0 end
+type _ ty = M : 'a ty -> 'a M.t ty;;
+[%%expect{|
+module M : sig type +'a t0 and 'a t = M_t of 'a t0 end
+type _ ty = M : 'a ty -> 'a M.t ty
+|}]
+
+(* Named type *)
+module M : sig type +'a t [@@unique "M.t"] end =
+  struct type 'a t = Nil | Cons of 'a * 'a t [@@unique "M.t"] end
+type _ ty = M : 'a ty -> 'a M.t ty;;
+[%%expect{|
+module M : sig type +'a t [@@unique "M.t"] end
+type _ ty = M : 'a ty -> 'a M.t ty
+|}]
+
+(* Expression *)
+module M : sig type +'a t [@@unique "M.t"] val create : 'a list -> 'a t end =
+struct
+  type 'a t = Nil | Cons of 'a * 'a t [@@unique "M.t"]
+  let rec create = function [] -> Nil | a::l -> Cons (a, create l)
+end
+type _ exp = M : 'a list -> 'a M.t exp | Int : int -> int exp
+let eval_int : int exp -> int = function Int x -> x;;
+[%%expect{|
+module M : sig type +'a t [@@unique "M.t"] val create : 'a list -> 'a t end
+type _ exp = M : 'a list -> 'a M.t exp | Int : int -> int exp
+val eval_int : int exp -> int = <fun>
 |}]
