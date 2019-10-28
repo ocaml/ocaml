@@ -113,7 +113,7 @@ let frame_size env =                     (* includes return address *)
   end else
     env.stack_offset + 8
 
-let slot_offset loc cl env =
+let slot_offset env loc cl =
   match loc with
   | Incoming n -> (frame_size env) + n
   | Local n ->
@@ -199,19 +199,19 @@ let label s = sym (emit_label s)
 let def_label ?typ s =
   D.label ?typ (emit_label s)
 
-let emit_Llabel fallthrough lbl env =
+let emit_Llabel env fallthrough lbl =
   if not fallthrough && env.f.fun_fast then D.align 4;
   def_label lbl
 
 (* Output a pseudo-register *)
 
-let reg ~env = function
+let reg env = function
   | { loc = Reg.Reg r } -> register_name r
   | { loc = Stack s; typ = Float } as r ->
-      let ofs = slot_offset s (register_class r) env in
+      let ofs = slot_offset env s (register_class r) in
       mem64 REAL8 ofs RSP
   | { loc = Stack s } as r ->
-      let ofs = slot_offset s (register_class r) env in
+      let ofs = slot_offset env s (register_class r) in
       mem64 QWORD ofs RSP
   | { loc = Unknown } ->
       assert false
@@ -220,17 +220,17 @@ let reg64 = function
   | { loc = Reg.Reg r } -> int_reg_name.(r)
   | _ -> assert false
 
-let arg i n ~env = reg i.arg.(n) ~env
+let arg env i n = reg env i.arg.(n)
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
 let reg_low_16_name = Array.map (fun r -> Reg16 r) int_reg_name
 let reg_low_32_name = Array.map (fun r -> Reg32 r) int_reg_name
 
-let emit_subreg tbl typ r env =
+let emit_subreg env tbl typ r =
   match r.loc with
   | Reg.Reg r when r < 13 -> tbl.(r)
-  | Stack s -> mem64 typ (slot_offset s (register_class r) env) RSP
+  | Stack s -> mem64 typ (slot_offset env s (register_class r)) RSP
   | _ -> assert false
 
 let arg64 i n = reg64 i.arg.(n)
@@ -255,7 +255,7 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points -- see Emitaux *)
 
-let record_frame_label live dbg env =
+let record_frame_label env live dbg =
   let lbl = new_label () in
   let live_offset = ref [] in
   Reg.Set.iter
@@ -263,7 +263,7 @@ let record_frame_label live dbg env =
       | {typ = Val; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
       | {typ = Val; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) env :: !live_offset
+          live_offset := slot_offset env s (register_class reg) :: !live_offset
       | {typ = Addr} as r ->
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ()
@@ -273,20 +273,20 @@ let record_frame_label live dbg env =
     ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame live dbg env =
-  let lbl = record_frame_label live dbg env in
+let record_frame env live dbg =
+  let lbl = record_frame_label env live dbg in
   def_label lbl
 
-let emit_call_gc gc ~env =
+let emit_call_gc env gc =
   def_label gc.gc_lbl;
   emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
-let bound_error_label dbg env =
+let bound_error_label env dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) env in
+    let lbl_frame = record_frame_label env Reg.Set.empty (Dbg_other dbg) in
     env.bound_error_sites <- { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
                              :: env.bound_error_sites;
     lbl_bound_error
@@ -294,7 +294,7 @@ let bound_error_label dbg env =
     match env.bound_error_call with
     | None ->
       let lbl = new_label () in
-      env.bound_error_call <- lbl;
+      env.bound_error_call <- Some lbl;
       lbl
     | Some lbl -> lbl
   end
@@ -349,15 +349,15 @@ let cond = function
 
 (* Output an = 0 or <> 0 test. *)
 
-let output_test_zero arg env =
+let output_test_zero env arg =
   match arg.loc with
-  | Reg.Reg _ -> I.test (reg arg ~env) (reg arg ~env)
-  | _  -> I.cmp (int 0) (reg arg ~env)
+  | Reg.Reg _ -> I.test (reg env arg) (reg env arg)
+  | _  -> I.cmp (int 0) (reg env arg)
 
 (* Output a floating-point compare and branch *)
 
-let emit_float_test cmp i lbl env =
-  let arg = arg ~env in
+let emit_float_test env cmp i lbl =
+  let arg = arg env in
   (* Effect of comisd on flags and conditional branches:
                      ZF PF CF  cond. branches taken
         unordered     1  1  1  je, jb, jbe, jp
@@ -405,7 +405,7 @@ let emit_float_test cmp i lbl env =
 
 (* Deallocate the stack frame before a return or tail call *)
 
-let output_epilogue f ~env =
+let output_epilogue env f =
   if env.f.fun_frame_required then begin
     let n = (frame_size env) - 8 - (if fp then 8 else 0) in
     if n <> 0
@@ -468,14 +468,14 @@ let emit_named_text_section func_name =
 (* Output the assembly code for an instruction *)
 
 (* Emit an instruction *)
-let emit_instr fallthrough i env =
-  let arg8 i n = emit_subreg reg_low_8_name BYTE i.arg.(n) env in
-  let arg16 i n = emit_subreg reg_low_16_name WORD i.arg.(n) env in
-  let arg32 i n = emit_subreg reg_low_32_name DWORD i.arg.(n) env in
-  let res16 i n = emit_subreg reg_low_16_name WORD i.res.(n) env in
-  let res32 i n = emit_subreg reg_low_32_name DWORD i.res.(n) env in
-  let arg = arg ~env in
-  let res i n = reg i.res.(n) ~env in
+let emit_instr env fallthrough i =
+  let arg8 i n = emit_subreg env reg_low_8_name BYTE i.arg.(n) in
+  let arg16 i n = emit_subreg env reg_low_16_name WORD i.arg.(n) in
+  let arg32 i n = emit_subreg env reg_low_32_name DWORD i.arg.(n) in
+  let res16 i n = emit_subreg env reg_low_16_name WORD i.res.(n) in
+  let res32 i n = emit_subreg env reg_low_32_name DWORD i.res.(n) in
+  let arg = arg env in
+  let res i n = reg env i.res.(n) in
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
@@ -498,9 +498,9 @@ let emit_instr fallthrough i env =
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
         begin match src.typ, src.loc, dst.loc with
-        | Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src ~env) (reg dst ~env)
-        | Float, _, _ -> I.movsd (reg src ~env) (reg dst ~env)
-        | _ -> I.mov (reg src ~env) (reg dst ~env)
+        | Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg env src) (reg env dst)
+        | Float, _, _ -> I.movsd (reg env src) (reg env dst)
+        | _ -> I.mov (reg env src) (reg env dst)
         end
   | Lop(Iconst_int n) ->
       if n = 0n then begin
@@ -534,19 +534,19 @@ let emit_instr fallthrough i env =
       load_symbol_addr s (res i 0)
   | Lop(Icall_ind) ->
       I.call (arg i 0);
-      record_frame i.live (Dbg_other i.dbg) env
+      record_frame env i.live (Dbg_other i.dbg)
   | Lop(Icall_imm { func; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live (Dbg_other i.dbg) env
+      record_frame env i.live (Dbg_other i.dbg)
   | Lop(Itailcall_ind) ->
-      output_epilogue ~env (fun () -> I.jmp (arg i 0))
+      output_epilogue env (fun () -> I.jmp (arg i 0))
   | Lop(Itailcall_imm { func; }) ->
       begin
         if func = env.f.fun_name then
           I.jmp (label env.f.fun_tailrec_entry_point_label)
         else begin
-          output_epilogue ~env begin fun () ->
+          output_epilogue env begin fun () ->
             add_used_symbol func;
             emit_jump func
           end
@@ -557,7 +557,7 @@ let emit_instr fallthrough i env =
       if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
-        record_frame i.live (Dbg_other i.dbg) env;
+        record_frame env i.live (Dbg_other i.dbg);
         if system <> S_win64 then begin
           (* TODO: investigate why such a diff.
              This comes from:
@@ -624,7 +624,7 @@ let emit_instr fallthrough i env =
         I.cmp (domain_field Domainstate.Domain_young_limit) r15;
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live (Dbg_alloc dbginfo) env
+          record_frame_label env i.live (Dbg_alloc dbginfo)
         in
         I.jb (label lbl_call_gc);
         let lbl_after_alloc = new_label() in
@@ -643,7 +643,7 @@ let emit_instr fallthrough i env =
             I.sub (int n) r15;
             emit_call "caml_allocN"
         end;
-        let label = record_frame_label i.live (Dbg_alloc dbginfo) env in
+        let label = record_frame_label env i.live (Dbg_alloc dbginfo) in
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
@@ -656,11 +656,11 @@ let emit_instr fallthrough i env =
       I.set (cond cmp) al;
       I.movzx al (res i 0)
   | Lop(Iintop (Icheckbound)) ->
-      let lbl = bound_error_label i.dbg env in
+      let lbl = bound_error_label env i.dbg in
       I.cmp (arg i 1) (arg i 0);
       I.jbe (label lbl)
   | Lop(Iintop_imm(Icheckbound, n)) ->
-      let lbl, env = bound_error_label i.dbg env in
+      let lbl, env = bound_error_label env i.dbg in
       I.cmp (int n) (arg i 0);
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->
@@ -728,34 +728,34 @@ let emit_instr fallthrough i env =
   | Lreloadretaddr ->
       ()
   | Lreturn ->
-      output_epilogue ~env begin fun () ->
+      output_epilogue env begin fun () ->
         I.ret ()
       end
   | Llabel lbl ->
-      emit_Llabel fallthrough lbl env
+      emit_Llabel env fallthrough lbl
   | Lbranch lbl ->
       I.jmp (label lbl)
   | Lcondbranch(tst, lbl) ->
       let lbl = label lbl in
       begin match tst with
       | Itruetest ->
-          output_test_zero i.arg.(0) env;
+          output_test_zero env i.arg.(0);
           I.jne lbl
       | Ifalsetest ->
-          output_test_zero i.arg.(0) env;
+          output_test_zero env i.arg.(0);
           I.je lbl
       | Iinttest cmp ->
           I.cmp (arg i 1) (arg i 0);
           I.j (cond cmp) lbl
       | Iinttest_imm((Isigned Ceq | Isigned Cne |
                       Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
-          output_test_zero i.arg.(0) env;
+          output_test_zero env i.arg.(0);
           I.j (cond cmp) lbl
       | Iinttest_imm(cmp, n) ->
           I.cmp (int n) (arg i 0);
           I.j (cond cmp) lbl
       | Ifloattest cmp ->
-          emit_float_test cmp i lbl env
+          emit_float_test env cmp i lbl
       | Ioddtest ->
           I.test (int 1) (arg8 i 0);
           I.jne lbl
@@ -789,11 +789,11 @@ let emit_instr fallthrough i env =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.lea (mem64_rip NONE lbl) (reg tmp1 ~env);
+      I.lea (mem64_rip NONE lbl) (reg env tmp1);
       I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
-               (reg tmp2 ~env);
-      I.add (reg tmp2 ~env) (reg tmp1 ~env);
-      I.jmp (reg tmp1 ~env);
+               (reg env tmp2);
+      I.add (reg env tmp2) (reg env tmp1);
+      I.jmp (reg env tmp1);
 
       begin match system with
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
@@ -839,10 +839,10 @@ let emit_instr fallthrough i env =
       | Lambda.Raise_regular ->
           I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty (Dbg_raise i.dbg) env
+          record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty (Dbg_raise i.dbg) env
+          record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           I.mov (domain_field Domainstate.Domain_exception_pointer) rsp;
           I.pop (domain_field Domainstate.Domain_exception_pointer);
@@ -850,12 +850,12 @@ let emit_instr fallthrough i env =
           I.jmp r11
       end
 
-let rec emit_all fallthrough i env =
+let rec emit_all env fallthrough i =
   match i.desc with
   | Lend -> ()
   | _ ->
-      emit_instr fallthrough i env;
-      emit_all (Linear.has_fallthrough i.desc) i.next env
+      emit_instr env fallthrough i;
+      emit_all env (Linear.has_fallthrough i.desc) i.next
 
 let all_functions = ref []
 
@@ -877,8 +877,8 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  emit_all true fundecl.fun_body env;
-  List.iter (emit_call_gc ~env) env.call_gc_sites;
+  emit_all env true fundecl.fun_body;
+  List.iter (emit_call_gc env) env.call_gc_sites;
   emit_call_bound_errors env;
   if fundecl.fun_frame_required then begin
     let n = (frame_size env) - 8 - (if fp then 8 else 0) in
