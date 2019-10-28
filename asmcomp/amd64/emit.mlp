@@ -87,10 +87,10 @@ type bound_error_call =
 (* Environment for emitting a function *)
 type per_function_env = {
   f : fundecl;
-  stack_offset : int;
-  call_gc_sites : gc_call list;
-  bound_error_sites : bound_error_call list;
-  bound_error_call : label option;
+  mutable stack_offset : int;
+  mutable call_gc_sites : gc_call list;
+  mutable bound_error_sites : bound_error_call list;
+  mutable bound_error_call : label option;
 }
 
 let mk_env f =
@@ -287,17 +287,16 @@ let bound_error_label dbg env =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) env in
-    let bound_error_sites = { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
-                            :: env.bound_error_sites in
-    let env = { env with bound_error_sites } in
-    (lbl_bound_error, env)
+    env.bound_error_sites <- { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
+                             :: env.bound_error_sites;
+    lbl_bound_error
   end else begin
     match env.bound_error_call with
     | None ->
       let lbl = new_label () in
-      let env = { env with bound_error_call = Some lbl } in
-      lbl, env
-    | Some lbl -> lbl, env
+      env.bound_error_call <- lbl;
+      lbl
+    | Some lbl -> lbl
   end
 
 let emit_call_bound_error env bd =
@@ -479,7 +478,7 @@ let emit_instr fallthrough i env =
   let res i n = reg i.res.(n) ~env in
   emit_debug_info i.dbg;
   match i.desc with
-  | Lend -> env
+  | Lend -> ()
   | Lprologue ->
     assert (env.f.fun_prologue_required);
     if fp then begin
@@ -494,8 +493,7 @@ let emit_instr fallthrough i env =
         I.sub (int n) rsp;
         cfi_adjust_cfa_offset n;
       end;
-    end;
-    env
+    end
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -503,8 +501,7 @@ let emit_instr fallthrough i env =
         | Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src ~env) (reg dst ~env)
         | Float, _, _ -> I.movsd (reg src ~env) (reg dst ~env)
         | _ -> I.mov (reg src ~env) (reg dst ~env)
-        end;
-      env
+        end
   | Lop(Iconst_int n) ->
       if n = 0n then begin
         match i.res.(0).loc with
@@ -523,8 +520,7 @@ let emit_instr fallthrough i env =
         | _ ->
           I.mov (nat n) (res i 0)
       end else
-        I.mov (nat n) (res i 0);
-      env
+        I.mov (nat n) (res i 0)
   | Lop(Iconst_float f) ->
       begin match f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -532,12 +528,10 @@ let emit_instr fallthrough i env =
       | _ ->
           let lbl = add_float_constant f in
           I.movsd (mem64_rip NONE (emit_label lbl)) (res i 0)
-      end;
-      env
+      end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
-      load_symbol_addr s (res i 0);
-      env
+      load_symbol_addr s (res i 0)
   | Lop(Icall_ind) ->
       I.call (arg i 0);
       record_frame i.live (Dbg_other i.dbg) env
@@ -546,8 +540,7 @@ let emit_instr fallthrough i env =
       emit_call func;
       record_frame i.live (Dbg_other i.dbg) env
   | Lop(Itailcall_ind) ->
-      output_epilogue ~env (fun () -> I.jmp (arg i 0));
-      env
+      output_epilogue ~env (fun () -> I.jmp (arg i 0))
   | Lop(Itailcall_imm { func; }) ->
       begin
         if func = env.f.fun_name then
@@ -559,7 +552,6 @@ let emit_instr fallthrough i env =
           end
         end
       end;
-      env
   | Lop(Iextcall { func; alloc; }) ->
       add_used_symbol func;
       if alloc then begin
@@ -578,7 +570,6 @@ let emit_instr fallthrough i env =
         end
       end else begin
         emit_call func;
-        env
       end
   | Lop(Istackoffset n) ->
       if n < 0
@@ -587,7 +578,7 @@ let emit_instr fallthrough i env =
       then I.sub (int n) rsp;
       if n <> 0
       then cfi_adjust_cfa_offset n;
-      { env with stack_offset = env.stack_offset + n }
+      env.stack_offset <- env.stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
       begin match chunk with
@@ -609,8 +600,7 @@ let emit_instr fallthrough i env =
           I.cvtss2sd (addressing addr REAL4 i 0) dest
       | Double | Double_u ->
           I.movsd (addressing addr REAL8 i 0) dest
-      end;
-      env
+      end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
       | Word_int | Word_val ->
@@ -626,8 +616,7 @@ let emit_instr fallthrough i env =
           I.movss xmm15 (addressing addr REAL4 i 1)
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
-      end;
-      env
+      end
   | Lop(Ialloc { bytes = n; dbginfo }) ->
       assert (n <= (Config.max_young_wosize + 1) * Arch.size_addr);
       if env.f.fun_fast then begin
@@ -641,11 +630,10 @@ let emit_instr fallthrough i env =
         let lbl_after_alloc = new_label() in
         def_label lbl_after_alloc;
         I.lea (mem64 NONE 8 R15) (res i 0);
-        let call_gc_sites =
+        env.call_gc_sites <-
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_after_alloc;
-            gc_frame = lbl_frame; } :: !env.call_gc_sites in
-        { env with call_gc_sites }
+            gc_frame = lbl_frame; } :: env.call_gc_sites
       end else begin
         begin match n with
         | 16 -> emit_call "caml_alloc1"
@@ -657,128 +645,96 @@ let emit_instr fallthrough i env =
         end;
         let label = record_frame_label i.live (Dbg_alloc dbginfo) env in
         def_label label;
-        I.lea (mem64 NONE 8 R15) (res i 0);
-        env
+        I.lea (mem64 NONE 8 R15) (res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1) (arg i 0);
       I.set (cond cmp) al;
-      I.movzx al (res i 0);
-      env
+      I.movzx al (res i 0)
   | Lop(Iintop_imm(Icomp cmp, n)) ->
       I.cmp (int n) (arg i 0);
       I.set (cond cmp) al;
-     I.movzx al (res i 0);
-      env
+      I.movzx al (res i 0)
   | Lop(Iintop (Icheckbound)) ->
       let lbl = bound_error_label i.dbg env in
       I.cmp (arg i 1) (arg i 0);
-      I.jbe (label lbl);
-      env
+      I.jbe (label lbl)
   | Lop(Iintop_imm(Icheckbound, n)) ->
       let lbl, env = bound_error_label i.dbg env in
       I.cmp (int n) (arg i 0);
-      I.jbe (label lbl);
-      env
+      I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->
       I.cqo ();
-      I.idiv (arg i 1);
-      env
+      I.idiv (arg i 1)
   | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
       (* We have i.arg.(0) = i.res.(0) and i.arg.(1) = %rcx *)
-      instr_for_intop op cl (res i 0);
-      env
+      instr_for_intop op cl (res i 0)
   | Lop(Iintop Imulh) ->
-      I.imul (arg i 1) None;
-      env
+      I.imul (arg i 1) None
   | Lop(Iintop op) ->
       (* We have i.arg.(0) = i.res.(0) *)
-      instr_for_intop op (arg i 1) (res i 0);
-      env
+      instr_for_intop op (arg i 1) (res i 0)
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.lea (mem64 NONE n (arg64 i 0)) (res i 0);
-      env
+      I.lea (mem64 NONE n (arg64 i 0)) (res i 0)
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
-      I.inc (res i 0);
-      env
+      I.inc (res i 0)
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
-      I.dec (res i 0);
-      env
+      I.dec (res i 0)
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
-      instr_for_intop op (int n) (res i 0);
-      env
+      instr_for_intop op (int n) (res i 0)
   | Lop(Inegf) ->
-      I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0);
-      env
+      I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->
-      I.andpd (mem64_rip OWORD (emit_symbol "caml_absf_mask")) (res i 0);
-      env
+      I.andpd (mem64_rip OWORD (emit_symbol "caml_absf_mask")) (res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
-      instr_for_floatop floatop (arg i 1) (res i 0);
-      env
+      instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
-      I.cvtsi2sd  (arg i 0)  (res i 0);
-      env
+      I.cvtsi2sd  (arg i 0)  (res i 0)
   | Lop(Iintoffloat) ->
       I.cvttsd2si (arg i 0) (res i 0)
-      env
   | Lop(Iopaque) ->
       assert (i.arg.(0).loc = i.res.(0).loc)
   | Lop(Ispecific(Ilea addr)) ->
-      I.lea (addressing addr NONE i 0) (res i 0);
-      env
+      I.lea (addressing addr NONE i 0) (res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
-      I.mov (nat n) (addressing addr QWORD i 0);
-      env
+      I.mov (nat n) (addressing addr QWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
-      I.add (int n) (addressing addr QWORD i 0);
-      env
+      I.add (int n) (addressing addr QWORD i 0)
   | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
-      instr_for_floatarithmem op (addressing addr REAL8 i 1) (res i 0);
-      env
+      instr_for_floatarithmem op (addressing addr REAL8 i 1) (res i 0)
   | Lop(Ispecific(Ibswap 16)) ->
       I.xchg ah al;
-      I.movzx (res16 i 0) (res i 0);
-      env
+      I.movzx (res16 i 0) (res i 0)
   | Lop(Ispecific(Ibswap 32)) ->
       I.bswap (res32 i 0);
-      I.movsxd (res32 i 0) (res i 0);
-      env
+      I.movsxd (res32 i 0) (res i 0)
   | Lop(Ispecific(Ibswap 64)) ->
-      I.bswap (res i 0);
-      env
+      I.bswap (res i 0)
   | Lop(Ispecific(Ibswap _)) ->
       assert false
   | Lop(Ispecific Isqrtf) ->
       if arg i 0 <> res i 0 then
         I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)
-      I.sqrtsd (arg i 0) (res i 0);
-      env
+      I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
-      env
   | Lop(Ispecific(Isextend32)) ->
       I.movsxd (arg32 i 0) (res i 0)
-      env
   | Lop(Ispecific(Izextend32)) ->
       I.mov (arg32 i 0) (res32 i 0)
-      env
   | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
-      env
+      ()
   | Lreturn ->
       output_epilogue ~env begin fun () ->
         I.ret ()
-      end;
-      env
+      end
   | Llabel lbl ->
-      emit_Llabel fallthrough lbl env;
-      env
+      emit_Llabel fallthrough lbl env
   | Lbranch lbl ->
-      I.jmp (label lbl);
-      env
+      I.jmp (label lbl)
   | Lcondbranch(tst, lbl) ->
       let lbl = label lbl in
       begin match tst with
@@ -806,8 +762,7 @@ let emit_instr fallthrough i env =
       | Ieventest ->
           I.test (int 1) (arg8 i 0);
           I.je lbl
-      end;
-      env
+      end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
       I.cmp (int 1) (arg i 0);
       begin match lbl0 with
@@ -821,8 +776,7 @@ let emit_instr fallthrough i env =
       begin match lbl2 with
       | None -> ()
       | Some lbl -> I.ja (label lbl)
-      end;
-      env
+      end
   | Lswitch jumptbl ->
       let lbl = emit_label (new_label()) in
       (* rax and rdx are clobbered by the Lswitch,
@@ -852,15 +806,14 @@ let emit_instr fallthrough i env =
         D.long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
                          ConstLabel lbl))
       done;
-      emit_named_text_section env.f.fun_name;
-      env
+      emit_named_text_section env.f.fun_name
   | Lentertrap ->
-      env
+      ()
   | Ladjust_trap_depth { delta_traps; } ->
       (* each trap occupies 16 bytes on the stack *)
       let delta = 16 * delta_traps in
       cfi_adjust_cfa_offset delta;
-      { env with stack_offset =  env.stack_offset + delta }
+      env.stack_offset <- env.stack_offset + delta
   | Lpushtrap { lbl_handler; } ->
       let load_label_addr s arg =
         if !Clflags.pic_code then
@@ -874,13 +827,13 @@ let emit_instr fallthrough i env =
       I.push (domain_field Domainstate.Domain_exception_pointer);
       cfi_adjust_cfa_offset 8;
       I.mov rsp (domain_field Domainstate.Domain_exception_pointer);
-      { env with stack_offset = env.stack_offset + 16 }
+      env.stack_offset <- env.stack_offset + 16;
   | Lpoptrap ->
       I.pop (domain_field Domainstate.Domain_exception_pointer);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
-      { env with stack_offset = env.stack_offset - 16 }
+      env.stack_offset <- env.stack_offset - 16
   | Lraise k ->
       begin match k with
       | Lambda.Raise_regular ->
@@ -895,14 +848,13 @@ let emit_instr fallthrough i env =
           I.pop (domain_field Domainstate.Domain_exception_pointer);
           I.pop r11;
           I.jmp r11
-      end;
-      env
+      end
 
 let rec emit_all fallthrough i env =
   match i.desc with
-  | Lend -> env
+  | Lend -> ()
   | _ ->
-      let env = emit_instr fallthrough i env in
+      emit_instr fallthrough i env;
       emit_all (Linear.has_fallthrough i.desc) i.next env
 
 let all_functions = ref []
@@ -925,7 +877,7 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  let env = emit_all true fundecl.fun_body env in
+  emit_all true fundecl.fun_body env;
   List.iter (emit_call_gc ~env) env.call_gc_sites;
   emit_call_bound_errors env;
   if fundecl.fun_frame_required then begin
