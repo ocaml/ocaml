@@ -64,6 +64,7 @@ module type S =
     val of_list: elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
+    val to_seq_rev : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
@@ -593,6 +594,11 @@ module Make(Ord: OrderedType) =
       | More (x, t, rest) -> Seq.Cons (x, seq_of_enum_ (cons_enum t rest))
 
     let to_seq c = seq_of_enum_ (cons_enum c End)
+
+    let rec to_seq_rev = function
+      | Empty -> Seq.empty
+      | Node {l; r; v; _} ->
+          Seq.append (to_seq_rev r) (Seq.cons v (to_seq_rev l))
 
     let to_seq_from low s =
       let rec aux low s c = match s with
