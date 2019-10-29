@@ -74,7 +74,7 @@ let iter f seq =
 
 let cons x next () = Cons (x, next)
 
-let rec concat seq1 seq2 () =
+let rec append seq1 seq2 () =
   match seq1() with
   | Nil -> seq2()
-  | Cons (x, next) -> Cons (x, concat next seq2)
+  | Cons (x, next) -> Cons (x, append next seq2)

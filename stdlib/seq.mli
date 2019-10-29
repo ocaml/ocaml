@@ -82,4 +82,9 @@ val iter : ('a -> unit) -> 'a t -> unit
     sequences. *)
 
 val cons: 'a -> 'a t -> 'a t
-val concat: 'a t -> 'a t -> 'a t
+(** [cons x xs] returns a new sequence whose elements are [x] followed
+    by the elements of [xs] @since 4.11 *)
+
+val append: 'a t -> 'a t -> 'a t
+(** [append xs ys] returns a new sequence whose elements are those of
+    [xs] followed by the elements of [ys] @since 4.11 *)
