@@ -172,6 +172,7 @@ module Map : sig
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
       val to_seq : 'a t -> (key * 'a) Seq.t
+      val to_seq_rev : 'a t -> (key * 'a) Seq.t
       val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
       val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
       val of_seq : (key * 'a) Seq.t -> 'a t
