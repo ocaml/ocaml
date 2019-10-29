@@ -24,9 +24,6 @@ open Mach
 open Linear
 open Emitaux
 
-module IntSet = Stdlib.Set.Make(Stdlib.Int)
-module IntMap = Stdlib.Map.Make(Stdlib.Int)
-
 (* Reserved space at bottom of stack *)
 
 let reserved_stack_space =
@@ -35,74 +32,28 @@ let reserved_stack_space =
   | ELF64v1 -> 48
   | ELF64v2 -> 32
 
-(* Record calls to the GC -- we've moved them out of the way *)
-
-type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
-    gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame: label }                   (* Label of frame descriptor *)
-
-(* Record calls to caml_ml_array_bound_error.
-   In -g mode, we maintain one call to caml_ml_array_bound_error
-   per bound check site.  Without -g, we can share a single call. *)
-
-type bound_error_call =
-  { bd_lbl: label;                      (* Entry label *)
-    bd_frame: label }                   (* Label of frame descriptor *)
-
-(* Pending floating-point literals *) (* for PPC32 *)
-type float_literal =
-  {
-    fl : int64;
-    lbl : label;
-  }
-
 (* Record jump tables (for PPC64).  In order to reduce the size of the TOC,
    we concatenate all jumptables and emit them at the end of the function. *)
 
 type pending = {
-  (* Labels of glue code for calling the GC.
-     There is one label per size allocated. *)
-  mutable call_gc_labels : label IntMap.t; (* size -> label *)
-  mutable float_literals : float_literal list;
+  (* Label of glue code for calling the GC. *)
+  mutable call_gc_label : int;
   mutable jumptables_lbl : label option;
   mutable jumptables : label list; (* in reverse order *)
 }
 
-(* Environment for emitting a function *)
-type per_function_env = {
-  f : fundecl;
-  mutable stack_offset : int;
-  mutable call_gc_sites : gc_call list; (* unused *)
-  mutable bound_error_sites : bound_error_call list; (* unused *)
-  mutable bound_error_call : label option; (* unused *)
-  p : pending;
-}
-
-
 let mk_pending () =
   {
-    call_gc_labels = IntMap.empty;
-    float_literals = [];
+    call_gc_label = 0;
     jumptables_lbl = None;
     jumptables = [];
-  }
-
-let mk_env f =
-  {
-    f;
-    stack_offset = 0;
-    call_gc_sites = [];
-    bound_error_sites = [];
-    bound_error_call = None;
-    p = mk_pending ();
   }
 
 let initial_stack_offset f =
   reserved_stack_space +
   size_int * f.fun_num_stack_slots.(0) +    (* Local int variables *)
   size_float * f.fun_num_stack_slots.(1) +  (* Local float variables *)
-  (if !f.fun_contains_calls && abi = ELF32 then size_int else 0)
+  (if f.fun_contains_calls && abi = ELF32 then size_int else 0)
                                         (* The return address *)
 let frame_size env =
   let size =
@@ -567,21 +518,21 @@ end)
 
 (* Assembly code for inlined allocation *)
 
-let emit_alloc i bytes dbginfo far =
-  if !call_gc_label = 0 then call_gc_label := new_label ();
+let emit_alloc env i bytes dbginfo far =
+  if env.p.call_gc_label = 0 then env.p.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	{emit_string lg}	0, {emit_int offset}(30)\n`;
   `	addi    31, 31, {emit_int(-bytes)}\n`;
   `	{emit_string cmplg}	31, 0\n`;
   if not far then begin
-    `	bltl	{emit_label !call_gc_label}\n`;
-    record_frame i.live (Dbg_alloc dbginfo);
+    `	bltl	{emit_label env.p.call_gc_label}\n`;
+    record_frame env i.live (Dbg_alloc dbginfo);
     `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
   end else begin
     let lbl = new_label() in
     `	bge	{emit_label lbl}\n`;
-    `	bl	{emit_label !call_gc_label}\n`;
-    record_frame i.live (Dbg_alloc dbginfo);
+    `	bl	{emit_label env.p.call_gc_label}\n`;
+    record_frame env i.live (Dbg_alloc dbginfo);
     `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
   end
 
@@ -655,7 +606,7 @@ let emit_instr env i =
         begin match abi with
         | ELF32 ->
           let lbl = new_label() in
-          env.p.float_literals <- { fl=f; lbl } :: env.p.float_literals;
+          env.float_literals <- { fl=f; lbl } :: env.float_literals;
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
         | ELF64v1 | ELF64v2 ->
@@ -688,7 +639,7 @@ let emit_instr env i =
           `	ld	2, 8({emit_reg i.arg.(0)})\n`;  (* TOC for callee *)
           `	bctrl\n`;
           record_frame env i.live (Dbg_other i.dbg);
-          emit_reload_toc()
+          emit_reload_toc env
         | ELF64v2 ->
           `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`;  (* addr of fn in r12 *)
@@ -743,8 +694,8 @@ let emit_instr env i =
         emit_free_frame env;
         `	bctr\n`
     | Lop(Itailcall_imm { func; }) ->
-        if func = !env.f.fun_name then
-          `	b	{emit_label !env.f.fun_tailrec_entry_point_label}\n`
+        if func = env.f.fun_name then
+          `	b	{emit_label env.f.fun_tailrec_entry_point_label}\n`
         else begin
           begin match abi with
           | ELF32 ->
@@ -816,9 +767,9 @@ let emit_instr env i =
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc { bytes; dbginfo }) ->
-        emit_alloc i bytes dbginfo false
+        emit_alloc env i bytes dbginfo false
     | Lop(Ispecific(Ialloc_far { bytes; dbginfo })) ->
-        emit_alloc i bytes dbginfo true
+        emit_alloc env i bytes dbginfo true
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop Imod) ->
@@ -873,7 +824,7 @@ let emit_instr env i =
           `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
 	end else begin
           let lbl = new_label() in
-          env.p.float_literals <- {fl=0x4330000080000000L; lbl} :: env.p.float_literals;
+          env.float_literals <- {fl=0x4330000080000000L; lbl} :: env.float_literals;
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	0, {emit_lower emit_label lbl}(11)\n`;
           `	lis	0, 0x4330\n`;
@@ -1071,7 +1022,7 @@ let rec emit_all env i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl in
+  let env = mk_env fundecl (mk_pending ()) in
   begin match abi with
   | ELF32 ->
     emit_string code_space;
@@ -1104,11 +1055,11 @@ let fundecl fundecl =
   (* On this target, there is at most one "out of line" code block per
      function: a single "call GC" point.  It comes immediately after the
      function's body. *)
-  BR.relax fundecl.fun_body ~max_out_of_line_code_offset:0;
+  BR.relax fundecl ~max_out_of_line_code_offset:0;
   emit_all env fundecl.fun_body;
   (* Emit the glue code to call the GC *)
-  if !env.p.call_gc_label > 0 then begin
-    `{emit_label !call_gc_label}:\n`;
+  if env.p.call_gc_label > 0 then begin
+    `{emit_label env.p.call_gc_label}:\n`;
     match abi with
     | ELF32 ->
       `	b	{emit_symbol "caml_call_gc"}\n`
@@ -1135,14 +1086,14 @@ let fundecl fundecl =
     `	.size	{emit_symbol fundecl.fun_name}, . - .L.{emit_symbol fundecl.fun_name}\n`
   end;
   (* Emit the numeric literals *)
-  if env.p.float_literals <> [] then begin
+  if env.float_literals <> [] then begin
     emit_string rodata_space;
     `	.align	3\n`;
     List.iter
       (fun { fl; lbl } ->
         `{emit_label lbl}:`;
         emit_float64_split_directive ".long" fl)
-      env.p.float_literals
+      env.float_literals
   end;
   (* Emit the jump tables *)
   match env.p.jumptables_lbl with

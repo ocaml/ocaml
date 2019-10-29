@@ -49,39 +49,6 @@ let cfi_adjust_cfa_offset n =
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
 
-(* Record calls to the GC -- we've moved them out of the way *)
-
-type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
-    gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame: label }                   (* Label of frame descriptor *)
-
-(* Record calls to caml_ml_array_bound_error.
-   In -g mode, we maintain one call to caml_ml_array_bound_error
-   per bound check site.  Without -g, we can share a single call. *)
-
-type bound_error_call =
-  { bd_lbl: label;                      (* Entry label *)
-    bd_frame: label }                   (* Label of frame descriptor *)
-
-(* Environment for emitting a function *)
-type per_function_env = {
-  f : fundecl;
-  mutable stack_offset : int;
-  mutable call_gc_sites : gc_call list;
-  mutable bound_error_sites : bound_error_call list;
-  mutable bound_error_call : label option;
-}
-
-let mk_env f =
-  {
-    f;
-    stack_offset = 0;
-    call_gc_sites = [];
-    bound_error_sites = [];
-    bound_error_call = None;
-  }
-
 let frame_size env =                     (* includes return address *)
   let sz =
     env.stack_offset
@@ -237,7 +204,7 @@ let record_frame_label env live dbg =
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
-  record_frame_descr env ~label:lbl ~frame_size:(frame_size env)
+  record_frame_descr ~label:lbl ~frame_size:(frame_size env)
     ~live_offset:!live_offset dbg;
   lbl
 
@@ -248,15 +215,15 @@ let record_frame env live dbg =
 let emit_call_gc gc =
   def_label gc.gc_lbl;
   emit_call "caml_call_gc";
-  def_label gc.gc_frame;
+  def_label gc.gc_frame_lbl;
   I.jmp (label gc.gc_return_lbl)
 
 let bound_error_label env dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label Reg.Set.empty (Dbg_other dbg) in
+    let lbl_frame = record_frame_label env Reg.Set.empty (Dbg_other dbg) in
     env.bound_error_sites <-
-      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame }
+      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
       :: env.bound_error_sites;
     lbl_bound_error
   end else begin
@@ -549,8 +516,8 @@ let emit_instr env fallthrough i =
   | Lop(Itailcall_ind) ->
       output_epilogue env (fun () -> I.jmp (reg i.arg.(0)))
   | Lop(Itailcall_imm { func; }) ->
-      if func = !env.f.fun_name then
-        I.jmp (label !env.f.fun_tailrec_entry_point)label)
+      if func = env.f.fun_name then
+        I.jmp (label env.f.fun_tailrec_entry_point_label)
       else begin
         output_epilogue env begin fun () ->
           add_used_symbol func;
@@ -614,7 +581,7 @@ let emit_instr env fallthrough i =
           end
       end
   | Lop(Ialloc { bytes = n; dbginfo }) ->
-      if !env.f.fun_fast then begin
+      if env.f.fun_fast then begin
         load_domain_state ebx;
         I.mov (domain_field Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
@@ -630,7 +597,7 @@ let emit_instr env fallthrough i =
         env.call_gc_sites <-
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_after_alloc;
-            gc_frame = lbl_frame } :: env.call_gc_sites
+            gc_frame_lbl = lbl_frame; } :: env.call_gc_sites
       end else begin
         begin match n with
           8  -> emit_call "caml_alloc1"
@@ -920,7 +887,7 @@ let rec emit_all env fallthrough i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl in
+  let env = mk_env fundecl () in
   emit_named_text_section fundecl.fun_name;
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);

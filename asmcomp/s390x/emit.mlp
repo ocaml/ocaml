@@ -25,65 +25,6 @@ open Mach
 open Linear
 open Emitaux
 
-(* Record calls to caml_call_gc, emitted out of line. *)
-
-type gc_call =
-  { gc_lbl: label;                      (* Entry label *)
-    gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_frame_lbl: label }               (* Label of frame descriptor *)
-
-(* Record calls to caml_ml_array_bound_error, emitted out of line. *)
-
-type bound_error_call =
-  { bd_lbl: label;                      (* Entry label *)
-    bd_frame: label }                   (* Label of frame descriptor *)
-
-(* Pending floating-point literals *)
-type float_literal =
-  {
-    fl : int64;
-    lbl : label;
-  }
-
-(* Pending large integer literals *)
-type int_literal =
-  {
-    n : nativeint;
-    n_lbl : label;
-  }
-
-type pending =
-  {
-    mutable float_literals : float_literal list;
-    mutable int_literals : int_literal list;
-  }
-
-(* Environment for emitting a function *)
-type per_function_env = {
-  f : fundecl;
-  mutable stack_offset : int;
-  mutable call_gc_sites : gc_call list;
-  mutable bound_error_sites : bound_error_call list;
-  mutable bound_error_call : label option;
-  p : pending; (* s390x specific *)
-}
-
-let mk_pending () =
-  {
-    float_literals = [];
-    int_literals = [];
-  }
-
-let mk_env f =
-  {
-    f;
-    stack_offset = 0;
-    call_gc_sites = [];
-    bound_error_sites = [];
-    bound_error_call = None;
-    p = mk_pending ();
-  }
-
 let frame_size env =
   let size =
     env.stack_offset +      (* Trap frame, outgoing parameters *)
@@ -248,7 +189,8 @@ let bound_error_label env dbg =
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label env Reg.Set.empty (Dbg_other dbg) in
     env.bound_error_sites <-
-     { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: env.bound_error_sites;
+      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame; }
+      :: env.bound_error_sites;
    lbl_bound_error
  end else begin
     match env.bound_error_call with
@@ -367,12 +309,12 @@ let emit_instr env i =
           `	lgfi	{emit_reg i.res.(0)}, {emit_nativeint n}\n`;
         end else begin
           let n_lbl = new_label() in
-          env.p.int_literals <- {n; n_lbl} :: env.p.int_literals;
+          env.int_literals <- {n; n_lbl} :: env.int_literals;
           `	lgrl	{emit_reg i.res.(0)}, {emit_label n_lbl}\n`;
           end
     | Lop(Iconst_float fl) ->
         let lbl = new_label() in
-        env.p.float_literals <- { fl; lbl } :: env.p.float_literals;
+        env.float_literals <- { fl; lbl } :: env.float_literals;
         `	larl	%r1, {emit_label lbl}\n`;
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
@@ -385,7 +327,7 @@ let emit_instr env i =
         emit_call func;
         `{record_frame env i.live (Dbg_other i.dbg)}\n`
     | Lop(Itailcall_ind) ->
-        let n = frame_size() in
+        let n = frame_size env in
         if env.f.fun_contains_calls then
           `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
         emit_stack_adjust (-n);
@@ -455,7 +397,7 @@ let emit_instr env i =
         env.call_gc_sites <-
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_after_alloc;
-            gc_frame_lbl = lbl_frame } :: env.call_gc_sites;
+            gc_frame_lbl = lbl_frame; } :: env.call_gc_sites;
         `	lay     %r11, {emit_int(-n)}(%r11)\n`;
         let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
         `	clg	%r11, {emit_int offset}(%r10)\n`;
@@ -689,7 +631,7 @@ let rec emit_all env i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
-  let env = mk_env fundecl in
+  let env = mk_env fundecl () in
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   emit_debug_info fundecl.fun_dbg;
   `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
@@ -702,18 +644,18 @@ let fundecl fundecl =
   (* Emit the glue code to handle bound errors *)
   emit_call_bound_errors env;
   (* Emit the numeric literals *)
-  if env.p.float_literals <> [] || env.p.int_literals <> [] then begin
+  if env.float_literals <> [] || env.int_literals <> [] then begin
     emit_string rodata_space;
     `	.align	8\n`;
     List.iter
       (fun {fl; lbl} ->
         `{emit_label lbl}:`;
         emit_float64_directive ".quad" fl)
-      env.p.float_literals;
+      env.float_literals;
     List.iter
       (fun {n; n_lbl} ->
         `{emit_label n_lbl}:	.quad	{emit_nativeint n}\n`)
-      env.p.int_literals
+      env.int_literals
   end
 
 (* Emission of data *)
