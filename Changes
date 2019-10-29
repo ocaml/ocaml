@@ -15,6 +15,9 @@ Working version
   with the index of the element.
   (Léo Andrès, review by Alain Frisch)
 
+- #8894: Added List.fold_left_map function combining map and fold.
+  (Bernhard Schommer, review by Alain Frisch and github user @cfcs)
+
 ### Other libraries:
 
 ### Tools:
