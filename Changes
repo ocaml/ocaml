@@ -680,7 +680,6 @@ OCaml 4.10.0 (21 February 2020)
 - #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list
   (Gabriel Scherer, review by Daniel Bünzli and Thomas Refis)
 
-
 - #8832: List.find_map : ('a -> 'b option) -> 'a list -> 'b option
   (Gabriel Scherer, review by Jeremy Yallop, Nicolás Ojeda Bär
    and Daniel Bünzli)
