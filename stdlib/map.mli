@@ -332,7 +332,7 @@ module type S =
     (** Iterate on the whole map, in ascending order of keys
         @since 4.07 *)
 
-    val to_seq_rev : 'a t -> (key * 'a) Seq.t
+    val rev_to_seq : 'a t -> (key * 'a) Seq.t
     (** Iterate on the whole map, in descending order of keys
         @since 4.xx *)
 

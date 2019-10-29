@@ -291,7 +291,7 @@ module type S =
     (** Iterate on the whole set, in ascending order
         @since 4.07 *)
 
-    val to_seq_rev: t -> elt Seq.t
+    val rev_to_seq : t -> elt Seq.t
     (** Iterate on the whole set, in descending order
         @since 4.xx *)
 

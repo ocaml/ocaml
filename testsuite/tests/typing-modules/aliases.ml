@@ -318,7 +318,7 @@ module StringSet :
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
-    val to_seq_rev : t -> elt Seq.t
+    val rev_to_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
@@ -365,7 +365,7 @@ module SSet :
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
-    val to_seq_rev : t -> elt Seq.t
+    val rev_to_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
@@ -444,7 +444,7 @@ module A :
         val of_list : elt list -> t
         val to_seq_from : elt -> t -> elt Seq.t
         val to_seq : t -> elt Seq.t
-        val to_seq_rev : t -> elt Seq.t
+        val rev_to_seq : t -> elt Seq.t
         val add_seq : elt Seq.t -> t -> t
         val of_seq : elt Seq.t -> t
       end
@@ -558,7 +558,7 @@ module SInt :
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
-    val to_seq_rev : t -> elt Seq.t
+    val rev_to_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
