@@ -341,3 +341,40 @@ module M : sig type +'a t [@@unique "M.t"] val create : 'a list -> 'a t end
 type _ exp = M : 'a list -> 'a M.t exp | Int : int -> int exp
 val eval_int : int exp -> int = <fun>
 |}]
+
+
+(* Injectivity with same identity *)
+type (_,_) eq = Eq : ('a,'a) eq
+module M : sig
+  type 'a t [@@unique "M.t"] and 'a u [@@unique "M.t"] and v [@@unique "M.t"]
+  type a and b
+  val eq_at_bu : (a t, b u) eq
+  val eq_at_v : (a t, v) eq
+end = struct
+  type 'a t = T of 'a [@@unique "M.t"]
+  type 'a u = 'a t
+  type v = int t
+  type a = int and b = int
+  let eq_at_bu = Eq
+  let eq_at_v = Eq
+end;;
+[%%expect{|
+type (_, _) eq = Eq : ('a, 'a) eq
+module M :
+  sig
+    type 'a t [@@unique "M.t"]
+    and 'a u [@@unique "M.t"]
+    and v [@@unique "M.t"]
+    type a
+    and b
+    val eq_at_bu : (a t, b u) eq
+    val eq_at_v : (a t, v) eq
+  end
+|}]
+
+let check1 (x : M.a) (y : M.b) = let Eq = M.eq_at_bu in x = y ;;
+let check2 (x : M.a M.t) (y : M.v) = let Eq = M.eq_at_v in x = y ;;
+[%%expect{|
+val check1 : M.a -> M.b -> bool = <fun>
+val check2 : M.a M.t -> M.v -> bool = <fun>
+|}]

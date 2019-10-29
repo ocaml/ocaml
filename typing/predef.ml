@@ -158,9 +158,10 @@ let mk_add_type add_type type_ident
 
 let common_initial_env add_type add_extension empty_env =
   let add_type id decl =
-    if decl.type_kind = Type_abstract && decl.type_manifest = None then
-      add_type id {decl with type_ident = Some (Ident.name id)}
-    else add_type id decl
+    match decl with
+    | {type_kind = Type_abstract; type_manifest = None; type_ident = None} ->
+           add_type id {decl with type_ident = Some (Ident.name id)}
+    | _ -> add_type id decl
   in
   let add_type = mk_add_type add_type
   and add_type1 type_ident

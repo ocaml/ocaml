@@ -2208,17 +2208,9 @@ let is_instantiable env p =
     decl.type_kind = Type_abstract &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
-    decl.type_manifest = None &&
-    not (non_aliasable decl)
+    decl.type_manifest = None
   with Not_found -> false
 
-
-(* PR#7113: -safe-string should be a global property *)
-let compatible_paths p1 p2 =
-  let open Predef in
-  Path.same p1 p2 ||
-  Path.same p1 path_bytes && Path.same p2 path_string ||
-  Path.same p1 path_string && Path.same p2 path_bytes
 
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
@@ -2362,7 +2354,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if compatible_paths p1 p2 then begin
+    if Path.same p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2738,6 +2730,9 @@ and unify3 env t1 t1' t2 t2' =
          Tconstr (path',[],_))
         when is_instantiable !env path && is_instantiable !env path'
         && can_generate_equations () ->
+          (* incomplete w.r.t. failure: compatibility is not transitive *)
+          (* in particular we may forget a unique identifier *)
+          mcomp !env t1' t2';
           let source, destination =
             if Path.scope path > Path.scope path'
             then  path , t2'
@@ -2748,13 +2743,25 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (path,[],_), _)
         when is_instantiable !env path && can_generate_equations () ->
           reify env t2';
+          mcomp !env t1' t2';
           record_equation t1' t2';
           add_gadt_equation env path t2'
       | (_, Tconstr (path,[],_))
         when is_instantiable !env path && can_generate_equations () ->
           reify env t1';
+          mcomp !env t1' t2';
           record_equation t1' t2';
           add_gadt_equation env path t1'
+      | (Tconstr (p1,tl1,_), Tconstr (p2,tl2,_))
+        when can_generate_equations () && List.length tl1 = List.length tl2 ->
+          reify env t1';
+          reify env t2';
+          begin match Env.find_type p1 !env, Env.find_type p2 !env with
+          | {type_ident = Some id1}, {type_ident = Some id2} when id1 = id2 ->
+              unify_list env tl1 tl2
+          | _ -> ()
+          end;
+          mcomp !env t1' t2'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
