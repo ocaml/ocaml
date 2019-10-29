@@ -29,6 +29,9 @@ Working version
 
 ### Bug fixes:
 
+- #7683, #1499: Fixes one case where the evaluation order in native-code
+  may not match the one in bytecode.
+  (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
 
 OCaml 4.10.0
 ------------
