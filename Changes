@@ -11,6 +11,10 @@ Working version
 
 ### Standard library:
 
+- #9059: Added List.filteri function, same as List.filter but
+  with the index of the element.
+  (Léo Andrès, review by Alain Frisch)
+
 ### Other libraries:
 
 ### Tools:

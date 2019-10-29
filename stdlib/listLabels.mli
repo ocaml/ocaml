@@ -266,6 +266,13 @@ val filter : f:('a -> bool) -> 'a list -> 'a list
 val find_all : f:('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!List.filter}. *)
 
+val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
+(** Same as {!List.filter}, but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.11.0
+*)
+
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition p l] returns a pair of lists [(l1, l2)], where
    [l1] is the list of all the elements of [l] that
