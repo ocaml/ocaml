@@ -80,3 +80,6 @@ val iter : ('a -> unit) -> 'a t -> unit
 (** Iterate on the sequence, calling the (imperative) function on every element.
     The traversal happens immediately and will not terminate on infinite
     sequences. *)
+
+val cons: 'a -> 'a t -> 'a t
+val concat: 'a t -> 'a t -> 'a t
