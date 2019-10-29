@@ -509,10 +509,17 @@ module Make(Ord: OrderedType) = struct
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
 
-    let rec rev_to_seq = function
-      | Empty -> Seq.empty
-      | Node {l; v; d; r; _} ->
-          Seq.append (rev_to_seq r) (Seq.cons (v, d) (rev_to_seq l))
+    let rec snoc_enum s e =
+      match s with
+        Empty -> e
+      | Node{l; v; d; r} -> snoc_enum r (More(v, d, l, e))
+
+    let rec rev_seq_of_enum_ c () = match c with
+      | End -> Seq.Nil
+      | More (k,v,t,rest) -> Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
+
+    let rev_to_seq c =
+      rev_seq_of_enum_ (snoc_enum c End)
 
     let to_seq_from low m =
       let rec aux low m c = match m with
