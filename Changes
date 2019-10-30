@@ -29,6 +29,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9078: make all compilerlibs/ available to ocamltest.
+  (Gabriel Scherer, review by Sébastien Hinderer)
+
 ### Build system:
 
 ### Bug fixes:
