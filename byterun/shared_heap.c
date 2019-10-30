@@ -520,6 +520,12 @@ void verify_push(void* st_v, value v, value* p)
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
 
+  if( Is_minor(v) ) {
+    caml_gc_log("minor in heap: 0x%lx, hd_val: %d, p: 0x%lx", v, Hd_val(v), p);
+    struct domain* domain = caml_owner_of_young_block(v);
+    caml_gc_log("owner: %d, young_start: 0x%lx, young_end: 0x%lx, young_ptr: 0x%lx, young_limit: 0x%lx", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, domain->state->young_limit);
+  }
+
   if (st->sp == st->stack_len) {
     st->stack_len = st->stack_len * 2 + 100;
     st->stack = caml_stat_resize(st->stack,
@@ -535,12 +541,6 @@ void caml_verify_root(void* state, value v, value* p)
 
 static void verify_object(struct heap_verify_state* st, value v) {
   if (!Is_block(v)) return;
-
-  if( Is_minor(v) ) {
-    caml_gc_log("minor in stack: 0x%lx, hd_val: %d", v, Hd_val(v));
-    struct domain* domain = caml_owner_of_young_block(v);
-    caml_gc_log("owner: %d, young_start: 0x%lx, young_end: 0x%lx, young_ptr: 0x%lx, young_limit: 0x%lx", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, domain->state->young_limit);
-  }
 
   Assert (!Is_minor(v));
   Assert (Hd_val(v));
@@ -571,7 +571,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
         Assert(caml_owner_of_young_block(v) ==
                caml_owner_of_young_block(f));
       }
-      if (Is_block(f)) verify_push(st, f, 0);
+      if (Is_block(f)) verify_push(st, f, Op_val(v)+i);
     }
   }
 }
