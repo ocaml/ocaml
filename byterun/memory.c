@@ -193,16 +193,15 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
   if (Is_young(obj))
     Assert(Op_val(obj)[field] == Debug_uninit_minor ||
            Op_val(obj)[field] == Val_unit);
-  else
+  else {
+    if (Is_young(val)) {
+      caml_gc_log("caml_initialize_field: obj=0x%lx val=0x%lx tag=%d", obj, val, Tag_hd(Hd_val(val)));
+    }
     Assert(Op_val(obj)[field] == Debug_uninit_major ||
            Op_val(obj)[field] == Val_unit);
+  }
 #endif
 
-  if (!Is_young(obj) && Is_young(val)) {
-    Begin_root(obj);
-    val = caml_promote(caml_domain_self(), val);
-    End_roots();
-  }
   write_barrier(obj, field, Op_val(obj)[field], val);
   Op_val(obj)[field] = val;
 }

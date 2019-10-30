@@ -156,6 +156,19 @@ static inline void resolve_infix_val (value* v)
   }
 }
 
+static inline void log_gc_value(const char* prefix, value v)
+{
+  if (Is_block(v)) {
+    header_t hd = Hd_val(v);
+    int sz = Wosize_hd (hd);
+    caml_gc_log("%s 0x%lx hd=0x%lx tag=%d sz=%d", prefix, v, hd, Tag_val(v), sz);
+  } else {
+    caml_gc_log("%s not block 0x%lx", prefix, v);
+  }
+}
+
+static value debug_addr = 0x2001fd8b8; /* 0x200201d08; */
+
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 static void oldify_one (void* st_v, value v, value *p)
@@ -190,6 +203,8 @@ static void oldify_one (void* st_v, value v, value *p)
       return;
     }
     tag = Tag_hd (hd);
+    if (v == debug_addr)
+      log_gc_value("Got you! ", v);
     if (tag == Infix_tag) {
       /* Infix header, retry with the real block */
       CAMLassert (infix_offset == 0);
@@ -219,6 +234,9 @@ static void oldify_one (void* st_v, value v, value *p)
     CAMLassert (!Is_debug_tag(field0));
     *Hp_val (v) = 0;           /* Set forward flag */
     Op_val(v)[0] = result;     /*  and forward pointer. */
+    if (v == debug_addr)
+      log_gc_value("oldifying in InfixTag: ", v);
+
     if (sz > 1){
       Op_val (result)[0] = field0;
       Op_val (result)[1] = st->todo_list;    /* Add this block */
@@ -230,6 +248,7 @@ static void oldify_one (void* st_v, value v, value *p)
       goto tail_call;
     }
   } else if (tag >= No_scan_tag) {
+    if(v == debug_addr) log_gc_value("handling No_scan_tag: ", v);
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared(sz, tag);
@@ -247,9 +266,18 @@ static void oldify_one (void* st_v, value v, value *p)
 
     value f = Forward_val (v);
     tag_t ft = 0;
+    if (v == debug_addr)
+      log_gc_value("oldifying in Forward_tag[v]: ", v);
+
+    if (f == debug_addr) {
+      log_gc_value("oldifying pointing to f [v]: ", v);
+      log_gc_value("oldifying pointing to f [f]: ", f);
+    }
 
     if (Is_block (f)) {
       ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
+      if (v == debug_addr)
+        log_gc_value("oldifying in Forward_tag[f]: ", f);
     }
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
@@ -421,6 +449,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   st.promote_domain = domain;
 
   CAMLassert(caml_owner_of_young_block(root) == domain);
+  caml_gc_log("caml_promote: oldify. [0x%lx]", root);
   oldify_one (&st, root, &root);
   oldify_mopup (&st);
 
@@ -429,7 +458,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   caml_darken(0, root, 0);
 
   /* ctk21: inefficient, but part of refactor to remove caml_promote */
-  caml_gc_log("caml_promote: forcing minor GC. ");
+  caml_gc_log("caml_promote: forcing minor GC. [0x%lx]", root);
   caml_empty_minor_heap_domain (domain, (void*)0);
 
   domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
@@ -543,19 +572,57 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     caml_ev_begin("minor_gc");
     caml_ev_begin("minor_gc/roots");
     caml_do_local_roots(&oldify_one, &st, domain, 0);
+    caml_gc_log("Minor collection of local roots finished");
 
     caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
+    caml_gc_log("Minor collection of stack finished");
 
     for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
-      value x = **r;
-      oldify_one (&st, x, &x);
+      /*value x = **r;
+      oldify_one (&st, x, &x);*/
+      oldify_one (&st, **r, *r);
+
+#if 0
+#ifdef DEBUG
+      x = **r;
+      if (Is_block (x) && is_in_interval ((value)Hp_val(x), young_ptr, young_end)) {
+        header_t hd = Hd_val(x);
+        int offset = 0;
+        if (Tag_hd(hd) == Infix_tag) {
+          offset = Infix_offset_hd(hd);
+          x -= offset;
+        }
+        if (Hd_val(x) != 0) {
+          log_gc_value("major_ref that wasn't forwarded first time: ", x);
+        }
+      }
+#endif
+#endif
     }
+    caml_gc_log("Minor collection of minor_tables finished");
     caml_ev_end("minor_gc/roots");
 
     caml_ev_begin("minor_gc/promote");
     oldify_mopup (&st);
     caml_ev_end("minor_gc/promote");
-
+#if 0
+#ifdef DEBUG
+    for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
+      value x = **r;
+      if (Is_block (x) && is_in_interval ((value)Hp_val(x), young_ptr, young_end)) {
+        header_t hd = Hd_val(x);
+        int offset = 0;
+        if (Tag_hd(hd) == Infix_tag) {
+          offset = Infix_offset_hd(hd);
+          x -= offset;
+        }
+        if (Hd_val(x) != 0) {
+          log_gc_value("major_ref that wasn't forwarded after oldify_mopup: ", x);
+        }
+      }
+    }
+#endif
+#endif
     caml_ev_begin("minor_gc/ephemerons");
     for (re = minor_tables->ephe_ref.base;
          re < minor_tables->ephe_ref.ptr; re++) {
@@ -583,7 +650,9 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     caml_ev_begin("minor_gc/update_minor_tables");
     for (r = minor_tables->major_ref.base;
          r < minor_tables->major_ref.ptr; r++) {
-      value v = **r;
+      value vnew = **r;
+      CAMLassert (!Is_block(vnew) || (!Is_minor(vnew) && Hd_val(vnew) != 0));
+#if 0
       if (Is_block (v) && is_in_interval ((value)Hp_val(v), young_ptr, young_end)) {
         value vnew;
         header_t hd = Hd_val(v);
@@ -592,10 +661,19 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
           offset = Infix_offset_hd(hd);
           v -= offset;
         }
+        if (v == debug_addr)
+          log_gc_value("patchup of v in major_ref: ", v);
+
         CAMLassert (Hd_val(v) == 0);
         vnew = Op_val(v)[0] + offset;
         CAMLassert (Is_block(vnew) && !Is_minor(vnew));
         CAMLassert (Hd_val(vnew));
+        if ((!Is_block(vnew)) || Is_minor(vnew))
+        {
+          log_gc_value("patchup of v is a mistake: ", v);
+          log_gc_value("patchup of v is a mistake it points to: ", vnew);
+        }
+
         if (Tag_hd(hd) == Infix_tag) {
           CAMLassert(Tag_val(vnew) == Infix_tag);
           v += offset;
@@ -610,6 +688,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
             ++rewrite_failures;
         }
       }
+#endif
     }
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
     caml_ev_end("minor_gc/update_minor_tables");

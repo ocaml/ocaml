@@ -790,9 +790,6 @@ let global_approx = ref([||] : value_approximation array)
 let function_nesting_depth = ref 0
 let excessive_function_nesting_depth = 5
 
-let prim_promote =
-  Pccall (Primitive.simple ~name:"caml_obj_force_promote_to" ~arity:2 ~alloc:true)
-
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -1009,8 +1006,7 @@ let rec close fenv cenv = function
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
       let dbg = Debuginfo.from_location loc in
-      let promoted = Uprim(prim_promote, [ulam; Uconst (Uconst_int 0)], Debuginfo.none) in
-      (Uprim(Psetfield(n, is_ptr, init), [getglobal dbg id; promoted], dbg),
+      (Uprim(Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
        Value_unknown)
   | Lprim(Praise k, [arg], loc) ->
       let (ulam, _approx) = close fenv cenv arg in

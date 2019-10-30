@@ -1656,10 +1656,11 @@ type assignment_kind = Caml_modify | Caml_initialize | Simple
 let assignment_kind ptr init =
   match init, ptr with
   | Assignment, Pointer -> Caml_modify
-  | Heap_initialization, Pointer -> Caml_initialize
+  | Heap_initialization, Pointer
+  | Root_initialization, Pointer -> Caml_initialize
   | Assignment, Immediate
   | Heap_initialization, Immediate
-  | Root_initialization, (Immediate | Pointer) -> Simple
+  | Root_initialization, Immediate -> Simple
 
 (* Translate an expression *)
 

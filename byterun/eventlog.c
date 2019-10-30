@@ -217,11 +217,13 @@ static void post_event(const char* name, evtype ty, uint64_t value)
 
 void caml_ev_begin(const char* name)
 {
+  caml_gc_log("ev_begin: %s", name);
   post_event(name, BEGIN, 0);
 }
 
 void caml_ev_end(const char* name)
 {
+  caml_gc_log("ev_end: %s", name);
   post_event(name, END, 0);
 }
 

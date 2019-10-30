@@ -266,6 +266,7 @@ CAMLexport const value* caml_named_value(char const *name)
   }
   caml_plat_unlock(&named_value_lock);
   /* *ret should never be a minor object, since caml_create_root promotes */
+  /* TODO: this needs updating */
   CAMLassert (!(ret && Is_minor(caml_read_root(ret))));
   return Op_val(ret);
 }
