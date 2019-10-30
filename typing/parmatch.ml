@@ -995,7 +995,8 @@ let pats_of_type ?(always=false) env ty =
   match ty'.desc with
   | Tconstr (path, _, _) ->
       begin try match (Env.find_type path env).type_kind with
-      | Type_variant cl when always || List.length cl = 1 ||
+      | Type_variant cl when always || List.length cl <= 1 ||
+        (* Only explode when all constructors are GADTs *)
         List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
           List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
@@ -2070,14 +2071,27 @@ let contains_extension pat =
      | _ -> false)
     pat
 
-(* Build an untyped or-pattern from its expected type *)
+(* Build a pattern from its expected type *)
+type pat_explosion = PE_single | PE_gadt_cases
+type ppat_of_type =
+  | PT_empty
+  | PT_any
+  | PT_pattern of
+      pat_explosion *
+      Parsetree.pattern *
+      (string, constructor_description) Hashtbl.t *
+      (string, label_description) Hashtbl.t
+
 let ppat_of_type env ty =
   match pats_of_type env ty with
-  | [] -> raise Empty
-  | [{pat_desc = Tpat_any}] ->
-      (Conv.mkpat Parsetree.Ppat_any, Hashtbl.create 0, Hashtbl.create 0)
+  | [] -> PT_empty
+  | [{pat_desc = Tpat_any}] -> PT_any
+  | [pat] ->
+      let (ppat, constrs, labels) = Conv.conv pat in
+      PT_pattern (PE_single, ppat, constrs, labels)
   | pats ->
-      Conv.conv (orify_many pats)
+      let (ppat, constrs, labels) = Conv.conv (orify_many pats) in
+      PT_pattern (PE_gadt_cases, ppat, constrs, labels)
 
 let do_check_partial ~pred loc casel pss = match pss with
 | [] ->
