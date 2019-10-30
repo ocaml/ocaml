@@ -133,7 +133,7 @@ let rec push_defaults loc bindings cases partial =
       let exp =
         let cases =
           let pure_case ({c_lhs; _} as case) =
-            {case with c_lhs = {c_lhs with pat_desc = Tpat_value c_lhs}} in
+            {case with c_lhs = as_computation_pattern c_lhs} in
           List.map pure_case cases in
         { exp with exp_loc = loc; exp_env = env; exp_desc =
           Texp_match

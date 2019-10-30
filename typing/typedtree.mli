@@ -120,7 +120,15 @@ and 'k pattern_desc =
   | Tpat_value : value general_pattern -> computation pattern_desc
         (** P
 
-            Invariant: TODO
+            Invariant: Tpat_value pattern should not carry
+            pat_attributes or pat_extra metadata coming from user
+            syntax, which must be on the inner pattern node -- to
+            facilitate searching for a certain value pattern
+            constructor with a specific attributed.
+
+            To enforce this restriction it suffices to use the
+            [as_computation_pattern] function below instead of the
+            [Tpat_value] constructor directly.
          *)
   | Tpat_exception : value general_pattern -> computation pattern_desc
         (** exception P *)
@@ -742,6 +750,12 @@ and 'a class_infos =
    }
 
 (* Auxiliary functions over the a.s.t. *)
+
+(** [as_computation_pattern p] is a computation pattern with description
+    [Tpat_value p], which enforces a correct placement of pat_attributes
+    and pat_extra metadata (on the inner value pattern, rather than on
+    the computation pattern). *)
+val as_computation_pattern: pattern -> computation general_pattern
 
 val classify_pattern_desc: 'k pattern_desc -> 'k pattern_category
 val classify_pattern: 'k general_pattern -> 'k pattern_category

@@ -613,6 +613,16 @@ and 'a class_infos =
 
 (* Auxiliary functions over the a.s.t. *)
 
+let as_computation_pattern (p : pattern) : computation general_pattern =
+  {
+    pat_desc = Tpat_value p;
+    pat_loc = p.pat_loc;
+    pat_extra = [];
+    pat_type = p.pat_type;
+    pat_env = p.pat_env;
+    pat_attributes = [];
+  }
+
 let rec classify_pattern_desc : type k . k pattern_desc -> k pattern_category =
   function
   | Tpat_alias _ -> Value

@@ -1181,7 +1181,7 @@ let pure
   = fun category pat ->
   match category with
   | Value -> pat
-  | Computation -> { pat with pat_desc = Tpat_value pat }
+  | Computation -> as_computation_pattern pat
 
 let only_impure
   : type k . k pattern_category ->
@@ -1199,7 +1199,7 @@ let as_comp_pattern
              k general_pattern -> computation general_pattern
   = fun category pat ->
   match category with
-  | Value -> { pat with pat_desc = Tpat_value pat }
+  | Value -> as_computation_pattern pat
   | Computation -> pat
 
 (* type_pat propagates the expected type as well as maps for
