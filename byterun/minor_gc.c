@@ -581,23 +581,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
       /*value x = **r;
       oldify_one (&st, x, &x);*/
       oldify_one (&st, **r, *r);
-
-#if 0
-#ifdef DEBUG
-      x = **r;
-      if (Is_block (x) && is_in_interval ((value)Hp_val(x), young_ptr, young_end)) {
-        header_t hd = Hd_val(x);
-        int offset = 0;
-        if (Tag_hd(hd) == Infix_tag) {
-          offset = Infix_offset_hd(hd);
-          x -= offset;
-        }
-        if (Hd_val(x) != 0) {
-          log_gc_value("major_ref that wasn't forwarded first time: ", x);
-        }
-      }
-#endif
-#endif
     }
     caml_gc_log("Minor collection of minor_tables finished");
     caml_ev_end("minor_gc/roots");
@@ -605,24 +588,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     caml_ev_begin("minor_gc/promote");
     oldify_mopup (&st);
     caml_ev_end("minor_gc/promote");
-#if 0
-#ifdef DEBUG
-    for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
-      value x = **r;
-      if (Is_block (x) && is_in_interval ((value)Hp_val(x), young_ptr, young_end)) {
-        header_t hd = Hd_val(x);
-        int offset = 0;
-        if (Tag_hd(hd) == Infix_tag) {
-          offset = Infix_offset_hd(hd);
-          x -= offset;
-        }
-        if (Hd_val(x) != 0) {
-          log_gc_value("major_ref that wasn't forwarded after oldify_mopup: ", x);
-        }
-      }
-    }
-#endif
-#endif
     caml_ev_begin("minor_gc/ephemerons");
     for (re = minor_tables->ephe_ref.base;
          re < minor_tables->ephe_ref.ptr; re++) {
@@ -652,43 +617,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
          r < minor_tables->major_ref.ptr; r++) {
       value vnew = **r;
       CAMLassert (!Is_block(vnew) || (!Is_minor(vnew) && Hd_val(vnew) != 0));
-#if 0
-      if (Is_block (v) && is_in_interval ((value)Hp_val(v), young_ptr, young_end)) {
-        value vnew;
-        header_t hd = Hd_val(v);
-        int offset = 0;
-        if (Tag_hd(hd) == Infix_tag) {
-          offset = Infix_offset_hd(hd);
-          v -= offset;
-        }
-        if (v == debug_addr)
-          log_gc_value("patchup of v in major_ref: ", v);
-
-        CAMLassert (Hd_val(v) == 0);
-        vnew = Op_val(v)[0] + offset;
-        CAMLassert (Is_block(vnew) && !Is_minor(vnew));
-        CAMLassert (Hd_val(vnew));
-        if ((!Is_block(vnew)) || Is_minor(vnew))
-        {
-          log_gc_value("patchup of v is a mistake: ", v);
-          log_gc_value("patchup of v is a mistake it points to: ", vnew);
-        }
-
-        if (Tag_hd(hd) == Infix_tag) {
-          CAMLassert(Tag_val(vnew) == Infix_tag);
-          v += offset;
-        }
-        if (caml_domain_alone()) {
-          **r = vnew;
-          ++rewrite_successes;
-        } else {
-          if (atomic_compare_exchange_strong((atomic_value*)*r, &v, vnew))
-            ++rewrite_successes;
-          else
-            ++rewrite_failures;
-        }
-      }
-#endif
     }
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
     caml_ev_end("minor_gc/update_minor_tables");
