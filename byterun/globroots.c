@@ -115,9 +115,11 @@ static void scan_global_roots(scanning_action f, void* fdata)
   r = roots_all;
   caml_plat_unlock(&roots_mutex);
 
+  /* TODO: this needs to change */
   Assert(!Is_minor(r));
   newr = r;
   f(fdata, newr, &newr);
+  /* TODO: this needs to change */
   Assert(r == newr); /* GC should not move r, it is not young */
 }
 
@@ -129,6 +131,7 @@ void caml_cleanup_deleted_roots()
 
   r = roots_all;
   while (Is_block(r)) {
+    /* TODO: this needs changing too */
     Assert(!Is_foreign(Op_val(r)[2]));
     value next = Op_val(r)[2];
     if (Int_field(r, 1) == 0) {

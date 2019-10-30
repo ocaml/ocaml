@@ -72,7 +72,7 @@ CAMLprim value caml_obj_make_forward (value blk, value fwd)
       &hd_lazy,
       (hd_lazy & ~0xFF) | Int_val(Forward_tag));
 
-    if (cas_result) 
+    if (cas_result)
         return Val_unit;
     else
         goto again;
@@ -169,6 +169,7 @@ CAMLprim value caml_obj_promote_to (value obj, value upto)
 /* caml_force_promote_to(obj, upto) force promotes obj to be as least as shared as upto */
 CAMLprim value caml_obj_force_promote_to (value obj, value upto)
 {
+  /* FIXME: we need to catch and handle this in our shared heap version */
   if (Is_block(upto) && Is_minor(upto)) {
     /* upto is local, obj is already as shared as upto is */
     return obj;
