@@ -8,37 +8,40 @@
 *)
 
 type test_record = {
-  mutable lzy: string Lazy.t;
+  mutable lzy_str: string Lazy.t;
+  mutable lzy_int: int Lazy.t;
 }
 
 let is_shared x = Obj.is_shared (Obj.repr x)
 
+let glbl_int = ref 0
 let glbl_string = ref "init"
+
+let get_random_int () =
+  Random.int 256
 
 let get_random_string () =
   Printf.sprintf "%f" (Random.float 1.)
 
-let get_lazy () =
-  lazy (glbl_string := get_random_string (); !glbl_string)
 
-let get_lazy_status x =
+let get_lazy_status fmt_str x =
   if Lazy.is_val x then
-    Printf.sprintf "%s" (Lazy.force x)
+    Printf.sprintf fmt_str (Lazy.force x)
   else
     "<not forced>"
 
+let get_lazy_int_status x = get_lazy_status "%d" x
+let get_lazy_string_status x = get_lazy_status "%s" x
+
 let dump_record_status x =
-  Printf.printf "x.lzy=%s [shared=%b]\n" (get_lazy_status x.lzy) (is_shared x.lzy)
+  Printf.printf "x.lzy_string=%s [shared=%b]\n" (get_lazy_string_status x.lzy_str) (is_shared x.lzy_str);
+  Printf.printf "x.lzy_int=%s [shared=%b]\n" (get_lazy_int_status x.lzy_int) (is_shared x.lzy_int)
 
-let update_record x =
-  let lzy = get_lazy () in
-  Printf.printf "updating: %b\n%!" (is_shared lzy);
-  x.lzy <- lzy;
-  dump_record_status x
-
-let force_lazy_val x =
-  let v = Lazy.force x.lzy in
-  Printf.printf "forcing x.lzy [%s] %b %d\n%!" v (is_shared x.lzy) (Obj.tag (Obj.repr x.lzy))
+let force_lazy_vals x =
+  let v = Lazy.force x.lzy_str in
+  Printf.printf "forcing x.lzy_str [%s] %b %d\n%!" v (is_shared x.lzy_str) (Obj.tag (Obj.repr x.lzy_str));
+  let v = Lazy.force x.lzy_int in
+  Printf.printf "forcing x.lzy_int [%d] %b %d\n%!" v (is_shared x.lzy_int) (Obj.tag (Obj.repr x.lzy_int))
 
 let do_minor_gc () =
   Printf.printf "Gc.minor ()\n%!";
@@ -46,16 +49,22 @@ let do_minor_gc () =
 
 let () =
   Random.init 34;
-  let lzy1 = get_lazy () in
-  let x = {lzy=lzy1} in
+  let x = {
+    lzy_str = lazy (glbl_string := get_random_string (); !glbl_string);
+    lzy_int = lazy (glbl_int := get_random_int (); !glbl_int);
+  } in
 
   do_minor_gc ();
   (* x should now be on the heap *)
   dump_record_status x;
   Printf.printf "x is setup on major heap\n\n%!";
 
-  update_record x;
-  force_lazy_val x;
+  Printf.printf "updating fields in x\n\n%!";
+  x.lzy_str <- lazy (glbl_string := get_random_string (); !glbl_string);
+  x.lzy_int <- lazy (glbl_int := get_random_int (); !glbl_int);
+  dump_record_status x;
+
+  force_lazy_vals x;
   dump_record_status x;
   do_minor_gc ();
   dump_record_status x
