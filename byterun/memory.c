@@ -193,7 +193,7 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
            Op_val(obj)[field] == Val_unit);
   else {
     if (Is_minor(val)) {
-      caml_gc_log("caml_initialize_field: obj=0x%lx val=0x%lx tag=%d", obj, val, Tag_hd(Hd_val(val)));
+      caml_gc_log("caml_initialize_field: obj=0x%lx field=%d val=0x%lx tag=%d", obj, field, val, Tag_hd(Hd_val(val)));
     }
     Assert(Op_val(obj)[field] == Debug_uninit_major ||
            Op_val(obj)[field] == Val_unit);
