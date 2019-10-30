@@ -974,7 +974,7 @@ let complete_tags nconsts nconstrs tags =
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
-   Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
+   Tpat_construct (mknoloc (Longident.Lident cstr.cstr_name),
                    cstr, omegas cstr.cstr_arity)}
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
@@ -1003,7 +1003,7 @@ let pats_of_type ?(always=false) env ty =
           let labels = snd (Env.find_type_descrs path env) in
           let fields =
             List.map (fun ld ->
-              mknoloc (Longident.Lident "?pat_of_label?"), ld, omega)
+              mknoloc (Longident.Lident ld.lbl_name), ld, omega)
               labels
           in
           [make_pat (Tpat_record (fields, Closed)) ty env]
