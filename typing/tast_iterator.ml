@@ -170,7 +170,7 @@ let pat
   | Tpat_array l -> List.iter (sub.pat sub) l
   | Tpat_alias (p, _, _) -> sub.pat sub p
   | Tpat_lazy p -> sub.pat sub p
-  | Tpat_value p
+  | Tpat_value p -> sub.pat sub (p :> pattern)
   | Tpat_exception p -> sub.pat sub p
   | Tpat_or (p1, p2, _) ->
       sub.pat sub p1;

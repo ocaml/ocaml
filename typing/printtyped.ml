@@ -261,7 +261,7 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
       pattern i ppf p;
   | Tpat_value p ->
       line i ppf "Tpat_value\n";
-      pattern i ppf p;
+      pattern i ppf (p :> pattern);
   | Tpat_or (p1, p2, _) ->
       line i ppf "Tpat_or\n";
       pattern i ppf p1;

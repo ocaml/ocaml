@@ -71,12 +71,14 @@ and 'k pattern_desc =
   | Tpat_array : value general_pattern list -> value pattern_desc
   | Tpat_lazy : value general_pattern -> value pattern_desc
   (* computation patterns *)
-  | Tpat_value : value general_pattern -> computation pattern_desc
+  | Tpat_value : tpat_value_argument -> computation pattern_desc
   | Tpat_exception : value general_pattern -> computation pattern_desc
   (* generic constructions *)
   | Tpat_or :
       'k general_pattern * 'k general_pattern * row_desc option ->
       'k pattern_desc
+
+and tpat_value_argument = value general_pattern
 
 and expression =
   { exp_desc: expression_desc;

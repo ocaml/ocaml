@@ -221,7 +221,7 @@ let pat
     | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, s)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
     | Tpat_value p ->
-       Tpat_value (sub.pat sub p)
+       (as_computation_pattern (sub.pat sub (p :> pattern))).pat_desc
     | Tpat_exception p ->
        Tpat_exception (sub.pat sub p)
     | Tpat_or (p1, p2, rd) ->

@@ -117,7 +117,7 @@ and 'k pattern_desc =
   | Tpat_lazy : value general_pattern -> value pattern_desc
         (** lazy P *)
   (* computation patterns *)
-  | Tpat_value : value general_pattern -> computation pattern_desc
+  | Tpat_value : tpat_value_argument -> computation pattern_desc
         (** P
 
             Invariant: Tpat_value pattern should not carry
@@ -126,9 +126,10 @@ and 'k pattern_desc =
             facilitate searching for a certain value pattern
             constructor with a specific attributed.
 
-            To enforce this restriction it suffices to use the
-            [as_computation_pattern] function below instead of the
-            [Tpat_value] constructor directly.
+            To enforce this restriction, we made the argument of
+            the Tpat_value constructor a private synonym of [pattern],
+            requiring you to use the [as_computation_pattern] function
+            below instead of using the [Tpat_value] constructor directly.
          *)
   | Tpat_exception : value general_pattern -> computation pattern_desc
         (** exception P *)
@@ -141,6 +142,8 @@ and 'k pattern_desc =
             [row_desc] = [Some _] when translating [Ppat_type _],
                          [None] otherwise.
          *)
+
+and tpat_value_argument = private value general_pattern
 
 and expression =
   { exp_desc: expression_desc;
