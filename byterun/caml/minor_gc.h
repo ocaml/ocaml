@@ -59,9 +59,8 @@ struct domain;
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_stw_empty_minor_heap (struct domain* domain, void* unused); /* in STW */
 extern int caml_try_stw_empty_minor_heap_on_all_domains(); /* out STW */
-extern void caml_empty_my_minor_heap(); /* out STW */
+extern void caml_empty_minor_heaps_once(); /* out STW */
 CAMLextern void caml_minor_collection (void);
-CAMLextern void forward_pointer (void* domain, value v, value* p);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
 
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);

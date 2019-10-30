@@ -143,13 +143,14 @@ void caml_ephe_clean (struct domain* d, value v) {
             /* Do not short-circuit the pointer */
           } else {
             Op_val(v)[i] = child = f;
-            if (Is_block (f) && Is_young (f))
+            if (Is_block (f) && Is_minor (f))
               add_to_ephe_ref_table(&Caml_state->minor_tables->ephe_ref, v, i);
             goto ephemeron_again;
           }
         }
       }
-      if (!Is_young (child) && is_unmarked(child)) {
+      // FIXME: Is_young -> Is_minor is this really right?
+      if (!Is_minor (child) && is_unmarked(child)) {
         release_data = 1;
         Op_val(v)[i] = caml_ephe_none;
       }
@@ -176,14 +177,13 @@ static void clean_field (struct domain* d, value e, mlsize_t offset)
 
 static void do_set (struct domain* d, value e, mlsize_t offset, value v)
 {
-  CAMLassert (!(Is_block(v) && Is_foreign(v)));
   CAMLassert (Ephe_domain(e) == d ||
               !Is_block(v) || !Is_minor(v)); //blit operations
 
-  if (Is_block(v) && Is_young(v)) {
+  if (Is_block(v) && Is_minor(v)) {
     value old = Op_val(e)[offset];
     Op_val(e)[offset] = v;
-    if (!(Is_block(old) && Is_young(old)))
+    if (!(Is_block(old) && Is_minor(old)))
       add_to_ephe_ref_table (&d->state->minor_tables->ephe_ref,
                              e, offset);
   } else {
@@ -244,7 +244,6 @@ static value ephe_get_field_domain (value e, value n, struct domain* d, int* rpc
 
   clean_field(d, e, offset);
   elt = Op_val(e)[offset];
-  CAMLassert (!(Is_block(elt) && Is_foreign(elt)));
   if (elt == caml_ephe_none) {
     res = None_val;
   } else {

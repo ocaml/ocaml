@@ -364,21 +364,16 @@ CAMLprim value caml_continuation_use (value cont)
 {
   struct stack_info* stk;
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
-  if (Is_young(cont)) {
-    stk = Ptr_val(Op_val(cont)[0]);
-    Op_val(cont)[0] = Val_ptr(NULL);
-    if (stk == NULL) caml_invalid_argument("continuation already taken");
-    return Val_ptr(stk);
+
+  value v;
+  if (!Is_minor(cont) ) caml_darken_cont(cont);
+
+  v = Op_val(cont)[0];
+  if (v != Val_ptr(NULL) &&
+      atomic_compare_exchange_strong(Op_atomic_val(cont), &v, Val_ptr(NULL))) {
+    return v;
   } else {
-    value v;
-    caml_darken_cont(cont);
-    v = Op_val(cont)[0];
-    if (v != Val_ptr(NULL) &&
-        atomic_compare_exchange_strong(Op_atomic_val(cont), &v, Val_ptr(NULL))) {
-      return v;
-    } else {
-      caml_invalid_argument("continuation already taken");
-    }
+    caml_invalid_argument("continuation already taken");
   }
 }
 

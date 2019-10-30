@@ -530,12 +530,17 @@ void verify_push(void* st_v, value v, value* p)
 
 void caml_verify_root(void* state, value v, value* p)
 {
-  Assert (!Is_foreign(v));
   verify_push(state, v, p);
 }
 
 static void verify_object(struct heap_verify_state* st, value v) {
   if (!Is_block(v)) return;
+
+  if( Is_minor(v) ) {
+    caml_gc_log("minor in stack: 0x%lx, hd_val: %d", v, Hd_val(v));
+    struct domain* domain = caml_owner_of_young_block(v);
+    caml_gc_log("owner: %d, young_start: 0x%lx, young_end: 0x%lx, young_ptr: 0x%lx, young_limit: 0x%lx", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, domain->state->young_limit);
+  }
 
   Assert (!Is_minor(v));
   Assert (Hd_val(v));

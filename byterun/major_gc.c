@@ -455,7 +455,7 @@ static struct pool* find_pool_to_rescan();
 static void mark_stack_push(struct mark_stack* stk, mark_entry e)
 {
   value v;
-  CAMLassert(Is_block(e.block) && !Is_young(e.block));
+  CAMLassert(Is_block(e.block) && !Is_minor(e.block));
   CAMLassert(Tag_val(e.block) != Infix_tag);
   CAMLassert(Tag_val(e.block) != Cont_tag);
   CAMLassert(Tag_val(e.block) < No_scan_tag);
@@ -464,6 +464,26 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
       /* nothing left to mark */
       return;
     v = Op_val(e.block)[e.offset];
+#if DEBUG
+    /* Here we check that if v is a reference to a block on the minor heap then it is definitely
+       contained within the remembered set */
+    if( Is_block(v) && Is_minor(v) ) {
+      struct domain* domain = caml_owner_of_young_block(v);
+      struct caml_minor_tables *minor_tables = domain->state->minor_tables;
+      value **r;
+      int found_v_in_remembered_set = 0;
+
+      for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
+        value x = **r;
+        if( x == v ) {
+          found_v_in_remembered_set = 1;
+        }
+      }
+
+      CAMLassert(found_v_in_remembered_set);
+    }
+#endif
+
     if (Is_markable(v))
       /* found something to mark */
       break;
@@ -564,7 +584,7 @@ static intnat mark(intnat budget) {
 
 void caml_darken_cont(value cont)
 {
-  CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
+  CAMLassert(Is_block(cont) && !Is_minor(cont) && Tag_val(cont) == Cont_tag);
   SPIN_WAIT {
     header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
     CAMLassert(!Has_status_hd(hd, global.GARBAGE));

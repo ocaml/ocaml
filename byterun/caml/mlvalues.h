@@ -427,7 +427,6 @@ static inline value Field_imm(value x, int i) {
   Assert (Hd_val(x));
   Assert (Tag_val(x) == Infix_tag || i < Wosize_val(x));
   value v = Op_val(x)[i];
-  Assert (!Is_foreign(v));
   return v;
 }
 
@@ -436,7 +435,7 @@ static inline value Field(value x, int i) {
   Assert (Hd_val(x));
   value v = (((value*)x))[i];
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
-  return Is_foreign(v) ? caml_read_barrier(x, i) : v;
+  return v;
 }
 
 static inline void caml_read_field(value x, int i, value* ret) {
@@ -444,7 +443,7 @@ static inline void caml_read_field(value x, int i, value* ret) {
   /* See Note [MM] in memory.c */
   value v = atomic_load_explicit(&Op_atomic_val(x)[i], memory_order_relaxed);
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
-  *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
+  *ret = v;
 }
 
 #define Int_field(x, i) Int_val(Op_val(x)[i])
