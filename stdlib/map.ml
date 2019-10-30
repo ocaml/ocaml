@@ -516,7 +516,8 @@ module Make(Ord: OrderedType) = struct
 
     let rec rev_seq_of_enum_ c () = match c with
       | End -> Seq.Nil
-      | More (k,v,t,rest) -> Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
+      | More (k,v,t,rest) ->
+          Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
 
     let rev_to_seq c =
       rev_seq_of_enum_ (snoc_enum c End)
