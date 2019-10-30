@@ -17,6 +17,9 @@ OCaml 4.09 maintenance branch:
   incompatible with C.
   (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
 
+- #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
+  (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
+
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------
 

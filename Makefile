@@ -574,8 +574,10 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
-	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
+	  compilerlibs/*.cma \
+	  "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	   $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	$(INSTALL_DATA) \
@@ -675,7 +677,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
-	    compilerlibs/ocamloptcomp.cma $(OPTSTART) \
+	    $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  $(MAKE) -C ocamldoc installopt; \
@@ -720,9 +722,9 @@ installoptopt:
 	   asmcomp/debug/*.cmx \
           "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
-	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
-	   compilerlibs/ocamloptcomp.cmxa  compilerlibs/ocamloptcomp.$(A) \
+	   compilerlibs/*.cmxa compilerlibs/*.$(A) \
+	   "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
@@ -733,8 +735,6 @@ installoptopt:
 	     toplevel/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
 	  $(INSTALL_DATA) \
-	     compilerlibs/ocamlopttoplevel.cmxa \
-	     compilerlibs/ocamlopttoplevel.$(A) \
 	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
