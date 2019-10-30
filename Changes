@@ -23,6 +23,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #9074: reworded error message for non-regular structural types
+  (Florian Angeletti, review by Jacques Garrigue and Leo White,
+   report by Chas Emerick)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:

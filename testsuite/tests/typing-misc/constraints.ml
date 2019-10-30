@@ -21,7 +21,12 @@ type 'a t = [`A of 'a t t];; (* fails *)
 Line 1, characters 0-26:
 1 | type 'a t = [`A of 'a t t];; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the definition of t, type 'a t t should be 'a t
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type 'a t
+       but it is used as
+         'a t t.
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
