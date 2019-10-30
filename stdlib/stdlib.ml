@@ -75,6 +75,8 @@ let max x y = if x >= y then x else y
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 external ( != ) : 'a -> 'a -> bool = "%noteq"
+external physical_equality : 'a -> 'a -> bool = "%eq"
+external physical_inequality : 'a -> 'a -> bool = "%noteq"
 
 (* Boolean operations *)
 
