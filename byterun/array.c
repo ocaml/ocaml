@@ -308,7 +308,7 @@ CAMLprim value caml_make_vect(value len, value init)
     /* make sure init is not young, to avoid creating
        very many ref table entries */
     if (size >= Max_young_wosize &&
-        Is_block(init) && Is_young(init))
+        Is_block(init) && Is_minor(init))
       caml_minor_collection();
     /* TODO: Spacetime */
     res = caml_alloc(size, 0);

@@ -132,15 +132,15 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
 
   Assert (Is_block(obj));
 
-  if (!Is_young(obj)) {
+  if (!Is_minor(obj)) {
 
     caml_darken(0, old_val, 0);
 
-    if (Is_block(new_val) && Is_young(new_val)) {
+    if (Is_block(new_val) && Is_minor(new_val)) {
 
       /* If old_val is young, then `Op_val(obj)+field` is already in
        * major_ref. We can safely skip adding it again. */
-       if (Is_block(old_val) && Is_young(old_val))
+       if (Is_block(old_val) && Is_minor(old_val))
          return;
 
       /* Add to remembered set */
@@ -149,14 +149,14 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
   }
 #ifdef DEBUG
   /* minor_ref is only used in debug mode */
-  else if (Is_young(new_val) && new_val < obj)
+  else if (Is_minor(new_val) && new_val < obj)
   {
 
     /* Both obj and new_val are young and new_val is more recent than obj.
       * If old_val is also young, and younger than obj, then it must be the
       * case that `Op_val(obj)+field` is already in minor_ref. We can safely
       * skip adding it again. */
-    if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
+    if (Is_block(old_val) && Is_minor(old_val) && old_val < obj)
       return;
 
     /* Add to remembered set */
@@ -168,7 +168,6 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
 CAMLexport void caml_modify_field (value obj, int field, value val)
 {
   Assert (Is_block(obj));
-  Assert (!Is_foreign(obj));
   Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
 
   Assert(field >= 0 && field < Wosize_val(obj));
@@ -186,7 +185,6 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 CAMLexport void caml_initialize_field (value obj, int field, value val)
 {
   Assert(Is_block(obj));
-  Assert(!Is_foreign(obj));
   Assert(0 <= field && field < Wosize_val(obj));
 #ifdef DEBUG
   /* caml_initialize_field can only be used on just-allocated objects */
@@ -194,7 +192,7 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
     Assert(Op_val(obj)[field] == Debug_uninit_minor ||
            Op_val(obj)[field] == Val_unit);
   else {
-    if (Is_young(val)) {
+    if (Is_minor(val)) {
       caml_gc_log("caml_initialize_field: obj=0x%lx val=0x%lx tag=%d", obj, val, Tag_hd(Hd_val(val)));
     }
     Assert(Op_val(obj)[field] == Debug_uninit_major ||
@@ -240,8 +238,6 @@ CAMLprim value caml_atomic_load (value ref)
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
     v = atomic_load(Op_atomic_val(ref));
-    if (Is_foreign(v))
-      v = caml_read_barrier(ref, 0);
     return v;
   }
 }
@@ -443,26 +439,10 @@ static void send_read_fault(struct read_fault_req* req)
 
 CAMLexport value caml_read_barrier(value obj, int field)
 {
-  /* A GC may occur just before or just after sending a fault. The obj value
-     must be root. The orig value must *not* be a root, since it may contain a
-     foreign value, which the GC must not see even if it runs just before the
-     fault is handled. */
+  /* ctk21: no-op the read barrier as part of experiment */
   CAMLparam1(obj);
   value orig = Op_val(obj)[field];
-  value ret;
-
-  if (Is_foreign(orig)) {
-    struct read_fault_req req = {obj, field, &Caml_state->read_fault_ret_val};
-    caml_ev_begin("fault/read");
-    send_read_fault(&req);
-    caml_ev_end("fault/read");
-    ret = caml_read_root(Caml_state->read_fault_ret_val);
-    Assert (!Is_foreign(ret));
-    caml_modify_root(Caml_state->read_fault_ret_val, Val_unit);
-  } else {
-    ret = orig;
-  }
-  CAMLreturn (ret);
+  CAMLreturn (orig);
 }
 
 #ifdef DEBUG
