@@ -1,10 +1,9 @@
 % Colors for links
 \def\visited@color{\#0d46a3}
 \def\link@color{\#4286f4}
-\def\hover@color{\@getstylecolor{subsection}}
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
 \newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
-\newstyle{a:hover}{color:black;text-decoration:underline;background-color:\hover@color}
+\newstyle{a:hover}{color:black;text-decoration:underline;}
 
 
 \newstyle{@media all}{@font-face \{
@@ -49,7 +48,40 @@
   border: 1px solid grey;
   padding: 10px;
   overflow-y:auto;
-  white-space: pre-wrap;
+  display:flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+/*  white-space: pre-wrap;*/
+}
+
+
+
+\newstyle{.ocamlkeyword}{
+  font-weight:bold;
+}
+
+
+\newstyle{.ocamlhighlight}{
+  font-weight:bold;
+  text-decoration:underline;
+}
+
+\newstyle{.ocamlerror}{
+  font-weight:bold;
+  color:red;
+}
+
+\newstyle{.ocamlwarning}{
+  font-weight:bold;
+  color:purple;
+}
+
+\newstyle{.ocamlcomment}{
+  color:grey;
+}
+
+\newstyle{.ocamlstring}{
+  opacity:0.75;
 }
 
 % Creative commons license logo
@@ -69,7 +101,8 @@
 \newstyle{div.caml-example.toplevel div.caml-input::before}
          {content:"\#"; color:black;}
 \newstyle{div.caml-example.toplevel div.caml-input}{color:\#006000;}
-%%%
+
+%%% Code examples
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
 \newcommand{\machine}{\tt}
@@ -79,14 +112,10 @@
 \newcommand{\nextline}{\examplespace\ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \let\?=\@zyva
-\newenvironment{camlunder}{\@style{U}}{}
-\newcommand{\caml}{\begin{alltt}\renewcommand{\;}{}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
-\newcommand{\endcaml}{\activebracetrue\end{alltt}
-}
 \renewcommand{\:}{\renewcommand{\?}{\@zyva}}
 \newcommand{\var}[1]{\textit{#1}}
 
-% Caml-example environment
+%% Caml-example environment
 \newcommand{\camlexample}[1]{
   \ifthenelse{\equal{#1}{toplevel}}
     {\renewcommand{\examplespace}{\ }}
@@ -99,14 +128,16 @@
   \renewcommand{\examplespace}{\ }
 }
 
-\newcommand{\camlinput}{\@open{div}{class="caml-input"}}
-\newcommand{\endcamlinput}{\@close{div}}
-\newcommand{\camloutput}{\@open{div}{class="caml-output ok"}}
-\newcommand{\endcamloutput}{\@close{div}}
-\newcommand{\camlerror}{\@open{div}{class="caml-output error"}}
-\newcommand{\endcamlerror}{\@close{div}}
-\newcommand{\camlwarn}{\@open{div}{class="caml-output warn"}}
-\newcommand{\endcamlwarn}{\@close{div}}
+\newenvironment{caml}{\@open{pre}{class=ocaml}}{\@close{pre}}
+\newcommand{\ocamlkeyword}{\@span{class="ocamlkeyword"}}
+\newcommand{\ocamlhighlight}{\@span{class="ocamlhighlight"}}
+\newcommand{\ocamlerror}{\@span{class="ocamlerror"}}
+\newcommand{\ocamlwarning}{\@span{class="ocamlwarning"}}
+\newcommand{\ocamlcomment}{\@span{class="ocamlcomment"}}
+\newcommand{\ocamlstring}{\@span{class="ocamlstring"}}
+
+
+%%% End of code example
 
 \newenvironment{library}{}{}
 \newcounter{page}
