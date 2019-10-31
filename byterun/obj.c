@@ -158,24 +158,15 @@ CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value ne
    major heap for correctness, use caml_obj_force_promote_to*/
 CAMLprim value caml_obj_promote_to (value obj, value upto)
 {
-  if (Is_block(upto) && (Is_minor(upto) || caml_domain_alone())) {
-    /* upto is local, obj is already as shared as upto is */
-    return obj;
-  }else{
-    return caml_promote(caml_domain_self(), obj);
-  }
+  /* ctk21: now no-op */
+  return obj;
 }
 
 /* caml_force_promote_to(obj, upto) force promotes obj to be as least as shared as upto */
 CAMLprim value caml_obj_force_promote_to (value obj, value upto)
 {
-  /* FIXME: we need to catch and handle this in our shared heap version */
-  if (Is_block(upto) && Is_minor(upto)) {
-    /* upto is local, obj is already as shared as upto is */
-    return obj;
-  }else{
-    return caml_promote(caml_domain_self(), obj);
-  }
+  /* ctk21: now no-op */
+  return obj;
 }
 
 CAMLprim value caml_obj_is_shared (value obj)

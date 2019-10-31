@@ -406,7 +406,6 @@ static void handle_read_fault(struct domain* target, void* reqp, interrupt* done
   value v = Op_val(req->obj)[req->field];
 
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
-    ret = caml_promote(target, v);
     caml_modify_root(*req->ret, ret);
     /* Update the field so that future requests don't fault. We must
        use a CAS here, since another thread may modify the field and
