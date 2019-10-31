@@ -390,9 +390,6 @@ CAMLprim value caml_domain_spawn(value callback)
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
-  /* FIXME: feels very fishy that we need this call for tests/parallel to pass */
-  caml_empty_minor_heaps_once();
-
   p.callback = caml_create_root(callback);
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);

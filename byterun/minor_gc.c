@@ -191,13 +191,15 @@ static void oldify_one (void* st_v, value v, value *p)
   do {
     hd = Hd_val (v);
     if (hd == 0) {
+      if (v == debug_addr)
+        caml_gc_log("updating p=0x%lx to point at 0x%lx", (value)p, Op_val(v)[0] + infix_offset);
       /* already forwarded, forward pointer is first field. */
       *p = Op_val(v)[0] + infix_offset;
       return;
     }
-    tag = Tag_hd (hd);
     if (v == debug_addr)
-      log_gc_value("Got you! ", v);
+      log_gc_value("Got you! v=", v);
+    tag = Tag_hd (hd);
     if (tag == Infix_tag) {
       /* Infix header, retry with the real block */
       CAMLassert (infix_offset == 0);
@@ -219,6 +221,9 @@ static void oldify_one (void* st_v, value v, value *p)
       caml_scan_stack(&oldify_one, st, stk);
   } else if (tag < Infix_tag) {
     value field0;
+    if (v == debug_addr)
+      log_gc_value("oldifying < Infix_tag: ", v);
+
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared (sz, tag);
@@ -227,8 +232,6 @@ static void oldify_one (void* st_v, value v, value *p)
     CAMLassert (!Is_debug_tag(field0));
     *Hp_val (v) = 0;           /* Set forward flag */
     Op_val(v)[0] = result;     /*  and forward pointer. */
-    if (v == debug_addr)
-      log_gc_value("oldifying in InfixTag: ", v);
 
     if (sz > 1){
       Op_val (result)[0] = field0;
@@ -443,46 +446,38 @@ void caml_empty_minor_heap_domain_finalizers (struct domain* domain, void* unuse
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   struct caml_custom_elt *elt;
-  uintnat minor_allocated_bytes = domain_state->young_end - domain_state->young_ptr;
 
-  if (minor_allocated_bytes != 0)
-  {
-    caml_ev_begin("minor_gc/finalisers");
-    caml_final_update_last_minor(domain);
-    /* Run custom block finalisation of dead minor values */
-    for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
-      value v = elt->block;
-      if (Hd_val(v) == 0) {
-        /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
-      } else {
-        /* Block will be freed: call finalisation function, if any */
-        void (*final_fun)(value) = Custom_ops_val(v)->finalize;
-        if (final_fun != NULL) final_fun(v);
-      }
+  caml_ev_begin("minor_gc/finalisers");
+  caml_final_update_last_minor(domain);
+  /* Run custom block finalisation of dead minor values */
+  for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
+    value v = elt->block;
+    if (Hd_val(v) == 0) {
+      /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
+    } else {
+      /* Block will be freed: call finalisation function, if any */
+      void (*final_fun)(value) = Custom_ops_val(v)->finalize;
+      if (final_fun != NULL) final_fun(v);
     }
-    caml_ev_end("minor_gc/finalisers");
   }
+  caml_ev_end("minor_gc/finalisers");
 }
 
 void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
-  uintnat minor_allocated_bytes = domain_state->young_end - domain_state->young_ptr;
 
   caml_final_empty_young(domain);
 
-  if (minor_allocated_bytes != 0)
-  {
-    clear_table ((struct generic_table *)&minor_tables->major_ref);
-    clear_table ((struct generic_table *)&minor_tables->ephe_ref);
-    clear_table ((struct generic_table *)&minor_tables->custom);
+  clear_table ((struct generic_table *)&minor_tables->major_ref);
+  clear_table ((struct generic_table *)&minor_tables->ephe_ref);
+  clear_table ((struct generic_table *)&minor_tables->custom);
 #ifdef DEBUG
-    clear_table ((struct generic_table *)&minor_tables->minor_ref);
+  clear_table ((struct generic_table *)&minor_tables->minor_ref);
 #endif
 
-    domain_state->young_ptr = domain_state->young_end;
-  }
+  domain_state->young_ptr = domain_state->young_end;
 }
 
 void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
@@ -502,75 +497,68 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
 
   caml_gc_log("young_end: %p, young_ptr: %p", young_end, young_ptr);
 
-  if (minor_allocated_bytes != 0) {
-    uintnat prev_alloc_words = domain_state->allocated_words;
+  /* TODO: are there any optimizations we can make where we don't need to scan
+     when minor heaps can reference each other? */
+  uintnat prev_alloc_words = domain_state->allocated_words;
 
-    caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
-    caml_ev_begin("minor_gc");
-    caml_ev_begin("minor_gc/roots");
-    caml_do_local_roots(&oldify_one, &st, domain, 0);
-    caml_gc_log("Minor collection of local roots finished");
+  caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
+  caml_ev_begin("minor_gc");
+  caml_ev_begin("minor_gc/roots");
+  caml_do_local_roots(&oldify_one, &st, domain, 0);
+  caml_gc_log("Minor collection of local roots finished");
 
-    caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
-    caml_gc_log("Minor collection of stack finished");
+  caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
+  caml_gc_log("Minor collection of stack finished");
 
-    for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
-      oldify_one (&st, **r, *r);
+  for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
+    oldify_one (&st, **r, *r);
+  }
+  caml_gc_log("Minor collection of minor_tables finished");
+  caml_ev_end("minor_gc/roots");
+
+  caml_ev_begin("minor_gc/promote");
+  oldify_mopup (&st);
+  caml_ev_end("minor_gc/promote");
+  caml_ev_begin("minor_gc/ephemerons");
+  for (re = minor_tables->ephe_ref.base;
+       re < minor_tables->ephe_ref.ptr; re++) {
+    CAMLassert (Ephe_domain(re->ephe) == domain);
+    if (re->offset == CAML_EPHE_DATA_OFFSET) {
+      /* Data field has already been handled in oldify_mopup. Handle only
+       * keys here. */
+      continue;
     }
-    caml_gc_log("Minor collection of minor_tables finished");
-    caml_ev_end("minor_gc/roots");
-
-    caml_ev_begin("minor_gc/promote");
-    oldify_mopup (&st);
-    caml_ev_end("minor_gc/promote");
-    caml_ev_begin("minor_gc/ephemerons");
-    for (re = minor_tables->ephe_ref.base;
-         re < minor_tables->ephe_ref.ptr; re++) {
-      CAMLassert (Ephe_domain(re->ephe) == domain);
-      if (re->offset == CAML_EPHE_DATA_OFFSET) {
-        /* Data field has already been handled in oldify_mopup. Handle only
-         * keys here. */
-        continue;
-      }
-      value* key = &Op_val(re->ephe)[re->offset];
-      if (*key != caml_ephe_none && Is_block(*key) && Is_minor(*key)) {
-        resolve_infix_val(key);
-        if (Hd_val(*key) == 0) { /* value copied to major heap */
-          *key = Op_val(*key)[0];
-        } else {
-          CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
-          *key = caml_ephe_none;
-          Ephe_data(re->ephe) = caml_ephe_none;
-        }
+    value* key = &Op_val(re->ephe)[re->offset];
+    if (*key != caml_ephe_none && Is_block(*key) && Is_minor(*key)) {
+      resolve_infix_val(key);
+      if (Hd_val(*key) == 0) { /* value copied to major heap */
+        *key = Op_val(*key)[0];
+      } else {
+        CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
+        *key = caml_ephe_none;
+        Ephe_data(re->ephe) = caml_ephe_none;
       }
     }
-    caml_ev_end("minor_gc/ephemerons");
+  }
+  caml_ev_end("minor_gc/ephemerons");
 
 #ifdef DEBUG
-    caml_ev_begin("minor_gc/update_minor_tables");
-    for (r = minor_tables->major_ref.base;
-         r < minor_tables->major_ref.ptr; r++) {
-      value vnew = **r;
-      CAMLassert (!Is_block(vnew) || (!Is_minor(vnew) && Hd_val(vnew) != 0));
-    }
-    caml_ev_end("minor_gc/update_minor_tables");
+  for (r = minor_tables->major_ref.base;
+       r < minor_tables->major_ref.ptr; r++) {
+    value vnew = **r;
+    CAMLassert (!Is_block(vnew) || (!Is_minor(vnew) && Hd_val(vnew) != 0));
+  }
 #endif
 
-    domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-    domain_state->stat_minor_collections++;
-    domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
+  domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
+  domain_state->stat_minor_collections++;
+  domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
-    caml_ev_end("minor_gc");
-    caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, rewrite: successes=%u failures=%u",
-                 domain->state->id,
-                 100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
-                 (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
-  }
-  else
-  {
-    caml_final_empty_young(domain);
-    caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
-  }
+  caml_ev_end("minor_gc");
+  caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, rewrite: successes=%u failures=%u",
+               domain->state->id,
+               100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
+               (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
 }
 
 /* Make sure the minor heap is empty by performing a minor collection
