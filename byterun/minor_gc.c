@@ -404,37 +404,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 {
   /* ctk21: no-op caml_promote as part of experiment */
   return root;
-#if 0
-  caml_domain_state* domain_state = domain->state;
-  uintnat prev_alloc_words = domain_state->allocated_words;
-  struct oldify_state st = {0};
-
-  /* Integers are already shared */
-  if (Is_long(root))
-    return root;
-
-  /* Objects which are in the major heap are already shared. */
-  if (!Is_minor(root))
-    return root;
-
-  st.promote_domain = domain;
-
-  CAMLassert(caml_owner_of_young_block(root) == domain);
-  caml_gc_log("caml_promote: oldify. [0x%lx]", root);
-  oldify_one (&st, root, &root);
-  oldify_mopup (&st);
-
-  CAMLassert (!Is_minor(root));
-  /* FIXME: surely a newly-allocated root is already darkened? */
-  caml_darken(0, root, 0);
-
-  /* ctk21: inefficient, but part of refactor to remove caml_promote */
-  caml_gc_log("caml_promote: forcing minor GC. [0x%lx]", root);
-  caml_empty_minor_heap_domain (domain, (void*)0);
-
-  domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
-  return root;
-#endif
 }
 
 //*****************************************************************************
