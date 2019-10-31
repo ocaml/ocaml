@@ -31,8 +31,3 @@ tests/asmcomp/is_static
 # GC bug in callbacks (#211)
 tests/callback/nested_fiber.byte
 tests/callback/test7.native
-
-# ctk21: these no longer promote
-tests/promotion/bigletrec.ml
-tests/promotion/bigrecmod.ml
-
