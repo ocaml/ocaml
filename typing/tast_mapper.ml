@@ -22,8 +22,7 @@ open Typedtree
 type mapper =
   {
     binding_op: mapper -> binding_op -> binding_op;
-    case: mapper -> case -> case;
-    cases: mapper -> case list -> case list;
+    case: 'k . mapper -> 'k case -> 'k case;
     class_declaration: mapper -> class_declaration -> class_declaration;
     class_description: mapper -> class_description -> class_description;
     class_expr: mapper -> class_expr -> class_expr;
@@ -47,7 +46,7 @@ type mapper =
     module_type_declaration:
       mapper -> module_type_declaration -> module_type_declaration;
     package_type: mapper -> package_type -> package_type;
-    pat: mapper -> pattern -> pattern;
+    pat: 'k . mapper -> 'k general_pattern -> 'k general_pattern;
     row_field: mapper -> row_field -> row_field;
     object_field: mapper -> object_field -> object_field;
     open_declaration: mapper -> open_declaration -> open_declaration;
@@ -195,20 +194,22 @@ let extension_constructor sub x =
   in
   {x with ext_kind}
 
-let pat sub x =
-  let extra = function
-    | Tpat_type _
-    | Tpat_unpack as d -> d
-    | Tpat_open (path,loc,env) ->  Tpat_open (path, loc, sub.env sub env)
-    | Tpat_constraint ct -> Tpat_constraint (sub.typ sub ct)
-  in
+let pat_extra sub = function
+  | Tpat_type _
+  | Tpat_unpack as d -> d
+  | Tpat_open (path,loc,env) ->  Tpat_open (path, loc, sub.env sub env)
+  | Tpat_constraint ct -> Tpat_constraint (sub.typ sub ct)
+
+let pat
+  : type k . mapper -> k general_pattern -> k general_pattern
+  = fun sub x ->
   let pat_env = sub.env sub x.pat_env in
-  let pat_extra = List.map (tuple3 extra id id) x.pat_extra in
-  let pat_desc =
+  let pat_extra = List.map (tuple3 (pat_extra sub) id id) x.pat_extra in
+  let pat_desc : k pattern_desc =
     match x.pat_desc with
     | Tpat_any
     | Tpat_var _
-    | Tpat_constant _ as d -> d
+    | Tpat_constant _ -> x.pat_desc
     | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
     | Tpat_construct (loc, cd, l) ->
         Tpat_construct (loc, cd, List.map (sub.pat sub) l)
@@ -217,11 +218,14 @@ let pat sub x =
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 id id (sub.pat sub)) l, closed)
     | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
-    | Tpat_or (p1, p2, rd) ->
-        Tpat_or (sub.pat sub p1, sub.pat sub p2, rd)
     | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, s)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
-    | Tpat_exception p -> Tpat_exception (sub.pat sub p)
+    | Tpat_value p ->
+       (as_computation_pattern (sub.pat sub (p :> pattern))).pat_desc
+    | Tpat_exception p ->
+       Tpat_exception (sub.pat sub p)
+    | Tpat_or (p1, p2, rd) ->
+        Tpat_or (sub.pat sub p1, sub.pat sub p2, rd)
   in
   {x with pat_extra; pat_desc; pat_env}
 
@@ -244,8 +248,8 @@ let expr sub x =
         let (rec_flag, list) = sub.value_bindings sub (rec_flag, list) in
         Texp_let (rec_flag, list, sub.expr sub exp)
     | Texp_function { arg_label; param; cases; partial; } ->
-        Texp_function { arg_label; param; cases = sub.cases sub cases;
-          partial; }
+        let cases = List.map (sub.case sub) cases in
+        Texp_function { arg_label; param; cases; partial; }
     | Texp_apply (exp, list) ->
         Texp_apply (
           sub.expr sub exp,
@@ -254,13 +258,13 @@ let expr sub x =
     | Texp_match (exp, cases, p) ->
         Texp_match (
           sub.expr sub exp,
-          sub.cases sub cases,
+          List.map (sub.case sub) cases,
           p
         )
     | Texp_try (exp, cases) ->
         Texp_try (
           sub.expr sub exp,
-          sub.cases sub cases
+          List.map (sub.case sub) cases
         )
     | Texp_tuple list ->
         Texp_tuple (List.map (sub.expr sub) list)
@@ -678,10 +682,9 @@ let class_field sub x =
 let value_bindings sub (rec_flag, list) =
   (rec_flag, List.map (sub.value_binding sub) list)
 
-let cases sub l =
-  List.map (sub.case sub) l
-
-let case sub {c_lhs; c_guard; c_rhs} =
+let case
+  : type k . mapper -> k case -> k case
+  = fun sub {c_lhs; c_guard; c_rhs} ->
   {
     c_lhs = sub.pat sub c_lhs;
     c_guard = Option.map (sub.expr sub) c_guard;
@@ -699,7 +702,6 @@ let default =
   {
     binding_op;
     case;
-    cases;
     class_declaration;
     class_description;
     class_expr;

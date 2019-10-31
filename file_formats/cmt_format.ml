@@ -39,7 +39,7 @@ and binary_part =
 | Partial_structure of structure
 | Partial_structure_item of structure_item
 | Partial_expression of expression
-| Partial_pattern of pattern
+| Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
 | Partial_class_expr of class_expr
 | Partial_signature of signature
 | Partial_signature_item of signature_item
@@ -81,7 +81,7 @@ let clear_part = function
   | Partial_structure_item s ->
       Partial_structure_item (cenv.structure_item cenv s)
   | Partial_expression e -> Partial_expression (cenv.expr cenv e)
-  | Partial_pattern p -> Partial_pattern (cenv.pat cenv p)
+  | Partial_pattern (category, p) -> Partial_pattern (category, cenv.pat cenv p)
   | Partial_class_expr ce -> Partial_class_expr (cenv.class_expr cenv ce)
   | Partial_signature s -> Partial_signature (cenv.signature cenv s)
   | Partial_signature_item s ->
