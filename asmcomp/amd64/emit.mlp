@@ -359,27 +359,6 @@ let emit_call_bound_errors () =
     emit_call "caml_ml_array_bound_error"
   end
 
-(* read barrier calls *)
-
-type read_barrier_call =
-  { rb_base       : Reg.t;              (* Base register *)
-    rb_off        : Reg.t;              (* Offset register *)
-    rb_dest       : Reg.t;              (* Destination register *)
-    rb_lbl        : label;              (* Entry label *)
-    rb_return_lbl : label;              (* Where to branch after read barrier *)
-    rb_frame      : label }             (* Label of frame descriptor *)
-
-let read_barrier_call_sites = ref ([] : read_barrier_call list)
-
-let emit_call_read_barrier rb =
-  def_label rb.rb_lbl;
-  I.mov (reg rb.rb_base) rax;
-  I.mov (reg rb.rb_off) rdx;
-  emit_call "caml_call_read_barrier";
-  def_label rb.rb_frame;
-  I.mov rax (reg rb.rb_dest);
-  I.jmp (label rb.rb_return_lbl)
-
 (* Names for instructions *)
 
 let instr_for_intop = function
@@ -663,28 +642,7 @@ let emit_instr fallthrough i =
       if Config.stats then begin
         I.inc (domain_field Domainstate.Domain_mutable_loads);
       end;
-      I.mov (mem64 QWORD 0 ~base:(arg64 i 0) (arg64 i 1) ~scale:8) (reg i.res.(0));
-      I.mov (res i 0) rax;
-      I.xor r15 rax;
-      let s = Nativeint.(shift_left one Domainstate.minor_heap_align_bits) in
-      I.sub (nat s) rax;
-      let bits = Domainstate.minor_heap_align_bits + Domainstate.minor_heap_sel_bits in
-      let minor_val_bitmask = Nativeint.(logor one (shift_left minus_one bits)) in
-      (* The test instruction sign-extends a 32-bit immediate *)
-      assert (minor_val_bitmask = Nativeint.(minor_val_bitmask |> to_int32 |> of_int32));
-      I.test (nat minor_val_bitmask) rax;
-      let lbl_call_read_barrier = new_label () in
-      let lbl_return = new_label () in
-      let lbl_frame = record_frame_label i.live false Debuginfo.none in
-      I.je (label lbl_call_read_barrier);
-      def_label lbl_return;
-      read_barrier_call_sites :=
-        { rb_base = i.arg.(0);
-          rb_off = i.arg.(1);
-          rb_dest = i.res.(0);
-          rb_lbl = lbl_call_read_barrier;
-          rb_return_lbl = lbl_return;
-          rb_frame = lbl_frame } :: !read_barrier_call_sites
+      I.mov (mem64 QWORD 0 ~base:(arg64 i 0) (arg64 i 1) ~scale:8) (reg i.res.(0))
   | Lop(Istore(chunk, addr, is_assignment)) ->
       if Config.stats && is_assignment then begin
         I.inc (domain_field Domainstate.Domain_immutable_stores);
@@ -1038,7 +996,6 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
-  read_barrier_call_sites := [];
   all_functions := fundecl :: !all_functions;
   D.text ();
   D.align 16;
@@ -1088,7 +1045,6 @@ let fundecl fundecl =
   def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
-  List.iter emit_call_read_barrier !read_barrier_call_sites;
   emit_call_bound_errors ();
   (match !handle_overflow with None -> () | Some (overflow,ret) -> begin
     def_label overflow;
