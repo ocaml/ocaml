@@ -793,7 +793,7 @@ AS_IF([test x"$enable_shared" != "xno"],
                [mksharedlib="$CC -qmkshrobj -G"
                 shared_libraries_supported=true])],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
-    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
+    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-solaris*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
       mksharedlib="$CC -shared"
       oc_ldflags="$oc_ldflags -Wl,-E"
@@ -819,6 +819,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [x86_64-*-darwin*], [natdynlink=true],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
+    [x86_64-*-solaris*], [natdynlink=true],
     [i686-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-kfreebsd*], [natdynlink=true],
     [x86_64-*-dragonfly*], [natdynlink=true],
@@ -910,6 +911,8 @@ AS_CASE([$host],
     [arch=amd64; system=gnu],
   [x86_64-*-dragonfly*],
     [arch=amd64; system=dragonfly],
+  [x86_64-*-solaris*],
+    [arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
     [arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
@@ -947,7 +950,7 @@ AS_IF([test -z "$PARTIALLD"],
   # achieved using the $(EMPTY) expansion trick).
   [AS_CASE(["$arch,$CC,$system,$model"],
     [amd64,gcc*,macosx,*], [PACKLD='ld -r -arch x86_64 -o $(EMPTY)'],
-    [amd64,gcc*,solaris,*], [PACKLD='ld -r -m elf_x86_64 -o $(EMPTY)'],
+    [amd64,gcc*,solaris,*], [PACKLD='ld -r -o $(EMPTY)'],
     [power,gcc*,elf,ppc], [PACKLD='ld -r -m elf32ppclinux -o $(EMPTY)'],
     [power,gcc*,elf,ppc64], [PACKLD='ld -r -m elf64ppc -o $(EMPTY)'],
     [power,gcc*,elf,ppc64le], [PACKLD='ld -r -m elf64lppc -o $(EMPTY)'],
@@ -1111,6 +1114,8 @@ AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [cclibs="$cclibs -lws2_32"
     sockets=true],
+  [*-*-solaris],
+    [cclibs="$cclibs -lsocket -lnsl -lrt -lresolv"],
   [
     AC_CHECK_FUNC([socket])
     AC_CHECK_FUNC([socketpair])
@@ -1462,7 +1467,7 @@ AS_IF([test x"$enable_systhreads" = "xno"],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
       AS_CASE([$host],
-        [*-*-solaris*], [pthread_link="-lpthread -lposix4"],
+        [*-*-solaris*], [pthread_link="-lpthread -lposix4 -lsocket -lnsl -lrt -lresolv"],
         [*-*-haiku*], [pthread_link=""],
         [pthread_link="-lpthread"])
       common_cppflags="$common_cppflags -D_REENTRANT"
