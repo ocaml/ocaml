@@ -26,6 +26,6 @@
       (let
         (*match* =
            (apply (field 4 (global Anonymous!))
-             (field 0 (field 3 (global Anonymous!)))))
+             (field_mut 0 (field 3 (global Anonymous!)))))
         0)
       0)))

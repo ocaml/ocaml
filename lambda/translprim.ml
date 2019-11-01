@@ -127,8 +127,8 @@ let primitives_table =
     "%loc_POS", Loc Loc_POS;
     "%loc_MODULE", Loc Loc_MODULE;
     "%loc_FUNCTION", Loc Loc_FUNCTION;
-    "%field0", Primitive ((Pfield 0), 1);
-    "%field1", Primitive ((Pfield 1), 1);
+    "%field0", Primitive ((Pfield (0, Reads_vary)), 1);
+    "%field1", Primitive ((Pfield (1, Reads_vary)), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
     "%makeblock", Primitive ((Pmakeblock(0, Immutable, None)), 1);
     "%makemutable", Primitive ((Pmakeblock(0, Mutable, None)), 1);
@@ -791,7 +791,7 @@ let lambda_primitive_needs_event_after = function
   | Pbbswap _ -> true
 
   | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
-  | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed _ | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Praise _
   | Psequor | Psequand | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint

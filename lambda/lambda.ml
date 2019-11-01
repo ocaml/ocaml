@@ -39,6 +39,10 @@ type is_safe =
   | Safe
   | Unsafe
 
+type field_read_semantics =
+  | Reads_agree
+  | Reads_vary
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -48,11 +52,11 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
-  | Pfield_computed
+  | Pfield of int * field_read_semantics
+  | Pfield_computed of field_read_semantics
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
-  | Pfloatfield of int
+  | Pfloatfield of int * field_read_semantics
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
@@ -193,7 +197,6 @@ let equal_value_kind x y =
   | Pboxedintval bi1, Pboxedintval bi2 -> equal_boxed_integer bi1 bi2
   | Pintval, Pintval -> true
   | (Pgenval | Pfloatval | Pboxedintval _ | Pintval), _ -> false
-
 
 type structured_constant =
     Const_base of constant
@@ -647,7 +650,7 @@ let rec transl_address loc = function
       then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Env.Adot(addr, pos) ->
-      Lprim(Pfield pos, [transl_address loc addr], loc)
+      Lprim(Pfield (pos, Reads_agree), [transl_address loc addr], loc)
 
 let transl_path find loc env path =
   match find path env with
