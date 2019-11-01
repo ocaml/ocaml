@@ -289,8 +289,6 @@ void caml_init_domains(uintnat minor_heap_wsz) {
   /* reserve memory space for minor heaps */
   size = (uintnat)1 << (Minor_heap_sel_bits + Minor_heap_align_bits);
 
-  /* To ensure Is_foreign gives no false positives, we reserve twice
-     the address space needed and only use the first half */
   heaps_base = caml_mem_map(size*2, size*2, 1 /* reserve_only */);
   if (!heaps_base) caml_raise_out_of_memory();
 

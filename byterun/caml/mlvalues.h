@@ -217,14 +217,6 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Is_minor(val) \
   ((((uintnat)(val) ^ (uintnat)Caml_state) & Minor_val_bitmask) == 0)
 
-/* Is_foreign(val) is true iff val is a block in another domain's minor heap.
-   Since all minor heaps lie in one aligned block, this can be tested via
-   more bitmasking. */
-#define Is_foreign(val) \
-  (((((uintnat)(val) ^ (uintnat)Caml_state) - (1 << Minor_heap_align_bits)) & \
-    Minor_val_bitmask) == 0)
-
-
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
    See [caml_oldify_one] in minor_gc.c for more details.

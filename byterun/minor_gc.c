@@ -101,7 +101,6 @@ void reset_minor_tables(struct caml_minor_tables* r)
 void caml_free_minor_tables(struct caml_minor_tables* r)
 {
   CAMLassert(r->major_ref.ptr == r->major_ref.base);
-  CAMLassert(r->minor_ref.ptr == r->minor_ref.base);
 
   reset_minor_tables(r);
   caml_stat_free(r);
@@ -167,7 +166,6 @@ static inline void log_gc_value(const char* prefix, value v)
   }
 }
 
-static value debug_addr = 0x0;
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
@@ -180,8 +178,8 @@ static void oldify_one (void* st_v, value v, value *p)
   mlsize_t infix_offset;
   tag_t tag;
 
- tail_call:
-  if (!Is_minor(v)) {
+  tail_call:
+  if (!(Is_block(v) && Is_minor(v))) {
     /* not a minor block */
     *p = v;
     return;
@@ -191,14 +189,10 @@ static void oldify_one (void* st_v, value v, value *p)
   do {
     hd = Hd_val (v);
     if (hd == 0) {
-      if (v == debug_addr)
-        caml_gc_log("updating p=0x%lx to point at 0x%lx", (value)p, Op_val(v)[0] + infix_offset);
       /* already forwarded, forward pointer is first field. */
       *p = Op_val(v)[0] + infix_offset;
       return;
     }
-    if (v == debug_addr)
-      log_gc_value("Got you! v=", v);
     tag = Tag_hd (hd);
     if (tag == Infix_tag) {
       /* Infix header, retry with the real block */
@@ -221,9 +215,6 @@ static void oldify_one (void* st_v, value v, value *p)
       caml_scan_stack(&oldify_one, st, stk);
   } else if (tag < Infix_tag) {
     value field0;
-    if (v == debug_addr)
-      log_gc_value("oldifying < Infix_tag: ", v);
-
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared (sz, tag);
@@ -232,7 +223,6 @@ static void oldify_one (void* st_v, value v, value *p)
     CAMLassert (!Is_debug_tag(field0));
     *Hp_val (v) = 0;           /* Set forward flag */
     Op_val(v)[0] = result;     /*  and forward pointer. */
-
     if (sz > 1){
       Op_val (result)[0] = field0;
       Op_val (result)[1] = st->todo_list;    /* Add this block */
@@ -244,7 +234,6 @@ static void oldify_one (void* st_v, value v, value *p)
       goto tail_call;
     }
   } else if (tag >= No_scan_tag) {
-    if(v == debug_addr) log_gc_value("handling No_scan_tag: ", v);
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared(sz, tag);
@@ -262,18 +251,9 @@ static void oldify_one (void* st_v, value v, value *p)
 
     value f = Forward_val (v);
     tag_t ft = 0;
-    if (v == debug_addr)
-      log_gc_value("oldifying in Forward_tag[v]: ", v);
-
-    if (f == debug_addr) {
-      log_gc_value("oldifying pointing to f [v]: ", v);
-      log_gc_value("oldifying pointing to f [f]: ", f);
-    }
 
     if (Is_block (f)) {
       ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
-      if (v == debug_addr)
-        log_gc_value("oldifying in Forward_tag[f]: ", f);
     }
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
@@ -304,7 +284,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
   for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++) {
     child = Op_val(re->ephe)[i];
     if (child != caml_ephe_none
-        && Is_block (child) && is_in_interval(child, young_ptr, young_end)) {
+        && Is_block (child) && Is_minor(child)) {
       resolve_infix_val(&child);
       if (Hd_val(child) != 0) {
         /* value not copied to major heap */
@@ -312,6 +292,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
       }
     }
   }
+
   return 1;
 }
 
@@ -366,7 +347,6 @@ static void oldify_mopup (struct oldify_state* st)
         if (Hd_val(*data) == 0) { /* Value copied to major heap */
           *data = Op_val(*data)[0];
         } else {
-          /* FIXME: is this test valid if there are minor <-> minor links? */
           if (ephe_check_alive_data(re, young_ptr, young_end)) {
             oldify_one(st, *data, data);
             redo = 1; /* oldify_todo_list can still be 0 */
@@ -402,7 +382,6 @@ static value next_minor_block(caml_domain_state* domain_state, value curr_hp)
 
 CAMLexport value caml_promote(struct domain* domain, value root)
 {
-  /* ctk21: no-op caml_promote as part of experiment */
   return root;
 }
 
@@ -464,8 +443,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
 
   st.promote_domain = domain;
 
-  caml_gc_log("young_end: %p, young_ptr: %p", young_end, young_ptr);
-
   /* TODO: are there any optimizations we can make where we don't need to scan
      when minor heaps can reference each other? */
   uintnat prev_alloc_words = domain_state->allocated_words;
@@ -474,20 +451,17 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
   caml_ev_begin("minor_gc");
   caml_ev_begin("minor_gc/roots");
   caml_do_local_roots(&oldify_one, &st, domain, 0);
-  caml_gc_log("Minor collection of local roots finished");
-
   caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
-  caml_gc_log("Minor collection of stack finished");
 
   for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
     oldify_one (&st, **r, *r);
   }
-  caml_gc_log("Minor collection of minor_tables finished");
   caml_ev_end("minor_gc/roots");
 
   caml_ev_begin("minor_gc/promote");
   oldify_mopup (&st);
   caml_ev_end("minor_gc/promote");
+
   caml_ev_begin("minor_gc/ephemerons");
   for (re = minor_tables->ephe_ref.base;
        re < minor_tables->ephe_ref.ptr; re++) {
@@ -503,7 +477,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
       if (Hd_val(*key) == 0) { /* value copied to major heap */
         *key = Op_val(*key)[0];
       } else {
-        CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
+        // CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
         *key = caml_ephe_none;
         Ephe_data(re->ephe) = caml_ephe_none;
       }

@@ -149,7 +149,8 @@ void caml_ephe_clean (struct domain* d, value v) {
           }
         }
       }
-      // FIXME: Is_young -> Is_minor is this really right?
+
+      // FIXME: Is_young -> Is_minor here is probably not what we want, fix this.
       if (!Is_minor (child) && is_unmarked(child)) {
         release_data = 1;
         Op_val(v)[i] = caml_ephe_none;
@@ -244,11 +245,12 @@ static value ephe_get_field_domain (value e, value n, struct domain* d, int* rpc
 
   clean_field(d, e, offset);
   elt = Op_val(e)[offset];
+
   if (elt == caml_ephe_none) {
     res = None_val;
   } else {
     if (rpc_success) {
-      Op_val(e)[offset] = elt = Op_val(e)[offset];
+      elt = Op_val(e)[offset];
     }
     caml_darken (0, elt, 0);
     if (rpc_success) {
@@ -290,7 +292,7 @@ static value ephe_get_field_copy_domain (value e, value n, struct domain* d, int
     }
     clean_field (d, e, offset);
     if (rpc_success) {
-      v = Op_val(e)[offset] = Op_val(e)[offset];
+      v = Op_val(e)[offset];
     } else {
       v = Op_val (e)[offset];
     }
@@ -355,7 +357,6 @@ static value ephe_blit_field_produce_domain (value es, value ofs, value len,
   CAMLassert (Ephe_domain(es) == d);
 
   for (i = 0; i < length; i++) {
-    Op_val(es)[offset_s + i] = Op_val(es)[offset_s + i];
     caml_darken(0, Op_val(es)[offset_s + i], 0);
   }
   ar = caml_alloc_shr (length, 0);
