@@ -133,7 +133,6 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
   Assert (Is_block(obj));
 
   if (!Is_minor(obj)) {
-
     caml_darken(0, old_val, 0);
 
     if (Is_block(new_val) && Is_minor(new_val)) {
@@ -147,11 +146,8 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
       Ref_table_add(&domain_state->minor_tables->major_ref, Op_val(obj) + field);
     }
   }
-#ifdef DEBUG
-  /* minor_ref is only used in debug mode */
-  else if (Is_minor(new_val) && new_val < obj)
-  {
-
+  #ifdef DEBUG
+  else if (Is_minor(new_val) && new_val < obj) {
     /* Both obj and new_val are young and new_val is more recent than obj.
       * If old_val is also young, and younger than obj, then it must be the
       * case that `Op_val(obj)+field` is already in minor_ref. We can safely
@@ -162,14 +158,12 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
     /* Add to remembered set */
     Ref_table_add(&domain_state->minor_tables->minor_ref, Op_val(obj) + field);
   }
-#endif
+  #endif
 }
 
 CAMLexport void caml_modify_field (value obj, int field, value val)
 {
   Assert (Is_block(obj));
-  Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
-
   Assert(field >= 0 && field < Wosize_val(obj));
 
   write_barrier(obj, field, Op_val(obj)[field], val);
@@ -188,16 +182,12 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
   Assert(0 <= field && field < Wosize_val(obj));
 #ifdef DEBUG
   /* caml_initialize_field can only be used on just-allocated objects */
-  if (Is_young(obj))
+  if (Is_minor(obj))
     Assert(Op_val(obj)[field] == Debug_uninit_minor ||
            Op_val(obj)[field] == Val_unit);
-  else {
-    if (Is_minor(val)) {
-      caml_gc_log("caml_initialize_field: obj=0x%lx field=%d val=0x%lx tag=%d", obj, field, val, Tag_hd(Hd_val(val)));
-    }
+  else
     Assert(Op_val(obj)[field] == Debug_uninit_major ||
            Op_val(obj)[field] == Val_unit);
-  }
 #endif
 
   write_barrier(obj, field, Op_val(obj)[field], val);
@@ -451,10 +441,6 @@ header_t hd_val (value v) {
 
 int is_minor(value v) {
   return Is_minor(v);
-}
-
-int is_foreign(value v) {
-  return Is_foreign(v);
 }
 
 int is_young(value v) {
