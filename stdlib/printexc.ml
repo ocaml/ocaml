@@ -283,43 +283,54 @@ let try_get_raw_backtrace () =
   with _ (* Out_of_memory? *) ->
     empty_backtrace
 
-let handle_uncaught_exception' exn debugger_in_use =
+external fatal_user_error : string -> 'a = "caml_fatal_user_error_caml"
+
+let handle_uncaught_exception' exn output_stderr =
   try
     (* Get the backtrace now, in case one of the [at_exit] function
        destroys it. *)
-    let raw_backtrace =
-      if debugger_in_use (* Same test as in [runtime/printexc.c] *) then
-        empty_backtrace
-      else
-        try_get_raw_backtrace ()
-    in
+    let raw_backtrace = try_get_raw_backtrace () in
     (try Stdlib.do_at_exit () with _ -> ());
     match !uncaught_exception_handler with
     | None ->
-        eprintf "Fatal error: exception %s\n" (to_string exn);
-        print_raw_backtrace stderr raw_backtrace;
-        flush stderr
+        if output_stderr then (
+          eprintf "Fatal error: exception %s\n" (to_string exn);
+          print_raw_backtrace stderr raw_backtrace;
+          flush stderr )
+        else (
+          (* custom caml_fatal_user_error_hook, or debugger in use *)
+          let msg = sprintf "exception %s\n" (to_string exn) in
+          fatal_user_error msg; )
     | Some handler ->
         try
           handler exn raw_backtrace
         with exn' ->
-          let raw_backtrace' = try_get_raw_backtrace () in
-          eprintf "Fatal error: exception %s\n" (to_string exn);
-          print_raw_backtrace stderr raw_backtrace;
-          eprintf "Fatal error in uncaught exception handler: exception %s\n"
-            (to_string exn');
-          print_raw_backtrace stderr raw_backtrace';
-          flush stderr
+          if output_stderr then (
+            let raw_backtrace' = try_get_raw_backtrace () in
+            eprintf "Fatal error: exception %s\n" (to_string exn);
+            print_raw_backtrace stderr raw_backtrace;
+            eprintf "Fatal error in uncaught exception handler: exception %s\n"
+              (to_string exn');
+            print_raw_backtrace stderr raw_backtrace';
+            flush stderr )
+          else (
+            let msg =
+              sprintf "in uncaught exception handler: exception %s\n"
+                (to_string exn')
+            in
+            fatal_user_error msg )
   with
     | Out_of_memory ->
-        prerr_endline
-          "Fatal error: out of memory in uncaught exception handler"
+        fatal_user_error "out of memory in uncaught exception handler"
 
 (* This function is called by [caml_fatal_uncaught_exception] in
-   [runtime/printexc.c] which expects no exception is raised. *)
-let handle_uncaught_exception exn debugger_in_use =
+   [runtime/printexc.c] which expects no exception is raised.
+
+   output_stderr: false if there is either a custom
+   caml_fatal_user_error_hook, or a debugger in use. *)
+let handle_uncaught_exception exn output_stderr =
   try
-    handle_uncaught_exception' exn debugger_in_use
+    handle_uncaught_exception' exn output_stderr
   with _ ->
     (* There is not much we can do at this point *)
     ()

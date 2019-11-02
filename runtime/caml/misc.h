@@ -178,17 +178,40 @@ CAMLnoreturn_end;
 #define CAMLassert(x) ((void) 0)
 #endif
 
-/* This hook is called when a fatal error occurs in the OCaml
-   runtime. It is given arguments to be passed to the [vprintf]-like
-   functions in order to synthetize the error message.
-   If it returns, the runtime calls [abort()].
+/* This hook is called when a fatal error occurs in the OCaml runtime.
+   It is given arguments to be passed to the [vprintf]-like functions
+   in order to synthetize the error message. It must not interact with
+   the OCaml runtime or heap, which should be assumed to be in
+   inconsistent states. If it returns, the runtime calls [abort()].
 
    If it is [NULL], the error message is printed on stderr and then
    [abort()] is called. */
 extern void (*caml_fatal_error_hook) (char *msg, va_list args);
 
+/* Denotes an internal error in the runtime system. Behaves as per
+   caml_fatal_error_hook. */
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 1, 2)))
+#endif
+CAMLnoreturn_end;
+
+/* This hook is called when a fatal error occurs in the execution of
+   user's program. It is given arguments to be passed to the
+   [vprintf]-like functions in order to synthetize the error message.
+   It must not interact with the OCaml runtime or heap, which should
+   be assumed to be in inconsistent states. If it returns, the runtime
+   calls [exit(2)].
+
+   If it is [NULL], the error message is printed on stderr and then
+   [exit(2)] is called. */
+extern void (*caml_fatal_user_error_hook) (char *msg, va_list args);
+
+/* Denotes a fatal error during the execution of the user's program.
+   Behaves as per caml_fatal_user_error_hook. */
+CAMLnoreturn_start
+CAMLextern void caml_fatal_user_error (char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 1, 2)))
 #endif

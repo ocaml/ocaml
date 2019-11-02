@@ -137,7 +137,7 @@ static void open_shared_lib(char_os * name)
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
   if (handle == NULL)
-    caml_fatal_error
+    caml_fatal_user_error
     (
       "cannot load shared library %s\n"
       "Reason: %s",
@@ -183,7 +183,7 @@ void caml_build_primitive_table(char_os * lib_path,
   for (q = req_prims; *q != 0; q += strlen(q) + 1) {
     c_primitive prim = lookup_primitive(q);
     if (prim == NULL)
-          caml_fatal_error("unknown C primitive `%s'", q);
+          caml_fatal_user_error("unknown C primitive `%s'", q);
     caml_ext_table_add(&caml_prim_table, (void *) prim);
 #ifdef DEBUG
     caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(q));

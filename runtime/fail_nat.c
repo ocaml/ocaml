@@ -190,11 +190,9 @@ void caml_array_bound_error(void)
   if (caml_array_bound_error_exn == NULL) {
     caml_array_bound_error_exn =
       caml_named_value("Pervasives.array_bound_error");
-    if (caml_array_bound_error_exn == NULL) {
-      fprintf(stderr, "Fatal error: exception "
-                      "Invalid_argument(\"index out of bounds\")\n");
-      exit(2);
-    }
+    if (caml_array_bound_error_exn == NULL)
+      caml_fatal_user_error
+        ("exception Invalid_argument(\"index out of bounds\")");
   }
   caml_raise(*caml_array_bound_error_exn);
 }

@@ -48,7 +48,7 @@ static int afl_initialised = 0;
 
 /* afl uses abnormal termination (SIGABRT) to check whether
    to count a testcase as "crashing" */
-extern int caml_abort_on_uncaught_exn;
+extern void (*caml_fatal_user_error_hook) (char *msg, va_list args);
 
 /* Values used by the instrumentation logic (see cmmgen.ml) */
 static unsigned char afl_area_initial[1 << 16];
@@ -73,6 +73,11 @@ static uint32_t afl_read()
   return msg;
 }
 
+static void caml_abort_on_uncaught_exn(char *msg, va_list args)
+{
+  caml_fatal_error(msg, args);
+}
+
 CAMLprim value caml_setup_afl(value unit)
 {
   if (afl_initialised) return Val_unit;
@@ -85,7 +90,7 @@ CAMLprim value caml_setup_afl(value unit)
   }
 
   /* if afl-fuzz is attached, we want it to know about uncaught exceptions */
-  caml_abort_on_uncaught_exn = 1;
+  caml_fatal_user_error_hook = &caml_abort_on_uncaught_exn;
 
   char* shm_id_end;
   long int shm_id = strtol(shm_id_str, &shm_id_end, 10);

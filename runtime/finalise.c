@@ -75,7 +75,7 @@ static void alloc_to_do (int size)
 {
   struct to_do *result = caml_stat_alloc_noexc (sizeof (struct to_do) +
                                                 size * sizeof (struct final));
-  if (result == NULL) caml_fatal_error ("out of memory");
+  if (result == NULL) caml_fatal_user_error ("out of memory");
   result->next = NULL;
   result->size = size;
   if (to_do_tl == NULL){

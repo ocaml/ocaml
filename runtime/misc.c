@@ -93,6 +93,28 @@ CAMLexport void caml_fatal_error (char *msg, ...)
   abort();
 }
 
+void (*caml_fatal_user_error_hook) (char *msg, va_list args) = NULL;
+
+CAMLexport void caml_fatal_user_error (char *msg, ...)
+{
+  va_list ap;
+  va_start(ap, msg);
+  if(caml_fatal_user_error_hook != NULL) {
+    caml_fatal_user_error_hook(msg, ap);
+  } else {
+    fprintf (stderr, "Fatal error: ");
+    vfprintf (stderr, msg, ap);
+    fprintf (stderr, "\n");
+  }
+  va_end(ap);
+  exit(2);
+}
+
+CAMLprim value caml_fatal_user_error_caml (value msg)
+{
+  caml_fatal_user_error("%s", String_val(msg));
+}
+
 /* If you change the caml_ext_table* functions, also update
    runtime/spacetime_nat.c:find_trie_node_from_libunwind. */
 

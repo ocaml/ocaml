@@ -247,8 +247,16 @@ OCaml 4.10.0
    Stephen Dolan)
 
 - #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
-  the new hook caml_fatal_error_hook.
+  the new hook caml_fatal_error_hook. The function caml_fatal_error is now
+  more consistently used to denote internal errors in the runtime system.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
+
+- #8963: Introduce caml_fatal_user_error for runtime errors denoting
+  an error in the user's program. It defaults to printing an error
+  message on stderr and calling exit(2) and can be customised by the
+  hook caml_fatal_user_error_hook.
+  (Guillaume Munch-Maccagnoni, suggestion by Daniel Bünzli, review by
+   TODO)
 
 - #8713: Introduce a state table in the runtime to contain the global variables
    which must be duplicated for each domain in the multicore runtime.
