@@ -440,8 +440,7 @@ let read_one_param ppf position name v =
           v (String.concat ", " passes)
     | Some v ->
         let pass = Option.get (P.of_string v)  in
-        Clflags.stop_after := Some pass;
-        compile_only := P.is_compilation_pass pass
+        Clflags.stop_after := Some pass
     end
   | _ ->
     if not (List.mem name !can_discard) then begin

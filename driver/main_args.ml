@@ -1816,7 +1816,6 @@ module Default = struct
     let _g = set debug
     let _i () =
       print_types := true;
-      compile_only := true;
       stop_after := (Some Compiler_pass.Typing);
       ()
     let _impl = impl
@@ -1839,9 +1838,7 @@ module Default = struct
       let module P = Compiler_pass in
         match P.of_string pass with
         | None -> () (* this should not occur as we use Arg.Symbol *)
-        | Some pass ->
-            stop_after := (Some pass);
-            compile_only := P.is_compilation_pass pass
+        | Some pass -> stop_after := (Some pass)
     let _thread = set use_threads
     let _verbose = set verbose
     let _version () = print_version_string ()
