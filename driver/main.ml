@@ -49,18 +49,13 @@ let main () =
       end
     end;
     readenv ppf Before_link;
-    let module P = Clflags.Compiler_pass in
-    let stop_early = !compile_only ||
-                     match !stop_after with
-                     | None -> false
-                     | Some p -> P.is_compilation_pass p
-    in
     if
       List.length
         (List.filter (fun x -> !x)
-           [make_archive;make_package;ref stop_early;output_c_object])
+           [make_archive;make_package;stop_early;output_c_object])
         > 1
     then begin
+      let module P = Clflags.Compiler_pass in
       match !stop_after with
       | None ->
         fatal "Please specify at most one of -pack, -a, -c, -output-obj";
@@ -90,7 +85,7 @@ let main () =
           revd (extracted_output));
       Warnings.check_fatal ();
     end
-    else if not stop_early && !objfiles <> [] then begin
+    else if not !stop_early && !objfiles <> [] then begin
       let target =
         if !output_c_object && not !output_complete_executable then
           let s = extract_output !output_name in

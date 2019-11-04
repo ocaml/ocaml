@@ -1814,10 +1814,7 @@ module Default = struct
     let _dump_into_file = set dump_into_file
     let _for_pack s = for_package := (Some s)
     let _g = set debug
-    let _i () =
-      print_types := true;
-      stop_after := (Some Compiler_pass.Typing);
-      ()
+    let _i = set print_types
     let _impl = impl
     let _intf = intf
     let _intf_suffix s = Config.interface_suffix := s
@@ -1838,7 +1835,12 @@ module Default = struct
       let module P = Compiler_pass in
         match P.of_string pass with
         | None -> () (* this should not occur as we use Arg.Symbol *)
-        | Some pass -> stop_after := (Some pass)
+        | Some pass ->
+          match !stop_after with
+          | None -> stop_after := (Some pass)
+          | Some p ->
+            if not (p = pass) then
+              fatal "Please specify at most one -stop-after <pass>."
     let _thread = set use_threads
     let _verbose = set verbose
     let _version () = print_version_string ()

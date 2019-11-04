@@ -56,6 +56,7 @@ let first_ppx = ref []
 let last_ppx = ref []
 let first_objfiles = ref []
 let last_objfiles = ref []
+let stop_early = ref false
 
 (* Check validity of module name *)
 let is_unit_name name =
@@ -670,3 +671,9 @@ let process_deferred_actions env =
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
+  stop_early :=
+    !compile_only ||
+    !print_types ||
+    match !stop_after with
+    | None -> false
+    | Some p -> Clflags.Compiler_pass.is_compilation_pass p;

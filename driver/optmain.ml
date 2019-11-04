@@ -66,18 +66,13 @@ let main () =
       end
     end;
     readenv ppf Before_link;
-    let module P = Clflags.Compiler_pass in
-    let stop_early = !compile_only ||
-                     match !stop_after with
-                     | None -> false
-                     | Some p -> P.is_compilation_pass p
-    in
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;
-                      ref stop_early; output_c_object]) > 1
+                      stop_early; output_c_object]) > 1
     then
     begin
+      let module P = Clflags.Compiler_pass in
       match !stop_after with
       | None ->
         fatal "Please specify at most one of -pack, -a, -shared, -c, \
@@ -113,7 +108,7 @@ let main () =
           (get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
     end
-    else if not stop_early && !objfiles <> [] then begin
+    else if not !stop_early && !objfiles <> [] then begin
       let target =
         if !output_c_object then
           let s = extract_output !output_name in
