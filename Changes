@@ -233,7 +233,8 @@ OCaml 4.10.0
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
 - #8637, #8805: Record debug info for each allocation
-  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez)
+  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
+   KC Sivaramakrishnan and Xavier Leroy)
 
 - #8713: Introduce a state table in the runtime to contain the global variables
    which must be duplicated for each domain in the multicore runtime.
