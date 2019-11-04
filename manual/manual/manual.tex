@@ -38,7 +38,11 @@
   \setenvclass{lstlisting}{caml-output ok}
   \lstset {basicstyle=\ttfamily}
 \else
-  \lstset{upquote=true}
+  \lstset{
+    upquote=true,
+    literate={'"'}{\textquotesingle "\textquotesingle}3
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+}
 \fi
 }{}
 
@@ -62,8 +66,12 @@
 \ifouthtml
   \setenvclass{lstlisting}{caml-input}
 \else
-%not implemented in hevea: upquote
-  \lstset{upquote=true}
+%not implemented in hevea: upquote and literate
+  \lstset{
+    upquote=true,
+    literate={'"'}{\textquotesingle "\textquotesingle}3
+    {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
+}
 \fi
 }{}
 
