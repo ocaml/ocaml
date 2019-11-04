@@ -10,7 +10,7 @@ elif [[ $LDVER -lt 224 ]]; then
   echo "ld version is $LDVER, only 224 or above are supported";
   test_result=${TEST_SKIP};
 else
-  test_reslut=${TEST_PASS};
+  test_result=${TEST_PASS};
 fi
 
 exit ${TEST_RESULT}
