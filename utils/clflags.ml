@@ -450,13 +450,10 @@ module Compiler_pass = struct
 
   let enabled is_native t = not (is_native_only t) || is_native
 
-  let pass_names is_native =
+  let available_pass_names ~native =
     passes
-    |> List.filter (enabled is_native)
+    |> List.filter (enabled native)
     |> List.map to_string
-
-  let stop_after_pass_names ~native =
-    pass_names native
 end
 
 let stop_after = ref None (* -stop-after *)

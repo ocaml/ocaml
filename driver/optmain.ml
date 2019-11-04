@@ -88,7 +88,7 @@ let main () =
           "Options -i and -stop-after (%s) \
            are  incompatible with -pack, -a, -shared, -output-obj"
           (String.concat "|"
-             (Clflags.Compiler_pass.stop_after_pass_names ~native:true))
+             (Clflags.Compiler_pass.available_pass_names ~native:true))
     end;
     if !make_archive then begin
       Compmisc.init_path ();

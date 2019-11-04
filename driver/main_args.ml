@@ -108,7 +108,7 @@ let mk_function_sections f =
 
 let mk_stop_after ~native f =
   "-stop-after",
-  Arg.Symbol (Clflags.Compiler_pass.stop_after_pass_names ~native, f),
+  Arg.Symbol (Clflags.Compiler_pass.available_pass_names ~native, f),
   " Stop after the given compilation pass."
 ;;
 

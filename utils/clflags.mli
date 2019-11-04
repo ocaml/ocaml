@@ -239,7 +239,7 @@ module Compiler_pass : sig
   val of_string : string -> t option
   val to_string : t -> string
   val is_compilation_pass : t -> bool
-  val stop_after_pass_names : native:bool -> string list
+  val available_pass_names : native:bool -> string list
 end
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool
