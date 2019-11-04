@@ -64,8 +64,7 @@ _caml_call_gc:
         pop     edi
         pop     ebp
     ; Return to caller. Returns young_ptr in eax
-        mov     eax, _Caml_state
-        Load_young_ptr eax, eax
+        Load_young_ptr ebx, eax
         ret
 
         ALIGN  4

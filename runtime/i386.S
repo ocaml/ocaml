@@ -148,8 +148,7 @@ LBL(caml_call_gc):
         popl    %edi; CFI_ADJUST(-4)
         popl    %ebp; CFI_ADJUST(-4)
     /* Return to caller. Returns young_ptr in %eax. */
-        movl    G(Caml_state), %eax
-        movl    CAML_STATE(young_ptr, %eax), %eax
+        movl    CAML_STATE(young_ptr, %ebx), %eax
         ret
         CFI_ENDPROC
         ENDFUNCTION(caml_call_gc)
