@@ -121,7 +121,8 @@ let implementation info ~backend =
     let parsed = parse_impl info in
     if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
       let typed = typecheck_impl info parsed in
-      if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
+      if Clflags.(should_stop_after Compiler_pass.Typing || !print_types)
+      then () else begin
         backend info typed
       end;
     end;
