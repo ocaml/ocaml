@@ -55,7 +55,7 @@ type extension_constructor_mismatch =
 
 type ident_mismatch =
   | Ident_other of string * string
-  | Ident_added of string
+  | Ident_added of string option
   | Ident_removed of string
 
 type type_mismatch =

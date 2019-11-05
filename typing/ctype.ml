@@ -1780,12 +1780,12 @@ let generic_private_abbrev env path =
     | _ -> false
   with Not_found -> false
 
-let non_aliasable decl = decl.type_ident <> None
+let is_nominal decl = decl.type_ident <> None || is_datatype decl
 
-let is_contractive env p =
+let is_nominal_path env p =
   try
     let decl = Env.find_type p env in
-    non_aliasable decl || is_datatype decl
+    is_nominal decl
   with Not_found -> false
 
 
@@ -1803,7 +1803,7 @@ let rec occur_rec env allow_recursive visited ty0 = function
   if ty == ty0  then raise Occur;
   match ty.desc with
     Tconstr(p, _tl, _abbrev) ->
-      if allow_recursive && is_contractive env p then () else
+      if allow_recursive && is_nominal_path env p then () else
       begin try
         if TypeSet.mem ty visited then raise Occur;
         let visited = TypeSet.add ty visited in
@@ -1860,7 +1860,7 @@ let rec local_non_recursive_abbrev ~allow_rec strict visited env p ty =
     match ty.desc with
       Tconstr(p', args, _abbrev) ->
         if Path.same p p' then raise Occur;
-        if allow_rec && not strict && is_contractive env p' then () else
+        if allow_rec && not strict && is_nominal_path env p' then () else
         let visited = ty :: visited in
         begin try
           (* try expanding, since [p] could be hidden *)
@@ -2211,6 +2211,12 @@ let is_instantiable env p =
     decl.type_manifest = None
   with Not_found -> false
 
+let compatible_type_ident decl decl' =
+  match decl.type_ident, decl'.type_ident with
+  | Some (Some id1), Some (Some id2) -> id1 = id2
+  | Some (Some _), _ -> not (is_datatype decl')
+  | _, Some (Some _) -> not (is_datatype decl)
+  | _ -> true
 
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
@@ -2265,11 +2271,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
-            begin try
-              let decl = Env.find_type p env in
-              if non_aliasable decl || is_datatype decl then raise (Unify [])
-            with Not_found -> ()
-            end
+            if is_nominal_path env p then raise (Unify [])
         (*
         | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
             mcomp_list type_pairs env tl1 tl2
@@ -2363,14 +2365,8 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
     end
-    else if non_aliasable decl && non_aliasable decl'
-        && decl.type_ident <> decl'.type_ident then raise (Unify [])
-    else if is_datatype decl && is_datatype decl'
-        && decl.type_ident <> decl'.type_ident then raise (Unify [])
+    else if not (compatible_type_ident decl decl') then raise (Unify [])
     else begin
-      if non_aliasable decl && decl.type_ident = decl'.type_ident
-      && decl.type_params <> [] && decl'.type_params <> [] then
-        mcomp_list type_pairs env tl1 tl2;
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2380,11 +2376,10 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract, Type_abstract -> ()
-      | Type_abstract, _
-        when not (non_aliasable decl) || non_aliasable decl' -> ()
-      | _, Type_abstract
-        when non_aliasable decl || not (non_aliasable decl') -> ()
+      | Type_abstract, _ | _, Type_abstract ->
+          if is_nominal decl && is_nominal decl'
+          && decl.type_params <> [] && decl'.type_params <> []
+          then mcomp_list type_pairs env tl1 tl2
       | _ -> raise (Unify [])
     end
   with Not_found -> ()
@@ -2757,9 +2752,10 @@ and unify3 env t1 t1' t2 t2' =
           reify env t1';
           reify env t2';
           begin match Env.find_type p1 !env, Env.find_type p2 !env with
-          | {type_ident = Some id1}, {type_ident = Some id2} when id1 = id2 ->
-              unify_list env tl1 tl2
-          | _ -> ()
+          | decl1, decl2 ->
+              if is_nominal decl1 && is_nominal decl2
+              && compatible_type_ident decl1 decl2 then unify_list env tl1 tl2
+          | exception Not_found -> ()
           end;
           mcomp !env t1' t2'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->

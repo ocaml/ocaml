@@ -799,10 +799,10 @@ val ( @ ) : 'a list -> 'a list -> 'a list
     Note: all input/output functions can raise [Sys_error] when the system
     calls they invoke fail. *)
 
-type in_channel  [@@unique]
+type in_channel  [@@nominal "Stdlib.in_channel"]
 (** The type of input channel. *)
 
-type out_channel [@@unique]
+type out_channel [@@nominal "Stdlib.out_channel"]
 (** The type of output channel. *)
 
 val stdin : in_channel

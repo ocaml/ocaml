@@ -362,7 +362,7 @@ type type_declaration =
     type_immediate: Type_immediacy.t;
     type_unboxed: unboxed_status;
     type_uid: Uid.t;
-    type_ident: string option;
+    type_ident: string option option;
   }
 
 and type_kind =

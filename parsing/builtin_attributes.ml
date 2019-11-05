@@ -270,12 +270,11 @@ let immediate64 =
        | _ -> false
     )
 
-let rec unique default = function
+let rec nominal = function
   | [] -> None
-  | {attr_name =  {txt = "ocaml.unique"|"unique"; _};
-     attr_payload = p} :: _ ->
-       Some (Option.value (string_of_payload p) ~default)
-  | _ :: tl -> unique default tl
+  | {attr_name =  {txt = "ocaml.nominal"|"nominal"; _};
+     attr_payload = p} :: _ -> Some (string_of_payload p)
+  | _ :: tl -> nominal tl
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
    attributes cannot be input by the user, they are added by the

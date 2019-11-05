@@ -399,7 +399,7 @@ let transl_declaration env sdecl (id, uid) =
     in
     let ident =
       if man <> None && kind = Type_abstract then None else
-      Builtin_attributes.unique (Ident.name id) sdecl.ptype_attributes
+      Builtin_attributes.nominal sdecl.ptype_attributes
     in
     let arity = List.length params in
     let decl =
@@ -626,7 +626,7 @@ let check_well_founded env loc path to_check ty =
     let rec_ok =
       match ty.desc with
         Tconstr(p,_,_) ->
-          !Clflags.recursive_types && Ctype.is_contractive env p
+          !Clflags.recursive_types && Ctype.is_nominal_path env p
       | Tobject _ | Tvariant _ -> true
       | _ -> !Clflags.recursive_types
     in
@@ -1422,7 +1422,7 @@ let transl_with_constraint id row_path ~sig_env ~sig_decl ~outer_env sdecl =
   let (tman, man, ident) =  match sdecl.ptype_manifest with
       None ->
         None, None,
-        Builtin_attributes.unique (Ident.name id) sdecl.ptype_attributes
+        Builtin_attributes.nominal sdecl.ptype_attributes
     | Some sty ->
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type, None

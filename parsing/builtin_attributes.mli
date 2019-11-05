@@ -80,7 +80,7 @@ val explicit_arity: Parsetree.attributes -> bool
 val immediate: Parsetree.attributes -> bool
 val immediate64: Parsetree.attributes -> bool
 
-val unique: string -> Parsetree.attributes -> string option
+val nominal: Parsetree.attributes -> string option option
 
 val has_unboxed: Parsetree.attributes -> bool
 val has_boxed: Parsetree.attributes -> bool

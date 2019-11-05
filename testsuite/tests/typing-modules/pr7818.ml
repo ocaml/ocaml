@@ -233,7 +233,7 @@ type (_, _) eq = Eq : ('a, 'a) eq
 module MkT :
   functor (X : Set.OrderedType) ->
     sig
-      type t = Set.Make(X).t [@@unique "Set.Make.t"]
+      type t = Set.Make(X).t [@@nominal "Set.Make.t"]
       type elt = X.t
       val empty : t
       val is_empty : t -> bool

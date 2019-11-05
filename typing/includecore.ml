@@ -169,7 +169,7 @@ type extension_constructor_mismatch =
 
 type ident_mismatch =
   | Ident_other of string * string
-  | Ident_added of string
+  | Ident_added of string option
   | Ident_removed of string
 
 type type_mismatch =
@@ -263,12 +263,14 @@ let report_ident_mismatch ppf err =
   match err with
   | Ident_other (id1, id2) ->
       pr "@[<hv>%s:@;<1 2>\"%s\"@ %s@;<1 2>\"%s\"@]"
-        "Unique identifiers do not match" id1 "is not compatible with" id2
-  | Ident_added id ->
-      pr "@[<hv>Unique identifier@;<1 2>\"%s\"@ %s@]"
+        "Nominal identifiers do not match" id1 "is not compatible with" id2
+  | Ident_added (Some id) ->
+      pr "@[<hv>Nominal identifier@;<1 2>\"%s\"@ %s@]"
         id "was not present in original declaration"
+  | Ident_added None ->
+      pr "The original declaration was not nominal"
   | Ident_removed id ->
-      pr "@[<hv>Unique identifier@;<1 2>\"%s\"@ %s@]"
+      pr "@[<hv>Nominal identifier@;<1 2>\"%s\"@ %s@]"
         id "was removed without abstracting the datatype"
 
 let report_type_mismatch0 first second decl ppf err =
@@ -436,35 +438,32 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   in
   if err <> None then err else
   let err =
+    let decl1 =
+      if decl1.type_kind <> Type_abstract then decl1 else
+      match decl1.type_manifest with
+      | None -> decl1
+      | Some ty ->
+          match Ctype.expand_head_opt env ty with
+          | {desc=Tconstr (p, tl, _)}
+            when decl1.type_params = [] ||
+            Ctype.equal env false decl1.type_params tl ->
+              (try Env.find_type p env with Not_found -> decl1)
+          | _ -> decl1
+    in
     match decl1.type_ident, decl2.type_ident with
-    | Some id1, Some id2 ->
+    | Some (Some id1), Some (Some id2) ->
         if id1 = id2 then None else
         Some (Ident_mismatch (Ident_other (id1, id2)))
-    | None, Some id2 ->
-        begin try match decl1.type_manifest with
-        | None -> raise Not_found
-        | Some ty ->
-            match Ctype.expand_head_opt env ty with
-            | {desc=Tconstr (p, tl, _)}
-              when decl1.type_params = []
-              || Ctype.equal env false decl1.type_params tl ->
-              (* when List.for_all
-                  (fun ty1 -> List.exists
-                      (fun ty -> Ctype.equal env false [ty1] [ty]) tl)
-                  decl1.type_params -> *)
-                begin match Env.find_type p env with
-                | {type_ident = Some id1} ->
-                    if id1 = id2 then None else
-                    Some (Ident_mismatch (Ident_other (id1, id2)))
-                | _ -> raise Not_found
-                end
-            | _ -> raise Not_found
-        with Not_found -> Some (Ident_mismatch (Ident_added id2))
-        end
-    | Some id, None
-      when decl1.type_kind <> Type_abstract && decl2.type_kind <> Type_abstract
-      -> Some (Ident_mismatch (Ident_removed id))
+    | Some None, Some (Some id) ->
+        Some (Ident_mismatch (Ident_added (Some id)))
+    | Some (Some id), (None | Some None) when
+      decl1.type_kind <> Type_abstract && decl2.type_kind <> Type_abstract ->
+        Some (Ident_mismatch (Ident_removed id))
+    | Some _, Some None
     | _, None -> None
+    | None, Some None when decl1.type_kind <> Type_abstract -> None
+    | None, Some id2 ->
+        Some (Ident_mismatch (Ident_added id2))
   in
   if err <> None then err else
   let err = match (decl1.type_kind, decl2.type_kind) with

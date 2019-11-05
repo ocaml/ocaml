@@ -4,22 +4,22 @@
 
 (* Definitions *)
 
-type t [@@unique "foo"]
-type a = A [@@unique "alf"]
-type b = {b: int} [@@unique "bar"]
-type ext = .. [@@unique]
+type t [@@nominal "foo"]
+type a = A [@@nominal "alf"]
+type b = {b: int} [@@nominal "bar"]
+type ext = .. [@@nominal "ext"]
 [%%expect{|
-type t [@@unique "foo"]
-type a = A [@@unique "alf"]
-type b = { b : int; } [@@unique "bar"]
-type ext = .. [@@unique "ext"]
+type t [@@nominal "foo"]
+type a = A [@@nominal "alf"]
+type b = { b : int; } [@@nominal "bar"]
+type ext = .. [@@nominal "ext"]
 |}]
 
 (* Re-exporting rules *)
 
-module M = struct type a = A [@@unique "M.a"] end;;
+module M = struct type a = A [@@nominal "M.a"] end;;
 [%%expect{|
-module M : sig type a = A [@@unique "M.a"] end
+module M : sig type a = A [@@nominal "M.a"] end
 |}]
 
 (* we can abstract *)
@@ -29,9 +29,15 @@ module M1 : sig type a end
 |}]
 
 (* we can abstract keeping identity *)
-module M2 : sig type a [@@unique "M.a"] end = M;;
+module M2 : sig type a [@@nominal "M.a"] end = M;;
 [%%expect{|
-module M2 : sig type a [@@unique "M.a"] end
+module M2 : sig type a [@@nominal "M.a"] end
+|}]
+
+(* Or just that the type is nominal *)
+module M2' : sig type a [@@nominal] end = M;;
+[%%expect{|
+module M2' : sig type a [@@nominal] end
 |}]
 
 (* we cannot forget identity of concrete type *)
@@ -42,28 +48,28 @@ Line 1, characters 33-34:
                                      ^
 Error: Signature mismatch:
        Modules do not match:
-         sig type a = M.a = A [@@unique "M.a"] end
+         sig type a = M.a = A [@@nominal "M.a"] end
        is not included in
          sig type a = A end
        Type declarations do not match:
-         type a = M.a = A [@@unique "M.a"]
+         type a = M.a = A [@@nominal "M.a"]
        is not included in
          type a = A
-       Unique identifier "M.a" was removed without abstracting the datatype
+       Nominal identifier "M.a" was removed without abstracting the datatype
 |}]
 
-(* we can export an abbreviation of a unique type as unique *)
-module M4 : sig type float_array [@@unique "array"] end =
+(* we can export an abbreviation of a nominal type as nominal *)
+module M4 : sig type float_array [@@nominal "array"] end =
   struct type float_array = float array end
-module M5 : sig type 'a my_array [@@unique "array"] end =
+module M5 : sig type 'a my_array [@@nominal "array"] end =
   struct type 'a my_array = 'a array end
 [%%expect{|
-module M4 : sig type float_array [@@unique "array"] end
-module M5 : sig type 'a my_array [@@unique "array"] end
+module M4 : sig type float_array [@@nominal "array"] end
+module M5 : sig type 'a my_array [@@nominal "array"] end
 |}]
 
 (* beware of injectivity *)
-module M6 : sig type 'a my_array [@@unique "array"] end =
+module M6 : sig type 'a my_array [@@nominal "array"] end =
   struct type 'a my_array = float array end
 [%%expect{|
 Line 2, characters 2-43:
@@ -73,19 +79,19 @@ Error: Signature mismatch:
        Modules do not match:
          sig type 'a my_array = float array end
        is not included in
-         sig type 'a my_array [@@unique "array"] end
+         sig type 'a my_array [@@nominal "array"] end
        Type declarations do not match:
          type 'a my_array = float array
        is not included in
-         type 'a my_array [@@unique "array"]
-       Unique identifier "array" was not present in original declaration
+         type 'a my_array [@@nominal "array"]
+       Nominal identifier "array" was not present in original declaration
 |}]
 
 (* Compatibility *)
 
 module Lists = struct
 type 'a list1 = [] | (::) of 'a * 'a list1
-type 'a list2 = [] | (::) of 'a * 'a list2 [@@unique "list2"]
+type 'a list2 = [] | (::) of 'a * 'a list2 [@@nominal "list2"]
 
 type _ typ =
   | Int : int typ
@@ -139,7 +145,7 @@ Here is an example of a case that is not matched:
 module Lists :
   sig
     type 'a list1 = [] | (::) of 'a * 'a list1
-    type 'a list2 = [] | (::) of 'a * 'a list2 [@@unique "list2"]
+    type 'a list2 = [] | (::) of 'a * 'a list2 [@@nominal "list2"]
     type _ typ =
         Int : int typ
       | Bool : bool typ
@@ -155,51 +161,51 @@ module Lists :
 
 (* Typical example *)
 
-module M : sig type b [@@unique "M.b"] end = struct
-  module M1 = struct type a = A [@@unique "M.b"] end
+module M : sig type b [@@nominal "M.b"] end = struct
+  module M1 = struct type a = A [@@nominal "M.b"] end
   type b = M1.a
 end;;
 [%%expect{|
-module M : sig type b [@@unique "M.b"] end
+module M : sig type b [@@nominal "M.b"] end
 |}]
 
-module M : sig type b = A [@@unique "M.b"] end = struct
-  module M1 = struct type a = A [@@unique "M.b"] end
-  type b = M1.a = A [@@unique "M.b"]
+module M : sig type b = A [@@nominal "M.b"] end = struct
+  module M1 = struct type a = A [@@nominal "M.b"] end
+  type b = M1.a = A [@@nominal "M.b"]
 end;;
 [%%expect{|
-module M : sig type b = A [@@unique "M.b"] end
+module M : sig type b = A [@@nominal "M.b"] end
 |}]
 
-module M2 : sig type c [@@unique "M.b"] end = struct
-  type c = C [@@unique "M.b"]
+module M2 : sig type c [@@nominal "M.b"] end = struct
+  type c = C [@@nominal "M.b"]
 end;;
 [%%expect{|
-module M2 : sig type c [@@unique "M.b"] end
+module M2 : sig type c [@@nominal "M.b"] end
 |}]
 
 (* Private types *)
 
-module M : sig type a [@@unique "M.a"] end = struct
-  type t = T of int [@@unique "M.a"]
+module M : sig type a [@@nominal "M.a"] end = struct
+  type t = T of int [@@nominal "M.a"]
   type a = private t
 end
 [%%expect{|
-module M : sig type a [@@unique "M.a"] end
+module M : sig type a [@@nominal "M.a"] end
 |}]
 
 
 (* Injectivy for non-unifiable types *)
 
 type (_,_) eq = Eq : ('a,'a) eq
-type 'a t [@@unique "M.t"]
-type 'a u [@@unique "M.t"]
-type v [@@unique "M.t"];;
+type 'a t [@@nominal "M.t"]
+type 'a u [@@nominal "M.t"]
+type v [@@nominal "M.t"];;
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq
-type 'a t [@@unique "M.t"]
-type 'a u [@@unique "M.t"]
-type v [@@unique "M.t"]
+type 'a t [@@nominal "M.t"]
+type 'a u [@@nominal "M.t"]
+type v [@@nominal "M.t"]
 |}]
 
 let f : (int t, bool u) eq option -> int = function None -> 1;;
@@ -218,43 +224,52 @@ Some Eq
 val g : (int t, v) eq option -> int = <fun>
 |}]
 
-module M : sig type x [@@unique "M.t"] end = struct type x = int t end;;
+module M : sig type x [@@nominal "M.t"] end = struct type x = int t end;;
 [%%expect{|
-module M : sig type x [@@unique "M.t"] end
+module M : sig type x [@@nominal "M.t"] end
 |}]
 
 module M : sig
-  type 'a t [@@unique "M.t"]
-  type 'a u [@@unique "M.t"]
+  type 'a t [@@nominal "M.t"]
+  type 'a u [@@nominal "M.t"]
 end = struct
-  type ('a,'b) s [@@unique "M.t"]
+  type ('a,'b) s [@@nominal "M.t"]
   type 'a t = ('a,bool) s
   type 'a u = (int, 'a) s
 end;;
 [%%expect{|
 Lines 4-8, characters 6-3:
 4 | ......struct
-5 |   type ('a,'b) s [@@unique "M.t"]
+5 |   type ('a,'b) s [@@nominal "M.t"]
 6 |   type 'a t = ('a,bool) s
 7 |   type 'a u = (int, 'a) s
 8 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig
-           type ('a, 'b) s [@@unique "M.t"]
+           type ('a, 'b) s [@@nominal "M.t"]
            type 'a t = ('a, bool) s
            type 'a u = (int, 'a) s
          end
        is not included in
-         sig type 'a t [@@unique "M.t"] type 'a u [@@unique "M.t"] end
+         sig type 'a t [@@nominal "M.t"] type 'a u [@@nominal "M.t"] end
        Type declarations do not match:
          type 'a t = ('a, bool) s
        is not included in
-         type 'a t [@@unique "M.t"]
-       Unique identifier "M.t" was not present in original declaration
+         type 'a t [@@nominal "M.t"]
+       Nominal identifier "M.t" was not present in original declaration
 |}]
 
 (* Application to functors *)
+
+module F(X : sig type 'a t [@@nominal] end) = struct
+  type _ exp = Int : int exp | T : 'a exp -> 'a X.t exp
+end
+[%%expect{|
+module F :
+  functor (X : sig type 'a t [@@nominal] end) ->
+    sig type _ exp = Int : int exp | T : 'a exp -> 'a X.t exp end
+|}]
 
 module type S = sig
   type elt
@@ -262,11 +277,11 @@ module type S = sig
   val create : elt list -> t
 end
 module Set(X : sig type t end) : sig
-  type 'a t1 constraint 'a = X.t [@@unique "Make.t"]
+  type 'a t1 constraint 'a = X.t [@@nominal "Make.t"]
   include S with type elt = X.t and type t = X.t t1
 end = struct
   type elt = X.t
-  type 'a t1 = {elems: 'a list} constraint 'a = elt [@@unique "Make.t"]
+  type 'a t1 = {elems: 'a list} constraint 'a = elt [@@nominal "Make.t"]
   type t = elt t1
   let create l = {elems=l}
 end;;
@@ -275,7 +290,7 @@ module type S = sig type elt type t val create : elt list -> t end
 module Set :
   functor (X : sig type t end) ->
     sig
-      type 'a t1 constraint 'a = X.t [@@unique "Make.t"]
+      type 'a t1 constraint 'a = X.t [@@nominal "Make.t"]
       type elt = X.t
       type t = X.t t1
       val create : elt list -> t
@@ -320,24 +335,24 @@ type _ ty = M : 'a ty -> 'a M.t ty
 |}]
 
 (* Named type *)
-module M : sig type +'a t [@@unique "M.t"] end =
-  struct type 'a t = Nil | Cons of 'a * 'a t [@@unique "M.t"] end
+module M : sig type +'a t [@@nominal "M.t"] end =
+  struct type 'a t = Nil | Cons of 'a * 'a t [@@nominal "M.t"] end
 type _ ty = M : 'a ty -> 'a M.t ty;;
 [%%expect{|
-module M : sig type +'a t [@@unique "M.t"] end
+module M : sig type +'a t [@@nominal "M.t"] end
 type _ ty = M : 'a ty -> 'a M.t ty
 |}]
 
 (* Expression *)
-module M : sig type +'a t [@@unique "M.t"] val create : 'a list -> 'a t end =
+module M : sig type +'a t [@@nominal "M.t"] val create : 'a list -> 'a t end =
 struct
-  type 'a t = Nil | Cons of 'a * 'a t [@@unique "M.t"]
+  type 'a t = Nil | Cons of 'a * 'a t [@@nominal "M.t"]
   let rec create = function [] -> Nil | a::l -> Cons (a, create l)
 end
 type _ exp = M : 'a list -> 'a M.t exp | Int : int -> int exp
 let eval_int : int exp -> int = function Int x -> x;;
 [%%expect{|
-module M : sig type +'a t [@@unique "M.t"] val create : 'a list -> 'a t end
+module M : sig type +'a t [@@nominal "M.t"] val create : 'a list -> 'a t end
 type _ exp = M : 'a list -> 'a M.t exp | Int : int -> int exp
 val eval_int : int exp -> int = <fun>
 |}]
@@ -346,12 +361,12 @@ val eval_int : int exp -> int = <fun>
 (* Injectivity with same identity *)
 type (_,_) eq = Eq : ('a,'a) eq
 module M : sig
-  type 'a t [@@unique "M.t"] and 'a u [@@unique "M.t"] and v [@@unique "M.t"]
+  type 'a t [@@nominal "M.t"] and 'a u [@@nominal "M.t"] and v [@@nominal "M.t"]
   type a and b
   val eq_at_bu : (a t, b u) eq
   val eq_at_v : (a t, v) eq
 end = struct
-  type 'a t = T of 'a [@@unique "M.t"]
+  type 'a t = T of 'a [@@nominal "M.t"]
   type 'a u = 'a t
   type v = int t
   type a = int and b = int
@@ -362,9 +377,9 @@ end;;
 type (_, _) eq = Eq : ('a, 'a) eq
 module M :
   sig
-    type 'a t [@@unique "M.t"]
-    and 'a u [@@unique "M.t"]
-    and v [@@unique "M.t"]
+    type 'a t [@@nominal "M.t"]
+    and 'a u [@@nominal "M.t"]
+    and v [@@nominal "M.t"]
     type a
     and b
     val eq_at_bu : (a t, b u) eq

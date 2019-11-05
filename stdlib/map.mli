@@ -351,9 +351,9 @@ module type S =
   end
 (** Output signature of the functor {!Map.Make}. *)
 
-module type S_unique =
-  sig type +'a t [@@unique "Map.Make.t"] include S with type 'a t := 'a t end
+module type S_nominal =
+  sig type +'a t [@@nominal "Map.Make.t"] include S with type 'a t := 'a t end
 
-module Make (Ord : OrderedType) : S_unique with type key = Ord.t
+module Make (Ord : OrderedType) : S_nominal with type key = Ord.t
 (** Functor building an implementation of the map structure
    given a totally ordered type. *)

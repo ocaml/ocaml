@@ -298,8 +298,8 @@ let rec ( @ ) l1 l2 =
 
 (* I/O operations *)
 
-type in_channel  [@@unique]
-type out_channel [@@unique]
+type in_channel  [@@nominal "Stdlib.in_channel"]
+type out_channel [@@nominal "Stdlib.out_channel"]
 
 external open_descriptor_out : int -> out_channel
                              = "caml_ml_open_descriptor_out"

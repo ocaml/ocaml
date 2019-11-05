@@ -160,7 +160,7 @@ let common_initial_env add_type add_extension empty_env =
   let add_type id decl =
     match decl with
     | {type_kind = Type_abstract; type_manifest = None; type_ident = None} ->
-           add_type id {decl with type_ident = Some (Ident.name id)}
+           add_type id {decl with type_ident = Some (Some (Ident.name id))}
     | _ -> add_type id decl
   in
   let add_type = mk_add_type add_type
@@ -248,7 +248,8 @@ let common_initial_env add_type add_extension empty_env =
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
   let add_type_string id decl =
-    add_type id {decl with type_ident = Some (Ident.name ident_string)} in
+    add_type id {decl with type_ident = Some (Some (Ident.name ident_string))}
+  in
   let safe_string = mk_add_type add_type_string ident_bytes common in
   let unsafe_string =
     mk_add_type add_type ident_bytes ~manifest:type_string common in

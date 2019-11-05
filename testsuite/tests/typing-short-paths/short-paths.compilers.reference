@@ -13,7 +13,7 @@ module Core :
         val ( + ) : t -> t -> t
         module Map :
           sig
-            type 'a t = 'a Map.Make(T).t [@@unique "Map.Make.t"]
+            type 'a t = 'a Map.Make(T).t [@@nominal "Map.Make.t"]
             type key = int
             val empty : 'a t
             val is_empty : 'a t -> bool

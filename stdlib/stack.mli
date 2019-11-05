@@ -18,7 +18,7 @@
    This module implements stacks (LIFOs), with in-place modification.
 *)
 
-type 'a t [@@unique "Stack.t"]
+type 'a t [@@nominal "Stack.t"]
 (** The type of stacks containing elements of type ['a]. *)
 
 exception Empty
