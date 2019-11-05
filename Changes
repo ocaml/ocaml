@@ -242,6 +242,9 @@ Working version
 - #9305: Avoid polymorphic compare in Ident
   (Leo White, review by Xavier Leroy and Gabriel Scherer)
 
+- #2324: Replace caml_int_compare and caml_float_compare with primitives.
+  (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
+
 ### Build system:
 
 - #9250: Add --disable-ocamltest to configure and disable building for
