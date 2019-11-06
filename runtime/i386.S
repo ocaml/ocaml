@@ -113,15 +113,13 @@ G(caml_system__code_begin):
 
 FUNCTION(caml_call_gc)
         CFI_STARTPROC
+LBL(caml_call_gc):
     /* Record lowest stack address and return address */
-        pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
-        movl    4(%esp), %eax
+        movl    (%esp), %eax
         movl    %eax, CAML_STATE(last_return_address, %ebx)
-        leal    8(%esp), %eax
+        leal    4(%esp), %eax
         movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
-LBL(105):
 #if !defined(SYS_mingw) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
@@ -137,7 +135,6 @@ LBL(105):
         pushl   %ecx; CFI_ADJUST(4)
         pushl   %ebx; CFI_ADJUST(4)
         pushl   %eax; CFI_ADJUST(4)
-        movl    G(Caml_state), %ebx
         movl    %esp, CAML_STATE(gc_regs, %ebx)
         /* MacOSX note: 16-alignment of stack preserved at this point */
     /* Call the garbage collector */
@@ -150,108 +147,58 @@ LBL(105):
         popl    %esi; CFI_ADJUST(-4)
         popl    %edi; CFI_ADJUST(-4)
         popl    %ebp; CFI_ADJUST(-4)
-    /* Return to caller */
+    /* Return to caller. Returns young_ptr in %eax. */
+        movl    CAML_STATE(young_ptr, %ebx), %eax
         ret
         CFI_ENDPROC
         ENDFUNCTION(caml_call_gc)
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
-        pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
         movl    CAML_STATE(young_ptr, %ebx), %eax
         subl    $8, %eax
-        cmpl    CAML_STATE(young_limit, %ebx), %eax
-        jb      LBL(100)
         movl    %eax, CAML_STATE(young_ptr, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
+        jb      LBL(caml_call_gc)
         ret
-LBL(100):
-        movl    4(%esp), %eax
-        movl    %eax, CAML_STATE(last_return_address, %ebx)
-        leal    8(%esp), %eax
-        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
-        ALIGN_STACK(12)
-        call    LBL(105)
-        UNDO_ALIGN_STACK(12)
-        jmp     G(caml_alloc1)
         CFI_ENDPROC
         ENDFUNCTION(caml_alloc1)
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
-        pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
         movl    CAML_STATE(young_ptr, %ebx), %eax
         subl    $12, %eax
-        cmpl    CAML_STATE(young_limit, %ebx), %eax
-        jb      LBL(101)
         movl    %eax, CAML_STATE(young_ptr, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
+        jb      LBL(caml_call_gc)
         ret
-LBL(101):
-        movl    4(%esp), %eax
-        movl    %eax, CAML_STATE(last_return_address, %ebx)
-        leal    8(%esp), %eax
-        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
-        ALIGN_STACK(12)
-        call    LBL(105)
-        UNDO_ALIGN_STACK(12)
-        jmp     G(caml_alloc2)
         CFI_ENDPROC
         ENDFUNCTION(caml_alloc2)
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
-        pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
         movl    CAML_STATE(young_ptr, %ebx), %eax
         subl    $16, %eax
-        cmpl    CAML_STATE(young_limit, %ebx), %eax
-        jb      LBL(102)
         movl    %eax, CAML_STATE(young_ptr, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
+        jb      LBL(caml_call_gc)
         ret
-LBL(102):
-        movl    4(%esp), %eax
-        movl    %eax, CAML_STATE(last_return_address, %ebx)
-        leal    8(%esp), %eax
-        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
-        ALIGN_STACK(12)
-        call    LBL(105)
-        UNDO_ALIGN_STACK(12)
-        jmp     G(caml_alloc3)
         CFI_ENDPROC
         ENDFUNCTION(caml_alloc3)
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
-        pushl   %eax; CFI_ADJUST(4) /* saved desired size */
-        pushl   %ebx; CFI_ADJUST(4)
         movl    G(Caml_state), %ebx
         /* eax = size - Caml_state->young_ptr */
         subl    CAML_STATE(young_ptr, %ebx), %eax
         negl    %eax              /* eax = Caml_state->young_ptr - size */
-        cmpl    CAML_STATE(young_limit, %ebx), %eax
-        jb      LBL(103)
         movl    %eax, CAML_STATE(young_ptr, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
-        addl    $4, %esp; CFI_ADJUST(-4) /* drop desired size */
+        cmpl    CAML_STATE(young_limit, %ebx), %eax
+        jb      LBL(caml_call_gc)
         ret
-LBL(103):
-        movl    8(%esp), %eax
-        movl    %eax, CAML_STATE(last_return_address, %ebx)
-        leal    12(%esp), %eax
-        movl    %eax, CAML_STATE(bottom_of_stack, %ebx)
-        popl    %ebx; CFI_ADJUST(-4)
-        ALIGN_STACK(8)
-        call    LBL(105)
-        UNDO_ALIGN_STACK(8)
-        popl    %eax; CFI_ADJUST(-4)    /* recover desired size */
-        jmp     G(caml_allocN)
         CFI_ENDPROC
         ENDFUNCTION(caml_allocN)
 

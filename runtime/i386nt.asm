@@ -39,22 +39,19 @@ INCLUDE domain_state32.inc
 
 _caml_call_gc:
     ; Record lowest stack address and return address
-        push    ebx ; make a tmp reg
         mov     ebx, _Caml_state
-        mov     eax, [esp+4]
+        mov     eax, [esp]
         Store_last_return_address ebx, eax
-        lea     eax, [esp+8]
+        lea     eax, [esp+4]
         Store_bottom_of_stack ebx, eax
-        pop     ebx
     ; Save all regs used by the code generator
-L105:   push    ebp
+        push    ebp
         push    edi
         push    esi
         push    edx
         push    ecx
         push    ebx
         push    eax
-        mov     ebx, _Caml_state
         Store_gc_regs ebx, esp
     ; Call the garbage collector
         call    _caml_garbage_collection
@@ -66,88 +63,49 @@ L105:   push    ebp
         pop     esi
         pop     edi
         pop     ebp
-    ; Return to caller
+    ; Return to caller. Returns young_ptr in eax
+        Load_young_ptr ebx, eax
         ret
 
         ALIGN  4
 _caml_alloc1:
-        push    ebx ; make a tmp reg
         mov     ebx, _Caml_state
         Load_young_ptr ebx, eax
         sub     eax, 8
-        Cmp_young_limit ebx, eax
-        jb      L100
         Store_young_ptr ebx, eax
-        pop     ebx
+        Cmp_young_limit ebx, eax
+        jb      _caml_call_gc
         ret
-L100:   mov     eax, [esp + 4]
-        Store_last_return_address ebx, eax
-        lea     eax, [esp+8]
-        Store_bottom_of_stack ebx, eax
-        pop     ebx
-        call    L105
-        jmp     _caml_alloc1
 
         ALIGN  4
 _caml_alloc2:
-        push    ebx ; make a tmp reg
         mov     ebx, _Caml_state
         Load_young_ptr ebx, eax
         sub     eax, 12
-        Cmp_young_limit ebx, eax
-        jb      L101
         Store_young_ptr ebx, eax
-        pop     ebx
+        Cmp_young_limit ebx, eax
+        jb      _caml_call_gc
         ret
-L101:   mov     eax, [esp+4]
-        Store_last_return_address ebx, eax
-        lea     eax, [esp+8]
-        Store_bottom_of_stack ebx, eax
-        pop     ebx
-        call    L105
-        jmp     _caml_alloc2
 
         ALIGN  4
 _caml_alloc3:
-        push    ebx ; make a tmp reg
         mov     ebx, _Caml_state
         Load_young_ptr ebx, eax
         sub     eax, 16
-        Cmp_young_limit ebx, eax
-        jb      L102
         Store_young_ptr ebx, eax
-        pop     ebx
+        Cmp_young_limit ebx, eax
+        jb      _caml_call_gc
         ret
-L102:   mov     eax, [esp+4]
-        Store_last_return_address ebx, eax
-        lea     eax, [esp+8]
-        Store_bottom_of_stack ebx, eax
-        pop     ebx
-        call    L105
-        jmp     _caml_alloc3
-
 
         ALIGN  4
 _caml_allocN:
-        push    eax ; Save desired size
-        push    ebx ; Make a tmp reg
         mov     ebx, _Caml_state
         Sub_young_ptr ebx, eax ; eax = size - young_ptr
         neg     eax            ; eax = young_ptr - size
-        Cmp_young_limit ebx, eax
-        jb      L103
         Store_young_ptr ebx, eax
-        pop     ebx
-        add     esp, 4 ; drop desired size
+        Cmp_young_limit ebx, eax
+        jb      _caml_call_gc
         ret
-L103:   mov     eax, [esp+8]
-        Store_last_return_address ebx, eax
-        lea     eax, [esp+12]
-        Store_bottom_of_stack ebx, eax
-        pop     ebx
-        call    L105
-        pop     eax                     ; recover desired size
-        jmp     _caml_allocN
 
 ; Call a C function from OCaml
 

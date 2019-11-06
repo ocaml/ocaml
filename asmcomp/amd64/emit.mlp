@@ -239,7 +239,7 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points -- see Emitaux *)
 
-let record_frame_label ?label live raise_ dbg =
+let record_frame_label ?label live dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -258,11 +258,11 @@ let record_frame_label ?label live raise_ dbg =
     )
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in
   def_label lbl
 
 (* Spacetime instrumentation *)
@@ -281,8 +281,7 @@ let spacetime_before_uninstrumented_call ~node_ptr ~index =
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
-  { gc_size: int;                       (* Allocation size, in bytes *)
-    gc_lbl: label;                      (* Entry label *)
+  { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label;                    (* Label of frame descriptor *)
     gc_spacetime : (X86_ast.arg * int) option;
@@ -299,13 +298,7 @@ let emit_call_gc gc =
     assert Config.spacetime;
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
-  begin match gc.gc_size with
-  | 16 -> emit_call "caml_call_gc1"
-  | 24 -> emit_call "caml_call_gc2"
-  | 32 -> emit_call "caml_call_gc3"
-  | n ->  I.add (int n) r15;
-          emit_call "caml_call_gc"
-  end;
+  emit_call "caml_call_gc";
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
@@ -327,7 +320,7 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg ~spacetime =
   if !Clflags.debug || Config.spacetime then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame;
         bd_spacetime = spacetime; } :: !bound_error_sites;
@@ -573,16 +566,16 @@ let emit_instr fallthrough i =
       load_symbol_addr s (res i 0)
   | Lop(Icall_ind { label_after; }) ->
       I.call (arg i 0);
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Icall_imm { func; label_after; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Itailcall_ind { label_after; }) ->
       output_epilogue begin fun () ->
         I.jmp (arg i 0);
         if Config.spacetime then begin
-          record_frame Reg.Set.empty false i.dbg ~label:label_after
+          record_frame Reg.Set.empty (Dbg_other i.dbg) ~label:label_after
         end
       end
   | Lop(Itailcall_imm { func; label_after; }) ->
@@ -597,14 +590,14 @@ let emit_instr fallthrough i =
         end
       end;
       if Config.spacetime then begin
-        record_frame Reg.Set.empty false i.dbg ~label:label_after
+        record_frame Reg.Set.empty (Dbg_other i.dbg) ~label:label_after
       end
   | Lop(Iextcall { func; alloc; label_after; }) ->
       add_used_symbol func;
       if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
-        record_frame i.live false i.dbg ~label:label_after;
+        record_frame i.live (Dbg_other i.dbg) ~label:label_after;
         if system <> S_win64 then begin
           (* TODO: investigate why such a diff.
              This comes from:
@@ -618,7 +611,7 @@ let emit_instr fallthrough i =
       end else begin
         emit_call func;
         if Config.spacetime then begin
-          record_frame Reg.Set.empty false i.dbg ~label:label_after
+          record_frame Reg.Set.empty (Dbg_other i.dbg) ~label:label_after
         end
       end
   | Lop(Istackoffset n) ->
@@ -667,30 +660,26 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
-  | Lop(Ialloc { bytes = n; label_after_call_gc; spacetime_index; }) ->
+  | Lop(Ialloc { bytes = n; label_after_call_gc; spacetime_index; dbginfo }) ->
+      assert (n <= (Config.max_young_wosize + 1) * Arch.size_addr);
       if !fastcode_flag then begin
-        let lbl_redo = new_label() in
-        def_label lbl_redo;
         I.sub (int n) r15;
         I.cmp (domain_field Domainstate.Domain_young_limit) r15;
         let lbl_call_gc = new_label() in
-        let dbg =
-          if not Config.spacetime then Debuginfo.none
-          else i.dbg
-        in
         let lbl_frame =
-          record_frame_label ?label:label_after_call_gc i.live false dbg
+          record_frame_label ?label:label_after_call_gc i.live (Dbg_alloc dbginfo)
         in
         I.jb (label lbl_call_gc);
+        let lbl_after_alloc = new_label() in
+        def_label lbl_after_alloc;
         I.lea (mem64 NONE 8 R15) (res i 0);
         let gc_spacetime =
           if not Config.spacetime then None
           else Some (arg i 0, spacetime_index)
         in
         call_gc_sites :=
-          { gc_size = n;
-            gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
+          { gc_lbl = lbl_call_gc;
+            gc_return_lbl = lbl_after_alloc;
             gc_frame = lbl_frame;
             gc_spacetime; } :: !call_gc_sites
       end else begin
@@ -707,8 +696,8 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         let label =
-          record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+          record_frame_label ?label:label_after_call_gc i.live
+            (Dbg_alloc dbginfo)
         in
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
@@ -914,10 +903,10 @@ let emit_instr fallthrough i =
       | Lambda.Raise_regular ->
           I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
+          record_frame Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
+          record_frame Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           I.mov (domain_field Domainstate.Domain_exception_pointer) rsp;
           I.pop (domain_field Domainstate.Domain_exception_pointer);
@@ -1015,9 +1004,6 @@ let begin_assembly() =
   all_functions := [];
   if system = S_win64 then begin
     D.extrn "caml_call_gc" NEAR;
-    D.extrn "caml_call_gc1" NEAR;
-    D.extrn "caml_call_gc2" NEAR;
-    D.extrn "caml_call_gc3" NEAR;
     D.extrn "caml_c_call" NEAR;
     D.extrn "caml_allocN" NEAR;
     D.extrn "caml_alloc1" NEAR;
@@ -1119,6 +1105,7 @@ let end_assembly() =
   emit_frames
     { efa_code_label = (fun l -> D.qword (ConstLabel (emit_label l)));
       efa_data_label = (fun l -> D.qword (ConstLabel (emit_label l)));
+      efa_8 = (fun n -> D.byte (const n));
       efa_16 = (fun n -> D.word (const n));
       efa_32 = (fun n -> D.long (const_32 n));
       efa_word = (fun n -> D.qword (const n));
@@ -1141,6 +1128,11 @@ let end_assembly() =
       efa_def_label = (fun l -> _label (emit_label l));
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
+
+  if system = S_linux then begin
+    let frametable = Compilenv.make_symbol (Some "frametable") in
+    D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
+  end;
 
   if Config.spacetime then begin
     emit_spacetime_shapes ()

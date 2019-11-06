@@ -78,14 +78,24 @@ static link* frametables_list_tail(link *list) {
 }
 
 static frame_descr * next_frame_descr(frame_descr * d) {
-  uintnat nextd;
-  nextd =
-    ((uintnat)d +
-     sizeof(char *) + sizeof(short) + sizeof(short) +
-     sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-    & -sizeof(frame_descr *);
-  if (d->frame_size & 1) nextd += sizeof(void *); /* pointer to debuginfo */
-  return((frame_descr *) nextd);
+  unsigned char num_allocs = 0, *p;
+  CAMLassert(d->retaddr >= 4096);
+  /* Skip to end of live_ofs */
+  p = (unsigned char*)&d->live_ofs[d->num_live];
+  /* Skip alloc_lengths if present */
+  if (d->frame_size & 2) {
+    num_allocs = *p;
+    p += num_allocs + 1;
+  }
+  /* Skip debug info if present */
+  if (d->frame_size & 1) {
+    /* Align to 32 bits */
+    p = Align_to(p, uint32_t);
+    p += sizeof(uint32_t) * (d->frame_size & 2 ? num_allocs : 1);
+  }
+  /* Align to word size */
+  p = Align_to(p, void*);
+  return ((frame_descr*) p);
 }
 
 static void fill_hashtable(link *frametables) {

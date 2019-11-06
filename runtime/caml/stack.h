@@ -87,8 +87,24 @@ typedef struct {
   uintnat retaddr;
   unsigned short frame_size;
   unsigned short num_live;
-  unsigned short live_ofs[1];
+  unsigned short live_ofs[1 /* num_live */];
+  /*
+    If frame_size & 2, then allocation info follows:
+  unsigned char num_allocs;
+  unsigned char alloc_lengths[num_alloc];
+
+    If frame_size & 1, then debug info follows:
+  uint32_t debug_info_offset[num_debug];
+
+    Debug info is stored as relative offsets to debuginfo structures.
+    num_debug is num_alloc if frame_size & 2, otherwise 1. */
 } frame_descr;
+
+/* Used to compute offsets in frame tables.
+   ty must have power-of-2 size */
+#define Align_to(p, ty) \
+  (void*)(((uintnat)(p) + sizeof(ty) - 1) & -sizeof(ty))
+
 
 /* Hash table of frame descriptors */
 

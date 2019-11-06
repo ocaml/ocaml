@@ -25,6 +25,17 @@ type item = private {
 
 type t = item list
 
+type alloc_dbginfo_item =
+  { alloc_words : int;
+    alloc_dbg : t }
+(** Due to Comballoc, a single Ialloc instruction may combine several
+    unrelated allocations. Their Debuginfo.t (which may differ) are stored
+    as a list of alloc_dbginfo. This list is in order of increasing memory
+    address, which is the reverse of the original allocation order. Later
+    allocations are consed to the front of this list by Comballoc. *)
+
+type alloc_dbginfo = alloc_dbginfo_item list
+
 val none : t
 
 val is_none : t -> bool

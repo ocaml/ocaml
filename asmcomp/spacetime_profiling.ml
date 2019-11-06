@@ -396,6 +396,7 @@ class virtual instruction_selection = object (self)
       in
       Mach.Ialloc {
         bytes;
+        dbginfo = [];
         label_after_call_gc = Some label;
         spacetime_index = index;
       }

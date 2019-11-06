@@ -63,6 +63,7 @@ module type S = sig
   val relax_allocation
      : num_bytes:int
     -> label_after_call_gc:Cmm.label option
+    -> dbginfo:Debuginfo.alloc_dbginfo
     -> Linear.instruction_desc
   val relax_intop_checkbound
      : label_after_error:Cmm.label option

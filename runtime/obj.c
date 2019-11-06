@@ -153,6 +153,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
   header_t hd = Hd_val (v);
   tag_t tag = Tag_hd (hd);
   color_t color = Color_hd (hd);
+  color_t frag_color = Is_young(v) ? 0 : Caml_black;
   mlsize_t wosize = Wosize_hd (hd);
   mlsize_t i;
 
@@ -177,7 +178,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
      look like a pointer because there may be some references to it in
      ref_table. */
   Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), Abstract_tag, Caml_black);
+    Make_header (Wosize_whsize (wosize-new_wosize), Abstract_tag, frag_color);
   Hd_val (v) =
     Make_header_with_profinfo (new_wosize, tag, color, Profinfo_val(v));
   return Val_unit;

@@ -60,6 +60,12 @@
             + or [Caml_state->young_trigger].
 */
 
+/* Asserts that a word is a valid header for a young object */
+#define CAMLassert_young_header(hd)                \
+  CAMLassert(Wosize_hd(hd) > 0 &&                  \
+             Wosize_hd(hd) <= Max_young_wosize &&  \
+             Color_hd(hd) == 0)
+
 struct generic_table CAML_TABLE_STRUCT(char);
 
 void caml_alloc_minor_tables ()
@@ -198,6 +204,7 @@ void caml_oldify_one (value v, value *p)
     if (hd == 0){         /* If already forwarded */
       *p = Field (v, 0);  /*  then forward pointer is first field. */
     }else{
+      CAMLassert_young_header(hd);
       tag = Tag_hd (hd);
       if (tag < Infix_tag){
         value field0;
@@ -351,6 +358,7 @@ void caml_empty_minor_heap (void)
   struct caml_ephe_ref_elt *re;
 
   if (Caml_state->young_ptr != Caml_state->young_alloc_end){
+    CAMLassert_young_header(*(header_t*)Caml_state->young_ptr);
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
     CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
@@ -508,6 +516,11 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
        callbacks. */
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    if (caml_young_ptr == caml_young_alloc_end) {
+      caml_spacetime_automatic_snapshot();
+    }
+#endif
   }
 
   /* Re-do the allocation: we now have enough space in the minor heap. */
