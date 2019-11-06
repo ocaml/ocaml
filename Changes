@@ -30,6 +30,10 @@ Working version
 - #8938: Extend ocamlopt option "-stop-after" to handle "scheduling" argument.
   (Greta Yorsh, review by Florian Angeletti and Sébastien Hinderer)
 
+- #8945: Fix toplevel show directive to work with constructors
+  (Simon Parry, review by Gabriel Scherer, Jeremy Yallop,
+  Alain Frisch, Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #8970: separate value patterns (matching on values) from computation patterns
