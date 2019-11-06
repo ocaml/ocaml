@@ -2280,7 +2280,10 @@ type t =  T of string
 \begin{syntax}
 
 dot-ext:
-   | ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'='||'>'||'?'||'@'||'^'||'|'||'~') { operator-char }
+   | dot-operator-char { operator-char }
+;
+dot-operator-char:
+  '!' ||  '?' || core-operator-char || '%' || ':'
 ;
 expr:
           ...
@@ -2600,10 +2603,10 @@ class c =
 
 \begin{syntax}
 let-operator:
- | 'let' ('$'||'&'||'*'||'+'||'-'||'/'||'<'||'='||'>'||'@'||'^'||'|') { operator-char }
+ | 'let' (core-operator-char || '<') { dot-operator-char }
 ;
 and-operator:
- | 'and' ('$'||'&'||'*'||'+'||'-'||'/'||'<'||'='||'>'||'@'||'^'||'|') { operator-char }
+ | 'and' (core-operator-char || '<') { dot-operator-char }
 ;
 operator-name :
           ...

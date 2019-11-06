@@ -230,8 +230,7 @@ there are really 3 tokens, with optional blanks between them.
 
 \begin{syntax}
 infix-symbol:
-        ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
-         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+        ( core-operator-char || '%' || '<' ) { operator-char }
       | "#" {{ operator-char }}
 ;
 prefix-symbol:
@@ -239,13 +238,15 @@ prefix-symbol:
       | ('?' || '~') {{ operator-char }}
 ;
 operator-char:
-        '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
-        '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
-        '^' || '|' || '~'
+        '~' || '!' || '?' || core-operator-char || '%' || '<' || ':' || '.'
+;
+core-operator-char:
+        '$' || '&' || '*' || '+' || '-' || '/' || '=' || '>' || '@' || '^' || '|'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s:ext-ops]{extension operators} and
-\hyperref[s:index-operators]{extended indexing operators}.
+\hyperref[s:ext-ops]{extension operators},
+\hyperref[s:index-operators]{extended indexing operators},
+and \hyperref[s:binding-operators]{binding operators}.
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
