@@ -56,6 +56,9 @@ Working version
   may not match the one in bytecode.
   (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
 
+- #9064: Relax the level handling when unifying row fields
+  (Leo White, review by Jacques Garrigue)
+
 OCaml 4.10.0
 ------------
 
