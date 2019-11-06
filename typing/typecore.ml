@@ -4358,39 +4358,39 @@ and type_construct_ env loc lid sarg constr ty_expected_explained attrs =
 and type_construct_fun_ env loc lid constr ty_expected_explained attrs =
   let open Ast_helper in
   let with_loc txt = Location.{ txt; loc } in
-  let wrap_fun (label, arg_name) content =
-    let pat = Pat.var (with_loc arg_name) in
-    Exp.fun_ ~loc label None pat content
-  in
-  let wrap_constructor constructor_arg args =
-    let constructor = Exp.construct ~loc ~attrs lid (Some constructor_arg) in
+  let wrap_constructor payload args =
+    let wrap_fun arg_name content =
+      let pat = Pat.var (with_loc arg_name) in
+      Exp.fun_ ~loc Nolabel None pat content
+    in
+    let constructor = Exp.construct ~loc ~attrs lid (Some payload) in
     List.fold_right wrap_fun args constructor
+  in
+  let make_record_payload fields =
+    let record_field name =
+      let lid = with_loc (Longident.Lident name) in
+      lid, Exp.ident ~loc lid
+    in
+    Exp.record ~loc (List.map record_field fields) None
+  in
+  let make_tuple_payload =
+    let arg_ident name = Exp.ident ~loc (with_loc (Longident.Lident name)) in
+    function
+    | [ arg ] -> arg_ident arg
+    | args -> Exp.tuple ~loc (List.map arg_ident args)
   in
   let exp =
     match constr.cstr_inlined with
     | Some { type_kind = Type_record (record_labels, _); _ } ->
         Location.prerr_warning loc
           (Warnings.Construct_fun_inline_record (Longident.last lid.txt));
-        let label_name ld = Ident.name ld.Types.ld_id in
-        let arg_names = List.map label_name record_labels in
-        let record_field name =
-          let lid = with_loc (Longident.Lident name) in
-          lid, Exp.ident ~loc lid
-        in
-        let record = Exp.record ~loc (List.map record_field arg_names) None in
-        let args = List.map (fun name -> Nolabel, name) arg_names in
-        wrap_constructor record args
+        let make_arg ld = Ident.name ld.Types.ld_id in
+        let args = List.map make_arg record_labels in
+        wrap_constructor (make_record_payload args) args
     | _ ->
         let ghost_name i = "x" ^ string_of_int i in
-        let arg_names = List.init constr.cstr_arity ghost_name in
-        let arg_ident name = Exp.ident (with_loc (Longident.Lident name)) in
-        let constr_arg =
-          match arg_names with
-          | [ arg ] -> arg_ident arg
-          | args -> Exp.tuple ~loc (List.map arg_ident args)
-        in
-        let args = List.map (fun name -> Nolabel, name) arg_names in
-        wrap_constructor constr_arg args
+        let args = List.init constr.cstr_arity ghost_name in
+        wrap_constructor (make_tuple_payload args) args
   in
   type_expect_ env exp ty_expected_explained
 

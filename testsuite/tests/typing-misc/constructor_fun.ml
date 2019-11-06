@@ -113,7 +113,9 @@ type t = A of string
 let _ = ((A) : int -> t)
 [%%expect{|
 type t = A of string
-File "_none_", line 1:
+Line 2, characters 9-12:
+2 | let _ = ((A) : int -> t)
+             ^^^
 Error: This expression has type int but an expression was expected of type
          string
 |}] (* TODO: Error should be on the coercing and not in the generated code *)
