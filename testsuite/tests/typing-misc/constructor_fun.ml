@@ -38,10 +38,15 @@ type t = Constr of { a : int; b : float }
 let constr = (Constr);;
 [%%expect{|
 type t = Constr of { a : int; b : float; }
-val constr : a:int -> b:float -> t = <fun>
+Line 2, characters 13-21:
+2 | let constr = (Constr);;
+                 ^^^^^^^^
+Warning 67: Constructor Constr is declared using an inline record.
+This will take the arguments for the fields in the order they are defined.
+val constr : int -> float -> t = <fun>
 |}]
 
-let _ = constr ~a:2 ~b:3.;;
+let _ = constr 2 3.;;
 [%%expect{|
 - : t = Constr {a = 2; b = 3.}
 |}]

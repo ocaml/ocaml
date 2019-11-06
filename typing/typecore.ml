@@ -4369,6 +4369,8 @@ and type_construct_fun_ env loc lid constr ty_expected_explained attrs =
   let exp =
     match constr.cstr_inlined with
     | Some { type_kind = Type_record (record_labels, _); _ } ->
+        Location.prerr_warning loc
+          (Warnings.Construct_fun_inline_record (Longident.last lid.txt));
         let label_name ld = Ident.name ld.Types.ld_id in
         let arg_names = List.map label_name record_labels in
         let record_field name =
@@ -4376,7 +4378,7 @@ and type_construct_fun_ env loc lid constr ty_expected_explained attrs =
           lid, Exp.ident ~loc lid
         in
         let record = Exp.record ~loc (List.map record_field arg_names) None in
-        let args = List.map (fun name -> Labelled name, name) arg_names in
+        let args = List.map (fun name -> Nolabel, name) arg_names in
         wrap_constructor record args
     | _ ->
         let ghost_name i = "x" ^ string_of_int i in
