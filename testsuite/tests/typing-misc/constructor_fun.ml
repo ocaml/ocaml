@@ -82,3 +82,33 @@ Line 1, characters 13-19:
 Error: The constructor Constr expects 2 argument(s),
        but is applied here to 0 argument(s)
 |}]
+
+(* Should work with constructor disambiguation *)
+type t1 = A of int
+type t2 = A of int * int
+
+let _ = (((A) 1) : t1);;
+[%%expect{|
+type t1 = A of int
+type t2 = A of int * int
+Line 4, characters 9-16:
+4 | let _ = (((A) 1) : t1);;
+             ^^^^^^^
+Error: This expression has type int -> t2
+       but an expression was expected of type t1
+|}] (* TODO: Disambiguation should work, as in: *)
+
+let _ = ((A 1) : t1);;
+[%%expect{|
+- : t1 = A 1
+|}]
+
+(* Type errors *)
+type t = A of string
+let _ = ((A) : int -> t)
+[%%expect{|
+type t = A of string
+File "_none_", line 1:
+Error: This expression has type int but an expression was expected of type
+         string
+|}] (* TODO: Error should be on the coercing and not in the generated code *)
