@@ -308,15 +308,15 @@ let call_linker file_list startup_file output_name =
   in
   let files = startup_file :: (List.rev file_list) in
   let libunwind =
-    if not Config.spacetime then []
-    else if not Config.libunwind_available then []
-    else String.split_on_char ' ' Config.libunwind_link_flags
+    if not Config.spacetime then ""
+    else if not Config.libunwind_available then ""
+    else Config.libunwind_link_flags
   in
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
-      files @ (List.rev !Clflags.ccobjs) @ runtime_lib () @ libunwind,
+      files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
       (if !Clflags.nopervasives || main_obj_runtime
-       then "" else Config.native_c_libraries)
+       then "" else Config.native_c_libraries ^ libunwind)
     else
       files, ""
   in
