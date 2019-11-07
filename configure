@@ -16540,6 +16540,10 @@ $as_echo_n "checking whether to use libunwind... " >&6; }
     if test x"$with_libunwind" = "xno"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
 $as_echo "disabled" >&6; }
+       libunwind_available=false
+       libunwind_include_flags=
+       libunwind_link_flags=
+
 else
   if test x"$with_libunwind" = "x"; then :
   libunwind_requested=false

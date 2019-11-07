@@ -1595,7 +1595,11 @@ AS_IF([test x"$enable_spacetime" != "xyes" ],
       [call_counts=false])
     AC_MSG_CHECKING([whether to use libunwind])
     AS_IF([test x"$with_libunwind" = "xno"],
-      [AC_MSG_RESULT([disabled])],
+      [AC_MSG_RESULT([disabled])
+       libunwind_available=false
+       libunwind_include_flags=
+       libunwind_link_flags=
+      ],
       [AS_IF([test x"$with_libunwind" = "x"],
         [libunwind_requested=false
         AC_MSG_RESULT([if available])],
