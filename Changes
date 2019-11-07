@@ -43,6 +43,9 @@ Working version
   (matching on the effects of a copmutation) in the typedtree.
   (Gabriel Scherer, review by Jacques Garrigue and Alain Frisch)
 
+- #9060: ensure that Misc.protect_refs preserves backtraces
+  (Gabriel Scherer, review by Guillaume Munch-Maccagnoni and David Allsopp)
+
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)
 

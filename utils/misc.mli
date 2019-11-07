@@ -82,7 +82,8 @@ type ref_and_value = R : 'a ref * 'a -> ref_and_value
 val protect_refs : ref_and_value list -> (unit -> 'a) -> 'a
 (** [protect_refs l f] temporarily sets [r] to [v] for each [R (r, v)] in [l]
     while executing [f]. The previous contents of the references is restored
-    even if [f] raises an exception. *)
+    even if [f] raises an exception, without altering the exception backtrace.
+*)
 
 module Stdlib : sig
   module List : sig
