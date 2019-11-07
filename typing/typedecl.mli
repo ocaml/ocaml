@@ -38,10 +38,10 @@ val transl_value_decl:
     Env.t -> Location.t ->
     Parsetree.value_description -> Typedtree.value_description * Env.t
 
-(* If a [Path.t] optional argument is provided, the [Parsetree.type_declaration]
-   argument should satisfy [is_fixed_type] *)
+(* If the [fixed_row_path] optional argument is provided,
+   the [Parsetree.type_declaration] argument should satisfy [is_fixed_type] *)
 val transl_with_constraint:
-    Ident.t -> Path.t option ->
+    Ident.t -> ?fixed_row_path:Path.t ->
     sig_env:Env.t -> sig_decl:Types.type_declaration ->
     outer_env:Env.t -> Parsetree.type_declaration ->
     Typedtree.type_declaration

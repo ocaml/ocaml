@@ -1409,7 +1409,7 @@ let transl_value_decl env loc valdecl =
    In particular, note that [sig_env] is an extension of
    [outer_env].
 *)
-let transl_with_constraint id fixed_row_path ~sig_env ~sig_decl ~outer_env
+let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
   reset_type_variables();
