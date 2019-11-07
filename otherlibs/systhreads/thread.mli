@@ -42,10 +42,23 @@ val id : t -> int
    It can be used to build data structures indexed by threads. *)
 
 val exit : unit -> unit
-(** Terminate prematurely the currently executing thread. *)
+  [@@ocaml.deprecated
+     "Since OCaml 4.11, Thread.exit raises an exception. \
+      Please use your own dedicated exception."]
+(** @deprecated In order to guarantee the correct reclamation of
+  resources in calling code, use a dedicated exception to interrupt
+  the currently running thread.
+  The implementation of [exit] has changed in OCaml 4.11 to using such
+  an exception, which is handled in [create]. This should not be
+  relied on.
+
+  Terminate prematurely the currently executing thread. *)
 
 val kill : t -> unit
-(** Terminate prematurely the thread whose handle is given. *)
+  [@@ocaml.deprecated "This function is currently unimplemented."]
+(** @deprecated This function is currently unimplemented.
+
+  Terminate prematurely the thread whose handle is given. *)
 
 (** {1 Suspending threads} *)
 

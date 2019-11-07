@@ -17,6 +17,12 @@ Working version
 
 ### Other libraries:
 
+* #9100: Deprecate [Thread.exit], and change its implementation to
+  using a dedicated exception, in order to make it possible to easily
+  write resource-safe code.
+  (Jacques-Henri Jourdan, review by Guillaume Munch-Maccagnoni and
+   Daniel Bünzli)
+
 ### Tools:
 
 ### Manual and documentation:

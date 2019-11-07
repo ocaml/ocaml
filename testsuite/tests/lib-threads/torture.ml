@@ -27,18 +27,22 @@ let writer_thread (oc, size) =
   let buff = Bytes.make size 'b' in
   ignore (Unix.write oc buff 0 size)
 
+exception Exit
+
 let reader_thread (ic, size) =
-  while true do
-(*    print_string "reader "; print_int size; print_newline(); *)
-    let buff = Bytes.make size ' ' in
-    let n = Unix.read ic buff 0 size in
-(*    print_string "reader "; print_int n; print_newline(); *)
-    for i = 0 to n-1 do
-      if Bytes.get buff i = 'b' then Thread.exit()
-      else if Bytes.get buff i <> 'a' then
-        print_string "error in reader_thread\n"
+  try
+    while true do
+  (*    print_string "reader "; print_int size; print_newline(); *)
+      let buff = Bytes.make size ' ' in
+      let n = Unix.read ic buff 0 size in
+  (*    print_string "reader "; print_int n; print_newline(); *)
+      for i = 0 to n-1 do
+        if Bytes.get buff i = 'b' then raise Exit
+        else if Bytes.get buff i <> 'a' then
+          print_string "error in reader_thread\n"
+      done
     done
-  done
+  with Exit -> ()
 
 let _ =
   let t1 = Thread.create gc_thread () in
