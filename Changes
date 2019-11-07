@@ -51,6 +51,9 @@ Working version
   (Florian Angeletti, Jacques Garrigue, Gabriel Scherer,
    review by Thomas Refis)
 
+- #9081: typedtree, make the pat_env field of pattern data immutable
+  (Gabriel Scherer, review by Jacques Garrigue, report by Alain Frisch)
+
 ### Build system:
 
 ### Bug fixes:
