@@ -555,7 +555,7 @@ void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, 
 }
 
 #ifdef DEBUG
-int caml_is_in_stw() {
+int caml_domain_is_in_stw() {
   caml_domain_state* domain_state = Caml_state;
 
   return domain_state->inside_stw_handler;

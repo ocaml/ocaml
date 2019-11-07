@@ -81,7 +81,7 @@ typedef struct interrupt interrupt;
 void caml_acknowledge_interrupt(interrupt*);
 
 #ifdef DEBUG
-int caml_is_in_stw();
+int caml_domain_is_in_stw();
 #endif
 
 void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data);
