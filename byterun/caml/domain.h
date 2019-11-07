@@ -80,6 +80,10 @@ int caml_domain_rpc(struct domain*,
 typedef struct interrupt interrupt;
 void caml_acknowledge_interrupt(interrupt*);
 
+#ifdef DEBUG
+int caml_is_in_stw();
+#endif
+
 void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data);
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void*);
 
