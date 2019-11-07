@@ -1633,6 +1633,10 @@ AS_IF([test x"$enable_spacetime" != "xyes" ],
       AS_IF([$libunwind_requested && ! $libunwind_available],
         [AC_MSG_ERROR([libunwind was requested but can not be found])])
 
+      AS_IF([$libunwind_available],
+            [mkexe="$mkexe $libunwind_link_flags"
+             mksharedlib="$mksharedlib $libunwind_link_flags"])
+
         # We need unwinding information at runtime, but since we use
         # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
         # the OS X linker will chuck away the DWARF-like (.eh_frame)
