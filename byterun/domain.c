@@ -515,6 +515,8 @@ int caml_global_barrier_num_domains()
 
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
+  caml_domain_state* domain_state = Caml_state;
+
   caml_ev_begin("stw/handler");
   caml_acknowledge_interrupt(done);
   SPIN_WAIT {
@@ -522,7 +524,14 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
       break;
     caml_handle_incoming_interrupts();
   }
+
+  #ifdef DEBUG
+  domain_state->inside_stw_handler = 1;
+  #endif
   stw_request.callback(domain, stw_request.data);
+  #ifdef DEBUG
+  domain_state->inside_stw_handler = 0;
+  #endif
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
   SPIN_WAIT {
     if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
@@ -545,8 +554,18 @@ void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, 
   }
 }
 
+#ifdef DEBUG
+int caml_is_in_stw() {
+  caml_domain_state* domain_state = Caml_state;
+
+  return domain_state->inside_stw_handler;
+}
+#endif
+
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data)
 {
+  caml_domain_state* domain_state = Caml_state;
+  
   int i;
   uintnat domains_participating = 1;
 
@@ -592,7 +611,13 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
 
   atomic_store_rel(&stw_request.domains_still_running, 0);
 
+  #ifdef DEBUG
+  domain_state->inside_stw_handler = 1;
+  #endif
   handler(&domain_self->state, data);
+  #ifdef DEBUG
+  domain_state->inside_stw_handler = 0;
+  #endif
 
   /* release the STW lock before allowing other domains to continue */
   caml_plat_lock(&all_domains_lock);

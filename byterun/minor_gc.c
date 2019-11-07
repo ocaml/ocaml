@@ -511,6 +511,10 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
 /* must be called within a STW section */
 void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 {
+  #ifdef DEBUG
+  CAMLassert(caml_is_in_stw());
+  #endif
+
   barrier_status b;
 
   b = caml_global_barrier_begin();
@@ -535,6 +539,10 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 /* must be called outside a STW section */
 int caml_try_stw_empty_minor_heap_on_all_domains ()
 {
+  #ifdef DEBUG
+  CAMLassert(!caml_is_in_stw());
+  #endif
+
   caml_gc_log("requesting stw empty_minor_heap");
   return caml_try_run_on_all_domains(&caml_stw_empty_minor_heap, (void*)0);
 }
@@ -542,6 +550,10 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
 /* must be called outside a STW section, will retry until we have emptied our minor heap */
 void caml_empty_minor_heaps_once ()
 {
+  #ifdef DEBUG
+  CAMLassert(!caml_is_in_stw());
+  #endif
+  
   while( !caml_try_stw_empty_minor_heap_on_all_domains() )
     ;
 }
