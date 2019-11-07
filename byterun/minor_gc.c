@@ -523,8 +523,10 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   uintnat minor_allocated_bytes = young_end - young_ptr;
   struct oldify_state st = {0};
   value **r;
+  value **r_new;
   struct caml_ephe_ref_elt *re;
   struct caml_custom_elt *elt;
+  struct caml_ref_table major_ref_rewrites = {0};
 
   st.promote_domain = domain;
 
@@ -575,6 +577,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
       value x = **r;
       oldify_one (&st, x, &x);
+      /* save pointer to the final location and do atomic update later */
+      Ref_table_add(&major_ref_rewrites, Op_val(x));
     }
     caml_ev_end("minor_gc/roots");
 
@@ -607,25 +611,14 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_ev_end("minor_gc/ephemerons");
 
     caml_ev_begin("minor_gc/update_minor_tables");
-    for (r = minor_tables->major_ref.base;
-         r < minor_tables->major_ref.ptr; r++) {
+    for (r = minor_tables->major_ref.base, r_new = major_ref_rewrites.base;
+         r < minor_tables->major_ref.ptr;
+         r++, r_new++) {
+      CAMLassert (r_new < major_ref_rewrites.ptr);
       value v = **r;
       if (Is_block (v) && is_in_interval ((value)Hp_val(v), young_ptr, young_end)) {
-        value vnew;
-        header_t hd = Hd_val(v);
-        int offset = 0;
-        if (Tag_hd(hd) == Infix_tag) {
-          offset = Infix_offset_hd(hd);
-          v -= offset;
-        }
-        CAMLassert (Hd_val(v) == 0);
-        vnew = Op_val(v)[0] + offset;
-        CAMLassert (Is_block(vnew) && !Is_minor(vnew));
-        CAMLassert (Hd_val(vnew));
-        if (Tag_hd(hd) == Infix_tag) {
-          CAMLassert(Tag_val(vnew) == Infix_tag);
-          v += offset;
-        }
+        value vnew = (value)*r_new;
+        CAMLassert (!Is_block(vnew) || (!Is_minor(vnew) && Hd_val(vnew) != 0));
         if (caml_domain_alone()) {
           **r = vnew;
           ++rewrite_successes;
@@ -638,6 +631,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       }
     }
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
+    reset_table((struct generic_table *)&major_ref_rewrites);
     caml_ev_end("minor_gc/update_minor_tables");
 
     caml_ev_begin("minor_gc/finalisers");
