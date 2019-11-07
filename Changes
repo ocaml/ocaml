@@ -401,6 +401,9 @@ OCaml 4.10.0
   (Florian Angelettion, review by Gabriel Scherer,
    report by Clément Busschaert)
 
+- #9101: manual, add links to section anchor after the section title
+  (Florian Angeletti, review by ???)
+
 ### Compiler user-interface and warnings:
 
 - #8833: Hint for (type) redefinitions in toplevel session

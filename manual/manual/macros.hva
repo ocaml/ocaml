@@ -1,4 +1,11 @@
 % Colors for links
+
+
+\newstyle{h2>a,h3>a,h4>a, h5>a}{
+  color:black !important;
+  text-decoration:none !important
+}
+
 \def\visited@color{\#0d46a3}
 \def\link@color{\#4286f4}
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
