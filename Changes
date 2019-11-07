@@ -346,6 +346,9 @@ OCaml 4.10.0
 - #8950: manual, move local opens in pattern out of the extension chapter
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- #9088, #9097: manual, fix operator character classes
+  (Florian Angelettion, review by Gabriel Scherer,
+   report by Clément Busschaert)
 
 ### Compiler user-interface and warnings:
 
