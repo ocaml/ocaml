@@ -657,8 +657,6 @@ type msg_flag =
 external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
-let socketpair ?cloexec:_ _dom _ty _proto =
-  invalid_arg "Unix.socketpair not implemented"
 external accept :
   ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
@@ -1127,6 +1125,54 @@ external select :
         file_descr list * file_descr list * file_descr list = "unix_select"
 
 (* High-level network functions *)
+
+let socketpair ?cloexec _dom ty proto =
+  let s = socket ?cloexec PF_INET ty proto
+  and c = socket ?cloexec PF_INET ty proto in
+  bind s (ADDR_INET (inet_addr_loopback, 0));
+  let saddr = getsockname s in
+  match ty with
+  | SOCK_DGRAM ->
+      connect c saddr;
+      let caddr = getsockname c in
+      connect s caddr;
+      begin match select [c;s] [] [] 0. with
+      | [], [], [] -> s, c
+      | _ -> failwith "Unix.socketpair: unexpected data"
+      end
+  | SOCK_SEQPACKET
+  | SOCK_STREAM ->
+      listen s 1;
+      set_nonblock c;
+      (try connect c saddr; assert false with Unix_error (EINPROGRESS, _, _) -> ());
+      clear_nonblock c;
+      let s, caddr =
+        match select [s] [] [] 0.1 with
+        | [s'], [], [] when s' == s ->
+            let ret = accept ?cloexec s in
+            close s;
+            ret
+        | [], [], [] -> failwith "Unix.socketpair: timeout waiting for client"
+        | _ -> assert false
+      in
+      assert begin
+        match caddr with
+        | ADDR_INET (addr, _) when addr = inet_addr_loopback -> true
+        | _ -> false
+      end;
+      begin match select [] [c] [c] 0.1 with
+      | [], [c'], _ when c == c' -> ()
+      | [], [], [c'] when c == c' ->
+          begin match getsockopt_error c with
+          | Some e -> raise (Unix_error (e, "socketpair", ""))
+          | None -> assert false
+          end
+      | [], [], [] -> failwith "Unix.socketpair: timeout waiting for server"
+      | _ -> assert false
+      end;
+      s, c
+  | SOCK_RAW ->
+      invalid_arg "Unix.socketpair: SOCK_RAW not supported"
 
 let open_connection sockaddr =
   let sock =
