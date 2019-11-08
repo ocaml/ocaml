@@ -1,7 +1,7 @@
 %hevea book class with anchor links in headers
 \input{bookcommon.hva}
 \newcommand{\@book@attr}[1]{\@secid\envclass@attr{#1}}
-\newcommand{\@titlesecanchor}{\@open{a}{href="\#\@sec@id@attr"}}
+\newcommand{\@titlesecanchor}{\@open{a}{class="section-anchor" href="\#\@sec@id@attr"}\@print@u{xfeff}\@close{a}}
 \@makesection
   {\part}{-2}{part}
   {\@opencell{class="center"}{}{}\@open{h1}{\@book@attr{part}}}%
@@ -13,18 +13,18 @@
    {\@open{h1}{\@book@attr{chapter}}}{\chaptername~\thechapter}{\quad}{\@close{h1}}
 \@makesection
   {\section}{0}{section}
-  {\@open{h2}{\@book@attr{section}}\@titlesecanchor}{\thesection}{\quad}{\@close{a}\@close{h2}}%
+  {\@open{h2}{\@book@attr{section}}\@titlesecanchor}{\thesection}{\quad}{\@close{h2}}%
 \@makesection
   {\subsection}{1}{subsection}
-  {\@open{h3}{\@book@attr{subsection}}\@titlesecanchor}{\thesubsection}{\quad}{\@close{a}\@close{h3}}%
+  {\@open{h3}{\@book@attr{subsection}}\@titlesecanchor}{\thesubsection}{\quad}{\@close{h3}}%
 \@makesection
   {\subsubsection}{2}{subsubsection}
-  {\@open{h4}{\@book@attr{subsubsection}}\@titlesecanchor}{\thesubsubsection}{\quad}{\@close{a}\@close{h4}}%
+  {\@open{h4}{\@book@attr{subsubsection}}\@titlesecanchor}{\thesubsubsection}{\quad}{\@close{h4}}%
 \@makesection
   {\paragraph}{3}{paragraph}
-  {\@open{h5}{\@book@attr{paragraph}}\@titlesecanchor}{\theparagraph}{\quad}{\@close{a}\@close{h5}}%
+  {\@open{h5}{\@book@attr{paragraph}}\@titlesecanchor}{\theparagraph}{\quad}{\@close{h5}}%
 \@makesection
   {\subparagraph}{4}{subparagraph}
-  {\@open{h6}{\@book@attr{subparagraph}}\@titlesecanchor}{\thesubparagraph}{\quad}{\@close{a}\@close{h6}}%
+  {\@open{h6}{\@book@attr{subparagraph}}\@titlesecanchor}{\thesubparagraph}{\quad}{\@close{h6}}%
 \newcommand{\hacha@style}{book}%
 \styleloadedtrue

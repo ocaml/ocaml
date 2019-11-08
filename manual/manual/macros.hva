@@ -1,9 +1,23 @@
 % Colors for links
 
 
-\newstyle{h2>a,h3>a,h4>a, h5>a}{
-  color:black !important;
-  text-decoration:none !important
+
+\newstyle{a.section-anchor::after}{
+  content:"\@print@u{128279}";
+  font-size:smaller;
+  margin-left:-1.5em;
+  padding-right:0.5em;
+}
+
+
+\newstyle{a.section-anchor}{
+  visibility:hidden;
+  color:grey !important;
+  text-decoration:none !important;
+}
+
+\newstyle{*:hover>a.section-anchor}{
+  visibility:visible;
 }
 
 \def\visited@color{\#0d46a3}
