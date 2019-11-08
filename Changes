@@ -41,6 +41,9 @@ Working version
 - #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann, review by David Allsopp)
 
+- Emulate Unix.socketpair on windows
+  (Christopher Zimmermann)
+
 ### Tools:
 
 - #463: objinfo: better errors on object files coming
