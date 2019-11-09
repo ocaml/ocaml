@@ -78,8 +78,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the extension constructor "Three"
-         and the value "one" are not in the same order
+         the exception "Three" and the value "one" are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -322,8 +321,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the extension constructor "B"
-         and the extension constructor "A" are not in the same order
+         the exception "B" and the exception "A" are not in the same order
          in the expected and actual module types.
 |}]
 
