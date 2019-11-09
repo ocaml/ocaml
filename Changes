@@ -20,7 +20,7 @@ Working version
 
 ### Other libraries:
 
-- win32unix: Register printer for Unix_error.
+- #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann)
 
 ### Tools:
