@@ -1145,7 +1145,7 @@ let socketpair ?cloexec _dom ty proto =
       listen s 1;
       set_nonblock c;
       (try connect c saddr; assert false
-       with Unix_error (EINPROGRESS, _, _) -> ());
+       with Unix_error (EWOULDBLOCK, _, _) -> ());
       clear_nonblock c;
       let s, caddr =
         match select [s] [] [] 0.1 with
