@@ -20,6 +20,9 @@ Working version
 
 ### Other libraries:
 
+- win32unix: Register printer for Unix_error.
+  (Christopher Zimmermann)
+
 ### Tools:
 
 ### Manual and documentation:
