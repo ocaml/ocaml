@@ -9,6 +9,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #8998, #?: in ocamlopt, ensure the mapping from ocaml name to C
+  symbol is injective
+  (Valentin Gatien-Baron, ?)
+
 ### Standard library:
 
 - #9059: Added List.filteri function, same as List.filter but

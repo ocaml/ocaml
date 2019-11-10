@@ -104,8 +104,17 @@ let symbolname_for_pack pack name =
 
 let unit_id_from_name name = Ident.create_persistent name
 
+let no_leading_or_consecutive_underscores str =
+  String.mapi
+    (fun i c -> if c = '_' && (i = 0 || str.[i - 1] = '_') then '.' else c)
+    str
+
 let concat_symbol unitname id =
-  unitname ^ "__" ^ id
+  (* PR#8998: no_leading_or_consecutive_underscores prevents any
+     occurrence of "__" after the "__" we add, so concat_symbol is
+     injective. Since "." doesn't show up in value names, this doesn't
+     create more ambiguities. *)
+  unitname ^ "__" ^ no_leading_or_consecutive_underscores id
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
