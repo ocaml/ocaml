@@ -466,6 +466,8 @@ let should_stop_after pass =
     | None -> false
     | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
 
+let no_implicit_interface = ref false (* -no-implicit-interface *)
+
 module String = Misc.Stdlib.String
 
 let arg_spec = ref []

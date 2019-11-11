@@ -46,6 +46,7 @@ module type Common_options = sig
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
+  val _no_implicit_interface : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -119,6 +120,8 @@ module type Compiler_options = sig
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
   val _dump_into_file : unit -> unit
+
+  val _no_implicit_interface : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array

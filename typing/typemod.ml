@@ -101,6 +101,7 @@ type error =
   | Badly_formed_signature of string * Typedecl.error
   | Cannot_hide_id of hiding_error
   | Invalid_type_subst_rhs
+  | Implicit_interfaces_not_allowed
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -2673,6 +2674,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           gen_annot outputprefix sourcefile annots;
           (str, coercion)
         end else begin
+          if !Clflags.no_implicit_interface then
+            raise(Error(Location.in_file sourcefile, Env.empty,
+                        Implicit_interfaces_not_allowed));
           let coercion =
             Includemod.compunit initial_env ~mark:Mark_positive
               sourcefile sg "(inferred signature)" simple_sg
@@ -2780,6 +2784,9 @@ let package_units initial_env objfiles cmifile modulename =
     Includemod.compunit initial_env ~mark:Mark_both
       "(obtained by packing)" sg mlifile dclsig
   end else begin
+    if !Clflags.no_implicit_interface then
+      raise(Error(Location.in_file mlifile, Env.empty,
+                  Implicit_interfaces_not_allowed));
     (* Determine imports *)
     let unit_names = List.map fst units in
     let imports =
@@ -2931,6 +2938,9 @@ let report_error ppf = function
         Ident.print opened_item_id
   | Invalid_type_subst_rhs ->
       fprintf ppf "Only type synonyms are allowed on the right of :="
+  | Implicit_interfaces_not_allowed ->
+      fprintf ppf "Cannot find interface file and implicit interface \
+                   generation has been turned off (-no-implicit-interface)"
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)

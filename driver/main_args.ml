@@ -886,6 +886,11 @@ let mk__ f =
   "<file>  Treat <file> as a file name (even if it starts with `-')"
 ;;
 
+let mk_no_implicit_interface f =
+  "-no-implicit-interface", Arg.Unit f,
+  "Disallow implicit generation of interfaces for modules"
+;;
+
 module type Common_options = sig
   val _absname : unit -> unit
   val _alert : string -> unit
@@ -916,6 +921,7 @@ module type Common_options = sig
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
+  val _no_implicit_interface : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -990,6 +996,8 @@ module type Compiler_options = sig
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
   val _dump_into_file : unit -> unit
+
+  val _no_implicit_interface : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -1238,6 +1246,8 @@ struct
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
 
+    mk_no_implicit_interface F._no_implicit_interface;
+
     mk_args F._args;
     mk_args0 F._args0;
   ]
@@ -1300,6 +1310,8 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+
+    mk_no_implicit_interface F._no_implicit_interface;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1458,6 +1470,8 @@ struct
     mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
 
+    mk_no_implicit_interface F._no_implicit_interface;
+
     mk_args F._args;
     mk_args0 F._args0;
   ]
@@ -1560,6 +1574,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
+
+    mk_no_implicit_interface F._no_implicit_interface;
   ]
 end;;
 
@@ -1607,6 +1623,7 @@ struct
     mk_vnum F._vnum;
     mk_w F._w;
     mk__ F.anonymous;
+    mk_no_implicit_interface F._no_implicit_interface;
   ]
 end;;
 
@@ -1687,6 +1704,7 @@ module Default = struct
     let _unboxed_types = set unboxed_types
     let _unsafe_string = set unsafe_string
     let _w s = Warnings.parse_options false s
+    let _no_implicit_interface = set no_implicit_interface
 
     let anonymous = anonymous
 

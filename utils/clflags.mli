@@ -245,6 +245,8 @@ end
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool
 
+val no_implicit_interface : bool ref
+
 val arg_spec : (string * Arg.spec * string) list ref
 
 (* [add_arguments __LOC__ args] will add the arguments from [args] at
