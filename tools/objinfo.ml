@@ -246,9 +246,9 @@ let dump_byte ic =
 let find_dyn_offset filename =
   let helper = Filename.concat Config.standard_library "objinfo_helper" in
   let tempfile = Filename.temp_file "objinfo" ".out" in
-  try
-    try_finally
-      ~always:(fun () -> remove_file tempfile)
+  match
+    Fun.protect
+      ~finally:(fun () -> remove_file tempfile)
       (fun () ->
          let rc = Sys.command (sprintf "%s %s > %s"
                                  (Filename.quote helper)
@@ -256,11 +256,13 @@ let find_dyn_offset filename =
                                  tempfile) in
          if rc <> 0 then failwith "cannot read";
          let tc = Scanf.Scanning.from_file tempfile in
-         try_finally
-           ~always:(fun () -> Scanf.Scanning.close_in tc)
+         Fun.protect
+           ~finally:(fun () -> Scanf.Scanning.close_in tc)
            (fun () ->
-              Scanf.bscanf tc "%Ld" (fun x -> Some x)))
-  with Failure _ | Sys_error _ -> None
+              Scanf.bscanf tc "%Ld" (fun x -> x)))
+  with
+    | offset -> Some offset
+    | exception (Failure _ | Sys_error _) -> None
 
 let exit_err msg = print_endline msg; exit 2
 let exit_errf fmt = Printf.ksprintf exit_err fmt
