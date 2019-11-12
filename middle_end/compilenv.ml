@@ -23,11 +23,13 @@
 
 open Config
 open Cmx_format
+open Misc
 
 type error =
-    Not_a_unit_info of string
-  | Corrupted_unit_info of string
-  | Illegal_renaming of string * string * string
+  | Not_a_unit_info of filepath * Magic_number.kind * Magic_number.parse_error
+  | Corrupted_unit_info of filepath
+  | Unexpected_unit_info of filepath * Magic_number.unexpected_error
+  | Illegal_renaming of modname * modname * filepath
 
 exception Error of error
 
@@ -156,31 +158,40 @@ let symbol_in_current_unit name =
    && name.[lp] = '_'
    && name.[lp + 1] = '_')
 
+let read_magic_number filename kind ic =
+  let open Magic_number in
+  match read_current_info ~expected_kind:(Some kind) ic with
+    | Error (Parse_error err) ->
+       raise (Error (Not_a_unit_info (filename, kind, err)))
+    | Error (Unexpected_error err) ->
+       raise (Error (Unexpected_unit_info (filename, err)))
+    | Ok _ -> ()
+
 let read_unit_info filename =
   let ic = open_in_bin filename in
-  try
-    let buffer = really_input_string ic (String.length cmx_magic_number) in
-    if buffer <> cmx_magic_number then begin
-      close_in ic;
-      raise(Error(Not_a_unit_info filename))
-    end;
-    let ui = (input_value ic : unit_infos) in
-    let crc = Digest.input ic in
-    close_in ic;
-    (ui, crc)
-  with End_of_file | Failure _ ->
-    close_in ic;
-    raise(Error(Corrupted_unit_info(filename)))
+  Fun.protect
+    ~finally:(fun () -> close_in ic)
+    (fun () ->
+      read_magic_number filename (Cmx Magic_number.native_obj_config) ic;
+      try
+        let ui = (input_value ic : unit_infos) in
+        let crc = Digest.input ic in
+        (ui, crc)
+      with End_of_file | Failure _ ->
+        raise (Error (Corrupted_unit_info filename))
+    )
 
 let read_library_info filename =
   let ic = open_in_bin filename in
-  let buffer = really_input_string ic (String.length cmxa_magic_number) in
-  if buffer <> cmxa_magic_number then
-    raise(Error(Not_a_unit_info filename));
-  let infos = (input_value ic : library_infos) in
-  close_in ic;
-  infos
-
+  Fun.protect
+    ~finally:(fun () -> close_in ic)
+    (fun () ->
+      read_magic_number filename (Cmxa Magic_number.native_obj_config) ic;
+      try
+        (input_value ic : library_infos)
+      with End_of_file | Failure _ ->
+        raise (Error (Corrupted_unit_info filename))
+    )
 
 (* Read and cache info on global identifiers *)
 
@@ -349,7 +360,7 @@ let save_unit_info filename =
 let current_unit () =
   match Compilation_unit.get_current () with
   | Some current_unit -> current_unit
-  | None -> Misc.fatal_error "Compilenv.current_unit"
+  | None -> fatal_error "Compilenv.current_unit"
 
 let current_unit_symbol () =
   Symbol.of_global_linkage (current_unit ()) (current_unit_linkage_name ())
@@ -438,15 +449,20 @@ let require_global global_ident =
 open Format
 
 let report_error ppf = function
-  | Not_a_unit_info filename ->
-      fprintf ppf "%a@ is not a compilation unit description."
-        Location.print_filename filename
+  | Not_a_unit_info (filename, kind, err) ->
+      fprintf ppf "%a@ is not a compilation unit description:"
+        Location.print_filename filename;
+      pp_print_text ppf (Magic_number.explain_parse_error (Some kind) err);
   | Corrupted_unit_info filename ->
-      fprintf ppf "Corrupted compilation unit description@ %a"
+      fprintf ppf "Corrupted compilation unit description@ %a."
         Location.print_filename filename
+  | Unexpected_unit_info (filename, err) ->
+      fprintf ppf "%a@ does not follow the expected format.@;"
+        Location.print_filename filename;
+      pp_print_text ppf (Magic_number.explain_unexpected_error err);
   | Illegal_renaming(name, modname, filename) ->
       fprintf ppf "%a@ contains the description for unit\
-                   @ %s when %s was expected"
+                   @ %s when %s was expected."
         Location.print_filename filename name modname
 
 let () =

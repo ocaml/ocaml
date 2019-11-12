@@ -147,10 +147,12 @@ val require_global: Ident.t -> unit
 
 val read_library_info: string -> library_infos
 
+open Misc
 type error =
-    Not_a_unit_info of string
-  | Corrupted_unit_info of string
-  | Illegal_renaming of string * string * string
+  | Not_a_unit_info of filepath * Magic_number.kind * Magic_number.parse_error
+  | Corrupted_unit_info of filepath
+  | Unexpected_unit_info of filepath * Magic_number.unexpected_error
+  | Illegal_renaming of modname * modname * filepath
 
 exception Error of error
 
