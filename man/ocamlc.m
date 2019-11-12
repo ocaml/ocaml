@@ -484,6 +484,10 @@ each functor application generates new types in its result and
 applying the same functor twice to the same argument yields two
 incompatible structures.
 .TP
+.B \-no\-implicit\-interface
+Raises an error when compiling an implementation file that has no
+corresponding interface file.
+.TP
 .B \-noassert
 Do not compile assertion checks.  Note that the special form
 .B assert\ false
