@@ -23,11 +23,25 @@
 #define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
 
 /* global variables moved to Caml_state in 4.10.0 */
+#define caml_stat_top_heap_wsz (Caml_state_field(stat_top_heap_wsz))
+#define caml_stat_heap_wsz (Caml_state_field(stat_heap_wsz))
 #define caml_young_start (Caml_state_field(young_start))
 #define caml_young_end (Caml_state_field(young_end))
 #define caml_young_ptr (Caml_state_field(young_ptr))
 #define caml_young_limit (Caml_state_field(young_limit))
 #define caml_local_roots (Caml_state_field(local_roots))
+#define caml_backtrace_active (Caml_state_field(backtrace_active))
+#define caml_backtrace_pos (Caml_state_field(backtrace_pos))
+#define caml_backtrace_buffer (Caml_state_field(backtrace_buffer))
+#define caml_backtrace_last_exn (Caml_state_field(backtrace_last_exn))
+#define caml_compare_unordered (Caml_state_field(compare_unordered))
+#define caml_external_raise (Caml_state_field(external_raise))
+#define caml_stack_low (Caml_state_field(stack_low))
+#define caml_stack_high (Caml_state_field(stack_high))
+#define caml_stack_threshold (Caml_state_field(stack_threshold))
+#define caml_extern_sp (Caml_state_field(extern_sp))
+#define caml_trapsp (Caml_state_field(trapsp))
+#define caml_trap_barrier (Caml_state_field(trap_barrier))
 
 #ifndef CAML_NAME_SPACE
 
