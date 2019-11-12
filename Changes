@@ -37,6 +37,9 @@ Working version
   (Simon Parry, review by Gabriel Scherer, Jeremy Yallop,
   Alain Frisch, Florian Angeletti)
 
+- #9107: improved error message for exceptions in module signature errors
+  (Gabriel Scherer, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #8970: separate value patterns (matching on values) from computation patterns
