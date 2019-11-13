@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+- #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
+  API when the old block is NULL.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
