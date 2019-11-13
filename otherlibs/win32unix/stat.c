@@ -297,7 +297,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* opath, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int do_stat(int do_lstat, int use_64, const char* opath, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   wchar_t* wpath;
   int ret;
