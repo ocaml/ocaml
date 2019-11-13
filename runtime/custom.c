@@ -94,7 +94,7 @@ CAMLexport value caml_alloc_custom_mem(struct custom_operations * ops,
                            * caml_custom_major_ratio,
                            mem_minor,
                            Bsize_wsize (Caml_state->minor_heap_wsz) / 100
-                           * caml_custom_major_ratio);
+                           * caml_custom_minor_ratio);
 }
 
 struct custom_operations_list {
