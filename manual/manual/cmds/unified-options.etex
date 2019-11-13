@@ -378,9 +378,8 @@ incompatible structures.
 \nat{%
 \item["-no-float-const-prop"]
 Deactivates the constant propagation for floating-point operations.
-With this option no propagation of floating-point constants is
-performed. This option should be given if the program changes the
-float rounding mode during its execution.
+This option should be given if the program changes the float rounding
+mode during its execution.
 }%nat
 
 \item["-noassert"]
