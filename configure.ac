@@ -1716,9 +1716,9 @@ AS_IF([test x"$with_afl" = "xyes"],
   [afl=false])
 
 AS_IF([test x"$enable_force_safe_string" = "xno"],
+  [force_safe_string=false],
   [AC_DEFINE([CAML_SAFE_STRING])
-  force_safe_string=false],
-  [force_safe_string=true])
+   force_safe_string=true])
 
 AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
   [default_safe_string=false],
