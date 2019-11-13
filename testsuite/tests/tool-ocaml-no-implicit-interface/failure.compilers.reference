@@ -1,0 +1,2 @@
+File "failure.ml", line 1:
+Error: Cannot find interface file and implicit interface generation has been turned off (-no-implicit-interface)
