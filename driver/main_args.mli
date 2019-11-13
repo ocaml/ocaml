@@ -46,7 +46,6 @@ module type Common_options = sig
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
-  val _no_implicit_interface : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -121,8 +120,6 @@ module type Compiler_options = sig
   val _dprofile : unit -> unit
   val _dump_into_file : unit -> unit
 
-  val _no_implicit_interface : unit -> unit
-
   val _args: string -> string array
   val _args0: string -> string array
 end
@@ -149,6 +146,7 @@ module type Bytecomp_options = sig
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
   val _no_check_prims : unit -> unit
+  val _no_implicit_interface : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
@@ -237,6 +235,7 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _function_sections : unit -> unit
+  val _no_implicit_interface : unit -> unit
 end;;
 
 module type Opttop_options = sig

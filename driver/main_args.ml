@@ -921,7 +921,6 @@ module type Common_options = sig
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
-  val _no_implicit_interface : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -997,8 +996,6 @@ module type Compiler_options = sig
   val _dprofile : unit -> unit
   val _dump_into_file : unit -> unit
 
-  val _no_implicit_interface : unit -> unit
-
   val _args: string -> string array
   val _args0: string -> string array
 end
@@ -1025,6 +1022,7 @@ module type Bytecomp_options = sig
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
   val _no_check_prims : unit -> unit
+  val _no_implicit_interface : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
@@ -1113,6 +1111,7 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _function_sections : unit -> unit
+  val _no_implicit_interface : unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1181,6 +1180,7 @@ struct
     mk_no_alias_deps F._no_alias_deps;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
+    mk_no_implicit_interface F._no_implicit_interface;
     mk_no_check_prims F._no_check_prims;
     mk_noassert F._noassert;
     mk_noautolink_byt F._noautolink;
@@ -1246,8 +1246,6 @@ struct
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
 
-    mk_no_implicit_interface F._no_implicit_interface;
-
     mk_args F._args;
     mk_args0 F._args0;
   ]
@@ -1311,8 +1309,6 @@ struct
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
 
-    mk_no_implicit_interface F._no_implicit_interface;
-
     mk_args F._args;
     mk_args0 F._args0;
   ]
@@ -1373,6 +1369,7 @@ struct
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
+    mk_no_implicit_interface F._no_implicit_interface;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
@@ -1469,8 +1466,6 @@ struct
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
-
-    mk_no_implicit_interface F._no_implicit_interface;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1575,7 +1570,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
 
-    mk_no_implicit_interface F._no_implicit_interface;
   ]
 end;;
 
@@ -1623,7 +1617,6 @@ struct
     mk_vnum F._vnum;
     mk_w F._w;
     mk__ F.anonymous;
-    mk_no_implicit_interface F._no_implicit_interface;
   ]
 end;;
 
@@ -1704,7 +1697,6 @@ module Default = struct
     let _unboxed_types = set unboxed_types
     let _unsafe_string = set unsafe_string
     let _w s = Warnings.parse_options false s
-    let _no_implicit_interface = set no_implicit_interface
 
     let anonymous = anonymous
 
@@ -1935,6 +1927,7 @@ module Default = struct
       assert Config.function_sections;
       first_ccopts := ("-ffunction-sections" :: (!first_ccopts));
       function_sections := true
+    let _no_implicit_interface = set no_implicit_interface
     let _nodynlink = clear dlcode
     let _output_complete_obj () =
       set output_c_object (); set output_complete_object ()
@@ -1990,6 +1983,7 @@ third-party libraries such as Lwt, but with a different API."
     let _make_runtime () =
       custom_runtime := true; make_runtime := true; link_everything := true
     let _no_check_prims = set no_check_prims
+    let _no_implicit_interface = set no_implicit_interface
     let _output_complete_obj () =
       output_c_object := true;
       output_complete_object := true;
