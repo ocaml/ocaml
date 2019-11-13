@@ -10,7 +10,7 @@
 #include <winbase.h>
 #include <winerror.h>
 
-void process_fd(char * s)
+void process_fd(const char * s)
 {
   int fd;
   HANDLE h;
@@ -39,7 +39,7 @@ void process_fd(char * s)
 #include <sys/stat.h>
 #include <unistd.h>
 
-void process_fd(char * s)
+void process_fd(const char * s)
 {
   long n;
   int fd;
