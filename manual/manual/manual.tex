@@ -35,7 +35,7 @@
     aboveskip=0\baselineskip,
   }
 \ifouthtml
-  \setenvclass{lstlisting}{caml-output ok}
+  \setenvclass{lstlisting}{pre caml-output ok}
   \lstset {basicstyle=\ttfamily}
 \else
   \lstset{
@@ -64,7 +64,7 @@
     belowskip=0\baselineskip
   }
 \ifouthtml
-  \setenvclass{lstlisting}{caml-input}
+  \setenvclass{lstlisting}{pre caml-input}
 \else
 %not implemented in hevea: upquote and literate
   \lstset{
@@ -83,7 +83,7 @@
     emph={Error}, emphstyle={\ocamlerror},
   }
 \ifouthtml
-  \setenvclass{lstlisting}{caml-output error}
+  \setenvclass{lstlisting}{pre caml-output error}
   \lstset { basicstyle=\ttfamily }
 \else
 \lstset{upquote=true}
@@ -99,7 +99,7 @@
     emph={Warning}, emphstyle={\ocamlwarning},
   }
 \ifouthtml
-\setenvclass{lstlisting}{caml-output warn}
+\setenvclass{lstlisting}{pre caml-output warn}
 \lstset { basicstyle=\ttfamily }
 \else
 \lstset{upquote=true}

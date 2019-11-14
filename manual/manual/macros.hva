@@ -42,7 +42,9 @@
   border-bottom: 1px solid black;
 }
 
-\newstyle{pre}{
+
+\newstyle{div.ocaml}{
+  margin:2ex 0px;
   font-size: 1rem;
   background: beige;
   border: 1px solid grey;
@@ -51,7 +53,11 @@
   display:flex;
   flex-direction: column;
   flex-wrap: nowrap;
-/*  white-space: pre-wrap;*/
+}
+
+\newstyle{div.ocaml .pre}{
+  white-space: pre;
+  font-family:mono;
 }
 
 
@@ -96,7 +102,6 @@
 
 %Styles for caml-example and friends
 \newstyle{div.caml-output}{color:maroon;}
-\newstyle{div.caml-example pre}{margin:2ex 0px;}
 % Styles for toplevel mode only
 \newstyle{div.caml-example.toplevel div.caml-input::before}
          {content:"\#"; color:black;}
@@ -128,7 +133,7 @@
   \renewcommand{\examplespace}{\ }
 }
 
-\newenvironment{caml}{\@open{pre}{class=ocaml}}{\@close{pre}}
+\newenvironment{caml}{\@open{div}{class=ocaml}}{\@close{div}}
 \newcommand{\ocamlkeyword}{\@span{class="ocamlkeyword"}}
 \newcommand{\ocamlhighlight}{\@span{class="ocamlhighlight"}}
 \newcommand{\ocamlerror}{\@span{class="ocamlerror"}}
