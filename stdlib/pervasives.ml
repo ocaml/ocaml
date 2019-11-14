@@ -28,12 +28,10 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 external compare : 'a -> 'a -> int = "%compare"
 let min = min
 let max = max
-external physical_equality : 'a -> 'a -> bool = "%eq"
-external physical_inequality : 'a -> 'a -> bool = "%noteq"
+external phys_equal : 'a -> 'a -> bool = "%eq"
+external phys_inequal : 'a -> 'a -> bool = "%noteq"
 external ( == ) : 'a -> 'a -> bool = "%eq"
-  [@@ocaml.deprecated "Use = or physical_equality instead."]
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-  [@@ocaml.deprecated "Use <> or physical_inequality instead."]
 external not : bool -> bool = "%boolnot"
 external ( && ) : bool -> bool -> bool = "%sequand"
 external ( & ) : bool -> bool -> bool = "%sequand"

@@ -185,7 +185,7 @@ val max : 'a -> 'a -> 'a
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 
-external physical_equality : 'a -> 'a -> bool = "%eq"
+external phys_equal : 'a -> 'a -> bool = "%eq"
 (** [physical_equality e1 e2] tests for physical equality of [e1] and [e2].
    On mutable types such as references, arrays, byte sequences, records with
    mutable fields and objects with mutable instance variables,
@@ -196,19 +196,17 @@ external physical_equality : 'a -> 'a -> bool = "%eq"
    [physical_equality e1 e2] implies [compare e1 e2 = 0].
 *)
 
-external physical_inequality : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Stdlib.physical_equality}.
+external phys_inequal : 'a -> 'a -> bool = "%noteq"
+(** Negation of {!Stdlib.phys_equal}.
 *)
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
-  [@@ocaml.deprecated "Use = or physical_equality instead."]
-(** @deprecated {!Stdlib.physical_inequality} should be used instead.
+(** Operator alias to {!Stdlib.phys_equal}.
    Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-[@@ocaml.deprecated "Use <> or physical_inequality instead."]
-(** @deprecated {!Stdlib.physical_inequality} should be used instead.
+(** Operator alias to {!Stdlib.phys_inequal}.
     Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
