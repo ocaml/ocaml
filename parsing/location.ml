@@ -483,7 +483,10 @@ let highlight_quote ppf
         Misc.pp_two_columns ~sep:"|" ~max_lines ppf
         @@ List.map (fun (line, line_nb, line_start_cnum) ->
           let line = String.mapi (fun i c ->
-            if ISet.mem iset ~pos:(line_start_cnum + i) then c else '.'
+            if ISet.mem iset ~pos:(line_start_cnum + i)
+            || c = ' ' || c = '\t' (* display blank as itself *)
+            then c
+            else '.'
           ) line in
           (line_nb, line)
         ) lines
