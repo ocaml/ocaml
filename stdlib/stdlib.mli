@@ -186,14 +186,14 @@ val max : 'a -> 'a -> 'a
     the float value [nan]. *)
 
 external phys_equal : 'a -> 'a -> bool = "%eq"
-(** [physical_equality e1 e2] tests for physical equality of [e1] and [e2].
+(** [phys_equal e1 e2] tests for physical equality of [e1] and [e2].
    On mutable types such as references, arrays, byte sequences, records with
    mutable fields and objects with mutable instance variables,
-   [physical_equality e1 e2] is true if and only if physical modification of [e1]
+   [phys_equal e1 e2] is true if and only if physical modification of [e1]
    also affects [e2].
-   On non-mutable types, the behavior of [physical_equality] is
+   On non-mutable types, the behavior of [phys_equal] is
    implementation-dependent; however, it is guaranteed that
-   [physical_equality e1 e2] implies [compare e1 e2 = 0].
+   [phys_equal e1 e2] implies [compare e1 e2 = 0].
 *)
 
 external phys_inequal : 'a -> 'a -> bool = "%noteq"
