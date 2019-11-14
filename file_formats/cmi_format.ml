@@ -22,8 +22,8 @@ type pers_flags =
   | Unsafe_string
 
 type error =
-  | Not_an_interface of filepath
-  | Wrong_version_interface of filepath * string
+  | Not_an_interface of filepath * Magic_number.parse_error
+  | Unexpected_interface of filepath * Magic_number.unexpected_error
   | Corrupted_interface of filepath
 
 exception Error of error
@@ -53,34 +53,25 @@ let input_cmi ic =
       cmi_flags = flags;
     }
 
+let read_cmi_magic_number filename ic =
+  let open Magic_number in
+  match read_current_info ~expected_kind:(Some Cmi) ic with
+    | Error (Parse_error err) ->
+       raise (Error (Not_an_interface (filename, err)))
+    | Error (Unexpected_error err) ->
+       raise (Error (Unexpected_interface (filename, err)))
+    | Ok _ -> ()
+
 let read_cmi filename =
   let ic = open_in_bin filename in
-  try
-    let buffer =
-      really_input_string ic (String.length Config.cmi_magic_number)
-    in
-    if buffer <> Config.cmi_magic_number then begin
-      close_in ic;
-      let pre_len = String.length Config.cmi_magic_number - 3 in
-      if String.sub buffer 0 pre_len
-          = String.sub Config.cmi_magic_number 0 pre_len then
-      begin
-        let msg =
-          if buffer < Config.cmi_magic_number then "an older" else "a newer" in
-        raise (Error (Wrong_version_interface (filename, msg)))
-      end else begin
-        raise(Error(Not_an_interface filename))
-      end
-    end;
-    let cmi = input_cmi ic in
-    close_in ic;
-    cmi
-  with End_of_file | Failure _ ->
-      close_in ic;
-      raise(Error(Corrupted_interface(filename)))
-    | Error e ->
-      close_in ic;
-      raise (Error e)
+  Fun.protect
+    ~finally:(fun () -> close_in ic)
+    (fun () ->
+      read_cmi_magic_number filename ic;
+      try input_cmi ic
+      with End_of_file | Failure _ ->
+        raise (Error (Corrupted_interface filename))
+    )
 
 let output_cmi filename oc cmi =
 (* beware: the provided signature must have been substituted for saving *)
@@ -98,16 +89,17 @@ let output_cmi filename oc cmi =
 open Format
 
 let report_error ppf = function
-  | Not_an_interface filename ->
-      fprintf ppf "%a@ is not a compiled interface"
-        Location.print_filename filename
-  | Wrong_version_interface (filename, older_newer) ->
+  | Not_an_interface (filename, err) ->
+      fprintf ppf "%a@ is not a compiled interface.@;"
+        Location.print_filename filename;
+      pp_print_text ppf Magic_number.(explain_parse_error (Some Cmi) err);
+  | Unexpected_interface (filename, err) ->
       fprintf ppf
-        "%a@ is not a compiled interface for this version of OCaml.@.\
-         It seems to be for %s version of OCaml."
-        Location.print_filename filename older_newer
+        "%a@ does not follow the expected format.@;"
+        Location.print_filename filename;
+      pp_print_text ppf (Magic_number.explain_unexpected_error err);
   | Corrupted_interface filename ->
-      fprintf ppf "Corrupted compiled interface@ %a"
+      fprintf ppf "Corrupted compiled interface@ %a."
         Location.print_filename filename
 
 let () =

@@ -40,8 +40,8 @@ val read_cmi : string -> cmi_infos
 (* Error report *)
 
 type error =
-  | Not_an_interface of filepath
-  | Wrong_version_interface of filepath * string
+  | Not_an_interface of filepath * Magic_number.parse_error
+  | Unexpected_interface of filepath * Magic_number.unexpected_error
   | Corrupted_interface of filepath
 
 exception Error of error
