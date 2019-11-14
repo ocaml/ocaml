@@ -55,7 +55,7 @@ let _ = f (object
 class type t_a = object method f : 'a -> int end
 val f : t_a -> int = <fun>
 Lines 5-7, characters 10-5:
-5 | ..........(object
+5 | ... . . . (object
 6 |     method f _ = 0
 7 |  end)..
 Error: This expression has type < f : 'a -> int >

@@ -9,7 +9,7 @@ let f = function
   | Some _, Some _ -> 2;;
 [%%expect {|
 Lines 1-3, characters 8-23:
-1 | ........function
+1 | ... . . function
 2 |     None, None -> 1
 3 |   | Some _, Some _ -> 2..
 Warning 8: this pattern-matching is not exhaustive.
@@ -39,7 +39,7 @@ let f : type a b c d e f g.
 ;;
 [%%expect {|
 Lines 4-5, characters 1-38:
-4 | .function A, A, A, A, A, A, A, _, U, U -> 1
+4 |  function A, A, A, A, A, A, A, _, U, U -> 1
 5 |    | _, _, _, _, _, _, _, G, _, _ -> 1
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -359,7 +359,7 @@ let f = function
 ;;
 [%%expect {|
 Lines 1-4, characters 8-28:
-1 | ........function
+1 | ... . . function
 2 |   | None -> ()
 3 |   | Some x when x > 0 -> ()
 4 |   | Some x when x <= 0 -> ()

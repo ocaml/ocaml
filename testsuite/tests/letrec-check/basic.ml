@@ -173,7 +173,7 @@ let rec x =
 and y = x; ();;
 [%%expect{|
 Lines 2-4, characters 2-6:
-2 | ..for i = 0 to 1 do
+2 |   for i = 0 to 1 do
 3 |     let z = y in ignore z
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -186,7 +186,7 @@ let rec x =
 and y = 10;;
 [%%expect{|
 Lines 2-4, characters 2-6:
-2 | ..for i = 0 to y do
+2 |   for i = 0 to y do
 3 |     ()
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -199,7 +199,7 @@ let rec x =
 and y = 0;;
 [%%expect{|
 Lines 2-4, characters 2-6:
-2 | ..for i = y to 10 do
+2 |   for i = y to 10 do
 3 |     ()
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -212,7 +212,7 @@ let rec x =
 and y = x; ();;
 [%%expect{|
 Lines 2-4, characters 2-6:
-2 | ..while false do
+2 |   while false do
 3 |     let y = x in ignore y
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -225,7 +225,7 @@ let rec x =
 and y = false;;
 [%%expect{|
 Lines 2-4, characters 2-6:
-2 | ..while y do
+2 |   while y do
 3 |     ()
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -238,7 +238,7 @@ let rec x =
 and y = false;;
 [%%expect{|
 Lines 2-4, characters 2-6:
-2 | ..while y do
+2 |   while y do
 3 |     let y = x in ignore y
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -321,7 +321,7 @@ and y = match x with
   z -> ("y", z);;
 [%%expect{|
 Lines 2-4, characters 2-30:
-2 | ..match let _ = y in raise Not_found with
+2 |   match let _ = y in raise Not_found with
 3 |     _ -> "x"
 4 |   | exception Not_found -> "z"
 Error: This kind of expression is not allowed as right-hand side of `let rec'
@@ -347,7 +347,7 @@ let rec wrong =
   in ref ("foo" ^ ! ! !x);;
 [%%expect{|
 Lines 10-12, characters 2-25:
-10 | ..let rec x = ref y
+10 |   let rec x = ref y
 11 |   and y = ref wrong
 12 |   in ref ("foo" ^ ! ! !x)..
 Error: This kind of expression is not allowed as right-hand side of `let rec'

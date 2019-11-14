@@ -41,7 +41,7 @@ class foo: foo_t =
 ;;
 [%%expect{|
 Lines 2-8, characters 2-5:
-2 | ..object(self)
+2 |   object(self)
 3 |     method foo = "foo"
 4 |     method cast: type a. a name -> a =
 5 |       function

@@ -112,7 +112,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = A of string [@@ocaml.unboxed]
 5 | end..
 Error: Signature mismatch:
@@ -135,7 +135,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = A of string
 5 | end..
 Error: Signature mismatch:
@@ -158,7 +158,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = { f : string } [@@ocaml.unboxed]
 5 | end..
 Error: Signature mismatch:
@@ -181,7 +181,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = { f : string }
 5 | end..
 Error: Signature mismatch:
@@ -204,7 +204,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = A of { f : string } [@@ocaml.unboxed]
 5 | end..
 Error: Signature mismatch:
@@ -227,7 +227,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = A of { f : string }
 5 | end..
 Error: Signature mismatch:
@@ -293,7 +293,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | ... . struct
 5 |   type t = A of float [@@ocaml.unboxed]
 6 |   type u = { f1 : t; f2 : t }
 7 | end..

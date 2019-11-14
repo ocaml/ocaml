@@ -64,7 +64,7 @@ end
 and B: sig val value: unit end = struct let value = A.f () end
 [%%expect {|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | ... . struct
 5 |   module F(X:sig end) = struct end
 6 |   let f () = B.value
 7 | end
@@ -94,7 +94,7 @@ module F(X: sig module type t module M: t end) = struct
 end
 [%%expect {|
 Lines 5-8, characters 8-5:
-5 | ........struct
+5 |   ... . struct
 6 |     module M = X.M
 7 |     let f () = B.value
 8 |   end

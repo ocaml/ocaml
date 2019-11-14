@@ -57,7 +57,7 @@ let check : type s . s t * s -> bool = function
 [%%expect{|
 type _ t = IntLit : int t | BoolLit : bool t
 Lines 5-7, characters 39-23:
-5 | .......................................function
+5 | ... ..... . .... . . . . . . .. .... . function
 6 |   | BoolLit, false -> false
 7 |   | IntLit , 6 -> false
 Warning 8: this pattern-matching is not exhaustive.
@@ -75,7 +75,7 @@ let check : type s . (s t, s) pair -> bool = function
 [%%expect{|
 type ('a, 'b) pair = { fst : 'a; snd : 'b; }
 Lines 3-5, characters 45-38:
-3 | .............................................function
+3 | ... ..... . .... . . .. .. .. .... .. .... . function
 4 |   | {fst = BoolLit; snd = false} -> false
 5 |   | {fst = IntLit ; snd =  6} -> false
 Warning 8: this pattern-matching is not exhaustive.

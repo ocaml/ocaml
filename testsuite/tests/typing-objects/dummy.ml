@@ -140,7 +140,7 @@ class leading_up_to = object(self : 'a)
 end;;
 [%%expect{|
 Lines 4-7, characters 4-7:
-4 | ....object
+4 |     object
 5 |       inherit child1 self
 6 |       inherit child2
 7 |     end
@@ -163,7 +163,7 @@ class assertion_failure = object(self : 'a)
 end;;
 [%%expect{|
 Lines 4-10, characters 4-7:
- 4 | ....object
+ 4 |     object
  5 |       inherit child1 self
  6 |       inherit child2
  7 |

@@ -13,7 +13,7 @@ module F(S : sig type 'a t end) = struct
 end;;
 [%%expect{|
 Lines 7-8, characters 47-21:
-7 | ...............................................match l, r with
+7 |     ... .. . ... ... ... .. . ..... ... ... .. match l, r with
 8 |     | A, B -> "f A B"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -40,7 +40,7 @@ module F(S : sig type 'a t end) = struct
 end;;
 [%%expect{|
 Lines 10-11, characters 15-21:
-10 | ...............match l, r with
+10 |     ... . . .. match l, r with
 11 |     | A, B -> "f A B"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

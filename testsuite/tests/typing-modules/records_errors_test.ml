@@ -11,7 +11,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | ... . struct
 5 |   type t = {f0 : unit * unit * unit * float* unit * unit * unit;
 6 |             f1 : unit * unit * unit * string * unit * unit * unit}
 7 | end..
@@ -57,7 +57,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | ... . struct
 5 |   type t = {f0 : unit * unit * unit * float* unit * unit * unit;
 6 |             f1 : unit * unit * unit * string * unit * unit * unit}
 7 | end..
@@ -100,7 +100,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = {f1 : unit}
 5 | end..
 Error: Signature mismatch:
@@ -122,7 +122,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type t = {f0 : unit}
 5 | end..
 Error: Signature mismatch:

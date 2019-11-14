@@ -32,7 +32,7 @@ end and d () = object
 end;;
 [%%expect{|
 Lines 3-5, characters 4-3:
-3 | ....and d () = object
+3 | ... and d () = object
 4 |   inherit ['a] c ()
 5 | end..
 Error: Some type variables are unbound in this type:
@@ -675,9 +675,9 @@ end : sig
 end);;
 [%%expect{|
 Lines 1-3, characters 12-3:
-1 | ............struct
+1 | ...... . . .struct
 2 |   let f (x : #c) = x
-3 | end......
+3 | end . ...
 Error: Signature mismatch:
        Modules do not match:
          sig val f : (#c as 'a) -> 'a end

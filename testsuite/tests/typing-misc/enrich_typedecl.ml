@@ -14,7 +14,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type t = A | B
  5 |
  6 |   let f (x : t) =
@@ -45,7 +45,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type 'a t = A of 'a | B
  5 |
  6 |   let f (x : _ t) =
@@ -76,7 +76,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type 'a t = A of 'a | B
  5 |
  6 |   let f (x : _ t) =
@@ -109,7 +109,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type 'a t = A of 'a | B
  5 |
  6 |   let f (x : _ t) =
@@ -140,7 +140,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type 'a t = A of 'a | B
  5 |
  6 |   let f (x : _ t) =
@@ -171,7 +171,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type 'a t = A of 'a | B
  5 |
  6 |   let f (x : _ t) =
@@ -202,7 +202,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-10, characters 6-3:
- 3 | ......struct
+ 3 | ... . struct
  4 |   type 'a t = A of 'a | B
  5 |
  6 |   let f (x : _ t) =
@@ -233,7 +233,7 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-9, characters 6-3:
-3 | ......struct
+3 | ... . struct
 4 |   type ('a, 'b) t = Foo of 'b
 5 |
 6 |   (* this function typechecks properly, which means that we've added the

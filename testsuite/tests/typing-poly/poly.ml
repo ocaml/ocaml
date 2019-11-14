@@ -556,7 +556,7 @@ end
 ;;
 [%%expect {|
 Lines 4-7, characters 12-17:
-4 | ............x =
+4 |   ...... .. x =
 5 |     match r with
 6 |       None -> r <- Some x; x
 7 |     | Some y -> y
@@ -1232,7 +1232,7 @@ let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 [%%expect {|
 Lines 2-3, characters 2-47:
-2 | ..(x : <m:'a. (<p:int;..> as 'a) -> int>
+2 |   (x : <m:'a. (<p:int;..> as 'a) -> int>
 3 |     :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int >
