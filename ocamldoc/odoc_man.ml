@@ -288,7 +288,10 @@ class man =
       match txt with
       | Odoc_info.Raw s -> bs b (self#escape s)
       | Odoc_info.Code s -> self#man_of_code b s
-      | Odoc_info.CodePre s -> self#man_of_code b s
+      | Odoc_info.CodePre s ->
+         bs b "\n.EX";
+         self#man_of_code b s;
+         bs b "\n.EE";
       | Odoc_info.Verbatim s ->
           bs b (self#escape s)
       | Odoc_info.Bold t
