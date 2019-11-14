@@ -101,8 +101,6 @@ val save_cmt :
 
 (* Miscellaneous functions *)
 
-val read_magic_number : in_channel -> string
-
 val clear: unit -> unit
 
 val add_saved_type : binary_part -> unit
