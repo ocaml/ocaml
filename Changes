@@ -237,6 +237,10 @@ OCaml 4.10.0
   (Daniel C. Bünzli, review by David Allsopp, Armaël Guéneau and
    Nicolás Ojeda Bär)
 
+- #9113: ocamldoc: fix the rendering of multi-line code blocks
+  in the 'man' backend.
+  (Gabriel Scherer, review by Florian Angeletti)
+
 ### Standard library:
 
 - #8651: add '%#F' modifier in printf to output OCaml float constants

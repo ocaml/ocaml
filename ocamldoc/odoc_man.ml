@@ -287,12 +287,11 @@ class man =
     method man_of_text_element b txt =
       match txt with
       | Odoc_info.Raw s -> bs b (self#escape s)
-      | Odoc_info.Code s ->
-          bs b "\n.B ";
-          bs b ((Str.global_replace (Str.regexp "\n") "\n.B " (self#escape s))^"\n")
+      | Odoc_info.Code s -> self#man_of_code b s
       | Odoc_info.CodePre s ->
-          bs b "\n.B ";
-          bs b ((Str.global_replace (Str.regexp "\n") "\n.B " (self#escape s))^"\n")
+         bs b "\n.EX";
+         self#man_of_code b s;
+         bs b "\n.EE";
       | Odoc_info.Verbatim s ->
           bs b (self#escape s)
       | Odoc_info.Bold t
@@ -346,7 +345,11 @@ class man =
       if String.lowercase_ascii target = "man" then bs b code else ()
 
     (** Print groff string to display code. *)
-    method man_of_code b s = self#man_of_text b [ Code s ]
+    method man_of_code b code =
+      let code = self#escape code in
+      bs b "\n.ft B\n";
+      bs b (Str.global_replace (Str.regexp "\n") "\n.br\n\\&" code);
+      bs b "\n.ft R\n";
 
     (** Take a string and return the string where fully qualified idents
        have been replaced by idents relative to the given module name.*)
