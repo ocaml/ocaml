@@ -146,11 +146,9 @@ void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* h)
 }
 
 
-/* Allocating and deallocating pools from the global freelist.
-   Up to MAX_LOCAL_FREE_POOLS are cached locally */
+/* Allocating and deallocating pools from the global freelist. */
 
 #define POOLS_PER_ALLOCATION 16
-#define MAX_LOCAL_FREE_POOLS 5
 static pool* pool_acquire(struct caml_heap_state* local) {
   pool* r;
 
@@ -188,18 +186,11 @@ static void pool_release(struct caml_heap_state* local, pool* pool, sizeclass sz
   Assert(pool->sz == sz);
   local->stats.pool_words -= POOL_WSIZE;
   local->stats.pool_frag_words -= POOL_HEADER_WSIZE + wastage_sizeclass[sz];
-  if (local->num_free_pools < MAX_LOCAL_FREE_POOLS) {
-    /* FIXME: in the local cache, other domains can't get it */
-    local->num_free_pools++;
-    pool->next = local->free_pools;
-    local->free_pools = pool;
-  } else {
-    /* FIXME: give free pools back to the OS */
-    caml_plat_lock(&pool_freelist.lock);
-    pool->next = pool_freelist.free;
-    pool_freelist.free = pool;
-    caml_plat_unlock(&pool_freelist.lock);
-  }
+  /* FIXME: give free pools back to the OS */
+  caml_plat_lock(&pool_freelist.lock);
+  pool->next = pool_freelist.free;
+  pool_freelist.free = pool;
+  caml_plat_unlock(&pool_freelist.lock);
 }
 
 /* Allocating an object from a pool */
@@ -218,6 +209,30 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   while (!local->avail_pools[sz] &&
          pool_sweep(local, &local->unswept_full_pools[sz], sz));
   r = local->avail_pools[sz];
+  if (r) return r;
+
+/* Haven't managed to find a pool locally, try the global ones */
+  caml_plat_lock(&pool_freelist.lock);
+  if( pool_freelist.global_avail_pools[sz] ) {
+    r = pool_freelist.global_avail_pools[sz];
+    pool_freelist.global_avail_pools[sz] = r->next;
+    r->next = 0;
+    local->avail_pools[sz] = r;
+  }
+
+  /* There were no global avail pools, so let's adopt the full ones and try 
+     our luck sweeping them later on */
+  if( !r ) {
+    move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
+  }
+
+  caml_plat_unlock(&pool_freelist.lock);
+
+  if( !r ) {
+    pool_sweep(local, &local->full_pools[sz], sz);    
+    r = local->avail_pools[sz];
+  }
+
   if (r) return r;
 
   /* Failing that, we need to allocate a new pool */
