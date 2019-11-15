@@ -51,6 +51,7 @@ STDLIB_MODULES=\
   $(P)map \
   $(P)stack \
   $(P)queue \
+  $(P)dynArray \
   camlinternalLazy \
   $(P)lazy \
   $(P)stream \

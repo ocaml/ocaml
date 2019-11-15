@@ -574,6 +574,7 @@ module Callback     = Callback
 module Char         = Char
 module Complex      = Complex
 module Digest       = Digest
+module DynArray     = DynArray
 module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float

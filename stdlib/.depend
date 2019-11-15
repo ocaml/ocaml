@@ -186,6 +186,13 @@ stdlib__digest.cmx : \
     stdlib__bytes.cmx \
     stdlib__digest.cmi
 stdlib__digest.cmi :
+stdlib__dynArray.cmo : \
+    stdlib__array.cmi \
+    stdlib__dynArray.cmi
+stdlib__dynArray.cmx : \
+    stdlib__array.cmx \
+    stdlib__dynArray.cmi
+stdlib__dynArray.cmi :
 stdlib__ephemeron.cmo : \
     stdlib__sys.cmi \
     stdlib__seq.cmi \
