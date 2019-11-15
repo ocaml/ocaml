@@ -22,10 +22,6 @@ Working version
 
 ### Tools:
 
-- #9113: fix the rendering of ocamldoc multi-line code blocks
-  in the 'man' backend.
-  (Gabriel Scherer, review by Florian Angeletti)
-
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
@@ -310,6 +306,10 @@ OCaml 4.10.0
   is unchanged.
   (Daniel C. Bünzli, review by David Allsopp, Armaël Guéneau and
    Nicolás Ojeda Bär)
+
+- #9113: fix the rendering of ocamldoc multi-line code blocks
+  in the 'man' backend.
+  (Gabriel Scherer, review by Florian Angeletti)
 
 ### Standard library:
 
