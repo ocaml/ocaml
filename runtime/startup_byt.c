@@ -35,6 +35,7 @@
 #include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/dynlink.h"
+#include "caml/eventlog.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fix_code.h"
@@ -353,6 +354,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_verb_gc = 0x3F;
 #endif
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -488,6 +490,7 @@ CAMLexport value caml_startup_code_exn(
   caml_verb_gc = 0x3F;
 #endif
   caml_parse_ocamlrunparam();
+  CAML_EVENTLOG_INIT();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif

@@ -317,6 +317,12 @@ clean::
 	rm -f "objinfo_helper" "objinfo_helper.manifest"
 	rm -f "objinfo_helper.exe" "objinfo_helper.exe.manifest"
 
+# Eventlog metadata file
+
+install::
+	$(INSTALL_DATA) \
+	  eventlog_metadata \
+	  "$(INSTALL_LIBDIR)"
 
 # Copy a bytecode executable, stripping debug info
 
@@ -333,13 +339,6 @@ CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
        cmpbyt.cmo
 
 $(call byte_and_opt,cmpbyt,$(CMPBYT),)
-
-ifeq "$(RUNTIMEI)" "true"
-install::
-	$(INSTALL_PROG) \
-	  ocaml-instr-graph ocaml-instr-report \
-	  "$(INSTALL_BINDIR)/"
-endif
 
 CAMLTEX= $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 	$(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \

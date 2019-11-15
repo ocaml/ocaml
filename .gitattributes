@@ -116,7 +116,8 @@ testsuite/tests/**/*.reference               typo.prune
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line
 
-tools/magic         typo.missing-header
+tools/magic                       typo.missing-header
+tools/eventlog_metadata.in        typo.missing-header
 
 # TODO we should fix the long-line errors in yacc/*.c
 /yacc/*.[ch]         typo.very-long-line=may
