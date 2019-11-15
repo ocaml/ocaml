@@ -177,10 +177,15 @@ open https://github.com/ocaml/ocaml/releases
 # for a minor release, the description is:
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
-## 5.2: Inria CI
+## 5.3: Inria CI (for a new release branch)
 
-After creating a new branch, add it to the Inria CI list.
+Add the new release branch to the Inria CI list.
 Remove the oldest branch from this list.
+
+## 5.4 new badge in README.adoc (for a new release branch)
+
+Add a badge for the new branch in README.adoc.
+Remove any badge that tracks a version older than Debian stable.
 
 
 ## 6: create OPAM packages
