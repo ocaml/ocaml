@@ -325,12 +325,13 @@ OCaml 4.10.0
    or young values.
    (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
 
-- #8634: Statistical memory profiling provided by the Gc.Memprof
-   module.
-   Incomplete version: does not sample objects allocated in the minor
-   heap in native mode
-   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
-    Damien Doligez)
+- #8634, #8668, #8684, #9103 (originally #847): Statistical memory profiling.
+  In OCaml 4.10, support for allocations in the minor heap in native
+  mode is not available, and callbacks for promotions and
+  deallocations are not available.
+  Hence, there is not any public API for this feature yet.
+  (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
+   and Damien Doligez)
 
 - #7672, #1492: Add `Filename.quote_command` to produce properly-quoted
   commands for execution by Sys.command.
