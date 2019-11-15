@@ -436,6 +436,10 @@ OCaml 4.10 release branch
   and correct initialisation of some blocks allocated with caml_alloc_small.
   (David Allsopp, review by Xavier Leroy)
 
+- #9073, #9120: fix incorrect GC ratio multiplier when allocating custom blocks
+  with caml_alloc_custom_mem in runtime/custom.c
+  (Markus Mottl, review by Gabriel Scherer and Damien Doligez)
+
 OCaml 4.09 maintenance branch:
 ------------------------------
 
