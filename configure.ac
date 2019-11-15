@@ -543,6 +543,8 @@ AS_CASE([$ocaml_cv_cc_vendor],
     [outputobj='-o $(EMPTY)'
     warn_error_flag=''
     cc_warnings='-qflag=i:i'], # all warnings enabled
+  [sunc-*],
+    [outputobj='-o $(EMPTY)'; cc_warnings=""],
   [msvc-*],
     [outputobj='-Fo'
     warn_error_flag='-WX'
@@ -623,6 +625,9 @@ AS_CASE([$host],
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+      internal_cflags="$cc_warnings"],
+    [sunc-*],
+      [common_cflags="-O2 -xc99=all $CFLAGS";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
@@ -839,9 +844,14 @@ AS_IF([test x"$enable_shared" != "xno"],
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true],
     [powerpc-ibm-aix*],
-      [AS_CASE([$CC],
+      [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
                [mksharedlib="$CC -qmkshrobj -G \$(LDFLAGS)"
+                shared_libraries_supported=true])],
+    [sparc-sun-solaris*],
+      [AS_CASE([$ocaml_cv_cc_vendor],
+               [sunc*],
+               [mksharedlib="$CC -G"
                 shared_libraries_supported=true])],
     [*-*-solaris*],
       [sharedlib_cflags="-fPIC"
@@ -1502,10 +1512,11 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$CC,$host],
+AS_CASE([$ocaml_cv_cc_vendor,$host],
   [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
+  [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
   [OCAML_CC_HAS_DEBUG_PREFIX_MAP])
 
 ## Does stat support nanosecond precision
