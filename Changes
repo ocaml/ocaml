@@ -213,12 +213,13 @@ OCaml 4.10 release branch
 - #8641: Better call stacks when a C call is involved in byte code mode
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8634: Statistical memory profiling. In OCaml 4.10, support for
-   allocations in the minor heap in native mode is not available, and
-   callbacks for promotions and deallocations are not available.
-   Hence, there is not any public API for this feature yet.
-   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
-    and Damien Doligez)
+- #8634, #8668, #8684, #9103 (originally #847): Statistical memory profiling.
+  In OCaml 4.10, support for allocations in the minor heap in native
+  mode is not available, and callbacks for promotions and
+  deallocations are not available.
+  Hence, there is not any public API for this feature yet.
+  (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
+   and Damien Doligez)
 
 ### Tools:
 
