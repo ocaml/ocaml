@@ -212,6 +212,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     domain_state->id = d->id;
     domain_state->unique_id = d->interruptor.unique_id;
     d->state.state = domain_state;
+    domain_state->critical_section_nesting = 0;
 
     if (caml_init_signal_stack() < 0) {
       goto init_signal_stack_failure;
@@ -953,12 +954,17 @@ static void domain_terminate()
 
   caml_delete_root(domain_state->read_fault_ret_val);
   caml_stat_free(domain_state->final_info);
+  caml_stat_free(domain_state->ephe_info);
   caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = 0;
   caml_free_signal_stack();
+  
+  if(domain_state->current_stack != NULL) {
+    caml_free_stack(domain_state->current_stack);
+  }
 
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;
