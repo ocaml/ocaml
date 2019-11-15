@@ -39,6 +39,7 @@ void caml_finish_major_cycle(void);
 
 /* Ephemerons and finalisers */
 void caml_ephe_todo_list_emptied(void);
+void caml_orphan_allocated_words();
 void caml_add_orphaned_ephe(value todo_head, value todo_tail,
                             value live_head, value live_tail);
 void caml_add_orphaned_finalisers (struct caml_final_info*);

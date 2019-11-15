@@ -66,6 +66,8 @@ static atomic_uintnat num_domains_to_ephe_sweep;
 static atomic_uintnat num_domains_to_final_update_first;
 static atomic_uintnat num_domains_to_final_update_last;
 
+static atomic_uintnat terminated_domains_allocated_words;
+
 gc_phase_t caml_gc_phase;
 
 uintnat caml_get_num_domains_to_mark () {
@@ -175,6 +177,10 @@ static int no_orphaned_work ()
     orph_structs.ephe_list_todo == 0 &&
     orph_structs.ephe_list_live == 0 &&
     orph_structs.final_info == NULL;
+}
+
+void caml_orphan_allocated_words() {
+    atomic_fetch_add(&terminated_domains_allocated_words, Caml_state->allocated_words);
 }
 
 void caml_add_orphaned_ephe(value todo_head, value todo_tail,
@@ -333,7 +339,13 @@ static uintnat default_slice_budget() {
   uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
   heap_words = (double)Wsize_bsize(heap_size);
   uintnat heap_blocks = caml_heap_blocks(Caml_state->shared_heap);
-  p = (double) Caml_state->allocated_words * 3.0 * (100 + caml_percent_free)
+
+  uintnat saved_terminated_words = terminated_domains_allocated_words;
+  if( saved_terminated_words > 0 ) {
+    while(!atomic_compare_exchange_strong(&terminated_domains_allocated_words, &saved_terminated_words, 0));
+  }
+
+  p = (double) (saved_terminated_words + Caml_state->allocated_words) * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
 
   computed_work = (intnat) (p * (heap_blocks + (heap_words * 100 / (100 + caml_percent_free))));
