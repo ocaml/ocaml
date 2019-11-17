@@ -85,6 +85,11 @@ Working version
   Makefile.config.
   (Damien Doligez, review by Mark Shinwell and Gabriel Scherer)
 
+- #9116, #9118, #10582: Fix single-line source highlighting in the
+  presence of tabs
+  (Armaël Guéneau, review by Gabriel Scherer,
+   split off from #9118 by Kate Deplaix, report by Ricardo M. Correia)
+
 ### Internal/compiler-libs changes:
 
 - #1599: add unset directive to ocamltest to clear environment variables before
