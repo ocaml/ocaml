@@ -16,7 +16,7 @@ end
 [%%expect{|
 class type foo_t = object method foo : string end
 Lines 8-10, characters 6-3:
- 8 | ... . struct
+ 8 |   ... struct
  9 |   class type ct = object end
 10 | end
 Error: Signature mismatch:
@@ -43,7 +43,7 @@ end
 ;;
 [%%expect{|
 Lines 5-9, characters 6-3:
-5 | ... . struct
+5 |   ... struct
 6 |   class virtual c = object
 7 |     method virtual a: string
 8 |   end
@@ -72,7 +72,7 @@ end
 [%%expect{|
 class type ['a] ct = object val x : 'a end
 Lines 5-7, characters 6-3:
-5 | ... . struct
+5 |   ... struct
 6 |   class type c = object end
 7 | end
 Error: Signature mismatch:
@@ -95,7 +95,7 @@ end
 ;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ... . struct
+3 |   ... struct
 4 |   class ['a] c = object end
 5 | end
 Error: Signature mismatch:
@@ -118,7 +118,7 @@ end
 ;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ... . struct
+3 |   ... struct
 4 |   class c (x : float) = object end
 5 | end
 Error: Signature mismatch:
@@ -142,7 +142,7 @@ class virtual foo: foo_t =
 
 [%%expect{|
 Lines 2-5, characters 4-7:
-2 |     object
+2 | ... object
 3 |         method foo = "foo"
 4 |         method private virtual cast: int
 5 |     end
@@ -164,7 +164,7 @@ class foo: foo_t2 =
 [%%expect{|
 class type foo_t2 = object method private foo : string end
 Lines 7-9, characters 4-7:
-7 |     object
+7 | ... object
 8 |         method foo = "foo"
 9 |     end
 Error: The class type object method foo : string end
@@ -179,7 +179,7 @@ class virtual foo: foo_t =
 ;;
 [%%expect{|
 Lines 2-4, characters 4-7:
-2 |     object
+2 | ... object
 3 |         method virtual foo: string
 4 |     end
 Error: The class type object method virtual foo : string end
@@ -200,7 +200,7 @@ class foo: foo_t3 =
 [%%expect{|
 class type foo_t3 = object val mutable x : int end
 Lines 7-9, characters 4-7:
-7 |     object
+7 | ... object
 8 |         val x = 1
 9 |     end
 Error: The class type object val x : int end is not matched by the class type
@@ -221,7 +221,7 @@ class virtual foo: foo_t4 =
 [%%expect{|
 class type foo_t4 = object val x : int end
 Lines 7-9, characters 4-7:
-7 |     object
+7 | ... object
 8 |         val virtual x : int
 9 |     end
 Error: The class type object val virtual x : int end
@@ -237,7 +237,7 @@ end
 ;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ... . struct
+3 |   ... struct
 4 |   class type c = object method private m: string end
 5 | end
 Error: Signature mismatch:

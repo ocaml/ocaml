@@ -13,7 +13,7 @@ module M = struct
 end;;
 [%%expect{|
 Lines 5-8, characters 8-5:
-5 |   ... . struct
+5 |     ... struct
 6 |     type t = B
 7 |     let f B = ()
 8 |   end
@@ -72,7 +72,7 @@ end;;
 
 [%%expect{|
 Lines 4-7, characters 4-7:
-4 |     struct
+4 | ... struct
 5 |       module type s
 6 |       module A(X:s) =struct end
 7 |     end
@@ -104,7 +104,7 @@ module L = struct
 end;;
       [%%expect {|
 Lines 4-7, characters 4-7:
-4 |     struct
+4 | ... struct
 5 |       module T = struct type t end
 6 |       type t = A of T.t
 7 |     end
@@ -275,14 +275,14 @@ end;;
 
 [%%expect{|
 Lines 8-15, characters 6-3:
- 8 | ... . struct
+ 8 |   ... struct
  9 |   type t
 10 |   class type a = object method m:t end
 11 |   module K = struct
 12 |     type t
 13 |     class type c = object inherit a end
 14 |   end
-15 | end..
+15 | end
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -352,9 +352,9 @@ type t = B
 type t = C
 type t = D
 Lines 5-7, characters 44-3:
-5 | ...... .. ... ... .. . .. . .. . .. . ... . struct
+5 |                                         ... struct
 6 |   let f A B C = D
-7 | end..
+7 | end
 Error: Signature mismatch:
        Modules do not match:
          sig val f : t/2 -> t/3 -> t/4 -> t/1 end

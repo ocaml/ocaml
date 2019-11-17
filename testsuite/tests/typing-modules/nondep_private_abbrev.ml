@@ -100,9 +100,9 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ... . struct
+3 |   ... struct
 4 |   type s = t
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type s = t end

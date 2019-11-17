@@ -104,13 +104,13 @@ module Nonexhaustive =
 ;;
 [%%expect{|
 Lines 11-12, characters 6-19:
-11 |       function
+11 |   ... function
 12 |         | C2 x -> x
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C1 _
 Lines 24-26, characters 6-30:
-24 |       function
+24 |   ... function
 25 |         | Foo _ , Foo _ -> true
 26 |         | Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
@@ -261,8 +261,8 @@ module PR6801 = struct
 end;;
 [%%expect{|
 Lines 8-9, characters 4-33:
-8 |     match x with
-9 |     | String s -> print_endline s .. .... . ... ..
+8 | ... match x with
+9 |     | String s -> print_endline s ...
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Any
@@ -815,7 +815,7 @@ let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 [%%expect{|
 Lines 1-2, characters 4-15:
 1 | ... f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
-2 |   fun Eq o -> o .. .. .... ..
+2 |   fun Eq o -> o ...
 Error: This definition has type
          ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
        which is less general than 'a0 'b0. ('a0, 'b0) eq -> 'c -> 'c

@@ -64,7 +64,7 @@ Lines 5-9, characters 2-10:
 6 |     (if Sys.opaque_identity true then
 7 |        X a
 8 |      else
-9 |        Y)}..
+9 |        Y)}
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -104,6 +104,6 @@ Lines 5-9, characters 2-9:
 6 |     (if Sys.opaque_identity true then
 7 |        V d
 8 |      else
-9 |        W)..
+9 |        W)
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

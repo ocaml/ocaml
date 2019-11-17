@@ -25,7 +25,7 @@ Lines 7-12, characters 0-5:
  9 |     method foo (Dyn ty) =
 10 |       match ty with
 11 |       | Int -> (this :> bar)
-12 |   end..  .. ..... ... ... ... ..... ..
+12 |   end ...
 Error: This class should be virtual.
        The following methods are undefined : bar
 |}];;

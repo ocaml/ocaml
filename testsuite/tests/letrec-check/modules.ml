@@ -40,7 +40,7 @@ let rec x =
 Lines 2-4, characters 2-14:
 2 |   let module M = struct
 3 |     module N = struct let y = x end
-4 |   end in M.N.y..
+4 |   end in M.N.y
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 

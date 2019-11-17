@@ -349,7 +349,7 @@ let rec wrong =
 Lines 10-12, characters 2-25:
 10 |   let rec x = ref y
 11 |   and y = ref wrong
-12 |   in ref ("foo" ^ ! ! !x)..
+12 |   in ref ("foo" ^ ! ! !x)
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}]
 

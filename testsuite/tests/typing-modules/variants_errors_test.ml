@@ -11,10 +11,10 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ... . struct
+4 |   ... struct
 5 |   type t =
 6 |     | Foo of float * int
-7 | end..
+7 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type t = Foo of float * int end
@@ -40,10 +40,10 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ... . struct
+4 |   ... struct
 5 |   type t =
 6 |     | Foo of float
-7 | end..
+7 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type t = Foo of float end
@@ -69,10 +69,10 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ... . struct
+4 |   ... struct
 5 |   type t =
 6 |     | Foo of {x : float; y : int}
-7 | end..
+7 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type t = Foo of { x : float; y : int; } end
@@ -102,10 +102,10 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ... . struct
+4 |   ... struct
 5 |   type t =
 6 |     | Foo of float
-7 | end..
+7 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type t = Foo of float end
@@ -131,10 +131,10 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ... . struct
+4 |   ... struct
 5 |   type 'a t =
 6 |     | Foo of 'a
-7 | end..
+7 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a t = Foo of 'a end
@@ -158,9 +158,9 @@ end = struct
 end;;
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ... . struct
+3 |   ... struct
 4 |   type ('a, 'b) t = A of 'b
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type ('a, 'b) t = A of 'b end
@@ -184,9 +184,9 @@ end = struct
 end;;
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ... . struct
+3 |   ... struct
 4 |   type ('b, 'a) t = A of 'a
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type ('b, 'a) t = A of 'a end

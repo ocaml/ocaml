@@ -13,7 +13,7 @@ type t = int
 Lines 3-5, characters 0-3:
 3 | struct
 4 |   type t = [`T of t]
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type t = [ `T of t ] end
