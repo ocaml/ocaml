@@ -29,7 +29,6 @@ external compare : 'a -> 'a -> int = "%compare"
 let min = min
 let max = max
 external phys_equal : 'a -> 'a -> bool = "%eq"
-external phys_inequal : 'a -> 'a -> bool = "%noteq"
 external ( == ) : 'a -> 'a -> bool = "%eq"
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 external not : bool -> bool = "%boolnot"
