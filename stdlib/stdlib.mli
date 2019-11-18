@@ -196,17 +196,13 @@ external phys_equal : 'a -> 'a -> bool = "%eq"
    [phys_equal e1 e2] implies [compare e1 e2 = 0].
 *)
 
-external phys_inequal : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Stdlib.phys_equal}.
-*)
-
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** Operator alias to {!Stdlib.phys_equal}.
    Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-(** Operator alias to {!Stdlib.phys_inequal}.
+(** Negation of {!Stdlib.phys_equal}.
     Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
