@@ -16685,8 +16685,9 @@ if test x"$enable_function_sections" = "xno"; then :
   function_sections=false
 else
   case $arch in #(
-  amd64|i386|arm|arm64) :
-    case $target in #(
+  amd64|i386|arm64) :
+    # not supported on arm32, see issue #9124.
+     case $target in #(
   *-cygwin*|*-mingw*|*-windows|*-apple-darwin*) :
     function_sections=false;
            { $as_echo "$as_me:${as_lineno-$LINENO}: No support for function sections on $target." >&5
