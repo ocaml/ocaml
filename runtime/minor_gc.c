@@ -148,6 +148,7 @@ void caml_set_minor_heap_size (asize_t bsz)
 
   CAMLassert (bsz >= Bsize_wsize(Minor_heap_min));
   CAMLassert (bsz <= Bsize_wsize(Minor_heap_max));
+  CAMLassert (bsz % Page_size == 0);
   CAMLassert (bsz % sizeof (value) == 0);
   if (Caml_state->young_ptr != Caml_state->young_alloc_end){
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
