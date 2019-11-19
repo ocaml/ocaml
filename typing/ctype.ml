@@ -2850,7 +2850,8 @@ and unify_row env row1 row2 =
   end;
   let fixed1 = fixed_explanation row1 and fixed2 = fixed_explanation row2 in
   let more = match fixed1, fixed2 with
-    | Some _, _ -> rm1
+    | Some _, Some _ -> if rm2.level < rm1.level then rm2 else rm1
+    | Some _, None -> rm1
     | None, Some _ -> rm2
     | None, None -> newty2 (min rm1.level rm2.level) (Tvar None)
   in
