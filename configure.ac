@@ -436,6 +436,9 @@ AS_CASE([$host],
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2) && ${RANLIB} \$(1)"
   ])
 
+## Find vendor of the C compiler
+OCAML_CC_VENDOR
+
 # Determine how to call the C preprocessor directly.
 # Most of the time, calling the C preprocessor through the C compiler is
 # desirable and even important.
@@ -447,8 +450,10 @@ AS_CASE([$host],
 # We thus figure out how to invoke the C preprocessor directly but
 # let the CPP variable untouched, except for the MSVC port where we set it
 # manually to make sure the backward compatibility is preserved
-AS_CASE([$host],
-  [*-pc-windows],
+AS_CASE([$ocaml_cv_cc_vendor],
+  [xlc-*],
+    [CPP="$CC -E -qnoppline"], # suppress incompatible XLC line directives
+  [msvc-*],
     [CPP="$CC -nologo -EP"])
 
 # Libraries to build depending on the host
@@ -513,16 +518,13 @@ AS_IF(
 ## Check for C99 support: done by libtool
 ## AC_PROG_CC_C99
 
-## Find vendor of the C compiler
-OCAML_CC_VENDOR
-
 ## Determine which flags to use for the C compiler
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
     [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
   [msvc-*],
-    [outputobj=-Fo; CPP="cl -nologo -EP"; gcc_warnings=""],
+    [outputobj=-Fo; gcc_warnings=""],
   [outputobj='-o $(EMPTY)'; AS_CASE([AC_PACKAGE_VERSION],
     [*+dev*],
       [gcc_warnings="-Wall -Werror"],
@@ -842,6 +844,8 @@ AS_CASE(["$CC,$host"],
     [OCAML_CC_HAS_FNO_TREE_VRP
     AS_IF([$cc_has_fno_tree_vrp],
       [internal_cflags="$internal_cflags -fno-tree-vrp"])])
+
+OCAML_CC_SUPPORTS_ALIGNED
 
 # Configure the native-code compiler
 
