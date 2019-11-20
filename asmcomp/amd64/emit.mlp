@@ -28,6 +28,7 @@ open X86_ast
 open X86_proc
 open X86_dsl
 module String = Misc.Stdlib.String
+module Int = Numbers.Int
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -171,14 +172,13 @@ let emit_label lbl =
 
 let label s = sym (emit_label s)
 
-module Int = Numbers.Int
-
 (* For Spacetime, keep track of code labels that have been emitted.  *)
 let used_labels = ref Int.Set.empty
 
 let mark_used lbl =
-  if Config.spacetime && not (Int.Set.mem lbl !used_labels) then
+  if Config.spacetime && not (Int.Set.mem lbl !used_labels) then begin
     used_labels := Int.Set.add lbl !used_labels
+  end
 
 let def_label ?typ s =
   mark_used s;
