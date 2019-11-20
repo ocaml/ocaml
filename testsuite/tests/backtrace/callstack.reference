@@ -1,15 +1,15 @@
 main thread:
-Raised by primitive operation at file "callstack.ml", line 12, characters 38-66
-Called from file "callstack.ml", line 13, characters 27-32
-Called from file "callstack.ml", line 14, characters 27-32
-Called from file "callstack.ml", line 15, characters 27-32
-Called from file "callstack.ml", line 18, characters 9-14
+Raised by primitive operation at Callstack.f0 in file "callstack.ml", line 12, characters 38-66
+Called from Callstack.f1 in file "callstack.ml", line 13, characters 27-32
+Called from Callstack.f2 in file "callstack.ml", line 14, characters 27-32
+Called from Callstack.f3 in file "callstack.ml", line 15, characters 27-32
+Called from Callstack in file "callstack.ml", line 18, characters 9-14
 from finalizer:
-Raised by primitive operation at file "callstack.ml", line 12, characters 38-66
-Called from file "callstack.ml", line 23, characters 2-18
+Raised by primitive operation at Callstack.f0 in file "callstack.ml", line 12, characters 38-66
+Called from Callstack in file "callstack.ml", line 23, characters 2-18
 new thread:
-Raised by primitive operation at file "callstack.ml", line 12, characters 38-66
-Called from file "callstack.ml", line 13, characters 27-32
-Called from file "callstack.ml", line 14, characters 27-32
-Called from file "callstack.ml", line 15, characters 27-32
-Called from file "thread.ml", line 39, characters 8-14
+Raised by primitive operation at Callstack.f0 in file "callstack.ml", line 12, characters 38-66
+Called from Callstack.f1 in file "callstack.ml", line 13, characters 27-32
+Called from Callstack.f2 in file "callstack.ml", line 14, characters 27-32
+Called from Callstack.f3 in file "callstack.ml", line 15, characters 27-32
+Called from Thread.create.(fun) in file "thread.ml", line 39, characters 8-14
