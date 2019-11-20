@@ -242,6 +242,9 @@ OCaml 4.10 release branch
   in the 'man' backend.
   (Gabriel Scherer, review by Florian Angeletti)
 
+- #9127, #9130: ocamldoc: fix the formatting of closing brace in record types.
+  (David Allsopp, report by San Vu Ngoc)
+
 ### Standard library:
 
 - #8651: add '%#F' modifier in printf to output OCaml float constants
