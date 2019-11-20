@@ -22,6 +22,7 @@ open Types
 open Lambda
 open Switch
 open Instruct
+open Debuginfo.Scoped_location
 
 (**** Label generation ****)
 
@@ -228,15 +229,10 @@ let rec size_of_lambda env = function
 (**** Merging consecutive events ****)
 
 let copy_event ev kind info repr =
-  { ev_pos = 0;                   (* patched in emitcode *)
-    ev_module = ev.ev_module;
-    ev_loc = ev.ev_loc;
+  { ev with
+    ev_pos = 0;                   (* patched in emitcode *)
     ev_kind = kind;
     ev_info = info;
-    ev_typenv = ev.ev_typenv;
-    ev_typsubst = ev.ev_typsubst;
-    ev_compenv = ev.ev_compenv;
-    ev_stacksize = ev.ev_stacksize;
     ev_repr = repr }
 
 let merge_infos ev ev' =
@@ -306,10 +302,12 @@ let add_event ev =
       to prevent the debugger to stop at every single allocation. *)
 let add_pseudo_event loc modname c =
   if !Clflags.debug then
+    let ev_defname = string_of_scoped_location loc in
     let ev =
       { ev_pos = 0;                   (* patched in emitcode *)
         ev_module = modname;
-        ev_loc = loc;
+        ev_loc = to_location loc;
+        ev_defname;
         ev_kind = Event_pseudo;
         ev_info = Event_other;        (* Dummy *)
         ev_typenv = Env.Env_empty;    (* Dummy *)
@@ -584,7 +582,7 @@ let rec comp_expr env exp sz cont =
             (getmethod :: Kapply nargs :: cont1)
         end
   | Lfunction{params; body; loc} -> (* assume kind = Curried *)
-      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
+      let cont = add_pseudo_event loc !compunit_name cont in
       let lbl = new_label() in
       let fv = Ident.Set.elements(free_variables exp) in
       let to_compile =
@@ -735,7 +733,7 @@ let rec comp_expr env exp sz cont =
          Kconst (Const_base (Const_int n))::
          Kaddint::cont)
   | Lprim(Pmakearray (kind, _), args, loc) ->
-      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
+      let cont = add_pseudo_event loc !compunit_name cont in
       begin match kind with
         Pintarray | Paddrarray ->
           comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
@@ -780,10 +778,10 @@ let rec comp_expr env exp sz cont =
       in
       comp_args env args sz cont
   | Lprim(Pmakeblock(tag, _mut, _), args, loc) ->
-      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
+      let cont = add_pseudo_event loc !compunit_name cont in
       comp_args env args sz (Kmakeblock(List.length args, tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->
-      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
+      let cont = add_pseudo_event loc !compunit_name cont in
       comp_args env args sz (Kgetfloatfield n :: cont)
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
@@ -922,11 +920,15 @@ let rec comp_expr env exp sz cont =
         fatal_error "Bytegen.comp_expr: assign"
       end
   | Levent(lam, lev) ->
+      let ev_defname = match lev.lev_loc with
+        | Loc_unknown -> "??"
+        | Loc_known { loc = _; scopes } -> string_of_scopes scopes in
       let event kind info =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
-          ev_loc = raw_location lev.lev_loc;
+          ev_loc = to_location lev.lev_loc;
           ev_kind = kind;
+          ev_defname;
           ev_info = info;
           ev_typenv = Env.summary lev.lev_env;
           ev_typsubst = Subst.identity;

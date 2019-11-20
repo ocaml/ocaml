@@ -269,6 +269,16 @@ module Slot : sig
       @since 4.02
   *)
 
+  val name : t -> string option
+  (** [name slot] returns the name of the function or definition
+      enclosing the location referred to by the slot.
+
+      [name slot] returns None if the name is unavailable, which
+      may happen for the same reasons as [location] returning None.
+
+      @since 4.11
+  *)
+
   val format : int -> t -> string option
   (** [format pos slot] returns the string representation of [slot] as
       [raw_backtrace_to_string] would format it, assuming it is the

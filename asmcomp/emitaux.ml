@@ -147,6 +147,16 @@ let emit_frames a =
       Hashtbl.add filenames name lbl;
       lbl
   in
+  let defnames = Hashtbl.create 7 in
+  let label_defname filename defname =
+    try
+      snd (Hashtbl.find defnames (filename, defname))
+    with Not_found ->
+      let file_lbl = label_filename filename in
+      let def_lbl = Cmm.new_label () in
+      Hashtbl.add defnames (filename, defname) (file_lbl, def_lbl);
+      def_lbl
+  in
   let module Label_table =
     Hashtbl.Make (struct
       type t = bool * Debuginfo.t
@@ -215,8 +225,16 @@ let emit_frames a =
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
-    a.efa_string name;
-    a.efa_align Arch.size_addr
+    a.efa_string name
+  in
+  let emit_defname (_filename, defname) (file_lbl, lbl) =
+    (* These must be 32-bit aligned, both because they contain a
+       32-bit value, and because emit_debuginfo assumes the low 2 bits
+       of their addresses are 0. *)
+    a.efa_align 4;
+    a.efa_def_label lbl;
+    a.efa_label_rel file_lbl 0l;
+    a.efa_string defname
   in
   let pack_info fd_raise d has_next =
     let line = min 0xFFFFF d.Debuginfo.dinfo_line
@@ -234,12 +252,14 @@ let emit_frames a =
     (* Due to inlined functions, a single debuginfo may have multiple locations.
        These are represented sequentially in memory (innermost frame first),
        with the low bit of the packed debuginfo being 0 on the last entry. *)
-    a.efa_align Arch.size_addr;
+    a.efa_align 4;
     a.efa_def_label lbl;
     let rec emit rs d rest =
+      let open Debuginfo in
       let info = pack_info rs d (rest <> []) in
+      let defname = Scoped_location.string_of_scopes d.dinfo_scopes in
       a.efa_label_rel
-        (label_filename d.Debuginfo.dinfo_file)
+        (label_defname d.dinfo_file defname)
         (Int64.to_int32 info);
       a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
       match rest with
@@ -252,6 +272,8 @@ let emit_frames a =
   List.iter emit_frame !frame_descriptors;
   Label_table.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
+  Hashtbl.iter emit_defname defnames;
+  a.efa_align Arch.size_addr;
   frame_descriptors := []
 
 (* Detection of functions that can be duplicated between a DLL and
