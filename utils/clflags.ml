@@ -459,7 +459,7 @@ end
 let stop_after = ref None (* -stop-after *)
 
 let should_stop_after pass =
-  if pass = Compiler_pass.Typing && !print_types then true
+  if Compiler_pass.(rank Typing <= rank pass) && !print_types then true
   else
     match !stop_after with
     | None -> false
