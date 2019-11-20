@@ -31,6 +31,9 @@ Working version
 
 ### Tools:
 
+- #9127, #9130: ocamldoc: fix the formatting of closing brace in record types.
+  (David Allsopp, report by San Vu Ngoc)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

@@ -1712,7 +1712,7 @@ class html =
         bs b "\n</tr>"
       in
       print_concat b "\n" print_one l;
-      bs b "</table>\n}\n"
+      bs b "</table>\n<code>}</code>\n"
 
 
     (** Print html code for a type. *)

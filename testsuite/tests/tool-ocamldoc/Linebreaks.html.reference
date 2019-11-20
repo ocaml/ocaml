@@ -69,7 +69,7 @@
 <code><span id="TYPEELTb.field">field</span>&nbsp;: <code class="type">'a</code>;</code></td>
 
 </tr></table>
-}
+<code>}</code>
 
 
 
@@ -109,7 +109,7 @@
 <code><span id="TYPEELTLinebreaks.E.inline">inline</span>&nbsp;: <code class="type">int</code>;</code></td>
 
 </tr></table>
-}
+<code>}</code>
 </pre>
 <p>type_Linebreaks.html should contain</p>
 
