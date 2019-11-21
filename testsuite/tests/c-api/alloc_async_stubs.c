@@ -12,9 +12,9 @@ value stub(value ref)
 
   printf("C, before: %d\n", Int_val(Field(ref, 0)));
 
-  /* First, do enough major allocation to trigger a major collection */
+  /* First, do enough major allocations to do a full major collection cycle */
   coll_before = Caml_state_field(stat_major_collections);
-  while (Caml_state_field(stat_major_collections) == coll_before) {
+  while (Caml_state_field(stat_major_collections) <= coll_before+1) {
     caml_alloc(10000, 0);
   }
 
