@@ -15955,6 +15955,13 @@ fi
       if test -z "$BFD_LIB_DIR"; then :
   BFD_LIB_DIR="/opt/local/lib"
 fi ;; #(
+  *-*openbsd*) :
+    if test -z "$BFD_INCLUDE_DIR"; then :
+  BFD_INCLUDE_DIR="/usr/local/include"
+fi
+      if test -z "$BFD_LIB_DIR"; then :
+  BFD_LIB_DIR="/usr/local/lib"
+fi ;; #(
   *) :
      ;;
 esac
@@ -16012,13 +16019,14 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
 fi
 
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl $LIBS"
+LIBS="-lbfd -liberty $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16049,18 +16057,19 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl"
+  bfd_ldlibs="-lbfd -liberty"
 fi
 
 fi
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl -liberty $LIBS"
+LIBS="-lbfd -liberty -lz $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16091,18 +16100,19 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl -liberty"
+  bfd_ldlibs="-lbfd -liberty -lz"
 fi
 
 fi
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl -liberty -lz $LIBS"
+LIBS="-lbfd -liberty -lz -lintl $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16133,49 +16143,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
 $as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
 if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl -liberty -lz"
-fi
-
-fi
-    if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
-$as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
-if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbfd -ldl -liberty -lz -lintl $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char bfd_openr ();
-int
-main ()
-{
-return bfd_openr ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bfd_bfd_openr=yes
-else
-  ac_cv_lib_bfd_bfd_openr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bfd_bfd_openr" >&5
-$as_echo "$ac_cv_lib_bfd_bfd_openr" >&6; }
-if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
-  bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"
+  bfd_ldlibs="-lbfd -liberty -lz -lintl"
 fi
 
 fi
