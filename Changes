@@ -6,7 +6,7 @@ OCaml 4.09 maintenance branch:
   ocamldep link not created)
   (David Allsopp, report by Thomas Leonard)
 
-- #8947: fix/improve support for the BFD library
+- #8947, #9134: fix/improve support for the BFD library
   (Sébastien Hinderer, review by Damien Doligez)
 
 - #8953, #8954: Fix error submessages in the toplevel: do not display
