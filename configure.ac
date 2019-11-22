@@ -1496,7 +1496,12 @@ AS_IF([test x"$with_bfd" != "xno"],
       [AS_IF([test -z "$BFD_INCLUDE_DIR"],
         [BFD_INCLUDE_DIR="/opt/local/include"])
       AS_IF([test -z "$BFD_LIB_DIR"],
-        [BFD_LIB_DIR="/opt/local/lib"])])
+        [BFD_LIB_DIR="/opt/local/lib"])],
+    [*-*openbsd*],
+      [AS_IF([test -z "$BFD_INCLUDE_DIR"],
+        [BFD_INCLUDE_DIR="/usr/local/include"])
+      AS_IF([test -z "$BFD_LIB_DIR"],
+        [BFD_LIB_DIR="/usr/local/lib"])])
   AS_IF([test -n "$BFD_INCLUDE_DIR"],
     [bfd_cppflags="-I$BFD_INCLUDE_DIR"])
   AS_IF([test -n "$BFD_LIB_DIR"],
@@ -1509,17 +1514,18 @@ AS_IF([test x"$with_bfd" != "xno"],
     [bfd_ldlibs=""
     AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd"])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd -ldl"], [], [-ldl])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd -liberty"], [], [-liberty])])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd -liberty -lz"], [], [-liberty -lz])])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
-    AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"], [],
-        [-ldl -liberty -lz -lintl])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd -liberty -lz -lintl"], [],
+        [-liberty -lz -lintl])])
     AS_IF([test -n "$bfd_ldlibs"],
       [bfd_available=true
       AC_DEFINE([HAS_LIBBFD])])])
