@@ -71,6 +71,10 @@ Working version
 
 ### Build system:
 
+- #9136: Don't propagate Cygwin-style prefix from configure to Makefile.config
+  on Windows ports.
+  (David Allsopp, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
