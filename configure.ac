@@ -1781,7 +1781,11 @@ AS_IF([test x"$prefix" = "xNONE"],
     [i686-w64-mingw32], [prefix='C:/ocamlmgw'],
     [x86_64-w64-mingw32], [prefix='C:/ocamlmgw64'],
     [i686-pc-windows], [prefix='C:/ocamlms'],
-    [x86_64-pc-windows], [prefix='C:/ocamlms64'])])
+    [x86_64-pc-windows], [prefix='C:/ocamlms64'])],
+  [AS_IF([test x"$unix_or_win32" = "xwin32" \
+          && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ],
+    [AS_CASE([$build],
+      [*-pc-cygwin], [prefix=`cygpath -m "$prefix"`])])])
 
 # Define a few macros that were defined in config/m-nt.h
 # but whose value is not guessed properly by configure
