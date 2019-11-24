@@ -16832,6 +16832,16 @@ if test x"$prefix" = "xNONE"; then :
   *) :
      ;;
 esac
+else
+  if test x"$unix_or_win32" = "xwin32" \
+          && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ; then :
+  case $build in #(
+  *-pc-cygwin) :
+    prefix=`cygpath -m "$prefix"` ;; #(
+  *) :
+     ;;
+esac
+fi
 fi
 
 # Define a few macros that were defined in config/m-nt.h

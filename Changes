@@ -366,6 +366,10 @@ OCaml 4.10 release branch
   further details.
   (David Allsopp, review by Gabriel Scherer)
 
+- #9136: Don't propagate Cygwin-style prefix from configure to
+  Makefile.config on Windows ports.
+  (David Allsopp, review by Sébastien Hinderer)
+
 ### Compiler user-interface and warnings:
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
