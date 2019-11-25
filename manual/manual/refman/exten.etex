@@ -1796,10 +1796,10 @@ the attributes are considered to apply to the payload:
 fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
 
-Furthermore, quoted strings "{|...|}" can be combined with ppx payloads
+Furthermore, quoted strings "{|...|}" can be combined with extension nodes
 to embed foreign syntax fragments. Those fragments can be interpreted
 by a preprocessor and turned into OCaml code without requiring escaping
-quotes. A syntax shortcut as available for them:
+quotes. A syntax shortcut is available for them:
 
 \begin{verbatim}
 {%%foo|...|}               === [%%foo{|...|}]
