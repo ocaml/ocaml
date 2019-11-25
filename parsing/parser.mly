@@ -418,19 +418,9 @@ let wrap_sig_ext ~loc body ext =
 let wrap_mksig_ext ~loc (item, ext) =
   wrap_sig_ext ~loc (mksig ~loc item) ext
 
-let mk_quotedext ~loc ~shift (id, content, strloc, delim) =
-  let exp_id =
-    let orig_loc = fst loc in
-    let id_start_pos = orig_loc.Lexing.pos_cnum + shift in
-    let start_loc =
-      Lexing.{orig_loc with pos_cnum = id_start_pos }
-    in
-    let end_loc =
-      Lexing.{orig_loc with pos_cnum = id_start_pos + String.length id}
-    in
-    mkloc id (make_loc (start_loc, end_loc))
-  in
-  let e = ghexp ~loc (Pexp_constant (Pconst_string (content, strloc, delim))) in
+let mk_quotedext ~loc (id, idloc, str, strloc, delim) =
+  let exp_id = mkloc id idloc in
+  let e = ghexp ~loc (Pexp_constant (Pconst_string (str, strloc, delim))) in
   (exp_id, PStr [mkstrexp e []])
 
 let text_str pos = Str.text (rhs_text pos)
@@ -693,8 +683,10 @@ let mk_directive ~loc name arg =
 %token SIG
 %token STAR
 %token <string * Location.t * string option> STRING
-%token <string * string * Location.t * string option> QUOTED_STRING_EXPR
-%token <string * string * Location.t * string option> QUOTED_STRING_ITEM
+%token
+  <string * Location.t * string * Location.t * string option> QUOTED_STRING_EXPR
+%token
+  <string * Location.t * string * Location.t * string option> QUOTED_STRING_ITEM
 %token STRUCT
 %token THEN
 %token TILDE
@@ -3699,12 +3691,12 @@ ext:
 extension:
   | LBRACKETPERCENT attr_id payload RBRACKET { ($2, $3) }
   | QUOTED_STRING_EXPR
-    { mk_quotedext ~loc:$sloc ~shift:2 $1 }
+    { mk_quotedext ~loc:$sloc $1 }
 ;
 item_extension:
   | LBRACKETPERCENTPERCENT attr_id payload RBRACKET { ($2, $3) }
   | QUOTED_STRING_ITEM
-    { mk_quotedext ~loc:$sloc ~shift:3 $1 }
+    { mk_quotedext ~loc:$sloc $1 }
 ;
 payload:
     structure { PStr $1 }

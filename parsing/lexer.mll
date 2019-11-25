@@ -124,6 +124,16 @@ let store_escaped_char lexbuf c =
 let store_escaped_uchar lexbuf u =
   if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
 
+let compute_quoted_string_idloc {Location.loc_start = orig_loc } shift id =
+  let id_start_pos = orig_loc.Lexing.pos_cnum + shift in
+  let loc_start =
+    Lexing.{orig_loc with pos_cnum = id_start_pos }
+  in
+  let loc_end =
+    Lexing.{orig_loc with pos_cnum = id_start_pos + String.length id}
+  in
+  {Location. loc_start ; loc_end ; loc_ghost = false }
+
 let wrap_string_lexer f lexbuf =
   let loc_start = lexbuf.lex_curr_p in
   reset_string_buffer();
@@ -410,17 +420,25 @@ rule token = parse
       { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         STRING (s, loc, Some delim) }
   | "{%" (extattrident as id) "|"
-      { let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
-        QUOTED_STRING_EXPR (id, s, loc, Some "") }
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 2 id in
+        QUOTED_STRING_EXPR (id, idloc, s, loc, Some "") }
   | "{%" (extattrident as id) blank+ (lowercase* as delim) "|"
-      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
-        QUOTED_STRING_EXPR (id, s, loc, Some delim) }
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 2 id in
+        QUOTED_STRING_EXPR (id, idloc, s, loc, Some delim) }
   | "{%%" (extattrident as id) "|"
-      { let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
-        QUOTED_STRING_ITEM (id, s, loc, Some "") }
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 3 id in
+        QUOTED_STRING_ITEM (id, idloc, s, loc, Some "") }
   | "{%%" (extattrident as id) blank+ (lowercase* as delim) "|"
-      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
-        QUOTED_STRING_ITEM (id, s, loc, Some delim) }
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 3 id in
+        QUOTED_STRING_ITEM (id, idloc, s, loc, Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         (* newline is ('\013'* '\010') *)

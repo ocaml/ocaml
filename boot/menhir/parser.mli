@@ -25,8 +25,8 @@ type token =
   | REC
   | RBRACKET
   | RBRACE
-  | QUOTED_STRING_ITEM of (string * string * Location.t * string option)
-  | QUOTED_STRING_EXPR of (string * string * Location.t * string option)
+  | QUOTED_STRING_ITEM of (string * Location.t * string * Location.t * string option)
+  | QUOTED_STRING_EXPR of (string * Location.t * string * Location.t * string option)
   | QUOTE
   | QUESTION
   | PRIVATE
