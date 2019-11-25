@@ -124,7 +124,7 @@ let store_escaped_char lexbuf c =
 let store_escaped_uchar lexbuf u =
   if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
 
-let with_string f lexbuf =
+let wrap_string_lexer f lexbuf =
   let loc_start = lexbuf.lex_curr_p in
   reset_string_buffer();
   is_in_string := true;
@@ -136,7 +136,7 @@ let with_string f lexbuf =
   let loc = Location.{loc_ghost= false; loc_start; loc_end} in
   get_stored_string (), loc
 
-let with_comment_buffer comment lexbuf =
+let wrap_comment_lexer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
   comment_start_loc := [start_loc];
   reset_string_buffer ();
@@ -404,22 +404,22 @@ rule token = parse
   | (float_literal | hex_float_literal | int_literal) identchar+ as invalid
       { error lexbuf (Invalid_literal invalid) }
   | "\""
-      { let s, loc = with_string string lexbuf in
+      { let s, loc = wrap_string_lexer string lexbuf in
         STRING (s, loc, None) }
   | "{" (lowercase* as delim) "|"
-      { let s, loc = with_string (quoted_string delim) lexbuf in
+      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         STRING (s, loc, Some delim) }
   | "{%" (extattrident as id) "|"
-      { let s, loc = with_string (quoted_string "") lexbuf in
+      { let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
         QUOTED_STRING_EXPR (id, s, loc, Some "") }
   | "{%" (extattrident as id) blank+ (lowercase* as delim) "|"
-      { let s, loc = with_string (quoted_string delim) lexbuf in
+      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         QUOTED_STRING_EXPR (id, s, loc, Some delim) }
   | "{%%" (extattrident as id) "|"
-      { let s, loc = with_string (quoted_string "") lexbuf in
+      { let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
         QUOTED_STRING_ITEM (id, s, loc, Some "") }
   | "{%%" (extattrident as id) blank+ (lowercase* as delim) "|"
-      { let s, loc = with_string (quoted_string delim) lexbuf in
+      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         QUOTED_STRING_ITEM (id, s, loc, Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
@@ -438,10 +438,10 @@ rule token = parse
   | "\'" ("\\" _ as esc)
       { error lexbuf (Illegal_escape (esc, None)) }
   | "(*"
-      { let s, loc = with_comment_buffer comment lexbuf in
+      { let s, loc = wrap_comment_lexer comment lexbuf in
         COMMENT (s, loc) }
   | "(**"
-      { let s, loc = with_comment_buffer comment lexbuf in
+      { let s, loc = wrap_comment_lexer comment lexbuf in
         if !handle_docstrings then
           DOCSTRING (Docstrings.docstring s loc)
         else
@@ -449,7 +449,7 @@ rule token = parse
       }
   | "(**" (('*'+) as stars)
       { let s, loc =
-          with_comment_buffer
+          wrap_comment_lexer
             (fun lexbuf ->
                store_string ("*" ^ stars);
                comment lexbuf)
@@ -459,7 +459,7 @@ rule token = parse
   | "(*)"
       { if !print_warnings then
           Location.prerr_warning (Location.curr lexbuf) Warnings.Comment_start;
-        let s, loc = with_comment_buffer comment lexbuf in
+        let s, loc = wrap_comment_lexer comment lexbuf in
         COMMENT (s, loc) }
   | "(*" (('*'*) as stars) "*)"
       { if !handle_docstrings && stars="" then
