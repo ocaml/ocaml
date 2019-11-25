@@ -328,7 +328,8 @@ let dotsymbolchar =
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
-let extattrident = identchar+ ('.' identchar+)*
+let ident = (lowercase | uppercase) identchar*
+let extattrident = ident ('.' ident)*
 
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
