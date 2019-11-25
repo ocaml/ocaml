@@ -385,6 +385,8 @@ module E = struct
     | Pexp_tuple el -> tuple ~loc ~attrs (List.map (sub.expr sub) el)
     | Pexp_construct (lid, arg) ->
         construct ~loc ~attrs (map_loc sub lid) (map_opt (sub.expr sub) arg)
+    | Pexp_construct_fun lid ->
+        construct_fun ~loc ~attrs (map_loc sub lid)
     | Pexp_variant (lab, eo) ->
         variant ~loc ~attrs lab (map_opt (sub.expr sub) eo)
     | Pexp_record (l, eo) ->

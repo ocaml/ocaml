@@ -2656,6 +2656,9 @@ and type_expect_
         exp_env = env }
   | Pexp_construct(lid, sarg) ->
       type_construct env loc lid sarg ty_expected_explained sexp.pexp_attributes
+  | Pexp_construct_fun lid ->
+      type_construct_maybe_fun env loc lid ty_expected_explained
+        sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
       let ty_expected0 = instance ty_expected in
@@ -4254,8 +4257,8 @@ and type_application env funct sargs =
     else
       type_args [] [] ty (instance ty) ty sargs []
 
-and type_construct env loc lid sarg ty_expected_explained attrs =
-  let { ty = ty_expected; explanation } = ty_expected_explained in
+and disambiguate_type_construct env lid ty_expected_explained =
+  let { ty = ty_expected; _ } = ty_expected_explained in
   let opath =
     try
       let (p0, p,_) = extract_concrete_variant env ty_expected in
@@ -4268,18 +4271,31 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   let constrs =
     Env.lookup_all_constructors ~loc:lid.loc Env.Positive lid.txt env
   in
-  let constr =
-    wrap_disambiguate "This variant expression is expected to have"
-      ty_expected_explained
-      (Constructor.disambiguate Env.Positive lid env opath) constrs
-  in
+  wrap_disambiguate "This variant expression is expected to have"
+    ty_expected_explained
+    (Constructor.disambiguate Env.Positive lid env opath) constrs
+
+and type_construct env loc lid sarg ty_expected_explained attrs =
+  let constr = disambiguate_type_construct env lid ty_expected_explained in
+  type_construct_ env loc lid sarg constr ty_expected_explained attrs
+
+and type_construct_maybe_fun env loc lid ty_expected_explained attrs =
+  let constr = disambiguate_type_construct env lid ty_expected_explained in
+  if constr.cstr_arity > 0 then
+    type_construct_fun_ env loc lid constr ty_expected_explained attrs
+  else
+    type_construct_ env loc lid None constr ty_expected_explained attrs
+
+and type_construct_ env loc lid sarg constr ty_expected_explained attrs =
+  let { ty = ty_expected; explanation } = ty_expected_explained in
   let sargs =
     match sarg with
       None -> []
     | Some {pexp_desc = Pexp_tuple sel} when
         constr.cstr_arity > 1 || Builtin_attributes.explicit_arity attrs
       -> sel
-    | Some se -> [se] in
+    | Some se -> [se]
+  in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, env, Constructor_arity_mismatch
                             (lid.txt, constr.cstr_arity, List.length sargs)));
@@ -4336,6 +4352,45 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
   { texp with
     exp_desc = Texp_construct(lid, constr, args) }
+
+and type_construct_fun_ env loc lid constr ty_expected_explained attrs =
+  let open Ast_helper in
+  let with_loc txt = Location.{ txt; loc } in
+  let wrap_constructor payload args =
+    let wrap_fun arg_name content =
+      let pat = Pat.var (with_loc arg_name) in
+      Exp.fun_ ~loc Nolabel None pat content
+    in
+    let constructor = Exp.construct ~loc ~attrs lid (Some payload) in
+    List.fold_right wrap_fun args constructor
+  in
+  let make_record_payload fields =
+    let record_field name =
+      let lid = with_loc (Longident.Lident name) in
+      lid, Exp.ident ~loc lid
+    in
+    Exp.record ~loc (List.map record_field fields) None
+  in
+  let make_tuple_payload =
+    let arg_ident name = Exp.ident ~loc (with_loc (Longident.Lident name)) in
+    function
+    | [ arg ] -> arg_ident arg
+    | args -> Exp.tuple ~loc (List.map arg_ident args)
+  in
+  let exp =
+    match constr.cstr_inlined with
+    | Some { type_kind = Type_record (record_labels, _); _ } ->
+        Location.prerr_warning loc
+          (Warnings.Construct_fun_inline_record (Longident.last lid.txt));
+        let make_arg ld = Ident.name ld.Types.ld_id in
+        let args = List.map make_arg record_labels in
+        wrap_constructor (make_record_payload args) args
+    | _ ->
+        let ghost_name i = "x" ^ string_of_int i in
+        let args = List.init constr.cstr_arity ghost_name in
+        wrap_constructor (make_tuple_payload args) args
+  in
+  type_expect_ env exp ty_expected_explained
 
 (* Typing of statements (expressions whose values are discarded) *)
 

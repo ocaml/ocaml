@@ -294,6 +294,8 @@ and expression i ppf x =
   | Pexp_construct (li, eo) ->
       line i ppf "Pexp_construct %a\n" fmt_longident_loc li;
       option i expression ppf eo;
+  | Pexp_construct_fun li ->
+      line i ppf "Pexp_construct_fun %a\n" fmt_longident_loc li;
   | Pexp_variant (l, eo) ->
       line i ppf "Pexp_variant \"%s\"\n" l;
       option i expression ppf eo;

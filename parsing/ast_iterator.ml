@@ -361,6 +361,8 @@ module E = struct
     | Pexp_tuple el -> List.iter (sub.expr sub) el
     | Pexp_construct (lid, arg) ->
         iter_loc sub lid; iter_opt (sub.expr sub) arg
+   | Pexp_construct_fun lid ->
+        iter_loc sub lid
     | Pexp_variant (_lab, eo) ->
         iter_opt (sub.expr sub) eo
     | Pexp_record (l, eo) ->

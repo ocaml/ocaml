@@ -676,6 +676,8 @@ and expression ctxt f x =
              pp f "@[<2>%a@;%a@]" longident_loc li
                (simple_expr ctxt) eo
          | _ -> assert false)
+    | Pexp_construct_fun li ->
+        pp f "@[(%a)@]" longident_loc li
     | Pexp_setfield (e1, li, e2) ->
         pp f "@[<2>%a.%a@ <-@ %a@]"
           (simple_expr ctxt) e1 longident_loc li (simple_expr ctxt) e2

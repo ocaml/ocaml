@@ -1,6 +1,6 @@
 [@@@foo]
 
-let (x[@foo]) : unit [@foo] = ()[@foo]
+let (x[@foo]) : unit [@foo] = (())[@foo]
   [@@foo]
 
 type t =
@@ -7372,3 +7372,9 @@ let f = function
 
 let () =
   f (fun (type t) -> x)
+
+(* PR#9005: Promote constructors to functions *)
+let x = (Some)
+let x = ((::))
+let x = ([])
+let x = (())

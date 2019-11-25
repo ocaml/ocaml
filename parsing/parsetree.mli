@@ -307,6 +307,10 @@ and expression_desc =
            C E              Some E
            C (E1, ..., En)  Some (Pexp_tuple[E1;...;En])
         *)
+  | Pexp_construct_fun of Longident.t loc
+        (* (Some)
+           (None)
+        *)
   | Pexp_variant of label * expression option
         (* `A             (None)
            `A E           (Some E)

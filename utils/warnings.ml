@@ -92,6 +92,7 @@ type t =
   | Redefining_unit of string               (* 65 *)
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
+  | Construct_fun_inline_record of string   (* 68 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -170,9 +171,10 @@ let number = function
   | Redefining_unit _ -> 65
   | Unused_open_bang _ -> 66
   | Unused_functor_parameter _ -> 67
+  | Construct_fun_inline_record _ -> 68
 ;;
 
-let last_warning_number = 67
+let last_warning_number = 68
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -631,6 +633,11 @@ let message = function
          which shadows the existing one.\n\
          Hint: Did you mean 'type %s = unit'?" name
   | Unused_functor_parameter s -> "unused functor parameter " ^ s ^ "."
+  | Construct_fun_inline_record cons_name ->
+      Printf.sprintf
+        "Constructor %s is declared using an inline record.\n\
+         This will take the arguments for the fields in the order they are \
+         defined." cons_name
 ;;
 
 let nerrors = ref 0;;
@@ -775,6 +782,7 @@ let descriptions =
    64, "-unsafe used with a preprocessor returning a syntax tree";
    65, "Type declaration defining a new '()' constructor";
    66, "Unused open! statement";
+   68, "Constructor function with inline record";
   ]
 ;;
 
