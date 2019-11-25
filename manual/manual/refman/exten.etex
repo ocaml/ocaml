@@ -1796,10 +1796,18 @@ the attributes are considered to apply to the payload:
 fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
 
-Quoted strings "{|...|}" are particularly interesting for payloads
-that embed foreign syntax fragments. Those fragments can be interpreted
+Furthermore, quoted strings "{|...|}" can be combined with extension nodes
+to embed foreign syntax fragments. Those fragments can be interpreted
 by a preprocessor and turned into OCaml code without requiring escaping
-quotes. For instance, you can use "[%sql {|...|}]" to
+quotes. A syntax shortcut is available for them:
+
+\begin{verbatim}
+{%%foo|...|}               === [%%foo{|...|}]
+let x = {%foo|...|}        === let x = [%foo{|...|}]
+let y = {%foo bar|...|bar} === let y = [%foo{bar|...|bar}]
+\end{verbatim}
+
+For instance, you can use "{%sql|...|}" to
 represent arbitrary SQL statements -- assuming you have a ppx-rewriter
 that recognizes the "%sql" extension.
 

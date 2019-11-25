@@ -393,11 +393,11 @@ let const_compare x y =
   match x,y with
   | Const_float f1, Const_float f2 ->
       Stdlib.compare (float_of_string f1) (float_of_string f2)
-  | Const_string (s1, _), Const_string (s2, _) ->
+  | Const_string (s1, _, _), Const_string (s2, _, _) ->
       String.compare s1 s2
   | (Const_int _
     |Const_char _
-    |Const_string (_, _)
+    |Const_string (_, _, _)
     |Const_float _
     |Const_int32 _
     |Const_int64 _
@@ -1192,9 +1192,11 @@ let build_other ext env =
             0n Nativeint.succ d env
       | Constant Const_string _ ->
           build_other_constant
-            (function Constant(Const_string (s, _)) -> String.length s
+            (function Constant(Const_string (s, _, _)) -> String.length s
                     | _ -> assert false)
-            (function i -> Tpat_constant(Const_string(String.make i '*', None)))
+            (function i ->
+               Tpat_constant
+                 (Const_string(String.make i '*',Location.none,None)))
             0 succ d env
       | Constant Const_float _ ->
           build_other_constant
