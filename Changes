@@ -674,7 +674,7 @@ OCaml 4.10.0 (21 February 2020)
    Jacques-Henri Jourdan)
 
 ### Standard library:
-- #9075: define rev_to_seq in Set and Map module
+- #9075: define to_rev_seq in Set and Map module
    (Sébastien Briais, review by Gabriel Scherer and Nicolas Ojeda Bär)
 
 - #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list

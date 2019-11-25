@@ -60,7 +60,7 @@ module type S =
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
-    val rev_to_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
@@ -519,7 +519,7 @@ module Make(Ord: OrderedType) = struct
       | More (k,v,t,rest) ->
           Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
 
-    let rev_to_seq c =
+    let to_rev_seq c =
       rev_seq_of_enum_ (snoc_enum c End)
 
     let to_seq_from low m =

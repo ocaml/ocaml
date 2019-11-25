@@ -191,7 +191,7 @@ let test x s1 s2 =
     (S.equal s1 (S.of_seq @@ S.to_seq s1));
 
   checkbool "to_seq_of_seq"
-    (S.equal s1 (S.of_seq @@ S.rev_to_seq s1));
+    (S.equal s1 (S.of_seq @@ S.to_rev_seq s1));
 
   checkbool "to_seq_from"
     (let seq = S.to_seq_from x s1 in
@@ -209,8 +209,8 @@ let test x s1 s2 =
      Seq.iter (fun x -> assert (!last <= x); last := x) seq;
      true);
 
-  checkbool "rev_to_seq_decreasing"
-    (let seq = S.rev_to_seq s1 in
+  checkbool "to_rev_seq_decreasing"
+    (let seq = S.to_rev_seq s1 in
      let last = ref max_int in
      Seq.iter (fun x -> assert (x <= !last); last := x) seq;
      true);

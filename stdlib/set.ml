@@ -64,7 +64,7 @@ module type S =
     val of_list: elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
-    val rev_to_seq : t -> elt Seq.t
+    val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
@@ -604,7 +604,7 @@ module Make(Ord: OrderedType) =
       | End -> Seq.Nil
       | More (x, t, rest) -> Seq.Cons (x, rev_seq_of_enum_ (snoc_enum t rest))
 
-    let rev_to_seq c = rev_seq_of_enum_ (snoc_enum c End)
+    let to_rev_seq c = rev_seq_of_enum_ (snoc_enum c End)
 
     let to_seq_from low s =
       let rec aux low s c = match s with
