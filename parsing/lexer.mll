@@ -411,16 +411,16 @@ rule token = parse
         STRING (s, loc, Some delim) }
   | "{%" (extattrident as id) "|"
       { let s, loc = with_string (quoted_string "") lexbuf in
-        BRACEPERCENTBRACE (id, s, loc, Some "") }
+        QUOTED_STRING_EXPR (id, s, loc, Some "") }
   | "{%" (extattrident as id) blank+ (lowercase* as delim) "|"
       { let s, loc = with_string (quoted_string delim) lexbuf in
-        BRACEPERCENTBRACE (id, s, loc, Some delim) }
+        QUOTED_STRING_EXPR (id, s, loc, Some delim) }
   | "{%%" (extattrident as id) "|"
       { let s, loc = with_string (quoted_string "") lexbuf in
-        BRACEPERCENTPERCENTBRACE (id, s, loc, Some "") }
+        QUOTED_STRING_ITEM (id, s, loc, Some "") }
   | "{%%" (extattrident as id) blank+ (lowercase* as delim) "|"
       { let s, loc = with_string (quoted_string delim) lexbuf in
-        BRACEPERCENTPERCENTBRACE (id, s, loc, Some delim) }
+        QUOTED_STRING_ITEM (id, s, loc, Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         (* newline is ('\013'* '\010') *)

@@ -693,8 +693,8 @@ let mk_directive ~loc name arg =
 %token SIG
 %token STAR
 %token <string * Location.t * string option> STRING
-%token <string * string * Location.t * string option> BRACEPERCENTBRACE
-%token <string * string * Location.t * string option> BRACEPERCENTPERCENTBRACE
+%token <string * string * Location.t * string option> QUOTED_STRING_EXPR
+%token <string * string * Location.t * string option> QUOTED_STRING_ITEM
 %token STRUCT
 %token THEN
 %token TILDE
@@ -776,7 +776,7 @@ The precedences must be listed from low to high.
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
-          LBRACKETPERCENT BRACEPERCENTBRACE
+          LBRACKETPERCENT QUOTED_STRING_EXPR
 
 
 /* Entry points */
@@ -3698,12 +3698,12 @@ ext:
 ;
 extension:
   | LBRACKETPERCENT attr_id payload RBRACKET { ($2, $3) }
-  | BRACEPERCENTBRACE
+  | QUOTED_STRING_EXPR
     { mk_quotedext ~loc:$sloc ~shift:2 $1 }
 ;
 item_extension:
   | LBRACKETPERCENTPERCENT attr_id payload RBRACKET { ($2, $3) }
-  | BRACEPERCENTPERCENTBRACE
+  | QUOTED_STRING_ITEM
     { mk_quotedext ~loc:$sloc ~shift:3 $1 }
 ;
 payload:

@@ -25,6 +25,8 @@ type token =
   | REC
   | RBRACKET
   | RBRACE
+  | QUOTED_STRING_ITEM of (string * string * Location.t * string option)
+  | QUOTED_STRING_EXPR of (string * string * Location.t * string option)
   | QUOTE
   | QUESTION
   | PRIVATE
@@ -111,8 +113,6 @@ type token =
   | COLON
   | CLASS
   | CHAR of (char)
-  | BRACEPERCENTPERCENTBRACE of (string * string * Location.t * string option)
-  | BRACEPERCENTBRACE of (string * string * Location.t * string option)
   | BEGIN
   | BARRBRACKET
   | BARBAR
