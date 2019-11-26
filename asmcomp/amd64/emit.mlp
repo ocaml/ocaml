@@ -28,6 +28,7 @@ open X86_ast
 open X86_proc
 open X86_dsl
 module String = Misc.Stdlib.String
+module Int = Numbers.Int
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -171,7 +172,17 @@ let emit_label lbl =
 
 let label s = sym (emit_label s)
 
-let def_label s = D.label (emit_label s)
+(* For Spacetime, keep track of code labels that have been emitted.  *)
+let used_labels = ref Int.Set.empty
+
+let mark_used lbl =
+  if Config.spacetime && not (Int.Set.mem lbl !used_labels) then begin
+    used_labels := Int.Set.add lbl !used_labels
+  end
+
+let def_label ?typ s =
+  mark_used s;
+  D.label ?typ (emit_label s)
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align 4;
@@ -1002,6 +1013,7 @@ let begin_assembly() =
   reset_imp_table();
   float_constants := [];
   all_functions := [];
+  used_labels := Int.Set.empty;
   if system = S_win64 then begin
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_c_call" NEAR;
@@ -1049,10 +1061,14 @@ let emit_spacetime_shapes () =
       begin match fundecl.fun_spacetime_shape with
       | None -> ()
       | Some shape ->
-        let funsym = emit_symbol fundecl.fun_name in
-        D.comment ("Shape for " ^ funsym ^ ":");
-        D.qword (ConstLabel funsym);
-        List.iter (fun (part_of_shape, label) ->
+        (* Instrumentation that refers to dead code may have been eliminated. *)
+        match List.filter (fun (_, l) -> Int.Set.mem l !used_labels) shape with
+        | [] -> ()
+        | shape ->
+          let funsym = emit_symbol fundecl.fun_name in
+          D.comment ("Shape for " ^ funsym ^ ":");
+          D.qword (ConstLabel funsym);
+          List.iter (fun (part_of_shape, label) ->
             let tag =
               match part_of_shape with
               | Direct_call_point _ -> 1
@@ -1067,7 +1083,7 @@ let emit_spacetime_shapes () =
             | Indirect_call_point -> ()
             | Allocation_point -> ()
             end)
-          shape;
+            shape;
           D.qword (Const 0L)
       end)
     !all_functions;
