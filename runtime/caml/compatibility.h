@@ -23,11 +23,11 @@
 #define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
 
 /* global variables moved to Caml_state in 4.10.0 */
-#define caml_young_start (Caml_state->young_start)
-#define caml_young_end (Caml_state->young_end)
-#define caml_young_ptr (Caml_state->young_ptr)
-#define caml_young_limit (Caml_state->young_limit)
-#define caml_local_roots (Caml_state->local_roots)
+#define caml_young_start (Caml_state->_young_start)
+#define caml_young_end (Caml_state->_young_end)
+#define caml_young_ptr (Caml_state->_young_ptr)
+#define caml_young_limit (Caml_state->_young_limit)
+#define caml_local_roots (Caml_state->_local_roots)
 
 #ifndef CAML_NAME_SPACE
 
