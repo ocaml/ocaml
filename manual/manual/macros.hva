@@ -52,6 +52,12 @@
   white-space: pre-wrap;
 }
 
+% Creative commons license logo
+\newstyle{\#cc_license_logo}{
+  float:left;
+  margin-right: 1em;
+}
+
 % More spacing between lines and inside tables
 \newstyle{p,ul}{line-height:1.3em}
 \newstyle{.cellpadding1 tr td}{padding:1px 4px}
