@@ -459,9 +459,11 @@ end
 let stop_after = ref None (* -stop-after *)
 
 let should_stop_after pass =
-  match !stop_after with
-  | None -> false
-  | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
+  if Compiler_pass.(rank Typing <= rank pass) && !print_types then true
+  else
+    match !stop_after with
+    | None -> false
+    | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
 
 module String = Misc.Stdlib.String
 
