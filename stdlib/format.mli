@@ -44,8 +44,8 @@
 (** {1 Introduction}
    For a gentle introduction to the basics of pretty-printing using
    [Format], read
-   {{:http://caml.inria.fr/resources/doc/guides/format.en.html}
-    http://caml.inria.fr/resources/doc/guides/format.en.html}.
+   {{:https://ocaml.org/learn/tutorials/format.html}
+    https://ocaml.org/learn/tutorials/format.html}.
 
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line splitting. The addition of
