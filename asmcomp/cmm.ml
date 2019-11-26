@@ -114,7 +114,10 @@ let init_label = 99
 let label_counter = ref init_label
 
 let set_label l =
-  assert (l >= !label_counter);
+  if (l < !label_counter) then begin
+    Misc.fatal_errorf "Cannot set label counter to %d, it must be >= %d"
+      l !label_counter ()
+  end;
   label_counter := l
 
 let cur_label () = !label_counter

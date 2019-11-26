@@ -29,7 +29,9 @@ type linear_unit_info =
     mutable items : linear_item_info list;
   }
 
-(* Marshal and unmashal a compilation unit in Linear format.
-   Save and restores global state required for Emit. *)
+(* Marshal and unmarshal a compilation unit in Linear format.
+   It includes saving and restoring global state required for Emit,
+   that currently consists of Cmm.label_counter.
+*)
 val save : string -> linear_unit_info -> unit
 val restore : string -> linear_unit_info * Digest.t

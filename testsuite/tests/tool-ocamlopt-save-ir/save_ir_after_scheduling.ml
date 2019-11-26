@@ -3,7 +3,6 @@
  ** setup-ocamlopt.byte-build-env
  *** ocamlopt.byte
    flags = "-save-ir-after scheduling -S"
-   ocamlopt_byte_exit_status = "0"
  **** check-ocamlopt.byte-output
  ***** script
    script = "sh ${test_source_directory}/save_ir_after_scheduling.sh"

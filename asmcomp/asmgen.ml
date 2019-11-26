@@ -42,10 +42,10 @@ let pass_dump_linear_if ppf flag message phrase =
 let should_save_before_emit () =
   should_save_ir_after Compiler_pass.Scheduling
 
-let linear_unit_info = { Linear_format.
-                         unit_name = "";
-                         items = [];
-                       }
+let linear_unit_info =
+  { Linear_format.unit_name = "";
+    items = [];
+  }
 
 let reset () =
   if should_save_before_emit () then begin
@@ -54,20 +54,23 @@ let reset () =
   end
 
 let save_data dl =
-  if should_save_before_emit () then
-    linear_unit_info.items <- Linear_format.(Data dl) :: linear_unit_info.items;
+  if should_save_before_emit () then begin
+    linear_unit_info.items <- Linear_format.(Data dl) :: linear_unit_info.items
+  end;
   dl
 
 let save_linear f =
-  if should_save_before_emit () then
-    linear_unit_info.items <- Linear_format.(Func f) :: linear_unit_info.items;
+  if should_save_before_emit () then begin
+    linear_unit_info.items <- Linear_format.(Func f) :: linear_unit_info.items
+  end;
   f
 
 let write_linear output_prefix =
-  if should_save_before_emit () then
+  if should_save_before_emit () then begin
     let filename = output_prefix ^ Clflags.Compiler_ir.(extension Linear) in
     linear_unit_info.items <- List.rev linear_unit_info.items;
     Linear_format.save filename linear_unit_info
+  end
 
 let should_emit () =
   not (should_stop_after Compiler_pass.Scheduling)
@@ -158,8 +161,7 @@ let compile_genfuns ~ppf_dump f =
        | _ -> ())
     (Cmm_helpers.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit output_prefix asm_filename keep_asm
-      obj_filename gen =
+let compile_unit ~output_prefix ~asm_filename ~keep_asm ~obj_filename gen =
   reset ();
   let create_asm = should_emit () &&
                    (keep_asm || not !Emitaux.binary_backend_available) in
@@ -218,12 +220,13 @@ type middle_end =
 
 let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
       ~ppf_dump (program : Lambda.program) =
-  let asmfile =
+  let asm_filename =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
+  compile_unit ~output_prefix:prefixname ~asm_filename ~keep_asm:!keep_asm_file
+    ~obj_filename:(prefixname ^ ext_obj)
     (fun () ->
       Ident.Set.iter Compilenv.require_global program.required_globals;
       let clambda_with_constants =
