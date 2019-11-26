@@ -418,7 +418,7 @@ let unboxed_types = ref false
 module Compiler_ir = struct
   type t = Linear
 
-  (* Filename extensions are a convension, but not required. Any filename works,
+  (* Filename extensions are a convention, but not required. Any filename works,
      as long as the file starts with the correct magic number. *)
   let extension t =
     let ext =
@@ -427,6 +427,7 @@ module Compiler_ir = struct
     in
     ".cmir-" ^ ext
 
+  (* Magic numbers for all IRs must be the same length. *)
   let magic t =
     let open Config in
     match t with

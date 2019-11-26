@@ -236,7 +236,7 @@ let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
 
 let linear_gen_implementation filename =
   let open Linear_format in
-  let linear_unit_info,_ = restore filename in
+  let linear_unit_info, _ = restore filename in
   let emit_item = function
     | Data dl -> emit_data dl
     | Func f -> emit_fundecl f

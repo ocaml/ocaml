@@ -103,9 +103,9 @@ let module_of_filename inputfile outputprefix =
 (* Check that start_from pass is before stop_after *)
 let check_pass_order () =
   match !start_from, !stop_after with
-  | None, _ | _, None -> ();
+  | None, _ | _, None -> ()
   | Some start, Some stop ->
-    if (Compiler_pass.compare stop start) < 0 then
+    if Compiler_pass.compare stop start < 0 then
       fatal "When using \"-stop-after <last>\" and \"-start-from <first>\", \
              <first> last must be before <last>"
 
@@ -483,12 +483,12 @@ let read_one_param ppf position name v =
                     ~native:!native_code in
      begin match List.find_opt (String.equal v) passes with
      | None ->
-       Printf.ksprintf (print_error ppf)
-         "bad value %s for option \"start-from\" (expected one of: %s)"
-         v (String.concat ", " passes)
+         Printf.ksprintf (print_error ppf)
+           "bad value %s for option \"start-from\" (expected one of: %s)"
+           v (String.concat ", " passes)
      | Some v ->
-       let pass = Option.get (P.of_string v)  in
-       Clflags.start_from := Some pass
+         let pass = Option.get (P.of_string v) in
+         Clflags.start_from := Some pass
      end
 
   | _ ->
@@ -644,10 +644,11 @@ let check_ir name =
       None
     else begin
       List.find_opt (fun ir ->
-        let s = Compiler_ir.extension ir in
-        (* check whether [ext] starts with [s]  *)
-        let s_len = String.length s in
-        s_len <= ext_len && s = String.sub ext 0 s_len)
+          let s = Compiler_ir.extension ir in
+          (* Check whether [ext] starts with [s]. It is not an exact match,
+             to distinguish different passes on the same IR. *)
+          let s_len = String.length s in
+          s_len <= ext_len && s = String.sub ext 0 s_len)
         Compiler_ir.all
     end
   in
@@ -655,35 +656,42 @@ let check_ir name =
     let ic = open_in_bin name in
     Misc.try_finally
       (fun () ->
+         (* Assumes that the length of magic numbers for all IRs is the same. *)
          let len = String.length Config.linear_magic_number in
+         let pre_len = len - 3 in
          try
            let buffer = really_input_string ic len in
            List.find_opt (fun ir ->
              let magic = Compiler_ir.magic ir in
              assert (String.length magic = len);
-             if buffer = magic then true
-             else if String.sub buffer 0 9 = String.sub magic 0 9 then
-               Misc.fatal_errorf "OCaml and %s have incompatible versions"
-                 name ()
-             else false)
+             if String.equal buffer magic then true
+             else begin
+               if String.sub buffer 0 pre_len = String.sub magic 0 pre_len
+               then Misc.fatal_errorf
+                      "%s is not compiled for this version of OCaml." name ()
+               else false
+             end)
              Compiler_ir.all
          with End_of_file -> None
       )
       ~always:(fun () -> close_in ic)
   in
-  let ir = match check_suffix () with
+  let ir =
+    match check_suffix () with
     | Some ir -> Some ir
     | None -> check_magic ()
   in match ir with
   | None -> false
   | Some Linear ->
-    if not (should_start_from Compiler_pass.Emit) then
-      if (!start_from = None) then
-        raise(Arg.Bad("Format of the input file " ^ name
-                      ^ " requires -start-from emit."))
-      else
-        raise(Arg.Bad("Format of the input file " ^ name ^
-                      " is incompatible with the given -start-from <pass>."));
+    if not (should_start_from Compiler_pass.Emit) then begin
+      match !start_from with
+      | None ->
+          raise (Arg.Bad ("Format of the input file " ^ name ^
+                          " requires -start-from emit."))
+      | Some _ ->
+          raise (Arg.Bad ("Format of the input file " ^ name ^
+                          " is incompatible with -start-from <pass>."))
+    end;
     true
 
 let process_action
