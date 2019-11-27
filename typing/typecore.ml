@@ -1447,8 +1447,6 @@ and type_pat_aux
          correct head *)
       if constr.cstr_generalized then
         unify_head_only ~gadt loc env (instance expected_ty) constr;
-      (* unify_pat_types ~gadt loc env (instance expected_ty)
-                                      (snd (instance_constructor constr)); *)
       let sargs =
         match sarg with
           None -> []
