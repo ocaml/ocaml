@@ -529,7 +529,7 @@ let rec builtin_meths self env env2 body =
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e], _) when Ident.same e env ->
-        "env", [Lvar env2; Lconst(Const_int n)]
+        "env", [Lvar env2; Lconst(Const_base (Const_int n))]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
