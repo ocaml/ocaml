@@ -859,7 +859,12 @@ let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
         (* Special case for rebuilt syntax trees *)
         List.map
           (function lid, a -> match lid.txt with
-            Longident.Lident s -> lid, Hashtbl.find labels s, a
+            Longident.Lident s ->
+              let lbl = Hashtbl.find labels s in
+              let lid =
+                Location.mkloc (Longident.Lident lbl.lbl_name) lid.loc in
+              lid,
+              Label.disambiguate () lid env opath (Ok[lbl, fun () -> ()]), a
           | _ -> assert false)
           lid_a_list
     | _ ->
@@ -1248,7 +1253,16 @@ and type_pat_aux
     | Some Backtrack_or -> false
     | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or
   in
-  match sp.ppat_desc with
+  let pdesc =
+    if mode = Normal then sp.ppat_desc else
+    (* If the expected type is abstract and compatible with any type,
+       discard the pattern *)
+    match expand_head !env expected_ty with
+    | {desc=Tconstr (path, _, _)} when Ctype.is_compatible !env path ->
+        Ppat_any
+    | _ -> sp.ppat_desc
+  in
+  match pdesc with
     Ppat_any ->
       let k' d = rvp k {
         pat_desc = d;
@@ -1406,15 +1420,19 @@ and type_pat_aux
             Some (p0, p, true)
         with Not_found -> None
       in
-      let constr =
+      let lid, candidates =
         match lid.txt, mode with
-        | Longident.Lident s, Counter_example {constrs; _} ->
+          Longident.Lident s, Counter_example {constrs; _} ->
            (* assert: cf. {!counter_example_checking_info} documentation *)
             assert (Hashtbl.mem constrs s);
-            Hashtbl.find constrs s
+            let constr = Hashtbl.find constrs s in
+            Location.mkloc (Longident.Lident constr.cstr_name) lid.loc,
+            Ok [constr, (fun () -> ())]
         | _ ->
-        let candidates =
-          Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env in
+            lid,
+            Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env
+      in
+      let constr =
         wrap_disambiguate "This variant pattern is expected to have"
           (mk_expected expected_ty)
           (Constructor.disambiguate Env.Pattern lid !env opath) candidates
@@ -1510,6 +1528,8 @@ and type_pat_aux
          the abstract row variable *)
       if l = Parmatch.some_private_tag
       then assert (match mode with Normal -> false | Counter_example _ -> true)
+      else if mode <> Normal && has_constr_row (expand_head !env expected_ty)
+      then unify_pat_types_gadt loc env (newgenty (Tvariant row)) expected_ty
       else unify_pat_types loc !env (newgenty (Tvariant row)) expected_ty;
       let k arg =
         rvp k {

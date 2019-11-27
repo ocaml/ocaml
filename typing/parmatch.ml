@@ -2119,7 +2119,7 @@ let do_check_partial ~pred loc casel pss = match pss with
         let v =
           let (pattern,constrs,labels) = Conv.conv u in
           let u' = pred constrs labels pattern in
-          (* pretty_pat u;
+          (* Printpat.pretty_pat u;
           begin match u' with
             None -> prerr_endline ": impossible"
           | Some _ -> prerr_endline ": possible"

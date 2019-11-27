@@ -268,6 +268,11 @@ val matches: Env.t -> type_expr -> type_expr -> bool
 val reify_univars : Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
 
+val mcomp: Env.t -> type_expr -> type_expr -> unit
+        (* Whether two types are compatible *)
+val is_compatible: Env.t -> Path.t -> bool
+        (* Whether a type constructor is compatible with all types *)
+
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
@@ -368,5 +373,3 @@ val maybe_pointer_type : Env.t -> type_expr -> bool
 val package_subtype :
     (Env.t -> Path.t -> Longident.t list -> type_expr list ->
       Path.t -> Longident.t list -> type_expr list -> bool) ref
-
-val mcomp : Env.t -> type_expr -> type_expr -> unit

@@ -7,6 +7,15 @@ File "robustmatch.ml", lines 33-37, characters 6-23:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (AB, MAB, A)
+File "robustmatch.ml", lines 43-47, characters 4-21:
+43 | ....match t1, t2, x with
+44 |     | AB,  AB, A -> ()
+45 |     | MAB, _, A -> ()
+46 |     | _,  AB, B -> ()
+47 |     | _, MAB, B -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(AB, MAB, A)
 File "robustmatch.ml", lines 54-56, characters 4-27:
 54 | ....match r1, r2, a with
 55 |     | R1, _, 0 -> ()

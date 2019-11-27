@@ -2134,6 +2134,12 @@ let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && not decl.type_is_newtype
 
+let is_compatible env p =
+  try
+    let decl = Env.find_type p env in
+    not (is_datatype decl || non_aliasable p decl)
+  with Not_found -> true
+
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
