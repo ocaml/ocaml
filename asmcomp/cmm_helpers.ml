@@ -2201,16 +2201,16 @@ let xor_int_caml arg1 arg2 dbg =
             Cconst_int (1, dbg)], dbg)
 
 let lsl_int_caml arg1 arg2 dbg =
-  incr_int(lsl_int (decr_int arg1 dbg)
-             (untag_int arg2 dbg) dbg) dbg
+  let k = ignore_high_bit_int (untag_int arg2 dbg) in
+  incr_int(lsl_int (decr_int arg1 dbg) k dbg) dbg
 
 let lsr_int_caml arg1 arg2 dbg =
-  Cop(Cor, [lsr_int arg1 (untag_int arg2 dbg) dbg;
-            Cconst_int (1, dbg)], dbg)
+  let k = ignore_high_bit_int (untag_int arg2 dbg) in
+  Cop(Cor, [lsr_int arg1 k dbg; Cconst_int (1, dbg)], dbg)
 
 let asr_int_caml arg1 arg2 dbg =
-  Cop(Cor, [asr_int arg1 (untag_int arg2 dbg) dbg;
-            Cconst_int (1, dbg)], dbg)
+  let k = ignore_high_bit_int (untag_int arg2 dbg) in
+  Cop(Cor, [asr_int arg1 k dbg; Cconst_int (1, dbg)], dbg)
 
 let int_comp_caml cmp arg1 arg2 dbg =
   tag_int(Cop(Ccmpi cmp,
