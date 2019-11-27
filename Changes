@@ -380,6 +380,9 @@ OCaml 4.10.0
 
 ### Manual and documentation:
 
+- #8718, #9089: syntactic highlighting for code examples in the manual
+  (Florian Angeletti, report by Anton Kochkov, review by Gabriel Scherer)
+
 - #8950: manual, move local opens in pattern out of the extension chapter
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
