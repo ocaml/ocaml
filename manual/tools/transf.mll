@@ -14,7 +14,7 @@ rule main = parse
     "\\begin{syntax}" {
       print_string "\\begin{syntax}";
       syntax lexbuf }
-  | "\\begin{verbatim}" | "\\camlexample" as s {
+  | "\\begin{verbatim}" | "\\begin{camlexample}" as s {
       print_string s;
       verbatim lexbuf }
   | "\\@" {
@@ -99,7 +99,7 @@ and indoublequote = parse
       indoublequote lexbuf }
 
 and verbatim = parse
-    "\n\\end{verbatim}"|"\\endcamlexample" as s {
+    "\n\\end{verbatim}"|"\\end{camlexample}" as s {
       print_string s;
       main lexbuf }
   | _ {
