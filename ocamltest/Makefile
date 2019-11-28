@@ -261,6 +261,15 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	  -e 's|@@FUNCTION_SECTIONS@@|$(FUNCTION_SECTIONS)|' \
 	  $< > $@
 
+# Manual
+
+.PHONY: doc
+
+doc: ocamltest.html
+
+ocamltest.html: ocamltest.org
+	pandoc -s --toc -N -f org -t html -o $@ $<
+
 .PHONY: clean
 clean:
 	rm -rf ocamltest$(EXE) ocamltest.opt$(EXE)
@@ -269,6 +278,7 @@ clean:
 	rm -rf $(cmo_files)
 	rm -rf $(cmx_files)
 	rm -rf $(generated)
+	rm -f ocamltest.html
 
 ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
