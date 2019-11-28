@@ -33,6 +33,9 @@ Working version
 
 ### Manual and documentation:
 
+- #9141: beginning of the ocamltest reference manual
+  (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
+
 ### Compiler user-interface and warnings:
 
 - #9074: reworded error message for non-regular structural types
