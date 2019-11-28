@@ -1899,7 +1899,12 @@ module Default = struct
     let _start_from pass =
         match Compiler_pass.of_string pass with
         | None -> () (* this should not occur as we use Arg.Symbol *)
-        | Some pass -> start_from := Some pass
+        | Some pass ->
+          match !start_from with
+          | None -> start_from := (Some pass)
+          | Some p ->
+            if not (p = pass) then
+              fatal "Please specify at most one -start-from <pass>."
     let _thread = set use_threads
     let _verbose = set verbose
     let _version () = Compenv.print_version_string ()

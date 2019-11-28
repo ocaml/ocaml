@@ -202,6 +202,30 @@ let check_bool ppf name s =
       "bad value %s for %s" s name;
     false
 
+let decode_compiler_pass ppf v ~name ~filter =
+  let module P = Clflags.Compiler_pass in
+  let passes = P.available_pass_names ~filter ~native:!native_code in
+  begin match List.find_opt (String.equal v) passes with
+  | None ->
+    Printf.ksprintf (print_error ppf)
+      "bad value %s for option \"%s\" (expected one of: %s)"
+      v name (String.concat ", " passes);
+    None
+  | Some v -> P.of_string v
+  end
+
+let set_compiler_pass ppf ~name v flag ~filter =
+  match decode_compiler_pass ppf v ~name ~filter with
+  | None -> ()
+  | Some pass ->
+    match !flag with
+    | None -> flag := Some pass
+    | Some p ->
+      if not (p = pass) then begin
+        Printf.ksprintf (print_error ppf)
+          "Please specify at most one %s <pass>." name
+      end
+
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
@@ -445,51 +469,19 @@ let read_one_param ppf position name v =
      profile_columns := if check_bool ppf name v then if_on else []
 
   | "stop-after" ->
-    let module P = Clflags.Compiler_pass in
-    let passes = P.available_pass_names
-                   ~filter:(fun _ -> true)
-                   ~native:!native_code in
-    begin match List.find_opt (String.equal v) passes with
-    | None ->
-        Printf.ksprintf (print_error ppf)
-          "bad value %s for option \"stop-after\" (expected one of: %s)"
-          v (String.concat ", " passes)
-    | Some v ->
-        let pass = Option.get (P.of_string v)  in
-        Clflags.stop_after := Some pass
-    end
+    set_compiler_pass ppf v ~name Clflags.stop_after ~filter:(fun _ -> true)
 
   | "save-ir-after" ->
     if !native_code then begin
-      let module P = Clflags.Compiler_pass in
-      let passes = P.available_pass_names
-                     ~filter:P.can_save_ir_after
-                     ~native:!native_code in
-      begin match List.find_opt (String.equal v) passes with
-      | None ->
-          Printf.ksprintf (print_error ppf)
-            "bad value %s for option \"save-ir-after\" (expected one of: %s)"
-            v (String.concat ", " passes)
-      | Some v ->
-          let pass = Option.get (P.of_string v)  in
-          set_save_ir_after pass true
-      end
+      let filter = Clflags.Compiler_pass.can_save_ir_after in
+      match decode_compiler_pass ppf v ~name ~filter with
+      | None -> ()
+      | Some pass -> set_save_ir_after pass true
     end
 
-   | "start-from" ->
-     let module P = Clflags.Compiler_pass in
-     let passes = P.available_pass_names
-                    ~filter:P.can_start_from
-                    ~native:!native_code in
-     begin match List.find_opt (String.equal v) passes with
-     | None ->
-         Printf.ksprintf (print_error ppf)
-           "bad value %s for option \"start-from\" (expected one of: %s)"
-           v (String.concat ", " passes)
-     | Some v ->
-         let pass = Option.get (P.of_string v) in
-         Clflags.start_from := Some pass
-     end
+  | "start-from" ->
+    let filter = Clflags.Compiler_pass.can_start_from in
+    set_compiler_pass ppf v ~name Clflags.start_from ~filter
 
   | _ ->
     if not (List.mem name !can_discard) then begin
@@ -498,6 +490,7 @@ let read_one_param ppf position name v =
         "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
         name
     end
+
 
 let read_OCAMLPARAM ppf position =
   try
