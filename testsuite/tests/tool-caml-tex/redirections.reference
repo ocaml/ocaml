@@ -1,21 +1,39 @@
-\camlexample{toplevel}
-\caml\camlinput\?[@@@warning "+A"];;
-\endcamlinput\endcaml
-\caml\camlinput\?1 + \<2.\> ;;
-\endcamlinput\camlerror\:Error: This expression has type float but an expression was expected of type
-\:         int
-\endcamlerror\endcaml
-\caml\camlinput\?let f \<x\> = () ;;
-\endcamlinput\camlwarn\:Warning 27: unused variable x.
-\:val f : \textquotesingle\-a -> unit = <fun>
-\endcamlwarn\endcaml
-\endcamlexample
+\begin{camlexample}{toplevel}
+\begin{caml}
+\begin{camlinput}
+$\?$[@@@warning "+A"];;
+\end{camlinput}
+\end{caml}
+\begin{caml}
+\begin{camlinput}
+$\?$1 + <<2.>> ;;
+\end{camlinput}
+\begin{camlerror}
+$\:$Error: This expression has type float but an expression was expected of type
+$\:$         int
+\end{camlerror}
+\end{caml}
+\begin{caml}
+\begin{camlinput}
+$\?$let f <<x>> = () ;;
+\end{camlinput}
+\begin{camlwarn}
+$\:$Warning 27: unused variable x.
+$\:$val f : 'a -> unit = <fun>
+\end{camlwarn}
+\end{caml}
+\end{camlexample}
 
-\camlexample{toplevel}
-\caml\camlinput\?Format.printf "Hello@.";
-\?print_endline "world";;
-\endcamlinput\camloutput\:Hello
-\:world
-\:- : unit = ()
-\endcamloutput\endcaml
-\endcamlexample
+\begin{camlexample}{toplevel}
+\begin{caml}
+\begin{camlinput}
+$\?$Format.printf "Hello@.";
+$\?$print_endline "world";;
+\end{camlinput}
+\begin{camloutput}
+$\:$Hello
+$\:$world
+$\:$- : unit = ()
+\end{camloutput}
+\end{caml}
+\end{camlexample}

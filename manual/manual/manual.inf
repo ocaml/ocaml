@@ -4,18 +4,19 @@
 \newcommand{\machine}{\tt}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newenvironment{camlunder}{\@style{U}}{}
-\newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
-\newcommand{\endcaml}{\activebracetrue\end{alltt}}
 \newcommand{\?}{\black\#\blue }
 \renewcommand{\:}{\maroon}
-\def\camlinput{}
-\def\endcamlinput{}
-\def\camloutput{}
-\def\endcamloutput{}
-\def\camlerror{}
-\def\endcamlerror{}
-\def\camlwarn{}
-\def\endcamlwarn{}
+
+\newcommand{\ocamlkeyword}{\bfseries}
+\newcommand{\ocamlhighlight}{\bfseries\underline}
+\newcommand{\ocamlerror}{\bfseries}
+\newcommand{\ocamlwarning}{\bfseries}
+\newcommand{\ocamlcomment}{\normalfont\small}
+\newcommand{\ocamlstring}{\bfseries}
+
+\newenvironment{caml}{\begin{alltt}}{\\\end{alltt}}
+\newenvironment{camlexample}[1]{}{}
+
 \newcommand{\var}[1]{\textit{#1}}
 
 \newenvironment{library}{}{}
