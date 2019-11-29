@@ -643,7 +643,9 @@ let finalise_codegen_cc ocamlsrcdir test_basename _log env =
   in
   let archmod = Ocaml_files.asmgen_archmod ocamlsrcdir in
   let modules = test_module ^ " " ^ archmod in
-  let program = Filename.make_filename test_basename "out" in
+  let program =
+    Filename.concat Filename.current_dir_name
+      (Filename.make_filename test_basename "out") in
   let env = Environments.add_bindings
   [
     Ocaml_variables.modules, modules;
@@ -669,7 +671,9 @@ let finalise_codegen_msvc ocamlsrcdir test_basename log env =
   then begin
     let archmod = Ocaml_files.asmgen_archmod ocamlsrcdir in
     let modules = obj ^ " " ^ archmod in
-    let program = Filename.make_filename test_basename "out" in
+    let program =
+      Filename.concat Filename.current_dir_name
+        (Filename.make_filename test_basename "out") in
     let env = Environments.add_bindings
     [
       Ocaml_variables.modules, modules;
