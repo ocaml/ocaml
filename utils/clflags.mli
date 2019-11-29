@@ -237,6 +237,13 @@ val insn_sched_default : bool
 
 module Compiler_ir : sig
   type t = Linear
+
+  (** [extract_extension_with_pass filename] returns the IR whose extension
+      is a prefix of the extension of [filename], and the suffix,
+      which can be used to distinguish different passes on the same IR.
+      For example, [extract_extension_with_pass "foo.cmir-linear123"]
+      returns [Some (Linear, "123")]. *)
+  val extract_extension_with_pass : string -> (t * string) option
   val extension : t -> string
   val magic : t -> string
   val all : t list

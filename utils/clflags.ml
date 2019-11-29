@@ -418,8 +418,10 @@ let unboxed_types = ref false
 module Compiler_ir = struct
   type t = Linear
 
-  (* Filename extensions are a convention, but not required. Any filename works,
-     as long as the file starts with the correct magic number. *)
+  let all = [
+    Linear;
+  ]
+
   let extension t =
     let ext =
     match t with
@@ -427,15 +429,32 @@ module Compiler_ir = struct
     in
     ".cmir-" ^ ext
 
+  let extract_extension_with_pass filename =
+    let ext = Filename.extension filename in
+    let ext_len = String.length ext in
+    if ext_len <= 0 then None
+    else begin
+      let is_prefix ir =
+        let s = extension ir in
+        let s_len = String.length s in
+        s_len <= ext_len && s = String.sub ext 0 s_len
+      in
+      let drop_prefix ir =
+        let s = extension ir in
+        let s_len = String.length s in
+        String.sub ext s_len (ext_len - s_len)
+      in
+      let ir = List.find_opt is_prefix all in
+      match ir with
+      | None -> None
+      | Some ir -> Some (ir, drop_prefix ir)
+    end
+
   (* Magic numbers for all IRs must be the same length. *)
   let magic t =
     let open Config in
     match t with
     | Linear -> linear_magic_number
-
-  let all = [
-    Linear;
-  ]
 end
 
 (* This is used by the -stop-after option. *)

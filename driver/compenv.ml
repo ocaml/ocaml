@@ -630,52 +630,9 @@ let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
 let check_ir name =
-  let check_suffix () =
-    let ext = Filename.extension name in
-    let ext_len = String.length ext in
-    if ext_len <= 0 then
-      None
-    else begin
-      List.find_opt (fun ir ->
-          let s = Compiler_ir.extension ir in
-          (* Check whether [ext] starts with [s]. It is not an exact match,
-             to distinguish different passes on the same IR. *)
-          let s_len = String.length s in
-          s_len <= ext_len && s = String.sub ext 0 s_len)
-        Compiler_ir.all
-    end
-  in
-  let check_magic () =
-    let ic = open_in_bin name in
-    Misc.try_finally
-      (fun () ->
-         (* Assumes that the length of magic numbers for all IRs is the same. *)
-         let len = String.length Config.linear_magic_number in
-         let pre_len = len - 3 in
-         try
-           let buffer = really_input_string ic len in
-           List.find_opt (fun ir ->
-             let magic = Compiler_ir.magic ir in
-             assert (String.length magic = len);
-             if String.equal buffer magic then true
-             else begin
-               if String.sub buffer 0 pre_len = String.sub magic 0 pre_len
-               then Misc.fatal_errorf
-                      "%s is not compiled for this version of OCaml." name ()
-               else false
-             end)
-             Compiler_ir.all
-         with End_of_file -> None
-      )
-      ~always:(fun () -> close_in ic)
-  in
-  let ir =
-    match check_suffix () with
-    | Some ir -> Some ir
-    | None -> check_magic ()
-  in match ir with
+  match Clflags.Compiler_ir.extract_extension_with_pass name with
   | None -> false
-  | Some Linear ->
+  | Some (Linear, _) ->
     if not (should_start_from Compiler_pass.Emit) then begin
       match !start_from with
       | None ->
