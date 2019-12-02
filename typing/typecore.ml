@@ -1154,6 +1154,7 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
     type_pat ~exception_allowed ~no_existentials ~mode ~env
   in
   let loc = sp.ppat_loc in
+  let refine = match mode with Normal -> false | Counter_example _ -> true in
   let rup k x =
     if mode = Normal then (ignore (rp x));
     unify_pat ~refine env x (instance expected_ty);
@@ -1491,7 +1492,7 @@ and type_pat_aux ~exception_allowed ~no_existentials ~mode
       end_def ();
       generalize_structure expected_ty;
       unify_pat_types ~refine
-        loc !env (Predef.type_array ty_elt) expected_ty;
+        loc env (Predef.type_array ty_elt) expected_ty;
       map_fold_cont (fun p -> type_pat p ty_elt) spl (fun pl ->
         rp k {
         pat_desc = Tpat_array pl;
