@@ -269,16 +269,6 @@ let extract_label_names env ty =
 
 (* Typing of patterns *)
 
-(* unification inside type_pat*)
-let unify_pat_types loc env ty ty' =
-  try
-    unify env ty ty'
-  with
-    Unify trace ->
-      raise(Error(loc, env, Pattern_type_clash(trace, None)))
-  | Tags(l1,l2) ->
-      raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
-
 (* unification inside type_exp and type_expect *)
 let unify_exp_types loc env ty expected_ty =
   (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
@@ -298,21 +288,25 @@ let get_gadt_equations_level () =
     Some y -> y
   | None -> assert false
 
-let unify_pat_types_gadt loc env ty ty' =
-  try unify_gadt ~equations_level:(get_gadt_equations_level ()) env ty ty'
+(* unification inside type_pat*)
+let unify_pat_types ?(refine=false) loc env ty ty' =
+  try
+    if refine then
+      unify_gadt ~equations_level:(get_gadt_equations_level ()) env ty ty'
+    else
+      unify !env ty ty'
   with
   | Unify trace ->
       raise(Error(loc, !env, Pattern_type_clash(trace, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
 
-(* Creating new conjunctive types is not allowed when typing patterns *)
-
-let unify_pat env pat expected_ty =
-  try unify_pat_types pat.pat_loc env pat.pat_type expected_ty
+let unify_pat ?refine env pat expected_ty =
+  try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
   with Error (loc, env, Pattern_type_clash(trace, None)) ->
     raise(Error(loc, env, Pattern_type_clash(trace, Some pat.pat_desc)))
 
+(* Creating new conjunctive types is not allowed when typing patterns *)
 (* make all Reither present in open variants *)
 let finalize_variant pat tag opat r =
   let row =
@@ -327,7 +321,8 @@ let finalize_variant pat tag opat r =
   | Reither (false, ty::tl, _, e) when not row.row_closed ->
       set_row_field e (Rpresent (Some ty));
       begin match opat with None -> assert false
-      | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
+      | Some pat ->
+          let env = ref pat.pat_env in List.iter (unify_pat env pat) (ty::tl)
       end
   | Reither (c, _l, true, e) when not (row_fixed row) ->
       set_row_field e (Reither (c, [], false, ref None))
@@ -488,7 +483,7 @@ let rec build_as_type env p =
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
           let _, ty_arg', ty_res' = instance_label false lbl in
-          unify env ty_arg ty_arg';
+          unify !env ty_arg ty_arg';
           unify_pat env p ty_res'
         end in
       Array.iter do_label lbl.lbl_all;
@@ -927,13 +922,14 @@ end)
 
 (* unification of a type with a tconstr with
    freshly created arguments *)
-let unify_head_only loc env ty constr =
+let unify_head_only ~refine loc env ty constr =
   let (_, ty_res) = instance_constructor constr in
-  match (repr ty_res).desc with
+  let ty_res = repr ty_res in
+  match ty_res.desc with
   | Tconstr(p,args,m) ->
       ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
-      enforce_constraints env ty_res;
-      unify_pat_types loc env ty_res ty
+      enforce_constraints !env ty_res;
+      unify_pat_types ~refine loc env ty_res ty
   | _ -> assert false
 
 (* Typing of patterns *)
@@ -1229,8 +1225,9 @@ and type_pat_aux
     type_pat category ~no_existentials ~mode ~env
   in
   let loc = sp.ppat_loc in
+  let refine = match mode with Normal -> false | Counter_example _ -> true in
   let unif (x : pattern) : pattern =
-    unify_pat !env x (instance expected_ty);
+    unify_pat ~refine env x (instance expected_ty);
     x
   in
   let rp x =
@@ -1324,7 +1321,7 @@ and type_pat_aux
       assert construction_not_used_in_counterexamples;
       let cty, force = Typetexp.transl_simple_type_delayed !env sty in
       let ty = cty.ctyp_type in
-      unify_pat_types lloc !env ty (instance expected_ty);
+      unify_pat_types ~refine lloc env ty (instance expected_ty);
       pattern_force := force :: !pattern_force;
       begin match ty.desc with
       | Tpoly (body, tyl) ->
@@ -1347,7 +1344,7 @@ and type_pat_aux
       assert construction_not_used_in_counterexamples;
       type_pat Value sq expected_ty (fun q ->
         begin_def ();
-        let ty_var = build_as_type !env q in
+        let ty_var = build_as_type env q in
         end_def ();
         generalize ty_var;
         let id =
@@ -1391,7 +1388,7 @@ and type_pat_aux
       let expected_ty = instance expected_ty in
       end_def ();
       generalize_structure expected_ty;
-      unify_pat_types loc !env ty expected_ty;
+      unify_pat_types ~refine loc env ty expected_ty;
       map_fold_cont (fun (p,t) -> type_pat Value p t) spl_ann (fun pl ->
         rvp k {
         pat_desc = Tpat_tuple pl;
@@ -1431,7 +1428,7 @@ and type_pat_aux
       (* if constructor is gadt, we must verify that the expected type has the
          correct head *)
       if constr.cstr_generalized then
-        unify_head_only loc !env (instance expected_ty) constr;
+        unify_head_only ~refine loc env (instance expected_ty) constr;
       let sargs =
         match sarg with
           None -> []
@@ -1461,9 +1458,8 @@ and type_pat_aux
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      if not constr.cstr_generalized || no_existentials <> None
-      then unify_pat_types loc !env ty_res expected_ty
-      else unify_pat_types_gadt loc env ty_res expected_ty;
+      (let refine = refine || constr.cstr_generalized && no_existentials = None
+       in unify_pat_types ~refine loc env ty_res expected_ty);
       end_def ();
       generalize_structure expected_ty;
       generalize_structure ty_res;
@@ -1510,7 +1506,7 @@ and type_pat_aux
          the abstract row variable *)
       if l = Parmatch.some_private_tag
       then assert (match mode with Normal -> false | Counter_example _ -> true)
-      else unify_pat_types loc !env (newgenty (Tvariant row)) expected_ty;
+      else unify_pat_types ~refine loc env (newgenty(Tvariant row)) expected_ty;
       let k arg =
         rvp k {
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
@@ -1540,7 +1536,7 @@ and type_pat_aux
         begin_def ();
         let (_, ty_arg, ty_res) = instance_label false label in
         begin try
-          unify_pat_types loc !env ty_res (instance record_ty)
+          unify_pat_types ~refine loc env ty_res (instance record_ty)
         with Error(_loc, _env, Pattern_type_clash(trace, _)) ->
           raise(Error(label_lid.loc, !env,
                       Label_mismatch(label_lid.txt, trace)))
@@ -1579,8 +1575,8 @@ and type_pat_aux
       let expected_ty = instance expected_ty in
       end_def ();
       generalize_structure expected_ty;
-      unify_pat_types
-        loc !env (Predef.type_array ty_elt) expected_ty;
+      unify_pat_types ~refine
+        loc env (Predef.type_array ty_elt) expected_ty;
       map_fold_cont (fun p -> type_pat Value p ty_elt) spl (fun pl ->
         rvp k {
         pat_desc = Tpat_array pl;
@@ -1661,7 +1657,7 @@ and type_pat_aux
       end
   | Ppat_lazy sp1 ->
       let nv = newgenvar () in
-      unify_pat_types loc !env (Predef.type_lazy_t nv) expected_ty;
+      unify_pat_types ~refine loc env (Predef.type_lazy_t nv) expected_ty;
       (* do not explode under lazy: PR#7421 *)
       type_pat Value ~mode:(no_explosion mode) sp1 nv (fun p1 ->
         rvp k {
@@ -1678,7 +1674,7 @@ and type_pat_aux
       end_def();
       generalize_structure ty;
       let ty, expected_ty' = instance ty, ty in
-      unify_pat_types loc !env ty (instance expected_ty);
+      unify_pat_types ~refine loc env ty (instance expected_ty);
       type_pat category sp expected_ty' (fun p ->
         (*Format.printf "%a@.%a@."
           Printtyp.raw_type_expr ty
@@ -1700,7 +1696,7 @@ and type_pat_aux
         in k p)
   | Ppat_type lid ->
       let (path, p,ty) = build_or_pat !env loc lid in
-      unify_pat_types loc !env ty (instance expected_ty);
+      unify_pat_types ~refine loc env ty (instance expected_ty);
       k @@ pure category @@ { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes)
         :: p.pat_extra }
@@ -1829,7 +1825,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
     finalize_variants pat;
   end;
   List.iter (fun f -> f()) (get_ref pattern_force);
-  if is_optional l then unify_pat val_env pat (type_option (newvar ()));
+  if is_optional l then unify_pat (ref val_env) pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
       (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} (pv, env) ->
@@ -2352,8 +2348,8 @@ let check_absent_variant env =
                   row_more = newvar (); row_bound = ();
                   row_closed = false; row_fixed = None; row_name = None} in
       (* Should fail *)
-      unify_pat env {pat with pat_type = newty (Tvariant row')}
-                    (correct_levels pat.pat_type)
+      unify_pat (ref env) {pat with pat_type = newty (Tvariant row')}
+                          (correct_levels pat.pat_type)
     | _ -> () }
 
 (* Getting proper location of already typed expressions.
@@ -4448,7 +4444,7 @@ and type_cases
   let ty_arg' = newvar () in
   let unify_pats ty =
     List.iter (fun { typed_pat = pat; pat_type_for_unif = pat_ty; _ } ->
-      unify_pat_types pat.pat_loc env pat_ty ty
+      unify_pat_types pat.pat_loc (ref env) pat_ty ty
     ) half_typed_cases
   in
   unify_pats ty_arg';
@@ -4621,7 +4617,7 @@ and type_let
               {pat with pat_type =
                snd (instance_poly ~keep_names:true false tl ty)}
           | _ -> pat
-        in unify_pat env pat (type_approx env binding.pvb_expr))
+        in unify_pat (ref env) pat (type_approx env binding.pvb_expr))
       pat_list spat_sexp_list;
   (* Polymorphic variant processing *)
   List.iter

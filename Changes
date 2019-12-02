@@ -534,6 +534,10 @@ OCaml 4.10.0
 - #8981: Fix check for incompatible -c and -o options.
   (Greta Yorsh, review by Damien Doligez)
 
+- #9019, #9154: Unsound exhaustivity of GADTs from incomplete unification
+  Also fixes bug found by Thomas Refis in #9012
+  (Jacques Garrigue, report and review by Leo White, Thomas Refis)
+
 - #9031: Unregister Windows stack overflow handler while shutting
   the runtime down.
   (Dmitry Bely, review by David Allsopp)
