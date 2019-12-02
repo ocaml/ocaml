@@ -25,6 +25,7 @@ start "ocaml" and type "#load \"str.cma\";;".
 \end{links}
 
 \else
+\ocamldocinputstart
 \input{Str.tex}
 \fi
 

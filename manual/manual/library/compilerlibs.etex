@@ -41,6 +41,7 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 \end{links}
 
 \else
+{\ocamldocinputstart
 % Ast_helper is excluded from the PDF and text manuals.
 % It is over 20 pages long and does not have doc-comments. It is expected
 % that Ast_helper will be only useful in the HTML manual (to look up signatures).
@@ -53,5 +54,6 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 \input{Parse.tex}
 \input{Parsetree.tex}
 \input{Pprintast.tex}
+}
 % \input{Printast.tex}
 \fi
