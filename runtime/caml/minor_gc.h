@@ -16,9 +16,6 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
-#ifndef CAML_INTERNALS
-#include "compatibility.h"
-#endif
 #include "address_class.h"
 #include "config.h"
 

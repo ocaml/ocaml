@@ -43,9 +43,7 @@
 #undef SUPPORT_DYNAMIC_LINKING
 #endif
 
-#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
-#endif
 
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
