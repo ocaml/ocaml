@@ -31,6 +31,10 @@ Working version
 
 ### Tools:
 
+- #463: objinfo: better errors on object files coming
+  from a different (older or newer), incompatible compiler version.
+  (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
@@ -53,6 +57,10 @@ Working version
   (Gabriel Scherer, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
+
+ - #463: a new Misc.Magic_number module for user-friendly parsing
+   and validation of OCaml magic numbers.
+   (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
 - #8970: separate value patterns (matching on values) from computation patterns
   (matching on the effects of a copmutation) in the typedtree.
