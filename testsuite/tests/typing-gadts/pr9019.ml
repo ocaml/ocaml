@@ -2,7 +2,7 @@
    * expect
 *)
 
-(* #9012 by Thomas Refix *)
+(* #9012 by Thomas Refis *)
 
 type ab = A | B
 

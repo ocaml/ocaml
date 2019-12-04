@@ -1458,8 +1458,8 @@ and type_pat_aux
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      (let refine = refine || constr.cstr_generalized && no_existentials = None
-       in unify_pat_types ~refine loc env ty_res expected_ty);
+      unify_pat_types loc env ty_res expected_ty
+        ~refine:(refine || constr.cstr_generalized && no_existentials = None);
       end_def ();
       generalize_structure expected_ty;
       generalize_structure ty_res;
