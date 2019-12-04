@@ -292,7 +292,7 @@ OCaml 4.10.0
   functions, this can be replaced with calls to
   caml_process_pending_actions at safe points.
   Side effect of this change: in bytecode mode, polling for
-  asynchronous callbacks is perfomed at every minor heap allocation,
+  asynchronous callbacks is performed at every minor heap allocation,
   in addition to function calls and loops as in previous OCaml
   releases.
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and

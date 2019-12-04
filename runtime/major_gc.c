@@ -87,7 +87,7 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
       - the ephemerons in (3) are in an unknown state and must be checked
 
     At the end of mark phase, (3) is empty and ephe_list_pure is true.
-    The ephemeron in (1) and (2) will be cleaned (white keys and datas
+    The ephemeron in (1) and (2) will be cleaned (white keys and data
     replaced by none or the ephemeron is removed from the list if it is white)
     in clean phase.
 

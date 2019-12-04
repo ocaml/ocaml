@@ -134,7 +134,7 @@ git push --tags
 
 ## 5-bis: Alternative for branching
 
-This needs to be more tested, tread with care.
+This needs to be more tested, treat with care.
 ```
 # at this point, the VERSION file contains N+devD
 # increment it into N+dev(D+1); for example,
