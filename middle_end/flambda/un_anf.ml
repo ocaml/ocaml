@@ -33,8 +33,8 @@ module VP = Backend_var.With_provenance
    (b) it is never assigned to (using [Uassign]).
 *)
 type var_info =
-  { used : V.Set.t;
-    linear : V.Set.t;
+  { used_let_bound_vars : V.Set.t;
+    linear_let_bound_vars : V.Set.t;
     assigned : V.Set.t;
     closure_environment : V.Set.t;
     let_bound_vars_that_can_be_moved : V.Set.t;
@@ -73,18 +73,56 @@ let closure_environment_var (ufunction:Clambda.ufunction) =
     (* closed function, no environment *)
     None
 
+type var_uses =
+  | Zero
+  | One
+  | More_than_one
+  | Assigned
+
+type var =
+  { definition_depth : int;
+    uses : var_uses; }
+
+let incr_uses { definition_depth; uses } depth =
+  assert (definition_depth <= depth);
+  let uses =
+    match uses with
+    | Zero ->
+        if definition_depth < depth then More_than_one
+        else One
+    | One -> More_than_one
+    | More_than_one -> More_than_one
+    | Assigned -> Assigned
+  in
+  { definition_depth; uses }
+
+let assign_uses r = { r with uses = Assigned }
+
+let zero definition_depth = { definition_depth; uses = Zero }
+
+let add_definition t var depth =
+  V.Tbl.add t var (zero depth)
+
+let add_use t var depth =
+  match V.Tbl.find t var with
+  | info -> V.Tbl.replace t var (incr_uses info depth)
+  | exception Not_found -> () (* Variable is not let-bound *)
+
+let add_assignment t var =
+  match V.Tbl.find t var with
+  | info -> V.Tbl.replace t var (assign_uses info)
+  | exception Not_found ->
+    Misc.fatal_errorf
+      "make_var_info: Assigned variable %a not let-bound"
+      V.print var
+
 let make_var_info (clam : Clambda.ulambda) : var_info =
-  let t : int V.Tbl.t = V.Tbl.create 42 in
-  let assigned_vars = ref V.Set.empty in
+  let t : var V.Tbl.t = V.Tbl.create 42 in
   let environment_vars = ref V.Set.empty in
-  let rec loop : Clambda.ulambda -> unit = function
+  let rec loop ~depth : Clambda.ulambda -> unit = function
     (* No underscores in the pattern match, to reduce the chance of failing
        to traverse some subexpression. *)
-    | Uvar var ->
-      begin match V.Tbl.find t var with
-      | n -> V.Tbl.replace t var (n + 1)
-      | exception Not_found -> V.Tbl.add t var 1
-      end
+    | Uvar var -> add_use t var depth
     | Uconst const ->
       (* The only variables that might occur in [const] are those in constant
          closures---and those are all bound by such closures.  It follows that
@@ -95,14 +133,14 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       ignore_uconstant const
     | Udirect_apply (label, args, dbg) ->
       ignore_function_label label;
-      List.iter loop args;
+      List.iter (loop ~depth) args;
       ignore_debuginfo dbg
     | Ugeneric_apply (func, args, dbg) ->
-      loop func;
-      List.iter loop args;
+      loop ~depth func;
+      List.iter (loop ~depth) args;
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
-      List.iter loop captured_variables;
+      List.iter (loop ~depth) captured_variables;
       List.iter (fun (
         { Clambda. label; arity; params; return; body; dbg; env; } as clos) ->
           (match closure_environment_var clos with
@@ -114,104 +152,98 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
           ignore_int arity;
           ignore_params_with_value_kind params;
           ignore_value_kind return;
-          loop body;
+          loop ~depth:(depth + 1) body;
           ignore_debuginfo dbg;
           ignore_var_option env)
         functions
     | Uoffset (expr, offset) ->
-      loop expr;
+      loop ~depth expr;
       ignore_int offset
-    | Ulet (_let_kind, _value_kind, _var, def, body) ->
-      loop def;
-      loop body
+    | Ulet (_let_kind, _value_kind, var, def, body) ->
+      add_definition t (VP.var var) depth;
+      loop ~depth def;
+      loop ~depth body
     | Uphantom_let (var, defining_expr_opt, body) ->
       ignore_var_with_provenance var;
       ignore_uphantom_defining_expr_option defining_expr_opt;
-      loop body
+      loop ~depth body
     | Uletrec (defs, body) ->
       List.iter (fun (var, def) ->
           ignore_var_with_provenance var;
-          loop def)
+          loop ~depth def)
         defs;
-      loop body
+      loop ~depth body
     | Uprim (prim, args, dbg) ->
       ignore_primitive prim;
-      List.iter loop args;
+      List.iter (loop ~depth) args;
       ignore_debuginfo dbg
     | Uswitch (cond, { us_index_consts; us_actions_consts;
           us_index_blocks; us_actions_blocks }, dbg) ->
-      loop cond;
+      loop ~depth cond;
       ignore_int_array us_index_consts;
-      Array.iter loop us_actions_consts;
+      Array.iter (loop ~depth) us_actions_consts;
       ignore_int_array us_index_blocks;
-      Array.iter loop us_actions_blocks;
+      Array.iter (loop ~depth) us_actions_blocks;
       ignore_debuginfo dbg
     | Ustringswitch (cond, branches, default) ->
-      loop cond;
+      loop ~depth cond;
       List.iter (fun (str, branch) ->
           ignore_string str;
-          loop branch)
+          loop ~depth branch)
         branches;
-      Option.iter loop default
+      Option.iter (loop ~depth) default
     | Ustaticfail (static_exn, args) ->
       ignore_int static_exn;
-      List.iter loop args
+      List.iter (loop ~depth) args
     | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
       ignore_params_with_value_kind vars;
-      loop body;
-      loop handler
+      loop ~depth body;
+      loop ~depth handler
     | Utrywith (body, var, handler) ->
-      loop body;
+      loop ~depth body;
       ignore_var_with_provenance var;
-      loop handler
+      loop ~depth handler
     | Uifthenelse (cond, ifso, ifnot) ->
-      loop cond;
-      loop ifso;
-      loop ifnot
+      loop ~depth cond;
+      loop ~depth ifso;
+      loop ~depth ifnot
     | Usequence (e1, e2) ->
-      loop e1;
-      loop e2
+      loop ~depth e1;
+      loop ~depth e2
     | Uwhile (cond, body) ->
-      loop cond;
-      loop body
+      loop ~depth:(depth + 1) cond;
+      loop ~depth:(depth + 1) body
     | Ufor (var, low, high, direction_flag, body) ->
       ignore_var_with_provenance var;
-      loop low;
-      loop high;
+      loop ~depth low;
+      loop ~depth high;
       ignore_direction_flag direction_flag;
-      loop body
+      loop ~depth:(depth + 1) body
     | Uassign (var, expr) ->
-      assigned_vars := V.Set.add var !assigned_vars;
-      loop expr
+      add_assignment t var;
+      loop ~depth expr
     | Usend (meth_kind, e1, e2, args, dbg) ->
       ignore_meth_kind meth_kind;
-      loop e1;
-      loop e2;
-      List.iter loop args;
+      loop ~depth e1;
+      loop ~depth e2;
+      List.iter (loop ~depth) args;
       ignore_debuginfo dbg
     | Uunreachable ->
       ()
   in
-  loop clam;
-  let linear =
-    V.Tbl.fold (fun var n acc ->
-        assert (n >= 1);
-        if n = 1 && not (V.Set.mem var !assigned_vars)
-        then V.Set.add var acc
-        else acc)
-      t V.Set.empty
+  loop ~depth:0 clam;
+  let linear_let_bound_vars, used_let_bound_vars, assigned =
+    V.Tbl.fold (fun var desc ((linear, used, assigned) as acc) ->
+      match desc.uses with
+      | Zero -> acc
+      | One -> (V.Set.add var linear, V.Set.add var used, assigned)
+      | More_than_one -> (linear, V.Set.add var used, assigned)
+      | Assigned -> (linear, V.Set.add var used, V.Set.add var assigned))
+      t (V.Set.empty, V.Set.empty, V.Set.empty)
   in
-  let assigned = !assigned_vars in
-  let used =
-    (* This doesn't work transitively and thus is somewhat restricted.  In
-       particular, it does not allow us to get rid of useless chains of [let]s.
-       However it should be sufficient to remove the majority of unnecessary
-       [let] bindings that might hinder [Cmmgen]. *)
-    V.Tbl.fold (fun var _n acc -> V.Set.add var acc)
-      t assigned
-  in
-  { used; linear; assigned; closure_environment = !environment_vars;
+  { used_let_bound_vars; linear_let_bound_vars; assigned;
+    closure_environment = !environment_vars;
     let_bound_vars_that_can_be_moved = V.Set.empty;
   }
 
@@ -243,8 +275,8 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
       | let_bound_var::let_bound_vars, (Uvar arg)::args
           when V.same let_bound_var arg
             && not (V.Set.mem arg var_info.assigned) ->
-        assert (V.Set.mem arg var_info.used);
-        assert (V.Set.mem arg var_info.linear);
+        assert (V.Set.mem arg var_info.used_let_bound_vars);
+        assert (V.Set.mem arg var_info.linear_let_bound_vars);
         can_move := V.Set.add arg !can_move;
         loop let_bound_vars args
       | _::_, _::_ ->
@@ -304,7 +336,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
         loop body
       | _ ->
         loop def;
-        if V.Set.mem var var_info.linear then begin
+        if V.Set.mem var var_info.linear_let_bound_vars then begin
           let_stack := var::!let_stack
         end else begin
           (* If we encounter a non-linear [let]-binding then we must clear
@@ -657,9 +689,11 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
     un_anf_and_moveable var_info env def
   | Ulet (let_kind, value_kind, var, def, body) ->
     let def, def_moveable = un_anf_and_moveable var_info env def in
-    let is_linear = V.Set.mem (VP.var var) var_info.linear in
-    let is_used = V.Set.mem (VP.var var) var_info.used in
-    let is_assigned = V.Set.mem (VP.var var) var_info.assigned in
+    let is_linear = V.Set.mem (VP.var var) var_info.linear_let_bound_vars in
+    let is_used = V.Set.mem (VP.var var) var_info.used_let_bound_vars in
+    let is_assigned =
+      V.Set.mem (VP.var var) var_info.assigned
+    in
     let maybe_for_debugger (body, moveable) : Clambda.ulambda * moveable =
       if not !Clflags.debug_full then
         body, moveable
