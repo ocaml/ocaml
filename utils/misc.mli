@@ -490,7 +490,7 @@ end
 
 module Magic_number : sig
   (** a typical magic number is "Caml1999I011"; it is formed of an
-      alpha-numeric prefix, here Caml1990I, followed by a version,
+      alphanumeric prefix, here Caml1990I, followed by a version,
       here 011. The prefix identifies the kind of the versioned data:
       here the I indicates that it is the magic number for .cmi files.
 

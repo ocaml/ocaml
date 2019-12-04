@@ -190,7 +190,7 @@ make $jobs world.opt
 # occurs.
 
 # We already use sigaltstack for stack overflow detection. Our use
-# interracts with ASAN's. Hence, we tell ASAN not to use it.
+# interacts with ASAN's. Hence, we tell ASAN not to use it.
 
 ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 
