@@ -8,6 +8,7 @@ OCaml reference manual.
 
 %HEVEA\cutdef{section}
 \section{letrecvalues}{Recursive definitions of values}
+%HEVEA\cutname{letrecvalues.html}
 
 (Introduced in Objective Caml 1.00)
 
@@ -162,6 +163,7 @@ Note that, in the @specification@ case, the @module-type@s must be
 parenthesized if they use the @'with' mod-constraint@ construct.
 
 \section{private-types}{Private types}
+%HEVEA\cutname{privatetypes.html}
 \ikwd{private\@\texttt{private}}
 
 Private type declarations in module signatures, of the form
@@ -177,6 +179,7 @@ for type abbreviations (section~\ref{ss:private-types-abbrev}),
 and for row types (section~\ref{ss:private-rows}).
 
 \subsection{private-types-variant}{Private variant and record types}
+
 
 (Introduced in Objective Caml 3.07)
 
@@ -333,6 +336,8 @@ is not inferred, and must be given explicitly.
 \section{locally-abstract}{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
+%HEVEA\cutname{locallyabstract.html}
+
 
 (Introduced in OCaml 3.12, short syntax added in 4.03)
 
@@ -428,6 +433,8 @@ The same feature is provided for method definitions.
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
 \ikwd{and\@\texttt{and}}
+%HEVEA\cutname{firstclassmodules.html}
+
 
 (Introduced in OCaml 3.12; pattern syntax and package type inference
 introduced in 4.00; structural comparison of package types introduced in 4.02.;
@@ -657,6 +664,7 @@ polymorphic recursion.
 \fi
 
 \section{module-type-of}{Recovering the type of a module}
+%HEVEA\cutname{moduletypeof.html}
 
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
@@ -714,6 +722,8 @@ it to represent sets internally in a different way.
 \ikwd{with\@\texttt{with}}
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
+%HEVEA\cutname{signaturesubstitution.html}
+
 
 \subsection{destructive-substitution}{Destructive substitutions}
 
@@ -817,6 +827,7 @@ end [@@expect error];;
 
 \section{module-alias}{Type-level module aliases}
 \ikwd{module\@\texttt{module}}
+%HEVEA\cutname{modulealias.html}
 
 (Introduced in OCaml 4.02)
 
@@ -931,6 +942,7 @@ standard library is compiled.
 
 \section{explicit-overriding-open}{Overriding in open statements}
 \ikwd{open.\@\texttt{open\char33}}
+%HEVEA\cutname{overridingopen.html}
 
 (Introduced in OCaml 4.01)
 
@@ -967,6 +979,8 @@ expressions and class type expressions.
 
 \section{gadts}{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
 \ikwd{match\@\texttt{match}}
+%HEVEA\cutname{gadts.html}
+
 
 (Introduced in OCaml 4.00)
 
@@ -1269,6 +1283,7 @@ abstract types defined by the local module, are non-instantiable, and
 as such cause a type error rather than introduce an equation.
 
 \section{bigarray-access}{Syntax for Bigarray access}
+%HEVEA\cutname{bigarray.html}
 
 (Introduced in Objective Caml 3.00)
 
@@ -1309,6 +1324,7 @@ The short expressions are translated into calls to functions of the
 The last two entries are valid for any $n > 3$.
 
 \section{attributes}{Attributes}
+%HEVEA\cutname{attributes.html}
 
 \ikwd{when\@\texttt{when}}
 
@@ -1706,6 +1722,7 @@ end
 \end{caml_example*}
 
 \section{extension-nodes}{Extension nodes}
+%HEVEA\cutname{extensionnodes.html}
 
 (Introduced in OCaml 4.02,
 infix notations for constructs other than expressions added in 4.03,
@@ -1836,6 +1853,7 @@ let y = [%extension_constructor Y]
 \end{caml_example}
 
 \section{extensible-variants}{Extensible variant types}
+%HEVEA\cutname{extensiblevariants.html}
 
 (Introduced in OCaml 4.02)
 
@@ -1958,6 +1976,7 @@ end
 \end{caml_example*}
 
 \section{generative-functors}{Generative functors}
+%HEVEA\cutname{generativefunctors.html}
 
 (Introduced in OCaml 4.02)
 
@@ -1997,6 +2016,7 @@ As a side-effect of this generativity, one is allowed to unpack
 first-class modules in the body of generative functors.
 
 \section{extension-syntax}{Extension-only syntax}
+%HEVEA\cutname{extensionsyntax.html}
 (Introduced in OCaml 4.02.2, extended in 4.03)
 
 Some syntactic constructions are accepted during parsing and rejected
@@ -2048,6 +2068,7 @@ Int and float literals followed by an one-letter identifier in the
 range @["g".."z"||"G".."Z"]@ are extension-only literals.
 
 \section{inline-records}{Inline records}
+%HEVEA\cutname{inlinerecords.html}
 (Introduced in OCaml 4.03)
 \begin{syntax}
   constr-args:
@@ -2094,6 +2115,7 @@ let invalid = function
 \end{caml_example}
 
 \section{doc-comments}{Documentation comments}
+%HEVEA\cutname{doccomments.html}
 (Introduced in OCaml 4.03)
 
 Comments which start with "**" are treated specially by the
@@ -2277,6 +2299,7 @@ type t =  T of string
 \end{caml_example*}
 
 \section{index-operators}{Extended indexing operators }
+%HEVEA\cutname{indexops.html}
 (Introduced in 4.06)
 
 \begin{syntax}
@@ -2370,6 +2393,7 @@ let syntax_compare vec mat t3 t4 =
 
 
 \section{empty-variants}{Empty variant types}
+%HEVEA\cutname{emptyvariants.html}
 (Introduced in 4.07.0)
 
 \begin{syntax}
@@ -2385,6 +2409,7 @@ let f (x: t) = match x with _ -> .
 \end{caml_example*}
 
 \section{alerts}{Alerts}
+%HEVEA\cutname{alerts.html}
 (Introduced in 4.08)
 
 Since OCaml 4.08, it is possible to mark components (such as value or
@@ -2483,6 +2508,7 @@ val x: int
 \end{verbatim}
 
 \section{generalized-open}{Generalized open statements}
+%HEVEA\cutname{generalizedopens.html}
 
 (Introduced in 4.08)
 
@@ -2601,6 +2627,7 @@ class c =
 \end{verbatim}
 
 \section{binding-operators}{Binding operators}
+%HEVEA\cutname{bindingops.html}
 (Introduced in 4.08.0)
 
 \begin{syntax}
