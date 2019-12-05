@@ -212,6 +212,10 @@ let () =
   | [ { a = 3; _ } ; { b = F; _ }] -> ()
   | _ -> ();;
 [%%expect{|
+Line 3, characters 27-28:
+3 |   | [ { a = 3; _ } ; { b = F; _ }] -> ()
+                               ^
+Warning 18: This introduction of a GADT equation is not principal.
 |}]
 
 let () =
@@ -264,6 +268,10 @@ let () =
   | [ { a = 3; _ }; { b = Refl3 ; _ }] -> ()
   | _ -> ()
 [%%expect{|
+Line 3, characters 26-31:
+3 |   | [ { a = 3; _ }; { b = Refl3 ; _ }] -> ()
+                              ^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
 |}]
 
 let () =
@@ -271,6 +279,10 @@ let () =
   | [ { b = Refl3 ; _ }; { a = 3; _ } ] -> ()
   | _ -> ()
 [%%expect{|
+Line 3, characters 12-17:
+3 |   | [ { b = Refl3 ; _ }; { a = 3; _ } ] -> ()
+                ^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
 |}]
 
 
@@ -304,6 +316,10 @@ let foo x =
   | { x = (x : int); eq = Refl3 } -> x
 ;;
 [%%expect{|
+Line 3, characters 26-31:
+3 |   | { x = (x : int); eq = Refl3 } -> x
+                              ^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
 val foo : int foo -> int = <fun>
 |}]
 
@@ -326,6 +342,10 @@ let foo x =
   | { x = (x : string); eq = Refl3 } -> x
 ;;
 [%%expect{|
+Line 3, characters 29-34:
+3 |   | { x = (x : string); eq = Refl3 } -> x
+                                 ^^^^^
+Warning 18: This introduction of a GADT equation is not principal.
 val foo : string foo -> string = <fun>
 |}]
 
