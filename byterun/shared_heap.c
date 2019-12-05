@@ -198,6 +198,7 @@ static void pool_release(struct caml_heap_state* local, pool* pool, sizeclass sz
 static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
 static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   pool* r;
+  intnat t;
 
   /* Hopefully we have a pool we can use directly */
   r = local->avail_pools[sz];
@@ -215,15 +216,52 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   caml_plat_lock(&pool_freelist.lock);
   if( pool_freelist.global_avail_pools[sz] ) {
     r = pool_freelist.global_avail_pools[sz];
-    pool_freelist.global_avail_pools[sz] = r->next;
-    r->next = 0;
-    local->avail_pools[sz] = r;
+
+    if( r ) {
+      pool_freelist.global_avail_pools[sz] = r->next;
+      r->next = 0;
+      local->avail_pools[sz] = r;
+
+      int free_objs = 0;
+      value* next_obj = r->next_obj;
+      while( next_obj ) {
+        free_objs++;
+        #ifdef DEBUG
+        CAMLassert(next_obj[0] == 0);
+        #endif
+        next_obj = (value*)next_obj[1];
+      }
+
+      local->stats.pool_words += POOL_WSIZE;
+      pool_freelist.stats.pool_words -= POOL_WSIZE;
+
+      if (local->stats.pool_words > local->stats.pool_max_words)
+        local->stats.pool_max_words = local->stats.pool_words;    
+
+      // Live words in adopted pool
+      t = POOL_WSIZE - (free_objs * sz);
+
+      local->stats.pool_live_words += t;
+      pool_freelist.stats.pool_live_words -= t;
+
+      // Live blocks in adopted pool
+      t = (POOL_WSIZE/sz) - free_objs;
+      local->stats.pool_live_blocks += t;
+      pool_freelist.stats.pool_live_blocks -= t;
+
+      // Frag words in adopted pool
+      t = POOL_HEADER_WSIZE + wastage_sizeclass[sz];
+      local->stats.pool_frag_words += t;
+      pool_freelist.stats.pool_frag_words -= t;
+    }
   }
 
   /* There were no global avail pools, so let's adopt the full ones and try 
      our luck sweeping them later on */
   if( !r ) {
-    move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
+    int moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
+    local->stats.pool_words += POOL_WSIZE*moved_pools;
+    pool_freelist.stats.pool_words -= POOL_WSIZE*moved_pools;
   }
 
   caml_plat_unlock(&pool_freelist.lock);
@@ -646,6 +684,7 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
 static void verify_swept (struct caml_heap_state* local) {
   int i;
   struct mem_stats pool_stats = {}, large_stats = {};
+
   /* sweeping should be done by this point */
   Assert(local->next_to_sweep == NUM_SIZECLASSES);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
@@ -690,6 +729,7 @@ void caml_cycle_heap_stw() {
 
 void caml_cycle_heap(struct caml_heap_state* local) {
   int i, received_p = 0, received_l = 0;
+
   caml_gc_log("Cycling heap [%02d]", local->owner->state->id);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     CAMLassert(local->unswept_avail_pools[i] == 0);
