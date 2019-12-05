@@ -260,8 +260,17 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
      our luck sweeping them later on */
   if( !r ) {
     int moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
-    local->stats.pool_words += POOL_WSIZE*moved_pools;
-    pool_freelist.stats.pool_words -= POOL_WSIZE*moved_pools;
+
+    t = POOL_WSIZE*moved_pools;
+
+    local->stats.pool_words += t;
+    pool_freelist.stats.pool_words -= t;
+
+    local->stats.pool_live_words += t;
+    pool_freelist.stats.pool_live_words -= t;
+
+    local->stats.pool_live_blocks += t / sz;
+    pool_freelist.stats.pool_live_blocks -= t / sz;
   }
 
   caml_plat_unlock(&pool_freelist.lock);
