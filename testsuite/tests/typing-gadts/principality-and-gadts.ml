@@ -128,6 +128,10 @@ let f1 t1 =
   | AB -> true
   | MAB -> false;;
 [%%expect{|
+Line 4, characters 4-7:
+4 |   | MAB -> false;;
+        ^^^
+Warning 18: 'some error message here' is not principal.
 val f1 : unit ab M.t -> bool = <fun>
 |}]
 
@@ -157,6 +161,12 @@ let f3 t1 =
   | AB -> true
   | MAB -> false;;
 [%%expect{|
+val f3 : unit ab M.t -> bool = <fun>
+|}, Principal{|
+Line 5, characters 4-7:
+5 |   | MAB -> false;;
+        ^^^
+Warning 18: 'some error message here' is not principal.
 val f3 : unit ab M.t -> bool = <fun>
 |}]
 

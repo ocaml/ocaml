@@ -2742,7 +2742,14 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
-          if can_generate_equations () then mcomp !env t1' t2'
+          if can_generate_equations () then (
+            mcomp !env t1' t2';
+            match using_only_principal_information t1' t2' with
+            | Ok () -> ()
+            | Error loc ->
+              Location.prerr_warning loc
+                (Warnings.Not_principal "'some error message here'")
+          )
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields env fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
@@ -2764,7 +2771,14 @@ and unify3 env t1 t1' t2 t2' =
               backtrack snap;
               reify env t1';
               reify env t2';
-              if can_generate_equations () then mcomp !env t1' t2'
+              if can_generate_equations () then (
+                mcomp !env t1' t2';
+                match using_only_principal_information t1' t2' with
+                | Ok () -> ()
+                | Error loc ->
+                  Location.prerr_warning loc
+                    (Warnings.Not_principal "'some error message here'")
+              )
           end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
