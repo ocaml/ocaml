@@ -1,7 +1,7 @@
 %hevea book class with anchor links in headers
 \input{bookcommon.hva}
 \newcommand{\@book@attr}[1]{\@secid\envclass@attr{#1}}
-\newcommand{\@titlesecanchor}{\@open{a}{class="section-anchor" href="\#\@sec@id@attr"}\@print@u{xfeff}\@close{a}}
+\newcommand{\@titlesecanchor}{\@open{a}{class="section-anchor" href="\#\@sec@id@attr" aria-hidden="true"}\@print@u{xfeff}\@close{a}}
 \@makesection
   {\part}{-2}{part}
   {\@opencell{class="center"}{}{}\@open{h1}{\@book@attr{part}}}%
