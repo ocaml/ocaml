@@ -389,7 +389,7 @@ static void process_comment(FILE *const f) {
                 continue;
             default:
                 if (In_bitmap(caml_ident_start, c)) {
-                  while (In_bitmap(caml_ident_body, *cptr)) cptr++;
+                  while (In_bitmap(caml_ident_body, *cptr)) putc(*cptr++, f);
                 }
                 continue;
             }
