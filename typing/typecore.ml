@@ -1581,7 +1581,7 @@ and type_pat_aux
           TypePairs.iter (fun (t1, t2) () ->
             generalize_structure t1;
             generalize_structure t2;
-            if t1.level <> generic_level || t2.level <> generic_level then
+            if not (fully_generic t1 && fully_generic t2) then
               let msg =
                 Format.asprintf
                   "typing this pattern requires considering@ %a@ and@ %a@ as \

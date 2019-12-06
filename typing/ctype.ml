@@ -1074,6 +1074,22 @@ let compute_univars ty =
     try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
 
 
+let fully_generic ty =
+  let rec aux acc ty =
+    acc &&
+    let ty = repr ty in
+    ty.level < lowest_level || (
+      ty.level = generic_level && (
+        mark_type_node ty;
+        fold_type_expr aux true ty
+      )
+    )
+  in
+  let res = aux true ty in
+  unmark_type ty;
+  res
+
+
                               (*******************)
                               (*  Instantiation  *)
                               (*******************)

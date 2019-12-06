@@ -191,6 +191,8 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
+val fully_generic: type_expr -> bool
+
 val check_scope_escape : Env.t -> int -> type_expr -> unit
         (* [check_scope_escape env lvl ty] ensures that [ty] could be raised
            to the level [lvl] without any scope escape.

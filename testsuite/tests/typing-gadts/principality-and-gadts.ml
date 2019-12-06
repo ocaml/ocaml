@@ -197,6 +197,13 @@ let g2 (type x) (e : (x, _ option) eq) (x : x) : int option =
    let Refl = e in x;;
 [%%expect{|
 val g2 : ('x, int option) eq -> 'x -> int option = <fun>
+|}, Principal{|
+Line 3, characters 7-11:
+3 |    let Refl = e in x;;
+           ^^^^
+Warning 18: typing this pattern requires considering x and int option as equal.
+But the knowledge of these types is not principal.
+val g2 : ('x, int option) eq -> 'x -> int option = <fun>
 |}]
 
 (* Issues with "principal level" *)
