@@ -4,7 +4,7 @@
 The "ocamlrun" command executes bytecode files produced by the
 linking phase of the "ocamlc" command.
 
-\section{ocamlrun-overview}{Overview}
+\section{s:ocamlrun-overview}{Overview}
 
 The "ocamlrun" command comprises three main parts: the bytecode
 interpreter, that actually executes bytecode files; the memory
@@ -44,7 +44,7 @@ to always give ".exe" names to bytecode executables, e.g. compile
 with "ocamlc -o myprog.exe ..." rather than "ocamlc -o myprog ...".
 \end{windows}
 
-\section{ocamlrun-options}{Options}
+\section{s:ocamlrun-options}{Options}
 The following command-line options are recognized by "ocamlrun".
 
 \begin{options}
@@ -203,7 +203,7 @@ The following environment variables are also consulted:
 executable file.
 \end{options}
 
-\section{ocamlrun-dllpath}{Dynamic loading of shared libraries}
+\section{s:ocamlrun-dllpath}{Dynamic loading of shared libraries}
 
 On platforms that support dynamic loading, "ocamlrun" can link
 dynamically with C shared libraries (DLLs) providing additional C primitives
@@ -240,7 +240,7 @@ system directories, plus the directories listed in the "PATH"
 environment variable.
 \end{enumerate}
 
-\section{ocamlrun-common-errors}{Common errors}
+\section{s:ocamlrun-common-errors}{Common errors}
 
 This section describes and explains the most frequently encountered
 error messages.

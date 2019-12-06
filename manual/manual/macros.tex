@@ -27,14 +27,14 @@
 \renewcommand{\subsection}{\@ifstar{\@lsubsectionstar}{\@lsubsection}}
 \renewcommand{\subsubsection}{\@ifstar{\@lsubsubsectionstar}{\@lsubsubsection}}
 
-\newcommand{\@lsection}[2]{\@oldsection{\label{s:#1}#2}}
-\newcommand{\@lsectionstar}[2]{\@oldsection*{\label{s:#1}#2}}
-\newcommand{\@lsubsection}[2]{\@oldsubsection{\label{ss:#1}#2}}
-\newcommand{\@lsubsectionstar}[2]{\@oldsubsection*{\label{ss:#1}#2}}
-\newcommand{\@lsubsubsection}[2]{\@oldsubsubsection{\label{sss:#1}#2}}
-\newcommand{\@lsubsubsectionstar}[2]{\@oldsubsubsection*{\label{sss:#1}#2}}
+\newcommand{\@lsection}[2]{\@oldsection{\label{#1}#2}}
+\newcommand{\@lsectionstar}[2]{\@oldsection*{\label{#1}#2}}
+\newcommand{\@lsubsection}[2]{\@oldsubsection{\label{#1}#2}}
+\newcommand{\@lsubsectionstar}[2]{\@oldsubsection*{\label{#1}#2}}
+\newcommand{\@lsubsubsection}[2]{\@oldsubsubsection{\label{#1}#2}}
+\newcommand{\@lsubsubsectionstar}[2]{\@oldsubsubsection*{\label{#1}#2}}
 
-\newcommand{\lparagraph}[1]{\paragraph{\label{p:#1}#1}}
+\newcommand{\lparagraph}[1]{\paragraph{\label{#1}#1}}
 
 % Numerotation
 \setcounter{secnumdepth}{2}     % Pour numeroter les \subsection

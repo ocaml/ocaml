@@ -1,4 +1,4 @@
-\section{names}{Names}
+\section{s:names}{Names}
 %HEVEA\cutname{names.html}
 
 Identifiers are used to give names to several classes of language
@@ -22,7 +22,7 @@ identifier is in lowercase (written @lowercase-ident@ below) or in
 uppercase (written @capitalized-ident@).  Underscore is considered a
 lowercase letter for this purpose.
 
-\subsubsection*{naming-objects}{Naming objects}
+\subsubsection*{sss:naming-objects}{Naming objects}
 \ikwd{mod\@\texttt{mod}}
 \ikwd{land\@\texttt{land}}
 \ikwd{lor\@\texttt{lor}}
@@ -99,7 +99,7 @@ lowercase variant tags in addition to capitalized variant tags, but we
 suggest you avoid lowercase variant tags for portability and
 compatibility with future OCaml versions.
 
-\subsubsection*{refer-named}{Referring to named objects}
+\subsubsection*{sss:refer-named}{Referring to named objects}
 
 \begin{syntax}
 value-path:

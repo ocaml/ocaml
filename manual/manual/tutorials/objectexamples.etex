@@ -16,7 +16,7 @@ in those languages.  OCaml has alternatives that are often more appropriate,
 such as modules and functors.  Indeed, many OCaml programs do not use objects
 at all.
 
-\section{classes-and-objects}{Classes and objects}
+\section{s:classes-and-objects}{Classes and objects}
 
 The class "point" below defines one instance variable "x" and two methods
 "get_x" and "move". The initial value of the instance variable is "0".
@@ -149,7 +149,7 @@ the same class but with different initialization patterns; an
 alternative is to use initializers, as described below in
 section~\ref{s:initializers}.
 
-\section{immediate-objects}{Immediate objects}
+\section{s:immediate-objects}{Immediate objects}
 
 There is another, more direct way to create an object: create it
 without going through a class.
@@ -183,7 +183,7 @@ are not abbreviated, and you cannot inherit from them. But these two
 weaknesses can be advantages in some situations, as we will see
 in sections~\ref{s:reference-to-self} and~\ref{s:parameterized-classes}.
 
-\section{reference-to-self}{Reference to self}
+\section{s:reference-to-self}{Reference to self}
 
 A method or an initializer can invoke methods on self (that is,
 the current object).  For that, self must be explicitly bound, here to
@@ -229,7 +229,7 @@ let my_int =
   end;;
 \end{caml_example}
 
-\section{initializers}{Initializers}
+\section{s:initializers}{Initializers}
 
 Let-bindings within class definitions are evaluated before the object
 is constructed. It is also possible to evaluate an expression
@@ -254,7 +254,7 @@ Initializers are particularly useful to enforce invariants.
 Another example can be seen in section~\ref{s:extended-bank-accounts}.
 
 
-\section{virtual-methods}{Virtual methods}
+\section{s:virtual-methods}{Virtual methods}
 
 It is possible to declare a method without actually defining it, using
 the keyword "virtual".  This method will be provided later in
@@ -294,7 +294,7 @@ class point2 x_init =
   end;;
 \end{caml_example}
 
-\section{private-methods}{Private methods}
+\section{s:private-methods}{Private methods}
 
 Private methods are methods that do not appear in object interfaces.
 They can only be invoked from other methods of the same object.
@@ -359,7 +359,7 @@ class point_again x =
 Of course, private methods can also be virtual. Then, the keywords must
 appear in this order "method private virtual".
 
-\section{class-interfaces}{Class interfaces}
+\section{s:class-interfaces}{Class interfaces}
 
 
 %XXX Differentiate class type and class interface ?
@@ -401,7 +401,7 @@ module Point : POINT = struct
 end;;
 \end{caml_example}
 
-\section{inheritance}{Inheritance}
+\section{s:inheritance}{Inheritance}
 
 We illustrate inheritance by defining a class of colored points that
 inherits from the class of points.  This class has all instance
@@ -432,7 +432,7 @@ let set_x p = p#set_x;;
 let incr p = set_x p (get_succ_x p);;
 \end{caml_example}
 
-\section{multiple-inheritance}{Multiple inheritance}
+\section{s:multiple-inheritance}{Multiple inheritance}
 
 Multiple inheritance is allowed. Only the last definition of a method
 is kept: the redefinition in a subclass of a method that was visible in
@@ -483,7 +483,7 @@ class another_printable_colored_point y c c' =
   end;;
 \end{caml_example}
 
-\section{parameterized-classes}{Parameterized classes}
+\section{s:parameterized-classes}{Parameterized classes}
 
 Reference cells can be implemented as objects.
 The naive definition fails to typecheck:
@@ -588,7 +588,7 @@ class ['a] colored_circle c =
   end;;
 \end{caml_example}
 
-\section{polymorphic-methods}{Polymorphic methods}
+\section{s:polymorphic-methods}{Polymorphic methods}
 
 While parameterized classes may be polymorphic in their contents, they
 are not enough to allow polymorphism of method use.
@@ -717,7 +717,7 @@ In method "m1", "o" must be an object with at least a method "n1",
 itself polymorphic.  In method "m2", the argument of "n2" and "x" must
 have the same type, which is quantified at the same level as "'a".
 
-\section{using-coercions}{Using coercions}
+\section{s:using-coercions}{Using coercions}
 
 Subtyping is never implicit.  There are, however, two ways to perform
 subtyping.  The most general construction is fully explicit: both the
@@ -911,7 +911,7 @@ type 'a c'_class = 'a constraint 'a = < m : int; .. >;;
 \end{caml_example*}
 with an extra type variable capturing the open object type.
 
-\section{functional-objects}{Functional objects}
+\section{s:functional-objects}{Functional objects}
 
 It is possible to write a version of class "point" without assignments
 on the instance variables. The override construct "{< ... >}" returns a copy of
@@ -958,7 +958,7 @@ object of the subclass.
 Functional update is often used in conjunction with binary methods
 as illustrated in section~\ref{ss:string-as-class}.
 
-\section{cloning-objects}{Cloning objects}
+\section{s:cloning-objects}{Cloning objects}
 
 Objects can also be cloned, whether they are functional or imperative.
 The library function "Oo.copy" makes a shallow copy of an object. That is,
@@ -1056,7 +1056,7 @@ p # save; p # set 1; p # save; p # set 2;
 
 
 
-\section{recursive-classes}{Recursive classes}
+\section{s:recursive-classes}{Recursive classes}
 
 Recursive classes can be used to define objects whose types are
 mutually recursive.
@@ -1076,7 +1076,7 @@ Although their types are mutually recursive, the classes "widget" and
 "window" are themselves independent.
 
 
-\section{binary-methods}{Binary methods}
+\section{s:binary-methods}{Binary methods}
 
 A binary method is a method which takes an argument of the same type
 as self. The class "comparable" below is a template for classes with a
@@ -1164,7 +1164,7 @@ class money x =
   end;;
 \end{caml_example}
 
-\section{friends}{Friends}
+\section{s:friends}{Friends}
 
 The above class "money" reveals a problem that often occurs with binary
 methods.  In order to interact with other objects of the same class, the

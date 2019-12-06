@@ -21,15 +21,15 @@
 \let\subsubsection*=\@oldsubsubsection*
 }
 
-\renewcommand{\section}[2]{\@oldsection{\label{s:#1}#2}}
-\renewcommand{\section*}[2]{\@oldsection*{\label{s:#1}#2}}
-\renewcommand{\subsection}[2]{\@oldsubsection{\label{ss:#1}#2}}
-\renewcommand{\subsection*}[2]{\@oldsubsection*{\label{ss:#1}#2}}
-\renewcommand{\subsubsection}[2]{\@oldsubsubsection{\label{sss:#1}#2}}
-\renewcommand{\subsubsection*}[2]{\@oldsubsubsection*{\label{sss:#1}#2}}
+\renewcommand{\section}[2]{\@oldsection{\label{#1}#2}}
+\renewcommand{\section*}[2]{\@oldsection*{\label{#1}#2}}
+\renewcommand{\subsection}[2]{\@oldsubsection{\label{#1}#2}}
+\renewcommand{\subsection*}[2]{\@oldsubsection*{\label{#1}#2}}
+\renewcommand{\subsubsection}[2]{\@oldsubsubsection{\label{#1}#2}}
+\renewcommand{\subsubsection*}[2]{\@oldsubsubsection*{\label{#1}#2}}
 
 % For paragraph, we do not make labels compulsory
-\newcommand{\lparagraph}[2]{\paragraph{\label{p:#1}#2}}
+\newcommand{\lparagraph}[2]{\paragraph{\label{#1}#2}}
 
 % Colors for links
 

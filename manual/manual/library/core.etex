@@ -15,7 +15,7 @@ unqualified identifiers to refer to the functions provided by the
 "Stdlib" module, without adding a "open Stdlib" directive.
 \end{itemize}
 
-\section*{core-conventions}{Conventions}
+\section*{s:core-conventions}{Conventions}
 
 The declarations of the built-in types and the components of module
 "Stdlib" are printed one by one in typewriter font, followed by a
@@ -24,7 +24,7 @@ indexed at the end of this report.
 
 \input{builtin.tex}
 \ifouthtml
-\section{stdlib-module}{Module {\tt Stdlib}: the initially opened module}
+\section{s:stdlib-module}{Module {\tt Stdlib}: the initially opened module}
 \begin{links}
 \item \ahref{libref/Stdlib.html}{Module \texttt{Stdlib}: the initially opened module}
 \item \ahref{libref/Pervasives.html}{Module \texttt{Pervasives}: deprecated alias for Stdlib}

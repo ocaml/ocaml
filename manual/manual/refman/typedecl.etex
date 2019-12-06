@@ -1,7 +1,7 @@
-\section{tydef}{Type and exception definitions}
+\section{s:tydef}{Type and exception definitions}
 %HEVEA\cutname{typedecl.html}%
 
-\subsection{typedefs}{Type definitions}
+\subsection{ss:typedefs}{Type definitions}
 
 Type definitions bind type constructors to data types: either
 variant types, record types, type abbreviations, or abstract data
@@ -208,7 +208,7 @@ parameter @ident@ has to be an instance of @typexpr@ (more precisely,
 @ident@ and @typexpr@ are unified). Type variables of @typexpr@ can
 appear in the type equation and the type declaration.
 
-\subsection{exndef}{Exception definitions}
+\subsection{ss:exndef}{Exception definitions}
 \ikwd{exception\@\texttt{exception}}
 
 \begin{syntax}
