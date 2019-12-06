@@ -1,4 +1,4 @@
-\section{Constants}
+\section{s:const}{Constants}
 %HEVEA\cutname{const.html}
 
 \ikwd{false\@\texttt{false}}
@@ -25,7 +25,7 @@ constant:
   | "`"tag-name
 \end{syntax}
 See also the following language extension:
-\hyperref[s:extension-literals]{extension literals}.
+\hyperref[ss:extension-literals]{extension literals}.
 
 The syntactic class of constants comprises literals from the four
 base types (integers, floating-point numbers, characters, character
