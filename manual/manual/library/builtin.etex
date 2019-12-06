@@ -1,4 +1,4 @@
-\section{Built-in types and predefined exceptions}
+\section{s:core-builtins}{Built-in types and predefined exceptions}
 
 The following built-in types and predefined exceptions are always
 defined in the
@@ -6,7 +6,7 @@ compilation environment, but are not part of any module.  As a
 consequence, they can only be referred by their short names.
 
 %\vspace{0.1cm}
-\subsection*{Built-in types}
+\subsection{ss:builtin-types}*{Built-in types}
 %\vspace{0.1cm}
 
 \begin{ocamldoccode}
@@ -154,7 +154,7 @@ type 'a lazy_t
 \end{ocamldocdescription}
 
 %\vspace{0.1cm}
-\subsection*{Predefined exceptions}
+\subsection*{ss:predef-exn}{Predefined exceptions}
 %\vspace{0.1cm}
 
 \begin{ocamldoccode}
@@ -276,7 +276,7 @@ exception Undefined_recursive_module of (string * int * int)
 \index{Undefinedrecursivemodule@\verb`Undefined_recursive_module`}
 \begin{ocamldocdescription}
    Exception raised when an ill-founded recursive module definition
-   is evaluated.  (See section~\ref{s-recursive-modules}.)
+   is evaluated.  (See section~\ref{s:recursive-modules}.)
    The arguments are the location of the definition in the source code
    (file name, line number, column number).
 \end{ocamldocdescription}

@@ -1,9 +1,9 @@
-\section{Classes}
+\section{s:classes}{Classes}
 %HEVEA\cutname{classes.html}
 Classes are defined using a small language, similar to the module
 language.
 
-\subsection{Class types}
+\subsection{ss:classes:class-types}{Class types}
 
 Class types are the class-level equivalent of type expressions: they
 specify the general shape and type properties of classes.
@@ -41,7 +41,7 @@ See also the following language extensions:
 \hyperref[s:attributes]{attributes} and
 \hyperref[s:extension-nodes]{extension nodes}.
 
-\subsubsection*{Simple class expressions}
+\subsubsection*{sss:clty:simple}{Simple class expressions}
 
 The expression @classtype-path@ is equivalent to the class type bound to
 the name @classtype-path@. Similarly, the expression
@@ -50,14 +50,14 @@ the parametric class type bound to the name @classtype-path@, in which
 type parameters have been instantiated to respectively @typexpr_1@,
 \ldots @typexpr_n@.
 
-\subsubsection*{Class function type}
+\subsubsection*{sss:clty-fun}{Class function type}
 
 The class type expression @typexpr '->' class-type@ is the type of
 class functions (functions from values to classes) that take as
 argument a value of type @typexpr@ and return as result a class of
 type @class-type@.
 
-\subsubsection*{Class body type}
+\subsubsection*{sss:clty:body}{Class body type}
 
 The class type expression
 @'object' ['(' typexpr ')'] {class-field-spec} 'end'@
@@ -75,11 +75,11 @@ virtual method will match a concrete method, which makes it possible
 to forget its implementation. An immutable instance variable will match a
 mutable instance variable.
 
-\subsubsection*{Local opens}
+\subsubsection*{sss:clty-open}{Local opens}
 
 Local opens are supported in class types since OCaml 4.06.
 
-\subsubsection*{Inheritance}
+\subsubsection*{sss:clty-inheritance}{Inheritance}
 
 \ikwd{inherit\@\texttt{inherit}}
 
@@ -88,7 +88,7 @@ methods and instance variables from other class types.
 The instance variable and method types from @class-body-type@ are added
 into the current class type.
 
-\subsubsection*{Instance variable specification}
+\subsubsection*{sss:clty-variable}{Instance variable specification}
 
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
@@ -107,8 +107,7 @@ initialized. It can be initialized later through inheritance.
 An instance variable specification will hide any previous
 specification of an instance variable of the same name.
 
-\subsubsection*{Method specification}
-\label{sec-methspec}
+\subsubsection*{sss:clty-meth}{Method specification}
 
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
@@ -129,7 +128,7 @@ If several specifications are present for the same method, they
 must have compatible types.
 Any non-private specification of a method forces it to be public.
 
-\subsubsection*{Virtual method specification}
+\subsubsection*{sss:class-virtual-meth-spec}{Virtual method specification}
 
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
@@ -138,7 +137,7 @@ A virtual method specification is written @'method' ['private']
 'virtual' method-name ':' poly-typexpr@, where @method-name@ is the
 name of the method and @poly-typexpr@ its expected type.
 
-\subsubsection*{Constraints on type parameters}
+\subsubsection*{sss:class-constraints}{Constraints on type parameters}
 
 \ikwd{constraint\@\texttt{constraint}}
 
@@ -147,7 +146,7 @@ type expressions to be equal. This is typically used to specify type
 parameters: in this way, they can be bound to specific type
 expressions.
 
-\subsection{Class expressions}
+\subsection{ss:class-expr}{Class expressions}
 
 Class expressions are the class-level equivalent of value expressions:
 they evaluate to classes, thus providing implementations for the
@@ -203,7 +202,7 @@ See also the following language extensions:
 \hyperref[s:attributes]{attributes} and
 \hyperref[s:extension-nodes]{extension nodes}.
 
-\subsubsection*{Simple class expressions}
+\subsubsection*{sss:class-simple}{Simple class expressions}
 
 The expression @class-path@ evaluates to the class bound to the name
 @class-path@. Similarly, the expression
@@ -222,7 +221,7 @@ implementation @class-expr@ meets the type specification
 @class-expr@, except that all components not specified in
 @class-type@ are hidden and can no longer be accessed.
 
-\subsubsection*{Class application}
+\subsubsection*{sss:class-app}{Class application}
 
 Class application is denoted by juxtaposition of (possibly labeled)
 expressions. It denotes the class whose constructor is the first
@@ -232,7 +231,7 @@ only be evaluated when objects are created. In particular, side-effects
 caused by the application of the constructor will only occur at object
 creation time.
 
-\subsubsection*{Class function}
+\subsubsection*{sss:class-fun}{Class function}
 
 The expression @'fun' [['?']label-name':']pattern '->' class-expr@ evaluates
 to a function from values to classes.
@@ -253,7 +252,7 @@ is a short form for
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
 
-\subsubsection*{Local definitions}
+\subsubsection*{sss:class-localdefs}{Local definitions}
 
 The {\tt let} and {\tt let rec} constructs bind value names locally,
 as for the core language expressions.
@@ -263,11 +262,11 @@ definition, it will be evaluated when the class is created (just as if
 the definition was outside of the class).
 Otherwise, it will be evaluated when the object constructor is called.
 
-\subsubsection*{Local opens}
+\subsubsection*{sss:class-opens}{Local opens}
 
 Local opens are supported in class expressions since OCaml 4.06.
 
-\subsubsection*{Class\label{ss:class-body} body}
+\subsubsection*{sss:class-body}{Class body}
 \begin{syntax}
 class-body:  ['(' pattern [':' typexpr] ')'] { class-field }
 \end{syntax}
@@ -289,7 +288,7 @@ extensible.
 Since OCaml 4.01, it is an error if the same method or instance
 variable name is defined several times in the same class body.
 
-\subsubsection*{Inheritance}
+\subsubsection*{sss:class-inheritance}{Inheritance}
 
 \ikwd{inherit\@\texttt{inherit}}
 
@@ -310,7 +309,7 @@ redefined in the current class.
 The scope of this ancestor binding is limited to the current class.
 The ancestor method may be called from a subclass but only indirectly.
 
-\subsubsection*{Instance variable definition}
+\subsubsection*{sss:class-variables}{Instance variable definition}
 
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
@@ -333,7 +332,7 @@ However, if an instance variable is hidden by
 omitting it from an interface, it will be kept distinct from
 other instance variables with the same name.
 
-\subsubsection*{Virtual instance variable definition}
+\subsubsection*{sss:class-virtual-variable}{Virtual instance variable definition}
 
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
@@ -344,7 +343,7 @@ modifiable, and gives its type.
 
 Virtual instance variables were added in version 3.10.
 
-\subsubsection*{Method definition}
+\subsubsection*{sss:class-method}{Method definition}
 
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
@@ -396,7 +395,7 @@ instance variables @inst-var-name_1, \ldots, inst-var-name_n@ have
 been replaced by the values of the corresponding expressions @expr_1,
 \ldots, expr_n@.
 
-\subsubsection*{Virtual method definition}
+\subsubsection*{sss:class-virtual-meth}{Virtual method definition}
 
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
@@ -406,7 +405,7 @@ method-name ':' poly-typexpr@.  It specifies whether the method is
 public or private, and gives its type. If the method is intended to be
 polymorphic, the type must be explicitly polymorphic.
 
-\subsubsection*{Explicit overriding}
+\subsubsection*{sss:class-explicit-overriding}{Explicit overriding}
 
 Since Ocaml 3.12, the keywords @"inherit!"@, @"val!"@ and @"method!"@
 have the same semantics as @"inherit"@, @"val"@ and @"method"@, but
@@ -421,7 +420,7 @@ As a side-effect, these 3 keywords avoid the warnings~7
 (method override) and~13 (instance variable override).
 Note that warning~7 is disabled by default.
 
-\subsubsection*{Constraints on type parameters}
+\subsubsection*{sss:class-type-constraints}{Constraints on type parameters}
 
 \ikwd{constraint\@\texttt{constraint}}
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
@@ -429,7 +428,7 @@ type expressions to be equals. This is typically used to specify type
 parameters: in that way they can be bound to specific type
 expressions.
 
-\subsubsection*{Initializers}
+\subsubsection*{sss:class-initializers}{Initializers}
 
 \ikwd{initializer\@\texttt{initializer}}
 
@@ -437,7 +436,7 @@ A class initializer @'initializer' expr@ specifies an expression that
 will be evaluated whenever an object is created from the class, once
 all its instance variables have been initialized.
 
-\subsection{Class definitions}
+\subsection{ss:class-def}{Class definitions}
 \label{s:classdef}
 
 \ikwd{class\@\texttt{class}}
@@ -466,15 +465,15 @@ the type of the class, and defines two type abbreviations :
 @class-name@ and @'#' class-name@. The first one is the type of
 objects of this class, while the second is more general as it unifies
 with the type of any object belonging to a subclass (see
-section~\ref{s:sharp-types}).
+section~\ref{sss:typexpr-sharp-types}).
 
-\subsubsection*{Virtual class}
+\subsubsection*{sss:class-virtual}{Virtual class}
 
 A class must be flagged virtual if one of its methods is virtual (that
 is, appears in the class type, but is not actually defined).
 Objects cannot be created from a virtual class.
 
-\subsubsection*{Type parameters}
+\subsubsection*{sss:class-type-params}{Type parameters}
 
 The class type parameters correspond to the ones of the class type and
 of the two type abbreviations defined by the class binding.  They must
@@ -483,8 +482,7 @@ constraints.  So that the abbreviations are well-formed, type
 variables of the inferred type of the class must either be type
 parameters or be bound in the constraint clause.
 
-\subsection{Class specifications}
-\label{s:class-spec}
+\subsection{ss:class-spec}{Class specifications}
 
 \ikwd{class\@\texttt{class}}
 \ikwd{and\@\texttt{and}}
@@ -502,8 +500,7 @@ This is the counterpart in signatures of class definitions.
 A class specification matches a class definition if they have the same
 type parameters and their types match.
 
-\subsection{Class type definitions}
-\label{s:classtype}
+\subsection{ss:classtype}{Class type definitions}
 
 \ikwd{class\@\texttt{class}}
 \ikwd{type\@\texttt{type}}
