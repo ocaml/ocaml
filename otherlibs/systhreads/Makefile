@@ -40,6 +40,9 @@ OPTCOMPFLAGS=-O3
 else
 OPTCOMPFLAGS=
 endif
+ifeq "$(FUNCTION_SECTIONS)" "true"
+OPTCOMPFLAGS += -function-sections
+endif
 
 LIBNAME=threads
 

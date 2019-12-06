@@ -39,6 +39,9 @@ OPTCOMPFLAGS=-O3
 else
 OPTCOMPFLAGS=
 endif
+ifeq "$(FUNCTION_SECTIONS)" "true"
+OPTCOMPFLAGS += -function-sections
+endif
 
 COMPFLAGS += -I byte
 OPTCOMPFLAGS += -I native
