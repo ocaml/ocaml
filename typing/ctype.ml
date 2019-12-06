@@ -533,6 +533,26 @@ exception Non_closed of type_expr * bool
 let free_variables = ref []
 let really_closed = ref None
 
+(* [free_vars_rec] collects the variables of the input type
+   expression into the [free_variables] reference. It is used for
+   several different things in the type-checker, with the following
+   bells and whistles:
+   - If [really_closed] is Some typing environment, types in the environment
+     are expanded to check whether the apparently-free variable would vanish
+     during expansion.
+   - We collect both type variables and row variables, paired with a boolean
+     that is [true] if we have a row variable.
+   - We do not count "virtual" free variables -- free variables stored in
+     the abbreviation of an object type that has been expanded (we store
+     the abbreviations for use when displaying the type).
+
+   The functions [free_vars] and [free_variables] below receive
+   a typing environment as an optional [?env] parameter and
+   set [really_closed] accordingly.
+   [free_vars] returns a [(variable * bool) list], while
+   [free_variables] drops the type/row information
+   and only returns a [variable list].
+ *)
 let rec free_vars_rec real ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin

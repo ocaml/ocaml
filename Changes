@@ -31,6 +31,10 @@ Working version
 
 ### Tools:
 
+- #463: objinfo: better errors on object files coming
+  from a different (older or newer), incompatible compiler version.
+  (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
@@ -53,6 +57,10 @@ Working version
   (Gabriel Scherer, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
+
+ - #463: a new Misc.Magic_number module for user-friendly parsing
+   and validation of OCaml magic numbers.
+   (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
 - #8970: separate value patterns (matching on values) from computation patterns
   (matching on the effects of a copmutation) in the typedtree.
@@ -284,7 +292,7 @@ OCaml 4.10.0
   functions, this can be replaced with calls to
   caml_process_pending_actions at safe points.
   Side effect of this change: in bytecode mode, polling for
-  asynchronous callbacks is perfomed at every minor heap allocation,
+  asynchronous callbacks is performed at every minor heap allocation,
   in addition to function calls and loops as in previous OCaml
   releases.
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
@@ -533,6 +541,10 @@ OCaml 4.10.0
 
 - #8981: Fix check for incompatible -c and -o options.
   (Greta Yorsh, review by Damien Doligez)
+
+- #9019, #9154: Unsound exhaustivity of GADTs from incomplete unification
+  Also fixes bug found by Thomas Refis in #9012
+  (Jacques Garrigue, report and review by Leo White, Thomas Refis)
 
 - #9031: Unregister Windows stack overflow handler while shutting
   the runtime down.
