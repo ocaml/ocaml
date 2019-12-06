@@ -302,22 +302,26 @@ let get_gadt_equations_level () =
     Some y -> y
   | None -> assert false
 
+let nothing_equated = TypePairs.create 0
+
 (* unification inside type_pat*)
-let unify_pat_types ?(refine = None) loc env ty ty' =
+let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
   try
     match refine with
     | Some allow_recursive ->
-        unify_gadt ~loc
-          ~equations_level:(get_gadt_equations_level ())
-          ~principal_level:(get_current_level ())
+        unify_gadt ~equations_level:(get_gadt_equations_level ())
           ~allow_recursive env ty ty'
     | None ->
-        unify !env ty ty'
+        unify !env ty ty';
+        nothing_equated
   with
   | Unify trace ->
       raise(Error(loc, !env, Pattern_type_clash(trace, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
+
+let unify_pat_types ?refine loc env ty ty' =
+  ignore (unify_pat_types_return_equated_pairs ?refine loc env ty ty')
 
 let unify_pat ?refine env pat expected_ty =
   try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
@@ -1561,12 +1565,36 @@ and type_pat_aux
       (* PR#7214: do not use gadt unification for toplevel lets *)
       let refine =
         if refine = None && constr.cstr_generalized && no_existentials = None
-        then Some false else refine in
-      unify_pat_types ~refine loc env ty_res expected_ty;
+        then Some false
+        else refine
+      in
+      let equated_types =
+        unify_pat_types_return_equated_pairs ~refine loc env ty_res expected_ty
+      in
       end_def ();
       generalize_structure expected_ty;
       generalize_structure ty_res;
       List.iter generalize_structure ty_args;
+      if !Clflags.principal then (
+        let exception Warn_only_once in
+        try
+          TypePairs.iter (fun (t1, t2) () ->
+            generalize_structure t1;
+            generalize_structure t2;
+            if t1.level <> generic_level || t2.level <> generic_level then
+              let msg =
+                Format.asprintf
+                  "typing this pattern requires considering@ %a@ and@ %a@ as \
+                   equal.@,\
+                   But the knowledge of these types"
+                  Printtyp.type_expr t1
+                  Printtyp.type_expr t2
+              in
+              Location.prerr_warning loc (Warnings.Not_principal msg);
+              raise Warn_only_once
+          ) equated_types
+        with Warn_only_once -> ()
+      );
 
       let rec check_non_escaping p =
         match p.ppat_desc with

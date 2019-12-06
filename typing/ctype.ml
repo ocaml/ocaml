@@ -303,7 +303,7 @@ type unification_mode =
 
 type equations_generation =
   | Forbidden
-  | Allowed_but_warn_on_non_generic_parts of Location.t
+  | Allowed of { equated_types : unit TypePairs.t }
 
 let umode = ref Expression
 let equations_generation = ref Forbidden
@@ -2112,7 +2112,6 @@ let deep_occur t0 ty =
 *)
 
 let gadt_equations_level = ref None
-let principal_level = ref None
 
 let get_gadt_equations_level () =
   match !gadt_equations_level with
@@ -2430,7 +2429,7 @@ let find_lowest_level ty =
 let find_expansion_scope env path =
   (Env.find_type path env).type_expansion_scope
 
-let add_gadt_equation ~principally_known env source destination =
+let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
   if local_non_recursive_abbrev !env source destination then begin
@@ -2439,12 +2438,6 @@ let add_gadt_equation ~principally_known env source destination =
       max (Path.scope source) (get_gadt_equations_level ())
     in
     let decl = new_declaration expansion_scope (Some destination) in
-    begin match principally_known with
-    | Ok () -> ()
-    | Error loc ->
-      Location.prerr_warning loc
-        (Warnings.Not_principal "This introduction of a GADT equation")
-    end;
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end
@@ -2553,14 +2546,10 @@ let unify1_var env t1 t2 =
     raise e
 
 (* Can only be called when generate_equations is true *)
-let using_only_principal_information t1 t2 =
-  match !equations_generation, !principal_level with
-  | Forbidden, _
-  | _, None -> assert false
-  | Allowed_but_warn_on_non_generic_parts loc, Some lev ->
-    if t1.level >= lev && t2.level >= lev
-    then Ok ()
-    else Error loc
+let record_equation t1 t2 =
+  match !equations_generation with
+  | Forbidden -> assert false
+  | Allowed { equated_types } -> TypePairs.add equated_types (t1, t2) ()
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
@@ -2722,33 +2711,29 @@ and unify3 env t1 t1' t2 t2' =
          Tconstr (path',[],_))
         when is_instantiable !env path && is_instantiable !env path'
         && can_generate_equations () ->
-          let principally_known = using_only_principal_information t1' t2' in
           let source, destination =
             if Path.scope path > Path.scope path'
             then  path , t2'
             else  path', t1'
           in
-          add_gadt_equation ~principally_known env source destination
+          record_equation t1' t2';
+          add_gadt_equation env source destination
       | (Tconstr (path,[],_), _)
         when is_instantiable !env path && can_generate_equations () ->
-          let principally_known = using_only_principal_information t1' t2' in
           reify env t2';
-          add_gadt_equation ~principally_known env path t2'
+          record_equation t1' t2';
+          add_gadt_equation env path t2'
       | (_, Tconstr (path,[],_))
         when is_instantiable !env path && can_generate_equations () ->
-          let principally_known = using_only_principal_information t1' t2' in
           reify env t1';
-          add_gadt_equation ~principally_known env path t1'
+          record_equation t1' t2';
+          add_gadt_equation env path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
           if can_generate_equations () then (
             mcomp !env t1' t2';
-            match using_only_principal_information t1' t2' with
-            | Ok () -> ()
-            | Error loc ->
-              Location.prerr_warning loc
-                (Warnings.Not_principal "'some error message here'")
+            record_equation t1' t2'
           )
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields env fi1 fi2;
@@ -2773,11 +2758,7 @@ and unify3 env t1 t1' t2 t2' =
               reify env t2';
               if can_generate_equations () then (
                 mcomp !env t1' t2';
-                match using_only_principal_information t1' t2' with
-                | Ok () -> ()
-                | Error loc ->
-                  Location.prerr_warning loc
-                    (Warnings.Not_principal "'some error message here'")
+                record_equation t1' t2'
               )
           end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
@@ -3101,19 +3082,19 @@ let unify env ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_trace !env trace))
 
-let unify_gadt ~loc ~equations_level:lev ~principal_level:plev ~allow_recursive
-    (env:Env.t ref) ty1 ty2 =
+let unify_gadt ~equations_level:lev ~allow_recursive (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
     gadt_equations_level := Some lev;
-    principal_level := Some plev;
+    let equated_types = TypePairs.create 0 in
     set_mode_pattern
-      ~generate:(Allowed_but_warn_on_non_generic_parts loc)
+      ~generate:(Allowed { equated_types })
       ~injective:true
       ~allow_recursive
       (fun () -> unify env ty1 ty2);
     gadt_equations_level := None;
     TypePairs.clear unify_eq_set;
+    equated_types
   with e ->
     gadt_equations_level := None;
     TypePairs.clear unify_eq_set;
