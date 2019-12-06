@@ -293,7 +293,7 @@ and comment = parse
       string lexbuf;
       reset_string_buffer();
       comment lexbuf }
-  | '{' (['a'-'z' '_'] * as delim) '|'
+  | '{' ('%' '%'? identstart identbody* ('.' identstart identbody*)* [' ' '\009' '\012']*)? (['a'-'z' '_']* as delim) "|"
     { quoted_string delim lexbuf;
       comment lexbuf }
   | "'"
@@ -321,7 +321,7 @@ and action = parse
       handle_lexical_error string lexbuf;
       reset_string_buffer();
       action lexbuf }
-  | '{' (['a'-'z' '_'] * as delim) '|'
+  | '{' ('%' '%'? identstart identbody* ('.' identstart identbody*)* [' ' '\009' '\012']*)? (['a'-'z' '_']* as delim) "|"
     { quoted_string delim lexbuf;
       action lexbuf }
   | "'"
