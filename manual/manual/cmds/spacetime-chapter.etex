@@ -1,7 +1,7 @@
 \chapter{Memory profiling with Spacetime}
 %HEVEA\cutname{spacetime.html}
 
-\section{Overview}
+\section{s:spacetime-overview}{Overview}
 
 Spacetime is the name given to functionality within the OCaml compiler that
 provides for accurate profiling of the memory behaviour of a program.
@@ -16,7 +16,7 @@ Spacetime only analyses the memory behaviour of a program with respect to
 the OCaml heap allocators and garbage collector.  It does not analyse
 allocation on the C heap.  Spacetime does not affect the memory behaviour
 of a program being profiled with the exception of any change caused by the
-overhead of profiling (see section\ \ref{runtimeoverhead})---for example
+overhead of profiling (see section\ \ref{s:spacetime-runtimeoverhead})---for example
 the program running slower might cause it to allocate less memory in total.
 
 Spacetime is currently only available for x86-64 targets and has only been
@@ -25,9 +25,9 @@ Unix-like systems and provision has been made for running under
 Windows). It is expected that the set of supported platforms will
 be extended in the future.
 
-\section{How to use it}
+\section{s:spacetime-howto}{How to use it}
 
-\subsection{Building}
+\subsection{ss:spacetime-building}{Building}
 
 To use Spacetime it is necessary to use an OCaml compiler that was
 configured with the {\tt -spacetime} option.  It is not possible to select
@@ -55,12 +55,12 @@ Spacetime-configured compilers run slower and occupy more memory than their
 counterparts.  It is hoped this will be fixed in the future as part of
 improved cross compilation support.
 
-\subsection{Running}
+\subsection{ss:spacetime-running}{Running}
 
 Programs built with Spacetime instrumentation have a dependency on
 the {\tt libunwind} library unless that was unavailable at configure time or
 the {\tt -disable-libunwind} option was specified
-(see section\ \ref{runtimeoverhead}).
+(see section\ \ref{s:spacetime-runtimeoverhead}).
 
 Setting the {\tt OCAML\_SPACETIME\_INTERVAL} environment variable to an
 integer representing a number of milliseconds before running a program built
@@ -88,7 +88,7 @@ are then not relevant.)  Full documentation as regards this method of profiling
 is provided in the standard library documentation (section\ \ref{c:stdlib})
 for the {\tt Spacetime} module.
 
-\subsection{Analysis}
+\subsection{ss:spacetime-analysis}{Analysis}
 
 The compiler distribution does not itself provide the facility for analysing
 Spacetime output files; this is left to external tools.  The first such tool
@@ -96,7 +96,7 @@ will appear in OPAM as a package called {\tt prof_spacetime}.  That tool will
 provide interactive graphical and terminal-based visualisation of
 the results of profiling.
 
-\section{Runtime overhead}\label{runtimeoverhead}
+\section{s:spacetime-runtimeoverhead}{Runtime overhead}
 
 The runtime overhead imposed by Spacetime varies considerably depending on
 the particular program being profiled.  The overhead may be as low as
@@ -112,7 +112,7 @@ Programs running with Spacetime instrumentation consume significantly more
 memory than their non-instrumented counterparts.  It is expected that this
 memory overhead will also be reduced in the future.
 
-\section{For developers}
+\section{s:spacetime-dev}{For developers}
 
 The compiler distribution provides an ``{\tt otherlibs}'' library called
 {\tt raw\_spacetime\_lib} for decoding Spacetime files.  This library

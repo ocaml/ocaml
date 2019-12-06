@@ -39,9 +39,11 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \begin{latexonly}
+{
+\ocamldocinputstart
 \input{Unix.tex}
 
-\section{Module \texttt{UnixLabels}: labelized version of the interface}
+\section{s:Module \texttt{UnixLabels}: labelized version of the interface}
 \label{UnixLabels}
 \index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
 
@@ -50,6 +52,7 @@ the addition of labels. You may see these labels directly by looking
 at "unixLabels.mli", or by using the "ocamlbrowser" tool.
 
 \newpage
+}
 \end{latexonly}
 
 \begin{windows}

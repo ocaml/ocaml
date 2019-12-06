@@ -293,6 +293,11 @@ OCaml 4.10 release branch
   (Florian Angelettion, review by Gabriel Scherer,
    report by Clément Busschaert)
 
+- #9101: manual, add links to section anchor before the section title,
+  make the name of those anchor explicits.
+  (Florian Angeletti, review by Daniel Bünzli, Sébastien Hinderer,
+   and Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #8833: Hint for (type) redefinitions in toplevel session

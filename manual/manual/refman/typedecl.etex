@@ -1,8 +1,7 @@
-\section{Type and exception definitions}
+\section{s:tydef}{Type and exception definitions}
 %HEVEA\cutname{typedecl.html}%
 
-\subsection{Type definitions}
-\label{s:type-defs}
+\subsection{ss:typedefs}{Type definitions}
 
 Type definitions bind type constructors to data types: either
 variant types, record types, type abbreviations, or abstract data
@@ -179,7 +178,8 @@ The type variables appearing as type parameters can optionally be
 prefixed by "+" or "-" to indicate that the type constructor is
 covariant or contravariant with respect to this parameter.  This
 variance information is used to decide subtyping relations when
-checking the validity of @":>"@ coercions (see section \ref{s:coercions}).
+checking the validity of @":>"@ coercions
+(see section \ref{ss:expr-coercions}).
 
 For instance, "type +'a t" declares "t" as an abstract type that is
 covariant in its parameter; this means that if the type $\tau$ is a
@@ -208,7 +208,7 @@ parameter @ident@ has to be an instance of @typexpr@ (more precisely,
 @ident@ and @typexpr@ are unified). Type variables of @typexpr@ can
 appear in the type equation and the type declaration.
 
-\subsection{Exception definitions} \label{s:excdef}
+\subsection{ss:exndef}{Exception definitions}
 \ikwd{exception\@\texttt{exception}}
 
 \begin{syntax}

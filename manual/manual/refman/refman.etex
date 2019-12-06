@@ -2,9 +2,9 @@
 %HEVEA\cutname{language.html}
 
 %better html output that way, sniff.
-%HEVEA\subsection*{Foreword}
+%HEVEA\subsection*{ss:foreword}{Foreword}
 %BEGIN LATEX
-\section*{Foreword}
+\section*{s:foreword}{Foreword}
 %END LATEX
 
 This document is intended as a reference manual for the OCaml
@@ -20,7 +20,7 @@ mathematical framework required to express them, while they are
 definitely part of a full formal definition of the language.
 
 
-\subsection*{Notations}
+\subsection*{ss:notations}{Notations}
 
 The syntax of the language is given in BNF-like notation. Terminal
 symbols are set in typewriter font (@'like' 'this'@).
