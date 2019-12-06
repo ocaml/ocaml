@@ -22,6 +22,9 @@ script: tools/ci/travis/travis-ci.sh
 matrix:
   include:
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0
+  - env:
+    - CI_KIND=build XARCH=s390x CONFIG_ARG=--enable-flambda OCAMLRUNPARAM=b,v=0
+    arch: s390x
   - env: CI_KIND=build XARCH=i386 CONFIG_ARG=--disable-stdlib-manpages
     addons:
       apt:
@@ -38,8 +41,19 @@ matrix:
         packages:
         - texlive-latex-extra
         - texlive-fonts-recommended
+  - env: CI_KIND=build XARCH=s390x
+    arch: s390x
+    addons:
+      apt:
+        packages:
+        - texlive-latex-extra
+        - texlive-fonts-recommended
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--disable-shared
   - env: CI_KIND=build XARCH=x64 MIN_BUILD=1
+  - env: CI_KIND=build XARCH=s390x CONFIG_ARG=--disable-shared
+    arch: s390x
+  - env: CI_KIND=build XARCH=s390x MIN_BUILD=1
+    arch: s390x
   - env: CI_KIND=changes
   - env: CI_KIND=manual
   - env: CI_KIND=check-typo

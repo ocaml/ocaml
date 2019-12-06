@@ -118,6 +118,9 @@ EOF
       AS='as' ASPP='gcc -c' \
       $configure_flags
     ;;
+  s390x)
+    ./configure $configure_flags
+    ;;
   *)
     echo unknown arch
     exit 1
