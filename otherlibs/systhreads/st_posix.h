@@ -76,16 +76,7 @@ static INLINE void st_thread_cleanup(void)
   return;
 }
 
-/* Thread termination */
-
-CAMLnoreturn_start
-static void st_thread_exit(void)
-CAMLnoreturn_end;
-
-static void st_thread_exit(void)
-{
-  pthread_exit(NULL);
-}
+/* Thread join */
 
 static void st_thread_join(st_thread_id thr)
 {

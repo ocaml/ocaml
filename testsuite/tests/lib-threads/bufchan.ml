@@ -15,12 +15,14 @@ type 'a buffer_channel = {
   thread: Thread.t;
 }
 
+exception Exit
+
 let new_buffer_channel() =
   let ic = new_channel() in
   let oc = new_channel() in
   let rec buffer_process front rear =
     match (front, rear) with
-    | (["EOF"], []) -> Thread.exit ()
+    | (["EOF"], []) -> raise Exit
     | ([], []) -> buffer_process [sync(receive ic)] []
     | (hd::tl, _) ->
         select [
@@ -28,7 +30,11 @@ let new_buffer_channel() =
           wrap (send oc hd) (fun () -> buffer_process tl rear)
         ]
     | ([], _) -> buffer_process (List.rev rear) [] in
-  let t = Thread.create (buffer_process []) [] in
+  let thread () =
+    try buffer_process [] []
+    with Exit -> ()
+  in
+  let t = Thread.create thread () in
   { input = ic; output = oc; thread = t }
 
 let buffer_send bc data =

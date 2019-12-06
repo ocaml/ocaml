@@ -81,7 +81,6 @@ struct caml_thread_struct {
   value * gc_regs;          /* Saved value of Caml_state->gc_regs */
   char * exception_pointer; /* Saved value of Caml_state->exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
-  struct longjmp_buffer * exit_buf; /* For thread exit */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   value internal_spacetime_trie_root;
   value internal_spacetime_finaliser_trie_root;
@@ -135,12 +134,6 @@ static intnat thread_next_ident = 0;
 static value caml_threadstatus_new (void);
 static void caml_threadstatus_terminate (value);
 static st_retcode caml_threadstatus_wait (value);
-
-/* Imports from the native-code runtime system */
-#ifdef NATIVE_CODE
-extern struct longjmp_buffer caml_termination_jmpbuf;
-extern void (*caml_termination_hook)(void);
-#endif
 
 /* Hook for scanning the stacks of the other threads */
 
@@ -352,7 +345,6 @@ static caml_thread_t caml_thread_new_info(void)
   th->last_retaddr = 1;
   th->exception_pointer = NULL;
   th->local_roots = NULL;
-  th->exit_buf = NULL;
 #ifdef WITH_SPACETIME
   /* CR-someday mshinwell: The commented-out changes here are for multicore,
      where we think we should have one trie per domain. */
@@ -484,9 +476,6 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   curr_thread->prev = curr_thread;
   all_threads = curr_thread;
   curr_thread->backtrace_last_exn = Val_unit;
-#ifdef NATIVE_CODE
-  curr_thread->exit_buf = &caml_termination_jmpbuf;
-#endif
   /* The stack-related fields will be filled in at the next
      caml_enter_blocking_section */
   /* Associate the thread descriptor with the thread */
@@ -497,9 +486,6 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
-#ifdef NATIVE_CODE
-  caml_termination_hook = st_thread_exit;
-#endif
   caml_channel_mutex_free = caml_io_mutex_free;
   caml_channel_mutex_lock = caml_io_mutex_lock;
   caml_channel_mutex_unlock = caml_io_mutex_unlock;
@@ -553,7 +539,6 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   caml_thread_t th = (caml_thread_t) arg;
   value clos;
 #ifdef NATIVE_CODE
-  struct longjmp_buffer termination_buf;
   char tos;
   /* Record top of stack (approximative) */
   th->top_of_stack = &tos;
@@ -564,19 +549,11 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   /* Acquire the global mutex */
   caml_leave_blocking_section();
   caml_setup_stack_overflow_detection();
-#ifdef NATIVE_CODE
-  /* Setup termination handler (for caml_thread_exit) */
-  if (sigsetjmp(termination_buf.buf, 0) == 0) {
-    th->exit_buf = &termination_buf;
-#endif
-    /* Callback the closure */
-    clos = Start_closure(th->descr);
-    caml_modify(&(Start_closure(th->descr)), Val_unit);
-    caml_callback_exn(clos, Val_unit);
-    caml_thread_stop();
-#ifdef NATIVE_CODE
-  }
-#endif
+  /* Callback the closure */
+  clos = Start_closure(th->descr);
+  caml_modify(&(Start_closure(th->descr)), Val_unit);
+  caml_callback_exn(clos, Val_unit);
+  caml_thread_stop();
   /* The thread now stops running */
   return 0;
 }
@@ -705,37 +682,6 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   if (Caml_state->backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
-}
-
-/* Terminate current thread */
-
-CAMLprim value caml_thread_exit(value unit)   /* ML */
-{
-  struct longjmp_buffer * exit_buf = NULL;
-
-  if (curr_thread == NULL)
-    caml_invalid_argument("Thread.exit: not initialized");
-
-  /* In native code, we cannot call pthread_exit here because on some
-     systems this raises a C++ exception, and ocamlopt-generated stack
-     frames cannot be unwound.  Instead, we longjmp to the thread
-     creation point (in caml_thread_start) or to the point in
-     caml_main where caml_termination_hook will be called.
-     Note that threads created in C then registered do not have
-     a creation point (exit_buf == NULL).
- */
-#ifdef NATIVE_CODE
-  exit_buf = curr_thread->exit_buf;
-#endif
-  caml_thread_stop();
-  if (exit_buf != NULL) {
-    /* Native-code and (main thread or thread created by OCaml) */
-    siglongjmp(exit_buf->buf, 1);
-  } else {
-    /* Bytecode, or thread created from C */
-    st_thread_exit();
-  }
-  return Val_unit;  /* not reached */
 }
 
 /* Allow re-scheduling */

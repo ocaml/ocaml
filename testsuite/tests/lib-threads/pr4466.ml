@@ -20,17 +20,21 @@ open Printf
        (the one connected to the echo server)
 *)
 
+exception Exit
+
 let server sock =
-  let (s, _) = Unix.accept sock in
-  let buf = Bytes.make 1024 '>' in
-  for i = 1 to 3 do
-    let n = Unix.recv s buf 2 (Bytes.length buf - 2) [] in
-    if n = 0 then begin
-      Unix.close s; Thread.exit ()
-    end else begin
-      ignore (Unix.send s buf 0 (n + 2) [])
-    end
-  done
+  try
+    let (s, _) = Unix.accept sock in
+    let buf = Bytes.make 1024 '>' in
+    for i = 1 to 3 do
+      let n = Unix.recv s buf 2 (Bytes.length buf - 2) [] in
+      if n = 0 then begin
+        Unix.close s; raise Exit
+      end else begin
+        ignore (Unix.send s buf 0 (n + 2) [])
+      end
+    done
+  with Exit -> ()
 
 let reader s =
   let buf = Bytes.make 16 ' ' in

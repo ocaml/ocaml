@@ -81,17 +81,7 @@ static void st_thread_cleanup(void)
   if (ev != NULL) CloseHandle(ev);
 }
 
-/* Thread termination */
-
-CAMLnoreturn_start
-static void st_thread_exit(void)
-CAMLnoreturn_end;
-
-static void st_thread_exit(void)
-{
-  TRACE("st_thread_exit");
-  ExitThread(0);
-}
+/* Thread join */
 
 static void st_thread_join(st_thread_id thr)
 {
