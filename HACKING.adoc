@@ -38,7 +38,7 @@ make runtop
 make tests
 ----
 
-5. Install in a new opam switch to try things out:
+6. Install in a new opam switch to try things out:
 +
 ----
 opam compiler-conf install
@@ -52,7 +52,7 @@ opam switch create . --empty
 opam install .
 ----
 
-6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
+7. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
 
 See our <<Development tips and tricks>> for various helpful details,
 for example on how to automatically <<opam compiler script,create an
