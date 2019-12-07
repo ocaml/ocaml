@@ -364,10 +364,6 @@ OCaml 4.10 release branch
 - #8951: let make's default target build the compiler
   (Sébastien Hinderer, review by David Allsopp)
 
-- #8985, #8986: fix generation of the primitives when the locale collation is
-  incompatible with C.
-  (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
-
 - #8995: allow developers to specify frequently-used configure options in
   Git (ocaml.configure option) and a directory for host-specific, shareable
   config.cache files (ocaml.configure-cache option). See HACKING.adoc for
@@ -469,6 +465,10 @@ OCaml 4.09 maintenance branch:
 
 - #8965, #8979: Alpine build failure caused by check-parser-uptodate-or-warn.sh
   (Gabriel Scherer and David Allsopp, report by Anton Kochkov)
+
+- #8985, #8986: fix generation of the primitives when the locale collation is
+  incompatible with C.
+  (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
 
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
