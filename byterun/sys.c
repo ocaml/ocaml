@@ -481,10 +481,9 @@ extern int caml_win32_random_seed (intnat data[16]);
 
 CAMLprim value caml_sys_random_seed (value unit)
 {
-  CAMLparam0();
-  CAMLlocal1(res);
   intnat data[16];
   int n, i;
+  value res;
 #ifdef _WIN32
   n = caml_win32_random_seed(data);
 #else
@@ -519,7 +518,7 @@ CAMLprim value caml_sys_random_seed (value unit)
   /* Convert to an OCaml array of ints */
   res = caml_alloc_small(n, 0);
   for (i = 0; i < n; i++) caml_initialize_field(res, i, Val_long(data[i]));
-  CAMLreturn (res);
+  return res;
 }
 
 CAMLprim value caml_sys_const_big_endian(value unit)

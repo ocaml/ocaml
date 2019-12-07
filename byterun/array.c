@@ -53,12 +53,9 @@ CAMLexport int caml_is_double_array(value array)
 /* [ 'a array -> int -> 'a ] where 'a != float */
 CAMLprim value caml_array_get_addr(value array, value index)
 {
-  CAMLparam2(array, index);
-  CAMLlocal1(x);
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  caml_read_field(array, idx, &x);
-  CAMLreturn (x);
+  return Field(array, idx);
 }
 
 /* [ float array -> int -> float ] */
@@ -181,16 +178,13 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
 /* [ 'a array -> int -> 'a ] */
 CAMLprim value caml_array_unsafe_get(value array, value index)
 {
-  CAMLparam2(array, index);
-  CAMLlocal1(x);
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
-    CAMLreturn (caml_array_unsafe_get_float(array, index));
+    return caml_array_unsafe_get_float(array, index);
 #else
   CAMLassert (Tag_val(array) != Double_array_tag);
 #endif
-  caml_read_field(array, Long_val(index), &x);
-  CAMLreturn (x);
+  return Field(array, Long_val(index));
 }
 
 /* [ floatarray -> int -> float ] */
