@@ -5,6 +5,11 @@ Working version
 
 ### Language features
 
+- #8820: quoted extensions: {%foo|...|} is lighter syntax for
+  [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|}].
+  (Gabriel Radanne, Leo White and Gabriel Scherer,
+   request by Bikal Lem)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
@@ -12,6 +17,10 @@ Working version
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
 ### Code generation and optimizations:
+
+- #8637, #8805: Record debug info for each allocation
+  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
+   KC Sivaramakrishnan and Xavier Leroy)
 
 ### Standard library:
 
@@ -82,10 +91,6 @@ Working version
 
 ### Build system:
 
-- #9136: Don't propagate Cygwin-style prefix from configure to Makefile.config
-  on Windows ports.
-  (David Allsopp, review by Sébastien Hinderer)
-
 ### Bug fixes:
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
@@ -127,10 +132,6 @@ OCaml 4.10.0
   re-raising.
   (Guillaume Munch-Maccagnoni, review by Jacques-Henri Jourdan,
    Stephen Dolan, and Gabriel Scherer)
-
-- #8820: quoted extensions: {%foo|...|}
-  (Gabriel Radanne, Leo White and Gabriel Scherer,
-   request by Bikal Lem)
 
 ### Internal/compiler-libs changes:
 
@@ -308,10 +309,6 @@ OCaml 4.10.0
   the new hook caml_fatal_error_hook.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8637, #8805: Record debug info for each allocation
-  (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
-   KC Sivaramakrishnan and Xavier Leroy)
-
 - #8713: Introduce a state table in the runtime to contain the global variables
    which must be duplicated for each domain in the multicore runtime.
    (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
@@ -320,6 +317,14 @@ OCaml 4.10.0
 
 - #8641: Better call stacks when a C call is involved in byte code mode
   (Jacques-Henri Jourdan, review by Xavier Leroy)
+
+- #8634, #8668, #8684, #9103 (originally #847): Statistical memory profiling.
+  In OCaml 4.10, support for allocations in the minor heap in native
+  mode is not available, and callbacks for promotions and
+  deallocations are not available.
+  Hence, there is not any public API for this feature yet.
+  (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
+   and Damien Doligez)
 
 ### Tools:
 
@@ -338,7 +343,7 @@ OCaml 4.10.0
   (Daniel C. Bünzli, review by David Allsopp, Armaël Guéneau and
    Nicolás Ojeda Bär)
 
-- #9113: fix the rendering of ocamldoc multi-line code blocks
+- #9113: ocamldoc: fix the rendering of multi-line code blocks
   in the 'man' backend.
   (Gabriel Scherer, review by Florian Angeletti)
 
@@ -358,14 +363,6 @@ OCaml 4.10.0
 - #8657: Optimization in [Array.make] when initializing with unboxed
    or young values.
    (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
-
-- #8634, #8668, #8684, #9103 (originally #847): Statistical memory profiling.
-  In OCaml 4.10, support for allocations in the minor heap in native
-  mode is not available, and callbacks for promotions and
-  deallocations are not available.
-  Hence, there is not any public API for this feature yet.
-  (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
-   and Damien Doligez)
 
 - #7672, #1492: Add `Filename.quote_command` to produce properly-quoted
   commands for execution by Sys.command.
@@ -472,15 +469,15 @@ OCaml 4.10.0
 - #8951: let make's default target build the compiler
   (Sébastien Hinderer, review by David Allsopp)
 
-- #8985, #8986: fix generation of the primitives when the locale collation is
-  incompatible with C.
-  (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
-
 - #8995: allow developers to specify frequently-used configure options in
   Git (ocaml.configure option) and a directory for host-specific, shareable
   config.cache files (ocaml.configure-cache option). See HACKING.adoc for
   further details.
   (David Allsopp, review by Gabriel Scherer)
+
+- #9136: Don't propagate Cygwin-style prefix from configure to
+  Makefile.config on Windows ports.
+  (David Allsopp, review by Sébastien Hinderer)
 
 ### Compiler user-interface and warnings:
 
@@ -574,6 +571,10 @@ OCaml 4.09 maintenance branch:
 - #8965, #8979: Alpine build failure caused by check-parser-uptodate-or-warn.sh
   (Gabriel Scherer and David Allsopp, report by Anton Kochkov)
 
+- #8985, #8986: fix generation of the primitives when the locale collation is
+  incompatible with C.
+  (David Allsopp, review by Nicolás Ojeda Bär, report by Sebastian Rasmussen)
+
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
 
@@ -593,6 +594,7 @@ OCaml 4.09.0 (19 September 2019):
 
 - #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
   (Jeremy Yallop, report by Marcello Seri)
+
 
 - #2075, #7729: rename _T macro used to support Unicode in the (Windows) runtime
   in order to avoid compiler warning
