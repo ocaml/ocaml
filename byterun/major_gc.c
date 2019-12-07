@@ -748,6 +748,17 @@ void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
   acc->large_blocks += h->large_blocks;
 }
 
+void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
+{
+  acc->pool_words -= h->pool_words;
+  acc->pool_live_words -= h->pool_live_words;
+  acc->pool_live_blocks -= h->pool_live_blocks;
+  acc->pool_frag_words -= h->pool_frag_words;
+  acc->large_words -= h->large_words;
+  acc->large_blocks -= h->large_blocks;
+}
+
+
 void caml_sample_gc_stats(struct gc_stats* buf)
 {
   memset(buf, 0, sizeof(*buf));
