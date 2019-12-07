@@ -193,6 +193,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Op_val(x) ((value *) (x))
 #define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
+#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
 
 /* All values which are not blocks in the current domain's minor heap
    differ from caml_domain_state in at least one of the bits set in
@@ -423,18 +424,11 @@ static inline value Field_imm(value x, int i) {
 }
 
 CAMLextern value caml_read_barrier(value, int);
-static inline value Field(value x, int i) {
-  Assert (Hd_val(x));
-  value v = (((value*)x))[i];
-  //if (Is_young(v)) Assert(young_ptr < (char*)v);
-  return v;
-}
 
 static inline void caml_read_field(value x, int i, value* ret) {
   Assert (Hd_val(x));
   /* See Note [MM] in memory.c */
   value v = atomic_load_explicit(&Op_atomic_val(x)[i], memory_order_relaxed);
-  //if (Is_young(v)) Assert(young_ptr < (char*)v);
   *ret = v;
 }
 
