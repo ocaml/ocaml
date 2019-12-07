@@ -193,12 +193,32 @@ static void pool_release(struct caml_heap_state* local, pool* pool, sizeclass sz
   caml_plat_unlock(&pool_freelist.lock);
 }
 
-/* Allocating an object from a pool */
+static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
+  value* p = (value*)((char*)a + POOL_HEADER_SZ);
+  value* end = (value*)a + POOL_WSIZE;
+  mlsize_t wh = wsize_sizeclass[sz];
+  s->pool_frag_words += Wsize_bsize(POOL_HEADER_SZ);
 
+  while (p + wh <= end) {
+    header_t hd = (header_t)*p;
+    if (hd) {
+      s->pool_live_words += Whsize_hd(hd);
+      s->pool_frag_words += wh - Whsize_hd(hd);
+      s->pool_live_blocks++;
+    }
+
+    p += wh;
+  }
+  CAMLassert(end - p == wastage_sizeclass[sz]);
+  s->pool_frag_words += end - p;
+  s->pool_words += POOL_WSIZE;
+}
+
+/* Allocating an object from a pool */
 static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
 static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   pool* r;
-  intnat t;
+  pool* v;
 
   /* Hopefully we have a pool we can use directly */
   r = local->avail_pools[sz];
@@ -226,51 +246,37 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
       value* next_obj = r->next_obj;
       while( next_obj ) {
         free_objs++;
-        #ifdef DEBUG
         CAMLassert(next_obj[0] == 0);
-        #endif
         next_obj = (value*)next_obj[1];
       }
 
-      local->stats.pool_words += POOL_WSIZE;
-      pool_freelist.stats.pool_words -= POOL_WSIZE;
+      struct heap_stats tmp_stats = { 0 };
+
+      calc_pool_stats(r, sz, &tmp_stats);
+      caml_accum_heap_stats(&local->stats, &tmp_stats);
+      caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
 
       if (local->stats.pool_words > local->stats.pool_max_words)
         local->stats.pool_max_words = local->stats.pool_words;    
-
-      // Live words in adopted pool
-      t = POOL_WSIZE - (free_objs * sz);
-
-      local->stats.pool_live_words += t;
-      pool_freelist.stats.pool_live_words -= t;
-
-      // Live blocks in adopted pool
-      t = (POOL_WSIZE/sz) - free_objs;
-      local->stats.pool_live_blocks += t;
-      pool_freelist.stats.pool_live_blocks -= t;
-
-      // Frag words in adopted pool
-      t = POOL_HEADER_WSIZE + wastage_sizeclass[sz];
-      local->stats.pool_frag_words += t;
-      pool_freelist.stats.pool_frag_words -= t;
     }
   }
 
   /* There were no global avail pools, so let's adopt the full ones and try 
      our luck sweeping them later on */
   if( !r ) {
+    struct heap_stats tmp_stats = { 0 };
+
+    for(v = pool_freelist.global_full_pools[sz]; v; v = v->next ) {
+      calc_pool_stats(v, sz, &tmp_stats);
+    }
+
+    caml_accum_heap_stats(&local->stats, &tmp_stats);
+    caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
+
     int moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
 
-    t = POOL_WSIZE*moved_pools;
-
-    local->stats.pool_words += t;
-    pool_freelist.stats.pool_words -= t;
-
-    local->stats.pool_live_words += t;
-    pool_freelist.stats.pool_live_words -= t;
-
-    local->stats.pool_live_blocks += t / sz;
-    pool_freelist.stats.pool_live_blocks -= t / sz;
+    if (local->stats.pool_words > local->stats.pool_max_words)
+      local->stats.pool_max_words = local->stats.pool_words;    
   }
 
   caml_plat_unlock(&pool_freelist.lock);
@@ -655,7 +661,7 @@ struct mem_stats {
 static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
   value* v;
   for (v = a->next_obj; v; v = (value*)v[1]) {
-    Assert(*v == 0);
+    CAMLassert(*v == 0);
   }
 
   value* p = (value*)((char*)a + POOL_HEADER_SZ);
@@ -665,7 +671,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
 
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
-    Assert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
+    CAMLassert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
     if (hd) {
       s->live += Whsize_hd(hd);
       s->overhead += wh - Whsize_hd(hd);
@@ -675,7 +681,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
     }
     p += wh;
   }
-  Assert(end - p == wastage_sizeclass[sz]);
+  CAMLassert(end - p == wastage_sizeclass[sz]);
   s->overhead += end - p;
   s->alloced += POOL_WSIZE;
 }

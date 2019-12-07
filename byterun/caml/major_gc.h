@@ -57,6 +57,7 @@ struct heap_stats {
   intnat large_blocks;
 };
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
+void caml_remove_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 
 struct gc_stats {
   uint64_t minor_words;
