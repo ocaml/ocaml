@@ -38,6 +38,9 @@ Working version
 
 ### Other libraries:
 
+- #9106: Register printer for Unix_error in win32unix, as in unix.
+  (Christopher Zimmermann, review by David Allsopp)
+
 ### Tools:
 
 - #463: objinfo: better errors on object files coming
