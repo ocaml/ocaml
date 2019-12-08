@@ -42,6 +42,7 @@
   leaving it small for now means the overflow code gets more testing.
 */
 #define MARK_STACK_SIZE (1 << 14)
+#define INITIAL_POOLS_TO_RESCAN_LEN 4
 
 typedef struct {
   value block;
@@ -1379,9 +1380,10 @@ int caml_init_major_gc(caml_domain_state* d) {
   atomic_fetch_add(&num_domains_to_final_update_first, 1);
   atomic_fetch_add(&num_domains_to_final_update_last, 1);
 
-  Caml_state->pools_to_rescan_len = 0;
+  Caml_state->pools_to_rescan = caml_stat_alloc_noexc(INITIAL_POOLS_TO_RESCAN_LEN * sizeof(struct pool*));
+  Caml_state->pools_to_rescan_len = INITIAL_POOLS_TO_RESCAN_LEN;
   Caml_state->pools_to_rescan_count = 0;
-  
+
   return 0;
 }
 
