@@ -18,9 +18,14 @@
 #ifndef CAML_COMPATIBILITY_H
 #define CAML_COMPATIBILITY_H
 
-/* internal global variables renamed between 4.02.1 and 4.03.0 */
-#define caml_stat_top_heap_size Bsize_wsize(caml_stat_top_heap_wsz)
-#define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
+#if defined(CAML_NAME_SPACE) && !(CAML_NAME_SPACE + 0)
+  // Ensure CAML_NAME_SPACE has an integer value
+  #undef CAML_NAME_SPACE
+  #define CAML_NAME_SPACE 1
+#endif
+
+
+#if !defined(CAML_NAME_SPACE) || CAML_NAME_SPACE < 41000
 
 /* global variables moved to Caml_state in 4.10.0 */
 #define caml_stat_top_heap_wsz (Caml_state_field(stat_top_heap_wsz))
@@ -64,6 +69,18 @@
 #define caml_stat_major_collections (Caml_state_field(stat_major_collections))
 #define caml_stat_compactions (Caml_state_field(stat_compactions))
 #define caml_stat_heap_chunks (Caml_state_field(stat_heap_chunks))
+
+#endif // 4.10
+
+
+#if !defined(CAML_NAME_SPACE) || CAML_NAME_SPACE < 40300
+
+/* internal global variables renamed between 4.02.1 and 4.03.0 */
+#define caml_stat_top_heap_size Bsize_wsize(caml_stat_top_heap_wsz)
+#define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
+
+#endif // 4.03
+
 
 #ifndef CAML_NAME_SPACE
 
