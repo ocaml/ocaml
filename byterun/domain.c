@@ -201,7 +201,6 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
     caml_plat_unlock(&s->lock);
   }
   if (d) {
-
     d->state.internals = d;
     domain_self = d;
     SET_Caml_state((void*)(d->tls_area));
