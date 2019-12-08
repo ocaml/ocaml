@@ -1378,6 +1378,10 @@ int caml_init_major_gc(caml_domain_state* d) {
   }
   atomic_fetch_add(&num_domains_to_final_update_first, 1);
   atomic_fetch_add(&num_domains_to_final_update_last, 1);
+
+  Caml_state->pools_to_rescan_len = 0;
+  Caml_state->pools_to_rescan_count = 0;
+  
   return 0;
 }
 
@@ -1385,7 +1389,7 @@ void caml_teardown_major_gc() {
   CAMLassert(Caml_state->mark_stack->count == 0);
   caml_stat_free(Caml_state->mark_stack->stack);
   caml_stat_free(Caml_state->mark_stack);
-  caml_stat_free(Caml_state->pools_to_rescan);
+  if( Caml_state->pools_to_rescan_len > 0 ) caml_stat_free(Caml_state->pools_to_rescan);
   Caml_state->mark_stack = NULL;
 }
 
