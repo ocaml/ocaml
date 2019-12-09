@@ -606,6 +606,7 @@ and comment = parse
   | "\""
       {
         string_start_loc := Location.curr lexbuf;
+        store_string_char '\"';
         is_in_string := true;
         let _loc = try string lexbuf
         with Error (Unterminated_string, str_start) ->
@@ -617,10 +618,12 @@ and comment = parse
             error_loc loc (Unterminated_string_in_comment (start, str_start))
         in
         is_in_string := false;
+        store_string_char '\"';
         comment lexbuf }
   | "{" ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
       {
         string_start_loc := Location.curr lexbuf;
+        store_lexeme lexbuf;
         is_in_string := true;
         let _loc = try quoted_string delim lexbuf
         with Error (Unterminated_string, str_start) ->
@@ -632,6 +635,9 @@ and comment = parse
             error_loc loc (Unterminated_string_in_comment (start, str_start))
         in
         is_in_string := false;
+        store_string_char '|';
+        store_string delim;
+        store_string_char '}';
         comment lexbuf }
   | "\'\'"
       { store_lexeme lexbuf; comment lexbuf }
