@@ -861,9 +861,9 @@ module P = struct end
 module N = P
 \end{caml_example*}
 has type
-\caml
-\:module N = P
-\endcaml
+\begin{caml_example*}{signature}
+module N = P
+\end{caml_example*}
 
 Type-level module aliases are used when checking module path
 equalities. That is, in a context where module name @N@ is known to be

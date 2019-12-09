@@ -1893,6 +1893,7 @@ do not register the "struct custom_operations" with the deserializer
 using "register_custom_operations" (see below).
 
 \item "const struct custom_fixed_length* fixed_length" \\
+(Since 4.08.0)
 Normally, space in the serialized output is reserved to write the
 "bsize_32" and "bsize_64" fields returned by "serialize". However, for
 very short custom blocks, this space can be larger than the data
