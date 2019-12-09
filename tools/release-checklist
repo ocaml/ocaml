@@ -14,8 +14,9 @@ release".
 
 ## A few days in advance
 
-Send a mail on caml-devel to warn Gabriel (to make a pass on Changes)
-and the OCamlLabs folks (for OPAM testing).
+Send a mail on caml-devel to warn Gabriel (to make a pass on Changes;
+see the "Changes curation" appendix for more details) and the
+OCamlLabs folks (for OPAM testing).
 
 ## 0: release environment setup
 
@@ -346,7 +347,7 @@ See the email announce templates at the end of this file.
 
 
 
-# Announces
+# Appendix
 
 ## Announcing a production release:
 
@@ -447,7 +448,7 @@ Happy hacking,
 -- Damien Doligez for the OCaml team.
 ```
 
-#Changelog
+## Changelog template for a new version
 
 A list of common subsection for the "Changes" file:
 
@@ -474,3 +475,120 @@ A list of common subsection for the "Changes" file:
 
 ### Bug fixes:
 ```
+
+
+## Changes curation
+
+Here is the process that Gabriel uses to curate the Changes entries of
+a release in preparation. Feel free to take care of it if you wish.
+
+(In theory it would be possible to maintain the Changes in excellent
+ shape so that no curation would be necessary. In practice it is less
+ work and less friction to tolerate imperfect Changes entries, and
+ curate them before the release.)
+
+### Synchronizing the trunk Changes with release branches
+
+The Changes entries of a release branch or past release should be
+exactly included in the trunk Changes, in the section of this release
+(or release branch). Use an interactive diffing tool (for example
+"meld") to compare and synchronize the Changes files of trunk and
+release branches.
+
+Here are typical forms of divergence and their usual solutions:
+
+- A change entry is present in a different section in two branches.
+  (Typically: in the XX.YY section of the XX.YY release branch,
+  but in the trunk section of the trunk branch.)
+
+  This usually happens when the PR is written for a given branch
+  first, and then cherry-picked in an older maintenance branch, but
+  the cherry-picker forgets to move the Change entry in the first
+  branch.
+
+  Fix: ensure that the entry is in the same section on all branches,
+  by putting it in the "smallest" version -- assuming that all bigger
+  versions also contain this cange.
+
+- A change entry is present in a given section, but the change is not
+  present in the corresponding release branch.
+
+  There are two common causes for this with radically different solutions:
+
+  + If a PR is merged a long time after they were submitted, the merge
+    may put their Changes entry in the section of an older release,
+    while it should go in trunk.
+
+    Fix: in trunk, move the entry to the trunk section.
+
+  + Sometimes the author of a PR against trunk intends it to be
+    cherry-picked in an older release branch, and places it in the
+    corresponding Changes entry, but we forget to cherry-pick.
+
+    Fix: cherry-pick the PR in the appropriate branch.
+
+  Reading the PR discussion is often enough to distinguish between the
+  two cases, but one should be careful before cherry-picking in
+  a branch (for an active release branch, check with the release
+  manager(s)).
+
+Figuring out the status of a given Changes entry often requires
+checking the git log for trunk and branches. Grepping for the PR
+number often suffices (note: when you cherry-pick a PR in a release
+branch, please target the merge commit to ensure the PR number is
+present in the log), or parts of the commit message text.
+
+### Ensure each entry is in the appropriate section
+
+(of course)
+
+### Fill more details in unclear Changes entries
+
+Expert users want to learn about the changes in the new release. We
+want to avoid forcing them to read the tortuous PR discussion, by
+giving enough details in the Changes entry.
+
+In particular, for language changes, showing a small example of
+concrete syntax of the new feature is very useful, and giving a few
+words of explanations helps.
+
+Compare for example
+
+    - #8820: quoted string extensions
+      (Gabriel Radanne, Leo White and Gabriel Scherer,
+       request by Bikal Lem)
+
+with
+
+    - #8820: quoted extensions: {%foo|...|} is lighter syntax for
+      [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
+      (Gabriel Radanne, Leo White and Gabriel Scherer,
+       request by Bikal Lem)
+
+This is also important for changes that break compatibility; users
+will scrutinize them with more care, so please give clear information on
+what breaks and, possibly, recommended update methods.
+
+Having enough details is also useful when you will grep the Changes
+later to know when a given change was introduced (knowing what to grep
+can be difficult).
+
+### Ordering of Changes entries
+
+In the past, we would order Changes entries numerically (this would
+also correspond to a chronological order). Since 4.09 Gabriel is
+trying to order them by importance (being an exciting/notable feature
+for a large number of users). What is the best ordering of sections,
+and the best entry ordering within a section, to put the most
+important changes first? This is guesswork of course, and we commonly
+have a long tail of "not so important PRs" in each section which don't
+need to be ordered with respect to each other -- one may break two
+lines just before this long tail.
+
+The ordering of sections depends on the nature of the changes within
+the release; some releases have an exciting "Runtime" section, many
+release don't. Usually "Language features" is among the first, and
+"Bug fixes" is the very last (who cares about bugs, right?).
+
+If some entries feel very anecdotal, consider moving them to the Bug
+Fixes section.

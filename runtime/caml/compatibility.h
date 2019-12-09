@@ -23,11 +23,25 @@
 #define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
 
 /* global variables moved to Caml_state in 4.10.0 */
-#define caml_young_start (Caml_state->young_start)
-#define caml_young_end (Caml_state->young_end)
-#define caml_young_ptr (Caml_state->young_ptr)
-#define caml_young_limit (Caml_state->young_limit)
-#define caml_local_roots (Caml_state->local_roots)
+#define caml_stat_top_heap_wsz (Caml_state_field(stat_top_heap_wsz))
+#define caml_stat_heap_wsz (Caml_state_field(stat_heap_wsz))
+#define caml_young_start (Caml_state_field(young_start))
+#define caml_young_end (Caml_state_field(young_end))
+#define caml_young_ptr (Caml_state_field(young_ptr))
+#define caml_young_limit (Caml_state_field(young_limit))
+#define caml_local_roots (Caml_state_field(local_roots))
+#define caml_backtrace_active (Caml_state_field(backtrace_active))
+#define caml_backtrace_pos (Caml_state_field(backtrace_pos))
+#define caml_backtrace_buffer (Caml_state_field(backtrace_buffer))
+#define caml_backtrace_last_exn (Caml_state_field(backtrace_last_exn))
+#define caml_compare_unordered (Caml_state_field(compare_unordered))
+#define caml_external_raise (Caml_state_field(external_raise))
+#define caml_stack_low (Caml_state_field(stack_low))
+#define caml_stack_high (Caml_state_field(stack_high))
+#define caml_stack_threshold (Caml_state_field(stack_threshold))
+#define caml_extern_sp (Caml_state_field(extern_sp))
+#define caml_trapsp (Caml_state_field(trapsp))
+#define caml_trap_barrier (Caml_state_field(trap_barrier))
 
 #ifndef CAML_NAME_SPACE
 
@@ -242,10 +256,10 @@
 /* **** meta.c */
 
 /* **** minor_gc.c */
-#define young_start (Caml_state->_young_start)
-#define young_end (Caml_state->_young_end)
-#define young_ptr (Caml_state->_young_ptr)
-#define young_limit (Caml_state->_young_limit)
+#define young_start caml_young_start
+#define young_end caml_young_end
+#define young_ptr caml_young_ptr
+#define young_limit caml_young_limit
 #define ref_table caml_ref_table
 #define minor_collection caml_minor_collection
 #define check_urgent_gc caml_check_urgent_gc
@@ -262,7 +276,7 @@
 #define format_caml_exception caml_format_exception /*SP*/
 
 /* **** roots.c */
-#define local_roots (Caml_state->_local_roots)
+#define local_roots caml_local_roots
 #define scan_roots_hook caml_scan_roots_hook
 #define do_local_roots caml_do_local_roots
 

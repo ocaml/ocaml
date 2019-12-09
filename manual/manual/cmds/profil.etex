@@ -5,7 +5,7 @@ This chapter describes how the execution of OCaml
 programs can be profiled, by recording how many times functions are
 called, branches of conditionals are taken, \ldots
 
-\section{Compiling for profiling}
+\section{s:ocamlprof-compiling}{Compiling for profiling}
 
 Before profiling an execution, the program must be compiled in
 profiling mode, using the "ocamlcp" front-end to the "ocamlc" compiler
@@ -16,7 +16,7 @@ compiling the modules (production of ".cmo" or ".cmx" files), and can
 also be used (though this is not strictly necessary) when linking them
 together.
 
-\paragraph{Note} If a module (".ml" file) doesn't have a corresponding
+\lparagraph{p:ocamlprof-warning}{Note} If a module (".ml" file) doesn't have a corresponding
 interface (".mli" file), then compiling it with "ocamlcp" will produce
 object files (".cmi" and ".cmo") that are not compatible with the ones
 produced by "ocamlc", which may lead to problems (if the ".cmi" or
@@ -25,7 +25,7 @@ non-profiling compilations.  To avoid this problem, you should always
 have a ".mli" file for each ".ml" file.  The same problem exists with
 "ocamloptp".
 
-\paragraph{Note} To make sure your programs can be compiled in
+\lparagraph{p:ocamlprof-reserved}{Note} To make sure your programs can be compiled in
 profiling mode, avoid using any identifier that begins with
 "__ocaml_prof".
 
@@ -64,7 +64,7 @@ the corresponding "ocamlc" or "ocamlopt" compiler, except the "-pp"
 (preprocessing) option.
 
 
-\section{Profiling an execution}
+\section{s:ocamlprof-profiling}{Profiling an execution}
 
 Running an executable that has been compiled with "ocamlcp" or
 "ocamloptp" records the execution counts for the specified parts of
@@ -85,7 +85,7 @@ different inputs.  Note that dump files produced by byte-code
 executables (compiled with "ocamlcp") are compatible with the dump
 files produced by native executables (compiled with "ocamloptp").
 
-\section{Printing profiling information}
+\section{s:ocamlprof-printing}{Printing profiling information}
 
 The "ocamlprof" command produces a source listing of the program modules
 where execution counts have been inserted as comments. For instance,
@@ -136,7 +136,7 @@ Display a short usage summary and exit.
 %
 \end{options}
 
-\section{Time profiling}
+\section{s:ocamlprof-time-profiling}{Time profiling}
 
 Profiling with "ocamlprof" only records execution counts, not the actual
 time spent within each function. There is currently no way to perform
