@@ -815,6 +815,8 @@ oc_cflags
 toolchain
 ccomptype
 mkexedebugflag
+mkexe_extra
+mkexe_ml
 mkexe
 fpic
 libraries_man_section
@@ -2734,10 +2736,12 @@ programs_man_section=1
 # Library section of the Unix manual
 libraries_man_section=3
 
-# Command to build executalbes
+# Command to build executables
 mkexe="\$(CC) \$(OC_CFLAGS) \$(OC_CPPFLAGS) \$(OC_LDFLAGS)"
+mkexe_ml="\$(CC) \$(OC_CFLAGS) \$(ML_CPPFLAGS) \$(OC_LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
+mkexe_extra=""
 mkexedebugflag="-g"
 common_cflags=""
 common_cppflags=""
@@ -2803,6 +2807,8 @@ VERSION=4.11.0+dev0-2019-10-18
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
+
 
 
 
@@ -12536,7 +12542,7 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
 esac ;;
 esac
 
-internal_cppflags="-DCAML_NAME_SPACE=99999 $internal_cppflags"
+compilation_cppflags="-DCAML_NAME_SPACE=99999"
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 case $host in #(
@@ -12570,7 +12576,7 @@ fi
 
 case $CC,$host in #(
   *,*-*-darwin*) :
-    mkexe="$mkexe -Wl,-no_compact_unwind";
+    mkexe_extra="$mkexe_extra -Wl,-no_compact_unwind";
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   *,*-*-haiku*) :
@@ -12597,13 +12603,14 @@ $as_echo "$as_me: WARNING: flexlink not found: native shared libraries won't be 
 else
   iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
+        mkexe_ml=$mkexe
         mkexedebugflag="-link -g"
 
 fi
 
 fi
     if ! $with_sharedlibs; then :
-  mkexe="$mkexe -Wl,--stack,16777216"
+  mkexe_extra="$mkexe_extra -Wl,--stack,16777216"
       oc_ldflags="-Wl,--stack,16777216"
 
 fi
@@ -12629,12 +12636,14 @@ fi
     ostype="Win32"
     toolchain="mingw"
     mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe_ml=$mkexe
     oc_ldflags='-municode'
     SO="dll" ;; #(
   *,*-pc-windows) :
     toolchain=msvc
     ostype="Win32"
     mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe_ml=$mkexe
     oc_ldflags='/ENTRY:wmainCRTStartup'
     case $host in #(
   i686-pc-windows) :
@@ -16604,7 +16613,7 @@ fi
 
         if $libunwind_available && test x"$system" = "xmacosx"; then :
   extra_flags="-Wl,-keep_dwarf_unwind"
-          mkexe="$mkexe $extra_flags"
+          mkexe_extra="$mkexe_extra $extra_flags"
           mksharedlib="$mksharedlib $extra_flags"
 fi
 fi
@@ -16745,8 +16754,12 @@ else
   default_safe_string=true
 fi
 
+mkexe_ml="$mkexe_ml $mkexe_extra "
+mkexe="$mkexe $mkexe_extra "
+
 oc_cflags="$common_cflags $internal_cflags"
-oc_cppflags="$common_cppflags $internal_cppflags"
+ml_cppflags="$common_cppflags $internal_cppflags"
+oc_cppflags="$ml_cppflags $compilation_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags"
 ocamlc_cppflags="$common_cppflags"
 ocamlopt_cflags="$common_cflags"

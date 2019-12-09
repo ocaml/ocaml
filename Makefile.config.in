@@ -206,6 +206,7 @@ CMXS=@cmxs@
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 
 MKEXE=@mkexe@
+MKEXE_ML=@mkexe_ml@
 MKDLL=@mksharedlib@
 MKMAINDLL=@mkmaindll@
 

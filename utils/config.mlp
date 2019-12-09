@@ -67,9 +67,9 @@ let mkdll, mkexe, mkmaindll =
       flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
       flexlink ^ " -maindll"
     with Not_found ->
-      "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+      "%%MKDLL%%", "%%MKEXE_ML%%", "%%MKMAINDLL%%"
   else
-    "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+    "%%MKDLL%%", "%%MKEXE_ML%%", "%%MKMAINDLL%%"
 
 let flambda = %%FLAMBDA%%
 let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%

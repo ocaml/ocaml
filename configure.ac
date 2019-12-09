@@ -36,10 +36,12 @@ programs_man_section=1
 # Library section of the Unix manual
 libraries_man_section=3
 
-# Command to build executalbes
+# Command to build executables
 mkexe="\$(CC) \$(OC_CFLAGS) \$(OC_CPPFLAGS) \$(OC_LDFLAGS)"
+mkexe_ml="\$(CC) \$(OC_CFLAGS) \$(ML_CPPFLAGS) \$(OC_LDFLAGS)"
 
 # Flags for building executable files with debugging symbols
+mkexe_extra=""
 mkexedebugflag="-g"
 common_cflags=""
 common_cppflags=""
@@ -98,6 +100,8 @@ AC_SUBST([programs_man_section])
 AC_SUBST([libraries_man_section])
 AC_SUBST([fpic])
 AC_SUBST([mkexe])
+AC_SUBST([mkexe_ml])
+AC_SUBST([mkexe_extra])
 AC_SUBST([mkexedebugflag])
 AC_SUBST([ccomptype])
 AC_SUBST([toolchain])
@@ -590,7 +594,7 @@ AS_CASE([$host],
       internal_cflags="$gcc_warnings"],
     [common_cflags="-O"])])
 
-internal_cppflags="-DCAML_NAME_SPACE=99999 $internal_cppflags"
+compilation_cppflags="-DCAML_NAME_SPACE=99999"
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
@@ -616,7 +620,7 @@ AS_IF([test x"$enable_shared" = "xno"],[with_sharedlibs=false])
 
 AS_CASE([$CC,$host],
   [*,*-*-darwin*],
-    [mkexe="$mkexe -Wl,-no_compact_unwind";
+    [mkexe_extra="$mkexe_extra -Wl,-no_compact_unwind";
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
@@ -635,11 +639,12 @@ AS_CASE([$CC,$host],
         with_sharedlibs=false],
         [iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
+        mkexe_ml=$mkexe
         mkexedebugflag="-link -g"]
       )]
     )
     AS_IF([! $with_sharedlibs],
-      [mkexe="$mkexe -Wl,--stack,16777216"
+      [mkexe_extra="$mkexe_extra -Wl,--stack,16777216"
       oc_ldflags="-Wl,--stack,16777216"]
     )
     ostype="Cygwin"],
@@ -656,12 +661,14 @@ AS_CASE([$CC,$host],
     ostype="Win32"
     toolchain="mingw"
     mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe_ml=$mkexe
     oc_ldflags='-municode'
     SO="dll"],
   [*,*-pc-windows],
     [toolchain=msvc
     ostype="Win32"
     mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe_ml=$mkexe
     oc_ldflags='/ENTRY:wmainCRTStartup'
     AS_CASE([$host],
       [i686-pc-windows], [flexdll_chain=msvc],
@@ -1650,7 +1657,7 @@ AS_IF([test x"$enable_spacetime" != "xyes" ],
 
         AS_IF([$libunwind_available && test x"$system" = "xmacosx"],
           [extra_flags="-Wl,-keep_dwarf_unwind"
-          mkexe="$mkexe $extra_flags"
+          mkexe_extra="$mkexe_extra $extra_flags"
           mksharedlib="$mksharedlib $extra_flags"])])
     ],
     [AS_IF([test x"$enable_spacetime" = "xyes"],
@@ -1734,8 +1741,12 @@ AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
   [default_safe_string=false],
   [default_safe_string=true])
 
+mkexe_ml="$mkexe_ml $mkexe_extra "
+mkexe="$mkexe $mkexe_extra "
+
 oc_cflags="$common_cflags $internal_cflags"
-oc_cppflags="$common_cppflags $internal_cppflags"
+ml_cppflags="$common_cppflags $internal_cppflags"
+oc_cppflags="$ml_cppflags $compilation_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags"
 ocamlc_cppflags="$common_cppflags"
 ocamlopt_cflags="$common_cflags"

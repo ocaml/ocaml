@@ -86,7 +86,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,LIBUNWIND_AVAILABLE) \
 	    $(call SUBST,LIBUNWIND_LINK_FLAGS) \
 	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,MKEXE) \
+	    $(call SUBST_STRING,MKEXE_ML) \
 	    $(call SUBST_STRING,FLEXLINK_LDFLAGS) \
 	    $(call SUBST_STRING,MKMAINDLL) \
 	    $(call SUBST,MODEL) \
