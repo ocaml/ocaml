@@ -149,7 +149,7 @@ rule main = parse
       handle_lexical_error comment lexbuf;
       main lexbuf }
   | '_' { Tunderscore }
-  | identstart identbody *
+  | ident
     { match Lexing.lexeme lexbuf with
         "rule" -> Trule
       | "parse" -> Tparse
@@ -309,7 +309,7 @@ and comment = parse
   | '\010'
     { incr_loc lexbuf 0;
       comment lexbuf }
-  | identstart identbody *
+  | ident
     { comment lexbuf }
   | _
     { comment lexbuf }
@@ -341,7 +341,7 @@ and action = parse
   | '\010'
     { incr_loc lexbuf 0;
       action lexbuf }
-  | identstart identbody *
+  | ident
     { action lexbuf }
   | _
     { action lexbuf }
