@@ -182,6 +182,9 @@ section~\ref{s:c-custom}).}
 \entree{"caml/intext.h"}{operations for writing user-defined
 serialization and deserialization functions for custom blocks
 (see section~\ref{s:c-custom}).}
+\entree{"caml/signals.h"}{runtime lock, signals, and other
+  asynchronous callbacks (see
+  section~\ref{ss:c-process-pending-actions}).}
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
@@ -189,19 +192,30 @@ These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
-By default, header files in the "caml/" subdirectory give only access
-to the public interface of the OCaml runtime. It is possible to define
-the macro "CAML_INTERNALS" to get access to a lower-level interface,
-but this lower-level interface is more likely to change and break
-programs that use it.
+\paragraph{CAML_NAME_SPACE} OCaml C header files automatically
+include "caml/compatibility.h", which defines backwards compatibility
+helpers. It is possible and recommended to define the macro
+"CAML_NAME_SPACE" before including header files to control their
+presence. If you do not define "CAML_NAME_SPACE", the header files
+will define short names (without the "caml_" prefix) for most
+functions, which can produce clashes with names defined by other C
+libraries that you might use.
 
-{\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
-before including these header files. If you do not define it, the
-header files will also define short names (without the "caml_" prefix)
-for most functions, which usually produce clashes with names defined
-by other C libraries that you might use. Including the header files
-without "CAML_NAME_SPACE" is only supported for backward
-compatibility.
+Starting from 4.10, "CAML_NAME_SPACE" accepts an integer value. If you
+define "CAML_NAME_SPACE=X" where "X" is an OCaml version number, then
+only the compatibility macros introduced for "X" or later versions will
+be defined. The format of the version number is the same as the macro
+"OCAML_VERSION" from "caml/version.h" (e.g. 41000). The recommended
+way of defining this macro is with a program-wide argument
+"-DCAML_NAME_SPACE=X" passed to the C preprocessor.
+
+\paragraph{CAML_INTERNALS} By default, header files mentioned in
+this documentation give only access to the public interface of the
+OCaml runtime. It is possible to define the macro "CAML_INTERNALS" to
+get access to a lower-level interface, but this lower-level interface
+is more likely to change and break programs that use it. Undocumented
+headers in the "caml/" subdirectory are considered internal as well,
+and can change in the same way.
 
 \subsection{ss:staticlink-c-code}{Statically linking C code with OCaml code}
 
