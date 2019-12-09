@@ -1127,8 +1127,10 @@ external select :
 (* High-level network functions *)
 
 let socketpair ?cloexec _dom ty proto =
+  (* create two sockets "server" and "client". *)
   let s = socket ?cloexec PF_INET ty proto
   and c = socket ?cloexec PF_INET ty proto in
+  (* start listening on the serving socket, get assigned address *)
   bind s (ADDR_INET (inet_addr_loopback, 0));
   let saddr = getsockname s in
   match ty with
@@ -1136,13 +1138,19 @@ let socketpair ?cloexec _dom ty proto =
       connect c saddr;
       let caddr = getsockname c in
       connect s caddr;
+      (* make sure no evil party tried to smuggle in data while the server
+         socket was not yet connected. *)
       begin match select [c;s] [] [] 0. with
       | [], [], [] -> s, c
-      | _ -> failwith "Unix.socketpair: unexpected data"
+      | _ ->
+          close s; close c;
+          failwith "Unix.socketpair: unexpected data"
       end
   | SOCK_SEQPACKET
   | SOCK_STREAM ->
       listen s 1;
+      (* We need to do an asynchronous connect, so we are able to call accept
+       * while the connection setup is in flight. *)
       set_nonblock c;
       (try connect c saddr; assert false
        with Unix_error (EWOULDBLOCK, _, _) -> ());
@@ -1151,16 +1159,23 @@ let socketpair ?cloexec _dom ty proto =
         match select [s] [] [] 0.1 with
         | [s'], [], [] when s' == s ->
             let ret = accept ?cloexec s in
+            (* now that we have the established connection in (fst ret)
+             * we can close the listening socket s *)
             close s;
             ret
-        | [], [], [] -> failwith "Unix.socketpair: timeout waiting for client"
+        | [], [], [] ->
+            close s; close c;
+            failwith "Unix.socketpair: timeout waiting for client"
         | _ -> assert false
       in
       assert begin
+        (* make sure no evil third party has connected instead of our own
+           client socket *)
         match caddr with
         | ADDR_INET (addr, _) when addr = inet_addr_loopback -> true
-        | _ -> false
+        | _ -> close s; close c; false
       end;
+      (* now wait for the asynchronous connect to finish *)
       begin match select [] [c] [c] 0.1 with
       | [], [c'], _ when c == c' -> ()
       | [], [], [c'] when c == c' ->
@@ -1168,11 +1183,14 @@ let socketpair ?cloexec _dom ty proto =
           | Some e -> raise (Unix_error (e, "socketpair", ""))
           | None -> assert false
           end
-      | [], [], [] -> failwith "Unix.socketpair: timeout waiting for server"
+      | [], [], [] ->
+          close s; close c;
+          failwith "Unix.socketpair: timeout waiting for server"
       | _ -> assert false
       end;
       s, c
   | SOCK_RAW ->
+      close s; close c;
       invalid_arg "Unix.socketpair: SOCK_RAW not supported"
 
 let open_connection sockaddr =
