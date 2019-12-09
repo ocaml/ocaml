@@ -208,13 +208,15 @@ OCaml 4.10.0
 * #8713: Introduce a state table in the runtime to contain the global variables.
   (The Multicore runtime will have one such state for each domain.)
 
-   This changes the name of some internal variables of the OCaml runtime;
-   in many cases <caml/compatibility.h> provides a compatibility macro with
-   the old name, but programs using runtime internals may need to be fixed.
+  This changes the name of some internal variables of the OCaml
+  runtime; in many cases <caml/compatibility.h>, automatically
+  included in all caml headers, provides a compatibility macro with
+  the old name, but programs using runtime internals may need to be
+  fixed.
 
-   (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
-    David Allsopp, review by David Allsopp, Alain Frisch, Nicolás Ojeda Bär,
-    Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
+  (KC Sivaramakrishnan and Stephen Dolan, compatibility header hacking by
+   David Allsopp, review by David Allsopp, Alain Frisch, Nicolás Ojeda Bär,
+   Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
 - #8993: New C functions caml_process_pending_actions{,_exn} in
   caml/signals.h, intended for executing all pending actions inside
@@ -242,7 +244,6 @@ OCaml 4.10.0
   with calls to caml_process_pending_actions at safe points.
   (Guillaume Munch-Maccagnoni, review by Jacques-Henri Jourdan and
    Stephen Dolan)
-
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
@@ -273,6 +274,13 @@ OCaml 4.10.0
   Hence, there is not any public API for this feature yet.
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
+
+- #9167: The macro CAML_NAME_SPACE now accepts a version number as
+  value. If the user defines CAML_NAME_SPACE=X, then only the
+  compatibility macros introduced for version X or later are defined by
+  <caml/compatibility.h>.
+  (Guillaume Munch-Maccagnoni, inspired by Stephen Dolan and James
+   Woodyatt, review by Stephen Dolan)
 
 ### Standard library:
 
