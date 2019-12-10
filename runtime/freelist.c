@@ -1083,7 +1083,7 @@ static large_free_block **bf_search (mlsize_t wosz)
   return p;
 }
 
-/* Search for the least node that is large enough to accomodate the given
+/* Search for the least node that is large enough to accommodate the given
    size. Return in [next_lower] an upper bound on either the size of the
    next-lower node in the tree, or BF_NUM_SMALL if there is no such node.
 */

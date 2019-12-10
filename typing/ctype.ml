@@ -533,6 +533,26 @@ exception Non_closed of type_expr * bool
 let free_variables = ref []
 let really_closed = ref None
 
+(* [free_vars_rec] collects the variables of the input type
+   expression into the [free_variables] reference. It is used for
+   several different things in the type-checker, with the following
+   bells and whistles:
+   - If [really_closed] is Some typing environment, types in the environment
+     are expanded to check whether the apparently-free variable would vanish
+     during expansion.
+   - We collect both type variables and row variables, paired with a boolean
+     that is [true] if we have a row variable.
+   - We do not count "virtual" free variables -- free variables stored in
+     the abbreviation of an object type that has been expanded (we store
+     the abbreviations for use when displaying the type).
+
+   The functions [free_vars] and [free_variables] below receive
+   a typing environment as an optional [?env] parameter and
+   set [really_closed] accordingly.
+   [free_vars] returns a [(variable * bool) list], while
+   [free_variables] drops the type/row information
+   and only returns a [variable list].
+ *)
 let rec free_vars_rec real ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
@@ -2901,7 +2921,7 @@ and unify_row env row1 row2 =
     set_more row1 r2;
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env fixed1 fixed2 more l f1 f2
+        try unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2
         with Unify trace ->
           raise Trace.( Unify( Variant (Incompatible_types_for l) :: trace ))
       )
@@ -2914,7 +2934,7 @@ and unify_row env row1 row2 =
     set_type_desc rm1 md1; set_type_desc rm2 md2; raise exn
   end
 
-and unify_row_field env fixed1 fixed2 more l f1 f2 =
+and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   let if_not_fixed (pos,fixed) f =
     match fixed with
@@ -2949,13 +2969,13 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
             List.iter (unify env t1) tl;
             !e1 <> None || !e2 <> None
         end in
-      if redo then unify_row_field env fixed1 fixed2 more l f1 f2 else
+      if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
             if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
-      let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
       (* PR#6744 *)
       let split_univars =
         List.partition
@@ -2972,13 +2992,18 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       end;
       (* Is this handling of levels really principal? *)
       List.iter (fun ty ->
-        let rm = repr more in
+        let rm = repr rm2 in
         update_level !env rm.level ty;
         update_scope rm.scope ty;
-      ) (tl1' @ tl2');
+      ) tl1';
+      List.iter (fun ty ->
+        let rm = repr rm1 in
+        update_level !env rm.level ty;
+        update_scope rm.scope ty;
+      ) tl2';
       let e = ref None in
-      let f1' = Reither(c1 || c2, tl1', m1 || m2, e)
-      and f2' = Reither(c1 || c2, tl2', m1 || m2, e) in
+      let f1' = Reither(c1 || c2, tl2', m1 || m2, e)
+      and f2' = Reither(c1 || c2, tl1', m1 || m2, e) in
       set_row_field e1 f1'; set_row_field e2 f2';
   | Reither(_, _, false, e1), Rabsent ->
       if_not_fixed first (fun () -> set_row_field e1 f2)
@@ -2988,7 +3013,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Reither(false, tl, _, e1), Rpresent(Some t2) ->
       if_not_fixed first (fun () ->
           set_row_field e1 f2;
-          let rm = repr more in
+          let rm = repr rm1 in
           update_level !env rm.level t2;
           update_scope rm.scope t2;
           (try List.iter (fun t1 -> unify env t1 t2) tl
@@ -2997,7 +3022,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Rpresent(Some t1), Reither(false, tl, _, e2) ->
       if_not_fixed second (fun () ->
           set_row_field e2 f1;
-          let rm = repr more in
+          let rm = repr rm2 in
           update_level !env rm.level t1;
           update_scope rm.scope t1;
           (try List.iter (unify env t1) tl

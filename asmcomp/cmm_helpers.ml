@@ -1721,7 +1721,7 @@ let cache_public_method meths tag cache dbg =
      dbg),
   Clet (
     VP.create tagged,
-      Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
+      Cop(Caddi, [lsl_const (Cvar li) log2_size_addr dbg;
         cconst_int(1 - 3 * size_addr)], dbg),
     Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg),
               Cvar tagged)))))

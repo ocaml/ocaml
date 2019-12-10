@@ -419,7 +419,8 @@ method mark_instr = function
 (* Default instruction selection for operators *)
 
 method select_allocation bytes =
-  Ialloc { bytes; spacetime_index = 0; label_after_call_gc = None; }
+  Ialloc { bytes; label_after_call_gc = None;
+           dbginfo = []; spacetime_index = 0; }
 method select_allocation_args _env = [| |]
 
 method select_checkbound () =
@@ -775,8 +776,11 @@ method emit_expr (env:environment) exp =
           | Ialloc { bytes = _; spacetime_index; label_after_call_gc; } ->
               let rd = self#regs_for typ_val in
               let bytes = size_expr env (Ctuple new_args) in
+              assert (bytes mod Arch.size_addr = 0);
+              let alloc_words = bytes / Arch.size_addr in
               let op =
-                Ialloc { bytes; spacetime_index; label_after_call_gc; }
+                Ialloc { bytes; spacetime_index; label_after_call_gc;
+                         dbginfo = [{alloc_words; alloc_dbg = dbg}] }
               in
               let args = self#select_allocation_args env in
               self#insert_debug env (Iop op) dbg args rd;

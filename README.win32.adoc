@@ -202,9 +202,7 @@ for 32-bit, or:
 
         ./configure --build=x86_64-unknown-cygwin --host=x86_64-pc-windows
 
-for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
-this file. Normally, the only variable that needs to be changed is `PREFIX`,
-which indicates where to install everything.
+for 64-bit.
 
 Finally, use `make` to build the system, e.g.
 
@@ -269,9 +267,7 @@ for 32-bit, or:
 
         ./configure --build=x86_64-unknown-cygwin --host=x86_64-w64-mingw32
 
-for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
-this file. Normally, the only variable that needs to be changed is `PREFIX`,
-which indicates where to install everything.
+for 64-bit.
 
 Finally, use `make` to build the system, e.g.
 

@@ -81,7 +81,7 @@ let process_line line = function
   | Normal ->
     if is_prefix "\\begin{caml_" line || is_prefix "\\begin{rawhtml}" line
     then (print_string line; Verbatim_like)
-    else if is_prefix "\\camlexample" line
+    else if is_prefix "\\begin{camlexample}" line
     then (print_endline line; Caml)
     else if is_prefix "\\begin{verbatim}" line
     then begin
@@ -100,7 +100,7 @@ let process_line line = function
     end
   | Caml ->
     print_endline line;
-    if is_prefix "\\endcamlexample" line then Normal else Caml
+    if is_prefix "\\end{camlexample}" line then Normal else Caml
   | Verbatim (verbatim_end_in, verbatim_end_out) as env ->
     if is_prefix verbatim_end_in line
     then begin

@@ -77,7 +77,7 @@ external command : string -> int = "caml_sys_system_command"
   such as file redirections [>] and [<], which will be honored by the
   shell.
 
-  Conversely, whitespace or special shell characters occuring in
+  Conversely, whitespace or special shell characters occurring in
   command names or in their arguments must be quoted or escaped
   so that the shell does not interpret them.  The quoting rules vary
   between the POSIX shell and the Windows shell.

@@ -61,9 +61,10 @@ let fmt_constant f x =
   match x with
   | Const_int (i) -> fprintf f "Const_int %d" i;
   | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s, None) -> fprintf f "Const_string(%S,None)" s;
-  | Const_string (s, Some delim) ->
-      fprintf f "Const_string (%S,Some %S)" s delim;
+  | Const_string (s, strloc, None) ->
+      fprintf f "Const_string(%S,%a,None)" s fmt_location strloc;
+  | Const_string (s, strloc, Some delim) ->
+      fprintf f "Const_string (%S,%a,Some %S)" s fmt_location strloc delim;
   | Const_float (s) -> fprintf f "Const_float %s" s;
   | Const_int32 (i) -> fprintf f "Const_int32 %ld" i;
   | Const_int64 (i) -> fprintf f "Const_int64 %Ld" i;

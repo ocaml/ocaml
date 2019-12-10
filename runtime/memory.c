@@ -883,6 +883,8 @@ CAMLexport void caml_stat_free(caml_stat_block b)
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
 {
+  if(b == NULL)
+    return caml_stat_alloc_noexc(sz);
   /* Backward compatibility mode */
   if (pool == NULL)
     return realloc(b, sz);

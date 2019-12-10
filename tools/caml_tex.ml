@@ -19,39 +19,46 @@
 open StdLabels
 open Str
 
-let camlbegin = "\\caml"
-let camlend = "\\endcaml"
-let camlin = {|\\?\1|}
-let camlout = {|\\:\1|}
-let camlbunderline = "\\<"
-let camleunderline = "\\>"
+let camlprefix = "caml"
 
-let start newline out s args =
-  Format.fprintf out "%s%s" camlbegin s;
+let latex_escape s = String.concat "" ["$"; s; "$"]
+let camlin = latex_escape {|\\?|} ^ {|\1|}
+let camlout = latex_escape {|\\:|} ^ {|\1|}
+let camlbunderline = "<<"
+let camleunderline = ">>"
+
+
+(** Restrict the number of latex environment *)
+type env = Env of string
+let main = Env "example"
+let input_env = Env "input"
+let ok_output = Env "output"
+let error = Env "error"
+let warning = Env "warn"
+let phrase_env = Env ""
+
+let start out (Env s) args =
+  Format.fprintf out "\\begin{%s%s}" camlprefix s;
   List.iter (Format.fprintf out "{%s}") args;
-  if newline then Format.fprintf out "\n"
+  Format.fprintf out "\n"
 
-let stop newline out s =
-  Format.fprintf out "%s%s" camlend s;
-  if newline then Format.fprintf out "\n"
+let stop out (Env s) =
+  Format.fprintf out "\\end{%s%s}" camlprefix s;
+  Format.fprintf out "\n"
 
-let code_env ?(newline=true) env out s =
+let code_env env out s =
   let sep = if s.[String.length s - 1] = '\n' then "" else "\n" in
   Format.fprintf out "%a%s%s%a"
-    (fun ppf env -> start false ppf env []) env s sep (stop newline) env
+    (fun ppf env -> start ppf env [])
+    env s sep stop env
 
-let main = "example"
+
 type example_mode = Toplevel | Verbatim | Signature
 let string_of_mode =  function
   | Toplevel -> "toplevel"
   | Verbatim -> "verbatim"
   | Signature -> "signature"
 
-let input_env = "input"
-let ok_output ="output"
-let error ="error"
-let warning ="warn"
-let phrase_env = ""
 
 let verbose = ref true
 let linelen = ref 72
@@ -417,25 +424,23 @@ module Text_transform = struct
   let ellipsis start stop = { kind = Ellipsis; start; stop }
 
   let escape_specials s =
-    let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
-    let s2 = global_replace ~!"'" "\\\\textquotesingle\\\\-" s1 in
-    let s3 = global_replace ~!"`" "\\\\textasciigrave\\\\-" s2 in
-    s3
+    s
+    |> global_replace ~!{|\$|} {|$\textdollar$|}
 
   let rec apply_transform input (pos,underline_stop,out) t =
     if pos >= String.length input then pos, underline_stop, out
     else match underline_stop with
       | Some stop when stop <= t.start ->
           let f = escape_specials (String.sub input ~pos ~len:(stop - pos)) in
-          let out =  {|\>|} :: f :: out in
+          let out =  camleunderline :: f :: out in
           apply_transform input (stop,None,out) t
       | _ ->
           let out =
             escape_specials (String.sub input ~pos ~len:(t.start - pos))::out in
           match t.kind with
-          | Ellipsis -> t.stop, underline_stop, {|\ldots|} :: out
+          | Ellipsis -> t.stop, underline_stop, latex_escape {|\ldots|} :: out
           | Underline ->
-              t.start, Some t.stop, {|\<|} :: out
+              t.start, Some t.stop, camlbunderline :: out
 
   (** Check that all ellipsis are strictly nested inside underline transform
       and that otherwise no transform starts before the end of the previous
@@ -483,7 +488,7 @@ module Text_transform = struct
       | None -> last, ls
       | Some stop ->
           let f = escape_specials (String.sub s ~pos:last ~len:(stop - last)) in
-          stop, {|\>|} :: f :: ls in
+          stop, camleunderline :: f :: ls in
     let ls =
       let n = String.length s in
       if last = n then ls else
@@ -614,7 +619,7 @@ let process_file file =
         | Toplevel -> true in
       let global_expected = try Output.expected @@ matched_group 4 !input
         with Not_found -> Output.Ok in
-      start true tex_fmt main [string_of_mode mode];
+      start tex_fmt main [string_of_mode mode];
       let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
@@ -692,16 +697,16 @@ let process_file file =
             global_replace ~!{|^\(.\)|} camlout error_msgs
           else if omit_answer then ""
           else output in
-        start false tex_fmt phrase_env [];
-        code_env ~newline:omit_answer input_env tex_fmt phrase;
+        start tex_fmt phrase_env [];
+        code_env input_env tex_fmt phrase;
         if String.length final_output > 0 then
-          code_env ~newline:false (Output.env status) tex_fmt final_output;
-        stop true tex_fmt phrase_env;
+          code_env (Output.env status) tex_fmt final_output;
+        stop tex_fmt phrase_env;
         flush oc;
         first := false;
         if implicit_stop then raise End_of_file
       done
-      with End_of_file -> phrase_start:= !phrase_stop; stop true tex_fmt main
+      with End_of_file -> phrase_start:= !phrase_stop; stop tex_fmt main
     end
     else if string_match ~!"\\\\begin{caml_eval}[ \t]*$" !input 0
     then begin

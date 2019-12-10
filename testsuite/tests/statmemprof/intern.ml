@@ -76,11 +76,7 @@ let check_no_nested () =
   precompute_marshalled_data 2 300;
   let in_callback = ref false in
   start {
-      (* FIXME: we should use 1. to make sure the block is sampled,
-       but the runtime does an infinite loop in native mode in this
-       case. This bug will go away when the sampling of natively
-       allocated will be correctly implemented. *)
-      sampling_rate = 0.5;
+      sampling_rate = 1.;
       callstack_size = 10;
       callback = fun _ ->
         assert (not !in_callback);
@@ -155,11 +151,7 @@ let[@inline never] check_callstack () =
   precompute_marshalled_data 2 300;
   let callstack = ref None in
   start {
-      (* FIXME: we should use 1. to make sure the block is sampled,
-       but the runtime does an infinite loop in native mode in this
-       case. This bug will go away when the sampling of natively
-       allocated will be correctly implemented. *)
-      sampling_rate = 0.5;
+      sampling_rate = 1.;
       callstack_size = 10;
       callback = fun info ->
         if info.kind = Unmarshalled then callstack := Some info.callstack;

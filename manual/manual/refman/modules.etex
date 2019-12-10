@@ -1,4 +1,4 @@
-\section{Module\label{s:module-expr} expressions (module implementations)}
+\section{s:module-expr}{Module expressions (module implementations)}
 %HEVEA\cutname{modules.html}
 
 Module expressions are the module-level equivalent of value
@@ -45,14 +45,14 @@ definition:
         | 'include' module-expr
 \end{syntax}
 See also the following language extensions:
-\hyperref[s-recursive-modules]{recursive modules},
-\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:recursive-modules]{recursive modules},
+\hyperref[s:first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:attributes]{attributes},
 \hyperref[s:extension-nodes]{extension nodes} and
 \hyperref[s:generative-functors]{generative functors}.
 
-\subsection{Simple module expressions}
+\subsection{ss:mexpr-simple}{Simple module expressions}
 
 The expression @module-path@ evaluates to the module bound to the name
 @module-path@.
@@ -70,7 +70,7 @@ expression evaluates to the same module as @module-expr@, except that
 all components not specified in @module-type@ are hidden and can no
 longer be accessed.
 
-\subsection{Structures}
+\subsection{ss:mexpr-structures}{Structures}
 
 \ikwd{struct\@\texttt{struct}}
 \ikwd{end\@\texttt{end}}
@@ -90,13 +90,13 @@ a component of a structure. It is equivalent to @'let' '_' '=' expr@, i.e. @expr
 evaluated for its side-effects but is not bound to any identifier. If @expr@ is
 the first component of a structure, the preceding ";;" can be omitted.
 
-\subsubsection*{Value definitions}
+\subsubsection*{sss:mexpr-value-defs}{Value definitions}
 
 \ikwd{let\@\texttt{let}}
 
 A value definition @'let' ['rec'] let-binding  { 'and' let-binding }@
 bind value names in the same way as a @'let' \ldots 'in' \ldots@ expression
-(see section~\ref{s:localdef}). The value names appearing in the
+(see section~\ref{sss:expr-localdef}). The value names appearing in the
 left-hand sides of the bindings are bound to the corresponding values
 in the right-hand sides.
 
@@ -106,7 +106,7 @@ A value definition @'external' value-name ':' typexpr '=' external-declaration@
 implements @value-name@ as the external function specified in
 @external-declaration@ (see chapter~\ref{c:intf-c}).
 
-\subsubsection*{Type definitions}
+\subsubsection*{sss:mexpr-type-defs}{Type definitions}
 
 \ikwd{type\@\texttt{type}}
 
@@ -114,23 +114,23 @@ A definition of one or several type components is written
 @'type' typedef { 'and' typedef }@ and consists of a sequence
 of mutually recursive definitions of type names.
 
-\subsubsection*{Exception definitions}
+\subsubsection*{sss:mexpr-exn-defs}{Exception definitions}
 
 \ikwd{exception\@\texttt{exception}}
 
 Exceptions are defined with the syntax @'exception' constr-decl@
 or @'exception' constr-name '=' constr@.
 
-\subsubsection*{Class definitions}
+\subsubsection*{sss:mexpr-class-defs}{Class definitions}
 
 \ikwd{class\@\texttt{class}}
 
 A definition of one or several classes is written @'class'
 class-binding { 'and' class-binding }@ and consists of a sequence of
 mutually recursive definitions of class names. Class definitions are
-described more precisely in section~\ref{s:classdef}.
+described more precisely in section~\ref{ss:class-def}.
 
-\subsubsection*{Class type definitions}
+\subsubsection*{sss:mexpr-classtype-defs}{Class type definitions}
 
 \ikwd{class\@\texttt{class}}
 \ikwd{type\@\texttt{type}}
@@ -139,9 +139,9 @@ A definition of one or several classes is written
 @'class' 'type' classtype-def { 'and' classtype-def }@ and consists of
 a sequence of mutually recursive definitions of class type names.
 Class type definitions are described more precisely in
-section~\ref{s:classtype}.
+section~\ref{ss:classtype}.
 
-\subsubsection*{Module definitions}
+\subsubsection*{sss:mexpr-module-defs}{Module definitions}
 
 \ikwd{module\@\texttt{module}}
 
@@ -169,7 +169,7 @@ which is equivalent to
                                             '->' module-expr@
 \end{center}
 
-\subsubsection*{Module type definitions}
+\subsubsection*{sss:mexpr-modtype-defs}{Module type definitions}
 
 \ikwd{type\@\texttt{type}}
 \ikwd{module\@\texttt{module}}
@@ -179,7 +179,7 @@ A definition for a module type is written
 It binds the name @modtype-name@ to the module type denoted by the
 expression @module-type@.
 
-\subsubsection*{Opening a module path}
+\subsubsection*{sss:mexpr-open}{Opening a module path}
 
 \ikwd{open\@\texttt{open}}
 
@@ -190,7 +190,7 @@ module denoted by @module-path@ to be referred to by their simple names
 @name@ instead of path accesses @module-path '.' name@.  The scope of
 the @"open"@ stops at the end of the structure expression.
 
-\subsubsection*{Including the components of another structure}
+\subsubsection*{sss:mexpr-include}{Including the components of another structure}
 
 \ikwd{include\@\texttt{include}}
 
@@ -214,9 +214,9 @@ structure, without defining any components of the current structure,
 while @'include'@ also adds definitions for the components of the
 included structure.
 
-\subsection{Functors}
+\subsection{ss:mexpr-functors}{Functors}
 
-\subsubsection*{Functor definition}
+\subsubsection*{sss:mexpr-functor-defs}{Functor definition}
 
 \ikwd{functor\@\texttt{functor}}
 
@@ -228,7 +228,7 @@ resulting modules as results. No restrictions are placed on the type of the
 functor argument; in particular, a functor may take another functor as
 argument (``higher-order'' functor).
 
-\subsubsection*{Functor application}
+\subsubsection*{sss:mexpr-functor-app}{Functor application}
 
 The expression @module-expr_1 '(' module-expr_2 ')'@ evaluates
 @module-expr_1@ to a functor and @module-expr_2@ to a module, and

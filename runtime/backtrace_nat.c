@@ -137,18 +137,32 @@ void caml_current_callstack_write(value trace) {
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {
-  uintnat infoptr;
+  unsigned char* infoptr;
+  uint32_t debuginfo_offset;
   frame_descr * d = (frame_descr *)slot;
 
   if ((d->frame_size & 1) == 0) {
     return NULL;
   }
   /* Recover debugging info */
-  infoptr = ((uintnat) d +
-             sizeof(char *) + sizeof(short) + sizeof(short) +
-             sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-            & -sizeof(frame_descr *);
-  return *((debuginfo*)infoptr);
+  infoptr = (unsigned char*)&d->live_ofs[d->num_live];
+  if (d->frame_size & 2) {
+    /* skip alloc_lengths */
+    infoptr += *infoptr + 1;
+    /* align to 32 bits */
+    infoptr = Align_to(infoptr, uint32_t);
+    /* we know there's at least one valid debuginfo,
+       but it may not be the one for the first alloc */
+    while (*(uint32_t*)infoptr == 0) {
+      infoptr += sizeof(uint32_t);
+    }
+  } else {
+    /* align to 32 bits */
+    infoptr = Align_to(infoptr, uint32_t);
+  }
+  /* read offset to debuginfo */
+  debuginfo_offset = *(uint32_t*)infoptr;
+  return (debuginfo)(infoptr + debuginfo_offset);
 }
 
 debuginfo caml_debuginfo_next(debuginfo dbg)
@@ -159,8 +173,12 @@ debuginfo caml_debuginfo_next(debuginfo dbg)
     return NULL;
 
   infoptr = dbg;
-  infoptr += 2; /* Two packed info fields */
-  return *((debuginfo*)infoptr);
+  if ((infoptr[0] & 1) == 0)
+    /* No next debuginfo */
+    return NULL;
+  else
+    /* Next debuginfo is after the two packed info fields */
+    return (debuginfo*)(infoptr + 2);
 }
 
 /* Extract location information for the given frame descriptor */
@@ -181,17 +199,19 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   info1 = ((uint32_t *)dbg)[0];
   info2 = ((uint32_t *)dbg)[1];
   /* Format of the two info words:
-       llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
-                          44       36         26                       2  0
+       llllllllllllllllllll aaaaaaaa bbbbbbbbbb ffffffffffffffffffffffff k n
+                         44       36         26                        2 1 0
                        (32+12)    (32+4)
-     k ( 2 bits): 0 if it's a call
+     n ( 1 bit ): 0 if this is the final debuginfo
+                  1 if there's another following this one
+     k ( 1 bit ): 0 if it's a call
                   1 if it's a raise
-     n (24 bits): offset (in 4-byte words) of file name relative to dbg
+     f (24 bits): offset (in 4-byte words) of file name relative to dbg
      l (20 bits): line number
      a ( 8 bits): beginning of character range
      b (10 bits): end of character range */
   li->loc_valid = 1;
-  li->loc_is_raise = (info1 & 3) == 1;
+  li->loc_is_raise = (info1 & 2) == 2;
   li->loc_is_inlined = caml_debuginfo_next(dbg) != NULL;
   li->loc_filename = (char *) dbg + (info1 & 0x3FFFFFC);
   li->loc_lnum = info2 >> 12;

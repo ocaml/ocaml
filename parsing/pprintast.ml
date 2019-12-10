@@ -221,9 +221,9 @@ let longident_loc f x = pp f "%a" longident x.txt
 let constant f = function
   | Pconst_char i ->
       pp f "%C"  i
-  | Pconst_string (i, None) ->
+  | Pconst_string (i, _, None) ->
       pp f "%S" i
-  | Pconst_string (i, Some delim) ->
+  | Pconst_string (i, _, Some delim) ->
       pp f "{%s|%s|%s}" delim i delim
   | Pconst_integer (i, None) ->
       paren (first_is '-' i) (fun f -> pp f "%s") f i

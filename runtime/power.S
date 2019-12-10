@@ -301,9 +301,8 @@ FUNCTION(caml_call_gc)
         lfdu    29, 8(11)
         lfdu    30, 8(11)
         lfdu    31, 8(11)
-    /* Return to caller, restarting the allocation */
+    /* Return to caller, resuming the allocation */
         lg      11, Caml_state(last_return_address)
-        addi    11, 11, -16     /* Restart the allocation (4 instructions) */
         mtlr    11
     /* For PPC64: restore the TOC that the caller saved at the usual place */
 #ifdef TOC_SAVE
