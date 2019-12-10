@@ -794,8 +794,16 @@ AS_IF([test x"$enable_shared" != "xno"],
                [xlc*],
                [mksharedlib="$CC -qmkshrobj -G"
                 shared_libraries_supported=true])],
+    [*-*-solaris*],
+      [sharedlib_cflags="-fPIC"
+      mksharedlib="$CC -shared"
+      oc_ldflags="$oc_ldflags"
+      rpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      natdynlinkopts=""
+      shared_libraries_supported=true],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
-    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-solaris*|*-*-gnu*|*-*-haiku*]],
+    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
       mksharedlib="$CC -shared"
       oc_ldflags="$oc_ldflags -Wl,-E"
