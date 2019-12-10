@@ -1392,6 +1392,11 @@ OCaml 4.08.0 (13 June 2019)
 - #7676, #2144: Remove old GC heuristic
   (Damien Doligez, report and review by Alain Frisch)
 
+* #1683: Change Marshal format to make Custom_tag objects store their
+  length. Old versions of OCaml will no longer be able to parse new marshalled
+  files containing custom blocks, but old files will still parse.
+  (Stephen Dolan)
+
 - #1723: Remove internal Meta.static_{alloc,free} primitives.
   (Stephen Dolan, review by Gabriel Scherer)
 
@@ -2111,11 +2116,6 @@ OCaml 4.07.0 (10 July 2018)
 
 - #1753: avoid potential off-by-one overflow in debugger socket path length.
   (Anil Madhavapeddy)
-
-* #1683: Change Marshal format to make Custom_tag objects store their
-  length. Old versions of OCaml will no longer be able to parse new marshalled
-  files containing custom blocks, but old files will still parse.
-  (Stephen Dolan)
 
 ### Tools:
 
