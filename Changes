@@ -318,6 +318,10 @@ OCaml 4.10.0
   (Florian Angelettion, review by Gabriel Scherer,
    report by Clément Busschaert)
 
+- #9169: better documentation for the best-fit allocation policy
+  (Gabriel Scherer, review by Guillaume Munch-Maccagnoni
+   and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #8833: Hint for (type) redefinitions in toplevel session
