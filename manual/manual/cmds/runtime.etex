@@ -125,15 +125,17 @@ The following environment variables are also consulted:
 \fi
         This option takes no argument.
   \item[h] The initial size of the major heap (in words).
-  \item[a] ("allocation_policy") The policy used for allocating in the
-  OCaml heap.  Possible values are 0 for the next-fit policy, and 1
-  for the first-fit policy.  Next-fit is usually faster, but first-fit
-  is better for avoiding fragmentation and the associated heap
-  compactions.
+  \item[a] ("allocation_policy")
+    The policy used for allocating in the OCaml heap. Possible values
+    are "0" for the next-fit policy, "1" for the first-fit
+    policy, and "2" for the best-fit policy. Best-fit is still experimental,
+    but probably the best of the three. The default is "0" (next-fit).
+    See the Gc module documentation for details.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
   \item[i] ("major_heap_increment")  Default size increment for the
   major heap. (in words)
   \item[o] ("space_overhead")  The major GC speed setting.
+    See the Gc module documentation for details.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
   \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[v] ("verbose")  What GC messages to print to stderr.  This
