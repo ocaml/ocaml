@@ -38,7 +38,7 @@ make runtop
 make tests
 ----
 
-5. Install in a new opam switch to try things out:
+6. Install in a new opam switch to try things out:
 +
 ----
 opam compiler-conf install
@@ -52,7 +52,7 @@ opam switch create . --empty
 opam install .
 ----
 
-6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
+7. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
 
 See our <<Development tips and tricks>> for various helpful details,
 for example on how to automatically <<opam compiler script,create an
@@ -205,6 +205,22 @@ has excellent documentation.
   yacc/::                 parser generator
 
 == Development tips and tricks
+
+=== Keep merge commits when merging and cherry-picking Github PRs
+
+Having the Github PR number show up in the git log is very useful for
+later triaging. We recently disabled the "Rebase and merge" button,
+precisely because it does not produce a merge commit.
+
+When you cherry-pick a PR in another branch, please cherry-pick this
+merge-style commit rather than individual commits, whenever
+possible. (Picking a merge commit typically requires the `-m 1`
+option.) You should also use the `-x` option to include the hash of
+the original commit in the commit message.
+
+----
+git cherry-pick -x -m 1 <merge-commit-hash>
+----
 
 === opam compiler script
 
