@@ -55,6 +55,19 @@ val mk_expected:
 
 val is_nonexpansive: Typedtree.expression -> bool
 
+module Label_kind : sig
+  type t = Field | Constructor
+  val type_name : t -> string
+  val label_name : t -> string
+end
+
+type wrong_name = {
+  type_path: Path.t;
+  kind: Label_kind.t;
+  name: string loc;
+  valid_names: string list;
+}
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with [let ... and ...] *)
@@ -114,12 +127,6 @@ val name_cases : string -> Typedtree.value Typedtree.case list -> Ident.t
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
-module Label_kind : sig
-  type t = Field | Constructor
-  val type_name : t -> string
-  val label_name : t -> string
-end
-
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Ctype.Unification_trace.t
@@ -136,8 +143,7 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of
-      string * type_expected * Label_kind.t * Path.t * string * string list
+  | Wrong_name of string * type_expected * wrong_name
   | Name_type_mismatch of
       Label_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string

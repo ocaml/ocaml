@@ -52,6 +52,13 @@ module Label_kind = struct
     | Constructor -> "constructor"
 end
 
+type wrong_name = {
+  type_path: Path.t;
+  kind: Label_kind.t;
+  name: string loc;
+  valid_names: string list;
+}
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with let ... and ... *)
@@ -77,8 +84,7 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of
-      string * type_expected * Label_kind.t * Path.t * string * string list
+  | Wrong_name of string * type_expected * wrong_name
   | Name_type_mismatch of
       Label_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
@@ -597,14 +603,7 @@ let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
-exception Name_not_found of {
-  env: Env.t;
-  type_path: Path.t;
-  name: string loc;
-  kind: Label_kind.t;
-  valid_names: string list;
-}
-
+exception Wrong_name_disambiguation of Env.t * wrong_name
 
 module NameChoice(Name : sig
   type t
@@ -635,13 +634,12 @@ end) = struct
             descr
         | exception Not_found ->
             let valid_names = List.map (fun (nd, _) -> get_name nd) descrs in
-            raise (Name_not_found {
-                    env;
+            raise (Wrong_name_disambiguation (env, {
                     type_path;
                     name = { lid with txt = name };
                     kind;
                     valid_names;
-              })
+              }))
       end
     | _ -> raise Not_found
 
@@ -763,10 +761,8 @@ end
 
 let wrap_disambiguate msg ty f x =
   try f x with
-  | Name_not_found { env; type_path; kind; name; valid_names; } ->
-    raise (Error (name.loc, env,
-                  Wrong_name (msg, ty, kind, type_path,
-                              name.txt, valid_names)))
+  | Wrong_name_disambiguation (env, wrong_name) ->
+    raise (Error (wrong_name.name.loc, env, Wrong_name (msg, ty, wrong_name)))
 
 module Label = NameChoice (struct
   type t = label_description
@@ -5107,15 +5103,15 @@ let report_error ~loc env = function
         print_labels labels
   | Label_not_mutable lid ->
       Location.errorf ~loc "The record field %a is not mutable" longident lid
-  | Wrong_name (eorp, ty_expected, kind, p, name, valid_names) ->
+  | Wrong_name (eorp, ty_expected, { type_path; kind; name; valid_names; }) ->
       Location.error_of_printer ~loc (fun ppf () ->
         let { ty; explanation } = ty_expected in
-        if Path.is_constructor_typath p then begin
+        if Path.is_constructor_typath type_path then begin
           fprintf ppf
             "@[The field %s is not part of the record \
              argument for the %a constructor@]"
-            name
-            path p;
+            name.txt
+            path type_path;
         end else begin
           fprintf ppf
             "@[@[<2>%s type@ %a%t@]@ \
@@ -5123,9 +5119,9 @@ let report_error ~loc env = function
             eorp type_expr ty
             (report_type_expected_explanation_opt explanation)
             (Label_kind.label_name kind)
-            name (*kind*) path p;
+            name.txt (*kind*) path type_path;
         end;
-        spellcheck ppf name valid_names
+        spellcheck ppf name.txt valid_names
       ) ()
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let type_name = Label_kind.type_name kind in
