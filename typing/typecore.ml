@@ -40,6 +40,18 @@ type type_expected = {
   explanation: type_forcing_context option;
 }
 
+module Label_kind = struct
+  type t = Field | Constructor
+
+  let type_name = function
+    | Field -> "record"
+    | Constructor -> "variant"
+
+  let label_name = function
+    | Field -> "field"
+    | Constructor -> "constructor"
+end
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with let ... and ... *)
@@ -66,9 +78,9 @@ type error =
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Wrong_name of
-      string * type_expected * string * Path.t * string * string list
+      string * type_expected * Label_kind.t * Path.t * string * string list
   | Name_type_mismatch of
-      string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
+      Label_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list
@@ -585,21 +597,19 @@ let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
-let label_of_kind kind =
-  if kind = "record" then "field" else "constructor"
-
 exception Name_not_found of {
   env: Env.t;
   type_path: Path.t;
   name: string loc;
-  type_kind: string;
+  kind: Label_kind.t;
   valid_names: string list;
 }
+
 
 module NameChoice(Name : sig
   type t
   type usage
-  val type_kind: string
+  val kind: Label_kind.t
   val get_name: t -> string
   val get_type: t -> type_expr
   val lookup_all_from_type:
@@ -629,7 +639,7 @@ end) = struct
                     env;
                     type_path;
                     name = { lid with txt = name };
-                    type_kind;
+                    kind;
                     valid_names;
               })
       end
@@ -685,10 +695,10 @@ end) = struct
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
-          let label = label_of_kind type_kind in
+          let label_name = Label_kind.label_name kind in
           warn lid.loc
             (Warnings.Not_principal
-               ("this type-based " ^ label ^ " disambiguation"))
+               ("this type-based " ^ label_name ^ " disambiguation"))
         in
         try
           let lbl, use = disambiguate_by_type env tpath scope in
@@ -739,7 +749,7 @@ end) = struct
                   lbls
               in
               raise (Error (lid.loc, env,
-                            Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
+                            Name_type_mismatch (kind, lid.txt, tp, tpl)))
     in
     if in_env lbl then
     begin match scope with
@@ -751,17 +761,17 @@ end) = struct
     lbl
 end
 
-let wrap_disambiguate kind ty f x =
+let wrap_disambiguate msg ty f x =
   try f x with
-  | Name_not_found { env; type_path; type_kind; name; valid_names; } ->
+  | Name_not_found { env; type_path; kind; name; valid_names; } ->
     raise (Error (name.loc, env,
-                  Wrong_name (kind, ty, type_kind, type_path,
+                  Wrong_name (msg, ty, kind, type_path,
                               name.txt, valid_names)))
 
 module Label = NameChoice (struct
   type t = label_description
   type usage = unit
-  let type_kind = "record"
+  let kind = Label_kind.Field
   let get_name lbl = lbl.lbl_name
   let get_type lbl = lbl.lbl_res
   let lookup_all_from_type loc () path env =
@@ -927,7 +937,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
 module Constructor = NameChoice (struct
   type t = constructor_description
   type usage = Env.constructor_usage
-  let type_kind = "variant"
+  let kind = Label_kind.Constructor
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
   let lookup_all_from_type loc usage path env =
@@ -5112,24 +5122,25 @@ let report_error ~loc env = function
              The %s %s does not belong to type %a@]"
             eorp type_expr ty
             (report_type_expected_explanation_opt explanation)
-            (label_of_kind kind)
+            (Label_kind.label_name kind)
             name (*kind*) path p;
         end;
         spellcheck ppf name valid_names
       ) ()
   | Name_type_mismatch (kind, lid, tp, tpl) ->
-      let name = label_of_kind kind in
+      let type_name = Label_kind.type_name kind in
+      let name = Label_kind.label_name kind in
       Location.error_of_printer ~loc (fun ppf () ->
         report_ambiguous_type_error ppf env tp tpl
           (function ppf ->
              fprintf ppf "The %s %a@ belongs to the %s type"
-               name longident lid kind)
+               name longident lid type_name)
           (function ppf ->
              fprintf ppf "The %s %a@ belongs to one of the following %s types:"
-               name longident lid kind)
+               name longident lid type_name)
           (function ppf ->
              fprintf ppf "but a %s was expected belonging to the %s type"
-               name kind)
+               name type_name)
       ) ()
   | Invalid_format msg ->
       Location.errorf ~loc "%s" msg

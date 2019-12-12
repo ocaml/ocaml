@@ -114,6 +114,12 @@ val name_cases : string -> Typedtree.value Typedtree.case list -> Ident.t
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
+module Label_kind : sig
+  type t = Field | Constructor
+  val type_name : t -> string
+  val label_name : t -> string
+end
+
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Ctype.Unification_trace.t
@@ -131,9 +137,9 @@ type error =
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Wrong_name of
-      string * type_expected * string * Path.t * string * string list
+      string * type_expected * Label_kind.t * Path.t * string * string list
   | Name_type_mismatch of
-      string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
+      Label_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list
