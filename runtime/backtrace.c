@@ -28,9 +28,6 @@
 #include "caml/fail.h"
 #include "caml/debugger.h"
 
-/* The table of debug information fragments */
-struct ext_table caml_debug_info;
-
 void caml_init_backtrace(void)
 {
   caml_register_global_root(&Caml_state->backtrace_last_exn);
