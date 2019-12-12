@@ -613,6 +613,10 @@ module NameChoice(Name : sig
   val get_type: t -> type_expr
   val lookup_all_from_type:
     Location.t -> usage -> Path.t -> Env.t -> (t * (unit -> unit)) list
+
+  (** Some names (for example the fields of inline records) are not
+      in the typing environment -- they behave as structural labels
+      rather than nominal labels.*)
   val in_env: t -> bool
 end) = struct
   open Name
@@ -670,11 +674,14 @@ end) = struct
         in
         List.find check_type lbls
 
+  (* scope: the labels equal to lid in the current lexical environment *)
+  (* lbls: possibly a subset of scope, see [disambiguate_label_by_ids] *)
   let disambiguate ?(warn=Location.prerr_warning) ?scope
                    usage lid env expected_type lbls =
     let scope = match scope with None -> lbls | Some l -> l in
     let lbl = match expected_type with
     | None ->
+        (* no expected type => no disambiguation *)
         begin match lbls with
         | (Error(loc', env', err) : _ result) ->
             Env.lookup_error loc' env' err
@@ -685,6 +692,7 @@ end) = struct
             let paths = ambiguous_types env lbl rest in
             let expansion =
               Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
+            (* warn if there were multiple candidates in scope *)
             if paths <> [] then
               warn lid.loc
                 (Warnings.Ambiguous_name ([Longident.last lid.txt],
@@ -698,6 +706,8 @@ end) = struct
             (Warnings.Not_principal
                ("this type-based " ^ name ^ " disambiguation"))
         in
+        (* first look for a disambiguation solution
+           in the current lexical scope *)
         begin match disambiguate_by_type env tpath scope with
         | lbl, use ->
           use ();
@@ -722,8 +732,11 @@ end) = struct
           end;
           lbl
         | exception Not_found ->
+        (* then look outside the lexical scope *)
         match lookup_from_type env tpath usage lid with
         | lbl ->
+          (* warn only on nominal labels;
+             structural labels cannot be qualified anyway *)
           if in_env lbl then
           begin
           let s =
@@ -752,6 +765,7 @@ end) = struct
                       Name_type_mismatch (kind, lid.txt, tp, tpl)));
         end
     in
+    (* warn only on nominal labels *)
     if in_env lbl then
     begin match scope with
     | Ok ((lab1,_)::_) when lab1 == lbl -> ()
@@ -781,6 +795,10 @@ module Label = NameChoice (struct
     | Record_unboxed true | Record_inlined _ | Record_extension _ -> false
 end)
 
+(* In record-construction expressions and patterns, we have many labels
+   at once; find a candidate type in the intersection of the candidates
+   of each label. In the [closed] expression case, this candidate must
+   contain exactly all the labels. *)
 let disambiguate_label_by_ids keep closed ids labels =
   let check_ids (lbl, _) =
     let lbls = Hashtbl.create 8 in
