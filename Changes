@@ -330,6 +330,11 @@ OCaml 4.10 release branch
   Makefile.config on Windows ports.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #9180: pass -fno-common option to C compiler when available,
+  so as to detect problematic multiple definitions of global variables
+  in the C runtime
+  (Xavier Leroy, review by Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - #8828: Added abstractions for variants, records, constructors, fields and
@@ -480,6 +485,11 @@ OCaml 4.10 release branch
 - #9073, #9120: fix incorrect GC ratio multiplier when allocating custom blocks
   with caml_alloc_custom_mem in runtime/custom.c
   (Markus Mottl, review by Gabriel Scherer and Damien Doligez)
+
+- #9144, #9180: multiple definitions of global variables in the C runtime,
+  causing problems with GCC 10.0 and possibly with other C compilers
+  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
+
 
 OCaml 4.09 maintenance branch:
 ------------------------------
