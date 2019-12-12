@@ -588,6 +588,14 @@ let compare_type_path env tpath1 tpath2 =
 let label_of_kind kind =
   if kind = "record" then "field" else "constructor"
 
+exception Name_not_found of {
+  env: Env.t;
+  type_path: Path.t;
+  name: string loc;
+  type_kind: string;
+  valid_names: string list;
+}
+
 module NameChoice(Name : sig
   type t
   type usage
@@ -605,21 +613,25 @@ end) = struct
     | Tconstr(p, _, _) -> p
     | _ -> assert false
 
-  let lookup_from_type env tpath usage lid =
-    let descrs = lookup_all_from_type lid.loc usage tpath env in
+  let lookup_from_type env type_path usage lid =
+    let descrs = lookup_all_from_type lid.loc usage type_path env in
     match lid.txt with
-    | Longident.Lident s -> begin
+    | Longident.Lident name -> begin
         match
-          List.find (fun (nd, _) -> get_name nd = s) descrs
+          List.find (fun (nd, _) -> get_name nd = name) descrs
         with
         | descr, use ->
             use ();
             descr
         | exception Not_found ->
-            let names = List.map (fun (nd, _) -> get_name nd) descrs in
-            raise (Error (lid.loc, env,
-                          Wrong_name ("", mk_expected (newvar ()),
-                                      type_kind, tpath, s, names)))
+            let valid_names = List.map (fun (nd, _) -> get_name nd) descrs in
+            raise (Name_not_found {
+                    env;
+                    type_path;
+                    name = { lid with txt = name };
+                    type_kind;
+                    valid_names;
+              })
       end
     | _ -> raise Not_found
 
@@ -740,8 +752,11 @@ end) = struct
 end
 
 let wrap_disambiguate kind ty f x =
-  try f x with Error (loc, env, Wrong_name ("",_,tk,tp,name,valid_names)) ->
-    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,name,valid_names)))
+  try f x with
+  | Name_not_found { env; type_path; type_kind; name; valid_names; } ->
+    raise (Error (name.loc, env,
+                  Wrong_name (kind, ty, type_kind, type_path,
+                              name.txt, valid_names)))
 
 module Label = NameChoice (struct
   type t = label_description
