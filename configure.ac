@@ -558,7 +558,7 @@ AS_CASE([$host],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$gcc_warnings -fno-common"],
     [gcc-[012]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -578,7 +578,7 @@ AS_CASE([$host],
       internal_cflags="$gcc_warnings"],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$gcc_warnings -fno-common"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
