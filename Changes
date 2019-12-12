@@ -20,6 +20,15 @@ OCaml 4.09 maintenance branch:
 - #9050, #9076: install missing compilerlibs/ocamlmiddleend archives
   (Gabriel Scherer, review by Florian Angeletti, report by Olaf Hering)
 
+- #9144, #9180: multiple definitions of global variables in the C runtime,
+  causing problems with GCC 10.0 and possibly with other C compilers
+  (Xavier Leroy, report by Jürgen Reuter, review by Mark Shinwell)
+
+- #9180: pass -fno-common option to C compiler when available,
+  so as to detect problematic multiple definitions of global variables
+  in the C runtime
+  (Xavier Leroy, review by Mark Shinwell)
+
 OCaml 4.09.0 (19 September 2019):
 ---------------------------------
 
