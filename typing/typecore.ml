@@ -671,10 +671,10 @@ end) = struct
         List.find check_type lbls
 
   let disambiguate ?(warn=Location.prerr_warning) ?scope
-                   usage lid env opath lbls =
+                   usage lid env expected_type lbls =
     let scope = match scope with None -> lbls | Some l -> l in
-    let lbl = match opath with
-      None ->
+    let lbl = match expected_type with
+    | None ->
         begin match lbls with
         | (Error(loc', env', err) : _ result) ->
             Env.lookup_error loc' env' err
@@ -691,23 +691,24 @@ end) = struct
                                           paths, false, expansion));
             lbl
         end
-    | Some(tpath0, tpath, pr) ->
-        let warn_pr () =
+    | Some(tpath0, tpath, principal) ->
+        let warn_non_principal () =
           let name = Datatype_kind.label_name kind in
           warn lid.loc
             (Warnings.Not_principal
                ("this type-based " ^ name ^ " disambiguation"))
         in
-        try
-          let lbl, use = disambiguate_by_type env tpath scope in
+        begin match disambiguate_by_type env tpath scope with
+        | lbl, use ->
           use ();
-          if not pr then begin
+          if not principal then begin
             (* Check if non-principal type is affecting result *)
             match lbls with
-            | (Error _ : _ result) | Ok [] -> warn_pr ()
+            | (Error _ : _ result) | Ok [] -> warn_non_principal ()
             | Ok ((lbl', _use') :: rest) ->
                 let lbl_tpath = get_type_path lbl' in
-                if not (compare_type_path env tpath lbl_tpath) then warn_pr ()
+                if not (compare_type_path env tpath lbl_tpath)
+                then warn_non_principal ()
                 else
                   Printtyp.Conflicts.reset ();
                   let paths = ambiguous_types env lbl rest in
@@ -720,8 +721,9 @@ end) = struct
                                                 paths, false, expansion))
           end;
           lbl
-        with Not_found -> try
-          let lbl = lookup_from_type env tpath usage lid in
+        | exception Not_found ->
+        match lookup_from_type env tpath usage lid with
+        | lbl ->
           if in_env lbl then
           begin
           let s =
@@ -730,24 +732,25 @@ end) = struct
           warn lid.loc
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           end;
-          if not pr then warn_pr ();
+          if not principal then warn_non_principal ();
           lbl
-        with Not_found ->
-          match lbls with
-          | (Error(loc', env', err) : _ result) ->
-              Env.lookup_error loc' env' err
-          | Ok lbls ->
-              let tp = (tpath0, expand_path env tpath) in
-              let tpl =
-                List.map
-                  (fun (lbl, _) ->
-                     let tp0 = get_type_path lbl in
-                     let tp = expand_path env tp0 in
-                     (tp0, tp))
-                  lbls
-              in
-              raise (Error (lid.loc, env,
-                            Name_type_mismatch (kind, lid.txt, tp, tpl)))
+        | exception Not_found ->
+        match lbls with
+        | (Error(loc', env', err) : _ result) ->
+            Env.lookup_error loc' env' err
+        | Ok lbls ->
+        let tp = (tpath0, expand_path env tpath) in
+        let tpl =
+          List.map
+            (fun (lbl, _) ->
+               let tp0 = get_type_path lbl in
+               let tp = expand_path env tp0 in
+               (tp0, tp))
+            lbls
+        in
+        raise (Error (lid.loc, env,
+                      Name_type_mismatch (kind, lid.txt, tp, tpl)));
+        end
     in
     if in_env lbl then
     begin match scope with
@@ -792,7 +795,7 @@ let disambiguate_label_by_ids keep closed ids labels =
   if keep && labels'' = [] then (false, labels') else (true, labels'')
 
 (* Only issue warnings once per record constructor/pattern *)
-let disambiguate_lid_a_list loc closed env opath lid_a_list =
+let disambiguate_lid_a_list loc closed env expected_type lid_a_list =
   let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
   let w_pr = ref false and w_amb = ref []
   and w_scope = ref [] and w_scope_ty = ref "" in
@@ -817,19 +820,21 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
        * if the reduced list is valid, call Label.disambiguate
      *)
     let scope = Env.lookup_all_labels ~loc:lid.loc lid.txt env in
-    match opath, scope with
+    match expected_type, scope with
     | None, Error(loc, env, err) ->
         Env.lookup_error loc env err
     | Some _, Error _ ->
-        Label.disambiguate () lid env opath scope ~warn ~scope
+        Label.disambiguate () lid env expected_type scope ~warn ~scope
     | _, Ok lbls ->
        let (ok, lbls) =
-         match opath with
+         match expected_type with
          | Some (_, _, true) ->
              (true, lbls) (* disambiguate only checks scope *)
-         | _  -> disambiguate_label_by_ids (opath=None) closed ids lbls
+         | _  ->
+            disambiguate_label_by_ids (expected_type=None) closed ids lbls
        in
-       if ok then Label.disambiguate () lid env opath (Ok lbls) ~warn ~scope
+       if ok
+       then Label.disambiguate () lid env expected_type (Ok lbls) ~warn ~scope
        else fst (List.hd lbls) (* will fail later *)
   in
   let lbl_a_list =
@@ -868,7 +873,8 @@ let map_fold_cont f xs k =
   List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
     xs (fun ys -> k (List.rev ys)) []
 
-let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
+let type_label_a_list
+      ?labels loc closed env type_lbl_a expected_type lid_a_list k =
   let lbl_a_list =
     match lid_a_list, labels with
       ({txt=Longident.Lident s}, _)::_, Some labels when Hashtbl.mem labels s ->
@@ -890,7 +896,7 @@ let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
                   | _ -> lid_a)
                 lid_a_list
         in
-        disambiguate_lid_a_list loc closed env opath lid_a_list
+        disambiguate_lid_a_list loc closed env expected_type lid_a_list
   in
   (* Invariant: records are sorted in the typed tree *)
   let lbl_a_list =
@@ -1418,7 +1424,7 @@ and type_pat_aux
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_construct(lid, sarg) ->
-      let opath =
+      let expected_type =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
             Some (p0, p, true)
@@ -1435,7 +1441,8 @@ and type_pat_aux
           Env.lookup_all_constructors Env.Pattern ~loc:lid.loc lid.txt !env in
         wrap_disambiguate "This variant pattern is expected to have"
           (mk_expected expected_ty)
-          (Constructor.disambiguate Env.Pattern lid !env opath) candidates
+          (Constructor.disambiguate Env.Pattern lid !env expected_type)
+          candidates
       in
       if constr.cstr_generalized && must_backtrack_on_gadt then
         raise Need_backtrack;
@@ -1543,7 +1550,7 @@ and type_pat_aux
       end
   | Ppat_record(lid_sp_list, closed) ->
       assert (lid_sp_list <> []);
-      let opath, record_ty =
+      let expected_type, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
           begin_def ();
@@ -1583,11 +1590,11 @@ and type_pat_aux
       | Normal ->
           k' (wrap_disambiguate "This record pattern is expected to have"
                (mk_expected expected_ty)
-               (type_label_a_list loc false !env type_label_pat opath
+               (type_label_a_list loc false !env type_label_pat expected_type
                   lid_sp_list)
                make_record_pat)
       | Counter_example {labels; _} ->
-          type_label_a_list ~labels loc false !env type_label_pat opath
+          type_label_a_list ~labels loc false !env type_label_pat expected_type
             lid_sp_list (fun lbl_pat_list -> k' (make_record_pat lbl_pat_list))
       end
   | Ppat_array spl ->
@@ -2721,7 +2728,7 @@ and type_expect_
             end;
             Some exp
       in
-      let ty_record, opath =
+      let ty_record, expected_type =
         let get_path ty =
           try
             let (p0, p,_) = extract_concrete_record env ty in
@@ -2755,7 +2762,7 @@ and type_expect_
           (mk_expected ty_record)
           (type_label_a_list loc closed env
              (fun e k -> k (type_label_exp true env loc ty_record e))
-             opath lid_sexp_list)
+             expected_type lid_sexp_list)
           (fun x -> x)
       in
       with_explanation (fun () ->
@@ -2859,8 +2866,10 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
-      let (record, label, opath) = type_label_access env srecord lid in
-      let ty_record = if opath = None then newvar () else record.exp_type in
+      let (record, label, expected_type) =
+        type_label_access env srecord lid in
+      let ty_record =
+        if expected_type = None then newvar () else record.exp_type in
       let (label_loc, label, newval) =
         type_label_exp false env loc ty_record (lid, label, snewval) in
       unify_exp env record ty_record;
@@ -3668,7 +3677,7 @@ and type_label_access env srecord lid =
     generalize_structure record.exp_type
   end;
   let ty_exp = record.exp_type in
-  let opath =
+  let expected_type =
     try
       let (p0, p,_) = extract_concrete_record env ty_exp in
       Some(p0, p, (repr ty_exp).level = generic_level || not !Clflags.principal)
@@ -3677,8 +3686,8 @@ and type_label_access env srecord lid =
   let labels = Env.lookup_all_labels ~loc:lid.loc lid.txt env in
   let label =
     wrap_disambiguate "This expression has" (mk_expected ty_exp)
-      (Label.disambiguate () lid env opath) labels in
-  (record, label, opath)
+      (Label.disambiguate () lid env expected_type) labels in
+  (record, label, expected_type)
 
 (* Typing format strings for printing or reading.
    These formats are used by functions in modules Printf, Format, and Scanf.
@@ -4273,7 +4282,7 @@ and type_application env funct sargs =
 
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
-  let opath =
+  let expected_type =
     try
       let (p0, p,_) = extract_concrete_variant env ty_expected in
       let principal =
@@ -4288,7 +4297,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   let constr =
     wrap_disambiguate "This variant expression is expected to have"
       ty_expected_explained
-      (Constructor.disambiguate Env.Positive lid env opath) constrs
+      (Constructor.disambiguate Env.Positive lid env expected_type) constrs
   in
   let sargs =
     match sarg with
