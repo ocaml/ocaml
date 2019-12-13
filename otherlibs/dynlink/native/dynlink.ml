@@ -82,7 +82,10 @@ module Native = struct
   let run handle ~unit_header ~priv:_ =
     List.iter (fun cu ->
         try ndl_run handle cu
-        with exn -> raise (DT.Error (Library's_module_initializers_failed exn)))
+        with exn ->
+          Printexc.raise_with_backtrace
+            (DT.Error (Library's_module_initializers_failed exn))
+            (Printexc.get_raw_backtrace ()))
       (Unit_header.defined_symbols unit_header)
 
   let load ~filename ~priv =
