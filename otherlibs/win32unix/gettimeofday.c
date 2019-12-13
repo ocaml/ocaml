@@ -20,21 +20,36 @@
 #include "unixsupport.h"
 
 /* Unix epoch as a Windows timestamp in hundreds of ns */
-#define epoch_ft 116444736000000000.0;
+#define epoch_ft 116444736000000000;
 
 CAMLprim value unix_gettimeofday(value unit)
 {
   FILETIME ft;
   double tm;
+  ULARGE_INTEGER li;
   GetSystemTimeAsFileTime(&ft);
-#if defined(_MSC_VER) && _MSC_VER < 1300
-  /* This compiler can't cast uint64_t to double! Fortunately, this doesn't
-     matter since SYSTEMTIME is only ever 63-bit (maximum value 31-Dec-30827
-     23:59:59.999, and it requires some skill to set the clock past 2099!)
-   */
-  tm = *(int64_t *)&ft - epoch_ft; /* shift to Epoch-relative time */
-#else
-  tm = *(uint64_t *)&ft - epoch_ft; /* shift to Epoch-relative time */
-#endif
+  li.LowPart = ft.dwLowDateTime;
+  li.HighPart = ft.dwHighDateTime;
+  tm = li.QuadPart - epoch_ft; /* shift to Epoch-relative time */
   return caml_copy_double(tm * 1e-7);  /* tm is in 100ns */
+}
+
+CAMLprim value unix_gettimeofday_int(value unit)
+{
+  value res;
+  FILETIME ft;
+  uint64_t time;
+  int64_t sec;
+  int32_t usec;
+  ULARGE_INTEGER li;
+  GetSystemTimeAsFileTime(&ft);
+  li.LowPart = ft.dwLowDateTime;
+  li.HighPart = ft.dwHighDateTime;
+  time = li.QuadPart - epoch_ft; /* shift to Epoch-relative time */
+  sec = time * 1e-7; /* tm is in 100ns */
+  usec = (time - sec) * 10;
+  res = caml_alloc_small(2, 0);
+  Field(res, 0) = caml_copy_int64(sec);
+  Field(res, 1) = caml_copy_int32(usec);
+  return res;
 }

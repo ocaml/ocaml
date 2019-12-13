@@ -1092,6 +1092,12 @@ val time : unit -> float
 val gettimeofday : unit -> float
 (** Same as {!Unix.time}, but with resolution better than 1 second. *)
 
+val gettimeofday_int : unit -> int64*int32
+(** Same as {!Unix.gettimeofday}, but using high-precision integers.
+   Return the pair: [seconds, microseconds].
+
+    @since 4.11.0 *)
+
 val gmtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
    a time. Assumes UTC (Coordinated Universal Time), also known as GMT.
@@ -1126,6 +1132,11 @@ val sleepf : float -> unit
     but fractions of seconds are supported.
 
     @since 4.03.0 *)
+
+val sleep_int : int64 -> int32 -> unit
+(** Like [sleepf] but takes a pair [seconds, microseconds].
+
+    @since 4.11.0 *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.
