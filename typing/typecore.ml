@@ -40,21 +40,21 @@ type type_expected = {
   explanation: type_forcing_context option;
 }
 
-module Name_kind = struct
-  type t = Field | Constructor
+module Datatype_kind = struct
+  type t = Record | Variant
 
   let type_name = function
-    | Field -> "record"
-    | Constructor -> "variant"
+    | Record -> "record"
+    | Variant -> "variant"
 
-  let name = function
-    | Field -> "field"
-    | Constructor -> "constructor"
+  let label_name = function
+    | Record -> "field"
+    | Variant -> "constructor"
 end
 
 type wrong_name = {
   type_path: Path.t;
-  kind: Name_kind.t;
+  kind: Datatype_kind.t;
   name: string loc;
   valid_names: string list;
 }
@@ -86,7 +86,7 @@ type error =
   | Label_not_mutable of Longident.t
   | Wrong_name of string * type_expected * wrong_name
   | Name_type_mismatch of
-      Name_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
+      Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list
@@ -608,7 +608,7 @@ exception Wrong_name_disambiguation of Env.t * wrong_name
 module NameChoice(Name : sig
   type t
   type usage
-  val kind: Name_kind.t
+  val kind: Datatype_kind.t
   val get_name: t -> string
   val get_type: t -> type_expr
   val lookup_all_from_type:
@@ -693,7 +693,7 @@ end) = struct
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
-          let name = Name_kind.name kind in
+          let name = Datatype_kind.label_name kind in
           warn lid.loc
             (Warnings.Not_principal
                ("this type-based " ^ name ^ " disambiguation"))
@@ -767,7 +767,7 @@ let wrap_disambiguate msg ty f x =
 module Label = NameChoice (struct
   type t = label_description
   type usage = unit
-  let kind = Name_kind.Field
+  let kind = Datatype_kind.Record
   let get_name lbl = lbl.lbl_name
   let get_type lbl = lbl.lbl_res
   let lookup_all_from_type loc () path env =
@@ -933,7 +933,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
 module Constructor = NameChoice (struct
   type t = constructor_description
   type usage = Env.constructor_usage
-  let kind = Name_kind.Constructor
+  let kind = Datatype_kind.Variant
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
   let lookup_all_from_type loc usage path env =
@@ -5118,14 +5118,14 @@ let report_error ~loc env = function
              The %s %s does not belong to type %a@]"
             eorp type_expr ty
             (report_type_expected_explanation_opt explanation)
-            (Name_kind.name kind)
+            (Datatype_kind.label_name kind)
             name.txt (*kind*) path type_path;
         end;
         spellcheck ppf name.txt valid_names
       ) ()
   | Name_type_mismatch (kind, lid, tp, tpl) ->
-      let type_name = Name_kind.type_name kind in
-      let name = Name_kind.name kind in
+      let type_name = Datatype_kind.type_name kind in
+      let name = Datatype_kind.label_name kind in
       Location.error_of_printer ~loc (fun ppf () ->
         report_ambiguous_type_error ppf env tp tpl
           (function ppf ->

@@ -55,15 +55,15 @@ val mk_expected:
 
 val is_nonexpansive: Typedtree.expression -> bool
 
-module Name_kind : sig
-  type t = Field | Constructor
+module Datatype_kind : sig
+  type t = Record | Variant
   val type_name : t -> string
-  val name : t -> string
+  val label_name : t -> string
 end
 
 type wrong_name = {
   type_path: Path.t;
-  kind: Name_kind.t;
+  kind: Datatype_kind.t;
   name: string loc;
   valid_names: string list;
 }
@@ -145,7 +145,7 @@ type error =
   | Label_not_mutable of Longident.t
   | Wrong_name of string * type_expected * wrong_name
   | Name_type_mismatch of
-      Name_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
+      Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list
