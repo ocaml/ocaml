@@ -266,6 +266,7 @@ and transl_type_aux env policy styp =
           in check decl;
           Location.deprecated styp.ptyp_loc
             "old syntax for polymorphic variant type";
+          ignore(Env.lookup_type ~loc:lid.loc lid.txt env);
           (path, decl,true)
         with Not_found -> try
           let lid2 =
