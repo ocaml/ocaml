@@ -143,13 +143,10 @@ static struct ev_info *process_debug_events(code_t code_start,
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
 
       {
-        uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
-        events[j].ev_filename = (char*)caml_stat_alloc_noexc(fnsz);
+        const char *fname = String_val(Field(ev_start, POS_FNAME));
+        events[j].ev_filename = caml_stat_strdup_noexc(fname);
         if(events[j].ev_filename == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
-        memcpy(events[j].ev_filename,
-            String_val(Field(ev_start, POS_FNAME)),
-            fnsz);
       }
 
       events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
