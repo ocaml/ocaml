@@ -210,14 +210,6 @@ module T7 : sig end = struct
   let _ = fun ((module S : S)) -> S.f (object end)
 end;;
 [%%expect {|
-Line 4, characters 4-29:
-4 |     class type t = object end
-        ^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 34: unused type t.
-Line 7, characters 4-10:
-7 |     open M
-        ^^^^^^
-Warning 33: unused open M.
 module T7 : sig end
 |}]
 
@@ -233,13 +225,5 @@ module T8 : sig end = struct
   let _ = fun ((module S : S)) -> S.f (object end)
 end;;
 [%%expect {|
-Line 4, characters 4-24:
-4 |     class t = object end
-        ^^^^^^^^^^^^^^^^^^^^
-Warning 34: unused type t.
-Line 7, characters 4-10:
-7 |     open M
-        ^^^^^^
-Warning 33: unused open M.
 module T8 : sig end
 |}]
