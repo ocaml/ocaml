@@ -195,14 +195,6 @@ Line 8, characters 11-13:
 8 |     val f: #t -> unit
                ^^
 Alert deprecated: old syntax for polymorphic variant type
-Line 4, characters 4-22:
-4 |     type t = [`A | `B]
-        ^^^^^^^^^^^^^^^^^^
-Warning 34: unused type t.
-Line 7, characters 4-10:
-7 |     open M
-        ^^^^^^
-Warning 33: unused open M.
 module T6 : sig end
 |}]
 
