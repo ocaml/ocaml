@@ -276,6 +276,7 @@ and transl_type_aux env policy styp =
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
           let path, decl = Env.find_type_by_name lid2 env in
+          ignore(Env.lookup_cltype ~loc:lid.loc lid.txt env);
           (path, decl, false)
         with Not_found ->
           ignore (Env.lookup_class ~loc:lid.loc lid.txt env); assert false
