@@ -798,8 +798,13 @@ end)
 (* In record-construction expressions and patterns, we have many labels
    at once; find a candidate type in the intersection of the candidates
    of each label. In the [closed] expression case, this candidate must
-   contain exactly all the labels. *)
-let disambiguate_label_by_ids keep closed ids labels =
+   contain exactly all the labels.
+
+   If our successive refinements result in an empty list,
+   return [Error] with the last non-empty list of candidates
+   for use in error messages.
+*)
+let disambiguate_label_by_ids closed ids labels  : (_, _) result =
   let check_ids (lbl, _) =
     let lbls = Hashtbl.create 8 in
     Array.iter (fun lbl -> Hashtbl.add lbls lbl.lbl_name ()) lbl.lbl_all;
@@ -807,10 +812,13 @@ let disambiguate_label_by_ids keep closed ids labels =
   and check_closed (lbl, _) =
     (not closed || List.length ids = Array.length lbl.lbl_all)
   in
-  let labels' = List.filter check_ids labels in
-  if keep && labels' = [] then (false, labels) else
-  let labels'' = List.filter check_closed labels' in
-  if keep && labels'' = [] then (false, labels') else (true, labels'')
+  match List.filter check_ids labels with
+  | [] -> Error labels
+  | labels ->
+  match List.filter check_closed labels with
+  | [] -> Error labels
+  | labels ->
+  Ok labels
 
 (* Only issue warnings once per record constructor/pattern *)
 let disambiguate_lid_a_list loc closed env expected_type lid_a_list =
@@ -844,16 +852,17 @@ let disambiguate_lid_a_list loc closed env expected_type lid_a_list =
     | Some _, Error _ ->
         Label.disambiguate () lid env expected_type scope ~warn ~scope
     | _, Ok lbls ->
-       let (ok, lbls) =
-         match expected_type with
-         | Some (_, _, true) ->
-             (true, lbls) (* disambiguate only checks scope *)
-         | _  ->
-            disambiguate_label_by_ids (expected_type=None) closed ids lbls
-       in
-       if ok
-       then Label.disambiguate () lid env expected_type (Ok lbls) ~warn ~scope
-       else fst (List.hd lbls) (* will fail later *)
+       let disambiguate_labels lbls =
+         Label.disambiguate () lid env expected_type (Ok lbls) ~warn ~scope in
+       match disambiguate_label_by_ids closed ids lbls with
+         | Ok lbls -> disambiguate_labels lbls
+         | Error lbls ->
+            if (expected_type <> None)
+            (* both branches will fail later; if there an expected type,
+               it will be used for a nice error message; otherwise we return
+               an arbitrary candidate for use in best-effort error messages. *)
+            then disambiguate_labels []
+            else fst (List.hd lbls)
   in
   let lbl_a_list =
     List.map (fun (lid,a) -> lid, process_label lid, a) lid_a_list in
