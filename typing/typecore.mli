@@ -55,6 +55,19 @@ val mk_expected:
 
 val is_nonexpansive: Typedtree.expression -> bool
 
+module Datatype_kind : sig
+  type t = Record | Variant
+  val type_name : t -> string
+  val label_name : t -> string
+end
+
+type wrong_name = {
+  type_path: Path.t;
+  kind: Datatype_kind.t;
+  name: string loc;
+  valid_names: string list;
+}
+
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
   | In_group (** nor with [let ... and ...] *)
@@ -130,10 +143,9 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of
-      string * type_expected * string * Path.t * string * string list
+  | Wrong_name of string * type_expected * wrong_name
   | Name_type_mismatch of
-      string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
+      Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
   | Undefined_method of type_expr * string * string list option
   | Undefined_inherited_method of string * string list

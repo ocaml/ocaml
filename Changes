@@ -92,6 +92,9 @@ Working version
 - #9081: typedtree, make the pat_env field of pattern data immutable
   (Gabriel Scherer, review by Jacques Garrigue, report by Alain Frisch)
 
+- #9178: start refactoring the label-disambiguation logic (Typecore.NameChoice)
+  (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
+
 ### Build system:
 
 ### Bug fixes:
