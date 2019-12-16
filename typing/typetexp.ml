@@ -279,7 +279,7 @@ and transl_type_aux env policy styp =
           ignore(Env.lookup_cltype ~loc:lid.loc lid.txt env);
           (path, decl, false)
         with Not_found ->
-          ignore (Env.lookup_class ~loc:lid.loc lid.txt env); assert false
+          ignore (Env.lookup_cltype ~loc:lid.loc lid.txt env); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
