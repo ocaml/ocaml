@@ -674,6 +674,37 @@ end) = struct
         in
         List.find check_type lbls
 
+  let warn_if_ambiguous warn lid env lbl rest =
+    Printtyp.Conflicts.reset ();
+    let paths = ambiguous_types env lbl rest in
+    let expansion =
+      Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
+    (* warn if there were multiple candidates in scope *)
+    if paths <> [] then
+      warn lid.loc
+        (Warnings.Ambiguous_name ([Longident.last lid.txt],
+                                  paths, false, expansion))
+
+  let warn_non_principal warn lid =
+    let name = Datatype_kind.label_name kind in
+    warn lid.loc
+      (Warnings.Not_principal
+         ("this type-based " ^ name ^ " disambiguation"))
+
+  let warn_out_of_scope warn lid env tpath =
+    let path_s =
+      Printtyp.wrap_printing_env ~error:true env
+        (fun () -> Printtyp.string_of_path tpath) in
+    warn lid.loc
+      (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
+
+  let warn_disambiguated_name warn lid lbl scope =
+    match scope with
+    | Ok ((lab1,_) :: _) when lab1 == lbl -> ()
+    | _ ->
+        warn lid.loc
+          (Warnings.Disambiguated_name (get_name lbl))
+
   (** [disambiguate] selects a concrete description for [lid] using some
       contextual information: an optional [expected_type], and a list of candidates [lbls].
       If [expected_type] is [None], it just returns the head of [lbls].
@@ -688,37 +719,6 @@ end) = struct
   let disambiguate ?(warn=Location.prerr_warning) ?scope
                    usage lid env expected_type lbls =
     let scope = match scope with None -> lbls | Some l -> l in
-    let warn_if_ambiguous lbl rest =
-      Printtyp.Conflicts.reset ();
-      let paths = ambiguous_types env lbl rest in
-      let expansion =
-        Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
-      (* warn if there were multiple candidates in scope *)
-      if paths <> [] then
-        warn lid.loc
-          (Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                    paths, false, expansion))
-    in
-    let warn_non_principal () =
-      let name = Datatype_kind.label_name kind in
-      warn lid.loc
-        (Warnings.Not_principal
-           ("this type-based " ^ name ^ " disambiguation"))
-    in
-    let warn_out_of_scope tpath =
-      let path_s =
-        Printtyp.wrap_printing_env ~error:true env
-          (fun () -> Printtyp.string_of_path tpath) in
-      warn lid.loc
-        (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
-    in
-    let warn_disambiguated_name lbl scope =
-      match scope with
-      | Ok ((lab1,_) :: _) when lab1 == lbl -> ()
-      | _ ->
-          Location.prerr_warning lid.loc
-            (Warnings.Disambiguated_name (get_name lbl))
-    in
     let lbl = match expected_type with
     | None ->
         (* no expected type => no disambiguation *)
@@ -728,7 +728,7 @@ end) = struct
         | Ok [] -> assert false
         | Ok((lbl, use) :: rest) ->
             use ();
-            warn_if_ambiguous lbl rest;
+            warn_if_ambiguous warn lid env lbl rest;
             lbl
         end
     | Some(tpath0, tpath, principal) ->
@@ -740,12 +740,12 @@ end) = struct
           if not principal then begin
             (* Check if non-principal type is affecting result *)
             match lbls with
-            | (Error _ : _ result) | Ok [] -> warn_non_principal ()
+            | (Error _ : _ result) | Ok [] -> warn_non_principal warn lid
             | Ok ((lbl', _use') :: rest) ->
                 let lbl_tpath = get_type_path lbl' in
                 if not (compare_type_path env tpath lbl_tpath)
-                then warn_non_principal ()
-                else warn_if_ambiguous lbl rest;
+                then warn_non_principal warn lid
+                else warn_if_ambiguous warn lid env lbl rest;
           end;
           lbl
         | exception Not_found ->
@@ -754,8 +754,8 @@ end) = struct
         | lbl ->
           (* warn only on nominal labels;
              structural labels cannot be qualified anyway *)
-          if in_env lbl then warn_out_of_scope tpath;
-          if not principal then warn_non_principal ();
+          if in_env lbl then warn_out_of_scope warn lid env tpath;
+          if not principal then warn_non_principal warn lid;
           lbl
         | exception Not_found ->
         match lbls with
@@ -776,7 +776,7 @@ end) = struct
         end
     in
     (* warn only on nominal labels *)
-    if in_env lbl then warn_disambiguated_name lbl scope;
+    if in_env lbl then warn_disambiguated_name warn lid lbl scope;
     lbl
 end
 
