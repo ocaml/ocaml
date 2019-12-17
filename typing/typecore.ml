@@ -674,8 +674,17 @@ end) = struct
         in
         List.find check_type lbls
 
-  (* scope: the labels equal to lid in the current lexical environment *)
-  (* lbls: possibly a subset of scope, see [disambiguate_label_by_ids] *)
+  (** [disambiguate] selects a concrete description for [lid] using some
+      contextual information: an optional [expected_type], and a list of candidates [lbls].
+      If [expected_type] is [None], it just returns the head of [lbls].
+      Otherwise, it extracts the description directly from the corresponding type definition,
+      except for extension types, where it has to choose it inside [lbls].
+      This code is careful to warn in a number of situations:
+      * if a non principal type was used for disambiguation [Not_principal]
+      * if [lbls] contained several valid candidates [Ambiguous_name]
+      * if the name was chosen out of [scope] [Name_out_of_scope]
+      Here [scope] contains the labels equal to [lid] in the current environment,
+      and [lbls] is a (potentially strict) subset of [scope], see [disambiguate_label_by_ids] *)
   let disambiguate ?(warn=Location.prerr_warning) ?scope
                    usage lid env expected_type lbls =
     let scope = match scope with None -> lbls | Some l -> l in
