@@ -264,10 +264,14 @@ beforedepend:: opnames.ml
 
 # Display info on compiled files
 
+DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
+
 ifeq "$(SYSTEM)" "macosx"
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
-else
-DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
+endif
+
+ifeq "$(SYSTEM)" "cygwin"
+DEF_SYMBOL_PREFIX = '-Dsymbol_prefix="_"'
 endif
 
 objinfo_helper$(EXE): objinfo_helper.$(O)
