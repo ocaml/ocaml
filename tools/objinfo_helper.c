@@ -18,6 +18,7 @@
 #ifdef HAS_LIBBFD
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 // PACKAGE: protect against binutils change
 //   https://sourceware.org/bugzilla/show_bug.cgi?id=14243
@@ -26,6 +27,18 @@
 #undef PACKAGE
 
 #define plugin_header_sym (symbol_prefix "caml_plugin_header")
+
+/* Print an error message and exit */
+static void error(bfd *fd, char *msg, ...)
+{
+  va_list ap;
+  va_start(ap, msg);
+  vfprintf (stderr, msg, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
+  if (fd!=NULL) bfd_close(fd);
+  exit(2);
+}
 
 int main(int argc, char ** argv)
 {
@@ -36,43 +49,27 @@ int main(int argc, char ** argv)
   asymbol ** symbol_table;
   long sym_count, i;
 
-  if (argc != 2) {
-    fprintf(stderr, "Usage: objinfo_helper <dynamic library>\n");
-    return 2;
-  }
+  if (argc != 2)
+    error(NULL, "Usage: objinfo_helper <dynamic library>");
 
   fd = bfd_openr(argv[1], "default");
-  if (!fd) {
-    fprintf(stderr, "Error opening file %s\n", argv[1]);
-    return 2;
-  }
-  if (! bfd_check_format (fd, bfd_object)) {
-    fprintf(stderr, "Error: wrong format\n");
-    bfd_close(fd);
-    return 2;
-  }
+  if (!fd)
+    error(NULL, "Error opening file %s", argv[1]);
+  if (! bfd_check_format (fd, bfd_object))
+    error(fd, "Error: wrong format");
 
   sec = bfd_get_section_by_name(fd, ".data");
-  if (! sec) {
-    fprintf(stderr, "Error: section .data not found\n");
-    bfd_close(fd);
-    return 2;
-  }
+  if (! sec)
+    error(fd, "Error: section .data not found");
 
   offset = sec->filepos;
   st_size = bfd_get_dynamic_symtab_upper_bound (fd);
-  if (st_size <= 0) {
-    fprintf(stderr, "Error: size of section .data unknown\n");
-    bfd_close(fd);
-    return 2;
-  }
+  if (st_size <= 0)
+    error(fd, "Error: size of section .data unknown");
 
   symbol_table = malloc(st_size);
-  if (! symbol_table) {
-    fprintf(stderr, "Error: out of memory\n");
-    bfd_close(fd);
-    return 2;
-  }
+  if (! symbol_table)
+    error(fd, "Error: out of memory");
 
   sym_count = bfd_canonicalize_dynamic_symtab (fd, symbol_table);
 
@@ -84,9 +81,7 @@ int main(int argc, char ** argv)
     }
   }
 
-  fprintf(stderr, "Error: missing symbol %s\n", plugin_header_sym);
-  bfd_close(fd);
-  return 2;
+  error(fd, "Error: missing symbol %s", plugin_header_sym);
 }
 
 #else
