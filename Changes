@@ -22,6 +22,9 @@ Working version
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
    KC Sivaramakrishnan and Xavier Leroy)
 
+- #9193: Make tuple matching optimisation apply to Lswitch and Lstringswitch.
+  (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
+
 ### Standard library:
 
 - #8771: Lexing: add set_position and set_filename to change (fake)

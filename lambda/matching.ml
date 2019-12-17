@@ -3405,8 +3405,23 @@ let rec map_return f = function
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
   | Lstaticcatch (l1, b, l2) ->
       Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Lswitch (s, sw, loc) ->
+      let map_cases cases =
+        List.map (fun (i, l) -> i, map_return f l) cases in
+      Lswitch (s,
+               { sw with sw_consts = map_cases sw.sw_consts;
+                         sw_blocks = map_cases sw.sw_blocks;
+                         sw_failaction =
+                           Option.map (map_return f) sw.sw_failaction },
+               loc)
+  | Lstringswitch (s, cases, def, loc) ->
+      Lstringswitch(s,
+                    List.map (fun (s,l) -> s, map_return f l) cases,
+                    Option.map (map_return f) def,
+                    loc)
   | (Lstaticraise _ | Lprim (Praise _, _, _)) as l -> l
-  | l -> f l
+  | (Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lsend _ | Lprim _
+    | Lwhile _ | Lfor _ | Lassign _ | Lifused _) as l -> f l
 
 (* The 'opt' reference indicates if the optimization is worthy.
 
