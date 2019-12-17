@@ -47,6 +47,10 @@ Working version
   from a different (older or newer), incompatible compiler version.
   (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
+- #9181: make objinfo work on Cygwin and look for the caml_plugin_header
+  symbol in both the static and the dynamic symbol tables.
+  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
