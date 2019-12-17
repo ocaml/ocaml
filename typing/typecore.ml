@@ -685,6 +685,7 @@ end) = struct
         (Warnings.Ambiguous_name ([Longident.last lid.txt],
                                   paths, false, expansion))
 
+  (* warn if a non-principal type was used for disambiguation *)
   let warn_non_principal warn lid =
     let name = Datatype_kind.label_name kind in
     warn lid.loc
@@ -698,6 +699,11 @@ end) = struct
     warn lid.loc
       (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
 
+  (* warn if the selected name is not the last introduced in scope
+     -- in these cases the resolution is different from pre-disambiguation OCaml
+     (this warning is not enabled by default, it is specifically for people
+      wishing to write backward-compatible code).
+   *)
   let warn_disambiguated_name warn lid lbl scope =
     match scope with
     | Ok ((lab1,_) :: _) when lab1 == lbl -> ()
@@ -710,10 +716,7 @@ end) = struct
       If [expected_type] is [None], it just returns the head of [lbls].
       Otherwise, it extracts the description directly from the corresponding type definition,
       except for extension types, where it has to choose it inside [lbls].
-      This code is careful to warn in a number of situations:
-      * if a non principal type was used for disambiguation [Not_principal]
-      * if [lbls] contained several valid candidates [Ambiguous_name]
-      * if the name was chosen out of [scope] [Name_out_of_scope]
+
       Here [scope] contains the labels equal to [lid] in the current environment,
       and [lbls] is a (potentially strict) subset of [scope], see [disambiguate_label_by_ids] *)
   let disambiguate ?(warn=Location.prerr_warning) ?scope
