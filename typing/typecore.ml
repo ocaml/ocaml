@@ -674,24 +674,25 @@ end) = struct
         in
         List.find check_type lbls
 
+  (* warn if there are several distinct candidates in scope *)
   let warn_if_ambiguous warn lid env lbl rest =
     Printtyp.Conflicts.reset ();
     let paths = ambiguous_types env lbl rest in
     let expansion =
       Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
-    (* warn if there were multiple candidates in scope *)
     if paths <> [] then
       warn lid.loc
         (Warnings.Ambiguous_name ([Longident.last lid.txt],
                                   paths, false, expansion))
 
-  (* warn if a non-principal type was used for disambiguation *)
+  (* a non-principal type was used for disambiguation *)
   let warn_non_principal warn lid =
     let name = Datatype_kind.label_name kind in
     warn lid.loc
       (Warnings.Not_principal
          ("this type-based " ^ name ^ " disambiguation"))
 
+  (* we selected a name out of the lexical scope *)
   let warn_out_of_scope warn lid env tpath =
     let path_s =
       Printtyp.wrap_printing_env ~error:true env
@@ -704,7 +705,7 @@ end) = struct
      (this warning is not enabled by default, it is specifically for people
       wishing to write backward-compatible code).
    *)
-  let warn_disambiguated_name warn lid lbl scope =
+  let warn_if_disambiguated_name warn lid lbl scope =
     match scope with
     | Ok ((lab1,_) :: _) when lab1 == lbl -> ()
     | _ ->
@@ -781,7 +782,8 @@ end) = struct
         end
     in
     (* warn only on nominal labels *)
-    if in_env lbl then warn_disambiguated_name warn lid lbl scope;
+    if in_env lbl then
+      warn_if_disambiguated_name warn lid lbl scope;
     lbl
 end
 
