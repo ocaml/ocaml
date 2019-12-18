@@ -50,8 +50,6 @@ int caml_gc_phase;        /* always Phase_mark, Pase_clean,
 static value *gray_vals;
 static value *gray_vals_cur, *gray_vals_end;
 static asize_t gray_vals_size;
-static int heap_is_pure;   /* The heap is pure if the only gray objects
-                              below [markhp] are also in [gray_vals]. */
 uintnat caml_allocated_words;
 uintnat caml_dependent_size, caml_dependent_allocated;
 double caml_extra_heap_resources;
@@ -59,7 +57,7 @@ uintnat caml_fl_wsz_at_phase_change = 0;
 
 extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
-static char *markhp, *chunk, *limit;
+static char *sweep_chunk, *sweep_limit;
 static double p_backlog = 0.0; /* backlog for the gc speedup parameter */
 
 int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
@@ -121,7 +119,8 @@ static void realloc_gray_vals (void)
   value *new;
 
   CAMLassert (gray_vals_cur == gray_vals_end);
-  if (gray_vals_size < Caml_state->stat_heap_wsz / 32){
+  if (1 /* FIXME: handle overflow if
+           gray_vals_size < caml_stat_heap_wsz / 32*/){
     caml_gc_message (0x08, "Growing gray_vals to %"
                            ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                      (intnat) gray_vals_size * sizeof (value) / 512);
@@ -129,18 +128,13 @@ static void realloc_gray_vals (void)
                                             2 * gray_vals_size *
                                             sizeof (value));
     if (new == NULL){
-      caml_gc_message (0x08, "No room for growing gray_vals\n");
-      gray_vals_cur = gray_vals;
-      heap_is_pure = 0;
+      caml_fatal_error("No room for growing gray_vals");
     }else{
       gray_vals = new;
       gray_vals_cur = gray_vals + gray_vals_size;
       gray_vals_size *= 2;
       gray_vals_end = gray_vals + gray_vals_size;
     }
-  }else{
-    gray_vals_cur = gray_vals + gray_vals_size / 2;
-    heap_is_pure = 0;
   }
 }
 
@@ -167,12 +161,10 @@ void caml_darken (value v, value *p /* not used */)
     CAMLassert (!Is_blue_hd (h));
     if (Is_white_hd (h)){
       ephe_list_pure = 0;
+      Hd_val (v) = Blackhd_hd (h);
       if (t < No_scan_tag){
-        Hd_val (v) = Grayhd_hd (h);
         *gray_vals_cur++ = v;
         if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
-      }else{
-        Hd_val (v) = Blackhd_hd (h);
       }
     }
   }
@@ -186,7 +178,6 @@ static void start_cycle (void)
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
   caml_gc_subphase = Subphase_mark_roots;
-  markhp = NULL;
   ephe_list_pure = 1;
   ephes_checked_if_pure = &caml_ephe_list_head;
   ephes_to_check = &caml_ephe_list_head;
@@ -210,9 +201,9 @@ static void init_sweep_phase(void)
   caml_gc_sweep_hp = caml_heap_start;
   caml_fl_init_merge ();
   caml_gc_phase = Phase_sweep;
-  chunk = caml_heap_start;
-  caml_gc_sweep_hp = chunk;
-  limit = chunk + Chunk_size (chunk);
+  sweep_chunk = caml_heap_start;
+  caml_gc_sweep_hp = sweep_chunk;
+  sweep_limit = sweep_chunk + Chunk_size (sweep_chunk);
   caml_fl_wsz_at_phase_change = caml_fl_cur_wsz;
   if (caml_major_gc_hook) (*caml_major_gc_hook)();
 }
@@ -267,7 +258,7 @@ Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
 #endif
     if (Is_white_hd (chd)){
       ephe_list_pure = 0;
-      Hd_val (child) = Grayhd_hd (chd);
+      Hd_val (child) = Blackhd_hd (chd);
       *gray_vals_ptr++ = child;
       if (gray_vals_ptr >= gray_vals_end) {
         gray_vals_cur = gray_vals_ptr;
@@ -393,7 +384,7 @@ static void mark_slice (intnat work)
     if (v == 0 && gray_vals_ptr > gray_vals){
       CAMLassert (start == 0);
       v = *--gray_vals_ptr;
-      CAMLassert (Is_gray_val (v));
+      CAMLassert (Is_black_val (v));
 #ifdef NO_NAKED_POINTERS
       if (Tag_val(v) == Closure_tag) {
         /* Skip the code pointers and integers at beginning of closure;
@@ -405,7 +396,7 @@ static void mark_slice (intnat work)
     }
     if (v != 0){
       hd = Hd_val(v);
-      CAMLassert (Is_gray_hd (hd));
+      CAMLassert (Is_black_hd (hd));
       size = Wosize_hd (hd);
       end = start + work;
       if (Tag_hd (hd) < No_scan_tag){
@@ -426,7 +417,7 @@ static void mark_slice (intnat work)
           work = 0;
           start = end;
           /* [v] doesn't change. */
-          CAMLassert (Is_gray_val (v));
+          CAMLassert (Is_black_val (v));
         }else{
           CAMLassert (end == size);
           Hd_val (v) = Blackhd_hd (hd);
@@ -441,34 +432,6 @@ static void mark_slice (intnat work)
         work -= Whsize_wosize(size);
         v = 0;
       }
-    }else if (markhp != NULL){
-      if (markhp == limit){
-        chunk = Chunk_next (chunk);
-        if (chunk == NULL){
-          markhp = NULL;
-        }else{
-          markhp = chunk;
-          limit = chunk + Chunk_size (chunk);
-        }
-      }else{
-        if (Is_gray_val (Val_hp (markhp))){
-          CAMLassert (gray_vals_ptr == gray_vals);
-          CAMLassert (v == 0 && start == 0);
-          v = Val_hp (markhp);
-#ifdef NO_NAKED_POINTERS
-          if (Tag_val(v) == Closure_tag) {
-            start = Start_env_closinfo(Closinfo_val(v));
-            CAMLassert(start <= Wosize_val(v));
-          }
-#endif
-        }
-        markhp += Bhsize_hp (markhp);
-      }
-    }else if (!heap_is_pure){
-      heap_is_pure = 1;
-      chunk = caml_heap_start;
-      markhp = chunk;
-      limit = chunk + Chunk_size (chunk);
     } else if (caml_gc_subphase == Subphase_mark_roots) {
       CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
       gray_vals_cur = gray_vals_ptr;
@@ -575,14 +538,14 @@ static void sweep_slice (intnat work)
   caml_gc_message (0x40, "Sweeping %"
                    ARCH_INTNAT_PRINTF_FORMAT "d words\n", work);
   while (work > 0){
-    if (caml_gc_sweep_hp < limit){
+    if (caml_gc_sweep_hp < sweep_limit){
       hp = caml_gc_sweep_hp;
       hd = Hd_hp (hp);
       work -= Whsize_hd (hd);
       caml_gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case Caml_white:
-        caml_gc_sweep_hp = (char *) caml_fl_merge_block (Val_hp (hp), limit);
+        caml_gc_sweep_hp = (char *) caml_fl_merge_block (Val_hp (hp), sweep_limit);
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
@@ -593,18 +556,18 @@ static void sweep_slice (intnat work)
         Hd_hp (hp) = Whitehd_hd (hd);
         break;
       }
-      CAMLassert (caml_gc_sweep_hp <= limit);
+      CAMLassert (caml_gc_sweep_hp <= sweep_limit);
     }else{
-      chunk = Chunk_next (chunk);
-      if (chunk == NULL){
+      sweep_chunk = Chunk_next (sweep_chunk);
+      if (sweep_chunk == NULL){
         /* Sweeping is done. */
         ++ Caml_state->stat_major_collections;
         work = 0;
         caml_gc_phase = Phase_idle;
         caml_request_minor_gc ();
       }else{
-        caml_gc_sweep_hp = chunk;
-        limit = chunk + Chunk_size (chunk);
+        caml_gc_sweep_hp = sweep_chunk;
+        sweep_limit = sweep_chunk + Chunk_size (sweep_chunk);
       }
     }
   }
@@ -912,7 +875,6 @@ void caml_init_major_heap (asize_t heap_size)
     caml_fatal_error ("not enough memory for the gray cache");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
-  heap_is_pure = 1;
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
   for (i = 0; i < Max_major_window; i++) caml_major_ring[i] = 0.0;
@@ -944,9 +906,9 @@ void caml_finalise_heap (void)
   /* Finalising all values (by means of forced sweeping) */
   caml_fl_init_merge ();
   caml_gc_phase = Phase_sweep;
-  chunk = caml_heap_start;
-  caml_gc_sweep_hp = chunk;
-  limit = chunk + Chunk_size (chunk);
+  sweep_chunk = caml_heap_start;
+  caml_gc_sweep_hp = sweep_chunk;
+  sweep_limit = sweep_chunk + Chunk_size (sweep_chunk);
   while (caml_gc_phase == Phase_sweep)
     sweep_slice (LONG_MAX);
 }
