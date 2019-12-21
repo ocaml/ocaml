@@ -854,10 +854,46 @@ let debug_prefix_map_flags () =
         []
   end
 
-let print_if ppf flag printer arg =
-  if !flag then Format.fprintf ppf "%a@." printer arg;
+(* this could eventually go in Format; the code would be nicer with
+   a (Format.formatter -> Format.geometry -> unit) setter function *)
+let with_geometry geometry printer ppf arg : unit =
+  let saved_geometry = Format.pp_get_geometry ppf () in
+  let Format.{max_indent; margin} = geometry in
+  Format.pp_set_geometry ppf ~max_indent ~margin;
+  Fun.protect (fun () -> printer ppf arg)
+    ~finally:(fun () ->
+      let Format.{max_indent; margin} = saved_geometry in
+      Format.pp_set_geometry ppf ~max_indent ~margin)
+
+let print_if ppf geometry flag printer arg =
+  let printer ppf v =
+    Format.fprintf ppf "%a@." printer v in
+  let without_geometry printer ppf v =
+    printer ppf v in
+  let print () =
+    (match geometry with
+       | None -> without_geometry
+       | Some g -> with_geometry g)
+      printer ppf arg
+  in
+  if !flag then print ();
   arg
 
+let dump_if ppf =
+  (* If [max_indent] is set too small, deeply-nested structures are
+     not printed properly. If [margin] is set too large, content is
+     printed on very-long lines without breaks.
+
+     [margin=120] is a compromise we found workable when inspecting
+     the -dlambda output of some compiler modules (few [max_indent]
+     cutoffs, readable-enough lines).
+
+     See feature request #9199 for a hope of a better world.
+   *)
+  print_if ppf (Some Format.{max_indent = 119; margin = 120})
+
+let pretty_print_if ppf =
+  print_if ppf None
 
 type filepath = string
 type modname = string

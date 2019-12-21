@@ -52,15 +52,15 @@ let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
 
 let parse_intf i =
   Pparse.parse_interface ~tool_name:i.tool_name i.source_file
-  |> print_if i.ppf_dump Clflags.dump_parsetree Printast.interface
-  |> print_if i.ppf_dump Clflags.dump_source Pprintast.signature
+  |> dump_if i.ppf_dump Clflags.dump_parsetree Printast.interface
+  |> pretty_print_if i.ppf_dump Clflags.dump_source Pprintast.signature
 
 let typecheck_intf info ast =
   Profile.(record_call typing) @@ fun () ->
   let tsg =
     ast
     |> Typemod.type_interface info.env
-    |> print_if info.ppf_dump Clflags.dump_typedtree Printtyped.interface
+    |> dump_if info.ppf_dump Clflags.dump_typedtree Printtyped.interface
   in
   let sg = tsg.Typedtree.sig_type in
   if !Clflags.print_types then
@@ -97,8 +97,8 @@ let interface info =
 
 let parse_impl i =
   Pparse.parse_implementation ~tool_name:i.tool_name i.source_file
-  |> print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation
-  |> print_if i.ppf_dump Clflags.dump_source Pprintast.structure
+  |> dump_if i.ppf_dump Clflags.dump_parsetree Printast.implementation
+  |> pretty_print_if i.ppf_dump Clflags.dump_source Pprintast.structure
 
 let typecheck_impl i parsetree =
   let always () = Stypes.dump (Some (annot i)) in
@@ -107,7 +107,7 @@ let typecheck_impl i parsetree =
     |> Profile.(record typing)
       (Typemod.type_implementation
          i.source_file i.output_prefix i.module_name i.env)
-    |> print_if i.ppf_dump Clflags.dump_typedtree
+    |> dump_if i.ppf_dump Clflags.dump_typedtree
       Printtyped.implementation_with_coercion
   )
 

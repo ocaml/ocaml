@@ -45,9 +45,9 @@ let flambda i backend typed =
     (fun {Lambda.module_ident; main_module_block_size;
           required_globals; code } ->
     ((module_ident, main_module_block_size), code)
-    |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
+    |>> dump_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
     |>> Simplif.simplify_lambda
-    |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
+    |>> dump_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
     |> (fun ((module_ident, main_module_block_size), code) ->
       let program : Lambda.program =
         { Lambda.
@@ -71,12 +71,12 @@ let clambda i backend typed =
   typed
   |> Profile.(record transl)
     (Translmod.transl_store_implementation i.module_name)
-  |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program
+  |> dump_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program
   |> Profile.(record generate)
     (fun program ->
        let code = Simplif.simplify_lambda program.Lambda.code in
        { program with Lambda.code }
-       |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
+       |> dump_if i.ppf_dump Clflags.dump_lambda Printlambda.program
        |> Asmgen.compile_implementation
             ~backend
             ~filename:i.source_file

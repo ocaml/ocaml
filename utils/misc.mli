@@ -453,10 +453,32 @@ val debug_prefix_map_flags: unit -> string list
 (** Returns the list of [--debug-prefix-map] flags to be passed to the
     assembler, built from the [BUILD_PATH_PREFIX_MAP] environment variable. *)
 
-val print_if :
-  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
-(** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
+val with_geometry :
+  Format.geometry ->
+  (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
+(** [with_geometry geometry printer ppf v] runs [printer ppf v] after
+    temporarily setting the geometry to [geometry] -- and reverts
+    to the previous geometry afterwards. *)
 
+val print_if :
+  Format.formatter -> Format.geometry option ->
+  bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
+(** [print_if ppf geometry flag fmt x] prints [x]
+    with [fmt] on [ppf] if [b] is true.
+    If [geometry] is set, it uses this geometry during printing,
+    see {!with_geometry} above. *)
+
+val dump_if :
+  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
+(** Like {!print_if}, with a geometry preset designed for dumping
+    large tree-form intermediate-representation that typically
+    go over default [max_indent] settings. *)
+
+val pretty_print_if :
+  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
+(** Like {!print_if}, without geometry presets -- uses the default
+    formatter size, designed for printing human-produced messages
+    or objects. *)
 
 type filepath = string
 type modname = string
