@@ -35,3 +35,18 @@ let () =
   callback_ok := true;
   stop ();
   assert(!callback_done)
+
+
+(* Check that postponed callbacks are run at program exit. *)
+let () =
+  let callback_done = ref false in
+  start ~callstack_size:0
+        ~minor_alloc_callback:(fun _ ->
+          if not !callback_done then begin
+              callback_done := true;
+              Printf.printf "Callback called at program exit.\n%!";
+            end;
+          None)
+        ~sampling_rate:1. ();
+  ignore (Sys.opaque_identity (alloc_stub ()));
+  assert(not !callback_done);

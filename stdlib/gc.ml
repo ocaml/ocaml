@@ -138,6 +138,8 @@ module Memprof =
       unit
       = "caml_memprof_set_byt" "caml_memprof_set"
 
+    let has_started = ref false
+
     let start
       ~sampling_rate
       ?(callstack_size = max_int)
@@ -146,6 +148,7 @@ module Memprof =
       ?(promote_callback = fun _ -> None)
       ?(minor_dealloc_callback = fun _ -> ())
       ?(major_dealloc_callback = fun _ -> ()) () =
+      has_started := true;
       set_ctrl sampling_rate callstack_size minor_alloc_callback
                major_alloc_callback promote_callback minor_dealloc_callback
                major_dealloc_callback
@@ -165,4 +168,6 @@ module Memprof =
       set_ctrl sampling_rate callstack_size minor_alloc_callback
                major_alloc_callback promote_callback minor_dealloc_callback
                major_dealloc_callback
+
+    let () = at_exit (fun () -> if !has_started then stop ())
   end
