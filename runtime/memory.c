@@ -664,7 +664,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
             major GC treats it as an additional root.
 
      The logic implemented below is duplicated in caml_array_fill to
-     avoid repated calls to caml_modify and repeated tests on the
+     avoid repeated calls to caml_modify and repeated tests on the
      values.  Don't forget to update caml_array_fill if the logic
      below changes!
   */

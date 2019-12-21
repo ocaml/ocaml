@@ -1,5 +1,6 @@
 check_nosample
-check_ephe_full_major
+check_counts_full_major
+check_counts_full_major
 check_no_nested
 check_distrib 1 250 1000 0.000010
 check_distrib 1 250 1000 0.000100
@@ -9,6 +10,6 @@ check_distrib 1 1 10000000 0.010000
 check_distrib 250 250 100000 0.100000
 check_callstack
 Raised by primitive operation at file "arrays_in_minor.ml", line 18, characters 20-34
-Called from file "arrays_in_minor.ml", line 142, characters 2-35
-Called from file "arrays_in_minor.ml", line 148, characters 9-27
+Called from file "arrays_in_minor.ml", line 161, characters 2-35
+Called from file "arrays_in_minor.ml", line 167, characters 9-27
 OK !

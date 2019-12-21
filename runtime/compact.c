@@ -29,6 +29,7 @@
 #include "caml/roots.h"
 #include "caml/weak.h"
 #include "caml/compact.h"
+#include "caml/memprof.h"
 
 extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
@@ -204,6 +205,8 @@ static void do_compaction (intnat new_allocation_policy)
     caml_do_roots (caml_invert_root, 1);
     /* The values to be finalised are not roots but should still be inverted */
     caml_final_invert_finalisable_values ();
+    /* Idem for memprof tracked blocks */
+    caml_memprof_invert_tracked ();
 
     ch = caml_heap_start;
     while (ch != NULL){

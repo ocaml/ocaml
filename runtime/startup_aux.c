@@ -28,6 +28,7 @@
 #endif
 #include "caml/osdeps.h"
 #include "caml/startup_aux.h"
+#include "caml/memprof.h"
 
 
 #ifdef _WIN32
@@ -171,6 +172,7 @@ CAMLexport void caml_shutdown(void)
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
   caml_finalise_heap();
+  caml_memprof_shutdown();
   caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();

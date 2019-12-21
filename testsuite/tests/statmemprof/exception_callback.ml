@@ -11,10 +11,9 @@ open Gc.Memprof
 let _ = Printexc.record_backtrace false
 
 let _ =
-  start {
-    sampling_rate = 1.;
-    callstack_size = 10;
-    callback = fun _ -> assert false
-  };
+  start ~callstack_size:10
+        ~minor_alloc_callback:(fun _ -> assert false)
+        ~major_alloc_callback:(fun _ -> assert false)
+        ~sampling_rate:1. ();
   ignore (Sys.opaque_identity (Array.make 200 0));
   stop ()
