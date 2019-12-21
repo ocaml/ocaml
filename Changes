@@ -54,6 +54,19 @@ Working version
   symbol in both the static and the dynamic symbol tables.
   (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
 
+* #9197: remove compatibility logic from #244 that was designed to
+  synchronize toplevel printing margins with Format.std_formatter,
+  but also resulted in unpredictable/fragile changes to formatter
+  margins.
+  Setting the margins on the desired formatters should now work.
+  typically on `Format.std_formatter`.
+  Note that there currently is no robust way to do this from the
+  toplevel, as applications may redirect toplevel printing. In
+  a compiler/toplevel driver, one should instead access
+  `Location.formatter_for_warnings`; it is not currently exposed
+  to the toplevel.
+  (Gabriel Scherer, review by Armaël Guéneau)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
