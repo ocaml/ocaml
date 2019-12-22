@@ -42,6 +42,10 @@
 #define caml_extern_sp (Caml_state_field(extern_sp))
 #define caml_trapsp (Caml_state_field(trapsp))
 #define caml_trap_barrier (Caml_state_field(trap_barrier))
+#define caml_exception_pointer (Caml_state_field(exception_pointer))
+#define caml_bottom_of_stack (Caml_state_field(bottom_of_stack))
+#define caml_last_return_address (Caml_state_field(last_return_address))
+#define caml_gc_regs (Caml_state_field(gc_regs))
 
 #ifndef CAML_NAME_SPACE
 
