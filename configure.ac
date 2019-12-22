@@ -1074,7 +1074,7 @@ AC_CHECK_FUNC([secure_getenv],
   [AC_DEFINE([HAS_SECURE_GETENV])],
   [AC_CHECK_FUNC([__secure_getenv], [AC_DEFINE([HAS___SECURE_GETENV])])])
 
-CPP_FLAGS="$saved_CPPFLAGS"
+CPPFLAGS="$saved_CPPFLAGS"
 
 ## issetugid
 
