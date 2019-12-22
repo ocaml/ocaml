@@ -910,7 +910,7 @@ static struct large_free_block *bf_large_least;
 
 /* Find first (i.e. least significant) bit set in a word. */
 #ifdef HAS_FFS
-/* Nothing to do */
+#include <strings.h>
 #elif defined(HAS_BITSCANFORWARD)
 #include <intrin.h>
 static inline int ffs (int x)
@@ -924,7 +924,7 @@ static inline int ffs (int x)
 static inline int ffs (int x)
 {
   /* adapted from Hacker's Delight */
-  int result, bnz, b0, b1, b2, b3, b4;
+  int bnz, b0, b1, b2, b3, b4;
   CAMLassert ((x & 0xFFFFFFFF) == x);
   x = x & -x;
   bnz = x != 0;
