@@ -69,14 +69,8 @@ static value alloc_host_entry(struct hostent *entry)
     else
       aliases = Atom(0);
     entry_h_length = entry->h_length;
-#ifdef h_addr
     addr_list =
       caml_alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
-#else
-    adr = alloc_one_addr(entry->h_addr);
-    addr_list = caml_alloc_small(1, 0);
-    Field(addr_list, 0) = adr;
-#endif
     res = caml_alloc_small(4, 0);
     Field(res, 0) = name;
     Field(res, 1) = aliases;
