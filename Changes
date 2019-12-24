@@ -98,6 +98,10 @@ Working version
 - #9107: improved error message for exceptions in module signature errors
   (Gabriel Scherer, review by Florian Angeletti)
 
+- #9208: -dno-locations option to hide source locations (and debug events)
+  from intermediate-representation dumps (-dfoo).
+  (Gabriel Scherer, review by Vincent Laviron)
+
 ### Internal/compiler-libs changes:
 
  - #463: a new Misc.Magic_number module for user-friendly parsing
