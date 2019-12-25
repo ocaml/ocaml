@@ -361,3 +361,52 @@ let rec okay =
 [%%expect{|
 val okay : string ref = {contents = "foobar"}
 |}]
+
+let rec okay =
+  let ok = okay in
+  let rec x = ref "bar"
+  and _y = ref ok
+  and _z = ref x, ok
+  in
+  ref ("foo" ^ ! x);;
+[%%expect{|
+val okay : string ref = {contents = "foobar"}
+|}]
+
+let rec a = 0 :: b
+and b = 1 :: a
+and f =
+  let x = a in
+  let y = x in
+  let z = y in
+  fun i -> List.hd z + i
+[%%expect{|
+val a : int list = [0; 1; <cycle>]
+val b : int list = [1; 0; <cycle>]
+val f : int -> int = <fun>
+|}]
+
+let rec a = 0 :: b
+and b = 1 :: a
+and f =
+  let rec x = a in
+  let y = x in
+  let z = y in
+  fun i -> List.hd z + i
+[%%expect{|
+val a : int list = [0; 1; <cycle>]
+val b : int list = [1; 0; <cycle>]
+val f : int -> int = <fun>
+|}]
+
+let rec okay =
+  let rec x = let r = "bar" in ref r
+  and y = fun s -> ignore xx; ref s
+  and _z = fun s -> y s
+  and xx = let k = 0 in k::yy
+  and yy = 1::xx
+  in
+  ref ("foo" ^ ! (y !x));;
+[%%expect{|
+val okay : string ref = {contents = "foobar"}
+|}]

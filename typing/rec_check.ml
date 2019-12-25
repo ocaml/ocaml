@@ -1074,7 +1074,7 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
            (Gi, (xj : mdef_ij)^j |- ei : m[mbody_i])^i   (xi : mbody_i -| D)^i
            G'i = Gi + mdef_ij[G'j]
            -------------------------------------------------------------------
-           Sum(G'i) + (D - (pi)^i) |- let rec (xi=ei)^i : m -| D
+           Sum(G'i) + (D - (xi)^i) |- let rec (xi=ei)^i : m -| D
 
            The (mdef_ij)^i,j are a family of modes over two indices:
            mdef_ij represents the mode of use, within e_i the definition of x_i,

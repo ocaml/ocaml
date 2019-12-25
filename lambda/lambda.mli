@@ -235,7 +235,7 @@ type let_kind = Strict | Alias | StrictOpt | Variable
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
-    Variable: the variable x is assigned later in e'
+    Variable: the variable x is assigned to later in e'
  *)
 
 type meth_kind = Self | Public | Cached

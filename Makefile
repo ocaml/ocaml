@@ -110,6 +110,7 @@ LAMBDA=lambda/debuginfo.cmo \
   lambda/switch.cmo lambda/matching.cmo \
   lambda/translobj.cmo lambda/translattribute.cmo \
   lambda/translprim.cmo lambda/translcore.cmo \
+  lambda/dissect_letrec.cmo \
   lambda/translclass.cmo lambda/translmod.cmo \
   lambda/simplif.cmo lambda/runtimedef.cmo
 

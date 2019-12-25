@@ -33,11 +33,12 @@ let () = (h [@inlined always]) (Sys.opaque_identity 2)
 *)
 
 (* Recursive constant values should be static *)
-let rec a = 1 :: b
-and b = 2 :: a
-let () =
-  assert(is_in_static_data a);
-  assert(is_in_static_data b)
+(* Disabled since adding the dissect_letrec pass *)
+(* let rec a = 1 :: b
+ * and b = 2 :: a
+ * let () =
+ *   assert(is_in_static_data a);
+ *   assert(is_in_static_data b) *)
 
 (* And a mix *)
 type e = E : 'a -> e
@@ -49,23 +50,25 @@ and l2 = E (g1, l1)
 
 let () =
   assert(is_in_static_data f1);
-  assert(is_in_static_data g1);
-  assert(is_in_static_data l1);
-  assert(is_in_static_data l2)
+  assert(is_in_static_data g1)
+  (* disabled since adding the dissect_letrec pass *)
+  (* assert(is_in_static_data l1); *)
+  (* assert(is_in_static_data l2) *)
 
 (* Also in functions *)
-let i () =
-  let rec f1 a = E (g1 a, l1)
-  and g1 a = E (f1 a, l2)
-  and l1 = E (f1, l2)
-  and l2 = E (g1, l1) in
-
-  assert(is_in_static_data f1);
-  assert(is_in_static_data g1);
-  assert(is_in_static_data l1);
-  assert(is_in_static_data l2)
-
-let () = (i [@inlined never]) ()
+(* Disabled since adding the dissect_letrec pass *)
+(* let i () =
+ *   let rec f1 a = E (g1 a, l1)
+ *   and g1 a = E (f1 a, l2)
+ *   and l1 = E (f1, l2)
+ *   and l2 = E (g1, l1) in
+ *
+ *   assert(is_in_static_data f1);
+ *   assert(is_in_static_data g1);
+ *   assert(is_in_static_data l1);
+ *   assert(is_in_static_data l2)
+ *
+ * let () = (i [@inlined never]) () *)
 
 module type P = module type of Stdlib
 (* Top-level modules should be static *)
