@@ -1,3 +1,3 @@
 int testdynfail() {
-	  return 0;
+  return 0;
 }
