@@ -74,8 +74,8 @@ Working version
   (Gabriel Scherer, review by Armaël Guéneau)
 
 * #9207: fix ocamlyacc to work correctly with up to 255 entry points
-  to the grammar (previous limit was 127 due to a small bug).
-  (Andreas Abel)
+  to the grammar.
+  (Andreas Abel, review by Xavier Leroy)
 
 ### Manual and documentation:
 
