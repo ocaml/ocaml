@@ -125,6 +125,9 @@ Working version
 - #9178: start refactoring the label-disambiguation logic (Typecore.NameChoice)
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
+- #9211: fix Makefile dependencies of compilerlibs archives
+  (Gabriel Scherer, review by Vincent Laviron)
+
 ### Build system:
 
 ### Bug fixes:
