@@ -978,9 +978,9 @@ void declare_start(void)
 
       if (bp->class == TERM)
         terminal_start(bp->name);
-      bp->entry = ++entry_counter;
-      if (entry_counter == 256)
+      if (entry_counter >= MAX_ENTRY_POINT)
         too_many_entries();
+      bp->entry = ++entry_counter;
     }
 }
 
@@ -1699,7 +1699,7 @@ void make_goal(void)
       if (is_polymorphic(bp->tag))
         polymorphic_entry_point(bp->name);
       fprintf(entry_file,
-              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (Parsing.yyparse yytables %d lexfun lexbuf : %s)\n",
+              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (Parsing.yyparse yytables %u lexfun lexbuf : %s)\n",
               bp->name, bp->entry, bp->tag);
       fprintf(interface_file,
               "val %s :\n  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> %s\n",

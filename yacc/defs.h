@@ -145,9 +145,15 @@ struct bucket
     short prec;
     char class;
     char assoc;
-    char entry;
+    unsigned char entry;  /* 1..MAX_ENTRY_POINT (0 for unassigned) */
     char true_token;
 };
+
+/* MAX_ENTRY_POINT is the maximal number of entry points into the grammar. */
+/* Entry points are identified by a non-zero byte in the input stream,     */
+/* so there are at most 255 entry points.                                  */
+
+#define MAX_ENTRY_POINT MAXCHAR
 
 /* TABLE_SIZE is the number of entries in the symbol table.      */
 /* TABLE_SIZE must be a power of two.                            */
