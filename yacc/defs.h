@@ -150,8 +150,8 @@ struct bucket
 };
 
 /* MAX_ENTRY_POINT is the maximal number of entry points into the grammar. */
-/* At the time of writing (2019-12-25), there are assumptions              */
-/* that the octal value of entry fits into 3 digits (see reader.c).        */
+/* Entry points are identified by a non-zero byte in the input stream,     */
+/* so there are at most 255 entry points.                                  */
 
 #define MAX_ENTRY_POINT MAXCHAR
 
