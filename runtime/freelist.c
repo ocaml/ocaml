@@ -924,7 +924,7 @@ static inline int ffs (int x)
 static inline int ffs (int x)
 {
   /* adapted from Hacker's Delight */
-  int result, bnz, b0, b1, b2, b3, b4;
+  int bnz, b0, b1, b2, b3, b4;
   CAMLassert ((x & 0xFFFFFFFF) == x);
   x = x & -x;
   bnz = x != 0;
