@@ -123,6 +123,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9216: add Lambda.duplicate which refreshes bound identifiers
+  (Gabriel Scherer, review by Pierre Chambart and Vincent Laviron)
+
 - #9493, #9520, #9563, #9599, #9608: refactor the pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
