@@ -343,7 +343,7 @@ let report_error ppf =
   let open Format in
   function
   | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
-      "Wrong file naming: %a@ contains the compiled interface for @ \
+      "Wrong file naming: %a@ contains the compiled interface for@ \
        %s when %s was expected"
       Location.print_filename filename ps_name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
