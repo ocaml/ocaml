@@ -33,6 +33,8 @@ Working version
 
 ### Standard library:
 
+- #9220: Add `curry` and `uncurry` functions to `Fun` module.
+
 - #8771: Lexing: add set_position and set_filename to change (fake)
    the initial tracking position of the lexbuf.
    (Konstantin Romanov, Miguel Lumapat, review by Gabriel Scherer,

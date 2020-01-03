@@ -16,6 +16,8 @@
 external id : 'a -> 'a = "%identity"
 let const c _ = c
 let flip f x y = f y x
+let curry f x y = f (x, y)
+let uncurry f (x, y) = f x y
 let negate p v = not (p v)
 
 exception Finally_raised of exn
