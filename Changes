@@ -85,6 +85,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9243, simplify parser rules for array indexing operations
+  (Florian Angeletti, review by Damien Doligez and Gabriel Scherer)
+
 - #9650, #9651: keep refactoring the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
