@@ -558,7 +558,7 @@ OCaml 4.10.0
   (Florian Angeletti, review by Gabriel Scherer)
 
 - #9015: fix fatal error in pprint_ast (#8789)
-  (Damien Doligez, review by ...)
+  (Damien Doligez, review by Thomas Refis)
 
 ### Bug fixes:
 
