@@ -125,7 +125,8 @@ Working version
 - #9178: start refactoring the label-disambiguation logic (Typecore.NameChoice)
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
-- #9211, #9215: fix Makefile dependencies of compilerlibs archives and dynlink
+- #9211, #9215, #9222: fix Makefile dependencies in
+  compilerlibs, dynlink, ocamltest.
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
 
 ### Build system:
