@@ -64,7 +64,7 @@ let lowercase_ascii = function
   | 'A' .. 'Z' as c -> unsafe_chr(code c + 32)
   | c -> c
 
-let uppercase_ascii c = function
+let uppercase_ascii = function
   | 'a' .. 'z' as c -> unsafe_chr(code c - 32)
   | c -> c
 
