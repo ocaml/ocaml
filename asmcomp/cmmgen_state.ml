@@ -22,7 +22,7 @@ module S = Misc.Stdlib.String
 type is_global = Global | Local
 
 type constant =
-  | Const_closure of is_global * Clambda.ufunction list * Clambda.uconstant list
+  | Const_closure of is_global * Clambda.ufunction list
   | Const_table of is_global * Cmm.data_item list
 
 type t = {

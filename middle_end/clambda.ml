@@ -29,7 +29,7 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
+  | Uconst_closure of ufunction list * string
 
 and uconstant =
   | Uconst_ref of string * ustructured_constant option
@@ -199,7 +199,7 @@ let compare_structured_constants c1 c2 =
   | Uconst_float_array l1, Uconst_float_array l2 ->
       compare_float_lists l1 l2
   | Uconst_string s1, Uconst_string s2 -> String.compare s1 s2
-  | Uconst_closure (_,lbl1,_), Uconst_closure (_,lbl2,_) ->
+  | Uconst_closure (_,lbl1), Uconst_closure (_,lbl2) ->
       String.compare lbl1 lbl2
   | _, _ ->
     (* no overflow possible here *)

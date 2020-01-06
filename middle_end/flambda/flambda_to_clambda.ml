@@ -598,7 +598,7 @@ and to_clambda_closed_set_of_closures t env symbol
   in
   let ufunct = List.map to_clambda_function functions in
   let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
-  Uconst_closure (ufunct, closure_lbl, [])
+  Uconst_closure (ufunct, closure_lbl)
 
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let fields =

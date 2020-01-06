@@ -2665,7 +2665,7 @@ let fundecls_size fundecls =
 
 (* Emit constant closures *)
 
-let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
+let emit_constant_closure ((_, global_symb) as symb) fundecls cont =
   let closure_symbol (f : Clambda.ufunction) =
     if Config.flambda then
       cdefine_symbol (f.label ^ "_closure", global_symb)
@@ -2674,14 +2674,10 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
   in
   match (fundecls : Clambda.ufunction list) with
     [] ->
-      (* This should probably not happen: dead code has normally been
-         eliminated and a closure cannot be accessed without going through
-         a [Project_closure], which depends on the function. *)
-      assert (clos_vars = []);
-      cdefine_symbol symb @ clos_vars @ cont
+      cdefine_symbol symb @ cont
   | f1 :: remainder ->
       let rec emit_others pos = function
-          [] -> clos_vars @ cont
+          [] -> cont
       | (f2 : Clambda.ufunction) :: rem ->
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
@@ -2696,8 +2692,7 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
             cint_const f2.arity ::
             Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
-      Cint(black_closure_header (fundecls_size fundecls
-                                 + List.length clos_vars)) ::
+      Cint(black_closure_header (fundecls_size fundecls)) ::
       cdefine_symbol symb @
       (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then

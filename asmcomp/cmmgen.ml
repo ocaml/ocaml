@@ -212,8 +212,8 @@ let emit_structured_constant ((_sym, is_global) as symb) cst cont =
       emit_block symb (block_header tag (List.length csts)) cont
   | Uconst_float_array fields ->
       emit_float_array_constant symb fields cont
-  | Uconst_closure(fundecls, lbl, fv) ->
-      Cmmgen_state.add_constant lbl (Const_closure (is_global, fundecls, fv));
+  | Uconst_closure(fundecls, lbl) ->
+      Cmmgen_state.add_constant lbl (Const_closure (is_global, fundecls));
       List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
       cont
 
@@ -366,7 +366,7 @@ let rec transl env e =
       transl_constant Debuginfo.none sc
   | Uclosure(fundecls, []) ->
       let sym = Compilenv.new_const_symbol() in
-      Cmmgen_state.add_constant sym (Const_closure (Local, fundecls, []));
+      Cmmgen_state.add_constant sym (Const_closure (Local, fundecls));
       List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
       let dbg =
         match fundecls with
@@ -1382,10 +1382,9 @@ let emit_cmm_data_items_for_constants cont =
   let c = ref cont in
   String.Map.iter (fun symbol (cst : Cmmgen_state.constant) ->
       match cst with
-      | Const_closure (global, fundecls, clos_vars) ->
+      | Const_closure (global, fundecls) ->
           let cmm =
-            emit_constant_closure (symbol, global) fundecls
-              (List.fold_right emit_constant clos_vars []) []
+            emit_constant_closure (symbol, global) fundecls []
           in
           c := (Cdata cmm) :: !c
       | Const_table (global, elems) ->

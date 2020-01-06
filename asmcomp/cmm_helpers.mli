@@ -642,7 +642,7 @@ val fundecls_size : Clambda.ufunction list -> int
 
 val emit_constant_closure :
   (string * Cmmgen_state.is_global) -> Clambda.ufunction list ->
-  data_item list -> data_item list -> data_item list
+  data_item list -> data_item list
 
 val emit_preallocated_blocks :
   Clambda.preallocated_block list -> phrase list -> phrase list

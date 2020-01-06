@@ -29,7 +29,7 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
+  | Uconst_closure of ufunction list * string
 
 and uconstant =
   | Uconst_ref of string * ustructured_constant option
