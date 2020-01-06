@@ -24,9 +24,9 @@ open Debugger_config
 open Types
 open Primitives
 open Unix_tools
-open Parser
+open Debugger_parser
 open Parser_aux
-open Lexer
+open Debugger_lexer
 open Input_handling
 open Question
 open Debugcom
@@ -44,6 +44,8 @@ open Breakpoints
 open Checkpoints
 open Frames
 open Printval
+
+module Lexer = Debugger_lexer
 
 (** Instructions, variables and infos lists. **)
 type dbg_instruction =

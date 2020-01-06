@@ -15,6 +15,7 @@
 
 open Input_handling
 open Primitives
+module Lexer = Debugger_lexer
 
 (* Ask user a yes or no question. *)
 let yes_or_no message =
