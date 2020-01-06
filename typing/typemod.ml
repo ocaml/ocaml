@@ -150,8 +150,11 @@ let initial_env ~loc ~safe_string ~initially_opened_module
   in
   let open_module env m =
     let open Asttypes in
-    let lid = {loc; txt = Longident.parse m } in
-    snd (type_open_ Override env lid.loc lid)
+    let lexbuf = Lexing.from_string m in
+    let txt =
+      Location.init lexbuf (Printf.sprintf "command line argument: -open %S" m);
+      Parse.simple_module_path lexbuf in
+        snd (type_open_ Override env loc {txt;loc})
   in
   let add_units env units =
     String.Set.fold

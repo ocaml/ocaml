@@ -45,7 +45,8 @@ utils_modules := $(addprefix utils/,\
 
 parsing_modules := $(addprefix parsing/,\
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
-  attr_helper builtin_attributes pprintast)
+  attr_helper builtin_attributes pprintast \
+  lexer camlinternalMenhirLib parser parse)
 
 typing_modules := $(addprefix typing/,\
   ident path type_immediacy types btype primitive typedtree subst predef \

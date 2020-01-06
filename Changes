@@ -111,6 +111,9 @@ Working version
 - #9060: ensure that Misc.protect_refs preserves backtraces
   (Gabriel Scherer, review by Guillaume Munch-Maccagnoni and David Allsopp)
 
+- #9061: expose compiler Longident.t parsers
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #9078: make all compilerlibs/ available to ocamltest.
   (Gabriel Scherer, review by Sébastien Hinderer)
 

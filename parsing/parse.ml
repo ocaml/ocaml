@@ -121,7 +121,13 @@ and core_type = wrap_menhir Parser.Incremental.parse_core_type
 and expression = wrap_menhir Parser.Incremental.parse_expression
 and pattern = wrap_menhir Parser.Incremental.parse_pattern
 
-
+let longident = wrap_menhir Parser.Incremental.parse_any_longident
+let val_ident = wrap_menhir Parser.Incremental.parse_val_longident
+let constr_ident= wrap_menhir Parser.Incremental.parse_constr_longident
+let extended_module_path =
+  wrap_menhir Parser.Incremental.parse_mod_ext_longident
+let simple_module_path = wrap_menhir Parser.Incremental.parse_mod_longident
+let type_ident = wrap_menhir Parser.Incremental.parse_mty_longident
 
 (* Error reporting for Syntaxerr *)
 (* The code has been moved here so that one can reuse Pprintast.tyvar *)
