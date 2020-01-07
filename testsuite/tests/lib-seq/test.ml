@@ -13,6 +13,19 @@ let () =
   ()
 ;;
 
+(* unfold *)
+let () =
+  let range first last =
+    let step i = if i > last then None
+                 else Some (i, succ i) in
+    Seq.unfold step first
+  in
+  begin
+    assert ([1;2;3] = List.of_seq (range 1 3));
+    assert ([] = List.of_seq (range 1 0));
+  end
+;;
+
 (* MPR 7820 *)
 let () =
   assert

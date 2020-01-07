@@ -41,6 +41,10 @@ Working version
 - #9235: Add Array.exists2 and Array.for_all2
   (Bernhard Schommer, review by Armaël Guéneau)
 
+- #9226: Add Seq.unfold.
+   (Jeremy Yallop, review by Hezekiah M. Carty, Gabriel Scherer and
+   Gabriel Radanne)
+
 - #8771: Lexing: add set_position and set_filename to change (fake)
    the initial tracking position of the lexbuf.
    (Konstantin Romanov, Miguel Lumapat, review by Gabriel Scherer,
