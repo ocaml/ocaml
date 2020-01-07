@@ -392,8 +392,13 @@ static uintnat norm_pmax (uintnat p)
 
 static intnat norm_minsize (intnat s)
 {
+  intnat page_wsize = Wsize_bsize(Page_size);
   if (s < Minor_heap_min) s = Minor_heap_min;
   if (s > Minor_heap_max) s = Minor_heap_max;
+  /* PR#9128 : Make sure the minor heap occupies an integral number of
+     pages, so that no page contains both bytecode and OCaml
+     values. This would confuse, e.g., caml_hash. */
+  s = (s + page_wsize - 1) / page_wsize * page_wsize;
   return s;
 }
 
@@ -614,14 +619,6 @@ CAMLprim value caml_get_major_credit (value v)
   return Val_long ((long) (caml_major_work_credit * 1e6));
 }
 
-uintnat caml_normalize_heap_increment (uintnat i)
-{
-  if (i < Bsize_wsize (Heap_chunk_min)){
-    i = Bsize_wsize (Heap_chunk_min);
-  }
-  return ((i + Page_size - 1) >> Page_log) << Page_log;
-}
-
 /* [minor_size] and [major_size] are numbers of words
    [major_incr] is either a percentage or a number of words */
 void caml_init_gc (uintnat minor_size, uintnat major_size,
@@ -630,21 +627,23 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat custom_maj, uintnat custom_min,
                    uintnat custom_bsz)
 {
-  uintnat major_heap_size =
-    Bsize_wsize (caml_normalize_heap_increment (major_size));
+  uintnat major_bsize;
+  if (major_size < Heap_chunk_min) major_size = Heap_chunk_min;
+  major_bsize = Bsize_wsize(major_size);
+  major_bsize = ((major_bsize + Page_size - 1) >> Page_log) << Page_log;
 
   caml_instr_init ();
   if (caml_init_alloc_for_heap () != 0){
     caml_fatal_error ("cannot initialize heap: mmap failed");
   }
-  if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
+  if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_bsize)){
     caml_fatal_error ("cannot initialize page table");
   }
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);
-  caml_init_major_heap (major_heap_size);
+  caml_init_major_heap (major_bsize);
   caml_major_window = norm_window (window);
   caml_custom_major_ratio = norm_custom_maj (custom_maj);
   caml_custom_minor_ratio = norm_custom_min (custom_min);
@@ -654,7 +653,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
                    caml_minor_heap_wsz / 1024);
   caml_gc_message (0x20, "Initial major heap size: %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                   major_heap_size / 1024);
+                   major_bsize / 1024);
   caml_gc_message (0x20, "Initial space overhead: %"
                    ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
   caml_gc_message (0x20, "Initial max overhead: %"

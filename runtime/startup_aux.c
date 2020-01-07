@@ -30,12 +30,30 @@
 #include "caml/startup_aux.h"
 
 
-/* Initialize the atom table */
+CAMLexport header_t *caml_atom_table = NULL;
 
-CAMLexport header_t caml_atom_table[256];
+/* Initialize the atom table */
 void caml_init_atom_table(void)
 {
+  caml_stat_block b;
   int i;
+
+  /* PR#9128: We need to give the atom table its own page to make sure
+     it does not share a page with a non-value, which would break code
+     which depend on the correctness of the page table. For example,
+     if the atom table shares a page with bytecode, then functions in
+     the runtime may decide to follow a code pointer in a closure, as
+     if it were a pointer to a value.
+
+     We add 1 padding at the end of the atom table because the atom
+     pointer actually points to the word *following* the corresponding
+     entry in the table (the entry is an empty block *header*).
+  */
+  asize_t request = (256 + 1) * sizeof(header_t);
+  request = (request + Page_size - 1) / Page_size * Page_size;
+  caml_atom_table =
+    caml_stat_alloc_aligned_noexc(request, 0, &b);
+
   for(i = 0; i < 256; i++) {
 #ifdef NATIVE_CODE
     caml_atom_table[i] = Make_header_allocated_here(0, i, Caml_white);
@@ -44,7 +62,7 @@ void caml_init_atom_table(void)
 #endif
   }
   if (caml_page_table_add(In_static_data,
-                          caml_atom_table, caml_atom_table + 256) != 0) {
+                          caml_atom_table, caml_atom_table + 256 + 1) != 0) {
     caml_fatal_error("not enough memory for initial page table");
   }
 }

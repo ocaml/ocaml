@@ -33,8 +33,6 @@ extern intnat
      caml_stat_compactions,
      caml_stat_heap_chunks;
 
-uintnat caml_normalize_heap_increment (uintnat);
-
 /*
   minor_size: cf. minor_heap_size in gc.mli
   major_size: Size in words of the initial major heap
