@@ -70,7 +70,8 @@ extern char caml_system__code_begin, caml_system__code_end;
 void caml_garbage_collection(void)
 {
   frame_descr* d;
-  intnat allocsz = 0;
+  intnat allocsz = 0, i, nallocs;
+  unsigned char* alloc_len;
 
   { /* Find the frame descriptor for the current allocation */
     uintnat h = Hash_retaddr(Caml_state->last_return_address);
@@ -83,21 +84,18 @@ void caml_garbage_collection(void)
     CAMLassert(d && d->frame_size != 0xFFFF && (d->frame_size & 2));
   }
 
-  { /* Compute the total allocation size at this point,
-       including allocations combined by Comballoc */
-    unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
-    int i, nallocs = *alloc_len++;
-    for (i = 0; i < nallocs; i++) {
-      /* Since 2 words is the smallest allocation, sizes are
-         encoded as (wosize - 2).
-         See Emitaux.emit_frames and caml/stack.h */
-      allocsz += alloc_len[i] + 2;
-    }
-    /* We have computed whsize (including header), but need wosize (without) */
-    allocsz -= 1;
+  /* Compute the total allocation size at this point,
+     including allocations combined by Comballoc */
+  alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
+  nallocs = *alloc_len++;
+  for (i = 0; i < nallocs; i++) {
+    allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
   }
+  /* We have computed whsize (including header), but need wosize (without) */
+  allocsz -= 1;
 
-  caml_alloc_small_dispatch(allocsz, /* CAML_DO_TRACK | */ CAML_FROM_CAML);
+  caml_alloc_small_dispatch(allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
+                            nallocs, alloc_len);
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)

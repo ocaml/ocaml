@@ -1,5 +1,7 @@
 (* TEST
    flags = "-g -w -5"
+   * native
+     compare_programs = "false"
    * bytecode
 *)
 
@@ -49,7 +51,7 @@ let marshalled =
   Marshal.to_string [Sys.opaque_identity 1] []
 let alloc_unmarshal () =
   ignore (Sys.opaque_identity
-            (Marshal.from_string (Sys.opaque_identity marshalled) 0))
+            ((Marshal.from_string [@inlined never]) (Sys.opaque_identity marshalled) 0))
 
 let alloc_ref () =
   ignore (Sys.opaque_identity (ref (Sys.opaque_identity 1)))
