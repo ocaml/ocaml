@@ -904,6 +904,7 @@ let rec comp_expr env exp sz cont =
             match lam with
               Lapply{ap_args = args}  -> Event_return (List.length args)
             | Lsend(_, _, _, args, _) -> Event_return (List.length args + 1)
+            | Lprim(_,args,_)         -> Event_return (List.length args)
             | _                       -> Event_other
           in
           let ev = event (Event_after ty) info in
