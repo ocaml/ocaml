@@ -111,7 +111,7 @@ INTEL_ASM=\
   asmcomp/x86_dsl.cmo \
   asmcomp/x86_gas.cmo \
   asmcomp/x86_masm.cmo
-INTL_ASM_CMI=\
+INTEL_ASM_CMI=\
   asmcomp/x86_ast.cmi
 
 ARCH_SPECIFIC_ASMCOMP=
