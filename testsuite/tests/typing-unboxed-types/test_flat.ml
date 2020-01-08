@@ -239,25 +239,37 @@ and _ t = T : 'a -> 'a s t
    One of the two declarations [valid1] and [valid2] below will fail,
    depending on the order in which GADT equality constraints
    are processed by our implementation.
-   The previous unfolding implementation would accept both. *)
+   The previous unfolding implementation would accept both.
+
+   We decided to specify that, if two parameters are equal to each other,
+   then we would use the more constrained mode (Sep rather than Ind) for the
+   first/leftmost parameter, and Ind for the second one. With a left-to-right
+   reading of parameters, this corresponds to considering that the equality
+   is on the second parameter, equal to a parameter already seen, rather than
+   an equality on a not-yet-seen parameter.
+
+   In the example below, almost_eq will thus get the mode signature
+   (Sep, Ind) rather than (Ind, Sep).
+*)
 type (_, _) almost_eq = Almost_refl : 'a -> ('a, 'a) almost_eq [@@unboxed]
 [%%expect{|
 type (_, _) almost_eq = Almost_refl : 'a -> ('a, 'a) almost_eq [@@unboxed]
 |}];;
 
+
 type valid1 = Any : ('a, int) almost_eq -> valid1 [@@unboxed];;
 [%%expect{|
-type valid1 = Any : ('a, int) almost_eq -> valid1 [@@unboxed]
-|}];;
-type valid2 = Any : (int, 'a) almost_eq -> valid2 [@@unboxed];;
-[%%expect{|
 Line 1, characters 0-61:
-1 | type valid2 = Any : (int, 'a) almost_eq -> valid2 [@@unboxed];;
+1 | type valid1 = Any : ('a, int) almost_eq -> valid1 [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
        depending on the instantiation of the existential variable 'a.
        You should annotate it with [@@ocaml.boxed].
+|}];;
+type valid2 = Any : (int, 'a) almost_eq -> valid2 [@@unboxed];;
+[%%expect{|
+type valid2 = Any : (int, 'a) almost_eq -> valid2 [@@unboxed]
 |}];;
 
 (* rejected: equivalent to (exits 'a. 'a) *)

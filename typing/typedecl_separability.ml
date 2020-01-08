@@ -567,7 +567,7 @@ let msig_of_external_type decl =
 let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
     -> context -> Sep.signature =
   fun ~decl_loc ~parameters context ->
-    let handle_equation param_instance (acc, context) =
+    let handle_equation (acc, context) param_instance =
       (* In the theory, GADT equations are of the form
            ('a = <ty>)
          for each type parameter 'a of the type constructor. For each
@@ -607,9 +607,44 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
             Deepsep :: acc, List.fold_left set_ind context instance_exis
     in
     let mode_signature, context =
-      (* fold_right here is necessary to get the mode
-         consed to the accumulator in the right order *)
-      List.fold_right handle_equation parameters ([], context) in
+      let (mode_signature_rev, ctx) =
+        List.fold_left handle_equation ([], context) parameters in
+      (* Note: our inference system is not principal, because the
+         inference result depends on the order in which those
+         equations are processed. (To our knowledge this is the only
+         source of non-principality.) If two parameters ('a, 'b) are
+         forced to be equal to each other, and also separable, then
+         either modes (Sep, Ind) and (Ind, Sep) are correct, allow
+         more declarations than (Sep, Sep), but (Ind, Ind) would be
+         unsound.
+
+         Such a non-principal example is the following:
+
+           type ('a, 'b) almost_eq =
+             | Almost_refl : 'c -> ('c, 'c) almost_eq
+
+         (This example looks strange: GADT equations are typically
+         either on only one parameter, or on two parameters that are
+         not used to classify constructor arguments. Indeed, we have
+         not found non-principal declarations in real-world code.)
+
+         In a non-principal system, it is important the our choice of
+         non-unique solution be at least predictable. We find it more
+         natural, when either ('a : Sep, 'b : Ind) and ('a : Ind,
+         'b : Sep) are correct because 'a = 'b, to choose to make the
+         first/leftmost parameter more constrained. We read this as
+         saying that 'a must be Sep, and 'b = 'a so 'b can be
+         Ind. (We define the second parameter as equal of the first,
+         already-seen parameter; instead of saying that the first
+         parameter is equal to the not-yet-seen second one.)
+
+         This is achieved by processing the equations from left to
+         right with List.fold_left, instead of using
+         List.fold_right. The code is slightly more awkward as it
+         needs a List.rev on the accumulated modes, but it gives
+         a more predictable/natural (non-principal) behavior.
+  *)
+      (List.rev mode_signature_rev, ctx) in
     (* After all variables determined by the parameters have been set to Ind
        by [handle_equation], all variables remaining in the context are
        purely existential and should not require a stronger mode than Ind. *)
