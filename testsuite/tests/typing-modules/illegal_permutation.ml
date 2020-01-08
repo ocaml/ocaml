@@ -102,7 +102,7 @@ end = struct
 end
 [%%expect {|
 Lines 9-17, characters 6-3:
- 9 | ......struct
+ 9 |   ... struct
 10 |   module type x = sig
 11 |     val a:int
 12 |     val b:int
@@ -172,7 +172,7 @@ end = struct
 end
 [%%expect {|
 Lines 6-11, characters 6-3:
- 6 | ......struct
+ 6 |   ... struct
  7 |   module type x= sig
  8 |     val x:int
  9 |     class x:ct
@@ -211,7 +211,7 @@ end = struct
 end
 [%%expect {|
 Lines 8-15, characters 6-3:
- 8 | ......struct
+ 8 |   ... struct
  9 |   module type a = sig
 10 |     module type b = sig
 11 |       val y:int
@@ -268,7 +268,7 @@ end
 [%%expect{|
 class type ct = object  end
 Lines 7-12, characters 6-3:
- 7 | ......struct
+ 7 |   ... struct
  8 |   module type x = sig
  9 |     class b: ct
 10 |     class a: ct
@@ -303,7 +303,7 @@ end = struct
 end
 [%%expect{|
 Lines 6-11, characters 6-3:
- 6 | ......struct
+ 6 |   ... struct
  7 |   module type x = sig
  8 |     type exn+=B
  9 |     type exn+=A
@@ -481,7 +481,7 @@ end=struct
 end
 [%%expect {|
 Lines 22-43, characters 4-3:
-22 | ....struct
+22 | ... struct
 23 |   module type x = sig
 24 |     module A: sig
 25 |       module B: sig

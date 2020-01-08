@@ -463,23 +463,61 @@ let highlight_quote ppf
         (* Single-line error *)
         Format.fprintf ppf "%s | %s@," line_nb line;
         Format.fprintf ppf "%*s   " (String.length line_nb) "";
-        for pos = line_start_cnum to rightmost.pos_cnum - 1 do
+        String.iteri (fun i c ->
+          let pos = line_start_cnum + i in
           if ISet.is_start iset ~pos <> None then
             Format.fprintf ppf "@{<%s>" highlight_tag;
           if ISet.mem iset ~pos then Format.pp_print_char ppf '^'
-          else Format.pp_print_char ppf ' ';
+          else if pos < rightmost.pos_cnum then begin
+            (* For alignment purposes, align using a tab for each tab in the
+               source code *)
+            if c = '\t' then Format.pp_print_char ppf '\t'
+            else Format.pp_print_char ppf ' '
+          end;
           if ISet.is_end iset ~pos <> None then
             Format.fprintf ppf "@}"
-        done;
+        ) line;
         Format.fprintf ppf "@}@,"
     | _ ->
         (* Multi-line error *)
         Misc.pp_two_columns ~sep:"|" ~max_lines ppf
         @@ List.map (fun (line, line_nb, line_start_cnum) ->
-          let line = String.mapi (fun i car ->
-            if ISet.mem iset ~pos:(line_start_cnum + i) then car else '.'
-          ) line in
-          (line_nb, line)
+          (* whether a character should be displayed or discarded *)
+          let is_show i =
+            ISet.mem iset ~pos:(line_start_cnum + i)
+            (* for alignment purposes, display tabs as themselves
+               instead of replacing them by a space *)
+            || line.[i] = '\t'
+          in
+          let line = Bytes.of_string line in
+          (* Replace characters that do not satisfy [is_show] with spaces *)
+          for i = 0 to Bytes.length line - 1 do
+            if not (is_show i) then Bytes.set line i ' '
+          done;
+          (* Insert an ellipsis marker if possible *)
+          let (--^) i j = List.init (max 0 (j-i-1)) ((+) i) in
+          let insert_ellipsis b (side: [`Before | `After]) idx =
+            let ellipsis_before = "... " and ellipsis_after = " ..." in
+            let i, j, ellipsis = match side with
+              | `Before ->
+                  idx - String.length ellipsis_before, idx, ellipsis_before
+              | `After ->
+                  idx+1, idx+1 + String.length ellipsis_after, ellipsis_after in
+            let i = max 0 i in
+            let j = min (Bytes.length b) j in
+            if j - i = String.length ellipsis &&
+               List.for_all (Fun.negate is_show) (i --^ j) then
+              Bytes.blit_string ellipsis 0 line i (String.length ellipsis)
+          in
+          (* Insert ellipsis markers before and after locations when possible *)
+          for i = 0 to Bytes.length line - 1 do
+            let pos = line_start_cnum + i in
+            if ISet.is_start iset ~pos <> None then
+              insert_ellipsis line `Before i
+            else if ISet.is_end iset ~pos <> None then
+              insert_ellipsis line `After i
+          done;
+          (line_nb, Bytes.to_string line)
         ) lines
     end;
     Format.fprintf ppf "@]"

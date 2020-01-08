@@ -284,7 +284,7 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   type ('a, 'b) bar += A of float
 5 | end
 Error: Signature mismatch:
@@ -310,7 +310,7 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   type ('a, 'b) bar += A of 'b
 5 | end
 Error: Signature mismatch:
@@ -336,9 +336,9 @@ end = struct
 end;;
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   type ('b, 'a) bar = A of 'a
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig type ('b, 'a) bar = A of 'a end
@@ -363,7 +363,7 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
 5 | end
 Error: Signature mismatch:

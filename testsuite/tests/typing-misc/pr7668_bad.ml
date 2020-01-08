@@ -21,7 +21,7 @@ val partition_map :
   ('a -> [< `Left of 'b | `Right of 'c ]) -> 'a list -> 'b list * 'c list =
   <fun>
 Lines 12-13, characters 35-18:
-12 | ...................................partition_map (fun x -> if x then `Left ()
+12 |                                ... partition_map (fun x -> if x then `Left ()
 13 | else `Right ()) xs
 Error: This expression has type unit list * unit list
        but an expression was expected of type int list * int list
@@ -58,7 +58,7 @@ end
 ;;
 [%%expect{|
 Lines 8-27, characters 6-3:
- 8 | ......struct
+ 8 |   ... struct
  9 |   type t = [
 10 |     | `A of int
 11 |     | `B of [ `BA | `BB of unit list ]

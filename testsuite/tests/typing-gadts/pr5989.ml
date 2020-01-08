@@ -26,7 +26,7 @@ let () = print_endline (f M.eq) ;;
 type (_, _) t = Any : ('a, 'b) t | Eq : ('a, 'a) t
 module M : sig type s = private [> `A ] val eq : (s, [ `A | `B ]) t end
 Lines 16-17, characters 39-16:
-16 | .......................................function
+16 |                                    ... function
 17 |   | Any -> "Any"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -56,7 +56,7 @@ module N :
     val eq : (s, < a : int; b : bool >) t
   end
 Lines 12-13, characters 49-16:
-12 | .................................................function
+12 |                                              ... function
 13 |   | Any -> "Any"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

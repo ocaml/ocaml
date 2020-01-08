@@ -107,9 +107,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : int -> (int [@untagged]) = "f" "f_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> (int [@untagged]) = "f" "f_nat" end
@@ -129,9 +129,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : (int [@untagged]) -> int = "f" "f_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : (int [@untagged]) -> int = "f" "f_nat" end
@@ -151,9 +151,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : float -> (float [@unboxed]) = "f" "f_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> (float [@unboxed]) = "f" "f_nat" end
@@ -173,9 +173,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : (float [@unboxed]) -> float = "f" "f_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
@@ -197,9 +197,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : int -> int = "f" "f_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "f" "f_nat" end
@@ -219,9 +219,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : int -> int = "a" "a_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "a" "a_nat" end
@@ -241,9 +241,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : float -> float = "f" "f_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> float = "f" "f_nat" end
@@ -263,9 +263,9 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 |   ... struct
 4 |   external f : float -> float = "a" "a_nat"
-5 | end..
+5 | end
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> float = "a" "a_nat" end

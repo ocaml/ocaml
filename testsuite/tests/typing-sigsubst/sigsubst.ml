@@ -48,7 +48,7 @@ module type S0 = sig
 end with type M.t = int
 [%%expect {|
 Lines 1-4, characters 17-23:
-1 | .................sig
+1 |              ... sig
 2 |   module rec M : sig type t = M2.t end
 3 |   and M2 : sig type t = int end
 4 | end with type M.t = int
@@ -163,7 +163,7 @@ end with type 'a t2 := 'a t * bool
 [%%expect {|
 type 'a t constraint 'a = 'b list
 Lines 2-6, characters 16-34:
-2 | ................sig
+2 |             ... sig
 3 |   type 'a t2 constraint 'a = 'b list
 4 |   type 'a mylist = 'a list
 5 |   val x : int mylist t2
@@ -268,7 +268,7 @@ module type S = sig
 end with type M.t := float
 [%%expect {|
 Lines 1-4, characters 16-26:
-1 | ................sig
+1 |             ... sig
 2 |   module M : sig type t end
 3 |   module A = M
 4 | end with type M.t := float
@@ -330,7 +330,7 @@ end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
 Lines 2-5, characters 17-25:
-2 | .................sig
+2 |              ... sig
 3 |   module rec M : sig type t = A of Id(M2).t end
 4 |   and M2 : sig type t end
 5 | end with type M2.t := int
@@ -373,7 +373,7 @@ module type S = sig
 end with module M.N := A
 [%%expect {|
 Lines 1-10, characters 16-24:
- 1 | ................sig
+ 1 |             ... sig
  2 |   module M : sig
  3 |     module N : sig
  4 |       module P : sig

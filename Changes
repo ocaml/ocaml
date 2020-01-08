@@ -98,6 +98,10 @@ Working version
 - #9107: improved error message for exceptions in module signature errors
   (Gabriel Scherer, review by Florian Angeletti)
 
+- #9116, #9118: fix error highlighting code in presence of tabulations
+  in the source code
+  (Armaël Guéneau, review by Gabriel Scherer, report by Ricardo M. Correia)
+
 ### Internal/compiler-libs changes:
 
  - #463: a new Misc.Magic_number module for user-friendly parsing

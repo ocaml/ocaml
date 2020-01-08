@@ -495,7 +495,7 @@ let t = function
 ;;
 [%%expect{|
 Lines 1-3, characters 8-10:
-1 | ........function
+1 |     ... function
 2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
 Warning 8: this pattern-matching is not exhaustive.
@@ -508,7 +508,7 @@ Line 3, characters 9-10:
              ^
 Warning 18: this type-based constructor disambiguation is not principal.
 Lines 1-3, characters 8-10:
-1 | ........function
+1 |     ... function
 2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
 Warning 8: this pattern-matching is not exhaustive.

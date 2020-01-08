@@ -323,7 +323,7 @@ let f = function
 ;;
 [%%expect {|
 Lines 1-4, characters 8-11:
-1 | ........function
+1 |     ... function
 2 |   | [Foo] -> 1
 3 |   | _::_::_ -> 3
 4 |   | [] -> 2

@@ -291,9 +291,9 @@ let ill_typed_5 =
   );;
 [%%expect{|
 Lines 3-5, characters 9-14:
-3 | .........x = 1
+3 |      ... x = 1
 4 |     and+ y = 2
-5 |     and+ z = 3...
+5 |     and+ z = 3
 Error: These bindings have type (int * int) * int
        but bindings were expected of type bool
 |}];;
@@ -321,7 +321,7 @@ let ill_typed_6 =
   );;
 [%%expect{|
 Lines 3-4, characters 9-14:
-3 | .........x = 1
+3 |      ... x = 1
 4 |     and+ y = 2
 Error: These bindings have type int * int but bindings were expected of type
          int
@@ -513,7 +513,7 @@ let indexed_monad4 =
   );;
 [%%expect{|
 Lines 6-7, characters 4-29:
-6 | ....let* second = read in
+6 | ... let* second = read in
 7 |       return (first ^ second)
 Error: This expression has type
          (Indexed_monad.opened, Indexed_monad.opened, string) Indexed_monad.t
