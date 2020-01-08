@@ -104,6 +104,33 @@ let rec is_tailcall = function
   | Kpop _ :: c -> is_tailcall c
   | _ -> false
 
+(* Will this primitive result in an OCaml call which would benefit
+   from the tail call optimization? *)
+
+let preserve_tailcall_for_prim = function
+    Pidentity | Popaque | Pdirapply | Prevapply | Psequor | Psequand ->
+      true
+  | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
+  | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
+  | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
+  | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat | Pmulfloat
+  | Pdivfloat | Pfloatcomp _ | Pstringlength | Pstringrefu  | Pstringrefs
+  | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
+  | Pmakearray _ | Pduparray _ | Parraylength _ | Parrayrefu _ | Parraysetu _
+  | Parrayrefs _ | Parraysets _ | Pisint | Pisout | Pbintofint _ | Pintofbint _
+  | Pcvtbint _ | Pnegbint _ | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _
+  | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
+  | Pasrbint _ | Pbintcomp _ | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _
+  | Pstring_load_16 _ | Pstring_load_32 _ | Pstring_load_64 _ | Pbytes_load_16 _
+  | Pbytes_load_32 _ | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _
+  | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
+  | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
+  | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer ->
+      false
+
 (* Add a Kpop N instruction in front of a continuation *)
 
 let rec add_pop n cont =
@@ -897,19 +924,27 @@ let rec comp_expr env exp sz cont =
           let c = comp_expr env lam sz cont in
           let ev = event Event_pseudo Event_other in
           add_event ev c
-      | Lev_after _ when is_tailcall cont -> (* don't destroy tail call opt *)
-          comp_expr env lam sz cont
       | Lev_after ty ->
-          let info =
+          let preserve_tailcall =
             match lam with
-              Lapply{ap_args = args}  -> Event_return (List.length args)
-            | Lsend(_, _, _, args, _) -> Event_return (List.length args + 1)
-            | Lprim(_,args,_)         -> Event_return (List.length args)
-            | _                       -> Event_other
+            | Lprim(prim, _, _) -> preserve_tailcall_for_prim prim
+            | _ -> true
           in
-          let ev = event (Event_after ty) info in
-          let cont1 = add_event ev cont in
-          comp_expr env lam sz cont1
+          if preserve_tailcall && is_tailcall cont then
+            (* don't destroy tail call opt *)
+            comp_expr env lam sz cont
+          else begin
+            let info =
+              match lam with
+                Lapply{ap_args = args}  -> Event_return (List.length args)
+              | Lsend(_, _, _, args, _) -> Event_return (List.length args + 1)
+              | Lprim(_,args,_)         -> Event_return (List.length args)
+              | _                       -> Event_other
+            in
+            let ev = event (Event_after ty) info in
+            let cont1 = add_event ev cont in
+            comp_expr env lam sz cont1
+          end
       | Lev_module_definition _ ->
           comp_expr env lam sz cont
       end

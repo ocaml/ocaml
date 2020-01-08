@@ -747,20 +747,42 @@ let transl_primitive loc p env ty path =
                  loc = loc;
                  body = body; }
 
-(* Determine if a primitive is a Pccall or will be turned later into
-   a C function call that may raise an exception *)
-let primitive_is_ccall = function
-  | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ |
-    Parraysets _ | Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
-    Prevapply -> true
-  | _ -> false
+let lambda_primitive_needs_event_after = function
+  | Prevapply | Pdirapply (* PR#6920 *)
+  (* We add an event after any primitive resulting in a C call that
+     may raise an exception or allocate. These are places where we may
+     collect the call stack. *)
+  | Pduprecord _ | Pccall _ | Pfloatofint | Pnegfloat | Pabsfloat
+  | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat | Pstringrefs | Pbytesrefs
+  | Pbytessets | Pmakearray (Pgenarray, _) | Pduparray _
+  | Parrayrefu (Pgenarray | Pfloatarray) | Parraysetu (Pgenarray | Pfloatarray)
+  | Parrayrefs _ | Parraysets _ | Pbintofint _ | Pcvtbint _ | Pnegbint _
+  | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _
+  | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp _
+  | Pbigarrayref _ | Pbigarrayset _ | Pbigarraydim _ | Pstring_load_16 _
+  | Pstring_load_32 _ | Pstring_load_64 _ | Pbytes_load_16 _ | Pbytes_load_32 _
+  | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _ | Pbytes_set_64 _
+  | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
+  | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
+  | Pbbswap _ -> true
+
+  | Pidentity | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
+  | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Praise _
+  | Psequor | Psequand | Pnot | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
+  | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
+  | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
+  | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
+  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
-  | Primitive (prim,_) -> primitive_is_ccall prim
+  | Primitive (prim,_) -> lambda_primitive_needs_event_after prim
   | External _ -> true
   | Comparison(comp, knd) ->
-      primitive_is_ccall (comparison_primitive comp knd)
+      lambda_primitive_needs_event_after (comparison_primitive comp knd)
   | Lazy_force | Send | Send_self | Send_cache -> true
   | Raise _ | Raise_with_backtrace | Loc _ -> false
 
