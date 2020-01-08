@@ -590,11 +590,6 @@ OCaml 4.10.0
   removed incrimined Btype.log_type, replaced by Btype.set_type
   (Jacques Garrigue, report by Alain Frisch, review by Thomas Refis)
 
-- #8855, #8858: Links for tools not created when installing with
-  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
-  ocamldep link not created)
-  (David Allsopp, report by Thomas Leonard)
-
 - #8856, #8860: avoid stackoverflow when printing cyclic type expressions
   in some error submessages.
   (Florian Angeletti, report by Mekhrubon Turaev, review by Leo White)
@@ -640,6 +635,11 @@ OCaml 4.10.0
 
 OCaml 4.09 maintenance branch:
 ------------------------------
+
+- #8855, #8858: Links for tools not created when installing with
+  --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
+  ocamldep link not created)
+  (David Allsopp, report by Thomas Leonard)
 
 - #8953, #8954: Fix error submessages in the toplevel: do not display
   dummy locations
