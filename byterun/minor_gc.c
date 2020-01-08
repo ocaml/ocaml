@@ -168,7 +168,7 @@ static inline void log_gc_value(const char* prefix, value v)
 
 #define Color_hd(v) ((color_t)(((v) >> 8) & 3))
 
-static inline int try_update_object_header(value v, value *p, value result) {
+static inline int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
   int success = 0;
 
   if( caml_domain_alone() ) {
@@ -207,7 +207,7 @@ static inline int try_update_object_header(value v, value *p, value result) {
     }
   }
 
-  *p = result;
+  *p = result + infix_offset;
   return success;
 }
 
@@ -251,7 +251,7 @@ static void oldify_one (void* st_v, value v, value *p)
     struct stack_info* stk = Ptr_val(Op_val(v)[0]);
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
     result = alloc_shared(1, Cont_tag);
-    if( try_update_object_header(v, p, result) ) {
+    if( try_update_object_header(v, p, result, 0) ) {
       Op_val(result)[0] = Val_ptr(stk);
       if (stk != NULL) {
         caml_scan_stack(&oldify_one, st, stk);
@@ -262,13 +262,28 @@ static void oldify_one (void* st_v, value v, value *p)
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared (sz, tag);
+    /*p = result + infix_offset;
+    field0 = Op_val(v)[0];
     CAMLassert (!Is_debug_tag(field0));
-    if( try_update_object_header(v, p, result + infix_offset) ) {
-      field0 = Op_val(v)[0];
+    *Hp_val (v) = 0;           // Set forward flag 
+    Op_val(v)[0] = result;     //  and forward pointer.
+    if (sz > 1){
+      Op_val (result)[0] = field0;
+      Op_val (result)[1] = st->todo_list;    // Add this block 
+      st->todo_list = v;                     //  to the "to do" list. 
+    }else{
+      CAMLassert (sz == 1);
+      p = Op_val(result);
+      v = field0;
+      goto tail_call;
+    }*/
+
+    field0 = Op_val(v)[0];
+    if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
         Op_val (result)[0] = field0;
-        Op_val (result)[1] = st->todo_list;    /* Add this block */
-        st->todo_list = v;                     /*  to the "to do" list. */
+        Op_val (result)[1] = st->todo_list;    
+        st->todo_list = v;                     
       } else {
         CAMLassert (sz == 1);
         p = Op_val(result);
@@ -276,6 +291,7 @@ static void oldify_one (void* st_v, value v, value *p)
         goto tail_call;
       }
     }
+
   } else if (tag >= No_scan_tag) {
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
@@ -284,7 +300,8 @@ static void oldify_one (void* st_v, value v, value *p)
       value curr = Op_val(v)[i];
       Op_val (result)[i] = curr;
     }
-    try_update_object_header(v, p, result);
+    CAMLassert (infix_offset == 0);
+    try_update_object_header(v, p, result, 0);
   } else {
     CAMLassert (tag == Forward_tag);
     CAMLassert (infix_offset == 0);
@@ -301,14 +318,14 @@ static void oldify_one (void* st_v, value v, value *p)
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (1, Forward_tag);
-      if( try_update_object_header(v, p, result) ) {
+      if( try_update_object_header(v, p, result, 0) ) {
         p = Op_val (result);
         v = f;
         goto tail_call;
+      } else {
+        v = f;                        /* Follow the forwarding */
+        goto tail_call;               /*  then oldify. */
       }
-    } else {
-      v = f;                        /* Follow the forwarding */
-      goto tail_call;               /*  then oldify. */
     }
   }
 }
@@ -566,16 +583,10 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   caml_global_barrier_end(b);
 
   caml_gc_log("running stw empty_minor_heap_domain_finalizers");
-  caml_empty_minor_heap_domain_finalizers(domain, 0);
-
-  b = caml_global_barrier_begin();
-  caml_global_barrier_end(b);  
+  caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
 
   caml_gc_log("running stw empty_minor_heap_domain_clear");
-  caml_empty_minor_heap_domain_clear(domain, 0);
-
-  b = caml_global_barrier_begin();
-  caml_global_barrier_end(b);
+  caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
 
   caml_gc_log("finished stw empty_minor_heap");
 }
