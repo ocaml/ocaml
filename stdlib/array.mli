@@ -211,13 +211,13 @@ val exists : ('a -> bool) -> 'a array -> bool
 
 val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!Array.for_all}, but for a two-argument predicate.
-   Raise [Invalid_argument] if the two arrays are determined
-   to have different lengths. *)
+   Raise [Invalid_argument] if the two arrays have different lengths.
+   @since 4.11.0 *)
 
 val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!Array.exists}, but for a two-argument predicate.
-   Raise [Invalid_argument] if the two arrays are determined
-   to have different lengths. *)
+   Raise [Invalid_argument] if the two arrays have different lengths.
+   @since 4.11.0 *)
 
 val mem : 'a -> 'a array -> bool
 (** [mem a l] is true if and only if [a] is structurally equal
