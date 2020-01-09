@@ -145,6 +145,12 @@ Working version
 - #9225: Do not drop bytecode debug info after C calls.
   (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+- #9231: Make sure a debug event (and the corresponding debug
+  information) is inserted after every primitive that can appear in a
+  collected call stack, and make sure ocamlc preserves such events
+  even if they are at tail position.
+  (Jacques-Henri Jourdan, review by Gabriel Scherer)
+
 OCaml 4.10.0
 ------------
 

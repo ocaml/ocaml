@@ -1,9 +1,7 @@
 (* TEST
    flags = "-g"
    * bytecode
-     reference = "${test_source_directory}/intern.byte.reference"
    * native
-     reference = "${test_source_directory}/intern.opt.reference"
      compare_programs = "false"
 *)
 
