@@ -148,7 +148,7 @@ static inline int is_in_interval (value v, char* low_closed, char* high_open)
 static inline void resolve_infix_val (value* v)
 {
   int offset = 0;
-  if (Hd_val(*v) == Infix_tag) {
+  if (try_check_header_val(*v) == Infix_tag) {
     offset = Infix_offset_val(*v);
     CAMLassert (offset > 0);
     *v -= offset;
@@ -341,7 +341,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
     if (child != caml_ephe_none
         && Is_block (child) && Is_minor(child)) {
       resolve_infix_val(&child);
-      if (Hd_val(child) != 0) {
+      if (try_check_header_val(child) != 0) {
         /* value not copied to major heap */
         return 0;
       }
@@ -369,7 +369,10 @@ static void oldify_mopup (struct oldify_state* st)
 
   while (st->todo_list != 0) {
     v = st->todo_list;                 /* Get the head. */
-    CAMLassert (Hd_val (v) == 0);             /* It must be forwarded. */
+    /* I'm not convinced we can ever have something in todo_list that was updated
+    by another domain, so this assert using try_check_header_val is probably not
+    neccessary */
+    CAMLassert (try_check_header_val(v) == 0);       /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     st->todo_list = Op_val (new_v)[1]; /* Remove from list. */
 
@@ -399,7 +402,7 @@ static void oldify_mopup (struct oldify_state* st)
       value *data = &Ephe_data(re->ephe);
       if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
         resolve_infix_val(data);
-        if (Hd_val(*data) == 0) { /* Value copied to major heap */
+        if (try_check_header_val(*data) == 0) { /* Value copied to major heap */
           *data = Op_val(*data)[0];
         } else {
           if (ephe_check_alive_data(re, young_ptr, young_end)) {
@@ -529,7 +532,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     value* key = &Op_val(re->ephe)[re->offset];
     if (*key != caml_ephe_none && Is_block(*key) && Is_minor(*key)) {
       resolve_infix_val(key);
-      if (Hd_val(*key) == 0) { /* value copied to major heap */
+      if (try_check_header_val(*key) == 0) { /* value copied to major heap */
         *key = Op_val(*key)[0];
       } else {
         // CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
