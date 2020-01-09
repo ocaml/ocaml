@@ -22,8 +22,8 @@ Working version
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez
    and Gabriel Scherer)
 
-- #??: Restore the bytecode stack after an allocation.
-  (Stephen Dolan, review by ??)
+- #9233: Restore the bytecode stack after an allocation.
+  (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
 
 ### Code generation and optimizations:
 
