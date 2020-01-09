@@ -67,8 +67,11 @@ type cmt_infos = {
   cmt_use_summaries : bool;
 }
 
+open Misc
 type error =
-    Not_a_typedtree of string
+  | Not_a_typedtree of filepath * Magic_number.parse_error
+  | Unexpected_typedtree of filepath * Magic_number.unexpected_error
+  | Corrupted_typedtree of filepath
 
 exception Error of error
 
@@ -97,8 +100,6 @@ val save_cmt :
   unit
 
 (* Miscellaneous functions *)
-
-val read_magic_number : in_channel -> string
 
 val clear: unit -> unit
 

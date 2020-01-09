@@ -22,12 +22,6 @@ open Typedtree
    integrated in Typerex).
 *)
 
-
-
-let read_magic_number ic =
-  let len_magic_number = String.length Config.cmt_magic_number in
-  really_input_string ic len_magic_number
-
 type binary_annots =
   | Packed of Types.signature * string list
   | Implementation of structure
@@ -62,8 +56,12 @@ type cmt_infos = {
   cmt_use_summaries : bool;
 }
 
+module Magic_number = Misc.Magic_number
+
 type error =
-    Not_a_typedtree of string
+  | Not_a_typedtree of Misc.filepath * Magic_number.parse_error
+  | Unexpected_typedtree of Misc.filepath * Magic_number.unexpected_error
+  | Corrupted_typedtree of Misc.filepath
 
 let need_to_clear_env =
   try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
@@ -109,43 +107,75 @@ let output_cmt oc cmt =
   output_string oc Config.cmt_magic_number;
   output_value oc (cmt : cmt_infos)
 
-let read filename =
+let cmt_error filename = function
+  | Magic_number.Parse_error err ->
+     Not_a_typedtree (filename, err)
+  | Magic_number.Unexpected_error err ->
+     Unexpected_typedtree (filename, err)
+
+let cmi_error filename = function
+  | Magic_number.Parse_error err ->
+     Cmi_format.Not_an_interface (filename, err)
+  | Magic_number.Unexpected_error err ->
+     Cmi_format.Unexpected_interface (filename, err)
+
+let input_cmt_result filename ic : _ result =
+  match input_cmt ic with
+    | value -> Ok value
+    | exception _ -> Error (Corrupted_typedtree filename)
+
+let input_cmi_result filename ic : _ result =
+  match input_cmi ic with
+    | value -> Ok value
+    | exception _ -> Error (Cmi_format.Corrupted_interface filename)
+
+let read_results filename : _ result * _ result =
 (*  Printf.fprintf stderr "Cmt_format.read %s\n%!" filename; *)
   let ic = open_in_bin filename in
-  Misc.try_finally
-    ~always:(fun () -> close_in ic)
+  Fun.protect
+    ~finally:(fun () -> close_in ic)
     (fun () ->
-       let magic_number = read_magic_number ic in
-       let cmi, cmt =
-         if magic_number = Config.cmt_magic_number then
-           None, Some (input_cmt ic)
-         else if magic_number = Config.cmi_magic_number then
-           let cmi = Cmi_format.input_cmi ic in
-           let cmt = try
-               let magic_number = read_magic_number ic in
-               if magic_number = Config.cmt_magic_number then
-                 let cmt = input_cmt ic in
-                 Some cmt
-               else None
-             with _ -> None
-           in
-           Some cmi, cmt
-         else
-           raise(Cmi_format.Error(Cmi_format.Not_an_interface filename))
-       in
-       cmi, cmt
+      let open Magic_number in
+      match read_current_info ~expected_kind:None ic with
+        | Result.Error err ->
+           (Result.Error (cmi_error filename err),
+            Result.Error (cmt_error filename err))
+        | Result.Ok { kind; version = _ } ->
+      match kind with
+        | Cmt ->
+           let cmi_result =
+             let err = Kind { expected = Cmi; actual = Cmt } in
+             Result.Error (Cmi_format.Unexpected_interface (filename, err)) in
+           let cmt_result = input_cmt_result filename ic in
+           cmi_result, cmt_result
+        | Cmi ->
+           let cmi_result = input_cmi_result filename ic in
+           let cmt_result =
+             match read_current_info ~expected_kind:(Some Cmt) ic with
+               | Error err -> Result.Error (cmt_error filename err)
+               | Ok _ -> input_cmt_result filename ic in
+           cmi_result, cmt_result
+        | other_kind ->
+           let err =
+             let kinds = Kind { expected = Cmt; actual = other_kind } in
+             Unexpected_error kinds in
+           (Result.Error (cmi_error filename err),
+            Result.Error (cmt_error filename err))
     )
 
+let read filename =
+  let cmi_result, cmt_result = read_results filename in
+  Result.to_option cmi_result, Result.to_option cmt_result
+
 let read_cmt filename =
-  match read filename with
-      _, None -> raise (Error (Not_a_typedtree filename))
-    | _, Some cmt -> cmt
+  match read_results filename with
+    | _, Ok cmt -> cmt
+    | _, Error err -> raise (Error err)
 
 let read_cmi filename =
-  match read filename with
-      None, _ ->
-        raise (Cmi_format.Error (Cmi_format.Not_an_interface filename))
-    | Some cmi, _ -> cmi
+  match read_results filename with
+    | Ok cmi, _ -> cmi
+    | Error err, _ -> raise (Cmi_format.Error err)
 
 let saved_types = ref []
 let value_deps = ref []
@@ -192,3 +222,26 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi =
          output_cmt oc cmt)
   end;
   clear ()
+
+let report_error ppf =
+  let open Format in
+  function
+  | Not_a_typedtree (filename, err) ->
+      fprintf ppf "%a@ is not a compiled typedtree.@;"
+        Location.print_filename filename;
+      pp_print_text ppf Magic_number.(explain_parse_error (Some Cmt) err);
+  | Unexpected_typedtree (filename, err) ->
+      fprintf ppf
+        "%a@ does not follow the expected format.@;"
+        Location.print_filename filename;
+      pp_print_text ppf (Magic_number.explain_unexpected_error err);
+  | Corrupted_typedtree filename ->
+      fprintf ppf "Corrupted compiled typedtree@ %a."
+        Location.print_filename filename
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
