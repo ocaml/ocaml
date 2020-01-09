@@ -73,7 +73,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #define Setup_for_gc \
   { sp -= 2; sp[0] = accu; sp[1] = env; Caml_state->extern_sp = sp; }
 #define Restore_after_gc \
-  { accu = sp[0]; env = sp[1]; sp += 2; }
+  { sp = Caml_state->extern_sp; accu = sp[0]; env = sp[1]; sp += 2; }
 
 /* We store [pc+1] in the stack so that, in case of an exception, the
    first backtrace slot points to the event following the C call
@@ -108,7 +108,11 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
      sp[0] = accu; sp[1] = (value)(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
      Caml_state->extern_sp = sp; }
-#define Restore_after_debugger { sp += 4; }
+#define Restore_after_debugger \
+   { CAMLassert(sp == Caml_state->extern_sp); \
+     CAMLassert(sp[0] == accu); \
+     CAMLassert(sp[2] == env); \
+     sp += 4; }
 
 #ifdef THREADED_CODE
 #define Restart_curr_instr \
