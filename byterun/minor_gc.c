@@ -205,7 +205,7 @@ int try_update_object_header(value v, value *p, value result, mlsize_t infix_off
       result = Op_val(v)[0];
     } else {
       // Here the header is neither zero nor an in-progress update
-      header_t desired_hd = hd | (1 << 9); // set the lowest color bit
+      header_t desired_hd = 1 << 9; // set the lowest color bit
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
         // Success
         // Now we can write the forwarding pointer
@@ -589,7 +589,7 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 
     caml_gc_log("finished stw empty_minor_heap");
   }
-  
+
   caml_global_barrier_end(b);
 }
 
