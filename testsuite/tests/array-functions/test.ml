@@ -153,8 +153,10 @@ let () =
 let () =
   let a = [|1|]
   and b = [|1;2|] in
-  assert (does_raise3 Array.exists2 (fun a b -> a > 1 && a = b) a b);
+  assert (does_raise3 Array.exists2 (fun a b -> a = b) a b);
+  assert (does_raise3 Array.exists2 (fun _ _ -> true) a b);
   assert (does_raise3 Array.exists2 (fun _ _ -> false) a b);
+  assert (does_raise3 Array.exists2 (fun a b -> a = 1 && b = 1) a b);
   assert (does_raise3 Array.exists2 (fun a b -> a = 2 && b = 2) a b);
   assert (does_raise3 Array.exists2 (fun a b -> a = 3 && b = 3) a b);
   assert (does_raise3 Array.exists2 (fun a b -> a = 4 && b = 4) a b);
@@ -199,15 +201,17 @@ let () =
   let a = [|1|]
   and b = [|1;2|] in
   assert (does_raise3 Array.for_all2 (fun a b -> a = b) a b);
+  assert (does_raise3 Array.for_all2 (fun _ _ -> true) a b);
+  assert (does_raise3 Array.for_all2 (fun _ _ -> false) a b);
   assert (does_raise3 Array.for_all2 (fun a b -> a = 1 && b = 1) a b);
-  assert (not (Array.for_all2 (fun a b -> a = 2 && b = 2) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 3 && b = 3) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 4 && b = 4) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 5 && b = 5) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 6 && b = 6) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 7 && b = 7) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 8 && b = 8) a b));
-  assert (not (Array.for_all2 (fun a b -> a = 9 && b = 9) a b));
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 2 && b = 2) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 3 && b = 3) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 4 && b = 4) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 5 && b = 5) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 6 && b = 6) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 7 && b = 7) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 8 && b = 8) a b);
+  assert (does_raise3 Array.for_all2 (fun a b -> a = 9 && b = 9) a b);
 ;;
 
 let () =
