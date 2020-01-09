@@ -168,7 +168,22 @@ static inline void log_gc_value(const char* prefix, value v)
 
 #define Color_hd(v) ((color_t)(((v) >> 8) & 3))
 
-static inline int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
+int try_check_header_val(value v) {
+  header_t hd = Hd_val(v);
+
+  if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
+    while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+    hd = 0;
+  }
+
+  return hd;
+}
+
+void spin_on_header(value v) {
+  while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+}
+
+int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
   int success = 0;
 
   if( caml_domain_alone() ) {
@@ -176,7 +191,7 @@ static inline int try_update_object_header(value v, value *p, value result, mlsi
     Op_val(v)[0] = result;
     success = 1;
   } else {
-    header_t hd = Hd_val(v);
+    header_t hd = atomic_load(Hp_atomic_val(v));
     if( hd == 0 ) { 
       // in this case this has been updated by another domain, throw away result
       // and return the one in the object
@@ -185,7 +200,7 @@ static inline int try_update_object_header(value v, value *p, value result, mlsi
       // here we've caught a domain in the process of moving a minor heap object
       // we need to wait for it to finish
       // TODO: Probably a better spinlock needed here though doesn't happen often
-      while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+      spin_on_header(v);
       // Also throw away result and use the one from the other domain
       result = Op_val(v)[0];
     } else {
@@ -262,22 +277,6 @@ static void oldify_one (void* st_v, value v, value *p)
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared (sz, tag);
-    /*p = result + infix_offset;
-    field0 = Op_val(v)[0];
-    CAMLassert (!Is_debug_tag(field0));
-    *Hp_val (v) = 0;           // Set forward flag 
-    Op_val(v)[0] = result;     //  and forward pointer.
-    if (sz > 1){
-      Op_val (result)[0] = field0;
-      Op_val (result)[1] = st->todo_list;    // Add this block 
-      st->todo_list = v;                     //  to the "to do" list. 
-    }else{
-      CAMLassert (sz == 1);
-      p = Op_val(result);
-      v = field0;
-      goto tail_call;
-    }*/
-
     field0 = Op_val(v)[0];
     if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
@@ -310,7 +309,7 @@ static void oldify_one (void* st_v, value v, value *p)
     tag_t ft = 0;
 
     if (Is_block (f)) {
-      ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
+      ft = Tag_val (try_check_header_val(f) == 0 ? Op_val (f)[0] : f);
     }
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
@@ -322,10 +321,10 @@ static void oldify_one (void* st_v, value v, value *p)
         p = Op_val (result);
         v = f;
         goto tail_call;
-      } else {
-        v = f;                        /* Follow the forwarding */
-        goto tail_call;               /*  then oldify. */
-      }
+      } 
+    } else {
+      v = f;                        /* Follow the forwarding */
+      goto tail_call;               /*  then oldify. */
     }
   }
 }
@@ -580,15 +579,18 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   caml_empty_minor_heap_promote(domain, 0);
 
   b = caml_global_barrier_begin();
+
+  if( caml_global_barrier_is_final(b) ) {
+    caml_gc_log("running stw empty_minor_heap_domain_finalizers");
+    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
+
+    caml_gc_log("running stw empty_minor_heap_domain_clear");
+    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
+
+    caml_gc_log("finished stw empty_minor_heap");
+  }
+  
   caml_global_barrier_end(b);
-
-  caml_gc_log("running stw empty_minor_heap_domain_finalizers");
-  caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
-
-  caml_gc_log("running stw empty_minor_heap_domain_clear");
-  caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
-
-  caml_gc_log("finished stw empty_minor_heap");
 }
 
 /* must be called outside a STW section */
