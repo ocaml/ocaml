@@ -488,7 +488,7 @@ CAMLexport void caml_gc_dispatch (void)
 /* Called by [Alloc_small] when [Caml_state->young_ptr] reaches
    [Caml_state->young_limit]. We may have to either call memprof or
    the gc. */
-void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
+void caml_alloc_small_dispatch (intnat wosize, int flags)
 {
   intnat whsize = Whsize_wosize (wosize);
 
@@ -532,7 +532,7 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   /* Check if the allocated block has been sampled by memprof. */
   if(Caml_state->young_ptr < caml_memprof_young_trigger){
     if(flags & CAML_DO_TRACK) {
-      caml_memprof_track_young(tag, wosize, flags & CAML_FROM_CAML);
+      caml_memprof_track_young(wosize, flags & CAML_FROM_CAML);
       /* Until the allocation actually takes place, the heap is in an invalid
          state (see comments in [caml_memprof_track_young]). Hence, very little
          heap operations are allowed before the actual allocation.

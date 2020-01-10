@@ -97,8 +97,7 @@ void caml_garbage_collection(void)
     allocsz -= 1;
   }
 
-  caml_alloc_small_dispatch(0 /* FIXME */, allocsz,
-                            /* CAML_DO_TRACK | */ CAML_FROM_CAML);
+  caml_alloc_small_dispatch(allocsz, /* CAML_DO_TRACK | */ CAML_FROM_CAML);
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)

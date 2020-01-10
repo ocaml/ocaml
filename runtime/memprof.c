@@ -181,8 +181,8 @@ struct tracked {
   /* Number of samples in this block. */
   uintnat n_samples;
 
-  /* The header of this block (useful for tag and size) */
-  header_t header;
+  /* The size of this block. */
+  uintnat wosize;
 
   /* The value returned by the previous callback for this block, or
      the callstack if the alloc callback has not been called yet.
@@ -263,7 +263,7 @@ static int realloc_trackst(void) {
   return 1;
 }
 
-static inline uintnat new_tracked(uintnat n_samples, header_t header,
+static inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
                                   int is_unmarshalled, int is_young,
                                   value block, value user_data)
 {
@@ -276,7 +276,7 @@ static inline uintnat new_tracked(uintnat n_samples, header_t header,
   t = &trackst.entries[trackst.len - 1];
   t->block = block;
   t->n_samples = n_samples;
-  t->header = header;
+  t->wosize = wosize;
   t->user_data = user_data;
   t->idx_ptr = NULL;
   t->alloc_young = is_young;
@@ -351,12 +351,11 @@ static value handle_entry_callbacks_exn(uintnat* t_idx)
     CAMLassert(Is_block(t->block)
                || t->block == Placeholder_value
                || t->deallocated);
-    sample_info = caml_alloc_small(5, 0);
+    sample_info = caml_alloc_small(4, 0);
     Field(sample_info, 0) = Val_long(t->n_samples);
-    Field(sample_info, 1) = Val_long(Wosize_hd(t->header));
-    Field(sample_info, 2) = Val_long(Tag_hd(t->header));
-    Field(sample_info, 3) = Val_long(t->unmarshalled);
-    Field(sample_info, 4) = t->user_data;
+    Field(sample_info, 1) = Val_long(t->wosize);
+    Field(sample_info, 2) = Val_long(t->unmarshalled);
+    Field(sample_info, 3) = t->user_data;
     t->user_data = Val_unit;
     res = run_callback_exn(t_idx,
         t->alloc_young ? callback_alloc_minor : callback_alloc_major,
@@ -540,7 +539,7 @@ void caml_memprof_track_alloc_shr(value block)
   callstack = capture_callstack_postponed();
   if (callstack == 0) return;
 
-  new_tracked(n_samples, Hd_val(block), 0, 0, block, callstack);
+  new_tracked(n_samples, Wosize_val(block), 0, 0, block, callstack);
   caml_memprof_check_action_pending();
 }
 
@@ -581,7 +580,7 @@ void caml_memprof_renew_minor_sample(void)
 /* Called when exceeding the threshold for the next sample in the
    minor heap, from the C code (the handling is different when called
    from natively compiled OCaml code). */
-void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
+void caml_memprof_track_young(uintnat wosize, int from_caml)
 {
   uintnat whsize = Whsize_wosize(wosize), n_samples;
   uintnat t_idx;
@@ -607,7 +606,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
     callstack = capture_callstack_postponed();
     if (callstack == 0) return;
 
-    new_tracked(n_samples, Make_header(wosize, tag, Caml_white),
+    new_tracked(n_samples, wosize,
                 0, 1, Val_hp(Caml_state->young_ptr), callstack);
     caml_memprof_check_action_pending();
     return;
@@ -627,8 +626,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize, int from_caml)
 
   caml_memprof_suspended = 1;
   callstack = capture_callstack();
-  t_idx = new_tracked(n_samples, Make_header(wosize, tag, Caml_white),
-                      0, 1, Placeholder_value, callstack);
+  t_idx = new_tracked(n_samples, wosize, 0, 1, Placeholder_value, callstack);
   if (t_idx == Invalid_index)
     res = Val_unit;
   else
@@ -714,7 +712,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
     if (callstack == 0) callstack = capture_callstack_postponed();
     if (callstack == 0) break;  /* OOM */
     new_tracked(mt_generate_binom(next_p - next_sample_p) + 1,
-                Hd_hp(p), 1, is_young, Val_hp(p), callstack);
+                Wosize_hp(p), 1, is_young, Val_hp(p), callstack);
     p = next_p;
   }
   caml_memprof_check_action_pending();

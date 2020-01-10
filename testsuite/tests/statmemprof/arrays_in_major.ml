@@ -105,7 +105,6 @@ let check_distrib lo hi cnt rate =
   let smp = ref 0 in
   start ~callstack_size:10
         ~major_alloc_callback:(fun info ->
-           assert (info.tag = 0);
            assert (info.size >= lo && info.size <= hi);
            assert (info.n_samples > 0);
            assert (not info.unmarshalled);
