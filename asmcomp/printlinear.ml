@@ -70,7 +70,7 @@ let instr ppf i =
   | Lraise k ->
       fprintf ppf "%s %a" (Lambda.raise_kind k) reg i.arg.(0)
   end;
-  if not (Debuginfo.is_none i.dbg) then
+  if not (Debuginfo.is_none i.dbg) && !Clflags.locations then
     fprintf ppf " %s" (Debuginfo.to_string i.dbg)
 
 let rec all_instr ppf i =
@@ -80,7 +80,7 @@ let rec all_instr ppf i =
 
 let fundecl ppf f =
   let dbg =
-    if Debuginfo.is_none f.fun_dbg then
+    if Debuginfo.is_none f.fun_dbg || not !Clflags.locations then
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in

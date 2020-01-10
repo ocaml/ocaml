@@ -1,0 +1,176 @@
+[
+  structure_item (test_locations.ml[42,1260+0]..[44,1298+34])
+    Pstr_value Rec
+    [
+      <def>
+        pattern (test_locations.ml[42,1260+8]..[42,1260+11])
+          Ppat_var "fib" (test_locations.ml[42,1260+8]..[42,1260+11])
+        expression (test_locations.ml[42,1260+14]..[44,1298+34])
+          Pexp_function
+          [
+            <case>
+              pattern (test_locations.ml[43,1283+4]..[43,1283+9])
+                Ppat_or
+                pattern (test_locations.ml[43,1283+4]..[43,1283+5])
+                  Ppat_constant PConst_int (0,None)
+                pattern (test_locations.ml[43,1283+8]..[43,1283+9])
+                  Ppat_constant PConst_int (1,None)
+              expression (test_locations.ml[43,1283+13]..[43,1283+14])
+                Pexp_constant PConst_int (1,None)
+            <case>
+              pattern (test_locations.ml[44,1298+4]..[44,1298+5])
+                Ppat_var "n" (test_locations.ml[44,1298+4]..[44,1298+5])
+              expression (test_locations.ml[44,1298+9]..[44,1298+34])
+                Pexp_apply
+                expression (test_locations.ml[44,1298+21]..[44,1298+22])
+                  Pexp_ident "+" (test_locations.ml[44,1298+21]..[44,1298+22])
+                [
+                  <arg>
+                  Nolabel
+                    expression (test_locations.ml[44,1298+9]..[44,1298+20])
+                      Pexp_apply
+                      expression (test_locations.ml[44,1298+9]..[44,1298+12])
+                        Pexp_ident "fib" (test_locations.ml[44,1298+9]..[44,1298+12])
+                      [
+                        <arg>
+                        Nolabel
+                          expression (test_locations.ml[44,1298+13]..[44,1298+20])
+                            Pexp_apply
+                            expression (test_locations.ml[44,1298+16]..[44,1298+17])
+                              Pexp_ident "-" (test_locations.ml[44,1298+16]..[44,1298+17])
+                            [
+                              <arg>
+                              Nolabel
+                                expression (test_locations.ml[44,1298+14]..[44,1298+15])
+                                  Pexp_ident "n" (test_locations.ml[44,1298+14]..[44,1298+15])
+                              <arg>
+                              Nolabel
+                                expression (test_locations.ml[44,1298+18]..[44,1298+19])
+                                  Pexp_constant PConst_int (1,None)
+                            ]
+                      ]
+                  <arg>
+                  Nolabel
+                    expression (test_locations.ml[44,1298+23]..[44,1298+34])
+                      Pexp_apply
+                      expression (test_locations.ml[44,1298+23]..[44,1298+26])
+                        Pexp_ident "fib" (test_locations.ml[44,1298+23]..[44,1298+26])
+                      [
+                        <arg>
+                        Nolabel
+                          expression (test_locations.ml[44,1298+27]..[44,1298+34])
+                            Pexp_apply
+                            expression (test_locations.ml[44,1298+30]..[44,1298+31])
+                              Pexp_ident "-" (test_locations.ml[44,1298+30]..[44,1298+31])
+                            [
+                              <arg>
+                              Nolabel
+                                expression (test_locations.ml[44,1298+28]..[44,1298+29])
+                                  Pexp_ident "n" (test_locations.ml[44,1298+28]..[44,1298+29])
+                              <arg>
+                              Nolabel
+                                expression (test_locations.ml[44,1298+32]..[44,1298+33])
+                                  Pexp_constant PConst_int (2,None)
+                            ]
+                      ]
+                ]
+          ]
+    ]
+]
+
+let rec fib = function | 0|1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
+[
+  structure_item (test_locations.ml[42,1260+0]..test_locations.ml[44,1298+34])
+    Tstr_value Rec
+    [
+      <def>
+        pattern (test_locations.ml[42,1260+8]..test_locations.ml[42,1260+11])
+          Tpat_var "fib/80"
+        expression (test_locations.ml[42,1260+14]..test_locations.ml[44,1298+34])
+          Texp_function
+          Nolabel
+          [
+            <case>
+              pattern (test_locations.ml[43,1283+4]..test_locations.ml[43,1283+9])
+                Tpat_or
+                pattern (test_locations.ml[43,1283+4]..test_locations.ml[43,1283+5])
+                  Tpat_constant Const_int 0
+                pattern (test_locations.ml[43,1283+8]..test_locations.ml[43,1283+9])
+                  Tpat_constant Const_int 1
+              expression (test_locations.ml[43,1283+13]..test_locations.ml[43,1283+14])
+                Texp_constant Const_int 1
+            <case>
+              pattern (test_locations.ml[44,1298+4]..test_locations.ml[44,1298+5])
+                Tpat_var "n/81"
+              expression (test_locations.ml[44,1298+9]..test_locations.ml[44,1298+34])
+                Texp_apply
+                expression (test_locations.ml[44,1298+21]..test_locations.ml[44,1298+22])
+                  Texp_ident "Stdlib!.+"
+                [
+                  <arg>
+                    Nolabel
+                    expression (test_locations.ml[44,1298+9]..test_locations.ml[44,1298+20])
+                      Texp_apply
+                      expression (test_locations.ml[44,1298+9]..test_locations.ml[44,1298+12])
+                        Texp_ident "fib/80"
+                      [
+                        <arg>
+                          Nolabel
+                          expression (test_locations.ml[44,1298+13]..test_locations.ml[44,1298+20])
+                            Texp_apply
+                            expression (test_locations.ml[44,1298+16]..test_locations.ml[44,1298+17])
+                              Texp_ident "Stdlib!.-"
+                            [
+                              <arg>
+                                Nolabel
+                                expression (test_locations.ml[44,1298+14]..test_locations.ml[44,1298+15])
+                                  Texp_ident "n/81"
+                              <arg>
+                                Nolabel
+                                expression (test_locations.ml[44,1298+18]..test_locations.ml[44,1298+19])
+                                  Texp_constant Const_int 1
+                            ]
+                      ]
+                  <arg>
+                    Nolabel
+                    expression (test_locations.ml[44,1298+23]..test_locations.ml[44,1298+34])
+                      Texp_apply
+                      expression (test_locations.ml[44,1298+23]..test_locations.ml[44,1298+26])
+                        Texp_ident "fib/80"
+                      [
+                        <arg>
+                          Nolabel
+                          expression (test_locations.ml[44,1298+27]..test_locations.ml[44,1298+34])
+                            Texp_apply
+                            expression (test_locations.ml[44,1298+30]..test_locations.ml[44,1298+31])
+                              Texp_ident "Stdlib!.-"
+                            [
+                              <arg>
+                                Nolabel
+                                expression (test_locations.ml[44,1298+28]..test_locations.ml[44,1298+29])
+                                  Texp_ident "n/81"
+                              <arg>
+                                Nolabel
+                                expression (test_locations.ml[44,1298+32]..test_locations.ml[44,1298+33])
+                                  Texp_constant Const_int 2
+                            ]
+                      ]
+                ]
+          ]
+    ]
+]
+
+(setglobal Test_locations!
+  (letrec
+    (fib/80
+       (function n/81[int] : int
+         (funct-body test_locations.ml(42):1274-1332
+           (if (isout 1 n/81)
+             (before test_locations.ml(44):1307-1332
+               (+
+                 (after test_locations.ml(44):1307-1318
+                   (apply fib/80 (- n/81 1)))
+                 (after test_locations.ml(44):1321-1332
+                   (apply fib/80 (- n/81 2)))))
+             (before test_locations.ml(43):1296-1297 1)))))
+    (pseudo _none_(0)<ghost>:-1--1 (makeblock 0 fib/80))))
