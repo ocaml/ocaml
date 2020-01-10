@@ -53,6 +53,10 @@ Working version
 - #8894: Added List.fold_left_map function combining map and fold.
   (Bernhard Schommer, review by Alain Frisch and github user @cfcs)
 
+- #9237: `Format.pp_update_geometry ppf (fun geo -> {geo with ...})`
+  for formatter geometry changes that are robust to new geometry fields.
+  (Gabriel Scherer, review by Josh Berdine and ???)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.

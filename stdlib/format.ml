@@ -838,6 +838,13 @@ let pp_safe_set_geometry state ~max_indent ~margin =
 let pp_get_geometry state () =
   { margin = pp_get_margin state (); max_indent = pp_get_max_indent state () }
 
+let pp_set_full_geometry state {margin; max_indent} =
+  pp_set_geometry state ~max_indent ~margin
+
+let pp_update_geometry state update =
+  let geometry = pp_get_geometry state () in
+  pp_set_full_geometry state (update geometry)
+
 (* Setting a formatter basic output functions. *)
 let pp_set_formatter_out_functions state {
       out_string = f;
@@ -1123,6 +1130,7 @@ and get_max_indent = pp_get_max_indent std_formatter
 and set_geometry = pp_set_geometry std_formatter
 and safe_set_geometry = pp_safe_set_geometry std_formatter
 and get_geometry = pp_get_geometry std_formatter
+and update_geometry = pp_update_geometry std_formatter
 
 and set_max_boxes = pp_set_max_boxes std_formatter
 and get_max_boxes = pp_get_max_boxes std_formatter
