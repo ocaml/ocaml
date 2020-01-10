@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+.vscode
 
 # local to root directory
 
