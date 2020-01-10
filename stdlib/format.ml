@@ -823,11 +823,11 @@ let pp_get_margin state () = state.pp_margin
 
 let pp_set_geometry state ~max_indent ~margin =
   if max_indent < 2 then
-    raise (Invalid_argument "Format.pp_set_geometry: max_indent < 2")
-  else if margin <= max_indent then
-      raise (Invalid_argument "Format.pp_set_geometry: margin <= max_indent")
-  else
-    pp_set_margin state margin; pp_set_max_indent state max_indent
+    raise (Invalid_argument "Format.pp_set_geometry: max_indent < 2");
+  if margin <= max_indent then
+    raise (Invalid_argument "Format.pp_set_geometry: margin <= max_indent");
+  pp_set_margin state margin;
+  pp_set_max_indent state max_indent
 
 let pp_safe_set_geometry state ~max_indent ~margin =
   if check_geometry {max_indent;margin} then
