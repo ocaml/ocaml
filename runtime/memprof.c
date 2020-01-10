@@ -60,6 +60,9 @@ value* caml_memprof_young_trigger;
 /* Whether memprof has been initialized.  */
 static int init = 0;
 
+/* Whether memprof is started. */
+static int started = 0;
+
 /**** Statistical sampling ****/
 
 static double mt_generate_uniform(void)
@@ -729,22 +732,11 @@ static void caml_memprof_init(void) {
   mt_state[0] = 42;
   for (i = 1; i < MT_STATE_SIZE; i++)
     mt_state[i] = 0x6c078965 * (mt_state[i-1] ^ (mt_state[i-1] >> 30)) + i;
-
-  callback_alloc_minor = Val_unit;
-  callback_alloc_major = Val_unit;
-  callback_promote = Val_unit;
-  callback_dealloc_minor = Val_unit;
-  callback_dealloc_major = Val_unit;
-
-  caml_register_generational_global_root(&callback_alloc_minor);
-  caml_register_generational_global_root(&callback_alloc_major);
-  caml_register_generational_global_root(&callback_promote);
-  caml_register_generational_global_root(&callback_dealloc_minor);
-  caml_register_generational_global_root(&callback_dealloc_major);
 }
 
 void caml_memprof_shutdown(void) {
   init = 0;
+  started = 0;
   lambda = 0.;
   caml_memprof_suspended = 0;
   trackst.len = 0;
@@ -754,23 +746,65 @@ void caml_memprof_shutdown(void) {
   trackst.alloc_len = 0;
 }
 
-CAMLprim value caml_memprof_set(value lv, value szv,
-                                value cb_alloc_minor, value cb_alloc_major,
-                                value cb_promote,
-                                value cb_dealloc_minor, value cb_dealloc_major)
+CAMLprim value caml_memprof_start(value lv, value szv,
+                                  value cb_alloc_minor, value cb_alloc_major,
+                                  value cb_promote,
+                                  value cb_dealloc_minor,
+                                  value cb_dealloc_major)
 {
   CAMLparam5(lv, szv, cb_alloc_minor, cb_alloc_major, cb_promote);
   CAMLxparam2(cb_dealloc_minor, cb_dealloc_major);
   double l = Double_val(lv);
   intnat sz = Long_val(szv);
-  uintnat i;
+
+  if (started) caml_failwith("Gc.Memprof.start: already started.");
 
   if (sz < 0 || !(l >= 0.) || l > 1.) /* Checks that [l] is not NAN. */
-    caml_invalid_argument("caml_memprof_set");
+    caml_invalid_argument("Gc.Memprof.start");
 
   if (!init) caml_memprof_init();
 
-  /* This call to [caml_memprof_set] will discard all the previously
+  lambda = l;
+  if (l > 0) {
+    one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
+    next_mt_generate_geom = mt_generate_geom();
+  }
+
+  caml_memprof_renew_minor_sample();
+
+  callstack_size = sz;
+  started = 1;
+
+
+  callback_alloc_minor = cb_alloc_minor;
+  callback_alloc_major = cb_alloc_major;
+  callback_promote = cb_promote;
+  callback_dealloc_minor = cb_dealloc_minor;
+  callback_dealloc_major = cb_dealloc_major;
+
+  caml_register_generational_global_root(&callback_alloc_minor);
+  caml_register_generational_global_root(&callback_alloc_major);
+  caml_register_generational_global_root(&callback_promote);
+  caml_register_generational_global_root(&callback_dealloc_minor);
+  caml_register_generational_global_root(&callback_dealloc_major);
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_memprof_start_byt(value* argv, int argn)
+{
+  CAMLassert(argn == 7);
+  return caml_memprof_start(argv[0], argv[1], argv[2], argv[3],
+                            argv[4], argv[5], argv[6]);
+}
+
+CAMLprim value caml_memprof_stop(value unit)
+{
+  uintnat i;
+
+  if (!started) caml_failwith("Gc.Memprof.stop: not started.");
+
+  /* This call to [caml_memprof_stop] will discard all the previously
      tracked blocks. We try one last time to call the postponed
      callbacks. */
   caml_raise_if_exception(caml_memprof_handle_postponed_exn());
@@ -785,30 +819,15 @@ CAMLprim value caml_memprof_set(value lv, value szv,
   trackst.entries = NULL;
   trackst.alloc_len = 0;
 
-  lambda = l;
-  if (l > 0) {
-    one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
-    next_mt_generate_geom = mt_generate_geom();
-  }
-
+  lambda = 0;
   caml_memprof_renew_minor_sample();
+  started = 0;
 
-  callstack_size = sz;
+  caml_remove_generational_global_root(&callback_alloc_minor);
+  caml_remove_generational_global_root(&callback_alloc_major);
+  caml_remove_generational_global_root(&callback_promote);
+  caml_remove_generational_global_root(&callback_dealloc_minor);
+  caml_remove_generational_global_root(&callback_dealloc_major);
 
-  caml_modify_generational_global_root(&callback_alloc_minor, cb_alloc_minor);
-  caml_modify_generational_global_root(&callback_alloc_major, cb_alloc_major);
-  caml_modify_generational_global_root(&callback_promote, cb_promote);
-  caml_modify_generational_global_root(&callback_dealloc_minor,
-                                       cb_dealloc_minor);
-  caml_modify_generational_global_root(&callback_dealloc_major,
-                                       cb_dealloc_major);
-
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value caml_memprof_set_byt(value* argv, int argn)
-{
-  CAMLassert(argn == 7);
-  return caml_memprof_set(argv[0], argv[1], argv[2], argv[3],
-                          argv[4], argv[5], argv[6]);
+  return Val_unit;
 }

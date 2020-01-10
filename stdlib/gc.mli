@@ -467,9 +467,8 @@ module Memprof :
       ?minor_dealloc_callback:('minor -> unit) ->
       ?major_dealloc_callback:('major -> unit) ->
       unit -> unit
-    (** Start the sampling with the given parameters. If another
-       sampling is already running, it is stopped and all the
-       previously tracked blocks are discarded.
+    (** Start the sampling with the given parameters. Fails if
+       sampling is already active.
 
        The parameter [sampling_rate] is the sampling rate in samples
        per word (including headers). Usually, with cheap callbacks, a
@@ -496,14 +495,18 @@ module Memprof :
        actual event. The callstack passed to the callback is always
        accurate, but the program state may have evolved.
 
-       Calling [Thread.exit] in a callback is currently unsafe and
-       can result in undefined behavior.
-
-       Calling [start] or [stop] in a callback can lead to callbacks
-       not being called even though some events happened. *)
+       Calling [Thread.exit] in a callback is currently unsafe and can
+       result in undefined behavior. *)
 
     val stop : unit -> unit
-    (** Stop the sampling. This function does not allocate memory,
-        but tries to run the postponed callbacks for already allocated
-        memory blocks (of course, these callbacks may allocate). *)
+    (** Stop the sampling. Fails if sampling is not active.
+
+        This function does not allocate memory, but tries to run the
+        postponed callbacks for already allocated memory blocks (of
+        course, these callbacks may allocate).
+
+        All the already tracked blocks are discarded.
+
+        Calling [stop] when a callback is running can lead to
+        callbacks not being called even though some events happened. *)
 end

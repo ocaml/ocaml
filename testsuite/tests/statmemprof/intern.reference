@@ -10,6 +10,6 @@ check_distrib 300000 300000 20 0.100000
 check_callstack
 Raised by primitive operation at file "marshal.ml", line 61, characters 9-35
 Called from file "intern.ml", line 30, characters 14-35
-Called from file "intern.ml", line 180, characters 2-25
-Called from file "intern.ml", line 186, characters 9-27
+Called from file "intern.ml", line 181, characters 2-25
+Called from file "intern.ml", line 187, characters 9-27
 OK !
