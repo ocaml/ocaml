@@ -19,7 +19,7 @@ function (x :
 Line 2, characters 1-4:
 2 | #bar) -> ();;
      ^^^
-Error: Unbound class bar
+Error: Unbound class type bar
 |}];;
 
 function
