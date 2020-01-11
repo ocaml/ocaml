@@ -279,7 +279,7 @@ static void oldify_one (void* st_v, value v, value *p)
     else
     {
       // Conflict - fix up what we allocated on the major heap
-      *Hp_val(result) = 0;
+      *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);
       Op_val(result)[0] = Val_long(1);
     }
   } else if (tag < Infix_tag) {
@@ -302,7 +302,7 @@ static void oldify_one (void* st_v, value v, value *p)
     } else {
       // Conflict - fix up what we allocated on the major heap
       int c;
-      *Hp_val(result) = 0;
+      *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
       for( c = 0; c < sz ; c++ ) {
         Op_val(result)[c] = Val_long(1);
       }
@@ -319,7 +319,7 @@ static void oldify_one (void* st_v, value v, value *p)
     CAMLassert (infix_offset == 0);
     if( !try_update_object_header(v, p, result, 0) ) {
       // Conflict
-      *Hp_val(result) = 0;
+      *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
       for( i = 0; i < sz ; i++ ) {
         Op_val(result)[i] = Val_long(1);
       }
@@ -345,7 +345,7 @@ static void oldify_one (void* st_v, value v, value *p)
         v = f;
         goto tail_call;
       } else {
-        *Hp_val(result) = 0;
+        *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);;
         Op_val(result)[0] = Val_long(1);
       }
     } else {
