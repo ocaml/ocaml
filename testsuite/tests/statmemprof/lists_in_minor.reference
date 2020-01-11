@@ -7,6 +7,6 @@ check_distrib 100000 10 0.100000
 check_distrib 100000 10 0.900000
 check_callstack
 Raised by primitive operation at file "lists_in_minor.ml", line 14, characters 11-33
-Called from file "lists_in_minor.ml", line 67, characters 2-26
-Called from file "lists_in_minor.ml", line 74, characters 2-20
+Called from file "lists_in_minor.ml", line 66, characters 2-26
+Called from file "lists_in_minor.ml", line 73, characters 2-20
 OK !

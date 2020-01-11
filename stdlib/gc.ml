@@ -124,7 +124,6 @@ module Memprof =
     type allocation =
       { n_samples : int;
         size : int;
-        tag : int;
         unmarshalled : bool;
         callstack : Printexc.raw_backtrace }
 

@@ -5,11 +5,11 @@
 
 open Gc.Memprof
 
+let rec allocate_list accu = function
+  | 0 -> accu
+  | n -> allocate_list (n::accu) (n-1)
+
 let[@inline never] allocate_lists len cnt =
-  let rec allocate_list accu = function
-    | 0 -> accu
-    | n -> allocate_list (n::accu) (n-1)
-  in
   for j = 0 to cnt-1 do
     ignore (allocate_list [] len)
   done
@@ -20,12 +20,10 @@ let check_distrib len cnt rate =
   start ~callstack_size:10
         ~major_alloc_callback:(fun _ -> assert false)
         ~minor_alloc_callback:(fun info ->
-          if info.tag = 0 then begin (* Exclude noise such as spurious closures. *)
-            assert (info.size = 2);
-            assert (info.n_samples > 0);
-            assert (not info.unmarshalled);
-            smp := !smp + info.n_samples;
-          end;
+          assert (info.size = 2);
+          assert (info.n_samples > 0);
+          assert (not info.unmarshalled);
+          smp := !smp + info.n_samples;
           None)
         ~sampling_rate:rate ();
   allocate_lists len cnt;
@@ -60,7 +58,8 @@ let[@inline never] check_callstack () =
   let callstack = ref None in
   start ~callstack_size:10
         ~minor_alloc_callback:(fun info ->
-           if info.tag = 0 then callstack := Some info.callstack;
+           assert (info.size = 2);
+           callstack := Some info.callstack;
            None
         )
         ~sampling_rate:1. ();

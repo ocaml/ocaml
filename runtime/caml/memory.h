@@ -214,7 +214,7 @@ enum caml_alloc_small_flags {
   CAML_FROM_C = 0,     CAML_FROM_CAML = 2
 };
 
-extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags);
+extern void caml_alloc_small_dispatch (intnat wosize, int flags);
 // Do not call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_C
 #define Alloc_small_aux(result, wosize, tag, profinfo, track) do {     \
@@ -224,8 +224,7 @@ extern void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags);
   Caml_state_field(young_ptr) -= Whsize_wosize (wosize);               \
   if (Caml_state_field(young_ptr) < Caml_state_field(young_limit)) {   \
     Setup_for_gc;                                                      \
-    caml_alloc_small_dispatch((tag), (wosize),                         \
-                              (track) | Alloc_small_origin);           \
+    caml_alloc_small_dispatch((wosize), (track) | Alloc_small_origin); \
     Restore_after_gc;                                                  \
   }                                                                    \
   Hd_hp (Caml_state_field(young_ptr)) =                                \

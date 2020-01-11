@@ -5,19 +5,22 @@
 
 open Gc.Memprof
 
-type 'a list2 =  (* A list type where [Cons] has tag 1 *)
-  | Nil
-  | Dummy of int
-  | Cons of 'a * 'a list2
+let roots = Array.make 1000000 [||]
+let roots_pos = ref 0
+let add_root r =
+  roots.(!roots_pos) <- r;
+  incr roots_pos
+let clear_roots () =
+  Array.fill roots 0 !roots_pos [||];
+  roots_pos := 0
 
-let root = ref Nil
 let[@inline never] allocate_arrays lo hi cnt keep =
   assert (0 < lo && hi <= 250);  (* Fits in minor heap. *)
   for j = 0 to cnt-1 do
     for i = lo to hi do
-      root := Cons (Array.make i 0, !root)
+      add_root (Array.make i 0)
     done;
-    if not keep then root := Nil
+    if not keep then clear_roots ()
   done
 
 let check_nosample () =
@@ -43,7 +46,6 @@ let check_counts_full_major force_promote =
   start ~callstack_size:10
         ~minor_alloc_callback:(fun info ->
           if !enable then begin
-            assert (info.tag = 0 || info.tag = 1);
             incr nalloc_minor; if !nalloc_minor mod 100 = 0 then Gc.minor ();
             Some (ref 42)
           end else begin
@@ -68,11 +70,11 @@ let check_counts_full_major force_promote =
     Gc.full_major ();
     assert (!ndealloc_minor = 0 && !ndealloc_major = 0 &&
             !npromote = !nalloc_minor);
-    root := Nil;
+    clear_roots ();
     Gc.full_major ();
     assert (!ndealloc_minor = 0 && !ndealloc_major = !nalloc_minor);
   end else begin
-    root := Nil;
+    clear_roots ();
     Gc.minor ();
     Gc.full_major ();
     Gc.full_major ();
@@ -113,14 +115,11 @@ let check_distrib lo hi cnt rate =
   start ~callstack_size:10
         ~major_alloc_callback:(fun _ -> assert false)
         ~minor_alloc_callback:(fun info ->
-          (* Exclude noise such as spurious closures and the root list. *)
-           if info.tag = 0 then begin
-             assert (info.size >= lo && info.size <= hi);
-             assert (info.n_samples > 0);
-             assert (not info.unmarshalled);
-             smp := !smp + info.n_samples
-           end;
-           None
+          assert (info.size >= lo && info.size <= hi);
+          assert (info.n_samples > 0);
+          assert (not info.unmarshalled);
+          smp := !smp + info.n_samples;
+          None
         )
         ~sampling_rate:rate ();
   allocate_arrays lo hi cnt false;
@@ -154,7 +153,7 @@ let[@inline never] check_callstack () =
   let callstack = ref None in
   start ~callstack_size:10
         ~minor_alloc_callback:(fun info ->
-          if info.tag = 0 then callstack := Some info.callstack;
+          if info.size > 100 then callstack := Some info.callstack;
           None
         )
         ~sampling_rate:1. ();

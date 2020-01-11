@@ -448,9 +448,6 @@ module Memprof :
         size : int;
         (** The size of the block, in words, excluding the header. *)
 
-        tag : int;
-        (** The tag of the block. *)
-
         unmarshalled : bool;
         (** Whether the block comes from unmarshalling. *)
 
