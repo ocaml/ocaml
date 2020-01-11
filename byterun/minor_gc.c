@@ -143,18 +143,6 @@ static inline int is_in_interval (value v, char* low_closed, char* high_open)
   return low_closed <= (char*)v && (char*)v < high_open;
 }
 
-/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
- * object in the block. */
-static inline void resolve_infix_val (value* v)
-{
-  int offset = 0;
-  if (try_check_header_val(*v) == Infix_tag) {
-    offset = Infix_offset_val(*v);
-    CAMLassert (offset > 0);
-    *v -= offset;
-  }
-}
-
 static inline void log_gc_value(const char* prefix, value v)
 {
   if (Is_block(v)) {
@@ -168,22 +156,26 @@ static inline void log_gc_value(const char* prefix, value v)
 
 #define Color_hd(v) ((color_t)(((v) >> 8) & 3))
 
-int try_check_header_val(value v) {
-  header_t hd = Hd_val(v);
+static int get_header_val(value v) {
+  if( caml_domain_alone() ) {
+    return Hd_val(v);
+  } else {
+    header_t hd = atomic_load(Hp_atomic_val(v));
 
-  if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
-    while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
-    hd = 0;
+    if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
+      while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+      return 0;
+    }
+
+    return hd;
   }
-
-  return hd;
 }
 
-void spin_on_header(value v) {
+static inline void spin_on_header(value v) {
   while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
 }
 
-int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
+static int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
   int success = 0;
 
   if( caml_domain_alone() ) {
@@ -226,6 +218,18 @@ int try_update_object_header(value v, value *p, value result, mlsize_t infix_off
   return success;
 }
 
+/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
+ * object in the block. */
+static inline void resolve_infix_val (value* v)
+{
+  int offset = 0;
+  if (get_header_val(*v) == Infix_tag) {
+    offset = Infix_offset_val(*v);
+    CAMLassert (offset > 0);
+    *v -= offset;
+  }
+}
+
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 static void oldify_one (void* st_v, value v, value *p)
@@ -246,7 +250,7 @@ static void oldify_one (void* st_v, value v, value *p)
 
   infix_offset = 0;
   do {
-    hd = Hd_val (v);
+    hd = get_header_val(v);
     if (hd == 0) {
       /* already forwarded, another domain is likely working on this. */
       *p = Op_val(v)[0] + infix_offset;
@@ -328,7 +332,7 @@ static void oldify_one (void* st_v, value v, value *p)
     tag_t ft = 0;
 
     if (Is_block (f)) {
-      ft = Tag_val (try_check_header_val(f) == 0 ? Op_val (f)[0] : f);
+      ft = Tag_val (get_header_val(f) == 0 ? Op_val (f)[0] : f);
     }
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
@@ -363,7 +367,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
     if (child != caml_ephe_none
         && Is_block (child) && Is_minor(child)) {
       resolve_infix_val(&child);
-      if (try_check_header_val(child) != 0) {
+      if (get_header_val(child) != 0) {
         /* value not copied to major heap */
         return 0;
       }
@@ -394,7 +398,7 @@ static void oldify_mopup (struct oldify_state* st)
     /* I'm not convinced we can ever have something in todo_list that was updated
     by another domain, so this assert using try_check_header_val is probably not
     neccessary */
-    CAMLassert (try_check_header_val(v) == 0);       /* It must be forwarded. */
+    CAMLassert (get_header_val(v) == 0);       /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     st->todo_list = Op_val (new_v)[1]; /* Remove from list. */
 
@@ -424,7 +428,7 @@ static void oldify_mopup (struct oldify_state* st)
       value *data = &Ephe_data(re->ephe);
       if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
         resolve_infix_val(data);
-        if (try_check_header_val(*data) == 0) { /* Value copied to major heap */
+        if (get_header_val(*data) == 0) { /* Value copied to major heap */
           *data = Op_val(*data)[0];
         } else {
           if (ephe_check_alive_data(re, young_ptr, young_end)) {
@@ -554,7 +558,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     value* key = &Op_val(re->ephe)[re->offset];
     if (*key != caml_ephe_none && Is_block(*key) && Is_minor(*key)) {
       resolve_infix_val(key);
-      if (try_check_header_val(*key) == 0) { /* value copied to major heap */
+      if (get_header_val(*key) == 0) { /* value copied to major heap */
         *key = Op_val(*key)[0];
       } else {
         // CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
