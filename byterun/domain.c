@@ -530,6 +530,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   domain_state->inside_stw_handler = 1;
   #endif
   stw_request.callback(domain, stw_request.data);
+  caml_ev_begin("stw/handler/waiting");
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -538,6 +539,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
     if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
       break;
   }
+  caml_ev_end("stw/handler/waiting");
   caml_ev_end("stw/handler");
 }
 
@@ -621,16 +623,19 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
   #endif
 
   /* release the STW lock before allowing other domains to continue */
+  caml_ev_begin("stw/leader/waiting");
   caml_plat_lock(&all_domains_lock);
   Assert (stw_leader == domain_self);
   stw_leader = 0;
   caml_plat_broadcast(&all_domains_cond);
   caml_plat_unlock(&all_domains_lock);
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
+  
   SPIN_WAIT {
     if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
       break;
   }
+  caml_ev_end("stw/leader/waiting");
   caml_ev_end("stw/leader");
   /* other domains might not have finished stw_handler yet, but they
      will finish as soon as they notice num_domains_still_processing

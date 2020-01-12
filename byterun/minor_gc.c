@@ -396,7 +396,7 @@ static void oldify_mopup (struct oldify_state* st)
   while (st->todo_list != 0) {
     v = st->todo_list;                 /* Get the head. */
     /* I'm not convinced we can ever have something in todo_list that was updated
-    by another domain, so this assert using try_check_header_val is probably not
+    by another domain, so this assert using get_header_val is probably not
     neccessary */
     CAMLassert (get_header_val(v) == 0);       /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
@@ -600,26 +600,35 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   #endif
 
   barrier_status b;
+  int sync_ended = 0;
 
+  caml_ev_begin("minor_gc/sync_start");
   b = caml_global_barrier_begin();
   caml_global_barrier_end(b);
+  caml_ev_end("minor_gc/sync_start");
   
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, 0);
 
+  caml_ev_begin("minor_gc/sync_end");
   b = caml_global_barrier_begin();
 
   if( caml_global_barrier_is_final(b) ) {
+    sync_ended = 1;
+    caml_ev_end("minor_gc/sync_end");
+    caml_ev_begin("minor_gc/finalizers");
     caml_gc_log("running stw empty_minor_heap_domain_finalizers");
     caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
-
+    caml_ev_end("minor_gc/finalizers");
+    caml_ev_begin("minor_gc/clear");
     caml_gc_log("running stw empty_minor_heap_domain_clear");
     caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
-
+    caml_ev_end("minor_gc/clear");
     caml_gc_log("finished stw empty_minor_heap");
   }
 
   caml_global_barrier_end(b);
+  if( !sync_ended ) caml_ev_end("minor_gc/sync_end");
 }
 
 /* must be called outside a STW section */
