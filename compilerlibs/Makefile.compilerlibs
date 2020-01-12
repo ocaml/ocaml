@@ -134,6 +134,7 @@ LAMBDA = \
   lambda/translcore.cmo \
   lambda/translclass.cmo \
   lambda/translmod.cmo \
+  lambda/tmc.cmo \
   lambda/simplif.cmo \
   lambda/runtimedef.cmo
 LAMBDA_CMI =

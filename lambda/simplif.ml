@@ -904,7 +904,10 @@ let simplify_local_functions lam =
     rewrite lam
 
 (* The entry point:
-   simplification + emission of tailcall annotations, if needed. *)
+   simplification
+   + rewriting of tail-modulo-cons calls
+   + emission of tailcall annotations, if needed
+*)
 
 let simplify_lambda lam =
   let lam =
@@ -914,6 +917,7 @@ let simplify_lambda lam =
        )
     |> simplify_exits
     |> simplify_lets
+    |> Tmc.rewrite
   in
   if !Clflags.annotations
      || Warnings.is_active (Warnings.Wrong_tailcall_expectation true)
