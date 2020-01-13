@@ -249,7 +249,7 @@ let check_type_decl env loc id row_id newdecl decl rs rem =
     | Some id -> Env.add_type ~check:false id newdecl env
   in
   let env = if rs = Trec_not then env else add_rec_types env rem in
-  Includemod.type_declarations ~loc env id newdecl decl;
+  Includemod.type_declarations ~mark:Mark_both ~loc env id newdecl decl;
   Typedecl.check_coherence env loc (Path.Pident id) newdecl
 
 let update_rec_next rs rem =
@@ -539,7 +539,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
-        ignore(Includemod.modtypes ~loc sig_env newmd.md_type md.md_type);
+        ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
+                 newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
         Sig_module(id, pres, newmd, rs, priv) :: rem
     | (Sig_module(id, _, md, rs, _) :: rem, [s], Pwith_modsubst (_, lid'))
@@ -547,8 +548,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         let path, md' = Env.lookup_module ~loc lid'.txt initial_env in
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
-          (Includemod.strengthened_module_decl ~loc ~aliasable sig_env
-             md' path md);
+          (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
+             ~aliasable sig_env md' path md);
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
@@ -1766,7 +1767,8 @@ let check_recmodule_inclusion env bindings =
         and mty_actual' = subst_and_strengthen env scope s id mty_actual in
         let coercion =
           try
-            Includemod.modtypes ~loc:modl.mod_loc env mty_actual' mty_decl'
+            Includemod.modtypes ~loc:modl.mod_loc ~mark:Mark_both env
+              mty_actual' mty_decl'
           with Includemod.Error msg ->
             raise(Error(modl.mod_loc, env, Not_included msg)) in
         let modl' =
@@ -1842,9 +1844,10 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
     modtype_of_package env Location.none p nl tl
   in
   let mty1 = mkmty p1 nl1 tl1 and mty2 = mkmty p2 nl2 tl2 in
-  try Includemod.modtypes ~loc:Location.none env mty1 mty2 = Tcoerce_none
-  with Includemod.Error _msg -> false
-    (* raise(Error(Location.none, env, Not_included msg)) *)
+  let loc = Location.none in
+  match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
+  | Tcoerce_none -> true
+  | _ | exception Includemod.Error _ -> false
 
 let () = Ctype.package_subtype := package_subtype
 
@@ -1965,7 +1968,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
           let coercion =
             try
-              Includemod.modtypes ~loc:sarg.pmod_loc env arg.mod_type mty_param
+              Includemod.modtypes ~loc:sarg.pmod_loc ~mark:Mark_both env
+                arg.mod_type mty_param
             with Includemod.Error msg ->
               raise(Error(sarg.pmod_loc, env, Not_included msg)) in
           let mty_appl =
@@ -2656,7 +2660,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                           Interface_not_compiled sourceintf)) in
           let dclsig = Env.read_signature modulename intf_file in
           let coercion =
-            Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+            Includemod.compunit initial_env ~mark:Mark_positive
               sourcefile sg intf_file dclsig
           in
           Typecore.force_delayed_checks ();
@@ -2670,7 +2674,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (str, coercion)
         end else begin
           let coercion =
-            Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+            Includemod.compunit initial_env ~mark:Mark_positive
               sourcefile sg "(inferred signature)" simple_sg
           in
           check_nongen_schemes finalenv simple_sg;
@@ -2773,7 +2777,8 @@ let package_units initial_env objfiles cmifile modulename =
     let dclsig = Env.read_signature modulename cmifile in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
       (Cmt_format.Packed (sg, objfiles)) None initial_env  None ;
-    Includemod.compunit initial_env "(obtained by packing)" sg mlifile dclsig
+    Includemod.compunit initial_env ~mark:Mark_both
+      "(obtained by packing)" sg mlifile dclsig
   end else begin
     (* Determine imports *)
     let unit_names = List.map fst units in

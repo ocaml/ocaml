@@ -582,7 +582,7 @@ let () =
 (* Check that an implementation of a compilation unit meets its
    interface. *)
 
-let compunit env ?(mark=Mark_both) impl_name impl_sig intf_name intf_sig =
+let compunit env ~mark impl_name impl_sig intf_name intf_sig =
   try
     signatures ~loc:(Location.in_file impl_name) env ~mark []
       Subst.identity impl_sig intf_sig
@@ -592,13 +592,13 @@ let compunit env ?(mark=Mark_both) impl_name impl_sig intf_name intf_sig =
 
 (* Hide the context and substitution parameters to the outside world *)
 
-let modtypes ~loc env ?(mark=Mark_both) mty1 mty2 =
+let modtypes ~loc env ~mark mty1 mty2 =
   modtypes ~loc env ~mark [] Subst.identity mty1 mty2
-let signatures env ?(mark=Mark_both) sig1 sig2 =
+let signatures env ~mark sig1 sig2 =
   signatures ~loc:Location.none env ~mark [] Subst.identity sig1 sig2
-let type_declarations ~loc env ?(mark=Mark_both) id decl1 decl2 =
+let type_declarations ~loc env ~mark id decl1 decl2 =
   type_declarations ~loc env ~mark [] Subst.identity id decl1 decl2
-let strengthened_module_decl ~loc ~aliasable env ?(mark=Mark_both)
+let strengthened_module_decl ~loc ~aliasable env ~mark
       md1 path1 md2 =
   strengthened_module_decl ~loc ~aliasable env ~mark [] Subst.identity
     md1 path1 md2
