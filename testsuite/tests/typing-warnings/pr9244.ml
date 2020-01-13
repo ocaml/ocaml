@@ -37,6 +37,10 @@ end = struct
   module F2 (_ : U) = F1 (struct end)
 end
 [%%expect {|
+Line 5, characters 8-9:
+5 |     let x = 13
+            ^
+Warning 32: unused value x.
 module N : sig module F2 : U -> U end
 |}]
 
