@@ -47,5 +47,9 @@ module N : sig module F2 : U -> U end
 
 module F (X : sig type t type s end) = struct type t = X.t end
 [%%expect {|
+Line 1, characters 25-31:
+1 | module F (X : sig type t type s end) = struct type t = X.t end
+                             ^^^^^^
+Warning 34: unused type s.
 module F : functor (X : sig type t type s end) -> sig type t = X.t end
 |}]
