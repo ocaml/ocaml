@@ -32,9 +32,9 @@ extern uintnat caml_incremental_roots_count;
 CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
                                      struct caml__roots_block *);
 #else
-CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                                    uintnat last_retaddr, value * gc_regs,
-                                    struct caml__roots_block * local_roots);
+CAMLextern void caml_do_local_roots(scanning_action, char *,
+                                    uintnat last_retaddr, value *,
+                                    struct caml__roots_block *);
 #endif
 
 CAMLextern void (*caml_scan_roots_hook) (scanning_action);
