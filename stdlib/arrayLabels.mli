@@ -202,6 +202,16 @@ val for_all : f:('a -> bool) -> 'a array -> bool
    [(f a1) && (f a2) && ... && (f an)].
    @since 4.03.0 *)
 
+val for_all2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+(** Same as {!ArrayLabels.for_all}, but for a two-argument predicate.
+   Raise [Invalid_argument] if the two arrays have different lengths.
+   @since 4.11.0 *)
+
+val exists2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+(** Same as {!ArrayLabels.exists}, but for a two-argument predicate.
+   Raise [Invalid_argument] if the two arrays have different lengths.
+   @since 4.11.0 *)
+
 val mem : 'a -> set:'a array -> bool
 (** [mem x ~set] is true if and only if [x] is equal
    to an element of [set].

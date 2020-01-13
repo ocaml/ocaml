@@ -37,6 +37,9 @@ Working version
 
 ### Standard library:
 
+- #9235: Add Array.exists2 and Array.for_all2
+  (Bernhard Schommer, review by Armaël Guéneau)
+
 - #8771: Lexing: add set_position and set_filename to change (fake)
    the initial tracking position of the lexbuf.
    (Konstantin Romanov, Miguel Lumapat, review by Gabriel Scherer,
