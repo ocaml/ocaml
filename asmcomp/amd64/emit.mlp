@@ -594,14 +594,16 @@ let emit_instr fallthrough i =
         end;
         cfi_remember_state ();
         I.mov (domain_field Domainstate.Domain_c_stack) rsp;
-        (* FIXME: CFI *)
-        (* cfi_def_cfa_offset 8; *)
+        cfi_def_cfa_offset 0;
+
+        (* Keep GDB happy. If the cfa_offset was left at 0, then GDB complains
+         * that the frame did not save the PC and truncates the backtrace.
+         * Subtract rsp by 16 (instead of 8) to keep the stack aligned to
+         * 16-byte boundary. *)
+        I.sub (int 16) rsp;
+        cfi_adjust_cfa_offset 16;
+
         emit_call func;
-        (* FIXME KC:
-        if Config.spacetime then begin
-          record_frame Reg.Set.empty false i.dbg ~label:label_after
-        end
-        *)
         I.mov rbp rsp;
         cfi_restore_state ();
       end
@@ -928,14 +930,14 @@ let emit_profile () =
     I.mov rsp r10;
     cfi_remember_state ();
     I.mov (domain_field Domainstate.Domain_c_stack) rsp;
-    cfi_def_cfa_offset 8;
-    I.push r10;
-    cfi_adjust_cfa_offset 8;
+    cfi_def_cfa_offset 0;
+    I.sub (int 16) rsp;
+    cfi_adjust_cfa_offset 16;
+    I.mov r10 (mem64 NONE 0 RSP);
     (* No Spacetime instrumentation needed: [mcount] cannot call anything
        OCaml-related. *)
     emit_call "mcount";
-    I.pop r10;
-    cfi_adjust_cfa_offset (-8);
+    I.mov (mem64 NONE 0 RSP) r10;
     I.mov r10 rsp;
     cfi_restore_state()
   end
