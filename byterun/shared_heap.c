@@ -57,9 +57,6 @@ struct {
 
 /* readable and writable only by the current thread */
 struct caml_heap_state {
-  pool* free_pools;
-  int num_free_pools;
-
   pool* avail_pools[NUM_SIZECLASSES];
   pool* full_pools[NUM_SIZECLASSES];
   pool* unswept_avail_pools[NUM_SIZECLASSES];
@@ -81,8 +78,6 @@ struct caml_heap_state* caml_init_shared_heap() {
 
   heap = caml_stat_alloc_noexc(sizeof(struct caml_heap_state));
   if(heap != NULL) {
-    heap->free_pools = 0;
-    heap->num_free_pools = 0;
     for (i = 0; i<NUM_SIZECLASSES; i++) {
       heap->avail_pools[i] = heap->full_pools[i] =
         heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
@@ -113,9 +108,6 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
   int i;
   int released = 0, released_large = 0;
   caml_plat_lock(&pool_freelist.lock);
-  heap->num_free_pools -=
-    move_all_pools(&heap->free_pools, &pool_freelist.free, NULL);
-  Assert(heap->num_free_pools == 0);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     released +=
       move_all_pools(&heap->avail_pools[i], &pool_freelist.global_avail_pools[i], NULL);
@@ -152,31 +144,26 @@ void caml_sample_heap_stats(struct caml_heap_state* local, struct heap_stats* h)
 static pool* pool_acquire(struct caml_heap_state* local) {
   pool* r;
 
-  if (local->num_free_pools > 0) {
-    r = local->free_pools;
-    local->free_pools = r->next;
-    local->num_free_pools--;
-  } else {
-    caml_plat_lock(&pool_freelist.lock);
-    if (!pool_freelist.free) {
-      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION,
-                               Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
-      int i;
-      if (mem) {
-        pool_freelist.free = mem;
-        for (i=1; i<POOLS_PER_ALLOCATION; i++) {
-          r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
-          r->next = pool_freelist.free;
-          r->owner = 0;
-          pool_freelist.free = r;
-        }
+  caml_plat_lock(&pool_freelist.lock);
+  if (!pool_freelist.free) {
+    void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION,
+                              Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
+    int i;
+    if (mem) {
+      pool_freelist.free = mem;
+      for (i=1; i<POOLS_PER_ALLOCATION; i++) {
+        r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
+        r->next = pool_freelist.free;
+        r->owner = 0;
+        pool_freelist.free = r;
       }
     }
-    r = pool_freelist.free;
-    if (r)
-      pool_freelist.free = r->next;
-    caml_plat_unlock(&pool_freelist.lock);
   }
+  r = pool_freelist.free;
+  if (r)
+    pool_freelist.free = r->next;
+  caml_plat_unlock(&pool_freelist.lock);
+
   if (r) Assert (r->owner == 0);
   return r;
 }
