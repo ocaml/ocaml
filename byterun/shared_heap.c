@@ -209,7 +209,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
 
     p += wh;
   }
-  CAMLassert(end - p == wastage_sizeclass[sz]);
+  Assert(end - p == wastage_sizeclass[sz]);
   s->pool_frag_words += end - p;
   s->pool_words += POOL_WSIZE;
 }
@@ -246,7 +246,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
       value* next_obj = r->next_obj;
       while( next_obj ) {
         free_objs++;
-        CAMLassert(next_obj[0] == 0);
+        Assert(next_obj[0] == 0);
         next_obj = (value*)next_obj[1];
       }
 
@@ -661,7 +661,7 @@ struct mem_stats {
 static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
   value* v;
   for (v = a->next_obj; v; v = (value*)v[1]) {
-    CAMLassert(*v == 0);
+    Assert(*v == 0);
   }
 
   value* p = (value*)((char*)a + POOL_HEADER_SZ);
@@ -671,7 +671,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
 
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
-    CAMLassert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
+    Assert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
     if (hd) {
       s->live += Whsize_hd(hd);
       s->overhead += wh - Whsize_hd(hd);
@@ -681,7 +681,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
     }
     p += wh;
   }
-  CAMLassert(end - p == wastage_sizeclass[sz]);
+  Assert(end - p == wastage_sizeclass[sz]);
   s->overhead += end - p;
   s->alloced += POOL_WSIZE;
 }
@@ -747,14 +747,14 @@ void caml_cycle_heap(struct caml_heap_state* local) {
 
   caml_gc_log("Cycling heap [%02d]", local->owner->state->id);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
-    CAMLassert(local->unswept_avail_pools[i] == 0);
+    Assert(local->unswept_avail_pools[i] == 0);
     local->unswept_avail_pools[i] = local->avail_pools[i];
     local->avail_pools[i] = 0;
-    CAMLassert(local->unswept_full_pools[i] == 0);
+    Assert(local->unswept_full_pools[i] == 0);
     local->unswept_full_pools[i] = local->full_pools[i];
     local->full_pools[i] = 0;
   }
-  CAMLassert(local->unswept_large == 0);
+  Assert(local->unswept_large == 0);
   local->unswept_large = local->swept_large;
   local->swept_large = 0;
 
