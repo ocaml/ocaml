@@ -31,7 +31,8 @@ let check_nosample () =
   in
   start ~callstack_size:10 ~minor_alloc_callback:cb ~major_alloc_callback:cb
         ~sampling_rate:0. ();
-  allocate_arrays 1 250 100 false
+  allocate_arrays 1 250 100 false;
+  stop ()
 
 let () = check_nosample ()
 

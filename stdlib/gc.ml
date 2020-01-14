@@ -127,7 +127,7 @@ module Memprof =
         unmarshalled : bool;
         callstack : Printexc.raw_backtrace }
 
-    external set_ctrl :
+    external c_start :
       float -> int ->
       (allocation -> 'minor option) ->
       (allocation -> 'major option) ->
@@ -135,7 +135,7 @@ module Memprof =
       ('minor -> unit) ->
       ('major -> unit) ->
       unit
-      = "caml_memprof_set_byt" "caml_memprof_set"
+      = "caml_memprof_start_byt" "caml_memprof_start"
 
     let start
       ~sampling_rate
@@ -145,23 +145,9 @@ module Memprof =
       ?(promote_callback = fun _ -> None)
       ?(minor_dealloc_callback = fun _ -> ())
       ?(major_dealloc_callback = fun _ -> ()) () =
-      set_ctrl sampling_rate callstack_size minor_alloc_callback
-               major_alloc_callback promote_callback minor_dealloc_callback
-               major_dealloc_callback
+      c_start sampling_rate callstack_size minor_alloc_callback
+              major_alloc_callback promote_callback minor_dealloc_callback
+              major_dealloc_callback
 
-    let stop =
-      (* We make sure this function does not allocate by preallocating
-         the parameters of [set_ctrl]. *)
-      let sampling_rate = 0. in
-      let callstack_size = 0 in
-      let minor_alloc_callback _ = None in
-      let major_alloc_callback _ = None in
-      let promote_callback _ = None in
-      let minor_dealloc_callback _ = () in
-      let major_dealloc_callback _ = () in
-
-      fun () ->
-      set_ctrl sampling_rate callstack_size minor_alloc_callback
-               major_alloc_callback promote_callback minor_dealloc_callback
-               major_dealloc_callback
+    external stop : unit -> unit = "caml_memprof_stop"
   end

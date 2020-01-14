@@ -10,6 +10,6 @@ check_distrib 1 1 10000000 0.010000
 check_distrib 250 250 100000 0.100000
 check_callstack
 Raised by primitive operation at file "arrays_in_minor.ml", line 21, characters 15-31
-Called from file "arrays_in_minor.ml", line 160, characters 2-35
-Called from file "arrays_in_minor.ml", line 166, characters 9-27
+Called from file "arrays_in_minor.ml", line 161, characters 2-35
+Called from file "arrays_in_minor.ml", line 167, characters 9-27
 OK !
