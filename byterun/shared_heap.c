@@ -242,6 +242,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
       r->next = 0;
       local->avail_pools[sz] = r;
 
+      #ifdef DEBUG
       int free_objs = 0;
       value* next_obj = r->next_obj;
       while( next_obj ) {
@@ -249,6 +250,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
         Assert(next_obj[0] == 0);
         next_obj = (value*)next_obj[1];
       }
+      #endif
 
       struct heap_stats tmp_stats = { 0 };
 
