@@ -111,7 +111,7 @@ value caml_remove_debug_info(code_t start);
  * `max_int` from the OCaml side would overflow on 64bits machines. */
 
 intnat caml_current_callstack_size(intnat max_frames);
-void caml_current_callstack_write(value trace);
+void caml_current_callstack_write(value trace, unsigned alloc_idx);
 
 #endif /* CAML_INTERNALS */
 

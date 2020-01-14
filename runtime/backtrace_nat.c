@@ -121,25 +121,39 @@ intnat caml_current_callstack_size(intnat max_frames) {
   return trace_size;
 }
 
-void caml_current_callstack_write(value trace) {
+/* A backtrace_slot is either a debuginfo or a frame_descr* */
+#define Slot_is_debuginfo(s) ((uintnat)(s) & 2)
+#define Debuginfo_slot(s) ((debuginfo)((uintnat)(s) - 2))
+#define Slot_debuginfo(d) ((backtrace_slot)((uintnat)(d) + 2))
+#define Frame_descr_slot(s) ((frame_descr*)(s))
+#define Slot_frame_descr(f) ((backtrace_slot)(f))
+static debuginfo debuginfo_extract(frame_descr* d, unsigned alloc_idx);
+void caml_current_callstack_write(value trace, unsigned alloc_idx)
+{
   uintnat pc = Caml_state->last_return_address;
   char * sp = Caml_state->bottom_of_stack;
-  intnat trace_pos, trace_size = Wosize_val(trace);
+  intnat trace_pos = 0, trace_size = Wosize_val(trace);
 
-  for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
+  if (alloc_idx > 0 && trace_size > 0) {
+    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
+    debuginfo info = debuginfo_extract(descr, alloc_idx);
+    Field(trace, 0) = Val_backtrace_slot(Slot_debuginfo(info));
+    trace_pos++;
+  }
+
+  for (; trace_pos < trace_size; trace_pos++) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     CAMLassert(descr != NULL);
     /* [Val_backtrace_slot(...)] is always a long, no need to call
        [caml_modify]. */
-    Field(trace, trace_pos) = Val_backtrace_slot((backtrace_slot) descr);
+    Field(trace, trace_pos) = Val_backtrace_slot(Slot_frame_descr(descr));
   }
 }
 
-debuginfo caml_debuginfo_extract(backtrace_slot slot)
+static debuginfo debuginfo_extract(frame_descr* d, unsigned alloc_idx)
 {
   unsigned char* infoptr;
   uint32_t debuginfo_offset;
-  frame_descr * d = (frame_descr *)slot;
 
   if ((d->frame_size & 1) == 0) {
     return NULL;
@@ -147,22 +161,43 @@ debuginfo caml_debuginfo_extract(backtrace_slot slot)
   /* Recover debugging info */
   infoptr = (unsigned char*)&d->live_ofs[d->num_live];
   if (d->frame_size & 2) {
+    CAMLassert(alloc_idx < *infoptr);
     /* skip alloc_lengths */
     infoptr += *infoptr + 1;
     /* align to 32 bits */
     infoptr = Align_to(infoptr, uint32_t);
-    /* we know there's at least one valid debuginfo,
-       but it may not be the one for the first alloc */
-    while (*(uint32_t*)infoptr == 0) {
-      infoptr += sizeof(uint32_t);
+    /* select the right debug info for this allocation */
+    infoptr += alloc_idx * sizeof(uint32_t);
+    if (alloc_idx == 0 && *(uint32_t*)infoptr == 0) {
+      /* Special case: if we're asked for index 0 and index 0 doesn't
+         have debug info, return the first debug info we can find.
+         This occurs when we're generating a backtrace through a
+         finaliser/signal handler triggered via a Comballoc
+         allocation, at which point it doesn't matter which allocation
+         we report debug info for */
+      infoptr -= alloc_idx * sizeof(uint32_t);
+      while (*(uint32_t*)infoptr == 0) {
+        infoptr += sizeof(uint32_t);
+      }
     }
   } else {
     /* align to 32 bits */
     infoptr = Align_to(infoptr, uint32_t);
+    CAMLassert(alloc_idx == 0);
   }
-  /* read offset to debuginfo */
   debuginfo_offset = *(uint32_t*)infoptr;
+  CAMLassert(debuginfo_offset != 0 && (debuginfo_offset & 3) == 0);
   return (debuginfo)(infoptr + debuginfo_offset);
+}
+
+debuginfo caml_debuginfo_extract(backtrace_slot slot)
+{
+  if (Slot_is_debuginfo(slot)) {
+    /* already a decoded debuginfo */
+    return Debuginfo_slot(slot);
+  } else {
+    return debuginfo_extract(Frame_descr_slot(slot), 0);
+  }
 }
 
 debuginfo caml_debuginfo_next(debuginfo dbg)

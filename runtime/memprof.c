@@ -144,13 +144,13 @@ static uintnat mt_generate_binom(uintnat len)
    which may call the GC, but prefer using [caml_alloc_shr], which
    gives this guarantee. The return value is either a valid callstack
    or 0 in out-of-memory scenarios. */
-static value capture_callstack_postponed(void)
+static value capture_callstack_postponed(unsigned alloc_idx)
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
   if (wosize == 0) return Atom(0);
   res = caml_alloc_shr_no_track_noexc(wosize, 0);
-  if (res != 0) caml_current_callstack_write(res);
+  if (res != 0) caml_current_callstack_write(res, alloc_idx);
   return res;
 }
 
@@ -158,13 +158,13 @@ static value capture_callstack_postponed(void)
    [caml_alloc], which is more efficient since it uses the minor
    heap.
    Should be called with [caml_memprof_suspended == 1] */
-static value capture_callstack(void)
+static value capture_callstack(unsigned alloc_idx)
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
   CAMLassert(caml_memprof_suspended);
   res = caml_alloc(wosize, 0);
-  caml_current_callstack_write(res);
+  caml_current_callstack_write(res, alloc_idx);
   return res;
 }
 
@@ -547,7 +547,7 @@ void caml_memprof_track_alloc_shr(value block)
   n_samples = mt_generate_binom(Whsize_val(block));
   if (n_samples == 0) return;
 
-  callstack = capture_callstack_postponed();
+  callstack = capture_callstack_postponed(0);
   if (callstack == 0) return;
 
   new_tracked(n_samples, Wosize_val(block), 0, 0, block, callstack);
@@ -621,7 +621,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
     CAMLassert(encoded_alloc_lens == NULL);    /* No Comballoc in C! */
     caml_memprof_renew_minor_sample();
 
-    callstack = capture_callstack_postponed();
+    callstack = capture_callstack_postponed(0);
     if (callstack == 0) return;
 
     new_tracked(n_samples, wosize,
@@ -663,7 +663,7 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
     if (n_samples > 0) {
       uintnat *idx_ptr, t_idx;
 
-      callstack = capture_callstack();
+      callstack = capture_callstack(alloc_idx);
       t_idx = new_tracked(n_samples, alloc_wosz,
                           0, 1, Placeholder_offs(alloc_ofs), callstack);
       if (t_idx == Invalid_index) continue;
@@ -809,7 +809,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
       p = next_p;
     }
 
-    if (callstack == 0) callstack = capture_callstack_postponed();
+    if (callstack == 0) callstack = capture_callstack_postponed(0);
     if (callstack == 0) break;  /* OOM */
     new_tracked(mt_generate_binom(next_p - next_sample_p) + 1,
                 Wosize_hp(p), 1, is_young, Val_hp(p), callstack);

@@ -1,6 +1,12 @@
 (* TEST
    flags = "-g"
-   compare_programs = "false" *)
+   compare_programs = "false"
+   * bytecode
+     reference = "${test_source_directory}/comballoc.byte.reference"
+   * native
+     reference = "${test_source_directory}/comballoc.opt.reference"
+     compare_programs = "false"
+*)
 
 open Gc.Memprof
 
@@ -13,9 +19,14 @@ let test sampling_rate =
   let allocs = Array.make 257 0 in
   let deallocs = Array.make 257 0 in
   let promotes = Array.make 257 0 in
+  let callstacks = Array.make 257 None in
   start ~callstack_size:10
     ~minor_alloc_callback:(fun info ->
       allocs.(info.size) <- allocs.(info.size) + info.n_samples;
+      begin match callstacks.(info.size) with
+      | None -> callstacks.(info.size) <- Some info.callstack
+      | Some s -> assert (s = info.callstack)
+      end;
       Some (info.size, info.n_samples))
     ~minor_dealloc_callback:(fun (sz,n) ->
       deallocs.(sz) <- deallocs.(sz) + n)
@@ -24,9 +35,11 @@ let test sampling_rate =
       None)
     ~sampling_rate ();
   let iter = 100_000 in
-  let arr = Array.init iter (fun i ->
+  let arr = Array.make iter (0,0,0,0) in
+  for i = 0 to Array.length arr - 1 do
     let (_, (_, _, x)) = Sys.opaque_identity f i in
-    x) in
+    arr.(i) <- x;
+  done;
   Gc.minor ();
   stop ();
   ignore (Sys.opaque_identity arr);
@@ -46,7 +59,10 @@ let test sampling_rate =
          is a 5-sigma event, with probability less than 3*10^-7 *)
       Printf.printf "%d: %.2f %b\n" i
         (float_of_int allocs.(i) /. float_of_int total)
-        (promotes.(i) > 1000)
+        (promotes.(i) > 1000);
+      (match callstacks.(i) with
+       | Some s -> Printexc.print_raw_backtrace stdout s
+       | None -> assert false)
     end
   done
 
