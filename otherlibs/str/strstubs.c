@@ -140,11 +140,11 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
   for (i = 0; i < n; i++) {
     group = &(groups[i]);
     if (group->start == NULL || group->end == NULL) {
-      caml_initialize_field(res, i * 2, Val_int(-1));
-      caml_initialize_field(res, i * 2 + 1, Val_int(-1));
+      Field(res, i * 2) = Val_int(-1);
+      Field(res, i * 2 + 1) = Val_int(-1);
     } else {
-      caml_initialize_field(res, i * 2, Val_long(group->start - starttxt));
-      caml_initialize_field(res, i * 2 + 1, Val_long(group->end - starttxt));
+      Field(res, i * 2) = Val_long(group->start - starttxt);
+      Field(res, i * 2 + 1) = Val_long(group->end - starttxt);
     }
   }
   CAMLreturn(res);

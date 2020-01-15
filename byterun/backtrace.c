@@ -215,15 +215,15 @@ static value caml_convert_debuginfo(debuginfo dbg)
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
     p = caml_alloc_small(6, 0);
-    caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
-    caml_initialize_field(p, 1, fname);
-    caml_initialize_field(p, 2, Val_int(li.loc_lnum));
-    caml_initialize_field(p, 3, Val_int(li.loc_startchr));
-    caml_initialize_field(p, 4, Val_int(li.loc_endchr));
-    caml_initialize_field(p, 5, Val_bool(li.loc_is_inlined));
+    Field(p, 0) = Val_bool(li.loc_is_raise);
+    Field(p, 1) = fname;
+    Field(p, 2) = Val_int(li.loc_lnum);
+    Field(p, 3) = Val_int(li.loc_startchr);
+    Field(p, 4) = Val_int(li.loc_endchr);
+    Field(p, 5) = Val_bool(li.loc_is_inlined);
   } else {
     p = caml_alloc_small(1, 1);
-    caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
+    Field(p, 0) = Val_bool(li.loc_is_raise);
   }
 
   CAMLreturn(p);
@@ -308,7 +308,7 @@ CAMLprim value caml_raw_backtrace_next_slot(value slot)
   else
   {
     v = caml_alloc(1, 0);
-    caml_initialize_field(v, 0, Val_debuginfo(dbg));
+    Field(v, 0) = Val_debuginfo(dbg);
   }
 
   CAMLreturn(v);
@@ -341,7 +341,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
     }
 
     res = caml_alloc_small(1, 0);
-    caml_initialize_field(res, 0, arr); /* Some */
+    Field(res, 0) = arr; /* Some */
   }
 
   CAMLreturn(res);
