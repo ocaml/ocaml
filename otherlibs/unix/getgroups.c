@@ -38,7 +38,7 @@ CAMLprim value unix_getgroups(value unit)
   if (n == -1) uerror("getgroups", Nothing);
   res = caml_alloc_tuple(n);
   for (i = 0; i < n; i++)
-    caml_initialize_field(res, i, Val_int(gidset[i]));
+    Field(res, i) = Val_int(gidset[i]);
   return res;
 }
 

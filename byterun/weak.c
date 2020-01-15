@@ -255,10 +255,11 @@ static value ephe_get_field_domain (value e, value n, struct domain* d, int* rpc
     caml_darken (0, elt, 0);
     if (rpc_success) {
       res = caml_alloc_shr (1, Some_tag);
+      caml_initialize_field(res, 0, elt);
     } else {
       res = caml_alloc_small (1, Some_tag);
+      Field (res, 0) = elt;
     }
-    caml_initialize_field(res, 0, elt);
   }
   CAMLreturn (res);
 }
@@ -317,10 +318,11 @@ static value ephe_get_field_copy_domain (value e, value n, struct domain* d, int
   }
   if (rpc_success) {
     res = caml_alloc_shr (1, Some_tag);
+    caml_initialize_field(res, 0, elt);
   } else {
     res = caml_alloc_small (1, Some_tag);
+    Field (res, 0) = elt;
   }
-  caml_initialize_field(res, 0, elt);
   CAMLreturn(res);
 }
 
