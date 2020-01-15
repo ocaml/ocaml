@@ -103,10 +103,7 @@ CAMLprim value caml_obj_dup(value arg)
     uintnat profinfo;
     Get_my_profinfo_with_cached_backtrace(profinfo, sz);
     res = caml_alloc_small_with_my_or_given_profinfo(sz, tg, profinfo);
-    for (i = 0; i < sz; i++) {
-      caml_read_field(arg, i, &x);
-      caml_initialize_field(res, i, x);
-    }
+    for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc(sz, tg);
     for (i = 0; i < sz; i++) {
@@ -194,7 +191,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  caml_initialize_field (res, 0, v);
+  Field (res, 0) = v;
   CAMLreturn (res);
 }
 

@@ -607,7 +607,7 @@ static value alloc_int_vect(mlsize_t size)
                 res = caml_alloc_shr(size, 0);
         }
         for (i = 0; i < size; i++) {
-                caml_initialize_field(res, i, Val_long(0));
+                Field(res, i) = Val_long(0);
         }
         CAMLreturn (res);
 }

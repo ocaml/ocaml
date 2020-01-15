@@ -360,8 +360,8 @@ CAMLprim value caml_sys_get_argv(value unit)
   argv = caml_alloc_array((void*)caml_copy_string_of_os,
                           (char const **)caml_params->main_argv);
   res = caml_alloc_small(2, 0);
-  caml_initialize_field(res, 0, exe_name);
-  caml_initialize_field(res, 1, argv);
+  Field(res, 0) = exe_name;
+  Field(res, 1) = argv;
   CAMLreturn(res);
 }
 
@@ -517,7 +517,7 @@ CAMLprim value caml_sys_random_seed (value unit)
 #endif
   /* Convert to an OCaml array of ints */
   res = caml_alloc_small(n, 0);
-  for (i = 0; i < n; i++) caml_initialize_field(res, i, Val_long(data[i]));
+  for (i = 0; i < n; i++) Field(res, i) = Val_long(data[i]);
   return res;
 }
 
@@ -574,12 +574,12 @@ CAMLprim value caml_sys_get_config(value unit)
 
   ostype = caml_copy_string(OCAML_OS_TYPE);
   result = caml_alloc_small (3, 0);
-  caml_initialize_field(result, 0, ostype);
-  caml_initialize_field(result, 1, Val_long (8 * sizeof(value)));
+  Field(result, 0) = ostype;
+  Field(result, 1) = Val_long (8 * sizeof(value));
 #ifdef ARCH_BIG_ENDIAN
-  caml_initialize_field(result, 2, Val_true);
+  Field(result, 2) = Val_true;
 #else
-  caml_initialize_field(result, 2, Val_false);
+  Field(result, 2) = Val_false;
 #endif
   CAMLreturn (result);
 }
