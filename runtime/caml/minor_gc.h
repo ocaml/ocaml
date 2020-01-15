@@ -16,11 +16,22 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
-#ifndef CAML_INTERNALS
-#include "compatibility.h"
-#endif
 #include "address_class.h"
 #include "config.h"
+
+#define caml_young_start (Caml_state_field(young_start))
+#define caml_young_end (Caml_state_field(young_end))
+#define caml_young_ptr (Caml_state_field(young_ptr))
+#define caml_young_limit (Caml_state_field(young_limit))
+#define caml_young_alloc_start (Caml_state_field(young_alloc_start))
+#define caml_young_alloc_end (Caml_state_field(young_alloc_end))
+#define caml_young_alloc_mid (Caml_state_field(young_alloc_mid))
+#define caml_young_trigger (Caml_state_field(young_trigger))
+#define caml_minor_heap_wsz (Caml_state_field(minor_heap_wsz))
+#define caml_in_minor_collection (Caml_state_field(in_minor_collection))
+#define caml_extra_heap_resources_minor \
+  (Caml_state_field(extra_heap_resources_minor))
+
 
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \
