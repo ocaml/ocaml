@@ -135,6 +135,12 @@ let rec declare_const t (const : Lambda.structured_constant)
   | Const_base (Const_int64 c) ->
     register_const t (Allocated_const (Int64 c))
       Names.const_int64
+  | Const_base (Const_uint32 c) ->
+    register_const t (Allocated_const (Uint32 c))
+      Names.const_uint32
+  | Const_base (Const_uint64 c) ->
+    register_const t (Allocated_const (Uint64 c))
+      Names.const_uint64
   | Const_base (Const_nativeint c) ->
     register_const t (Allocated_const (Nativeint c)) Names.const_nativeint
   | Const_pointer c -> Const (Const_pointer c), Names.const_ptr
@@ -345,6 +351,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         Allocated_const (Int32 0l)
       | Pdivbint { size = Pint64 } | Pmodbint { size = Pint64 } ->
         Allocated_const (Int64 0L)
+      | Pdivbint { size = Puint32 } | Pmodbint { size = Puint32 } ->
+        Allocated_const (Uint32 Uint32.zero)
+      | Pdivbint { size = Puint64 } | Pmodbint { size = Puint64 } ->
+        Allocated_const (Uint64 Uint64.zero)
       | Pdivbint { size = Pnativeint } | Pmodbint { size = Pnativeint } ->
         Allocated_const (Nativeint 0n)
       | _ -> assert false

@@ -69,10 +69,14 @@ let string_header len =
       block_header Obj.string_tag ((len + size_addr) / size_addr)
 let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
+let boxeduint32_header = block_header Obj.custom_tag 2
+let boxeduint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
 let caml_nativeint_ops = "caml_nativeint_ops"
 let caml_int32_ops = "caml_int32_ops"
 let caml_int64_ops = "caml_int64_ops"
+let caml_uint32_ops = "caml_uint32_ops"
+let caml_uint64_ops = "caml_uint64_ops"
 
 
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
@@ -81,6 +85,8 @@ let alloc_closure_header sz dbg = Cblockheader (white_closure_header sz, dbg)
 let alloc_infix_header ofs dbg = Cblockheader (infix_header ofs, dbg)
 let alloc_boxedint32_header dbg = Cblockheader (boxedint32_header, dbg)
 let alloc_boxedint64_header dbg = Cblockheader (boxedint64_header, dbg)
+let alloc_boxeduint32_header dbg = Cblockheader (boxeduint32_header, dbg)
+let alloc_boxeduint64_header dbg = Cblockheader (boxeduint64_header, dbg)
 let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
 
 (* Integers *)
@@ -959,12 +965,16 @@ let operations_boxed_int (bi : Primitive.boxed_integer) =
     Pnativeint -> caml_nativeint_ops
   | Pint32 -> caml_int32_ops
   | Pint64 -> caml_int64_ops
+  | Puint32 -> caml_uint32_ops
+  | Puint64 -> caml_uint64_ops
 
 let alloc_header_boxed_int (bi : Primitive.boxed_integer) =
   match bi with
     Pnativeint -> alloc_boxedintnat_header
   | Pint32 -> alloc_boxedint32_header
   | Pint64 -> alloc_boxedint64_header
+  | Puint32 -> alloc_boxeduint32_header
+  | Puint64 -> alloc_boxeduint64_header
 
 let box_int_gen dbg (bi : Primitive.boxed_integer) arg =
   let arg' =
@@ -996,7 +1006,13 @@ let alloc_matches_boxed_int bi ~hdr ~ops =
   | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
       Nativeint.equal hdr boxedint64_header
         && String.equal sym caml_int64_ops
-  | (Pnativeint | Pint32 | Pint64), _, _ -> false
+  | Puint32, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+      Nativeint.equal hdr boxeduint32_header
+        && String.equal sym caml_uint32_ops
+  | Puint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+      Nativeint.equal hdr boxeduint64_header
+        && String.equal sym caml_uint64_ops
+  | (Pnativeint | Pint32 | Pint64 | Puint32 | Puint64), _, _ -> false
 
 let unbox_int dbg bi =
   let default arg =
@@ -2103,6 +2119,8 @@ let bbswap bi arg dbg =
     | Pnativeint -> "nativeint"
     | Pint32 -> "int32"
     | Pint64 -> "int64"
+    | Puint32 -> "uint32"
+    | Puint64 -> "uint64"
   in
   Cop(Cextcall(Printf.sprintf "caml_%s_direct_bswap" prim,
                typ_int, false, None),
@@ -2489,6 +2507,26 @@ let emit_boxed_int64_constant_fields n cont =
       Csymbol_address caml_int64_ops :: Cint lo :: Cint hi :: cont
   end
 
+let emit_boxed_uint32_constant_fields n cont =
+  let n = Nativeint.of_int32 (Uint32.to_int32 n) in
+  if size_int = 8 then
+    Csymbol_address caml_uint32_ops :: Cint32 n :: Cint32 0n :: cont
+  else
+    Csymbol_address caml_uint32_ops :: Cint n :: cont
+
+let emit_boxed_uint64_constant_fields n cont =
+  let lo = Int64.to_nativeint (Uint64.to_int64 n) in
+  if size_int = 8 then
+    Csymbol_address caml_uint64_ops :: Cint lo :: cont
+  else begin
+    let hi = Int64.to_nativeint (Uint64.to_int64 (Uint64.shift_right n 32)) in
+    if big_endian then
+      Csymbol_address caml_uint64_ops :: Cint hi :: Cint lo :: cont
+    else
+      Csymbol_address caml_uint64_ops :: Cint lo :: Cint hi :: cont
+  end
+
+
 let emit_boxed_nativeint_constant_fields n cont =
   Csymbol_address caml_nativeint_ops :: Cint n :: cont
 
@@ -2506,6 +2544,14 @@ let emit_int32_constant symb n cont =
 let emit_int64_constant symb n cont =
   emit_block symb boxedint64_header
     (emit_boxed_int64_constant_fields n cont)
+
+let emit_uint32_constant symb n cont =
+  emit_block symb boxeduint32_header
+    (emit_boxed_uint32_constant_fields n cont)
+
+let emit_uint64_constant symb n cont =
+  emit_block symb boxeduint64_header
+    (emit_boxed_uint64_constant_fields n cont)
 
 let emit_nativeint_constant symb n cont =
   emit_block symb boxedintnat_header

@@ -47,6 +47,8 @@ type out_value =
   | Oval_int of int
   | Oval_int32 of int32
   | Oval_int64 of int64
+  | Oval_uint32 of uint32
+  | Oval_uint64 of uint64
   | Oval_nativeint of nativeint
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)

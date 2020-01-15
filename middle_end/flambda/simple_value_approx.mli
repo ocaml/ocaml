@@ -23,6 +23,8 @@
 type 'a boxed_int =
   | Int32 : int32 boxed_int
   | Int64 : int64 boxed_int
+  | Uint32 : uint32 boxed_int
+  | Uint64 : uint64 boxed_int
   | Nativeint : nativeint boxed_int
 
 type value_string = {

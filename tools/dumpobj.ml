@@ -90,8 +90,10 @@ let rec print_struct_const = function
   | Const_immstring s -> printf "%S" s
   | Const_base(Const_char c) -> printf "%C" c
   | Const_base(Const_int32 i) -> printf "%ldl" i
+  | Const_base(Const_uint32 u) -> printf "%su" (Uint32.to_string u)
   | Const_base(Const_nativeint i) -> printf "%ndn" i
   | Const_base(Const_int64 i) -> printf "%LdL" i
+  | Const_base(Const_uint64 u) -> printf "%sU" (Uint64.to_string u)
   | Const_pointer n -> printf "%da" n
   | Const_block(tag, args) ->
       printf "<%d>" tag;

@@ -62,6 +62,8 @@ val string_header : int -> nativeint
 (** Boxed integer headers *)
 val boxedint32_header : nativeint
 val boxedint64_header : nativeint
+val boxeduint32_header : nativeint
+val boxeduint64_header : nativeint
 val boxedintnat_header : nativeint
 
 (** Wrappers *)
@@ -630,6 +632,12 @@ val emit_int32_constant :
   data_item list
 val emit_int64_constant :
   (string * Cmmgen_state.is_global) -> int64 -> data_item list ->
+  data_item list
+val emit_uint32_constant :
+  (string * Cmmgen_state.is_global) -> uint32 -> data_item list ->
+  data_item list
+val emit_uint64_constant :
+  (string * Cmmgen_state.is_global) -> uint64 -> data_item list ->
   data_item list
 val emit_nativeint_constant :
   (string * Cmmgen_state.is_global) -> nativeint -> data_item list ->

@@ -211,6 +211,8 @@ let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
   | Float f -> Value_float f
   | Int32 i -> Value_boxed_int (Int32, i)
   | Int64 i -> Value_boxed_int (Int64, i)
+  | Uint32 i -> Value_boxed_int (Uint32, i)
+  | Uint64 i -> Value_boxed_int (Uint64, i)
   | Nativeint i -> Value_boxed_int (Nativeint, i)
   | String s ->
     let v_string : Export_info.value_string =

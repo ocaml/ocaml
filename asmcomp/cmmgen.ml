@@ -205,6 +205,10 @@ let emit_structured_constant ((_sym, is_global) as symb) cst cont =
       emit_int32_constant symb n cont
   | Uconst_int64 n ->
       emit_int64_constant symb n cont
+  | Uconst_uint32 n ->
+      emit_uint32_constant symb n cont
+  | Uconst_uint64 n ->
+      emit_uint64_constant symb n cont
   | Uconst_nativeint n ->
       emit_nativeint_constant symb n cont
   | Uconst_block (tag, csts) ->
@@ -229,6 +233,12 @@ let box_int_constant sym bi n =
   | Pint64 ->
       let n = Int64.of_nativeint n in
       emit_int64_constant (sym, Local) n []
+  | Puint32 ->
+      let n = Uint32.of_int32 (Nativeint.to_int32 n) in
+      emit_uint32_constant (sym, Local) n []
+  | Puint64 ->
+      let n = Uint64.of_int64 (Int64.of_nativeint n) in
+      emit_uint64_constant (sym, Local) n []
 
 let box_int dbg bi arg =
   match arg with
@@ -252,6 +262,8 @@ let equal_unboxed_integer ui1 ui2 =
   | Pnativeint, Pnativeint -> true
   | Pint32, Pint32 -> true
   | Pint64, Pint64 -> true
+  | Puint32, Puint32 -> true
+  | Puint64, Puint64 -> true
   | _, _ -> false
 
 let equal_boxed_number bn1 bn2 =

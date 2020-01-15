@@ -28,6 +28,8 @@ let rec struct_const ppf = function
   | Const_base(Const_float f) -> fprintf ppf "%s" f
   | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
   | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
+  | Const_base(Const_uint32 u) -> fprintf ppf "%su" (Uint32.to_string u)
+  | Const_base(Const_uint64 u) -> fprintf ppf "%sU" (Uint64.to_string u)
   | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
   | Const_pointer n -> fprintf ppf "%ia" n
   | Const_block(tag, []) ->

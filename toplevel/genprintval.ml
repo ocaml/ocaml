@@ -145,12 +145,18 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       ( Pident(Ident.create_local "print_int32"),
         Simple (Predef.type_int32,
                 (fun x -> Oval_int32 (O.obj x : int32))) );
+      ( Pident(Ident.create_local "print_uint32"),
+        Simple (Predef.type_uint32,
+                (fun x -> Oval_uint32 (O.obj x : uint32))) );
       ( Pident(Ident.create_local "print_nativeint"),
         Simple (Predef.type_nativeint,
                 (fun x -> Oval_nativeint (O.obj x : nativeint))) );
       ( Pident(Ident.create_local "print_int64"),
         Simple (Predef.type_int64,
-                (fun x -> Oval_int64 (O.obj x : int64)) ))
+                (fun x -> Oval_int64 (O.obj x : int64)) ));
+      ( Pident(Ident.create_local "print_uint64"),
+        Simple (Predef.type_uint64,
+                (fun x -> Oval_uint64 (O.obj x : uint64))) );
     ] : (Path.t * printer) list)
 
     let exn_printer ppf path exn =

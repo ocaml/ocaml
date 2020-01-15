@@ -183,6 +183,8 @@ let approx_for_allocated_const (const : Allocated_const.t) =
   | Immutable_string s -> A.value_string (String.length s) (Some s)
   | Int32 i -> A.value_boxed_int Int32 i
   | Int64 i -> A.value_boxed_int Int64 i
+  | Uint32 u -> A.value_boxed_int Uint32 u
+  | Uint64 u -> A.value_boxed_int Uint64 u
   | Nativeint i -> A.value_boxed_int Nativeint i
   | Float f -> A.value_float f
   | Float_array a -> A.value_mutable_float_array ~size:(List.length a)

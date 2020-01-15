@@ -477,6 +477,8 @@ let print_approx_components ppf ~symbol_id ~values
       begin match t with
       | A.Int32 -> Format.fprintf ppf "%li" i
       | A.Int64 -> Format.fprintf ppf "%Li" i
+      | A.Uint32 -> Format.pp_print_string ppf (Uint32.to_string i)
+      | A.Uint64 -> Format.pp_print_string ppf (Uint64.to_string i)
       | A.Nativeint -> Format.fprintf ppf "%ni" i
       end
     | Value_unknown_descr -> Format.fprintf ppf "?"

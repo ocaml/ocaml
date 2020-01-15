@@ -280,6 +280,8 @@ let all_coherent column =
         | Const_int _, Const_int _
         | Const_int32 _, Const_int32 _
         | Const_int64 _, Const_int64 _
+        | Const_uint32 _, Const_uint32 _
+        | Const_uint64 _, Const_uint64 _
         | Const_nativeint _, Const_nativeint _
         | Const_float _, Const_float _
         | Const_string _, Const_string _ -> true
@@ -287,6 +289,8 @@ let all_coherent column =
           | Const_int _
           | Const_int32 _
           | Const_int64 _
+          | Const_uint32 _
+          | Const_uint64 _
           | Const_nativeint _
           | Const_float _
           | Const_string _), _ -> false
@@ -401,6 +405,8 @@ let const_compare x y =
     |Const_float _
     |Const_int32 _
     |Const_int64 _
+    |Const_uint32 _
+    |Const_uint64 _
     |Const_nativeint _
     ), _ -> Stdlib.compare x y
 
@@ -1185,6 +1191,16 @@ let build_other ext env =
             (function Constant(Const_int64 i) -> i | _ -> assert false)
             (function i -> Tpat_constant(Const_int64 i))
             0L Int64.succ d env
+      | Constant Const_uint32 _ ->
+          build_other_constant
+            (function Constant(Const_uint32 i) -> i | _ -> assert false)
+            (function i -> Tpat_constant(Const_uint32 i))
+            Uint32.zero Uint32.succ d env
+      | Constant Const_uint64 _ ->
+          build_other_constant
+            (function Constant(Const_uint64 i) -> i | _ -> assert false)
+            (function i -> Tpat_constant(Const_uint64 i))
+            Uint64.zero Uint64.succ d env
       | Constant Const_nativeint _ ->
           build_other_constant
             (function Constant(Const_nativeint i) -> i | _ -> assert false)
@@ -2316,7 +2332,9 @@ let inactive ~partial pat =
             match c with
             | Const_string _ -> Config.safe_string
             | Const_int _ | Const_char _ | Const_float _
-            | Const_int32 _ | Const_int64 _ | Const_nativeint _ -> true
+            | Const_int32 _ | Const_int64 _
+            | Const_uint32 _ | Const_uint64 _
+            | Const_nativeint _ -> true
           end
         | Tpat_tuple ps | Tpat_construct (_, _, ps) ->
             List.for_all (fun p -> loop p) ps
