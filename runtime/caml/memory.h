@@ -269,6 +269,8 @@ struct caml__roots_block {
   intnat nitems;
   value *tables [5];
 };
+/* global variables moved to Caml_state in 4.10.0 */
+#define caml_local_roots (Caml_state_field(local_roots))
 
 /* The following macros are used to declare C local variables and
    function parameters of type [value].

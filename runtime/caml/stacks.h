@@ -24,6 +24,13 @@
 #include "mlvalues.h"
 #include "memory.h"
 
+#define caml_stack_low (Caml_state_field(stack_low))
+#define caml_stack_high (Caml_state_field(stack_high))
+#define caml_stack_threshold (Caml_state_field(stack_threshold))
+#define caml_extern_sp (Caml_state_field(extern_sp))
+#define caml_trapsp (Caml_state_field(trapsp))
+#define caml_trap_barrier (Caml_state_field(trap_barrier))
+
 #define Trap_pc(tp) (((code_t *)(tp))[0])
 #define Trap_link(tp) (((value **)(tp))[1])
 
