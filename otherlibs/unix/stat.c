@@ -62,19 +62,19 @@ static value stat_aux(int use_64, struct stat *buf)
   #undef NSEC
   offset = use_64 ? Val_file_offset(buf->st_size) : Val_int (buf->st_size);
   v = caml_alloc(12, 0);
-  caml_initialize_field(v, 0, Val_int (buf->st_dev));
-  caml_initialize_field(v, 1, Val_int (buf->st_ino));
-  caml_initialize_field(v, 2, cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
-                                  sizeof(file_kind_table) / sizeof(int), 0));
-  caml_initialize_field(v, 3, Val_int (buf->st_mode & 07777));
-  caml_initialize_field(v, 4, Val_int (buf->st_nlink));
-  caml_initialize_field(v, 5, Val_int (buf->st_uid));
-  caml_initialize_field(v, 6, Val_int (buf->st_gid));
-  caml_initialize_field(v, 7, Val_int (buf->st_rdev));
-  caml_initialize_field(v, 8, offset);
-  caml_initialize_field(v, 9, atime);
-  caml_initialize_field(v, 10, mtime);
-  caml_initialize_field(v, 11, ctime);
+  Field (v, 0) = Val_int (buf->st_dev);
+  Field (v, 1) = Val_int (buf->st_ino);
+  Field (v, 2) = cst_to_constr(buf->st_mode & S_IFMT, file_kind_table,
+                               sizeof(file_kind_table) / sizeof(int), 0);
+  Field (v, 3) = Val_int (buf->st_mode & 07777);
+  Field (v, 4) = Val_int (buf->st_nlink);
+  Field (v, 5) = Val_int (buf->st_uid);
+  Field (v, 6) = Val_int (buf->st_gid);
+  Field (v, 7) = Val_int (buf->st_rdev);
+  Field (v, 8) = offset;
+  Field (v, 9) = atime;
+  Field (v, 10) = mtime;
+  Field (v, 11) = ctime;
   CAMLreturn(v);
 }
 
