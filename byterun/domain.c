@@ -918,6 +918,7 @@ static void domain_terminate()
   caml_ev_pause(EV_PAUSE_YIELD);
   s->terminating = 1;
   while (!finished) {
+    caml_orphan_allocated_words();
     caml_finish_sweeping();
 
     caml_empty_minor_heaps_once();
