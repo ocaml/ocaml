@@ -197,13 +197,13 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
       result = Op_val(v)[0];
     } else {
       // Here the header is neither zero nor an in-progress update
-      header_t desired_hd = 1 << 8; // set the lowest color bit
+      header_t desired_hd = 1 << 8; // set the lowest color bit - this should probably be in a macro
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
         // Success
         // Now we can write the forwarding pointer
-        atomic_store(Op_atomic_val(v), result);
+        atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
         // And can update the header too
-        atomic_store(Hp_atomic_val(v), 0);
+        atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_relaxed);
         // Let the caller know we were responsible for the update
         success = 1;
       } else {
