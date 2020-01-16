@@ -13383,6 +13383,41 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+# The cast to long int works around a bug in the HP C Compiler,
+# see AC_CHECK_SIZEOF for more information.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking alignment of long long" >&5
+$as_echo_n "checking alignment of long long... " >&6; }
+if ${ac_cv_alignof_long_long+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) offsetof (ac__type_alignof_, y)" "ac_cv_alignof_long_long"        "$ac_includes_default
+#ifndef offsetof
+# define offsetof(type, member) ((char *) &((type *) 0)->member - (char *) 0)
+#endif
+typedef struct { char x; long long y; } ac__type_alignof_;"; then :
+
+else
+  if test "$ac_cv_type_long_long" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute alignment of long long
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_alignof_long_long=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_alignof_long_long" >&5
+$as_echo "$ac_cv_alignof_long_long" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define ALIGNOF_LONG_LONG $ac_cv_alignof_long_long
+_ACEOF
+
+
 
 if ! $arch64; then :
   case $target_cpu in #(
@@ -13393,9 +13428,16 @@ if ! $arch64; then :
   $as_echo "#define ARCH_ALIGN_DOUBLE 1" >>confdefs.h
 
 fi
-    if test "$ac_cv_alignof_long" -gt 4; then :
-  $as_echo "#define ARCH_ALIGN_LONG 1" >>confdefs.h
+     if test "x$ac_cv_sizeof_long" = "x8" &&
+            test "$ac_cv_alignof_long" -gt 4; then :
+  $as_echo "#define ARCH_ALIGN_INT64 1" >>confdefs.h
 
+else
+  if test "x$ac_cv_sizeof_long_long" = "x8" &&
+              test "$ac_cv_alignof_long_long" -gt 4; then :
+  $as_echo "#define ARCH_ALIGN_INT64 1" >>confdefs.h
+
+fi
 fi
      ;;
 esac
