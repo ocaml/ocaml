@@ -439,6 +439,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
   uintnat minor_allocated_bytes = young_end - young_ptr;
   struct oldify_state st = {0};
   value **r;
+  value **r_new;
   struct caml_ephe_ref_elt *re;
 
   st.promote_domain = domain;
@@ -553,7 +554,7 @@ void caml_empty_minor_heaps_once ()
   #ifdef DEBUG
   CAMLassert(!caml_domain_is_in_stw());
   #endif
-  
+
   while( !caml_try_stw_empty_minor_heap_on_all_domains() )
     ;
 }
