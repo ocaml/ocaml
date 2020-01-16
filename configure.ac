@@ -129,6 +129,7 @@ AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
+AC_SUBST([ocamltest])
 AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
@@ -275,6 +276,10 @@ AC_ARG_ENABLE([ocamldoc],
     [do not build the ocamldoc documentation system])],
   [],
   [ocamldoc=auto])
+
+AC_ARG_ENABLE([ocamltest],
+  [AS_HELP_STRING([--disable-ocamltest],
+    [do not build the ocamltest driver])])
 
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
@@ -1674,6 +1679,10 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
 AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
+
+AS_IF([test x"$enable_ocamltest" = "xno"],
+  [ocamltest=""],
+  [ocamltest=ocamltest])
 
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true

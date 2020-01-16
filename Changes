@@ -194,6 +194,9 @@ Working version
 
 ### Build system:
 
+- #9250: Add --disable-ocamltest to configure
+  (David Allsopp, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
