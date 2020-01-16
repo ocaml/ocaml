@@ -1388,9 +1388,15 @@ int caml_init_major_gc(caml_domain_state* d) {
 }
 
 void caml_teardown_major_gc() {
+  int c;
   CAMLassert(Caml_state->mark_stack->count == 0);
   caml_stat_free(Caml_state->mark_stack->stack);
   caml_stat_free(Caml_state->mark_stack);
+  // Rescan pools in pools_to_rescan before we free them. This is 
+  // required for correctness or objects in those pools may not be marked
+  for( c = 0 ; c < Caml_state->pools_to_rescan_count ; c++ ) {
+    caml_redarken_pool(Caml_state->pools_to_rescan[c], &mark_stack_push_act, 0);
+  }
   if( Caml_state->pools_to_rescan_len > 0 ) caml_stat_free(Caml_state->pools_to_rescan);
   Caml_state->mark_stack = NULL;
 }
