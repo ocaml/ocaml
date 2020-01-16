@@ -312,10 +312,9 @@ CAMLprim value caml_alloc_dummy_float (value size)
 
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {
-  CAMLparam2(dummy, newval);
-  CAMLlocal1(x);
   mlsize_t size, i;
   tag_t tag;
+  value x;
 
   size = Wosize_val(newval);
   tag = Tag_val (newval);
@@ -334,5 +333,5 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
       caml_modify_field (dummy, i, x);
     }
   }
-  CAMLreturn (Val_unit);
+  return Val_unit;
 }

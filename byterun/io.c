@@ -500,8 +500,8 @@ CAMLprim value caml_ml_out_channels_list (value unit)
       chan = caml_alloc_channel (channel);
       tail = res;
       res = caml_alloc_small (2, Pair_tag);
-      caml_initialize_field (res, 0, chan);
-      caml_initialize_field (res, 1, tail);
+      Field (res, 0) = chan;
+      Field (res, 1) = tail;
     }
   CAMLreturn (res);
 }
