@@ -608,22 +608,16 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   #endif
 
   barrier_status b;
-  int sync_ended = 0;
 
-  caml_ev_begin("minor_gc/sync_start");
   b = caml_global_barrier_begin();
   caml_global_barrier_end(b);
-  caml_ev_end("minor_gc/sync_start");
   
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, 0);
 
-  caml_ev_begin("minor_gc/sync_end");
   b = caml_global_barrier_begin();
 
   if( caml_global_barrier_is_final(b) ) {
-    sync_ended = 1;
-    caml_ev_end("minor_gc/sync_end");
     caml_ev_begin("minor_gc/finalizers");
     caml_gc_log("running stw empty_minor_heap_domain_finalizers");
     caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
@@ -636,7 +630,6 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   }
 
   caml_global_barrier_end(b);
-  if( !sync_ended ) caml_ev_end("minor_gc/sync_end");
 }
 
 /* must be called outside a STW section */
