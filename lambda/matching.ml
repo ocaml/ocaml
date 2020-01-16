@@ -961,6 +961,14 @@ let group_const_int64 = function
   | { pat_desc = Tpat_constant (Const_int64 _) } -> true
   | _ -> false
 
+let group_const_uint32 = function
+  | { pat_desc = Tpat_constant (Const_uint32 _) } -> true
+  | _ -> false
+
+let group_const_uint64 = function
+  | { pat_desc = Tpat_constant (Const_uint64 _) } -> true
+  | _ -> false
+
 let group_const_nativeint = function
   | { pat_desc = Tpat_constant (Const_nativeint _) } -> true
   | _ -> false
@@ -1007,6 +1015,8 @@ let can_group p =
   | Tpat_constant (Const_float _) -> group_const_float
   | Tpat_constant (Const_int32 _) -> group_const_int32
   | Tpat_constant (Const_int64 _) -> group_const_int64
+  | Tpat_constant (Const_uint32 _) -> group_const_uint32
+  | Tpat_constant (Const_uint64 _) -> group_const_uint64
   | Tpat_constant (Const_nativeint _) -> group_const_nativeint
   | Tpat_construct (_, { cstr_tag = Cstr_extension _ as t }, _) ->
       (* Extension constructors with distinct names may be equal thanks to
@@ -2631,6 +2641,16 @@ let combine_constant loc arg cst partial ctx def
         make_test_sequence loc fail
           (Pbintcomp (Pint64, Cne))
           (Pbintcomp (Pint64, Clt))
+          arg const_lambda_list
+    | Const_uint32 _ ->
+        make_test_sequence loc fail
+          (Pbintcomp (Puint32, Cne))
+          (Pbintcomp (Puint32, Clt))
+          arg const_lambda_list
+    | Const_uint64 _ ->
+        make_test_sequence loc fail
+          (Pbintcomp (Puint64, Cne))
+          (Pbintcomp (Puint64, Clt))
           arg const_lambda_list
     | Const_nativeint _ ->
         make_test_sequence loc fail

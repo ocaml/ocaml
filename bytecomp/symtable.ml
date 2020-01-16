@@ -221,6 +221,8 @@ let rec transl_const = function
   | Const_base(Const_float f) -> Obj.repr (float_of_string f)
   | Const_base(Const_int32 i) -> Obj.repr i
   | Const_base(Const_int64 i) -> Obj.repr i
+  | Const_base(Const_uint32 u) -> Obj.repr u
+  | Const_base(Const_uint64 u) -> Obj.repr u
   | Const_base(Const_nativeint i) -> Obj.repr i
   | Const_pointer i -> Obj.repr i
   | Const_immstring s -> Obj.repr s

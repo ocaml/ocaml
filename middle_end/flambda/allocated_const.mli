@@ -24,6 +24,8 @@ type t =
   | Float of float
   | Int32 of int32
   | Int64 of int64
+  | Uint32 of uint32
+  | Uint64 of uint64
   | Nativeint of nativeint
   (* CR-someday mshinwell: consider using "float array" *)
   | Float_array of float list

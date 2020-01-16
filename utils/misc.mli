@@ -253,6 +253,8 @@ module Int_literal_converter : sig
   val int : string -> int
   val int32 : string -> int32
   val int64 : string -> int64
+  val uint32 : string -> uint32
+  val uint64 : string -> uint64
   val nativeint : string -> nativeint
 end
 

@@ -34,11 +34,15 @@ let value_kind =
   | Pboxedintval Pnativeint -> ":nativeint"
   | Pboxedintval Pint32 -> ":int32"
   | Pboxedintval Pint64 -> ":int64"
+  | Pboxedintval Puint32 -> ":uint32"
+  | Pboxedintval Puint64 -> ":uint64"
 
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x
   | Uconst_int32 x -> fprintf ppf "%ldl" x
   | Uconst_int64 x -> fprintf ppf "%LdL" x
+  | Uconst_uint32 x -> fprintf ppf "%su" (Uint32.to_string x)
+  | Uconst_uint64 x -> fprintf ppf "%sU" (Uint64.to_string x)
   | Uconst_nativeint x -> fprintf ppf "%ndn" x
   | Uconst_block (tag, l) ->
       fprintf ppf "block(%i" tag;

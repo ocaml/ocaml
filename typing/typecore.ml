@@ -208,6 +208,8 @@ let type_constant = function
   | Const_float _ -> instance Predef.type_float
   | Const_int32 _ -> instance Predef.type_int32
   | Const_int64 _ -> instance Predef.type_int64
+  | Const_uint32 _ -> instance Predef.type_uint32
+  | Const_uint64 _ -> instance Predef.type_uint64
   | Const_nativeint _ -> instance Predef.type_nativeint
 
 let constant : Parsetree.constant -> (Asttypes.constant, error) result =
@@ -226,6 +228,16 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
      begin
        try Ok (Const_int64 (Misc.Int_literal_converter.int64 i))
        with Failure _ -> Error (Literal_overflow "int64")
+     end
+  | Pconst_integer (i,Some 'u') ->
+     begin
+       try Ok (Const_uint32 (Misc.Int_literal_converter.uint32 i))
+       with Failure _ -> Error (Literal_overflow "uint32")
+     end
+  | Pconst_integer (i,Some 'U') ->
+     begin
+       try Ok (Const_uint64 (Misc.Int_literal_converter.uint64 i))
+       with Failure _ -> Error (Literal_overflow "uint64")
      end
   | Pconst_integer (i,Some 'n') ->
      begin
@@ -4947,6 +4959,8 @@ let report_literal_type_constraint expected_type const =
     | Const_int n -> Some (Int.to_string n)
     | Const_int32 n -> Some (Int32.to_string n)
     | Const_int64 n -> Some (Int64.to_string n)
+    | Const_uint32 n -> Some (Uint32.to_string n)
+    | Const_uint64 n -> Some (Uint64.to_string n)
     | Const_nativeint n -> Some (Nativeint.to_string n)
     | _ -> None
   in
@@ -4955,6 +4969,10 @@ let report_literal_type_constraint expected_type const =
       Some 'l'
     else if Path.same expected_type Predef.path_int64 then
       Some 'L'
+    else if Path.same expected_type Predef.path_uint32 then
+      Some 'u'
+    else if Path.same expected_type Predef.path_uint64 then
+      Some 'U'
     else if Path.same expected_type Predef.path_nativeint then
       Some 'n'
     else if Path.same expected_type Predef.path_float then

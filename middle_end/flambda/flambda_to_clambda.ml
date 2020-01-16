@@ -208,6 +208,8 @@ let to_clambda_allocated_constant (const : Allocated_const.t)
   | Float f -> Uconst_float f
   | Int32 i -> Uconst_int32 i
   | Int64 i -> Uconst_int64 i
+  | Uint32 i -> Uconst_uint32 i
+  | Uint64 i -> Uconst_uint64 i
   | Nativeint i -> Uconst_nativeint i
   | Immutable_string s | String s -> Uconst_string s
   | Immutable_float_array a | Float_array a -> Uconst_float_array a

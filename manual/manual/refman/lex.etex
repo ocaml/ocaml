@@ -59,6 +59,10 @@ int32-literal: integer-literal 'l'
 ;
 int64-literal: integer-literal 'L'
 ;
+uint32-literal: uinteger-literal 'u'
+;
+uint64-literal: uinteger-literal 'U'
+;
 nativeint-literal: integer-literal 'n'
 \end{syntax}
 

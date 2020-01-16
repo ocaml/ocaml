@@ -893,6 +893,8 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
         | Const_base(Const_int64 x) -> str (Uconst_int64 x)
+        | Const_base(Const_uint32 x) -> str (Uconst_uint32 x)
+        | Const_base(Const_uint64 x) -> str (Uconst_uint64 x)
         | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
@@ -1438,7 +1440,8 @@ let collect_exported_structured_constants a =
   and structured_constant = function
     | Uconst_block (_, ul) -> List.iter const ul
     | Uconst_float _ | Uconst_int32 _
-    | Uconst_int64 _ | Uconst_nativeint _
+    | Uconst_int64 _ | Uconst_uint32 _
+    | Uconst_uint64 _ | Uconst_nativeint _
     | Uconst_float_array _ | Uconst_string _ -> ()
     | Uconst_closure _ -> assert false (* Cannot be generated *)
   and ulam = function

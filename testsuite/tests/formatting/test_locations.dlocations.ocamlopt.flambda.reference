@@ -13,17 +13,17 @@ cmm:
  global "camlTest_locations__gc_roots"
  "camlTest_locations__gc_roots":
  int 0)
-(function{test_locations.ml:42,14-72} camlTest_locations__fib_5 (n/84: val)
- (if (<a 3 n/84)
+(function{test_locations.ml:42,14-72} camlTest_locations__fib_5 (n/86: val)
+ (if (<a 3 n/86)
    (let
-     Paddint_arg/91
+     Paddint_arg/93
        (app{test_locations.ml:44,23-34} "camlTest_locations__fib_5"
-         (+ n/84 -4) val)
+         (+ n/86 -4) val)
      (+
        (+
          (app{test_locations.ml:44,9-20} "camlTest_locations__fib_5"
-           (+ n/84 -2) val)
-         Paddint_arg/91)
+           (+ n/86 -2) val)
+         Paddint_arg/93)
        -1))
    3))
 

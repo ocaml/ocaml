@@ -11,6 +11,8 @@ constant:
     integer-literal
   | int32-literal
   | int64-literal
+  | uint32-literal
+  | uint64-literal
   | nativeint-literal
   | float-literal
   | char-literal

@@ -44,6 +44,8 @@ STDLIB_MODULES=\
   $(P)int \
   $(P)int32 \
   $(P)int64 \
+  $(P)uint32 \
+  $(P)uint64 \
   $(P)nativeint \
   $(P)lexing \
   $(P)parsing \

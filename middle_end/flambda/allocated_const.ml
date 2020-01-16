@@ -21,6 +21,8 @@ type t =
   | Float of float
   | Int32 of int32
   | Int64 of int64
+  | Uint32 of uint32
+  | Uint64 of uint64
   | Nativeint of nativeint
   | Float_array of float list
   | Immutable_float_array of float list
@@ -47,6 +49,8 @@ let compare (x : t) (y : t) =
   | Int32 x, Int32 y -> Int32.compare x y
   | Int64 x, Int64 y -> Int64.compare x y
   | Nativeint x, Nativeint y -> Nativeint.compare x y
+  | Uint32 x, Uint32 y -> Uint32.compare x y
+  | Uint64 x, Uint64 y -> Uint64.compare x y
   | Float_array x, Float_array y -> compare_float_lists x y
   | Immutable_float_array x, Immutable_float_array y -> compare_float_lists x y
   | String x, String y -> String.compare x y
@@ -57,6 +61,10 @@ let compare (x : t) (y : t) =
   | _, Int32 _ -> 1
   | Int64 _, _ -> -1
   | _, Int64 _ -> 1
+  | Uint32 _, _ -> -1
+  | _, Uint32 _ -> 1
+  | Uint64 _, _ -> -1
+  | _, Uint64 _ -> 1
   | Nativeint _, _ -> -1
   | _, Nativeint _ -> 1
   | Float_array _, _ -> -1
@@ -76,6 +84,8 @@ let print ppf (t : t) =
   | Immutable_string s -> fprintf ppf "#%S" s
   | Int32 n -> fprintf ppf "%lil" n
   | Int64 n -> fprintf ppf "%LiL" n
+  | Uint32 n -> fprintf ppf "%su" (Uint32.to_string n)
+  | Uint64 n -> fprintf ppf "%sU" (Uint64.to_string n)
   | Nativeint n -> fprintf ppf "%nin" n
   | Float f -> fprintf ppf "%f" f
   | Float_array [] -> fprintf ppf "[| |]"

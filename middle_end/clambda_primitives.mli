@@ -134,7 +134,7 @@ and value_kind = Lambda.value_kind =
 
 and block_shape = Lambda.block_shape
 and boxed_integer = Primitive.boxed_integer =
-    Pnativeint | Pint32 | Pint64
+    Pnativeint | Pint32 | Pint64 | Puint32 | Puint64
 
 and bigarray_kind = Lambda.bigarray_kind =
     Pbigarray_unknown

@@ -93,7 +93,8 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
-  (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
+  (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t,
+     Uint32.t, Uint64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
   | Pcvtbint of boxed_integer (*source*) * boxed_integer (*destination*)
@@ -159,7 +160,7 @@ and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
 and boxed_integer = Primitive.boxed_integer =
-    Pnativeint | Pint32 | Pint64
+    Pnativeint | Pint32 | Pint64 | Puint32 | Puint64
 
 and bigarray_kind =
     Pbigarray_unknown
@@ -184,9 +185,11 @@ let equal_boxed_integer x y =
   match x, y with
   | Pnativeint, Pnativeint
   | Pint32, Pint32
-  | Pint64, Pint64 ->
+  | Pint64, Pint64
+  | Puint32, Puint32
+  | Puint64, Puint64 ->
     true
-  | (Pnativeint | Pint32 | Pint64), _ ->
+  | (Pnativeint | Pint32 | Pint64 | Puint32 | Puint64), _ ->
     false
 
 let equal_primitive =

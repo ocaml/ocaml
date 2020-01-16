@@ -347,6 +347,22 @@ stdlib__int64.cmx : \
     stdlib.cmx \
     stdlib__int64.cmi
 stdlib__int64.cmi :
+stdlib__uint32.cmo : \
+    stdlib__sys.cmi \
+    stdlib.cmi \
+    stdlib__uint32.cmi
+stdlib__uint32.cmx : \
+    stdlib__sys.cmx \
+    stdlib.cmx \
+    stdlib__uint32.cmi
+stdlib__uint32.cmi :
+stdlib__uint64.cmo : \
+    stdlib.cmi \
+    stdlib__uint64.cmi
+stdlib__uint64.cmx : \
+    stdlib.cmx \
+    stdlib__uint64.cmi
+stdlib__uint64.cmi :
 stdlib__lazy.cmo : \
     stdlib__obj.cmi \
     camlinternalLazy.cmi \

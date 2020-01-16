@@ -31,6 +31,8 @@ let pretty_const c = match c with
 | Const_float f -> Printf.sprintf "%s" f
 | Const_int32 i -> Printf.sprintf "%ldl" i
 | Const_int64 i -> Printf.sprintf "%LdL" i
+| Const_uint32 u -> Printf.sprintf "%sl" (Uint32.to_string u)
+| Const_uint64 u -> Printf.sprintf "%sL" (Uint64.to_string u)
 | Const_nativeint i -> Printf.sprintf "%ndn" i
 
 let pretty_extra ppf (cstr, _loc, _attrs) pretty_rest rest =

@@ -28,6 +28,8 @@ let rec struct_const ppf = function
   | Const_base(Const_float f) -> fprintf ppf "%s" f
   | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
   | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
+  | Const_base(Const_uint32 u) -> fprintf ppf "%su" (Uint32.to_string u)
+  | Const_base(Const_uint64 u) -> fprintf ppf "%sU" (Uint64.to_string u)
   | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
   | Const_pointer n -> fprintf ppf "%ia" n
   | Const_block(tag, []) ->
@@ -53,6 +55,8 @@ let boxed_integer_name = function
   | Pnativeint -> "nativeint"
   | Pint32 -> "int32"
   | Pint64 -> "int64"
+  | Puint32 -> "uint32"
+  | Puint64 -> "uint64"
 
 let value_kind ppf = function
   | Pgenval -> ()
@@ -79,6 +83,8 @@ let boxed_integer_mark name = function
   | Pnativeint -> Printf.sprintf "Nativeint.%s" name
   | Pint32 -> Printf.sprintf "Int32.%s" name
   | Pint64 -> Printf.sprintf "Int64.%s" name
+  | Puint32 -> Printf.sprintf "Uint32.%s" name
+  | Puint64 -> Printf.sprintf "Uint64.%s" name
 
 let print_boxed_integer name ppf bi =
   fprintf ppf "%s" (boxed_integer_mark name bi);;

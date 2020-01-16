@@ -22,6 +22,8 @@ module U = Flambda_utils
 type 'a boxed_int =
   | Int32 : int32 boxed_int
   | Int64 : int64 boxed_int
+  | Uint32 : uint32 boxed_int
+  | Uint64 : uint64 boxed_int
   | Nativeint : nativeint boxed_int
 
 type value_string = {
@@ -217,6 +219,8 @@ let rec print_descr ppf = function
     match t with
     | Int32 -> Format.fprintf ppf "%li" i
     | Int64 -> Format.fprintf ppf "%Li" i
+    | Uint32 -> Format.pp_print_string ppf (Uint32.to_string i)
+    | Uint64 -> Format.pp_print_string ppf (Uint64.to_string i)
     | Nativeint -> Format.fprintf ppf "%ni" i
 
 and print ppf { descr; var; symbol; } =
@@ -274,6 +278,8 @@ let augment_kind_with_approx t (kind:Lambda.value_kind) : Lambda.value_kind =
   | Value_int _ -> Pintval
   | Value_boxed_int (Int32, _) -> Pboxedintval Pint32
   | Value_boxed_int (Int64, _) -> Pboxedintval Pint64
+  | Value_boxed_int (Uint32, _) -> Pboxedintval Puint32
+  | Value_boxed_int (Uint64, _) -> Pboxedintval Puint64
   | Value_boxed_int (Nativeint, _) -> Pboxedintval Pnativeint
   | _ -> kind
 
@@ -421,6 +427,8 @@ let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
     match t with
     | Int32 -> Int32 i
     | Int64 -> Int64 i
+    | Uint32 -> Uint32 i
+    | Uint64 -> Uint64 i
     | Nativeint -> Nativeint i
   in
   Allocated_const c, value_boxed_int t i
@@ -654,6 +662,8 @@ let equal_boxed_int (type t1) (type t2)
   match bi1, bi2 with
   | Int32, Int32 -> Int32.equal i1 i2
   | Int64, Int64 -> Int64.equal i1 i2
+  | Uint32, Uint32 -> Uint32.equal i1 i2
+  | Uint64, Uint64 -> Uint64.equal i1 i2
   | Nativeint, Nativeint -> Nativeint.equal i1 i2
   | _ -> false
 

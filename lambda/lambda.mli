@@ -101,7 +101,8 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
-  (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
+  (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t,
+     Uint32.t, Uint64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
   | Pcvtbint of boxed_integer (*source*) * boxed_integer (*destination*)
@@ -167,7 +168,7 @@ and block_shape =
   value_kind list option
 
 and boxed_integer = Primitive.boxed_integer =
-    Pnativeint | Pint32 | Pint64
+    Pnativeint | Pint32 | Pint64 | Puint32 | Puint64
 
 and bigarray_kind =
     Pbigarray_unknown

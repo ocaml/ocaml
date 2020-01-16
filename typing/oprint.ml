@@ -168,6 +168,8 @@ let print_out_value ppf tree =
     | Oval_int i -> parenthesize_if_neg ppf "%i" i (i < 0)
     | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i (i < 0l)
     | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
+    | Oval_uint32 u -> fprintf ppf "%su" (Uint32.to_string u)
+    | Oval_uint64 u -> fprintf ppf "%sU" (Uint64.to_string u)
     | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
     | Oval_float f ->
         parenthesize_if_neg ppf "%s" (float_repres f)
@@ -182,6 +184,8 @@ let print_out_value ppf tree =
       Oval_int i -> fprintf ppf "%i" i
     | Oval_int32 i -> fprintf ppf "%lil" i
     | Oval_int64 i -> fprintf ppf "%LiL" i
+    | Oval_uint32 u -> fprintf ppf "%su" (Uint32.to_string u)
+    | Oval_uint64 u -> fprintf ppf "%sU" (Uint64.to_string u)
     | Oval_nativeint i -> fprintf ppf "%nin" i
     | Oval_float f -> pp_print_string ppf (float_repres f)
     | Oval_char c -> fprintf ppf "%C" c

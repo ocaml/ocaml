@@ -67,8 +67,10 @@ from being garbage-collected \\
 \begin{tabular}{lll}
 "Complex" & p.~\pageref{Complex} & Complex numbers \\
 "Float" & p.~\pageref{Float} & Floating-point numbers \\
-"Int32" & p.~\pageref{Int32} & operations on 32-bit integers \\
-"Int64" & p.~\pageref{Int64} & operations on 64-bit integers \\
+"Int32" & p.~\pageref{Int32} & operations on 32-bit signed integers \\
+"Int64" & p.~\pageref{Int64} & operations on 64-bit signed integers \\
+"Uint32" & p.~\pageref{Uint32} & operations on 32-bit unsigned integers \\
+"Uint64" & p.~\pageref{Uint64} & operations on 64-bit unsigned integers \\
 "Nativeint" & p.~\pageref{Nativeint} & operations on platform-native
 integers
 \end{tabular}

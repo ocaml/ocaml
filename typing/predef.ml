@@ -41,6 +41,8 @@ and ident_option = ident_create "option"
 and ident_nativeint = ident_create "nativeint"
 and ident_int32 = ident_create "int32"
 and ident_int64 = ident_create "int64"
+and ident_uint32 = ident_create "uint32"
+and ident_uint64 = ident_create "uint64"
 and ident_lazy_t = ident_create "lazy_t"
 and ident_string = ident_create "string"
 and ident_extension_constructor = ident_create "extension_constructor"
@@ -59,6 +61,8 @@ and path_option = Pident ident_option
 and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
+and path_uint32 = Pident ident_uint32
+and path_uint64 = Pident ident_uint64
 and path_lazy_t = Pident ident_lazy_t
 and path_string = Pident ident_string
 and path_extension_constructor = Pident ident_extension_constructor
@@ -77,6 +81,8 @@ and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
 and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
+and type_uint32 = newgenty (Tconstr(path_uint32, [], ref Mnil))
+and type_uint64 = newgenty (Tconstr(path_uint64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
 and type_extension_constructor =
@@ -219,6 +225,8 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
+  add_type ident_uint64 decl_abstr (
+  add_type ident_uint32 decl_abstr (
   add_type ident_nativeint decl_abstr (
   add_type ident_lazy_t decl_lazy_t (
   add_type ident_option decl_option (
@@ -233,7 +241,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_int decl_abstr_imm (
   add_type ident_extension_constructor decl_abstr (
   add_type ident_floatarray decl_abstr (
-    empty_env))))))))))))))))))))))))))))
+    empty_env))))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
