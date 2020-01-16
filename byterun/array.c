@@ -53,12 +53,9 @@ CAMLexport int caml_is_double_array(value array)
 /* [ 'a array -> int -> 'a ] where 'a != float */
 CAMLprim value caml_array_get_addr(value array, value index)
 {
-  CAMLparam2(array, index);
-  CAMLlocal1(x);
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  caml_read_field(array, idx, &x);
-  CAMLreturn (x);
+  return Field(array, idx);
 }
 
 /* [ float array -> int -> float ] */
@@ -181,16 +178,13 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
 /* [ 'a array -> int -> 'a ] */
 CAMLprim value caml_array_unsafe_get(value array, value index)
 {
-  CAMLparam2(array, index);
-  CAMLlocal1(x);
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
-    CAMLreturn (caml_array_unsafe_get_float(array, index));
+    return caml_array_unsafe_get_float(array, index);
 #else
   CAMLassert (Tag_val(array) != Double_array_tag);
 #endif
-  caml_read_field(array, Long_val(index), &x);
-  CAMLreturn (x);
+  return Field(array, Long_val(index));
 }
 
 /* [ floatarray -> int -> float ] */
@@ -304,15 +298,21 @@ CAMLprim value caml_make_vect(value len, value init)
     }
 #endif
   } else {
-    if (size > Max_wosize) caml_invalid_argument("Array.make");
-    /* make sure init is not young, to avoid creating
+    if (size <= Max_young_wosize) {
+      res = caml_alloc_small(size, 0);
+      for (i = 0; i < size; i++) Field(res, i) = init;
+    }
+    else if (size > Max_wosize) caml_invalid_argument("Array.make");
+    else {
+      /* make sure init is not young, to avoid creating
        very many ref table entries */
-    if (size >= Max_young_wosize &&
-        Is_block(init) && Is_minor(init))
-      caml_minor_collection();
-    /* TODO: Spacetime */
-    res = caml_alloc(size, 0);
-    for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
+      if (size >= Max_young_wosize &&
+          Is_block(init) && Is_minor(init))
+        caml_minor_collection();
+      /* TODO: Spacetime */
+      res = caml_alloc(size, 0);
+      for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
+    }
   }
   CAMLreturn (res);
 }

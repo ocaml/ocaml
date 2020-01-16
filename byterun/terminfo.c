@@ -74,7 +74,7 @@ CAMLprim value caml_terminfo_setup (value vchan)
     CAMLreturn (Bad_term);
   }
   result = caml_alloc_small (1, Good_term_tag);
-  caml_initialize_field (result, 0, Val_int (num_lines));
+  Field (result, 0) = Val_int (num_lines);
   CAMLreturn (result);
 }
 
