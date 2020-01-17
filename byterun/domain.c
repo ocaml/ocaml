@@ -626,6 +626,7 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
   caml_plat_broadcast(&all_domains_cond);
   caml_plat_unlock(&all_domains_lock);
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
+  
   SPIN_WAIT {
     if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
       break;

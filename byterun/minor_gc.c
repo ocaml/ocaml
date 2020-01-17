@@ -143,18 +143,6 @@ static inline int is_in_interval (value v, char* low_closed, char* high_open)
   return low_closed <= (char*)v && (char*)v < high_open;
 }
 
-/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
- * object in the block. */
-static inline void resolve_infix_val (value* v)
-{
-  int offset = 0;
-  if (Hd_val(*v) == Infix_tag) {
-    offset = Infix_offset_val(*v);
-    CAMLassert (offset > 0);
-    *v -= offset;
-  }
-}
-
 static inline void log_gc_value(const char* prefix, value v)
 {
   if (Is_block(v)) {
@@ -166,6 +154,81 @@ static inline void log_gc_value(const char* prefix, value v)
   }
 }
 
+#define Color_hd(v) ((color_t)(((v) >> 8) & 3))
+
+static int get_header_val(value v) {
+  if( caml_domain_alone() ) {
+    return Hd_val(v);
+  } else {
+    header_t hd = atomic_load(Hp_atomic_val(v));
+
+    if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
+      while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+      return 0;
+    }
+
+    return hd;
+  }
+}
+
+static inline void spin_on_header(value v) {
+  while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+}
+
+static int try_update_object_header(value v, value *p, value result, mlsize_t infix_offset) {
+  int success = 0;
+
+  if( caml_domain_alone() ) {
+    *Hp_val (v) = 0;
+    Op_val(v)[0] = result;
+    success = 1;
+  } else {
+    header_t hd = atomic_load(Hp_atomic_val(v));
+    if( hd == 0 ) { 
+      // in this case this has been updated by another domain, throw away result
+      // and return the one in the object
+      result = Op_val(v)[0];
+    } else if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
+      // here we've caught a domain in the process of moving a minor heap object
+      // we need to wait for it to finish
+      // TODO: Probably a better spinlock needed here though doesn't happen often
+      spin_on_header(v);
+      // Also throw away result and use the one from the other domain
+      result = Op_val(v)[0];
+    } else {
+      // Here the header is neither zero nor an in-progress update
+      header_t desired_hd = 1 << 8; // set the lowest color bit - this should probably be in a macro
+      if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
+        // Success
+        // Now we can write the forwarding pointer
+        atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
+        // And can update the header too
+        atomic_store_explicit(Hp_atomic_val(v), 0, memory_order_relaxed);
+        // Let the caller know we were responsible for the update
+        success = 1;
+      } else {
+        // We were sniped by another domain, throw away result and use the one from
+        // the other domain
+        result = Op_val(v)[0];
+      }
+    }
+  }
+
+  *p = result + infix_offset;
+  return success;
+}
+
+/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
+ * object in the block. */
+static inline void resolve_infix_val (value* v)
+{
+  int offset = 0;
+  if (get_header_val(*v) == Infix_tag) {
+    offset = Infix_offset_val(*v);
+    CAMLassert (offset > 0);
+    *v -= offset;
+  }
+}
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
@@ -187,9 +250,9 @@ static void oldify_one (void* st_v, value v, value *p)
 
   infix_offset = 0;
   do {
-    hd = Hd_val (v);
+    hd = get_header_val(v);
     if (hd == 0) {
-      /* already forwarded, forward pointer is first field. */
+      /* already forwarded, another domain is likely working on this. */
       *p = Op_val(v)[0] + infix_offset;
       return;
     }
@@ -207,32 +270,48 @@ static void oldify_one (void* st_v, value v, value *p)
     struct stack_info* stk = Ptr_val(Op_val(v)[0]);
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
     result = alloc_shared(1, Cont_tag);
-    *p = result;
-    Op_val(result)[0] = Val_ptr(stk);
-    *Hp_val (v) = 0;
-    Op_val(v)[0] = result;
-    if (stk != NULL)
-      caml_scan_stack(&oldify_one, st, stk);
+    if( try_update_object_header(v, p, result, 0) ) {
+      Op_val(result)[0] = Val_ptr(stk);
+      if (stk != NULL) {
+        caml_scan_stack(&oldify_one, st, stk);
+      }
+    }
+    else
+    {
+      // Conflict - fix up what we allocated on the major heap
+      *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);
+      #ifdef DEBUG
+      Op_val(result)[0] = Val_long(1);
+      #endif
+    }
   } else if (tag < Infix_tag) {
     value field0;
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared (sz, tag);
-    *p = result + infix_offset;
     field0 = Op_val(v)[0];
-    CAMLassert (!Is_debug_tag(field0));
-    *Hp_val (v) = 0;           /* Set forward flag */
-    Op_val(v)[0] = result;     /*  and forward pointer. */
-    if (sz > 1){
-      Op_val (result)[0] = field0;
-      Op_val (result)[1] = st->todo_list;    /* Add this block */
-      st->todo_list = v;                     /*  to the "to do" list. */
-    }else{
-      CAMLassert (sz == 1);
-      p = Op_val(result);
-      v = field0;
-      goto tail_call;
+    if( try_update_object_header(v, p, result, infix_offset) ) {
+      if (sz > 1){
+        Op_val (result)[0] = field0;
+        Op_val (result)[1] = st->todo_list;    
+        st->todo_list = v;                     
+      } else {
+        CAMLassert (sz == 1);
+        p = Op_val(result);
+        v = field0;
+        goto tail_call;
+      }
+    } else {
+      // Conflict - fix up what we allocated on the major heap
+      int c;
+      *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
+      #ifdef DEBUG
+      for( c = 0; c < sz ; c++ ) {
+        Op_val(result)[c] = Val_long(1);
+      }
+      #endif
     }
+
   } else if (tag >= No_scan_tag) {
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
@@ -241,10 +320,16 @@ static void oldify_one (void* st_v, value v, value *p)
       value curr = Op_val(v)[i];
       Op_val (result)[i] = curr;
     }
-    *Hp_val (v) = 0;           /* Set forward flag */
-    Op_val (v)[0] = result;    /*  and forward pointer. */
     CAMLassert (infix_offset == 0);
-    *p = result;
+    if( !try_update_object_header(v, p, result, 0) ) {
+      // Conflict
+      *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
+      #ifdef DEBUG
+      for( i = 0; i < sz ; i++ ) {
+        Op_val(result)[i] = Val_long(1);
+      }
+      #endif
+    }
   } else {
     CAMLassert (tag == Forward_tag);
     CAMLassert (infix_offset == 0);
@@ -253,7 +338,7 @@ static void oldify_one (void* st_v, value v, value *p)
     tag_t ft = 0;
 
     if (Is_block (f)) {
-      ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
+      ft = Tag_val (get_header_val(f) == 0 ? Op_val (f)[0] : f);
     }
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
@@ -261,12 +346,16 @@ static void oldify_one (void* st_v, value v, value *p)
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (1, Forward_tag);
-      *p = result;
-      *Hp_val (v) = 0;             /* Set (GC) forward flag */
-      Op_val (v)[0] = result;      /*  and forward pointer. */
-      p = Op_val (result);
-      v = f;
-      goto tail_call;
+      if( try_update_object_header(v, p, result, 0) ) {
+        p = Op_val (result);
+        v = f;
+        goto tail_call;
+      } else {
+        *Hp_val(result) = Make_header(1, No_scan_tag, global.MARKED);
+        #ifdef DEBUG
+        Op_val(result)[0] = Val_long(1);
+        #endif
+      }
     } else {
       v = f;                        /* Follow the forwarding */
       goto tail_call;               /*  then oldify. */
@@ -286,7 +375,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
     if (child != caml_ephe_none
         && Is_block (child) && Is_minor(child)) {
       resolve_infix_val(&child);
-      if (Hd_val(child) != 0) {
+      if (get_header_val(child) != 0) {
         /* value not copied to major heap */
         return 0;
       }
@@ -314,7 +403,10 @@ static void oldify_mopup (struct oldify_state* st)
 
   while (st->todo_list != 0) {
     v = st->todo_list;                 /* Get the head. */
-    CAMLassert (Hd_val (v) == 0);             /* It must be forwarded. */
+    /* I'm not convinced we can ever have something in todo_list that was updated
+    by another domain, so this assert using get_header_val is probably not
+    neccessary */
+    CAMLassert (get_header_val(v) == 0);       /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     st->todo_list = Op_val (new_v)[1]; /* Remove from list. */
 
@@ -344,7 +436,7 @@ static void oldify_mopup (struct oldify_state* st)
       value *data = &Ephe_data(re->ephe);
       if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
         resolve_infix_val(data);
-        if (Hd_val(*data) == 0) { /* Value copied to major heap */
+        if (get_header_val(*data) == 0) { /* Value copied to major heap */
           *data = Op_val(*data)[0];
         } else {
           if (ephe_check_alive_data(re, young_ptr, young_end)) {
@@ -475,7 +567,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     value* key = &Op_val(re->ephe)[re->offset];
     if (*key != caml_ephe_none && Is_block(*key) && Is_minor(*key)) {
       resolve_infix_val(key);
-      if (Hd_val(*key) == 0) { /* value copied to major heap */
+      if (get_header_val(*key) == 0) { /* value copied to major heap */
         *key = Op_val(*key)[0];
       } else {
         // CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
@@ -519,21 +611,25 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   barrier_status b;
 
   b = caml_global_barrier_begin();
-  if (caml_global_barrier_is_final(b))
-  {
-    CAMLnoalloc;
+  caml_global_barrier_end(b);
+  
+  caml_gc_log("running stw empty_minor_heap_promote");
+  caml_empty_minor_heap_promote(domain, 0);
 
-    caml_gc_log("running stw empty_minor_heap_promote");
-    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_promote, (void*)0);
+  b = caml_global_barrier_begin();
 
+  if( caml_global_barrier_is_final(b) ) {
+    caml_ev_begin("minor_gc/finalizers");
     caml_gc_log("running stw empty_minor_heap_domain_finalizers");
     caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
-
+    caml_ev_end("minor_gc/finalizers");
+    caml_ev_begin("minor_gc/clear");
     caml_gc_log("running stw empty_minor_heap_domain_clear");
     caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
-
+    caml_ev_end("minor_gc/clear");
     caml_gc_log("finished stw empty_minor_heap");
   }
+
   caml_global_barrier_end(b);
 }
 
