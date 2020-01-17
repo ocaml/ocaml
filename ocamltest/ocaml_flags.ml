@@ -38,8 +38,11 @@ let runtime_flags env backend c_files =
     | Ocaml_backends.Native -> runtime_variant_flags ()
     | Ocaml_backends.Bytecode ->
       begin
-        if c_files then begin (* custom mode *)
-          "-custom " ^ (runtime_variant_flags ())
+        if c_files &&
+           Environments.lookup_as_bool Ocaml_variables.compile_only env <> Some true then
+          begin (* custom mode *)
+          "-output-complete-exe " ^
+          (runtime_variant_flags ())
         end else begin (* non-custom mode *)
           let use_runtime =
             Environments.lookup_as_bool Ocaml_variables.use_runtime env

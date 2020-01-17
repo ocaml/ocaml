@@ -274,6 +274,12 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
           ~stderr_variable:compiler#output_variable
           ~append:true
           log env commandline in
+      let env =
+        if has_c_file || bytecode_links_c_code then
+          Environments.add_if_undefined Ocaml_variables.compare_byte_programs "false" env
+        else
+          env
+      in
       if exit_status=expected_exit_status
       then (Result.pass, env)
       else begin
@@ -895,8 +901,13 @@ let native_programs_comparison_tool = Filecompare.default_comparison_tool
 let compare_bytecode_programs_code log env =
   let bytecode_programs_comparison_tool =
     make_bytecode_programs_comparison_tool in
-  compare_programs
-    Ocaml_backends.Bytecode bytecode_programs_comparison_tool log env
+  match Environments.lookup_as_bool Ocaml_variables.compare_byte_programs env with
+  | Some false ->
+      let reason = "program comparison disabled" in
+      (Result.pass_with_reason reason, env)
+  | _ ->
+      compare_programs
+        Ocaml_backends.Bytecode bytecode_programs_comparison_tool log env
 
 let compare_bytecode_programs =
   native_action
