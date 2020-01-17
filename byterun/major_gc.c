@@ -42,6 +42,7 @@
   leaving it small for now means the overflow code gets more testing.
 */
 #define MARK_STACK_SIZE (1 << 14)
+#define INITIAL_POOLS_TO_RESCAN_LEN 4
 
 typedef struct {
   value block;
@@ -1237,22 +1238,17 @@ void caml_finish_sweeping () {
   }
 }
 
-static struct pool** pools_to_rescan;
-static int pools_to_rescan_count;
-static int pools_to_rescan_len;
-static caml_plat_mutex pools_to_rescan_lock = CAML_PLAT_MUTEX_INITIALIZER;
-
 static struct pool* find_pool_to_rescan()
 {
   struct pool* p;
-  caml_plat_lock(&pools_to_rescan_lock);
-  if (pools_to_rescan_count > 0) {
-    p = pools_to_rescan[--pools_to_rescan_count];
-    caml_gc_log("Redarkening pool %p (%d others left)", p, pools_to_rescan_count);
+
+  if (Caml_state->pools_to_rescan_count > 0) {
+    p = Caml_state->pools_to_rescan[--Caml_state->pools_to_rescan_count];
+    caml_gc_log("Redarkening pool %p (%d others left)", p, Caml_state->pools_to_rescan_count);
   } else {
     p = 0;
   }
-  caml_plat_unlock(&pools_to_rescan_lock);
+
   return p;
 }
 
@@ -1382,23 +1378,15 @@ static void mark_stack_prune (struct mark_stack* stk)
               (int)stk->count);
 
 
-  /* Add the pools to rescan to the global list.
-
-     This must be done after the mark stack is filtered, since other
-     threads race to remove pools from the global list. As soon as
-     pools_to_rescan_lock is released, we cannot rely on pools being
-     in the global list. */
-
-  caml_plat_lock(&pools_to_rescan_lock);
-  for (i = start; i < count; i++) {
-    if (pools_to_rescan_count == pools_to_rescan_len) {
-      pools_to_rescan_len = pools_to_rescan_len * 2 + 128;
-      pools_to_rescan =
-        caml_stat_resize(pools_to_rescan, pools_to_rescan_len * sizeof(struct pool*));
+  /* Add the pools to rescan to domain's pools to rescan list */
+    for (i = start; i < count; i++) {
+      if (Caml_state->pools_to_rescan_count == Caml_state->pools_to_rescan_len) {
+        Caml_state->pools_to_rescan_len = Caml_state->pools_to_rescan_len * 2 + 128;
+        Caml_state->pools_to_rescan =
+          caml_stat_resize(Caml_state->pools_to_rescan, Caml_state->pools_to_rescan_len * sizeof(struct pool*));
+      }
+      Caml_state->pools_to_rescan[Caml_state->pools_to_rescan_count++] = pools[i].pool;
     }
-    pools_to_rescan[pools_to_rescan_count++] = pools[i].pool;
-  }
-  caml_plat_unlock(&pools_to_rescan_lock);
 }
 
 int caml_init_major_gc(caml_domain_state* d) {
@@ -1435,6 +1423,11 @@ int caml_init_major_gc(caml_domain_state* d) {
   }
   atomic_fetch_add(&num_domains_to_final_update_first, 1);
   atomic_fetch_add(&num_domains_to_final_update_last, 1);
+
+  Caml_state->pools_to_rescan = caml_stat_alloc_noexc(INITIAL_POOLS_TO_RESCAN_LEN * sizeof(struct pool*));
+  Caml_state->pools_to_rescan_len = INITIAL_POOLS_TO_RESCAN_LEN;
+  Caml_state->pools_to_rescan_count = 0;
+
   return 0;
 }
 
@@ -1442,6 +1435,7 @@ void caml_teardown_major_gc() {
   CAMLassert(Caml_state->mark_stack->count == 0);
   caml_stat_free(Caml_state->mark_stack->stack);
   caml_stat_free(Caml_state->mark_stack);
+  if( Caml_state->pools_to_rescan_len > 0 ) caml_stat_free(Caml_state->pools_to_rescan);
   Caml_state->mark_stack = NULL;
 }
 
