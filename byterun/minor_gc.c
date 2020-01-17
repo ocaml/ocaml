@@ -184,7 +184,7 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
     success = 1;
   } else {
     header_t hd = atomic_load(Hp_atomic_val(v));
-    if( hd == 0 ) { 
+    if( hd == 0 ) {
       // in this case this has been updated by another domain, throw away result
       // and return the one in the object
       result = Op_val(v)[0];
@@ -207,8 +207,9 @@ static int try_update_object_header(value v, value *p, value result, mlsize_t in
         // Let the caller know we were responsible for the update
         success = 1;
       } else {
-        // We were sniped by another domain, throw away result and use the one from
-        // the other domain
+        // We were sniped by another domain, spin for that to complete then
+        // throw away result and use the one from the other domain
+        spin_on_header(v);
         result = Op_val(v)[0];
       }
     }
@@ -293,8 +294,8 @@ static void oldify_one (void* st_v, value v, value *p)
     if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
         Op_val (result)[0] = field0;
-        Op_val (result)[1] = st->todo_list;    
-        st->todo_list = v;                     
+        Op_val (result)[1] = st->todo_list;
+        st->todo_list = v;
       } else {
         CAMLassert (sz == 1);
         p = Op_val(result);
@@ -612,7 +613,7 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 
   b = caml_global_barrier_begin();
   caml_global_barrier_end(b);
-  
+
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, 0);
 
