@@ -14,7 +14,7 @@ Here is a summary of the main differences between these ports:
 |                                        | Native Microsoft       | Native Mingw-w64 | Cygwin
 4+^| Third-party software required
 | for base bytecode system               | none                   | none             | none
-| for `ocamlc -custom`                     | Microsoft Visual C++   | Cygwin           | Cygwin
+| for `ocamlc -output-complete-exe`                     | Microsoft Visual C++   | Cygwin           | Cygwin
 | for native-code generation             | Microsoft Visual C++   | Cygwin           | Cygwin
 4+^| Features
 | Speed of bytecode interpreter          | 70%                    | 100%             | 100%
@@ -85,7 +85,7 @@ ports runs without any additional tools.
 === REQUIREMENTS
 
 The native-code compiler (`ocamlopt`) and static linking of OCaml bytecode with
-C code (`ocamlc -custom`) require a Microsoft Visual C/C++ Compiler and the
+C code (`ocamlc -output-complete-exe`) require a Microsoft Visual C/C++ Compiler and the
 `flexlink` tool (see <<bmflex,above>>).
 
 Any edition (including Express/Community editions) of Microsoft Visual Studio
@@ -211,7 +211,7 @@ Finally, use `make` to build the system, e.g.
 
 After installing, it is not necessary to keep the Cygwin installation (although
 you may require it to build additional third party libraries and tools).  You
-will need to use `ocamlopt` (or `ocamlc -custom`) from the same Visual Studio or
+will need to use `ocamlopt` (or `ocamlc -output-complete-exe`) from the same Visual Studio or
 Windows SDK Command Prompt as you compiled OCaml from, or `ocamlopt` will not
 be able to find `cl`.
 
@@ -240,7 +240,7 @@ changes to the OCaml project.
 === REQUIREMENTS
 
 The native-code compiler (`ocamlopt`) and static linking of OCaml bytecode with
-C code (`ocamlc -custom`) require the appropriate Mingw-w64 gcc and the
+C code (`ocamlc -output-complete-exe`) require the appropriate Mingw-w64 gcc and the
 `flexlink` tool (see <<bmflex,above>>). Mingw-w64 gcc is provided by the
 `mingw64-i686-gcc-core` package for 32-bit and the `mingw64-x86_64-gcc-core`
 package for 64-bit.
@@ -274,7 +274,7 @@ Finally, use `make` to build the system, e.g.
         make
         make install
 
-After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
+After installing, you will need to ensure that `ocamlopt` (or `ocamlc -output-complete-exe`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
 bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
 
