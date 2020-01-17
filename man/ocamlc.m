@@ -116,16 +116,16 @@ it is not linked in.
 
 Arguments ending in .c are passed to the C compiler, which generates
 a .o object file. This object file is linked with the program if the
-.B \-custom
+.B \-output-complete-exe
 flag is set (see the description of
-.B \-custom
+.B \-output-complete-exe
 below).
 
 Arguments ending in .o or .a are assumed to be C object files and
 libraries. They are passed to the C linker when linking in
-.B \-custom
+.B \-output-complete-exe
 mode (see the description of
-.B \-custom
+.B \-output-complete-exe
 below).
 
 Arguments ending in .so
@@ -232,14 +232,14 @@ compile modules separately.
 Use
 .I ccomp
 as the C linker when linking in "custom runtime" mode (see the
-.B \-custom
+.B \-output-complete-exe
 option) and as the C compiler for compiling .c source files.
 .TP
 .BI \-cclib\ -l libname
 Pass the
 .BI \-l libname
 option to the C linker when linking in "custom runtime" mode (see the
-.B \-custom
+.B \-output-complete-exe
 option). This causes the given C library to be linked with the program.
 .TP
 .BI \-ccopt \ option
@@ -247,7 +247,7 @@ Pass the given
 .I option
 to the C compiler and linker, when linking in
 "custom runtime" mode (see the
-.B \-custom
+.B \-output-complete-exe
 option). For instance,
 .BI \-ccopt\ \-L dir
 causes the C linker to search for C libraries in
@@ -683,7 +683,7 @@ standard library directory, then exit.
 .B \-verbose
 Print all external commands before they are executed, in particular
 invocations of the C compiler and linker in
-.B \-custom
+.B \-output-complete-exe
 mode.  Useful to debug C library problems.
 .TP
 .BR \-vnum \ or\  \-version
