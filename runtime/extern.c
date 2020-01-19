@@ -32,6 +32,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/reverse.h"
+#include "caml/addrmap.h"
 
 static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */
@@ -47,6 +48,8 @@ enum {
 };
 
 static int extern_flags;        /* logical or of some of the flags above */
+
+static struct addrmap recorded_objs = ADDRMAP_INIT;
 
 /* Trail mechanism to undo forwarding pointers put inside objects */
 
@@ -130,15 +133,6 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   extern_stack = newstack;
   extern_stack_limit = newstack + newsize;
   return newstack + sp_offset;
-}
-
-/* Initialize the trail */
-
-static void init_extern_trail(void)
-{
-  extern_trail_block = &extern_trail_first;
-  extern_trail_cur = extern_trail_block->entries;
-  extern_trail_limit = extern_trail_block->entries + ENTRIES_PER_TRAIL_BLOCK;
 }
 
 /* Replay the trail, undoing the in-place modifications
@@ -645,7 +639,7 @@ static intnat extern_value(value v, value flags,
   /* Parse flag list */
   extern_flags = caml_convert_flag_list(flags, extern_flag_values);
   /* Initializations */
-  init_extern_trail();
+  caml_addrmap_clear(&recorded_objs);
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
@@ -653,9 +647,9 @@ static intnat extern_value(value v, value flags,
   extern_rec(v);
   /* Record end of output */
   close_extern_output();
-  /* Undo the modifications done on externed blocks */
-  extern_replay_trail();
-  /* Write the header */
+  /* Delete the hashtable of recorded objects */
+  caml_addrmap_clear(&recorded_objs);
+  /* Write the sizes */
   res_len = extern_output_length();
 #ifdef ARCH_SIXTYFOUR
   if (res_len >= ((intnat)1 << 32) ||

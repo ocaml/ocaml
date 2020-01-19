@@ -183,6 +183,10 @@ CAMLnoreturn_end;
 #define CAMLassert(x) ((void) 0)
 #endif
 
+#ifndef CAML_AVOID_CONFLICTS
+#define Assert CAMLassert
+#endif
+
 /* This hook is called when a fatal error occurs in the OCaml
    runtime. It is given arguments to be passed to the [vprintf]-like
    functions in order to synthetize the error message.
@@ -198,6 +202,8 @@ CAMLextern void caml_fatal_error (char *, ...)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 CAMLnoreturn_end;
+
+#define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
 
 /* Detection of available C built-in functions, the Clang way. */
 
