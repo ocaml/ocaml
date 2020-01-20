@@ -132,7 +132,8 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
 {
   caml_domain_state* domain_state = Caml_state;
 
-  Assert (Is_block(obj));
+  /* HACK: can't assert when get old C-api style pointers
+    Assert (Is_block(obj)); */
 
   if (!Is_minor(obj)) {
     caml_darken(0, old_val, 0);
@@ -178,6 +179,22 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
                         memory_order_release);
 }
 
+/* Compatability with old C-API
+   bit of a HACK as less Assert possible here
+ */
+CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
+{
+  write_barrier((value)fp, 0, *fp, val);
+  #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
+  Caml_state->mutable_stores++;
+  #endif
+
+  /* See Note [MM] above */
+  atomic_thread_fence(memory_order_acquire);
+  atomic_store_explicit(Op_atomic_val(*fp), val,
+                        memory_order_release);
+}
+
 CAMLexport void caml_initialize_field (value obj, int field, value val)
 {
   Assert(Is_block(obj));
@@ -194,6 +211,24 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
 
   write_barrier(obj, field, Op_val(obj)[field], val);
   Op_val(obj)[field] = val;
+}
+
+/* Compatability with old C-API
+   bit of a HACK as less Assert possible here
+ */
+CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
+{
+#ifdef DEBUG
+  /* caml_initialize_field can only be used on just-allocated objects */
+  if (Is_minor((value)fp))
+    Assert(*fp == Debug_uninit_minor ||
+           *fp == Val_unit);
+  else
+    Assert(*fp == Debug_uninit_major ||
+           *fp == Val_unit);
+#endif
+  write_barrier((value)fp, 0, *fp, val);
+  *fp = val;
 }
 
 CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value newval)

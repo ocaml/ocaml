@@ -66,6 +66,9 @@ CAMLextern int caml_add_to_heap (char *mem);
 
 CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 
+/* old CAPI function compatability */
+CAMLextern void caml_modify (value *, value);
+CAMLextern void caml_initialize (value *, value);
 
 /* [caml_stat_*] functions below provide an interface to the static memory
    manager built into the runtime, which can be used for managing static
