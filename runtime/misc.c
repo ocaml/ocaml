@@ -93,6 +93,12 @@ CAMLexport void caml_fatal_error (char *msg, ...)
   abort();
 }
 
+CAMLexport void caml_fatal_error_arg (const char *fmt, const char *arg)
+{
+  fprintf (stderr, fmt, arg);
+  exit(2);
+}
+
 /* If you change the caml_ext_table* functions, also update
    runtime/spacetime_nat.c:find_trie_node_from_libunwind. */
 

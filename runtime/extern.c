@@ -51,21 +51,6 @@ static int extern_flags;        /* logical or of some of the flags above */
 
 static struct addrmap recorded_objs = ADDRMAP_INIT;
 
-/* Trail mechanism to undo forwarding pointers put inside objects */
-
-struct trail_entry {
-  value obj;    /* address of object + initial color in low 2 bits */
-  value field0; /* initial contents of field 0 */
-};
-
-struct trail_block {
-  struct trail_block * previous;
-  struct trail_entry entries[ENTRIES_PER_TRAIL_BLOCK];
-};
-
-static struct trail_block * extern_trail_block;
-static struct trail_entry * extern_trail_cur, * extern_trail_limit;
-
 /* Stack for pending values to marshal */
 
 struct extern_item { value * v; mlsize_t count; };
@@ -132,30 +117,10 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   return newstack + sp_offset;
 }
 
-/* Set forwarding pointer on an object and add corresponding entry
-   to the trail. */
-
-static void extern_record_location(value obj)
-{
-  header_t hdr;
-
+static void extern_record_location(value* loc) {
   if (extern_flags & NO_SHARING) return;
-  if (extern_trail_cur == extern_trail_limit) {
-    struct trail_block * new_block =
-      caml_stat_alloc_noexc(sizeof(struct trail_block));
-    if (new_block == NULL) extern_out_of_memory();
-    new_block->previous = extern_trail_block;
-    extern_trail_block = new_block;
-    extern_trail_cur = extern_trail_block->entries;
-    extern_trail_limit = extern_trail_block->entries + ENTRIES_PER_TRAIL_BLOCK;
-  }
-  hdr = Hd_val(obj);
-  extern_trail_cur->obj = obj | Colornum_hd(hdr);
-  extern_trail_cur->field0 = Field(obj, 0);
-  extern_trail_cur++;
-  Hd_val(obj) = Bluehd_hd(hdr);
-  Field(obj, 0) = (value) obj_counter;
-  obj_counter++;
+  Assert(loc);
+  *loc = Val_long(obj_counter++);
 }
 
 /* To buffer the output */
@@ -351,7 +316,6 @@ int caml_extern_allow_out_of_heap = 0;
 
 static void extern_rec(value v)
 {
-  struct code_fragment * cf;
   struct extern_item * sp;
   sp = extern_stack;
 
@@ -374,21 +338,17 @@ static void extern_rec(value v)
     } else
       writecode32(CODE_INT32, n);
     goto next_item;
-  }
-  if (Is_in_value_area(v) || caml_extern_allow_out_of_heap) {
+  } else {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
+    value* output_location;
 
     if (tag == Forward_tag) {
       value f = Forward_val (v);
       if (Is_block (f)
-          && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-              || Tag_val (f) == Lazy_tag
-#ifdef FLAT_FLOAT_ARRAY
-              || Tag_val (f) == Double_tag
-#endif
-              )){
+          && (Tag_val (f) == Forward_tag
+              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
         /* Do not short-circuit the pointer. */
       }else{
         v = f;
@@ -410,8 +370,13 @@ static void extern_rec(value v)
       goto next_item;
     }
     /* Check if already seen */
-    if (Color_hd(hd) == Caml_blue) {
-      uintnat d = obj_counter - (uintnat) Field(v, 0);
+    if (extern_flags & NO_SHARING) {
+      output_location = 0;
+    } else {
+      output_location = caml_addrmap_insert_pos(&recorded_objs, v);
+    }
+    if (output_location && *output_location != ADDRMAP_NOT_PRESENT) {
+      uintnat d = obj_counter - (uintnat)Long_val(*output_location);
       if (d < 0x100) {
         writecode8(CODE_SHARED8, d);
       } else if (d < 0x10000) {
@@ -450,7 +415,7 @@ static void extern_rec(value v)
       writeblock(String_val(v), len);
       size_32 += 1 + (len + 4) / 4;
       size_64 += 1 + (len + 8) / 8;
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     case Double_tag: {
@@ -460,7 +425,7 @@ static void extern_rec(value v)
       writeblock_float8((double *) v, 1);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     case Double_array_tag: {
@@ -486,7 +451,7 @@ static void extern_rec(value v)
       writeblock_float8((double *) v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     case Abstract_tag:
@@ -499,7 +464,7 @@ static void extern_rec(value v)
     case Custom_tag: {
       uintnat sz_32, sz_64;
       char * size_header;
-      char const * ident = Custom_ops_val(v)->identifier;
+      char * ident = Custom_ops_val(v)->identifier;
       void (*serialize)(value v, uintnat * bsize_32,
                         uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
@@ -524,13 +489,13 @@ static void extern_rec(value v)
         serialize(v, &sz_32, &sz_64);
         if (sz_32 != fixed_length->bsize_32 ||
             sz_64 != fixed_length->bsize_64)
-          caml_fatal_error(
+          caml_fatal_error_arg(
             "output_value: incorrect fixed sizes specified by %s",
             ident);
       }
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     default: {
@@ -558,31 +523,19 @@ static void extern_rec(value v)
       size_32 += 1 + sz;
       size_64 += 1 + sz;
       field0 = Field(v, 0);
-      extern_record_location(v);
+      extern_record_location(output_location);
       /* Remember that we still have to serialize fields 1 ... sz - 1 */
       if (sz > 1) {
         sp++;
         if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
-        sp->v = &Field(v,1);
+        sp->v = Op_val(v) + 1;
         sp->count = sz-1;
       }
       /* Continue serialization with the first field */
       v = field0;
       continue;
     }
-    }
-  }
-  else if (caml_find_code_fragment((char*) v, NULL, &cf)) {
-    if ((extern_flags & CLOSURES) == 0)
-      extern_invalid_argument("output_value: functional value");
-    if (! cf->digest_computed) {
-      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-      cf->digest_computed = 1;
-    }
-    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((const char *)cf->digest, 16);
-  } else {
-    extern_invalid_argument("output_value: abstract value (outside heap)");
+   }
   }
   next_item:
     /* Pop one more item to marshal, if any */

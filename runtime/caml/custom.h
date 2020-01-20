@@ -28,7 +28,7 @@ struct custom_fixed_length {
 };
 
 struct custom_operations {
-  char const *identifier;
+  char *identifier;
   void (*finalize)(value v);
   int (*compare)(value v1, value v2);
   intnat (*hash)(value v);
