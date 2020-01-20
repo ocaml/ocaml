@@ -457,6 +457,9 @@ static void extern_rec(value v)
     case Abstract_tag:
       extern_invalid_argument("output_value: abstract value (Abstract)");
       break;
+    case Closure_tag:
+      caml_failwith("Serializing closures is broken");
+      break;
     case Infix_tag:
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
       v = v - Infix_offset_hd(hd); /* PR#5772 */
