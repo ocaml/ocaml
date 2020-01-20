@@ -1118,6 +1118,15 @@ let normalize_type_path oloc env path =
   | Papply _ ->
       assert false
 
+let rec normalize_modtype_path env path =
+  let path = normalize_path_prefix None env path in
+  expand_modtype_path env path
+
+and expand_modtype_path env path =
+  match (find_modtype path env).mtd_type with
+  | Some (Mty_ident path) -> normalize_modtype_path env path
+  | _ | exception Not_found -> path
+
 let find_module path env =
   find_module ~alias:false path env
 
