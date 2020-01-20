@@ -323,7 +323,7 @@ static void writecode16(int code, intnat val)
 {
   if (extern_ptr + 3 > extern_limit) grow_extern_output(3);
   extern_ptr[0] = code;
-  store16(extern_ptr + 1, (int) val);
+  store16(extern_ptr + 1, val);
   extern_ptr += 3;
 }
 
