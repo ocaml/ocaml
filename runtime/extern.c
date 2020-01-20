@@ -63,10 +63,8 @@ struct trail_block {
   struct trail_entry entries[ENTRIES_PER_TRAIL_BLOCK];
 };
 
-static struct trail_block extern_trail_first;
 static struct trail_block * extern_trail_block;
 static struct trail_entry * extern_trail_cur, * extern_trail_limit;
-
 
 /* Stack for pending values to marshal */
 
@@ -99,7 +97,6 @@ CAMLnoreturn_start
 static void extern_stack_overflow(void)
 CAMLnoreturn_end;
 
-static void extern_replay_trail(void);
 static void free_extern_output(void);
 
 /* Free the extern stack if needed */
@@ -133,35 +130,6 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   extern_stack = newstack;
   extern_stack_limit = newstack + newsize;
   return newstack + sp_offset;
-}
-
-/* Replay the trail, undoing the in-place modifications
-   performed on objects */
-
-static void extern_replay_trail(void)
-{
-  struct trail_block * blk, * prevblk;
-  struct trail_entry * ent, * lim;
-
-  blk = extern_trail_block;
-  lim = extern_trail_cur;
-  while (1) {
-    for (ent = &(blk->entries[0]); ent < lim; ent++) {
-      value obj = ent->obj;
-      color_t colornum = obj & 3;
-      obj = obj & ~3;
-      Hd_val(obj) = Coloredhd_hd(Hd_val(obj), colornum);
-      Field(obj, 0) = ent->field0;
-    }
-    if (blk == &extern_trail_first) break;
-    prevblk = blk->previous;
-    caml_stat_free(blk);
-    blk = prevblk;
-    lim = &(blk->entries[ENTRIES_PER_TRAIL_BLOCK]);
-  }
-  /* Protect against a second call to extern_replay_trail */
-  extern_trail_block = &extern_trail_first;
-  extern_trail_cur = extern_trail_block->entries;
 }
 
 /* Set forwarding pointer on an object and add corresponding entry
@@ -274,21 +242,21 @@ static intnat extern_output_length(void)
 
 static void extern_out_of_memory(void)
 {
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_raise_out_of_memory();
 }
 
 static void extern_invalid_argument(char *msg)
 {
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_invalid_argument(msg);
 }
 
 static void extern_failwith(char *msg)
 {
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_failwith(msg);
 }
@@ -296,7 +264,7 @@ static void extern_failwith(char *msg)
 static void extern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in marshaling value\n");
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_raise_out_of_memory();
 }
