@@ -635,7 +635,7 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_output_value_to_bytes(value v, value flags)
+CAMLprim value caml_output_value_to_string(value v, value flags)
 {
   char header[32];
   int header_len;
@@ -653,7 +653,7 @@ CAMLprim value caml_output_value_to_bytes(value v, value flags)
   memcpy(&Byte(res, ofs), header, header_len);
   ofs += header_len;
   while (blk != NULL) {
-    intnat n = blk->end - blk->data;
+    int n = blk->end - blk->data;
     memcpy(&Byte(res, ofs), blk->data, n);
     ofs += n;
     nextblk = blk->next;
@@ -661,11 +661,6 @@ CAMLprim value caml_output_value_to_bytes(value v, value flags)
     blk = nextblk;
   }
   return res;
-}
-
-CAMLprim value caml_output_value_to_string(value v, value flags)
-{
-  return caml_output_value_to_bytes(v,flags);
 }
 
 CAMLexport intnat caml_output_value_to_block(value v, value flags,
@@ -719,7 +714,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   memcpy(res, header, header_len);
   res += header_len;
   for (blk = extern_output_first; blk != NULL; blk = blk->next) {
-    intnat n = blk->end - blk->data;
+    int n = blk->end - blk->data;
     memcpy(res, blk->data, n);
     res += n;
   }
