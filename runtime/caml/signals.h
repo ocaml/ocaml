@@ -66,6 +66,10 @@ CAMLextern intnat volatile caml_pending_signals[];
 */
 CAMLextern int volatile caml_something_to_do;
 
+/* Global variables moved to Caml_state in 4.10 */
+#define caml_requested_major_slice (Caml_state_field(requested_major_slice))
+#define caml_requested_minor_gc (Caml_state_field(requested_minor_gc))
+
 void caml_update_young_limit(void);
 void caml_request_major_slice (void);
 void caml_request_minor_gc (void);

@@ -50,11 +50,12 @@
  *   still backend and process image dependent (unsafe to marshal).
  * [backtrace] (more expensive)
  *   OCaml values of algebraic data-type [Printexc.backtrace_slot]
- *
- * [Caml_state->backtrace_active] is non zero iff backtraces are recorded.
+ */
+ /* [Caml_state->backtrace_active] is non zero iff backtraces are recorded.
  * This variable must be changed with [caml_record_backtrace].
- *
- * The [Caml_state->backtrace_buffer] and [Caml_state->backtrace_last_exn]
+ */
+#define caml_backtrace_active (Caml_state_field(backtrace_active))
+/* The [Caml_state->backtrace_buffer] and [Caml_state->backtrace_last_exn]
  * variables are valid only if [Caml_state->backtrace_active != 0].
  *
  * They are part of the state specific to each thread, and threading libraries
@@ -69,12 +70,17 @@
  *
  * Its maximum size is determined by [BACKTRACE_BUFFER_SIZE] from
  * [backtrace_prim.h], but this shouldn't affect users.
- *
- * [Caml_state->backtrace_last_exn] stores the last exception value that was
+ */
+#define caml_backtrace_buffer (Caml_state_field(backtrace_buffer))
+#define caml_backtrace_pos (Caml_state_field(backtrace_pos))
+
+/* [Caml_state->backtrace_last_exn] stores the last exception value that was
  * raised, iff [Caml_state->backtrace_active != 0]. It is tested for equality
  * to determine whether a raise is a re-raise of the same exception.
- *
- * FIXME: this shouldn't matter anymore. Since OCaml 4.02, non-parameterized
+ */
+#define caml_backtrace_last_exn (Caml_state_field(backtrace_last_exn))
+
+/* FIXME: this shouldn't matter anymore. Since OCaml 4.02, non-parameterized
  * exceptions are constant, so physical equality is no longer appropriate.
  * raise and re-raise are distinguished by:
  * - passing reraise = 1 to [caml_stash_backtrace] (see below) in the bytecode
