@@ -150,7 +150,7 @@ static value capture_callstack_postponed()
   uintnat wosize = caml_current_callstack_size(callstack_size);
   if (wosize == 0) return Atom(0);
   res = caml_alloc_shr_no_track_noexc(wosize, 0);
-  if (res != 0) caml_current_callstack_write(res, 0);
+  if (res != 0) caml_current_callstack_write(res, -1);
   return res;
 }
 
@@ -158,7 +158,7 @@ static value capture_callstack_postponed()
    [caml_alloc], which is more efficient since it uses the minor
    heap.
    Should be called with [caml_memprof_suspended == 1] */
-static value capture_callstack(unsigned alloc_idx)
+static value capture_callstack(int alloc_idx)
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
