@@ -47,8 +47,16 @@ static double one_log1m_lambda;
 int caml_memprof_suspended = 0;
 static intnat callstack_size;
 
-static value callback_alloc_minor, callback_alloc_major,
-  callback_promote, callback_dealloc_minor, callback_dealloc_major;
+/* accessors for the OCaml type [Gc.Memprof.tracker],
+   which is the type of the [tracker] global below. */
+#define Alloc_minor(tracker) (Field(tracker, 0))
+#define Alloc_major(tracker) (Field(tracker, 1))
+#define Promote(tracker) (Field(tracker, 2))
+#define Dealloc_minor(tracker) (Field(tracker, 3))
+#define Dealloc_major(tracker) (Field(tracker, 4))
+
+static value tracker;
+
 
 /* Pointer to the word following the next sample in the minor
    heap. Equals [Caml_state->young_alloc_start] if no sampling is planned in
@@ -389,7 +397,7 @@ static value handle_entry_callbacks_exn(uintnat* t_idx)
     Field(sample_info, 3) = t->user_data;
     t->user_data = Val_unit;
     res = run_callback_exn(t_idx,
-        t->alloc_young ? callback_alloc_minor : callback_alloc_major,
+        t->alloc_young ? Alloc_minor(tracker) : Alloc_major(tracker),
         sample_info);
     if (*t_idx == Invalid_index)
       return res;
@@ -406,7 +414,7 @@ static value handle_entry_callbacks_exn(uintnat* t_idx)
     t->cb_promote_called = 1;
     user_data = t->user_data;
     t->user_data = Val_unit;
-    res = run_callback_exn(t_idx, callback_promote, user_data);
+    res = run_callback_exn(t_idx, Promote(tracker), user_data);
     if (*t_idx == Invalid_index)
       return res;
     CAMLassert(!Is_exception_result(res) && Is_block(res) && Tag_val(res) == 0
@@ -420,7 +428,7 @@ static value handle_entry_callbacks_exn(uintnat* t_idx)
 
   if (t->deallocated && !t->cb_dealloc_called) {
     value cb = (t->promoted || !t->alloc_young) ?
-      callback_dealloc_major : callback_dealloc_minor;
+      Dealloc_major(tracker) : Dealloc_minor(tracker);
     t->cb_dealloc_called = 1;
     user_data = t->user_data;
     t->user_data = Val_unit;
@@ -867,18 +875,12 @@ void caml_memprof_shutdown(void) {
   callstack_buffer_len = 0;
 }
 
-CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
+CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
 {
-  CAMLparam3(lv, szv, tracker);
+  CAMLparam3(lv, szv, tracker_param);
 
   double l = Double_val(lv);
   intnat sz = Long_val(szv);
-
-  value cb_alloc_minor = Field(tracker, 0);
-  value cb_alloc_major = Field(tracker, 1);
-  value cb_promote = Field(tracker, 2);
-  value cb_dealloc_minor = Field(tracker, 3);
-  value cb_dealloc_major = Field(tracker, 4);
 
   if (started) caml_failwith("Gc.Memprof.start: already started.");
 
@@ -898,18 +900,8 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   callstack_size = sz;
   started = 1;
 
-
-  callback_alloc_minor = cb_alloc_minor;
-  callback_alloc_major = cb_alloc_major;
-  callback_promote = cb_promote;
-  callback_dealloc_minor = cb_dealloc_minor;
-  callback_dealloc_major = cb_dealloc_major;
-
-  caml_register_generational_global_root(&callback_alloc_minor);
-  caml_register_generational_global_root(&callback_alloc_major);
-  caml_register_generational_global_root(&callback_promote);
-  caml_register_generational_global_root(&callback_dealloc_minor);
-  caml_register_generational_global_root(&callback_dealloc_major);
+  tracker = tracker_param;
+  caml_register_generational_global_root(&tracker);
 
   CAMLreturn(Val_unit);
 }
@@ -939,11 +931,7 @@ CAMLprim value caml_memprof_stop(value unit)
   caml_memprof_renew_minor_sample();
   started = 0;
 
-  caml_remove_generational_global_root(&callback_alloc_minor);
-  caml_remove_generational_global_root(&callback_alloc_major);
-  caml_remove_generational_global_root(&callback_promote);
-  caml_remove_generational_global_root(&callback_dealloc_minor);
-  caml_remove_generational_global_root(&callback_dealloc_major);
+  caml_remove_generational_global_root(&tracker);
 
   caml_stat_free(callstack_buffer);
   callstack_buffer = NULL;
