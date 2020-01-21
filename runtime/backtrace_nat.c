@@ -137,13 +137,14 @@ void caml_current_callstack_write(value trace, unsigned alloc_idx)
   if (alloc_idx > 0 && trace_size > 0) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     debuginfo info = debuginfo_extract(descr, alloc_idx);
+    CAMLassert(((uintnat)info & 3) == 0);
     Field(trace, 0) = Val_backtrace_slot(Slot_debuginfo(info));
     trace_pos++;
   }
 
   for (; trace_pos < trace_size; trace_pos++) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-    CAMLassert(descr != NULL);
+    CAMLassert(descr != NULL && ((uintnat)descr & 3) == 0);
     /* [Val_backtrace_slot(...)] is always a long, no need to call
        [caml_modify]. */
     Field(trace, trace_pos) = Val_backtrace_slot(Slot_frame_descr(descr));
