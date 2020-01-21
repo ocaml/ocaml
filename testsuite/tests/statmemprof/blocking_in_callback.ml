@@ -59,11 +59,8 @@ let rec go () =
 
 let () =
   let t = Thread.create go () in
-  Gc.Memprof.start
-    ~callstack_size:10
-    ~minor_alloc_callback
-    ~major_alloc_callback:(fun _ -> None)
-    ~sampling_rate:1. ();
+  Gc.Memprof.(start ~callstack_size:10 ~sampling_rate:1.
+    { null_tracker with alloc_minor = minor_alloc_callback; });
   Mutex.unlock mut;
   go ();
   Thread.join t;

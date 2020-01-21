@@ -20,20 +20,21 @@ let test sampling_rate =
   let deallocs = Array.make 257 0 in
   let promotes = Array.make 257 0 in
   let callstacks = Array.make 257 None in
-  start ~callstack_size:10
-    ~minor_alloc_callback:(fun info ->
-      allocs.(info.size) <- allocs.(info.size) + info.n_samples;
-      begin match callstacks.(info.size) with
-      | None -> callstacks.(info.size) <- Some info.callstack
-      | Some s -> assert (s = info.callstack)
-      end;
-      Some (info.size, info.n_samples))
-    ~minor_dealloc_callback:(fun (sz,n) ->
-      deallocs.(sz) <- deallocs.(sz) + n)
-    ~promote_callback:(fun (sz,n) ->
-      promotes.(sz) <- promotes.(sz) + n;
-      None)
-    ~sampling_rate ();
+  start ~callstack_size:10  ~sampling_rate
+    { null_tracker with
+      alloc_minor = (fun info ->
+        allocs.(info.size) <- allocs.(info.size) + info.n_samples;
+        begin match callstacks.(info.size) with
+        | None -> callstacks.(info.size) <- Some info.callstack
+        | Some s -> assert (s = info.callstack)
+        end;
+        Some (info.size, info.n_samples));
+      dealloc_minor = (fun (sz,n) ->
+        deallocs.(sz) <- deallocs.(sz) + n);
+      promote = (fun (sz,n) ->
+        promotes.(sz) <- promotes.(sz) + n;
+        None);
+    };
   let iter = 100_000 in
   let arr = Array.make iter (0,0,0,0) in
   for i = 0 to Array.length arr - 1 do
@@ -73,17 +74,17 @@ let () =
 let no_callback_after_stop trigger =
   let stopped = ref false in
   let cnt = ref 0 in
-  start ~callstack_size:0
-    ~minor_alloc_callback:(fun info ->
-      assert(not !stopped);
-      incr cnt;
-      if !cnt > trigger then begin
-        stop ();
-        stopped := true
-      end;
-      None
-    )
-    ~sampling_rate:1. ();
+  start ~callstack_size:0 ~sampling_rate:1.
+    { null_tracker with
+      alloc_minor = (fun info ->
+        assert(not !stopped);
+        incr cnt;
+        if !cnt > trigger then begin
+          stop ();
+          stopped := true
+        end;
+        None);
+    };
   for i = 0 to 1000 do ignore (Sys.opaque_identity f i) done;
   assert !stopped
 

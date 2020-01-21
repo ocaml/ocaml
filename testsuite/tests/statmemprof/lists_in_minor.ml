@@ -19,15 +19,16 @@ let[@inline never] allocate_lists len cnt =
 let check_distrib len cnt rate =
   Printf.printf "check_distrib %d %d %f\n%!" len cnt rate;
   let smp = ref 0 in
-  start ~callstack_size:10
-        ~major_alloc_callback:(fun _ -> assert false)
-        ~minor_alloc_callback:(fun info ->
-          assert (info.size = 2);
-          assert (info.n_samples > 0);
-          assert (not info.unmarshalled);
-          smp := !smp + info.n_samples;
-          None)
-        ~sampling_rate:rate ();
+  start ~callstack_size:10 ~sampling_rate:rate
+    { null_tracker with
+      alloc_major = (fun _ -> assert false);
+      alloc_minor = (fun info ->
+        assert (info.size = 2);
+        assert (info.n_samples > 0);
+        assert (not info.unmarshalled);
+        smp := !smp + info.n_samples;
+        None);
+    };
   allocate_lists len cnt;
   stop ();
 

@@ -867,16 +867,18 @@ void caml_memprof_shutdown(void) {
   callstack_buffer_len = 0;
 }
 
-CAMLprim value caml_memprof_start(value lv, value szv,
-                                  value cb_alloc_minor, value cb_alloc_major,
-                                  value cb_promote,
-                                  value cb_dealloc_minor,
-                                  value cb_dealloc_major)
+CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
 {
-  CAMLparam5(lv, szv, cb_alloc_minor, cb_alloc_major, cb_promote);
-  CAMLxparam2(cb_dealloc_minor, cb_dealloc_major);
+  CAMLparam3(lv, szv, tracker);
+
   double l = Double_val(lv);
   intnat sz = Long_val(szv);
+
+  value cb_alloc_minor = Field(tracker, 0);
+  value cb_alloc_major = Field(tracker, 1);
+  value cb_promote = Field(tracker, 2);
+  value cb_dealloc_minor = Field(tracker, 3);
+  value cb_dealloc_major = Field(tracker, 4);
 
   if (started) caml_failwith("Gc.Memprof.start: already started.");
 
@@ -912,11 +914,10 @@ CAMLprim value caml_memprof_start(value lv, value szv,
   CAMLreturn(Val_unit);
 }
 
+/* not used anymore, the prototype is only kept until the next bootstrap */
 CAMLprim value caml_memprof_start_byt(value* argv, int argn)
 {
-  CAMLassert(argn == 7);
-  return caml_memprof_start(argv[0], argv[1], argv[2], argv[3],
-                            argv[4], argv[5], argv[6]);
+  return(Val_unit);
 }
 
 CAMLprim value caml_memprof_stop(value unit)
