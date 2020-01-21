@@ -24,6 +24,7 @@
 #include "mlvalues.h"
 #include "memory.h"
 
+/* Global variables moved to Caml_state in 4.10 */
 #define caml_stack_low (Caml_state_field(stack_low))
 #define caml_stack_high (Caml_state_field(stack_high))
 #define caml_stack_threshold (Caml_state_field(stack_threshold))

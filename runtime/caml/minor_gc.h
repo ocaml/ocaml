@@ -19,6 +19,7 @@
 #include "address_class.h"
 #include "config.h"
 
+/* Global variables moved to Caml_state in 4.10 */
 #define caml_young_start (Caml_state_field(young_start))
 #define caml_young_end (Caml_state_field(young_end))
 #define caml_young_ptr (Caml_state_field(young_ptr))

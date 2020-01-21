@@ -112,7 +112,7 @@ extern char caml_globals_map[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
 
-/* Global variable moved to Caml_state in 4.10 */
+/* Global variables moved to Caml_state in 4.10 */
 #define caml_top_of_stack (Caml_state_field(top_of_stack))
 #define caml_bottom_of_stack (Caml_state_field(bottom_of_stack))
 #define caml_last_return_address (Caml_state_field(last_return_address))
