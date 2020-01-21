@@ -59,6 +59,7 @@ struct longjmp_buffer {
 #define siglongjmp(buf,val) longjmp(buf,val)
 #endif
 
+/* Global variables moved to Caml_state in 4.10 */
 #define caml_external_raise (Caml_state_field(external_raise))
 #define caml_exn_bucket (Caml_state_field(exn_bucket))
 

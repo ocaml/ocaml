@@ -20,7 +20,7 @@
 
 #include "misc.h"
 
-/* global variables moved to Caml_state in 4.10.0 */
+/* Global variables moved to Caml_state in 4.10 */
 #define caml_stat_minor_words (Caml_state_field(stat_minor_words))
 #define caml_stat_promoted_words (Caml_state_field(stat_promoted_words))
 #define caml_stat_major_words (Caml_state_field(stat_major_words))
