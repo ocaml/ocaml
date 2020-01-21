@@ -13,6 +13,10 @@ Working version
 - #6673, #1132: Relax the handling of explicit polymorphic types
   (Leo White, review by Jacques Garrigue and Gabriel Scherer)
 
+- #9232: allow any class type paths in #-types,
+  For instance, "val f: #F(X).t -> unit" is now allowed.
+  (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
