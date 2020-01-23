@@ -34,6 +34,12 @@ Working version
 - #9233: Restore the bytecode stack after an allocation.
   (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+- #9259: Made `Ephemeron.blit_key` and `Weak.blit` faster. They are now
+  linear in the size of the range being copied instead of depending on the
+  total sizes of the ephemerons or weak arrays involved.
+  (Arseniy Alekseyev, design advice by Leo White, review by François Bobot
+  and Damien Doligez)
+
 ### Code generation and optimizations:
 
 - #8637, #8805: Record debug info for each allocation
