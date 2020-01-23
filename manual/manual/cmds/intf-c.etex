@@ -189,19 +189,15 @@ These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
-By default, header files in the "caml/" subdirectory give only access
-to the public interface of the OCaml runtime. It is possible to define
-the macro "CAML_INTERNALS" to get access to a lower-level interface,
-but this lower-level interface is more likely to change and break
-programs that use it.
-
-{\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
-before including these header files. If you do not define it, the
-header files will also define short names (without the "caml_" prefix)
-for most functions, which usually produce clashes with names defined
-by other C libraries that you might use. Including the header files
-without "CAML_NAME_SPACE" is only supported for backward
-compatibility.
+{\bf Note:} It is highly recommended to define the macro "CAML_NAME_SPACE"
+on the command line with "-DCAML_NAME_SPACE" when including any of these
+header files. Otherwise, it is your responsability to ensure that
+the macro "CAML_NAME_SPACE" is defined bedore any of these header files.
+If you do not define it, the header files will also define short names
+(without the "caml_" prefix) for most functions, which usually produce
+clashes with names defined by other C libraries that you might use.
+Including the header files without "CAML_NAME_SPACE" is only supported
+for backward compatibility and may be removed in the future.
 
 \subsection{ss:staticlink-c-code}{Statically linking C code with OCaml code}
 
@@ -2702,3 +2698,67 @@ support libraries ("-lz") and the corresponding options
 ("-L/usr/local/zlib") must be given on all three invocations of "ocamlmklib",
 because they are needed at different times depending on whether shared
 libraries are supported.
+
+
+\section{s:c-internal-guidelines}{Disavowed topic: the internal runtime API}
+
+Let's start with a warning, there is \emph{no} stability guarantee if you are
+using internals of the OCaml runtime. If you really need access
+to the runtime internal API, this section provides some guidelines
+that may help you to write code that might not break on every new version
+of OCaml.
+
+\subsection{ss:c-internals}{CAML_INTERNALS}
+First, by default header files in the "caml/" subdirectory give only access
+to the public interface of the OCaml runtime.
+It is necessary to define the macro "CAML_INTERNALS" to get access to
+the lower-level interface. Once again, this lower-level interface is likely to
+change and break programs that use it.
+Another caveat is that this lower-level interface is only publicly accessible
+since OCaml 4.04.
+
+\subsection{ss:c-internal-variables}{Internal variables}
+Second, if you are using internal C variables, do not redefine them
+by hand. You should import those variables by including the corresponding
+header files. The representation of those variables has already changed once in
+OCaml 4.10, and is still under evolution.
+If your code relies on such internal and brittle properties, it will be broken
+at some point in time.
+
+For instance, rather than redefining "caml_young_limit":
+\begin{verbatim}
+extern int caml_young_limit;
+\end{verbatim}
+which breaks in OCaml $\ge$ 4.10, you should include the "minor_gc" header:
+\begin{verbatim}
+#include <caml/minor_gc.h>
+\end{verbatim}
+
+\subsection{ss:c-internal-macros}{OCaml version macros}
+Finally, if including the right headers is not enough, or if you need to support
+version older than OCaml 4.04, the header file "caml/version.h" should help
+you to define your own compatibility layer.
+This file provides macros defining the current ocaml major
+version "OCAML_VERSION_MAJOR", the minor version "OCAML_VERSION_MINOR", the
+patch level "OCAML_VERSION_PATCHLEVEL" and the full version
+"OCAML_VERSION" (which is the concatenation of the three previous macros).
+
+For example, if you need some specific handling for versions more recent than 4.10.0,
+you could write
+\begin{verbatim}
+#include <caml/version.h>
+#if OCAML_VERSION > 41000
+...
+#else
+...
+#endif
+\end{verbatim}
+
+The "caml/version.h" header also defines a macro for the compiler variant
+"OCAML_VERSION_ADDITIONAL" which is used to distinguish alpha and beta releases
+or release candidates.
+Finally, the version string is available as "OCAML_VERSION_STRING".
+
+\subsection{ss:c-internal-no}{A final word of caution}
+Do not access the domain state directly. \\
+Always use the "Caml_state_field" macro.
