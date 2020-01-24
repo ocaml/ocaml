@@ -149,22 +149,5 @@ let () =
   check_distrib 1 1   10000000 0.01;
   check_distrib 250 250 100000 0.1
 
-let[@inline never] check_callstack () =
-  Printf.printf "check_callstack\n%!";
-  let callstack = ref None in
-  start ~callstack_size:10
-        ~minor_alloc_callback:(fun info ->
-          if info.size > 100 then callstack := Some info.callstack;
-          None
-        )
-        ~sampling_rate:1. ();
-  allocate_arrays 250 250 100 false;
-  stop ();
-  match !callstack with
-  | None -> assert false
-  | Some cs -> Printexc.print_raw_backtrace stdout cs
-
-let () = check_callstack ()
-
 let () =
   Printf.printf "OK !\n"
