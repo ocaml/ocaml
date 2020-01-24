@@ -55,29 +55,32 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
   return Val_unit;
 }
 
-/* only called on lazy block */
-CAMLprim value caml_obj_make_forward (value blk, value fwd)
+CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
 {
-  caml_modify_field(blk, 0, fwd);
-  header_t hd_lazy;
+  header_t hd;
 
+  /* Modify field before setting tag */
+  caml_modify_field(blk, 0, fwd);
   again:
-  hd_lazy = (Hd_val(blk) & ~0xFF) | Int_val(Lazy_tag);
+  hd = Hd_val(blk);
+
+  /* This function is only called on Lazy_tag objects. The only racy write to
+   * this object is by the GC threads. */
+  CAMLassert (Tag_hd(hd) == Lazy_tag);
   if (caml_domain_alone()) {
     Tag_val (blk) = Forward_tag;
     return Val_unit;
   } else {
-    int cas_result = atomic_compare_exchange_strong(
-      Hp_atomic_val(blk),
-      &hd_lazy,
-      (hd_lazy & ~0xFF) | Int_val(Forward_tag));
-
-    if (cas_result) 
+    int cas_result =
+      atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
+                                     (hd & ~0xFF) | Forward_tag);
+    if (cas_result)
         return Val_unit;
     else
         goto again;
   }
 }
+
 
 /* [size] is a value encoding a number of blocks */
 CAMLprim value caml_obj_block(value tag, value size)
