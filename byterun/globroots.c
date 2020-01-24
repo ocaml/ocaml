@@ -216,3 +216,61 @@ void caml_scan_global_roots(scanning_action f, void* fdata) {
   scan_native_globals(f, fdata);
 #endif
 }
+
+/* linked list of registered global roots */
+typedef struct capi_global_roots {
+  void *v;
+  caml_root root;
+  struct capi_global_roots *next;
+} capi_global_roots;
+
+static capi_global_roots *cons_capi_roots(void *v, caml_root root, capi_global_roots *tl) {
+  capi_global_roots *dat = caml_stat_alloc(sizeof(capi_global_roots));
+  dat->v = v;
+  dat->root = root;
+  dat->next = tl;
+  return dat;
+}
+
+#define iter_capi_roots_list(list,dat) \
+  for (dat = list; dat != NULL; dat = dat->next)
+
+/* protected by roots_mutex */
+static capi_global_roots * caml_capi_global_roots = NULL;
+
+CAMLexport void caml_register_global_root (value *v) {
+  caml_root root = caml_create_root(*v);
+  caml_plat_lock(&roots_mutex);
+  caml_capi_global_roots = cons_capi_roots((void*) v, root, caml_capi_global_roots);
+  caml_plat_unlock(&roots_mutex);
+}
+
+CAMLexport void caml_remove_global_root (value *v) {
+  capi_global_roots* dat;
+  capi_global_roots** last;
+
+  caml_plat_lock(&roots_mutex);
+  last = &caml_capi_global_roots;
+  iter_capi_roots_list(caml_capi_global_roots, dat) {
+    if (dat->v == v) {
+      caml_delete_root(dat->root);
+      *last = dat->next;
+      caml_stat_free(dat);
+      break;
+    }
+    last = &dat->next;
+  }
+  caml_plat_unlock(&roots_mutex);
+}
+
+CAMLexport void caml_register_generational_global_root (value *v) {
+  caml_register_global_root(v);
+}
+
+CAMLexport void caml_remove_generational_global_root (value *v) {
+  caml_remove_global_root(v);
+}
+
+CAMLexport void caml_modify_generational_global_root (value *r, value newval) {
+  caml_modify_field(*r, 0, newval);
+}
