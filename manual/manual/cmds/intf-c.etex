@@ -1242,6 +1242,7 @@ The stub code file, "curses_stubs.c", looks like this:
 \begin{verbatim}
 /* File curses_stubs.c -- stub code for curses */
 #include <curses.h>
+#define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -1267,7 +1268,7 @@ static struct custom_operations curses_window_ops = {
 /* Allocating an OCaml custom block to hold the given WINDOW * */
 static value alloc_window(WINDOW * w)
 {
-  value v = alloc_custom(&curses_window_ops, sizeof(WINDOW *), 0, 1);
+  value v = caml_alloc_custom(&curses_window_ops, sizeof(WINDOW *), 0, 1);
   Window_val(v) = w;
   return v;
 }
@@ -2554,6 +2555,7 @@ The rest of the binding is the same for both platforms:
 
 \begin{verbatim}
 /* The following define is necessary because the API is experimental */
+#define CAML_NAME_SPACE
 #define CAML_INTERNALS
 
 #include <caml/mlvalues.h>
