@@ -205,8 +205,8 @@ static inline void caml_ephe_clean_partial (value v,
       } else {
         /* If we scanned all the keys and the data field remains filled,
            then the mark phase must have marked it */
-        CAMLassert( !(offset_start == 2 && offset_end == Wosize_hd (Hd_val(v)) &&
-                      Is_block (child) && Is_in_heap (child)
+        CAMLassert( !(offset_start == 2 && offset_end == Wosize_hd (Hd_val(v))
+                      && Is_block (child) && Is_in_heap (child)
                       && Is_white_val (child)));
       }
   }
