@@ -181,6 +181,9 @@ Working version
   even if they are at tail position.
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
 
+- #XXXX: Fix a soundness bug in Rec_check
+  (Vincent Laviron, review by ...)
+
 OCaml 4.10.0
 ------------
 
