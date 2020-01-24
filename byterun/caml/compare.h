@@ -16,5 +16,7 @@
 
 /* In domain_state.tbl: intnat compare_unordered; */
 /* Used by custom comparison to report unordered NaN-like cases. */
+CAMLextern int caml_compare_unordered;
+
 
 #endif /* CAML_COMPARE_H */

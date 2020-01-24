@@ -64,6 +64,8 @@ CAMLextern void caml_register_custom_operations(const struct custom_operations *
 
 /* In domain_state.tbl: intnat compare_unordered; */
 /* Used by custom comparison to report unordered NaN-like cases. */
+CAMLextern int caml_compare_unordered; /* FIXME: ctk21 horrific hack to get old CAPI compiling */
+
 
 #ifdef CAML_INTERNALS
 extern struct custom_operations * caml_find_custom_operations(char * ident);
