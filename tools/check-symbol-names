@@ -20,9 +20,9 @@ set -o pipefail
 
 nm -A -P "$@" | awk '
 # ignore caml_foo, camlFoo_bar, _caml_foo, _camlFoo_bar
-$2 ~ /^(_?caml[_A-Z])/ { next }
+$2 ~ /^(_?[c|C]aml[_A-Z])/ { next }
 # ignore local and undefined symbols
-$3 ~ /^[rbdtsU]$/ { next }
+$3 ~ /^[a-zU]$/ { next }
 # ignore "main", which should be externally linked
 $2 ~ /^_?main$/ { next }
 # print the rest
