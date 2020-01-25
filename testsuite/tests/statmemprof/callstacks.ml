@@ -43,9 +43,10 @@ let alloc_closure () =
   let x = Sys.opaque_identity 1 in
   ignore (Sys.opaque_identity (fun () -> x))
 
-let floatarray = [| 1. |]
+let floatarray = [| 1.; 2. |]
+let[@inline never] get0 a = a.(0)
 let getfloatfield () =
-  ignore (Sys.opaque_identity (floatarray.(0)))
+  ignore (Sys.opaque_identity (get0 floatarray))
 
 let marshalled =
   Marshal.to_string [Sys.opaque_identity 1] []
@@ -57,9 +58,9 @@ let alloc_ref () =
   ignore (Sys.opaque_identity (ref (Sys.opaque_identity 1)))
 
 let fl = 1.
+let[@inline never] prod_floats a b = a *. b
 let alloc_boxedfloat () =
-  ignore (Sys.opaque_identity
-            (Sys.opaque_identity fl *. Sys.opaque_identity fl))
+  ignore (Sys.opaque_identity (prod_floats fl fl))
 
 let allocators =
   [alloc_list_literal; alloc_pair; alloc_record; alloc_some;
