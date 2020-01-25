@@ -72,49 +72,6 @@ void caml_raise(value v)
   caml_raise_exception(Caml_state, v);
 }
 
-/* Used by the stack overflow handler -> deactivate ASAN (see
-   segv_handler in signals_nat.c). */
-CAMLno_asan
-void caml_raise_constant(value tag)
-{
-  caml_raise(tag);
-}
-
-void caml_raise_with_arg(value tag, value arg)
-{
-  CAMLparam2 (tag, arg);
-  CAMLlocal1 (bucket);
-
-  bucket = caml_alloc_small (2, 0);
-  Field(bucket, 0) = tag;
-  Field(bucket, 1) = arg;
-  caml_raise(bucket);
-  CAMLnoreturn;
-}
-
-void caml_raise_with_args(value tag, int nargs, value args[])
-{
-  CAMLparam1 (tag);
-  CAMLxparamN (args, nargs);
-  value bucket;
-  int i;
-
-  CAMLassert(1 + nargs <= Max_young_wosize);
-  bucket = caml_alloc_small (1 + nargs, 0);
-  Field(bucket, 0) = tag;
-  for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
-  caml_raise(bucket);
-  CAMLnoreturn;
-}
-
-void caml_raise_with_string(value tag, char const *msg)
-{
-  CAMLparam1(tag);
-  value v_msg = caml_copy_string(msg);
-  caml_raise_with_arg(tag, v_msg);
-  CAMLnoreturn;
-}
-
 void caml_failwith (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Failure, msg);
@@ -171,12 +128,6 @@ void caml_raise_not_found(void)
 void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
-}
-
-value caml_raise_if_exception(value res)
-{
-  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
-  return res;
 }
 
 /* We use a pre-allocated exception because we can't
