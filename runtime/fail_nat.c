@@ -89,71 +89,71 @@ void caml_raise(value v)
   caml_raise_exception(Caml_state, v);
 }
 
-void caml_failwith (char const *msg)
+value caml_exception_failure(char const *msg)
 {
-  caml_raise_with_string((value) caml_exn_Failure, msg);
+  return caml_exception_with_string((value)caml_exn_Failure, msg);
 }
 
-void caml_failwith_value (value msg)
+value caml_exception_failure_value(value msg)
 {
-  caml_raise_with_arg((value) caml_exn_Failure, msg);
+  return caml_exception_with_arg((value)caml_exn_Failure, msg);
 }
 
-void caml_invalid_argument (char const *msg)
+value caml_exception_invalid_argument(char const *msg)
 {
-  caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
+  return caml_exception_with_string((value)caml_exn_Invalid_argument, msg);
 }
 
-void caml_invalid_argument_value (value msg)
+value caml_exception_invalid_argument_value(value msg)
 {
-  caml_raise_with_arg((value) caml_exn_Invalid_argument, msg);
+  return caml_exception_with_arg((value)caml_exn_Invalid_argument, msg);
 }
 
-void caml_raise_out_of_memory(void)
+value caml_exception_out_of_memory(void)
 {
-  caml_raise_constant((value) caml_exn_Out_of_memory);
+  return (value)caml_exn_Out_of_memory;
 }
 
 /* Used by the stack overflow handler -> deactivate ASAN (see
    segv_handler in signals_nat.c). */
 CAMLno_asan
-void caml_raise_stack_overflow(void)
+value caml_exception_stack_overflow(void)
 {
-  caml_raise_constant((value) caml_exn_Stack_overflow);
+  return (value)caml_exn_Stack_overflow;
 }
 
-void caml_raise_sys_error(value msg)
+value caml_exception_sys_error(value msg)
 {
-  caml_raise_with_arg((value) caml_exn_Sys_error, msg);
+  return caml_exception_with_arg((value)caml_exn_Sys_error, msg);
 }
 
-void caml_raise_end_of_file(void)
+value caml_exception_end_of_file(void)
 {
-  caml_raise_constant((value) caml_exn_End_of_file);
+  return (value)caml_exn_End_of_file;
 }
 
-void caml_raise_zero_divide(void)
+value caml_exception_zero_divide(void)
 {
-  caml_raise_constant((value) caml_exn_Division_by_zero);
+  return (value)caml_exn_Division_by_zero;
 }
 
-void caml_raise_not_found(void)
+value caml_exception_not_found(void)
 {
-  caml_raise_constant((value) caml_exn_Not_found);
+  return (value)caml_exn_Not_found;
 }
 
-void caml_raise_sys_blocked_io(void)
+value caml_exception_sys_blocked_io(void)
 {
-  caml_raise_constant((value) caml_exn_Sys_blocked_io);
+  return (value)caml_exn_Sys_blocked_io;
 }
 
 /* We use a pre-allocated exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
-static value array_bound_exn(void)
+value caml_exception_array_bound_error(void)
 {
-  static atomic_uintnat exn_cache = 0;
-  const value* exn = (const value*)atomic_load_acquire(&exn_cache);
+  static _Atomic(const value *) exn_cache = NULL;
+  const value *exn = atomic_load_acquire(&exn_cache);
   if (!exn) {
     exn = caml_named_value("Pervasives.array_bound_error");
     if (!exn) {
@@ -161,14 +161,9 @@ static value array_bound_exn(void)
         "Invalid_argument(\"index out of bounds\")\n");
       exit(2);
     }
-    atomic_store_release(&exn_cache, (uintnat)exn);
+    atomic_store_release(&exn_cache, exn);
   }
   return *exn;
-}
-
-void caml_array_bound_error(void)
-{
-  caml_raise(array_bound_exn());
 }
 
 void caml_array_bound_error_asm(void)
@@ -180,7 +175,7 @@ void caml_array_bound_error_asm(void)
 
   /* This exception is raised directly from ocamlopt-compiled OCaml,
      not C, so we jump directly to the OCaml handler (and avoid GC) */
-  caml_raise_exception(Caml_state, array_bound_exn());
+  caml_raise_exception(Caml_state, caml_exception_array_bound_error());
 }
 
 int caml_is_special_exception(value exn) {
