@@ -41,6 +41,9 @@
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
+static atomic_intnat domains_in_minor_gc;
+static atomic_intnat domains_finished_roots;
+
 /* [sz] and [rsv] are numbers of entries */
 static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
                                  asize_t rsv, asize_t element_size)
@@ -493,7 +496,7 @@ void caml_empty_minor_heap_domain_finalizers (struct domain* domain, void* unuse
   /* Run custom block finalisation of dead minor values */
   for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
     value v = elt->block;
-    if (Hd_val(v) == 0) {
+    if (get_header_val(v) == 0) {
       /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
     } else {
       /* Block will be freed: call finalisation function, if any */
@@ -518,6 +521,21 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   clear_table ((struct generic_table *)&minor_tables->minor_ref);
 #endif
 
+  asize_t wsize = domain_state->minor_heap_wsz;
+
+  if( domain_state->young_phase == 0 ) {
+    domain_state->young_start = (char*)domain_state->young_end;
+    domain_state->young_end = (char*)(domain_state->young_start + Bsize_wsize(wsize) / 2);
+
+    domain_state->young_phase = 1;  
+  } else {
+    domain_state->young_end = (char*)(domain_state->young_end - Bsize_wsize(wsize) / 2);
+    domain_state->young_start = (char*)(domain_state->young_end - Bsize_wsize(wsize) / 2);
+
+    domain_state->young_phase = 0;
+  }
+
+  domain_state->young_limit = domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
 }
 
@@ -551,6 +569,8 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
     oldify_one (&st, **r, *r);
   }
   caml_ev_end("minor_gc/roots");
+
+  atomic_fetch_add_explicit(&domains_finished_roots, 1, memory_order_release);
 
   caml_ev_begin("minor_gc/promote");
   oldify_mopup (&st);
@@ -612,6 +632,14 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   barrier_status b;
 
   b = caml_global_barrier_begin();
+  if( caml_global_barrier_is_final(b) ) {
+    atomic_store_explicit(&domains_in_minor_gc, 0, memory_order_release);
+    atomic_store_explicit(&domains_finished_roots, 0, memory_order_release);
+  }
+  caml_global_barrier_end(b);
+
+  b = caml_global_barrier_begin();
+  atomic_fetch_add_explicit(&domains_in_minor_gc, 1, memory_order_release);
   caml_global_barrier_end(b);
 
   caml_gc_log("running stw empty_minor_heap_promote");
