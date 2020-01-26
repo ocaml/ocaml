@@ -45,6 +45,9 @@ Working version
 
 ### Standard library:
 
+- #9248: Add Printexc.default_uncaught_exception_handler
+  (Raphael Sousa Santos, review by Daniel Bünzli)
+
 - #9235: Add Array.exists2 and Array.for_all2
   (Bernhard Schommer, review by Armaël Guéneau)
 
