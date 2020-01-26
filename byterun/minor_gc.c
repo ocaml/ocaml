@@ -43,7 +43,7 @@ extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
 static atomic_intnat domains_in_minor_gc;
-static atomic_intnat domains_finished_roots;
+static atomic_intnat domains_finished_remembered_set;
 
 /* [sz] and [rsv] are numbers of entries */
 static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
@@ -394,7 +394,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
    Note that [oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
    oldifying its fields. */
-static void oldify_mopup (struct oldify_state* st)
+static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
 {
   value v, new_v, f;
   mlsize_t i;
@@ -434,26 +434,28 @@ static void oldify_mopup (struct oldify_state* st)
 
   /* Oldify the data in the minor heap of alive ephemeron
      During minor collection keys outside the minor heap are considered alive */
-  for (re = ephe_ref_table.base;
-       re < ephe_ref_table.ptr; re++) {
-    /* look only at ephemeron with data in the minor heap */
-    if (re->offset == CAML_EPHE_DATA_OFFSET) {
-      value *data = &Ephe_data(re->ephe);
-      if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
-        resolve_infix_val(data);
-        if (get_header_val(*data) == 0) { /* Value copied to major heap */
-          *data = Op_val(*data)[0];
-        } else {
-          if (ephe_check_alive_data(re, young_ptr, young_end)) {
-            oldify_one(st, *data, data);
-            redo = 1; /* oldify_todo_list can still be 0 */
+  if( do_ephemerons ) {
+    for (re = ephe_ref_table.base;
+        re < ephe_ref_table.ptr; re++) {
+      /* look only at ephemeron with data in the minor heap */
+      if (re->offset == CAML_EPHE_DATA_OFFSET) {
+        value *data = &Ephe_data(re->ephe);
+        if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
+          resolve_infix_val(data);
+          if (get_header_val(*data) == 0) { /* Value copied to major heap */
+            *data = Op_val(*data)[0];
+          } else {
+            if (ephe_check_alive_data(re, young_ptr, young_end)) {
+              oldify_one(st, *data, data);
+              redo = 1; /* oldify_todo_list can still be 0 */
+            }
           }
         }
       }
     }
   }
 
-  if (redo) oldify_mopup (st);
+  if (redo) oldify_mopup (st, 1);
 }
 
 //*****************************************************************************
@@ -538,7 +540,7 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   domain_state->young_ptr = domain_state->young_end;
 }
 
-void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
+void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
@@ -560,20 +562,28 @@ void caml_empty_minor_heap_promote (struct domain* domain, void* unused)
 
   caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
   caml_ev_begin("minor_gc");
-  caml_ev_begin("minor_gc/roots");
-  caml_do_local_roots(&oldify_one, &st, domain, 0);
-  caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
+  caml_ev_begin("minor_gc/remembered_set");
 
   for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
     oldify_one (&st, **r, *r);
   }
-  caml_ev_end("minor_gc/roots");
 
-  atomic_fetch_add_explicit(&domains_finished_roots, 1, memory_order_release);
+  caml_ev_begin("minor_gc/remembered_set/promote");
+  oldify_mopup (&st, 0);
+  caml_ev_end("minor_gc/remembered_set/promote");
+  caml_ev_end("minor_gc/remembered_set");
 
-  caml_ev_begin("minor_gc/promote");
-  oldify_mopup (&st);
-  caml_ev_end("minor_gc/promote");
+  if( not_alone ) {
+    atomic_fetch_add_explicit(&domains_finished_remembered_set, 1, memory_order_release);
+  }
+
+  caml_ev_begin("minor_gc/local_roots");
+  caml_do_local_roots(&oldify_one, &st, domain, 0);
+  caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
+  caml_ev_begin("minor_gc/local_roots/promote");
+  oldify_mopup (&st, 1);
+  caml_ev_end("minor_gc/local_roots/promote");
+  caml_ev_end("minor_gc/local_roots");
 
   caml_ev_begin("minor_gc/ephemerons");
   for (re = minor_tables->ephe_ref.base;
@@ -630,23 +640,30 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 
   barrier_status b;
 
-  b = caml_global_barrier_begin();
-  if( caml_global_barrier_is_final(b) ) {
-    atomic_store_explicit(&domains_in_minor_gc, 0, memory_order_release);
-    atomic_store_explicit(&domains_finished_roots, 0, memory_order_release);
-  }
-  caml_global_barrier_end(b);
+  int not_alone = !caml_domain_alone();
 
-  b = caml_global_barrier_begin();
-  atomic_fetch_add_explicit(&domains_in_minor_gc, 1, memory_order_release);
-  caml_global_barrier_end(b);
+  if( not_alone ) {
+    // TODO: There's probably a better way to do this than have two barriers
+    b = caml_global_barrier_begin();
+    if( caml_global_barrier_is_final(b) ) {
+      atomic_store_explicit(&domains_in_minor_gc, 0, memory_order_release);
+      atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
+    }
+    caml_global_barrier_end(b);
+
+    b = caml_global_barrier_begin();
+    atomic_fetch_add_explicit(&domains_in_minor_gc, 1, memory_order_release);
+    caml_global_barrier_end(b);
+  }
 
   caml_gc_log("running stw empty_minor_heap_promote");
-  caml_empty_minor_heap_promote(domain, 0);
+  caml_empty_minor_heap_promote(domain, not_alone);
 
-  SPIN_WAIT {
-    if( atomic_load_explicit(&domains_finished_roots, memory_order_acquire) == atomic_load_explicit(&domains_in_minor_gc, memory_order_acquire) ) {
-      break;
+  if( not_alone ) {
+    SPIN_WAIT {
+      if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == atomic_load_explicit(&domains_in_minor_gc, memory_order_acquire) ) {
+        break;
+      }
     }
   }
 
@@ -669,7 +686,7 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
   #endif
 
   caml_gc_log("requesting stw empty_minor_heap");
-  return caml_try_run_on_all_domains(&caml_stw_empty_minor_heap, (void*)0);
+  return caml_try_run_on_all_domains(&caml_stw_empty_minor_heap, (void*)0, 1);
 }
 
 /* must be called outside a STW section, will retry until we have emptied our minor heap */
