@@ -33,6 +33,7 @@
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/platform.h"
 #include "caml/roots.h"
 #include "caml/shared_heap.h"
 #include "caml/signals.h"
@@ -491,7 +492,6 @@ void caml_empty_minor_heap_domain_finalizers (struct domain* domain, void* unuse
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   struct caml_custom_elt *elt;
 
-  caml_ev_begin("minor_gc/finalisers");
   caml_final_update_last_minor(domain);
   /* Run custom block finalisation of dead minor values */
   for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
@@ -504,7 +504,6 @@ void caml_empty_minor_heap_domain_finalizers (struct domain* domain, void* unuse
       if (final_fun != NULL) final_fun(v);
     }
   }
-  caml_ev_end("minor_gc/finalisers");
 }
 
 void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
@@ -645,21 +644,21 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, 0);
 
-  b = caml_global_barrier_begin();
-
-  if( caml_global_barrier_is_final(b) ) {
-    caml_ev_begin("minor_gc/finalizers");
-    caml_gc_log("running stw empty_minor_heap_domain_finalizers");
-    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_finalizers, (void*)0);
-    caml_ev_end("minor_gc/finalizers");
-    caml_ev_begin("minor_gc/clear");
-    caml_gc_log("running stw empty_minor_heap_domain_clear");
-    caml_run_on_all_running_domains_during_stw(&caml_empty_minor_heap_domain_clear, (void*)0);
-    caml_ev_end("minor_gc/clear");
-    caml_gc_log("finished stw empty_minor_heap");
+  SPIN_WAIT {
+    if( atomic_load_explicit(&domains_finished_roots, memory_order_acquire) == atomic_load_explicit(&domains_in_minor_gc, memory_order_acquire) ) {
+      break;
+    }
   }
 
-  caml_global_barrier_end(b);
+  caml_ev_begin("minor_gc/finalizers");
+  caml_gc_log("running stw empty_minor_heap_domain_finalizers");
+  caml_empty_minor_heap_domain_finalizers(domain, 0);
+  caml_ev_end("minor_gc/finalizers");
+  caml_ev_begin("minor_gc/clear");
+  caml_gc_log("running stw empty_minor_heap_domain_clear");
+  caml_empty_minor_heap_domain_clear(domain, 0);
+  caml_ev_end("minor_gc/clear");
+  caml_gc_log("finished stw empty_minor_heap");
 }
 
 /* must be called outside a STW section */
