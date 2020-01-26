@@ -42,7 +42,7 @@
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
-static atomic_intnat domains_in_minor_gc;
+static intnat domains_in_minor_gc;
 static atomic_intnat domains_finished_remembered_set;
 
 /* [sz] and [rsv] are numbers of entries */
@@ -643,28 +643,27 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   int not_alone = !caml_domain_alone();
 
   if( not_alone ) {
-    // TODO: There's probably a better way to do this than have two barriers
+    caml_ev_begin("minor_gc/barrier0");
     b = caml_global_barrier_begin();
     if( caml_global_barrier_is_final(b) ) {
-      atomic_store_explicit(&domains_in_minor_gc, 0, memory_order_release);
+      domains_in_minor_gc = caml_global_barrier_num_domains();
       atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
     }
     caml_global_barrier_end(b);
-
-    b = caml_global_barrier_begin();
-    atomic_fetch_add_explicit(&domains_in_minor_gc, 1, memory_order_release);
-    caml_global_barrier_end(b);
+    caml_ev_end("minor_gc/barrier0");
   }
 
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, not_alone);
 
   if( not_alone ) {
+    caml_ev_begin("minor_gc/barrier1");
     SPIN_WAIT {
-      if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == atomic_load_explicit(&domains_in_minor_gc, memory_order_acquire) ) {
+      if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == domains_in_minor_gc ) {
         break;
       }
     }
+    caml_ev_end("minor_gc/barrier1");
   }
 
   caml_ev_begin("minor_gc/finalizers");
@@ -713,7 +712,7 @@ CAMLexport void caml_minor_collection (void)
   /* TODO: is try really acceptable or do we need 'every time'
   caml_empty_minor_heap (); */
   caml_handle_incoming_interrupts ();
-  caml_major_collection_slice (0, 0);
+  // caml_major_collection_slice (0, 0);
   caml_final_do_calls();
 
   caml_ev_resume();
