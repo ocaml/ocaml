@@ -12,6 +12,9 @@ DOMAIN_STATE(char*, young_start)
 DOMAIN_STATE(char*, young_end)
 /* End of the minor heap. always(young_end <= young_ptr <= young_start) */
 
+DOMAIN_STATE(int, young_phase)
+/* The current minor heap being used. This is for double buffering */
+
 DOMAIN_STATE(struct stack_info*, current_stack)
 /* Current stack */
 

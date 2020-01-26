@@ -152,9 +152,12 @@ int caml_reallocate_minor_heap(asize_t wsize)
   }
 #endif
 
-  Caml_state->minor_heap_wsz = wsize;
+  domain_state->minor_heap_wsz = wsize;
+  domain_state->young_phase = 0;
+
   domain_state->young_start = (char*)domain_self->minor_heap_area;
-  domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
+  domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize) / 2);
+  domain_state->young_limit = domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
   return 0;
 }
@@ -191,7 +194,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
           (caml_domain_state*)(d->tls_area);
         atomic_uintnat* young_limit = (atomic_uintnat*)&domain_state->young_limit;
         d->interrupt_word_address = young_limit;
-        atomic_store_rel(young_limit, d->minor_heap_area);
+        atomic_store_rel(young_limit, domain_state->young_start);
         s->interrupt_word = young_limit;
       }
       Assert(s->qhead == NULL);
@@ -660,7 +663,7 @@ void caml_handle_gc_interrupt() {
     caml_ev_begin("handle_interrupt");
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(young_limit, &i, domain_self->minor_heap_area);
+      atomic_compare_exchange_strong(young_limit, &i, Caml_state->young_start);
     }
     caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
@@ -669,7 +672,7 @@ void caml_handle_gc_interrupt() {
   }
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
-       domain_self->minor_heap_area) ||
+       Caml_state->young_start) ||
       Caml_state->force_major_slice) {
     /* out of minor heap or collection forced */
     Caml_state->force_major_slice = 0;
