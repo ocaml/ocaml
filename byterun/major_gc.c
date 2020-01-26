@@ -1148,7 +1148,7 @@ mark_again:
     if (from_barrier) {
       try_complete_gc_phase (d, (void*)0);
     } else {
-      caml_try_run_on_all_domains (&try_complete_gc_phase, 0);
+      caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
     }
     caml_ev_end("major_gc/phase_change");
     if (budget > 0) goto mark_again;
@@ -1176,7 +1176,7 @@ mark_again:
       if (from_barrier) {
         cycle_all_domains_callback(d, (void*)0);
       } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0);
+        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
       }
       caml_ev_end("major_gc/phase_change");
     }
@@ -1205,7 +1205,7 @@ static void finish_major_cycle_callback (struct domain* domain, void* arg)
 void caml_finish_major_cycle ()
 {
   caml_try_run_on_all_domains(&finish_major_cycle_callback,
-                              (void*)caml_major_cycles_completed);
+                              (void*)caml_major_cycles_completed, 0);
 }
 
 void caml_empty_mark_stack () {

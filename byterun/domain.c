@@ -463,7 +463,7 @@ static struct {
   atomic_uintnat num_domains_still_processing;
   void (*callback)(struct domain*, void*);
   void* data;
-
+  int leave_when_done;
   int num_domains;
   atomic_uintnat barrier;
 } stw_request = {
@@ -471,6 +471,7 @@ static struct {
   ATOMIC_UINTNAT_INIT(0),
   NULL,
   NULL,
+  0,
   0,
   ATOMIC_UINTNAT_INIT(0)
 };
@@ -536,9 +537,12 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   domain_state->inside_stw_handler = 0;
   #endif
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
-  SPIN_WAIT {
-    if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
-      break;
+
+  if( !stw_request.leave_when_done ) {
+    SPIN_WAIT {
+      if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
+        break;
+    }
   }
   caml_ev_end("stw/handler");
 }
@@ -565,7 +569,7 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data)
+int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data, int leave_when_done)
 {
   caml_domain_state* domain_state = Caml_state;
   
@@ -606,6 +610,7 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
   }
 
   stw_request.num_domains = domains_participating;
+  stw_request.leave_when_done = leave_when_done;
   atomic_store_rel(&stw_request.barrier, 0);
   atomic_store_rel(&stw_request.num_domains_still_processing,
                    domains_participating);
@@ -630,9 +635,11 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
   caml_plat_unlock(&all_domains_lock);
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
   
-  SPIN_WAIT {
-    if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
-      break;
+  if( !leave_when_done ) {
+    SPIN_WAIT {
+      if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
+        break;
+    }
   }
   caml_ev_end("stw/leader");
   /* other domains might not have finished stw_handler yet, but they
