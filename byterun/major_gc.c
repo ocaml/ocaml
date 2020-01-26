@@ -1029,7 +1029,7 @@ static intnat major_collection_slice(intnat howmuch,
   int steal_result;
   int was_marking = 0;
   uintnat saved_ephe_cycle;
-  uintnat saved_major_cycle;
+  uintnat saved_major_cycle = caml_major_cycles_completed;
 
   caml_ev_begin("major_gc/slice");
 
@@ -1045,8 +1045,14 @@ static intnat major_collection_slice(intnat howmuch,
         FIXME: we would like to handle steal interrupts regularly,
         but bad things happen if the GC cycles ends via an STW
         interrupt here.
-      caml_handle_incoming_interrupts();
       */
+     caml_handle_incoming_interrupts();
+     // FIXME: Is this sufficient to deal with the above case?
+     if( saved_major_cycle != caml_major_cycles_completed ) {
+       caml_ev_end("major_gc/sweep");
+       caml_ev_end("major_gc/slice");
+       return;
+     }
     } while (budget > 0 && available != left);
 
     if (budget > 0) {
@@ -1060,9 +1066,12 @@ static intnat major_collection_slice(intnat howmuch,
     /*
       FIXME: we would like to handle steal interrupts regularly,
       but bad things happen if the GC cycles ends via an STW
-      interrupt here.
+      interrupt here. */
     caml_handle_incoming_interrupts();
-    */
+    if( saved_major_cycle != caml_major_cycles_completed ) {
+       caml_ev_end("major_gc/slice");
+       return;      
+    }
   }
 
 mark_again:
@@ -1080,8 +1089,13 @@ mark_again:
         FIXME: we would like to handle steal interrupts regularly,
         but bad things happen if the GC cycles ends via an STW
         interrupt here.
-      caml_handle_incoming_interrupts();
       */
+      caml_handle_incoming_interrupts();
+      if( saved_major_cycle != caml_major_cycles_completed ) {
+        caml_ev_end("major_gc/mark");
+        caml_ev_end("major_gc/slice");       
+        return;
+      }
     } else if (0) {
       if (was_marking) {
         caml_ev_end("major_gc/mark");
