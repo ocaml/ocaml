@@ -138,7 +138,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
   caml_mem_decommit((void*)domain_self->minor_heap_area,
                     domain_self->minor_heap_area_end - domain_self->minor_heap_area);
 
-  wsize = caml_norm_minor_heap_size(wsize);
+  wsize = caml_norm_minor_heap_size(wsize * 2);
 
   if (!caml_mem_commit((void*)domain_self->minor_heap_area, Bsize_wsize(wsize))) {
     return -1;
