@@ -3,9 +3,9 @@ accept.$(O): accept.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h \
- socketaddr.h ../../runtime/caml/misc.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/signals.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
 bind.$(O): bind.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
@@ -126,8 +126,8 @@ lockf.$(O): lockf.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/fail.h unixsupport.h ../../runtime/caml/signals.h
+ ../../runtime/caml/domain.h ../../runtime/caml/fail.h unixsupport.h \
+ ../../runtime/caml/signals.h
 lseek.$(O): lseek.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -174,14 +174,12 @@ pipe.$(O): pipe.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/alloc.h unixsupport.h
+ ../../runtime/caml/domain.h ../../runtime/caml/alloc.h unixsupport.h
 read.$(O): read.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/signals.h unixsupport.h
+ ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h
 readlink.$(O): readlink.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -207,18 +205,17 @@ select.$(O): select.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h ../../runtime/caml/fail.h \
- ../../runtime/caml/signals.h winworker.h unixsupport.h windbug.h \
- winlist.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/signals.h winworker.h \
+ unixsupport.h windbug.h winlist.h
 sendrecv.$(O): sendrecv.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h \
- socketaddr.h ../../runtime/caml/misc.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/signals.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
 shutdown.$(O): shutdown.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -240,9 +237,9 @@ sockopt.$(O): sockopt.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/alloc.h ../../runtime/caml/fail.h unixsupport.h \
- socketaddr.h ../../runtime/caml/misc.h
+ ../../runtime/caml/domain.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/fail.h unixsupport.h socketaddr.h \
+ ../../runtime/caml/misc.h
 startup.$(O): startup.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -302,9 +299,8 @@ unixsupport.$(O): unixsupport.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/callback.h \
  ../../runtime/caml/alloc.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/fail.h ../../runtime/caml/custom.h unixsupport.h \
- ../unix/cst2constr.h
+ ../../runtime/caml/domain.h ../../runtime/caml/fail.h \
+ ../../runtime/caml/custom.h unixsupport.h ../unix/cst2constr.h
 windir.$(O): windir.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -320,24 +316,23 @@ winwait.$(O): winwait.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/signals.h unixsupport.h
 write.$(O): write.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/signals.h unixsupport.h
+ ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h
 winlist.$(O): winlist.c winlist.h
 winworker.$(O): winworker.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h ../../runtime/caml/signals.h winworker.h \
- unixsupport.h winlist.h windbug.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/signals.h winworker.h unixsupport.h winlist.h \
+ windbug.h
 windbug.$(O): windbug.c windbug.h
 utimes.$(O): utimes.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
@@ -354,17 +349,16 @@ access.$(O): access.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h ../../runtime/caml/signals.h \
- ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
 addrofstr.$(O): addrofstr.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/fail.h unixsupport.h socketaddr.h \
- ../../runtime/caml/misc.h
+ ../../runtime/caml/domain.h ../../runtime/caml/fail.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
 chdir.$(O): chdir.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -423,8 +417,8 @@ execvp.$(O): execvp.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+ ../../runtime/caml/domain.h ../../runtime/caml/osdeps.h \
+ ../../runtime/caml/memory.h unixsupport.h
 exit.$(O): exit.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
@@ -435,9 +429,9 @@ getaddrinfo.$(O): getaddrinfo.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
  ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/misc.h ../../runtime/caml/signals.h unixsupport.h \
- ../unix/cst2constr.h socketaddr.h
+ ../../runtime/caml/domain.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h unixsupport.h ../unix/cst2constr.h \
+ socketaddr.h
 getcwd.$(O): getcwd.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -454,9 +448,8 @@ gethost.$(O): gethost.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
  ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/signals.h unixsupport.h socketaddr.h \
- ../../runtime/caml/misc.h
+ ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
 gethostname.$(O): gethostname.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -469,33 +462,29 @@ getnameinfo.$(O): getnameinfo.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
  ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- ../../runtime/caml/signals.h unixsupport.h socketaddr.h \
- ../../runtime/caml/misc.h
+ ../../runtime/caml/domain.h ../../runtime/caml/signals.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
 getproto.$(O): getproto.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
  ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- unixsupport.h
+ ../../runtime/caml/domain.h unixsupport.h
 getserv.$(O): getserv.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
  ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- unixsupport.h
+ ../../runtime/caml/domain.h unixsupport.h
 gmtime.$(O): gmtime.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
  ../../runtime/caml/fail.h ../../runtime/caml/memory.h \
- ../../runtime/caml/compatibility.h ../../runtime/caml/domain.h \
- unixsupport.h
+ ../../runtime/caml/domain.h unixsupport.h
 mmap_ba.$(O): mmap_ba.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
@@ -529,9 +518,8 @@ socketaddr.$(O): socketaddr.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
- ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
- ../../runtime/caml/domain.h unixsupport.h socketaddr.h \
- ../../runtime/caml/misc.h
+ ../../runtime/caml/memory.h ../../runtime/caml/domain.h unixsupport.h \
+ socketaddr.h ../../runtime/caml/misc.h
 strofaddr.$(O): strofaddr.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
