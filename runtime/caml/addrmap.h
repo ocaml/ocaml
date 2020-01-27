@@ -1,3 +1,18 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                Stephen Dolan, University of Cambridge                  */
+/*                                                                        */
+/*   Copyright 2020 Indian Institute of Technology, Madras                */
+/*   Copyright 2020 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 #include "mlvalues.h"
 
 #ifndef CAML_ADDRMAP_H
@@ -31,7 +46,8 @@ void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value));
 
 /* iteration */
 typedef uintnat addrmap_iterator;
-static inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t, addrmap_iterator i)
+static inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t,
+                                                    addrmap_iterator i)
 {
   if (i < t->size) {
     Assert(t->entries[i].key != ADDRMAP_INVALID_KEY);
@@ -41,7 +57,8 @@ static inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t, addrmap_i
   }
 }
 
-static inline addrmap_iterator caml_addrmap_next(struct addrmap* t, addrmap_iterator i)
+static inline addrmap_iterator caml_addrmap_next(struct addrmap* t,
+                                                 addrmap_iterator i)
 {
   if (!t->entries) return (uintnat)(-1);
   i++;
@@ -52,19 +69,22 @@ static inline addrmap_iterator caml_addrmap_next(struct addrmap* t, addrmap_iter
   return i;
 }
 
-static inline value caml_addrmap_iter_key(struct addrmap* t, addrmap_iterator i)
+static inline value caml_addrmap_iter_key(struct addrmap* t,
+                                          addrmap_iterator i)
 {
   Assert(caml_addrmap_iter_ok(t, i));
   return t->entries[i].key;
 }
 
-static inline value caml_addrmap_iter_value(struct addrmap* t, addrmap_iterator i)
+static inline value caml_addrmap_iter_value(struct addrmap* t,
+                                            addrmap_iterator i)
 {
   Assert(caml_addrmap_iter_ok(t, i));
   return t->entries[i].value;
 }
 
-static inline value* caml_addrmap_iter_val_pos(struct addrmap* t, addrmap_iterator i)
+static inline value* caml_addrmap_iter_val_pos(struct addrmap* t,
+                                               addrmap_iterator i)
 {
   Assert(caml_addrmap_iter_ok(t, i));
   return &t->entries[i].value;

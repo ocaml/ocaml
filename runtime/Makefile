@@ -24,8 +24,8 @@ BYTECODE_C_SOURCES := $(addsuffix .c, \
   interp misc stacks fix_code startup_aux startup_byt freelist major_gc \
   minor_gc memory alloc roots_byt globroots fail_byt signals \
   signals_byt printexc backtrace_byt backtrace compare ints \
-  floats str array io addrmap extern intern hash sys meta parsing gc_ctrl md5 obj \
-  lexing callback debugger weak compact finalise custom dynlink \
+  floats str array io addrmap extern intern hash sys meta parsing gc_ctrl \
+  md5 obj lexing callback debugger weak compact finalise custom dynlink \
   spacetime_byt afl $(UNIX_OR_WIN32) bigarray main memprof domain)
 
 NATIVE_C_SOURCES := $(addsuffix .c, \
