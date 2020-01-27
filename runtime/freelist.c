@@ -702,7 +702,7 @@ static void ff_reset (void)
 }
 
 /* Note: the [limit] parameter is unused because we merge blocks one by one. */
-header_t *ff_merge_block (value bp, char *limit)
+static header_t *ff_merge_block (value bp, char *limit)
 {
   value prev, cur, adj;
   header_t hd = Hd_val (bp);
