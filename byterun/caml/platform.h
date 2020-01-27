@@ -53,12 +53,7 @@ unsigned caml_plat_spin_wait(unsigned spins,
 
 #define SPIN_WAIT                                                       \
   unsigned GENSYM(caml__spins) = 0;                                     \
-  for (; 1; cpu_relax(),                                                \
-         GENSYM(caml__spins) =                                          \
-           CAMLlikely(GENSYM(caml__spins) < Max_spins) ?                \
-         GENSYM(caml__spins) + 1 :                                      \
-         caml_plat_spin_wait(GENSYM(caml__spins),                       \
-                             __FILE__, __LINE__, __func__))
+  for (; 1; cpu_relax())                                                
 
 INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
   SPIN_WAIT {
