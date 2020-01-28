@@ -299,6 +299,9 @@ OCaml 4.10.0
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
 
+- #9268: Fix bytecode backtrace generation when large integers are present.
+  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer)
+
 ### Standard library:
 
 - #8760: List.concat_map : ('a -> 'b list) -> 'a list -> 'b list
