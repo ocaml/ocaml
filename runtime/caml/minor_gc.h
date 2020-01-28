@@ -81,6 +81,12 @@ extern void caml_alloc_custom_table (struct caml_custom_table *,
                                      asize_t, asize_t);
 void caml_alloc_minor_tables (void);
 
+/* Asserts that a word is a valid header for a young object */
+#define CAMLassert_young_header(hd)                \
+  CAMLassert(Wosize_hd(hd) > 0 &&                  \
+             Wosize_hd(hd) <= Max_young_wosize &&  \
+             Color_hd(hd) == 0)
+
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \
     if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
