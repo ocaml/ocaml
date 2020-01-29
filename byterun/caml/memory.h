@@ -66,6 +66,9 @@ CAMLextern int caml_add_to_heap (char *mem);
 
 CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 
+/* old CAPI function compatability */
+CAMLextern void caml_modify (value *, value);
+CAMLextern void caml_initialize (value *, value);
 
 /* [caml_stat_*] functions below provide an interface to the static memory
    manager built into the runtime, which can be used for managing static
@@ -580,6 +583,50 @@ CAMLextern value caml_read_root (caml_root);
 /* [caml_modify_root] stores a new value in a root */
 
 CAMLextern void caml_modify_root (caml_root, value);
+
+
+/** Compatability with old C-API **/
+
+/* [caml_register_global_root] registers a global C variable as a memory root
+   for the duration of the program, or until [caml_remove_global_root] is
+   called. */
+
+CAMLextern void caml_register_global_root (value *);
+
+/* [caml_remove_global_root] removes a memory root registered on a global C
+   variable with [caml_register_global_root]. */
+
+CAMLextern void caml_remove_global_root (value *);
+
+/* [caml_register_generational_global_root] registers a global C
+   variable as a memory root for the duration of the program, or until
+   [caml_remove_generational_global_root] is called.
+   The program guarantees that the value contained in this variable
+   will not be assigned directly.  If the program needs to change
+   the value of this variable, it must do so by calling
+   [caml_modify_generational_global_root].  The [value *] pointer
+   passed to [caml_register_generational_global_root] must contain
+   a valid OCaml value before the call.
+   In return for these constraints, scanning of memory roots during
+   minor collection is made more efficient. */
+
+CAMLextern void caml_register_generational_global_root (value *);
+
+/* [caml_remove_generational_global_root] removes a memory root
+   registered on a global C variable with
+   [caml_register_generational_global_root]. */
+
+CAMLextern void caml_remove_generational_global_root (value *);
+
+/* [caml_modify_generational_global_root(r, newval)]
+   modifies the value contained in [r], storing [newval] inside.
+   In other words, the assignment [*r = newval] is performed,
+   but in a way that is compatible with the optimized scanning of
+   generational global roots.  [r] must be a global memory root
+   previously registered with [caml_register_generational_global_root]. */
+
+CAMLextern void caml_modify_generational_global_root(value *r, value newval);
+
 
 #ifdef __cplusplus
 }
