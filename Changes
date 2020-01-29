@@ -31,7 +31,7 @@ Working version
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
 - #8920, #9238, #9239: New API for statistical memory profiling in
-  Memprof.Gc. The new version does no longer use ephemerons and allows
+  Gc.Memprof. The new version does no longer use ephemerons and allows
   registering callbacks for promotion and deallocation of memory
   blocks.
   The new API no longer gives the block tags to the allocation callback.
@@ -306,8 +306,10 @@ OCaml 4.10.0
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
 
-- #9268: Fix bytecode backtrace generation when large integers are present.
-  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer)
+- #9268, XXXXX: Fix bytecode backtrace generation when large integers are
+  present.
+  (Stephen Dolan, Jacques-Henri Jourdan and Mark Shinwell,
+   review by Gabriel Scherer)
 
 ### Standard library:
 

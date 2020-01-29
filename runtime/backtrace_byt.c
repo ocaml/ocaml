@@ -260,7 +260,9 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
 code_t caml_next_frame_pointer(value ** sp, value ** trsp)
 {
   while (*sp < Caml_state->stack_high) {
-    code_t *p = (code_t*) (*sp)++;
+    value *v = (*sp)++;
+    if (Is_long(*v)) continue;
+    code_t *p = (code_t*)v;
     if(&Trap_pc(*trsp) == p) {
       *trsp = Trap_link(*trsp);
       continue;
