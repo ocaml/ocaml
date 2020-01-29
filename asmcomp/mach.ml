@@ -62,6 +62,7 @@ type operation =
   | Ispecific of Arch.specific_operation
   | Iname_for_debugger of { ident : Ident.t; which_parameter : int option;
       provenance : unit option; is_assignment : bool; }
+  | Ipoll
 
 type instruction =
   { desc: instruction_desc;
@@ -194,7 +195,7 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Iconst_symbol _ | Istackoffset _ | Iload _ | Iloadmut | Istore _
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
     | Ifloatofint | Iintoffloat
-    | Iname_for_debugger _ -> false
+    | Iname_for_debugger _ | Ipoll -> false
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false

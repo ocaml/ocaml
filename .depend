@@ -726,8 +726,8 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     asmcomp/selection.cmi asmcomp/scheduling.cmi asmcomp/reload.cmi \
     asmcomp/reg.cmi utils/profile.cmi asmcomp/proc.cmi asmcomp/printmach.cmi \
     asmcomp/printlinear.cmi asmcomp/printcmm.cmi asmcomp/printclambda.cmi \
-    typing/primitive.cmi utils/misc.cmi asmcomp/mach.cmi parsing/location.cmi \
-    asmcomp/liveness.cmi asmcomp/linscan.cmi \
+    typing/primitive.cmi asmcomp/polling.cmi utils/misc.cmi asmcomp/mach.cmi \
+    parsing/location.cmi asmcomp/liveness.cmi asmcomp/linscan.cmi \
     middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
     bytecomp/lambda.cmi asmcomp/interval.cmi asmcomp/interf.cmi \
     typing/ident.cmi asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi \
@@ -742,8 +742,8 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     asmcomp/selection.cmx asmcomp/scheduling.cmx asmcomp/reload.cmx \
     asmcomp/reg.cmx utils/profile.cmx asmcomp/proc.cmx asmcomp/printmach.cmx \
     asmcomp/printlinear.cmx asmcomp/printcmm.cmx asmcomp/printclambda.cmx \
-    typing/primitive.cmx utils/misc.cmx asmcomp/mach.cmx parsing/location.cmx \
-    asmcomp/liveness.cmx asmcomp/linscan.cmx \
+    typing/primitive.cmx asmcomp/polling.cmx utils/misc.cmx asmcomp/mach.cmx \
+    parsing/location.cmx asmcomp/liveness.cmx asmcomp/linscan.cmx \
     middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
     bytecomp/lambda.cmx asmcomp/interval.cmx asmcomp/interf.cmx \
     typing/ident.cmx asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx \
@@ -1072,6 +1072,11 @@ asmcomp/mach.cmx : asmcomp/debug/reg_with_debug_info.cmx \
 asmcomp/mach.cmi : asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     bytecomp/lambda.cmi typing/ident.cmi middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi asmcomp/arch.cmo
+asmcomp/polling.cmo : asmcomp/reg.cmi asmcomp/mach.cmi \
+    middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/polling.cmi
+asmcomp/polling.cmx : asmcomp/reg.cmx asmcomp/mach.cmx \
+    middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/polling.cmi
+asmcomp/polling.cmi : asmcomp/mach.cmi
 asmcomp/printclambda.cmo : bytecomp/printlambda.cmi bytecomp/lambda.cmi \
     typing/ident.cmi asmcomp/clambda.cmi parsing/asttypes.cmi \
     asmcomp/printclambda.cmi
