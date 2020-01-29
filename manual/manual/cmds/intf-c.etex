@@ -2720,8 +2720,8 @@ of OCaml.
 First, by default header files in the "caml/" subdirectory give only access
 to the public interface of the OCaml runtime.
 It is necessary to define the macro "CAML_INTERNALS" to get access to
-the lower-level interface. Once again, this lower-level interface is likely to
-change and break programs that use it.
+the lower-level interface. Once again, this lower-level interface may change
+with every minor releases and break programs that use it.
 Another caveat is that this lower-level interface is only publicly accessible
 since OCaml 4.04.
 
@@ -2746,7 +2746,7 @@ which breaks in OCaml $\ge$ 4.10, you should include the "minor_gc" header:
 Finally, if including the right headers is not enough, or if you need to support
 version older than OCaml 4.04, the header file "caml/version.h" should help
 you to define your own compatibility layer.
-This file provides macros defining the current ocaml major
+This file provides macros defining the current OCaml major
 version "OCAML_VERSION_MAJOR", the minor version "OCAML_VERSION_MINOR", the
 patch level "OCAML_VERSION_PATCHLEVEL" and the full version
 "OCAML_VERSION" (which is the concatenation of the three previous macros).
