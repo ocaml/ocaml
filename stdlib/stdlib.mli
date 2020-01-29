@@ -79,13 +79,16 @@ exception Not_found
 
 exception Out_of_memory
 (** Exception raised by the garbage collector when there is
-   insufficient memory to complete the computation. *)
+   insufficient memory to complete the computation. (Not reliable for
+   allocations on the minor heap.) *)
 
 exception Stack_overflow
 (** Exception raised by the bytecode interpreter when the evaluation
    stack reaches its maximal size. This often indicates infinite or
-   excessively deep recursion in the user's program. (Not fully
-   implemented by the native-code compiler.) *)
+   excessively deep recursion in the user's program.
+
+   Before 4.10, it was not fully implemented by the native-code
+   compiler. *)
 
 exception Sys_error of string
   [@ocaml.warn_on_literal_pattern]
