@@ -185,19 +185,25 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
+Before including any of these files, you should define the "OCAML_NAME_SPACE"
+macro. For instance,
+\begin{verbatim}
+#define CAML_NAME_SPACE
+#include "caml/mlvalues.h"
+#include "caml/fail.h"
+\end{verbatim}
 These files reside in the "caml/" subdirectory of the OCaml
 standard library directory, which is returned by the command
 "ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
-{\bf Note:} It is highly recommended to define the macro "CAML_NAME_SPACE"
-on the command line with "-DCAML_NAME_SPACE" when including any of these
-header files. Otherwise, it is your responsability to ensure that
-the macro "CAML_NAME_SPACE" is defined bedore any of these header files.
-If you do not define it, the header files will also define short names
-(without the "caml_" prefix) for most functions, which usually produce
-clashes with names defined by other C libraries that you might use.
-Including the header files without "CAML_NAME_SPACE" is only supported
-for backward compatibility and may be removed in the future.
+{\bf Note:}
+Including the header files without first defining "CAML_NAME_SPACE" is only
+supported for backward compatibility and may be removed in the future:
+without this definition, the header files will also define short names
+(without the "caml_" prefix) for most functions.
+Those short names usually produce clashes with names defined by other
+C libraries. Even defining "CAML_NAME_SPACE" after the inclusion of
+some "caml/" headers may produce clashes within OCaml header files.
 
 \subsection{ss:staticlink-c-code}{Statically linking C code with OCaml code}
 
