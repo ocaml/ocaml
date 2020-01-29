@@ -237,6 +237,7 @@ method class_of_operation op =
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
   | Iname_for_debugger _ -> Op_pure
+  | Ipoll -> Op_checkbound
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 
