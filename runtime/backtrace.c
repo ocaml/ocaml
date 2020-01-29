@@ -325,12 +325,17 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   CAMLreturn(res);
 }
 
-CAMLprim value caml_get_current_callstack(value max_frames_value) {
+CAMLprim value caml_get_current_callstack(value max_frames_value)
+{
   CAMLparam1(max_frames_value);
   CAMLlocal1(res);
-
-  res = caml_alloc(caml_current_callstack_size(Long_val(max_frames_value)), 0);
-  caml_current_callstack_write(res, -1);
-
+  value* callstack = NULL;
+  intnat callstack_alloc_len = 0;
+  intnat callstack_len =
+    caml_collect_current_callstack(&callstack, &callstack_alloc_len,
+                                   Long_val(max_frames_value), -1);
+  res = caml_alloc(callstack_len, 0);
+  memcpy(Op_val(res), callstack, sizeof(value) * callstack_len);
+  caml_stat_free(callstack);
   CAMLreturn(res);
 }
