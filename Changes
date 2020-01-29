@@ -17,6 +17,13 @@ Working version
   For instance, "val f: #F(X).t -> unit" is now allowed.
   (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
 
+- MPR#7364, GPR#2188: improvement of the unboxability check for types
+  with a single constructor. Mutually-recursive type declarations can
+  now contain unboxed types. This is based on the paper
+    https://arxiv.org/abs/1811.02300
+  (Gabriel Scherer and Rodolphe Lepigre,
+   review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
@@ -34,6 +41,9 @@ Working version
 - #9233: Restore the bytecode stack after an allocation.
   (Stephen Dolan, review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+- #9230: Memprof support for native allocations.
+  (Jacques-Henri Jourdan and Stephen Dolan, review by Gabriel Scherer)
+
 - #9259: Made `Ephemeron.blit_key` and `Weak.blit` faster. They are now
   linear in the size of the range being copied instead of depending on the
   total sizes of the ephemerons or weak arrays involved.
@@ -42,7 +52,7 @@ Working version
 
 ### Code generation and optimizations:
 
-- #8637, #8805: Record debug info for each allocation
+- #8637, #8805, #9247: Record debug info for each allocation.
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
    KC Sivaramakrishnan and Xavier Leroy)
 
@@ -50,6 +60,9 @@ Working version
   (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
 
 ### Standard library:
+
+- #9248: Add Printexc.default_uncaught_exception_handler
+  (Raphael Sousa Santos, review by Daniel Bünzli)
 
 - #9235: Add Array.exists2 and Array.for_all2
   (Bernhard Schommer, review by Armaël Guéneau)
@@ -298,6 +311,9 @@ OCaml 4.10.0
   Hence, there is not any public API for this feature yet.
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
+
+- #9268: Fix bytecode backtrace generation when large integers are present.
+  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer)
 
 ### Standard library:
 
@@ -672,6 +688,9 @@ OCaml 4.10.0
 - #9209, #9212: fix a development-version regression caused by #2288
   (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
    and Gabriel Scherer )
+
+- #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
+  (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
 
 OCaml 4.09 maintenance branch:
 ------------------------------

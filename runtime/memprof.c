@@ -98,16 +98,17 @@ static double mt_generate_uniform(void)
 }
 
 /* Simulate a geometric variable of parameter [lambda].
-   The result is clipped in [1..Max_long]
-   Requires [lambda > 0]. */
+   The result is clipped in [1..Max_long] */
 static uintnat mt_generate_geom(void)
 {
+  double res;
+  CAMLassert(lambda > 0.);
   /* We use the float versions of exp/log, since these functions are
      significantly faster, and we really don't need much precision
      here. The entropy contained in [next_mt_generate_geom] is anyway
      bounded by the entropy provided by [mt_generate_uniform], which
      is 32bits. */
-  double res = 1 + logf(mt_generate_uniform()) * one_log1m_lambda;
+  res = 1 + logf(mt_generate_uniform()) * one_log1m_lambda;
   if (res > Max_long) return Max_long;
   return (uintnat)res;
 }
@@ -123,12 +124,11 @@ static uintnat next_mt_generate_geom;
    If needed, we could use algorithm BTRS from the paper:
      Hormann, Wolfgang. "The generation of binomial random variates."
      Journal of statistical computation and simulation 46.1-2 (1993), pp101-110.
-
-   Requires [lambda > 0] and [len < Max_long].
  */
 static uintnat mt_generate_binom(uintnat len)
 {
   uintnat res;
+  CAMLassert(lambda > 0. && len < Max_long);
   for (res = 0; next_mt_generate_geom < len; res++)
     next_mt_generate_geom += mt_generate_geom();
   next_mt_generate_geom -= len;
@@ -144,13 +144,13 @@ static uintnat mt_generate_binom(uintnat len)
    which may call the GC, but prefer using [caml_alloc_shr], which
    gives this guarantee. The return value is either a valid callstack
    or 0 in out-of-memory scenarios. */
-static value capture_callstack_postponed(void)
+static value capture_callstack_postponed()
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
   if (wosize == 0) return Atom(0);
   res = caml_alloc_shr_no_track_noexc(wosize, 0);
-  if (res != 0) caml_current_callstack_write(res);
+  if (res != 0) caml_current_callstack_write(res, -1);
   return res;
 }
 
@@ -158,24 +158,17 @@ static value capture_callstack_postponed(void)
    [caml_alloc], which is more efficient since it uses the minor
    heap.
    Should be called with [caml_memprof_suspended == 1] */
-static value capture_callstack(void)
+static value capture_callstack(int alloc_idx)
 {
   value res;
   uintnat wosize = caml_current_callstack_size(callstack_size);
   CAMLassert(caml_memprof_suspended);
   res = caml_alloc(wosize, 0);
-  caml_current_callstack_write(res);
+  caml_current_callstack_write(res, alloc_idx);
   return res;
 }
 
 /**** Data structures for tracked blocks. ****/
-
-/* During the alloc callback for a minor allocation, the block being
-   sampled is not yet allocated. Instead, it's represented as this. */
-#define Placeholder_value (Val_long(0x42424242))
-
-/* When an entry is deleted, its index is replaced by that integer. */
-#define Invalid_index (~(uintnat)0)
 
 struct tracked {
   /* Memory block being sampled. This is a weak GC root. */
@@ -225,6 +218,19 @@ struct tracked {
      simultaneously by several threads. */
   uintnat* idx_ptr;
 };
+
+/* During the alloc callback for a minor allocation, the block being
+   sampled is not yet allocated. Instead, we place in the block field
+   a value computed with the following macro: */
+#define Placeholder_magic 0x04200000
+#define Placeholder_offs(offset) (Val_long(offset + Placeholder_magic))
+#define Offs_placeholder(block) (Long_val(block) & 0xFFFF)
+#define Is_placeholder(block) \
+  (Is_long(block) && (Long_val(block) & ~(uintnat)0xFFFF) == Placeholder_magic)
+
+/* When an entry is deleted, its index is replaced by that integer. */
+#define Invalid_index (~(uintnat)0)
+
 
 static struct tracking_state {
   struct tracked* entries;
@@ -309,6 +315,7 @@ static inline value run_callback_exn(uintnat *t_idx, value cb, value param) {
   struct tracked* t = &trackst.entries[*t_idx];
   value res;
   CAMLassert(!t->callback_running && t->idx_ptr == NULL);
+  CAMLassert(lambda > 0.);
 
   t->callback_running = 1;
   t->idx_ptr = t_idx;
@@ -352,7 +359,7 @@ static value handle_entry_callbacks_exn(uintnat* t_idx)
   if (!t->cb_alloc_called) {
     t->cb_alloc_called = 1;
     CAMLassert(Is_block(t->block)
-               || t->block == Placeholder_value
+               || Is_placeholder(t->block)
                || t->deallocated);
     sample_info = caml_alloc_small(4, 0);
     Field(sample_info, 0) = Val_long(t->n_samples);
@@ -473,7 +480,7 @@ void caml_memprof_minor_update(void)
   for (i = trackst.young; i < trackst.len; i++) {
     struct tracked *t = &trackst.entries[i];
     CAMLassert(Is_block(t->block) || t->deleted || t->deallocated ||
-               t->block == Placeholder_value);
+               Is_placeholder(t->block));
     if (Is_block(t->block) && Is_young(t->block)) {
       if (Hd_val(t->block) == 0) {
         /* Block has been promoted */
@@ -481,6 +488,7 @@ void caml_memprof_minor_update(void)
         t->promoted = 1;
       } else {
         /* Block is dead */
+        CAMLassert_young_header(Hd_val(t->block));
         t->block = Val_unit;
         t->deallocated = 1;
       }
@@ -583,11 +591,18 @@ void caml_memprof_renew_minor_sample(void)
 /* Called when exceeding the threshold for the next sample in the
    minor heap, from the C code (the handling is different when called
    from natively compiled OCaml code). */
-void caml_memprof_track_young(uintnat wosize, int from_caml)
+void caml_memprof_track_young(uintnat wosize, int from_caml,
+                              int nallocs, unsigned char* encoded_alloc_lens)
 {
-  uintnat whsize = Whsize_wosize(wosize), n_samples;
-  uintnat t_idx;
-  value callstack, res;
+  uintnat whsize = Whsize_wosize(wosize);
+  value callstack, res = Val_unit;
+  int alloc_idx = 0, i, allocs_sampled = 0, has_delete = 0;
+  intnat alloc_ofs, trigger_ofs;
+  /* usually, only one allocation is sampled, even when the block contains
+     multiple combined allocations. So, we delay allocating the full
+     sampled_allocs array until we discover we actually need two entries */
+  uintnat first_idx, *idx_tab = &first_idx;
+  double saved_lambda = lambda;
 
   if (caml_memprof_suspended) {
     caml_memprof_renew_minor_sample();
@@ -600,10 +615,10 @@ void caml_memprof_track_young(uintnat wosize, int from_caml)
      caml_memprof_young_trigger], which is contradictory. */
   CAMLassert(lambda > 0);
 
-  n_samples = 1 +
-    mt_generate_binom(caml_memprof_young_trigger - 1 - Caml_state->young_ptr);
-
   if (!from_caml) {
+    unsigned n_samples = 1 +
+      mt_generate_binom(caml_memprof_young_trigger - 1 - Caml_state->young_ptr);
+    CAMLassert(encoded_alloc_lens == NULL);    /* No Comballoc in C! */
     caml_memprof_renew_minor_sample();
 
     callstack = capture_callstack_postponed();
@@ -615,25 +630,86 @@ void caml_memprof_track_young(uintnat wosize, int from_caml)
     return;
   }
 
-  /* We need to call the callback for this sampled block. Since the
+  /* We need to call the callbacks for this sampled block. Since each
      callback can potentially allocate, the sampled block will *not*
      be the one pointed to by [caml_memprof_young_trigger]. Instead,
      we remember that we need to sample the next allocated word,
      call the callback and use as a sample the block which will be
      allocated right after the callback. */
 
-  /* Restore the minor heap in a valid state for calling the callback.
+  CAMLassert(Caml_state->young_ptr < caml_memprof_young_trigger &&
+             caml_memprof_young_trigger <= Caml_state->young_ptr + whsize);
+  trigger_ofs = caml_memprof_young_trigger - Caml_state->young_ptr;
+  alloc_ofs = whsize;
+
+  /* Restore the minor heap in a valid state for calling the callbacks.
      We should not call the GC before these two instructions. */
   Caml_state->young_ptr += whsize;
   caml_memprof_renew_minor_sample();
-
   caml_memprof_suspended = 1;
-  callstack = capture_callstack();
-  t_idx = new_tracked(n_samples, wosize, 0, 1, Placeholder_value, callstack);
-  if (t_idx == Invalid_index)
-    res = Val_unit;
-  else
-    res = handle_entry_callbacks_exn(&t_idx);
+
+  /* Perform the sampling of the block in the set of Comballoc'd
+     blocks, insert them in the entries array, and run the
+     callbacks. */
+  for (alloc_idx = nallocs - 1; alloc_idx >= 0; alloc_idx--) {
+    unsigned alloc_wosz = encoded_alloc_lens == NULL ? wosize :
+      Wosize_encoded_alloc_len(encoded_alloc_lens[alloc_idx]);
+    unsigned n_samples = 0;
+    alloc_ofs -= Whsize_wosize(alloc_wosz);
+    while (alloc_ofs < trigger_ofs) {
+      n_samples++;
+      trigger_ofs -= mt_generate_geom();
+    }
+    if (n_samples > 0) {
+      uintnat *idx_ptr, t_idx;
+
+      callstack = capture_callstack(alloc_idx);
+      t_idx = new_tracked(n_samples, alloc_wosz,
+                          0, 1, Placeholder_offs(alloc_ofs), callstack);
+      if (t_idx == Invalid_index) continue;
+      res = handle_entry_callbacks_exn(&t_idx);
+      if (t_idx == Invalid_index) {
+        has_delete = 1;
+        if (saved_lambda != lambda) {
+          /* [lambda] changed during the callback. We need to refresh
+             [trigger_ofs]. */
+          saved_lambda = lambda;
+          trigger_ofs = lambda == 0. ? 0 : alloc_ofs - (mt_generate_geom() - 1);
+        }
+      }
+      if (Is_exception_result(res)) break;
+      if (t_idx == Invalid_index) continue;
+
+      if (allocs_sampled == 1) {
+        /* Found a second sampled allocation! Allocate a buffer for them */
+        idx_tab = caml_stat_alloc_noexc(sizeof(uintnat) * nallocs);
+        if (idx_tab == NULL) {
+          alloc_ofs = 0;
+          idx_tab = &first_idx;
+          break;
+        }
+        idx_tab[0] = first_idx;
+        if (idx_tab[0] != Invalid_index)
+          trackst.entries[idx_tab[0]].idx_ptr = &idx_tab[0];
+      }
+
+      /* Usually, trackst.entries[...].idx_ptr is owned by the thread
+         running a callback for the entry, if any. Here, we take ownership
+         of idx_ptr until the end of the function.
+
+         This does not conflict with the usual use of idx_ptr because no
+         callbacks can run on this entry until the end of the function:
+         the allocation callback has already run and the other callbacks
+         do not run on Placeholder values */
+      idx_ptr = &idx_tab[allocs_sampled];
+      *idx_ptr = t_idx;
+      trackst.entries[*idx_ptr].idx_ptr = idx_ptr;
+      allocs_sampled++;
+    }
+  }
+
+  CAMLassert(alloc_ofs == 0 || Is_exception_result(res));
+  CAMLassert(allocs_sampled <= nallocs);
   caml_memprof_suspended = 0;
   caml_memprof_check_action_pending();
   /* We need to call [caml_memprof_check_action_pending] since we
@@ -646,6 +722,31 @@ void caml_memprof_track_young(uintnat wosize, int from_caml)
      [trackst.callback]. Fortunately, [handle_entry_callback_exn]
      increments [trackst.callback] if it is equal to [t_idx]. */
 
+  /* This condition happens either in the case of an exception or if
+     one of the callbacks returned [None]. If these cases happen
+     frequently, then we need to call [flush_deleted] somewhere to
+     prevent a leak. */
+  if (has_delete)
+    flush_deleted();
+
+  if (Is_exception_result(res)) {
+    for (i = 0; i < allocs_sampled; i++)
+      if (idx_tab[i] != Invalid_index) {
+        struct tracked* t = &trackst.entries[idx_tab[i]];
+        /* The allocations are cancelled because of the exception,
+           but this callback has already been called. We simulate a
+           deallocation. */
+        t->block = Val_unit;
+        t->deallocated = 1;
+        if (trackst.callback > idx_tab[i]) {
+          trackst.callback = idx_tab[i];
+          caml_memprof_check_action_pending();
+        }
+      }
+    if (idx_tab != &first_idx) caml_stat_free(idx_tab);
+    caml_raise(Extract_exception(res));
+  }
+
   /* We can now restore the minor heap in the state needed by
      [Alloc_small_aux]. */
   if (Caml_state->young_ptr - whsize < Caml_state->young_trigger) {
@@ -653,34 +754,30 @@ void caml_memprof_track_young(uintnat wosize, int from_caml)
     caml_gc_dispatch();
   }
 
-  /* This condition happens either in the case of an exception or if
-     the callback returned [None]. If these cases happen frequently,
-     then we need to call [flush_deleted] somewhere to prevent a
-     leak. */
-  if (t_idx == Invalid_index)
-    flush_deleted();
-
-  caml_raise_if_exception(res);
-
-  /* Re-allocate the block in the minor heap. We should not call the
+  /* Re-allocate the blocks in the minor heap. We should not call the
      GC after this. */
   Caml_state->young_ptr -= whsize;
 
   /* Make sure this block is not going to be sampled again. */
   shift_sample(whsize);
 
-  if (t_idx != Invalid_index) {
-    /* If the execution of the callback has succeeded, then we start the
-       tracking of this block..
+  for (i = 0; i < allocs_sampled; i++) {
+    if (idx_tab[i] != Invalid_index) {
+      /* If the execution of the callback has succeeded, then we start the
+         tracking of this block..
 
-       Subtlety: we are actually writing [t->block] with an invalid
-       (uninitialized) block. This is correct because the allocation
-       and initialization happens right after returning from
-       [caml_memprof_track_young]. */
-    trackst.entries[t_idx].block = Val_hp(Caml_state->young_ptr);
-    CAMLassert(trackst.entries[t_idx].cb_alloc_called);
-    if (t_idx < trackst.young) trackst.young = t_idx;
+         Subtlety: we are actually writing [t->block] with an invalid
+         (uninitialized) block. This is correct because the allocation
+         and initialization happens right after returning from
+         [caml_memprof_track_young]. */
+      struct tracked *t = &trackst.entries[idx_tab[i]];
+      t->block = Val_hp(Caml_state->young_ptr + Offs_placeholder(t->block));
+      t->idx_ptr = NULL;
+      CAMLassert(t->cb_alloc_called);
+      if (idx_tab[i] < trackst.young) trackst.young = idx_tab[i];
+    }
   }
+  if (idx_tab != &first_idx) caml_stat_free(idx_tab);
 
   /* /!\ Since the heap is in an invalid state before initialization,
      very little heap operations are allowed until then. */

@@ -330,7 +330,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   CAMLlocal1(res);
 
   res = caml_alloc(caml_current_callstack_size(Long_val(max_frames_value)), 0);
-  caml_current_callstack_write(res);
+  caml_current_callstack_write(res, -1);
 
   CAMLreturn(res);
 }

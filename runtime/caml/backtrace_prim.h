@@ -107,11 +107,16 @@ value caml_remove_debug_info(code_t start);
  * performance) or [caml_alloc_shr] (when we need to avoid a call to
  * the GC, in memprof.c).
  *
+ * The alloc_idx parameter to [caml_current_callstack_write] is used
+ * to select between the backtraces of different allocation sites which
+ * were combined by Comballoc. Passing -1 here means the caller doesn't
+ * care which is chosen.
+ *
  * We use `intnat` for max_frames because, were it only `int`, passing
  * `max_int` from the OCaml side would overflow on 64bits machines. */
 
 intnat caml_current_callstack_size(intnat max_frames);
-void caml_current_callstack_write(value trace);
+void caml_current_callstack_write(value trace, int alloc_idx);
 
 #endif /* CAML_INTERNALS */
 

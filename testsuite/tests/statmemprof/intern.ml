@@ -162,29 +162,5 @@ let () =
   check_distrib 2 2000 1 0.9;
   check_distrib 300000 300000 20 0.1
 
-(* FIXME : in bytecode mode, C calls may or may not be associated with
-   debug information. In particular, C calls at tail positions do not
-   have debug information, and the [from_bytes_unsafe] external C
-   function is called at tail positionin [marshal.ml]. This is the
-   reason why the reference file is different in native and bytecode
-   modes. *)
-
-let[@inline never] check_callstack () =
-  Printf.printf "check_callstack\n%!";
-  precompute_marshalled_data 2 300;
-  let callstack = ref None in
-  start ~callstack_size:10
-        ~minor_alloc_callback:(fun info ->
-          if info.unmarshalled then callstack := Some info.callstack;
-          None)
-        ~sampling_rate:1. ();
-  do_intern 2 250 1 false;
-  stop ();
-  match !callstack with
-  | None -> assert false
-  | Some cs -> Printexc.print_raw_backtrace stdout cs
-
-let () = check_callstack ()
-
 let () =
   Printf.printf "OK !\n"

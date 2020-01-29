@@ -244,7 +244,9 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
   for (/*nothing*/; sp < Caml_state->trapsp; sp++) {
-    code_t p = (code_t) *sp;
+    code_t p;
+    if (Is_long(*sp)) continue;
+    p = (code_t) *sp;
     if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
       Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = p;
@@ -284,10 +286,12 @@ intnat caml_current_callstack_size(intnat max_frames)
   return trace_size;
 }
 
-void caml_current_callstack_write(value trace) {
+void caml_current_callstack_write(value trace, int alloc_idx)
+{
   value * sp = Caml_state->extern_sp;
   value * trsp = Caml_state->trapsp;
   uintnat trace_pos, trace_size = Wosize_val(trace);
+  CAMLassert(alloc_idx == 0 || alloc_idx == -1);
 
   for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
     code_t p = caml_next_frame_pointer(&sp, &trsp);
