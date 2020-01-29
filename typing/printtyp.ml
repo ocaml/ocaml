@@ -389,25 +389,19 @@ let rewrite_double_underscore_paths env p =
   else
     rewrite_double_underscore_paths env p
 
-let rec regular_tree_of_path namespace = function
+let rec tree_of_path namespace = function
   | Pident id ->
       Oide_ident (ident_name namespace id)
   | Pdot(_, s) as path when non_shadowed_pervasive path ->
       Oide_ident (Naming_context.pervasives_name namespace s)
+  | Pdot(Pident t, s)
+    when namespace=Type && not (Path.is_uident (Ident.name t)) ->
+      (* [t.A]: inline record of the constructor [A] from type [t] *)
+      Oide_dot (Oide_ident (ident_name Type t), s)
   | Pdot(p, s) ->
-      Oide_dot (regular_tree_of_path Module p, s)
+      Oide_dot (tree_of_path Module p, s)
   | Papply(p1, p2) ->
-      Oide_apply (regular_tree_of_path Module p1,
-                  regular_tree_of_path Module p2)
-
-let tree_of_path namespace p = match namespace with
-  | Module | Module_type | Class | Class_type | Other->
-      regular_tree_of_path namespace p
-  | Type ->
-      match Path.constructor_typath p with
-      | Regular _ | Ext _ | LocalExt _ -> regular_tree_of_path namespace p
-      | Cstr (p, s) -> (* t.A *)
-          Oide_dot (regular_tree_of_path Type p, s)
+      Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
 
 let tree_of_path namespace p =
   tree_of_path namespace (rewrite_double_underscore_paths !printing_env p)
