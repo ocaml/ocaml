@@ -472,9 +472,11 @@ let merge_constraint initial_env remove_aliases loc sg constr =
        Pwith_type (_, ({ptype_kind = Ptype_abstract} as sdecl)))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
-          { type_params =
+          let arity = List.length sdecl.ptype_params in
+          {
+            type_params =
               List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
-            type_arity = List.length sdecl.ptype_params;
+            type_arity = arity;
             type_kind = Type_abstract;
             type_private = Private;
             type_manifest = None;
@@ -490,6 +492,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
                    make_variance (not n) (not c) false
                 )
                 sdecl.ptype_params;
+            type_separability =
+              Types.Separability.default_signature ~arity;
             type_loc = sdecl.ptype_loc;
             type_is_newtype = false;
             type_expansion_scope = Btype.lowest_level;

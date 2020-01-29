@@ -60,6 +60,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/parmatch.cmo typing/stypes.cmo \
   typing/typedecl_properties.cmo typing/typedecl_variance.cmo \
   typing/typedecl_unboxed.cmo typing/typedecl_immediacy.cmo \
+  typing/typedecl_separability.cmo \
   typing/typedecl.cmo typing/typeopt.cmo \
   typing/rec_check.cmo typing/typecore.cmo typing/typeclass.cmo \
   typing/typemod.cmo

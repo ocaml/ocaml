@@ -1305,6 +1305,7 @@ let temp_abbrev loc env id arity =
        type_private = Public;
        type_manifest = Some ty;
        type_variance = Misc.replicate_list Variance.full arity;
+       type_separability = Types.Separability.default_signature ~arity;
        type_is_newtype = false;
        type_expansion_scope = Btype.lowest_level;
        type_loc = loc;
@@ -1549,12 +1550,15 @@ let class_infos define_class kind
     }
   in
   let obj_abbr =
-    {type_params = obj_params;
-     type_arity = List.length obj_params;
+    let arity = List.length obj_params in
+    {
+     type_params = obj_params;
+     type_arity = arity;
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> Variance.full) obj_params;
+     type_separability = Types.Separability.default_signature ~arity;
      type_is_newtype = false;
      type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
@@ -1569,12 +1573,15 @@ let class_infos define_class kind
   Ctype.hide_private_methods cl_ty;
   Ctype.set_object_name obj_id (Ctype.row_variable cl_ty) cl_params cl_ty;
   let cl_abbr =
-    {type_params = cl_params;
-     type_arity = List.length cl_params;
+    let arity = List.length cl_params in
+    {
+     type_params = cl_params;
+     type_arity = arity;
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> Variance.full) cl_params;
+     type_separability = Types.Separability.default_signature ~arity;
      type_is_newtype = false;
      type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;

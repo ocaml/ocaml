@@ -17,6 +17,13 @@ Working version
   For instance, "val f: #F(X).t -> unit" is now allowed.
   (Florian Angeletti, review by Gabriel Scherer, suggestion by Leo White)
 
+- MPR#7364, GPR#2188: improvement of the unboxability check for types
+  with a single constructor. Mutually-recursive type declarations can
+  now contain unboxed types. This is based on the paper
+    https://arxiv.org/abs/1811.02300
+  (Gabriel Scherer and Rodolphe Lepigre,
+   review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
