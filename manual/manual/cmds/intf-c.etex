@@ -2714,8 +2714,9 @@ for which there is \emph{no} stability guarantee. If you really need access
 to this internal runtime API, this section provides some guidelines
 that may help you to write code that might not break on every new version
 of OCaml.
-\paragraph{Note} If you have a valid and non-experimental use case for a part
-of the internal runtime API, you are encouraged to report it.
+\paragraph{Note} Programmers which come to rely on the internal API
+for a use-case which they find realistic and useful are encouraged to open
+a request for improvement on the bug tracker.
 
 \subsection{ss:c-internals}{Internal variables and CAML_INTERNALS}
 Since OCaml 4.04, it is possible to get access to every part of the internal
