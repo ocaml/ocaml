@@ -460,25 +460,6 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
 
 //*****************************************************************************
 
-static value next_minor_block(caml_domain_state* domain_state, value curr_hp)
-{
-  mlsize_t wsz;
-  header_t hd;
-  value curr_val;
-  CAMLassert ((value)domain_state->young_ptr <= curr_hp);
-  CAMLassert (curr_hp < (value)domain_state->young_end);
-  hd = Hd_hp(curr_hp);
-  curr_val = Val_hp(curr_hp);
-  if (hd == 0) {
-    /* Forwarded object, find the promoted version */
-    curr_val = Op_val(curr_val)[0];
-  }
-  CAMLassert (Is_block(curr_val) && Hd_val(curr_val) != 0 && Tag_val(curr_val) != Infix_tag);
-  wsz = Wosize_val(curr_val);
-  CAMLassert (wsz <= Max_young_wosize);
-  return curr_hp + Bsize_wsize(Whsize_wosize(wsz));
-}
-
 CAMLexport value caml_promote(struct domain* domain, value root)
 {
   return root;
