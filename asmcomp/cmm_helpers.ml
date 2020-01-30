@@ -263,17 +263,13 @@ let tag_int i dbg =
 let untag_int i dbg =
   map_single_tail (function
       | Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
-      | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1,_)], _); Cconst_int (1,_)],_) ->
-          c
       | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
         when n > 0 && n < size_int * 8 ->
           Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
       | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
         when n > 0 && n < size_int * 8 ->
           Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
-      | Cop(Cor, [c; Cconst_int (1, _)], _) ->
-          Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
-      | c -> Cop(Casr, [c; Cconst_int (1, dbg)], dbg)
+      | c -> asr_int c (Cconst_int (1, dbg)) dbg
     ) i
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
