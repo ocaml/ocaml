@@ -22,6 +22,7 @@
 #include "caml/fail.h"
 #include "caml/finalise.h"
 #include "caml/memory.h"
+#include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/roots.h"
 #include "caml/shared_heap.h"
@@ -269,7 +270,7 @@ static void generic_final_minor_update (struct domain* d, struct finalisable * f
   for (i = final->old; i < final->young; i++) {
     CAMLassert (Is_block (final->table[i].val));
     if (Is_minor(final->table[i].val)) {
-      CAMLassert (Hd_val(final->table[i].val) == 0);
+      CAMLassert (get_header_val(final->table[i].val) == 0);
       final->table[i].val = Op_val(final->table[i].val)[0];
     }
   }
