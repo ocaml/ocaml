@@ -40,7 +40,6 @@
 */
 
 intnat caml_globals_inited = 0;
-static intnat caml_globals_scanned = 0;
 #endif
 
 CAMLexport void (*caml_scan_roots_hook)(scanning_action, void* fdata, struct domain*) = NULL;
