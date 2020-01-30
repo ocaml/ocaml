@@ -47,12 +47,7 @@ unsigned caml_plat_spin_wait(unsigned spins,
                              const char* file, int line,
                              const char* function);
 
-#define GENSYM_3(name, l) name##l
-#define GENSYM_2(name, l) GENSYM_3(name, l)
-#define GENSYM(name) GENSYM_2(name, __LINE__)
-
 #define SPIN_WAIT                                                       \
-  unsigned GENSYM(caml__spins) = 0;                                     \
   for (; 1; cpu_relax())                                                
 
 INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
