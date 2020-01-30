@@ -712,7 +712,7 @@ CAMLexport void caml_minor_collection (void)
   /* TODO: is try really acceptable or do we need 'every time'
   caml_empty_minor_heap (); */
   caml_handle_incoming_interrupts ();
-  // caml_major_collection_slice (0, 0);
+  caml_major_collection_slice (0, 0);
   caml_final_do_calls();
 
   caml_ev_resume();
