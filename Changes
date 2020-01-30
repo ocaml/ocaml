@@ -683,6 +683,10 @@ OCaml 4.10.0
   (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
    and Gabriel Scherer )
 
+- #9218, #9269: avoid a rare wrong module name error with "-annot" and
+  inline records.
+  (Florian Angeletti, review by Gabriel Scherer, report by Kate Deplaix)
+
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
 

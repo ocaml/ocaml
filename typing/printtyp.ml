@@ -394,6 +394,10 @@ let rec tree_of_path namespace = function
       Oide_ident (ident_name namespace id)
   | Pdot(_, s) as path when non_shadowed_pervasive path ->
       Oide_ident (Naming_context.pervasives_name namespace s)
+  | Pdot(Pident t, s)
+    when namespace=Type && not (Path.is_uident (Ident.name t)) ->
+      (* [t.A]: inline record of the constructor [A] from type [t] *)
+      Oide_dot (Oide_ident (ident_name Type t), s)
   | Pdot(p, s) ->
       Oide_dot (tree_of_path Module p, s)
   | Papply(p1, p2) ->
