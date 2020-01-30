@@ -2288,8 +2288,9 @@ code around C calls.  Technically it wraps every C call with the C function
 For small functions that are called repeatedly, this indirection can have
 a big impact on performances.  However this is not needed if we know that
 the C function doesn't allocate, doesn't raise exceptions, and doesn't release
-the master lock.  We can instruct the OCaml native-code compiler of this fact
-by annotating the external declaration with the attribute "[\@\@noalloc]":
+the master lock (see section~\ref{ss:parallel-execution-long-running-c-code}).  
+We can instruct the OCaml native-code compiler of this fact by annotating the
+external declaration with the attribute "[\@\@noalloc]":
 
 \begin{verbatim}
 external bar : int -> int -> int = "foo" [@@noalloc]
