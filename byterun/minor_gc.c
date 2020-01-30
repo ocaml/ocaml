@@ -160,7 +160,7 @@ static inline void log_gc_value(const char* prefix, value v)
 
 #define Color_hd(v) ((color_t)(((v) >> 8) & 3))
 
-static int get_header_val(value v) {
+int get_header_val(value v) {
   if( caml_domain_alone() ) {
     return Hd_val(v);
   } else {
