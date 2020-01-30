@@ -223,10 +223,12 @@ let ignore_low_bit_int =
     )
 
 (* removes the 1-bit sign-extension left by untag_int (tag_int c) *)
-let ignore_high_bit_int = function
-    Cop(Casr,
-        [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
-  | c -> c
+let ignore_high_bit_int =
+  map_single_tail (function
+      | Cop(Casr,
+            [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
+      | c -> c
+  )
 
 let lsr_int c1 c2 dbg =
   map_single_tail (function
