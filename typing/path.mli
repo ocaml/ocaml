@@ -37,6 +37,8 @@ val heads: t -> Ident.t list
 
 val last: t -> string
 
+val is_uident: string -> bool
+
 type typath =
   | Regular of t
   | Ext of t * string
