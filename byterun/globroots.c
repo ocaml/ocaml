@@ -217,6 +217,10 @@ void caml_scan_global_roots(scanning_action f, void* fdata) {
 #ifdef NATIVE_CODE
     scan_native_globals(f, fdata);
 #endif
+    /* If we are running verification code, then we will need to scan the roots
+     * again for marking. */
+    if (f == &caml_verify_root)
+      atomic_store(&caml_globals_scanned, 0);
   } else {
     CAMLassert (v == 1);
   }
