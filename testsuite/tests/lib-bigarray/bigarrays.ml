@@ -986,27 +986,146 @@ let tests () =
 
   testing_function "overlap" ;
   test 1 (Array0.overlap a b) false ;
-  test 1 (Array0.overlap b a) false ;
-  test 2 (Array0.overlap a a) true ;
-  test 3 (Array0.overlap b b) true ;
+  test 2 (Array0.overlap b a) false ;
+  test 3 (Array0.overlap a a) true ;
+  test 4 (Array0.overlap b b) true ;
 
-  let c = Array1.create Int C_layout 20 in
-  let a = Array1.sub c 0 10 in
-  let b = Array1.sub c 5 10 in
+  let v = Array1.create Int C_layout 10 in
 
-  test 4 (Array1.overlap a b) (Some (5, 5, 0)) ;
-  test 5 (Array1.overlap b a) (Some (5, 0, 5)) ;
-  test 6 (Array1.overlap a a) (Some (10, 0, 0)) ;
-  test 7 (Array1.overlap b b) (Some (10, 0, 0)) ;
+  let ab = Array1.sub v 5 5 in
+  let cd = Array1.sub v 0 5 in
+  test 5 (Array1.overlap ab cd) None ;
 
-  let b = Array1.sub c 10 10 in
+  let ab = Array1.sub v 0 5 in
+  let cd = Array1.sub v 5 5 in
+  test 6 (Array1.overlap ab cd) None ;
 
-  test 8 (Array1.overlap a b) None ;
-  test 9 (Array1.overlap b a) None ;
-  test 10 (Array1.overlap c a) (Some (10, 0, 0)) ;
-  test 11 (Array1.overlap c b) (Some (10, 10, 0)) ;
-  test 12 (Array1.overlap a c) (Some (10, 0, 0)) ;
-  test 13 (Array1.overlap b c) (Some (10, 0, 10)) ;
+  let ab = Array1.sub v 0 6 in
+  let cd = Array1.sub v 5 5 in
+  test 7 (Array1.overlap ab cd) (Some (1, 5, 0)) ;
+
+  let ab = Array1.sub v 5 5 in
+  let cd = Array1.sub v 0 6 in
+  test 8 (Array1.overlap ab cd) (Some (1, 0, 5)) ;
+
+  let ab = Array1.sub v 0 8 in
+  let cd = Array1.sub v 2 8 in
+  test 9 (Array1.overlap ab cd) (Some (6, 2, 0)) ;
+
+  let ab = Array1.sub v 0 10 in
+  let cd = Array1.sub v 2 8 in
+  test 10 (Array1.overlap ab cd) (Some (8, 2, 0)) ;
+
+  let ab = Array1.sub v 0 10 in
+  let cd = Array1.sub v 2 6 in
+  test 11 (Array1.overlap ab cd) (Some (6, 2, 0)) ;
+
+  let ab = Array1.sub v 0 8 in
+  let cd = Array1.sub v 0 10 in
+  test 12 (Array1.overlap ab cd) (Some (8, 0, 0)) ;
+
+  let ab = Array1.sub v 0 10 in
+  let cd = Array1.sub v 0 10 in
+  test 13 (Array1.overlap ab cd) (Some (10, 0, 0)) ;
+
+  let ab = Array1.sub v 0 10 in
+  let cd = Array1.sub v 0 8 in
+  test 14 (Array1.overlap ab cd) (Some (8, 0, 0)) ;
+
+  let ab = Array1.sub v 2 6 in
+  let cd = Array1.sub v 0 10 in
+  test 15 (Array1.overlap ab cd) (Some (6, 0, 2)) ;
+
+  let ab = Array1.sub v 2 8 in
+  let cd = Array1.sub v 0 10 in
+  test 16 (Array1.overlap ab cd) (Some (8, 0, 2)) ;
+
+  let ab = Array1.sub v 2 8 in
+  let cd = Array1.sub v 0 8 in
+  test 17 (Array1.overlap ab cd) (Some (6, 0, 2)) ;
+
+  let v = Array2.create Int C_layout 10 10 in
+
+  let ab = Array2.sub_left v 5 5 in
+  let cd = Array2.sub_left v 0 5 in
+  test 18 (Array2.overlap ab cd) None ;
+  let ab = Array2.sub_left v 0 5 in
+  let cd = Array2.sub_left v 5 5 in
+  test 19 (Array2.overlap ab cd) None ;
+  let ab = Array2.sub_left v 0 6 in
+  let cd = Array2.sub_left v 5 5 in
+  test 20 (Array2.overlap ab cd) (Some (10, (5, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 5 5 in
+  let cd = Array2.sub_left v 0 6 in
+  test 21 (Array2.overlap ab cd) (Some (10, (0, 0), (5, 0))) ;
+  let ab = Array2.sub_left v 0 8 in
+  let cd = Array2.sub_left v 2 8 in
+  test 22 (Array2.overlap ab cd) (Some (60, (2, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 0 10 in
+  let cd = Array2.sub_left v 2 8 in
+  test 23 (Array2.overlap ab cd) (Some (80, (2, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 0 10 in
+  let cd = Array2.sub_left v 2 6 in
+  test 24 (Array2.overlap ab cd) (Some (60, (2, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 0 8 in
+  let cd = Array2.sub_left v 0 10 in
+  test 25 (Array2.overlap ab cd) (Some (80, (0, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 0 10 in
+  let cd = Array2.sub_left v 0 10 in
+  test 26 (Array2.overlap ab cd) (Some (100, (0, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 0 10 in
+  let cd = Array2.sub_left v 0 8 in
+  test 27 (Array2.overlap ab cd) (Some (80, (0, 0), (0, 0))) ;
+  let ab = Array2.sub_left v 2 6 in
+  let cd = Array2.sub_left v 0 10 in
+  test 28 (Array2.overlap ab cd) (Some (60, (0, 0), (2, 0))) ;
+  let ab = Array2.sub_left v 2 8 in
+  let cd = Array2.sub_left v 0 10 in
+  test 29 (Array2.overlap ab cd) (Some (80, (0, 0), (2, 0))) ;
+  let ab = Array2.sub_left v 2 8 in
+  let cd = Array2.sub_left v 0 8 in
+  test 30 (Array2.overlap ab cd) (Some (60, (0, 0), (2, 0))) ;
+
+  let v = Array3.create Int C_layout 10 10 10 in
+  let ab = Array3.sub_left v 5 5 in
+  let cd = Array3.sub_left v 0 5 in
+  test 31 (Array3.overlap ab cd) None ;
+  let ab = Array3.sub_left v 0 5 in
+  let cd = Array3.sub_left v 5 5 in
+  test 32 (Array3.overlap ab cd) None ;
+  let ab = Array3.sub_left v 0 6 in
+  let cd = Array3.sub_left v 5 5 in
+  test 33 (Array3.overlap ab cd) (Some (100, (5, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 5 5 in
+  let cd = Array3.sub_left v 0 6 in
+  test 34 (Array3.overlap ab cd) (Some (100, (0, 0, 0), (5, 0, 0))) ;
+  let ab = Array3.sub_left v 0 8 in
+  let cd = Array3.sub_left v 2 8 in
+  test 35 (Array3.overlap ab cd) (Some (600, (2, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 0 10 in
+  let cd = Array3.sub_left v 2 8 in
+  test 36 (Array3.overlap ab cd) (Some (800, (2, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 0 10 in
+  let cd = Array3.sub_left v 2 6 in
+  test 37 (Array3.overlap ab cd) (Some (600, (2, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 0 8 in
+  let cd = Array3.sub_left v 0 10 in
+  test 38 (Array3.overlap ab cd) (Some (800, (0, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 0 10 in
+  let cd = Array3.sub_left v 0 10 in
+  test 39 (Array3.overlap ab cd) (Some (1000, (0, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 0 10 in
+  let cd = Array3.sub_left v 0 8 in
+  test 40 (Array3.overlap ab cd) (Some (800, (0, 0, 0), (0, 0, 0))) ;
+  let ab = Array3.sub_left v 2 6 in
+  let cd = Array3.sub_left v 0 10 in
+  test 41 (Array3.overlap ab cd) (Some (600, (0, 0, 0), (2, 0, 0))) ;
+  let ab = Array3.sub_left v 2 8 in
+  let cd = Array3.sub_left v 0 10 in
+  test 42 (Array3.overlap ab cd) (Some (800, (0, 0, 0), (2, 0, 0))) ;
+  let ab = Array3.sub_left v 2 8 in
+  let cd = Array3.sub_left v 0 8 in
+  test 43 (Array3.overlap ab cd) (Some (600, (0, 0, 0), (2, 0, 0))) ;
 
   ()
   [@@inline never]
