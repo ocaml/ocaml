@@ -246,11 +246,11 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
       caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
 
       if (local->stats.pool_words > local->stats.pool_max_words)
-        local->stats.pool_max_words = local->stats.pool_words;    
+        local->stats.pool_max_words = local->stats.pool_words;
     }
   }
 
-  /* There were no global avail pools, so let's adopt the full ones and try 
+  /* There were no global avail pools, so let's adopt the full ones and try
      our luck sweeping them later on */
   if( !r ) {
     struct heap_stats tmp_stats = { 0 };
@@ -265,13 +265,13 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
     int moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
 
     if (local->stats.pool_words > local->stats.pool_max_words)
-      local->stats.pool_max_words = local->stats.pool_words;    
+      local->stats.pool_max_words = local->stats.pool_words;
   }
 
   caml_plat_unlock(&pool_freelist.lock);
 
   if( !r ) {
-    pool_sweep(local, &local->full_pools[sz], sz);    
+    pool_sweep(local, &local->full_pools[sz], sz);
     r = local->avail_pools[sz];
   }
 
