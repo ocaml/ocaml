@@ -9,7 +9,7 @@ let () =
   let f' = ignore in
   f' '"'
 
-(* test {|*)|}, {%foo|*)|} and {%foo bar|*)|bar} *)
+(* test {|*)|}, {%foo|*)|} and {%%f.oo bar|*)|bar} *)
 (* test {%foo {%| *)
 
 let () = ignore {foo||foo}

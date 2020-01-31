@@ -270,6 +270,7 @@ static void process_open_curly_bracket(FILE *f) {
             idcptr++;
             while (In_bitmap(caml_ident_body, *idcptr)) idcptr++;
             while (*idcptr == '.') {
+                idcptr++;
                 if (In_bitmap(caml_ident_start, *idcptr)) {
                     idcptr++;
                     while (In_bitmap(caml_ident_body, *idcptr)) idcptr++;
