@@ -130,7 +130,7 @@ module Genarray = struct
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
 
-  external ptr : ('a, 'b, c_layout) t -> int = "caml_ba_ptr" [@@noalloc]
+  external ptr : ('a, 'b, c_layout) t -> nativeint = "caml_ba_ptr"
 
   let overlap
     : ('a, 'b, c_layout) t ->
@@ -141,15 +141,19 @@ module Genarray = struct
 
     let src_a = ptr a in
     let src_b = ptr b in
-    let len_a = size_in_bytes a in
-    let len_b = size_in_bytes b in
+    let len_a = Nativeint.of_int (size_in_bytes a) in
+    let len_b = Nativeint.of_int (size_in_bytes b) in
 
-    let len = max 0 (min (src_a + len_a) (src_b + len_b) - max src_a src_b) in
+    let len =
+      let ( + ) = Nativeint.add in
+      let ( - ) = Nativeint.sub in
+      max 0n (min (src_a + len_a) (src_b + len_b) - max src_a src_b) in
+    let len = Nativeint.to_int len in
     let len = len / kind_size_in_bytes (kind a) in
 
-    if src_a >= src_b && src_a < src_b + len_b
+    if src_a >= src_b && src_a < Nativeint.add src_b len_b
     then begin
-      let offset = ref ((src_a - src_b) / kind_size_in_bytes (kind a)) in
+      let offset = ref ((Nativeint.to_int (Nativeint.sub src_a src_b)) / kind_size_in_bytes (kind a)) in
       let points = Array.make (num_dims b) 0 in
       for i = num_dims b - 1 downto 0
       do
@@ -157,9 +161,9 @@ module Genarray = struct
         offset := !offset / (nth_dim b i);
       done ;
       Some (len, Array.make (num_dims a) 0, points)
-    end else if src_b >= src_a && src_b < src_a + len_a
+    end else if src_b >= src_a && src_b < Nativeint.add src_a len_a
     then begin
-      let offset = ref ((src_b - src_a) / kind_size_in_bytes (kind b)) in
+      let offset = ref ((Nativeint.to_int (Nativeint.sub src_b src_a)) / kind_size_in_bytes (kind b)) in
       let points = Array.make (num_dims a) 0 in
       for i = num_dims a - 1 downto 0
       do
