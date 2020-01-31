@@ -210,6 +210,11 @@ OCaml 4.10 release branch
   (Florian Angeletti, review by Daniel Bünzli, Sébastien Hinderer,
    and Gabriel Scherer)
 
+- #9257, cautionary guidelines for using the internal runtime API
+  without too much updating pain.
+  (Florian Angeletti, review by Daniel Bünzli, Guillaume Munch-Maccagnoni
+   and KC Sivaramakrishnan)
+
 
 - #8950: move local opens in pattern out of the extension chapter
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
