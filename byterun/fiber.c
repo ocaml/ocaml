@@ -338,6 +338,8 @@ CAMLprim value caml_clone_continuation (value cont)
   struct stack_info *source, *orig_source, *target, *ret_stack;
   struct stack_info **link = &ret_stack;
 
+  caml_gc_log("Cloning continuation: %ul", cont);
+
   new_cont = caml_alloc_1(Cont_tag, Val_ptr(NULL));
   orig_source = source = Ptr_val(caml_continuation_use(cont));
   do {
@@ -363,6 +365,7 @@ CAMLprim value caml_clone_continuation (value cont)
 CAMLprim value caml_continuation_use (value cont)
 {
   struct stack_info* stk;
+  caml_gc_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
   value v;

@@ -87,12 +87,12 @@ int caml_domain_is_in_stw();
 void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data);
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void*, int);
 
-void caml_global_barrier();
+void caml_global_barrier(const char* func, int line);
 
 typedef uintnat barrier_status;
-barrier_status caml_global_barrier_begin();
-int caml_global_barrier_is_final(barrier_status);
-void caml_global_barrier_end(barrier_status);
+barrier_status caml_global_barrier_begin(const char* func, int line);
+int caml_global_barrier_is_final(barrier_status, const char* func, int line);
+void caml_global_barrier_end(barrier_status, const char* func, int line);
 int caml_global_barrier_num_domains();
 int caml_domain_is_terminating(void);
 

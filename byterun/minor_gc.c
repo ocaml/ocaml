@@ -42,8 +42,9 @@
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
-static intnat domains_in_minor_gc;
+static atomic_intnat domains_in_minor_gc_count;
 static atomic_intnat domains_finished_remembered_set;
+static struct domain* domains_in_minor_gc[Max_domains];
 
 static atomic_uintnat caml_minor_cycles_started = 0;
 
@@ -112,6 +113,16 @@ void caml_free_minor_tables(struct caml_minor_tables* r)
   caml_stat_free(r);
 }
 
+#ifdef DEBUG
+extern int caml_debug_is_minor(value val) {
+  return Is_minor(val);
+}
+
+extern int caml_debug_is_major(value val) {
+  return !Is_minor(val);
+}
+#endif
+
 void caml_set_minor_heap_size (asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
@@ -166,10 +177,10 @@ int get_header_val(value v) {
   if( caml_domain_alone() ) {
     return Hd_val(v);
   } else {
-    header_t hd = atomic_load(Hp_atomic_val(v));
+    header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_relaxed);
 
     if ( Wosize_hd(hd) == 0 && Color_hd(hd) == 1 ) {
-      while( atomic_load(Hp_atomic_val(v)) != 0 ) {}
+      while( atomic_load_explicit(Hp_atomic_val(v), memory_order_acquire) != 0 ) {}
       return 0;
     }
 
@@ -311,11 +322,13 @@ static void oldify_one (void* st_v, value v, value *p)
       }
     } else {
       // Conflict - fix up what we allocated on the major heap
-      int c;
       *Hp_val(result) = Make_header(sz, No_scan_tag, global.MARKED);
       #ifdef DEBUG
-      for( c = 0; c < sz ; c++ ) {
-        Op_val(result)[c] = Val_long(1);
+      { 
+        int c;
+        for( c = 0; c < sz ; c++ ) {
+          Op_val(result)[c] = Val_long(1);
+        }
       }
       #endif
     }
@@ -524,10 +537,10 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   domain_state->young_ptr = domain_state->young_end;
 }
 
-void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
+void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_gc_idx, int not_alone)
 {
   caml_domain_state* domain_state = domain->state;
-  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
+  struct caml_minor_tables *self_minor_tables = domain_state->minor_tables;
   unsigned rewrite_successes = 0;
   unsigned rewrite_failures = 0;
   char* young_ptr = domain_state->young_ptr;
@@ -537,6 +550,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
   value **r;
   value **r_new;
   struct caml_ephe_ref_elt *re;
+  intnat c;
 
   st.promote_domain = domain;
 
@@ -548,18 +562,76 @@ void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
   caml_ev_begin("minor_gc");
   caml_ev_begin("minor_gc/remembered_set");
 
-  for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
-    oldify_one (&st, **r, *r);
+  int remembered_roots = 0;
+
+  if( not_alone ) {
+    struct domain* foreign_domain;
+    intnat cached_domains_in_minor_gc_count = atomic_load_explicit(&domains_in_minor_gc_count, memory_order_acquire);
+    // We use this rather odd scheme because it better smoothes the remainder
+    int curr_idx = domains_in_minor_gc_idx;
+    for( c = 0 ; c < cached_domains_in_minor_gc_count ; c++ ) {
+      foreign_domain = domains_in_minor_gc[c];
+      struct caml_minor_tables* foreign_minor_tables = foreign_domain->state->minor_tables;
+      struct caml_ref_table* foreign_major_ref = &foreign_minor_tables->major_ref; 
+      // calculate the size of the remembered set
+      intnat major_ref_size = foreign_major_ref->ptr - foreign_major_ref->base;
+      // number of remembered set entries each domain takes here
+      intnat refs_per_domain = (major_ref_size / domains_in_minor_gc_count);
+      // where to start in the remembered set
+      value** ref_start = foreign_major_ref->base + (curr_idx * refs_per_domain);
+      // where to end in the remembered set
+      value** ref_end = foreign_major_ref->base + ((curr_idx+1) * refs_per_domain);
+      // if we're the last domain this time, cover all the remaining refs
+      if( curr_idx == domains_in_minor_gc_count-1 ) {
+        caml_gc_log("taking remainder");
+        ref_end = foreign_major_ref->ptr;
+      }
+
+      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %ul, refs_per_domain: %ul, ref_base: %ul, ref_ptr: %ul, ref_start: %ul, ref_end: %ul", domains_in_minor_gc_idx, foreign_domain->state->id, major_ref_size, refs_per_domain, foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
+      
+      for( r = ref_start ; r < foreign_major_ref->ptr && r < ref_end ; r++ )
+      {
+        oldify_one (&st, **r, *r);
+        remembered_roots++;
+      }
+
+      curr_idx = (curr_idx+1) % cached_domains_in_minor_gc_count;
+    }
   }
+  else
+  {
+    // If we're alone, we just do our own remembered set
+    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ )
+    {
+      oldify_one (&st, **r, *r);
+      remembered_roots++;
+    }
+  }
+
+  #ifdef DEBUG
+    caml_global_barrier(__func__, __LINE__);
+    // At this point all domains should have gone through all remembered set entries
+    // We need to verify that all our remembered set entries are now in the major heap or promoted
+    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ )
+    {
+      value v = *r;
+
+      // Everything should be promoted
+      CAMLassert(!Is_minor(v));
+    }    
+  #endif
 
   caml_ev_begin("minor_gc/remembered_set/promote");
   oldify_mopup (&st, 0);
   caml_ev_end("minor_gc/remembered_set/promote");
   caml_ev_end("minor_gc/remembered_set");
+  caml_gc_log("promoted %d roots, %d bytes", remembered_roots, st.live_bytes);
 
 #ifdef DEBUG
-  for (r = minor_tables->major_ref.base;
-       r < minor_tables->major_ref.ptr; r++) {
+  caml_global_barrier(__func__, __LINE__);
+  caml_gc_log("ref_base: %ul, ref_ptr: %ul", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
+  for (r = self_minor_tables->major_ref.base;
+       r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
     CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_minor(vnew)));
   }
@@ -578,8 +650,8 @@ void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
   caml_ev_end("minor_gc/local_roots");
 
   caml_ev_begin("minor_gc/ephemerons");
-  for (re = minor_tables->ephe_ref.base;
-       re < minor_tables->ephe_ref.ptr; re++) {
+  for (re = self_minor_tables->ephe_ref.base;
+       re < self_minor_tables->ephe_ref.ptr; re++) {
     CAMLassert (Ephe_domain(re->ephe) == domain);
     if (re->offset == CAML_EPHE_DATA_OFFSET) {
       /* Data field has already been handled in oldify_mopup. Handle only
@@ -625,16 +697,24 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   barrier_status b;
 
   int not_alone = !caml_domain_alone();
+  intnat domains_in_minor_gc_idx = 0;
 
   if( not_alone ) {
     caml_ev_begin("minor_gc/start_barrier");
-    b = caml_global_barrier_begin();
-    if( caml_global_barrier_is_final(b) ) {
-      domains_in_minor_gc = caml_global_barrier_num_domains();
+    b = caml_global_barrier_begin(__func__, __LINE__);
+    if( caml_global_barrier_is_final(b, __func__, __LINE__) ) {
+      atomic_store_explicit(&domains_in_minor_gc_count, 0, memory_order_release);
+    }
+    caml_global_barrier_end(b, __func__, __LINE__);
+    domains_in_minor_gc_idx = atomic_fetch_add_explicit(&domains_in_minor_gc_count, 1, memory_order_acq_rel);
+    domains_in_minor_gc[domains_in_minor_gc_idx] = domain;
+    atomic_thread_fence(memory_order_release);
+    b = caml_global_barrier_begin(__func__, __LINE__);
+    if( caml_global_barrier_is_final(b, __func__, __LINE__) ) {
       atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
       atomic_fetch_add(&caml_minor_cycles_started, 1);
     }
-    caml_global_barrier_end(b);
+    caml_global_barrier_end(b, __func__, __LINE__);
     caml_ev_end("minor_gc/start_barrier");
   }
   else
@@ -643,12 +723,12 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   }
 
   caml_gc_log("running stw empty_minor_heap_promote");
-  caml_empty_minor_heap_promote(domain, not_alone);
+  caml_empty_minor_heap_promote(domain, domains_in_minor_gc_idx, not_alone);
 
   if( not_alone ) {
     caml_ev_begin("minor_gc/leave_barrier");
     SPIN_WAIT {
-      if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == domains_in_minor_gc ) {
+      if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == atomic_load_explicit(&domains_in_minor_gc_count, memory_order_acquire) ) {
         break;
       }
     }
