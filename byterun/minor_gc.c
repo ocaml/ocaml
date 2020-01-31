@@ -624,27 +624,27 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   int not_alone = !caml_domain_alone();
 
   if( not_alone ) {
-    caml_ev_begin("minor_gc/barrier0");
+    caml_ev_begin("minor_gc/start_barrier");
     b = caml_global_barrier_begin();
     if( caml_global_barrier_is_final(b) ) {
       domains_in_minor_gc = caml_global_barrier_num_domains();
       atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
     }
     caml_global_barrier_end(b);
-    caml_ev_end("minor_gc/barrier0");
+    caml_ev_end("minor_gc/start_barrier");
   }
 
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, not_alone);
 
   if( not_alone ) {
-    caml_ev_begin("minor_gc/barrier1");
+    caml_ev_begin("minor_gc/leave_barrier");
     SPIN_WAIT {
       if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == domains_in_minor_gc ) {
         break;
       }
     }
-    caml_ev_end("minor_gc/barrier1");
+    caml_ev_end("minor_gc/leave_barrier");
   }
 
   caml_ev_begin("minor_gc/finalizers");

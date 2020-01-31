@@ -523,13 +523,13 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 
   caml_ev_begin("stw/handler");
   caml_acknowledge_interrupt(done);
-  caml_ev_begin("stw/barrierA");
+  caml_ev_begin("stw/api_barrier");
   SPIN_WAIT {
     if (atomic_load_acq(&stw_request.domains_still_running) == 0)
       break;
     caml_handle_incoming_interrupts();
   }
-  caml_ev_end("stw/barrierA");
+  caml_ev_end("stw/api_barrier");
 
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
