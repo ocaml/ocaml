@@ -137,7 +137,8 @@ module Genarray = struct
       ('a, 'b, c_layout) t ->
       (int * int array * int array) option
     = fun a b ->
-    if (num_dims a) <> (num_dims b) then invalid_arg "Bigarray.Genarray.overlap" ;
+    if (num_dims a) <> (num_dims b)
+    then invalid_arg "Bigarray.Genarray.overlap" ;
 
     let src_a = ptr a in
     let src_b = ptr b in
@@ -153,7 +154,8 @@ module Genarray = struct
 
     if src_a >= src_b && src_a < Nativeint.add src_b len_b
     then begin
-      let offset = ref ((Nativeint.to_int (Nativeint.sub src_a src_b)) / kind_size_in_bytes (kind a)) in
+      let offset = ref ((Nativeint.to_int (Nativeint.sub src_a src_b))
+                        / kind_size_in_bytes (kind a)) in
       let points = Array.make (num_dims b) 0 in
       for i = num_dims b - 1 downto 0
       do
@@ -163,7 +165,8 @@ module Genarray = struct
       Some (len, Array.make (num_dims a) 0, points)
     end else if src_b >= src_a && src_b < Nativeint.add src_a len_a
     then begin
-      let offset = ref ((Nativeint.to_int (Nativeint.sub src_b src_a)) / kind_size_in_bytes (kind b)) in
+      let offset = ref ((Nativeint.to_int (Nativeint.sub src_b src_a))
+                        / kind_size_in_bytes (kind b)) in
       let points = Array.make (num_dims a) 0 in
       for i = num_dims a - 1 downto 0
       do
