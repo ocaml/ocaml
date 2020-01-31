@@ -1051,7 +1051,7 @@ static intnat major_collection_slice(intnat howmuch,
      if( saved_major_cycle != caml_major_cycles_completed ) {
        caml_ev_end("major_gc/sweep");
        caml_ev_end("major_gc/slice");
-       return;
+       return computed_work;
      }
     } while (budget > 0 && available != left);
 
@@ -1070,7 +1070,7 @@ static intnat major_collection_slice(intnat howmuch,
     caml_handle_incoming_interrupts();
     if( saved_major_cycle != caml_major_cycles_completed ) {
        caml_ev_end("major_gc/slice");
-       return;      
+       return computed_work;
     }
   }
 
@@ -1093,8 +1093,8 @@ mark_again:
       caml_handle_incoming_interrupts();
       if( saved_major_cycle != caml_major_cycles_completed ) {
         caml_ev_end("major_gc/mark");
-        caml_ev_end("major_gc/slice");       
-        return;
+        caml_ev_end("major_gc/slice");
+        return computed_work;
       }
     } else if (0) {
       if (was_marking) {
