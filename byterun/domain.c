@@ -78,7 +78,6 @@ struct dom_internal {
 };
 typedef struct dom_internal dom_internal;
 
-
 static uintnat handle_incoming(struct interruptor* s);
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
@@ -277,6 +276,7 @@ init_signal_stack_failure:
 domain_init_complete:
   caml_ev_resume();
   }
+  caml_gc_log("created");
   caml_plat_unlock(&all_domains_lock);
 }
 
@@ -479,24 +479,27 @@ static struct {
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
-barrier_status caml_global_barrier_begin()
+barrier_status caml_global_barrier_begin(const char* func, int line)
 {
   uintnat b = 1 + atomic_fetch_add(&stw_request.barrier, 1);
-  caml_gc_log("domain %d to barrier", (int)b & ~BARRIER_SENSE_BIT);
+  caml_gc_log("domain %d to barrier (%s:%d)", (int)b & ~BARRIER_SENSE_BIT, func, line);
   return b;
 }
 
-int caml_global_barrier_is_final(barrier_status b)
+int caml_global_barrier_is_final(barrier_status b, const char* func, int line)
 {
-  return ((b & ~BARRIER_SENSE_BIT) == stw_request.num_domains);
+  int is_final = ((b & ~BARRIER_SENSE_BIT) == stw_request.num_domains);
+  caml_gc_log("domain is final: %d [%d] [%d] (%s:%d)", is_final, b, stw_request.num_domains, func, line);
+  return is_final;
 }
 
-void caml_global_barrier_end(barrier_status b)
+void caml_global_barrier_end(barrier_status b, const char* func, int line)
 {
   uintnat sense = b & BARRIER_SENSE_BIT;
-  if (caml_global_barrier_is_final(b)) {
+  if (caml_global_barrier_is_final(b, func, line)) {
     /* last domain into the barrier, flip sense */
     atomic_store_rel(&stw_request.barrier, sense ^ BARRIER_SENSE_BIT);
+    caml_gc_log("flip barrier sense bit %d (%s:%d)", sense ^ BARRIER_SENSE_BIT, func, line);
   } else {
     /* wait until another domain flips the sense */
     SPIN_WAIT {
@@ -504,12 +507,14 @@ void caml_global_barrier_end(barrier_status b)
       if ((barrier & BARRIER_SENSE_BIT) != sense) break;
     }
   }
+
+  caml_gc_log("domain leaving barrier (%s:%d)", func, line);
 }
 
-void caml_global_barrier()
+void caml_global_barrier(const char* func, int line)
 {
-  barrier_status b = caml_global_barrier_begin();
-  caml_global_barrier_end(b);
+  barrier_status b = caml_global_barrier_begin(func, line);
+  caml_global_barrier_end(b, func, line);
 }
 
 int caml_global_barrier_num_domains()
@@ -564,6 +569,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
         break;
     }
   }
+
   caml_ev_end("stw/handler");
 }
 
@@ -969,12 +975,15 @@ static void domain_terminate()
     if (handle_incoming(s) == 0 &&
         Caml_state->marking_done &&
         Caml_state->sweeping_done) {
+      
+      caml_gc_log("terminated");
       finished = 1;
       s->terminating = 0;
       s->running = 0;
       atomic_fetch_add(&num_domains_running, -1);
       s->unique_id += Max_domains;
     }
+
     caml_plat_unlock(&s->lock);
   }
 

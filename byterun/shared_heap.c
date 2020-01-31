@@ -295,13 +295,19 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   mlsize_t wh = wsize_sizeclass[sz];
   value* p = (value*)((char*)r + POOL_HEADER_SZ);
   value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
+  value* last_p = 0;
+
+  p[0] = 0;
+  p[1] = 0;
+  p += wh;
 
   while (p + wh <= end) {
     p[0] = 0; /* zero header indicates free object */
-    p[1] = (value)r->next_obj;
-    r->next_obj = p;
+    p[1] = p - wh;
     p += wh;
   }
+
+  r->next_obj = p - wh;
 
   return r;
 }

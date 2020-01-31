@@ -70,6 +70,11 @@ extern void caml_realloc_custom_table (struct caml_custom_table *);
 struct caml_minor_tables* caml_alloc_minor_tables();
 void caml_free_minor_tables(struct caml_minor_tables*);
 
+#ifdef DEBUG
+extern int caml_debug_is_minor(value val);
+extern int caml_debug_is_major(value val);
+#endif
+
 CAMLextern value caml_promote(struct domain*, value root);
 
 #define Ref_table_add(ref_table, x) do {                                \
