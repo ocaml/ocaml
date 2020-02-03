@@ -276,34 +276,34 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
 }
 
 #define Default_callstack_size 32
-intnat caml_collect_current_callstack(value** pbuffer, intnat* plen,
+intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
                                       intnat max_frames, int alloc_idx)
 {
-  value * sp =  Caml_state->extern_sp;
+  value * sp = Caml_state->extern_sp;
   value * trsp = Caml_state->trapsp;
-  intnat trace_pos = 0, trace_len = *plen;
-  value* trace = *pbuffer;
+  intnat trace_pos = 0;
   CAMLassert(alloc_idx == 0 || alloc_idx == -1);
 
   if (max_frames <= 0) return 0;
-  if (trace_len == 0) {
-    trace = caml_stat_alloc_noexc(Default_callstack_size * sizeof(value));
+  if (*plen == 0) {
+    value* trace =
+      caml_stat_alloc_noexc(Default_callstack_size * sizeof(value));
     if (trace == NULL) return 0;
-    *pbuffer = trace;
-    *plen = trace_len = Default_callstack_size;
+    *ptrace = trace;
+    *plen = Default_callstack_size;
   }
 
   while (trace_pos < max_frames) {
     code_t p = caml_next_frame_pointer(&sp, &trsp);
     if (p == NULL) break;
-    if (trace_pos == trace_len) {
-      trace_len *= 2;
-      trace = caml_stat_resize_noexc(trace, trace_len * sizeof(value));
+    if (trace_pos == *plen) {
+      intnat new_len = *plen * 2;
+      value * trace = caml_stat_resize_noexc(*ptrace, new_len * sizeof(value));
       if (trace == NULL) break;
-      *pbuffer = trace;
-      *plen = trace_len;
+      *ptrace = trace;
+      *plen = new_len;
     }
-    trace[trace_pos++] = Val_backtrace_slot(p);
+    (*ptrace)[trace_pos++] = Val_backtrace_slot(p);
   }
 
   return trace_pos;

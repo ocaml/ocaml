@@ -113,20 +113,20 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 static debuginfo debuginfo_extract(frame_descr* d, int alloc_idx);
 
 #define Default_callstack_size 32
-intnat caml_collect_current_callstack(value** pbuffer, intnat* plen,
+intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
                                       intnat max_frames, int alloc_idx)
 {
   uintnat pc = Caml_state->last_return_address;
   char * sp = Caml_state->bottom_of_stack;
-  intnat trace_pos = 0, trace_len = *plen;
-  value* trace = *pbuffer;
+  intnat trace_pos = 0;
 
   if (max_frames <= 0) return 0;
-  if (trace_len == 0) {
-    trace = caml_stat_alloc_noexc(Default_callstack_size * sizeof(value));
+  if (*plen == 0) {
+    value* trace =
+      caml_stat_alloc_noexc(Default_callstack_size * sizeof(value));
     if (trace == NULL) return 0;
-    *pbuffer = trace;
-    *plen = trace_len = Default_callstack_size;
+    *ptrace = trace;
+    *plen = Default_callstack_size;
   }
 
   if (alloc_idx >= 0) {
@@ -136,21 +136,21 @@ intnat caml_collect_current_callstack(value** pbuffer, intnat* plen,
     if (descr == NULL) return 0;
     info = debuginfo_extract(descr, alloc_idx);
     CAMLassert(((uintnat)info & 3) == 0);
-    trace[trace_pos++] = Val_backtrace_slot(Slot_debuginfo(info));
+    (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_debuginfo(info));
   }
 
   while (trace_pos < max_frames) {
     frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
     if (descr == NULL) break;
     CAMLassert(((uintnat)descr & 3) == 0);
-    if (trace_pos == trace_len) {
-      trace_len *= 2;
-      trace = caml_stat_resize_noexc(trace, trace_len * sizeof(value));
+    if (trace_pos == *plen) {
+      intnat new_len = *plen * 2;
+      value * trace = caml_stat_resize_noexc(*ptrace, new_len * sizeof(value));
       if (trace == NULL) break;
-      *pbuffer = trace;
-      *plen = trace_len;
+      *ptrace = trace;
+      *plen = new_len;
     }
-    trace[trace_pos++] = Val_backtrace_slot(Slot_frame_descr(descr));
+    (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_frame_descr(descr));
   }
 
   return trace_pos;

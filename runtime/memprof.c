@@ -862,6 +862,9 @@ void caml_memprof_shutdown(void) {
   caml_stat_free(trackst.entries);
   trackst.entries = NULL;
   trackst.alloc_len = 0;
+  caml_stat_free(callstack_buffer);
+  callstack_buffer = NULL;
+  callstack_buffer_len = 0;
 }
 
 CAMLprim value caml_memprof_start(value lv, value szv,
