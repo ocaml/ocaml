@@ -27,16 +27,14 @@
 #endif
 #endif
 
-CAMLprim value unix_sleep(value duration)
+static inline value unix_sleep_implementation(int64_t sec, int64_t nsec)
 {
-  double d = Double_val(duration);
-  if (d < 0.0) return Val_unit;
 #if defined(HAS_NANOSLEEP)
   {
     struct timespec t;
     int ret;
-    t.tv_sec = (time_t) d;
-    t.tv_nsec = (d - t.tv_sec) * 1e9;
+    t.tv_sec = sec;
+    t.tv_nsec = nsec;
     do {
       caml_enter_blocking_section();
       ret = nanosleep(&t, &t);
@@ -52,8 +50,8 @@ CAMLprim value unix_sleep(value duration)
   {
     struct timeval t;
     int ret;
-    t.tv_sec = (time_t) d;
-    t.tv_usec = (d - t.tv_sec) * 1e6;
+    t.tv_sec = sec;
+    t.tv_usec = nsec * 1e-3;
     do {
       caml_enter_blocking_section();
       ret = select(0, NULL, NULL, NULL, &t);
@@ -68,9 +66,22 @@ CAMLprim value unix_sleep(value duration)
      remaining time returned by sleep() is generally rounded up. */
   {
     caml_enter_blocking_section();
-    sleep ((unsigned int) d);
+    sleep ((unsigned int) sec);
     caml_leave_blocking_section();
   }
 #endif
   return Val_unit;
+}
+
+CAMLprim value unix_sleep(value duration) {
+  double d = Double_val(duration);
+  if (d < 0.0) return Val_unit;
+  int64_t sec = (time_t) d;
+  int64_t usec = (d - sec) * 1e9;
+
+  return unix_sleep_implementation(sec, usec); 
+}
+
+CAMLprim value unix_sleep_int(value sec, value usec) {
+  return unix_sleep_implementation(Int64_val(sec), Int32_val(usec) * 1e3);
 }
