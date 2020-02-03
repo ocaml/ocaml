@@ -509,7 +509,7 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
     domain_state->young_start = (char*)domain_state->young_end;
     domain_state->young_end = (char*)(domain_state->young_start + Bsize_wsize(wsize) / 2);
 
-    domain_state->young_phase = 1;  
+    domain_state->young_phase = 1;
   } else {
     domain_state->young_end = (char*)(domain_state->young_end - Bsize_wsize(wsize) / 2);
     domain_state->young_start = (char*)(domain_state->young_end - Bsize_wsize(wsize) / 2);
@@ -554,6 +554,14 @@ void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
   caml_ev_end("minor_gc/remembered_set/promote");
   caml_ev_end("minor_gc/remembered_set");
 
+#ifdef DEBUG
+  for (r = minor_tables->major_ref.base;
+       r < minor_tables->major_ref.ptr; r++) {
+    value vnew = **r;
+    CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_minor(vnew)));
+  }
+#endif
+
   if( not_alone ) {
     atomic_fetch_add_explicit(&domains_finished_remembered_set, 1, memory_order_release);
   }
@@ -588,14 +596,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, int not_alone)
     }
   }
   caml_ev_end("minor_gc/ephemerons");
-
-#ifdef DEBUG
-  for (r = minor_tables->major_ref.base;
-       r < minor_tables->major_ref.ptr; r++) {
-    value vnew = **r;
-    CAMLassert (!Is_block(vnew) || (!Is_minor(vnew) && Hd_val(vnew) != 0));
-  }
-#endif
 
   domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
   domain_state->stat_minor_collections++;
