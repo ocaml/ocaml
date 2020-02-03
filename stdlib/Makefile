@@ -33,8 +33,6 @@ DEPFLAGS=-slash
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
 # Object file prefix
-P=stdlib__
-
 include StdlibModules
 
 OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))

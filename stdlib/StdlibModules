@@ -18,68 +18,68 @@
 # This file lists all standard library modules.
 # It is used in particular to know what to expunge in toplevels.
 
-P ?= stdlib__
+STDLIBPREFIX = stdlib__
 
 # Modules should be listed in dependency order.
 
 STDLIB_MODULES=\
   camlinternalFormatBasics \
   stdlib \
-  $(P)pervasives \
-  $(P)seq \
-  $(P)option \
-  $(P)result \
-  $(P)bool \
-  $(P)char \
-  $(P)uchar \
-  $(P)sys \
-  $(P)list \
-  $(P)bytes \
-  $(P)string \
-  $(P)unit \
-  $(P)marshal \
-  $(P)obj \
-  $(P)array \
-  $(P)float \
-  $(P)int \
-  $(P)int32 \
-  $(P)int64 \
-  $(P)nativeint \
-  $(P)lexing \
-  $(P)parsing \
-  $(P)set \
-  $(P)map \
-  $(P)stack \
-  $(P)queue \
+  $(STDLIBPREFIX)pervasives \
+  $(STDLIBPREFIX)seq \
+  $(STDLIBPREFIX)option \
+  $(STDLIBPREFIX)result \
+  $(STDLIBPREFIX)bool \
+  $(STDLIBPREFIX)char \
+  $(STDLIBPREFIX)uchar \
+  $(STDLIBPREFIX)sys \
+  $(STDLIBPREFIX)list \
+  $(STDLIBPREFIX)bytes \
+  $(STDLIBPREFIX)string \
+  $(STDLIBPREFIX)unit \
+  $(STDLIBPREFIX)marshal \
+  $(STDLIBPREFIX)obj \
+  $(STDLIBPREFIX)array \
+  $(STDLIBPREFIX)float \
+  $(STDLIBPREFIX)int \
+  $(STDLIBPREFIX)int32 \
+  $(STDLIBPREFIX)int64 \
+  $(STDLIBPREFIX)nativeint \
+  $(STDLIBPREFIX)lexing \
+  $(STDLIBPREFIX)parsing \
+  $(STDLIBPREFIX)set \
+  $(STDLIBPREFIX)map \
+  $(STDLIBPREFIX)stack \
+  $(STDLIBPREFIX)queue \
   camlinternalLazy \
-  $(P)lazy \
-  $(P)stream \
-  $(P)buffer \
+  $(STDLIBPREFIX)lazy \
+  $(STDLIBPREFIX)stream \
+  $(STDLIBPREFIX)buffer \
   camlinternalFormat \
-  $(P)printf \
-  $(P)arg \
-  $(P)printexc \
-  $(P)fun \
-  $(P)gc \
-  $(P)digest \
-  $(P)random \
-  $(P)hashtbl \
-  $(P)weak \
-  $(P)format \
-  $(P)scanf \
-  $(P)callback \
+  $(STDLIBPREFIX)printf \
+  $(STDLIBPREFIX)arg \
+  $(STDLIBPREFIX)printexc \
+  $(STDLIBPREFIX)fun \
+  $(STDLIBPREFIX)gc \
+  $(STDLIBPREFIX)digest \
+  $(STDLIBPREFIX)random \
+  $(STDLIBPREFIX)hashtbl \
+  $(STDLIBPREFIX)weak \
+  $(STDLIBPREFIX)format \
+  $(STDLIBPREFIX)scanf \
+  $(STDLIBPREFIX)callback \
   camlinternalOO \
-  $(P)oo \
+  $(STDLIBPREFIX)oo \
   camlinternalMod \
-  $(P)genlex \
-  $(P)ephemeron \
-  $(P)filename \
-  $(P)complex \
-  $(P)arrayLabels \
-  $(P)listLabels \
-  $(P)bytesLabels \
-  $(P)stringLabels \
-  $(P)moreLabels \
-  $(P)stdLabels \
-  $(P)spacetime \
-  $(P)bigarray
+  $(STDLIBPREFIX)genlex \
+  $(STDLIBPREFIX)ephemeron \
+  $(STDLIBPREFIX)filename \
+  $(STDLIBPREFIX)complex \
+  $(STDLIBPREFIX)arrayLabels \
+  $(STDLIBPREFIX)listLabels \
+  $(STDLIBPREFIX)bytesLabels \
+  $(STDLIBPREFIX)stringLabels \
+  $(STDLIBPREFIX)moreLabels \
+  $(STDLIBPREFIX)stdLabels \
+  $(STDLIBPREFIX)spacetime \
+  $(STDLIBPREFIX)bigarray
