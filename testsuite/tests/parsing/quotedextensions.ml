@@ -30,3 +30,13 @@ let {%M.foo bar| <hello>{|x|} |bar}
    {x}
  </hello>
 |}
+
+(* Double quotes inside quoted strings inside comments *)
+(* {|"|}, and *)
+(* [%foo {|"|}], and *)
+(* {%foo|"|} should be valid inside comments *)
+
+(* Comment delimiters inside quoted strings inside comments: *)
+(* {|*)|}, and *)
+(* [%foo {bar|*)|bar}], and *)
+(* {%foo bar|*)|bar} should be valid inside comments *)

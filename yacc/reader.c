@@ -261,9 +261,30 @@ void process_apostrophe_body(FILE *f)
 
 
 static void process_open_curly_bracket(FILE *f) {
-    if (In_bitmap(caml_ident_start, *cptr) || *cptr == '|')
+    char *idcptr = cptr;
+
+    if (*idcptr == '%') {
+        if (*++idcptr == '%') idcptr++;
+
+        if (In_bitmap(caml_ident_start, *idcptr)) {
+            idcptr++;
+            while (In_bitmap(caml_ident_body, *idcptr)) idcptr++;
+            while (*idcptr == '.') {
+                idcptr++;
+                if (In_bitmap(caml_ident_start, *idcptr)) {
+                    idcptr++;
+                    while (In_bitmap(caml_ident_body, *idcptr)) idcptr++;
+                }
+            }
+            while (*idcptr == ' ' || *idcptr == 9 || *idcptr == 12) idcptr++;
+        } else {
+           return;
+        }
+    }
+
+    if (In_bitmap(caml_ident_start, *idcptr) || *idcptr == '|')
     {
-        char *newcptr = cptr;
+        char *newcptr = idcptr;
         size_t size = 0;
         char *buf;
         while(In_bitmap(caml_ident_body, *newcptr)) { newcptr++; }
@@ -273,13 +294,13 @@ static void process_open_curly_bracket(FILE *f) {
             char *s_line;
             char *s_cptr;
 
-            size = newcptr - cptr;
+            size = newcptr - idcptr;
             buf = MALLOC(size + 2);
             if (!buf) no_space();
-            memcpy(buf, cptr, size);
+            memcpy(buf, idcptr, size);
             buf[size] = '}';
             buf[size + 1] = '\0';
-            fwrite(cptr, 1, size + 1, f);
+            fwrite(cptr, 1, newcptr - cptr + 1, f);
             cptr = newcptr + 1;
             s_lineno = lineno;
             s_line = dup_line();
@@ -369,7 +390,7 @@ static void process_comment(FILE *const f) {
                 continue;
             default:
                 if (In_bitmap(caml_ident_start, c)) {
-                  while (In_bitmap(caml_ident_body, *cptr)) cptr++;
+                  while (In_bitmap(caml_ident_body, *cptr)) putc(*cptr++, f);
                 }
                 continue;
             }

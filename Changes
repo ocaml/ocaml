@@ -5,9 +5,9 @@ Working version
 
 ### Language features
 
-- #8820: quoted extensions: {%foo|...|} is lighter syntax for
+- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
   [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
-  (Gabriel Radanne, Leo White and Gabriel Scherer,
+  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
    request by Bikal Lem)
 
 - #6673, #1132: Relax the handling of explicit polymorphic types
