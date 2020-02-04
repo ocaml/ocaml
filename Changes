@@ -18,8 +18,8 @@ Working version
   a breaking change if the configuration system was being abused before).
   (David Allsopp, review by Xavier Leroy)
 
-* #10098: Harden command-line parsing in ocamlrun (ensure given parameters
-  are exactly the required string, rather than just beginning with it).
+* #10098: Improve command-line parsing in ocamlrun: strictly recognise options
+  and be more informative for `ocamlrun -I`.
   (David Allsopp, review by Xavier Leroy)
 
 ### Code generation and optimizations:

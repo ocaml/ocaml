@@ -303,6 +303,8 @@ static int parse_command_line(char_os **argv)
         if (argv[i + 1] != NULL) {
           caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
           i++;
+        } else {
+          error("option '-I' needs an argument.");
         }
         break;
       case 'm':
