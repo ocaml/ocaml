@@ -87,10 +87,10 @@ let print_cma_infos (lib : Cmo_format.library) =
   (* PR#4949: print in linking order *)
   List.iter print_spaced_string (List.rev lib.lib_ccobjs);
   printf "\nExtra C options:";
-  List.iter print_spaced_string lib.lib_ccopts;
+  List.iter print_spaced_string (List.rev lib.lib_ccopts);
   printf "\n";
   print_string "Extra dynamically-loaded libraries:";
-  List.iter print_spaced_string lib.lib_dllibs;
+  List.iter print_spaced_string (List.rev lib.lib_dllibs);
   printf "\n";
   List.iter print_cmo_infos lib.lib_units
 
@@ -179,7 +179,7 @@ let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";
   List.iter print_spaced_string (List.rev lib.lib_ccobjs);
   printf "\nExtra C options:";
-  List.iter print_spaced_string lib.lib_ccopts;
+  List.iter print_spaced_string (List.rev lib.lib_ccopts);
   printf "\n";
   List.iter print_cmx_infos lib.lib_units
 
