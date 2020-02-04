@@ -18,8 +18,9 @@ Working version
   a breaking change if the configuration system was being abused before).
   (David Allsopp, review by Xavier Leroy)
 
-* #10098: Improve command-line parsing in ocamlrun: strictly recognise options
-  and be more informative for `ocamlrun -I`.
+* #10098: Improve command-line parsing in ocamlrun: strictly recognise options,
+  be more informative for `ocamlrun -I` and support `--` for terminating options
+  parsing.
   (David Allsopp, review by Xavier Leroy)
 
 ### Code generation and optimizations:

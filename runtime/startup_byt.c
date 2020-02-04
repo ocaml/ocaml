@@ -285,6 +285,9 @@ static int parse_command_line(char_os **argv)
     if (len == 2) {
       /* Single-letter options, e.g. -v */
       switch(argv[i][1]) {
+      case '-':
+        return i + 1;
+        break;
       case 't':
         ++ caml_trace_level; /* ignored unless DEBUG mode */
         break;
