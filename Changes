@@ -14,6 +14,10 @@ Working version
   (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
    Jourdan)
 
+- #10102: Ignore PROFINFO_WIDTH if WITH_PROFINFO is not defined (technically
+  a breaking change if the configuration system was being abused before).
+  (David Allsopp, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9937: improvements in ARM64 code generation (constants, sign extensions)
