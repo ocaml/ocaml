@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
 
   printf("Back in C code...\n");
   printf("Computing fib(20)...\n");
-  printf("%s\n", format_result(fib(20)));
+  puts(format_result(fib(20)));
 
   caml_shutdown();
   caml_shutdown();
