@@ -276,7 +276,6 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   SORT=/usr/bin/sort
   SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
   FLEXLINK_CMD=flexlink
-  MKEXE_ANSI=$(FLEXLINK) -exe
   FLEXDLL_CHAIN=@flexdll_chain@
   # FLEXLINK_FLAGS must be safe to insert in an OCaml string
   #   (see ocamlmklibconfig.ml in tools/Makefile)

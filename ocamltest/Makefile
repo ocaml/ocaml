@@ -44,11 +44,10 @@ endif
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)" | cygpath -w -f -)
-  mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
-  mkexe := $(MKEXE)
 endif
+mkexe := $(MKEXE)
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul

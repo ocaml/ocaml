@@ -702,13 +702,13 @@ AS_CASE([$CC,$host],
       mkexedebugflag="-link -g"])
     ostype="Win32"
     toolchain="mingw"
-    mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='-municode'
     SO="dll"],
   [*,*-pc-windows],
     [toolchain=msvc
     ostype="Win32"
-    mkexe='$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
+    mkexe='$(FLEXLINK) -exe $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")'
     oc_ldflags='/ENTRY:wmainCRTStartup'
     AS_CASE([$host],
       [i686-pc-windows], [flexdll_chain=msvc],
