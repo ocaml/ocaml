@@ -75,6 +75,15 @@ static c_primitive lookup_primitive(char * name)
 
 #define LD_CONF_NAME T("ld.conf")
 
+CAMLexport char_os * caml_get_stdlib_location(void)
+{
+  char_os * stdlib;
+  stdlib = caml_secure_getenv(T("OCAMLLIB"));
+  if (stdlib == NULL) stdlib = caml_secure_getenv(T("CAMLLIB"));
+  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
+  return stdlib;
+}
+
 static char_os * parse_ld_conf(void)
 {
   char_os * stdlib, * ldconfname, * wconfig, * p, * q;
@@ -86,9 +95,7 @@ static char_os * parse_ld_conf(void)
 #endif
   int ldconf, nread;
 
-  stdlib = caml_secure_getenv(T("OCAMLLIB"));
-  if (stdlib == NULL) stdlib = caml_secure_getenv(T("CAMLLIB"));
-  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
+  stdlib = caml_get_stdlib_location();
   ldconfname = caml_stat_strconcat_os(3, stdlib, T("/"), LD_CONF_NAME);
   if (stat_os(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
