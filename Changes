@@ -119,7 +119,7 @@ Working version
 
 - #9283: add a new toplevel directive `#use_output "<command>"` to
   run a command and evaluate its output.
-  (Jérémie Dimino)
+  (Jérémie Dimino, review by David Allsopp)
 
 ### Manual and documentation:
 

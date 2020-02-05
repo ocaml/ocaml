@@ -394,7 +394,7 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
 
-let use_file ppf wrap_mod ic name filename =
+let use_channel ppf wrap_mod ic name filename =
   let lb = Lexing.from_channel ic in
   Warnings.reset_fatal ();
   Location.init lb filename;
@@ -420,7 +420,8 @@ let use_file ppf wrap_mod ic name filename =
 
 let use_output ppf command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
-  Misc.try_finally ~always:(fun () -> Sys.remove fn)
+  Misc.try_finally ~always:(fun () ->
+      try Sys.remove fn with Sys_error _ -> ())
     (fun () ->
        match
          Printf.ksprintf Sys.command "%s > %s"
@@ -430,7 +431,7 @@ let use_output ppf command =
        | 0 ->
          let ic = open_in_bin fn in
          Misc.try_finally ~always:(fun () -> close_in ic)
-           (fun () -> use_file ppf false ic "" "(command-output)")
+           (fun () -> use_channel ppf false ic "" "(command-output)")
        | n ->
          fprintf ppf "Command exited with code %d.@." n;
          false)
@@ -438,13 +439,13 @@ let use_output ppf command =
 let use_file ppf wrap_mode name =
   match name with
   | "" ->
-    use_file ppf wrap_mode stdin name "(stdin)"
+    use_channel ppf wrap_mode stdin name "(stdin)"
   | _ ->
     match Load_path.find name with
     | filename ->
       let ic = open_in_bin filename in
       Misc.try_finally ~always:(fun () -> close_in ic)
-        (fun () -> use_file ppf false ic name filename)
+        (fun () -> use_channel ppf false ic name filename)
     | exception Not_found ->
       fprintf ppf "Cannot find file %s.@." name;
       false
