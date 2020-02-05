@@ -163,7 +163,7 @@ void caml_ephe_clean (struct domain* d, value v) {
     if (release_data) {
       Op_val(v)[CAML_EPHE_DATA_OFFSET] = caml_ephe_none;
     } else {
-      CAMLassert (!Is_block(child) && !is_unmarked(child));
+      CAMLassert (!Is_block(child) || !is_unmarked(child));
     }
   }
 }
