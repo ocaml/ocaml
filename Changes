@@ -10,6 +10,10 @@ Working version
 
 ### Runtime system:
 
+- #9284: Add -config option to display the configuration of ocamlrun on stdout,
+  including the search path for shared stub libraries.
+  (David Allsopp, review by Xavier Leroy)
+
 - #10025: Track custom blocks (e.g. Bigarray) with Statmemprof
   (Stephen Dolan, review by Leo White, Gabriel Scherer and Jacques-Henri
    Jourdan)
