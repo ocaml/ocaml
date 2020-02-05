@@ -23,6 +23,9 @@ Working version
   parsing.
   (David Allsopp, review by Xavier Leroy)
 
+- #10101: Add -help/--help option to ocamlrun.
+  (David Allsopp, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9876: do not cache the young_limit GC variable in a processor register.
