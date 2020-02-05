@@ -71,7 +71,7 @@ Print the names of the primitives known to this version of
 "ocamlrun" and exit.
 \item["-v"]
 Direct the memory manager to print some progress messages on
-standard error.  This is equivalent to setting "v=63" in the
+standard error.  This is equivalent to setting "v=61" in the
 "OCAMLRUNPARAM" environment variable (see below).
 \item["-version"]
 Print version string and exit.
