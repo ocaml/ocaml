@@ -408,6 +408,12 @@ static void do_print_config(void)
 #else
          "false");
 #endif
+  printf("no_naked_pointers: %s\n",
+#ifdef NO_NAKED_POINTERS
+         "true");
+#else
+         "false");
+#endif
   printf("exec_magic_number: %s\n", EXEC_MAGIC);
 
   /* Parse ld.conf and print the effective search path */
