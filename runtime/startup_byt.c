@@ -414,6 +414,13 @@ static void do_print_config(void)
 #else
          "false");
 #endif
+  printf("profinfo: %s\n"
+         "profinfo_width: %d\n",
+#ifdef WITH_PROFINFO
+         "true", PROFINFO_WIDTH);
+#else
+         "false", 0);
+#endif
   printf("exec_magic_number: %s\n", EXEC_MAGIC);
 
   /* Parse ld.conf and print the effective search path */
