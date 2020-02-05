@@ -581,9 +581,7 @@ AS_CASE([$host],
 -fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
         common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'],
       [AC_MSG_ERROR([Unsupported C compiler for a Mingw build])])],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
@@ -618,13 +616,14 @@ AS_CASE([$host],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-      internal_cppflags='-DUNICODE -D_UNICODE'
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+      internal_cppflags='-DUNICODE -D_UNICODE'],
     [xlc-*],
       [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
+
+internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
