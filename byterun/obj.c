@@ -61,7 +61,7 @@ CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
 
   /* Modify field before setting tag */
   caml_modify_field(blk, 0, fwd);
-again:
+  again:
   hd = Hd_val(blk);
 
   /* This function is only called on Lazy_tag objects. The only racy write to

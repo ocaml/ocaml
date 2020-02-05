@@ -68,7 +68,6 @@ static atomic_uintnat num_domains_to_final_update_first;
 static atomic_uintnat num_domains_to_final_update_last;
 
 static atomic_uintnat terminated_domains_allocated_words;
-extern atomic_uintnat caml_globals_scanned;
 
 gc_phase_t caml_gc_phase;
 
@@ -883,13 +882,12 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
       atomic_store_rel(&num_domains_to_mark, num_domains_in_stw);
 
       caml_gc_phase = Phase_sweep_and_mark_main;
-      atomic_store_rel(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
-      atomic_store_rel(&ephe_cycle_info.ephe_cycle, 0);
-      atomic_store_rel(&ephe_cycle_info.num_domains_done, 0);
+      atomic_store(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
+      atomic_store(&ephe_cycle_info.ephe_cycle, 0);
+      atomic_store(&ephe_cycle_info.num_domains_done, 0);
       atomic_store_rel(&num_domains_to_ephe_sweep, num_domains_in_stw);
       atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
       atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
-      atomic_store_rel(&caml_globals_scanned, 0);
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts
