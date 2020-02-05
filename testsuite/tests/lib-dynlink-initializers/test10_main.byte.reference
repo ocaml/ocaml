@@ -1,6 +1,6 @@
 Error: Failure("Plugin error")
 Raised at file "stdlib.ml", line 29, characters 22-33
-Called from file "test10_plugin.ml", line 2, characters 15-38
+Called from file "test10_plugin.ml", line 3, characters 2-21
 Called from file "test10_plugin.ml", line 6, characters 2-6
 Called from file "test10_plugin.ml", line 10, characters 2-6
 Called from file "otherlibs/dynlink/dynlink.ml", line 137, characters 16-25
