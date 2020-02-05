@@ -18,68 +18,71 @@
 # This file lists all standard library modules.
 # It is used in particular to know what to expunge in toplevels.
 
-STDLIBPREFIX = stdlib__
+define add_stdlib_prefix
+ $(or $(filter stdlib, $1), $(filter camlinternal%, $1), stdlib__$1)
+endef
 
 # Modules should be listed in dependency order.
-
-STDLIB_MODULES=\
+STDLIB_MODULES=$(foreach module, \
   camlinternalFormatBasics \
   stdlib \
-  $(STDLIBPREFIX)pervasives \
-  $(STDLIBPREFIX)seq \
-  $(STDLIBPREFIX)option \
-  $(STDLIBPREFIX)result \
-  $(STDLIBPREFIX)bool \
-  $(STDLIBPREFIX)char \
-  $(STDLIBPREFIX)uchar \
-  $(STDLIBPREFIX)sys \
-  $(STDLIBPREFIX)list \
-  $(STDLIBPREFIX)bytes \
-  $(STDLIBPREFIX)string \
-  $(STDLIBPREFIX)unit \
-  $(STDLIBPREFIX)marshal \
-  $(STDLIBPREFIX)obj \
-  $(STDLIBPREFIX)array \
-  $(STDLIBPREFIX)float \
-  $(STDLIBPREFIX)int \
-  $(STDLIBPREFIX)int32 \
-  $(STDLIBPREFIX)int64 \
-  $(STDLIBPREFIX)nativeint \
-  $(STDLIBPREFIX)lexing \
-  $(STDLIBPREFIX)parsing \
-  $(STDLIBPREFIX)set \
-  $(STDLIBPREFIX)map \
-  $(STDLIBPREFIX)stack \
-  $(STDLIBPREFIX)queue \
+  pervasives \
+  seq \
+  option \
+  result \
+  bool \
+  char \
+  uchar \
+  sys \
+  list \
+  bytes \
+  string \
+  unit \
+  marshal \
+  obj \
+  array \
+  float \
+  int \
+  int32 \
+  int64 \
+  nativeint \
+  lexing \
+  parsing \
+  set \
+  map \
+  stack \
+  queue \
   camlinternalLazy \
-  $(STDLIBPREFIX)lazy \
-  $(STDLIBPREFIX)stream \
-  $(STDLIBPREFIX)buffer \
+  lazy \
+  stream \
+  buffer \
   camlinternalFormat \
-  $(STDLIBPREFIX)printf \
-  $(STDLIBPREFIX)arg \
-  $(STDLIBPREFIX)printexc \
-  $(STDLIBPREFIX)fun \
-  $(STDLIBPREFIX)gc \
-  $(STDLIBPREFIX)digest \
-  $(STDLIBPREFIX)random \
-  $(STDLIBPREFIX)hashtbl \
-  $(STDLIBPREFIX)weak \
-  $(STDLIBPREFIX)format \
-  $(STDLIBPREFIX)scanf \
-  $(STDLIBPREFIX)callback \
+  printf \
+  arg \
+  printexc \
+  fun \
+  gc \
+  digest \
+  random \
+  hashtbl \
+  weak \
+  format \
+  scanf \
+  callback \
   camlinternalOO \
-  $(STDLIBPREFIX)oo \
+  oo \
   camlinternalMod \
-  $(STDLIBPREFIX)genlex \
-  $(STDLIBPREFIX)ephemeron \
-  $(STDLIBPREFIX)filename \
-  $(STDLIBPREFIX)complex \
-  $(STDLIBPREFIX)arrayLabels \
-  $(STDLIBPREFIX)listLabels \
-  $(STDLIBPREFIX)bytesLabels \
-  $(STDLIBPREFIX)stringLabels \
-  $(STDLIBPREFIX)moreLabels \
-  $(STDLIBPREFIX)stdLabels \
-  $(STDLIBPREFIX)spacetime \
-  $(STDLIBPREFIX)bigarray
+  genlex \
+  ephemeron \
+  filename \
+  complex \
+  arrayLabels \
+  listLabels \
+  bytesLabels \
+  stringLabels \
+  moreLabels \
+  stdLabels \
+  spacetime \
+  bigarray ,\
+  $(call add_stdlib_prefix,$(module))\
+)
