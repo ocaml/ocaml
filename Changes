@@ -89,6 +89,10 @@ Working version
 - #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann, review by David Allsopp)
 
+- #9183: Preserve exception backtrace of exceptions raised by top-level phrases
+  of dynlinked modules.
+  (Nicolás Ojeda Bär, review by Xavier Clerc and Gabriel Scherer)
+
 ### Tools:
 
 - #9276: objinfo: cm[x]a print extra C options, objects and dlls in
