@@ -177,8 +177,8 @@ module Win32 : SYSDEPS = struct
       | c    -> Buffer.add_char b c; loop (i+1);
     and loop_bs n i =
       if i = l then begin
+        add_bs (2 * n);
         Buffer.add_char b '\"';
-        add_bs n;
       end else begin
         match s.[i] with
         | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
