@@ -272,10 +272,11 @@ static void oldify_one (void* st_v, value v, value *p)
   } while (tag == Infix_tag);
 
   if (tag == Cont_tag) {
-    struct stack_info* stk = Ptr_val(Op_val(v)[0]);
+    value stack_value = Op_val(v)[0];
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
     result = alloc_shared(1, Cont_tag);
     if( try_update_object_header(v, p, result, 0) ) {
+      struct stack_info* stk = Ptr_val(stack_value);
       Op_val(result)[0] = Val_ptr(stk);
       if (stk != NULL) {
         caml_scan_stack(&oldify_one, st, stk);
