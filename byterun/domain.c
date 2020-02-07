@@ -171,7 +171,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
   caml_plat_lock(&all_domains_lock);
 
   /* wait until any in-progress STW sections end */
-  while (stw_leader) caml_plat_wait(&all_domains_cond);
+  while (atomic_load_acq(&stw_leader)) caml_plat_wait(&all_domains_cond);
 
   for (i = 0;
        i < Max_domains &&
@@ -517,6 +517,23 @@ int caml_global_barrier_num_domains()
   return stw_request.num_domains;
 }
 
+static void decrement_stw_domains_still_processing()
+{
+  /* we check if we are the last to leave a stw section
+     if so, clear the stw_leader to allow the new stw sections to start.
+   */
+  caml_plat_lock(&all_domains_lock);
+  intnat am_last = atomic_fetch_add(&stw_request.num_domains_still_processing, -1) == 1;
+
+  if( am_last ) {
+    /* release the STW lock to allow new STW sections */
+    atomic_store_rel(&stw_leader, 0);
+    caml_plat_broadcast(&all_domains_cond);
+    caml_gc_log("clearing stw leader");
+  }
+  caml_plat_unlock(&all_domains_lock);
+}
+
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
   caml_domain_state* domain_state = Caml_state;
@@ -538,7 +555,8 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
-  atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
+
+  decrement_stw_domains_still_processing();
 
   if( !stw_request.leave_when_done ) {
     SPIN_WAIT {
@@ -574,7 +592,7 @@ int caml_domain_is_in_stw() {
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data, int leave_when_done)
 {
   caml_domain_state* domain_state = Caml_state;
-  
+
   int i;
   uintnat domains_participating = 1;
 
@@ -584,12 +602,12 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
      If it fails, handle interrupts (probably participating in
      an STW section) and return. */
   caml_plat_lock(&all_domains_lock);
-  if (stw_leader) {
+  if (atomic_load_acq(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
     caml_handle_incoming_interrupts();
     return 0;
   } else {
-      stw_leader = domain_self;
+    atomic_store_rel(&stw_leader, domain_self);
   }
   caml_plat_unlock(&all_domains_lock);
 
@@ -629,20 +647,15 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
   domain_state->inside_stw_handler = 0;
   #endif
 
-  /* release the STW lock before allowing other domains to continue */
-  caml_plat_lock(&all_domains_lock);
-  Assert (stw_leader == domain_self);
-  stw_leader = 0;
-  caml_plat_broadcast(&all_domains_cond);
-  caml_plat_unlock(&all_domains_lock);
-  atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
-  
+  decrement_stw_domains_still_processing();
+
   if( !leave_when_done ) {
     SPIN_WAIT {
       if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
         break;
     }
   }
+
   caml_ev_end("stw/leader");
   /* other domains might not have finished stw_handler yet, but they
      will finish as soon as they notice num_domains_still_processing
@@ -974,7 +987,7 @@ static void domain_terminate()
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = 0;
   caml_free_signal_stack();
-  
+
   if(domain_state->current_stack != NULL) {
     caml_free_stack(domain_state->current_stack);
   }
