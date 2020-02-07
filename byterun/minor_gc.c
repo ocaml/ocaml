@@ -45,6 +45,8 @@ struct generic_table CAML_TABLE_STRUCT(char);
 static intnat domains_in_minor_gc;
 static atomic_intnat domains_finished_remembered_set;
 
+static atomic_uintnat caml_minor_cycles_started = 0;
+
 /* [sz] and [rsv] are numbers of entries */
 static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
                                  asize_t rsv, asize_t element_size)
@@ -630,9 +632,14 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
     if( caml_global_barrier_is_final(b) ) {
       domains_in_minor_gc = caml_global_barrier_num_domains();
       atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
+      atomic_fetch_add(&caml_minor_cycles_started, 1);
     }
     caml_global_barrier_end(b);
     caml_ev_end("minor_gc/start_barrier");
+  }
+  else
+  {
+    atomic_fetch_add(&caml_minor_cycles_started, 1);
   }
 
   caml_gc_log("running stw empty_minor_heap_promote");
@@ -673,12 +680,16 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
 /* must be called outside a STW section, will retry until we have emptied our minor heap */
 void caml_empty_minor_heaps_once ()
 {
+  uintnat saved_minor_cycle = atomic_load(&caml_minor_cycles_started);
+
   #ifdef DEBUG
   CAMLassert(!caml_domain_is_in_stw());
   #endif
 
-  while( !caml_try_stw_empty_minor_heap_on_all_domains() )
-    ;
+  /* To handle the case where multiple domains try to execute a minor gc STW section */
+  do {
+    caml_try_stw_empty_minor_heap_on_all_domains();
+  } while (saved_minor_cycle == atomic_load(&caml_minor_cycles_started));
 }
 
 /* Do a minor collection and a slice of major collection, call finalisation
