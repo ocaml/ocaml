@@ -68,7 +68,7 @@ let force (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
   let t = Obj.tag x in
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
-  if t <> Obj.lazy_tag || t <> Obj.forcing_tag then (Obj.obj x : 'arg)
+  if t <> Obj.lazy_tag && t <> Obj.forcing_tag then (Obj.obj x : 'arg)
   else force_lazy_block lzv
 
 
@@ -76,5 +76,5 @@ let force_val (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
   let t = Obj.tag x in
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
-  if t <> Obj.lazy_tag || t <> Obj.forcing_tag then (Obj.obj x : 'arg)
+  if t <> Obj.lazy_tag && t <> Obj.forcing_tag then (Obj.obj x : 'arg)
   else force_val_lazy_block lzv
