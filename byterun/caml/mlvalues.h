@@ -277,12 +277,16 @@ static inline void* Ptr_val(value val)
 #define Val_bytecode(code) (Val_pc(code))
 #define Code_val(val) Bytecode_val(Field_imm((val), 0))
 
-/* This tag is used (with Forward_tag) to implement lazy values.
+/* This tag is used (with Forcing_tag & Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */
 #define Lazy_tag 246
 
 /* Tag used for continuations (see fiber.c) */
 #define Cont_tag 245
+
+/* This tag is used (with Lazy_tag & Forward_tag) to implement lazy values.
+ * See major_gc.c and stdlib/lazy.ml. */
+#define Forcing_tag 244
 
 /* Another special case: variants */
 CAMLextern value caml_hash_variant(char const * tag);
