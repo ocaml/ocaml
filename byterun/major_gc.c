@@ -530,7 +530,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
 	  e = (mark_entry){0};
 	} else {
 again:
-          if (Tag_hd(hd) == Lazy_tag) {
+          if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
             if (!atomic_compare_exchange_strong(
                   Hp_atomic_val(v), &hd,
                   With_status_hd(hd, global.MARKED))) {
