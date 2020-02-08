@@ -1468,15 +1468,11 @@ let get_mod_field modname field =
 
 let code_force_lazy_block =
   get_mod_field "CamlinternalLazy" "force_lazy_block"
-;;
-
-let code_lazy_wrap_fun =
-  get_mod_field "CamlinternalLazy" "wrap_fun"
 
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
    the value argument is tagged as:
    - forward, take field 0
-   - lazy, call the primitive that forces (without testing again the tag)
+   - lazy || forcing, call the primitive that forces
    - anything else, return it
 
    Using Lswitch below relies on the fact that the GC does not shortcut
@@ -1488,19 +1484,21 @@ let inline_lazy_force_cond arg loc =
   let varg = Lvar idarg in
   let tag = Ident.create "tag" in
   let force_fun = Lazy.force code_force_lazy_block in
+  let test_tag t =
+    Lprim(Pintcomp Ceq, [Lvar tag; Lconst(Const_base(Const_int t))], loc)
+  in
   Llet(Strict, Pgenval, idarg, arg,
        Llet(Alias, Pgenval, tag, Lprim(Pccall prim_obj_tag, [varg], loc),
             Lifthenelse(
               (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
-              Lprim(Pintcomp Ceq,
-                    [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))],
-                    loc),
+              test_tag Obj.forward_tag,
               Lprim(Pfield(0, Pointer, Mutable), [varg], loc),
               Lifthenelse(
-                (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
-                Lprim(Pintcomp Ceq,
-                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))],
-                      loc),
+                (* ... if tag == Obj.lazy_tag || tag == Obj.forcing_tag then
+                         Lazy.force varg
+                       else ... *)
+                Lprim (Psequor,
+                       [test_tag Obj.lazy_tag; test_tag Obj.forcing_tag], loc),
                 Lapply{ap_should_be_tailcall=false;
                        ap_loc=loc;
                        ap_func=force_fun;
@@ -1508,7 +1506,7 @@ let inline_lazy_force_cond arg loc =
                        ap_inlined=Default_inline;
                        ap_specialised=Default_specialise},
                 (* ... arg *)
-                  varg))))
+                 varg))))
 
 let inline_lazy_force_switch arg loc =
   let idarg = Ident.create "lzarg" in

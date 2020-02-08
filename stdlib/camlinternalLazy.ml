@@ -18,45 +18,47 @@
 type 'a t = 'a lazy_t
 
 exception Undefined
-exception RacyLazy
 
-external domain_self : unit -> int = "caml_ml_domain_id"
 external forward_lazy : Obj.t -> Obj.t -> unit = "caml_obj_forward_lazy"
 
-let wrap_fun (f: unit -> 'a) l =
-  let myid = domain_self () in
-  let bomb () =
-    if myid = domain_self () then
-      raise Undefined
-    else raise RacyLazy
-  in
-  let rec wf () =
-    if Obj.compare_and_swap_field (Obj.repr l) 0 (Obj.repr wf) (Obj.repr bomb) then
-      f ()
-    else raise RacyLazy
-  in
-  wf
+(* [update_tag blk old new] updates the tag [blk] from [old] to [new] using a
+ * CAS loop (in order to handle concurrent conflicts with the GC marking).
+ * Returns [true] if the update is successful. Return [false] if the tag of
+ * [blk] is not [old]. *)
 
+external update_tag : Obj.t -> int -> int -> bool = "caml_obj_update_tag"
 
 (* Assume [blk] is a block with tag lazy *)
 let force_lazy_block (blk : 'arg lazy_t) =
-  let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
-  try
-    let result = closure () in
-    forward_lazy (Obj.repr blk) (Obj.repr result);
-    result
-  with e ->
-    Obj.set_field (Obj.repr blk) 0 (Obj.repr (fun () -> raise e));
-    raise e
+  let b = Obj.repr blk in
+  if not (update_tag b Obj.lazy_tag Obj.forcing_tag) then
+    (* blk has tag Obj.forcing_tag *)
+    raise Undefined
+  else begin
+    let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
+    try
+      let result = closure () in
+      forward_lazy b (Obj.repr result);
+      result
+    with e ->
+      Obj.set_field b 0 (Obj.repr (fun () -> raise e));
+      assert (update_tag b Obj.forcing_tag Obj.lazy_tag);
+      raise e
+  end
 
 
 (* Assume [blk] is a block with tag lazy *)
 let force_val_lazy_block (blk : 'arg lazy_t) =
-  let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
-  let result = closure () in
-  forward_lazy (Obj.repr blk) (Obj.repr result);
-  result
-
+  let b = Obj.repr blk in
+  if not (update_tag b Obj.lazy_tag Obj.forcing_tag) then
+    (* blk has tag Obj.forcing_tag *)
+    raise Undefined
+  else begin
+    let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
+    let result = closure () in
+    forward_lazy b (Obj.repr result);
+    result
+  end
 
 (* [force] is not used, since [Lazy.force] is declared as a primitive
    whose code inlines the tag tests of its argument.  This function is
@@ -66,7 +68,7 @@ let force (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
   let t = Obj.tag x in
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
-  if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
+  if t <> Obj.lazy_tag || t <> Obj.forcing_tag then (Obj.obj x : 'arg)
   else force_lazy_block lzv
 
 
@@ -74,5 +76,5 @@ let force_val (lzv : 'arg lazy_t) =
   let x = Obj.repr lzv in
   let t = Obj.tag x in
   if t = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg) else
-  if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
+  if t <> Obj.lazy_tag || t <> Obj.forcing_tag then (Obj.obj x : 'arg)
   else force_val_lazy_block lzv
