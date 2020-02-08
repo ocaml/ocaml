@@ -55,6 +55,11 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
   return Val_unit;
 }
 
+CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
+{
+  return Val_unit;
+}
+
 CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
 {
   header_t hd;

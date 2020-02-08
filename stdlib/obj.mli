@@ -71,6 +71,7 @@ external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 val first_non_constant_constructor_tag : int
 val last_non_constant_constructor_tag : int
 
+val forcing_tag : int
 val cont_tag : int
 val lazy_tag : int
 val closure_tag : int
