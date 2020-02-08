@@ -20,9 +20,6 @@
 type 'a t = 'a lazy_t
 
 exception Undefined
-exception RacyLazy
-
-val wrap_fun : (unit -> 'a) -> Obj.t -> (unit -> 'a)
 
 val force_lazy_block : 'a lazy_t -> 'a
 
