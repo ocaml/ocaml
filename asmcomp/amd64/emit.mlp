@@ -312,7 +312,7 @@ let emit_call_gc gc =
   end;
   *)
   if gc.is_poll then begin
-    emit_call "caml_call_gc"
+    emit_call "caml_call_poll"
   end else begin
     emit_call "caml_call_gc"
   end;

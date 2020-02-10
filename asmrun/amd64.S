@@ -545,6 +545,21 @@ LBL(call_gc_and_retry_alloc):
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
 
+FUNCTION(G(caml_call_poll))
+CFI_STARTPROC
+LBL(caml_call_poll):
+        SAVE_ALL_REGS
+        pushq   %r15
+        PUSH_EXN_HANDLER
+        SWITCH_OCAML_TO_C_NO_CTXT(16)
+        C_call (GCALL(caml_garbage_collection))
+        SWITCH_C_TO_OCAML_NO_CTXT
+        POP_EXN_HANDLER
+        popq    %r15
+        RESTORE_ALL_REGS
+        ret
+CFI_ENDPROC
+
 /******************************************************************************/
 /* Call a C function from OCaml */
 /******************************************************************************/
