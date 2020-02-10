@@ -84,7 +84,7 @@ let rec insert_poll_aux delta instr =
         (* | Iop (Iname_for_debugger _) *)
         ->
             if (delta > lmax-e) then begin
-                let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
+                let updated_instr = { instr with next = insert_poll_aux 0 instr.next} in
                 insert_poll_instr updated_instr
             end else begin
                 { instr with next = insert_poll_aux (delta+1) instr.next}
