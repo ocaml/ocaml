@@ -151,12 +151,15 @@ io_b.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_b.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_b.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_b.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -448,12 +451,15 @@ io_bd.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_bd.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_bd.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_bd.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -750,12 +756,15 @@ io_bi.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_bi.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_bi.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_bi.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -1047,12 +1056,15 @@ io_bpic.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_bpic.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_bpic.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_bpic.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -1303,12 +1315,15 @@ io_n.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_n.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_n.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_n.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -1596,12 +1611,15 @@ io_nd.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_nd.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_nd.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_nd.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -1889,12 +1907,15 @@ io_ni.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_ni.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_ni.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_ni.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
@@ -2182,12 +2203,15 @@ io_npic.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
  caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
  caml/domain.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/memory.h \
  caml/signals.h caml/sys.h
+addrmap_npic.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/compatibility.h caml/config.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/domain.h caml/addrmap.h
 extern_npic.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/config.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
  caml/io.h caml/io.h caml/md5.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/domain.h \
- caml/misc.h caml/mlvalues.h caml/reverse.h
+ caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
 intern_npic.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/callback.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
