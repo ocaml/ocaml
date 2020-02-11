@@ -841,8 +841,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   {
     /* Cycle major heap */
     // FIXME: delete caml_cycle_heap_stw and have per-domain copies of the data?
-    barrier_status b = caml_global_barrier_begin(__func__, __LINE__);
-    if (caml_global_barrier_is_final(b, __func__, __LINE__)) {
+    barrier_status b = caml_global_barrier_begin();
+    if (caml_global_barrier_is_final(b)) {
       caml_cycle_heap_stw();
       caml_gc_log("GC cycle %lu completed (heap cycled)",
                   (long unsigned int)caml_major_cycles_completed);
@@ -913,7 +913,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts
-    caml_global_barrier_end(b, __func__, __LINE__);
+    caml_global_barrier_end(b);
   }
 
   /* If the heap is to be verified, do it before the domains continue
@@ -923,7 +923,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
     caml_do_roots (&caml_verify_root, ver, domain, 1);
     caml_verify_heap(ver);
     caml_gc_log("Heap verified");
-    caml_global_barrier(__func__, __LINE__);
+    caml_global_barrier();
   }
 
   domain->state->stat_major_collections++;
@@ -1004,15 +1004,15 @@ static void try_complete_gc_phase (struct domain* domain, void* unused)
 {
   barrier_status b;
 
-  b = caml_global_barrier_begin (__func__, __LINE__);
-  if (caml_global_barrier_is_final(b, __func__, __LINE__)) {
+  b = caml_global_barrier_begin ();
+  if (caml_global_barrier_is_final(b)) {
     if (is_complete_phase_sweep_and_mark_main(domain)) {
       caml_gc_phase = Phase_mark_final;
     } else if (is_complete_phase_mark_final(domain)) {
       caml_gc_phase = Phase_sweep_ephe;
     }
   }
-  caml_global_barrier_end(b, __func__, __LINE__);
+  caml_global_barrier_end(b);
 }
 
 #define Chunk_size 0x4000
