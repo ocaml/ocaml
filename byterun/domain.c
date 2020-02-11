@@ -276,7 +276,6 @@ init_signal_stack_failure:
 domain_init_complete:
   caml_ev_resume();
   }
-  caml_gc_log("created");
   caml_plat_unlock(&all_domains_lock);
 }
 
@@ -487,8 +486,7 @@ barrier_status caml_global_barrier_begin()
 
 int caml_global_barrier_is_final(barrier_status b)
 {
-  int is_final = ((b & ~BARRIER_SENSE_BIT) == stw_request.num_domains);
-  return is_final;
+  return ((b & ~BARRIER_SENSE_BIT) == stw_request.num_domains);
 }
 
 void caml_global_barrier_end(barrier_status b)
@@ -971,14 +969,12 @@ static void domain_terminate()
         Caml_state->marking_done &&
         Caml_state->sweeping_done) {
       
-      caml_gc_log("terminated");
       finished = 1;
       s->terminating = 0;
       s->running = 0;
       atomic_fetch_add(&num_domains_running, -1);
       s->unique_id += Max_domains;
     }
-
     caml_plat_unlock(&s->lock);
   }
 
