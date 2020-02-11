@@ -31,6 +31,9 @@
 #include "caml/signals.h"
 #include "caml/weak.h"
 #include "caml/memprof.h"
+#ifdef WITH_SPACETIME
+#include "caml/spacetime.h"
+#endif
 
 /* Pointers into the minor heap.
    [Caml_state->young_base]
