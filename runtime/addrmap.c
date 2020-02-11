@@ -37,10 +37,11 @@ static uintnat pos_next(struct addrmap* t, uintnat pos)
 
 int caml_addrmap_contains(struct addrmap* t, value key)
 {
+  uintnat pos, i;
+
   CAMLassert(Is_block(key));
   if (!t->entries) return 0;
 
-  uintnat pos, i;
   for (i = 0, pos = pos_initial(t, key);
        i < MAX_CHAIN;
        i++, pos = pos_next(t, pos)) {
@@ -52,10 +53,11 @@ int caml_addrmap_contains(struct addrmap* t, value key)
 
 value caml_addrmap_lookup(struct addrmap* t, value key)
 {
+  uintnat pos;
+
   CAMLassert(Is_block(key));
   CAMLassert(t->entries);
 
-  uintnat pos;
   for (pos = pos_initial(t, key); ; pos = pos_next(t, pos)) {
     CAMLassert(t->entries[pos].key != ADDRMAP_INVALID_KEY);
     if (t->entries[pos].key == key)
@@ -84,7 +86,9 @@ void caml_addrmap_clear(struct addrmap* t) {
 
 
 value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
-  uintnat i, pos;
+  uintnat i, pos, old_size;
+  struct addrmap_entry* old_table;
+
   CAMLassert(Is_block(key));
   if (!t->entries) {
     /* first call, initialise table with a small initial size */
@@ -101,8 +105,8 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
     }
   }
   /* failed to insert, rehash and try again */
-  struct addrmap_entry* old_table = t->entries;
-  uintnat old_size = t->size;
+  old_table = t->entries;
+  old_size = t->size;
   addrmap_alloc(t, old_size * 2);
   for (i = 0; i < old_size; i++) {
     if (old_table[i].key != ADDRMAP_INVALID_KEY) {
