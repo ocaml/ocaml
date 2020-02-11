@@ -12,6 +12,9 @@ Working version
 
 ### Runtime system:
 
+- #9293: Use addrmap hash table for marshaling
+  (Stephen Dolan and KC Sivaramakrishnan)
+
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
