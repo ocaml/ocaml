@@ -1731,7 +1731,7 @@ static header_t *bf_merge_block (value bp, char *limit)
   while (wosz > Max_wosize){
     Hd_val (start) = Make_header (Max_wosize, 0, Caml_blue);
     bf_insert_sweep (start);
-    start = Next_small (start);
+    start = Next_in_mem (start);
     wosz -= Whsize_wosize (Max_wosize);
   }
   if (wosz > 0){
