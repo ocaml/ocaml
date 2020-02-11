@@ -235,10 +235,10 @@ OCaml 4.10.0
 
 ### Runtime system:
 
-- #8809: Add a best-fit allocator for the major heap; still experimental,
-  it should be much better than current allocation policies (first-fit and
-  next-fit) for programs with large heaps, reducing both GC cost and
-  memory usage.
+- #8809, #9292: Add a best-fit allocator for the major heap; still
+  experimental, it should be much better than current allocation
+  policies (first-fit and next-fit) for programs with large heaps,
+  reducing both GC cost and memory usage.
   This new best-fit is not (yet) the default; set it explicitly with
   OCAMLRUNPARAM="a=2" (or Gc.set from the program). You may also want
   to increase the `space_overhead` parameter of the GC (a percentage,
