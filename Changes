@@ -155,8 +155,11 @@ Working version
    and validation of OCaml magic numbers.
    (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
-- #1176: introduce Caml_inline for consistent static inline on all C compilers
-  and remove inconsistent inline in runtime/win32.c.
+- #1176: encourage better compatibility with older Microsoft C compilers by
+  using GCC's -Wdeclaration-after-statement when available. Introduce
+  Caml_inline to stop abuse of the inline keyword on MSVC and to help ensure
+  that only static inline is used in the codebase (erroneous instance in
+  runtime/win32.c removed).
   (David Allsopp, review by Oliver Andrieu and Xavier Leroy)
 
 - #8970: separate value patterns (matching on values) from computation patterns
