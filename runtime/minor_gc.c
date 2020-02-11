@@ -274,7 +274,7 @@ void caml_oldify_one (value v, value *p)
 }
 
 /* Test if the ephemeron is alive, everything outside minor heap is alive */
-static inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
+Caml_inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
   mlsize_t i;
   value child;
   for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++){

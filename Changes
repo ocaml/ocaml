@@ -155,6 +155,9 @@ Working version
    and validation of OCaml magic numbers.
    (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
+- #1176: introduce Caml_inline for consistent static inline on all C compilers.
+  (David Allsopp, review by Oliver Andrieu and Xavier Leroy)
+
 - #8970: separate value patterns (matching on values) from computation patterns
   (matching on the effects of a copmutation) in the typedtree.
   (Gabriel Scherer, review by Jacques Garrigue and Alain Frisch)

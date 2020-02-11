@@ -309,17 +309,17 @@ static void extern_stack_overflow(void)
 
 /* Conversion to big-endian */
 
-static inline void store16(char * dst, int n)
+Caml_inline void store16(char * dst, int n)
 {
   dst[0] = n >> 8;  dst[1] = n;
 }
 
-static inline void store32(char * dst, intnat n)
+Caml_inline void store32(char * dst, intnat n)
 {
   dst[0] = n >> 24;  dst[1] = n >> 16;  dst[2] = n >> 8;  dst[3] = n;
 }
 
-static inline void store64(char * dst, int64_t n)
+Caml_inline void store64(char * dst, int64_t n)
 {
   dst[0] = n >> 56;  dst[1] = n >> 48;  dst[2] = n >> 40;  dst[3] = n >> 32;
   dst[4] = n >> 24;  dst[5] = n >> 16;  dst[6] = n >> 8;   dst[7] = n;
@@ -327,7 +327,7 @@ static inline void store64(char * dst, int64_t n)
 
 /* Write characters, integers, and blocks in the output buffer */
 
-static inline void write(int c)
+Caml_inline void write(int c)
 {
   if (extern_ptr >= extern_limit) grow_extern_output(1);
   *extern_ptr++ = c;
@@ -340,7 +340,7 @@ static void writeblock(const char * data, intnat len)
   extern_ptr += len;
 }
 
-static inline void writeblock_float8(const double * data, intnat ndoubles)
+Caml_inline void writeblock_float8(const double * data, intnat ndoubles)
 {
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
   writeblock((const char *) data, ndoubles * 8);

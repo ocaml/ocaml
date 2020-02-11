@@ -293,9 +293,9 @@ static int realloc_trackst(void) {
   return 1;
 }
 
-static inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
-                                  int is_unmarshalled, int is_young,
-                                  value block, value user_data)
+Caml_inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
+                                int is_unmarshalled, int is_young,
+                                value block, value user_data)
 {
   struct tracked *t;
   trackst.len++;
@@ -332,7 +332,7 @@ static void mark_deleted(uintnat t_idx)
 /* The return value is an exception or [Val_unit] iff [*t_idx] is set to
    [Invalid_index]. In this case, the entry is deleted.
    Otherwise, the return value is a [Some(...)] block. */
-static inline value run_callback_exn(uintnat *t_idx, value cb, value param) {
+Caml_inline value run_callback_exn(uintnat *t_idx, value cb, value param) {
   struct tracked* t = &trackst.entries[*t_idx];
   value res;
   CAMLassert(!t->callback_running && t->idx_ptr == NULL);

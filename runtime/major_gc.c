@@ -41,7 +41,7 @@
 #endif
 
 #ifdef _MSC_VER
-static inline double fmin(double a, double b) {
+Caml_inline double fmin(double a, double b) {
   return (a < b) ? a : b;
 }
 #endif
@@ -233,9 +233,9 @@ static void init_sweep_phase(void)
 }
 
 /* auxiliary function of mark_slice */
-static inline value* mark_slice_darken(value *gray_vals_ptr,
-                                       value v, mlsize_t i,
-                                       int in_ephemeron, int *slice_pointers)
+Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
+                                     value v, mlsize_t i,
+                                     int in_ephemeron, int *slice_pointers)
 {
   value child;
   header_t chd;
