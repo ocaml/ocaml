@@ -63,24 +63,14 @@ expr:
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
   | "let" "exception" constr-decl "in" expr
-  | 'new' class-path
-  | 'object' class-body 'end'
-  | expr '#' method-name
-  | inst-var-name
-  | inst-var-name '<-' expr
-  | '(' expr ':>' typexpr ')'
-  | '(' expr ':' typexpr ':>' typexpr ')'
-  | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
-  | 'assert' expr
-  | 'lazy' expr
   | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
     [ ':' module-type ] \\ '=' module-expr 'in' expr
-  | "let" "open" module-path "in" expr
-  | module-path '.(' expr ')'
-  | module-path '.[' expr ']'
-  | module-path '.[|' expr '|]'
-  | module-path '.{' expr '}'
-  | module-path '.{<' expr '>}'
+  | '(' expr ':>' typexpr ')'
+  | '(' expr ':' typexpr ':>' typexpr ')'
+  | 'assert' expr
+  | 'lazy' expr
+  | local-open
+  | object-expr
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -111,6 +101,22 @@ parameter:
   | '?' '(' label-name [':' typexpr] ['=' expr] ')'
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
+;
+local-open:
+  | "let" "open" module-path "in" expr
+  | module-path '.(' expr ')'
+  | module-path '.[' expr ']'
+  | module-path '.[|' expr '|]'
+  | module-path '.{' expr '}'
+  | module-path '.{<' expr '>}'
+;
+object-expr:
+  | 'new' class-path
+  | 'object' class-body 'end'
+  | expr '#' method-name
+  | inst-var-name
+  | inst-var-name '<-' expr
+  | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
