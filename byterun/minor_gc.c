@@ -609,7 +609,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   }
 
   #ifdef DEBUG
-    caml_global_barrier(__func__, __LINE__);
+    caml_global_barrier();
     // At this point all domains should have gone through all remembered set entries
     // We need to verify that all our remembered set entries are now in the major heap or promoted
     for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ )
@@ -628,7 +628,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   caml_gc_log("promoted %d roots, %d bytes", remembered_roots, st.live_bytes);
 
 #ifdef DEBUG
-  caml_global_barrier(__func__, __LINE__);
+  caml_global_barrier();
   caml_gc_log("ref_base: %ul, ref_ptr: %ul", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
@@ -701,20 +701,20 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 
   if( not_alone ) {
     caml_ev_begin("minor_gc/start_barrier");
-    b = caml_global_barrier_begin(__func__, __LINE__);
-    if( caml_global_barrier_is_final(b, __func__, __LINE__) ) {
+    b = caml_global_barrier_begin();
+    if( caml_global_barrier_is_final(b) ) {
       atomic_store_explicit(&domains_in_minor_gc_count, 0, memory_order_release);
     }
-    caml_global_barrier_end(b, __func__, __LINE__);
+    caml_global_barrier_end(b);
     domains_in_minor_gc_idx = atomic_fetch_add_explicit(&domains_in_minor_gc_count, 1, memory_order_acq_rel);
     domains_in_minor_gc[domains_in_minor_gc_idx] = domain;
     atomic_thread_fence(memory_order_release);
-    b = caml_global_barrier_begin(__func__, __LINE__);
-    if( caml_global_barrier_is_final(b, __func__, __LINE__) ) {
+    b = caml_global_barrier_begin();
+    if( caml_global_barrier_is_final(b) ) {
       atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
       atomic_fetch_add(&caml_minor_cycles_started, 1);
     }
-    caml_global_barrier_end(b, __func__, __LINE__);
+    caml_global_barrier_end(b);
     caml_ev_end("minor_gc/start_barrier");
   }
   else

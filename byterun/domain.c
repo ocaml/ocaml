@@ -479,27 +479,24 @@ static struct {
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
-barrier_status caml_global_barrier_begin(const char* func, int line)
+barrier_status caml_global_barrier_begin()
 {
   uintnat b = 1 + atomic_fetch_add(&stw_request.barrier, 1);
-  caml_gc_log("domain %d to barrier (%s:%d)", (int)b & ~BARRIER_SENSE_BIT, func, line);
   return b;
 }
 
-int caml_global_barrier_is_final(barrier_status b, const char* func, int line)
+int caml_global_barrier_is_final(barrier_status b)
 {
   int is_final = ((b & ~BARRIER_SENSE_BIT) == stw_request.num_domains);
-  caml_gc_log("domain is final: %d [%d] [%d] (%s:%d)", is_final, b, stw_request.num_domains, func, line);
   return is_final;
 }
 
-void caml_global_barrier_end(barrier_status b, const char* func, int line)
+void caml_global_barrier_end(barrier_status b)
 {
   uintnat sense = b & BARRIER_SENSE_BIT;
-  if (caml_global_barrier_is_final(b, func, line)) {
+  if (caml_global_barrier_is_final(b)) {
     /* last domain into the barrier, flip sense */
     atomic_store_rel(&stw_request.barrier, sense ^ BARRIER_SENSE_BIT);
-    caml_gc_log("flip barrier sense bit %d (%s:%d)", sense ^ BARRIER_SENSE_BIT, func, line);
   } else {
     /* wait until another domain flips the sense */
     SPIN_WAIT {
@@ -507,14 +504,12 @@ void caml_global_barrier_end(barrier_status b, const char* func, int line)
       if ((barrier & BARRIER_SENSE_BIT) != sense) break;
     }
   }
-
-  caml_gc_log("domain leaving barrier (%s:%d)", func, line);
 }
 
-void caml_global_barrier(const char* func, int line)
+void caml_global_barrier()
 {
-  barrier_status b = caml_global_barrier_begin(func, line);
-  caml_global_barrier_end(b, func, line);
+  barrier_status b = caml_global_barrier_begin();
+  caml_global_barrier_end(b);
 }
 
 int caml_global_barrier_num_domains()
