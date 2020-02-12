@@ -175,6 +175,13 @@ let rec expr_size env = function
 
 (* Translate structured constants to Cmm data items *)
 
+let transl_constant_approx = function
+  | Some (Uconst_float f) -> Some (Csc_float f)
+  | Some (Uconst_int32 n) -> Some (Csc_int32 n)
+  | Some (Uconst_int64 n) -> Some (Csc_int64 n)
+  | Some (Uconst_nativeint n) -> Some (Csc_nativeint n)
+  | _ -> None
+
 let transl_constant dbg = function
   | Uconst_int n ->
       int_const dbg n
@@ -184,8 +191,8 @@ let transl_constant dbg = function
       else Cconst_natpointer
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n,
                dbg)
-  | Uconst_ref (label, _) ->
-      Cconst_symbol (label, dbg)
+  | Uconst_ref (label, approx) ->
+      Cconst_symbol (label, transl_constant_approx approx, dbg)
 
 let emit_constant cst cont =
   match cst with
@@ -230,18 +237,25 @@ let box_int_constant sym bi n =
       let n = Int64.of_nativeint n in
       emit_int64_constant (sym, Local) n []
 
+let cstructured_int_constant bi n =
+  match bi with
+  | Pint32 -> Csc_int32 (Nativeint.to_int32 n)
+  | Pint64 -> Csc_int64 (Int64.of_nativeint n)
+  | Pnativeint -> Csc_nativeint n
+
 let box_int dbg bi arg =
   match arg with
   | Cconst_int (n, _) ->
       let sym = Compilenv.new_const_symbol () in
-      let data_items = box_int_constant sym bi (Nativeint.of_int n) in
+      let n = Nativeint.of_int n in
+      let data_items = box_int_constant sym bi n in
       Cmmgen_state.add_data_items data_items;
-      Cconst_symbol (sym, dbg)
+      Cconst_symbol (sym, Some (cstructured_int_constant bi n), dbg)
   | Cconst_natint (n, _) ->
       let sym = Compilenv.new_const_symbol () in
       let data_items = box_int_constant sym bi n in
       Cmmgen_state.add_data_items data_items;
-      Cconst_symbol (sym, dbg)
+      Cconst_symbol (sym, Some (cstructured_int_constant bi n), dbg)
   | _ ->
       box_int_gen dbg bi arg
 
@@ -316,7 +330,7 @@ let is_unboxed_number_cmm ~strict cmm =
     | Cop(Calloc, [Cblockheader (hdr, _); _], dbg)
       when Nativeint.equal hdr float_header ->
         notify (Boxed (Boxed_float dbg, false))
-    | Cop(Calloc, [Cblockheader (hdr, _); Cconst_symbol (ops, _); _], dbg) ->
+    | Cop(Calloc, [Cblockheader (hdr, _); Cconst_symbol (ops,_,_); _], dbg) ->
         if Nativeint.equal hdr boxedintnat_header
         && String.equal ops caml_nativeint_ops
         then
@@ -333,19 +347,14 @@ let is_unboxed_number_cmm ~strict cmm =
           notify (Boxed (Boxed_integer (Pint64, dbg), false))
         else
           notify No_unboxing
-    | Cconst_symbol (s, _) ->
-        begin match Cmmgen_state.structured_constant_of_sym s with
-        | Some (Uconst_float _) ->
-            notify (Boxed (Boxed_float Debuginfo.none, true))
-        | Some (Uconst_nativeint _) ->
-            notify (Boxed (Boxed_integer (Pnativeint, Debuginfo.none), true))
-        | Some (Uconst_int32 _) ->
-            notify (Boxed (Boxed_integer (Pint32, Debuginfo.none), true))
-        | Some (Uconst_int64 _) ->
-            notify (Boxed (Boxed_integer (Pint64, Debuginfo.none), true))
-        | _ ->
-            notify No_unboxing
-        end
+    | Cconst_symbol (_, Some (Csc_float _), _) ->
+        notify (Boxed (Boxed_float Debuginfo.none, true))
+    | Cconst_symbol (_, Some (Csc_int32 _), _) ->
+        notify (Boxed (Boxed_integer (Pint32, Debuginfo.none), true))
+    | Cconst_symbol (_, Some (Csc_int64 _), _) ->
+        notify (Boxed (Boxed_integer (Pint64, Debuginfo.none), true))
+    | Cconst_symbol (_, Some (Csc_nativeint _), _) ->
+        notify (Boxed (Boxed_integer (Pnativeint, Debuginfo.none), true))
     | l ->
         if not (Cmm.iter_shallow_tail aux l) then
           notify No_unboxing
@@ -373,7 +382,7 @@ let rec transl env e =
         | [] -> Debuginfo.none
         | fundecl::_ -> fundecl.dbg
       in
-      Cconst_symbol (sym, dbg)
+      Cconst_symbol (sym, None, dbg)
   | Uclosure(fundecls, clos_vars) ->
       let rec transl_fundecls pos = function
           [] ->
@@ -383,13 +392,13 @@ let rec transl env e =
             let dbg = f.dbg in
             let without_header =
               if f.arity = 1 || f.arity = 0 then
-                Cconst_symbol (f.label, dbg) ::
+                Cconst_symbol (f.label, None, dbg) ::
                 int_const dbg f.arity ::
                 transl_fundecls (pos + 3) rem
               else
-                Cconst_symbol (curry_function_sym f.arity, dbg) ::
+                Cconst_symbol (curry_function_sym f.arity, None, dbg) ::
                 int_const dbg f.arity ::
-                Cconst_symbol (f.label, dbg) ::
+                Cconst_symbol (f.label, None, dbg) ::
                 transl_fundecls (pos + 4) rem
             in
             if pos = 0 then without_header
@@ -451,7 +460,7 @@ let rec transl env e =
   | Uprim(prim, args, dbg) ->
       begin match (simplif_primitive prim, args) with
       | (Pread_symbol sym, []) ->
-          Cconst_symbol (sym, dbg)
+          Cconst_symbol (sym, None, dbg)
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
@@ -1419,7 +1428,6 @@ let transl_all_functions cont =
 let compunit (ulam, preallocated_blocks, constants) =
   assert (Cmmgen_state.no_more_functions ());
   let dbg = Debuginfo.none in
-  Cmmgen_state.set_structured_constants constants;
   let init_code =
     if !Clflags.afl_instrument then
       Afl_instrument.instrument_initialiser (transl empty_env ulam)
@@ -1441,6 +1449,5 @@ let compunit (ulam, preallocated_blocks, constants) =
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_clambda_constants constants c1 in
   let c3 = transl_all_functions c2 in
-  Cmmgen_state.set_structured_constants [];
   let c4 = emit_preallocated_blocks preallocated_blocks c3 in
   emit_cmm_data_items_for_constants c4

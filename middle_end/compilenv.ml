@@ -49,18 +49,16 @@ module CstMap =
        because it compares "0.0" and "-0.0" equal. *)
   end)
 
-module SymMap = Misc.Stdlib.String.Map
-
 type structured_constants =
   {
     strcst_shared: string CstMap.t;
-    strcst_all: Clambda.ustructured_constant SymMap.t;
+    strcst_all: (string * Clambda.ustructured_constant) list;
   }
 
 let structured_constants_empty  =
   {
     strcst_shared = CstMap.empty;
-    strcst_all = SymMap.empty;
+    strcst_all = [];
   }
 
 let structured_constants = ref structured_constants_empty
@@ -373,7 +371,7 @@ let new_structured_constant cst ~shared =
       structured_constants :=
         {
           strcst_shared = CstMap.add cst lbl strcst_shared;
-          strcst_all = SymMap.add lbl cst strcst_all;
+          strcst_all = (lbl, cst) :: strcst_all;
         };
       lbl
   else
@@ -381,7 +379,7 @@ let new_structured_constant cst ~shared =
     structured_constants :=
       {
         strcst_shared;
-        strcst_all = SymMap.add lbl cst strcst_all;
+        strcst_all = (lbl, cst) :: strcst_all;
       };
     lbl
 
@@ -391,9 +389,6 @@ let add_exported_constant s =
 let clear_structured_constants () =
   structured_constants := structured_constants_empty
 
-let structured_constant_of_symbol s =
-  SymMap.find_opt s (!structured_constants).strcst_all
-
 let structured_constants () =
   let provenance : Clambda.usymbol_provenance =
     { original_idents = [];
@@ -401,8 +396,7 @@ let structured_constants () =
         Path.Pident (Ident.create_persistent (current_unit_name ()));
     }
   in
-  SymMap.bindings (!structured_constants).strcst_all
-  |> List.map
+  List.map
     (fun (symbol, definition) ->
        {
          Clambda.symbol;
@@ -410,6 +404,7 @@ let structured_constants () =
          definition;
          provenance = Some provenance;
        })
+    (!structured_constants).strcst_all
 
 let closure_symbol fv =
   let compilation_unit = Closure_id.get_compilation_unit fv in

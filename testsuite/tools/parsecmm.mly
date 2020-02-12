@@ -202,7 +202,7 @@ componentlist:
 expr:
     INTCONST    { Cconst_int ($1, debuginfo ()) }
   | FLOATCONST  { Cconst_float (float_of_string $1, debuginfo ()) }
-  | STRING      { Cconst_symbol ($1, debuginfo ()) }
+  | STRING      { Cconst_symbol ($1, None, debuginfo ()) }
   | POINTER     { Cconst_pointer ($1, debuginfo ()) }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }

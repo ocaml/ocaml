@@ -370,7 +370,7 @@ let validate d m p =
 *)
 
 let raise_symbol dbg symb =
-  Cop(Craise Lambda.Raise_regular, [Cconst_symbol (symb, dbg)], dbg)
+  Cop(Craise Lambda.Raise_regular, [Cconst_symbol (symb, None, dbg)], dbg)
 
 let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -521,13 +521,8 @@ let unbox_float dbg =
       | Cop(Calloc, [Cblockheader (hdr, _); c], _)
         when Nativeint.equal hdr float_header ->
           c
-      | Cconst_symbol (s, _dbg) as cmm ->
-          begin match Cmmgen_state.structured_constant_of_sym s with
-          | Some (Uconst_float x) ->
-              Cconst_float (x, dbg) (* or keep _dbg? *)
-          | _ ->
-              Cop(Cload (Double_u, Immutable), [cmm], dbg)
-          end
+      | Cconst_symbol (_, Some (Csc_float x), _dbg) ->
+          Cconst_float (x, dbg) (* or keep _dbg? *)
       | cmm -> Cop(Cload (Double_u, Immutable), [cmm], dbg)
     )
 
@@ -744,7 +739,7 @@ let call_cached_method obj tag cache pos args dbg =
   let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
-      Cconst_symbol("caml_send" ^ Int.to_string arity, dbg) ::
+      Cconst_symbol("caml_send" ^ Int.to_string arity, None, dbg) ::
         obj :: tag :: cache :: args,
       dbg)
 
@@ -975,7 +970,7 @@ let box_int_gen dbg (bi : Primitive.boxed_integer) arg =
     else arg
   in
   Cop(Calloc, [alloc_header_boxed_int bi dbg;
-               Cconst_symbol(operations_boxed_int bi, dbg);
+               Cconst_symbol(operations_boxed_int bi, None, dbg);
                arg'], dbg)
 
 let split_int64_for_32bit_target arg dbg =
@@ -987,13 +982,13 @@ let split_int64_for_32bit_target arg dbg =
 
 let alloc_matches_boxed_int bi ~hdr ~ops =
   match (bi : Primitive.boxed_integer), hdr, ops with
-  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _, _) ->
       Nativeint.equal hdr boxedintnat_header
         && String.equal sym caml_nativeint_ops
-  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _, _) ->
       Nativeint.equal hdr boxedint32_header
         && String.equal sym caml_int32_ops
-  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
+  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _, _) ->
       Nativeint.equal hdr boxedint64_header
         && String.equal sym caml_int64_ops
   | (Pnativeint | Pint32 | Pint64), _, _ -> false
@@ -1009,45 +1004,42 @@ let unbox_int dbg bi =
         [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
   in
   map_tail
-    (function
+    (fun t -> match t, bi with
       | Cop(Calloc,
             [hdr; ops;
-             Cop(Clsl, [contents; Cconst_int (32, _)], _dbg')], _dbg)
-        when bi = Primitive.Pint32 && size_int = 8 && big_endian
+             Cop(Clsl, [contents; Cconst_int (32, _)], _dbg')], _dbg),
+        Primitive.Pint32
+        when size_int = 8 && big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
           sign_extend_32 dbg contents
       | Cop(Calloc,
-            [hdr; ops; contents], _dbg)
-        when bi = Primitive.Pint32 && size_int = 8 && not big_endian
+            [hdr; ops; contents], _dbg),
+        Primitive.Pint32
+        when size_int = 8 && not big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
           sign_extend_32 dbg contents
-      | Cop(Calloc, [hdr; ops; contents], _dbg)
+      | Cop(Calloc, [hdr; ops; contents], _dbg), bi
         when alloc_matches_boxed_int bi ~hdr ~ops ->
           contents
-      | Cconst_symbol (s, _dbg) as cmm ->
-          begin match Cmmgen_state.structured_constant_of_sym s, bi with
-          | Some (Uconst_nativeint n), Primitive.Pnativeint ->
-              Cconst_natint (n, dbg)
-          | Some (Uconst_int32 n), Primitive.Pint32 ->
-              Cconst_natint (Nativeint.of_int32 n, dbg)
-          | Some (Uconst_int64 n), Primitive.Pint64 ->
-              if size_int = 8 then
-                Cconst_natint (Int64.to_nativeint n, dbg)
-              else
-                let low = Int64.to_nativeint n in
-                let high =
-                  Int64.to_nativeint (Int64.shift_right_logical n 32)
-                in
-                if big_endian then
-                  Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
-                else
-                  Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
-          | _ ->
-              default cmm
-          end
-      | cmm ->
+      | Cconst_symbol (_, Some (Csc_nativeint n), _dbg), Primitive.Pnativeint ->
+          Cconst_natint (n, dbg)
+      | Cconst_symbol (_, Some (Csc_int32 n), _dbg), Primitive.Pint32 ->
+          Cconst_natint (Nativeint.of_int32 n, dbg)
+      | Cconst_symbol (_, Some (Csc_int64 n), _dbg), Primitive.Pint64 ->
+          if size_int = 8 then
+            Cconst_natint (Int64.to_nativeint n, dbg)
+          else
+            let low = Int64.to_nativeint n in
+            let high =
+              Int64.to_nativeint (Int64.shift_right_logical n 32)
+            in
+            if big_endian then
+              Ctuple [Cconst_natint (high, dbg); Cconst_natint (low, dbg)]
+            else
+              Ctuple [Cconst_natint (low, dbg); Cconst_natint (high, dbg)]
+      | cmm, _ ->
           default cmm
     )
 
@@ -1398,7 +1390,7 @@ let make_switch arg cases actions dbg =
     | Cconst_natpointer (n, _), _dbg
       when Nativeint.(to_int (logand n one) = 1) ->
         Some (Cint n)
-    | Cconst_symbol (s,_), _dbg ->
+    | Cconst_symbol (s,_,_), _dbg ->
         Some (Csymbol_address s)
     | _ -> None
   in
@@ -1427,7 +1419,7 @@ let make_switch arg cases actions dbg =
     Cmmgen_state.add_constant table (Const_table (Local,
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
-    addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
+    addr_array_ref (Cconst_symbol (table, None, dbg)) (tag_int arg dbg) dbg
   in
   let make_affine_computation ~offset ~slope arg dbg =
     (* In case the resulting integers are an affine function of the index, we
@@ -1633,7 +1625,7 @@ let ptr_offset ptr offset dbg =
   else Cop(Caddv, [ptr; Cconst_int(offset * size_addr, dbg)], dbg)
 
 let direct_apply lbl args dbg =
-  Cop(Capply typ_val, Cconst_symbol (lbl, dbg) :: args, dbg)
+  Cop(Capply typ_val, Cconst_symbol (lbl, None, dbg) :: args, dbg)
 
 let generic_apply mut clos args dbg =
   match args with
@@ -1644,7 +1636,7 @@ let generic_apply mut clos args dbg =
   | _ ->
       let arity = List.length args in
       let cargs =
-        Cconst_symbol(apply_function_sym arity, dbg) :: args @ [clos]
+        Cconst_symbol(apply_function_sym arity, None, dbg) :: args @ [clos]
       in
       Cop(Capply typ_val, cargs, dbg)
 
@@ -1953,16 +1945,18 @@ let rec intermediate_curry_functions arity num =
          if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
                [alloc_closure_header 5 (dbg ());
-                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1),
+                  None, dbg ());
                 int_const (dbg ()) (arity - num - 1);
                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1) ^ "_app",
-                  dbg ());
+                  None, dbg ());
                 Cvar arg; Cvar clos],
                dbg ())
          else
            Cop(Calloc,
                 [alloc_closure_header 4 (dbg ());
-                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
+                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1),
+                   None, dbg ());
                  int_const (dbg ()) 1; Cvar arg; Cvar clos],
                 dbg ());
       fun_codegen_options = [];
@@ -2520,7 +2514,7 @@ let emit_float_array_constant symb fields cont =
 let entry_point namelist =
   let dbg = placeholder_dbg in
   let cconst_int i = Cconst_int (i, dbg ()) in
-  let cconst_symbol sym = Cconst_symbol (sym, dbg ()) in
+  let cconst_symbol sym = Cconst_symbol (sym, None, dbg ()) in
   let incr_global_inited () =
     Cop(Cstore (Word_int, Assignment),
         [cconst_symbol "caml_globals_inited";

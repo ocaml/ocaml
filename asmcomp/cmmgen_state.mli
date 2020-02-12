@@ -38,8 +38,3 @@ val get_and_clear_data_items : unit -> Cmm.data_item list
 val next_function : unit -> Clambda.ufunction option
 
 val no_more_functions : unit -> bool
-
-val set_structured_constants : Clambda.preallocated_constant list -> unit
-
-(* Also looks up using Compilenv.structured_constant_of_symbol *)
-val structured_constant_of_sym : string -> Clambda.ustructured_constant option

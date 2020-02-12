@@ -147,13 +147,19 @@ and operation =
                    It results in a bounds error if the index is greater than
                    or equal to the bound. *)
 
+and cstructured_constant =
+  | Csc_float of float
+  | Csc_int32 of int32
+  | Csc_int64 of int64
+  | Csc_nativeint of nativeint
+
 (** Every basic block should have a corresponding [Debuginfo.t] for its
     beginning. *)
 and expression =
     Cconst_int of int * Debuginfo.t
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
-  | Cconst_symbol of string * Debuginfo.t
+  | Cconst_symbol of string * cstructured_constant option * Debuginfo.t
   | Cconst_pointer of int * Debuginfo.t
   | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t

@@ -32,7 +32,7 @@ type addressing_expr =
 
 let rec select_addr exp =
   match exp with
-    Cconst_symbol (s, _) ->
+    Cconst_symbol (s, _, _) ->
       (Asymbol s, 0)
   | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int (m, _)], _) ->
       let (a, n) = select_addr arg in (a, n + m)
@@ -200,7 +200,7 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | Cconst_natpointer (n, _) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_symbol (s, _) ->
+  | Cconst_symbol (s, _, _) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
@@ -292,7 +292,7 @@ method select_push exp =
   | Cconst_pointer (n, _) ->
       (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natpointer (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
-  | Cconst_symbol (s, _) -> (Ispecific(Ipush_symbol s), Ctuple [])
+  | Cconst_symbol (s, _, _) -> (Ispecific(Ipush_symbol s), Ctuple [])
   | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)

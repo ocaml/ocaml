@@ -142,11 +142,17 @@ and operation =
   | Craise of Lambda.raise_kind
   | Ccheckbound
 
+and cstructured_constant =
+  | Csc_float of float
+  | Csc_int32 of int32
+  | Csc_int64 of int64
+  | Csc_nativeint of nativeint
+
 type expression =
     Cconst_int of int * Debuginfo.t
   | Cconst_natint of nativeint * Debuginfo.t
   | Cconst_float of float * Debuginfo.t
-  | Cconst_symbol of string * Debuginfo.t
+  | Cconst_symbol of string * cstructured_constant option * Debuginfo.t
   | Cconst_pointer of int * Debuginfo.t
   | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t

@@ -142,6 +142,12 @@ let operation d = function
   | Craise k -> Lambda.raise_kind k ^ location d
   | Ccheckbound -> "checkbound" ^ location d
 
+let cstructured_constant ppf = function
+  | Csc_float f -> fprintf ppf "%F" f
+  | Csc_int32 n -> fprintf ppf "%ldl" n
+  | Csc_int64 n -> fprintf ppf "%LdL" n
+  | Csc_nativeint n -> fprintf ppf "%ndn" n
+
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
   | Cconst_natint (n, _dbg) ->
@@ -150,7 +156,10 @@ let rec expr ppf = function
     fprintf ppf "block-hdr(%s)%s"
       (Nativeint.to_string n) (location d)
   | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
-  | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%s\"" s
+  | Cconst_symbol (s, None, _dbg) -> fprintf ppf "\"%s\"" s
+  | Cconst_symbol (s, Some apx, _dbg) ->
+    fprintf ppf "\"%s\"=%a" s
+      cstructured_constant apx
   | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
   | Cconst_natpointer (n, _dbg) -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id

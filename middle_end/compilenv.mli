@@ -118,9 +118,6 @@ val structured_constants:
   unit -> Clambda.preallocated_constant list
 val clear_structured_constants: unit -> unit
 
-val structured_constant_of_symbol:
-  string -> Clambda.ustructured_constant option
-
 val add_exported_constant: string -> unit
         (* clambda-only *)
 type structured_constants
