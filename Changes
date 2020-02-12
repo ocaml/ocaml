@@ -129,6 +129,9 @@ Working version
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
 
+- #9255, #9300: reference chapter, split the expression grammar
+  (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #9074: reworded error message for non-regular structural types
