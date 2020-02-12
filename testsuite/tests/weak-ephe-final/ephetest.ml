@@ -66,7 +66,7 @@ let test2 () =
   is_key_value test eph 125;
   is_data_value test eph 42;
   ra := ref 13;
-  Gc.minor ();
+  Gc.minor (); Gc.full_major ();
   is_key_unset test eph;
   is_data_unset test eph
 let () = (test2 [@inlined never]) ()
@@ -82,7 +82,7 @@ let test3 () =
   is_key_value test eph 125;
   is_data_value test eph 13;
   ra := ref 14;
-  Gc.minor ();
+  Gc.minor (); Gc.full_major ();
   is_key_unset test eph;
   is_data_unset test eph
 let () = (test3 [@inlined never]) ()
@@ -117,7 +117,7 @@ let test5 () =
   is_data_value test eph 43;
   !rb := ref 4;
   Gc.minor ();
-  Gc.minor ();
+  Gc.minor (); Gc.full_major ();
   is_key_unset test eph;
   is_data_unset test eph
 let () = (test5 [@inlined never]) ()
