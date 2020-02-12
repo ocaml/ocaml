@@ -14,6 +14,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include "caml/config.h"
 #include "caml/memory.h"
 #include "caml/addrmap.h"
@@ -82,8 +84,6 @@ void caml_addrmap_clear(struct addrmap* t) {
   t->entries = 0;
   t->size = 0;
 }
-
-
 
 value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   uintnat i, pos, old_size;

@@ -13,10 +13,12 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include "mlvalues.h"
-
 #ifndef CAML_ADDRMAP_H
 #define CAML_ADDRMAP_H
+
+#ifdef CAML_INTERNALS
+
+#include "mlvalues.h"
 
 /* An addrmap is a value -> value hashmap, where
    the values are blocks */
@@ -95,5 +97,6 @@ static inline addrmap_iterator caml_addrmap_iterator(struct addrmap* t)
   return caml_addrmap_next(t, (uintnat)(-1));
 }
 
+#endif /* CAML_INTERNALS */
 
-#endif
+#endif /* CAML_ADDRMAP_H */

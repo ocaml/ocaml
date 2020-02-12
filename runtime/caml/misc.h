@@ -199,7 +199,9 @@ CAMLextern void caml_fatal_error (char *, ...)
 #endif
 CAMLnoreturn_end;
 
+#ifdef CAML_INTERNALS
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
+#endif /* CAML_INTERNALS */
 
 /* Detection of available C built-in functions, the Clang way. */
 
