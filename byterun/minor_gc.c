@@ -385,8 +385,10 @@ static void oldify_one (void* st_v, value v, value *p)
 }
 
 /* Test if the ephemeron is alive */
-static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
-                                         char* young_ptr, char* young_end)
+/* Care needed with this test. It will only make sense if
+   all minor heaps have been promoted
+   as the liveness of the keys can only be known at that point */
+static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re)
 {
   mlsize_t i;
   value child;
@@ -448,24 +450,24 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
     CAMLassert (Wosize_val(new_v));
   }
 
-  /* Oldify the data in the minor heap of alive ephemeron
-     During minor collection keys outside the minor heap are considered alive */
+  /* Oldify the key and data in the minor heap of all ephemerons touched in this
+     cycle
+    We are doing this to allow concurrent minor collections to resume
+    executing mutating code while others are still collecting.
+   */
   if( do_ephemerons ) {
     for (re = ephe_ref_table.base;
-        re < ephe_ref_table.ptr; re++) {
-      /* look only at ephemeron with data in the minor heap */
-      if (re->offset == CAML_EPHE_DATA_OFFSET) {
-        value *data = &Ephe_data(re->ephe);
-        if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
-          resolve_infix_val(data);
-          if (get_header_val(*data) == 0) { /* Value copied to major heap */
-            *data = Op_val(*data)[0];
-          } else {
-            if (ephe_check_alive_data(re, young_ptr, young_end)) {
-              oldify_one(st, *data, data);
-              redo = 1; /* oldify_todo_list can still be 0 */
-            }
-          }
+         re < ephe_ref_table.ptr; re++) {
+      value *data = re->offset == CAML_EPHE_DATA_OFFSET
+              ? &Ephe_data(re->ephe)
+              :  &Op_val(re->ephe)[re->offset];
+      if (*data != caml_ephe_none && Is_block(*data) && Is_minor(*data) ) {
+        resolve_infix_val(data);
+        if (get_header_val(*data) == 0) { /* Value copied to major heap */
+          *data = Op_val(*data)[0];
+        } else {
+          oldify_one(st, *data, data);
+          redo = 1; /* oldify_todo_list can still be 0 */
         }
       }
     }
@@ -621,7 +623,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   #endif
 
   caml_ev_begin("minor_gc/remembered_set/promote");
-  oldify_mopup (&st, 0);
+  oldify_mopup (&st, 1); /* ephemerons promoted here */
   caml_ev_end("minor_gc/remembered_set/promote");
   caml_ev_end("minor_gc/remembered_set");
   caml_gc_log("promoted %d roots, %d bytes", remembered_roots, st.live_bytes);
@@ -644,32 +646,9 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   caml_do_local_roots(&oldify_one, &st, domain, 0);
   caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
   caml_ev_begin("minor_gc/local_roots/promote");
-  oldify_mopup (&st, 1);
+  oldify_mopup (&st, 0);
   caml_ev_end("minor_gc/local_roots/promote");
   caml_ev_end("minor_gc/local_roots");
-
-  caml_ev_begin("minor_gc/ephemerons");
-  for (re = self_minor_tables->ephe_ref.base;
-       re < self_minor_tables->ephe_ref.ptr; re++) {
-    CAMLassert (Ephe_domain(re->ephe) == domain);
-    if (re->offset == CAML_EPHE_DATA_OFFSET) {
-      /* Data field has already been handled in oldify_mopup. Handle only
-       * keys here. */
-      continue;
-    }
-    value* key = &Op_val(re->ephe)[re->offset];
-    if (*key != caml_ephe_none && Is_block(*key) && Is_minor(*key)) {
-      resolve_infix_val(key);
-      if (get_header_val(*key) == 0) { /* value copied to major heap */
-        *key = Op_val(*key)[0];
-      } else {
-        // CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
-        *key = caml_ephe_none;
-        Ephe_data(re->ephe) = caml_ephe_none;
-      }
-    }
-  }
-  caml_ev_end("minor_gc/ephemerons");
 
   domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
   domain_state->stat_minor_collections++;

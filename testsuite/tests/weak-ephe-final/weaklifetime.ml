@@ -31,7 +31,9 @@ let gccount () =
 (* Check the correctness condition on the data at (i,j):
    1. if the block is present, the weak pointer must be full
    2. if the block was removed at GC n, and the weak pointer is still
-      full, then the current GC must be at most n+1.
+      full, then the current GC must be at most n+2.
+      (could have promotion from minor during n+1 which keeps alive in n+1,
+      so will die at n+2)
 
    Then modify the data in one of the following ways:
    1. if the block and weak pointer are absent, fill them
@@ -41,7 +43,7 @@ let check_and_change i j =
   let gc1 = gccount () in
   match data.(i).objs.(j), Weak.check data.(i).wp j with
   | Present x, false -> assert false
-  | Absent n, true -> assert (gc1 <= n+1)
+  | Absent n, true -> assert (gc1 <= n+2)
   | Absent _, false ->
     let x = Array.make (1 + Random.int 10) 42 in
     data.(i).objs.(j) <- Present x;
