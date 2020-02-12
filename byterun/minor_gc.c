@@ -375,8 +375,7 @@ static void oldify_one (void* st_v, value v, value *p)
 /* Care needed with this test. It will only make sense if
    all minor heaps have been promoted
    as the liveness of the keys can only be known at that point */
-static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
-                                         char* young_ptr, char* young_end)
+static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re)
 {
   mlsize_t i;
   value child;
