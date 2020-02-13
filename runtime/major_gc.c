@@ -416,7 +416,7 @@ static void mark_slice (intnat work)
         CAMLassert (end >= start);
         INSTR (slice_fields += end - start;)
         INSTR (if (size > end)
-                 CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
+                 CAML_INSTR_INT ("major/mark/slice/remain#", size - end);)
         for (i = start; i < end; i++){
           gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,i,
                                             /*in_ephemeron=*/ 0,
