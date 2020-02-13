@@ -547,8 +547,8 @@ OCaml 4.10.0
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
-- #8947, #9134: fix/improve support for the BFD library
-  (Sébastien Hinderer, review by Damien Doligez)
+- #8947, #9134, #9302: fix/improve support for the BFD library
+  (Sébastien Hinderer, review by Damien Doligez and David Allsopp)
 
 - #8951: let make's default target build the compiler
   (Sébastien Hinderer, review by David Allsopp)
