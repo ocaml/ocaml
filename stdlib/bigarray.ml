@@ -132,11 +132,17 @@ module Genarray = struct
 
   external ptr : ('a, 'b, c_layout) t -> nativeint = "caml_ba_ptr"
 
+  let c_nth_dims a i = nth_dims a i
+  let fortran_nth_dims a i = nth_dim a (num_dims a - i - 1)
+
   let overlap
-    : ('a, 'b, c_layout) t ->
-      ('a, 'b, c_layout) t ->
+    : ('a, 'b, 'c) t ->
+      ('a, 'b, 'c) t ->
       (int * int array * int array) option
     = fun a b ->
+    let nth_dims = match layout a (* = layout b *) with
+      | C_layout -> c_nth_dims
+      | Fortran_layout -> fortran_nth_dims in
     if (num_dims a) <> (num_dims b)
     then invalid_arg "Bigarray.Genarray.overlap" ;
 
