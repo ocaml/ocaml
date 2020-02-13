@@ -31,12 +31,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef __GNUC__
-#define INLINE Caml_inline
-#else
-#define INLINE static
-#endif
-
 typedef int st_retcode;
 
 #define SIGPREEMPTION SIGVTALRM
@@ -71,7 +65,7 @@ static int st_thread_create(st_thread_id * res,
 
 /* Cleanup at thread exit */
 
-INLINE void st_thread_cleanup(void)
+Caml_inline void st_thread_cleanup(void)
 {
   return;
 }
@@ -102,12 +96,12 @@ static int st_tls_newkey(st_tlskey * res)
   return pthread_key_create(res, NULL);
 }
 
-INLINE void * st_tls_get(st_tlskey k)
+Caml_inline void * st_tls_get(st_tlskey k)
 {
   return pthread_getspecific(k);
 }
 
-INLINE void st_tls_set(st_tlskey k, void * v)
+Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   pthread_setspecific(k, v);
 }
@@ -153,7 +147,7 @@ static void st_masterlock_release(st_masterlock * m)
 }
 
 CAMLno_tsan  /* This can be called for reading [waiters] without locking. */
-INLINE int st_masterlock_waiters(st_masterlock * m)
+Caml_inline int st_masterlock_waiters(st_masterlock * m)
 {
   return m->waiters;
 }
@@ -167,7 +161,7 @@ INLINE int st_masterlock_waiters(st_masterlock * m)
    off the lock to a waiter we know exists, it's safe, as they'll certainly
    re-wake us later.
 */
-INLINE void st_thread_yield(st_masterlock * m)
+Caml_inline void st_thread_yield(st_masterlock * m)
 {
   pthread_mutex_lock(&m->lock);
   /* We must hold the lock to call this. */
@@ -219,7 +213,7 @@ static int st_mutex_destroy(st_mutex m)
   return rc;
 }
 
-INLINE int st_mutex_lock(st_mutex m)
+Caml_inline int st_mutex_lock(st_mutex m)
 {
   return pthread_mutex_lock(m);
 }
@@ -227,12 +221,12 @@ INLINE int st_mutex_lock(st_mutex m)
 #define PREVIOUSLY_UNLOCKED 0
 #define ALREADY_LOCKED EBUSY
 
-INLINE int st_mutex_trylock(st_mutex m)
+Caml_inline int st_mutex_trylock(st_mutex m)
 {
   return pthread_mutex_trylock(m);
 }
 
-INLINE int st_mutex_unlock(st_mutex m)
+Caml_inline int st_mutex_unlock(st_mutex m)
 {
   return pthread_mutex_unlock(m);
 }
@@ -260,17 +254,17 @@ static int st_condvar_destroy(st_condvar c)
   return rc;
 }
 
-INLINE int st_condvar_signal(st_condvar c)
+Caml_inline int st_condvar_signal(st_condvar c)
 {
   return pthread_cond_signal(c);
 }
 
-INLINE int st_condvar_broadcast(st_condvar c)
+Caml_inline int st_condvar_broadcast(st_condvar c)
 {
   return pthread_cond_broadcast(c);
 }
 
-INLINE int st_condvar_wait(st_condvar c, st_mutex m)
+Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
 {
   return pthread_cond_wait(c, m);
 }
