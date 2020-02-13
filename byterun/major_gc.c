@@ -36,7 +36,9 @@
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
 
-#define MARK_STACK_INIT_SIZE (1 << 10)
+/* NB the MARK_STACK_INIT_SIZE must be larger than the number of objects
+   that can be in a pool, see POOL_WSIZE */
+#define MARK_STACK_INIT_SIZE (1 << 12)
 #define INITIAL_POOLS_TO_RESCAN_LEN 4
 
 typedef struct {
