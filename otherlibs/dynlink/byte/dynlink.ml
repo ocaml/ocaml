@@ -134,7 +134,10 @@ module Bytecode = struct
     if priv then Symtable.hide_additions old_state;
     let _, clos = Meta.reify_bytecode code events (Some digest) in
     try ignore ((clos ()) : Obj.t)
-    with exn -> raise (DT.Error (Library's_module_initializers_failed exn))
+    with exn ->
+      Printexc.raise_with_backtrace
+        (DT.Error (Library's_module_initializers_failed exn))
+        (Printexc.get_raw_backtrace ())
 
   let load ~filename:file_name ~priv:_ =
     let ic = open_in_bin file_name in

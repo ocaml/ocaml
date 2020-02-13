@@ -5,9 +5,9 @@ Working version
 
 ### Language features
 
-- #8820: quoted extensions: {%foo|...|} is lighter syntax for
+- #8820, #9166: quoted extensions: {%foo|...|} is lighter syntax for
   [%foo {||}], and {%foo bar|...|bar} for [%foo {bar|...|bar}].
-  (Gabriel Radanne, Leo White and Gabriel Scherer,
+  (Gabriel Radanne, Leo White, Gabriel Scherer and Pieter Goetschalckx,
    request by Bikal Lem)
 
 - #6673, #1132: Relax the handling of explicit polymorphic types
@@ -50,9 +50,12 @@ Working version
   (Arseniy Alekseyev, design advice by Leo White, review by François Bobot
   and Damien Doligez)
 
+- #9279: Memprof optimisation.
+  (Stephen Dolan, review by Jacques-Henri Jourdan)
+
 ### Code generation and optimizations:
 
-- #8637, #8805, #9247: Record debug info for each allocation.
+- #8637, #8805, #9247, #9296: Record debug info for each allocation.
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez,
    KC Sivaramakrishnan and Xavier Leroy)
 
@@ -92,7 +95,15 @@ Working version
 - #9106: Register printer for Unix_error in win32unix, as in unix.
   (Christopher Zimmermann, review by David Allsopp)
 
+- #9183: Preserve exception backtrace of exceptions raised by top-level phrases
+  of dynlinked modules.
+  (Nicolás Ojeda Bär, review by Xavier Clerc and Gabriel Scherer)
+
 ### Tools:
+
+- #9276: objinfo: cm[x]a print extra C options, objects and dlls in
+  the order given on the cli. Follow up to #4949.
+  (Daniel Bünzli, review by Gabriel Scherer)
 
 - #463: objinfo: better errors on object files coming
   from a different (older or newer), incompatible compiler version.
@@ -123,6 +134,9 @@ Working version
 
 - #9141: beginning of the ocamltest reference manual
   (Sébastien Hinderer, review by Gabriel Scherer and Thomas Refis)
+
+- #9255, #9300: reference chapter, split the expression grammar
+  (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
@@ -200,6 +214,9 @@ Working version
   even if they are at tail position.
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
 
+- #9274, avoid reading cmi file while printing types
+  (Florian Angeletti, review by Gabriel Scherer)
+
 OCaml 4.10.0
 ------------
 
@@ -227,10 +244,10 @@ OCaml 4.10.0
 
 ### Runtime system:
 
-- #8809: Add a best-fit allocator for the major heap; still experimental,
-  it should be much better than current allocation policies (first-fit and
-  next-fit) for programs with large heaps, reducing both GC cost and
-  memory usage.
+- #8809, #9292: Add a best-fit allocator for the major heap; still
+  experimental, it should be much better than current allocation
+  policies (first-fit and next-fit) for programs with large heaps,
+  reducing both GC cost and memory usage.
   This new best-fit is not (yet) the default; set it explicitly with
   OCAMLRUNPARAM="a=2" (or Gc.set from the program). You may also want
   to increase the `space_overhead` parameter of the GC (a percentage,
@@ -312,8 +329,9 @@ OCaml 4.10.0
   (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer
    and Damien Doligez)
 
-- #9268: Fix bytecode backtrace generation when large integers are present.
-  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer)
+- #9268, #9271: Fix bytecode backtrace generation with large integers present.
+  (Stephen Dolan and Mark Shinwell, review by Gabriel Scherer and
+   Jacques-Henri Jourdan)
 
 ### Standard library:
 
@@ -410,6 +428,11 @@ OCaml 4.10.0
   make the name of those anchor explicits.
   (Florian Angeletti, review by Daniel Bünzli, Sébastien Hinderer,
    and Gabriel Scherer)
+
+- #9257, cautionary guidelines for using the internal runtime API
+  without too much updating pain.
+  (Florian Angeletti, review by Daniel Bünzli, Guillaume Munch-Maccagnoni
+   and KC Sivaramakrishnan)
 
 
 - #8950: move local opens in pattern out of the extension chapter
@@ -688,6 +711,10 @@ OCaml 4.10.0
 - #9209, #9212: fix a development-version regression caused by #2288
   (Kate Deplaix and David Allsopp, review by Sébastien Hinderer
    and Gabriel Scherer )
+
+- #9218, #9269: avoid a rare wrong module name error with "-annot" and
+  inline records.
+  (Florian Angeletti, review by Gabriel Scherer, report by Kate Deplaix)
 
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)

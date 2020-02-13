@@ -46,6 +46,12 @@ end
 
 (* printing environment for path shortening and naming *)
 let printing_env = ref Env.empty
+
+(* When printing, it is important to only observe the
+   current printing environment, without reading any new
+   cmi present on the file system *)
+let in_printing_env f = Env.without_cmis f !printing_env
+
 let human_unique n id = Printf.sprintf "%s/%d" (Ident.name id) n
 
 type namespace =
@@ -79,10 +85,11 @@ module Namespace = struct
 
   let pp ppf x = Format.pp_print_string ppf (show x)
 
+  (** The two functions below should never access the filesystem,
+      and thus use {!in_printing_env} rather than directly
+      accessing the printing environment *)
   let lookup =
-    let to_lookup f lid =
-      fst @@ f (Lident lid) !printing_env
-    in
+    let to_lookup f lid = fst @@ in_printing_env (f (Lident lid)) in
     function
     | Type -> to_lookup Env.find_type_by_name
     | Module -> to_lookup Env.find_module_by_name
@@ -92,15 +99,14 @@ module Namespace = struct
     | Other -> fun _ -> raise Not_found
 
   let location namespace id =
-    let env = !printing_env in
     let path = Path.Pident id in
     try Some (
         match namespace with
-        | Type -> (Env.find_type path env).type_loc
-        | Module -> (Env.find_module path env).md_loc
-        | Module_type -> (Env.find_modtype path env).mtd_loc
-        | Class -> (Env.find_class path env).cty_loc
-        | Class_type -> (Env.find_cltype path env).clty_loc
+        | Type -> (in_printing_env @@ Env.find_type path).type_loc
+        | Module -> (in_printing_env @@ Env.find_module path).md_loc
+        | Module_type -> (in_printing_env @@ Env.find_modtype path).mtd_loc
+        | Class -> (in_printing_env @@ Env.find_class path).cty_loc
+        | Class_type -> (in_printing_env @@ Env.find_cltype path).clty_loc
         | Other -> Location.none
       ) with Not_found -> None
 
@@ -330,7 +336,7 @@ let ident_stdlib = Ident.create_persistent "Stdlib"
 let non_shadowed_pervasive = function
   | Pdot(Pident id, s) as path ->
       Ident.same id ident_stdlib &&
-      (match Env.find_type_by_name (Lident s) !printing_env with
+      (match in_printing_env (Env.find_type_by_name (Lident s)) with
        | (path', _) -> Path.same path path'
        | exception Not_found -> true)
   | _ -> false
@@ -394,6 +400,10 @@ let rec tree_of_path namespace = function
       Oide_ident (ident_name namespace id)
   | Pdot(_, s) as path when non_shadowed_pervasive path ->
       Oide_ident (Naming_context.pervasives_name namespace s)
+  | Pdot(Pident t, s)
+    when namespace=Type && not (Path.is_uident (Ident.name t)) ->
+      (* [t.A]: inline record of the constructor [A] from type [t] *)
+      Oide_dot (Oide_ident (ident_name Type t), s)
   | Pdot(p, s) ->
       Oide_dot (tree_of_path Module p, s)
   | Papply(p1, p2) ->

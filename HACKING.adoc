@@ -38,14 +38,8 @@ make runtop
 make tests
 ----
 
-6. Install in a new opam switch to try things out:
-+
-----
-opam compiler-conf install
-----
-+
-With opam 2, create a local opam switch with the compiler installed from
-the current source directory:
+6. Install in a new opam switch to try things out. With `opam` v2, create a local
+opam switch with the compiler installed from the current source directory:
 +
 ----
 opam switch create . --empty
@@ -222,13 +216,16 @@ the original commit in the commit message.
 git cherry-pick -x -m 1 <merge-commit-hash>
 ----
 
-=== opam compiler script
+=== Testing with `opam`
 
-The separately-distributed script
-https://github.com/gasche/opam-compiler-conf[`opam-compiler-conf`] can
-be used to easily build opam switches out of a git branch of the
-compiler distribution. This lets you easily install and test opam
-packages from an under-modification compiler version.
+To test a particular branch `branch` of a public git repository
+`$REPO` of the compiler in an `opam` v2 switch issue:
+
+---
+opam switch create ocaml-branch --empty
+# Replace $VERSION by the trunk version
+opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
+---
 
 === Useful Makefile targets
 

@@ -52,5 +52,7 @@ type unit_infos =
 
 type library_infos =
   { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ MD5s *)
+    (* In the following fields the lists are reversed with respect to
+       how they end up being used on the command line. *)
     lib_ccobjs: string list;            (* C object files needed *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)
