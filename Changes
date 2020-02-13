@@ -194,7 +194,8 @@ Working version
 
 ### Build system:
 
-- #9250: Add --disable-ocamltest to configure
+- #9250: Add --disable-ocamltest to configure and disable building for
+  non-development builds.
   (David Allsopp, review by Sébastien Hinderer)
 
 ### Bug fixes:

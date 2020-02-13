@@ -1680,9 +1680,9 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
 
-AS_IF([test x"$enable_ocamltest" = "xno"],
-  [ocamltest=""],
-  [ocamltest=ocamltest])
+AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*],[ocamltest='ocamltest'],
+  [ocamltest=''])
 
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true
