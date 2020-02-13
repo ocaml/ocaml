@@ -752,14 +752,19 @@ AC_C_BIGENDIAN(
 
 AC_CHECK_ALIGNOF([double])
 AC_CHECK_ALIGNOF([long])
+AC_CHECK_ALIGNOF([long long])
 
 AS_IF([! $arch64],
   [AS_CASE([$target_cpu],
     [i686], [],
     [AS_IF([test "$ac_cv_alignof_double" -gt 4],
       [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
-    AS_IF([test "$ac_cv_alignof_long" -gt 4],
-      [AC_DEFINE([ARCH_ALIGN_LONG], [1])])
+     AS_IF([test "x$ac_cv_sizeof_long" = "x8" &&
+            test "$ac_cv_alignof_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_INT64], [1])],
+      [AS_IF([test "x$ac_cv_sizeof_long_long" = "x8" &&
+              test "$ac_cv_alignof_long_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
 # Shared library support
