@@ -525,12 +525,12 @@ AS_CASE([$ocaml_cv_cc_vendor],
     [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
   [msvc-*],
     [outputobj=-Fo; gcc_warnings=""],
-  [outputobj='-o $(EMPTY)'; AS_CASE([AC_PACKAGE_VERSION],
+  [outputobj='-o $(EMPTY)'
+  gcc_warnings='-Wall -Wdeclaration-after-statement'
+  AS_CASE([AC_PACKAGE_VERSION],
     [*+dev*],
-      [gcc_warnings="-Wall -Werror"],
-    [gcc_warnings="-Wall"]
-  )]
-)
+      [gcc_warnings="$gcc_warnings -Werror"])
+  ])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)

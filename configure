@@ -12461,14 +12461,15 @@ case $ocaml_cv_cc_vendor in #(
   msvc-*) :
     outputobj=-Fo; gcc_warnings="" ;; #(
   *) :
-    outputobj='-o $(EMPTY)'; case 4.11.0+dev0-2019-10-18 in #(
+    outputobj='-o $(EMPTY)'
+  gcc_warnings='-Wall -Wdeclaration-after-statement'
+  case 4.11.0+dev0-2019-10-18 in #(
   *+dev*) :
-    gcc_warnings="-Wall -Werror" ;; #(
+    gcc_warnings="$gcc_warnings -Werror" ;; #(
   *) :
-    gcc_warnings="-Wall"
-   ;;
+     ;;
 esac
- ;;
+   ;;
 esac
 
 # We select high optimization levels, provided we can turn off:

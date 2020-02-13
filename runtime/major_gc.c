@@ -41,7 +41,7 @@
 #endif
 
 #ifdef _MSC_VER
-static inline double fmin(double a, double b) {
+Caml_inline double fmin(double a, double b) {
   return (a < b) ? a : b;
 }
 #endif
@@ -233,9 +233,9 @@ static void init_sweep_phase(void)
 }
 
 /* auxiliary function of mark_slice */
-static inline value* mark_slice_darken(value *gray_vals_ptr,
-                                       value v, mlsize_t i,
-                                       int in_ephemeron, int *slice_pointers)
+Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
+                                     value v, mlsize_t i,
+                                     int in_ephemeron, int *slice_pointers)
 {
   value child;
   header_t chd;
@@ -623,6 +623,7 @@ void caml_major_collection_slice (intnat howmuch)
   double p, dp, filt_p, spend;
   intnat computed_work;
   int i;
+  CAML_INSTR_DECLARE (tmr);
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = Caml_state->stat_heap_wsz * caml_percent_free
@@ -682,7 +683,8 @@ void caml_major_collection_slice (intnat howmuch)
   */
 
   if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
-  CAML_INSTR_SETUP (tmr, "major");
+  CAML_INSTR_ALLOC (tmr);
+  CAML_INSTR_START (tmr, "major");
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
       / Caml_state->stat_heap_wsz / caml_percent_free / 2.0;

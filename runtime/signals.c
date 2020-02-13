@@ -325,7 +325,7 @@ exception:
 }
 
 CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
-static inline value process_pending_actions_with_root_exn(value extra_root)
+Caml_inline value process_pending_actions_with_root_exn(value extra_root)
 {
   if (caml_something_to_do) {
     CAMLparam1(extra_root);
