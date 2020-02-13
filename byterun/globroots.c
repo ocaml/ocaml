@@ -46,7 +46,6 @@
 
 static caml_plat_mutex roots_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 static value roots_all = Val_unit;
-atomic_uintnat caml_globals_scanned = 0;
 
 CAMLexport caml_root caml_create_root(value init)
 {
@@ -210,19 +209,12 @@ static void scan_native_globals(scanning_action f, void* fdata)
 #endif
 
 void caml_scan_global_roots(scanning_action f, void* fdata) {
-  uintnat v = 0;
-  if(atomic_compare_exchange_strong(&caml_globals_scanned, &v, 1)) {
-    scan_global_roots(f, fdata);
+  /* FIXME KC: Needs to be done only once per major cycle. Currently, every
+   * domain scans global roots */
+  scan_global_roots(f, fdata);
 #ifdef NATIVE_CODE
-    scan_native_globals(f, fdata);
+  scan_native_globals(f, fdata);
 #endif
-    /* If we are running verification code, then we will need to scan the roots
-     * again for marking. */
-    if (f == &caml_verify_root)
-      atomic_store(&caml_globals_scanned, 0);
-  } else {
-    CAMLassert (v == 1);
-  }
 }
 
 /* linked list of registered global roots */

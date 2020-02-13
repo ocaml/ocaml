@@ -55,30 +55,46 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
   return Val_unit;
 }
 
-CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
+static int obj_update_tag (value blk, int old_tag, int new_tag)
 {
   header_t hd;
+  tag_t tag;
 
-  /* Modify field before setting tag */
-  caml_modify_field(blk, 0, fwd);
 again:
   hd = Hd_val(blk);
+  tag = Tag_hd(hd);
+
+  if (tag != old_tag) return 0;
+  if (caml_domain_alone()) {
+    Tag_val (blk) = new_tag;
+    return 1;
+  }
+
+  if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
+                                     (hd & ~0xFF) | new_tag))
+    return 1;
+
+  goto again;
+}
+
+CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
+{
+  if (obj_update_tag(blk, Int_val(old_tag), Int_val(new_tag)))
+    return Val_true;
+  return Val_false;
+}
+
+CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
+{
+  /* Modify field before setting tag */
+  caml_modify_field(blk, 0, fwd);
 
   /* This function is only called on Lazy_tag objects. The only racy write to
    * this object is by the GC threads. */
-  CAMLassert (Tag_hd(hd) == Lazy_tag);
-  if (caml_domain_alone()) {
-    Tag_val (blk) = Forward_tag;
-    return Val_unit;
-  } else {
-    int cas_result =
-      atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
-                                     (hd & ~0xFF) | Forward_tag);
-    if (cas_result)
-        return Val_unit;
-    else
-        goto again;
-  }
+  CAMLassert (Tag_val(blk) == Forcing_tag);
+  obj_update_tag (blk, Forcing_tag, Forward_tag);
+
+  return Val_unit;
 }
 
 
