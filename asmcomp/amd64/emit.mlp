@@ -295,6 +295,7 @@ type gc_call =
     gc_frame: label;                    (* Label of frame descriptor *)
     gc_spacetime : (X86_ast.arg * int) option;
     (* Spacetime node hole pointer and index *)
+    is_poll : bool
   }
 
 let call_gc_sites = ref ([] : gc_call list)
@@ -310,7 +311,11 @@ let emit_call_gc gc =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   *)
-  emit_call "caml_call_gc";
+  if gc.is_poll then begin
+    emit_call "caml_call_poll"
+  end else begin
+    emit_call "caml_call_gc"
+  end;
   def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
@@ -693,7 +698,8 @@ let emit_instr fallthrough i =
               gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;
             gc_frame = lbl_frame;
-            gc_spacetime; } :: !call_gc_sites
+            gc_spacetime;
+            is_poll = false } :: !call_gc_sites
       end else begin
         if Config.stats then begin
           I.inc (domain_field Domainstate.Domain_allocations);
@@ -795,6 +801,23 @@ let emit_instr fallthrough i =
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
   | Lop (Iname_for_debugger _) -> ()
+  | Lop (Ipoll) -> 
+      I.cmp (domain_field Domainstate.Domain_young_limit) r15;
+      let gc_call_label = new_label () in
+      let label_after_gc = new_label () in
+      let lbl_frame =
+        record_frame_label ?label:None i.live false Debuginfo.none
+      in
+      I.jb (label gc_call_label);
+      call_gc_sites :=
+        { gc_size = 0; 
+          gc_lbl = gc_call_label;
+          gc_return_lbl = label_after_gc;
+          gc_frame = lbl_frame;
+          gc_spacetime = None ;
+          is_poll = true } :: !call_gc_sites;
+      def_label label_after_gc;
+      ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->
