@@ -77,27 +77,27 @@ CAMLnoreturn_end;
 
 static void intern_free_stack(void);
 
-static inline unsigned char read8u(void)
+Caml_inline unsigned char read8u(void)
 { return *intern_src++; }
 
-static inline signed char read8s(void)
+Caml_inline signed char read8s(void)
 { return *intern_src++; }
 
-static inline uint16_t read16u(void)
+Caml_inline uint16_t read16u(void)
 {
   uint16_t res = (intern_src[0] << 8) + intern_src[1];
   intern_src += 2;
   return res;
 }
 
-static inline int16_t read16s(void)
+Caml_inline int16_t read16s(void)
 {
   int16_t res = (intern_src[0] << 8) + intern_src[1];
   intern_src += 2;
   return res;
 }
 
-static inline uint32_t read32u(void)
+Caml_inline uint32_t read32u(void)
 {
   uint32_t res =
     ((uint32_t)(intern_src[0]) << 24) + (intern_src[1] << 16)
@@ -106,7 +106,7 @@ static inline uint32_t read32u(void)
   return res;
 }
 
-static inline int32_t read32s(void)
+Caml_inline int32_t read32s(void)
 {
   int32_t res =
     ((uint32_t)(intern_src[0]) << 24) + (intern_src[1] << 16)
@@ -132,7 +132,7 @@ static uintnat read64u(void)
 }
 #endif
 
-static inline void readblock(void * dest, intnat len)
+Caml_inline void readblock(void * dest, intnat len)
 {
   memcpy(dest, intern_src, len);
   intern_src += len;

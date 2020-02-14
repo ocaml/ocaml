@@ -50,7 +50,7 @@ value caml_fl_merge = Val_NULL;  /* Current insertion pointer.  Managed
 #define Next_small(v) Field ((v), 0)
 
 /* Next in memory order */
-static inline value Next_in_mem (value v) {
+Caml_inline value Next_in_mem (value v) {
   return (value) &Field ((v), Whsize_val (v));
 }
 
@@ -894,7 +894,7 @@ typedef struct large_free_block {
   struct large_free_block *next;
 } large_free_block;
 
-static inline mlsize_t bf_large_wosize (struct large_free_block *n) {
+Caml_inline mlsize_t bf_large_wosize (struct large_free_block *n) {
   return Wosize_val((value)(n));
 }
 
@@ -913,7 +913,7 @@ static struct large_free_block *bf_large_least;
 #include <strings.h>
 #elif defined(HAS_BITSCANFORWARD)
 #include <intrin.h>
-static inline int ffs (int x)
+Caml_inline int ffs (int x)
 {
   unsigned long index;
   unsigned char result;
@@ -921,7 +921,7 @@ static inline int ffs (int x)
   return result ? (int) index + 1 : 0;
 }
 #else
-static inline int ffs (int x)
+Caml_inline int ffs (int x)
 {
   /* adapted from Hacker's Delight */
   int bnz, b0, b1, b2, b3, b4;
@@ -938,11 +938,11 @@ static inline int ffs (int x)
 #endif /* HAS_FFS or HAS_BITSCANFORWARD */
 
 /* Indexing starts at 1 because that's the minimum block size. */
-static inline void set_map (int index)
+Caml_inline void set_map (int index)
 {
   bf_small_map |= (1 << (index - 1));
 }
-static inline void unset_map (int index)
+Caml_inline void unset_map (int index)
 {
   bf_small_map &= ~(1 << (index - 1));
 }

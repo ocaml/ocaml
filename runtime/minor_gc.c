@@ -277,7 +277,7 @@ void caml_oldify_one (value v, value *p)
 }
 
 /* Test if the ephemeron is alive, everything outside minor heap is alive */
-static inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
+Caml_inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
   mlsize_t i;
   value child;
   for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++){
@@ -354,11 +354,13 @@ void caml_empty_minor_heap (void)
   struct caml_custom_elt *elt;
   uintnat prev_alloc_words;
   struct caml_ephe_ref_elt *re;
+  CAML_INSTR_DECLARE (tmr);
 
   if (Caml_state->young_ptr != Caml_state->young_alloc_end){
     CAMLassert_young_header(*(header_t*)Caml_state->young_ptr);
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
-    CAML_INSTR_SETUP (tmr, "minor");
+    CAML_INSTR_ALLOC (tmr);
+    CAML_INSTR_START (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     Caml_state->in_minor_collection = 1;
     caml_gc_message (0x02, "<");

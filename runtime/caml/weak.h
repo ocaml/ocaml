@@ -161,7 +161,7 @@ extern value caml_ephe_none;
 
 /* In the header, in order to let major_gc.c
    and weak.c see the body of the function */
-static inline void caml_ephe_clean_partial (value v,
+Caml_inline void caml_ephe_clean_partial (value v,
                                             mlsize_t offset_start,
                                             mlsize_t offset_end) {
   value child;
@@ -212,7 +212,7 @@ static inline void caml_ephe_clean_partial (value v,
   }
 }
 
-static inline void caml_ephe_clean (value v) {
+Caml_inline void caml_ephe_clean (value v) {
   mlsize_t size;
   header_t hd;
   hd = Hd_val (v);

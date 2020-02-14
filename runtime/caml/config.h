@@ -34,7 +34,9 @@
 #endif
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
-#define inline __inline
+#define Caml_inline static __inline
+#else
+#define Caml_inline static inline
 #endif
 
 #include "s.h"

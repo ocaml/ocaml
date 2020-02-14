@@ -56,7 +56,7 @@ function set_configuration {
         ;;
     esac
 
-    ./configure $build $host --prefix="$2"
+    ./configure $build $host --prefix="$2" --enable-ocamltest
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"

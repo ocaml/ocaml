@@ -44,6 +44,10 @@ Working version
 - #9230: Memprof support for native allocations.
   (Jacques-Henri Jourdan and Stephen Dolan, review by Gabriel Scherer)
 
+- #9249: restore definition of ARCH_ALIGN_INT64 in m.h if the architecture
+  requires 64-bit integers to be double-word aligned (autoconf regression)
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #9259: Made `Ephemeron.blit_key` and `Weak.blit` faster. They are now
   linear in the size of the range being copied instead of depending on the
   total sizes of the ephemerons or weak arrays involved.
@@ -164,6 +168,13 @@ Working version
    and validation of OCaml magic numbers.
    (Gabriel Scherer, review by Gabriel Radanne and Damien Doligez)
 
+- #1176: encourage better compatibility with older Microsoft C compilers by
+  using GCC's -Wdeclaration-after-statement when available. Introduce
+  Caml_inline to stop abuse of the inline keyword on MSVC and to help ensure
+  that only static inline is used in the codebase (erroneous instance in
+  runtime/win32.c removed).
+  (David Allsopp, review by Oliver Andrieu and Xavier Leroy)
+
 - #8970: separate value patterns (matching on values) from computation patterns
   (matching on the effects of a copmutation) in the typedtree.
   (Gabriel Scherer, review by Jacques Garrigue and Alain Frisch)
@@ -192,6 +203,10 @@ Working version
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
 
 ### Build system:
+
+- #9250: Add --disable-ocamltest to configure and disable building for
+  non-development builds.
+  (David Allsopp, review by Sébastien Hinderer)
 
 ### Bug fixes:
 
@@ -546,8 +561,8 @@ OCaml 4.10.0
 - #8843, #8841: fix use of off_t on 32-bit systems.
   (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
 
-- #8947, #9134: fix/improve support for the BFD library
-  (Sébastien Hinderer, review by Damien Doligez)
+- #8947, #9134, #9302: fix/improve support for the BFD library
+  (Sébastien Hinderer, review by Damien Doligez and David Allsopp)
 
 - #8951: let make's default target build the compiler
   (Sébastien Hinderer, review by David Allsopp)
