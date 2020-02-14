@@ -518,7 +518,15 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
       /* nothing left to mark */
       return;
     v = Op_val(e.block)[e.offset];
-#if DEBUG
+#if 0
+/* #if DEBUG
+   ctk21: don't think this debug block is correct or safe
+   The block will be in a remembered set but not necessarily the one who owns it
+   because minor heaps are shared.
+   Also we can't scan all the minor_tables with minor early release as the
+   data structures can move underneath us
+    */
+
     /* Here we check that if v is a reference to a block on the minor heap then it is definitely
        contained within the remembered set */
     if( Is_block(v) && Is_minor(v) ) {
