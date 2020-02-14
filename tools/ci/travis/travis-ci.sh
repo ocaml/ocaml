@@ -102,11 +102,13 @@ EOF
       --disable-bigarray-lib \
       --disable-ocamldoc \
       --disable-native-compiler \
+      --enable-ocamltest \
       $CONFIG_ARG"
   else
     configure_flags="\
       --prefix=$PREFIX \
       --enable-flambda-invariants \
+      --enable-ocamltest \
       $CONFIG_ARG"
   fi
   case $XARCH in

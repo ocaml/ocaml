@@ -68,6 +68,7 @@ DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
+OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
 
 BYTESTART=driver/main.cmo
 
@@ -210,11 +211,12 @@ opt.opt: checknative
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	  $(WITH_OCAMLTEST)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  ocamltest.opt
+	  $(OCAMLTEST_OPT)
 ifneq "$(WITH_OCAMLDOC)" ""
 	$(MAKE) manpages
 endif
@@ -244,7 +246,8 @@ coreboot:
 .PHONY: all
 all: coreall
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+         $(WITH_OCAMLTEST)
 ifneq "$(WITH_OCAMLDOC)" ""
 	$(MAKE) manpages
 endif
