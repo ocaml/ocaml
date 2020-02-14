@@ -45,6 +45,8 @@ DOMAIN_STATE(uintnat, allocated_words)
 
 DOMAIN_STATE(uintnat, swept_words)
 
+DOMAIN_STATE(uintnat, opportunistic_work)
+
 DOMAIN_STATE(struct caml__roots_block*, local_roots)
 
 DOMAIN_STATE(struct caml_ephe_info*, ephe_info)

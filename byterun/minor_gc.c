@@ -626,11 +626,11 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   oldify_mopup (&st, 1); /* ephemerons promoted here */
   caml_ev_end("minor_gc/remembered_set/promote");
   caml_ev_end("minor_gc/remembered_set");
-  caml_gc_log("promoted %d roots, %d bytes", remembered_roots, st.live_bytes);
+  caml_gc_log("promoted %d roots, %lu bytes", remembered_roots, st.live_bytes);
 
 #ifdef DEBUG
   caml_global_barrier();
-  caml_gc_log("ref_base: %ul, ref_ptr: %ul", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
+  caml_gc_log("ref_base: %lu, ref_ptr: %lu", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
