@@ -36,12 +36,9 @@
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
 
-/*
-  FIXME: This is far too small. A better policy would be to match
-  OCaml's: allow the mark stack to grow to major_heap / 32. However,
-  leaving it small for now means the overflow code gets more testing.
-*/
-#define MARK_STACK_SIZE (1 << 14)
+/* NB the MARK_STACK_INIT_SIZE must be larger than the number of objects
+   that can be in a pool, see POOL_WSIZE */
+#define MARK_STACK_INIT_SIZE (1 << 12)
 #define INITIAL_POOLS_TO_RESCAN_LEN 4
 
 typedef struct {
@@ -53,6 +50,7 @@ typedef struct {
 struct mark_stack {
   mark_entry* stack;
   uintnat count;
+  uintnat size;
 };
 
 uintnat caml_percent_free = Percent_free_def;
@@ -465,6 +463,32 @@ static struct pool* find_pool_to_rescan();
 #define Is_markable(v) (Is_block(v) && !Is_minor(v))
 #endif
 
+static void realloc_mark_stack (struct mark_stack* stk)
+{
+  mark_entry* new;
+  uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
+
+  if ( mark_stack_bsize < caml_heap_size(Caml_state->shared_heap) / 32) {
+    caml_gc_log ("Growing mark stack to %"ARCH_INTNAT_PRINTF_FORMAT"uk bytes\n",
+                 (intnat) mark_stack_bsize * 2 / 1024);
+
+    new = (mark_entry*) caml_stat_resize_noexc ((char*) stk->stack,
+                                                2 * mark_stack_bsize);
+    if (new != NULL) {
+      stk->stack = new;
+      stk->size *= 2;
+      return;
+    }
+    caml_gc_log ("No room for growing mark stack. Pruning..\n");
+  }
+  caml_gc_log ("Mark stack size is %"ARCH_INTNAT_PRINTF_FORMAT"u"
+               "bytes (> 32 * major heap size of this domain %"
+               ARCH_INTNAT_PRINTF_FORMAT"u bytes. Pruning..\n",
+               mark_stack_bsize,
+               caml_heap_size(Caml_state->shared_heap));
+  mark_stack_prune(stk);
+}
+
 static void mark_stack_push(struct mark_stack* stk, mark_entry e)
 {
   value v;
@@ -504,8 +528,9 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
       /* keep going */
       e.offset++;
   }
-  if (stk->count >= MARK_STACK_SIZE)
-    mark_stack_prune(stk);
+  if (stk->count == stk->size)
+    realloc_mark_stack(stk);
+
   stk->stack[stk->count++] = e;
 }
 
@@ -1411,13 +1436,15 @@ int caml_init_major_gc(caml_domain_state* d) {
   if(Caml_state->mark_stack == NULL) {
     return -1;
   }
-  Caml_state->mark_stack->stack = caml_stat_alloc_noexc(MARK_STACK_SIZE * sizeof(mark_entry));
+  Caml_state->mark_stack->stack =
+    caml_stat_alloc_noexc(MARK_STACK_INIT_SIZE * sizeof(mark_entry));
   if(Caml_state->mark_stack->stack == NULL) {
     caml_stat_free(Caml_state->mark_stack);
     Caml_state->mark_stack = NULL;
     return -1;
   }
   Caml_state->mark_stack->count = 0;
+  Caml_state->mark_stack->size = MARK_STACK_INIT_SIZE;
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
   d->marking_done = 1;
