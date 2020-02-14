@@ -15877,6 +15877,13 @@ fi
       if test -z "$BFD_LIB_DIR"; then :
   BFD_LIB_DIR="/opt/local/lib"
 fi ;; #(
+  *-*openbsd*) :
+    if test -z "$BFD_INCLUDE_DIR"; then :
+  BFD_INCLUDE_DIR="/usr/local/include"
+fi
+      if test -z "$BFD_LIB_DIR"; then :
+  BFD_LIB_DIR="/usr/local/lib"
+fi ;; #(
   *) :
      ;;
 esac
@@ -15934,7 +15941,8 @@ if test "x$ac_cv_lib_bfd_bfd_openr" = xyes; then :
 fi
 
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -15976,7 +15984,8 @@ fi
 
 fi
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16018,7 +16027,8 @@ fi
 
 fi
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -16060,7 +16070,8 @@ fi
 
 fi
     if test -z "$bfd_ldlibs"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
+  unset ac_cv_lib_bfd_bfd_openr
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bfd_openr in -lbfd" >&5
 $as_echo_n "checking for bfd_openr in -lbfd... " >&6; }
 if ${ac_cv_lib_bfd_bfd_openr+:} false; then :
   $as_echo_n "(cached) " >&6
