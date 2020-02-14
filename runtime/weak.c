@@ -530,8 +530,12 @@ CAMLexport void caml_ephemeron_blit_key(value ars, mlsize_t offset_s,
   offset_d += CAML_EPHE_FIRST_KEY;
 
   if (caml_gc_phase == Phase_clean){
-    caml_ephe_clean(ars);
-    caml_ephe_clean(ard);
+    caml_ephe_clean_partial(ars, offset_s, offset_s + length);
+    /* We don't need to clean the keys that are about to be overwritten,
+       except where cleaning them could result in releasing the data,
+       which can't happen if data is already released. */
+    if (Field (ard, CAML_EPHE_DATA_OFFSET) != caml_ephe_none)
+      caml_ephe_clean_partial(ard, offset_d, offset_d + length);
   }
   if (offset_d < offset_s){
     for (i = 0; i < length; i++){

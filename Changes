@@ -48,6 +48,12 @@ Working version
   requires 64-bit integers to be double-word aligned (autoconf regression)
   (David Allsopp, review by Sébastien Hinderer)
 
+- #9259: Made `Ephemeron.blit_key` and `Weak.blit` faster. They are now
+  linear in the size of the range being copied instead of depending on the
+  total sizes of the ephemerons or weak arrays involved.
+  (Arseniy Alekseyev, design advice by Leo White, review by François Bobot
+  and Damien Doligez)
+
 - #9279: Memprof optimisation.
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
