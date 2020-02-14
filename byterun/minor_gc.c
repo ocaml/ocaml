@@ -617,12 +617,9 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
     caml_global_barrier();
     // At this point all domains should have gone through all remembered set entries
     // We need to verify that all our remembered set entries are now in the major heap or promoted
-    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ )
-    {
-      value v = *r;
-
+    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ ) {
       // Everything should be promoted
-      CAMLassert(!Is_minor(v));
+      CAMLassert(!Is_minor(*r));
     }
   #endif
 
@@ -631,7 +628,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_minor(*v)) {
-      resolve_infix_val(v);
       if (get_header_val(*v) == 0) { /* value copied to major heap */
         *v = Op_val(*v)[0];
       } else {
@@ -659,6 +655,11 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
+    CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_minor(vnew)));
+  }
+
+  for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
+    value vnew = elt->block;
     CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_minor(vnew)));
   }
 #endif
