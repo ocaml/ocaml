@@ -1095,37 +1095,29 @@ static intnat major_collection_slice(intnat howmuch,
       available = budget > Chunk_size ? Chunk_size : budget;
       left = caml_sweep(domain_state->shared_heap, available);
       budget -= available - left;
+
+      if (budget > 0 && available == left) {
+        domain_state->sweeping_done = 1;
+        atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
+      }
+
       /*
         FIXME: we would like to handle steal interrupts regularly,
         but bad things happen if the GC cycles ends via an STW
         interrupt here.
       */
-     caml_handle_incoming_interrupts();
-     // FIXME: Is this sufficient to deal with the above case?
-     if( saved_major_cycle != caml_major_cycles_completed ) {
-       caml_ev_end("major_gc/sweep");
-       caml_ev_end("major_gc/slice");
-       return computed_work;
-     }
-    } while (budget > 0 && available != left);
-
-    if (!opportunistic && budget > 0) {
-      domain_state->sweeping_done = 1;
-      atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
-    }
+      caml_handle_incoming_interrupts();
+      // FIXME: Is this sufficient to deal with the above case?
+      if( saved_major_cycle != caml_major_cycles_completed ) {
+        caml_ev_end("major_gc/sweep");
+        caml_ev_end("major_gc/slice");
+        return computed_work;
+      }
+    /* need to check if sweeping_done by the incoming interrupt */
+    } while (budget > 0 && available != left && !domain_state->sweeping_done);
 
     caml_ev_end("major_gc/sweep");
     sweep_work -= budget;
-
-    /*
-      FIXME: we would like to handle steal interrupts regularly,
-      but bad things happen if the GC cycles ends via an STW
-      interrupt here. */
-    caml_handle_incoming_interrupts();
-    if( saved_major_cycle != caml_major_cycles_completed ) {
-       caml_ev_end("major_gc/slice");
-       return computed_work;
-    }
   }
 
 mark_again:
