@@ -724,6 +724,13 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
   caml_gc_log("finished stw empty_minor_heap");
 }
 
+void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
+{
+  caml_ev_begin("minor_gc/opportunistic_major_slice");
+  caml_opportunistic_major_collection_slice(0x200, 0);
+  caml_ev_end("minor_gc/opportunistic_major_slice");
+}
+
 /* must be called outside a STW section */
 int caml_try_stw_empty_minor_heap_on_all_domains ()
 {
@@ -732,7 +739,11 @@ int caml_try_stw_empty_minor_heap_on_all_domains ()
   #endif
 
   caml_gc_log("requesting stw empty_minor_heap");
-  return caml_try_run_on_all_domains(&caml_stw_empty_minor_heap, (void*)0, 1);
+  return caml_try_run_on_all_domains_with_spin_work(
+    &caml_stw_empty_minor_heap, 0, /* stw handler */
+    &caml_do_opportunistic_major_slice, 0, /* enter spin work */
+    0, 0, /* leave spin work */
+    1); /* leave when done */
 }
 
 /* must be called outside a STW section, will retry until we have emptied our minor heap */

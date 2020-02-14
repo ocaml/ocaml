@@ -1101,7 +1101,7 @@ static intnat major_collection_slice(intnat howmuch,
      }
     } while (budget > 0 && available != left);
 
-    if (budget > 0) {
+    if (!opportunistic && budget > 0) {
       domain_state->sweeping_done = 1;
       atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
     }
@@ -1221,14 +1221,15 @@ mark_again:
   if (budget_left)
     *budget_left = budget;
 
-  caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
+  caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks), %lu opp work",
               (unsigned long)domain_state->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
-              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before));
+              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before),
+              (unsigned long)domain_state->opportunistic_work);
   domain_state->stat_major_words += domain_state->allocated_words;
   domain_state->allocated_words = 0;
   if (opportunistic)
-  domain_state->opportunistic_work += computed_work - budget;
+    domain_state->opportunistic_work += computed_work - budget;
 
   if (!opportunistic && is_complete_phase_sweep_ephe(d)) {
     saved_major_cycle = caml_major_cycles_completed;
