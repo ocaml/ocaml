@@ -85,6 +85,10 @@ int caml_domain_is_in_stw();
 #endif
 
 void caml_run_on_all_running_domains_during_stw(void (*handler)(struct domain*, void*), void* data);
+int caml_try_run_on_all_domains_with_spin_work(void (*handler)(struct domain*, void*), void*,
+  void (*enter_spin_callback)(struct domain*, void*), void*,
+  void (*leave_spin_callback)(struct domain*, void*), void*,
+  int);
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void*, int);
 
 void caml_global_barrier();

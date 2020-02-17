@@ -301,7 +301,7 @@ double caml_mean_space_overhead ()
 
 static uintnat default_slice_budget() {
   double p, heap_words;
-  intnat computed_work;
+  intnat computed_work, opportunistic_credit;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = heap_words * caml_percent_free
@@ -349,6 +349,22 @@ static uintnat default_slice_budget() {
 
   computed_work = (intnat) (p * (heap_blocks + (heap_words * 100 / (100 + caml_percent_free))));
 
+  /* adjust computed work for opportunistic_work done by this domain already */
+  if ( Caml_state->opportunistic_work > computed_work ) {
+    /* bound the credit that opportunistic_work can have vs computed_work */
+    if (Caml_state->opportunistic_work > computed_work*2) {
+     Caml_state->opportunistic_work = 2*computed_work;
+    }
+
+    opportunistic_credit = computed_work;
+    Caml_state->opportunistic_work -= computed_work;
+    computed_work = 0;
+  } else {
+    opportunistic_credit = Caml_state->opportunistic_work;
+    Caml_state->opportunistic_work = 0;
+    computed_work -= opportunistic_credit;
+  }
+
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
                          (uintnat)heap_words);
@@ -359,6 +375,7 @@ static uintnat default_slice_budget() {
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (p * 1000000));
   caml_gc_message (0x40, "ordered work = %ld words\n", (intnat)-1);
+  caml_gc_message (0x40, "opportunistic work credit = %ld words\n", opportunistic_credit);
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
 
   return computed_work;
@@ -501,7 +518,15 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
       /* nothing left to mark */
       return;
     v = Op_val(e.block)[e.offset];
-#if DEBUG
+#if 0
+/* #if DEBUG
+   ctk21: don't think this debug block is correct or safe
+   The block will be in a remembered set but not necessarily the one who owns it
+   because minor heaps are shared.
+   Also we can't scan all the minor_tables with minor early release as the
+   data structures can move underneath us
+    */
+
     /* Here we check that if v is a reference to a block on the minor heap then it is definitely
        contained within the remembered set */
     if( Is_block(v) && Is_minor(v) ) {
@@ -956,6 +981,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   /* Mark roots for new cycle */
   domain->state->marking_done = 0;
 
+  domain->state->opportunistic_work = 0;
+
   caml_ev_begin("major_gc/roots");
   caml_do_roots (&caml_darken, NULL, domain, 0);
   caml_ev_end("major_gc/roots");
@@ -1036,12 +1063,14 @@ static void try_complete_gc_phase (struct domain* domain, void* unused)
     }
   }
   caml_global_barrier_end(b);
+  domain->state->opportunistic_work = 0;
 }
 
 #define Chunk_size 0x4000
 
 static intnat major_collection_slice(intnat howmuch,
                                      intnat from_barrier,
+                                     intnat opportunistic,
                                      intnat* budget_left /* out */)
 {
   struct domain* d = caml_domain_self();
@@ -1066,37 +1095,29 @@ static intnat major_collection_slice(intnat howmuch,
       available = budget > Chunk_size ? Chunk_size : budget;
       left = caml_sweep(domain_state->shared_heap, available);
       budget -= available - left;
+
+      if (budget > 0 && available == left) {
+        domain_state->sweeping_done = 1;
+        atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
+      }
+
       /*
         FIXME: we would like to handle steal interrupts regularly,
         but bad things happen if the GC cycles ends via an STW
         interrupt here.
       */
-     caml_handle_incoming_interrupts();
-     // FIXME: Is this sufficient to deal with the above case?
-     if( saved_major_cycle != caml_major_cycles_completed ) {
-       caml_ev_end("major_gc/sweep");
-       caml_ev_end("major_gc/slice");
-       return computed_work;
-     }
-    } while (budget > 0 && available != left);
-
-    if (budget > 0) {
-      domain_state->sweeping_done = 1;
-      atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
-    }
+      caml_handle_incoming_interrupts();
+      // FIXME: Is this sufficient to deal with the above case?
+      if( saved_major_cycle != caml_major_cycles_completed ) {
+        caml_ev_end("major_gc/sweep");
+        caml_ev_end("major_gc/slice");
+        return computed_work;
+      }
+    /* need to check if sweeping_done by the incoming interrupt */
+    } while (budget > 0 && available != left && !domain_state->sweeping_done);
 
     caml_ev_end("major_gc/sweep");
     sweep_work -= budget;
-
-    /*
-      FIXME: we would like to handle steal interrupts regularly,
-      but bad things happen if the GC cycles ends via an STW
-      interrupt here. */
-    caml_handle_incoming_interrupts();
-    if( saved_major_cycle != caml_major_cycles_completed ) {
-       caml_ev_end("major_gc/slice");
-       return computed_work;
-    }
   }
 
 mark_again:
@@ -1138,59 +1159,61 @@ mark_again:
     caml_ev_end("major_gc/mark");
   mark_work -= budget;
 
-  /* Finalisers */
-  if (caml_gc_phase == Phase_mark_final &&
-      caml_final_update_first(d)) {
-    /* This domain has updated finalise first values */
-    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
-    if (budget > 0 && !domain_state->marking_done)
-      goto mark_again;
-  }
-
-  if (caml_gc_phase == Phase_sweep_ephe &&
-      caml_final_update_last(d)) {
-    /* This domain has updated finalise last values */
-    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
-    /* Nothing has been marked while updating last */
-  }
-
-  caml_adopt_orphaned_work();
-
-  /* Ephemerons */
-  saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
-  if (domain_state->ephe_info->todo != (value) NULL &&
-      saved_ephe_cycle > domain_state->ephe_info->cycle) {
-    caml_ev_begin("major_gc/ephe_mark");
-    budget = ephe_mark(budget, saved_ephe_cycle);
-    caml_ev_end("major_gc/ephe_mark");
-    if (domain_state->ephe_info->todo == (value) NULL)
-      caml_ephe_todo_list_emptied ();
-    else if (budget > 0 && domain_state->marking_done)
-      record_ephe_marking_done(saved_ephe_cycle);
-    else if (budget > 0) goto mark_again;
-  }
-
-  if (caml_gc_phase == Phase_sweep_ephe &&
-      domain_state->ephe_info->todo != 0) {
-    caml_ev_begin("major_gc/ephe_sweep");
-    budget = ephe_sweep (d, budget);
-    caml_ev_end("major_gc/ephe_sweep");
-    if (domain_state->ephe_info->todo == 0) {
-      atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
+  if (!opportunistic) {
+    /* Finalisers */
+    if (caml_gc_phase == Phase_mark_final &&
+        caml_final_update_first(d)) {
+      /* This domain has updated finalise first values */
+      atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
+      if (budget > 0 && !domain_state->marking_done)
+        goto mark_again;
     }
-  }
 
-  /* Complete GC phase */
-  if (is_complete_phase_sweep_and_mark_main(d) ||
-      is_complete_phase_mark_final (d)) {
-    caml_ev_begin("major_gc/phase_change");
-    if (from_barrier) {
-      try_complete_gc_phase (d, (void*)0);
-    } else {
-      caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
+    if (caml_gc_phase == Phase_sweep_ephe &&
+        caml_final_update_last(d)) {
+      /* This domain has updated finalise last values */
+      atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
+      /* Nothing has been marked while updating last */
     }
-    caml_ev_end("major_gc/phase_change");
-    if (budget > 0) goto mark_again;
+
+    caml_adopt_orphaned_work();
+
+    /* Ephemerons */
+    saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
+    if (domain_state->ephe_info->todo != (value) NULL &&
+        saved_ephe_cycle > domain_state->ephe_info->cycle) {
+      caml_ev_begin("major_gc/ephe_mark");
+      budget = ephe_mark(budget, saved_ephe_cycle);
+      caml_ev_end("major_gc/ephe_mark");
+      if (domain_state->ephe_info->todo == (value) NULL)
+        caml_ephe_todo_list_emptied ();
+      else if (budget > 0 && domain_state->marking_done)
+        record_ephe_marking_done(saved_ephe_cycle);
+      else if (budget > 0) goto mark_again;
+    }
+
+    if (caml_gc_phase == Phase_sweep_ephe &&
+        domain_state->ephe_info->todo != 0) {
+      caml_ev_begin("major_gc/ephe_sweep");
+      budget = ephe_sweep (d, budget);
+      caml_ev_end("major_gc/ephe_sweep");
+      if (domain_state->ephe_info->todo == 0) {
+        atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
+      }
+    }
+
+    /* Complete GC phase */
+    if (is_complete_phase_sweep_and_mark_main(d) ||
+        is_complete_phase_mark_final (d)) {
+      caml_ev_begin("major_gc/phase_change");
+      if (from_barrier) {
+        try_complete_gc_phase (d, (void*)0);
+      } else {
+        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
+      }
+      caml_ev_end("major_gc/phase_change");
+      if (budget > 0) goto mark_again;
+    }
   }
 
   caml_ev_end("major_gc/slice");
@@ -1198,14 +1221,17 @@ mark_again:
   if (budget_left)
     *budget_left = budget;
 
-  caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
+  caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks), %lu opp work",
               (unsigned long)domain_state->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
-              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before));
+              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before),
+              (unsigned long)domain_state->opportunistic_work);
   domain_state->stat_major_words += domain_state->allocated_words;
   domain_state->allocated_words = 0;
+  if (opportunistic)
+    domain_state->opportunistic_work += computed_work - budget;
 
-  if (is_complete_phase_sweep_ephe(d)) {
+  if (!opportunistic && is_complete_phase_sweep_ephe(d)) {
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
@@ -1225,9 +1251,14 @@ mark_again:
 }
 
 
+intnat caml_opportunistic_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
+{
+  return major_collection_slice(howmuch, 0, 1, budget_left);
+}
+
 intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
 {
-  return major_collection_slice(howmuch, 0, budget_left);
+  return major_collection_slice(howmuch, 0, 0, budget_left);
 }
 
 static void finish_major_cycle_callback (struct domain* domain, void* arg)
@@ -1237,7 +1268,7 @@ static void finish_major_cycle_callback (struct domain* domain, void* arg)
 
   caml_stw_empty_minor_heap(domain, (void*)0);
   while (saved_major_cycles == caml_major_cycles_completed) {
-    major_collection_slice(10000000, 1, 0);
+    major_collection_slice(10000000, 1, 0, 0);
   }
 }
 
@@ -1449,6 +1480,7 @@ int caml_init_major_gc(caml_domain_state* d) {
   d->sweeping_done = 1;
   d->marking_done = 1;
   d->stealing = 0;
+  d->opportunistic_work = 0;
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
   if(d->final_info == NULL) {
