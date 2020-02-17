@@ -210,9 +210,10 @@ Working version
 
 ### Bug fixes:
 
-- #9309: Treat the empty variant as a GADT in or-patterns, so that the
-  exhaustiveness check will examine all cases in the or pattern.
-  (Stefan Muenzel, report by Robert Head, review by ????)
+- #9309: Treat the empty variant identical to a GADT in or-patterns, so that
+  the exhaustiveness check will not incorrectly terminate early.
+  (Stefan Muenzel, report by Robert Head, review by Thomas Refis
+  and Florian Angeletti)
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
   may not match the one in bytecode.
