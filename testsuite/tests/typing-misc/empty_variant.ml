@@ -30,7 +30,6 @@ let f : t option -> int = function None -> 3
 val f : t option -> int = <fun>
 |}]
 
-
 type nothing = |
 type ('a, 'b, 'c) t = | A of 'a | B of 'b | C of 'c
 module Runner : sig
@@ -62,4 +61,19 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C ()
 val f : unit -> unit = <fun>
+|}]
+
+type nothing = |
+type 'b t = A | B of 'b | C
+let g (x:nothing t) = match x with A -> ()
+[%%expect{|
+type nothing = |
+type 'b t = A | B of 'b | C
+Line 3, characters 22-42:
+3 | let g (x:nothing t) = match x with A -> ()
+                          ^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+C
+val g : nothing t -> unit = <fun>
 |}]
