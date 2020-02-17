@@ -70,7 +70,6 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
       }
     }
   }
-  caml_final_do_young_roots (f, fdata, domain, do_final_val);
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, fdata, domain);
 }

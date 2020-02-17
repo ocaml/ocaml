@@ -228,7 +228,7 @@ static void generic_final_minor_update (struct domain* d, struct finalisable * f
   CAMLassert (final->old <= final->young);
   for (i = final->old; i < final->young; i++){
     CAMLassert (Is_block (final->table[i].val));
-    if (Is_minor(final->table[i].val) && Hd_val(final->table[i].val) != 0){
+    if (Is_minor(final->table[i].val) && get_header_val(final->table[i].val) != 0){
       ++ todo_count;
     }
   }
@@ -248,7 +248,7 @@ static void generic_final_minor_update (struct domain* d, struct finalisable * f
     for (i = final->old; i < final->young; i++) {
       CAMLassert (Is_block (final->table[i].val));
       CAMLassert (Tag_val (final->table[i].val) != Forward_tag);
-      if (Is_minor(final->table[j].val) && Hd_val(final->table[i].val) != 0) {
+      if (Is_minor(final->table[j].val) && get_header_val(final->table[i].val) != 0) {
         /** dead */
         fi->todo_tail->item[k] = final->table[i];
         /* The finalisation function is called with unit not with the value */
