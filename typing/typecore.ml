@@ -1282,7 +1282,9 @@ and type_pat_aux
       | Counter_example ({explosion_fuel; _} as info) ->
          let open Parmatch in
          begin match ppat_of_type !env expected_ty with
-         | PT_empty -> raise (Error (loc, !env, Empty_pattern))
+         | PT_empty ->
+            if must_backtrack_on_gadt then raise Need_backtrack;
+            raise (Error (loc, !env, Empty_pattern))
          | PT_any -> k' Tpat_any
          | PT_pattern (explosion, sp, constrs, labels) ->
             let explosion_fuel =
