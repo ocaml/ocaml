@@ -487,24 +487,27 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
 
 
-void caml_empty_minor_heap_domain_finalizers (struct domain* domain, void* unused)
+void caml_minor_heap_domain_finalizers_admin (struct domain* domain, void* unused)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   struct caml_custom_elt *elt;
 
+  /* need to do the finalizer data structure book-keeping */
   caml_final_update_last_minor(domain);
-  /* Run custom block finalisation of dead minor values */
-  for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
+
+  /* There will be no dead minor values as we can not tell the state of
+     a minor heap aliveness until all domains complete */
+  /*for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
     value v = elt->block;
-    if (get_header_val(v) == 0) {
+    if (get_header_val(v) == 0) {*/
       /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
-    } else {
+  /*} else {*/
       /* Block will be freed: call finalisation function, if any */
-      void (*final_fun)(value) = Custom_ops_val(v)->finalize;
+  /*    void (*final_fun)(value) = Custom_ops_val(v)->finalize;
       if (final_fun != NULL) final_fun(v);
     }
-  }
+  }*/
 }
 
 void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
@@ -543,6 +546,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *self_minor_tables = domain_state->minor_tables;
+  struct caml_custom_elt *elt;
   unsigned rewrite_successes = 0;
   unsigned rewrite_failures = 0;
   char* young_ptr = domain_state->young_ptr;
@@ -613,27 +617,49 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
     caml_global_barrier();
     // At this point all domains should have gone through all remembered set entries
     // We need to verify that all our remembered set entries are now in the major heap or promoted
-    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ )
-    {
-      value v = *r;
-
+    for( r = self_minor_tables->major_ref.base ; r < self_minor_tables->major_ref.ptr ; r++ ) {
       // Everything should be promoted
-      CAMLassert(!Is_minor(v));
+      CAMLassert(!Is_minor(*r));
     }
   #endif
+
+  /* promote the finalizers unconditionally as we want to allow early release */
+  caml_ev_begin("minor_gc/finalizers/oldify");
+  for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
+    value *v = &elt->block;
+    if (Is_block(*v) && Is_minor(*v)) {
+      if (get_header_val(*v) == 0) { /* value copied to major heap */
+        *v = Op_val(*v)[0];
+      } else {
+        oldify_one(&st, *v, v);
+      }
+    }
+  }
+  caml_final_do_young_roots (&oldify_one, &st, domain, 0);
+  caml_ev_end("minor_gc/finalizers/oldify");
 
   caml_ev_begin("minor_gc/remembered_set/promote");
   oldify_mopup (&st, 1); /* ephemerons promoted here */
   caml_ev_end("minor_gc/remembered_set/promote");
   caml_ev_end("minor_gc/remembered_set");
-  caml_gc_log("promoted %d roots, %d bytes", remembered_roots, st.live_bytes);
+  caml_gc_log("promoted %d roots, %lu bytes", remembered_roots, st.live_bytes);
+
+  caml_ev_begin("minor_gc/finalizers_admin");
+  caml_gc_log("running stw minor_heap_domain_finalizers_admin");
+  caml_minor_heap_domain_finalizers_admin(domain, 0);
+  caml_ev_end("minor_gc/finalizers_admin");
 
 #ifdef DEBUG
   caml_global_barrier();
-  caml_gc_log("ref_base: %ul, ref_ptr: %ul", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
+  caml_gc_log("ref_base: %lu, ref_ptr: %lu", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
+    CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_minor(vnew)));
+  }
+
+  for (elt = self_minor_tables->custom.base; elt < self_minor_tables->custom.ptr; elt++) {
+    value vnew = elt->block;
     CAMLassert (!Is_block(vnew) || (get_header_val(vnew) != 0 && !Is_minor(vnew)));
   }
 #endif
@@ -713,10 +739,6 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
     caml_ev_end("minor_gc/leave_barrier");
   }
 
-  caml_ev_begin("minor_gc/finalizers");
-  caml_gc_log("running stw empty_minor_heap_domain_finalizers");
-  caml_empty_minor_heap_domain_finalizers(domain, 0);
-  caml_ev_end("minor_gc/finalizers");
   caml_ev_begin("minor_gc/clear");
   caml_gc_log("running stw empty_minor_heap_domain_clear");
   caml_empty_minor_heap_domain_clear(domain, 0);
