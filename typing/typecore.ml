@@ -126,7 +126,6 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Empty_pattern
   | Letop_type_clash of string * Ctype.Unification_trace.t
   | Andop_type_clash of string * Ctype.Unification_trace.t
   | Bindings_type_clash of Ctype.Unification_trace.t
@@ -1148,7 +1147,7 @@ and splitting_mode =
      [Refine_or] tries another approach for refining or-pattern.
 
      Instead of always splitting each or-pattern, It first attempts to
-     find branches that do not introduce new constraints (because they
+     find non-empty branches that do not introduce new constraints (because they
      do not contain GADT constructors). Those branches are such that,
      if they fail, all other branches will fail.
 
@@ -1168,6 +1167,7 @@ and splitting_mode =
    it's an invariant that we always setup an exception handler for
    [Need_backtrack] when we set this flag. *)
  exception Need_backtrack
+ exception Empty_branch
 
 (** Remember current typing state for backtracking.
    No variable information, as we only backtrack on
@@ -1191,8 +1191,9 @@ let set_state s env =
 let rec find_valid_alternative f pat =
   match pat.ppat_desc with
   | Ppat_or(p1,p2) ->
-      (try find_valid_alternative f p1
-       with Error _ -> find_valid_alternative f p2)
+      (try find_valid_alternative f p1 with
+       | Empty_branch | Error _ -> find_valid_alternative f p2
+      )
   | _ -> f pat
 
 let no_explosion = function
@@ -1326,7 +1327,7 @@ and type_pat_aux
       | Counter_example ({explosion_fuel; _} as info) ->
          let open Parmatch in
          begin match ppat_of_type !env expected_ty with
-         | PT_empty -> raise (Error (loc, !env, Empty_pattern))
+         | PT_empty -> raise Empty_branch
          | PT_any -> k' Tpat_any
          | PT_pattern (explosion, sp, constrs, labels) ->
             let explosion_fuel =
@@ -1673,18 +1674,22 @@ and type_pat_aux
         let env1 = ref !env in
         let inside_or = enter_nonsplit_or mode in
         let p1 =
-          try Some (type_pat category ~mode:inside_or
+          try Ok (type_pat category ~mode:inside_or
                       sp1 expected_ty ~env:env1 (fun x -> x))
-          with Need_backtrack -> None in
+          with
+          | Need_backtrack -> Result.Error true
+          | Empty_branch -> Result.Error false in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let env2 = ref !env in
         let p2 =
-          try Some (type_pat category ~mode:inside_or
+          try Ok (type_pat category ~mode:inside_or
                       sp2 expected_ty ~env:env2 (fun x -> x))
-          with Need_backtrack -> None in
+          with
+          | Need_backtrack -> Result.Error true
+          | Empty_branch -> Result.Error false in
         end_def ();
         gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
@@ -1697,16 +1702,21 @@ and type_pat_aux
           check_scope_escape pv_loc !env2 outter_lev pv_type
         ) p2_variables;
         begin match p1, p2 with
-        | None, None ->
-           let inside_nonsplit_or =
-             match get_splitting_mode mode with
-             | None | Some Backtrack_or -> false
-             | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or in
-           if inside_nonsplit_or
-           then raise Need_backtrack
-           else split_or sp
-        | Some p, None | None, Some p -> rp k p (* no variables in this case *)
-        | Some p1, Some p2 ->
+        | Result.Error false, Error false ->
+            (* No GADTS: the two branches are empty, we can raise
+               to reach either an or-pattern handler or the toplevel one *)
+            raise Empty_branch
+        | Result.Error _, Result.Error _ ->
+            let inside_nonsplit_or =
+              match get_splitting_mode mode with
+              | None | Some Backtrack_or -> false
+              | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or in
+            if inside_nonsplit_or
+            then raise Need_backtrack
+            else split_or sp
+        | Ok p, Error _ | Error _, Ok p -> rp k p
+        (* no variables in this case *)
+        | Ok p1, Ok p2 ->
         let alpha_env =
           enter_orpat_variables loc !env p1_variables p2_variables in
         let p2 = alpha_pat alpha_env p2 in
@@ -1820,7 +1830,7 @@ let partial_pred ~lev ~splitting_mode ?(explode=0)
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
-  with Error _ ->
+  with Error _ | Empty_branch ->
     set_state state env;
     None
 
@@ -5410,7 +5420,6 @@ let report_error ~loc env = function
           fprintf ppf "These bindings have type")
         (function ppf ->
           fprintf ppf "but bindings were expected of type")
-  | Empty_pattern -> assert false
 
 let report_error ~loc env err =
   wrap_printing_env ~error:true env (fun () -> report_error ~loc env err)
