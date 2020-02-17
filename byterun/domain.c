@@ -465,6 +465,10 @@ static struct {
   int leave_when_done;
   int num_domains;
   atomic_uintnat barrier;
+  void (*enter_spin_callback)(struct domain*, void*);
+  void* enter_spin_data;
+  void (*leave_spin_callback)(struct domain*, void*);
+  void* leave_spin_data;
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
@@ -472,7 +476,11 @@ static struct {
   NULL,
   0,
   0,
-  ATOMIC_UINTNAT_INIT(0)
+  ATOMIC_UINTNAT_INIT(0),
+  NULL,
+  NULL,
+  NULL,
+  NULL
 };
 
 /* sense-reversing barrier */
@@ -543,6 +551,9 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
     if (atomic_load_acq(&stw_request.domains_still_running) == 0)
       break;
     caml_handle_incoming_interrupts();
+
+    if (stw_request.enter_spin_callback)
+      stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
   }
   caml_ev_end("stw/api_barrier");
 
@@ -560,6 +571,9 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
     SPIN_WAIT {
       if (atomic_load_acq(&stw_request.num_domains_still_processing) == 0)
         break;
+
+      if (stw_request.leave_spin_callback)
+        stw_request.leave_spin_callback(domain, stw_request.leave_spin_data);
     }
   }
 
@@ -588,7 +602,12 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data, int leave_when_done)
+int caml_try_run_on_all_domains_with_spin_work(
+  void (*handler)(struct domain*, void*), void* data,
+  void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data,
+  void (*leave_spin_callback)(struct domain*, void*), void* leave_spin_data,
+  int leave_when_done
+  )
 {
   caml_domain_state* domain_state = Caml_state;
 
@@ -635,6 +654,10 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
                    domains_participating);
   stw_request.callback = handler;
   stw_request.data = data;
+  stw_request.enter_spin_callback = enter_spin_callback;
+  stw_request.enter_spin_data = enter_spin_data;
+  stw_request.leave_spin_callback = leave_spin_callback;
+  stw_request.leave_spin_data = leave_spin_data;
 
   atomic_store_rel(&stw_request.domains_still_running, 0);
 
@@ -661,6 +684,11 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
      == 0, which will remain the case until they have responded to
      another interrupt from caml_run_on_all_domains */
   return 1;
+}
+
+int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data, int leave_when_done)
+{
+  caml_try_run_on_all_domains_with_spin_work(handler, data, 0, 0, 0, 0, leave_when_done);
 }
 
 void caml_interrupt_self() {
@@ -968,7 +996,7 @@ static void domain_terminate()
     if (handle_incoming(s) == 0 &&
         Caml_state->marking_done &&
         Caml_state->sweeping_done) {
-      
+
       finished = 1;
       s->terminating = 0;
       s->running = 0;
@@ -1077,7 +1105,7 @@ CAMLprim value caml_ml_domain_critical_section(value delta)
   return Val_unit;
 }
 
-#define Chunk_size 0x10000
+#define Chunk_size 0x400
 
 CAMLprim value caml_ml_domain_yield(value unused)
 {
@@ -1097,7 +1125,7 @@ CAMLprim value caml_ml_domain_yield(value unused)
       caml_plat_wait(&s->cond);
     } else {
       caml_plat_unlock(&s->lock);
-      caml_major_collection_slice(Chunk_size, &left);
+      caml_opportunistic_major_collection_slice(Chunk_size, &left);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);
@@ -1174,7 +1202,7 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       }
     } else {
       caml_plat_unlock(&s->lock);
-      caml_major_collection_slice(Chunk_size, &left);
+      caml_opportunistic_major_collection_slice(Chunk_size, &left);
       if (left == Chunk_size)
         found_work = 0;
       caml_plat_lock(&s->lock);
