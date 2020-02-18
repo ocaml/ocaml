@@ -91,6 +91,18 @@ static __thread dom_internal* domain_self;
 
 static int64_t startup_timestamp;
 
+struct interrupt {
+  /* immutable fields */
+  domain_rpc_handler handler;
+  void* data;
+  struct interruptor* sender;
+
+  atomic_uintnat completed;
+
+  /* accessed only when target's lock held */
+  struct interrupt* next;
+};
+
 #ifdef __APPLE__
 /* OSX has issues with dynamic loading + exported TLS.
     This is slower but works */
@@ -637,13 +649,26 @@ int caml_try_run_on_all_domains_with_spin_work(
   /* Next, interrupt all domains, counting how many domains received
      the interrupt (i.e. are not terminated and are participating in
      this STW section). */
-  for (i = 0; i < Max_domains; i++) {
-    if (&all_domains[i] == domain_self) continue;
-    if (caml_send_interrupt(&domain_self->interruptor,
-                            &all_domains[i].interruptor,
-                            stw_handler,
-                            0)) {
-      domains_participating++;
+  {
+    struct interrupt reqs[Max_domains];
+    int sent[Max_domains];
+    for (i = 0; i < Max_domains; i++) {
+      sent[i] = 0;
+      if (&all_domains[i] == domain_self) continue;
+      if (caml_send_partial_interrupt(&domain_self->interruptor,
+                              &all_domains[i].interruptor,
+                              stw_handler,
+                              0,
+                              &reqs[i])) {
+        domains_participating++;
+        sent[i] = 1;
+      }
+    }
+
+    for(i = 0; i < Max_domains ; i++) {
+      if( sent[i] ) {
+        caml_wait_interrupt_completed(&domain_self->interruptor, &reqs[i]);
+      }
     }
   }
 
@@ -848,7 +873,6 @@ CAMLexport int caml_domain_rpc(struct domain* domain,
   #undef DOMAIN_STATE
 #endif
 
-
 /* Sending interrupts between domains.
 
    To avoid deadlock, some rules are important:
@@ -856,18 +880,6 @@ CAMLexport int caml_domain_rpc(struct domain* domain,
    - Don't hold interruptor locks for long
    - Don't hold two interruptor locks at the same time
    - Continue to handle incoming interrupts even when waiting for a response */
-
-struct interrupt {
-  /* immutable fields */
-  domain_rpc_handler handler;
-  void* data;
-  struct interruptor* sender;
-
-  atomic_uintnat completed;
-
-  /* accessed only when target's lock held */
-  struct interrupt* next;
-};
 
 /* must be called with s->lock held */
 static uintnat handle_incoming(struct interruptor* s)
@@ -1035,6 +1047,62 @@ void caml_handle_incoming_interrupts()
   caml_plat_lock(&s->lock);
   handle_incoming(s);
   caml_plat_unlock(&s->lock);
+}
+
+int caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req)
+{
+  if (atomic_load_acq(&req->completed)) {
+    return 1;
+  }
+
+  caml_plat_lock(&self->lock);
+  while (1) {
+    handle_incoming(self);
+    if (atomic_load_acq(&req->completed)) break;
+    caml_plat_wait(&self->cond);
+  }
+  caml_plat_unlock(&self->lock);
+  return 1;
+}
+
+int caml_send_partial_interrupt(struct interruptor* self,
+                         struct interruptor* target,
+                         domain_rpc_handler handler,
+                         void* data,
+                         struct interrupt* req)
+{
+  int i;
+
+  req->handler = handler;
+  req->data = data;
+  req->sender = self;
+  atomic_store_rel(&req->completed, 0);
+  req->next = NULL;
+
+  caml_plat_lock(&target->lock);
+  if (!target->running) {
+    caml_plat_unlock(&target->lock);
+    return 0;
+  }
+
+  caml_ev_begin_flow("interrupt", (uintnat)&req);
+  /* add to wait queue */
+  if (target->qhead) {
+    /* queue was nonempty */
+    target->qtail->next = req;
+    target->qtail = req;
+  } else {
+    /* queue was empty */
+    target->qhead = target->qtail = req;
+  }
+  /* Signal the condition variable, in case the target is
+     itself waiting for an interrupt to be processed elsewhere */
+  caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
+  caml_plat_unlock(&target->lock);
+
+  atomic_store_rel(target->interrupt_word, INTERRUPT_MAGIC); //FIXME dup
+
+  return 1;
 }
 
 int caml_send_interrupt(struct interruptor* self,
