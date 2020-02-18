@@ -130,17 +130,18 @@ module Genarray = struct
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
 
-  external ptr : ('a, 'b, c_layout) t -> nativeint = "caml_ba_ptr"
+  external ptr : ('a, 'b, 'c) t -> nativeint = "caml_ba_ptr"
 
-  let c_nth_dims a i = nth_dims a i
+  let c_nth_dims a i = nth_dim a i
   let fortran_nth_dims a i = nth_dim a (num_dims a - i - 1)
 
   let overlap
-    : ('a, 'b, 'c) t ->
-      ('a, 'b, 'c) t ->
+    : type c.
+      ('a, 'b, c) t ->
+      ('a, 'b, c) t ->
       (int * int array * int array) option
     = fun a b ->
-    let nth_dims = match layout a (* = layout b *) with
+    let nth_dim = match layout a (* = layout b *) with
       | C_layout -> c_nth_dims
       | Fortran_layout -> fortran_nth_dims in
     if (num_dims a) <> (num_dims b)
