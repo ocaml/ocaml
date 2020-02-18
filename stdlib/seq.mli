@@ -82,12 +82,12 @@ val iter : ('a -> unit) -> 'a t -> unit
     sequences. *)
 
 val cons : 'a -> 'a t -> 'a t
-(** [cons x xs] returns a new sequence whose elements are [x] followed
-    by the elements of [xs] @since 4.11 *)
+(** [cons x xs] is the sequence containing the element [x] followed by
+    the [xs] sequence @since 4.11 *)
 
 val append : 'a t -> 'a t -> 'a t
-(** [append xs ys] returns a new sequence whose elements are those of
-    [xs] followed by the elements of [ys] @since 4.11 *)
+(** [append xs ys] is the sequence [xs] followed by the sequence [ys]
+    @since 4.11 *)
 
 val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
 (** Build a sequence from a step function and an initial value.
