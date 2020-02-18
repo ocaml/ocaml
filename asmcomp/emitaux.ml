@@ -105,26 +105,30 @@ let emit_float32_directive directive x =
 
 (* Record live pointers at call points *)
 
+type frame_debuginfo =
+  | Dbg_alloc of Debuginfo.alloc_dbginfo
+  | Dbg_raise of Debuginfo.t
+  | Dbg_other of Debuginfo.t
+
 type frame_descr =
   { fd_lbl: int;                        (* Return address *)
     fd_frame_size: int;                 (* Size of stack frame *)
     fd_live_offset: int list;           (* Offsets/regs of live addresses *)
-    fd_raise: bool;                     (* Is frame for a raise? *)
-    fd_debuginfo: Debuginfo.t }         (* Location, if any *)
+    fd_debuginfo: frame_debuginfo }     (* Location, if any *)
 
 let frame_descriptors = ref([] : frame_descr list)
 
-let record_frame_descr ~label ~frame_size ~live_offset ~raise_frame debuginfo =
+let record_frame_descr ~label ~frame_size ~live_offset debuginfo =
   frame_descriptors :=
     { fd_lbl = label;
       fd_frame_size = frame_size;
       fd_live_offset = List.sort_uniq (-) live_offset;
-      fd_raise = raise_frame;
       fd_debuginfo = debuginfo } :: !frame_descriptors
 
 type emit_frame_actions =
   { efa_code_label: int -> unit;
     efa_data_label: int -> unit;
+    efa_8: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
     efa_word: int -> unit;
@@ -155,64 +159,95 @@ let emit_frames a =
     end)
   in
   let debuginfos = Label_table.create 7 in
-  let rec label_debuginfos rs rdbg =
+  let label_debuginfos rs dbg =
+    let rdbg = List.rev dbg in
     let key = (rs, rdbg) in
-    try fst (Label_table.find debuginfos key)
+    try Label_table.find debuginfos key
     with Not_found ->
       let lbl = Cmm.new_label () in
-      let next =
-        match rdbg with
-        | [] -> assert false
-        | _ :: [] -> None
-        | _ :: ((_ :: _) as rdbg') -> Some (label_debuginfos false rdbg')
-      in
-      Label_table.add debuginfos key (lbl, next);
+      Label_table.add debuginfos key lbl;
       lbl
   in
-  let emit_debuginfo_label rs rdbg =
-    a.efa_data_label (label_debuginfos rs rdbg)
-  in
   let emit_frame fd =
+    assert (fd.fd_frame_size land 3 = 0);
+    let flags =
+      match fd.fd_debuginfo with
+      | Dbg_other d | Dbg_raise d ->
+        if Debuginfo.is_none d then 0 else 1
+      | Dbg_alloc dbgs ->
+        if !Clflags.debug && not Config.spacetime &&
+           List.exists (fun d ->
+             not (Debuginfo.is_none d.Debuginfo.alloc_dbg)) dbgs
+        then 3 else 2
+    in
     a.efa_code_label fd.fd_lbl;
-    a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
-              then fd.fd_frame_size
-              else fd.fd_frame_size + 1);
+    a.efa_16 (fd.fd_frame_size + flags);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
-    a.efa_align Arch.size_addr;
-    match List.rev fd.fd_debuginfo with
-    | [] -> ()
-    | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
+    begin match fd.fd_debuginfo with
+    | _ when flags = 0 ->
+      ()
+    | Dbg_other dbg ->
+      a.efa_align 4;
+      a.efa_label_rel (label_debuginfos false dbg) Int32.zero
+    | Dbg_raise dbg ->
+      a.efa_align 4;
+      a.efa_label_rel (label_debuginfos true dbg) Int32.zero
+    | Dbg_alloc dbg ->
+      assert (List.length dbg < 256);
+      a.efa_8 (List.length dbg);
+      List.iter (fun Debuginfo.{alloc_words;_} ->
+        (* Possible allocations range between 2 and 257 *)
+        assert (2 <= alloc_words &&
+                alloc_words - 1 <= Config.max_young_wosize &&
+                Config.max_young_wosize <= 256);
+        a.efa_8 (alloc_words - 2)) dbg;
+      if flags = 3 then begin
+        a.efa_align 4;
+        List.iter (fun Debuginfo.{alloc_dbg; _} ->
+          if Debuginfo.is_none alloc_dbg then
+            a.efa_32 Int32.zero
+          else
+            a.efa_label_rel (label_debuginfos false alloc_dbg) Int32.zero) dbg
+      end
+    end;
+    a.efa_align Arch.size_addr
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
     a.efa_string name;
     a.efa_align Arch.size_addr
   in
-  let pack_info fd_raise d =
+  let pack_info fd_raise d has_next =
     let line = min 0xFFFFF d.Debuginfo.dinfo_line
     and char_start = min 0xFF d.Debuginfo.dinfo_char_start
     and char_end = min 0x3FF d.Debuginfo.dinfo_char_end
-    and kind = if fd_raise then 1 else 0 in
+    and kind = if fd_raise then 1 else 0
+    and has_next = if has_next then 1 else 0 in
     Int64.(add (shift_left (of_int line) 44)
              (add (shift_left (of_int char_start) 36)
                 (add (shift_left (of_int char_end) 26)
-                   (of_int kind))))
+                   (add (shift_left (of_int kind) 1)
+                      (of_int has_next)))))
   in
-  let emit_debuginfo (rs, rdbg) (lbl,next) =
-    let d = List.hd rdbg in
+  let emit_debuginfo (rs, rdbg) lbl =
+    (* Due to inlined functions, a single debuginfo may have multiple locations.
+       These are represented sequentially in memory (innermost frame first),
+       with the low bit of the packed debuginfo being 0 on the last entry. *)
     a.efa_align Arch.size_addr;
     a.efa_def_label lbl;
-    let info = pack_info rs d in
-    a.efa_label_rel
-      (label_filename d.Debuginfo.dinfo_file)
-      (Int64.to_int32 info);
-    a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
-    begin match next with
-    | Some next -> a.efa_data_label next
-    | None -> a.efa_word 0
-    end
-  in
+    let rec emit rs d rest =
+      let info = pack_info rs d (rest <> []) in
+      a.efa_label_rel
+        (label_filename d.Debuginfo.dinfo_file)
+        (Int64.to_int32 info);
+      a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
+      match rest with
+      | [] -> ()
+      | d :: rest -> emit false d rest in
+    match rdbg with
+    | [] -> assert false
+    | d :: rest -> emit rs d rest in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
   Label_table.iter emit_debuginfo debuginfos;

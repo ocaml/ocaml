@@ -10,6 +10,7 @@ let string_of_even_opt x =
 (* Standard test case *)
 let () =
   let l = List.init 10 (fun x -> x) in
+  let sl = List.init 10 string_of_int in
   assert (List.exists (fun a -> a < 10) l);
   assert (List.exists (fun a -> a > 0) l);
   assert (List.exists (fun a -> a = 0) l);
@@ -33,6 +34,8 @@ let () =
     assert (List.find_map (f ~limit:30) l = None);
   end;
 
+  assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
+
   assert (List.compare_lengths [] [] = 0);
   assert (List.compare_lengths [1;2] ['a';'b'] = 0);
   assert (List.compare_lengths [] [1;2] < 0);
@@ -53,6 +56,11 @@ let () =
   assert (
     let count = ref 0 in
     List.concat_map (fun i -> incr count; [i; !count]) [1; 5] = [1; 1; 5; 2]);
+  assert (List.fold_left_map (fun a b -> a + b, b) 0 l = (45, l));
+  assert (List.fold_left_map (fun a b -> assert false) 0 [] = (0, []));
+  assert (
+    let f a b = a + b, string_of_int b in
+    List.fold_left_map f 0 l = (45, sl));
   ()
 ;;
 

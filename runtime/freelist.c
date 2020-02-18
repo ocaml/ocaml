@@ -50,7 +50,7 @@ value caml_fl_merge = Val_NULL;  /* Current insertion pointer.  Managed
 #define Next_small(v) Field ((v), 0)
 
 /* Next in memory order */
-static inline value Next_in_mem (value v) {
+Caml_inline value Next_in_mem (value v) {
   return (value) &Field ((v), Whsize_val (v));
 }
 
@@ -702,7 +702,7 @@ static void ff_reset (void)
 }
 
 /* Note: the [limit] parameter is unused because we merge blocks one by one. */
-header_t *ff_merge_block (value bp, char *limit)
+static header_t *ff_merge_block (value bp, char *limit)
 {
   value prev, cur, adj;
   header_t hd = Hd_val (bp);
@@ -894,7 +894,7 @@ typedef struct large_free_block {
   struct large_free_block *next;
 } large_free_block;
 
-static inline mlsize_t bf_large_wosize (struct large_free_block *n) {
+Caml_inline mlsize_t bf_large_wosize (struct large_free_block *n) {
   return Wosize_val((value)(n));
 }
 
@@ -910,10 +910,10 @@ static struct large_free_block *bf_large_least;
 
 /* Find first (i.e. least significant) bit set in a word. */
 #ifdef HAS_FFS
-/* Nothing to do */
+#include <strings.h>
 #elif defined(HAS_BITSCANFORWARD)
 #include <intrin.h>
-static inline int ffs (int x)
+Caml_inline int ffs (int x)
 {
   unsigned long index;
   unsigned char result;
@@ -921,10 +921,10 @@ static inline int ffs (int x)
   return result ? (int) index + 1 : 0;
 }
 #else
-static inline int ffs (int x)
+Caml_inline int ffs (int x)
 {
   /* adapted from Hacker's Delight */
-  int result, bnz, b0, b1, b2, b3, b4;
+  int bnz, b0, b1, b2, b3, b4;
   CAMLassert ((x & 0xFFFFFFFF) == x);
   x = x & -x;
   bnz = x != 0;
@@ -938,11 +938,11 @@ static inline int ffs (int x)
 #endif /* HAS_FFS or HAS_BITSCANFORWARD */
 
 /* Indexing starts at 1 because that's the minimum block size. */
-static inline void set_map (int index)
+Caml_inline void set_map (int index)
 {
   bf_small_map |= (1 << (index - 1));
 }
-static inline void unset_map (int index)
+Caml_inline void unset_map (int index)
 {
   bf_small_map &= ~(1 << (index - 1));
 }
@@ -1000,7 +1000,7 @@ static void bf_check (void)
     }else{
       CAMLassert (caml_gc_phase != Phase_sweep
                   || caml_fl_merge == Val_NULL
-                  || Val_bp (bf_small_fl[i].merge) < caml_fl_merge);
+                  || bf_small_fl[i].merge < &Next_small(caml_fl_merge));
     }
     CAMLassert (*bf_small_fl[i].merge == Val_NULL
                 || Color_val (*bf_small_fl[i].merge) == Caml_blue);
@@ -1083,7 +1083,7 @@ static large_free_block **bf_search (mlsize_t wosz)
   return p;
 }
 
-/* Search for the least node that is large enough to accomodate the given
+/* Search for the least node that is large enough to accommodate the given
    size. Return in [next_lower] an upper bound on either the size of the
    next-lower node in the tree, or BF_NUM_SMALL if there is no such node.
 */
@@ -1731,7 +1731,7 @@ static header_t *bf_merge_block (value bp, char *limit)
   while (wosz > Max_wosize){
     Hd_val (start) = Make_header (Max_wosize, 0, Caml_blue);
     bf_insert_sweep (start);
-    start = Next_small (start);
+    start = Next_in_mem (start);
     wosz -= Whsize_wosize (Max_wosize);
   }
   if (wosz > 0){

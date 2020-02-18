@@ -172,7 +172,7 @@ static void caml_thread_scan_roots(scanning_action action)
 
 /* Saving and restoring runtime state in curr_thread */
 
-static inline void caml_thread_save_runtime_state(void)
+Caml_inline void caml_thread_save_runtime_state(void)
 {
 #ifdef NATIVE_CODE
   curr_thread->top_of_stack = Caml_state->top_of_stack;
@@ -201,7 +201,7 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->memprof_suspended = caml_memprof_suspended;
 }
 
-static inline void caml_thread_restore_runtime_state(void)
+Caml_inline void caml_thread_restore_runtime_state(void)
 {
 #ifdef NATIVE_CODE
   Caml_state->top_of_stack = curr_thread->top_of_stack;
@@ -228,6 +228,7 @@ static inline void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
   caml_memprof_suspended = curr_thread->memprof_suspended;
+  caml_memprof_check_action_pending();
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */

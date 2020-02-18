@@ -761,7 +761,7 @@ let rec expression : Typedtree.expression -> term_judg =
       ]
     | Texp_override (pth, fields) ->
       (*
-         G |- pth : m   (Gi |- ei : m[Derefence])^i
+         G |- pth : m   (Gi |- ei : m[Dereference])^i
          ----------------------------------------------------
          G + sum(Gi)^i |- {< (xi = ei)^i >} (at path pth) : m
 
@@ -993,7 +993,7 @@ and module_binding : (Ident.t option * Typedtree.module_expr) -> bind_judg =
       *)
       let judg_E, env =
         match id with
-        | None -> modexp mexp << Ignore, env
+        | None -> modexp mexp << Guard, env
         | Some id ->
           let mM, env = Env.take id env in
           let judg_E = modexp mexp << (Mode.join mM Guard) in
@@ -1014,7 +1014,7 @@ and recursive_module_bindings
     let binding (mid, mexp) m =
       let judg_E =
         match mid with
-        | None -> modexp mexp << Ignore
+        | None -> modexp mexp << Guard
         | Some mid ->
           let mM = Env.find mid env in
           modexp mexp << (Mode.join mM Guard)
@@ -1144,8 +1144,9 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
    m' is the mode under which the scrutinee of p
    (the value matched against p) is placed.
 *)
-and case : Typedtree.case -> mode -> Env.t * mode =
-  fun { Typedtree.c_lhs; c_guard; c_rhs } ->
+and case
+    : 'k . 'k Typedtree.case -> mode -> Env.t * mode
+  = fun { Typedtree.c_lhs; c_guard; c_rhs } ->
     (*
        Ge |- e : m    Gg |- g : m[Dereference]
        G := Ge+Gg     p : mp -| G
@@ -1165,7 +1166,7 @@ and case : Typedtree.case -> mode -> Env.t * mode =
 
    m is the mode under which the scrutinee of p is placed.
 *)
-and pattern : pattern -> Env.t -> mode = fun pat env ->
+and pattern : type k . k general_pattern -> Env.t -> mode = fun pat env ->
   (*
     mp := | Dereference if p is destructuring
           | Guard       otherwise
@@ -1184,7 +1185,7 @@ and pattern : pattern -> Env.t -> mode = fun pat env ->
   in
   Mode.join m_pat m_env
 
-and is_destructuring_pattern : Typedtree.pattern -> bool =
+and is_destructuring_pattern : type k . k general_pattern -> bool =
   fun pat -> match pat.pat_desc with
     | Tpat_any -> false
     | Tpat_var (_, _) -> false
@@ -1195,10 +1196,11 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_variant _ -> true
     | Tpat_record (_, _) -> true
     | Tpat_array _ -> true
+    | Tpat_lazy _ -> true
+    | Tpat_value pat -> is_destructuring_pattern (pat :> pattern)
+    | Tpat_exception _ -> false
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
-    | Tpat_lazy _ -> true
-    | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
   let ty = expression expr Return in

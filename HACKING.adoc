@@ -38,21 +38,15 @@ make runtop
 make tests
 ----
 
-5. Install in a new opam switch to try things out:
-+
-----
-opam compiler-conf install
-----
-+
-With opam 2, create a local opam switch with the compiler installed from
-the current source directory:
+6. Install in a new opam switch to try things out. With `opam` v2, create a local
+opam switch with the compiler installed from the current source directory:
 +
 ----
 opam switch create . --empty
 opam install .
 ----
 
-6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
+7. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
 
 See our <<Development tips and tricks>> for various helpful details,
 for example on how to automatically <<opam compiler script,create an
@@ -206,13 +200,32 @@ has excellent documentation.
 
 == Development tips and tricks
 
-=== opam compiler script
+=== Keep merge commits when merging and cherry-picking Github PRs
 
-The separately-distributed script
-https://github.com/gasche/opam-compiler-conf[`opam-compiler-conf`] can
-be used to easily build opam switches out of a git branch of the
-compiler distribution. This lets you easily install and test opam
-packages from an under-modification compiler version.
+Having the Github PR number show up in the git log is very useful for
+later triaging. We recently disabled the "Rebase and merge" button,
+precisely because it does not produce a merge commit.
+
+When you cherry-pick a PR in another branch, please cherry-pick this
+merge-style commit rather than individual commits, whenever
+possible. (Picking a merge commit typically requires the `-m 1`
+option.) You should also use the `-x` option to include the hash of
+the original commit in the commit message.
+
+----
+git cherry-pick -x -m 1 <merge-commit-hash>
+----
+
+=== Testing with `opam`
+
+To test a particular branch `branch` of a public git repository
+`$REPO` of the compiler in an `opam` v2 switch issue:
+
+---
+opam switch create ocaml-branch --empty
+# Replace $VERSION by the trunk version
+opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
+---
 
 === Useful Makefile targets
 

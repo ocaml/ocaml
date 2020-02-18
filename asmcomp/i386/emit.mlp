@@ -200,7 +200,7 @@ let addressing addr typ i n =
 
 (* Record live pointers at call points *)
 
-let record_frame_label ?label live raise_ dbg =
+let record_frame_label ?label live dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -218,11 +218,11 @@ let record_frame_label ?label live raise_ dbg =
       | _ -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset dbg;
   lbl
 
-let record_frame ?label live raise_ dbg =
-  let lbl = record_frame_label ?label live raise_ dbg in
+let record_frame ?label live dbg =
+  let lbl = record_frame_label ?label live dbg in
   def_label lbl
 
 (* Record calls to the GC -- we've moved them out of the way *)
@@ -254,7 +254,7 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty (Dbg_other dbg) in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
     lbl_bound_error
@@ -540,11 +540,11 @@ let emit_instr fallthrough i =
       I.mov (immsym s) (reg i.res.(0))
   | Lop(Icall_ind { label_after; }) ->
       I.call (reg i.arg.(0));
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Icall_imm { func; label_after; }) ->
       add_used_symbol func;
       emit_call func;
-      record_frame i.live false i.dbg ~label:label_after
+      record_frame i.live (Dbg_other i.dbg) ~label:label_after
   | Lop(Itailcall_ind { label_after = _; }) ->
       output_epilogue begin fun () ->
         I.jmp (reg i.arg.(0))
@@ -563,7 +563,7 @@ let emit_instr fallthrough i =
       if alloc then begin
         I.mov (immsym func) eax;
         emit_call "caml_c_call";
-        record_frame i.live false i.dbg ~label:label_after
+        record_frame i.live (Dbg_other i.dbg) ~label:label_after
       end else begin
         emit_call func
       end
@@ -614,22 +614,24 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
+  | Lop(Ialloc { bytes = n; label_after_call_gc; dbginfo }) ->
       if !fastcode_flag then begin
-        let lbl_redo = new_label() in
-        def_label lbl_redo;
         load_domain_state ebx;
         I.mov (domain_field Domain_young_ptr RBX) eax;
         I.sub (int n) eax;
+        I.mov eax (domain_field Domain_young_ptr RBX);
         I.cmp (domain_field Domain_young_limit RBX) eax;
         let lbl_call_gc = new_label() in
-        let lbl_frame = record_frame_label i.live false Debuginfo.none in
+        let lbl_frame =
+          record_frame_label ?label:label_after_call_gc
+            i.live (Dbg_alloc dbginfo) in
         I.jb (label lbl_call_gc);
-        I.mov eax (domain_field Domain_young_ptr RBX);
+        let lbl_after_alloc = new_label() in
+        def_label lbl_after_alloc;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_redo;
+            gc_return_lbl = lbl_after_alloc;
             gc_frame = lbl_frame } :: !call_gc_sites
       end else begin
         begin match n with
@@ -641,8 +643,8 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         let label =
-          record_frame_label ?label:label_after_call_gc i.live false
-            Debuginfo.none
+          record_frame_label ?label:label_after_call_gc
+            i.live (Dbg_alloc dbginfo)
         in
         def_label label;
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0))
@@ -895,10 +897,10 @@ let emit_instr fallthrough i =
           load_domain_state ebx;
           I.mov (int 0) (domain_field Domain_backtrace_pos RBX);
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
+          record_frame Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
           emit_call "caml_raise_exn";
-          record_frame Reg.Set.empty true i.dbg
+          record_frame Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           load_domain_state ebx;
           I.mov (domain_field Domain_exception_pointer RBX) esp;
@@ -1019,6 +1021,7 @@ let end_assembly() =
   emit_frames
     { efa_code_label = (fun l -> D.long (ConstLabel (emit_label l)));
       efa_data_label = (fun l -> D.long (ConstLabel (emit_label l)));
+      efa_8 = (fun n -> D.byte (const n));
       efa_16 = (fun n -> D.word (const n));
       efa_32 = (fun n -> D.long (const_32 n));
       efa_word = (fun n -> D.long (const n));

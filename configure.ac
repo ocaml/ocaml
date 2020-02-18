@@ -129,6 +129,7 @@ AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
+AC_SUBST([ocamltest])
 AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
 AC_SUBST([x_libraries])
@@ -275,6 +276,10 @@ AC_ARG_ENABLE([ocamldoc],
     [do not build the ocamldoc documentation system])],
   [],
   [ocamldoc=auto])
+
+AC_ARG_ENABLE([ocamltest],
+  [AS_HELP_STRING([--disable-ocamltest],
+    [do not build the ocamltest driver])])
 
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
@@ -436,6 +441,9 @@ AS_CASE([$host],
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2) && ${RANLIB} \$(1)"
   ])
 
+## Find vendor of the C compiler
+OCAML_CC_VENDOR
+
 # Determine how to call the C preprocessor directly.
 # Most of the time, calling the C preprocessor through the C compiler is
 # desirable and even important.
@@ -447,8 +455,10 @@ AS_CASE([$host],
 # We thus figure out how to invoke the C preprocessor directly but
 # let the CPP variable untouched, except for the MSVC port where we set it
 # manually to make sure the backward compatibility is preserved
-AS_CASE([$host],
-  [*-pc-windows],
+AS_CASE([$ocaml_cv_cc_vendor],
+  [xlc-*],
+    [CPP="$CC -E -qnoppline"], # suppress incompatible XLC line directives
+  [msvc-*],
     [CPP="$CC -nologo -EP"])
 
 # Libraries to build depending on the host
@@ -513,22 +523,19 @@ AS_IF(
 ## Check for C99 support: done by libtool
 ## AC_PROG_CC_C99
 
-## Find vendor of the C compiler
-OCAML_CC_VENDOR
-
 ## Determine which flags to use for the C compiler
 
 AS_CASE([$ocaml_cv_cc_vendor],
   [xlc-*],
     [outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i"], # all warnings enabled
   [msvc-*],
-    [outputobj=-Fo; CPP="cl -nologo -EP"; gcc_warnings=""],
-  [outputobj='-o $(EMPTY)'; AS_CASE([AC_PACKAGE_VERSION],
+    [outputobj=-Fo; gcc_warnings=""],
+  [outputobj='-o $(EMPTY)'
+  gcc_warnings='-Wall -Wdeclaration-after-statement'
+  AS_CASE([AC_PACKAGE_VERSION],
     [*+dev*],
-      [gcc_warnings="-Wall -Werror"],
-    [gcc_warnings="-Wall"]
-  )]
-)
+      [gcc_warnings="$gcc_warnings -Werror"])
+  ])
 
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
@@ -556,7 +563,7 @@ AS_CASE([$host],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$gcc_warnings -fno-common"],
     [gcc-[012]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
@@ -576,7 +583,7 @@ AS_CASE([$host],
       internal_cflags="$gcc_warnings"],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$gcc_warnings"],
+      internal_cflags="$gcc_warnings -fno-common"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
@@ -750,14 +757,19 @@ AC_C_BIGENDIAN(
 
 AC_CHECK_ALIGNOF([double])
 AC_CHECK_ALIGNOF([long])
+AC_CHECK_ALIGNOF([long long])
 
 AS_IF([! $arch64],
   [AS_CASE([$target_cpu],
     [i686], [],
     [AS_IF([test "$ac_cv_alignof_double" -gt 4],
       [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
-    AS_IF([test "$ac_cv_alignof_long" -gt 4],
-      [AC_DEFINE([ARCH_ALIGN_LONG], [1])])
+     AS_IF([test "x$ac_cv_sizeof_long" = "x8" &&
+            test "$ac_cv_alignof_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_INT64], [1])],
+      [AS_IF([test "x$ac_cv_sizeof_long_long" = "x8" &&
+              test "$ac_cv_alignof_long_long" -gt 4],
+      [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
 # Shared library support
@@ -842,6 +854,8 @@ AS_CASE(["$CC,$host"],
     [OCAML_CC_HAS_FNO_TREE_VRP
     AS_IF([$cc_has_fno_tree_vrp],
       [internal_cflags="$internal_cflags -fno-tree-vrp"])])
+
+OCAML_CC_SUPPORTS_ALIGNED
 
 # Configure the native-code compiler
 
@@ -1070,7 +1084,7 @@ AC_CHECK_FUNC([secure_getenv],
   [AC_DEFINE([HAS_SECURE_GETENV])],
   [AC_CHECK_FUNC([__secure_getenv], [AC_DEFINE([HAS___SECURE_GETENV])])])
 
-CPP_FLAGS="$saved_CPPFLAGS"
+CPPFLAGS="$saved_CPPFLAGS"
 
 ## issetugid
 
@@ -1492,7 +1506,12 @@ AS_IF([test x"$with_bfd" != "xno"],
       [AS_IF([test -z "$BFD_INCLUDE_DIR"],
         [BFD_INCLUDE_DIR="/opt/local/include"])
       AS_IF([test -z "$BFD_LIB_DIR"],
-        [BFD_LIB_DIR="/opt/local/lib"])])
+        [BFD_LIB_DIR="/opt/local/lib"])],
+    [*-*openbsd*],
+      [AS_IF([test -z "$BFD_INCLUDE_DIR"],
+        [BFD_INCLUDE_DIR="/usr/local/include"])
+      AS_IF([test -z "$BFD_LIB_DIR"],
+        [BFD_LIB_DIR="/usr/local/lib"])])
   AS_IF([test -n "$BFD_INCLUDE_DIR"],
     [bfd_cppflags="-I$BFD_INCLUDE_DIR"])
   AS_IF([test -n "$BFD_LIB_DIR"],
@@ -1505,17 +1524,22 @@ AS_IF([test x"$with_bfd" != "xno"],
     [bfd_ldlibs=""
     AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd"])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr], [bfd_ldlibs="-lbfd -ldl"], [], [-ldl])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd $DLLIBS"], [], [$DLLIBS])])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty"], [], [-ldl -liberty])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd $DLLIBS -liberty"], [], [$DLLIBS -liberty])])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty -lz"], [], [-ldl -liberty -lz])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz"], [], [$DLLIBS -liberty -lz])])
     AS_IF([test -z "$bfd_ldlibs"],
-      [AC_CHECK_LIB([bfd], [bfd_openr],
-        [bfd_ldlibs="-lbfd -ldl -liberty -lz -lintl"], [],
-        [-ldl -liberty -lz -lintl])])
+      [unset ac_cv_lib_bfd_bfd_openr
+      AC_CHECK_LIB([bfd], [bfd_openr],
+        [bfd_ldlibs="-lbfd $DLLIBS -liberty -lz -lintl"], [],
+        [$DLLIBS -liberty -lz -lintl])])
     AS_IF([test -n "$bfd_ldlibs"],
       [bfd_available=true
       AC_DEFINE([HAS_LIBBFD])])])
@@ -1665,6 +1689,10 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
 
+AS_CASE([$enable_ocamltest,AC_PACKAGE_VERSION],
+  [yes,*|,*+dev*],[ocamltest='ocamltest'],
+  [ocamltest=''])
+
 AS_IF([test x"$enable_flambda" = "xyes"],
   [flambda=true
   AS_IF([test x"$enable_flambda_invariants" = "xyes"],
@@ -1681,7 +1709,7 @@ AS_IF([test x"$enable_flat_float_array" = "xno"],
 AS_IF([test x"$enable_function_sections" = "xno"],
   [function_sections=false],
   [AS_CASE([$arch],
-    [amd64|i386|arm|arm64],
+    [amd64|i386|arm64], # not supported on arm32, see issue #9124.
      [AS_CASE([$target],
         [*-cygwin*|*-mingw*|*-windows|*-apple-darwin*],
           [function_sections=false;
@@ -1716,9 +1744,9 @@ AS_IF([test x"$with_afl" = "xyes"],
   [afl=false])
 
 AS_IF([test x"$enable_force_safe_string" = "xno"],
+  [force_safe_string=false],
   [AC_DEFINE([CAML_SAFE_STRING])
-  force_safe_string=false],
-  [force_safe_string=true])
+   force_safe_string=true])
 
 AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
   [default_safe_string=false],
@@ -1781,7 +1809,11 @@ AS_IF([test x"$prefix" = "xNONE"],
     [i686-w64-mingw32], [prefix='C:/ocamlmgw'],
     [x86_64-w64-mingw32], [prefix='C:/ocamlmgw64'],
     [i686-pc-windows], [prefix='C:/ocamlms'],
-    [x86_64-pc-windows], [prefix='C:/ocamlms64'])])
+    [x86_64-pc-windows], [prefix='C:/ocamlms64'])],
+  [AS_IF([test x"$unix_or_win32" = "xwin32" \
+          && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ],
+    [AS_CASE([$build],
+      [*-pc-cygwin], [prefix=`cygpath -m "$prefix"`])])])
 
 # Define a few macros that were defined in config/m-nt.h
 # but whose value is not guessed properly by configure

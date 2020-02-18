@@ -15,6 +15,14 @@ Line 1, characters 12-76:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
+let rec x = let module _ = struct let _ = x () end in fun () -> ();;
+[%%expect{|
+Line 1, characters 12-66:
+1 | let rec x = let module _ = struct let _ = x () end in fun () -> ();;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of expression is not allowed as right-hand side of `let rec'
+|}];;
+
 let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
 [%%expect{|
 Line 1, characters 12-76:

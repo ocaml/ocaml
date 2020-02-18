@@ -106,8 +106,9 @@ let mk_function_sections f =
     "-function-sections", Arg.Unit err, " (option not available)"
 ;;
 
-let mk_stop_after f =
-  "-stop-after", Arg.Symbol (Clflags.Compiler_pass.pass_names, f),
+let mk_stop_after ~native f =
+  "-stop-after",
+  Arg.Symbol (Clflags.Compiler_pass.available_pass_names ~native, f),
   " Stop after the given compilation pass."
 ;;
 
@@ -705,6 +706,14 @@ let mk_dunique_ids f =
   "-dunique-ids", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dno_locations f =
+  "-dno-locations", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dlocations f =
+  "-dlocations", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dsource f =
   "-dsource", Arg.Unit f, " (undocumented)"
 ;;
@@ -921,6 +930,9 @@ module type Core_options = sig
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
+  val _dno_locations : unit -> unit
+  val _dlocations : unit -> unit
+
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
@@ -1141,7 +1153,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
-    mk_stop_after F._stop_after;
+    mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -1213,6 +1225,8 @@ struct
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1278,6 +1292,8 @@ struct
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1316,7 +1332,7 @@ struct
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_function_sections F._function_sections;
-    mk_stop_after F._stop_after;
+    mk_stop_after ~native:true F._stop_after;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -1405,6 +1421,8 @@ struct
     mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1677,12 +1695,14 @@ module Default = struct
     let _I dir = include_dirs := (dir :: (!include_dirs))
     let _color = Misc.set_or_ignore color_reader.parse color
     let _dlambda = set dump_lambda
-    let _dno_unique_ids = clear unique_ids
     let _dparsetree = set dump_parsetree
     let _drawlambda = set dump_rawlambda
     let _dsource = set dump_source
     let _dtypedtree = set dump_typedtree
     let _dunique_ids = set unique_ids
+    let _dno_unique_ids = clear unique_ids
+    let _dlocations = set locations
+    let _dno_locations = clear locations
     let _error_style =
       Misc.set_or_ignore error_style_reader.parse error_style
     let _nopervasives = set nopervasives
@@ -1813,11 +1833,7 @@ module Default = struct
     let _dump_into_file = set dump_into_file
     let _for_pack s = for_package := (Some s)
     let _g = set debug
-    let _i () =
-      print_types := true;
-      compile_only := true;
-      stop_after := (Some Compiler_pass.Typing);
-      ()
+    let _i = set print_types
     let _impl = impl
     let _intf = intf
     let _intf_suffix s = Config.interface_suffix := s
@@ -1839,9 +1855,11 @@ module Default = struct
         match P.of_string pass with
         | None -> () (* this should not occur as we use Arg.Symbol *)
         | Some pass ->
-            stop_after := (Some pass);
-            match pass with
-            | P.Parsing | P.Typing -> compile_only := true
+          match !stop_after with
+          | None -> stop_after := (Some pass)
+          | Some p ->
+            if not (p = pass) then
+              fatal "Please specify at most one -stop-after <pass>."
     let _thread = set use_threads
     let _verbose = set verbose
     let _version () = print_version_string ()

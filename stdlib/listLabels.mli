@@ -159,6 +159,13 @@ val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
     @since 4.10.0
 *)
 
+val fold_left_map :
+  f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b list -> 'a * 'c list
+(** [fold_left_map] is  a combination of [fold_left] and [map] hat threads an
+    accumulator through calls to [f]
+    @since 4.11.0
+*)
+
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)
@@ -265,6 +272,13 @@ val filter : f:('a -> bool) -> 'a list -> 'a list
 
 val find_all : f:('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!List.filter}. *)
+
+val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
+(** Same as {!List.filter}, but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.11.0
+*)
 
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition p l] returns a pair of lists [(l1, l2)], where

@@ -467,8 +467,8 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
-                                        int raise_oom, uintnat profinfo)
+Caml_inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag, int track,
+                                      int raise_oom, uintnat profinfo)
 {
   header_t *hp;
   value *new_block;
@@ -664,7 +664,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
             major GC treats it as an additional root.
 
      The logic implemented below is duplicated in caml_array_fill to
-     avoid repated calls to caml_modify and repeated tests on the
+     avoid repeated calls to caml_modify and repeated tests on the
      values.  Don't forget to update caml_array_fill if the logic
      below changes!
   */
@@ -883,6 +883,8 @@ CAMLexport void caml_stat_free(caml_stat_block b)
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
 {
+  if(b == NULL)
+    return caml_stat_alloc_noexc(sz);
   /* Backward compatibility mode */
   if (pool == NULL)
     return realloc(b, sz);

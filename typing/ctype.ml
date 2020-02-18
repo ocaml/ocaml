@@ -533,6 +533,26 @@ exception Non_closed of type_expr * bool
 let free_variables = ref []
 let really_closed = ref None
 
+(* [free_vars_rec] collects the variables of the input type
+   expression into the [free_variables] reference. It is used for
+   several different things in the type-checker, with the following
+   bells and whistles:
+   - If [really_closed] is Some typing environment, types in the environment
+     are expanded to check whether the apparently-free variable would vanish
+     during expansion.
+   - We collect both type variables and row variables, paired with a boolean
+     that is [true] if we have a row variable.
+   - We do not count "virtual" free variables -- free variables stored in
+     the abbreviation of an object type that has been expanded (we store
+     the abbreviations for use when displaying the type).
+
+   The functions [free_vars] and [free_variables] below receive
+   a typing environment as an optional [?env] parameter and
+   set [really_closed] accordingly.
+   [free_vars] returns a [(variable * bool) list], while
+   [free_variables] drops the type/row information
+   and only returns a [variable list].
+ *)
 let rec free_vars_rec real ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
@@ -1235,6 +1255,7 @@ let new_declaration expansion_scope manifest =
     type_private = Public;
     type_manifest = manifest;
     type_variance = [];
+    type_separability = [];
     type_is_newtype = true;
     type_expansion_scope = expansion_scope;
     type_loc = Location.none;
@@ -1971,32 +1992,35 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
 
 let univar_pairs = ref []
 
-(* assumption: [ty] is fully generalized. *)
-let reify_univars ty =
-  let rec subst_univar scope vars ty =
-    let ty = repr ty in
-    if ty.level >= lowest_level then begin
-      ty.level <- pivot_level - ty.level;
-      match ty.desc with
-      | Tvar name ->
-          For_copy.save_desc scope ty ty.desc;
-          let t = newty2 ty.level (Tunivar name) in
-          vars := t :: !vars;
-          ty.desc <- Tsubst t
-      | _ ->
-          iter_type_expr (subst_univar scope vars) ty
-    end
-  in
-  let vars = ref [] in
-  let ty =
-    For_copy.with_scope (fun scope ->
-      subst_univar scope vars ty;
-      unmark_type ty;
-      copy scope ty
-    )
-  in
-  newty2 ty.level (Tpoly(repr ty, !vars))
+(**** Instantiate a generic type into a poly type ***)
 
+let polyfy env ty vars =
+  let subst_univar scope ty =
+    let ty = repr ty in
+    match ty.desc with
+    | Tvar name when ty.level = generic_level ->
+        For_copy.save_desc scope ty ty.desc;
+        let t = newty (Tunivar name) in
+        ty.desc <- Tsubst t;
+        Some t
+    | _ -> None
+  in
+  (* need to expand twice? cf. Ctype.unify2 *)
+  let vars = List.map (expand_head env) vars in
+  let vars = List.map (expand_head env) vars in
+  For_copy.with_scope (fun scope ->
+    let vars' = List.filter_map (subst_univar scope) vars in
+    let ty = copy scope ty in
+    let ty = newty2 ty.level (Tpoly(repr ty, vars')) in
+    let complete = List.length vars = List.length vars' in
+    ty, complete
+  )
+
+(* assumption: [ty] is fully generalized. *)
+let reify_univars env ty =
+  let vars = free_variables ty in
+  let ty, _ = polyfy env ty vars in
+  ty
 
                               (*****************)
                               (*  Unification  *)
@@ -2830,7 +2854,8 @@ and unify_row env row1 row2 =
   end;
   let fixed1 = fixed_explanation row1 and fixed2 = fixed_explanation row2 in
   let more = match fixed1, fixed2 with
-    | Some _, _ -> rm1
+    | Some _, Some _ -> if rm2.level < rm1.level then rm2 else rm1
+    | Some _, None -> rm1
     | None, Some _ -> rm2
     | None, None -> newty2 (min rm1.level rm2.level) (Tvar None)
   in
@@ -2901,7 +2926,7 @@ and unify_row env row1 row2 =
     set_more row1 r2;
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env fixed1 fixed2 more l f1 f2
+        try unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2
         with Unify trace ->
           raise Trace.( Unify( Variant (Incompatible_types_for l) :: trace ))
       )
@@ -2914,7 +2939,7 @@ and unify_row env row1 row2 =
     set_type_desc rm1 md1; set_type_desc rm2 md2; raise exn
   end
 
-and unify_row_field env fixed1 fixed2 more l f1 f2 =
+and unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   let if_not_fixed (pos,fixed) f =
     match fixed with
@@ -2949,13 +2974,13 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
             List.iter (unify env t1) tl;
             !e1 <> None || !e2 <> None
         end in
-      if redo then unify_row_field env fixed1 fixed2 more l f1 f2 else
+      if redo then unify_row_field env fixed1 fixed2 rm1 rm2 l f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
             if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
-      let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
       (* PR#6744 *)
       let split_univars =
         List.partition
@@ -2972,13 +2997,18 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       end;
       (* Is this handling of levels really principal? *)
       List.iter (fun ty ->
-        let rm = repr more in
+        let rm = repr rm2 in
         update_level !env rm.level ty;
         update_scope rm.scope ty;
-      ) (tl1' @ tl2');
+      ) tl1';
+      List.iter (fun ty ->
+        let rm = repr rm1 in
+        update_level !env rm.level ty;
+        update_scope rm.scope ty;
+      ) tl2';
       let e = ref None in
-      let f1' = Reither(c1 || c2, tl1', m1 || m2, e)
-      and f2' = Reither(c1 || c2, tl2', m1 || m2, e) in
+      let f1' = Reither(c1 || c2, tl2', m1 || m2, e)
+      and f2' = Reither(c1 || c2, tl1', m1 || m2, e) in
       set_row_field e1 f1'; set_row_field e2 f2';
   | Reither(_, _, false, e1), Rabsent ->
       if_not_fixed first (fun () -> set_row_field e1 f2)
@@ -2988,7 +3018,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Reither(false, tl, _, e1), Rpresent(Some t2) ->
       if_not_fixed first (fun () ->
           set_row_field e1 f2;
-          let rm = repr more in
+          let rm = repr rm1 in
           update_level !env rm.level t2;
           update_scope rm.scope t2;
           (try List.iter (fun t1 -> unify env t1 t2) tl
@@ -2997,7 +3027,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Rpresent(Some t1), Reither(false, tl, _, e2) ->
       if_not_fixed second (fun () ->
           set_row_field e2 f1;
-          let rm = repr more in
+          let rm = repr rm2 in
           update_level !env rm.level t1;
           update_scope rm.scope t1;
           (try List.iter (unify env t1) tl
@@ -4641,6 +4671,7 @@ let nondep_type_decl env mid is_covariant decl =
       type_manifest = tm;
       type_private = priv;
       type_variance = decl.type_variance;
+      type_separability = decl.type_separability;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
       type_loc = decl.type_loc;

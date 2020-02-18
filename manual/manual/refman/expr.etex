@@ -1,4 +1,4 @@
-\section{Expressions\label{s:value-expr}}
+\section{s:value-expr}{Expressions}
 %HEVEA\cutname{expr.html}
 \ikwd{in\@\texttt{in}|see{\texttt{let}}}
 \ikwd{and\@\texttt{and}}
@@ -63,24 +63,14 @@ expr:
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
   | "let" "exception" constr-decl "in" expr
-  | 'new' class-path
-  | 'object' class-body 'end'
-  | expr '#' method-name
-  | inst-var-name
-  | inst-var-name '<-' expr
-  | '(' expr ':>' typexpr ')'
-  | '(' expr ':' typexpr ':>' typexpr ')'
-  | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
-  | 'assert' expr
-  | 'lazy' expr
   | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
     [ ':' module-type ] \\ '=' module-expr 'in' expr
-  | "let" "open" module-path "in" expr
-  | module-path '.(' expr ')'
-  | module-path '.[' expr ']'
-  | module-path '.[|' expr '|]'
-  | module-path '.{' expr '}'
-  | module-path '.{<' expr '>}'
+  | '(' expr ':>' typexpr ')'
+  | '(' expr ':' typexpr ':>' typexpr ')'
+  | 'assert' expr
+  | 'lazy' expr
+  | local-open
+  | object-expr
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -111,16 +101,32 @@ parameter:
   | '?' '(' label-name [':' typexpr] ['=' expr] ')'
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
+;
+local-open:
+  | "let" "open" module-path "in" expr
+  | module-path '.(' expr ')'
+  | module-path '.[' expr ']'
+  | module-path '.[|' expr '|]'
+  | module-path '.{' expr '}'
+  | module-path '.{<' expr '>}'
+;
+object-expr:
+  | 'new' class-path
+  | 'object' class-body 'end'
+  | expr '#' method-name
+  | inst-var-name
+  | inst-var-name '<-' expr
+  | '{<' [ inst-var-name ['=' expr] { ';' inst-var-name ['=' expr] } [';'] ] '>}'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
 \hyperref[s:attributes]{attributes},
 \hyperref[s:extension-nodes]{extension nodes} and
 \hyperref[s:index-operators]{extended indexing operators}.
 
-\subsection{Precedence and associativity}
+\subsection{ss:precedence-and-associativity}{Precedence and associativity}
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
 precedence come first. For infix and prefix symbols, we write
@@ -165,19 +171,19 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"let  match  fun  function  try"}{--}
 \end{tableau}
 
-\subsection{Basic expressions}
+\subsection{ss:expr-basic}{Basic expressions}
 
-\subsubsection*{Constants}
+\subsubsection*{sss:expr-constants}{Constants}
 
 An expression consisting in a constant evaluates to this constant.
 
-\subsubsection*{Value paths} \label{expr:var}
+\subsubsection*{sss:expr-var}{Value paths}
 
 An expression consisting in an access path evaluates to the value bound to
 this path in the current evaluation environment. The path can
 be either a value name or an access path to a value component of a module.
 
-\subsubsection*{Parenthesized expressions}
+\subsubsection*{sss:expr-parenthesized}{Parenthesized expressions}
 \ikwd{begin\@\texttt{begin}}
 \ikwd{end\@\texttt{end}}
 
@@ -195,10 +201,10 @@ compatible with @typexpr@.
 
 Parenthesized expressions can also contain coercions
 @'(' expr [':' typexpr] ':>' typexpr')'@ (see
-subsection~\ref{s:coercions} below).
+subsection~\ref{ss:expr-coercions} below).
 
 
-\subsubsection*{Function application}
+\subsubsection*{sss:expr-functions-application}{Function application}
 
 Function application is denoted by juxtaposition of (possibly labeled)
 expressions. The expression @expr argument_1 \ldots argument_n@
@@ -240,7 +246,7 @@ parameters, the function type should be known at the application
 point.  This can be ensured by adding a type constraint.  Principality
 of the derivation can be checked in the "-principal" mode.
 
-\subsubsection*{Function definition}
+\subsubsection*{sss:expr-function-definition}{Function definition}
 
 Two syntactic forms are provided to define functions. The first form
 is introduced by the keyword "function":
@@ -332,7 +338,7 @@ If the matching succeeds, the function returns the value of @expr@ in
 an environment enriched by the bindings performed during the matchings.
 If the matching fails, the exception "Match_failure" is raised.
 
-\subsubsection*{Guards in pattern-matchings}
+\subsubsection*{sss:guards-in-pattern-matchings}{Guards in pattern-matchings}
 
 \ikwd{when\@\texttt{when}}
 The cases of a pattern matching (in the @"function"@, @"match"@ and
@@ -356,7 +362,7 @@ then @expr_i@ is evaluated and its value returned as the result of the
 matching, as usual. But if @@cond@_i@ evaluates to "false", the matching
 is resumed against the patterns following @pattern_i@.
 
-\subsubsection*{Local definitions} \label{s:localdef}
+\subsubsection*{sss:expr-localdef}{Local definitions}
 
 \ikwd{let\@\texttt{let}}
 
@@ -416,7 +422,7 @@ The behavior of other forms of @"let" "rec"@ definitions is
 implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
-\subsubsection{Explicit polymorphic type annotations}
+\subsubsection{sss:expr-explicit-polytype}{Explicit polymorphic type annotations}
 (Introduced in OCaml 3.12)
 
 Polymorphic type annotations in @"let"@-definitions behave in a way
@@ -444,14 +450,14 @@ true:
   let () = assert(gen () <> gen ())
 \end{verbatim}
 
-\subsection{Control structures}
+\subsection{ss:expr-control}{Control structures}
 
-\subsubsection*{Sequence}
+\subsubsection*{sss:expr-sequence}{Sequence}
 
 The expression @expr_1 ";" expr_2@ evaluates @expr_1@ first, then
 @expr_2@, and returns the value of @expr_2@.
 
-\subsubsection*{Conditional}
+\subsubsection*{sss:expr-conditional}{Conditional}
 \ikwd{if\@\texttt{if}}
 
 The expression @"if" expr_1 "then" expr_2 "else" expr_3@ evaluates to
@@ -462,7 +468,7 @@ and to the value of @expr_3@ if @expr_1@ evaluates to the boolean
 The @"else" expr_3@ part can be omitted, in which case it defaults to
 @"else" "()"@.
 
-\subsubsection*{Case expression}\ikwd{match\@\texttt{match}}
+\subsubsection*{sss:expr-case}{Case expression}\ikwd{match\@\texttt{match}}
 
 The expression
 $$\begin{array}{rlll}
@@ -483,7 +489,7 @@ exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
 
-\subsubsection*{Boolean operators}
+\subsubsection*{sss:expr-boolean-operators}{Boolean operators}
 
 The expression @expr_1 '&&' expr_2@ evaluates to @'true'@ if both
 @expr_1@ and @expr_2@ evaluate to @'true'@; otherwise, it evaluates to
@@ -510,7 +516,7 @@ exactly as
 The boolean operators @'&'@ and @'or'@ are deprecated synonyms for
 (respectively) @'&&'@ and @'||'@.
 
-\subsubsection*{Loops}
+\subsubsection*{sss:expr-loops}{Loops}
 
 \ikwd{while\@\texttt{while}}
 The expression @'while' expr_1 'do' expr_2 'done'@ repeatedly
@@ -538,7 +544,7 @@ evaluates similarly, except that @name@ is successively bound to the values
 In both cases, the whole @'for'@ expression evaluates to the unit
 value @'()'@.
 
-\subsubsection*{Exception handling}
+\subsubsection*{sss:expr-exception-handling}{Exception handling}
 \ikwd{try\@\texttt{try}}
 
 The expression
@@ -561,15 +567,15 @@ selected. If none of the patterns matches the value of @expr@, the
 exception value is raised again, thereby transparently ``passing
 through'' the @'try'@ construct.
 
-\subsection{Operations on data structures}
+\subsection{ss:expr-ops-on-data}{Operations on data structures}
 
-\subsubsection*{Products}
+\subsubsection*{sss:expr-products}{Products}
 
 The expression @expr_1 ',' \ldots ',' expr_n@ evaluates to the
 \var{n}-tuple of the values of expressions @expr_1@ to @expr_n@. The
 evaluation order of the subexpressions is not specified.
 
-\subsubsection*{Variants}
+\subsubsection*{sss:expr-variants}{Variants}
 
 The expression @constr expr@ evaluates to the unary variant value
 whose constructor is @constr@, and whose argument is the value of
@@ -591,12 +597,12 @@ expr_n ']'@ is equivalent to @expr_1 '::' \ldots '::' expr_n '::'
 '[]'@, and therefore evaluates to the list whose elements are the
 values of @expr_1@ to @expr_n@.
 
-\subsubsection*{Polymorphic variants}
+\subsubsection*{sss:expr-polyvars}{Polymorphic variants}
 
 The expression @"`"tag-name expr@ evaluates to the polymorphic variant
 value whose tag is @tag-name@, and whose argument is the value of @expr@.
 
-\subsubsection*{Records}
+\subsubsection*{sss:expr-records}{Records}
 
 The expression @'{' field_1 ['=' expr_1] ';' \ldots ';' field_n ['='
 expr_n ']}'@ evaluates to the record value
@@ -641,7 +647,7 @@ declared @'mutable'@ in the definition of the record type. The whole
 expression @expr_1 '.' field '<-' expr_2@ evaluates to the unit value
 @'()'@.
 
-\subsubsection*{Arrays}
+\subsubsection*{sss:expr-arrays}{Arrays}
 
 The expression @'[|' expr_1 ';' \ldots ';' expr_n '|]'@ evaluates to
 a \var{n}-element array, whose elements are initialized with the values of
@@ -659,7 +665,7 @@ the array denoted by @expr_1@, replacing element number @expr_2@ by
 the value of @expr_3@. The exception "Invalid_argument" is raised if
 the access is out of bounds. The value of the whole expression is @'()'@.
 
-\subsubsection*{Strings}
+\subsubsection*{sss:expr-strings}{Strings}
 
 The expression @expr_1 '.[' expr_2 ']'@ returns the value of character
 number @expr_2@ in the string denoted by @expr_1@. The first character
@@ -677,7 +683,7 @@ compatibility with older versions of OCaml and will be removed in a
 future version. New code should use byte sequences and the "Bytes.set"
 function.
 
-\subsection{Operators}
+\subsection{ss:expr-operators}{Operators}
 \ikwd{mod\@\texttt{mod}}
 \ikwd{land\@\texttt{land}}
 \ikwd{lor\@\texttt{lor}}
@@ -765,9 +771,9 @@ interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
 \entree{"||   or"}{Boolean disjunction.}
 \end{tableau}
 
-\subsection{Objects}  \label{s:objects}
+\subsection{ss:expr-obj}{Objects}  \label{s:objects}
 
-\subsubsection*{Object creation}
+\subsubsection*{sss:expr-obj-creation}{Object creation}
 
 \ikwd{new\@\texttt{new}}
 
@@ -779,14 +785,14 @@ When @class-path@ evaluates to a class function, @'new' class-path@
 evaluates to a function expecting the same number of arguments and
 returning a new object of this class.
 
-\subsubsection*{Immediate object creation}
+\subsubsection*{sss:expr-obj-immediate}{Immediate object creation}
 
 \ikwd{object\@\texttt{object}}
 
 Creating directly an object through the @'object' class-body 'end'@
 construct is operationally equivalent to defining locally a @'class'
 class-name '=' 'object' class-body 'end'@ ---see sections
-\ref{ss:class-body} and following for the syntax of @class-body@---
+\ref{sss:class-body} and following for the syntax of @class-body@---
 and immediately creating a single object from it by @'new' class-name@.
 
 The typing of immediate objects is slightly different from explicitly
@@ -795,7 +801,7 @@ contain free type variables. Second, since the class body of an
 immediate object will never be extended, its self type can be unified
 with a closed object type.
 
-\subsubsection*{Method invocation}
+\subsubsection*{sss:expr-method}{Method invocation}
 
 The expression @expr '#' method-name@ invokes the method
 @method-name@ of the object denoted by @expr@.
@@ -806,7 +812,7 @@ of a fresh object (@'let' ident = 'new' class-path \dots @) or if
 there is a type constraint.  Principality of the derivation can be
 checked in the "-principal" mode.
 
-\subsubsection*{Accessing and modifying instance variables}
+\subsubsection*{sss:expr-obj-variables}{Accessing and modifying instance variables}
 
 The instance variables of a class are visible only in the body of the
 methods defined in the same class or a class that inherits from the
@@ -817,7 +823,7 @@ variable @inst-var-name@, which must be mutable.  The whole expression
 @inst-var-name '<-' expr@ evaluates to @"()"@.
 
 
-\subsubsection*{Object duplication}
+\subsubsection*{sss:expr-obj-duplication}{Object duplication}
 
 An object can be duplicated using the library function "Oo.copy"
 (see module \stdmoduleref{Oo}). Inside a method, the expression
@@ -827,7 +833,7 @@ the values of the associated expressions. A single instance variable
 name @id@ stands for @id '=' id@. Other instance variables have the same
 value in the returned object as in self.
 
-\subsection{Coercions} \label{s:coercions}
+\subsection{ss:expr-coercions}{Coercions}
 
 Expressions whose type contains object or polymorphic variant types
 can be explicitly coerced (weakened) to a supertype.
@@ -863,7 +869,7 @@ some instance of @typ_2@.
 %
 In the following paragraphs we describe the subtyping relation used.
 
-\subsubsection*{Object types}
+\subsubsection*{sss:expr-obj-types}{Object types}
 
 A fixed object type admits as subtype any object type that includes all
 its methods. The types of the methods shall be subtypes of those in
@@ -891,7 +897,7 @@ type of its class: this is allowed if the type of @@self@@ does not
 appear in a contravariant position in the class type, {\em i.e.} if
 there are no binary methods.
 
-\subsubsection*{Polymorphic variant types}
+\subsubsection*{sss:expr-polyvar-types}{Polymorphic variant types}
 
 A polymorphic variant type @typ@ is a subtype of another polymorphic
 variant type @typ@$'$ if the upper bound of @typ@ ({\em i.e.} the
@@ -910,7 +916,7 @@ which may be a shrinkable type, is a subtype of
 \end{center}
 which may be an extensible type, if every @typ_i@ is a subtype of @typ@$'_i$.
 
-\subsubsection*{Variance}
+\subsubsection*{sss:expr-variance}{Variance}
 
 Other types do not introduce new subtyping, but they may propagate the
 subtyping of their arguments. For instance, @typ_1 "*" typ_2@ is a
@@ -933,14 +939,14 @@ A variance-free parameter may change freely through subtyping, it does
 not have to be a subtype or a supertype.
 %
 For abstract and private types, the variance must be given explicitly
-(see section~\ref{s:type-defs}),
+(see section~\ref{ss:typedefs}),
 otherwise the default is nonvariant. This is also the case for
 constrained arguments in type definitions.
 
 
-\subsection{Other}
+\subsection{ss:expr-other}{Other}
 
-\subsubsection*{Assertion checking}
+\subsubsection*{sss:expr-assertion}{Assertion checking}
 
 
 \ikwd{assert\@\texttt{assert}}
@@ -963,7 +969,7 @@ the @"assert false"@ ``assertions'' cannot be turned off by the
 %
 \index{Assertfailure\@\verb`Assert_failure`}
 
-\subsubsection*{Lazy expressions}
+\subsubsection*{sss:expr-lazy}{Lazy expressions}
 \ikwd{lazy\@\texttt{lazy}}
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
@@ -972,9 +978,9 @@ evaluated at this point in the program.  Instead, its evaluation will
 be performed the first time the function "Lazy.force" is applied to the value
 \var{v}, returning the actual value of @expr@. Subsequent applications
 of "Lazy.force" to \var{v} do not evaluate @expr@ again. Applications
-of "Lazy.force" may be implicit through pattern matching (see~\ref{s:lazypat}).
+of "Lazy.force" may be implicit through pattern matching (see~\ref{sss:pat-lazy}).
 
-\subsubsection*{Local modules}
+\subsubsection*{sss:expr-local-modules}{Local modules}
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{module}}
 
@@ -992,7 +998,7 @@ let remove_duplicates comparison_fun string_list =
     (List.fold_right StringSet.add string_list StringSet.empty)
 \end{caml_example}
 
-\subsubsection*{Local opens}
+\subsubsection*{sss:local-opens}{Local opens}
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{open}}
 

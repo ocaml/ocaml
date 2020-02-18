@@ -124,15 +124,37 @@ let store_escaped_char lexbuf c =
 let store_escaped_uchar lexbuf u =
   if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
 
-let with_comment_buffer comment lexbuf =
+let compute_quoted_string_idloc {Location.loc_start = orig_loc } shift id =
+  let id_start_pos = orig_loc.Lexing.pos_cnum + shift in
+  let loc_start =
+    Lexing.{orig_loc with pos_cnum = id_start_pos }
+  in
+  let loc_end =
+    Lexing.{orig_loc with pos_cnum = id_start_pos + String.length id}
+  in
+  {Location. loc_start ; loc_end ; loc_ghost = false }
+
+let wrap_string_lexer f lexbuf =
+  let loc_start = lexbuf.lex_curr_p in
+  reset_string_buffer();
+  is_in_string := true;
+  let string_start = lexbuf.lex_start_p in
+  string_start_loc := Location.curr lexbuf;
+  let loc_end = f lexbuf in
+  is_in_string := false;
+  lexbuf.lex_start_p <- string_start;
+  let loc = Location.{loc_ghost= false; loc_start; loc_end} in
+  get_stored_string (), loc
+
+let wrap_comment_lexer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
   comment_start_loc := [start_loc];
   reset_string_buffer ();
   let end_loc = comment lexbuf in
   let s = get_stored_string () in
   reset_string_buffer ();
-  let loc = { start_loc with Location.loc_end = end_loc.Location.loc_end } in
-  s, loc
+  s,
+  { start_loc with Location.loc_end = end_loc.Location.loc_end }
 
 let error lexbuf e = raise (Error(e, Location.curr lexbuf))
 let error_loc loc e = raise (Error(e, loc))
@@ -316,6 +338,9 @@ let dotsymbolchar =
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
+let ident = (lowercase | uppercase) identchar*
+let extattrident = ident ('.' ident)*
+
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_digit =
@@ -389,23 +414,31 @@ rule token = parse
   | (float_literal | hex_float_literal | int_literal) identchar+ as invalid
       { error lexbuf (Invalid_literal invalid) }
   | "\""
-      { reset_string_buffer();
-        is_in_string := true;
-        let string_start = lexbuf.lex_start_p in
-        string_start_loc := Location.curr lexbuf;
-        string lexbuf;
-        is_in_string := false;
-        lexbuf.lex_start_p <- string_start;
-        STRING (get_stored_string(), None) }
+      { let s, loc = wrap_string_lexer string lexbuf in
+        STRING (s, loc, None) }
   | "{" (lowercase* as delim) "|"
-      { reset_string_buffer();
-        is_in_string := true;
-        let string_start = lexbuf.lex_start_p in
-        string_start_loc := Location.curr lexbuf;
-        quoted_string delim lexbuf;
-        is_in_string := false;
-        lexbuf.lex_start_p <- string_start;
-        STRING (get_stored_string(), Some delim) }
+      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
+        STRING (s, loc, Some delim) }
+  | "{%" (extattrident as id) "|"
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 2 id in
+        QUOTED_STRING_EXPR (id, idloc, s, loc, Some "") }
+  | "{%" (extattrident as id) blank+ (lowercase* as delim) "|"
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 2 id in
+        QUOTED_STRING_EXPR (id, idloc, s, loc, Some delim) }
+  | "{%%" (extattrident as id) "|"
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 3 id in
+        QUOTED_STRING_ITEM (id, idloc, s, loc, Some "") }
+  | "{%%" (extattrident as id) blank+ (lowercase* as delim) "|"
+      { let orig_loc = Location.curr lexbuf in
+        let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
+        let idloc = compute_quoted_string_idloc orig_loc 3 id in
+        QUOTED_STRING_ITEM (id, idloc, s, loc, Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         (* newline is ('\013'* '\010') *)
@@ -423,10 +456,10 @@ rule token = parse
   | "\'" ("\\" _ as esc)
       { error lexbuf (Illegal_escape (esc, None)) }
   | "(*"
-      { let s, loc = with_comment_buffer comment lexbuf in
+      { let s, loc = wrap_comment_lexer comment lexbuf in
         COMMENT (s, loc) }
   | "(**"
-      { let s, loc = with_comment_buffer comment lexbuf in
+      { let s, loc = wrap_comment_lexer comment lexbuf in
         if !handle_docstrings then
           DOCSTRING (Docstrings.docstring s loc)
         else
@@ -434,7 +467,7 @@ rule token = parse
       }
   | "(**" (('*'+) as stars)
       { let s, loc =
-          with_comment_buffer
+          wrap_comment_lexer
             (fun lexbuf ->
                store_string ("*" ^ stars);
                comment lexbuf)
@@ -444,7 +477,7 @@ rule token = parse
   | "(*)"
       { if !print_warnings then
           Location.prerr_warning (Location.curr lexbuf) Warnings.Comment_start;
-        let s, loc = with_comment_buffer comment lexbuf in
+        let s, loc = wrap_comment_lexer comment lexbuf in
         COMMENT (s, loc) }
   | "(*" (('*'*) as stars) "*)"
       { if !handle_docstrings && stars="" then
@@ -575,7 +608,7 @@ and comment = parse
         string_start_loc := Location.curr lexbuf;
         store_string_char '\"';
         is_in_string := true;
-        begin try string lexbuf
+        let _loc = try string lexbuf
         with Error (Unterminated_string, str_start) ->
           match !comment_start_loc with
           | [] -> assert false
@@ -583,16 +616,16 @@ and comment = parse
             let start = List.hd (List.rev !comment_start_loc) in
             comment_start_loc := [];
             error_loc loc (Unterminated_string_in_comment (start, str_start))
-        end;
+        in
         is_in_string := false;
         store_string_char '\"';
         comment lexbuf }
-  | "{" (lowercase* as delim) "|"
+  | "{" ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
       {
         string_start_loc := Location.curr lexbuf;
         store_lexeme lexbuf;
         is_in_string := true;
-        begin try quoted_string delim lexbuf
+        let _loc = try quoted_string delim lexbuf
         with Error (Unterminated_string, str_start) ->
           match !comment_start_loc with
           | [] -> assert false
@@ -600,13 +633,12 @@ and comment = parse
             let start = List.hd (List.rev !comment_start_loc) in
             comment_start_loc := [];
             error_loc loc (Unterminated_string_in_comment (start, str_start))
-        end;
+        in
         is_in_string := false;
         store_string_char '|';
         store_string delim;
         store_string_char '}';
         comment lexbuf }
-
   | "\'\'"
       { store_lexeme lexbuf; comment lexbuf }
   | "\'" newline "\'"
@@ -637,14 +669,14 @@ and comment = parse
         store_lexeme lexbuf;
         comment lexbuf
       }
-  | (lowercase | uppercase) identchar *
+  | ident
       { store_lexeme lexbuf; comment lexbuf }
   | _
       { store_lexeme lexbuf; comment lexbuf }
 
 and string = parse
     '\"'
-      { () }
+      { lexbuf.lex_start_p }
   | '\\' newline ([' ' '\t'] * as space)
       { update_loc lexbuf None 1 false (String.length space);
         if in_comment () then store_lexeme lexbuf;
@@ -701,7 +733,7 @@ and quoted_string delim = parse
         error_loc !string_start_loc Unterminated_string }
   | "|" (lowercase* as edelim) "}"
       {
-        if delim = edelim then ()
+        if delim = edelim then lexbuf.lex_start_p
         else (store_lexeme lexbuf; quoted_string delim lexbuf)
       }
   | (_ as c)

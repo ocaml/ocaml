@@ -150,6 +150,7 @@ build-aux/install text eol=lf
 build-aux/missing text eol=lf
 ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
+ocamltest/ocamltest.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
 tools/ci/inria/remove-sinh-primitive.patch text eol=lf
@@ -167,6 +168,7 @@ tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/m.h.in text eol=lf
 runtime/caml/s.h.in text eol=lf
+runtime/caml/compatibility.h typo.long-line=may
 
 # These are all Perl scripts, so may not actually require this
 manual/tools/caml-tex text eol=lf

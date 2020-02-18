@@ -21,8 +21,7 @@ open Typedtree
 type mapper =
   {
     binding_op: mapper -> binding_op -> binding_op;
-    case: mapper -> case -> case;
-    cases: mapper -> case list -> case list;
+    case: 'k . mapper -> 'k case -> 'k case;
     class_declaration: mapper -> class_declaration -> class_declaration;
     class_description: mapper -> class_description -> class_description;
     class_expr: mapper -> class_expr -> class_expr;
@@ -46,7 +45,7 @@ type mapper =
     module_type_declaration:
       mapper -> module_type_declaration -> module_type_declaration;
     package_type: mapper -> package_type -> package_type;
-    pat: mapper -> pattern -> pattern;
+    pat: 'k . mapper -> 'k general_pattern -> 'k general_pattern;
     row_field: mapper -> row_field -> row_field;
     object_field: mapper -> object_field -> object_field;
     open_declaration: mapper -> open_declaration -> open_declaration;

@@ -71,9 +71,10 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 // Do call asynchronous callbacks from allocation functions
 #define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
-  { sp -= 2; sp[0] = accu; sp[1] = env; Caml_state->extern_sp = sp; }
+  { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
+    Caml_state->extern_sp = sp; }
 #define Restore_after_gc \
-  { accu = sp[0]; env = sp[1]; sp += 2; }
+  { sp = Caml_state->extern_sp; accu = sp[0]; env = sp[1]; sp += 3; }
 
 /* We store [pc+1] in the stack so that, in case of an exception, the
    first backtrace slot points to the event following the C call
@@ -108,7 +109,11 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
      sp[0] = accu; sp[1] = (value)(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
      Caml_state->extern_sp = sp; }
-#define Restore_after_debugger { sp += 4; }
+#define Restore_after_debugger \
+   { CAMLassert(sp == Caml_state->extern_sp); \
+     CAMLassert(sp[0] == accu); \
+     CAMLassert(sp[2] == env); \
+     sp += 4; }
 
 #ifdef THREADED_CODE
 #define Restart_curr_instr \
@@ -533,6 +538,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, num_args + 2, Closure_tag);
         Field(accu, 1) = env;
         for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+        CAMLassert(!Is_in_value_area(pc-3));
         Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
         sp += num_args;
         pc = (code_t)(sp[0]);
@@ -560,6 +566,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       }
       /* The code pointer is not in the heap, so no need to go through
          caml_initialize. */
+      CAMLassert(!Is_in_value_area(pc + *pc));
       Code_val(accu) = pc + *pc;
       pc++;
       sp += nvars;
@@ -740,10 +747,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETFIELD):
       accu = Field(accu, *pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
-      double d = Double_flat_field(accu, *pc);
+      double d = Double_flat_field(accu, *pc++);
       Alloc_small(accu, Double_wosize, Double_tag);
       Store_double_val(accu, d);
-      pc++;
       Next;
     }
 

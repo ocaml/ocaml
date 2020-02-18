@@ -66,6 +66,21 @@ and ['a] d : unit -> object constraint 'a = int #c end
 |}];;
 (* class ['a] c : unit -> object constraint 'a = int end
    and ['a] d : unit -> object constraint 'a = int #c end *)
+(* Class type constraint *)
+module F(X:sig type t end) = struct
+  class type ['a] c = object
+    method m: 'a -> X.t
+  end
+end
+class ['a] c = object
+  constraint 'a = 'a #F(Int).c
+end
+[%%expect {|
+module F :
+  functor (X : sig type t end) ->
+    sig class type ['a] c = object method m : 'a -> X.t end end
+class ['a] c : object constraint 'a = < m : 'a -> Int.t; .. > end
+|}]
 
 (* Self as parameter *)
 class ['a] c (x : 'a) = object (self : 'b)
@@ -179,7 +194,14 @@ and 'a d = <f : int c>;;
 Line 1, characters 0-32:
 1 | type 'a c = <f : 'a c; g : 'a d>
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the definition of d, type int c should be 'a c
+Error: This recursive type is not regular.
+       The type constructor c is defined as
+         type 'a c
+       but it is used as
+         int c
+       after the following expansion(s):
+         'a d = < f : int c >
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
 and 'a d = <f : 'a c>;;

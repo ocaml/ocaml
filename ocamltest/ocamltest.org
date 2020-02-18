@@ -1,0 +1,745 @@
+#+STARTUP: showall
+
+#+title: The ocamltest reference manual
+#+language: en
+
+#+HTML_HEAD: <style> body { font-size: 1rem; max-width: 900px; margin: 0 auto; } </style>
+
+* Introduction
+
+This is =verbatim= and this is ~code~.
+
+** What is ocamltest
+
+ocamltest is a test-driver, that is, a program that can run tests and report
+their results so that they can be used by a test infrastructure.
+
+Originally, the tool has been designed specifically to run the integration
+tests of the OCaml compiler's test suite. However, it has been
+designed with extensibility in mind and thus has a plugin
+mechanism that makes it possible to extend it with other tests.
+
+** Design choices
+
+*** Programming language and external dependencies
+
+For a start, one may wonder in which language a test-driver for a compiler
+should be written. It may indeed seem odd to write a test-driver for a
+compiler in the language it compiles, since the compiler itself
+is yet untested and thus not trustworthy.
+
+It can however be observed that the OCaml compiler is /bootstraped/,
+meaning that it is itself written in OCaml. A newer version of the
+compiler can thus be produced from an existing one and the (OCaml)
+source code of that newer version. Practically, this means that the
+compiler works at least well enough to recompile itself. This is why we
+consider that it is okay to write a test-driver like ocamltest in OCaml,
+as long as it uses only code that has been used to bootstrap the
+compiler. In particular, this is why we prefer not to rely on any
+external dependency, not even the libraries included in the compiler
+distribution such as the =Unix= library.
+
+*** Test types
+
+As has been noted above, ocamltest has been developed to run the already
+existing integration tests of the OCaml compiler's test suite, which
+were previously run by a set of makefiles. This context explains
+several design decisions which could otherwise seem rather arbitrary.
+
+For example, the reason why ocamltest has no support for running unit tests
+is that there were no such tests in the OCaml compiler's test suite.
+
+Indeed, the OCaml compiler's test suite is composed mainly of complete
+programs. In this context, the most current meaning of "testing" a program
+is that the program needs to be compiled and executed. The test will
+be considered successful if the program compiles as expected and, when run,
+returns the expected value.
+
+Since this scenario is the most frequent one, it was of particular
+importance to make writing tests of this form as simple as possible.
+
+However, not all tests fall into the previously described category, so it is
+also necessary to support not only variations on the previous scenario
+(compile but do not run, compile with certain options, etc.) but also
+completely different tests, such as top-level tests, debugger tests,
+etc.
+
+To fulfill these requirements and make it as easy as possible to turn a
+program into a test, it has been chosen to design a Domain-Specific
+Language (DSL) used to annotate the test program with a
+=(* TEST *)= block at its top. This block specifies how the test
+should be performed.
+
+** Outline of this document
+
+The next chapter explains through examples how to write simple tests. We
+then introduce the key concepts used by ocamltest to provide a better
+understanding of how it works and can be used to write more complex
+tests. The two last chapters give an in-depth description of the
+built-in tests and actions and of the tests and actions that are specific
+to the OCaml compiler.
+
+* Writing simple tests
+
+This chapter is a tutorial. It explains how to write simple test
+programs and also tries to give insights about how ocamltest works. These
+insights will be deepened in chapter [[#concepts]] where ocamltest is
+presented in a more abstract and conceptual way.
+
+We start by explaining how to set-up a proper environment for writing
+tests. We then show how to turn the traditional "Hello, world!" program
+into a test and explain how to run it with ocamltest. We continue
+with a few variations on this test and conclude this chapter
+with a few other useful tests.
+
+** Prerequisites for writing tests
+
+Writing tests requires that the sources of the OCaml compiler for which
+one wants to write them are downloaded and compiled. The compiler
+does not need to be installed, though.
+
+The sources can be downloaded either as an archive, or directly cloned
+through git, which seems more appropriate in the context of writing ones
+own tests. Refer to
+=INSTALL.adoc= (and also to =README.win32.adoc= if you are on Windows) to
+learn how to get the sources of the OCaml compiler and to compile them.
+
+In the remainder of this manual, we will assume that the sources of the
+OCaml compiler have been extracted in the =${OCAMLSRCDIR}= directory (for
+instance =${HOME}/src/ocaml=) and that you have successfully configured
+and compiled them as described in =INSTALL.adoc= or =README.win32.adoc=,
+according to your operating system. The tools and libraries necessary
+for running tests should also be built. This can be achieved by running
+the following command from =${OCAMLSRCDIR}=:
+: make -C testsuite lib tools
+
+We will also assume that an =ocamltest= command is available in
+your =PATH=. Although this is not strictly necessary, it is strongly
+recommended that you set this up because this will simplify test
+development a lot. This can be achieved e.g. by creating a symbolic
+link to =${OCAMLSRCDIR}/ocamltest/ocamltest= (or its native
+counterpart =${OCAMLSRCDIR}/ocamltest/ocamltest.opt=) in a directory that
+is already in your =PATH=, like =~/bin=.
+
+** Testing the "Hello, world!" program with the default tests
+
+*** Turning "Hello, world!" into a useful test program
+
+Consider the following OCaml implementation of the classical "Hello, world!"
+program written to a =hello.ml= file:
+
+: let _ = print_endline "Hello, world!"
+
+Now assume we would like to make sure that the OCaml compiler can
+compile this program and that the resulting executable indeed prints the
+expected output. Here are the required steps to turn the program
+above into a test usable by ocamltest to verify this:
+
+1. First, we add a special comment at the very beginning of our =hello.ml=
+   file to make it explicit that it is a test:
+   #+begin_src
+   (* TEST *)
+
+   let _ = print_endline "Hello, world!"
+   #+end_src
+
+2. We then need to say what the expected outputs are. In our case, we
+   expect that compiling the test produces no output at all and that its
+   execution produces one single line:
+   : Hello, world!
+   To let ocamltest know about this, we create a =hello.reference= file
+   containing the program's expected output -- the line mentioned
+   above. There is nothing special to do for silent compilations
+   since this is what is expected by default and a non-silent
+   compilation would actually cause a test failure.
+
+3. We can now ask ocamltest to run our test program with the
+   following command:
+   : ocamltest hello.ml
+
+   Running this would produce an output similar to this one:
+
+   #+begin_src
+    ... testing 'hello.ml' with 1 (native) => passed
+    ... testing 'hello.ml' with 2 (bytecode) => passed
+   #+end_src
+
+   In addition to this output, it may be noticed that the previous
+   command has also created an =_ocamltest= directory whose content will
+   be examined in the next sub-section.
+
+4. Finally, there is one extra step required if we want our newly created
+   test to be run automatically as part of the OCaml compiler's test suite.
+   We need to move =hello.ml= and =hello.reference= to a directory (say
+   =newtest=) located somewhere
+   below =testsuite/tests= in the compiler's source tree and we
+   need to declare the test. This is done by appending the name of the
+   file containing the =(* TEST *)= comment to an =ocamltests=
+   (mark the final s) file located in the =newtest= directory,
+   alongside the other files relevant to the test. Once this is done,
+   the command
+   : make all
+   executed in the =testsuite= directory of the OCaml compiler' source
+   tree will run all the test suite, which now also includes our own test.
+
+*** What exactly is going on during the test
+
+The only thing we know from ocamltest's output when run on =hello.ml= is
+that it is running two tests named =bytecode= and =native= and that the two of
+them succeed. This can seem rather uninformative, and in a way it is, but
+it has to be kept in mind that this information is the one passed by the
+test-driver (ocamltest) to the test infrastructure. In that respect,
+this is enough. For us users, though, it is not. That's why
+ocamltest logs much more details about what is going on in a per-test
+log file, which should be located in the =_ocamltest/hello/hello.log= file
+found in the directory where =hello.ml= is.
+
+Before looking at this log file, notice that it has been created in a
+test-specific directory. ocamltest creates such a directory for each
+file it tests and makes sure every file produced as a result of
+testing this file will be placed in this directory, either directly, or
+in one of its sub-directories. The latter happens if the test has
+to be compiled several times, with the same compiler and different
+command-line options, or with different compilers. In particular,
+in order to better understand what follows, it may be helpful to
+remember that =OCaml= actually consists in not less than four compilers:
+=ocamlc.byte= and =ocamlc.opt= which are the bytecode and native
+flavors of the bytecode compiler and =ocamlopt.byte= and
+=ocamlopt.opt= which are the bytecode and native flavors of the native
+compiler. So, as we will see, ''testing the bytecode compiler''
+actually involves testing two compilers, and the same goes for ''testing
+the native compiler''.
+
+Now that all this has been spelled out, let's examine the log file
+produced by the test. Although it is too long to be reproduced here,
+it is recommended to go through it quickly to get an idea of its
+structure. Here is how it starts:
+
+#+begin_src
+Specified modules: hello.ml
+Source modules: hello.ml
+#+end_src
+
+The first line lists the names of the modules the test consists of. The
+second line is almost similar but if some modules had separate
+interface files, they would be listed here, too, without the user
+having to specify them in the list of modules (for each specified =.ml=
+file, ocamltest looks whether a corresponding =.mli= file exists and, if
+so, adds it to the list of files to consider).
+
+The rest of the log file can be split into two parts which are very
+similar to each other: one for the =native= test and one for the =bytecode=
+test. Among other things, we learn that each of these tests is composed
+of nine actions. Before diving into the details of what each of these
+actions does, let us take this opportunity to introduce a bit of
+ocamltest terminology. An /action/ is anything that can =pass=, =skip= or
+=fail=. A =test= is a sequence of such actions. Running
+a test thus means running each of its actions, in sequence, until all the
+actions have been run or one of them returns =pass= or =skip=. Whatever
+the last run action returns, this value will be the result of the whole
+test.
+
+To give concrete examples of actions, let's briefly go over the nine ones
+involved in the =bytecode= test (those for the =native= test are
+quite similar):
+
+1. =setup-ocamlc.byte-build-env=:: as its name suggests, this action
+   creates a build environment where a program can be compiled and
+   executed using the =ocamlc.byte= compiler. More precisely, this
+   involves creating a dedicated directory under the test-file specific
+   directory and populating it with the files required by subsequent actions.
+   Depending on what the underlying operating system supports, the files
+   will be either symlinked or copied from the test source directory.
+
+2. =ocamlc.byte=:: invokes the =ocamlc.byte= compiler in various ways.
+   Here, the test program is compiled and linked, but as we will see
+   later, different behaviors are possible depending on ocamltest
+   /variables/.
+
+3. =check-ocamlc.byte-output=:: this action compares the compiler's
+   output to a reference file, if one exists. As has been mentioned
+   earlier, the absence of such a reference file specifies that the
+   compiler's output is expected to be empty -- if it is not, this
+   causes a failure of this action and thus of the whole =bytecode=
+   test.
+
+4. =run=:: now that the program has been successfully compiled, it is
+   run with its standard output and error streams saved to a file.
+
+
+5. =check-program-output=:: this time it is the output of the program
+   which is compared to a reference file, namely the =hello.reference=
+   file created earlier. So far this comparison succeeds, because the
+   output of the program is identical to the reference file but, as an
+   exercise, one may try to modify the reference file to see how this
+   causes the failure of this action and of the whole =bytecode= test.
+
+   This action concludes the test of the =ocamlc.byte= compiler. We now
+   know that it is able to successfully compile our test program and that
+   the resulting executable runs as expected. The four remaining actions
+   are going to test the =ocamlc.opt= compiler in a similar but not
+   identical way:
+
+6. =setup-ocamlc.opt-build-env=:: this action is the counterpart of
+   action 1 for the =ocamlc.opt= compiler.
+
+7. =ocamlc.opt=:: like action 2, this action compiles the test program
+   but with the =ocamlc.opt= compiler.
+
+8. =check-ocamlc.opt-output=:: again, this action is similar to
+   action 3.
+
+9. =compare-bytecode-programs=:: here we make sure that the generated
+   executable is correct, but in a different way than for the
+   =ocamlc.byte= compiler. Rather than running it and checking its
+   output, we compare it to the one produced in action 2. Such a check
+   may seem strange, because what it requires is that =ocamlc.byte= and
+   =ocamlc.opt= produce exactly the same binary and not two binaries
+   than perform similarly when they are run, but it has proven useful in
+   the past and has permitted to detect a subtle bug in the compiler.
+
+** Customizing the default tests
+
+As has been briefly mentioned, the precise behavior of actions (and
+thus of tests) may depend on /variables/ whose value can be adjusted in
+the =(* TEST ... *)= blocks. In ocamltest, all the values of variables
+are strings. Here are a few examples of things that can be achieved just
+by defining the appropriate variables. The complete description of the
+actions provided by ocamltest and the variables they use will be given
+in chapters [[#builtins]] and [[#ocaml-specific]].
+
+*** Passing flags to the compilers
+
+Assume our =hello.ml= example is modified as follows:
+
+#+begin_src
+(* TEST *)
+
+open Format
+
+let _ = print_endline "Hello, world!"
+#+end_src
+
+As may be verified, this program still passes the default tests. It is
+however not as minimal as our previous version, because the =Format=
+module is opened but not used. Fortunately, OCaml has a warning to
+detect such unused =open= directives, namely warning 33, which is
+disabled by default. We could thus add this version of =hello.ml=
+to the test suite, not so much to verify that the program compiles and
+runs as expected (we verified this already), but rather to make sure
+the compiler does indeed trigger the expected warning. Here are the
+required steps to achieve this:
+
+1. We slightly modify the test block in =hello.ml=, as follows:
+   #+begin_src
+   (* TEST
+   flags = "-w +33"
+   *)
+   #+end_src
+
+2. Since we now expect a non-empty output for the compilers, we need to
+   store the expected output in a file, namely =hello.compilers.output=
+   besides to =hello.ml= and =hello.reference=. To figure out what
+   this file shall contain, we can run ocamltest even before it
+   has been created. Of course, the action that checks compiler output
+   will fail, but in this way we will get the compiler's output
+   which we will just have to check (to
+   make sure it is what we expect) and to move to the reference file.
+   Thus, we do:
+   : $ ocamltest hello.ml
+   which fails, unsurprisingly, and shows us the paths to the file
+   containing the output produced by the compiler and the path to the
+   expected reference file. We also see what the compiler produced as
+   output but we can double-check that the output is what we expect as a
+   reference:
+   : $ cat _ocamltest/hello/ocamlc.byte/ocamlc.byte.output
+   which shows the warning we expect from the compiler. We can thus move
+   this file to the reference file:
+   : $ mv _ocamltest/hello/ocamlc.byte/ocamlc.byte.output hello.compilers.reference
+   and if we now run ocamltest again, all the tests pass.
+
+Two remarks are due. First, we have used the =flags= variable, to pass
+extra flags to all the compilers. There are two other variables one can
+use, namely =ocamlc_flags= and =ocamlopt_flags=, to pass flags to the
+bytecode or native compilers. Second, in this test all the compilers
+have the same output so one reference file is enough for all of them.
+There are situations, though, where the compiler's output is
+back-end-specific (it depends whether we compile to bytecode or to native
+code) or even compiler-specific. ocamltest is clever enough to know how
+to deal with such situations, provided that the reference files are
+named appropriately. It will indeed first lookup the test source
+directory for a compiler-specific reference file, e.g.
+=hello.ocamlc.byte.reference=. If no such file exists, a
+back-end-specific reference file is searched, e.g.
+=hello.ocamlc.reference= for a compiler common to both =ocamlc.byte= and
+=ocamlc.opt=. If this file does not exist either, ocamltest falls back
+to looking for =hello.compilers.reference= as we have seen in this
+example, the absence of which meaning that the compiler's output is
+expected to be empty.
+
+*** Using an auxiliary module
+
+Let's start with our original =hello.ml= test program and extract the
+greeting logic into a distinct =greet.ml= module:
+
+#+begin_src
+let greet guest = Printf.printf "Hello, %s!\n" guest
+#+end_src
+
+Let's also write an interface, =greet.mli=:
+
+#+begin_src
+val greet : string -> unit
+#+end_src
+
+Our =hello.ml= test program can then be rewritten as follows:
+
+#+begin_src
+(* TEST
+modules = "greet.ml"
+*)
+
+let _ = Greet.greet "world"
+#+end_src
+
+Provided that the =hello.compilers.reference= file previously to test
+warnings is deleted, running ocamltest on =hello.ml= should work. It
+will also be worth looking at the two first lines of the log file generated
+while running the test. It says:
+
+#+begin_src
+Specified modules: greet.ml hello.ml
+Source modules: greet.mli greet.ml hello.ml
+#+end_src
+
+The first line shows that the =modules= variable has been taken into
+account. On the second line, it can be seen that the =greet.mli= file
+appears, right before =greet.ml=. It is ocamltest that has added it,
+because it has been recognized as an interface for one of the specified
+modules.
+
+To sum up, if a test consists in several modules, it is enough to list
+their implementations (except the one of the main test program which is
+implicit) in the =modules= variable, in linking order. There is no need
+to worry about their interfaces, which will be added automatically by
+ocamltest, if they exist.
+
+*** Linking with a library
+
+Assume we want to use the following program to make sure regular
+expressions as implemented by the =Str= library work as expected:
+
+#+begin_src
+let hello_re = Str.regexp "^Hello, .+!$"
+
+let hello_str = "Hello, world!"
+
+let _ =
+  if not (Str.string_match hello_re hello_str 0) then
+  begin
+     Printf.eprintf "There is a problem!\n";
+     exit 2
+  end
+#+end_src
+
+This test terminates silently if everything goes well and prints a
+message on its standard error only if something goes wrong, which means
+we won't have anything special to do so that ocamltest checks for an
+empty output after the program has run. However, to be able to compile
+and link this test, there are several things we need to do so that it
+finds the =Str= library it uses. More precisely, we need to add the =-I=
+option pointing to the right directory and, at link time, to give the
+name of the appropriate library file. To make our life a bit simpler,
+ocamltest has a few variables where directories and libraries can be
+listed. Once they are there, it is ocamltest which will take care of
+adding the =-I= option for each directory and for adding the right
+library file depending on whether we are producing bytecode or native
+programs. So, here is how the previous program can be annotated so that
+it becomes a test:
+
+#+begin_src
+(* TEST
+directories += " ${ocamlsrcdir}/otherlibs/str "
+libraries += " str "
+*)
+#+end_src
+
+With these annotations, it becomes possible to run =re.ml= as an
+ocamltest test program and, doing so, one may notice that the two tests
+pass. There are however a few other things worth pointing out here
+regarding the ocamltest DSL. For a start, the notation =${variable}=
+inside a string means to replace =variable= by its value, as happens in
+many other languages, like the bash shell. Moreover, it is the first
+time we meet the ~+=~ operator which concatenates a value to a variable.
+More precisely,
+: foo += "bar"
+is equivalent to
+: foo = "${foo}bar"
+and not to
+: foo = "${foo} bar"
+as it may happen in other languages such as makefiles.
+
+In other words, the ~+=~ operator concatenates two strings without
+inserting any implicit space between them as e.g. make would do. This is
+because in some cases such a behavior is required and could not be
+achieved if spaces were implicitly added, whereas with a literal
+concatenation it is always possible to include spaces explicitly. This is
+exactly what happens in the ocamltest annotation block above, where the
+strings added to the =libraries= and =directories= variables are
+surrounded by spaces. As should be clear to the reader by now, these
+spaces are mandatory. Without them, the added values would be glued to
+the last word of the variable and would thus be misinterpreted.
+
+Finally, one may notice that, although ocamltest does make it
+possible to link a test program with a library, it does not really make
+it easy or convenient to do so. In particular, what if we want to write
+several, perhaps many test programs that need to be linked with =Str=?
+Will we have to repeat these lines everywhere, thus creating code that
+is going to be tedious to maintain? Well, fortunately not. Actually,
+ocamltest has a much more elegant way to deal with such issues, namely
+/environment modifiers/. As will be explained in chapter [[#concepts]], an
+/environment modifier/ is an object that gathers several variable
+definitions that can then be included in an ocamltest block at once.
+Environment modifiers have to be defined in ocamltest itself and can
+then be used with the =include= directive. For instance, the previous
+test block is actually written as follows:
+
+#+begin_src
+(* TEST
+include str
+*)
+#+end_src
+
+*** Testing only on Unix systems
+
+So far, we have been able to fulfill our requirements just by assigning
+the right values to variables and relying on the =bytecode= and =native=
+tests ocaml runs by default. There are however situations where this is
+not enough and where one needs the ability to run other tests. One
+example of such a situation is when a test needs to be performed only on
+one given operating system, e.g. because it uses a feature which is
+present only on that operating system. On an other operating system, the
+test should be skipped because it is irrelevant. To illustrate this,
+here is how our original =hello.ml= test program should be annotated so
+that it is run only on Unix platforms:
+
+#+begin_src
+(* TEST
+:* unix
+:** bytecode
+:** native
+*)
+#+end_src
+
+As can be understood from this example, lines starting with an asterisk
+describe which tests should be executed. In addition, the number of
+asterisks allows to specify the nesting level of each test or action.
+Here for instance, =bytecode= and =native= are sub-tests that will be
+run only if the =unix= test passes and will not be started if it fails
+or skips.
+
+This way of describing the dependencies between tests has been inspired
+by the syntax of org-mode. Each line starting with asterisks (thus lines
+specifying which tests to run) can also be seen as a title. The whole
+set of lines is like the outline of the test scenario.
+
+With this information in mind, it can be seen that the smallest test
+block
+: (* TEST *)
+is actually equivalent to
+#+begin_src
+(* TEST
+:* bytecode
+:* native
+*)
+#+end_src
+
+One common error when designing tests is to believe that a block like
+#+begin_src
+(* TEST
+:* unix
+*)
+#+end_src
+means to execute the =unix= test that verifies that the OS is indeed
+Unix and then to execute the default tests. This is actually not the
+case. The only situation in which the default tests are considered is
+when the test block contains absolutely no line starting with an
+asterisk. As soon as there is a line starting with an asterisk, the
+default tests are ignored completely and one needs to be totally
+explicit about which tests to run. So the correct way to write the
+erroneous block above is the use shown at the beginning of this section,
+namely:
+#+begin_src
+(* TEST
+:* unix
+:** bytecode
+:** native
+*)
+#+end_src
+
+The fact that the language is inspired by org-mode should also be
+helpful in understanding the scope of variable assignments. Roughly
+speaking:
+
+1. Variables defined at the root level are visible by all the tests and
+   sub-tests that follow their assignment.
+
+2. If a variable is defined just below a test line, then it is visible
+   by that test and all its sub-tests (unless its definition is
+   overridden) but not by tests at a nesting level whose depth is less or
+   equal than the one of the test in which the variable is defined.
+
+For instance, given the following block:
+#+begin_src
+(* TEST
+foo = "abc"
+:* test1
+bar = "def"
+:** subtest1
+baz = "hij"
+:** subtest2
+:* test2
+*)
+#+end_src
+- The definition of =foo= is visible in all the tests
+
+- The definition of =bar= is visible in all the tests except =test2=.
+
+- The definition of =baz= is visible only in =subtest1=.
+
+** Other useful tests
+
+This section introduces three tests provided by =ocamltest= and that can
+be of particular interest. A complete list of available tests and
+actions and their detailed descriptions are given in chapters
+[[#builtins]] and [[#ocaml-specific]].
+
+*** Testing the top-level: the =toplevel= and =expect= tests
+
+Two tests are provided to make sure that the OCaml top-level behaves as
+expected: =toplevel= and =expect=. These tests are similar in that they
+both allow to test how the OCaml top-level reacts to some user input,
+but they are different in the way one specifies the expected output and
+also in what they can test. The =toplevel= test behaves in a spirit
+similar to the compiler tests described above, meaning that the expected
+output has to be stored in its own, separate file. Since this test
+invokes the real OCaml top-level, it is useful to test advanced features
+like the behavior of the top-level when its input is a file rather than
+a terminal, or similar things. In the expect test, on the contrary,
+the input and the output it is expected to produce can be written in
+the same file, close to each other. However, this test uses the OCaml
+top-level as a library, rather than calling it as an external program.
+So this test is actually not testing the complete real OCaml top-level,
+but for testing language features it remains perfectly valid and is
+actually what is needed in most of the cases. We thus give below an
+example of an expect test and will describe the =toplevel= test in
+chapter [[#ocaml-specific]].
+
+So, here is a toy example of an =expect= test:
+
+#+begin_src
+(* TEST
+:* expect
+*)
+
+type point = { x : int; y : int };;
+[%%expect{|
+type point = { x : int; y : int; }
+|}];;
+#+end_src
+
+The first line after the test block is the input phrase, while the line
+that appears between =[%%expect{|= and =|}];;= is the corresponding
+expected output. The =expect= test can also be used to test the output
+in presence of the =-principal= command-line flag. In such cases, the
+expected output should be written in a =|}, Principal{|= block (to be
+improved).
+
+*** The =script= test
+
+It may happen that a needed test is not provided by ocamltest. Of
+course, if it turns out that this test would be helpful to test several
+source files, then the best solution is to add it to ocamltest itself.
+Some tests are however so specific that it is easier to write them as
+shell scripts. Such tests can be run by the =script= test, their name
+being defined by the =script= variable. In this case, the script is run
+in an environment where all the variables defined in ocamltest have been
+exported. The script uses its exit status to report its result and can
+write a response to a dedicated file to modify its environment or
+explain why it failed or skipped, as will be explained in chapter
+[[#builtins]]. For the moment, let's see how to use a script to "test" our
+original =hello.ml= example. Our annotated program would look as
+follows:
+
+#+begin_src
+(* TEST
+script = "${test_source_directory}/faketest.sh"
+:* script
+*)
+
+let _ = print_endline "Hello, world!"
+#+end_src
+
+And here is =faketest.sh=, make sure it is executable:
+
+#+begin_src
+#!/bin/sh
+exit ${TEST_PASS}
+#+end_src
+
+This should be enough for the following command to work:
+: ocamltest hello.ml
+
+This of course tests nothing and a real test script should actually do
+something before returning its result. Let's however see how we can
+make the script test fail gracefully:
+
+#+begin_src
+#!/bin/sh
+echo Why should this pass in the first place > ${ocamltest_response}
+exit ${TEST_FAIL}
+#+end_src
+
+Running ocamltest on our =hello.ml= program again produces the following
+output:
+#+begin_src
+ ... testing 'hello.ml' with 1 (script) => failed (Why should this pass in the first place)
+#+end_src
+
+* Key concepts
+  :PROPERTIES:
+  :CUSTOM_ID: concepts
+  :END:
+
+** Actions, hooks and tests
+
+** Semantics of a test block
+
+** Variables, environments and how they are inherited
+
+** Environment modifiers
+
+* Built-in actions and tests
+  :PROPERTIES:
+  :CUSTOM_ID: builtins
+  :END:
+
+* OCaml-specific actions and tests
+  :PROPERTIES:
+  :CUSTOM_ID: ocaml-specific
+  :END:
+
+# Things to document (requested by Leo on caml-devel)
+# - the syntax of the DSL
+# - the precise meaning of the stars
+# - a clear definition of what "test" means in the context of the DSL
+# - a list of the builtin "actions"
+# - a list of which "actions" depend on which "variables"
+# - what does "include" do?
+# - what is the scoping of variables?
+
+# LocalWords: ocamltest OCaml DSL extensibility makefiles
+
+# Local Variables:
+# ispell-local-dictionary: "english"
+# End:

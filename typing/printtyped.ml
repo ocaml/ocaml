@@ -27,8 +27,11 @@ let fmt_position f l =
 ;;
 
 let fmt_location f loc =
-  fprintf f "(%a..%a)" fmt_position loc.loc_start fmt_position loc.loc_end;
-  if loc.loc_ghost then fprintf f " ghost";
+  if not !Clflags.locations then ()
+  else begin
+    fprintf f "(%a..%a)" fmt_position loc.loc_start fmt_position loc.loc_end;
+    if loc.loc_ghost then fprintf f " ghost";
+  end
 ;;
 
 let rec fmt_longident_aux f x =
@@ -61,9 +64,10 @@ let fmt_constant f x =
   match x with
   | Const_int (i) -> fprintf f "Const_int %d" i;
   | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s, None) -> fprintf f "Const_string(%S,None)" s;
-  | Const_string (s, Some delim) ->
-      fprintf f "Const_string (%S,Some %S)" s delim;
+  | Const_string (s, strloc, None) ->
+      fprintf f "Const_string(%S,%a,None)" s fmt_location strloc;
+  | Const_string (s, strloc, Some delim) ->
+      fprintf f "Const_string (%S,%a,Some %S)" s fmt_location strloc delim;
   | Const_float (s) -> fprintf f "Const_float %s" s;
   | Const_int32 (i) -> fprintf f "Const_int32 %ld" i;
   | Const_int64 (i) -> fprintf f "Const_int64 %Ld" i;
@@ -222,27 +226,13 @@ and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident s;
   core_type i ppf t
 
-and pattern i ppf x =
+and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   line i ppf "pattern %a\n" fmt_location x.pat_loc;
   attributes i ppf x.pat_attributes;
   let i = i+1 in
   match x.pat_extra with
-    | (Tpat_unpack, _, attrs) :: rem ->
-        line i ppf "Tpat_unpack\n";
-        attributes i ppf attrs;
-        pattern i ppf { x with pat_extra = rem }
-    | (Tpat_constraint cty, _, attrs) :: rem ->
-        line i ppf "Tpat_constraint\n";
-        attributes i ppf attrs;
-        core_type i ppf cty;
-        pattern i ppf { x with pat_extra = rem }
-    | (Tpat_type (id, _), _, attrs) :: rem ->
-        line i ppf "Tpat_type %a\n" fmt_path id;
-        attributes i ppf attrs;
-        pattern i ppf { x with pat_extra = rem }
-    | (Tpat_open (id,_,_), _, attrs)::rem ->
-        line i ppf "Tpat_open \"%a\"\n" fmt_path id;
-        attributes i ppf attrs;
+    | extra :: rem ->
+        pattern_extra i ppf extra;
         pattern i ppf { x with pat_extra = rem }
     | [] ->
   match x.pat_desc with
@@ -267,16 +257,35 @@ and pattern i ppf x =
   | Tpat_array (l) ->
       line i ppf "Tpat_array\n";
       list i pattern ppf l;
-  | Tpat_or (p1, p2, _) ->
-      line i ppf "Tpat_or\n";
-      pattern i ppf p1;
-      pattern i ppf p2;
   | Tpat_lazy p ->
       line i ppf "Tpat_lazy\n";
       pattern i ppf p;
   | Tpat_exception p ->
       line i ppf "Tpat_exception\n";
       pattern i ppf p;
+  | Tpat_value p ->
+      line i ppf "Tpat_value\n";
+      pattern i ppf (p :> pattern);
+  | Tpat_or (p1, p2, _) ->
+      line i ppf "Tpat_or\n";
+      pattern i ppf p1;
+      pattern i ppf p2;
+
+and pattern_extra i ppf (extra_pat, _, attrs) =
+  match extra_pat with
+  | Tpat_unpack ->
+     line i ppf "Tpat_extra_unpack\n";
+     attributes i ppf attrs;
+  | Tpat_constraint cty ->
+     line i ppf "Tpat_extra_constraint\n";
+     attributes i ppf attrs;
+     core_type i ppf cty;
+  | Tpat_type (id, _) ->
+     line i ppf "Tpat_extra_type %a\n" fmt_path id;
+     attributes i ppf attrs;
+  | Tpat_open (id,_,_) ->
+     line i ppf "Tpat_extra_open \"%a\"\n" fmt_path id;
+     attributes i ppf attrs;
 
 and expression_extra i ppf x attrs =
   match x with
@@ -881,7 +890,9 @@ and longident_x_pattern i ppf (li, _, p) =
   line i ppf "%a\n" fmt_longident li;
   pattern (i+1) ppf p;
 
-and case i ppf {c_lhs; c_guard; c_rhs} =
+and case
+    : type k . _ -> _ -> k case -> unit
+  = fun i ppf {c_lhs; c_guard; c_rhs} ->
   line i ppf "<case>\n";
   pattern (i+1) ppf c_lhs;
   begin match c_guard with

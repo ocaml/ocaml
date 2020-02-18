@@ -5,75 +5,106 @@
 
 open Gc.Memprof
 
-type 'a list2 =  (* A list type where [Cons] has tag 1 *)
-  | Nil
-  | Dummy of int
-  | Cons of 'a * 'a list2
+let roots = Array.make 1000000 [||]
+let roots_pos = ref 0
+let add_root r =
+  roots.(!roots_pos) <- r;
+  incr roots_pos
+let clear_roots () =
+  Array.fill roots 0 !roots_pos [||];
+  roots_pos := 0
 
-let root = ref Nil
 let[@inline never] allocate_arrays lo hi cnt keep =
   assert (0 < lo && hi <= 250);  (* Fits in minor heap. *)
   for j = 0 to cnt-1 do
     for i = lo to hi do
-      root := Cons (Array.make i 0, !root)
+      add_root (Array.make i 0)
     done;
-    if not keep then root := Nil
+    if not keep then clear_roots ()
   done
 
 let check_nosample () =
   Printf.printf "check_nosample\n%!";
-  start {
-      sampling_rate = 0.;
-      callstack_size = 10;
-      callback = fun _ ->
-        Printf.printf "Callback called with sampling_rate = 0\n";
-        assert(false)
-  };
-  allocate_arrays 1 250 100 false
+  let cb _ =
+    Printf.printf "Callback called with sampling_rate = 0\n";
+    assert(false)
+  in
+  start ~callstack_size:10 ~minor_alloc_callback:cb ~major_alloc_callback:cb
+        ~sampling_rate:0. ();
+  allocate_arrays 1 250 100 false;
+  stop ()
 
 let () = check_nosample ()
 
-let check_ephe_full_major () =
-  Printf.printf "check_ephe_full_major\n%!";
-  let ephes = ref [] in
-  start {
-    sampling_rate = 0.01;
-    callstack_size = 10;
-    callback = fun s ->
-      assert (s.tag = 0 || s.tag = 1);
-      let res = Ephemeron.K1.create () in
-      ephes := res :: !ephes;
-      Some res
-  };
+let check_counts_full_major force_promote =
+  Printf.printf "check_counts_full_major\n%!";
+  let nalloc_minor = ref 0 in
+  let enable = ref true in
+  let promotes_allowed = ref true in
+  let npromote = ref 0 in
+  let ndealloc_minor = ref 0 in
+  let ndealloc_major = ref 0 in
+  start ~callstack_size:10
+        ~minor_alloc_callback:(fun info ->
+          if !enable then begin
+            incr nalloc_minor; if !nalloc_minor mod 100 = 0 then Gc.minor ();
+            Some (ref 42)
+          end else begin
+            allocate_arrays 1 250 1 true;
+            None
+          end)
+        ~major_alloc_callback:(fun _ -> assert false)
+        ~promote_callback:(fun k ->
+           assert (!k = 42 && !promotes_allowed);
+           incr npromote; if !npromote mod 1097 = 0 then Gc.minor ();
+           Some (ref 17))
+        ~minor_dealloc_callback:(fun k -> assert (!k = 42); incr ndealloc_minor)
+        ~major_dealloc_callback:(fun r -> assert (!r = 17); incr ndealloc_major)
+        ~sampling_rate:0.01 ();
   allocate_arrays 1 250 100 true;
-  stop ();
-  List.iter (fun e -> assert (Ephemeron.K1.check_key e)) !ephes;
-  Gc.full_major ();
-  List.iter (fun e -> assert (Ephemeron.K1.check_key e)) !ephes;
-  root := Nil;
-  Gc.full_major ();
-  List.iter (fun e -> assert (not (Ephemeron.K1.check_key e))) !ephes
+  enable := false;
+  assert (!ndealloc_minor = 0 && !ndealloc_major = 0);
+  if force_promote then begin
+    Gc.full_major ();
+    promotes_allowed := false;
+    allocate_arrays 1 250 10 true;
+    Gc.full_major ();
+    assert (!ndealloc_minor = 0 && !ndealloc_major = 0 &&
+            !npromote = !nalloc_minor);
+    clear_roots ();
+    Gc.full_major ();
+    assert (!ndealloc_minor = 0 && !ndealloc_major = !nalloc_minor);
+  end else begin
+    clear_roots ();
+    Gc.minor ();
+    Gc.full_major ();
+    Gc.full_major ();
+    assert (!nalloc_minor = !ndealloc_minor + !npromote &&
+            !ndealloc_major = !npromote)
+  end;
+  stop ()
 
-let () = check_ephe_full_major ()
+let () =
+  check_counts_full_major false;
+  check_counts_full_major true
 
 let check_no_nested () =
   Printf.printf "check_no_nested\n%!";
   let in_callback = ref false in
-  start {
-      (* FIXME: we should use 1. to make sure the block is sampled,
-       but the runtime does an infinite loop in native mode in this
-       case. This bug will go away when the sampling of natively
-       allocated will be correctly implemented. *)
-      sampling_rate = 0.5;
-      callstack_size = 10;
-      callback = fun _ ->
-        assert (not !in_callback);
-        in_callback := true;
-        allocate_arrays 1 100 10 false;
-        ignore (Array.to_list (Array.make 1000 0));
-        in_callback := false;
-        None
-  };
+  let cb _ =
+    assert (not !in_callback);
+    in_callback := true;
+    allocate_arrays 1 100 10 false;
+    ignore (Array.to_list (Array.make 1000 0));
+    in_callback := false;
+    ()
+  in
+  let cb' _ = cb (); Some () in
+  start ~callstack_size:10
+        ~minor_alloc_callback:cb' ~major_alloc_callback:cb'
+        ~promote_callback:cb' ~minor_dealloc_callback:cb
+        ~major_dealloc_callback:cb
+        ~sampling_rate:1. ();
   allocate_arrays 1 250 5 false;
   stop ()
 
@@ -82,19 +113,16 @@ let () = check_no_nested ()
 let check_distrib lo hi cnt rate =
   Printf.printf "check_distrib %d %d %d %f\n%!" lo hi cnt rate;
   let smp = ref 0 in
-  start {
-      sampling_rate = rate;
-      callstack_size = 10;
-      callback = fun info ->
-        assert (info.kind = Minor);
-        (* Exclude noise such as spurious closures and the root list. *)
-        if info.tag = 0 then begin
+  start ~callstack_size:10
+        ~major_alloc_callback:(fun _ -> assert false)
+        ~minor_alloc_callback:(fun info ->
           assert (info.size >= lo && info.size <= hi);
           assert (info.n_samples > 0);
-          smp := !smp + info.n_samples
-        end;
-        None
-    };
+          assert (not info.unmarshalled);
+          smp := !smp + info.n_samples;
+          None
+        )
+        ~sampling_rate:rate ();
   allocate_arrays lo hi cnt false;
   stop ();
 
@@ -120,40 +148,6 @@ let () =
   check_distrib 1 250 1000 0.9;
   check_distrib 1 1   10000000 0.01;
   check_distrib 250 250 100000 0.1
-
-(* FIXME : in bytecode mode, the function [caml_get_current_callstack_impl],
-   which is supposed to capture the current call stack, does not have access
-   to the current value of [pc]. Therefore, depending on how the C call is
-   performed, we may miss the first call stack slot in the captured backtraces.
-   This is the reason why the reference file is different in native and
-   bytecode modes.
-
-   Note that [Printexc.get_callstack] does not suffer from this problem, because
-   this function is actually an automatically generated stub which performs th
-   C call. This is because [Printexc.get_callstack] is not declared as external
-   in the mli file. *)
-
-let[@inline never] check_callstack () =
-  Printf.printf "check_callstack\n%!";
-  let callstack = ref None in
-  start {
-      (* FIXME: we should use 1. to make sure the block is sampled,
-       but the runtime does an infinite loop in native mode in this
-       case. This bug will go away when the sampling of natively
-       allocated will be correctly implemented. *)
-      sampling_rate = 0.5;
-      callstack_size = 10;
-      callback = fun info ->
-        if info.tag = 0 then callstack := Some info.callstack;
-        None
-    };
-  allocate_arrays 250 250 100 false;
-  stop ();
-  match !callstack with
-  | None -> assert false
-  | Some cs -> Printexc.print_raw_backtrace stdout cs
-
-let () = check_callstack ()
 
 let () =
   Printf.printf "OK !\n"

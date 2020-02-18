@@ -108,6 +108,16 @@ val from_function : ?with_positions:bool -> (bytes -> int -> int) -> lexbuf
    starting at index 0, and return the number of bytes
    provided. A return value of 0 means end of input. *)
 
+val set_position : lexbuf -> position -> unit
+(** Set the initial tracked input position for [lexbuf] to a custom value.
+   Ignores [pos_fname]. See {!set_filename} for changing this field.
+   @since 4.11 *)
+
+val set_filename: lexbuf -> string -> unit
+(** Set filename in the initial tracked position to [file] in
+   [lexbuf].
+   @since 4.11 *)
+
 val with_positions : lexbuf -> bool
 (** Tell whether the lexer buffer keeps track of position fields
     [lex_curr_p] / [lex_start_p], as determined by the corresponding

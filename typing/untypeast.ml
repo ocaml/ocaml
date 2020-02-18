@@ -24,8 +24,7 @@ type mapper = {
   attribute: mapper -> T.attribute -> attribute;
   attributes: mapper -> T.attribute list -> attribute list;
   binding_op: mapper -> T.binding_op -> T.pattern -> binding_op;
-  case: mapper -> T.case -> case;
-  cases: mapper -> T.case list -> case list;
+  case: 'k . mapper -> 'k T.case -> case;
   class_declaration: mapper -> T.class_declaration -> class_declaration;
   class_description: mapper -> T.class_description -> class_description;
   class_expr: mapper -> T.class_expr -> class_expr;
@@ -55,7 +54,7 @@ type mapper = {
   package_type: mapper -> T.package_type -> package_type;
   open_declaration: mapper -> T.open_declaration -> open_declaration;
   open_description: mapper -> T.open_description -> open_description;
-  pat: mapper -> T.pattern -> pattern;
+  pat: 'k . mapper -> 'k T.general_pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
   object_field: mapper -> T.object_field -> object_field;
   signature: mapper -> T.signature -> signature;
@@ -133,7 +132,7 @@ let rec extract_letop_patterns n pat =
 
 let constant = function
   | Const_char c -> Pconst_char c
-  | Const_string (s,d) -> Pconst_string (s,d)
+  | Const_string (s,loc,d) -> Pconst_string (s,loc,d)
   | Const_int i -> Pconst_integer (Int.to_string i, None)
   | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
   | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
@@ -290,7 +289,7 @@ let extension_constructor sub ext =
       | Text_rebind (_p, lid) -> Pext_rebind (map_loc sub lid)
     )
 
-let pattern sub pat =
+let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
   let loc = sub.location sub pat.pat_loc in
   (* todo: fix attributes on extras *)
   let attrs = sub.attributes sub pat.pat_attributes in
@@ -347,9 +346,11 @@ let pattern sub pat =
         Ppat_record (List.map (fun (lid, _, pat) ->
             map_loc sub lid, sub.pat sub pat) list, closed)
     | Tpat_array list -> Ppat_array (List.map (sub.pat sub) list)
-    | Tpat_or (p1, p2, _) -> Ppat_or (sub.pat sub p1, sub.pat sub p2)
     | Tpat_lazy p -> Ppat_lazy (sub.pat sub p)
+
     | Tpat_exception p -> Ppat_exception (sub.pat sub p)
+    | Tpat_value p -> (sub.pat sub (p :> pattern)).ppat_desc
+    | Tpat_or (p1, p2, _) -> Ppat_or (sub.pat sub p1, sub.pat sub p2)
   in
   Pat.mk ~loc ~attrs desc
 
@@ -369,9 +370,7 @@ let exp_extra sub (extra, loc, attrs) sexp =
   in
   Exp.mk ~loc ~attrs desc
 
-let cases sub l = List.map (sub.case sub) l
-
-let case sub {c_lhs; c_guard; c_rhs} =
+let case : type k . mapper -> k case -> _ = fun sub {c_lhs; c_guard; c_rhs} ->
   {
    pc_lhs = sub.pat sub c_lhs;
    pc_guard = Option.map (sub.expr sub) c_guard;
@@ -404,14 +403,14 @@ let expression sub exp =
         Pexp_fun (arg_label, None, sub.pat sub p, sub.expr sub e)
     (* No label: it's a function. *)
     | Texp_function { arg_label = Nolabel; cases; _; } ->
-        Pexp_function (sub.cases sub cases)
+        Pexp_function (List.map (sub.case sub) cases)
     (* Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
     | Texp_function { arg_label = Labelled s | Optional s as label; cases;
           _ } ->
         let name = fresh_name s exp.exp_env in
         Pexp_fun (label, None, Pat.var ~loc {loc;txt = name },
           Exp.match_ ~loc (Exp.ident ~loc {loc;txt= Lident name})
-                          (sub.cases sub cases))
+                          (List.map (sub.case sub) cases))
     | Texp_apply (exp, list) ->
         Pexp_apply (sub.expr sub exp,
           List.fold_right (fun (label, expo) list ->
@@ -420,9 +419,9 @@ let expression sub exp =
               | Some exp -> (label, sub.expr sub exp) :: list
           ) list [])
     | Texp_match (exp, cases, _) ->
-      Pexp_match (sub.expr sub exp, sub.cases sub cases)
+      Pexp_match (sub.expr sub exp, List.map (sub.case sub) cases)
     | Texp_try (exp, cases) ->
-        Pexp_try (sub.expr sub exp, sub.cases sub cases)
+        Pexp_try (sub.expr sub exp, List.map (sub.case sub) cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map (sub.expr sub) list)
     | Texp_construct (lid, _, args) ->
@@ -877,7 +876,6 @@ let default_mapper =
     value_binding = value_binding;
     constructor_declaration = constructor_declaration;
     label_declaration = label_declaration;
-    cases = cases;
     case = case;
     location = location;
     row_field = row_field ;

@@ -602,9 +602,20 @@ static LONG CALLBACK
 }
 #endif /* _WIN64 */
 
+static PVOID caml_stack_overflow_handle;
+
 void caml_win32_overflow_detection(void)
 {
-  AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
+  caml_stack_overflow_handle =
+    AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
+  if (caml_stack_overflow_handle == NULL) {
+    caml_fatal_error("cannot install stack overflow detection");
+  }
+}
+
+void caml_win32_unregister_overflow_detection(void)
+{
+  RemoveVectoredExceptionHandler(caml_stack_overflow_handle);
 }
 
 #endif /* NATIVE_CODE */
@@ -872,12 +883,12 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   /* Do not include final NULL */
   retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0);
   v = caml_alloc_string(retcode);
-  win_wide_char_to_multi_byte(s, slen, String_val(v), retcode);
+  win_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
 
   return v;
 }
 
-CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
+CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
 {
   wchar_t * ws;
   int retcode;

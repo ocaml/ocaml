@@ -56,7 +56,7 @@ function set_configuration {
         ;;
     esac
 
-    ./configure $build $host --prefix="$2"
+    ./configure $build $host --prefix="$2" --enable-ocamltest
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"
@@ -103,6 +103,11 @@ case "$1" in
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
     run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
+    if [[ $PORT = 'mingw32' ]] ; then
+      run "Check runtime symbols" \
+          "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
+          $FULL_BUILD_PREFIX-$PORT/runtime/*.a
+    fi
     run "test $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" tests
     run "install $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then

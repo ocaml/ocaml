@@ -125,7 +125,7 @@ set -ex
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-confoptions="${OCAML_CONFIGURE_OPTIONS}"
+confoptions="--enable-ocamltest ${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
 cleanup=false
 check_make_alldepend=false

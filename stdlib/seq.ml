@@ -78,3 +78,8 @@ let rec append seq1 seq2 () =
   match seq1() with
   | Nil -> seq2()
   | Cons (x, next) -> Cons (x, append next seq2)
+
+let rec unfold f u () =
+  match f u with
+  | None -> Nil
+  | Some (x, u') -> Cons (x, unfold f u')

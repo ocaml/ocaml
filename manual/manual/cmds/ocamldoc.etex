@@ -17,16 +17,16 @@ a module, an exception, a module type, a type constructor, a record
 field, a class, a class type, a class method, a class value or a class
 inheritance clause.
 
-\section{Usage} \label{s:ocamldoc-usage}
+\section{s:ocamldoc-usage}{Usage}
 
-\subsection{Invocation}
+\subsection{ss:ocamldoc-invocation}{Invocation}
 
 OCamldoc is invoked via the command "ocamldoc", as follows:
 \begin{alltt}
         ocamldoc \var{options} \var{sourcefiles}
 \end{alltt}
 
-\subsubsection*{Options for choosing the output format}
+\subsubsection*{sss:ocamldoc-output}{Options for choosing the output format}
 
 The following options determine the format for the generated
 documentation.
@@ -68,7 +68,7 @@ Use "dot ocamldoc.out" to display it.
 
 \item["-g" \var{file.cm[o,a,xs]}]
 Dynamically load the given file, which defines a custom documentation
-generator.  See section \ref{s:ocamldoc-compilation-and-usage}.  This
+generator.  See section \ref{ss:ocamldoc-compilation-and-usage}.  This
 option is supported by the "ocamldoc" command (to load ".cmo" and ".cma" files)
 and by its native-code version "ocamldoc.opt" (to load ".cmxs" files).
 If the given file is a simple one and does not exist in
@@ -84,7 +84,7 @@ Add the given directory to the path where to look for custom generators.
 
 \end{options}
 
-\subsubsection*{General options}
+\subsubsection*{sss:ocamldoc-options}{General options}
 
 \begin{options}
 
@@ -117,7 +117,7 @@ Load information from \var{file}, which has been produced by
 
 \item["-m" \var{flags}]
 Specify merge options between interfaces and implementations.
-(see section \ref{s:ocamldoc-merge} for details).
+(see section \ref{ss:ocamldoc-merge} for details).
 \var{flags} can be one or several of the following characters:
 \begin{options}
         \item["d"] merge description
@@ -134,7 +134,7 @@ Specify merge options between interfaces and implementations.
 \end{options}
 
 \item["-no-custom-tags"]
-Do not allow custom \@-tags (see section \ref{s:ocamldoc-tags}).
+Do not allow custom \@-tags (see section \ref{ss:ocamldoc-tags}).
 
 \item["-no-stop"]
 Keep elements placed after/between the "(**/**)" special comment(s)
@@ -195,7 +195,7 @@ Display a short usage summary and exit.
 %
 \end{options}
 
-\subsubsection*{Type-checking options}
+\subsubsection*{sss:ocamldoc-type-checking}{Type-checking options}
 
 OCamldoc calls the OCaml type-checker to obtain type
 information.  The following options impact the type-checking phase.
@@ -215,7 +215,7 @@ Allow arbitrary recursive types.  (See the "-rectypes" option to "ocamlc".)
 
 \end{options}
 
-\subsubsection*{Options for generating HTML pages}
+\subsubsection*{sss:ocamldoc-html}{Options for generating HTML pages}
 
 The following options apply in conjunction with the "-html" option:
 
@@ -250,7 +250,7 @@ module M (A:Module) (B:Module2) : sig .. end
 
 \end{options}
 
-\subsubsection*{Options for generating \LaTeX\ files}
+\subsubsection*{sss:ocamldoc-latex}{Options for generating \LaTeX\ files}
 
 The following options apply in conjunction with the "-latex" option:
 
@@ -291,7 +291,7 @@ Generate one ".tex" file per toplevel module, instead of the global
 "ocamldoc.out" file.
 \end{options}
 
-\subsubsection*{Options for generating TeXinfo files}
+\subsubsection*{sss:ocamldoc-info}{Options for generating TeXinfo files}
 
 The following options apply in conjunction with the "-texi" option:
 
@@ -315,7 +315,7 @@ Do not build index for Info files.
 Suppress trailer in generated documentation.
 \end{options}
 
-\subsubsection*{Options for generating "dot" graphs}
+\subsubsection*{sss:ocamldoc-dot}{Options for generating "dot" graphs}
 
 The following options apply in conjunction with the "-dot" option:
 
@@ -344,7 +344,7 @@ Output "dot" code describing the type dependency graph instead of
 the module dependency graph.
 \end{options}
 
-\subsubsection*{Options for generating man files}
+\subsubsection*{sss:ocamldoc-man}{Options for generating man files}
 
 The following options apply in conjunction with the "-man" option:
 
@@ -362,8 +362,7 @@ Set the section number used for generated man filenames. Default is '"3"'.
 
 \end{options}
 
-\subsection{Merging of module information}
-\label{s:ocamldoc-merge}
+\subsection{ss:ocamldoc-merge}{Merging of module information}
 
 Information on a module can be extracted either from the ".mli" or ".ml"
 file, or both, depending on the files given on the command line.
@@ -384,8 +383,7 @@ If a description is present in the ".ml" file and not in the
 In either case, all the information given in the ".mli" file is kept.
 \end{itemize}
 
-\subsection{Coding rules}
-\label{s:ocamldoc-rules}
+\subsection{ss:ocamldoc-rules}{Coding rules}
 The following rules must be respected in order to avoid name clashes
 resulting in cross-reference errors:
 \begin{itemize}
@@ -419,22 +417,21 @@ In this case, OCamldoc will associate "Bar.x" to the "x" of module
 opened module "Foo".
 \end{itemize}
 
-\section{Syntax of documentation comments}
-\label{s:ocamldoc-comments}
+\section{s:ocamldoc-comments}{Syntax of documentation comments}
 
 Comments containing documentation material are called {\em special
 comments} and are written between "(**" and "*)". Special comments
 must start exactly with "(**".  Comments beginning with "(" and more
 than two "*" are ignored.
 
-\subsection{Placement of documentation comments}
+\subsection{ss:ocamldoc-placement}{Placement of documentation comments}
 OCamldoc can associate comments to some elements of the language
 encountered in the source files.  The association is made according to
 the locations of comments with respect to the language elements.  The
 locations of comments in ".mli" and ".ml" files are different.
 
 %%%%%%%%%%%%%
-\subsubsection{Comments in ".mli" files}
+\subsubsection{sss:ocamldoc-mli}{Comments in ".mli" files}
 A special comment is associated to an element if it is placed before or
 after the element.\\
 A special comment before an element is associated to this element if~:
@@ -574,7 +571,7 @@ module type my_module_type =
 \end{caml_example*}
 
 %%%%%%%%%%%%%
-\subsubsection{Comments in {\tt .ml} files}
+\subsubsection{sss:ocamldoc-comments-ml}{Comments in {\tt .ml} files}
 
 A special comment is associated to an element if it is placed before
 the element and there is no blank line between the comment and the
@@ -659,7 +656,7 @@ module type my_module_type =
 \end{caml_example}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The Stop special comment}
+\subsection{ss:ocamldoc-stop}{The Stop special comment}
 The special comment "(**/**)" tells OCamldoc to discard
 elements placed after this comment, up to the end of the current
 class, class type,  module or module type, or up to the next stop comment.
@@ -694,7 +691,7 @@ The {\bf\tt -no-stop} option to "ocamldoc" causes the Stop special
 comments to be ignored.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Syntax of documentation comments}
+\subsection{ss:ocamldoc-syntax}{Syntax of documentation comments}
 
 The inside of documentation comments "(**"\ldots"*)" consists of
 free-form text with optional formatting annotations, followed by
@@ -722,7 +719,7 @@ At last, "(**)" is the empty documentation comment.
 % enable section numbering for subsubsections (PR#6189, item 3)
 \setcounter{secnumdepth}{3}
 
-\subsection{Text formatting}
+\subsection{ss:ocamldoc-formatting}{Text formatting}
 
 Here is the BNF grammar for the simple markup language used to format
 text descriptions.
@@ -762,9 +759,9 @@ text: {{text-element}}
 @||@&@ '{v' string 'v}' @ & set the given @string@ in verbatim style. \\
 @||@&@ '{%' string '%}' @ & target-specific content
         (\LaTeX\ code by default, see details
-        in \ref{sss:target-specific-syntax}) \\
+        in \ref{sss:ocamldoc-target-specific-syntax}) \\
 @||@&@ '{!' string '}' @ & insert a cross-reference to an element
-        (see section \ref{sss:crossref} for the syntax of cross-references).\\
+        (see section \ref{sss:ocamldoc-crossref} for the syntax of cross-references).\\
 @||@&@ '{!modules:' string string ... '}' @ & insert an index table
 for the given module names. Used in HTML only.\\
 @||@&@ '{!indexlist}' @ & insert a table of links to the various indexes
@@ -777,7 +774,7 @@ must be	escaped by a '"\\"'\\
 @||@& \nt{blank-line} & force a new line.
 \end{tabular} \\
 
-\subsubsection{List formatting}
+\subsubsection{sss:ocamldoc-list}{List formatting}
 
 \begin{syntax}
 list:
@@ -807,8 +804,7 @@ The same shortcut is available for enumerated lists, using '"+"'
 instead of '"-"'.
 Note that only one list can be defined by this shortcut in nested lists.
 
-\subsubsection{Cross-reference formatting}
-\label{sss:crossref}
+\subsubsection{sss:ocamldoc-crossref}{Cross-reference formatting}
 
 Cross-references are fully qualified element names, as in the example
 "{!Foo.Bar.t}". This is an ambiguous reference as it may designate
@@ -842,7 +838,7 @@ names. For example, the constructor "Node" of the type "tree" will be
 referenced as "{!tree.Node}" or "{!const:tree.Node}", or possibly
 "{!Mod1.Mod2.tree.Node}" from outside the module.
 
-\subsubsection{First sentence}
+\subsubsection{sss:ocamldoc-preamble}{First sentence}
 
 In the description of a value, type, exception, module, module type, class
 or class type, the {\em first sentence} is sometimes used in indexes, or
@@ -863,8 +859,7 @@ outside of the following text formatting :
 @ '{^' text '}' @,
 @ '{_' text '}' @.
 
-\subsubsection{Target-specific formatting}
-\label{sss:target-specific-syntax}
+\subsubsection{sss:ocamldoc-target-specific-syntax}{Target-specific formatting}
 
 The content inside "{%foo: ... %}" is target-specific and will only be
 interpreted by the backend "foo", and ignored by the others. The
@@ -872,7 +867,7 @@ backends of the distribution are "latex", "html", "texi" and "man". If
 no target is specified (syntax "{% ... %}"), "latex" is chosen by
 default. Custom generators may support their own target prefix.
 
-\subsubsection{Recognized HTML tags}
+\subsubsection{sss:ocamldoc-html-tags}{Recognized HTML tags}
 The HTML tags  "<b>..</b>",
 "<code>..</code>",
 "<i>..</i>",
@@ -894,10 +889,10 @@ The HTML tags  "<b>..</b>",
 \setcounter{secnumdepth}{2}
 
 %%%%%%%%%%%%%
-\subsection{Documentation tags (\@-tags)}
-\label{s:ocamldoc-tags}
+\subsection{ss:ocamldoc-tags}{Documentation tags (\@-tags)}
 
-\subsubsection{Predefined tags}
+
+\subsubsection{sss:ocamldoc-builtin-tags}{Predefined tags}
 The following table gives the list of predefined \@-tags, with their
 syntax and meaning.\\
 
@@ -939,8 +934,7 @@ to the given \nt{version} in order to document compatibility issues. \\ \hline
 @ "@version" string @ & The version number for the element. \\ \hline
 \end{tabular}
 
-\subsubsection{Custom tags}
-\label{s:ocamldoc-custom-tags}
+\subsubsection{sss:ocamldoc-custom-tags}{Custom tags}
 You can use custom tags in the documentation comments, but they will
 have no effect if the generator used does not handle them. To use a
 custom tag,  for example "foo", just put "\@foo" with some text in your
@@ -952,11 +946,10 @@ comment, as in:
 \end{verbatim}
 
 To handle custom tags, you need to define a custom generator,
-as explained in section \ref{s:ocamldoc-handling-custom-tags}.
+as explained in section \ref{ss:ocamldoc-handling-custom-tags}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Custom generators}
-\label{s:ocamldoc-custom-generators}
+\section{s:ocamldoc-custom-generators}{Custom generators}
 
 OCamldoc operates in two steps:
 \begin{enumerate}
@@ -975,7 +968,7 @@ The files you can use to define custom generators are installed in the
 "ocamldoc" sub-directory of the OCaml standard library.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The generator modules}
+\subsection{ss:ocamldoc-generators}{The generator modules}
 The type of a generator module depends on the kind of generated documentation.
 Here is the list of generator module types, with the name of the generator
 class in the module~:
@@ -1003,7 +996,7 @@ It is recommended to inherit from the current generator of the same
 kind as the one you want to define. Doing so, it is possible to
 load various custom generators to combine improvements brought by each one.
 
-This is done using first class modules (see chapter \ref{s-first-class-modules}).
+This is done using first class modules (see chapter \ref{s:first-class-modules}).
 
 The easiest way to define a custom generator is the following this example,
 here extending the current HTML generator. We don't have to know if this is
@@ -1042,13 +1035,12 @@ kind of generator you are extending~:
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Handling custom tags}
-\label{s:ocamldoc-handling-custom-tags}
+\subsection{ss:ocamldoc-handling-custom-tags}{Handling custom tags}
 
 Making a custom generator handle custom tags (see
-\ref{s:ocamldoc-custom-tags}) is very simple.
+\ref{sss:ocamldoc-custom-tags}) is very simple.
 
-\subsubsection*{For HTML}
+\subsubsection*{sss:ocamldoc-html-generator}{For HTML}
 Here is how to develop a HTML generator handling your custom tags.
 
 The class "Odoc_html.Generator.html" inherits
@@ -1079,11 +1071,11 @@ function associated to a custom tag and apply it to the text given to
 the tag. If no function is associated to a custom tag, then the method
 prints a warning message on "stderr".
 
-\subsubsection{For other generators}
+\subsubsection{sss:ocamldoc-other-generators}{For other generators}
 You can act the same way for other kinds of generators.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Adding command line options}
+\section{s:ocamldoc-adding-flags}{Adding command line options}
 The command line analysis is performed after loading the module containing the
 documentation generator, thus allowing command line options to be added to the
  list of existing ones. Adding an option can be done with the function
@@ -1094,11 +1086,10 @@ documentation generator, thus allowing command line options to be added to the
 this function.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Compilation and usage}
-\label{s:ocamldoc-compilation-and-usage}
+\subsection{ss:ocamldoc-compilation-and-usage}{Compilation and usage}
 
 %%%%%%%%%%%%%%
-\subsubsection{Defining a custom generator class in one file}
+\subsubsection{sss:ocamldoc-generator-class}{Defining a custom generator class in one file}
 Let "custom.ml" be the file defining a new generator class.
 Compilation of "custom.ml" can be performed by the following command~:
 \begin{alltt}
@@ -1114,7 +1105,7 @@ Compilation of "custom.ml" can be performed by the following command~:
 custom one is ignored.
 
 %%%%%%%%%%%%%%
-\subsubsection{Defining a custom generator class in several files}
+\subsubsection{sss:ocamldoc-modular-generator}{Defining a custom generator class in several files}
 It is possible to define a generator class in several modules, which
 are defined in several files \var{\nth{file}{1}}".ml"["i"],
 \var{\nth{file}{2}}".ml"["i"], ..., \var{\nth{file}{n}}".ml"["i"]. A ".cma"

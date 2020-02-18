@@ -42,6 +42,7 @@ type mapper = {
   class_type_declaration: mapper -> class_type_declaration
                           -> class_type_declaration;
   class_type_field: mapper -> class_type_field -> class_type_field;
+  constant: mapper -> constant -> constant;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
   expr: mapper -> expression -> expression;
@@ -84,6 +85,19 @@ let map_tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
 let map_opt f = function None -> None | Some x -> Some (f x)
 
 let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
+
+module C = struct
+  (* Constants *)
+
+  let map sub c = match c with
+    | Pconst_integer _
+    | Pconst_char _
+    | Pconst_float _
+      -> c
+    | Pconst_string (s, loc, quotation_delimiter) ->
+        let loc = sub.location sub loc in
+        Const.string ~loc ?quotation_delimiter s
+end
 
 module T = struct
   (* Type expressions for the core language *)
@@ -369,7 +383,7 @@ module E = struct
     let attrs = sub.attributes sub attrs in
     match desc with
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
-    | Pexp_constant x -> constant ~loc ~attrs x
+    | Pexp_constant x -> constant ~loc ~attrs (sub.constant sub x)
     | Pexp_let (r, vbs, e) ->
         let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs)
           (sub.expr sub e)
@@ -463,7 +477,7 @@ module P = struct
     | Ppat_any -> any ~loc ~attrs ()
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub.pat sub p) (map_loc sub s)
-    | Ppat_constant c -> constant ~loc ~attrs c
+    | Ppat_constant c -> constant ~loc ~attrs (sub.constant sub c)
     | Ppat_interval (c1, c2) -> interval ~loc ~attrs c1 c2
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)
     | Ppat_construct (l, p) ->
@@ -557,6 +571,7 @@ end
 
 let default_mapper =
   {
+    constant = C.map;
     structure = (fun this l -> List.map (this.structure_item this) l);
     structure_item = M.map_structure_item;
     module_expr = M.map;
@@ -731,16 +746,18 @@ let extension_of_error {kind; main; sub} =
   let str_of_pp pp_msg = Format.asprintf "%t" pp_msg in
   let extension_of_sub sub =
     { loc = sub.loc; txt = "ocaml.error" },
-    PStr ([Str.eval (Exp.constant (Pconst_string (str_of_pp sub.txt, None)))])
+    PStr ([Str.eval (Exp.constant
+                       (Pconst_string (str_of_pp sub.txt, sub.loc, None)))])
   in
   { loc = main.loc; txt = "ocaml.error" },
-  PStr (Str.eval (Exp.constant (Pconst_string (str_of_pp main.txt, None))) ::
+  PStr (Str.eval (Exp.constant
+                    (Pconst_string (str_of_pp main.txt, main.loc, None))) ::
         List.map (fun msg -> Str.extension (extension_of_sub msg)) sub)
 
 let attribute_of_warning loc s =
   Attr.mk
     {loc; txt = "ocaml.ppwarning" }
-    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))]))
+    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, loc, None)))]))
 
 let cookies = ref String.Map.empty
 
@@ -763,7 +780,7 @@ module PpxContext = struct
 
   let lid name = { txt = Lident name; loc = Location.none }
 
-  let make_string x = Exp.constant (Pconst_string (x, None))
+  let make_string s = Exp.constant (Const.string s)
 
   let make_bool x =
     if x
@@ -828,7 +845,7 @@ module PpxContext = struct
   let restore fields =
     let field name payload =
       let rec get_string = function
-        | { pexp_desc = Pexp_constant (Pconst_string (str, None)) } -> str
+        | { pexp_desc = Pexp_constant (Pconst_string (str, _, None)) } -> str
         | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
                              { %s }] string syntax" name
       and get_bool pexp =

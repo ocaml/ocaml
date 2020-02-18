@@ -107,7 +107,7 @@ of the script:
 
 \end{unix}
 
-\section{Options} \label{s:toplevel-options}
+\section{s:toplevel-options}{Options}
 
 The following command-line options are recognized by the "ocaml" command.
 % Configure boolean variables used by the macros in unified-options.etex
@@ -140,8 +140,7 @@ and look up its capabilities in the terminal database.
 \end{options}
 \end{unix}
 
-\section{Toplevel directives}
-\label{s:toplevel-directives}
+\section{s:toplevel-directives}{Toplevel directives}
 
 The following directives control the toplevel behavior, load files in
 memory, and trace program execution.
@@ -311,7 +310,7 @@ directories:
 
 \end{options}
 
-\section{The toplevel and the module system} \label{s:toplevel-modules}
+\section{s:toplevel-modules}{The toplevel and the module system}
 
 Toplevel phrases can refer to identifiers defined in compilation units
 with the same mechanisms as for separately compiled units: either by
@@ -333,7 +332,7 @@ implementation of \var{Mod} has been loaded. The error
 ``reference to undefined global \var{Mod}'' will occur only when
 executing a value or module definition that refers to \var{Mod}.
 
-\section{Common errors}
+\section{s:toplevel-common-errors}{Common errors}
 
 This section describes and explains the most frequently encountered
 error messages.
@@ -367,7 +366,7 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 
 \end{options}
 
-\section{Building custom toplevel systems: \texttt{ocamlmktop}}
+\section{s:custom-toplevel}{Building custom toplevel systems: \texttt{ocamlmktop}}
 
 The "ocamlmktop" command builds OCaml toplevels that
 contain user code preloaded at start-up.
@@ -399,7 +398,7 @@ not opened, though; you still have to do
 \end{verbatim}
 yourself, if this is what you wish.
 
-\subsection{Options}
+\subsection{ss:ocamlmktop-options}{Options}
 
 The following command-line options are recognized by "ocamlmktop".
 
@@ -429,7 +428,7 @@ The default is "a.out".
 
 \end{options}
 
-\section{The native toplevel: \texttt{ocamlnat}\ (experimental)}
+\section{s:ocamlnat}{The native toplevel: \texttt{ocamlnat}\ (experimental)}
 
 {\bf This section describes a tool that is not yet officially supported %
 but may be found useful.}

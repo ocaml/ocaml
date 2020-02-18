@@ -61,7 +61,7 @@
    tast_iterator tast_mapper cmt_format untypeast includemod
    typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
-   typedecl_unboxed
+   typedecl_unboxed typedecl_separability
    ; manual update: mli only files
    annot outcometree
 
@@ -147,7 +147,8 @@
  (modules
    ;; asmcomp/
    afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
-   branch_relaxation_intf cmm cmmgen cmmgen_state coloring comballoc CSE CSEgen
+   branch_relaxation_intf cmm_helpers cmm cmmgen cmmgen_state coloring comballoc
+   CSE CSEgen
    deadcode domainstate emit emitaux interf interval linear linearize linscan
    liveness mach printcmm printlinear printmach proc reg reload reloadgen
    schedgen scheduling selectgen selection spacetime_profiling spill split

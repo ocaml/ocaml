@@ -120,7 +120,9 @@ val dirname : string -> string
 
 val null : string
 (** [null] is ["/dev/null"] on POSIX and ["NUL"] on Windows. It represents a
-    file on the OS that discards all writes and returns end of file on reads. *)
+    file on the OS that discards all writes and returns end of file on reads.
+
+    @since 4.10.0 *)
 
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a

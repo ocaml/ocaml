@@ -161,16 +161,18 @@ extern value caml_ephe_none;
 
 /* In the header, in order to let major_gc.c
    and weak.c see the body of the function */
-static inline void caml_ephe_clean (value v){
+Caml_inline void caml_ephe_clean_partial (value v,
+                                            mlsize_t offset_start,
+                                            mlsize_t offset_end) {
   value child;
   int release_data = 0;
-  mlsize_t size, i;
-  header_t hd;
+  mlsize_t i;
   CAMLassert(caml_gc_phase == Phase_clean);
+  CAMLassert(2 <= offset_start
+             && offset_start <= offset_end
+             && offset_end <= Wosize_hd (Hd_val(v)));
 
-  hd = Hd_val (v);
-  size = Wosize_hd (hd);
-  for (i = 2; i < size; i++){
+  for (i = offset_start; i < offset_end; i++){
     child = Field (v, i);
   ephemeron_again:
     if (child != caml_ephe_none
@@ -198,15 +200,27 @@ static inline void caml_ephe_clean (value v){
 
   child = Field (v, 1);
   if(child != caml_ephe_none){
-      if (release_data){
+    if (release_data){
         Field (v, 1) = caml_ephe_none;
       } else {
-        /* The mark phase must have marked it */
-        CAMLassert( !(Is_block (child) && Is_in_heap (child)
-                  && Is_white_val (child)) );
+        /* If we scanned all the keys and the data field remains filled,
+           then the mark phase must have marked it */
+        CAMLassert( !(offset_start == 2 && offset_end == Wosize_hd (Hd_val(v))
+                      && Is_block (child) && Is_in_heap (child)
+                      && Is_white_val (child)));
       }
   }
 }
+
+Caml_inline void caml_ephe_clean (value v) {
+  mlsize_t size;
+  header_t hd;
+  hd = Hd_val (v);
+  size = Wosize_hd (hd);
+
+  caml_ephe_clean_partial(v, 2, size);
+}
+
 
 #endif /* CAML_INTERNALS */
 

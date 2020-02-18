@@ -95,8 +95,13 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLweakdef
 #endif
 
-/* Alignment */
-#ifdef __GNUC__
+/* Alignment is necessary for domain_state.h, since the code generated */
+/* by ocamlopt makes direct references into the domain state structure,*/
+/* which is stored in a register on many platforms. For this to work, */
+/* we need to be able to compute the exact offset of each member. */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define CAMLalign(n) _Alignas(n)
+#elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
 #elif _MSC_VER >= 1500
 #define CAMLalign(n) __declspec(align(n))
@@ -140,7 +145,7 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 
 #define CAML_STATIC_ASSERT_3(b, l) \
   CAMLunused_start \
-    char static_assertion_failure_line_##l[(b) ? 1 : -1] \
+    CAMLextern char static_assertion_failure_line_##l[(b) ? 1 : -1] \
   CAMLunused_end
 
 #define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
@@ -209,7 +214,7 @@ CAMLnoreturn_end;
    If overflow is reported, this is the exact result modulo 2 to the word size.
 */
 
-static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
+Caml_inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #if __GNUC__ >= 5 || Caml_has_builtin(__builtin_add_overflow)
   return __builtin_add_overflow(a, b, res);
@@ -220,7 +225,7 @@ static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
 #endif
 }
 
-static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
+Caml_inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
   return __builtin_sub_overflow(a, b, res);
@@ -232,7 +237,7 @@ static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
 }
 
 #if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
-static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
+Caml_inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
   return __builtin_mul_overflow(a, b, res);
 }
@@ -503,12 +508,18 @@ extern void caml_instr_atexit (void);
 
 #endif /* CAML_INSTR */
 
-/* Macro used to deactivate thread sanitizer on some functions. */
+/* Macro used to deactivate thread and address sanitizers on some
+   functions. */
 #define CAMLno_tsan
+#define CAMLno_asan
 #if defined(__has_feature)
 #  if __has_feature(thread_sanitizer)
 #    undef CAMLno_tsan
 #    define CAMLno_tsan __attribute__((no_sanitize("thread")))
+#  endif
+#  if __has_feature(address_sanitizer)
+#    undef CAMLno_asan
+#    define CAMLno_asan __attribute__((no_sanitize("address")))
 #  endif
 #endif
 
@@ -528,8 +539,10 @@ int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
 
 /* The [backtrace_slot] type represents values stored in
  * [Caml_state->backtrace_buffer].  In bytecode, it is the same as a
- * [code_t], in native code it as a [frame_descr *].  The difference
- * doesn't matter for code outside [backtrace_{byt,nat}.c],
+ * [code_t], in native code it is either a [frame_descr *] or a [debuginfo],
+ * depending on the second-lowest bit.  In any case, the lowest bit must
+ * be 0.
+ * The representation doesn't matter for code outside [backtrace_{byt,nat}.c],
  * so it is just exposed as a [void *].
  */
 typedef void * backtrace_slot;

@@ -31,6 +31,9 @@
 #include "caml/signals.h"
 #include "caml/weak.h"
 #include "caml/memprof.h"
+#ifdef WITH_SPACETIME
+#include "caml/spacetime.h"
+#endif
 
 /* Pointers into the minor heap.
    [Caml_state->young_base]
@@ -142,6 +145,7 @@ void caml_set_minor_heap_size (asize_t bsz)
 
   CAMLassert (bsz >= Bsize_wsize(Minor_heap_min));
   CAMLassert (bsz <= Bsize_wsize(Minor_heap_max));
+  CAMLassert (bsz % Page_size == 0);
   CAMLassert (bsz % sizeof (value) == 0);
   if (Caml_state->young_ptr != Caml_state->young_alloc_end){
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
@@ -198,6 +202,7 @@ void caml_oldify_one (value v, value *p)
     if (hd == 0){         /* If already forwarded */
       *p = Field (v, 0);  /*  then forward pointer is first field. */
     }else{
+      CAMLassert_young_header(hd);
       tag = Tag_hd (hd);
       if (tag < Infix_tag){
         value field0;
@@ -272,7 +277,7 @@ void caml_oldify_one (value v, value *p)
 }
 
 /* Test if the ephemeron is alive, everything outside minor heap is alive */
-static inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
+Caml_inline int ephe_check_alive_data(struct caml_ephe_ref_elt *re){
   mlsize_t i;
   value child;
   for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++){
@@ -349,10 +354,13 @@ void caml_empty_minor_heap (void)
   struct caml_custom_elt *elt;
   uintnat prev_alloc_words;
   struct caml_ephe_ref_elt *re;
+  CAML_INSTR_DECLARE (tmr);
 
   if (Caml_state->young_ptr != Caml_state->young_alloc_end){
+    CAMLassert_young_header(*(header_t*)Caml_state->young_ptr);
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
-    CAML_INSTR_SETUP (tmr, "minor");
+    CAML_INSTR_ALLOC (tmr);
+    CAML_INSTR_START (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     Caml_state->in_minor_collection = 1;
     caml_gc_message (0x02, "<");
@@ -384,6 +392,8 @@ void caml_empty_minor_heap (void)
     }
     /* Update the OCaml finalise_last values */
     caml_final_update_minor_roots();
+    /* Trigger memprofs callbacks for blocks in the minor heap. */
+    caml_memprof_minor_update();
     /* Run custom block finalisation of dead minor values */
     for (elt = Caml_state->custom_table->base;
          elt < Caml_state->custom_table->ptr; elt++){
@@ -474,10 +484,11 @@ CAMLexport void caml_gc_dispatch (void)
   }
 }
 
-/* Called by [Alloc_small] when [Caml_state->young_ptr] reaches
+/* Called by young allocations when [Caml_state->young_ptr] reaches
    [Caml_state->young_limit]. We may have to either call memprof or
    the gc. */
-void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
+void caml_alloc_small_dispatch (intnat wosize, int flags,
+                                int nallocs, unsigned char* encoded_alloc_lens)
 {
   intnat whsize = Whsize_wosize (wosize);
 
@@ -508,6 +519,11 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
        callbacks. */
     CAML_INSTR_INT ("force_minor/alloc_small@", 1);
     caml_gc_dispatch ();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    if (caml_young_ptr == caml_young_alloc_end) {
+      caml_spacetime_automatic_snapshot();
+    }
+#endif
   }
 
   /* Re-do the allocation: we now have enough space in the minor heap. */
@@ -516,7 +532,8 @@ void caml_alloc_small_dispatch (tag_t tag, intnat wosize, int flags)
   /* Check if the allocated block has been sampled by memprof. */
   if(Caml_state->young_ptr < caml_memprof_young_trigger){
     if(flags & CAML_DO_TRACK) {
-      caml_memprof_track_young(tag, wosize, flags & CAML_FROM_CAML);
+      caml_memprof_track_young(wosize, flags & CAML_FROM_CAML,
+                               nallocs, encoded_alloc_lens);
       /* Until the allocation actually takes place, the heap is in an invalid
          state (see comments in [caml_memprof_track_young]). Hence, very little
          heap operations are allowed before the actual allocation.

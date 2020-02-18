@@ -61,7 +61,7 @@ let transl_extension_constructor env path ext =
   match ext.ext_kind with
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
-        [Lconst (Const_base (Const_string (name, None)));
+        [Lconst (Const_base (Const_string (name, loc, None)));
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
         loc)
   | Text_rebind(path, _lid) ->
@@ -131,6 +131,10 @@ let rec push_defaults loc bindings cases partial =
       let env = Env.add_value param desc exp.exp_env in
       let name = Ident.name param in
       let exp =
+        let cases =
+          let pure_case ({c_lhs; _} as case) =
+            {case with c_lhs = as_computation_pattern c_lhs} in
+          List.map pure_case cases in
         { exp with exp_loc = loc; exp_env = env; exp_desc =
           Texp_match
             ({exp with exp_type = pat.pat_type; exp_env = env; exp_desc =
@@ -170,16 +174,17 @@ let assert_failed exp =
     transl_extension_path Location.none
       Env.initial_safe_string Predef.path_assert_failure
   in
+  let loc = exp.exp_loc in
   let (fname, line, char) =
-    Location.get_pos_info exp.exp_loc.Location.loc_start
+    Location.get_pos_info loc.Location.loc_start
   in
   Lprim(Praise Raise_regular, [event_after exp
     (Lprim(Pmakeblock(0, Immutable, None),
           [slot;
            Lconst(Const_block(0,
-              [Const_base(Const_string (fname, None));
+              [Const_base(Const_string (fname, loc, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))], exp.exp_loc))], exp.exp_loc)
+               Const_base(Const_int char)]))], loc))], loc)
 ;;
 
 let rec cut n l =
@@ -966,7 +971,7 @@ and transl_match e arg pat_expr_list partial =
       assert (static_handlers = []);
       Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
     | arg, _ :: _ ->
-        let val_id = Typecore.name_cases "val" pat_expr_list in
+        let val_id = Typecore.name_pattern "val" (List.map fst val_cases) in
         let k = Typeopt.value_kind arg.exp_env arg.exp_type in
         static_catch [transl_exp arg] [val_id, k]
           (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)

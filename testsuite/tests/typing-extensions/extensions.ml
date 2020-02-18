@@ -668,6 +668,19 @@ let y = x (* Prints Bar and part of Foo (which has been shadowed) *)
 val y : exn * exn = (Foo (3, _), Bar (Some 5))
 |}]
 
+module Empty = struct end
+module F(X:sig end) = struct
+  type t = ..
+  type t += A
+end
+let x = let open F(Empty) in (A:F(Empty).t) (* A is not printed *)
+[%%expect {|
+module Empty : sig end
+module F : functor (X : sig end) -> sig type t = .. type t += A end
+val x : F(Empty).t = <extension>
+|}]
+
+
 (* Test Obj functions *)
 
 type foo = ..

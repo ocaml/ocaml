@@ -19,8 +19,7 @@ open Typedtree
 type iterator =
   {
     binding_op: iterator -> binding_op -> unit;
-    case: iterator -> case -> unit;
-    cases: iterator -> case list -> unit;
+    case: 'k . iterator -> 'k case -> unit;
     class_declaration: iterator -> class_declaration -> unit;
     class_description: iterator -> class_description -> unit;
     class_expr: iterator -> class_expr -> unit;
@@ -41,7 +40,7 @@ type iterator =
     module_type: iterator -> module_type -> unit;
     module_type_declaration: iterator -> module_type_declaration -> unit;
     package_type: iterator -> package_type -> unit;
-    pat: iterator -> pattern -> unit;
+    pat: 'k . iterator -> 'k general_pattern -> unit;
     row_field: iterator -> row_field -> unit;
     object_field: iterator -> object_field -> unit;
     open_declaration: iterator -> open_declaration -> unit;
@@ -149,15 +148,17 @@ let extension_constructor sub {ext_kind; _} =
       Option.iter (sub.typ sub) cto
   | Text_rebind _ -> ()
 
-let pat sub {pat_extra; pat_desc; pat_env; _} =
-  let extra = function
-    | Tpat_type _ -> ()
-    | Tpat_unpack -> ()
-    | Tpat_open (_, _, env) -> sub.env sub env
-    | Tpat_constraint ct -> sub.typ sub ct
-  in
+let pat_extra sub (e, _loc, _attrs) = match e with
+  | Tpat_type _ -> ()
+  | Tpat_unpack -> ()
+  | Tpat_open (_, _, env) -> sub.env sub env
+  | Tpat_constraint ct -> sub.typ sub ct
+
+let pat
+  : type k . iterator -> k general_pattern -> unit
+  = fun sub {pat_extra = extra; pat_desc; pat_env; _} ->
   sub.env sub pat_env;
-  List.iter (fun (e, _, _) -> extra e) pat_extra;
+  List.iter (pat_extra sub) extra;
   match pat_desc with
   | Tpat_any  -> ()
   | Tpat_var _ -> ()
@@ -167,12 +168,13 @@ let pat sub {pat_extra; pat_desc; pat_env; _} =
   | Tpat_variant (_, po, _) -> Option.iter (sub.pat sub) po
   | Tpat_record (l, _) -> List.iter (fun (_, _, i) -> sub.pat sub i) l
   | Tpat_array l -> List.iter (sub.pat sub) l
+  | Tpat_alias (p, _, _) -> sub.pat sub p
+  | Tpat_lazy p -> sub.pat sub p
+  | Tpat_value p -> sub.pat sub (p :> pattern)
+  | Tpat_exception p -> sub.pat sub p
   | Tpat_or (p1, p2, _) ->
       sub.pat sub p1;
       sub.pat sub p2
-  | Tpat_alias (p, _, _) -> sub.pat sub p
-  | Tpat_lazy p -> sub.pat sub p
-  | Tpat_exception p -> sub.pat sub p
 
 let expr sub {exp_extra; exp_desc; exp_env; _} =
   let extra = function
@@ -191,16 +193,17 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_let (rec_flag, list, exp) ->
       sub.value_bindings sub (rec_flag, list);
       sub.expr sub exp
-  | Texp_function {cases; _} -> sub.cases sub cases
+  | Texp_function {cases; _} ->
+     List.iter (sub.case sub) cases
   | Texp_apply (exp, list) ->
       sub.expr sub exp;
       List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
   | Texp_match (exp, cases, _) ->
       sub.expr sub exp;
-      sub.cases sub cases
+      List.iter (sub.case sub) cases
   | Texp_try (exp, cases) ->
       sub.expr sub exp;
-      sub.cases sub cases
+      List.iter (sub.case sub) cases
   | Texp_tuple list -> List.iter (sub.expr sub) list
   | Texp_construct (_, _, args) -> List.iter (sub.expr sub) args
   | Texp_variant (_, expo) -> Option.iter (sub.expr sub) expo
@@ -450,8 +453,6 @@ let class_field sub {cf_desc; _} = match cf_desc with
 
 let value_bindings sub (_, list) = List.iter (sub.value_binding sub) list
 
-let cases sub l = List.iter (sub.case sub) l
-
 let case sub {c_lhs; c_guard; c_rhs} =
   sub.pat sub c_lhs;
   Option.iter (sub.expr sub) c_guard;
@@ -467,7 +468,6 @@ let default_iterator =
   {
     binding_op;
     case;
-    cases;
     class_declaration;
     class_description;
     class_expr;

@@ -815,28 +815,47 @@ let pp_set_margin state n =
 (** Geometry functions and types *)
 type geometry = { max_indent:int; margin: int}
 
+let validate_geometry {margin; max_indent} =
+  if max_indent < 2 then
+    Error "max_indent < 2"
+  else if margin <= max_indent then
+    Error "margin <= max_indent"
+  else Ok ()
+
 let check_geometry geometry =
-  geometry.max_indent > 1
-  &&  geometry.margin > geometry.max_indent
+  match validate_geometry geometry with
+  | Ok () -> true
+  | Error _ -> false
 
 let pp_get_margin state () = state.pp_margin
 
+let pp_set_full_geometry state {margin; max_indent} =
+  pp_set_margin state margin;
+  pp_set_max_indent state max_indent;
+  ()
+
 let pp_set_geometry state ~max_indent ~margin =
-  if max_indent < 2 then
-    raise (Invalid_argument "Format.pp_set_geometry: max_indent < 2")
-  else if margin <= max_indent then
-      raise (Invalid_argument "Format.pp_set_geometry: margin <= max_indent")
-  else
-    pp_set_margin state margin; pp_set_max_indent state max_indent
+  let geometry = { max_indent; margin } in
+  match validate_geometry geometry with
+  | Error msg ->
+    raise (Invalid_argument ("Format.pp_set_geometry: " ^ msg))
+  | Ok () ->
+    pp_set_full_geometry state geometry
 
 let pp_safe_set_geometry state ~max_indent ~margin =
-  if check_geometry {max_indent;margin} then
-    pp_set_geometry state ~max_indent ~margin
-  else
-    ()
+  let geometry = { max_indent; margin } in
+  match validate_geometry geometry with
+  | Error _msg ->
+     ()
+  | Ok () ->
+    pp_set_full_geometry state geometry
 
 let pp_get_geometry state () =
   { margin = pp_get_margin state (); max_indent = pp_get_max_indent state () }
+
+let pp_update_geometry state update =
+  let geometry = pp_get_geometry state () in
+  pp_set_full_geometry state (update geometry)
 
 (* Setting a formatter basic output functions. *)
 let pp_set_formatter_out_functions state {
@@ -1123,6 +1142,7 @@ and get_max_indent = pp_get_max_indent std_formatter
 and set_geometry = pp_set_geometry std_formatter
 and safe_set_geometry = pp_safe_set_geometry std_formatter
 and get_geometry = pp_get_geometry std_formatter
+and update_geometry = pp_update_geometry std_formatter
 
 and set_max_boxes = pp_set_max_boxes std_formatter
 and get_max_boxes = pp_get_max_boxes std_formatter

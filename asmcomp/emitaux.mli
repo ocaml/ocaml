@@ -38,17 +38,22 @@ val emit_debug_info_gen :
   (file_num:int -> file_name:string -> unit) ->
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
+type frame_debuginfo =
+  | Dbg_alloc of Debuginfo.alloc_dbginfo
+  | Dbg_raise of Debuginfo.t
+  | Dbg_other of Debuginfo.t
+
 val record_frame_descr :
   label:int ->              (* Return address *)
   frame_size:int ->         (* Size of stack frame *)
   live_offset:int list ->   (* Offsets/regs of live addresses *)
-  raise_frame:bool ->       (* Is frame for a raise? *)
-  Debuginfo.t ->            (* Location, if any *)
+  frame_debuginfo ->        (* Location, if any *)
   unit
 
 type emit_frame_actions =
   { efa_code_label: int -> unit;
     efa_data_label: int -> unit;
+    efa_8: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
     efa_word: int -> unit;

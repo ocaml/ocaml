@@ -103,10 +103,37 @@ static struct debug_info *find_debug_info(code_t pc)
 
 static int cmp_ev_info(const void *a, const void *b)
 {
-  code_t pc_a = ((const struct ev_info*)a)->ev_pc;
-  code_t pc_b = ((const struct ev_info*)b)->ev_pc;
+  const struct ev_info* ev_a = a;
+  const struct ev_info* ev_b = b;
+  code_t pc_a = ev_a->ev_pc;
+  code_t pc_b = ev_b->ev_pc;
+  int num_a;
+  int num_b;
+
+  /* Perform a full lexicographic comparison to make sure the resulting order is
+     the same under all implementations of qsort (which is not stable). */
+
   if (pc_a > pc_b) return 1;
   if (pc_a < pc_b) return -1;
+
+  num_a = ev_a->ev_lnum;
+  num_b = ev_b->ev_lnum;
+
+  if (num_a > num_b) return 1;
+  if (num_a < num_b) return -1;
+
+  num_a = ev_a->ev_startchr;
+  num_b = ev_b->ev_startchr;
+
+  if (num_a > num_b) return 1;
+  if (num_a < num_b) return -1;
+
+  num_a = ev_a->ev_endchr;
+  num_b = ev_b->ev_endchr;
+
+  if (num_a > num_b) return 1;
+  if (num_a < num_b) return -1;
+
   return 0;
 }
 
@@ -143,13 +170,10 @@ static struct ev_info *process_debug_events(code_t code_start,
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
 
       {
-        uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
-        events[j].ev_filename = (char*)caml_stat_alloc_noexc(fnsz);
+        const char *fname = String_val(Field(ev_start, POS_FNAME));
+        events[j].ev_filename = caml_stat_strdup_noexc(fname);
         if(events[j].ev_filename == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
-        memcpy(events[j].ev_filename,
-            String_val(Field(ev_start, POS_FNAME)),
-            fnsz);
       }
 
       events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
@@ -247,7 +271,9 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
   for (/*nothing*/; sp < Caml_state->trapsp; sp++) {
-    code_t p = (code_t) *sp;
+    code_t p;
+    if (Is_long(*sp)) continue;
+    p = (code_t) *sp;
     if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
       Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = p;
@@ -261,7 +287,10 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
 code_t caml_next_frame_pointer(value ** sp, value ** trsp)
 {
   while (*sp < Caml_state->stack_high) {
-    code_t *p = (code_t*) (*sp)++;
+    value *spv = (*sp)++;
+    code_t *p;
+    if (Is_long(*spv)) continue;
+    p = (code_t*) spv;
     if(&Trap_pc(*trsp) == p) {
       *trsp = Trap_link(*trsp);
       continue;
@@ -273,32 +302,38 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
   return NULL;
 }
 
-intnat caml_current_callstack_size(intnat max_frames)
+#define Default_callstack_size 32
+intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
+                                      intnat max_frames, int alloc_idx)
 {
-  intnat trace_size;
   value * sp = Caml_state->extern_sp;
   value * trsp = Caml_state->trapsp;
+  intnat trace_pos = 0;
+  CAMLassert(alloc_idx == 0 || alloc_idx == -1);
 
-  for (trace_size = 0; trace_size < max_frames; trace_size++) {
+  if (max_frames <= 0) return 0;
+  if (*plen == 0) {
+    value* trace =
+      caml_stat_alloc_noexc(Default_callstack_size * sizeof(value));
+    if (trace == NULL) return 0;
+    *ptrace = trace;
+    *plen = Default_callstack_size;
+  }
+
+  while (trace_pos < max_frames) {
     code_t p = caml_next_frame_pointer(&sp, &trsp);
     if (p == NULL) break;
+    if (trace_pos == *plen) {
+      intnat new_len = *plen * 2;
+      value * trace = caml_stat_resize_noexc(*ptrace, new_len * sizeof(value));
+      if (trace == NULL) break;
+      *ptrace = trace;
+      *plen = new_len;
+    }
+    (*ptrace)[trace_pos++] = Val_backtrace_slot(p);
   }
 
-  return trace_size;
-}
-
-void caml_current_callstack_write(value trace) {
-  value * sp = Caml_state->extern_sp;
-  value * trsp = Caml_state->trapsp;
-  uintnat trace_pos, trace_size = Wosize_val(trace);
-
-  for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-    code_t p = caml_next_frame_pointer(&sp, &trsp);
-    CAMLassert(p != NULL);
-    /* [Val_backtrace_slot(...)] is always a long, no need to call
-       [caml_modify]. */
-    Field(trace, trace_pos) = Val_backtrace_slot(p);
-  }
+  return trace_pos;
 }
 
 /* Read the debugging info contained in the current bytecode executable. */

@@ -77,14 +77,16 @@ let constructor_args priv cd_args cd_res path rep =
         | Record_unboxed _ -> unboxed_true_default_false
         | _ -> unboxed_false_default_false
       in
+      let arity = List.length type_params in
       let tdecl =
         {
           type_params;
-          type_arity = List.length type_params;
+          type_arity = arity;
           type_kind = Type_record (lbls, rep);
           type_private = priv;
           type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
+          type_separability = Types.Separability.default_signature ~arity;
           type_is_newtype = false;
           type_expansion_scope = Btype.lowest_level;
           type_loc = Location.none;

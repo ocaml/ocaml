@@ -25,12 +25,22 @@ type partial = Partial | Total
 type attribute = Parsetree.attribute
 type attributes = attribute list
 
-type pattern =
-  { pat_desc: pattern_desc;
+type value = Value_pattern
+type computation = Computation_pattern
+
+type _ pattern_category =
+| Value : value pattern_category
+| Computation : computation pattern_category
+
+type pattern = value general_pattern
+and 'k general_pattern = 'k pattern_desc pattern_data
+
+and 'a pattern_data =
+  { pat_desc: 'a;
     pat_loc: Location.t;
     pat_extra : (pat_extra * Location.t * attribute list) list;
     pat_type: type_expr;
-    mutable pat_env: Env.t;
+    pat_env: Env.t;
     pat_attributes: attribute list;
    }
 
@@ -40,22 +50,35 @@ and pat_extra =
   | Tpat_open of Path.t * Longident.t loc * Env.t
   | Tpat_unpack
 
-and pattern_desc =
-    Tpat_any
-  | Tpat_var of Ident.t * string loc
-  | Tpat_alias of pattern * Ident.t * string loc
-  | Tpat_constant of constant
-  | Tpat_tuple of pattern list
-  | Tpat_construct of
-      Longident.t loc * constructor_description * pattern list
-  | Tpat_variant of label * pattern option * row_desc ref
-  | Tpat_record of
-      (Longident.t loc * label_description * pattern) list *
-        closed_flag
-  | Tpat_array of pattern list
-  | Tpat_or of pattern * pattern * row_desc option
-  | Tpat_lazy of pattern
-  | Tpat_exception of pattern
+and 'k pattern_desc =
+  (* value patterns *)
+  | Tpat_any : value pattern_desc
+  | Tpat_var : Ident.t * string loc -> value pattern_desc
+  | Tpat_alias :
+      value general_pattern * Ident.t * string loc -> value pattern_desc
+  | Tpat_constant : constant -> value pattern_desc
+  | Tpat_tuple : value general_pattern list -> value pattern_desc
+  | Tpat_construct :
+      Longident.t loc * constructor_description * value general_pattern list ->
+      value pattern_desc
+  | Tpat_variant :
+      label * value general_pattern option * row_desc ref ->
+      value pattern_desc
+  | Tpat_record :
+      (Longident.t loc * label_description * value general_pattern) list *
+        closed_flag ->
+      value pattern_desc
+  | Tpat_array : value general_pattern list -> value pattern_desc
+  | Tpat_lazy : value general_pattern -> value pattern_desc
+  (* computation patterns *)
+  | Tpat_value : tpat_value_argument -> computation pattern_desc
+  | Tpat_exception : value general_pattern -> computation pattern_desc
+  (* generic constructions *)
+  | Tpat_or :
+      'k general_pattern * 'k general_pattern * row_desc option ->
+      'k pattern_desc
+
+and tpat_value_argument = value general_pattern
 
 and expression =
   { exp_desc: expression_desc;
@@ -77,10 +100,10 @@ and expression_desc =
   | Texp_constant of constant
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of { arg_label : arg_label; param : Ident.t;
-      cases : case list; partial : partial; }
+      cases : value case list; partial : partial; }
   | Texp_apply of expression * (arg_label * expression option) list
-  | Texp_match of expression * case list * partial
-  | Texp_try of expression * case list
+  | Texp_match of expression * computation case list * partial
+  | Texp_try of expression * value case list
   | Texp_tuple of expression list
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
@@ -117,7 +140,7 @@ and expression_desc =
       let_ : binding_op;
       ands : binding_op list;
       param : Ident.t;
-      body : case;
+      body : value case;
       partial : partial;
     }
   | Texp_unreachable
@@ -128,9 +151,9 @@ and meth =
     Tmeth_name of string
   | Tmeth_val of Ident.t
 
-and case =
+and 'k case =
     {
-     c_lhs: pattern;
+     c_lhs: 'k general_pattern;
      c_guard: expression option;
      c_rhs: expression;
     }
@@ -592,58 +615,138 @@ and 'a class_infos =
 
 (* Auxiliary functions over the a.s.t. *)
 
-let shallow_iter_pattern_desc f = function
-  | Tpat_alias(p, _, _) -> f p
-  | Tpat_tuple patl -> List.iter f patl
-  | Tpat_construct(_, _, patl) -> List.iter f patl
-  | Tpat_variant(_, pat, _) -> Option.iter f pat
+let as_computation_pattern (p : pattern) : computation general_pattern =
+  {
+    pat_desc = Tpat_value p;
+    pat_loc = p.pat_loc;
+    pat_extra = [];
+    pat_type = p.pat_type;
+    pat_env = p.pat_env;
+    pat_attributes = [];
+  }
+
+let rec classify_pattern_desc : type k . k pattern_desc -> k pattern_category =
+  function
+  | Tpat_alias _ -> Value
+  | Tpat_tuple _ -> Value
+  | Tpat_construct _ -> Value
+  | Tpat_variant _ -> Value
+  | Tpat_record _ -> Value
+  | Tpat_array _ -> Value
+  | Tpat_lazy _ -> Value
+  | Tpat_any -> Value
+  | Tpat_var _ -> Value
+  | Tpat_constant _ -> Value
+
+  | Tpat_value _ -> Computation
+  | Tpat_exception _ -> Computation
+
+  | Tpat_or(p1, p2, _) ->
+     begin match classify_pattern p1, classify_pattern p2 with
+     | Value, Value -> Value
+     | Computation, Computation -> Computation
+     end
+
+and classify_pattern
+  : type k . k general_pattern -> k pattern_category
+  = fun pat ->
+  classify_pattern_desc pat.pat_desc
+
+type pattern_action =
+  { f : 'k . 'k general_pattern -> unit }
+let shallow_iter_pattern_desc
+  : type k . pattern_action -> k pattern_desc -> unit
+  = fun f -> function
+  | Tpat_alias(p, _, _) -> f.f p
+  | Tpat_tuple patl -> List.iter f.f patl
+  | Tpat_construct(_, _, patl) -> List.iter f.f patl
+  | Tpat_variant(_, pat, _) -> Option.iter f.f pat
   | Tpat_record (lbl_pat_list, _) ->
-      List.iter (fun (_, _, pat) -> f pat) lbl_pat_list
-  | Tpat_array patl -> List.iter f patl
-  | Tpat_or(p1, p2, _) -> f p1; f p2
-  | Tpat_lazy p -> f p
-  | Tpat_exception p -> f p
+      List.iter (fun (_, _, pat) -> f.f pat) lbl_pat_list
+  | Tpat_array patl -> List.iter f.f patl
+  | Tpat_lazy p -> f.f p
   | Tpat_any
   | Tpat_var _
   | Tpat_constant _ -> ()
+  | Tpat_value p -> f.f p
+  | Tpat_exception p -> f.f p
+  | Tpat_or(p1, p2, _) -> f.f p1; f.f p2
 
-let shallow_map_pattern_desc f d =
-  match d with
+type pattern_transformation =
+  { f : 'k . 'k general_pattern -> 'k general_pattern }
+let shallow_map_pattern_desc
+  : type k . pattern_transformation -> k pattern_desc -> k pattern_desc
+  = fun f d -> match d with
   | Tpat_alias (p1, id, s) ->
-      Tpat_alias (f p1, id, s)
+      Tpat_alias (f.f p1, id, s)
   | Tpat_tuple pats ->
-      Tpat_tuple (List.map f pats)
+      Tpat_tuple (List.map f.f pats)
   | Tpat_record (lpats, closed) ->
-      Tpat_record (List.map (fun (lid, l,p) -> lid, l, f p) lpats, closed)
+      Tpat_record (List.map (fun (lid, l,p) -> lid, l, f.f p) lpats, closed)
   | Tpat_construct (lid, c,pats) ->
-      Tpat_construct (lid, c, List.map f pats)
+      Tpat_construct (lid, c, List.map f.f pats)
   | Tpat_array pats ->
-      Tpat_array (List.map f pats)
-  | Tpat_lazy p1 -> Tpat_lazy (f p1)
-  | Tpat_exception p1 -> Tpat_exception (f p1)
+      Tpat_array (List.map f.f pats)
+  | Tpat_lazy p1 -> Tpat_lazy (f.f p1)
   | Tpat_variant (x1, Some p1, x2) ->
-      Tpat_variant (x1, Some (f p1), x2)
-  | Tpat_or (p1,p2,path) ->
-      Tpat_or (f p1, f p2, path)
+      Tpat_variant (x1, Some (f.f p1), x2)
   | Tpat_var _
   | Tpat_constant _
   | Tpat_any
   | Tpat_variant (_,None,_) -> d
+  | Tpat_value p -> Tpat_value (f.f p)
+  | Tpat_exception p -> Tpat_exception (f.f p)
+  | Tpat_or (p1,p2,path) ->
+      Tpat_or (f.f p1, f.f p2, path)
 
-let rec iter_pattern f p =
-  f p;
-  shallow_iter_pattern_desc (iter_pattern f) p.pat_desc
+let rec iter_general_pattern
+  : type k . pattern_action -> k general_pattern -> unit
+  = fun f p ->
+  f.f p;
+  shallow_iter_pattern_desc
+    { f = fun p -> iter_general_pattern f p }
+    p.pat_desc
 
-let exists_pattern f p =
+let iter_pattern (f : pattern -> unit) =
+  iter_general_pattern
+    { f = fun (type k) (p : k general_pattern) ->
+          match classify_pattern p with
+          | Value -> f p
+          | Computation -> () }
+
+let rec map_general_pattern
+  : type k . pattern_transformation -> k general_pattern -> k general_pattern
+  = fun f p ->
+  let pat_desc =
+    shallow_map_pattern_desc
+      { f = fun p -> map_general_pattern f p }
+      p.pat_desc in
+  f.f { p with pat_desc }
+
+type pattern_predicate = { f : 'k . 'k general_pattern -> bool }
+let exists_general_pattern (f : pattern_predicate) p =
   let exception Found in
-  let raiser f x = if (f x) then raise Found else () in
-  match iter_pattern (raiser f) p with
+  match
+    iter_general_pattern
+      { f = fun p -> if f.f p then raise Found else () }
+      p
+  with
   | exception Found -> true
   | () -> false
 
+let exists_pattern (f : pattern -> bool) =
+  exists_general_pattern
+    { f = fun (type k) (p : k general_pattern) ->
+          match classify_pattern p with
+          | Value -> f p
+          | Computation -> false }
+
+
 (* List the identifiers bound by a pattern or a let *)
 
-let rec iter_bound_idents f pat =
+let rec iter_bound_idents
+  : type k . _ -> k general_pattern -> _
+  = fun f pat ->
   match pat.pat_desc with
   | Tpat_var (id,s) ->
      f (id,s,pat.pat_type)
@@ -654,7 +757,9 @@ let rec iter_bound_idents f pat =
       (* Invariant : both arguments bind the same variables *)
       iter_bound_idents f p1
   | d ->
-     shallow_iter_pattern_desc (iter_bound_idents f) d
+     shallow_iter_pattern_desc
+       { f = fun p -> iter_bound_idents f p }
+       d
 
 let rev_pat_bound_idents_full pat =
   let idents_full = ref [] in
@@ -683,48 +788,54 @@ let let_bound_idents pat =
 
 let alpha_var env id = List.assoc id env
 
-let rec alpha_pat env p = match p.pat_desc with
-| Tpat_var (id, s) -> (* note the ``Not_found'' case *)
-    {p with pat_desc =
-     try Tpat_var (alpha_var env id, s) with
-     | Not_found -> Tpat_any}
-| Tpat_alias (p1, id, s) ->
-    let new_p =  alpha_pat env p1 in
-    begin try
-      {p with pat_desc = Tpat_alias (new_p, alpha_var env id, s)}
-    with
-    | Not_found -> new_p
-    end
-| d ->
-    {p with pat_desc = shallow_map_pattern_desc (alpha_pat env) d}
+let rec alpha_pat
+  : type k . _ -> k general_pattern -> k general_pattern
+  = fun env p -> match p.pat_desc with
+  | Tpat_var (id, s) -> (* note the ``Not_found'' case *)
+      {p with pat_desc =
+       try Tpat_var (alpha_var env id, s) with
+       | Not_found -> Tpat_any}
+  | Tpat_alias (p1, id, s) ->
+      let new_p =  alpha_pat env p1 in
+      begin try
+        {p with pat_desc = Tpat_alias (new_p, alpha_var env id, s)}
+      with
+      | Not_found -> new_p
+      end
+  | d ->
+     let pat_desc =
+       shallow_map_pattern_desc { f = fun p -> alpha_pat env p } d in
+     {p with pat_desc}
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc
 
 let split_pattern pat =
-  let combine_pattern_desc_opts ~into p1 p2 =
+  let combine_opts merge p1 p2 =
     match p1, p2 with
     | None, None -> None
     | Some p, None
     | None, Some p ->
         Some p
     | Some p1, Some p2 ->
-        (* The third parameter of [Tpat_or] is [Some _] only for "#typ"
-           patterns, which we do *not* expand. Hence we can put [None] here. *)
-        Some { into with pat_desc = Tpat_or (p1, p2, None) }
+        Some (merge p1 p2)
   in
-  let rec split_pattern pat =
-    match pat.pat_desc with
-    | Tpat_or (p1, p2, None) ->
-        let vals1, exns1 = split_pattern p1 in
-        let vals2, exns2 = split_pattern p2 in
-        combine_pattern_desc_opts ~into:pat vals1 vals2,
-        (* We could change the pattern type for exception patterns to
-           [Predef.exn], but it doesn't really matter. *)
-        combine_pattern_desc_opts ~into:pat exns1 exns2
+  let into pat p1 p2 =
+    (* The third parameter of [Tpat_or] is [Some _] only for "#typ"
+       patterns, which we do *not* expand. Hence we can put [None] here. *)
+    { pat with pat_desc = Tpat_or (p1, p2, None) } in
+  let rec split_pattern cpat =
+    match cpat.pat_desc with
+    | Tpat_value p ->
+        Some p, None
     | Tpat_exception p ->
         None, Some p
-    | _ ->
-        Some pat, None
+    | Tpat_or (cp1, cp2, _) ->
+        let vals1, exns1 = split_pattern cp1 in
+        let vals2, exns2 = split_pattern cp2 in
+        combine_opts (into cpat) vals1 vals2,
+        (* We could change the pattern type for exception patterns to
+           [Predef.exn], but it doesn't really matter. *)
+        combine_opts (into cpat) exns1 exns2
   in
   split_pattern pat

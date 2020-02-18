@@ -5,13 +5,10 @@ Line 1, characters 19-20:
 1 | let () = f (module N);;
                        ^
 Error: Signature mismatch:
-       Modules do not match:
-         sig type 'a t = 'a end
-       is not included in
-         sig type t = N.t end
+       Modules do not match: sig type 'a t = 'a end is not included in S
        Type declarations do not match:
          type 'a t = 'a
        is not included in
-         type t = N.t
+         type t
        They have different arities.
 

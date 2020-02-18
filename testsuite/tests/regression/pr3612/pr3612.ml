@@ -6,7 +6,7 @@ type t
 
 external test_alloc : unit -> t = "caml_test_pr3612_alloc"
 external get_counter : unit -> int = "caml_test_pr3612_counter"
-(* The number of deserialized blocs minus the number of freed blocs *)
+(* The number of deserialized blocks minus the number of freed blocks *)
 
 external init : unit -> unit = "caml_test_pr3612_init"
 

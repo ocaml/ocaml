@@ -28,10 +28,13 @@ let fmt_position with_name f l =
 ;;
 
 let fmt_location f loc =
-  let p_2nd_name = loc.loc_start.pos_fname <> loc.loc_end.pos_fname in
-  fprintf f "(%a..%a)" (fmt_position true) loc.loc_start
-                       (fmt_position p_2nd_name) loc.loc_end;
-  if loc.loc_ghost then fprintf f " ghost";
+  if not !Clflags.locations then ()
+  else begin
+    let p_2nd_name = loc.loc_start.pos_fname <> loc.loc_end.pos_fname in
+    fprintf f "(%a..%a)" (fmt_position true) loc.loc_start
+                         (fmt_position p_2nd_name) loc.loc_end;
+    if loc.loc_ghost then fprintf f " ghost";
+  end
 ;;
 
 let rec fmt_longident_aux f x =
@@ -64,9 +67,10 @@ let fmt_constant f x =
   match x with
   | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
   | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
-  | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
-  | Pconst_string (s, Some delim) ->
-      fprintf f "PConst_string (%S,Some %S)" s delim;
+  | Pconst_string (s, strloc, None) ->
+      fprintf f "PConst_string(%S,%a,None)" s fmt_location strloc ;
+  | Pconst_string (s, strloc, Some delim) ->
+      fprintf f "PConst_string (%S,%a,Some %S)" s fmt_location strloc delim;
   | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
 ;;
 

@@ -45,7 +45,8 @@ utils_modules := $(addprefix utils/,\
 
 parsing_modules := $(addprefix parsing/,\
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
-  attr_helper builtin_attributes pprintast)
+  attr_helper builtin_attributes pprintast \
+  lexer camlinternalMenhirLib parser parse)
 
 typing_modules := $(addprefix typing/,\
   ident path type_immediacy types btype primitive typedtree subst predef \
@@ -68,11 +69,11 @@ compiler_modules := $(addprefix $(ROOTDIR)/,\
   $(typing_modules) $(bytecomp_modules) $(other_compiler_modules))
 
 debugger_modules := \
-  int64ops primitives unix_tools debugger_config parameters lexer \
+  int64ops primitives unix_tools debugger_config parameters debugger_lexer \
   input_handling question debugcom exec source pos checkpoints events \
   program_loading symbols breakpoints trap_barrier history printval \
   show_source time_travel program_management frames eval \
-  show_information loadprinter parser command_line main
+  show_information loadprinter debugger_parser command_line main
 
 all_modules := $(compiler_modules) $(debugger_modules)
 
@@ -103,16 +104,16 @@ depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
-lexer.ml: lexer.mll
+debugger_lexer.ml: debugger_lexer.mll
 	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 clean::
-	rm -f lexer.ml
-beforedepend:: lexer.ml
+	rm -f debugger_lexer.ml
+beforedepend:: debugger_lexer.ml
 
-parser.ml parser.mli: parser.mly
-	$(CAMLYACC) parser.mly
+debugger_parser.ml debugger_parser.mli: debugger_parser.mly
+	$(CAMLYACC) debugger_parser.mly
 clean::
-	rm -f parser.ml parser.mli
-beforedepend:: parser.ml parser.mli
+	rm -f debugger_parser.ml debugger_parser.mli
+beforedepend:: debugger_parser.ml debugger_parser.mli
 
 include .depend

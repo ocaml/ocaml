@@ -32,6 +32,7 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
+#include "caml/memprof.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 #define NATIVE_CODE_AND_NO_NAKED_POINTERS
@@ -40,7 +41,7 @@
 #endif
 
 #ifdef _MSC_VER
-static inline double fmin(double a, double b) {
+Caml_inline double fmin(double a, double b) {
   return (a < b) ? a : b;
 }
 #endif
@@ -87,7 +88,7 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
       - the ephemerons in (3) are in an unknown state and must be checked
 
     At the end of mark phase, (3) is empty and ephe_list_pure is true.
-    The ephemeron in (1) and (2) will be cleaned (white keys and datas
+    The ephemeron in (1) and (2) will be cleaned (white keys and data
     replaced by none or the ephemeron is removed from the list if it is white)
     in clean phase.
 
@@ -232,9 +233,9 @@ static void init_sweep_phase(void)
 }
 
 /* auxiliary function of mark_slice */
-static inline value* mark_slice_darken(value *gray_vals_ptr,
-                                       value v, mlsize_t i,
-                                       int in_ephemeron, int *slice_pointers)
+Caml_inline value* mark_slice_darken(value *gray_vals_ptr,
+                                     value v, mlsize_t i,
+                                     int in_ephemeron, int *slice_pointers)
 {
   value child;
   header_t chd;
@@ -415,7 +416,7 @@ static void mark_slice (intnat work)
         CAMLassert (end >= start);
         INSTR (slice_fields += end - start;)
         INSTR (if (size > end)
-                 CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
+                 CAML_INSTR_INT ("major/mark/slice/remain#", size - end);)
         for (i = start; i < end; i++){
           gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,i,
                                             /*in_ephemeron=*/ 0,
@@ -498,6 +499,7 @@ static void mark_slice (intnat work)
             this cycle. Start clean phase. */
         caml_gc_phase = Phase_clean;
         caml_final_update_clean_phase ();
+        caml_memprof_update_clean_phase ();
         if (caml_ephe_list_head != (value) NULL){
           /* Initialise the clean phase. */
           ephes_to_check = &caml_ephe_list_head;
@@ -621,6 +623,7 @@ void caml_major_collection_slice (intnat howmuch)
   double p, dp, filt_p, spend;
   intnat computed_work;
   int i;
+  CAML_INSTR_DECLARE (tmr);
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = Caml_state->stat_heap_wsz * caml_percent_free
@@ -680,7 +683,8 @@ void caml_major_collection_slice (intnat howmuch)
   */
 
   if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
-  CAML_INSTR_SETUP (tmr, "major");
+  CAML_INSTR_ALLOC (tmr);
+  CAML_INSTR_START (tmr, "major");
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
       / Caml_state->stat_heap_wsz / caml_percent_free / 2.0;

@@ -112,6 +112,8 @@ case $NODE_NAME in
   ocaml-ppc-64)
     CCOMP="CC='gcc -m64'"
     OCAML_CONFIGURE_OPTIONS=;;
+  ocaml-openbsd-64)
+    OCAML_CONFIGURE_OPTIONS='--with-bfd'
 esac
 
 #########################################################################
@@ -123,7 +125,7 @@ host=''
 conffile=Makefile.config
 make=make
 instdir="$HOME/ocaml-tmp-install"
-confoptions="${OCAML_CONFIGURE_OPTIONS}"
+confoptions="--enable-ocamltest ${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
 cleanup=false
 check_make_alldepend=false

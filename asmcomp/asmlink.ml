@@ -59,7 +59,11 @@ let check_consistency file_name unit crc =
             then Cmi_consistbl.set crc_interfaces name crc file_name
             else Cmi_consistbl.check crc_interfaces name crc file_name)
       unit.ui_imports_cmi
-  with Cmi_consistbl.Inconsistency(name, user, auth) ->
+  with Cmi_consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = user;
+      original_source = auth;
+    } ->
     raise(Error(Inconsistent_interface(name, user, auth)))
   end;
   begin try
@@ -73,7 +77,11 @@ let check_consistency file_name unit crc =
           | Some crc ->
               Cmx_consistbl.check crc_implementations name crc file_name)
       unit.ui_imports_cmx
-  with Cmx_consistbl.Inconsistency(name, user, auth) ->
+  with Cmx_consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = user;
+      original_source = auth;
+    } ->
     raise(Error(Inconsistent_implementation(name, user, auth)))
   end;
   begin try
@@ -315,7 +323,7 @@ let call_linker file_list startup_file output_name =
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
       files @ (List.rev !Clflags.ccobjs) @ runtime_lib () @ libunwind,
-      (if !Clflags.nopervasives || main_obj_runtime
+      (if !Clflags.nopervasives || (main_obj_runtime && not main_dll)
        then "" else Config.native_c_libraries)
     else
       files, ""

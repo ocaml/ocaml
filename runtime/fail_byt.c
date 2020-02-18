@@ -105,7 +105,7 @@ static void check_global_data_param(char const *exception_name, char const *msg)
   }
 }
 
-static inline value caml_get_failwith_tag (char const *msg)
+Caml_inline value caml_get_failwith_tag (char const *msg)
 {
   check_global_data_param("Failure", msg);
   return Field(caml_global_data, FAILURE_EXN);
@@ -124,7 +124,7 @@ CAMLexport void caml_failwith_value (value msg)
   CAMLnoreturn;
 }
 
-static inline value caml_get_invalid_argument_tag (char const *msg)
+Caml_inline value caml_get_invalid_argument_tag (char const *msg)
 {
   check_global_data_param("Invalid_argument", msg);
   return Field(caml_global_data, INVALID_EXN);

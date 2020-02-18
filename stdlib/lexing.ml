@@ -179,6 +179,13 @@ let from_string ?(with_positions = true) s =
     lex_curr_p = if with_positions then zero_pos else dummy_pos;
   }
 
+let set_position lexbuf position =
+  lexbuf.lex_curr_p  <- {position with pos_fname = lexbuf.lex_curr_p.pos_fname};
+  lexbuf.lex_abs_pos <- position.pos_cnum
+
+let set_filename lexbuf fname =
+  lexbuf.lex_curr_p <- {lexbuf.lex_curr_p with pos_fname = fname}
+
 let with_positions lexbuf = lexbuf.lex_curr_p != dummy_pos
 
 let lexeme lexbuf =
