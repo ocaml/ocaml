@@ -73,6 +73,8 @@ and instrument = function
 
   (* these cases add no logging, but instrument subexpressions *)
   | Clet (v, e, body) -> Clet (v, instrument e, instrument body)
+  | Clet_mut (v, k, e, body) ->
+    Clet_mut (v, k, instrument e, instrument body)
   | Cphantom_let (v, defining_expr, body) ->
     Cphantom_let (v, defining_expr, instrument body)
   | Cassign (v, e) -> Cassign (v, instrument e)

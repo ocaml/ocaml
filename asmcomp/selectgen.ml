@@ -308,7 +308,8 @@ method is_simple_expr = function
   | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Clet(_id, arg, body) | Clet_mut(_id, _, arg, body) ->
+    self#is_simple_expr arg && self#is_simple_expr body
   | Cphantom_let(_var, _defining_expr, body) -> self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
   | Cop(op, args, _) ->
@@ -343,7 +344,7 @@ method effects_of exp =
   | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
   | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
-  | Clet (_id, arg, body) ->
+  | Clet (_id, arg, body) | Clet_mut (_id, _, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
   | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
@@ -597,24 +598,6 @@ method insert_moves env src dst =
     self#insert_move env src.(i) dst.(i)
   done
 
-(* Adjust the types of destination pseudoregs for a [Cassign] assignment.
-   The type inferred at [let] binding might be [Int] while we assign
-   something of type [Val] (PR#6501). *)
-
-method adjust_type src dst =
-  let ts = src.typ and td = dst.typ in
-  if ts <> td then
-    match ts, td with
-    | Val, Int -> dst.typ <- Val
-    | Int, Val -> ()
-    | _, _ -> Misc.fatal_error("Selection.adjust_type: bad assignment to "
-                               ^ Reg.name dst)
-
-method adjust_types src dst =
-  for i = 0 to min (Array.length src) (Array.length dst) - 1 do
-    self#adjust_type src.(i) dst.(i)
-  done
-
 (* Insert moves and stack offsets for function arguments and results *)
 
 method insert_move_args env arg loc stacksize =
@@ -672,10 +655,10 @@ method emit_expr (env:environment) exp =
       let r = self#regs_for typ_val in
       Some(self#insert_op env (Iconst_symbol n) [||] r)
   | Cconst_pointer (n, _dbg) ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
+      let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_int(Nativeint.of_int n)) [||] r)
   | Cconst_natpointer (n, _dbg) ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
+      let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_int n) [||] r)
   | Cblockheader(n, dbg) ->
       self#emit_blockheader env n dbg
@@ -690,6 +673,15 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
       end
+  | Clet_mut(v, k, e1, e2) ->
+      begin match self#emit_expr env e1 with
+        None -> None
+      | Some r1 ->
+        let rv = Reg.createv k in
+        name_regs v rv;
+        self#insert_moves env r1 rv;
+        self#emit_expr (env_add v rv env) e2
+      end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_expr env body
   | Cassign(v, e1) ->
@@ -701,7 +693,7 @@ method emit_expr (env:environment) exp =
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 ->
-          self#adjust_types r1 rv; self#insert_moves env r1 rv; Some [||]
+          self#insert_moves env r1 rv; Some [||]
       end
   | Ctuple [] ->
       Some [||]
