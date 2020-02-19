@@ -1169,6 +1169,8 @@ and splitting_mode =
  exception Need_backtrack
  exception Empty_branch
 
+type abort_reason = Adds_constraints | Empty
+
 (** Remember current typing state for backtracking.
    No variable information, as we only backtrack on
    patterns without variables (cf. assert statements). *)
@@ -1677,8 +1679,8 @@ and type_pat_aux
           try Ok (type_pat category ~mode:inside_or
                       sp1 expected_ty ~env:env1 (fun x -> x))
           with
-          | Need_backtrack -> Result.Error true
-          | Empty_branch -> Result.Error false in
+          | Need_backtrack -> Result.Error Adds_constraints
+          | Empty_branch -> Result.Error Empty in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
@@ -1688,8 +1690,8 @@ and type_pat_aux
           try Ok (type_pat category ~mode:inside_or
                       sp2 expected_ty ~env:env2 (fun x -> x))
           with
-          | Need_backtrack -> Result.Error true
-          | Empty_branch -> Result.Error false in
+          | Need_backtrack -> Result.Error Adds_constraints
+          | Empty_branch -> Result.Error Empty in
         end_def ();
         gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
@@ -1702,11 +1704,11 @@ and type_pat_aux
           check_scope_escape pv_loc !env2 outter_lev pv_type
         ) p2_variables;
         begin match p1, p2 with
-        | Result.Error false, Error false ->
+        | Error Empty, Error Empty ->
             (* No GADTS: the two branches are empty, we can raise
                to reach either an or-pattern handler or the toplevel one *)
             raise Empty_branch
-        | Result.Error _, Result.Error _ ->
+        | Error _, Error _ ->
             let inside_nonsplit_or =
               match get_splitting_mode mode with
               | None | Some Backtrack_or -> false
@@ -1717,18 +1719,18 @@ and type_pat_aux
         | Ok p, Error _ | Error _, Ok p -> rp k p
         (* no variables in this case *)
         | Ok p1, Ok p2 ->
-        let alpha_env =
-          enter_orpat_variables loc !env p1_variables p2_variables in
-        let p2 = alpha_pat alpha_env p2 in
-        pattern_variables := p1_variables;
-        module_variables := p1_module_variables;
-        let make_pat desc =
-          { pat_desc = desc;
-            pat_loc = loc; pat_extra=[];
-            pat_type = instance expected_ty;
-            pat_attributes = sp.ppat_attributes;
-            pat_env = !env } in
-        rp k (make_pat (Tpat_or(p1, p2, None)))
+            let alpha_env =
+              enter_orpat_variables loc !env p1_variables p2_variables in
+            let p2 = alpha_pat alpha_env p2 in
+            pattern_variables := p1_variables;
+            module_variables := p1_module_variables;
+            let make_pat desc =
+              { pat_desc = desc;
+                pat_loc = loc; pat_extra=[];
+                pat_type = instance expected_ty;
+                pat_attributes = sp.ppat_attributes;
+                pat_env = !env } in
+            rp k (make_pat (Tpat_or(p1, p2, None)))
         end
       end
   | Ppat_lazy sp1 ->
