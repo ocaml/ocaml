@@ -43,9 +43,8 @@ static int64_t startup_timestamp;
 #define EVENT_BUF_SIZE 4096
 struct event_buffer {
   struct evbuf_list_node list;
-
   uintnat ev_flushed;
-
+  int domain_unique_id;
   atomic_uintnat ev_generated;
   struct event events[EVENT_BUF_SIZE];
 };
@@ -62,6 +61,7 @@ static void thread_setup_evbuf()
 
   evbuf->ev_flushed = 0;
   atomic_store_rel(&evbuf->ev_generated, 0);
+  evbuf->domain_unique_id = Caml_state->unique_id;
 
   /* add to global list */
   caml_plat_lock(&lock);
@@ -112,7 +112,7 @@ void caml_setup_eventlog()
   atexit(&teardown_eventlog);
 }
 
-#define FPRINTF_EV(out, ev, ph, extra_fmt, ...) \
+#define FPRINTF_EV(out, ev, id, ph, extra_fmt, ...) \
   fprintf(out, \
     "{\"ph\": \"%c\", " \
     "\"ts\": "Pi64".%03d, " \
@@ -124,8 +124,8 @@ void caml_setup_eventlog()
     (ph), \
     ((ev).timestamp - startup_timestamp) / 1000, \
     (int)(((ev).timestamp - startup_timestamp) % 1000), \
-    Caml_state->unique_id, \
-    Caml_state->unique_id, \
+    (id), \
+    (id), \
     (ev).name, \
     ## __VA_ARGS__)
 
@@ -138,24 +138,25 @@ static void flush_events(FILE* out, struct event_buffer* eb)
   n = atomic_load_acq(&eb->ev_generated);
   for (i = eb->ev_flushed; i < n; i++) {
     struct event ev = eb->events[i];
+    int id = eb->domain_unique_id;
     switch (ev.ty) {
     case BEGIN:
     case END:
-      FPRINTF_EV(out, ev,
+      FPRINTF_EV(out, ev, id,
                  ev.ty == BEGIN ? 'B' : 'E', "");
       break;
     case BEGIN_FLOW:
     case END_FLOW:
-      FPRINTF_EV(out, ev,
+      FPRINTF_EV(out, ev, id,
                  ev.ty == BEGIN_FLOW ? 's' : 'f',
                  ", \"bp\": \"e\", \"id\": \"0x%08"ARCH_INT64_PRINTF_FORMAT"x\"",
                  ev.value);
       break;
     case GLOBAL_SYNC:
-      FPRINTF_EV(out, ev, 'i', ", \"cat\": \"gpu\"");
+      FPRINTF_EV(out, ev, id, 'i', ", \"cat\": \"gpu\"");
       break;
     case COUNTER:
-      FPRINTF_EV(out, ev, 'C',
+      FPRINTF_EV(out, ev, id, 'C',
                  ", \"args\": {\"value\": "Pu64"}",
                  ev.value);
       break;
