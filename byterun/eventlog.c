@@ -77,6 +77,7 @@ static void flush_events(FILE* out, struct event_buffer* eb);
 static void thread_teardown_evbuf(void* p)
 {
   CAMLassert(p == evbuf);
+  if(!evbuf) return;
   caml_plat_lock(&lock);
   flush_events(output, evbuf);
   /* remove from global list */
