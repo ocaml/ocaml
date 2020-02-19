@@ -261,11 +261,14 @@ module Simple : sig
 
   val explode_or_pat :
     Half_simple.pattern * Typedtree.pattern list ->
-    arg:Ident.t option ->
+    arg_id:Ident.t option ->
     mk_action:(vars:Ident.t list -> lambda) ->
     vars:Ident.t list ->
     clause list ->
     clause list
+  (** If the toplevel pattern is given a name, but the scrutinee is not named
+        (i.e. [arg_id = None]), which happens (only) when matching a literal
+        tuple, then [Cannot_flatten] is raised. *)
 end = struct
   include Patterns.Simple
 
@@ -292,19 +295,19 @@ end = struct
     in
     { p with pat_desc }
 
-  let mk_alpha_env arg aliases ids =
+  let mk_alpha_env arg_id aliases ids =
     List.map
       (fun id ->
         ( id,
           if List.mem id aliases then
-            match arg with
+            match arg_id with
             | Some v -> v
             | _ -> raise Cannot_flatten
           else
             Ident.create_local (Ident.name id) ))
       ids
 
-  let explode_or_pat ((p : Half_simple.pattern), patl) ~arg ~mk_action ~vars
+  let explode_or_pat ((p : Half_simple.pattern), patl) ~arg_id ~mk_action ~vars
       (rem : clause list) : clause list =
     let rec explode p aliases rem =
       let split_explode p aliases rem = explode (General.view p) aliases rem in
@@ -317,7 +320,7 @@ end = struct
             { p with pat_desc = `Alias (Patterns.omega, id, str) }
             aliases rem
       | #view as view ->
-          let env = mk_alpha_env arg aliases vars in
+          let env = mk_alpha_env arg_id aliases vars in
           ( (alpha env { p with pat_desc = view }, patl),
             mk_action ~vars:(List.map snd env) )
           :: rem
@@ -1269,7 +1272,7 @@ let as_matrix cases =
 
 *)
 
-let rec split_or argo (cls : Half_simple.clause list) args def =
+let rec split_or ~arg_id (cls : Half_simple.clause list) args def =
   let rec do_split (rev_before : Simple.clause list) rev_ors rev_no = function
     | [] ->
         cons_next (List.rev rev_before) (List.rev rev_ors) (List.rev rev_no)
@@ -1300,7 +1303,7 @@ let rec split_or argo (cls : Half_simple.clause list) args def =
     in
     match yesor with
     | [] -> split_no_or yes args def nexts
-    | _ -> precompile_or argo yes yesor args def nexts
+    | _ -> precompile_or ~arg_id yes yesor args def nexts
   in
   do_split [] [] [] cls
 
@@ -1399,7 +1402,7 @@ and precompile_var args cls def k =
               cls
           and var_def = Default_environment.pop_column def in
           let { me = first; matrix }, nexts =
-            split_or (Some v) var_cls var_args var_def
+            split_or ~arg_id:(Some v) var_cls var_args var_def
           in
           (* Compute top information *)
           match nexts with
@@ -1450,7 +1453,7 @@ and do_not_precompile args cls def k =
     },
     k )
 
-and precompile_or argo (cls : Simple.clause list) ors args def k =
+and precompile_or ~arg_id (cls : Simple.clause list) ors args def k =
   let rec do_cases = function
     | [] -> ([], [])
     | ((p, patl), action) :: rem -> (
@@ -1490,7 +1493,7 @@ and precompile_or argo (cls : Simple.clause list) ors args def k =
             in
             let rem_cases, rem_handlers = do_cases rem in
             let cases =
-              Simple.explode_or_pat (p, new_patl) ~arg:argo
+              Simple.explode_or_pat (p, new_patl) ~arg_id
                 ~mk_action:mk_new_action ~vars:(List.map fst vars) rem_cases
             in
             let handler =
@@ -1536,8 +1539,8 @@ let split_and_precompile_simplified pm =
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
-let split_and_precompile_half_simplified ~arg pm =
-  let { me = next }, nexts = split_or arg pm.cases pm.args pm.default in
+let split_and_precompile_half_simplified ~arg_id pm =
+  let { me = next }, nexts = split_or ~arg_id pm.cases pm.args pm.default in
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
@@ -1545,7 +1548,7 @@ let split_and_precompile ~arg_id ~arg_lambda pm =
   let pm =
     { pm with cases = List.map (half_simplify_clause ~arg:arg_lambda) pm.cases }
   in
-  split_and_precompile_half_simplified ~arg:arg_id pm
+  split_and_precompile_half_simplified ~arg_id pm
 
 (* General divide functions *)
 
@@ -3108,7 +3111,7 @@ and compile_match_nonempty ~scopes repr partial ctx
       let cases = List.map (half_simplify_nonempty ~arg:newarg) m.cases in
       let m = { m with args; cases } in
       let first_match, rem =
-        split_and_precompile_half_simplified ~arg:(Some v) m in
+        split_and_precompile_half_simplified ~arg_id:(Some v) m in
       combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem
   | _ -> assert false
 
