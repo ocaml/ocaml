@@ -811,6 +811,7 @@ typing/parmatch.cmx : \
 typing/parmatch.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/patterns.cmi \
     parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/env.cmi \
@@ -828,6 +829,7 @@ typing/patterns.cmo : \
     typing/typedtree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
@@ -838,6 +840,7 @@ typing/patterns.cmx : \
     typing/typedtree.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
+    typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
@@ -846,8 +849,8 @@ typing/patterns.cmx : \
 typing/patterns.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
-    parsing/location.cmi \
-    typing/env.cmi \
+    parsing/longident.cmi \
+    typing/ident.cmi \
     parsing/asttypes.cmi
 typing/persistent_env.cmo : \
     utils/warnings.cmi \
