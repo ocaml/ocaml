@@ -1155,8 +1155,10 @@ mark_again:
       break;
     }
   }
-  if (was_marking)
+  if (was_marking) {
     caml_ev_end("major_gc/mark");
+    was_marking = 0;
+  }
   mark_work -= budget;
 
   if (!opportunistic) {
