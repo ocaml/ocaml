@@ -1102,7 +1102,9 @@ and counter_example_checking_info = {
 (** Due to GADT constraints, an or-pattern produced within
     a counter-example may have ill-typed branches. Consider for example
 
+    {[
       type _ tag = Int : int tag | Bool : bool tag
+    ]}
 
     then [Parmatch] will propose the or-pattern [Int | Bool] whenever
     a pattern of type [tag] is required to form a counter-example. For
@@ -1144,30 +1146,35 @@ and splitting_mode =
   | Refine_or of { inside_nonsplit_or: bool; }
   (** Only backtrack when needed.
 
-     [Refine_or] tries another approach for refining or-pattern.
+      [Refine_or] tries another approach for refining or-pattern.
 
-     Instead of always splitting each or-pattern, It first attempts to
-     find non-empty branches that do not introduce new constraints (because they
-     do not contain GADT constructors). Those branches are such that,
-     if they fail, all other branches will fail.
+      Instead of always splitting each or-pattern, It first attempts to
+      find branches that do not introduce new constraints (because they
+      do not contain GADT constructors). Those branches are such that,
+      if they fail, all other branches will fail.
 
-     If we find one such branch, we attempt to complete the subpattern
-     (checking what's outside the or-pattern), ignoring other
-     branches -- we never consider another branch choice again. If all
-     branches are constrained, it falls back to splitting the
-     or-pattern.
+      If we find one such branch, we attempt to complete the subpattern
+      (checking what's outside the or-pattern), ignoring other
+      branches -- we never consider another branch choice again. If all
+      branches are constrained, it falls back to splitting the
+      or-pattern.
 
-     We use this mode when checking exhaustivity of pattern matching.
-    *)
+      We use this mode when checking exhaustivity of pattern matching.
+  *)
 
-(** This exception is only used internally within [type_pat_aux], to jump
-   back to the parent or-pattern in the [Refine_or] strategy.
+(** This exception is only used internally within [type_pat_aux], in
+    counter-example mode, to jump back to the parent or-pattern in the
+    [Refine_or] strategy.
 
-   Such a parent exists precisely when [inside_nonsplit_or = true];
-   it's an invariant that we always setup an exception handler for
-   [Need_backtrack] when we set this flag. *)
- exception Need_backtrack
- exception Empty_branch
+    Such a parent exists precisely when [inside_nonsplit_or = true];
+    it's an invariant that we always setup an exception handler for
+    [Need_backtrack] when we set this flag. *)
+exception Need_backtrack
+
+(** This exception is only used internally within [type_pat_aux], in
+    counter-example mode. We use it to discard counter-example candidates
+    that do not match any value. *)
+exception Empty_branch
 
 type abort_reason = Adds_constraints | Empty
 
@@ -1266,13 +1273,11 @@ let as_comp_pattern
   | Value -> as_computation_pattern pat
   | Computation -> pat
 
-(* type_pat propagates the expected type as well as maps for
-   constructors and labels.
-   Unification may update the typing environment. *)
-(* constrs <> None => called from parmatch: backtrack on or-patterns
-   explode > 0 => explode Ppat_any for gadts *)
-(* Need_backtrack exceptions are raised in the [Inside_or] mode to backtrack
-   to the outermost or-pattern *)
+(* type_pat propagates the expected type.
+   Unification may update the typing environment.
+
+   In counter-example mode, [Empty_branch] is raised when the counter-example
+   does not match any value.  *)
 let rec type_pat
   : type k r . k pattern_category -> no_existentials:_ -> mode:_ ->
       env:_ -> _ -> _ -> (k general_pattern -> r) -> r
@@ -1703,10 +1708,9 @@ and type_pat_aux
         ) p2_variables;
         begin match p1, p2 with
         | Error Empty, Error Empty ->
-            (* No GADTS: the two branches are empty, we can raise
-               to reach either an or-pattern handler or the toplevel one *)
             raise Empty_branch
-        | Error _, Error _ ->
+        | Error Adds_constraints, Error _
+        | Error _, Error Adds_constraints ->
             let inside_nonsplit_or =
               match get_splitting_mode mode with
               | None | Some Backtrack_or -> false
@@ -1714,8 +1718,9 @@ and type_pat_aux
             if inside_nonsplit_or
             then raise Need_backtrack
             else split_or sp
-        | Ok p, Error _ | Error _, Ok p -> rp k p
-        (* no variables in this case *)
+        | Ok p, Error _
+        | Error _, Ok p ->
+            rp k p
         | Ok p1, Ok p2 ->
             let alpha_env =
               enter_orpat_variables loc !env p1_variables p2_variables in
