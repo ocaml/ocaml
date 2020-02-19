@@ -31,3 +31,6 @@ tests/asmcomp/is_static
 # GC bug in callbacks (#211)
 tests/callback/nested_fiber.byte
 tests/callback/test7.native
+
+# since promotion is based on minor heap size now, this test can no longer be correct
+tests/promotion/bigrecmod.ml
