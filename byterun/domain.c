@@ -540,16 +540,16 @@ static void decrement_stw_domains_still_processing()
   /* we check if we are the last to leave a stw section
      if so, clear the stw_leader to allow the new stw sections to start.
    */
-  caml_plat_lock(&all_domains_lock);
   intnat am_last = atomic_fetch_add(&stw_request.num_domains_still_processing, -1) == 1;
 
   if( am_last ) {
     /* release the STW lock to allow new STW sections */
+    caml_plat_lock(&all_domains_lock);
     atomic_store_rel(&stw_leader, 0);
     caml_plat_broadcast(&all_domains_cond);
     caml_gc_log("clearing stw leader");
+    caml_plat_unlock(&all_domains_lock);
   }
-  caml_plat_unlock(&all_domains_lock);
 }
 
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
