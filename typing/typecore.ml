@@ -1107,13 +1107,12 @@ and splitting_mode =
      find branches that do not introduce new constraints (because they
      do not contain GADT constructors), and are not matching on an empty
      type. Those branches are such that, if they fail, all other branches
-     will fail.
+     will fail. We call these branches "suitable branches".
 
-     If we find one such branch, we attempt to complete the subpattern
+     If we find a suitable branch, we attempt to complete the subpattern
      (checking what's outside the or-pattern), ignoring other
      branches -- we never consider another branch choice again. If no
-     branch match these criteria, it falls back to splitting the
-     or-pattern.
+     branch is suitable, it falls back to splitting the or-pattern.
 
      We use this mode when checking exhaustivity of pattern matching.
     *)
@@ -1262,7 +1261,7 @@ and type_pat_aux
   and rvp k x = k (rp (pure category x))
   and rcp k x = k (rp (only_impure category x)) in
   let construction_not_used_in_counterexamples = (mode = Normal) in
-  let must_backtrack_on_gadt_and_empty_type = match get_splitting_mode mode with
+  let must_backtrack_on_unsuitable_branches = match get_splitting_mode mode with
     | None -> false
     | Some Backtrack_or -> false
     | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or
@@ -1284,7 +1283,7 @@ and type_pat_aux
          let open Parmatch in
          begin match ppat_of_type !env expected_ty with
          | PT_empty ->
-            if must_backtrack_on_gadt_and_empty_type then raise Need_backtrack;
+            if must_backtrack_on_unsuitable_branches then raise Need_backtrack;
             raise (Error (loc, !env, Empty_pattern))
          | PT_any -> k' Tpat_any
          | PT_pattern (explosion, sp, constrs, labels) ->
@@ -1292,7 +1291,7 @@ and type_pat_aux
               match explosion with
               | PE_single -> explosion_fuel - 1
               | PE_gadt_cases ->
-                  if must_backtrack_on_gadt_and_empty_type then
+                  if must_backtrack_on_unsuitable_branches then
                     raise Need_backtrack;
                   explosion_fuel - 5
             in
@@ -1441,7 +1440,7 @@ and type_pat_aux
           (mk_expected expected_ty)
           (Constructor.disambiguate Env.Pattern lid !env opath) candidates
       in
-      if constr.cstr_generalized && must_backtrack_on_gadt_and_empty_type then
+      if constr.cstr_generalized && must_backtrack_on_unsuitable_branches then
         raise Need_backtrack;
       begin match no_existentials, constr.cstr_existentials with
       | None, _ | _, [] -> ()
