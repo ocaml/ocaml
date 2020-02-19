@@ -748,9 +748,13 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
 
 void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
 {
-  caml_ev_begin("minor_gc/opportunistic_major_slice");
-  caml_opportunistic_major_collection_slice(0x200, 0);
-  caml_ev_end("minor_gc/opportunistic_major_slice");
+  /* NB: need to put guard around the ev logs to prevent
+    spam when we poll */
+  if (caml_opportunistic_major_work_available()) {
+    caml_ev_begin("minor_gc/opportunistic_major_slice");
+    caml_opportunistic_major_collection_slice(0x200, 0);
+    caml_ev_end("minor_gc/opportunistic_major_slice");
+  }
 }
 
 /* must be called outside a STW section */
