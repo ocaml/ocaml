@@ -40,7 +40,7 @@ static struct evbuf_list_node evbuf_head =
 static FILE* output;
 static int64_t startup_timestamp;
 
-#define EVENT_BUF_SIZE 4096
+#define EVENT_BUF_SIZE 32768
 struct event_buffer {
   struct evbuf_list_node list;
   uintnat ev_flushed;
@@ -77,6 +77,7 @@ static void flush_events(FILE* out, struct event_buffer* eb);
 static void thread_teardown_evbuf(void* p)
 {
   CAMLassert(p == evbuf);
+  if(!evbuf) return;
   caml_plat_lock(&lock);
   flush_events(output, evbuf);
   /* remove from global list */

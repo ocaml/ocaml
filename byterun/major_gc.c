@@ -1068,6 +1068,13 @@ static void try_complete_gc_phase (struct domain* domain, void* unused)
 
 #define Chunk_size 0x4000
 
+intnat caml_opportunistic_major_work_available ()
+{
+  struct domain* d = caml_domain_self();
+  caml_domain_state* domain_state = d->state;
+  return !domain_state->sweeping_done || !domain_state->marking_done;
+}
+
 static intnat major_collection_slice(intnat howmuch,
                                      intnat from_barrier,
                                      intnat opportunistic,
@@ -1084,6 +1091,11 @@ static intnat major_collection_slice(intnat howmuch,
   int was_marking = 0;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
+
+  /* shortcut out if there is no opportunistic work to be done
+   * NB: needed particularly to avoid caml_ev spam when polling */
+  if (opportunistic && !caml_opportunistic_major_work_available())
+    return computed_work;
 
   caml_ev_begin("major_gc/slice");
 
