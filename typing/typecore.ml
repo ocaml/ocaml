@@ -1675,23 +1675,21 @@ and type_pat_aux
         gadt_equations_level := Some lev;
         let env1 = ref !env in
         let inside_or = enter_nonsplit_or mode in
-        let p1 =
-          try Ok (type_pat category ~mode:inside_or
-                      sp1 expected_ty ~env:env1 (fun x -> x))
+        let type_pat_result env sp : (_, abort_reason) result =
+          match
+            type_pat category ~mode:inside_or sp expected_ty ~env (fun x -> x)
           with
-          | Need_backtrack -> Result.Error Adds_constraints
-          | Empty_branch -> Result.Error Empty in
+          | res -> Ok res
+          | exception Need_backtrack -> Error Adds_constraints
+          | exception Empty_branch -> Error Empty
+        in
+        let p1 = type_pat_result env1 sp1 in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let env2 = ref !env in
-        let p2 =
-          try Ok (type_pat category ~mode:inside_or
-                      sp2 expected_ty ~env:env2 (fun x -> x))
-          with
-          | Need_backtrack -> Result.Error Adds_constraints
-          | Empty_branch -> Result.Error Empty in
+        let p2 = type_pat_result env2 sp2 in
         end_def ();
         gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
