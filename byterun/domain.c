@@ -612,12 +612,12 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
-int caml_send_partial_interrupt(struct interruptor* self,
+static int caml_send_partial_interrupt(struct interruptor* self,
                          struct interruptor* target,
                          domain_rpc_handler handler,
                          void* data,
                          struct interrupt* req);
-int caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req);
+static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req);
 
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(struct domain*, void*), void* data,
@@ -892,7 +892,6 @@ static uintnat handle_incoming(struct interruptor* s)
   while (s->qhead != NULL) {
     struct interrupt* req = s->qhead;
     s->qhead = req->next;
-
     /* Unlock s while the handler runs, to allow other
        domains to send us messages. This is necessary to
        avoid deadlocks, since the handler might send
@@ -910,15 +909,7 @@ static uintnat handle_incoming(struct interruptor* s)
 
 void caml_acknowledge_interrupt(struct interrupt* req)
 {
-  /* We cannot access req after we signal completion, so save the sender's
-     identity now. */
-  struct interruptor* sender = req->sender;
   atomic_store_rel(&req->completed, 1);
-
-  /* lock sender->lock so that we don't broadcast between check and wait */
-  caml_plat_lock(&sender->lock);
-  caml_plat_broadcast(&sender->cond);
-  caml_plat_unlock(&sender->lock);
 }
 
 static void acknowledge_all_pending_interrupts()
@@ -1052,20 +1043,24 @@ void caml_handle_incoming_interrupts()
   caml_plat_unlock(&s->lock);
 }
 
-int caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req)
+static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req)
 {
-  if (atomic_load_acq(&req->completed)) {
-    return 1;
+  int i;
+  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
+  for (i=0; i<1000; i++) {
+    if (atomic_load_acq(&req->completed)) {
+      return;
+    }
+    cpu_relax();
   }
 
-  caml_plat_lock(&self->lock);
-  while (1) {
+  while (!atomic_load_acq(&req->completed)) {
+    cpu_relax();
+    caml_plat_lock(&self->lock);
     handle_incoming(self);
-    if (atomic_load_acq(&req->completed)) break;
-    caml_plat_wait(&self->cond);
+    caml_plat_unlock(&self->lock);
   }
-  caml_plat_unlock(&self->lock);
-  return 1;
+  return;
 }
 
 int caml_send_partial_interrupt(struct interruptor* self,
@@ -1112,52 +1107,9 @@ int caml_send_interrupt(struct interruptor* self,
                          void* data)
 {
   struct interrupt req;
-  int i;
-
-  req.handler = handler;
-  req.data = data;
-  req.sender = self;
-  atomic_store_rel(&req.completed, 0);
-  req.next = NULL;
-
-  caml_plat_lock(&target->lock);
-  if (!target->running) {
-    caml_plat_unlock(&target->lock);
+  if (!caml_send_partial_interrupt(self, target, handler, data, &req))
     return 0;
-  }
-
-  caml_ev_begin_flow("interrupt", (uintnat)&req);
-  /* add to wait queue */
-  if (target->qhead) {
-    /* queue was nonempty */
-    target->qtail->next = &req;
-    target->qtail = &req;
-  } else {
-    /* queue was empty */
-    target->qhead = target->qtail = &req;
-  }
-  /* Signal the condition variable, in case the target is
-     itself waiting for an interrupt to be processed elsewhere */
-  caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
-  caml_plat_unlock(&target->lock);
-
-  atomic_store_rel(target->interrupt_word, INTERRUPT_MAGIC); //FIXME dup
-
-  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
-  for (i=0; i<1000; i++) {
-    if (atomic_load_acq(&req.completed)) {
-      return 1;
-    }
-    cpu_relax();
-  }
-
-  caml_plat_lock(&self->lock);
-  while (1) {
-    handle_incoming(self);
-    if (atomic_load_acq(&req.completed)) break;
-    caml_plat_wait(&self->cond);
-  }
-  caml_plat_unlock(&self->lock);
+  caml_wait_interrupt_completed(self, &req);
   return 1;
 }
 
