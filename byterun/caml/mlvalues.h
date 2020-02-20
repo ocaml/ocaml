@@ -218,6 +218,9 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Is_minor(val) \
   ((((uintnat)(val) ^ (uintnat)Caml_state) & Minor_val_bitmask) == 0)
 
+#define Is_block_and_young(val) Is_young(val)
+#define Is_block_and_minor(val) Is_minor(val)
+
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
    See [caml_oldify_one] in minor_gc.c for more details.
