@@ -868,8 +868,7 @@ let half_simplify_cases args cls =
         | Tpat_construct _
         | Tpat_variant _
         | Tpat_array _
-        | Tpat_lazy _
-          ->
+        | Tpat_lazy _ ->
             cl
       )
   in
@@ -1602,9 +1601,9 @@ let matcher_constr cstr =
         match q.pat_desc with
         | Tpat_or (_, _, _) ->
             (* we cannot preserve the or-pattern as in the arity-1 case,
-          because we cannot express
-            (K (p1, .., pn) | K (q1, .. qn))
-          as (p1 .. pn | q1 .. qn) *)
+               because we cannot express
+                 (K (p1, .., pn) | K (q1, .. qn))
+               as (p1 .. pn | q1 .. qn) *)
             raise OrPat
         | Tpat_construct (_, cstr', args)
           when Types.may_equal_constr cstr cstr' ->
@@ -1803,15 +1802,15 @@ let inline_lazy_force_cond arg loc =
           tag,
           Lprim (Pccall prim_obj_tag, [ varg ], loc),
           Lifthenelse
-            ( (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
-              Lprim
+            (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
+            ( Lprim
                 ( Pintcomp Ceq,
                   [ tag_var; Lconst (Const_base (Const_int Obj.forward_tag)) ],
                   loc ),
               Lprim (Pfield 0, [ varg ], loc),
               Lifthenelse
-                ( (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
-                  Lprim
+                (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
+                ( Lprim
                     ( Pintcomp Ceq,
                       [ tag_var; Lconst (Const_base (Const_int Obj.lazy_tag)) ],
                       loc ),
@@ -2457,9 +2456,9 @@ let as_interval_nofail l =
     | (i, act) :: rem ->
         let act_index =
           (* In case there is some hole and that a switch is emitted,
-           action 0 will be used as the action of unreachable
-           cases (cf. switch.ml, make_switch).
-           Hence, this action will be shared *)
+             action 0 will be used as the action of unreachable
+             cases (cf. switch.ml, make_switch).
+             Hence, this action will be shared *)
           if some_hole rem then
             store.act_store_shared () act
           else
@@ -2517,8 +2516,8 @@ let mk_failaction_neg partial ctx def =
           (Some (Lstaticraise (idef, [])), Jumps.singleton idef ctx)
       | None ->
           (* Act as Total, this means
-          If no appropriate default matrix exists,
-          then this switch cannot fail *)
+             If no appropriate default matrix exists,
+             then this switch cannot fail *)
           (None, Jumps.empty)
     )
   | Total -> (None, Jumps.empty)
@@ -3208,7 +3207,8 @@ LM:
    I have  generalized the patch, so as to also find mutable fields.
 *)
 
-let is_lazy_pat p = match p.pat_desc with
+let is_lazy_pat p =
+  match p.pat_desc with
   | Tpat_lazy _ -> true
   | Tpat_alias _
   | Tpat_variant _
@@ -3222,8 +3222,7 @@ let is_lazy_pat p = match p.pat_desc with
   | Tpat_any ->
       false
 
-let has_lazy p =
-  Typedtree.exists_pattern is_lazy_pat p
+let has_lazy p = Typedtree.exists_pattern is_lazy_pat p
 
 let is_record_with_mutable_field p =
   match p.pat_desc with
@@ -3246,8 +3245,7 @@ let is_record_with_mutable_field p =
   | Tpat_any ->
       false
 
-let has_mutable p =
-  Typedtree.exists_pattern is_record_with_mutable_field p
+let has_mutable p = Typedtree.exists_pattern is_record_with_mutable_field p
 
 (* Downgrade Total when
    1. Matching accesses some mutable fields;
@@ -3270,12 +3268,10 @@ let check_partial has_mutable has_lazy pat_act_list = function
         Total
 
 let check_partial_list pats_act_list =
-  check_partial (List.exists has_mutable) (List.exists has_lazy)
-    pats_act_list
+  check_partial (List.exists has_mutable) (List.exists has_lazy) pats_act_list
 
 let check_partial pat_act_list =
-  check_partial has_mutable has_lazy
-    pat_act_list
+  check_partial has_mutable has_lazy pat_act_list
 
 (* have toplevel handler when appropriate *)
 
@@ -3407,21 +3403,26 @@ let rec map_return f = function
       Lstaticcatch (map_return f l1, b, map_return f l2)
   | Lswitch (s, sw, loc) ->
       let map_cases cases =
-        List.map (fun (i, l) -> i, map_return f l) cases in
-      Lswitch (s,
-               { sw with sw_consts = map_cases sw.sw_consts;
-                         sw_blocks = map_cases sw.sw_blocks;
-                         sw_failaction =
-                           Option.map (map_return f) sw.sw_failaction },
-               loc)
+        List.map (fun (i, l) -> (i, map_return f l)) cases
+      in
+      Lswitch
+        ( s,
+          { sw with
+            sw_consts = map_cases sw.sw_consts;
+            sw_blocks = map_cases sw.sw_blocks;
+            sw_failaction = Option.map (map_return f) sw.sw_failaction
+          },
+          loc )
   | Lstringswitch (s, cases, def, loc) ->
-      Lstringswitch(s,
-                    List.map (fun (s,l) -> s, map_return f l) cases,
-                    Option.map (map_return f) def,
-                    loc)
+      Lstringswitch
+        ( s,
+          List.map (fun (s, l) -> (s, map_return f l)) cases,
+          Option.map (map_return f) def,
+          loc )
   | (Lstaticraise _ | Lprim (Praise _, _, _)) as l -> l
-  | (Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lsend _ | Lprim _
-    | Lwhile _ | Lfor _ | Lassign _ | Lifused _) as l -> f l
+  | ( Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lsend _ | Lprim _ | Lwhile _
+    | Lfor _ | Lassign _ | Lifused _ ) as l ->
+      f l
 
 (* The 'opt' reference indicates if the optimization is worthy.
 
@@ -3450,7 +3451,7 @@ let assign_pat opt nraise catch_ids loc pat lam =
         List.fold_left2 collect_const acc patl scl
     | _ ->
         (* pattern idents will be bound in staticcatch (let body), so we
-       refresh them here to guarantee binders  uniqueness *)
+           refresh them here to guarantee binders uniqueness *)
         let pat_ids = pat_bound_idents pat in
         let fresh_ids = List.map (fun id -> (id, Ident.rename id)) pat_ids in
         (fresh_ids, alpha_pat fresh_ids pat, lam) :: acc
