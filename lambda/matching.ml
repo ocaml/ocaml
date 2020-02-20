@@ -1765,12 +1765,18 @@ let get_expr_args_constr ~scopes head (arg, _mut) rem =
     | _ -> fatal_error "Matching.get_expr_args_constr"
   in
   let loc = head_loc ~scopes head in
-  let make_field_accesses binding_kind first_pos last_pos argl =
+  let make_field_accesses binding_kind first_pos last_pos block_info argl =
     let rec make_args pos =
       if pos > last_pos then
         argl
       else
-        (Lprim (Pfield (pos, Reads_agree), [ arg ], loc), binding_kind) :: make_args (pos + 1)
+        let field_info = {
+          index = pos;
+          block_info;
+        }
+        in
+        (Lprim (Pfield (field_info, Reads_agree), [ arg ], loc), binding_kind)
+          :: make_args (pos + 1)
     in
     make_args first_pos
   in
@@ -1778,11 +1784,19 @@ let get_expr_args_constr ~scopes head (arg, _mut) rem =
     (arg, Alias) :: rem
   else
     match cstr.cstr_tag with
-    | Cstr_constant _
-    | Cstr_block _ ->
-        make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
+    | Cstr_constant _ -> rem
+    | Cstr_block {tag; size} ->
+        let block_info = { tag; size = Known size; } in
+        make_field_accesses Alias 0 (cstr.cstr_arity - 1) block_info rem
     | Cstr_unboxed -> (arg, Alias) :: rem
-    | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
+    | Cstr_extension (_, true) -> rem
+    | Cstr_extension (_, false) -> 
+        let block_info = {
+            tag = Obj.object_tag;
+            size = Known (cstr.cstr_arity + 1);
+          }
+        in
+        make_field_accesses Alias 1 cstr.cstr_arity block_info rem
 
 let divide_constructor ~scopes ctx pm =
   divide
@@ -1796,11 +1810,22 @@ let divide_constructor ~scopes ctx pm =
 
 let get_expr_args_variant_constant = drop_expr_arg
 
+let nonconstant_variant_field index =
+  Lambda.Pfield(
+    {
+      index;
+      (* Non-constant polymorphic variants are blocks of size 2:
+         First field is the hash label, second field is the argument.
+      *)
+      block_info = { tag = 0; size = Known 2; };
+    },
+    (* CR mshinwell: Is this correct? *)
+    Reads_agree)
+    
 let get_expr_args_variant_nonconst ~scopes head (arg, _mut) rem =
   let loc = head_loc ~scopes head in
-   (* CR mshinwell: Is this correct? *)
-   let sem = Reads_agree in
-  (Lprim (Pfield (1, sem), [ arg ], loc), Alias) :: rem
+   let field_prim = nonconstant_variant_field 1 in
+  (Lprim (field_prim, [ arg ], loc), Alias) :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
   let row = Btype.row_repr row in
@@ -1898,6 +1923,15 @@ let code_force_lazy = get_mod_field "CamlinternalLazy" "force"
    Forward(val_out_of_heap).
 *)
 
+let lazy_forward_field =
+  Lambda.Pfield (
+    {
+      index = 0;
+      block_info = { tag = Obj.forward_tag; size = Known 1; };
+    },
+    Reads_vary)
+
+
 let inline_lazy_force_cond arg loc =
   let idarg = Ident.create_local "lzarg" in
   let varg = Lvar idarg in
@@ -1920,7 +1954,7 @@ let inline_lazy_force_cond arg loc =
                 ( Pintcomp Ceq,
                   [ tag_var; Lconst (Const_base (Const_int Obj.forward_tag)) ],
                   loc ),
-              Lprim (Pfield (0, Reads_vary), [ varg ], loc),
+              Lprim (lazy_forward_field, [ varg ], loc),
               Lifthenelse
                 (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 ( Lprim
@@ -1959,7 +1993,7 @@ let inline_lazy_force_switch arg loc =
                 sw_blocks =
                   [ ({ sw_tag = Obj.forward_tag;
                        sw_size = 1;
-                      }, Lprim (Pfield (0, Reads_vary), [ varg ], loc));
+                      }, Lprim (lazy_forward_field, [ varg ], loc));
                     ({ sw_tag = Obj.lazy_tag;
                        sw_size = 1;
                      }, Lapply
@@ -2022,7 +2056,13 @@ let get_expr_args_tuple ~scopes head (arg, _mut) rem =
     if pos >= arity then
       rem
     else
-      (Lprim (Pfield (pos, Reads_agree), [ arg ], loc), Alias) :: make_args (pos + 1)
+      let field_info = {
+        index = pos;
+        block_info = { tag = 0; size = Known arity; };
+      }
+      in
+      (Lprim (Pfield (field_info, Reads_agree), [ arg ], loc), Alias)
+        :: make_args (pos + 1)
   in
   make_args 0
 
@@ -2058,7 +2098,8 @@ let get_expr_args_record ~scopes head (arg, _mut) rem =
         assert false
   in
   let rec make_args pos =
-    if pos >= Array.length all_labels then
+    let len = Array.length all_labels in
+    if pos >= len then
       rem
     else
       let lbl = all_labels.(pos) in
@@ -2068,13 +2109,25 @@ let get_expr_args_record ~scopes head (arg, _mut) rem =
         | Mutable -> Reads_vary
       in
       let access =
+        let field_info_reg tag = {
+          index = lbl.lbl_pos;
+          block_info = { tag; size = Known len; };
+        }
+        in
         match lbl.lbl_repres with
-        | Record_regular
-        | Record_inlined _ ->
-            Lprim (Pfield (lbl.lbl_pos, sem), [ arg ], loc)
+        | Record_regular ->
+            Lprim (Pfield (field_info_reg 0, sem), [ arg ], loc)
+        | Record_inlined tag ->
+            Lprim (Pfield (field_info_reg tag, sem), [ arg ], loc)
         | Record_unboxed _ -> arg
         | Record_float -> Lprim (Pfloatfield (lbl.lbl_pos, sem), [ arg ], loc)
-        | Record_extension _ -> Lprim (Pfield (lbl.lbl_pos + 1, sem), [ arg ], loc)
+        | Record_extension _ -> 
+            let field_info = {
+              index = lbl.lbl_pos + 1;
+              block_info = { tag = 0; size = Known (len + 1); };
+            }
+            in
+            Lprim (Pfield (field_info, sem), [ arg ], loc)
       in
       let str =
         match lbl.lbl_mut with
@@ -2830,7 +2883,7 @@ let combine_constructor loc arg pat_env cstr partial ctx def
                   nonconsts default
               in
               Llet (Alias, Pgenval, tag,
-                    Lprim (Pfield (0, Reads_agree), [ arg ], loc),
+                    Lprim (nonconstant_variant_field 0, [ arg ], loc),
                     tests)
         in
         List.fold_right
@@ -2921,7 +2974,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
     ( Alias,
       Pgenval,
       v,
-      Lprim (Pfield (0, Reads_agree), [ arg ], loc),
+      Lprim (nonconstant_variant_field 0, [ arg ], loc),
       call_switcher loc fail (Lvar v) min_int max_int int_lambda_list )
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)

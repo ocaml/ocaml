@@ -62,7 +62,13 @@ let mkappl (func, args) =
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
 
-let lfield v i = Lprim(Pfield (i, Reads_vary), [Lvar v], Loc_unknown)
+let lfield v i bi =
+  let field_info = {
+    index = i;
+    block_info = bi;
+  }
+  in
+  Lprim(Pfield (field_info, Reads_vary), [Lvar v], Loc_unknown)
 
 let transl_label l = share (Const_immstring l)
 
@@ -133,7 +139,12 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
       let env =
         match envs with None -> []
         | Some envs ->
-            [Lprim(Pfield (List.length inh_init + 1, Reads_vary),
+            let field_info = {
+              index = List.length inh_init + 1;
+              block_info = { tag = 0; size = Unknown; };
+            }
+            in
+            [Lprim(Pfield (field_info, Reads_vary),
                    [Lvar envs],
                    Loc_unknown)]
       in
@@ -239,12 +250,14 @@ let bind_methods tbl meths vals cl_init =
     if nvals = 0 then "get_method_labels", [] else
     "new_methods_variables", [transl_meth_list (List.map fst vals)]
   in
+  (* size is exactly len + nvals, but we choose not to track it. *)
+  let bi = { tag = 0; size = Unknown; } in
   Llet(Strict, Pgenval, ids,
        mkappl (oo_prim getter,
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
          (fun (_lab,id) lam -> decr i; Llet(StrictOpt, Pgenval, id,
-                                           lfield ids !i, lam))
+                                           lfield ids !i bi, lam))
          (methl @ vals) cl_init)
 
 let output_methods tbl methods lam =
@@ -271,6 +284,14 @@ let rec index a = function
 
 let bind_id_as_val (id, _) = ("", id)
 
+let class_field i =
+  let field_info = {
+    index = i;
+    block_info = { tag = 0; size = Known 4; };
+  }
+  in
+  Pfield (field_info, Reads_vary)
+
 let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
   | Tcl_ident _ ->
@@ -278,8 +299,8 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
       | (_, path_lam, obj_init)::inh_init ->
           (inh_init,
            Llet (Strict, Pgenval, obj_init,
-                 mkappl(Lprim(Pfield (1, Reads_vary), [path_lam], Loc_unknown), Lvar cla ::
-                        if top then [Lprim(Pfield (3, Reads_vary), [path_lam], Loc_unknown)]
+                 mkappl(Lprim(class_field 1, [path_lam], Loc_unknown), Lvar cla ::
+                        if top then [Lprim(class_field 3, [path_lam], Loc_unknown)]
                         else []),
                  bind_super cla super cl_init))
       | _ ->
@@ -365,25 +386,26 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
           let inh = Ident.create_local "inh"
           and ofs = List.length vals + 1
           and valids, methids = super in
+          let bi = { tag = 0; size = Unknown; } in
           let cl_init =
             List.fold_left
               (fun init (nm, id, _) ->
                 Llet(StrictOpt, Pgenval, id,
-                     lfield inh (index nm concr_meths + ofs),
+                     lfield inh (index nm concr_meths + ofs) bi,
                      init))
               cl_init methids in
           let cl_init =
             List.fold_left
               (fun init (nm, id) ->
                 Llet(StrictOpt, Pgenval, id,
-                     lfield inh (index nm vals + 1), init))
+                     lfield inh (index nm vals + 1) bi, init))
               cl_init valids in
           (inh_init,
            Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
                         [path_lam;
                          Lconst(const_int (if top then 1 else 0))]),
-                 Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
+                 Llet(StrictOpt, Pgenval, obj_init, lfield inh 0 bi, cl_init)))
       | _ ->
           let core cl_init =
             build_class_init
@@ -509,20 +531,21 @@ let transl_class_rebind ~scopes cl vf =
     and env_init = Ident.create_local "env_init"
     and table = Ident.create_local "table"
     and envs = Ident.create_local "envs" in
+    let bi = { tag = 0; size = Known 4; } in
     Llet(
     Strict, Pgenval, new_init, lfunction [obj_init, Pgenval] obj_init',
     Llet(
     Alias, Pgenval, cla, path_lam,
     Lprim(Pmakeblock(0, Immutable, None),
-          [mkappl(Lvar new_init, [lfield cla 0]);
+          [mkappl(Lvar new_init, [lfield cla 0 bi]);
            lfunction [table, Pgenval]
              (Llet(Strict, Pgenval, env_init,
-                   mkappl(lfield cla 1, [Lvar table]),
+                   mkappl(lfield cla 1 bi, [Lvar table]),
                    lfunction [envs, Pgenval]
                      (mkappl(Lvar new_init,
                              [mkappl(Lvar env_init, [Lvar envs])]))));
-           lfield cla 2;
-           lfield cla 3],
+           lfield cla 2 bi;
+           lfield cla 3 bi],
           Loc_unknown)))
   with Exit ->
     lambda_unit
@@ -551,7 +574,7 @@ let rec builtin_meths self env env2 body =
     | p when const_path p -> "const", [p]
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
-    | Lprim(Pfield (n, _), [Lvar e], _) when Ident.same e env ->
+    | Lprim(Pfield ({index = n; _ }, _), [Lvar e], _) when Ident.same e env ->
         "env", [Lvar env2; Lconst(const_int n)]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
@@ -712,9 +735,10 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
     new_ids' := !new_ids' @ Ident.Set.elements fv;
     (* prerr_ids "new_ids' =" !new_ids'; *)
     let i = ref (i0-1) in
+    let bi = { tag = 0; size = Unknown; } in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.Map.add id (lfield env !i)  subst)
+        incr i; Ident.Map.add id (lfield env !i bi)  subst)
       Ident.Map.empty !new_ids'
   in
   let new_ids_meths = ref [] in
@@ -752,9 +776,12 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
     if top then lam else
     (* must be called only once! *)
     let lam = Lambda.subst no_env_update (subst env1 lam 1 new_ids_init) lam in
-    Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
+    Llet(Alias, Pgenval, env1,
+         (if l = [] then Lvar envs
+          else lfield envs 0 { tag = 0; size = Unknown; }),
     Llet(Alias, Pgenval, env1',
-         (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
+         (if !new_ids_init = [] then Lvar env1
+          else lfield env1 0 { tag = 0; size = Unknown; }),
          lam))
   in
 
@@ -848,7 +875,8 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
           Loc_unknown)
   and linh_envs =
     List.map
-      (fun (_, path_lam, _) -> Lprim(Pfield (3, Reads_vary), [path_lam], Loc_unknown))
+      (fun (_, path_lam, _) ->
+        Lprim(class_field 3, [path_lam], Loc_unknown))
       (List.rev inh_init)
   in
   let make_envs lam =
@@ -868,7 +896,8 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   in
   let inh_keys =
     List.map
-      (fun (_, path_lam, _) -> Lprim(Pfield (1, Reads_vary), [path_lam], Loc_unknown))
+      (fun (_, path_lam, _) ->
+        Lprim(class_field 1, [path_lam], Loc_unknown))
       inh_paths
   in
   let lclass lam =
@@ -886,7 +915,8 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
                                     inh_keys, Loc_unknown)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, Pointer, Assignment),
+    let field_info = { index = i; block_info = { tag = 0; size  = Unknown; }; } in
+    Lprim(Psetfield(field_info, Pointer, Assignment),
           [Lvar cached; lam], Loc_unknown)
   in
   let ldirect () =
@@ -914,25 +944,27 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
             mkappl (oo_prim "make_class_store",
                     [transl_meth_list pub_meths;
                      Lvar class_init; Lvar cached])) in
+  (* CR vlaviron size might be known (3?) *)
+  let cached_bi = { tag = 0; size = Unknown; } in
   let lcheck_cache =
     if !Clflags.native_code && !Clflags.afl_instrument then
       (* When afl-fuzz instrumentation is enabled, ignore the cache
          so that the program's behaviour does not change between runs *)
       lupdate_cache
     else
-      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
+      Lifthenelse(lfield cached 0 cached_bi, lambda_unit, lupdate_cache) in
   llets (
   lcache (
   Lsequence(lcheck_cache,
   make_envs (
-  if ids = [] then mkappl (lfield cached 0, [lenvs]) else
+  if ids = [] then mkappl (lfield cached 0 cached_bi, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable, None),
         (if concrete then
-          [mkappl (lfield cached 0, [lenvs]);
-           lfield cached 1;
-           lfield cached 0;
+          [mkappl (lfield cached 0 cached_bi, [lenvs]);
+           lfield cached 1 cached_bi;
+           lfield cached 0 cached_bi;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
+        else [lambda_unit; lfield cached 0 cached_bi; lambda_unit; lenvs]),
         Loc_unknown
        )))))
 

@@ -43,6 +43,20 @@ type field_read_semantics =
   | Reads_agree
   | Reads_vary
 
+type block_size =
+  | Known of int
+  | Unknown
+
+type block_info =
+  { tag : int;
+    size : block_size;
+  }
+
+type field_info =
+  { index : int;
+    block_info : block_info;
+  }
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -52,9 +66,9 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int * field_read_semantics
+  | Pfield of field_info * field_read_semantics
   | Pfield_computed of field_read_semantics
-  | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Psetfield of field_info * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int * field_read_semantics
   | Psetfloatfield of int * initialization_or_assignment
@@ -650,7 +664,13 @@ let rec transl_address loc = function
       then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Env.Adot(addr, pos) ->
-      Lprim(Pfield (pos, Reads_agree), [transl_address loc addr], loc)
+      let field_info = {
+        index = pos;
+        block_info = { tag = 0; size = Unknown; };
+      }
+      in
+      Lprim(Pfield (field_info, Reads_agree),
+            [transl_address loc addr], loc)
 
 let transl_path find loc env path =
   match find path env with
@@ -976,3 +996,5 @@ let max_arity () =
 
 let reset () =
   raise_count := 0
+
+let module_block_info : block_info = { tag = 0; size = Unknown; }

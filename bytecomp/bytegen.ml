@@ -391,9 +391,9 @@ let comp_primitive p args =
   | Pcompare_ints -> Kccall("caml_int_compare", 2)
   | Pcompare_floats -> Kccall("caml_float_compare", 2)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
-  | Pfield (n, _sem) -> Kgetfield n
+  | Pfield ({ index = n; _ }, _sem) -> Kgetfield n
   | Pfield_computed _sem -> Kgetvectitem
-  | Psetfield(n, _ptr, _init) -> Ksetfield n
+  | Psetfield({ index = n; _ }, _ptr, _init) -> Ksetfield n
   | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Pfloatfield (n, _sem) -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
