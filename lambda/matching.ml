@@ -3583,11 +3583,17 @@ let flatten_pattern size p =
   | Tpat_any -> Patterns.omegas size
   | _ -> raise Cannot_flatten
 
+let flatten_simple_pattern size (p : Simple.pattern) =
+  match p.pat_desc with
+  | `Tuple args -> args
+  | `Any -> Patterns.omegas size
+  | _ -> raise Cannot_flatten
+
 let flatten_cases size cases =
   List.map
     (function
       | (p, []), action -> (
-          match flatten_pattern size (General.erase p) with
+          match flatten_simple_pattern size p with
           | p :: ps -> ((p, ps), action)
           | [] -> assert false
         )
