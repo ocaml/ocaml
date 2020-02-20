@@ -130,38 +130,22 @@ static void write_barrier(value obj, int field, value old_val, value new_val) __
    modifies domain-local data structures. */
 static void write_barrier(value obj, int field, value old_val, value new_val)
 {
-  caml_domain_state* domain_state = Caml_state;
-
   /* HACK: can't assert when get old C-api style pointers
     Assert (Is_block(obj)); */
 
   if (!Is_minor(obj)) {
-    caml_darken(0, old_val, 0);
 
-    if (Is_block(new_val) && Is_minor(new_val)) {
-
-      /* If old_val is young, then `Op_val(obj)+field` is already in
-       * major_ref. We can safely skip adding it again. */
-       if (Is_block(old_val) && Is_minor(old_val))
-         return;
-
-      /* Add to remembered set */
-      Ref_table_add(&domain_state->minor_tables->major_ref, Op_val(obj) + field);
-    }
-  }
-  #ifdef DEBUG
-  else if (Is_minor(new_val) && new_val < obj) {
-    /* Both obj and new_val are young and new_val is more recent than obj.
-      * If old_val is also young, and younger than obj, then it must be the
-      * case that `Op_val(obj)+field` is already in minor_ref. We can safely
-      * skip adding it again. */
-    if (Is_block(old_val) && Is_minor(old_val) && old_val < obj)
-      return;
-
-    /* Add to remembered set */
-    Ref_table_add(&domain_state->minor_tables->minor_ref, Op_val(obj) + field);
-  }
-  #endif
+    if (Is_block(old_val)) {
+       /* if old is in the minor heap, then this is in a remembered set already */
+       if (Is_minor(old_val)) return;
+       /* old is a block and in the major heap */
+       caml_darken(0, old_val, 0);
+     }
+     /* this update is creating a new link from major to minor, remember it */
+     if (Is_block_and_minor(new_val)) {
+       Ref_table_add(&Caml_state->minor_tables->major_ref, Op_val(obj) + field);
+     }
+   }
 }
 
 CAMLexport void caml_modify_field (value obj, int field, value val)
