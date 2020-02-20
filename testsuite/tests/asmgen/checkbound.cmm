@@ -1,7 +1,10 @@
 (* TEST
 files = "main.c"
-arguments = "-DCHECKBOUND main.c"
 * asmgen
+arguments = "-DCHECKBOUND main.c"
+** run
+arguments = "0 5"
+*** check-program-output
 *)
 
 (**************************************************************************)
