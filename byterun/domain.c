@@ -82,7 +82,7 @@ static uintnat handle_incoming(struct interruptor* s);
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
-static dom_internal* stw_leader = 0;
+static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
 static atomic_uintnat num_domains_running;
 
@@ -168,7 +168,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
 
   domain_state->young_start = (char*)domain_self->minor_heap_area;
   domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize) / 2);
-  domain_state->young_limit = domain_state->young_start;
+  domain_state->young_limit = (uintnat) domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
   return 0;
 }
@@ -205,7 +205,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
           (caml_domain_state*)(d->tls_area);
         atomic_uintnat* young_limit = (atomic_uintnat*)&domain_state->young_limit;
         d->interrupt_word_address = young_limit;
-        atomic_store_rel(young_limit, domain_state->young_start);
+        atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
         s->interrupt_word = young_limit;
       }
       Assert(s->qhead == NULL);
@@ -554,8 +554,6 @@ static void decrement_stw_domains_still_processing()
 
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
-  caml_domain_state* domain_state = Caml_state;
-
   caml_ev_begin("stw/handler");
   caml_acknowledge_interrupt(done);
   caml_ev_begin("stw/api_barrier");
@@ -614,6 +612,13 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
+int caml_send_partial_interrupt(struct interruptor* self,
+                         struct interruptor* target,
+                         domain_rpc_handler handler,
+                         void* data,
+                         struct interrupt* req);
+int caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req);
+
 int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(struct domain*, void*), void* data,
   void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data,
@@ -621,8 +626,6 @@ int caml_try_run_on_all_domains_with_spin_work(
   int leave_when_done
   )
 {
-  caml_domain_state* domain_state = Caml_state;
-
   int i;
   uintnat domains_participating = 1;
 
@@ -637,7 +640,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     caml_handle_incoming_interrupts();
     return 0;
   } else {
-    atomic_store_rel(&stw_leader, domain_self);
+    atomic_store_rel(&stw_leader, (uintnat)domain_self);
   }
   caml_plat_unlock(&all_domains_lock);
 
@@ -713,7 +716,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
 int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data, int leave_when_done)
 {
-  caml_try_run_on_all_domains_with_spin_work(handler, data, 0, 0, 0, 0, leave_when_done);
+  return caml_try_run_on_all_domains_with_spin_work(handler, data, 0, 0, 0, 0, leave_when_done);
 }
 
 void caml_interrupt_self() {
@@ -737,7 +740,7 @@ void caml_handle_gc_interrupt() {
     caml_ev_begin("handle_interrupt");
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(young_limit, &i, Caml_state->young_start);
+      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
     }
     caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
@@ -746,7 +749,7 @@ void caml_handle_gc_interrupt() {
   }
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
-       Caml_state->young_start) ||
+       (uintnat)Caml_state->young_start) ||
       Caml_state->force_major_slice) {
     /* out of minor heap or collection forced */
     Caml_state->force_major_slice = 0;
@@ -1071,8 +1074,6 @@ int caml_send_partial_interrupt(struct interruptor* self,
                          void* data,
                          struct interrupt* req)
 {
-  int i;
-
   req->handler = handler;
   req->data = data;
   req->sender = self;
