@@ -1094,8 +1094,10 @@ static intnat major_collection_slice(intnat howmuch,
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
-  if (opportunistic && !caml_opportunistic_major_work_available())
+  if (opportunistic && !caml_opportunistic_major_work_available()) {
+    if (budget_left) *budget_left = budget;
     return computed_work;
+  }
 
   caml_ev_begin("major_gc/slice");
 
@@ -1123,6 +1125,7 @@ static intnat major_collection_slice(intnat howmuch,
       if( saved_major_cycle != caml_major_cycles_completed ) {
         caml_ev_end("major_gc/sweep");
         caml_ev_end("major_gc/slice");
+        if (budget_left) *budget_left = budget;
         return computed_work;
       }
     /* need to check if sweeping_done by the incoming interrupt */
@@ -1152,6 +1155,7 @@ mark_again:
       if( saved_major_cycle != caml_major_cycles_completed ) {
         caml_ev_end("major_gc/mark");
         caml_ev_end("major_gc/slice");
+        if (budget_left) *budget_left = budget;
         return computed_work;
       }
     } else if (0) {
