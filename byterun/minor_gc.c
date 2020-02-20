@@ -100,9 +100,6 @@ void reset_minor_tables(struct caml_minor_tables* r)
   reset_table((struct generic_table *)&r->major_ref);
   reset_table((struct generic_table *)&r->ephe_ref);
   reset_table((struct generic_table *)&r->custom);
-#ifdef DEBUG
-  reset_table((struct generic_table *)&r->minor_ref);
-#endif
 }
 
 void caml_free_minor_tables(struct caml_minor_tables* r)
@@ -520,9 +517,6 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   clear_table ((struct generic_table *)&minor_tables->major_ref);
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
-#ifdef DEBUG
-  clear_table ((struct generic_table *)&minor_tables->minor_ref);
-#endif
 
   asize_t wsize = domain_state->minor_heap_wsz;
 
