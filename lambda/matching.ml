@@ -3523,7 +3523,23 @@ let flatten_simple_pattern size (p : Simple.pattern) =
   match p.pat_desc with
   | `Tuple args -> args
   | `Any -> Patterns.omegas size
-  | _ -> raise Cannot_flatten
+  | `Array _
+  | `Variant _
+  | `Record _
+  | `Lazy _
+  | `Construct _
+  | `Constant _ ->
+      (* If you trace where this function is called from, you'll notice all
+         the calls originate from [do_for_multiple_match], where we know we're
+         the scrutinee is a tuple literal.
+
+         Since the PM is well typed, none of this cases is possible. *)
+      let msg =
+        Format.fprintf Format.str_formatter
+          "Matching.flatten_pattern: got '%a'" top_pretty (General.erase p);
+        Format.flush_str_formatter ()
+      in
+      fatal_error msg
 
 let flatten_cases size cases =
   List.map
