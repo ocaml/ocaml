@@ -860,7 +860,8 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   buf->major_heap.large_max_words = large_max;
 }
 
-static void cycle_all_domains_callback(struct domain* domain, void* unused)
+static void cycle_all_domains_callback(struct domain* domain, void* unused,
+                                       int* participating)
 {
   uintnat num_domains_in_stw;
 
@@ -871,7 +872,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   CAMLassert(atomic_load(&num_domains_to_sweep) == 0);
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
 
-  caml_stw_empty_minor_heap(domain, (void*)0);
+  caml_stw_empty_minor_heap(domain, (void*)0, participating);
 
   caml_gc_log("In STW callback");
   caml_ev_begin("major_gc/stw");
@@ -1050,7 +1051,8 @@ static int is_complete_phase_sweep_ephe (struct domain *d)
     /* All orphaned structures have been adopted */
 }
 
-static void try_complete_gc_phase (struct domain* domain, void* unused)
+static void try_complete_gc_phase (struct domain* domain, void* unused,
+                                   int* participating)
 {
   barrier_status b;
 
@@ -1076,7 +1078,7 @@ intnat caml_opportunistic_major_work_available ()
 }
 
 static intnat major_collection_slice(intnat howmuch,
-                                     intnat from_barrier,
+                                     int* barrier_participants,
                                      intnat opportunistic,
                                      intnat* budget_left /* out */)
 {
@@ -1224,8 +1226,8 @@ mark_again:
     if (is_complete_phase_sweep_and_mark_main(d) ||
         is_complete_phase_mark_final (d)) {
       caml_ev_begin("major_gc/phase_change");
-      if (from_barrier) {
-        try_complete_gc_phase (d, (void*)0);
+      if (barrier_participants) {
+        try_complete_gc_phase (d, (void*)0, barrier_participants);
       } else {
         caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
       }
@@ -1256,8 +1258,8 @@ mark_again:
       ignoring whether caml_try_run_on_all_domains succeeds. */
     while (saved_major_cycle == caml_major_cycles_completed) {
       caml_ev_begin("major_gc/phase_change");
-      if (from_barrier) {
-        cycle_all_domains_callback(d, (void*)0);
+      if (barrier_participants) {
+        cycle_all_domains_callback(d, (void*)0, barrier_participants);
       } else {
         caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
       }
@@ -1279,14 +1281,15 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
   return major_collection_slice(howmuch, 0, 0, budget_left);
 }
 
-static void finish_major_cycle_callback (struct domain* domain, void* arg)
+static void finish_major_cycle_callback (struct domain* domain, void* arg,
+                                         int* participating)
 {
   uintnat saved_major_cycles = (uintnat)arg;
   CAMLassert (domain == caml_domain_self());
 
-  caml_stw_empty_minor_heap(domain, (void*)0);
+  caml_stw_empty_minor_heap(domain, (void*)0, participating);
   while (saved_major_cycles == caml_major_cycles_completed) {
-    major_collection_slice(10000000, 1, 0, 0);
+    major_collection_slice(10000000, participating, 0, 0);
   }
 }
 
