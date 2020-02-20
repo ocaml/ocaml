@@ -124,11 +124,11 @@
    generated.
 */
 
-static void write_barrier(value obj, int field, value old_val, value new_val) __attribute__((always_inline));
+static void write_barrier(value obj, intnat field, value old_val, value new_val) __attribute__((always_inline));
 
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
-static void write_barrier(value obj, int field, value old_val, value new_val)
+static void write_barrier(value obj, intnat field, value old_val, value new_val)
 {
   /* HACK: can't assert when get old C-api style pointers
     Assert (Is_block(obj)); */
@@ -148,7 +148,7 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
    }
 }
 
-CAMLexport void caml_modify_field (value obj, int field, value val)
+CAMLexport void caml_modify_field (value obj, intnat field, value val)
 {
   Assert (Is_block(obj));
   Assert(field >= 0 && field < Wosize_val(obj));
@@ -179,7 +179,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
                         memory_order_release);
 }
 
-CAMLexport void caml_initialize_field (value obj, int field, value val)
+CAMLexport void caml_initialize_field (value obj, intnat field, value val)
 {
   Assert(Is_block(obj));
   Assert(0 <= field && field < Wosize_val(obj));
@@ -215,7 +215,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   *fp = val;
 }
 
-CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value newval)
+CAMLexport int caml_atomic_cas_field (value obj, intnat field, value oldval, value newval)
 {
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
@@ -447,7 +447,7 @@ static void send_read_fault(struct read_fault_req* req)
   }
 }
 
-CAMLexport value caml_read_barrier(value obj, int field)
+CAMLexport value caml_read_barrier(value obj, intnat field)
 {
   /* ctk21: no-op the read barrier as part of experiment */
   CAMLparam1(obj);
