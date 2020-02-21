@@ -82,7 +82,7 @@ static uintnat handle_incoming(struct interruptor* s);
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
-static dom_internal* stw_leader = 0;
+static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
 static atomic_uintnat num_domains_running;
 
@@ -168,7 +168,7 @@ int caml_reallocate_minor_heap(asize_t wsize)
 
   domain_state->young_start = (char*)domain_self->minor_heap_area;
   domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize) / 2);
-  domain_state->young_limit = domain_state->young_start;
+  domain_state->young_limit = (uintnat) domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
   return 0;
 }
@@ -205,7 +205,7 @@ static void create_domain(uintnat initial_minor_heap_wsize) {
           (caml_domain_state*)(d->tls_area);
         atomic_uintnat* young_limit = (atomic_uintnat*)&domain_state->young_limit;
         d->interrupt_word_address = young_limit;
-        atomic_store_rel(young_limit, domain_state->young_start);
+        atomic_store_rel(young_limit, (uintnat)domain_state->young_start);
         s->interrupt_word = young_limit;
       }
       Assert(s->qhead == NULL);
@@ -472,7 +472,7 @@ static void interrupt_domain(dom_internal* d) {
 static struct {
   atomic_uintnat domains_still_running;
   atomic_uintnat num_domains_still_processing;
-  void (*callback)(struct domain*, void*);
+  void (*callback)(struct domain*, void*, int* others_participating);
   void* data;
   int leave_when_done;
   int num_domains;
@@ -481,6 +481,9 @@ static struct {
   void* enter_spin_data;
   void (*leave_spin_callback)(struct domain*, void*);
   void* leave_spin_data;
+
+  struct interrupt reqs[Max_domains];
+  int participating[Max_domains];
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
@@ -492,7 +495,9 @@ static struct {
   NULL,
   NULL,
   NULL,
-  NULL
+  NULL,
+  { { 0 } },
+  { 0 }
 };
 
 /* sense-reversing barrier */
@@ -554,7 +559,9 @@ static void decrement_stw_domains_still_processing()
 
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
+#ifdef DEBUG
   caml_domain_state* domain_state = Caml_state;
+#endif
 
   caml_ev_begin("stw/handler");
   caml_acknowledge_interrupt(done);
@@ -572,7 +579,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  stw_request.callback(domain, stw_request.data);
+  stw_request.callback(domain, stw_request.data, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -614,15 +621,23 @@ int caml_domain_is_in_stw() {
 }
 #endif
 
+static int caml_send_partial_interrupt(struct interruptor* self,
+                         struct interruptor* target,
+                         domain_rpc_handler handler,
+                         void* data,
+                         struct interrupt* req);
+static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req);
+
 int caml_try_run_on_all_domains_with_spin_work(
-  void (*handler)(struct domain*, void*), void* data,
+  void (*handler)(struct domain*, void*, int*), void* data,
   void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data,
   void (*leave_spin_callback)(struct domain*, void*), void* leave_spin_data,
   int leave_when_done
   )
 {
+#ifdef DEBUG
   caml_domain_state* domain_state = Caml_state;
-
+#endif
   int i;
   uintnat domains_participating = 1;
 
@@ -637,7 +652,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     caml_handle_incoming_interrupts();
     return 0;
   } else {
-    atomic_store_rel(&stw_leader, domain_self);
+    atomic_store_rel(&stw_leader, (uintnat)domain_self);
   }
   caml_plat_unlock(&all_domains_lock);
 
@@ -650,11 +665,14 @@ int caml_try_run_on_all_domains_with_spin_work(
      the interrupt (i.e. are not terminated and are participating in
      this STW section). */
   {
-    struct interrupt reqs[Max_domains];
-    int sent[Max_domains];
+    struct interrupt* reqs = stw_request.reqs;
+    int* sent = stw_request.participating;
     for (i = 0; i < Max_domains; i++) {
       sent[i] = 0;
-      if (&all_domains[i] == domain_self) continue;
+      if (&all_domains[i] == domain_self) {
+        sent[i] = 1;
+        continue;
+      }
       if (caml_send_partial_interrupt(&domain_self->interruptor,
                               &all_domains[i].interruptor,
                               stw_handler,
@@ -666,7 +684,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     }
 
     for(i = 0; i < Max_domains ; i++) {
-      if( sent[i] ) {
+      if( sent[i] && &all_domains[i] != domain_self) {
         caml_wait_interrupt_completed(&domain_self->interruptor, &reqs[i]);
       }
     }
@@ -689,7 +707,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  handler(&domain_self->state, data);
+  handler(&domain_self->state, data, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -711,9 +729,9 @@ int caml_try_run_on_all_domains_with_spin_work(
   return 1;
 }
 
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* data, int leave_when_done)
+int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int*), void* data, int leave_when_done)
 {
-  caml_try_run_on_all_domains_with_spin_work(handler, data, 0, 0, 0, 0, leave_when_done);
+  return caml_try_run_on_all_domains_with_spin_work(handler, data, 0, 0, 0, 0, leave_when_done);
 }
 
 void caml_interrupt_self() {
@@ -737,7 +755,7 @@ void caml_handle_gc_interrupt() {
     caml_ev_begin("handle_interrupt");
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       uintnat i = INTERRUPT_MAGIC;
-      atomic_compare_exchange_strong(young_limit, &i, Caml_state->young_start);
+      atomic_compare_exchange_strong(young_limit, &i, (uintnat)Caml_state->young_start);
     }
     caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
@@ -746,7 +764,7 @@ void caml_handle_gc_interrupt() {
   }
 
   if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
-       Caml_state->young_start) ||
+       (uintnat)Caml_state->young_start) ||
       Caml_state->force_major_slice) {
     /* out of minor heap or collection forced */
     Caml_state->force_major_slice = 0;
@@ -889,7 +907,6 @@ static uintnat handle_incoming(struct interruptor* s)
   while (s->qhead != NULL) {
     struct interrupt* req = s->qhead;
     s->qhead = req->next;
-
     /* Unlock s while the handler runs, to allow other
        domains to send us messages. This is necessary to
        avoid deadlocks, since the handler might send
@@ -907,15 +924,7 @@ static uintnat handle_incoming(struct interruptor* s)
 
 void caml_acknowledge_interrupt(struct interrupt* req)
 {
-  /* We cannot access req after we signal completion, so save the sender's
-     identity now. */
-  struct interruptor* sender = req->sender;
   atomic_store_rel(&req->completed, 1);
-
-  /* lock sender->lock so that we don't broadcast between check and wait */
-  caml_plat_lock(&sender->lock);
-  caml_plat_broadcast(&sender->cond);
-  caml_plat_unlock(&sender->lock);
 }
 
 static void acknowledge_all_pending_interrupts()
@@ -1049,20 +1058,24 @@ void caml_handle_incoming_interrupts()
   caml_plat_unlock(&s->lock);
 }
 
-int caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req)
+static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req)
 {
-  if (atomic_load_acq(&req->completed)) {
-    return 1;
+  int i;
+  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
+  for (i=0; i<1000; i++) {
+    if (atomic_load_acq(&req->completed)) {
+      return;
+    }
+    cpu_relax();
   }
 
-  caml_plat_lock(&self->lock);
-  while (1) {
+  while (!atomic_load_acq(&req->completed)) {
+    cpu_relax();
+    caml_plat_lock(&self->lock);
     handle_incoming(self);
-    if (atomic_load_acq(&req->completed)) break;
-    caml_plat_wait(&self->cond);
+    caml_plat_unlock(&self->lock);
   }
-  caml_plat_unlock(&self->lock);
-  return 1;
+  return;
 }
 
 int caml_send_partial_interrupt(struct interruptor* self,
@@ -1071,8 +1084,6 @@ int caml_send_partial_interrupt(struct interruptor* self,
                          void* data,
                          struct interrupt* req)
 {
-  int i;
-
   req->handler = handler;
   req->data = data;
   req->sender = self;
@@ -1111,52 +1122,9 @@ int caml_send_interrupt(struct interruptor* self,
                          void* data)
 {
   struct interrupt req;
-  int i;
-
-  req.handler = handler;
-  req.data = data;
-  req.sender = self;
-  atomic_store_rel(&req.completed, 0);
-  req.next = NULL;
-
-  caml_plat_lock(&target->lock);
-  if (!target->running) {
-    caml_plat_unlock(&target->lock);
+  if (!caml_send_partial_interrupt(self, target, handler, data, &req))
     return 0;
-  }
-
-  caml_ev_begin_flow("interrupt", (uintnat)&req);
-  /* add to wait queue */
-  if (target->qhead) {
-    /* queue was nonempty */
-    target->qtail->next = &req;
-    target->qtail = &req;
-  } else {
-    /* queue was empty */
-    target->qhead = target->qtail = &req;
-  }
-  /* Signal the condition variable, in case the target is
-     itself waiting for an interrupt to be processed elsewhere */
-  caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
-  caml_plat_unlock(&target->lock);
-
-  atomic_store_rel(target->interrupt_word, INTERRUPT_MAGIC); //FIXME dup
-
-  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
-  for (i=0; i<1000; i++) {
-    if (atomic_load_acq(&req.completed)) {
-      return 1;
-    }
-    cpu_relax();
-  }
-
-  caml_plat_lock(&self->lock);
-  while (1) {
-    handle_incoming(self);
-    if (atomic_load_acq(&req.completed)) break;
-    caml_plat_wait(&self->cond);
-  }
-  caml_plat_unlock(&self->lock);
+  caml_wait_interrupt_completed(self, &req);
   return 1;
 }
 
