@@ -692,7 +692,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int domains_in_minor_
 */
 
 /* must be called within a STW section */
-void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
+void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int* participating)
 {
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
@@ -720,6 +720,15 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused)
     }
     caml_global_barrier_end(b);
     caml_ev_end("minor_gc/start_barrier");
+
+    int npart = 0;
+    for (int i = 0; i < Max_domains; i++) npart+=participating[i];
+    if (npart != atomic_load_acq(&domains_in_minor_gc_count)) abort();
+    for (int i = 0; i < npart; i++) {
+      if (!participating[domains_in_minor_gc[i]->state->id]) abort();
+    }
+
+
   }
   else
   {
