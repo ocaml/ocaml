@@ -126,7 +126,6 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Empty_pattern
   | Letop_type_clash of string * Ctype.Unification_trace.t
   | Andop_type_clash of string * Ctype.Unification_trace.t
   | Bindings_type_clash of Ctype.Unification_trace.t
@@ -1103,7 +1102,9 @@ and counter_example_checking_info = {
 (** Due to GADT constraints, an or-pattern produced within
     a counter-example may have ill-typed branches. Consider for example
 
+    {[
       type _ tag = Int : int tag | Bool : bool tag
+    ]}
 
     then [Parmatch] will propose the or-pattern [Int | Bool] whenever
     a pattern of type [tag] is required to form a counter-example. For
@@ -1145,29 +1146,37 @@ and splitting_mode =
   | Refine_or of { inside_nonsplit_or: bool; }
   (** Only backtrack when needed.
 
-     [Refine_or] tries another approach for refining or-pattern.
+      [Refine_or] tries another approach for refining or-pattern.
 
-     Instead of always splitting each or-pattern, It first attempts to
-     find branches that do not introduce new constraints (because they
-     do not contain GADT constructors). Those branches are such that,
-     if they fail, all other branches will fail.
+      Instead of always splitting each or-pattern, It first attempts to
+      find branches that do not introduce new constraints (because they
+      do not contain GADT constructors). Those branches are such that,
+      if they fail, all other branches will fail.
 
-     If we find one such branch, we attempt to complete the subpattern
-     (checking what's outside the or-pattern), ignoring other
-     branches -- we never consider another branch choice again. If all
-     branches are constrained, it falls back to splitting the
-     or-pattern.
+      If we find one such branch, we attempt to complete the subpattern
+      (checking what's outside the or-pattern), ignoring other
+      branches -- we never consider another branch choice again. If all
+      branches are constrained, it falls back to splitting the
+      or-pattern.
 
-     We use this mode when checking exhaustivity of pattern matching.
-    *)
+      We use this mode when checking exhaustivity of pattern matching.
+  *)
 
-(** This exception is only used internally within [type_pat_aux], to jump
-   back to the parent or-pattern in the [Refine_or] strategy.
+(** This exception is only used internally within [type_pat_aux], in
+    counter-example mode, to jump back to the parent or-pattern in the
+    [Refine_or] strategy.
 
-   Such a parent exists precisely when [inside_nonsplit_or = true];
-   it's an invariant that we always setup an exception handler for
-   [Need_backtrack] when we set this flag. *)
- exception Need_backtrack
+    Such a parent exists precisely when [inside_nonsplit_or = true];
+    it's an invariant that we always setup an exception handler for
+    [Need_backtrack] when we set this flag. *)
+exception Need_backtrack
+
+(** This exception is only used internally within [type_pat_aux], in
+    counter-example mode. We use it to discard counter-example candidates
+    that do not match any value. *)
+exception Empty_branch
+
+type abort_reason = Adds_constraints | Empty
 
 (** Remember current typing state for backtracking.
    No variable information, as we only backtrack on
@@ -1191,8 +1200,9 @@ let set_state s env =
 let rec find_valid_alternative f pat =
   match pat.ppat_desc with
   | Ppat_or(p1,p2) ->
-      (try find_valid_alternative f p1
-       with Error _ -> find_valid_alternative f p2)
+      (try find_valid_alternative f p1 with
+       | Empty_branch | Error _ -> find_valid_alternative f p2
+      )
   | _ -> f pat
 
 let no_explosion = function
@@ -1263,13 +1273,11 @@ let as_comp_pattern
   | Value -> as_computation_pattern pat
   | Computation -> pat
 
-(* type_pat propagates the expected type as well as maps for
-   constructors and labels.
-   Unification may update the typing environment. *)
-(* constrs <> None => called from parmatch: backtrack on or-patterns
-   explode > 0 => explode Ppat_any for gadts *)
-(* Need_backtrack exceptions are raised in the [Inside_or] mode to backtrack
-   to the outermost or-pattern *)
+(* type_pat propagates the expected type.
+   Unification may update the typing environment.
+
+   In counter-example mode, [Empty_branch] is raised when the counter-example
+   does not match any value.  *)
 let rec type_pat
   : type k r . k pattern_category -> no_existentials:_ -> mode:_ ->
       env:_ -> _ -> _ -> (k general_pattern -> r) -> r
@@ -1326,7 +1334,7 @@ and type_pat_aux
       | Counter_example ({explosion_fuel; _} as info) ->
          let open Parmatch in
          begin match ppat_of_type !env expected_ty with
-         | PT_empty -> raise (Error (loc, !env, Empty_pattern))
+         | PT_empty -> raise Empty_branch
          | PT_any -> k' Tpat_any
          | PT_pattern (explosion, sp, constrs, labels) ->
             let explosion_fuel =
@@ -1672,19 +1680,21 @@ and type_pat_aux
         gadt_equations_level := Some lev;
         let env1 = ref !env in
         let inside_or = enter_nonsplit_or mode in
-        let p1 =
-          try Some (type_pat category ~mode:inside_or
-                      sp1 expected_ty ~env:env1 (fun x -> x))
-          with Need_backtrack -> None in
+        let type_pat_result env sp : (_, abort_reason) result =
+          match
+            type_pat category ~mode:inside_or sp expected_ty ~env (fun x -> x)
+          with
+          | res -> Ok res
+          | exception Need_backtrack -> Error Adds_constraints
+          | exception Empty_branch -> Error Empty
+        in
+        let p1 = type_pat_result env1 sp1 in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let env2 = ref !env in
-        let p2 =
-          try Some (type_pat category ~mode:inside_or
-                      sp2 expected_ty ~env:env2 (fun x -> x))
-          with Need_backtrack -> None in
+        let p2 = type_pat_result env2 sp2 in
         end_def ();
         gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
@@ -1697,28 +1707,33 @@ and type_pat_aux
           check_scope_escape pv_loc !env2 outter_lev pv_type
         ) p2_variables;
         begin match p1, p2 with
-        | None, None ->
-           let inside_nonsplit_or =
-             match get_splitting_mode mode with
-             | None | Some Backtrack_or -> false
-             | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or in
-           if inside_nonsplit_or
-           then raise Need_backtrack
-           else split_or sp
-        | Some p, None | None, Some p -> rp k p (* no variables in this case *)
-        | Some p1, Some p2 ->
-        let alpha_env =
-          enter_orpat_variables loc !env p1_variables p2_variables in
-        let p2 = alpha_pat alpha_env p2 in
-        pattern_variables := p1_variables;
-        module_variables := p1_module_variables;
-        let make_pat desc =
-          { pat_desc = desc;
-            pat_loc = loc; pat_extra=[];
-            pat_type = instance expected_ty;
-            pat_attributes = sp.ppat_attributes;
-            pat_env = !env } in
-        rp k (make_pat (Tpat_or(p1, p2, None)))
+        | Error Empty, Error Empty ->
+            raise Empty_branch
+        | Error Adds_constraints, Error _
+        | Error _, Error Adds_constraints ->
+            let inside_nonsplit_or =
+              match get_splitting_mode mode with
+              | None | Some Backtrack_or -> false
+              | Some (Refine_or {inside_nonsplit_or}) -> inside_nonsplit_or in
+            if inside_nonsplit_or
+            then raise Need_backtrack
+            else split_or sp
+        | Ok p, Error _
+        | Error _, Ok p ->
+            rp k p
+        | Ok p1, Ok p2 ->
+            let alpha_env =
+              enter_orpat_variables loc !env p1_variables p2_variables in
+            let p2 = alpha_pat alpha_env p2 in
+            pattern_variables := p1_variables;
+            module_variables := p1_module_variables;
+            let make_pat desc =
+              { pat_desc = desc;
+                pat_loc = loc; pat_extra=[];
+                pat_type = instance expected_ty;
+                pat_attributes = sp.ppat_attributes;
+                pat_env = !env } in
+            rp k (make_pat (Tpat_or(p1, p2, None)))
         end
       end
   | Ppat_lazy sp1 ->
@@ -1820,7 +1835,7 @@ let partial_pred ~lev ~splitting_mode ?(explode=0)
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
-  with Error _ ->
+  with Error _ | Empty_branch ->
     set_state state env;
     None
 
@@ -5410,7 +5425,6 @@ let report_error ~loc env = function
           fprintf ppf "These bindings have type")
         (function ppf ->
           fprintf ppf "but bindings were expected of type")
-  | Empty_pattern -> assert false
 
 let report_error ~loc env err =
   wrap_printing_env ~error:true env (fun () -> report_error ~loc env err)

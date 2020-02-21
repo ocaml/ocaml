@@ -237,6 +237,10 @@ Working version
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #9309, #9318: Fix exhaustivity checking with empty types
+  (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
+  and Thomas Refis)
+
 OCaml 4.10.0
 ------------
 

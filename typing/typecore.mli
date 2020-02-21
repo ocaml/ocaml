@@ -185,7 +185,6 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Empty_pattern
   | Letop_type_clash of string * Ctype.Unification_trace.t
   | Andop_type_clash of string * Ctype.Unification_trace.t
   | Bindings_type_clash of Ctype.Unification_trace.t
