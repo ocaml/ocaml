@@ -705,7 +705,7 @@ let addr_array_set arr ofs newval dbg =
   Cop(Cextcall("caml_modify_field", typ_void, false, None),
       [arr; untag_int ofs dbg; newval], dbg)
 let addr_array_initialize arr ofs newval dbg =
-  Cop(Cextcall("caml_initialize_field", typ_void, true, None),
+  Cop(Cextcall("caml_initialize_field", typ_void, false, None),
       [arr; untag_int ofs dbg; newval], dbg)
 let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Assignment),
@@ -776,7 +776,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
 
 let make_alloc dbg tag args =
   let addr_array_init arr ofs newval dbg =
-    Cop(Cextcall("caml_initialize_field", typ_void, true, None),
+    Cop(Cextcall("caml_initialize_field", typ_void, false, None),
         [arr; untag_int ofs dbg; newval], dbg)
   in
   make_alloc_generic addr_array_init dbg tag (List.length args) args
@@ -2115,7 +2115,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                         [transl env arg1; Cconst_int n; transl env arg2],
                         dbg))
       | Caml_initialize ->
-        return_unit(Cop(Cextcall("caml_initialize_field", typ_void, true, None),
+        return_unit(Cop(Cextcall("caml_initialize_field", typ_void, false, None),
                         [transl env arg1; Cconst_int n; transl env arg2],
                         dbg))
       | Simple ->
@@ -2406,10 +2406,10 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
   | Patomic_exchange ->
-     Cop (Cextcall ("caml_atomic_exchange", typ_val, true, None),
+     Cop (Cextcall ("caml_atomic_exchange", typ_val, false, None),
           [transl env arg1; transl env arg2], dbg)
   | Patomic_fetch_add ->
-     Cop (Cextcall ("caml_atomic_fetch_add", typ_int, true, None),
+     Cop (Cextcall ("caml_atomic_fetch_add", typ_int, false, None),
           [transl env arg1; transl env arg2], dbg)
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
@@ -2585,7 +2585,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (unaligned_set_64 ba_data idx newval dbg))))))
 
   | Patomic_cas ->
-     Cop (Cextcall ("caml_atomic_cas", typ_int, true, None),
+     Cop (Cextcall ("caml_atomic_cas", typ_int, false, None),
           [transl env arg1; transl env arg2; transl env arg3], dbg)
 
   | prim ->
