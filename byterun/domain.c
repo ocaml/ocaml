@@ -683,7 +683,7 @@ int caml_try_run_on_all_domains_with_spin_work(
                               &all_domains[i].interruptor,
                               stw_handler,
                               0,
-                              &reqs[i])) {
+                              &reqs[domains_participating])) {
         participating[domains_participating] = &all_domains[i].state;
         domains_participating++;
       }
