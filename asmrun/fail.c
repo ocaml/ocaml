@@ -175,16 +175,18 @@ void caml_raise_sys_blocked_io(void)
 
 void caml_array_bound_error(void)
 {
-  const value* array_bound_error_exn;
-
-  array_bound_error_exn =
-    caml_named_value("Pervasives.array_bound_error");
-  if (!array_bound_error_exn) {
-    fprintf(stderr, "Fatal error: exception "
-                    "Invalid_argument(\"index out of bounds\")\n");
-    exit(2);
+  static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
+  const value* exn = (const value*)atomic_load_acq(&exn_cache);
+  if (!exn) {
+    exn = caml_named_value("Pervasives.array_bound_error");
+    if (!exn) {
+      fprintf(stderr, "Fatal error: exception "
+        "Invalid_argument(\"index out of bounds\")\n");
+      exit(2);
+    }
+    atomic_store_rel(&exn_cache, (uintnat)exn);
   }
-  caml_raise(*array_bound_error_exn);
+  caml_raise(*exn);
 }
 
 int caml_is_special_exception(value exn) {
