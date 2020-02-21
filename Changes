@@ -439,6 +439,12 @@ OCaml 4.10.0
   (Stephen Dolan, with thanks to Andrew Hunter, Will Hasenplaugh,
    Spiros Eliopoulos and Brian Nigito. Review by Xavier Leroy)
 
+- #2165: better unboxing heuristics for let-bound identifiers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
+- #8735: unbox across static handlers
+  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #8718, #9089: syntactic highlighting for code examples in the manual
@@ -840,12 +846,6 @@ OCaml 4.09.0 (19 September 2019):
 - #2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
-
-- #2165: better unboxing heuristics for let-bound identifiers
-  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
-
-- #8735: unbox across static handlers
-  (Alain Frisch, review by Vincent Laviron and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
