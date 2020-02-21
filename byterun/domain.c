@@ -472,7 +472,7 @@ static void interrupt_domain(dom_internal* d) {
 static struct {
   atomic_uintnat domains_still_running;
   atomic_uintnat num_domains_still_processing;
-  void (*callback)(struct domain*, void*, int* others_participating);
+  void (*callback)(struct domain*, void*, int participating_count, struct domain** others_participating);
   void* data;
   int leave_when_done;
   int num_domains;
@@ -483,7 +483,7 @@ static struct {
   void* leave_spin_data;
 
   struct interrupt reqs[Max_domains];
-  int participating[Max_domains];
+  struct domain* participating[Max_domains];
 } stw_request = {
   ATOMIC_UINTNAT_INIT(0),
   ATOMIC_UINTNAT_INIT(0),
@@ -579,7 +579,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  stw_request.callback(domain, stw_request.data, stw_request.participating);
+  stw_request.callback(domain, stw_request.data, stw_request.num_domains, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -629,7 +629,8 @@ static int caml_send_partial_interrupt(struct interruptor* self,
 static void caml_wait_interrupt_completed(struct interruptor* self, struct interrupt* req);
 
 int caml_try_run_on_all_domains_with_spin_work(
-  void (*handler)(struct domain*, void*, int*), void* data,
+  void (*handler)(struct domain*, void*, int, struct domain**), void* data,
+  void (*leader_setup)(struct domain*),
   void (*enter_spin_callback)(struct domain*, void*), void* enter_spin_data,
   void (*leave_spin_callback)(struct domain*, void*), void* leave_spin_data,
   int leave_when_done
@@ -639,7 +640,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   caml_domain_state* domain_state = Caml_state;
 #endif
   int i;
-  uintnat domains_participating = 1;
+  uintnat domains_participating = 0;
 
   caml_gc_log("requesting STW");
 
@@ -661,16 +662,21 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   atomic_store_rel(&stw_request.domains_still_running, 1);
 
+  if( leader_setup ) {
+    leader_setup(&domain_self->state);
+  }
+
   /* Next, interrupt all domains, counting how many domains received
      the interrupt (i.e. are not terminated and are participating in
      this STW section). */
   {
     struct interrupt* reqs = stw_request.reqs;
-    int* sent = stw_request.participating;
+    struct domain** participating = stw_request.participating;
+
     for (i = 0; i < Max_domains; i++) {
-      sent[i] = 0;
       if (&all_domains[i] == domain_self) {
-        sent[i] = 1;
+        participating[domains_participating] = &domain_self->state;
+        domains_participating++;
         continue;
       }
       if (caml_send_partial_interrupt(&domain_self->interruptor,
@@ -678,17 +684,19 @@ int caml_try_run_on_all_domains_with_spin_work(
                               stw_handler,
                               0,
                               &reqs[i])) {
+        participating[domains_participating] = &all_domains[i].state;
         domains_participating++;
-        sent[i] = 1;
       }
     }
 
-    for(i = 0; i < Max_domains ; i++) {
-      if( sent[i] && &all_domains[i] != domain_self) {
+    for(i = 0; i < domains_participating ; i++) {
+      if( participating[i] && &domain_self->state != participating[i] ) {
         caml_wait_interrupt_completed(&domain_self->interruptor, &reqs[i]);
       }
     }
   }
+
+  Assert(domains_participating > 0);
 
   stw_request.num_domains = domains_participating;
   stw_request.leave_when_done = leave_when_done;
@@ -707,7 +715,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
   #endif
-  handler(&domain_self->state, data, stw_request.participating);
+  handler(&domain_self->state, data, domains_participating, stw_request.participating);
   #ifdef DEBUG
   domain_state->inside_stw_handler = 0;
   #endif
@@ -729,9 +737,9 @@ int caml_try_run_on_all_domains_with_spin_work(
   return 1;
 }
 
-int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int*), void* data, int leave_when_done)
+int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*, int, struct domain**), void* data, void (*leader_setup)(struct domain*), int leave_when_done)
 {
-  return caml_try_run_on_all_domains_with_spin_work(handler, data, 0, 0, 0, 0, leave_when_done);
+  return caml_try_run_on_all_domains_with_spin_work(handler, data, leader_setup, 0, 0, 0, 0, leave_when_done);
 }
 
 void caml_interrupt_self() {
