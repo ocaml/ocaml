@@ -694,8 +694,12 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
    if needed.
 */
 
+void caml_empty_minor_heap_setup(struct domain* domain) {
+  atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
+}
+
 /* must be called within a STW section */
-void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int participating_count, struct domain** participating)
 {
   #ifdef DEBUG
   CAMLassert(caml_domain_is_in_stw());
@@ -733,6 +737,18 @@ void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int partici
   caml_gc_log("finished stw empty_minor_heap");
 }
 
+/* must be called within a STW section  */
+void caml_empty_minor_heap_from_stw (struct domain* domain, void* unused, int participating_count, struct domain** participating)
+{
+  barrier_status b = caml_global_barrier_begin();
+  if( caml_global_barrier_is_final(b) ) {
+    caml_empty_minor_heap_setup(domain);
+  }
+  caml_global_barrier_end(b);
+
+  caml_stw_empty_minor_heap(domain, (void*)0, participating_count, participating);
+}
+
 void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
 {
   /* NB: need to put guard around the ev logs to prevent
@@ -742,10 +758,6 @@ void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
     caml_opportunistic_major_collection_slice(0x200, 0);
     caml_ev_end("minor_gc/opportunistic_major_slice");
   }
-}
-
-void caml_empty_minor_heap_setup(struct domain* domain) {
-  atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
 }
 
 /* must be called outside a STW section */
