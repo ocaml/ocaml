@@ -861,7 +861,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
 }
 
 static void cycle_all_domains_callback(struct domain* domain, void* unused,
-                                       int* participating)
+                                       int participating_count, struct domain** participating)
 {
   uintnat num_domains_in_stw;
 
@@ -872,9 +872,14 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused,
   CAMLassert(atomic_load(&num_domains_to_sweep) == 0);
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
 
-  caml_stw_empty_minor_heap(domain, (void*)0, participating);
+  barrier_status b = caml_global_barrier_begin();
+  if( caml_global_barrier_is_final(b) ) {
+    caml_empty_minor_heap_setup(domain);
+  }
+  caml_global_barrier_end(b);
 
-  caml_gc_log("In STW callback");
+  caml_stw_empty_minor_heap(domain, (void*)0, participating_count, participating);
+
   caml_ev_begin("major_gc/stw");
 
   {
@@ -1052,7 +1057,7 @@ static int is_complete_phase_sweep_ephe (struct domain *d)
 }
 
 static void try_complete_gc_phase (struct domain* domain, void* unused,
-                                   int* participating)
+                                   int participating_count, struct domain** participating)
 {
   barrier_status b;
 
@@ -1078,7 +1083,8 @@ intnat caml_opportunistic_major_work_available ()
 }
 
 static intnat major_collection_slice(intnat howmuch,
-                                     int* barrier_participants,
+                                     int participant_count,
+                                     struct domain** barrier_participants,
                                      intnat opportunistic,
                                      intnat* budget_left /* out */)
 {
@@ -1227,9 +1233,9 @@ mark_again:
         is_complete_phase_mark_final (d)) {
       caml_ev_begin("major_gc/phase_change");
       if (barrier_participants) {
-        try_complete_gc_phase (d, (void*)0, barrier_participants);
+        try_complete_gc_phase (d, (void*)0, participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
+        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0, 0);
       }
       caml_ev_end("major_gc/phase_change");
       if (budget > 0) goto mark_again;
@@ -1259,9 +1265,9 @@ mark_again:
     while (saved_major_cycle == caml_major_cycles_completed) {
       caml_ev_begin("major_gc/phase_change");
       if (barrier_participants) {
-        cycle_all_domains_callback(d, (void*)0, barrier_participants);
+        cycle_all_domains_callback(d, (void*)0, participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
+        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0, 0);
       }
       caml_ev_end("major_gc/phase_change");
     }
@@ -1273,23 +1279,29 @@ mark_again:
 
 intnat caml_opportunistic_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
 {
-  return major_collection_slice(howmuch, 0, 1, budget_left);
+  return major_collection_slice(howmuch, 0, 0, 1, budget_left);
 }
 
 intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */)
 {
-  return major_collection_slice(howmuch, 0, 0, budget_left);
+  return major_collection_slice(howmuch, 0, 0, 0, budget_left);
 }
 
 static void finish_major_cycle_callback (struct domain* domain, void* arg,
-                                         int* participating)
+                                         int participating_count, struct domain** participating)
 {
   uintnat saved_major_cycles = (uintnat)arg;
   CAMLassert (domain == caml_domain_self());
+  
+  barrier_status b = caml_global_barrier_begin();
+  if( caml_global_barrier_is_final(b) ) {
+    caml_empty_minor_heap_setup(domain);
+  }
+  caml_global_barrier_end(b);
 
-  caml_stw_empty_minor_heap(domain, (void*)0, participating);
+  caml_stw_empty_minor_heap(domain, (void*)0, participating_count, participating);
   while (saved_major_cycles == caml_major_cycles_completed) {
-    major_collection_slice(10000000, participating, 0, 0);
+    major_collection_slice(10000000, participating_count, participating, 0, 0);
   }
 }
 
@@ -1298,7 +1310,7 @@ void caml_finish_major_cycle ()
   uintnat saved_major_cycles = caml_major_cycles_completed;
 
   while( saved_major_cycles == caml_major_cycles_completed ) {
-    caml_try_run_on_all_domains(&finish_major_cycle_callback, (void*)caml_major_cycles_completed, 0);
+    caml_try_run_on_all_domains(&finish_major_cycle_callback, (void*)caml_major_cycles_completed, 0, 0);
   }
 }
 
