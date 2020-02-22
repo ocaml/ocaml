@@ -292,7 +292,7 @@ OCaml 4.10.0
    (KC Sivaramakrishnan and Stephen Dolan,
     compatibility hacking by David Allsopp, Florian Angeletti, Kate Deplaix,
     Jacques Garrigue, Guillaume Munch-Maccagnoni and Nicolás Ojeda Bär,
-    review by David Allsopp, Alain Frisch, Nicolas Ojeda Bar,
+    review by David Allsopp, Alain Frisch, Nicolás Ojeda Bär,
     Gabriel Scherer, Damien Doligez, and Guillaume Munch-Maccagnoni)
 
 - #8993: New C functions caml_process_pending_actions{,_exn} in
