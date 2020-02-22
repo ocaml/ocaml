@@ -324,9 +324,9 @@ static uintnat default_slice_budget() {
      Amount of marking work for the GC cycle:
                  MW = heap_words * 100 / (100 + caml_percent_free)
      Amount of sweeping work for the GC cycle:
-                 SW = heap_blocks
+                 SW = heap_sweep_words
      Amount of total work for the GC cycle:
-                 TW = MW + SW = heap_words * 100 / (100 + caml_percent_free) + heap_blocks
+                 TW = MW + SW = heap_words * 100 / (100 + caml_percent_free) + heap_sweep_words
 
      Amount of time to spend on this slice:
                  T = P * TT
@@ -337,7 +337,7 @@ static uintnat default_slice_budget() {
   */
   uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
   heap_words = (double)Wsize_bsize(heap_size);
-  uintnat heap_blocks = caml_heap_blocks(Caml_state->shared_heap);
+  uintnat heap_sweep_words = heap_words;
 
   uintnat saved_terminated_words = terminated_domains_allocated_words;
   if( saved_terminated_words > 0 ) {
@@ -349,7 +349,7 @@ static uintnat default_slice_budget() {
 
   if (p > 0.3) p = 0.3;
 
-  computed_work = (intnat) (p * (heap_blocks + (heap_words * 100 / (100 + caml_percent_free))));
+  computed_work = (intnat) (p * (heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free))));
 
   /* adjust computed work for opportunistic_work done by this domain already */
   if ( Caml_state->opportunistic_work > computed_work ) {
