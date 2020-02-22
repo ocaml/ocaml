@@ -111,10 +111,6 @@ val fold_lines : ('a -> string -> 'a) -> 'a -> t -> 'a
 (** [iter_lines f x ic] is equivalent to
     [List.fold_left f x (input_lines ic)]. *)
 
-val to_seq_lines : t -> string Seq.t
-(** [to_seq_lines ic] returns the lines of the input channel as a functional
-    iterator. *)
-
 val input_to_string : t -> string
 (** Read all remaining data. *)
 

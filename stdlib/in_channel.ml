@@ -68,14 +68,6 @@ let input_lines ic =
 let iter_lines f ic =
   fold_lines (fun () l -> f l) () ic
 
-let to_seq_lines ic =
-  let rec aux () =
-    match input_line ic with
-    | None -> Seq.Nil
-    | Some l -> Cons (l, aux)
-  in
-  aux
-
 let input_to_string ic =
   (* TODO : handle "large" positions? *)
   Option.get (really_input_string ic (in_channel_length ic - pos_in ic))
