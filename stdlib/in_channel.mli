@@ -42,10 +42,12 @@ val with_file : ?flags:open_flag list -> string -> (t -> 'a) -> 'a
     proceeding. *)
 
 val close : t -> unit
-(** Close the given channel.  Input functions raise a [Sys_error]
-    exception when they are applied to a closed input channel,
-    except [close_in], which does nothing when applied to an already
-    closed channel. *)
+(** [close ic] closes [ic]. Input functions raise a [Sys_error] exception when
+    they are applied to a closed input channel, except [close], which does
+    nothing when applied to an already closed channel. *)
+
+val close_noerr : t -> unit
+(** [close_noerr ic] is like [close ic] but ignores all errors. *)
 
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from

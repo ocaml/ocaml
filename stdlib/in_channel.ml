@@ -37,9 +37,10 @@ let open_ ?flags:(flags0 = []) path =
 
 let with_file ?flags path f =
   let ic = open_ ?flags path in
-  Fun.protect ~finally:(fun () -> close_in ic) (fun () -> f ic)
+  Fun.protect ~finally:(fun () -> close_in_noerr ic) (fun () -> f ic)
 
 let close = close_in
+let close_noerr = close_in_noerr
 let input = input
 let really_input ic b pos len =
   try Some (really_input ic b pos len) with End_of_file -> None

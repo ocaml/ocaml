@@ -42,9 +42,10 @@ let open_ ?flags:(flags0 = []) path =
 
 let with_file ?flags path f =
   let oc = open_ ?flags path in
-  Fun.protect ~finally:(fun () -> close_out oc) (fun () -> f oc)
+  Fun.protect ~finally:(fun () -> close_out_noerr oc) (fun () -> f oc)
 
 let close = close_out
+let close_noerr = close_out_noerr
 let flush = flush
 let flush_all = flush_all
 let output_char = output_char

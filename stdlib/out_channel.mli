@@ -48,12 +48,15 @@ val with_file : ?flags:open_flag list -> string -> (t -> 'a) -> 'a
     proceeding. *)
 
 val close : t -> unit
-(** Close the given channel, flushing all buffered write operations.
-    Output functions raise a [Sys_error] exception when they are
-    applied to a closed output channel, except [close_out] and [flush],
-    which do nothing when applied to an already closed channel.
-    Note that [close_out] may raise [Sys_error] if the operating
-    system signals an error when flushing or closing. *)
+(** [close oc] closes the channel [oc], flushing all buffered write operations.
+    Output functions raise a [Sys_error] exception when they are applied to a
+    closed output channel, except [close] and [flush], which do nothing when
+    applied to an already closed channel.  Note that [close] may raise
+    [Sys_error] if the operating system signals an error when flushing or
+    closing. *)
+
+val close_noerr : t -> unit
+(** [close_noerr oc] is like [close oc] but ignores all errors. *)
 
 val flush : t -> unit
 (** Flush the buffer associated with the given output channel,
