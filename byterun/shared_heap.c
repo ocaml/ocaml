@@ -432,7 +432,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
       all_free = 0;
     }
     p += wh;
-    work++;
+    work += wh;
   }
 
   if (all_free) {
