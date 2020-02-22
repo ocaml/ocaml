@@ -325,19 +325,16 @@ stdlib__hashtbl.cmx : \
 stdlib__hashtbl.cmi : \
     stdlib__seq.cmi
 stdlib__in_channel.cmo : \
-    stdlib__seq.cmi \
     stdlib__option.cmi \
     stdlib__list.cmi \
     stdlib__fun.cmi \
     stdlib__in_channel.cmi
 stdlib__in_channel.cmx : \
-    stdlib__seq.cmx \
     stdlib__option.cmx \
     stdlib__list.cmx \
     stdlib__fun.cmx \
     stdlib__in_channel.cmi
-stdlib__in_channel.cmi : \
-    stdlib__seq.cmi
+stdlib__in_channel.cmi :
 stdlib__int.cmo : \
     stdlib.cmi \
     stdlib__int.cmi
