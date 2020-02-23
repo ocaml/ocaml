@@ -102,6 +102,7 @@ let operation d = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise k -> Format.asprintf "%s%s" (Lambda.raise_kind k) (Debuginfo.to_string d)
   | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
+  | Cpoll -> "poll"
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n

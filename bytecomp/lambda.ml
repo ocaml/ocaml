@@ -161,6 +161,8 @@ type primitive =
   | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
+  (* Polling for interrupts *)
+  | Ppoll
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
