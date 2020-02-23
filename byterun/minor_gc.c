@@ -813,9 +813,12 @@ CAMLexport void caml_minor_collection (void)
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
-  CAMLparam1 (extra_root);
-  caml_handle_gc_interrupt();
-  CAMLreturn (extra_root);
+  if (Caml_check_gc_interrupt(Caml_state)) {
+    CAMLparam1(extra_root);
+    caml_handle_gc_interrupt();
+    CAMLdrop;
+  }
+  return extra_root;
 }
 
 static void realloc_generic_table
