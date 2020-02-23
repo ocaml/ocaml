@@ -347,6 +347,8 @@ static uintnat default_slice_budget() {
   p = (double) (saved_terminated_words + Caml_state->allocated_words) * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
 
+  if (p > 0.3) p = 0.3;
+
   computed_work = (intnat) (p * (heap_blocks + (heap_words * 100 / (100 + caml_percent_free))));
 
   /* adjust computed work for opportunistic_work done by this domain already */
