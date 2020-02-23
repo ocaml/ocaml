@@ -354,7 +354,7 @@ static uintnat default_slice_budget() {
   /* adjust computed work for opportunistic_work done by this domain already */
   if ( Caml_state->opportunistic_work > computed_work ) {
     /* bound the credit that opportunistic_work can have vs computed_work */
-    if (Caml_state->opportunistic_work > computed_work*2) {
+    if (Caml_state->opportunistic_work > 2*computed_work) {
      Caml_state->opportunistic_work = 2*computed_work;
     }
 
