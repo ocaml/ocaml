@@ -135,7 +135,7 @@ and operation =
   | Cextcall of string * machtype * bool * label option
     (** If specified, the given label will be placed immediately after the
         call (at the same place as any frame descriptor would reference). *)
-  | Cload of 
+  | Cload of
       { memory_chunk: memory_chunk
       ; mutability: Asttypes.mutable_flag
       ; is_atomic: bool }
@@ -153,6 +153,7 @@ and operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind
   | Ccheckbound
+  | Cpoll
 
 type expression =
     Cconst_int of int

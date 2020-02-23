@@ -344,6 +344,7 @@ let primitive ppf = function
   | Patomic_cas -> fprintf ppf "atomic_cas"
   | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
+  | Ppoll -> fprintf ppf "poll"
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
@@ -458,6 +459,7 @@ let name_of_primitive = function
   | Presume -> "Presume"
   | Pperform -> "Pperform"
   | Preperform -> "Preperform"
+  | Ppoll -> "Ppoll"
 
 let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then

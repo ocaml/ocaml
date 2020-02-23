@@ -367,6 +367,7 @@ let primitives_table = create_hashtable 57 [
   "%opaque", Popaque;
   "%perform", Pperform;
   "%resume", Presume;
+  "%poll", Ppoll;
 ]
 
 let find_primitive prim_name =

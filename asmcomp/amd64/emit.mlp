@@ -302,7 +302,6 @@ let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
-  I.add (int gc.gc_size) r15;
   (* TODO KC:
   begin match gc.gc_spacetime with
   | None -> assert (not Config.spacetime)
@@ -314,6 +313,7 @@ let emit_call_gc gc =
   if gc.is_poll then begin
     emit_call "caml_call_poll"
   end else begin
+    I.add (int gc.gc_size) r15;
     emit_call "caml_call_gc"
   end;
   def_label gc.gc_frame;
@@ -801,7 +801,7 @@ let emit_instr fallthrough i =
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
   | Lop (Iname_for_debugger _) -> ()
-  | Lop (Ipoll) -> 
+  | Lop (Ipoll) ->
       I.cmp (domain_field Domainstate.Domain_young_limit) r15;
       let gc_call_label = new_label () in
       let label_after_gc = new_label () in
@@ -810,7 +810,7 @@ let emit_instr fallthrough i =
       in
       I.jb (label gc_call_label);
       call_gc_sites :=
-        { gc_size = 0; 
+        { gc_size = 0;
           gc_lbl = gc_call_label;
           gc_return_lbl = label_after_gc;
           gc_frame = lbl_frame;

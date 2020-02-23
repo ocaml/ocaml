@@ -15,10 +15,10 @@ let lmax = 50
 let k = 10
 let e = lmax/k
 
-let is_addr_live i = 
+let is_addr_live i =
   not (Reg.Set.is_empty (Reg.Set.filter (fun f -> f.typ = Cmm.Addr) i))
 
-let insert_poll_instr instr = 
+let insert_poll_instr instr =
     { desc = Iop (Ipoll);
       next = instr;
       arg = instr.arg;
@@ -38,6 +38,7 @@ let rec insert_poll_aux delta instr =
         | Iend -> instr
 
         (* reset counter *)
+        | Iop (Ipoll)
         | Iop (Ialloc _) ->
             { instr with next = (insert_poll_aux 0 instr.next) }
 
@@ -62,7 +63,7 @@ let rec insert_poll_aux delta instr =
             (poll_instr.live <- Reg.Set.add ({Reg.dummy with loc = Reg.Reg 0 ; typ = Cmm.Val}) poll_instr.live);
             poll_instr
         *)
-            
+
         | Iop (Iconst_int _)
         | Iop (Iconst_float _)
         | Iop (Iconst_symbol _)
@@ -89,7 +90,7 @@ let rec insert_poll_aux delta instr =
             end else begin
                 { instr with next = insert_poll_aux (delta+1) instr.next}
             end
-        
+
         (* other *)
         (* | Iop (Iintop_imm (_, _, is_addr_upd)) -> (* signals_alloc failing *)
             if (is_addr_upd) then begin
@@ -114,8 +115,6 @@ let rec insert_poll_aux delta instr =
             let updated_instr = { instr with next = insert_poll_aux delta instr.next} in
             insert_poll_instr updated_instr
         *)
-        | Iop (Ipoll) ->
-            assert false
         (* pass through - temp until all instructions handled *)
         | _ -> { instr with next = (insert_poll_aux delta instr.next) }
     end

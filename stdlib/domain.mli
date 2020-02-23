@@ -106,5 +106,7 @@ module Sync : sig
   val cpu_relax : unit -> unit
   (** If busy-waiting, calling cpu_relax () between iterations
       will improve performance on some CPU architectures *)
-end
 
+  external poll : unit -> unit = "%poll"
+  (** poll for interrupts *)
+end

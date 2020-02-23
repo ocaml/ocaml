@@ -39,6 +39,7 @@ module Sync = struct
   let wait_until t = Raw.wait_until t
   let wait_for dt = Raw.wait_until (Int64.add (timer_ticks ()) dt)
   let cpu_relax () = Raw.cpu_relax ()
+  external poll : unit -> unit = "%poll"
 end
 
 type id = Raw.t

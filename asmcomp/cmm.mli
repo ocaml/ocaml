@@ -127,6 +127,7 @@ and operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind
   | Ccheckbound
+  | Cpoll
 
 (** Not all cmm expressions currently have [Debuginfo.t] values attached to
     them.  The ones that do are those that are likely to generate code that
