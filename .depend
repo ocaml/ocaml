@@ -45,6 +45,11 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
+utils/compilerlibs_edit_distance.cmo : \
+    utils/compilerlibs_edit_distance.cmi
+utils/compilerlibs_edit_distance.cmx : \
+    utils/compilerlibs_edit_distance.cmi
+utils/compilerlibs_edit_distance.cmi :
 utils/config.cmo : \
     utils/config.cmi
 utils/config.cmx : \
@@ -702,16 +707,20 @@ typing/includemod.cmo : \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
+    parsing/pprintast.cmi \
     typing/path.cmi \
+    parsing/parsetree.cmi \
     typing/oprint.cmi \
     typing/mtype.cmi \
     utils/misc.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     typing/includecore.cmi \
     typing/includeclass.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
+    utils/compilerlibs_edit_distance.cmi \
     file_formats/cmt_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -724,16 +733,20 @@ typing/includemod.cmx : \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
+    parsing/pprintast.cmx \
     typing/path.cmx \
+    parsing/parsetree.cmi \
     typing/oprint.cmx \
     typing/mtype.cmx \
     utils/misc.cmx \
+    parsing/longident.cmx \
     parsing/location.cmx \
     typing/includecore.cmx \
     typing/includeclass.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
+    utils/compilerlibs_edit_distance.cmx \
     file_formats/cmt_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
@@ -743,6 +756,8 @@ typing/includemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/path.cmi \
+    parsing/parsetree.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     typing/includecore.cmi \
     typing/ident.cmi \
