@@ -206,20 +206,23 @@ static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
 static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   pool* r;
   pool* v;
+  int moved_pools;
 
   /* Hopefully we have a pool we can use directly */
   r = local->avail_pools[sz];
   if (r) return r;
 
   /* Otherwise, try to sweep until we find one */
-  while (!local->avail_pools[sz] &&
-         pool_sweep(local, &local->unswept_avail_pools[sz], sz));
-  while (!local->avail_pools[sz] &&
-         pool_sweep(local, &local->unswept_full_pools[sz], sz));
+  while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
+    caml_domain_state* domain_state = caml_domain_self()->state;
+    domain_state->opportunistic_work +=
+      pool_sweep(local, &local->unswept_avail_pools[sz], sz);
+  }
+
   r = local->avail_pools[sz];
   if (r) return r;
 
-/* Haven't managed to find a pool locally, try the global ones */
+  /* Haven't managed to find a pool locally, try the global ones */
   caml_plat_lock(&pool_freelist.lock);
   if( pool_freelist.global_avail_pools[sz] ) {
     r = pool_freelist.global_avail_pools[sz];
@@ -262,7 +265,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
     caml_accum_heap_stats(&local->stats, &tmp_stats);
     caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
 
-    int moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
+    moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
 
     if (local->stats.pool_words > local->stats.pool_max_words)
       local->stats.pool_max_words = local->stats.pool_words;
@@ -270,8 +273,10 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
 
   caml_plat_unlock(&pool_freelist.lock);
 
-  if( !r ) {
-    pool_sweep(local, &local->full_pools[sz], sz);
+  if( !r && moved_pools ) {
+    caml_domain_state* domain_state = caml_domain_self()->state;
+    domain_state->opportunistic_work +=
+      pool_sweep(local, &local->full_pools[sz], sz);
     r = local->avail_pools[sz];
   }
 
@@ -431,7 +436,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
       all_free = 0;
     }
     p += wh;
-    work++;
+    work += wh;
   }
 
   if (all_free) {
@@ -470,12 +475,17 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
   /* Sweep local pools */
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
     sizeclass sz = local->next_to_sweep;
-    intnat sweep_work =
-      pool_sweep(local, &local->unswept_avail_pools[sz], sz) +
-      pool_sweep(local, &local->unswept_full_pools[sz], sz);
-    if (sweep_work) {
-      work -= sweep_work;
-    } else {
+    intnat full_sweep_work = 0;
+    intnat avail_sweep_work =
+      pool_sweep(local, &local->unswept_avail_pools[sz], sz);
+    work -= avail_sweep_work;
+
+    if (work > 0) {
+      full_sweep_work = pool_sweep(local, &local->unswept_full_pools[sz], sz);
+      work -= full_sweep_work;
+    }
+
+    if(full_sweep_work+avail_sweep_work == 0) {
       local->next_to_sweep++;
     }
   }
