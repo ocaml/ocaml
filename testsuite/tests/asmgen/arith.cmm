@@ -1,7 +1,11 @@
 (* TEST
 files = "mainarith.c"
-arguments = "mainarith.c"
 * asmgen
+arguments = "mainarith.c"
+** not-windows
+*** run
+arguments = ""
+**** check-program-output
 *)
 
 (**************************************************************************)

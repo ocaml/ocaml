@@ -1,7 +1,10 @@
 (* TEST
 files = "main.c"
-arguments = "-DINT_INT -DFUN=catch_fact main.c"
 * asmgen
+arguments = "-DINT_INT -DFUN=catch_fact main.c"
+** run
+arguments = "5"
+*** check-program-output
 *)
 
 (function "catch_fact" (b:int)
