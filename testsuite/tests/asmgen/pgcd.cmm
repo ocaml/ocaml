@@ -1,10 +1,7 @@
 (* TEST
 files = "main.c"
-* asmgen
 arguments = "-DINT_INT -DFUN=pgcd_30030 main.c"
-** run
-arguments = "1234"
-*** check-program-output
+* asmgen
 *)
 
 (function "pgcd_30030" (a:int)

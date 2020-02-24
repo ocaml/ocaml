@@ -1,10 +1,7 @@
 (* TEST
 files = "main.c"
-* asmgen
 arguments = "-DUNIT_INT -DFUN=takmain main.c"
-** run
-arguments = ""
-*** check-program-output
+* asmgen
 *)
 
 (**************************************************************************)

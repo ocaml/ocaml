@@ -1,10 +1,7 @@
 (* TEST
 files = "main.c"
-* asmgen
 arguments = "-DINT_INT -DFUN=fib main.c"
-** run
-arguments = "5"
-*** check-program-output
+* asmgen
 *)
 
 (**************************************************************************)

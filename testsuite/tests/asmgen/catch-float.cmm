@@ -1,10 +1,7 @@
 (* TEST
 files = "main.c"
-* asmgen
 arguments = "-DFLOAT_CATCH -DFUN=catch_float main.c"
-** run
-arguments = "5.0"
-*** check-program-output
+* asmgen
 *)
 
 (function "catch_float" (b:int)

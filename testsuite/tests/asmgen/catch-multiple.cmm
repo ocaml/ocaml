@@ -1,15 +1,7 @@
 (* TEST
 files = "main.c"
-* asmgen
 arguments = "-DINT_INT -DFUN=catch_multiple main.c"
-** run
-arguments = "0"
-*** check-program-output
-reference = "${test_source_directory}/catch-multiple.0.reference"
-** run
-arguments = "1"
-*** check-program-output
-reference = "${test_source_directory}/catch-multiple.1.reference"
+* asmgen
 *)
 
 (*
