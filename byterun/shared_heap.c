@@ -454,8 +454,14 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   large_alloc* a = local->unswept_large;
   if (!a) return 0;
   local->unswept_large = a->next;
-  header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
+  value* p = (value*)((char*)a + LARGE_ALLOC_HEADER_SZ);
+  header_t hd = (header_t)*p;
   if (Has_status_hd(hd, global.GARBAGE)) {
+    if (Tag_hd (hd) == Custom_tag) {
+      void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
+      if (final_fun != NULL) final_fun(Val_hp(p));
+    }
+
     local->stats.large_words -=
       Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
     local->owner->state->swept_words +=
@@ -466,6 +472,7 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
     a->next = local->swept_large;
     local->swept_large = a;
   }
+
   return Whsize_hd(hd);
 }
 
