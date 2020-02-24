@@ -511,42 +511,19 @@ static void realloc_mark_stack (struct mark_stack* stk)
 static void mark_stack_push(struct mark_stack* stk, mark_entry e)
 {
   value v;
+  int i;
+
   CAMLassert(Is_block(e.block) && !Is_minor(e.block));
   CAMLassert(Tag_val(e.block) != Infix_tag);
   CAMLassert(Tag_val(e.block) != Cont_tag);
   CAMLassert(Tag_val(e.block) < No_scan_tag);
-  while (1) {
+  /* Optimisation to avoid pushing small, unmarkable objects such as [Some 42]
+   * into the mark stack. */
+  for (i = 0; i < 16; i++) {
     if (e.offset == e.end)
       /* nothing left to mark */
       return;
     v = Op_val(e.block)[e.offset];
-#if 0
-/* #if DEBUG
-   ctk21: don't think this debug block is correct or safe
-   The block will be in a remembered set but not necessarily the one who owns it
-   because minor heaps are shared.
-   Also we can't scan all the minor_tables with minor early release as the
-   data structures can move underneath us
-    */
-
-    /* Here we check that if v is a reference to a block on the minor heap then it is definitely
-       contained within the remembered set */
-    if( Is_block(v) && Is_minor(v) ) {
-      struct domain* domain = caml_owner_of_young_block(v);
-      struct caml_minor_tables *minor_tables = domain->state->minor_tables;
-      value **r;
-      int found_v_in_remembered_set = 0;
-
-      for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
-        value x = **r;
-        if( x == v ) {
-          found_v_in_remembered_set = 1;
-        }
-      }
-
-      CAMLassert(found_v_in_remembered_set);
-    }
-#endif
 
     if (Is_markable(v))
       /* found something to mark */
@@ -555,6 +532,11 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
       /* keep going */
       e.offset++;
   }
+
+  if (e.offset == e.end)
+    /* nothing left to mark */
+    return;
+
   if (stk->count == stk->size)
     realloc_mark_stack(stk);
 
