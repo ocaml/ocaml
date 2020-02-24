@@ -1,20 +1,23 @@
-File "pr7414_2_bad.ml", line 46, characters 28-34:
+File "pr7414_2_bad.ml", line 46, characters 22-35:
 46 |   let module Ignore = Force(Choose) in
-                                 ^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         functor () -> sig module Choice : T val r : '_weak1 list ref ref end
-       is not included in
-         functor () -> S
-       At position functor () -> <here>
-       Modules do not match:
-         sig module Choice : T val r : '_weak1 list ref ref end
-       is not included in
-         S
-       At position functor () -> <here>
-       Values do not match:
-         val r : '_weak1 list ref ref
-       is not included in
-         val r : Choice.t list ref ref
-       File "pr7414_2_bad.ml", line 29, characters 2-31: Expected declaration
-       File "pr7414_2_bad.ml", line 40, characters 8-9: Actual declaration
+                           ^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         Choose
+       do not match these parameters:
+         functor (X : ...(X)) -> ...
+     Modules do not match:
+       Choose :
+       functor () -> sig module Choice : T val r : '_weak1 list ref ref end
+     is not included in
+       ...(X) = functor () -> S
+     Modules do not match:
+       sig module Choice : T val r : '_weak1 list ref ref end
+     is not included in
+       S
+     Values do not match:
+       val r : '_weak1 list ref ref
+     is not included in
+       val r : Choice.t list ref ref
+     File "pr7414_2_bad.ml", line 29, characters 2-31: Expected declaration
+     File "pr7414_2_bad.ml", line 40, characters 8-9: Actual declaration

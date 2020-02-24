@@ -83,15 +83,17 @@ Error: Signature mismatch:
          sig module A : functor (X : s) -> sig end end
        In module A:
        Modules do not match:
-         functor (X : s/1) -> sig end
+         functor (X : s/1) -> ...
        is not included in
-         functor (X : s/2) -> sig end
-       At position module A(X : <here>) : ...
-       Modules do not match: s/2 is not included in s/1
-       Line 5, characters 6-19:
-         Definition of module type s/1
-       Line 2, characters 2-15:
-         Definition of module type s/2
+         functor (X : s/2) -> ...
+     Module types do not match:
+       s/1
+     does not include
+       s/2
+      Line 5, characters 6-19:
+        Definition of module type s/1
+      Line 2, characters 2-15:
+        Definition of module type s/2
 |}]
 
 module L = struct
