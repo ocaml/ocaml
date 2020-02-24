@@ -30,8 +30,7 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    mlsize_t max)
 {
   mlsize_t wosize;
-  CAMLparam0();
-  CAMLlocal1(result);
+  value result;
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
   if (wosize <= Max_young_wosize) {
@@ -59,7 +58,7 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
     /* !!caml_adjust_gc_speed(mem,max); */
     result = caml_check_urgent_gc(result);
   }
-  CAMLreturn(result);
+  return result;
 }
 
 struct custom_operations_list {
