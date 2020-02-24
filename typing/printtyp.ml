@@ -1708,23 +1708,32 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       Omty_signature (if ellipsis then [Osig_ellipsis]
                       else tree_of_signature sg)
   | Mty_functor(param, ty_res) ->
-      let param, res =
-        match param with
-        | Unit -> None, tree_of_modtype ~ellipsis ty_res
-        | Named (param, ty_arg) ->
-          let name, env =
-            match param with
-            | None -> None, fun env -> env
-            | Some id ->
-                Some (Ident.name id),
-                Env.add_module ~arg:true id Mp_present ty_arg
-          in
-          Some (name, tree_of_modtype ~ellipsis:false ty_arg),
-          wrap_env env (tree_of_modtype ~ellipsis) ty_res
+      let param, env =
+        tree_of_functor_parameter param
       in
+      let res = wrap_env env (tree_of_modtype ~ellipsis) ty_res in
       Omty_functor (param, res)
   | Mty_alias p ->
       Omty_alias (tree_of_path Module p)
+
+and tree_of_functor_parameter = function
+  | Unit ->
+      None, fun k -> k
+  | Named (param, ty_arg) ->
+      let name, env =
+        match param with
+        | None -> None, fun env -> env
+        | Some id ->
+            Some (Ident.name id),
+            Env.add_module ~arg:true id Mp_present ty_arg
+      in
+      Some (name, tree_of_modtype ~ellipsis:false ty_arg), env
+
+and tree_of_functor_parameters = function
+  | [] -> []
+  | param :: l ->
+      let param, _ = tree_of_functor_parameter param in
+      param :: tree_of_functor_parameters l
 
 and tree_of_signature sg =
   wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg

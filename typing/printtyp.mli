@@ -145,6 +145,9 @@ val signature: formatter -> signature -> unit
 val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
+val tree_of_functor_parameters:
+  Types.functor_parameter list ->
+  (string option * Outcometree.out_module_type) option list
 val tree_of_signature: Types.signature -> out_sig_item list
 val tree_of_typexp: bool -> type_expr -> out_type
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
