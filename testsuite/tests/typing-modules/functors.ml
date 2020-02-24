@@ -1121,3 +1121,69 @@ Error: Signature mismatch:
        ...(R) = sig type upon type the type heath end
      The type `heart' is required but not provided
 |}]
+
+
+(** Abstract module type woes *)
+
+(** Future works: module types must be extended after accepting arguments *)
+
+module F(X:sig module type t module M:t end) = X.M
+
+module PF = struct
+  module type t = module type of F
+  module M = F
+end
+
+module U = F(PF)(PF)(PF)
+[%%expect {|
+module F : functor (X : sig module type t module M : t end) -> X.t
+module PF :
+  sig
+    module type t = functor (X : sig module type t module M : t end) -> X.t
+    module M = F
+  end
+module U : PF.t
+|}]
+
+module W = F(PF)(PF)(PF)(PF)(PF)(F)
+[%%expect {|
+Line 1, characters 11-35:
+1 | module W = F(PF)(PF)(PF)(PF)(PF)(F)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         PF PF PF PF PF F
+       do not match these parameters:
+         functor (X : ...)      -> ...
+  1. Module PF matches the expected module type
+  2. The following extra argument is provided
+         PF :
+         sig
+           module type t =
+             functor (X : sig module type t module M : t end) -> X.t
+           module M = F
+         end
+  3. The following extra argument is provided
+         PF :
+         sig
+           module type t =
+             functor (X : sig module type t module M : t end) -> X.t
+           module M = F
+         end
+  4. The following extra argument is provided
+         PF :
+         sig
+           module type t =
+             functor (X : sig module type t module M : t end) -> X.t
+           module M = F
+         end
+  5. The following extra argument is provided
+         PF :
+         sig
+           module type t =
+             functor (X : sig module type t module M : t end) -> X.t
+           module M = F
+         end
+  6. The following extra argument is provided
+         F : functor (X : sig module type t module M : t end) -> X.t
+|}]
