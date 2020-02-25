@@ -197,17 +197,22 @@ static void post_event(const char* name, evtype ty, uint64_t value)
 {
   uintnat i;
   struct event* ev;
+  int64_t duration = 0;
+
   if (!caml_params->eventlog_enabled) return;
   if (!evbuf) thread_setup_evbuf();
   i = atomic_load_acq(&evbuf->ev_generated);
   CAMLassert(i <= EVENT_BUF_SIZE);
   if (i == EVENT_BUF_SIZE) {
+    duration = caml_time_counter();
     caml_plat_lock(&lock);
     flush_events(output, evbuf);
     evbuf->ev_flushed = 0;
     atomic_store_rel(&evbuf->ev_generated, 0);
     caml_plat_unlock(&lock);
-    i = 0;
+    duration = caml_time_counter() - duration;
+    post_event("overhead#", COUNTER, duration);
+    i = 1;
   }
   ev = &evbuf->events[i];
   ev->name = name;
