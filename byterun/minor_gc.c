@@ -415,8 +415,6 @@ static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
     st->promote_domain ? st->promote_domain->state : Caml_state;
   struct caml_ephe_ref_table ephe_ref_table = domain_state->minor_tables->ephe_ref;
   struct caml_ephe_ref_elt *re;
-  char* young_ptr = domain_state->young_ptr;
-  char* young_end = domain_state->young_end;
   int redo = 0;
 
   while (st->todo_list != 0) {
@@ -484,12 +482,12 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
 void caml_minor_heap_domain_finalizers_admin (struct domain* domain, void* unused)
 {
-  caml_domain_state* domain_state = domain->state;
-  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
-  struct caml_custom_elt *elt;
-
   /* need to do the finalizer data structure book-keeping */
   caml_final_update_last_minor(domain);
+
+  /*caml_domain_state* domain_state = domain->state;
+  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
+  struct caml_custom_elt *elt; */
 
   /* There will be no dead minor values as we can not tell the state of
      a minor heap aliveness until all domains complete */
@@ -520,12 +518,12 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
 
   if( domain_state->young_phase == 0 ) {
     domain_state->young_start = (char*)domain_state->young_end;
-    domain_state->young_end = (char*)(domain_state->young_start + Bsize_wsize(wsize) / 2);
+    domain_state->young_end = (char*)(domain_state->young_start + Bsize_wsize(wsize) );
 
     domain_state->young_phase = 1;
   } else {
-    domain_state->young_end = (char*)(domain_state->young_end - Bsize_wsize(wsize) / 2);
-    domain_state->young_start = (char*)(domain_state->young_end - Bsize_wsize(wsize) / 2);
+    domain_state->young_end = (char*)(domain_state->young_end - Bsize_wsize(wsize) );
+    domain_state->young_start = (char*)(domain_state->young_end - Bsize_wsize(wsize) );
 
     domain_state->young_phase = 0;
   }
