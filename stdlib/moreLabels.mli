@@ -53,6 +53,12 @@ module Hashtbl : sig
   val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
   val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
   val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
+  val to_list : ('a,'b) t -> ('a * 'b) list
+  val to_list_keys : ('a,_) t -> 'a list
+  val to_list_values : (_,'b) t -> 'b list
+  val add_list : ('a,'b) t -> ('a * 'b) list -> unit
+  val replace_list : ('a,'b) t -> ('a * 'b) list -> unit
+  val of_list : ('a * 'b) list -> ('a, 'b) t
   module type HashedType = Hashtbl.HashedType
   module type SeededHashedType = Hashtbl.SeededHashedType
   module type S =
@@ -84,6 +90,12 @@ module Hashtbl : sig
       val add_seq : 'a t -> (key * 'a) Seq.t -> unit
       val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
       val of_seq : (key * 'a) Seq.t -> 'a t
+      val to_list : 'a t -> (key * 'a) list
+      val to_list_keys : _ t -> key list
+      val to_list_values : 'a t -> 'a list
+      val add_list : 'a t -> (key * 'a) list -> unit
+      val replace_list : 'a t -> (key * 'a) list -> unit
+      val of_list : (key * 'a) list -> 'a t
     end
   module type SeededS =
     sig
@@ -114,6 +126,12 @@ module Hashtbl : sig
       val add_seq : 'a t -> (key * 'a) Seq.t -> unit
       val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
       val of_seq : (key * 'a) Seq.t -> 'a t
+      val to_list : 'a t -> (key * 'a) list
+      val to_list_keys : _ t -> key list
+      val to_list_values : 'a t -> 'a list
+      val add_list : 'a t -> (key * 'a) list -> unit
+      val replace_list : 'a t -> (key * 'a) list -> unit
+      val of_list : (key * 'a) list -> 'a t
     end
   module Make : functor (H : HashedType) -> S
     with type key = H.t

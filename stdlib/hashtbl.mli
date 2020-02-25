@@ -252,6 +252,42 @@ val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
     will appear in the table.
     @since 4.07 *)
 
+val to_list : ('a,'b) t -> ('a * 'b) list
+(** [Hashtbl.to_list h] is the list of bindings in [h]. The order in which the
+    bindings appear in the list is unspecified. However, if the table contains
+    several bindings for the same key, they appear in order of introduction,
+    that is, the most recent binding appears last.
+
+    @since 4.11 *)
+
+val to_list_keys : ('a,_) t -> 'a list
+(** [to_list_keys h] is [List.map fst (to_list h)]
+
+    @since 4.11 *)
+
+val to_list_values : (_,'b) t -> 'b list
+(** [to_list_values h] is [List.map snd (to_list h)].
+
+    @since 4.11 *)
+
+val add_list : ('a,'b) t -> ('a * 'b) list -> unit
+(** [add_list h l] adds every binding in [l] to the table [h], using {!add}.
+
+    @since 4.11 *)
+
+val replace_list : ('a,'b) t -> ('a * 'b) list -> unit
+(** [replace_list h l] adds every binding in [l] to the table [h], using {!replace}.
+
+    @since 4.11 *)
+
+val of_list : ('a * 'b) list -> ('a, 'b) t
+(** [Hashtbl.of_list l] is a table built from the given bindings. The bindings
+    are added in the same order they appear in [l], using {!replace_list}, which
+    means that if two pairs have the same key, only the latest one will appear
+    in the table.
+
+    @since 4.11 *)
+
 (** {1 Functorial interface} *)
 
 (** The functorial interface allows the use of specific comparison
@@ -350,6 +386,24 @@ module type S =
 
     val of_seq : (key * 'a) Seq.t -> 'a t
     (** @since 4.07 *)
+
+    val to_list : 'a t -> (key * 'a) list
+    (** @since 4.11 *)
+
+    val to_list_keys : _ t -> key list
+    (** @since 4.11 *)
+
+    val to_list_values : 'a t -> 'a list
+    (** @since 4.11 *)
+
+    val add_list : 'a t -> (key * 'a) list -> unit
+    (** @since 4.11 *)
+
+    val replace_list : 'a t -> (key * 'a) list -> unit
+    (** @since 4.11 *)
+
+    val of_list : (key * 'a) list -> 'a t
+    (** @since 4.11 *)
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
@@ -424,6 +478,24 @@ module type SeededS =
 
     val of_seq : (key * 'a) Seq.t -> 'a t
     (** @since 4.07 *)
+
+    val to_list : 'a t -> (key * 'a) list
+    (** @since 4.11 *)
+
+    val to_list_keys : _ t -> key list
+    (** @since 4.11 *)
+
+    val to_list_values : 'a t -> 'a list
+    (** @since 4.11 *)
+
+    val add_list : 'a t -> (key * 'a) list -> unit
+    (** @since 4.11 *)
+
+    val replace_list : 'a t -> (key * 'a) list -> unit
+    (** @since 4.11 *)
+
+    val of_list : (key * 'a) list -> 'a t
+    (** @since 4.11 *)
   end
 (** The output signature of the functor {!Hashtbl.MakeSeeded}.
     @since 4.00.0 *)

@@ -264,6 +264,15 @@ let to_seq_keys m = Seq.map fst (to_seq m)
 
 let to_seq_values m = Seq.map snd (to_seq m)
 
+let to_list tbl =
+  fold (fun k v l -> (k,v) :: l) tbl []
+
+let to_list_keys tbl =
+  fold (fun k _ l -> k :: l) tbl []
+
+let to_list_values tbl =
+  fold (fun _ v l -> v :: l) tbl []
+
 (* Functorial interface *)
 
 module type HashedType =
@@ -306,6 +315,12 @@ module type S =
     val add_seq : 'a t -> (key * 'a) Seq.t -> unit
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
     val of_seq : (key * 'a) Seq.t -> 'a t
+    val to_list : 'a t -> (key * 'a) list
+    val to_list_keys : 'a t -> key list
+    val to_list_values : 'a t -> 'a list
+    val add_list : 'a t -> (key * 'a) list -> unit
+    val replace_list : 'a t -> (key * 'a) list -> unit
+    val of_list : (key * 'a) list -> 'a t
   end
 
 module type SeededS =
@@ -334,6 +349,12 @@ module type SeededS =
     val add_seq : 'a t -> (key * 'a) Seq.t -> unit
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
     val of_seq : (key * 'a) Seq.t -> 'a t
+    val to_list : 'a t -> (key * 'a) list
+    val to_list_keys : 'a t -> key list
+    val to_list_values : 'a t -> 'a list
+    val add_list : 'a t -> (key * 'a) list -> unit
+    val replace_list : 'a t -> (key * 'a) list -> unit
+    val of_list : (key * 'a) list -> 'a t
   end
 
 module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
@@ -467,6 +488,21 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let to_seq = to_seq
     let to_seq_keys = to_seq_keys
     let to_seq_values = to_seq_values
+
+    let add_list tbl l =
+      List.iter (fun (k,v) -> add tbl k v) l
+
+    let replace_list tbl l =
+      List.iter (fun (k,v) -> replace tbl k v) l
+
+    let of_list l =
+      let tbl = create 16 in
+      replace_list tbl l;
+      tbl
+
+    let to_list = to_list
+    let to_list_keys = to_list_keys
+    let to_list_values = to_list_values
   end
 
 module Make(H: HashedType): (S with type key = H.t) =
@@ -480,6 +516,10 @@ module Make(H: HashedType): (S with type key = H.t) =
     let of_seq i =
       let tbl = create 16 in
       replace_seq tbl i;
+      tbl
+    let of_list l =
+      let tbl = create 16 in
+      replace_list tbl l;
       tbl
   end
 
@@ -610,4 +650,15 @@ let replace_seq tbl i =
 let of_seq i =
   let tbl = create 16 in
   replace_seq tbl i;
+  tbl
+
+let add_list tbl l =
+  List.iter (fun (k,v) -> add tbl k v) l
+
+let replace_list tbl l =
+  List.iter (fun (k,v) -> replace tbl k v) l
+
+let of_list l =
+  let tbl = create 16 in
+  replace_list tbl l;
   tbl

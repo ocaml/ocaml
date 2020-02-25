@@ -413,6 +413,20 @@ module GenHashTable = struct
       replace_seq tbl i;
       tbl
 
+    let add_list tbl l =
+      List.iter (fun (k,v) -> add tbl k v) l
+
+    let replace_list tbl l =
+      List.iter (fun (k,v) -> replace tbl k v) l
+
+    let of_list l =
+      let tbl = create 16 in
+      replace_list tbl l;
+      tbl
+
+    let to_list m = fold (fun k v l -> (k,v) :: l) m []
+    let to_list_keys m = fold (fun k _ l -> k :: l) m []
+    let to_list_values m = fold (fun _ v l -> v :: l) m []
   end
 end
 
