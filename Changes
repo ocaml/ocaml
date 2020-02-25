@@ -141,7 +141,7 @@ Working version
 
 - #9255, #9300: reference chapter, split the expression grammar
   (Florian Angeletti, report by Harrison Ainsworth, review by Gabriel Scherer)
-  
+
 - #9325: documented base case for `List.for_all` and `List.exists`
   (Glenn Slotte, review by Florian Angeletti)
 
