@@ -37,6 +37,14 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
     H.fold (fun k v acc -> (k,v) :: acc) h []
     |> List.sort Stdlib.compare
 
+  let check_to_list h =
+    let l = H.to_list h |> List.sort Stdlib.compare in
+    assert (l = to_list_ h)
+
+  let check_to_list_of_list h =
+    let h' = H.of_list (H.to_list h) in
+    assert (to_list_ h = to_list_ h')
+
   let check_to_seq h =
     let l = to_list_ h in
     let l2 = List.of_seq (H.to_seq h) in
@@ -69,6 +77,8 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
            (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
     check_to_seq_of_seq h;
     check_to_seq h;
+    check_to_list_of_list h;
+    check_to_list h;
     (* Remove some of the data *)
     for i = 0 to n/3 - 1 do
       let (k, _) = data.(i) in H.remove h k; m := M.remove k !m
@@ -147,6 +157,8 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let of_seq = Hashtbl.of_seq
     let add_seq = Hashtbl.add_seq
     let replace_seq = Hashtbl.replace_seq
+    let of_list = Hashtbl.of_list
+    let to_list = Hashtbl.to_list
   end
 
 module HS1 = HofM(MS)
@@ -281,3 +293,11 @@ let () =
   let l = List.sort compare l in
   List.iter (fun (k, v) -> Printf.printf "%i,%i\n" k v) l;
   Printf.printf "%i elements\n" (Hashtbl.length h)
+
+let () =
+  let h = Hashtbl.create 3 in
+  Hashtbl.add h 2 "0";
+  Hashtbl.add h 2 "1";
+  Hashtbl.add h 2 "2";
+  let s = Hashtbl.to_list h |> List.map Stdlib.snd |> String.concat " " in
+  Printf.printf "ordering: %s\n" s
