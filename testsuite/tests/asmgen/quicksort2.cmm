@@ -24,9 +24,9 @@ arguments = "-DSORT -DFUN=quicksort main.c"
 
 (function "quick" (lo: int hi: int a: val cmp: val)
   (if (< lo hi)
-      (let (i lo
-            j hi
-            pivot (intaref a hi))
+      (letmut (i int lo
+               j int hi
+               pivot int (intaref a hi))
         (while (< i j)
           (catch
             (while 1

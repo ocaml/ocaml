@@ -25,22 +25,33 @@ module V = Backend_var
 module VP = Backend_var.With_provenance
 
 type environment =
-  { vars : (Reg.t array * Backend_var.Provenance.t option) V.Map.t;
+  { vars : (Reg.t array
+            * Backend_var.Provenance.t option
+            * Asttypes.mutable_flag) V.Map.t;
     static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
 
-let env_add var regs env =
+let env_add ?(mut=Asttypes.Immutable) var regs env =
   let provenance = VP.provenance var in
   let var = VP.var var in
-  { env with vars = V.Map.add var (regs, provenance) env.vars }
+  { env with vars = V.Map.add var (regs, provenance, mut) env.vars }
 
 let env_add_static_exception id v env =
   { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
-  let regs, _provenance = V.Map.find id env.vars in
+  let regs, _provenance, _mut = V.Map.find id env.vars in
+  regs
+
+let env_find_mut id env =
+  let regs, _provenance, mut = V.Map.find id env.vars in
+  begin match mut with
+  | Asttypes.Mutable -> ()
+  | Asttypes.Immutable ->
+    Misc.fatal_error "Selectgen.env_find_mut: not mutable"
+  end;
   regs
 
 let env_find_static_exception id env =
@@ -680,14 +691,14 @@ method emit_expr (env:environment) exp =
         let rv = Reg.createv k in
         name_regs v rv;
         self#insert_moves env r1 rv;
-        self#emit_expr (env_add v rv env) e2
+        self#emit_expr (env_add ~mut:Mutable v rv env) e2
       end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_expr env body
   | Cassign(v, e1) ->
       let rv =
         try
-          env_find v env
+          env_find_mut v env
         with Not_found ->
           Misc.fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
       begin match self#emit_expr env e1 with

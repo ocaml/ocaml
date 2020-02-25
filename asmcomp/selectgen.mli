@@ -19,7 +19,8 @@
 type environment
 
 val env_add
-   : Backend_var.With_provenance.t
+   : ?mut:Asttypes.mutable_flag
+  -> Backend_var.With_provenance.t
   -> Reg.t array
   -> environment
   -> environment

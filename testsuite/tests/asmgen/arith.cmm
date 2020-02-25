@@ -171,12 +171,12 @@ arguments = "mainarith.c"
           (seq (checkbound y 5) (addraset r 90 1))
         (addraset r 90 0))
 
-      (addraset r 91 (let res 1 (if (==f f g) [] (assign res 0)) res))
-      (addraset r 92 (let res 1 (if (!=f f g) [] (assign res 0)) res))
-      (addraset r 93 (let res 1 (if (<f f g) [] (assign res 0)) res))
-      (addraset r 94 (let res 1 (if (>f f g) [] (assign res 0)) res))
-      (addraset r 95 (let res 1 (if (<=f f g) [] (assign res 0)) res))
-      (addraset r 96 (let res 1 (if (>=f f g) [] (assign res 0)) res))
+      (addraset r 91 (letmut res int 1 (if (==f f g) [] (assign res 0)) res))
+      (addraset r 92 (letmut res int 1 (if (!=f f g) [] (assign res 0)) res))
+      (addraset r 93 (letmut res int 1 (if (<f f g) [] (assign res 0)) res))
+      (addraset r 94 (letmut res int 1 (if (>f f g) [] (assign res 0)) res))
+      (addraset r 95 (letmut res int 1 (if (<=f f g) [] (assign res 0)) res))
+      (addraset r 96 (letmut res int 1 (if (>=f f g) [] (assign res 0)) res))
 
       (addraset r 97 (==f (+f f 1.0) (+f g 1.0)))
       (addraset r 98 (!=f (+f f 1.0) (+f g 1.0)))

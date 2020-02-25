@@ -58,6 +58,7 @@ let keyword_table =
     "intoffloat", INTOFFLOAT;
     "string", KSTRING;
     "let", LET;
+    "letmut", LETMUT;
     "load", LOAD;
     "mod", MODI;
     "mulh", MULH;
