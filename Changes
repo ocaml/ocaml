@@ -94,6 +94,10 @@ Working version
   for formatter geometry changes that are robust to new geometry fields.
   (Gabriel Scherer, review by Josh Berdine and ???)
 
+- #2236: Add Hashtbl.{add,replace,of,to}_list.
+  (Nicolás Ojeda Bär, review by David Allsopp, Alain Frisch, Gabriel Scherer and
+  Damien Doligez)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.
