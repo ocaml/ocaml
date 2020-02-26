@@ -202,12 +202,14 @@ val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
 val for_all : ('a -> bool) -> 'a list -> bool
 (** [for_all p [a1; ...; an]] checks if all elements of the list
    satisfy the predicate [p]. That is, it returns
-   [(p a1) && (p a2) && ... && (p an)]. *)
+   [(p a1) && (p a2) && ... && (p an)] for a non-empty list and
+   [true] if the list is empty. *)
 
 val exists : ('a -> bool) -> 'a list -> bool
 (** [exists p [a1; ...; an]] checks if at least one element of
    the list satisfies the predicate [p]. That is, it returns
-   [(p a1) || (p a2) || ... || (p an)]. *)
+   [(p a1) || (p a2) || ... || (p an)] for a non-empty list and
+   [false] if the list is empty. *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 (** Same as {!List.for_all}, but for a two-argument predicate.
