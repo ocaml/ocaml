@@ -49,8 +49,6 @@ README*                  typo.missing-header
 stdlib/*.mld             typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
 
-.travis.yml              typo.long-line
-
 *.adoc                   typo.long-line=may
 
 /.github/ISSUE_TEMPLATE/config.yml typo.missing-header
