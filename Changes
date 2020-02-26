@@ -328,6 +328,10 @@ Working version
   (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
   and Thomas Refis)
 
+- #9335: actually have --disable-stdlib-manpages not build the manpages
+  (implementation conflicted with #8837 which wasn't picked up in review)
+  (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
+
 - #9343: Re-enable `-short-paths` for some error messages
   (Leo White, review by Florian Angeletti)
 
