@@ -40,12 +40,16 @@ CALL_GEN_CODE:
         pushq   %r13
         pushq   %r14
         pushq   %r15
+        # Stack frames have to be 16-aligned (including the return pointer
+        # automatically pushed) hence the unused stack offset
+        subq    $8, %rsp
         movq    %rdi, %r10
         movq    %rsi, %rax
         movq    %rdx, %rbx
         movq    %rcx, %rdi
         movq    %r8, %rsi
         call    *%r10
+        addq    $8, %rsp
         popq    %r15
         popq    %r14
         popq    %r13
