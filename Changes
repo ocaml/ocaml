@@ -319,6 +319,10 @@ Working version
   when the systhreads library is loaded.
   (David Allsopp, report by Anton Bachin, review by Xavier Leroy)
 
+- #9936: Make sure that `List.([1;2;3])` is printed `[1;2;3]` in the toplevel
+  by identifying lists by their types.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #10005: Try expanding aliases in Ctype.nondep_type_rec
   (Stephen Dolan, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
