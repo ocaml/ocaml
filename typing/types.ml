@@ -88,6 +88,24 @@ module Uid = struct
     | Internal
     | Predef of string
 
+  include Identifiable.Make(struct
+    type nonrec t = t
+
+    let equal (x : t) y = x = y
+    let compare (x : t) y = compare x y
+    let hash (x : t) = Hashtbl.hash x
+
+    let print fmt = function
+      | Internal -> Format.pp_print_string fmt "<internal>"
+      | Predef name -> Format.fprintf fmt "<predef:%s>" name
+      | Compilation_unit s -> Format.pp_print_string fmt s
+      | Item { comp_unit; id } -> Format.fprintf fmt "%s.%d" comp_unit id
+
+    let output oc t =
+      let fmt = Format.formatter_of_out_channel oc in
+      print fmt t
+  end)
+
   let mk =
     let id = ref (-1) in
     fun ~current_unit ->

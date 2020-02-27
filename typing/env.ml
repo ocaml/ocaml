@@ -27,7 +27,7 @@ module String = Misc.Stdlib.String
 
 let add_delayed_check_forward = ref (fun _ -> assert false)
 
-type 'a usage_tbl = (Types.Uid.t, 'a -> unit) Hashtbl.t
+type 'a usage_tbl = ('a -> unit) Types.Uid.Tbl.t
 (** This table is used to usage of value declarations.
     A declaration is identified by its uid.
     The callback attached to a declaration is called whenever the value (or
@@ -35,9 +35,9 @@ type 'a usage_tbl = (Types.Uid.t, 'a -> unit) Hashtbl.t
     (inclusion test between signatures, cf Includemod.value_descriptions, ...).
 *)
 
-let value_declarations  : unit usage_tbl = Hashtbl.create 16
-let type_declarations   : unit usage_tbl = Hashtbl.create 16
-let module_declarations : unit usage_tbl = Hashtbl.create 16
+let value_declarations  : unit usage_tbl = Types.Uid.Tbl.create 16
+let type_declarations   : unit usage_tbl = Types.Uid.Tbl.create 16
+let module_declarations : unit usage_tbl = Types.Uid.Tbl.create 16
 
 type constructor_usage = Positive | Pattern | Privatize
 type constructor_usages =
@@ -59,7 +59,7 @@ let add_constructor_usage priv cu usage =
 let constructor_usages () =
   {cu_positive = false; cu_pattern = false; cu_privatize = false}
 
-let used_constructors : constructor_usage usage_tbl = Hashtbl.create 16
+let used_constructors : constructor_usage usage_tbl = Types.Uid.Tbl.create 16
 
 (** Map indexed by the name of module components. *)
 module NameMap = String.Map
@@ -784,10 +784,10 @@ let is_imported_opaque modname =
   Persistent_env.is_imported_opaque persistent_env modname
 
 let reset_declaration_caches () =
-  Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations;
-  Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors;
+  Types.Uid.Tbl.clear value_declarations;
+  Types.Uid.Tbl.clear type_declarations;
+  Types.Uid.Tbl.clear module_declarations;
+  Types.Uid.Tbl.clear used_constructors;
   ()
 
 let reset_cache () =
@@ -1623,9 +1623,9 @@ and check_usage loc id uid warn tbl =
      Warnings.is_active (warn "")
   then begin
     let name = Ident.name id in
-    if Hashtbl.mem tbl uid then ()
+    if Types.Uid.Tbl.mem tbl uid then ()
     else let used = ref false in
-    Hashtbl.add tbl uid (fun () -> used := true);
+    Types.Uid.Tbl.add tbl uid (fun () -> used := true);
     if not (name = "" || name.[0] = '_' || name.[0] = '#')
     then
       !add_delayed_check_forward
@@ -1676,9 +1676,10 @@ and store_type ~check id info env =
         let name = cstr.cstr_name in
         let loc = cstr.cstr_loc in
         let k = cstr.cstr_uid in
-        if not (Hashtbl.mem used_constructors k) then
+        if not (Types.Uid.Tbl.mem used_constructors k) then
           let used = constructor_usages () in
-          Hashtbl.add used_constructors k (add_constructor_usage priv used);
+          Types.Uid.Tbl.add used_constructors k
+            (add_constructor_usage priv used);
           if not (ty_name = "" || ty_name.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
@@ -1727,9 +1728,9 @@ and store_extension ~check id addr ext env =
     let is_exception = Path.same ext.ext_type_path Predef.path_exn in
     let name = cstr.cstr_name in
     let k = cstr.cstr_uid in
-    if not (Hashtbl.mem used_constructors k) then begin
+    if not (Types.Uid.Tbl.mem used_constructors k) then begin
       let used = constructor_usages () in
-      Hashtbl.add used_constructors k (add_constructor_usage priv used);
+      Types.Uid.Tbl.add used_constructors k (add_constructor_usage priv used);
       !add_delayed_check_forward
         (fun () ->
           if not (is_in_signature env) && not used.cu_positive then
@@ -2117,19 +2118,19 @@ let (initial_safe_string, initial_unsafe_string) =
 (* Tracking usage *)
 
 let mark_module_used uid =
-  match Hashtbl.find module_declarations uid with
+  match Types.Uid.Tbl.find module_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let mark_modtype_used _uid = ()
 
 let mark_value_used uid =
-  match Hashtbl.find value_declarations uid with
+  match Types.Uid.Tbl.find value_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let mark_type_used uid =
-  match Hashtbl.find type_declarations uid with
+  match Types.Uid.Tbl.find type_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
@@ -2139,12 +2140,12 @@ let mark_type_path_used env path =
   | exception Not_found -> ()
 
 let mark_constructor_used usage cd =
-  match Hashtbl.find used_constructors cd.cd_uid with
+  match Types.Uid.Tbl.find used_constructors cd.cd_uid with
   | mark -> mark usage
   | exception Not_found -> ()
 
 let mark_extension_used usage ext =
-  match Hashtbl.find used_constructors ext.ext_uid with
+  match Types.Uid.Tbl.find used_constructors ext.ext_uid with
   | mark -> mark usage
   | exception Not_found -> ()
 
@@ -2155,7 +2156,7 @@ let mark_constructor_description_used usage env cstr =
     | _ -> assert false
   in
   mark_type_path_used env ty_path;
-  match Hashtbl.find used_constructors cstr.cstr_uid with
+  match Types.Uid.Tbl.find used_constructors cstr.cstr_uid with
   | mark -> mark usage
   | exception Not_found -> ()
 
@@ -2168,25 +2169,25 @@ let mark_label_description_used () env lbl =
   mark_type_path_used env ty_path
 
 let mark_class_used uid =
-  match Hashtbl.find type_declarations uid with
+  match Types.Uid.Tbl.find type_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let mark_cltype_used uid =
-  match Hashtbl.find type_declarations uid with
+  match Types.Uid.Tbl.find type_declarations uid with
   | mark -> mark ()
   | exception Not_found -> ()
 
 let set_value_used_callback vd callback =
-  Hashtbl.add value_declarations vd.val_uid callback
+  Types.Uid.Tbl.add value_declarations vd.val_uid callback
 
 let set_type_used_callback td callback =
   if Uid.for_actual_declaration td.type_uid then
     let old =
-      try Hashtbl.find type_declarations td.type_uid
+      try Types.Uid.Tbl.find type_declarations td.type_uid
       with Not_found -> ignore
     in
-    Hashtbl.replace type_declarations td.type_uid (fun () -> callback old)
+    Types.Uid.Tbl.replace type_declarations td.type_uid (fun () -> callback old)
 
 (* Lookup by name *)
 

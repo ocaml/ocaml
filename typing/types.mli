@@ -251,6 +251,8 @@ module Uid : sig
   val internal_not_actually_unique : t
 
   val for_actual_declaration : t -> bool
+
+  include Identifiable.S with type t := t
 end
 
 (* Maps of methods and instance variables *)
