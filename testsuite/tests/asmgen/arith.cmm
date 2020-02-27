@@ -1,11 +1,28 @@
 (* TEST
 files = "mainarith.c"
-* asmgen
+
+* not-windows
+** asmgen
 arguments = "mainarith.c"
-** not-windows
 *** run
 arguments = ""
 **** check-program-output
+
+
+* windows
+** arch32
+*** asmgen
+arguments = "-mfpmath=sse -msse2 mainarith.c"
+**** run
+arguments = ""
+***** check-program-output
+
+** arch64
+*** asmgen
+arguments = "mainarith.c"
+**** run
+arguments = ""
+***** check-program-output
 *)
 
 (**************************************************************************)
