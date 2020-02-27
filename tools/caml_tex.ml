@@ -251,6 +251,7 @@ let () =
              "-v", Arg.Bool (fun b -> verbose := b ), "output result on stderr"
             ]
     (fun s -> files := s :: !files)
+    "caml-tex: "
     "caml-tex: ";
   Toplevel.init ()
 

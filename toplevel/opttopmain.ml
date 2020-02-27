@@ -15,8 +15,11 @@
 
 open Clflags
 
-let usage =
-   "Usage: ocamlnat <options> <object-files> [script-file]\noptions are:"
+let err_usage = "Usage: ocamlnat <options> <object-files> [script-file \
+                 [arguments]]\nTry 'ocamlnat --help' for more information."
+
+let help_usage = "Usage: ocamlnat <options> <object-files> [script-file \
+                  [arguments]]\nOptions are:"
 
 let preload_objects = ref []
 
@@ -105,7 +108,8 @@ let main () =
   let list = ref Options.list in
   begin
     try
-      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+      Arg.parse_and_expand_argv_dynamic current argv list file_argument
+        err_usage help_usage;
     with
     | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg; exit 2
     | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0

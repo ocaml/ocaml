@@ -72,11 +72,13 @@ type spec =
 type key = string
 type doc = string
 type usage_msg = string
+type err_msg = string
+type help_msg = string
 type anon_fun = (string -> unit)
 
 val parse :
-  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
-(** [Arg.parse speclist anon_fun usage_msg] parses the command line.
+  (key * spec * doc) list -> anon_fun -> err_msg -> help_msg -> unit
+(** [Arg.parse speclist anon_fun err_msg help_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a ['-'] character.
     [spec] gives the option type and the function to call when this option
@@ -89,22 +91,22 @@ val parse :
     If an error occurs, [Arg.parse] exits the program, after printing
     to standard error an error message as follows:
 -   The reason for the error: unknown option, invalid or missing argument, etc.
--   [usage_msg]
--   The list of options, each followed by the corresponding [doc] string.
-    Beware: options that have an empty [doc] string will not be included in the
-    list.
+-   [err_msg] or [help_msg] depending on the error
+-   Optionally the list of options, if help was asked for, each followed by the
+    corresponding [doc] string. Beware: options that have an empty [doc] string
+    will not be included in the list.
 
     For the user to be able to specify anonymous arguments starting with a
     [-], include for example [("-", String anon_fun, doc)] in [speclist].
 
     By default, [parse] recognizes two unit options, [-help] and [--help],
-    which will print to standard output [usage_msg] and the list of
+    which will print to standard output [help_msg] and the list of
     options, and exit the program.  You can override this behaviour
     by specifying your own [-help] and [--help] options in [speclist].
 *)
 
 val parse_dynamic :
-  (key * spec * doc) list ref -> anon_fun -> usage_msg -> unit
+  (key * spec * doc) list ref -> anon_fun -> err_msg -> help_msg -> unit
 (** Same as {!Arg.parse}, except that the [speclist] argument is a reference
     and may be updated during the parsing. A typical use for this feature
     is to parse command lines of the form:
@@ -114,8 +116,8 @@ val parse_dynamic :
 *)
 
 val parse_argv : ?current: int ref -> string array ->
-  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
-(** [Arg.parse_argv ~current args speclist anon_fun usage_msg] parses
+  (key * spec * doc) list -> anon_fun -> err_msg -> help_msg -> unit
+(** [Arg.parse_argv ~current args speclist anon_fun err_msg help_msg] parses
   the array [args] as if it were the command line.  It uses and updates
   the value of [~current] (if given), or {!Arg.current}.  You must set
   it before calling [parse_argv].  The initial value of [current]
@@ -127,7 +129,7 @@ val parse_argv : ?current: int ref -> string array ->
 *)
 
 val parse_argv_dynamic : ?current:int ref -> string array ->
-  (key * spec * doc) list ref -> anon_fun -> string -> unit
+  (key * spec * doc) list ref -> anon_fun -> err_msg -> help_msg -> unit
 (** Same as {!Arg.parse_argv}, except that the [speclist] argument is a
     reference and may be updated during the parsing.
     See {!Arg.parse_dynamic}.
@@ -135,7 +137,7 @@ val parse_argv_dynamic : ?current:int ref -> string array ->
 *)
 
 val parse_and_expand_argv_dynamic : int ref -> string array ref ->
-  (key * spec * doc) list ref -> anon_fun -> string -> unit
+  (key * spec * doc) list ref -> anon_fun -> err_msg -> help_msg -> unit
 (** Same as {!Arg.parse_argv_dynamic}, except that the [argv] argument is a
     reference and may be updated during the parsing of [Expand] arguments.
     See {!Arg.parse_argv_dynamic}.
@@ -143,7 +145,7 @@ val parse_and_expand_argv_dynamic : int ref -> string array ref ->
 *)
 
 val parse_expand:
-  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+  (key * spec * doc) list -> anon_fun -> err_msg -> help_msg -> unit
 (** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
     the {!current} reference is not updated.
     @since 4.05.0

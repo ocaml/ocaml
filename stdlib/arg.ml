@@ -16,6 +16,8 @@
 type key = string
 type doc = string
 type usage_msg = string
+type err_msg = string
+type help_msg = string
 type anon_fun = (string -> unit)
 
 type spec =
@@ -100,9 +102,10 @@ let add_help speclist =
   speclist @ (add1 @ add2)
 
 
-let usage_b buf speclist errmsg =
+let usage_b ?(help=true) buf speclist errmsg =
   bprintf buf "%s\n" errmsg;
-  List.iter (print_spec buf) (add_help speclist)
+  if help then
+    List.iter (print_spec buf) (add_help speclist)
 
 
 let usage_string speclist errmsg =
@@ -130,7 +133,7 @@ let float_of_string_opt x =
   with Failure _ -> None
 
 let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
-                                      errmsg =
+                                      errmsg helpmsg =
   let initpos = !current in
   let convert_error error =
     (* convert an internal error to a Bad/Help exception
@@ -153,10 +156,14 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
       | Message s -> (* user error message *)
           bprintf b "%s: %s.\n" progname s
     end;
-    usage_b b !speclist errmsg;
     if error = Unknown "-help" || error = Unknown "--help"
-    then Help (Buffer.contents b)
-    else Bad (Buffer.contents b)
+    then begin
+      usage_b b !speclist helpmsg;
+      Help (Buffer.contents b)
+    end else begin
+      usage_b ~help:false b !speclist errmsg;
+      Bad (Buffer.contents b)
+    end
   in
   incr current;
   while !current < (Array.length !argv) do
@@ -272,39 +279,40 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
     incr current
   done
 
-let parse_and_expand_argv_dynamic current argv speclist anonfun errmsg =
-  parse_and_expand_argv_dynamic_aux true current argv speclist anonfun errmsg
+let parse_and_expand_argv_dynamic current argv speclist anonfun errmsg helpmsg =
+  parse_and_expand_argv_dynamic_aux true current argv speclist anonfun
+    errmsg helpmsg
 
-let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
+let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg helpmsg =
   parse_and_expand_argv_dynamic_aux false current (ref argv) speclist anonfun
-    errmsg
+    errmsg helpmsg
 
 
-let parse_argv ?(current=current) argv speclist anonfun errmsg =
-  parse_argv_dynamic ~current:current argv (ref speclist) anonfun errmsg
+let parse_argv ?(current=current) argv speclist anonfun errmsg helpmsg =
+  parse_argv_dynamic ~current:current argv (ref speclist) anonfun errmsg helpmsg
 
 
-let parse l f msg =
+let parse l f errmsg helpmsg =
   try
-    parse_argv Sys.argv l f msg
+    parse_argv Sys.argv l f errmsg helpmsg
   with
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0
 
 
-let parse_dynamic l f msg =
+let parse_dynamic l f errmsg helpmsg =
   try
-    parse_argv_dynamic Sys.argv l f msg
+    parse_argv_dynamic Sys.argv l f errmsg helpmsg
   with
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0
 
-let parse_expand l f msg =
+let parse_expand l f errmsg helpmsg =
   try
     let argv = ref Sys.argv in
     let spec = ref l in
     let current = ref (!current) in
-    parse_and_expand_argv_dynamic current argv spec f msg
+    parse_and_expand_argv_dynamic current argv spec f errmsg helpmsg
   with
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0

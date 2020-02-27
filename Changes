@@ -216,6 +216,9 @@ Working version
   non-development builds.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #9341: Do not print option documentation in usage messages.
+    (Andrew Jeffery, review by ...)
+
 ### Bug fixes:
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code

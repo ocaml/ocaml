@@ -84,6 +84,7 @@ let main() =
      "<file> Read additional NUL separated command line arguments from \n\
      \      <file>";]
     scan_obj
+    "Usage: primreq [options] <.cmo and .cma files>\nOptions are:"
     "Usage: primreq [options] <.cmo and .cma files>\nOptions are:";
   if String.length !exclude_file > 0 then exclude !exclude_file;
   String.Set.iter

@@ -16,7 +16,10 @@
 open Clflags
 open Compenv
 
-let usage = "Usage: ocamlc <options> <files>\nOptions are:"
+let err_usage = "Usage: ocamlc <options> <files>\n\
+                 Try 'ocamlc --help' for more information."
+
+let help_usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
 (* Error messages to standard error formatter *)
 let ppf = Format.err_formatter
@@ -30,7 +33,7 @@ let main () =
      "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
   try
     readenv ppf Before_args;
-    Clflags.parse_arguments anonymous usage;
+    Clflags.parse_arguments anonymous err_usage help_usage;
     Compmisc.read_clflags_from_env ();
     if !Clflags.plugin then
       fatal "-plugin is only supported up to OCaml 4.08.0";
@@ -44,7 +47,7 @@ let main () =
     with Arg.Bad msg ->
       begin
         prerr_endline msg;
-        Clflags.print_arguments usage;
+        Clflags.print_arguments help_usage;
         exit 2
       end
     end;

@@ -556,7 +556,12 @@ let arg_list = [
      "<file> Read additional NUL separated command line arguments from \n\
      \      <file>";
 ]
-let arg_usage =
+
+let arg_help_usage =
+  Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files"
+                 Sys.argv.(0)
+
+let arg_err_usage =
   Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files"
                  Sys.argv.(0)
 
@@ -576,7 +581,7 @@ let arg_fun filename =
   printf "## end of ocaml dump of %S\n%!" filename
 
 let main() =
-  Arg.parse_expand arg_list arg_fun arg_usage;
+  Arg.parse_expand arg_list arg_fun arg_err_usage arg_help_usage;
     exit 0
 
 let _ = main ()

@@ -216,7 +216,7 @@ let main () =
                                 ("camldebug" ^ (Int.to_string (Unix.getpid ())))
       );
     begin try
-      Arg.parse speclist anonymous "";
+      Arg.parse speclist anonymous "" "";
       Arg.usage speclist
         "No program name specified\n\
          Usage: ocamldebug [options] <program> [arguments]\n\

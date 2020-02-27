@@ -80,7 +80,7 @@ let main () =
   Arg.parse
     ["-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
            "<dir>  Add <dir> to the list of include directories"]
-    print_crc usage;
+    print_crc usage usage;
   print_string "\n]\n"
 
 let _ = main(); exit 0

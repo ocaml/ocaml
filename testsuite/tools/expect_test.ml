@@ -364,7 +364,7 @@ let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
 let () =
   Clflags.color := Some Misc.Color.Never;
   try
-    Arg.parse args main usage;
+    Arg.parse args main usage usage;
     Printf.eprintf "expect_test: no input file\n";
     exit 2
   with exn ->

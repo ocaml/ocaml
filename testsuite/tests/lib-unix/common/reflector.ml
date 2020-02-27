@@ -47,4 +47,4 @@ let () =
   set_binary_mode_in stdin true;
   set_binary_mode_out stdout true;
   set_binary_mode_out stderr true;
-  Arg.parse options report_bad_argument  ""
+  Arg.parse options report_bad_argument  "" ""

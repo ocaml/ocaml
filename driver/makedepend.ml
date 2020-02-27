@@ -634,11 +634,17 @@ let main () =
          "<file> Read additional NUL separated command line arguments from \n\
          \      <file>"
   ];
-  let usage =
+  let err_usage =
+    let basename = Filename.basename Sys.argv.(0) in
+    Printf.sprintf "Usage: %s [options] <source files>\n\
+      Try '%s --help' for more information."
+                   basename basename
+  in
+  let help_usage =
     Printf.sprintf "Usage: %s [options] <source files>\nOptions are:"
                    (Filename.basename Sys.argv.(0))
   in
-  Clflags.parse_arguments file_dependencies usage;
+  Clflags.parse_arguments file_dependencies err_usage help_usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);

@@ -45,15 +45,9 @@ let specs =
    "-vnum",  Arg.Unit print_version_num, " Print version number and exit";
   ]
 
-let _ =
-  Arg.parse
-    specs
-    (fun name -> source_name := Some name)
-    usage
-
+let _ = Arg.parse specs (fun name -> source_name := Some name) usage usage
 
 let main () =
-
   let source_name = match !source_name with
   | None -> Arg.usage specs usage ; exit 2
   | Some name -> name in

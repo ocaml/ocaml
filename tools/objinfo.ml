@@ -409,7 +409,7 @@ let arg_usage =
    Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 
 let main() =
-  Arg.parse_expand arg_list dump_obj arg_usage;
+  Arg.parse_expand arg_list dump_obj arg_usage arg_usage;
   exit 0
 
 let _ = main ()

@@ -4346,7 +4346,7 @@ let options = [
 let anonymous x = raise (Arg.Bad ("unrecognised option "^x));;
 
 let main () =
-  Arg.parse options anonymous usage;
+  Arg.parse options anonymous usage usage;
 
   Printf.printf "Command line arguments are:";
   for i = 1 to Array.length Sys.argv - 1 do

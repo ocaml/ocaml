@@ -15,8 +15,12 @@
 
 open Compenv
 
-let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
-             options are:"
+let err_usage = "Usage: ocaml <options> <object-files> [script-file \
+                 [arguments]]\nTry 'ocaml --help' for more information."
+
+let help_usage = "Usage: ocaml <options> <object-files> \
+                  [script-file [arguments]]\nOptions are:"
+
 
 let preload_objects = ref []
 
@@ -109,7 +113,8 @@ let main () =
   let list = ref Options.list in
   begin
     try
-      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+      Arg.parse_and_expand_argv_dynamic current argv list file_argument
+        err_usage help_usage;
     with
     | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
     | Arg.Help msg -> Printf.printf "%s" msg; exit 0

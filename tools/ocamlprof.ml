@@ -516,7 +516,7 @@ let main () =
        "-args0", Arg.Expand Arg.read_arg0,
            "<file> Read additional NUL separated command line arguments from \n\
            \      <file>"
-    ] process_anon_file usage;
+    ] process_anon_file usage usage;
     exit 0
   with
   | Profiler msg ->

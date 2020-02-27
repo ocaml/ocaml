@@ -37,7 +37,8 @@ and opnames = parse
         "-opcodes", Arg.Set print_opcodes, " Dump opcode numbers";
       ]
     in
-    Arg.parse (Arg.align spec) ignore "Extract opcode info from instruct.h";
+    let usage = "Extract opcode info from instruct.h" in
+    Arg.parse (Arg.align spec) ignore usage usage;
     let lexbuf = Lexing.from_channel stdin in
     let id, opnames = find_enum lexbuf in
     if !print_opnames then begin

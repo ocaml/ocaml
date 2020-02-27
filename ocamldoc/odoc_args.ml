@@ -379,6 +379,7 @@ let parse () =
   let options = !options @ !help_options in
   Arg.parse (Arg.align ~limit:13 options)
       anonymous
+      (M.usage^M.options_are)
       (M.usage^M.options_are);
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in

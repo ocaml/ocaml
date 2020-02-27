@@ -117,7 +117,7 @@ let main () =
                      "Error: the file's extension must be .cmt or .cmti.\n%!";
       Arg.usage arg_list arg_usage
     end
-  ) arg_usage
+  ) arg_usage arg_usage
 
 
 let () =

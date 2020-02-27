@@ -67,7 +67,7 @@ let optlist =
         \032     t  try ... with")
     :: Main_args.options_with_command_line_syntax Options.list rev_compargs
 in
-Arg.parse_expand optlist anon usage;
+Arg.parse_expand optlist anon usage usage;
 if !with_impl && !with_intf then begin
   fprintf stderr "ocamloptp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";

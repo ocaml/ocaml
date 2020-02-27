@@ -235,7 +235,7 @@ let args =
 
 let () =
   let m = ref Refs.empty in
-  Arg.parse args (OCaml_refs.from_file m) usage;
+  Arg.parse args (OCaml_refs.from_file m) usage usage;
   match !aux_file with
   | None -> print_error No_aux_file; exit 2
   |  Some aux ->
