@@ -1,9 +1,10 @@
 (* TEST
 files = "main.c"
+* asmgen
 arguments = "-DINT_FLOAT -DFUN=test main.c"
-* skip
-reason = "This test is currently broken"
-** asmgen
+** run
+arguments = "5"
+*** check-program-output
 *)
 
 (**************************************************************************)
@@ -24,7 +25,7 @@ reason = "This test is currently broken"
 (function "square" (x: float)
    ( *f x x))
 
-(function "integr" (f: addr low: float high: float n: int)
+(function "integr" (f: int low: float high: float n: int)
   (let (h (/f (-f high low) (floatofint n))
         x low
         s 0.0
