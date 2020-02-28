@@ -1297,8 +1297,10 @@ void caml_finish_major_cycle ()
 }
 
 void caml_empty_mark_stack () {
-  while (!Caml_state->marking_done)
-    mark(10000000);
+  while (!Caml_state->marking_done){
+    mark(1000);
+    caml_handle_incoming_interrupts();
+  }
 
   if (Caml_state->stat_blocks_marked)
     caml_gc_log("Finished marking major heap. Marked %u blocks",
