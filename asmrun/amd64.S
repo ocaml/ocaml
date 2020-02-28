@@ -94,6 +94,8 @@
 
 #define CAML_CONFIG_H_NO_TYPEDEFS
 #include "../byterun/caml/config.h"
+        .equ Minor_val_bitmask,\
+          (1 | ~((1 << (Minor_heap_align_bits + Minor_heap_sel_bits)) - 1))
 
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
@@ -478,6 +480,20 @@ CFI_STARTPROC
         pushq   %rax
         RESTORE_ALL_REGS
         popq    %rax
+        ret
+CFI_ENDPROC
+
+/* runs on C stack with C calling convention.
+   optimisation: use ocaml calling convention and SAVE_ALL_REGS?
+   args: C_ARG_1: object, C_ARG_2: field idx, C_ARG_3: new value */
+FUNCTION(G(caml_modify_field_asm))
+CFI_STARTPROC
+        movq    C_ARG_1, %r11
+        xorq    %r14, %r11
+        testq   $Minor_val_bitmask, %r11
+        jz      1f
+        jmp     GCALL(caml_modify_field)
+1:      movq    C_ARG_3, 0(C_ARG_1,C_ARG_2,8)
         ret
 CFI_ENDPROC
 
