@@ -42,7 +42,7 @@
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
-static atomic_intnat domains_finished_remembered_set;
+static atomic_intnat domains_finished_minor_gc;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
 
@@ -665,10 +665,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   }
 #endif
 
-  if( not_alone ) {
-    atomic_fetch_add_explicit(&domains_finished_remembered_set, 1, memory_order_release);
-  }
-
   caml_ev_begin("minor_gc/local_roots");
   caml_do_local_roots(&oldify_one, &st, domain, 0);
   caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
@@ -676,6 +672,10 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   oldify_mopup (&st, 0);
   caml_ev_end("minor_gc/local_roots/promote");
   caml_ev_end("minor_gc/local_roots");
+
+  if( not_alone ) {
+    atomic_fetch_add_explicit(&domains_finished_minor_gc, 1, memory_order_release);
+  }
 
   domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
   domain_state->stat_minor_collections++;
@@ -693,7 +693,7 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
 */
 
 void caml_empty_minor_heap_setup(struct domain* domain) {
-  atomic_store_explicit(&domains_finished_remembered_set, 0, memory_order_release);
+  atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
 }
 
 /* must be called within a STW section */
@@ -721,7 +721,7 @@ static void caml_stw_empty_minor_heap (struct domain* domain, void* unused, int 
   if( not_alone ) {
     caml_ev_begin("minor_gc/leave_barrier");
     SPIN_WAIT {
-      if( atomic_load_explicit(&domains_finished_remembered_set, memory_order_acquire) == participating_count ) {
+      if( atomic_load_explicit(&domains_finished_minor_gc, memory_order_acquire) == participating_count ) {
         break;
       }
     }
