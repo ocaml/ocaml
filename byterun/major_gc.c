@@ -1077,6 +1077,7 @@ static intnat major_collection_slice(intnat howmuch,
   int was_marking = 0;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
+  int log_events = !opportunistic || (caml_params->verb_gc & 0x40);
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
@@ -1085,10 +1086,10 @@ static intnat major_collection_slice(intnat howmuch,
     return computed_work;
   }
 
-  caml_ev_begin("major_gc/slice");
+  if (log_events) caml_ev_begin("major_gc/slice");
 
   if (!domain_state->sweeping_done) {
-    caml_ev_begin("major_gc/sweep");
+    if (log_events) caml_ev_begin("major_gc/sweep");
 
     sweep_work = budget;
     do {
@@ -1109,15 +1110,17 @@ static intnat major_collection_slice(intnat howmuch,
       caml_handle_incoming_interrupts();
       // FIXME: Is this sufficient to deal with the above case?
       if( saved_major_cycle != caml_major_cycles_completed ) {
-        caml_ev_end("major_gc/sweep");
-        caml_ev_end("major_gc/slice");
+        if (log_events) {
+          caml_ev_end("major_gc/sweep");
+          caml_ev_end("major_gc/slice");
+        }
         if (budget_left) *budget_left = budget;
         return computed_work;
       }
     /* need to check if sweeping_done by the incoming interrupt */
     } while (budget > 0 && available != left && !domain_state->sweeping_done);
 
-    caml_ev_end("major_gc/sweep");
+    if (log_events) caml_ev_end("major_gc/sweep");
     sweep_work -= budget;
   }
 
@@ -1126,7 +1129,7 @@ mark_again:
   while (budget > 0) {
     if (!domain_state->marking_done) {
       if (!was_marking) {
-        caml_ev_begin("major_gc/mark");
+        if (log_events) caml_ev_begin("major_gc/mark");
         was_marking = 1;
       }
       available = budget > Chunk_size ? Chunk_size : budget;
@@ -1139,26 +1142,28 @@ mark_again:
       */
       caml_handle_incoming_interrupts();
       if( saved_major_cycle != caml_major_cycles_completed ) {
-        caml_ev_end("major_gc/mark");
-        caml_ev_end("major_gc/slice");
+        if (log_events) {
+          caml_ev_end("major_gc/mark");
+          caml_ev_end("major_gc/slice");
+        }
         if (budget_left) *budget_left = budget;
         return computed_work;
       }
     } else if (0) {
       if (was_marking) {
-        caml_ev_end("major_gc/mark");
+        if (log_events) caml_ev_end("major_gc/mark");
         was_marking = 0;
       }
-      caml_ev_begin("major_gc/steal");
+      if (log_events) caml_ev_begin("major_gc/steal");
       steal_result = steal_mark_work();
-      caml_ev_end("major_gc/steal");
+      if (log_events) caml_ev_end("major_gc/steal");
       if (steal_result == -1) break;
     } else {
       break;
     }
   }
   if (was_marking) {
-    caml_ev_end("major_gc/mark");
+    if (log_events) caml_ev_end("major_gc/mark");
     was_marking = 0;
   }
   mark_work -= budget;
@@ -1220,7 +1225,7 @@ mark_again:
     }
   }
 
-  caml_ev_end("major_gc/slice");
+  if (log_events) caml_ev_end("major_gc/slice");
 
   if (budget_left)
     *budget_left = budget;
