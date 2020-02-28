@@ -19,6 +19,7 @@ value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t wosize, tag_t tag
 void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
 
 uintnat caml_heap_size(struct caml_heap_state*);
+uintnat caml_top_heap_words(struct caml_heap_state*);
 uintnat caml_heap_blocks(struct caml_heap_state*);
 
 struct pool* caml_pool_of_shared_block(value v);
