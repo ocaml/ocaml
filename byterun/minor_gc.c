@@ -37,6 +37,7 @@
 #include "caml/roots.h"
 #include "caml/shared_heap.h"
 #include "caml/signals.h"
+#include "caml/startup_aux.h"
 #include "caml/weak.h"
 
 extern value caml_ephe_none; /* See weak.c */
@@ -752,9 +753,10 @@ void caml_do_opportunistic_major_slice(struct domain* domain, void* unused)
   /* NB: need to put guard around the ev logs to prevent
     spam when we poll */
   if (caml_opportunistic_major_work_available()) {
-    caml_ev_begin("minor_gc/opportunistic_major_slice");
+    int log_events = caml_params->verb_gc & 0x40;
+    if (log_events) caml_ev_begin("minor_gc/opportunistic_major_slice");
     caml_opportunistic_major_collection_slice(0x200, 0);
-    caml_ev_end("minor_gc/opportunistic_major_slice");
+    if (log_events) caml_ev_end("minor_gc/opportunistic_major_slice");
   }
 }
 

@@ -702,7 +702,7 @@ let float_array_ref dbg arr ofs =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
 
 let addr_array_set arr ofs newval dbg =
-  Cop(Cextcall("caml_modify_field", typ_void, false, None),
+  Cop(Cextcall("caml_modify_field_asm", typ_void, false, None),
       [arr; untag_int ofs dbg; newval], dbg)
 let addr_array_initialize arr ofs newval dbg =
   Cop(Cextcall("caml_initialize_field", typ_void, false, None),
@@ -2113,7 +2113,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Psetfield(n, ptr, init) ->
       begin match assignment_kind ptr init with
       | Caml_modify ->
-        return_unit(Cop(Cextcall("caml_modify_field", typ_void, false, None),
+        return_unit(Cop(Cextcall("caml_modify_field_asm", typ_void, false, None),
                         [transl env arg1; Cconst_int n; transl env arg2],
                         dbg))
       | Caml_initialize ->
