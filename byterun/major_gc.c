@@ -1297,8 +1297,10 @@ void caml_finish_major_cycle ()
 }
 
 void caml_empty_mark_stack () {
-  while (!Caml_state->marking_done)
-    mark(10000000);
+  while (!Caml_state->marking_done) {
+    mark(1000);
+    caml_handle_incoming_interrupts();
+  }
 
   if (Caml_state->stat_blocks_marked)
     caml_gc_log("Finished marking major heap. Marked %u blocks",
@@ -1319,7 +1321,9 @@ void caml_finish_marking () {
 void caml_finish_sweeping () {
   if (!Caml_state->sweeping_done) {
     caml_ev_begin("major_gc/finish_sweeping");
-    while (caml_sweep(Caml_state->shared_heap, 10) <= 0);
+    while (caml_sweep(Caml_state->shared_heap, 10) <= 0) {
+      caml_handle_incoming_interrupts();
+    }
     Caml_state->sweeping_done = 1;
     atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
     caml_ev_end("major_gc/finish_sweeping");
