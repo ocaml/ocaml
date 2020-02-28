@@ -61,6 +61,7 @@
 #include "caml/callback.h"
 #include "caml/startup_aux.h"
 #include "caml/major_gc.h"
+#include "caml/shared_heap.h"
 
 static char * error_message(void)
 {
@@ -127,6 +128,19 @@ CAMLprim value caml_sys_exit(value retcode_v)
       + (double) (domain_state->young_end - domain_state->young_ptr);
     double majwords = s.major_words + (double) domain_state->allocated_words;
     double allocated_words = minwords + majwords - s.promoted_words;
+    intnat heap_words =
+      s.major_heap.pool_words + s.major_heap.large_words;
+    intnat top_heap_words =
+      s.major_heap.pool_max_words + s.major_heap.large_max_words;
+
+    if (heap_words == 0) {
+      heap_words = Wsize_bsize(caml_heap_size(Caml_state->shared_heap));
+    }
+
+    if (top_heap_words == 0) {
+      top_heap_words = caml_top_heap_words(Caml_state->shared_heap);
+    }
+
     caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                     (intnat)allocated_words);
     caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
@@ -140,9 +154,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
     caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                     domain_state->stat_major_collections);
     caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    s.major_heap.pool_words + s.major_heap.large_words);
+                    heap_words);
     caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    s.major_heap.pool_max_words + s.major_heap.large_max_words);
+                    top_heap_words);
     caml_gc_message(0x400, "mean_space_overhead: %lf\n", caml_mean_space_overhead());
   }
 

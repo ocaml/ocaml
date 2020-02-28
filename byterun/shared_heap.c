@@ -54,7 +54,6 @@ struct {
   NULL
 };
 
-
 /* readable and writable only by the current thread */
 struct caml_heap_state {
   pool* avail_pools[NUM_SIZECLASSES];
@@ -512,6 +511,11 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
 uintnat caml_heap_size(struct caml_heap_state* local) {
   return Bsize_wsize(local->stats.pool_words + local->stats.large_words);
 }
+
+uintnat caml_top_heap_words(struct caml_heap_state* local) {
+  return local->stats.pool_max_words + local->stats.large_max_words;
+}
+
 
 uintnat caml_heap_blocks(struct caml_heap_state* local) {
   return local->stats.pool_live_blocks + local->stats.large_blocks;
