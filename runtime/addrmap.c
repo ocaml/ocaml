@@ -54,7 +54,7 @@ void caml_addrmap_clear(struct addrmap* t) {
 void caml_addrmap_initialize(struct addrmap *t) {
   if (!t->entries) {
     /* first call, initialise table with a small initial size */
-    addrmap_alloc(t, caml_init_alloc_size);
+    addrmap_alloc(t, caml_init_intern_addrmap_size);
   }
 }
 
