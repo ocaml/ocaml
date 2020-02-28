@@ -116,6 +116,31 @@ let rec insert_poll_aux delta instr =
             insert_poll_instr updated_instr
         *)
         (* pass through - temp until all instructions handled *)
+        | Iifthenelse (t, ifso, ifnot) ->
+           { instr with
+             desc = Iifthenelse(t,
+                                insert_poll_aux delta ifso,
+                                insert_poll_aux delta ifnot);
+             next = insert_poll_aux delta instr.next }
+        | Iswitch (vals, cases) ->
+           { instr with
+             desc = Iswitch(vals, Array.map (insert_poll_aux delta) cases);
+             next = insert_poll_aux delta instr.next }
+        | Icatch (isrec, handlers, body) ->
+           { instr with
+             desc = Icatch(isrec,
+                           List.map (fun (i,c) -> i, insert_poll_aux delta c) handlers,
+                           insert_poll_aux delta body);
+             next = insert_poll_aux delta instr.next }
+        | Itrywith (e, h) ->
+           { instr with
+             desc = Itrywith(insert_poll_aux delta e,
+                             insert_poll_aux delta h);
+             next = insert_poll_aux delta instr.next }
+        | Iloop i ->
+           { instr with
+             desc = Iloop (insert_poll_instr (insert_poll_aux 0 i));
+             next = insert_poll_aux delta instr.next }
         | _ -> { instr with next = (insert_poll_aux delta instr.next) }
     end
 
