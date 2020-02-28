@@ -10,12 +10,6 @@
 #include "caml/fail.h"
 
 /* Mutexes */
-static void check_err(char* action, int err)
-{
-  if (err) {
-    caml_fatal_error_arg2("Fatal error during %s", action, ": %s\n", strerror(err));
-  }
-}
 
 void caml_plat_mutex_init(caml_plat_mutex* m)
 {
@@ -27,33 +21,6 @@ void caml_plat_mutex_init(caml_plat_mutex* m)
 #else
   check_err("mutex_init", pthread_mutex_init(m, 0));
 #endif
-}
-
-#ifdef DEBUG
-static __thread int lockdepth;
-#define DEBUG_LOCK(m) (lockdepth++)
-#define DEBUG_UNLOCK(m) (lockdepth--)
-#else
-#define DEBUG_LOCK(m)
-#define DEBUG_UNLOCK(m)
-#endif
-
-void caml_plat_lock(caml_plat_mutex* m)
-{
-  check_err("lock", pthread_mutex_lock(m));
-  DEBUG_LOCK(m);
-}
-
-int caml_plat_try_lock(caml_plat_mutex* m)
-{
-  int r = pthread_mutex_trylock(m);
-  if (r == EBUSY) {
-    return 0;
-  } else {
-    check_err("try_lock", r);
-    DEBUG_LOCK(m);
-    return 1;
-  }
 }
 
 void caml_plat_assert_locked(caml_plat_mutex* m)
@@ -69,12 +36,6 @@ void caml_plat_assert_locked(caml_plat_mutex* m)
     check_err("assert_locked", r);
   }
 #endif
-}
-
-void caml_plat_unlock(caml_plat_mutex* m)
-{
-  DEBUG_UNLOCK(m);
-  check_err("unlock", pthread_mutex_unlock(m));
 }
 
 void caml_plat_assert_all_locks_unlocked()

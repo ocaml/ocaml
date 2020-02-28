@@ -6,6 +6,8 @@
 #define _GNU_SOURCE /* for PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP */
 #endif
 #include <pthread.h>
+#include <errno.h>
+#include <string.h>
 #include "mlvalues.h"
 #include "memory.h"
 
@@ -69,11 +71,11 @@ INLINE uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 void caml_plat_mutex_init(caml_plat_mutex*);
-void caml_plat_lock(caml_plat_mutex*);
-int caml_plat_try_lock(caml_plat_mutex*);
+static inline void caml_plat_lock(caml_plat_mutex*);
+static inline int caml_plat_try_lock(caml_plat_mutex*);
 void caml_plat_assert_locked(caml_plat_mutex*);
 void caml_plat_assert_all_locks_unlocked();
-void caml_plat_unlock(caml_plat_mutex*);
+static inline void caml_plat_unlock(caml_plat_mutex*);
 void caml_plat_mutex_free(caml_plat_mutex*);
 typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
@@ -97,9 +99,10 @@ struct caml__mutex_unwind {
   struct caml__mutex_unwind caml__locked_mutex =        \
     { caml__mutex, CAML_LOCAL_ROOTS->mutexes };         \
   CAML_LOCAL_ROOTS->mutexes = &caml__locked_mutex;      \
-  for (caml_enter_blocking_section(),                   \
-         caml_plat_lock(caml__mutex),                   \
-         caml_leave_blocking_section();                 \
+  for (caml_plat_try_lock(caml__mutex) ||               \
+         ((caml_enter_blocking_section(),               \
+           caml_plat_lock(caml__mutex),                 \
+           caml_leave_blocking_section()), 0);          \
        caml__mutex_go;                                  \
        caml_plat_unlock(caml__mutex),                   \
          caml__mutex_go = 0,                            \
@@ -113,5 +116,47 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only);
 void* caml_mem_commit(void* mem, uintnat size);
 void caml_mem_decommit(void* mem, uintnat size);
 void caml_mem_unmap(void* mem, uintnat size);
+
+
+static inline void check_err(char* action, int err)
+{
+  if (err) {
+    caml_fatal_error_arg2("Fatal error during %s", action, ": %s\n", strerror(err));
+  }
+}
+
+#ifdef DEBUG
+static __thread int lockdepth;
+#define DEBUG_LOCK(m) (lockdepth++)
+#define DEBUG_UNLOCK(m) (lockdepth--)
+#else
+#define DEBUG_LOCK(m)
+#define DEBUG_UNLOCK(m)
+#endif
+
+static inline void caml_plat_lock(caml_plat_mutex* m)
+{
+  check_err("lock", pthread_mutex_lock(m));
+  DEBUG_LOCK(m);
+}
+
+static inline int caml_plat_try_lock(caml_plat_mutex* m)
+{
+  int r = pthread_mutex_trylock(m);
+  if (r == EBUSY) {
+    return 0;
+  } else {
+    check_err("try_lock", r);
+    DEBUG_LOCK(m);
+    return 1;
+  }
+}
+
+static inline void caml_plat_unlock(caml_plat_mutex* m)
+{
+  DEBUG_UNLOCK(m);
+  check_err("unlock", pthread_mutex_unlock(m));
+}
+
 
 #endif /* CAML_PLATFORM_H */
