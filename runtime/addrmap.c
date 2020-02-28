@@ -19,22 +19,18 @@
 #include "caml/config.h"
 #include "caml/memory.h"
 #include "caml/addrmap.h"
+#include "caml/startup_aux.h"
 
-#define MAX_CHAIN 100
+#define MAX_CHAIN 10
 
 static uintnat pos_initial(struct addrmap* t, value key)
 {
-  uintnat pos = (uintnat)key;
-  pos *= 0xcc9e2d51;
-  pos ^= (pos >> 17);
-
-  CAMLassert(Is_power_of_2(t->size));
-  return pos & (t->size - 1);
+  return key % (t->size);
 }
 
 static uintnat pos_next(struct addrmap* t, uintnat pos)
 {
-  return (pos + 1) & (t->size - 1);
+  return (pos + 1) % (t->size);
 }
 
 int caml_addrmap_contains(struct addrmap* t, value key)
@@ -85,15 +81,19 @@ void caml_addrmap_clear(struct addrmap* t) {
   t->size = 0;
 }
 
+void caml_addrmap_initialize(struct addrmap *t) {
+  if (!t->entries) {
+    /* first call, initialise table with a small initial size */
+    addrmap_alloc(t, caml_init_alloc_size);
+  }
+}
+
 value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
-  uintnat i, pos, old_size;
+  uintnat i, pos , old_size;
   struct addrmap_entry* old_table;
 
   CAMLassert(Is_block(key));
-  if (!t->entries) {
-    /* first call, initialise table with a small initial size */
-    addrmap_alloc(t, 256);
-  }
+
   for (i = 0, pos = pos_initial(t, key);
        i < MAX_CHAIN;
        i++,   pos = pos_next(t, pos)) {
@@ -104,6 +104,7 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
       return &t->entries[pos].value;
     }
   }
+
   /* failed to insert, rehash and try again */
   old_table = t->entries;
   old_size = t->size;

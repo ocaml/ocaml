@@ -254,4 +254,7 @@ typedef uint64_t uintnat;
    Documented in gc.mli */
 #define Custom_minor_max_bsz_def 8192
 
+/* Default initial size for addrmap hash table: 256 bytes */
+#define Init_addrmap_def 256
+
 #endif /* CAML_CONFIG_H */

@@ -577,6 +577,7 @@ static intnat extern_value(value v, value flags,
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
+  caml_addrmap_initialize(&recorded_objs);
   /* Marshal the object */
   extern_rec(v);
   /* Record end of output */

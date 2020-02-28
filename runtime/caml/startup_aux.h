@@ -36,6 +36,7 @@ extern uintnat caml_init_custom_major_ratio;
 extern uintnat caml_init_custom_minor_ratio;
 extern uintnat caml_init_custom_minor_max_bsz;
 extern uintnat caml_trace_level;
+extern uintnat caml_init_alloc_size;
 extern int caml_cleanup_on_exit;
 
 extern void caml_parse_ocamlrunparam (void);
