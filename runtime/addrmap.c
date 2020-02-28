@@ -33,36 +33,6 @@ static uintnat pos_next(struct addrmap* t, uintnat pos)
   return (pos + 1) % (t->size);
 }
 
-int caml_addrmap_contains(struct addrmap* t, value key)
-{
-  uintnat pos, i;
-
-  CAMLassert(Is_block(key));
-  if (!t->entries) return 0;
-
-  for (i = 0, pos = pos_initial(t, key);
-       i < MAX_CHAIN;
-       i++, pos = pos_next(t, pos)) {
-    if (t->entries[pos].key == ADDRMAP_INVALID_KEY) break;
-    if (t->entries[pos].key == key) return 1;
-  }
-  return 0;
-}
-
-value caml_addrmap_lookup(struct addrmap* t, value key)
-{
-  uintnat pos;
-
-  CAMLassert(Is_block(key));
-  CAMLassert(t->entries);
-
-  for (pos = pos_initial(t, key); ; pos = pos_next(t, pos)) {
-    CAMLassert(t->entries[pos].key != ADDRMAP_INVALID_KEY);
-    if (t->entries[pos].key == key)
-      return t->entries[pos].value;
-  }
-}
-
 static void addrmap_alloc(struct addrmap* t, uintnat sz)
 {
   uintnat i;
@@ -118,20 +88,4 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   }
   caml_stat_free(old_table);
   return caml_addrmap_insert_pos(t, key);
-}
-
-void caml_addrmap_insert(struct addrmap* t, value k, value v) {
-  value* p = caml_addrmap_insert_pos(t, k);
-  CAMLassert(*p == ADDRMAP_NOT_PRESENT);
-  *p = v;
-}
-
-void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value)) {
-  addrmap_iterator i;
-  for (i = caml_addrmap_iterator(t);
-       caml_addrmap_iter_ok(t, i);
-       i = caml_addrmap_next(t, i)) {
-    f(caml_addrmap_iter_key(t, i),
-      caml_addrmap_iter_value(t, i));
-  }
 }

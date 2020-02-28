@@ -44,60 +44,7 @@ void caml_addrmap_insert(struct addrmap* t, value k, value v);
 
 void caml_addrmap_clear(struct addrmap* t);
 
-void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value));
-
 void caml_addrmap_initialize(struct addrmap* t);
-
-/* iteration */
-typedef uintnat addrmap_iterator;
-static inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t,
-                                                    addrmap_iterator i)
-{
-  if (i < t->size) {
-    CAMLassert(t->entries[i].key != ADDRMAP_INVALID_KEY);
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-static inline addrmap_iterator caml_addrmap_next(struct addrmap* t,
-                                                 addrmap_iterator i)
-{
-  if (!t->entries) return (uintnat)(-1);
-  i++;
-  while (i < t->size && t->entries[i].key == ADDRMAP_INVALID_KEY) {
-    i++;
-  }
-  caml_addrmap_iter_ok(t, i); /* just for assert-checks */
-  return i;
-}
-
-static inline value caml_addrmap_iter_key(struct addrmap* t,
-                                          addrmap_iterator i)
-{
-  CAMLassert(caml_addrmap_iter_ok(t, i));
-  return t->entries[i].key;
-}
-
-static inline value caml_addrmap_iter_value(struct addrmap* t,
-                                            addrmap_iterator i)
-{
-  CAMLassert(caml_addrmap_iter_ok(t, i));
-  return t->entries[i].value;
-}
-
-static inline value* caml_addrmap_iter_val_pos(struct addrmap* t,
-                                               addrmap_iterator i)
-{
-  CAMLassert(caml_addrmap_iter_ok(t, i));
-  return &t->entries[i].value;
-}
-
-static inline addrmap_iterator caml_addrmap_iterator(struct addrmap* t)
-{
-  return caml_addrmap_next(t, (uintnat)(-1));
-}
 
 #endif /* CAML_INTERNALS */
 
