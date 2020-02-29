@@ -140,7 +140,6 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
 int caml_reallocate_minor_heap(asize_t wsize)
 {
-  asize_t double_wsize;
   caml_domain_state* domain_state = Caml_state;
   Assert(domain_state->young_ptr == domain_state->young_end);
 
@@ -151,23 +150,21 @@ int caml_reallocate_minor_heap(asize_t wsize)
                     domain_self->minor_heap_area_end - domain_self->minor_heap_area);
 
   /* we allocate a double buffer to allow early release in minor_gc */
-  double_wsize = caml_norm_minor_heap_size(wsize * 2);
-  wsize = double_wsize/2;
+  wsize = caml_norm_minor_heap_size(wsize);
 
-  if (!caml_mem_commit((void*)domain_self->minor_heap_area, Bsize_wsize(double_wsize))) {
+  if (!caml_mem_commit((void*)domain_self->minor_heap_area, Bsize_wsize(wsize))) {
     return -1;
   }
 
 #ifdef DEBUG
   {
     uintnat* p = (uintnat*)domain_self->minor_heap_area;
-    for (; p < (uintnat*)(domain_self->minor_heap_area + Bsize_wsize(double_wsize)); p++)
+    for (; p < (uintnat*)(domain_self->minor_heap_area + Bsize_wsize(wsize)); p++)
       *p = Debug_uninit_align;
   }
 #endif
 
   domain_state->minor_heap_wsz = wsize;
-  domain_state->young_phase = 0;
 
   domain_state->young_start = (char*)domain_self->minor_heap_area;
   domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize));

@@ -517,18 +517,6 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
 
   asize_t wsize = domain_state->minor_heap_wsz;
 
-  if( domain_state->young_phase == 0 ) {
-    domain_state->young_start = (char*)domain_state->young_end;
-    domain_state->young_end = (char*)(domain_state->young_start + Bsize_wsize(wsize) );
-
-    domain_state->young_phase = 1;
-  } else {
-    domain_state->young_end = (char*)(domain_state->young_end - Bsize_wsize(wsize) );
-    domain_state->young_start = (char*)(domain_state->young_end - Bsize_wsize(wsize) );
-
-    domain_state->young_phase = 0;
-  }
-
   domain_state->young_limit = domain_state->young_start;
   domain_state->young_ptr = domain_state->young_end;
 }
