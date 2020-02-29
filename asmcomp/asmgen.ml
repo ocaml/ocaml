@@ -112,6 +112,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ Profile.record ~accumulate:true "cse" CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
   ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
+  ++ Profile.record ~accumulate:true "polling" Polling.fundecl
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"
   ++ Profile.record ~accumulate:true "spill" Spill.fundecl
@@ -122,7 +123,6 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ppf 1)
   ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
-  ++ Profile.record ~accumulate:true "polling" Polling.fundecl
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
