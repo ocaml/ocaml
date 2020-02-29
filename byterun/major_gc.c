@@ -564,6 +564,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
       mark_stack_push(stk, e);
       break;
     }
+    budget--;
     CAMLassert(Is_markable(e.block) &&
                Has_status_hd(Hd_val(e.block), global.MARKED) &&
                Tag_val(e.block) < No_scan_tag &&
@@ -581,8 +582,9 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
         if (Tag_hd(hd) == Cont_tag) {
           mark_stack_push(stk, e);
           caml_darken_cont(v);
-	  e = (mark_entry){0};
-	} else {
+          e = (mark_entry){0};
+          budget -= Whsize_hd(hd);
+        } else {
 again:
           if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
             if (!atomic_compare_exchange_strong(
@@ -605,7 +607,6 @@ again:
           }
         }
       }
-      budget -= Whsize_hd(hd);
     }
   }
   return budget;
