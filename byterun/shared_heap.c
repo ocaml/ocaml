@@ -204,8 +204,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
 static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
 static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   pool* r;
-  pool* v;
-  int moved_pools;
+  int adopted_pool = 0;
 
   /* Hopefully we have a pool we can use directly */
   r = local->avail_pools[sz];
@@ -252,27 +251,34 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
     }
   }
 
-  /* There were no global avail pools, so let's adopt the full ones and try
-     our luck sweeping them later on */
+  /* There were no global avail pools, so let's adopt one of the full ones and try
+     our luck sweeping it later on */
   if( !r ) {
     struct heap_stats tmp_stats = { 0 };
 
-    for(v = pool_freelist.global_full_pools[sz]; v; v = v->next ) {
-      calc_pool_stats(v, sz, &tmp_stats);
+    r = pool_freelist.global_full_pools[sz];
+
+    if( r ) {
+      pool_freelist.global_full_pools[sz] = r->next;
+      r->next = local->full_pools[sz];
+      local->full_pools[sz] = r;
+
+      calc_pool_stats(r, sz, &tmp_stats);
+      caml_accum_heap_stats(&local->stats, &tmp_stats);
+      caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
+
+      adopted_pool = 1;
+      r = 0; // this pool is full
+
+      if (local->stats.pool_words > local->stats.pool_max_words) {
+        local->stats.pool_max_words = local->stats.pool_words;
+      }
     }
-
-    caml_accum_heap_stats(&local->stats, &tmp_stats);
-    caml_remove_heap_stats(&pool_freelist.stats, &tmp_stats);
-
-    moved_pools = move_all_pools(&pool_freelist.global_full_pools[sz], &local->full_pools[sz], local->owner);
-
-    if (local->stats.pool_words > local->stats.pool_max_words)
-      local->stats.pool_max_words = local->stats.pool_words;
   }
 
   caml_plat_unlock(&pool_freelist.lock);
 
-  if( !r && moved_pools ) {
+  if( !r && adopted_pool ) {
     caml_domain_state* domain_state = caml_domain_self()->state;
     domain_state->opportunistic_work +=
       pool_sweep(local, &local->full_pools[sz], sz);
