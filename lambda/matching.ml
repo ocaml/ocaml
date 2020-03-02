@@ -183,7 +183,7 @@ module Half_simple : sig
 
   type clause = pattern Non_empty_clause.t
 
-  val of_clause : args:(lambda * 'a) list -> General.clause -> clause
+  val of_clause : arg:lambda -> General.clause -> clause
 end = struct
   type nonrec pattern = pattern
 
@@ -209,7 +209,7 @@ end = struct
         { p with pat_desc = Tpat_record (all_lbls, closed) }
     | _ -> p
 
-  let of_clause ~args cl =
+  let of_clause ~arg cl =
     let rec aux ((pat, patl), action) =
       match pat.pat_desc with
       | Tpat_any -> ((pat, patl), action)
@@ -217,11 +217,6 @@ end = struct
           let p = { pat with pat_desc = Tpat_alias (omega, id, s) } in
           aux ((p, patl), action)
       | Tpat_alias (p, id, _) ->
-          let arg =
-            match args with
-            | [] -> assert false
-            | (arg, _) :: _ -> arg
-          in
           let k = Typeopt.value_kind pat.pat_env pat.pat_type in
           aux ((p, patl), bind_with_value_kind Alias (id, k) arg action)
       | Tpat_record ([], _) -> ((omega, patl), action)
@@ -987,10 +982,10 @@ let safe_before to_pattern ((p, ps), act_p) l =
       || not (may_compats (to_pattern p :: ps) (to_pattern q :: qs)))
     l
 
-let half_simplify_clause args cls =
-  cls |> Non_empty_clause.of_initial |> Half_simple.of_clause ~args
+let half_simplify_clause arg cls =
+  cls |> Non_empty_clause.of_initial |> Half_simple.of_clause ~arg
 
-let half_simplify_cases args cls = List.map (half_simplify_clause args) cls
+let half_simplify_cases arg cls = List.map (half_simplify_clause arg) cls
 
 (* Once matchings are *fully* simplified, one can easily find
    their nature. *)
@@ -1395,7 +1390,7 @@ and precompile_var args cls def k =
             List.map
               (fun ((p, ps), act) ->
                 assert (group_var p);
-                half_simplify_clause var_args (ps, act))
+                half_simplify_clause (fst arg) (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
           let { me = first; matrix }, nexts =
@@ -1477,7 +1472,8 @@ and precompile_or argo cls ors args def k =
             in
             let pm_fv = pm_free_variables orpm in
             let vars =
-              (* bound variables of the or-pattern and used in the orpm actions *)
+              (* bound variables of the or-pattern and used in the orpm
+                 actions *)
               Typedtree.pat_bound_idents_full orp
               |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
               |> List.map (fun (id, _, ty) ->
@@ -1519,11 +1515,11 @@ and precompile_or argo cls ors args def k =
     },
     k )
 
-let split_and_precompile_nonempty argo pm =
+let split_and_precompile_nonempty v pm =
   let pm =
-    { pm with cases = List.map (Half_simple.of_clause ~args:pm.args) pm.cases }
+    { pm with cases = List.map (Half_simple.of_clause ~arg:(Lvar v)) pm.cases }
   in
-  let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
+  let { me = next }, nexts = split_or (Some v) pm.cases pm.args pm.default in
   if
     dbg
     && (nexts <> []
@@ -1556,9 +1552,16 @@ let split_and_precompile_simplified pm =
   );
   (next, nexts)
 
-let split_and_precompile argo pm =
-  let pm = { pm with cases = half_simplify_cases pm.args pm.cases } in
-  let { me = next }, nexts = split_or argo pm.cases pm.args pm.default in
+type precompile_arg = For_multiple of lambda | Var of Ident.t
+
+let split_and_precompile arg pm =
+  let larg, varg =
+    match arg with
+    | For_multiple l -> (l, None)
+    | Var v -> (Lvar v, Some v)
+  in
+  let pm = { pm with cases = half_simplify_cases larg pm.cases } in
+  let { me = next }, nexts = split_or varg pm.cases pm.args pm.default in
   if
     dbg
     && (nexts <> []
@@ -3243,7 +3246,7 @@ let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
       let first_match, rem =
-        split_and_precompile (Some v) { m with args = (newarg, Alias) :: argl }
+        split_and_precompile (Var v) { m with args = (newarg, Alias) :: argl }
       in
       let lam, total =
         comp_match_handlers
@@ -3284,8 +3287,7 @@ and compile_half_compiled repr partial ctx
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = ((Lvar v as arg), str) :: argl } ->
       let first_match, rem =
-        split_and_precompile_nonempty (Some v)
-          { m with args = (arg, Alias) :: argl }
+        split_and_precompile_nonempty v { m with args = (arg, Alias) :: argl }
       in
       let lam, total =
         comp_match_handlers
@@ -3777,7 +3779,7 @@ let compile_flattened repr partial ctx pmh =
 let do_for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
   let partial = check_partial pat_act_list partial in
-  let raise_num, pm1 =
+  let raise_num, arg, pm1 =
     let raise_num, default =
       match partial with
       | Partial ->
@@ -3785,17 +3787,18 @@ let do_for_multiple_match loc paraml pat_act_list partial =
           (raise_num, Default_environment.(cons [ [ omega ] ] raise_num empty))
       | Total -> (-1, Default_environment.empty)
     in
+    let arg = Lprim (Pmakeblock (0, Immutable, None), paraml, loc) in
     ( raise_num,
+      arg,
       { cases = List.map (fun (pat, act) -> ([ pat ], act)) pat_act_list;
-        args =
-          [ (Lprim (Pmakeblock (0, Immutable, None), paraml, loc), Strict) ];
+        args = [ (arg, Strict) ];
         default
       } )
   in
   try
     try
       (* Once for checking that compilation is possible *)
-      let next, nexts = split_and_precompile None pm1 in
+      let next, nexts = split_and_precompile (For_multiple arg) pm1 in
       let size = List.length paraml
       and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
       let args = List.map (fun id -> (Lvar id, Alias)) idl in
