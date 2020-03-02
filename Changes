@@ -134,6 +134,9 @@ Working version
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
 
+- #9290: add a directive to switch off debugging in toplevel
+  (allows to see optimized bytecode with -dlambda)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
