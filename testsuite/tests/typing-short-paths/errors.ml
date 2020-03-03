@@ -14,7 +14,7 @@ type t = M.t
 Line 5, characters 14-15:
 5 | let x : M.t = S
                   ^
-Error: This variant expression is expected to have type M.t
+Error: This variant expression is expected to have type t
        The constructor S does not belong to type M.t
 |}]
 
@@ -31,6 +31,6 @@ type c = M.c
 Line 7, characters 9-18:
 7 | let () = (new M.c)#bar
              ^^^^^^^^^
-Error: This expression has type M.c
+Error: This expression has type c
        It has no method bar
 |}]
