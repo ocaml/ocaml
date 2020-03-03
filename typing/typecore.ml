@@ -5190,7 +5190,7 @@ let report_error ~loc env = function
               "@[The field %s is not part of the record \
                argument for the %a constructor@]"
               name.txt
-              Printtyp.path type_path;
+              Printtyp.type_path type_path;
           end else begin
             fprintf ppf
               "@[@[<2>%s type@ %a%t@]@ \
@@ -5198,7 +5198,7 @@ let report_error ~loc env = function
               eorp Printtyp.type_expr ty
               (report_type_expected_explanation_opt explanation)
               (Datatype_kind.label_name kind)
-              name.txt (*kind*) Printtyp.path type_path;
+              name.txt (*kind*) Printtyp.type_path type_path;
           end;
           spellcheck ppf name.txt valid_names
       )) ()
@@ -5430,7 +5430,8 @@ let report_error ~loc env = function
           fprintf ppf "but bindings were expected of type")
 
 let report_error ~loc env err =
-  Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ~loc env err)
+  Printtyp.wrap_printing_env ~error:true env
+    (fun () -> report_error ~loc env err)
 
 let () =
   Location.register_error_of_exn

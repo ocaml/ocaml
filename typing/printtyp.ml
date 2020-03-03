@@ -1119,6 +1119,12 @@ and type_sch ppf ty = typexp true ppf ty
 
 and type_scheme ppf ty = reset_and_mark_loops ty; typexp true ppf ty
 
+let type_path ppf p =
+  let (p', s) = best_type_path p in
+  let p = if (s = Id) then p' else p in
+  let t = tree_of_path Type p in
+  !Oprint.out_ident ppf t
+
 (* Maxence *)
 let type_scheme_max ?(b_reset_names=true) ppf ty =
   if b_reset_names then reset_names () ;
