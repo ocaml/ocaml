@@ -824,13 +824,25 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   int phase = ! (caml_major_cycles_completed & 1);
   int i;
   intnat pool_max = 0, large_max = 0;
+  struct domain* domain_self = caml_domain_self ();
+  int my_id = domain_self->state->id;
+
   for (i=0; i<Max_domains; i++) {
     struct gc_stats* s = &sampled_gc_stats[phase][i];
     struct heap_stats* h = &s->major_heap;
-    buf->minor_words += s->minor_words;
-    buf->promoted_words += s->promoted_words;
-    buf->major_words += s->major_words;
-    buf->minor_collections += s->minor_collections;
+    if (i != my_id) {
+      buf->minor_words += s->minor_words;
+      buf->promoted_words += s->promoted_words;
+      buf->major_words += s->major_words;
+      buf->minor_collections += s->minor_collections;
+    }
+    else {
+      buf->minor_words += Caml_state->stat_minor_words;
+      buf->promoted_words += Caml_state->stat_promoted_words;
+      buf->major_words += Caml_state->stat_major_words;
+      buf->minor_collections += Caml_state->stat_minor_collections;
+      //FIXME handle the case for major heap stats [h]
+    }
     /* The instantaneous maximum heap size cannot be computed
        from per-domain statistics, and would be very expensive
        to maintain directly. Here, we just sum the per-domain
