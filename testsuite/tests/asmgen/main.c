@@ -17,31 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
-/* Define the intnat format, taken from runtime/caml/config.h
- * with some manual inling of constants for the pritnf formats */
-
-#if SIZEOF_PTR == SIZEOF_LONG
-/* Standard models: ILP32 or I32LP64 */
-typedef long intnat;
-typedef unsigned long uintnat;
-#define INTNAT_PRINTF_FORMAT "ld"
-#elif SIZEOF_PTR == SIZEOF_INT
-/* Hypothetical IP32L64 model */
-typedef int intnat;
-typedef unsigned int uintnat;
-#define INTNAT_PRINTF_FORMAT ""
-#elif SIZEOF_PTR == 8
-/* Win64 model: IL32P64 */
-typedef int64_t intnat;
-typedef uint64_t uintnat;
-#define INTNAT_PRINTF_FORMAT "I64"
-#else
-#error "No integer type available to represent pointers"
-#endif
-
-/* end of copy from runtime/caml/config.h */
-
+#include "caml/config.h"
 
 void caml_ml_array_bound_error(void)
 {
@@ -87,7 +63,7 @@ int main(int argc, char **argv)
 #ifdef UNIT_INT
   { extern intnat FUN(void);
     extern intnat call_gen_code(intnat (*)(void));
-    printf("%"INTNAT_PRINTF_FORMAT"\n", call_gen_code(FUN));
+    printf("%"ARCH_INTNAT_PRINTF_FORMAT"d\n", call_gen_code(FUN));
   }
 #else
   if (argc < 2) {
@@ -97,7 +73,7 @@ int main(int argc, char **argv)
 #ifdef INT_INT
   { extern intnat FUN(intnat);
     extern intnat call_gen_code(intnat (*)(intnat), intnat);
-    printf("%"INTNAT_PRINTF_FORMAT"\n", call_gen_code(FUN, atoi(argv[1])));
+    printf("%"ARCH_INTNAT_PRINTF_FORMAT"d\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef INT_FLOAT
@@ -127,7 +103,7 @@ int main(int argc, char **argv)
     for (i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
 #ifdef DEBUG
     for (i = 0; i < n; i++)
-      printf("%"INTNAT_PRINTF_FORMAT" ", a[i]);
+      printf("%"ARCH_INTNAT_PRINTF_FORMAT"d ", a[i]);
     printf("\n");
 #endif
     b = (intnat *) malloc(n * sizeof(intnat));
@@ -135,7 +111,7 @@ int main(int argc, char **argv)
     call_gen_code(FUN, 0, n-1, a);
 #ifdef DEBUG
     for (i = 0; i < n; i++)
-      printf("%"INTNAT_PRINTF_FORMAT" ", a[i]);
+      printf("%"ARCH_INTNAT_PRINTF_FORMAT"d ", a[i]);
     printf("\n");
 #endif
     qsort(b, n, sizeof(intnat), cmpint);
