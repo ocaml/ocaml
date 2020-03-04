@@ -696,9 +696,16 @@ let find_name_module ~mark name tbl =
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
   if not (Current_unit_name.is_name_of id) then
+    let summary =
+      match
+        IdTbl.find_name wrap_module ~mark:false (Ident.name id) env.modules
+      with
+      | exception Not_found | _, Mod_persistent -> env.summary
+      | _ -> Env_persistent (env.summary, id)
+    in
     { env with
       modules = IdTbl.add id Mod_persistent env.modules;
-      summary = Env_persistent (env.summary, id);
+      summary
     }
   else
     env
