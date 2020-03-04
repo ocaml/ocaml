@@ -372,9 +372,6 @@ OCaml 4.10.0
 - #8971: Add `Filename.null`, the conventional name of the "null" device.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Alain Frisch)
 
-- #9077: define Seq.cons and Seq.append
-  (Sébastien Briais, review by ???)
-
 - #8651: add '%#F' modifier in printf to output OCaml float constants
   in hexadecimal
   (Pierre Roux, review by Gabriel Scherer and Xavier Leroy)
