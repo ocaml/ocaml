@@ -210,6 +210,9 @@ Working version
 - #9211, #9215: fix Makefile dependencies of compilerlibs archives and dynlink
   (Gabriel Scherer, review by Vincent Laviron and David Allsopp)
 
+- #9305: Avoid polymorphic compare in Ident
+  (Leo White, review by Xavier Leroy and Gabriel Scherer)
+
 ### Build system:
 
 - #9250: Add --disable-ocamltest to configure and disable building for

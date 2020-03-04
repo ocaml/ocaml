@@ -93,13 +93,16 @@ let equal i1 i2 =
   | _ ->
       false
 
-let same i1 i2 = i1 = i2
-  (* Possibly more efficient version (with a real compiler, at least):
-       if i1.stamp <> 0
-       then i1.stamp = i2.stamp
-       else i2.stamp = 0 && i1.name = i2.name *)
-
-let compare i1 i2 = Stdlib.compare i1 i2
+let same i1 i2 =
+  match i1, i2 with
+  | Local { stamp = s1; _ }, Local { stamp = s2; _ }
+  | Scoped { stamp = s1; _ }, Scoped { stamp = s2; _ }
+  | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
+      s1 = s2
+  | Global name1, Global name2 ->
+      name1 = name2
+  | _ ->
+      false
 
 let stamp = function
   | Local { stamp; _ }
@@ -197,7 +200,7 @@ let rec add id data = function
     Empty ->
       Node(Empty, {ident = id; data = data; previous = None}, Empty, 1)
   | Node(l, k, r, h) ->
-      let c = compare (name id) (name k.ident) in
+      let c = String.compare (name id) (name k.ident) in
       if c = 0 then
         Node(l, {ident = id; data = data; previous = Some k}, r, h)
       else if c < 0 then
@@ -227,7 +230,7 @@ let rec remove id = function
     Empty ->
       Empty
   | (Node (l, k, r, h) as m) ->
-      let c = compare (name id) (name k.ident) in
+      let c = String.compare (name id) (name k.ident) in
       if c = 0 then
         match k.previous with
         | None -> merge l r
@@ -247,7 +250,7 @@ let rec find_same id = function
     Empty ->
       raise Not_found
   | Node(l, k, r, _) ->
-      let c = compare (name id) (name k.ident) in
+      let c = String.compare (name id) (name k.ident) in
       if c = 0 then
         if same id k.ident
         then k.data
@@ -259,7 +262,7 @@ let rec find_name n = function
     Empty ->
       raise Not_found
   | Node(l, k, r, _) ->
-      let c = compare n (name k.ident) in
+      let c = String.compare n (name k.ident) in
       if c = 0 then
         k.ident, k.data
       else
@@ -273,7 +276,7 @@ let rec find_all n = function
     Empty ->
       []
   | Node(l, k, r, _) ->
-      let c = compare n (name k.ident) in
+      let c = String.compare n (name k.ident) in
       if c = 0 then
         (k.ident, k.data) :: get_all k.previous
       else
