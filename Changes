@@ -244,6 +244,9 @@ Working version
   (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
   and Thomas Refis)
 
+- #9343: Re-enable `-short-paths` for some error messages
+  (Leo White, review by Florian Angeletti)
+
 OCaml 4.10.0
 ------------
 
