@@ -28,7 +28,7 @@ module String = Misc.Stdlib.String
 let add_delayed_check_forward = ref (fun _ -> assert false)
 
 type 'a usage_tbl = ('a -> unit) Types.Uid.Tbl.t
-(** This table is used to usage of value declarations.
+(** This table is used to track usage of value declarations.
     A declaration is identified by its uid.
     The callback attached to a declaration is called whenever the value (or
     type, or ...) is used explicitly (lookup_value, ...) or implicitly
