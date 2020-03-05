@@ -19,7 +19,8 @@
 type environment
 
 val env_add
-   : Backend_var.With_provenance.t
+   : ?mut:Asttypes.mutable_flag
+  -> Backend_var.With_provenance.t
   -> Reg.t array
   -> environment
   -> environment
@@ -148,8 +149,6 @@ class virtual selector_generic : object
   method insert_move_results :
     environment -> Reg.t array -> Reg.t array -> int -> unit
   method insert_moves : environment -> Reg.t array -> Reg.t array -> unit
-  method adjust_type : Reg.t -> Reg.t -> unit
-  method adjust_types : Reg.t array -> Reg.t array -> unit
   method emit_expr :
     environment -> Cmm.expression -> Reg.t array option
   method emit_tail : environment -> Cmm.expression -> unit

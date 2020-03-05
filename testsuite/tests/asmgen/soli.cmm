@@ -51,13 +51,13 @@ arguments = "-DUNIT_INT -DFUN=solitaire main.c"
      (if (== (mod (load int "counter") 500) 0)
           (extcall "printf_int" "format" (load int "counter") unit)
        [])
-     (let i 1
+     (letmut i int 1
        (while (<= i 7)
-         (let j 1
+         (letmut j int 1
            (while (<= j 7)
              (if (== (intaref (addraref "board" i) j) 2)
                  (seq
-                  (let k 0
+                  (letmut k int 0
                     (while (<= k 3)
                       (let (d1 (intaref (addraref "dir" k) 0)
                             d2 (intaref (addraref "dir" k) 1)
@@ -93,9 +93,9 @@ arguments = "-DUNIT_INT -DFUN=solitaire main.c"
 ("format_newline": string "\n\000")
 
 (function "print_board" ()
-  (let i 0
+  (letmut i int 0
     (while (< i 9)
-      (let j 0
+      (letmut j int 0
         (while (< j 9)
           (switch 3 (intaref (addraref "board" i) j)
             case 0:

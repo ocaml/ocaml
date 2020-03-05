@@ -31,7 +31,7 @@ arguments = "-DINT_FLOAT -DFUN=test main.c"
         r))
 
 (function "integr" (f: val low: val high: val n: int)
-  (let (h "h" x "x" s "s" i n)
+  (letmut (h val "h" x val "x" s val "s" i int n)
     (store float h (/f (-f (load float high) (load float low)) (floatofint n)))
     (store float x (load float low))
     (store float s 0.0)

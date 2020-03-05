@@ -26,6 +26,13 @@ let rec make_letdef def body =
       unbind_ident id;
       Clet(id, def, make_letdef rem body)
 
+let rec make_letmutdef def body =
+  match def with
+    [] -> body
+  | (id, ty, def) :: rem ->
+      unbind_ident id;
+      Clet_mut(id, ty, def, make_letmutdef rem body)
+
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
@@ -105,6 +112,7 @@ let access_array base numelt size =
 %token LEF
 %token LEI
 %token LET
+%token LETMUT
 %token LOAD
 %token <Location.t> LOCATION
 %token LPAREN
@@ -207,6 +215,7 @@ expr:
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
+  | LPAREN LETMUT letmutdef sequence RPAREN { make_letmutdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
   | LPAREN APPLY location expr exprlist machtype RPAREN
                 { Cop(Capply $6, $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
@@ -288,6 +297,17 @@ letdefmult:
 ;
 oneletdef:
     IDENT expr                  { (bind_ident $1, $2) }
+;
+letmutdef:
+    oneletmutdef                { [$1] }
+  | LPAREN letmutdefmult RPAREN { $2 }
+;
+letmutdefmult:
+    /**/                        { [] }
+  | oneletmutdef letmutdefmult  { $1 :: $2 }
+;
+oneletmutdef:
+    IDENT machtype expr         { (bind_ident $1, $2, $3) }
 ;
 chunk:
     UNSIGNED BYTE               { Byte_unsigned }

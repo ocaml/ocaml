@@ -152,6 +152,8 @@ type expression =
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
+  | Clet_mut of Backend_var.With_provenance.t * machtype
+                * expression * expression
   | Cphantom_let of Backend_var.With_provenance.t
       * phantom_defining_expr option * expression
   | Cassign of Backend_var.t * expression
@@ -208,7 +210,7 @@ let reset () =
   label_counter := 99
 
 let iter_shallow_tail f = function
-  | Clet(_, _, body) | Cphantom_let (_, _, body) ->
+  | Clet(_, _, body) | Cphantom_let (_, _, body) | Clet_mut(_, _, _, body) ->
       f body;
       true
   | Cifthenelse(_cond, _ifso_dbg, ifso, _ifnot_dbg, ifnot, _dbg) ->
@@ -247,6 +249,8 @@ let iter_shallow_tail f = function
 let rec map_tail f = function
   | Clet(id, exp, body) ->
       Clet(id, exp, map_tail f body)
+  | Clet_mut(id, kind, exp, body) ->
+      Clet_mut(id, kind, exp, map_tail f body)
   | Cphantom_let(id, exp, body) ->
       Cphantom_let (id, exp, map_tail f body)
   | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
@@ -284,6 +288,8 @@ let rec map_tail f = function
 let map_shallow f = function
   | Clet (id, e1, e2) ->
       Clet (id, f e1, f e2)
+  | Clet_mut (id, kind, e1, e2) ->
+      Clet_mut (id, kind, f e1, f e2)
   | Cphantom_let (id, de, e) ->
       Cphantom_let (id, de, f e)
   | Cassign (id, e) ->

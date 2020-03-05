@@ -1684,10 +1684,10 @@ let cache_public_method meths tag cache dbg =
   let cconst_int i = Cconst_int (i, dbg) in
   let li = V.create_local "*li*" and hi = V.create_local "*hi*"
   and mi = V.create_local "*mi*" and tagged = V.create_local "*tagged*" in
-  Clet (
-  VP.create li, cconst_int 3,
-  Clet (
-  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg),
+  Clet_mut (
+  VP.create li, typ_int, cconst_int 3,
+  Clet_mut (
+  VP.create hi, typ_int, Cop(Cload (Word_int, Mutable), [meths], dbg),
   Csequence(
   ccatch
     (raise_num, [],
