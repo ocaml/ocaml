@@ -49,7 +49,7 @@ enum {
 
 static int extern_flags;        /* logical or of some of the flags above */
 
-static struct addrmap recorded_objs = ADDRMAP_INIT;
+static struct addrmap_page_table recorded_objs;
 
 /* Stack for pending values to marshal */
 
