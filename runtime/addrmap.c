@@ -21,10 +21,10 @@
 #include "caml/addrmap.h"
 #include "caml/startup_aux.h"
 
-int addrmap_page_table_initialize(struct addrmap_page_table *t, mlsize_t count)
+int caml_addrmap_initialize(struct addrmap_page_table *t)
 {
   mlsize_t sz = 0;
-  uintnat pagesize = Page(count * 4);
+  uintnat pagesize = Page(caml_init_intern_addrmap_size * 4);
 
   t->size  = 1;
   t->shift = 8 * sizeof(uintnat);
@@ -52,7 +52,7 @@ int addrmap_page_table_initialize(struct addrmap_page_table *t, mlsize_t count)
     return 0;
 }
 
-int addrmap_page_table_resize(struct addrmap_page_table* t)
+int caml_addrmap_resize(struct addrmap_page_table* t)
 {
   struct addrmap_entry* new_entries;
   uintnat i, h, new_size, new_shift, new_mask;
@@ -102,7 +102,7 @@ int addrmap_page_table_resize(struct addrmap_page_table* t)
   return 0;
 }
 
-value* addrmap_page_table_lookup(struct addrmap_page_table* t, value key)
+value* caml_addrmap_lookup(struct addrmap_page_table* t, value key)
 {
   uintnat h; /* e, i; */
 
@@ -139,19 +139,15 @@ void caml_addrmap_clear(struct addrmap_page_table* t) {
   t->size      = 0;
 }
 
-void caml_addrmap_initialize(struct addrmap_page_table* t) {
-  addrmap_page_table_initialize(t, caml_init_intern_addrmap_size);
-}
-
 value* caml_addrmap_insert_pos(struct addrmap_page_table* t, value key) {
   CAMLassert(Is_block(key));
 
   /* Resize to keep load factor around 0.9 */
   if (t->occupancy > 0.9 * t->size) {
 
-    if (addrmap_page_table_resize(t) != 0) {
+    if (caml_addrmap_resize(t) != 0) {
       return NULL;
     }
   }
-  return addrmap_page_table_lookup(t, key);
+  return caml_addrmap_lookup(t, key);
 }

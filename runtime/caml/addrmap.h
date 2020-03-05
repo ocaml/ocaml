@@ -42,19 +42,18 @@ struct addrmap_page_table {
   struct addrmap_entry* entries;   /* [size]  */
 };
 
-value* caml_addrmap_lookup(struct addrmap_page_table* t, value key);
-
 #define ADDRMAP_NOT_PRESENT ((value)(0))
 #define ADDRMAP_INVALID_KEY ((value)(0))
 
+int caml_addrmap_initialize(struct addrmap_page_table* t);
+
 value* caml_addrmap_insert_pos(struct addrmap_page_table* t, value v);
 
+value* caml_addrmap_lookup(struct addrmap_page_table* t, value key);
+
+int caml_addrmap_resize(struct addrmap_page_table* t);
+
 void caml_addrmap_clear(struct addrmap_page_table* t);
-
-void caml_addrmap_initialize(struct addrmap_page_table* t);
-
-value* addrmap_page_table_lookup(struct addrmap_page_table* t, value key);
-int addrmap_page_table_resize(struct addrmap_page_table* t);
 
 #endif /* CAML_INTERNALS */
 
