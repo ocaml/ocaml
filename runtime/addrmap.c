@@ -23,6 +23,7 @@
 
 int addrmap_page_table_initialize(struct addrmap_page_table *t, mlsize_t count)
 {
+  mlsize_t sz = 0;
   uintnat pagesize = Page(count * 4);
 
   t->size  = 1;
@@ -37,7 +38,7 @@ int addrmap_page_table_initialize(struct addrmap_page_table *t, mlsize_t count)
   t->occupancy = 0;
 
   /* Allocate for entries */
-  mlsize_t sz = t->size;
+  sz = t->size;
   CAMLassert(sz > 0 && (sz & (sz - 1)) == 0); /* sz must be a power of 2 */
   t->entries = caml_stat_alloc(sizeof(struct addrmap_entry) * sz);
   for (int i = 0; i < sz; i++) {
