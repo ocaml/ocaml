@@ -106,9 +106,11 @@ module Uid = struct
       print fmt t
   end)
 
-  let mk =
-    let id = ref (-1) in
-    fun ~current_unit ->
+  let id = ref (-1)
+
+  let reinit () = id := (-1)
+
+  let mk  ~current_unit =
       incr id;
       Item { comp_unit = current_unit; id = !id }
 

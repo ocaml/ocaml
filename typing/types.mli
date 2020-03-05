@@ -245,6 +245,8 @@ end
 module Uid : sig
   type t
 
+  val reinit : unit -> unit
+
   val mk : current_unit:string -> t
   val of_compilation_unit_id : Ident.t -> t
   val of_predef_id : Ident.t -> t
