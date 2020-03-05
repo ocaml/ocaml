@@ -727,7 +727,9 @@ to a function {\em application}, these direct the inliner likewise.  These
 attributes at call sites override any other attribute that may be present
 on the corresponding declaration.
 {\machine{\@inlined}} with no argument is equivalent to
-{\machine{\@inlined always}}.
+{\machine{\@inlined always}}. {\machine{\@\@inlined hint}} is equivalent to
+{\machine{\@\@inline always}} except that it will not trigger warning 55 if
+the function application cannot be inlined.
 \end{options}
 
 For recursive functions the relevant attributes are:

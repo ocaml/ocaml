@@ -202,6 +202,7 @@ let rec lam ppf (flam : t) =
       match inline with
       | Always_inline -> fprintf ppf "<always>"
       | Never_inline -> fprintf ppf "<never>"
+      | Hint_inline -> fprintf ppf "<hint>"
       | Unroll i -> fprintf ppf "<unroll %i>" i
       | Default_inline -> ()
     in
@@ -375,7 +376,7 @@ and print_function_declaration ppf var (f : function_declaration) =
   in
   let inline =
     match f.inline with
-    | Always_inline -> " *inline*"
+    | Always_inline | Hint_inline -> " *inline*"
     | Never_inline -> " *never_inline*"
     | Unroll _ -> " *unroll*"
     | Default_inline -> ""
@@ -1024,10 +1025,12 @@ let create_function_declaration ~params ~body ~stub ~dbg
       : function_declaration =
   begin match stub, inline with
   | true, (Never_inline | Default_inline)
-  | false, (Never_inline | Default_inline | Always_inline | Unroll _) -> ()
-  | true, (Always_inline | Unroll _) ->
+  | false, (Never_inline | Default_inline
+           | Always_inline | Hint_inline | Unroll _) -> ()
+  | true, (Always_inline | Hint_inline | Unroll _) ->
     Misc.fatal_errorf
-      "Stubs may not be annotated as [Always_inline] or [Unroll]: %a"
+      "Stubs may not be annotated as [Always_inline], \
+       [Hint_inline] or [Unroll]: %a"
       print body
   end;
   begin match stub, specialise with

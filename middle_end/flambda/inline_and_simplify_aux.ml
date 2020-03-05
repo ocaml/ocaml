@@ -543,7 +543,7 @@ let keep_body_check ~is_classic_mode ~recursive =
         match fun_decl.inline with
         | Default_inline -> can_inline_non_rec_function fun_decl
         | Unroll factor -> factor > 0
-        | Always_inline -> true
+        | Always_inline | Hint_inline -> true
         | Never_inline -> false
       end
     end

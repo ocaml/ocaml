@@ -214,6 +214,7 @@ type structured_constant =
 type inline_attribute =
   | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
+  | Hint_inline (* [@inlined hint] attribute *)
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
@@ -221,12 +222,14 @@ let equal_inline_attribute x y =
   match x, y with
   | Always_inline, Always_inline
   | Never_inline, Never_inline
+  | Hint_inline, Hint_inline
   | Default_inline, Default_inline
     ->
     true
   | Unroll u, Unroll v ->
     u = v
-  | (Always_inline | Never_inline | Unroll _ | Default_inline), _ ->
+  | (Always_inline | Never_inline
+    | Hint_inline | Unroll _ | Default_inline), _ ->
     false
 
 type specialise_attribute =
