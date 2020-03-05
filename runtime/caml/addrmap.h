@@ -39,7 +39,7 @@ struct addrmap_page_table {
   int shift;
   mlsize_t mask;                   /* mask == size - 1 */
   mlsize_t occupancy;
-  struct addrmap_entry* entries;   /* [size]  */
+  struct addrmap_entry* entries;   /* [count]  */
 };
 
 #define ADDRMAP_NOT_PRESENT ((value)(0))

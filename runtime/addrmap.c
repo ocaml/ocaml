@@ -25,6 +25,7 @@ int caml_addrmap_initialize(struct addrmap_page_table *t)
 {
   mlsize_t sz = 0;
   uintnat pagesize = Page(caml_init_intern_addrmap_size * 4);
+  uintnat i;
 
   t->size  = 1;
   t->shift = 8 * sizeof(uintnat);
@@ -41,7 +42,7 @@ int caml_addrmap_initialize(struct addrmap_page_table *t)
   sz = t->size;
   CAMLassert(sz > 0 && (sz & (sz - 1)) == 0); /* sz must be a power of 2 */
   t->entries = caml_stat_alloc(sizeof(struct addrmap_entry) * sz);
-  for (int i = 0; i < sz; i++) {
+  for (i = 0; i < sz; i++) {
     t->entries[i].key   = ADDRMAP_INVALID_KEY;
     t->entries[i].value = ADDRMAP_NOT_PRESENT;
   }
@@ -66,7 +67,7 @@ int caml_addrmap_resize(struct addrmap_page_table* t)
   new_mask    = new_size - 1;
   new_entries = caml_stat_alloc(sizeof(struct addrmap_entry) * new_size);
 
-  for (int i = 0; i < new_size; i++) {
+  for (i = 0; i < new_size; i++) {
     new_entries[i].key   = ADDRMAP_INVALID_KEY;
     new_entries[i].value = ADDRMAP_NOT_PRESENT;
   }
@@ -104,7 +105,7 @@ int caml_addrmap_resize(struct addrmap_page_table* t)
 
 value* caml_addrmap_lookup(struct addrmap_page_table* t, value key)
 {
-  uintnat h; /* e, i; */
+  uintnat h;
 
   h = Hash(Page(key), t->shift);
   /* The first hit is almost always successful, so optimize for this case */
