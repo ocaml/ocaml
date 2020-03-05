@@ -45,6 +45,7 @@ val reset_for_saving: unit -> unit
 
 val module_path: t -> Path.t -> Path.t
 val type_path: t -> Path.t -> Path.t
+val modtype_path: t -> Path.t -> Path.t
 
 val type_expr: t -> type_expr -> type_expr
 val class_type: t -> class_type -> class_type
