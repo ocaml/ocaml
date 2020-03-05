@@ -948,20 +948,18 @@ let rec tree_of_typexp sch ty =
         let name_gen = if non_gen then new_weak_name ty else new_name in
         Otyp_var (non_gen, name_of_type name_gen ty)
     | Tarrow(l, ty1, ty2, _) ->
-        let pr_arrow l ty1 ty2 =
-          let lab =
-            if !print_labels || is_optional l then string_of_label l else ""
-          in
-          let t1 =
-            if is_optional l then
-              match (repr ty1).desc with
-              | Tconstr(path, [ty], _)
-                when Path.same path Predef.path_option ->
-                  tree_of_typexp sch ty
-              | _ -> Otyp_stuff "<hidden>"
-            else tree_of_typexp sch ty1 in
-          Otyp_arrow (lab, t1, tree_of_typexp sch ty2) in
-        pr_arrow l ty1 ty2
+        let lab =
+          if !print_labels || is_optional l then string_of_label l else ""
+        in
+        let t1 =
+          if is_optional l then
+            match (repr ty1).desc with
+            | Tconstr(path, [ty], _)
+              when Path.same path Predef.path_option ->
+                tree_of_typexp sch ty
+            | _ -> Otyp_stuff "<hidden>"
+          else tree_of_typexp sch ty1 in
+        Otyp_arrow (lab, t1, tree_of_typexp sch ty2)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, _abbrev) ->
