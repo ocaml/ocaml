@@ -58,7 +58,7 @@ Working version
   (Stephen Dolan, review by Jacques-Henri Jourdan)
 
 - #9316: Use typing information from Clambda for mutable Cmm variables.
-  (Stephen Dolan, review by Vincent Laviron)
+  (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
 
 ### Code generation and optimizations:
 
