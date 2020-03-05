@@ -52,18 +52,6 @@ int addrmap_page_table_initialize(struct addrmap_page_table *t, mlsize_t count)
     return 0;
 }
 
-void display_addrmap(struct addrmap_page_table* t)
-{
-  mlsize_t i;
-
-  printf("Display addrmap page table entries\n");
-  printf("size       = %ld\n", t->size);
-  printf("occupancy  = %ld\n", t->occupancy);
-  for (i = 0; i < t->size; i++)
-    printf("addrmap_page_table.entries[%ld] = %ld:%ld\n", i, t->entries[i].key, t->entries[i].value);
-  printf("\n\n");
-}
-
 int addrmap_page_table_resize(struct addrmap_page_table* t)
 {
   struct addrmap_entry* new_entries;

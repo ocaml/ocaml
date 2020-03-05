@@ -53,7 +53,6 @@ void caml_addrmap_clear(struct addrmap_page_table* t);
 
 void caml_addrmap_initialize(struct addrmap_page_table* t);
 
-void display_addrmap(struct addrmap_page_table* t);
 value* addrmap_page_table_lookup(struct addrmap_page_table* t, value key);
 int addrmap_page_table_resize(struct addrmap_page_table* t);
 
