@@ -73,6 +73,12 @@ Working version
 - #9426: build the Mingw ports with higher levels of GCC optimization
   (Xavier Leroy, review by Sébastien Hinderer)
 
+- #9353: Reimplement `output_value` and the `Marshal.to_*` functions
+  using a hash table to detect sharing, instead of temporary in-place
+  modifications.  This is a prerequisite for Multicore OCaml.
+  (Xavier Leroy and Basile Clément, review by Gabriel Scherer and
+  Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
