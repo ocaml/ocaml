@@ -25,6 +25,13 @@ let empty () = Nil
 
 let return x () = Cons (x, empty)
 
+let cons x next () = Cons (x, next)
+
+let rec append seq1 seq2 () =
+  match seq1() with
+  | Nil -> seq2()
+  | Cons (x, next) -> Cons (x, append next seq2)
+
 let rec map f seq () = match seq() with
   | Nil -> Nil
   | Cons (x, next) -> Cons (f x, map f next)

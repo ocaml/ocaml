@@ -71,6 +71,9 @@ Working version
 
 ### Standard library:
 
+- #9077: Add Seq.cons and Seq.append
+  (Sébastien Briais, review by Yawar Amin and Florian Angeletti)
+
 - #9248: Add Printexc.default_uncaught_exception_handler
   (Raphael Sousa Santos, review by Daniel Bünzli)
 
