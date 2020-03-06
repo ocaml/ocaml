@@ -188,6 +188,9 @@ Working version
   runtime/win32.c removed).
   (David Allsopp, review by Oliver Andrieu and Xavier Leroy)
 
+- #8934: Stop relying on location to track usage
+  (Thomas Refis, review by Gabriel Radanne)
+
 - #8970: separate value patterns (matching on values) from computation patterns
   (matching on the effects of a copmutation) in the typedtree.
   (Gabriel Scherer, review by Jacques Garrigue and Alain Frisch)

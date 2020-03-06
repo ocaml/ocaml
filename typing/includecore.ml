@@ -419,18 +419,15 @@ let type_declarations ?(equality = false) ~loc env ~mark name
       (_, Type_abstract) -> None
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         if mark then begin
-          let mark usage name cstrs =
-            List.iter
-              (fun cstr ->
-                 Env.mark_constructor_used usage name cstr)
-              cstrs
+          let mark usage cstrs =
+            List.iter (Env.mark_constructor_used usage) cstrs
           in
           let usage =
             if decl2.type_private = Public then Env.Positive
             else Env.Privatize
           in
-          mark usage name cstrs1;
-          if equality then mark Env.Positive (Path.name path) cstrs2
+          mark usage cstrs1;
+          if equality then mark Env.Positive cstrs2
         end;
         Option.map
           (fun var_err -> Variant_mismatch var_err)
@@ -487,7 +484,7 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
       if ext2.ext_private = Public then Env.Positive
       else Env.Privatize
     in
-    Env.mark_extension_used usage (Ident.name id) ext1
+    Env.mark_extension_used usage ext1
   end;
   let ty1 =
     Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))

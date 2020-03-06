@@ -42,6 +42,7 @@ let init_path ?(dir="") () =
 
 let initial_env () =
   Ident.reinit();
+  Types.Uid.reinit();
   let initially_opened_module =
     if !Clflags.nopervasives then
       None
