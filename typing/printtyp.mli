@@ -25,6 +25,10 @@ val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
 
+val type_path: formatter -> Path.t -> unit
+(** Print a type path taking account of [-short-paths].
+    Calls should be within [wrap_printing_env]. *)
+
 module Out_name: sig
   val create: string -> out_name
   val print: out_name -> string
@@ -87,7 +91,6 @@ module Conflicts: sig
 
   val reset: unit -> unit
 end
-
 
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
