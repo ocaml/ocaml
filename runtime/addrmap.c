@@ -77,20 +77,14 @@ int caml_addrmap_resize(struct addrmap_page_table* t)
     if (e.key != ADDRMAP_INVALID_KEY) {
       h = Hash(Page(e.key), new_shift);
 
-      if (new_entries[h].key == ADDRMAP_INVALID_KEY) {
-        new_entries[h].key   = t->entries[i].key;
-        new_entries[h].value = t->entries[i].value;
-      }
-      else {
-        while (1) {
-          h = (h + 1) & new_mask;
-          if (new_entries[h].key == ADDRMAP_INVALID_KEY) {
-            new_entries[h].key   = t->entries[i].key;
-            new_entries[h].value = t->entries[i].value;
-            break;
-          }
+      do {
+        if (new_entries[h].key == ADDRMAP_INVALID_KEY) {
+          new_entries[h].key   = t->entries[i].key;
+          new_entries[h].value = t->entries[i].value;
+          break;
         }
-      }
+        h = (h + 1) & new_mask;
+      } while (1);
     }
   }
 
