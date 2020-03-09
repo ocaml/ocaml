@@ -50,7 +50,13 @@ parsing_modules := $(addprefix parsing/,\
 
 typing_modules := $(addprefix typing/,\
   ident path type_immediacy types btype primitive typedtree subst predef \
-  datarepr persistent_env env oprint ctype printtyp mtype envaux)
+  datarepr persistent_env env oprint untypeast ctype printtyp mtype envaux \
+  tast_mapper) file_formats/cmt_format \
+  $(addprefix typing/, stypes typetexp includecore \
+  typedecl_properties typedecl_unboxed typedecl_immediacy \
+  typedecl_separability typedecl_variance typedecl typeopt includeclass \
+  includemod printpat tast_iterator parmatch rec_check typecore typeclass \
+  typemod includemod)
 
 file_formats_modules := $(addprefix file_formats/,\
   cmi_format)
