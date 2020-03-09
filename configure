@@ -694,6 +694,9 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
+default_as
+default_cc_prog
+default_as_prog
 DIRECT_LD
 INSTALL_DATA
 INSTALL_SCRIPT
@@ -13856,12 +13859,6 @@ fi
 
 # Assembler
 
-if test -n "$host_alias"; then :
-  toolpref="${host_alias}-"
-else
-  toolpref=""
-fi
-
 # We first compute default values for as and aspp
 # If values have been given by the user then they take precedence over
 # those just computed
@@ -13879,48 +13876,2068 @@ case "$arch,$system" in #(
     default_as='clang -arch x86_64 -Wno-trigraphs -c'
         default_aspp='clang -arch x86_64 -Wno-trigraphs -c' ;; #(
   *) :
-    default_as="${toolpref}as -arch x86_64"
-      default_aspp="${toolpref}gcc -arch x86_64 -c" ;;
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+      default_as="${default_as_prog} -arch x86_64"
+      if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+      default_aspp="${default_cc_prog} -arch x86_64 -c" ;;
 esac ;; #(
   amd64,solaris) :
-    default_as="${toolpref}as --64"
-    default_aspp="${toolpref}gcc -m64 -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+    default_as="${default_as_prog} --64"
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+    default_aspp="${default_cc_prog} -m64 -c" ;; #(
   i386,solaris) :
-    default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as"; then
+  ac_cv_prog_default_as="$default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as=$ac_cv_prog_default_as
+if test -n "$default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as" >&5
+$as_echo "$default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as"; then
+  ac_ct_default_as=$default_as
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as"; then
+  ac_cv_prog_ac_ct_default_as="$ac_ct_default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as=$ac_cv_prog_ac_ct_default_as
+if test -n "$ac_ct_default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as" >&5
+$as_echo "$ac_ct_default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as" = x; then
+    default_as=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as=$ac_ct_default_as
+  fi
+else
+  default_as="$ac_cv_prog_default_as"
+fi
+
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+    default_aspp="${default_cc_prog} -c" ;; #(
   power,elf) :
     case $model in #(
   ppc64le) :
-    default_as="${toolpref}as -a64 -mpower8"
-        default_aspp="${toolpref}gcc -m64 -mcpu=powerpc64le -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+        default_as="${default_as_prog} -a64 -mpower8"
+        if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+        default_aspp="${default_cc_prog} -m64 -mcpu=powerpc64le -c" ;; #(
   ppc64) :
-    default_as="${toolpref}as -a64 -mppc64"
-        default_aspp="${toolpref}gcc -m64 -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+        default_as="${default_as_prog} -a64 -mppc64"
+        if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+        default_aspp="${default_cc_prog} -m64 -c" ;; #(
   ppc) :
-    default_as="${toolpref}as -mppc"
-        default_aspp="${toolpref}gcc -m32 -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+        default_as="${default_as_prog} -mppc"
+        if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+        default_aspp="${default_cc_prog} -m32 -c" ;; #(
   *) :
      ;;
 esac ;; #(
   s390x,elf) :
-    default_as="${toolpref}as -m 64 -march=$model"
-    default_aspp="${toolpref}gcc -c -Wa,-march=$model" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+    default_as="${default_as_prog} -m 64 -march=$model"
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+    default_aspp="${default_cc_prog} -c -Wa,-march=$model" ;; #(
   arm,freebsd|arm64,freebsd) :
-    default_as="${toolpref}cc -c"
-    default_aspp="${toolpref}cc -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}cc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}cc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as_prog"; then
+  ac_cv_prog_default_as_prog="$default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as_prog="${ac_tool_prefix}cc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as_prog=$ac_cv_prog_default_as_prog
+if test -n "$default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as_prog" >&5
+$as_echo "$default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as_prog"; then
+  ac_ct_default_as_prog=$default_as_prog
+  # Extract the first word of "cc", so it can be a program name with args.
+set dummy cc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as_prog"; then
+  ac_cv_prog_ac_ct_default_as_prog="$ac_ct_default_as_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as_prog="cc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as_prog=$ac_cv_prog_ac_ct_default_as_prog
+if test -n "$ac_ct_default_as_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as_prog" >&5
+$as_echo "$ac_ct_default_as_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as_prog" = x; then
+    default_as_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as_prog=$ac_ct_default_as_prog
+  fi
+else
+  default_as_prog="$ac_cv_prog_default_as_prog"
+fi
+
+    default_as="${default_as_prog} -c"
+    default_aspp="${default_as}" ;; #(
   *,dragonfly) :
-    default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as"; then
+  ac_cv_prog_default_as="$default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as=$ac_cv_prog_default_as
+if test -n "$default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as" >&5
+$as_echo "$default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as"; then
+  ac_ct_default_as=$default_as
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as"; then
+  ac_cv_prog_ac_ct_default_as="$ac_ct_default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as=$ac_cv_prog_ac_ct_default_as
+if test -n "$ac_ct_default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as" >&5
+$as_echo "$ac_ct_default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as" = x; then
+    default_as=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as=$ac_ct_default_as
+  fi
+else
+  default_as="$ac_cv_prog_default_as"
+fi
+
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}cc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}cc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}cc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "cc", so it can be a program name with args.
+set dummy cc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="cc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+    default_aspp="${default_cc_prog} -c" ;; #(
   *,freebsd) :
-    default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as"; then
+  ac_cv_prog_default_as="$default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as=$ac_cv_prog_default_as
+if test -n "$default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as" >&5
+$as_echo "$default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as"; then
+  ac_ct_default_as=$default_as
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as"; then
+  ac_cv_prog_ac_ct_default_as="$ac_ct_default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as=$ac_cv_prog_ac_ct_default_as
+if test -n "$ac_ct_default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as" >&5
+$as_echo "$ac_ct_default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as" = x; then
+    default_as=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as=$ac_ct_default_as
+  fi
+else
+  default_as="$ac_cv_prog_default_as"
+fi
+
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}cc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}cc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}cc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "cc", so it can be a program name with args.
+set dummy cc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="cc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+    default_aspp="${default_cc_prog} -c" ;; #(
   amd64,*|arm,*|arm64,*|i386,*) :
-    default_as="${toolpref}as"
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_as"; then
+  ac_cv_prog_default_as="$default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_as="${ac_tool_prefix}as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_as=$ac_cv_prog_default_as
+if test -n "$default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_as" >&5
+$as_echo "$default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_as"; then
+  ac_ct_default_as=$default_as
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_as"; then
+  ac_cv_prog_ac_ct_default_as="$ac_ct_default_as" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_as="as"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_as=$ac_cv_prog_ac_ct_default_as
+if test -n "$ac_ct_default_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_as" >&5
+$as_echo "$ac_ct_default_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_as" = x; then
+    default_as=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_as=$ac_ct_default_as
+  fi
+else
+  default_as="$ac_cv_prog_default_as"
+fi
+
     case $ocaml_cv_cc_vendor in #(
   clang-*) :
-    default_aspp="${toolpref}clang -c -Wno-trigraphs" ;; #(
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}clang", so it can be a program name with args.
+set dummy ${ac_tool_prefix}clang; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}clang"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "clang", so it can be a program name with args.
+set dummy clang; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="clang"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+        default_aspp="${default_cc_prog} -c -Wno-trigraphs" ;; #(
   *) :
-    default_aspp="${toolpref}gcc -c" ;;
+    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$default_cc_prog"; then
+  ac_cv_prog_default_cc_prog="$default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_default_cc_prog="${ac_tool_prefix}gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+default_cc_prog=$ac_cv_prog_default_cc_prog
+if test -n "$default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $default_cc_prog" >&5
+$as_echo "$default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_default_cc_prog"; then
+  ac_ct_default_cc_prog=$default_cc_prog
+  # Extract the first word of "gcc", so it can be a program name with args.
+set dummy gcc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_default_cc_prog+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_default_cc_prog"; then
+  ac_cv_prog_ac_ct_default_cc_prog="$ac_ct_default_cc_prog" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_default_cc_prog="gcc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_default_cc_prog=$ac_cv_prog_ac_ct_default_cc_prog
+if test -n "$ac_ct_default_cc_prog"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_default_cc_prog" >&5
+$as_echo "$ac_ct_default_cc_prog" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_default_cc_prog" = x; then
+    default_cc_prog=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    default_cc_prog=$ac_ct_default_cc_prog
+  fi
+else
+  default_cc_prog="$ac_cv_prog_default_cc_prog"
+fi
+
+      default_aspp="${default_cc_prog} -c" ;;
 esac ;; #(
   *) :
      ;;

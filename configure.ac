@@ -976,8 +976,6 @@ AS_IF([test $arch != "none" && $arch64 ],
 
 # Assembler
 
-AS_IF([test -n "$host_alias"], [toolpref="${host_alias}-"], [toolpref=""])
-
 # We first compute default values for as and aspp
 # If values have been given by the user then they take precedence over
 # those just computed
@@ -994,42 +992,61 @@ AS_CASE(["$arch,$system"],
       [clang-*],
         [default_as='clang -arch x86_64 -Wno-trigraphs -c'
         default_aspp='clang -arch x86_64 -Wno-trigraphs -c'],
-      [default_as="${toolpref}as -arch x86_64"
-      default_aspp="${toolpref}gcc -arch x86_64 -c"])],
+      [AC_CHECK_TOOL([default_as_prog], [as])
+      default_as="${default_as_prog} -arch x86_64"
+      AC_CHECK_TOOL([default_cc_prog], [gcc])
+      default_aspp="${default_cc_prog} -arch x86_64 -c"])],
   [amd64,solaris],
-    [default_as="${toolpref}as --64"
-    default_aspp="${toolpref}gcc -m64 -c"],
+    [AC_CHECK_TOOL([default_as_prog], [as])
+    default_as="${default_as_prog} --64"
+    AC_CHECK_TOOL([default_cc_prog], [gcc])
+    default_aspp="${default_cc_prog} -m64 -c"],
   [i386,solaris],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}gcc -c"],
+    [AC_CHECK_TOOL([default_as], [as])
+    AC_CHECK_TOOL([default_cc_prog], [gcc])
+    default_aspp="${default_cc_prog} -c"],
   [power,elf],
     [AS_CASE([$model],
       [ppc64le],
-        [default_as="${toolpref}as -a64 -mpower8"
-        default_aspp="${toolpref}gcc -m64 -mcpu=powerpc64le -c"],
+        [AC_CHECK_TOOL([default_as_prog], [as])
+        default_as="${default_as_prog} -a64 -mpower8"
+        AC_CHECK_TOOL([default_cc_prog], [gcc])
+        default_aspp="${default_cc_prog} -m64 -mcpu=powerpc64le -c"],
       [ppc64],
-        [default_as="${toolpref}as -a64 -mppc64"
-        default_aspp="${toolpref}gcc -m64 -c"],
+        [AC_CHECK_TOOL([default_as_prog], [as])
+        default_as="${default_as_prog} -a64 -mppc64"
+        AC_CHECK_TOOL([default_cc_prog], [gcc])
+        default_aspp="${default_cc_prog} -m64 -c"],
       [ppc],
-        [default_as="${toolpref}as -mppc"
-        default_aspp="${toolpref}gcc -m32 -c"])],
+        [AC_CHECK_TOOL([default_as_prog], [as])
+        default_as="${default_as_prog} -mppc"
+        AC_CHECK_TOOL([default_cc_prog], [gcc])
+        default_aspp="${default_cc_prog} -m32 -c"])],
   [s390x,elf],
-    [default_as="${toolpref}as -m 64 -march=$model"
-    default_aspp="${toolpref}gcc -c -Wa,-march=$model"],
+    [AC_CHECK_TOOL([default_as_prog], [as])
+    default_as="${default_as_prog} -m 64 -march=$model"
+    AC_CHECK_TOOL([default_cc_prog], [gcc])
+    default_aspp="${default_cc_prog} -c -Wa,-march=$model"],
   [arm,freebsd|arm64,freebsd],
-    [default_as="${toolpref}cc -c"
-    default_aspp="${toolpref}cc -c"],
+    [AC_CHECK_TOOL([default_as_prog], [cc])
+    default_as="${default_as_prog} -c"
+    default_aspp="${default_as}"],
   [*,dragonfly],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c"],
+    [AC_CHECK_TOOL([default_as], [as])
+    AC_CHECK_TOOL([default_cc_prog], [cc])
+    default_aspp="${default_cc_prog} -c"],
   [*,freebsd],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c"],
+    [AC_CHECK_TOOL([default_as], [as])
+    AC_CHECK_TOOL([default_cc_prog], [cc])
+    default_aspp="${default_cc_prog} -c"],
   [amd64,*|arm,*|arm64,*|i386,*],
-    [default_as="${toolpref}as"
+    [AC_CHECK_TOOL([default_as], [as])
     AS_CASE([$ocaml_cv_cc_vendor],
-      [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
-      [default_aspp="${toolpref}gcc -c"])])
+      [clang-*],
+        [AC_CHECK_TOOL([default_cc_prog], [clang])
+        default_aspp="${default_cc_prog} -c -Wno-trigraphs"],
+      [AC_CHECK_TOOL([default_cc_prog], [gcc])
+      default_aspp="${default_cc_prog} -c"])])
 
 AS_IF([test "$with_pic"],
   [fpic=true
