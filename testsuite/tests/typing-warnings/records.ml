@@ -268,6 +268,11 @@ module F3 = struct
   let r = {x=true;z='z'}
 end;; (* fail for missing label *)
 [%%expect{|
+Line 3, characters 11-12:
+3 |   let r = {x=true;z='z'}
+               ^
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 10-24:
 3 |   let r = {x=true;z='z'}
               ^^^^^^^^^^^^^^
@@ -645,4 +650,23 @@ Line 7, characters 5-15:
 Error: This pattern matches values of type [? `Key of v ]
        but a pattern was expected which matches values of type u
        Types for tag `Key are incompatible
+|}]
+
+(** no candidates after filtering;
+    This caused a temporary trunk regression identified by Florian Angeletti
+    while reviewing #9196
+ *)
+module M = struct
+  type t = { x:int; y:int}
+end
+type u = { a:int }
+let _ = ( { M.x=0 } : u );;
+[%%expect{|
+module M : sig type t = { x : int; y : int; } end
+type u = { a : int; }
+Line 5, characters 12-15:
+5 | let _ = ( { M.x=0 } : u );;
+                ^^^
+Error: The field M.x belongs to the record type M.t
+       but a field was expected belonging to the record type u
 |}]
