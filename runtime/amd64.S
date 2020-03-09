@@ -315,14 +315,14 @@ FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
 LBL(caml_call_gc):
     /* Record lowest stack address and return address. */
-        movq    (%rsp), %rax
-        movq    %rax, Caml_state(last_return_address)
-        leaq    8(%rsp), %rax
-        movq    %rax, Caml_state(bottom_of_stack)
+        movq    (%rsp), %r11
+        movq    %r11, Caml_state(last_return_address)
+        leaq    8(%rsp), %r11
+        movq    %r11, Caml_state(bottom_of_stack)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
         subq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(STACK_PROBE_SIZE);
-        movq    %rax, 0(%rsp)
+        movq    %r11, 0(%rsp)
         addq    $(STACK_PROBE_SIZE), %rsp; CFI_ADJUST(-STACK_PROBE_SIZE);
     /* Build array of registers, save it into Caml_state->gc_regs */
 #ifdef WITH_FRAME_POINTERS
@@ -441,7 +441,6 @@ ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
-        subq    %rax, %r15
         cmpq    Caml_state(young_limit), %r15
         jb      LBL(caml_call_gc)
         ret

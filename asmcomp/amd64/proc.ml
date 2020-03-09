@@ -301,14 +301,20 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
+let destroyed_by_spacetime_at_alloc =
+  if Config.spacetime then
+    [| loc_spacetime_node_hole |]
+  else
+    [| |]
+
 let destroyed_at_alloc =
   let regs =
-    if Config.spacetime then
-      [| rax; loc_spacetime_node_hole |]
+    if X86_proc.use_plt then
+      destroyed_by_plt_stub
     else
-      [| rax |]
+      [| r11 |]
   in
-  Array.concat [regs; destroyed_by_plt_stub]
+  Array.concat [regs; destroyed_by_spacetime_at_alloc]
 
 let destroyed_at_oper = function
     Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
