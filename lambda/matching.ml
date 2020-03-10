@@ -1509,59 +1509,38 @@ and precompile_or argo cls ors args def k =
     },
     k )
 
+let dbg_split_and_precompile pm next nexts =
+  if
+    dbg
+    && (nexts <> []
+       ||
+       match next with
+       | PmOr _ -> true
+       | _ -> false
+       )
+  then (
+    Format.eprintf "** SPLIT **\n";
+    pretty_pm pm;
+    pretty_precompiled_res next nexts
+  )
+
 let split_and_precompile_nonempty v pm =
   let pm =
     { pm with cases = List.map (Half_simple.of_clause ~arg:(Lvar v)) pm.cases }
   in
   let { me = next }, nexts = split_or (Some v) pm.cases pm.args pm.default in
-  if
-    dbg
-    && (nexts <> []
-       ||
-       match next with
-       | PmOr _ -> true
-       | _ -> false
-       )
-  then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_pm (pm_of_half_simple pm);
-    pretty_precompiled_res next nexts
-  );
+  dbg_split_and_precompile (pm_of_half_simple pm) next nexts;
   (next, nexts)
 
 let split_and_precompile_simplified pm =
   let { me = next }, nexts = split_no_or pm.cases pm.args pm.default [] in
-  if
-    dbg
-    && (nexts <> []
-       ||
-       match next with
-       | PmOr _ -> true
-       | _ -> false
-       )
-  then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_pm (pm_of_simple pm);
-    pretty_precompiled_res next nexts
-  );
+  dbg_split_and_precompile (pm_of_simple pm) next nexts;
   (next, nexts)
 
 let split_and_precompile ~arg_id ~arg_lambda pm =
   let pm = { pm with cases = half_simplify_cases arg_lambda pm.cases } in
   let { me = next }, nexts = split_or arg_id pm.cases pm.args pm.default in
-  if
-    dbg
-    && (nexts <> []
-       ||
-       match next with
-       | PmOr _ -> true
-       | _ -> false
-       )
-  then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_pm (pm_of_half_simple pm);
-    pretty_precompiled_res next nexts
-  );
+  dbg_split_and_precompile (pm_of_half_simple pm) next nexts;
   (next, nexts)
 
 (* General divide functions *)
