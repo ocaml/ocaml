@@ -48,15 +48,16 @@ debugger_modules := \
   show_source time_travel program_management frames eval \
   show_information loadprinter debugger_parser command_line main
 
-compiler_libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma
 all_modules := $(compiler_modules) $(debugger_modules)
 
 all_objects := $(addsuffix .cmo,$(all_modules))
 
+libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+  $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma
+
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma \
-  $(compiler_libraries) $(all_objects)
+ocamldebug$(EXE): $(libraries) $(all_objects)
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
