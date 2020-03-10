@@ -840,6 +840,15 @@ type pm_half_compiled_info = {
   top_default : Default_environment.t
 }
 
+let erase_cases f cases =
+  List.map (fun ((p, ps), act) -> (f p :: ps, act)) cases
+
+let pm_of_half_simple pm =
+  { pm with cases = erase_cases Half_simple.to_pattern pm.cases }
+
+let pm_of_simple pm =
+  { pm with cases = erase_cases Simple.to_pattern pm.cases }
+
 let pretty_cases cases =
   List.iter
     (fun (ps, _l) ->
@@ -852,31 +861,16 @@ let pretty_pm pm =
   if not (Default_environment.is_empty pm.default) then
     Default_environment.pp pm.default
 
-let pretty_hc_pm pm =
-  pretty_cases
-    (List.map
-       (fun ((p, ps), act) -> (Half_simple.to_pattern p :: ps, act))
-       pm.cases);
-  if not (Default_environment.is_empty pm.default) then
-    Default_environment.pp pm.default
-
-let pretty_sc_pm pm =
-  pretty_cases
-    (List.map (fun ((p, ps), act) -> (Simple.to_pattern p :: ps, act))
-       pm.cases);
-  if not (Default_environment.is_empty pm.default) then
-    Default_environment.pp pm.default
-
 let rec pretty_precompiled = function
   | Pm pm ->
       Format.eprintf "++++ PM ++++\n";
-      pretty_sc_pm pm
+      pretty_pm (pm_of_simple pm)
   | PmVar x ->
       Format.eprintf "++++ VAR ++++\n";
       pretty_precompiled x.inside
   | PmOr x ->
       Format.eprintf "++++ OR ++++\n";
-      pretty_sc_pm x.body;
+      pretty_pm (pm_of_simple x.body);
       pretty_matrix Format.err_formatter x.or_matrix;
       List.iter
         (fun { exit = i; pm; _ } ->
@@ -1530,7 +1524,7 @@ let split_and_precompile_nonempty v pm =
        )
   then (
     Format.eprintf "** SPLIT **\n";
-    pretty_hc_pm pm;
+    pretty_pm (pm_of_half_simple pm);
     pretty_precompiled_res next nexts
   );
   (next, nexts)
@@ -1547,7 +1541,7 @@ let split_and_precompile_simplified pm =
        )
   then (
     Format.eprintf "** SPLIT **\n";
-    pretty_sc_pm pm;
+    pretty_pm (pm_of_simple pm);
     pretty_precompiled_res next nexts
   );
   (next, nexts)
@@ -1565,7 +1559,7 @@ let split_and_precompile ~arg_id ~arg_lambda pm =
        )
   then (
     Format.eprintf "** SPLIT **\n";
-    pretty_hc_pm pm;
+    pretty_pm (pm_of_half_simple pm);
     pretty_precompiled_res next nexts
   );
   (next, nexts)
