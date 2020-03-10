@@ -1552,16 +1552,9 @@ let split_and_precompile_simplified pm =
   );
   (next, nexts)
 
-type precompile_arg = For_multiple of lambda | Var of Ident.t
-
-let split_and_precompile arg pm =
-  let larg, varg =
-    match arg with
-    | For_multiple l -> (l, None)
-    | Var v -> (Lvar v, Some v)
-  in
-  let pm = { pm with cases = half_simplify_cases larg pm.cases } in
-  let { me = next }, nexts = split_or varg pm.cases pm.args pm.default in
+let split_and_precompile ~arg_id ~arg_lambda pm =
+  let pm = { pm with cases = half_simplify_cases arg_lambda pm.cases } in
+  let { me = next }, nexts = split_or arg_id pm.cases pm.args pm.default in
   if
     dbg
     && (nexts <> []
@@ -3246,7 +3239,8 @@ let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
       let first_match, rem =
-        split_and_precompile (Var v) { m with args = (newarg, Alias) :: argl }
+        split_and_precompile ~arg_id:(Some v) ~arg_lambda:newarg
+          { m with args = (newarg, Alias) :: argl }
       in
       let lam, total =
         comp_match_handlers
@@ -3798,7 +3792,9 @@ let do_for_multiple_match loc paraml pat_act_list partial =
   try
     try
       (* Once for checking that compilation is possible *)
-      let next, nexts = split_and_precompile (For_multiple arg) pm1 in
+      let next, nexts =
+        split_and_precompile ~arg_id:None ~arg_lambda:arg pm1
+      in
       let size = List.length paraml
       and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
       let args = List.map (fun id -> (Lvar id, Alias)) idl in
