@@ -1862,8 +1862,7 @@ let divide_variant row ctx { cases = cl; args; default = def } =
                     variants
           )
         | _ ->
-            (* I really want to assert false here. *)
-            { args; cells = [] }
+            assert false
       )
   in
   divide cl
