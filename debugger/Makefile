@@ -39,40 +39,7 @@ DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-utils_modules := $(addprefix utils/,\
-  config build_path_prefix_map misc identifiable numbers arg_helper clflags \
-  consistbl warnings terminfo load_path)
-
-parsing_modules := $(addprefix parsing/,\
-  location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
-  attr_helper builtin_attributes pprintast \
-  lexer camlinternalMenhirLib parser parse)
-
-typing_modules := $(addprefix typing/,\
-  ident path type_immediacy types btype primitive typedtree subst predef \
-  datarepr persistent_env env oprint untypeast ctype printtyp mtype envaux \
-  tast_mapper) file_formats/cmt_format \
-  $(addprefix typing/, stypes typetexp includecore \
-  typedecl_properties typedecl_unboxed typedecl_immediacy \
-  typedecl_separability typedecl_variance typedecl typeopt includeclass \
-  includemod printpat tast_iterator parmatch rec_check typecore typeclass \
-  typemod includemod)
-
-file_formats_modules := $(addprefix file_formats/,\
-  cmi_format)
-
-lambda_modules := $(addprefix lambda/,\
-  runtimedef)
-
-bytecomp_modules := $(addprefix bytecomp/,\
-  bytesections dll meta symtable opcodes)
-
-other_compiler_modules := toplevel/genprintval
-
-compiler_modules := $(addprefix $(ROOTDIR)/,\
-  $(utils_modules) $(parsing_modules) $(file_formats_modules) \
-  $(lambda_modules) \
-  $(typing_modules) $(bytecomp_modules) $(other_compiler_modules))
+compiler_modules := $(ROOTDIR)/toplevel/genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters debugger_lexer \
@@ -81,13 +48,15 @@ debugger_modules := \
   show_source time_travel program_management frames eval \
   show_information loadprinter debugger_parser command_line main
 
+compiler_libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma
 all_modules := $(compiler_modules) $(debugger_modules)
 
 all_objects := $(addsuffix .cmo,$(all_modules))
 
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma $(all_objects)
+ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma \
+  $(compiler_libraries) $(all_objects)
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
