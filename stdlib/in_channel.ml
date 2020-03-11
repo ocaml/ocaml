@@ -70,10 +70,13 @@ let iter_lines f ic =
   fold_lines (fun () l -> f l) () ic
 
 let input_to_string ic =
-  (* TODO : handle "large" positions? *)
-  Option.get (really_input_string ic (in_channel_length ic - pos_in ic))
+  let n = Int64.sub (LargeFile.in_channel_length ic) (LargeFile.pos_in ic) in
+  if Int64.compare n (Int64.of_int Sys.max_string_length) > 0 then None
+  else really_input_string ic (Int64.to_int n)
 
 let seek = LargeFile.seek_in
 let pos = LargeFile.pos_in
 let length = LargeFile.in_channel_length
 let set_binary_mode = set_binary_mode_in
+
+external get_binary_mode : in_channel -> bool = "caml_ml_channel_binary_mode"

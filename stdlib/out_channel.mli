@@ -16,7 +16,7 @@
 
 (** Output channels.
 
-    @since 4.10 *)
+    @since 4.11 *)
 
 type t = out_channel
 
@@ -37,16 +37,18 @@ type open_flag =
   | Non_blocking
 
 val open_ : ?flags:open_flag list -> string -> t
-(** [open_ ?flags fn] opens the file [fn] for writing, and returns a new output
-    channel on that file, positioned at the beginning of the file. The file is
-    truncated to zero length if it already exists. It is created if it does not
-    already exists. *)
+(** [open_ ?flags fn] opens the file [fn] for writing according to [flags]
+    (defaults to [[]]), and returns a new output channel on that file,
+    positioned at the beginning of the file. The file is truncated to zero
+    length if it already exists. It is created if it does not already exists. *)
 
 val with_file : ?flags:open_flag list -> string -> (t -> 'a) -> 'a
 (** [with_file ?flags filename f] opens the file named [filename] for writing
-    according to [flags], invokes [f] to process the contents of that file then,
-    once [f] has returned or triggered an exception, closes the file before
-    proceeding. *)
+    according to [flags] (defaults to [[]]), invokes [f] to process the contents
+    of that file then, once [f] has returned or triggered an exception, closes
+    the file before proceeding.
+
+    All errors arising during closing are ignored. *)
 
 val close : t -> unit
 (** [close oc] closes the channel [oc], flushing all buffered write operations.
@@ -57,7 +59,8 @@ val close : t -> unit
     closing. *)
 
 val close_noerr : t -> unit
-(** [close_noerr oc] is like [close oc] but ignores all errors. *)
+(** [close_noerr oc] is like [close oc] but ignores all errors. In particular,
+    it never raises [Sys_error]. *)
 
 val flush : t -> unit
 (** [flush oc] flushes the buffer associated with the given output channel,
@@ -85,7 +88,7 @@ val output : t -> bytes -> int -> int -> unit
     [buf]. *)
 
 val output_substring : t -> string -> int -> int -> unit
-(** [output_substring oc s pos len] is like [output] but takes an argument of
+(** [output_substring oc s pos len] is like {!output} but takes an argument of
     type [string] instead of [bytes]. *)
 
 val output_byte : t -> int -> unit
@@ -100,8 +103,8 @@ val output_binary_int : t -> int -> unit
     machines for a given version of OCaml. *)
 
 val seek : t -> int64 -> unit
-(** [seek chan pos] sets the current writing position to [pos] for channel
-    [chan]. This works only for regular files. On files of other kinds (such as
+(** [seek ic pos] sets the current writing position to byte [pos] for channel
+    [ic]. This works only for regular files. On files of other kinds (such as
     terminals, pipes and sockets), the behavior is unspecified. *)
 
 val pos : t -> int64
@@ -110,7 +113,7 @@ val pos : t -> int64
     results). *)
 
 val length : t -> int64
-(** Return the size (number of characters) of the regular file on which the
+(** [length oc] is the size (number of bytes) of the regular file on which the
     given channel is opened.  If the channel is opened on a file that is not a
     regular file, the result is meaningless. *)
 
@@ -122,6 +125,11 @@ val set_binary_mode : t -> bool -> unit
     Windows, end-of-lines will be translated from [\n] to [\r\n].  This function
     has no effect under operating systems that do not distinguish between text
     mode and binary mode. *)
+
+val get_binary_mode : t -> bool
+(** [get_binary_mode oc] returns [true] if [oc] is in binary mode and [false] if
+    it is in text mode. This function always returns [true] in operatring systems
+    that do not distinguish between text mode and binary mode. *)
 
 val output_line : t -> string -> unit
 (** [output_line oc s] writes [s] followed by a newline character to [oc].

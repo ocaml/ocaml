@@ -61,3 +61,5 @@ let length = LargeFile.out_channel_length
 let set_binary_mode = set_binary_mode_out
 let output_line oc l = output_string oc l; output_char oc '\n'
 let output_lines oc l = List.iter (output_line oc) l
+
+external get_binary_mode : out_channel -> bool = "caml_ml_channel_binary_mode"

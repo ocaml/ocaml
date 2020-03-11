@@ -16,7 +16,7 @@
 
 (** Input channels.
 
-    @since 4.10 *)
+    @since 4.11 *)
 
 type t = in_channel
 
@@ -32,14 +32,17 @@ type open_flag =
   | Non_blocking
 
 val open_ : ?flags:open_flag list -> string -> t
-(** [open_ ?flags fn] opens the file named [fn] for reading, and return a new
-    input channel on that file, positioned at the beginning of the file. *)
+(** [open_ ?flags fn] opens the file named [fn] for reading according to [flags]
+    (default to [[]]), and returns a new input channel on that file, positioned
+    at the beginning of the file. *)
 
 val with_file : ?flags:open_flag list -> string -> (t -> 'a) -> 'a
 (** [with_file ?flags filename f] opens the file named [filename] for reading
-    according to [flags], invokes [f] to process the contents of that file then,
-    once [f] has returned or triggered an exception, closes the file before
-    proceeding. *)
+    according to [flags] (defaults to [[]]), invokes [f] to process the contents
+    of that file then, once [f] has returned or triggered an exception, closes
+    the file before proceeding.
+
+    All errors arising during closing are ignored. *)
 
 val close : t -> unit
 (** [close ic] closes [ic]. Input functions raise a [Sys_error] exception when
@@ -47,7 +50,8 @@ val close : t -> unit
     nothing when applied to an already closed channel. *)
 
 val close_noerr : t -> unit
-(** [close_noerr ic] is like [close ic] but ignores all errors. *)
+(** [close_noerr ic] is like [close ic] but ignores all errors. In particular,
+    it never raises [Sys_error]. *)
 
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from
@@ -63,15 +67,19 @@ val input : t -> bytes -> int -> int -> int
     [input] must be called again to read the remaining characters,
     if desired.  (See also {!Stdlib.really_input} for reading
     exactly [len] characters.)
-    Exception [Invalid_argument "input"] is raised if [pos] and [len]
-    do not designate a valid range of [buf]. *)
+
+    Exception [Invalid_argument] is raised if [pos] and [len] do not designate a
+    valid range of [buf]. *)
 
 val really_input : t -> bytes -> int -> int -> unit option
 (** [really_input ic buf pos len] reads [len] characters from channel [ic],
     storing them in byte sequence [buf], starting at character number [pos].
     Return [None] if the end of file is reached before [len] characters have
-    been read. Raises [Invalid_argument "really_input"] if [pos] and [len] do
-    not designate a valid range of [buf]. *)
+    been read. In this case, all available characters will have been written to
+    [buf].
+
+    Raises [Invalid_argument] if [pos] and [len] do not designate a valid range
+    of [buf]. *)
 
 val really_input_string : t -> int -> string option
 (** [really_input_string ic len] reads [len] characters from channel [ic] and
@@ -102,33 +110,35 @@ val input_line : t -> string option
     Note that if [ic] is in text mode (see {!set_binary_mode}), then the
     sequence [\r\n] is also accepted in place of the newline character. *)
 
+val fold_lines : ('a -> string -> 'a) -> 'a -> t -> 'a
+(** [fold_lines f x ic] is [x] if [input_line ic = None] and
+    [fold_lines f (f x l) ic] if [input_line ic = Some l]. *)
+
 val input_lines : t -> string list
-(** [input_lines ic] reads the rest of [ic] and splits it into lines. *)
+(** [input_lines ic] is [List.rev (fold_lines (fun l s -> s :: l) [] ic)]. *)
 
 val iter_lines : (string -> unit) -> t -> unit
-(** [iter_lines f ic] is [List.iter f (input_lines ic)] but more efficient. *)
+(** [iter_lines f ic] is [fold_lines (fun () l -> f l) () ic]. *)
 
-val fold_lines : ('a -> string -> 'a) -> 'a -> t -> 'a
-(** [iter_lines f x ic] is [List.fold_left f x (input_lines ic)] but more
-    efficient. *)
-
-val input_to_string : t -> string
-(** [input_to_string ic] reads all remaining data in [ic]. *)
+val input_to_string : t -> string option
+(** [input_to_string ic] is [None] if more than [Sys.max_string_length] bytes
+    are left to be read from [ic].  Otherwise, it is [Some s], where [s]
+    contains all remaining data in [ic]. *)
 
 val seek : t -> int64 -> unit
-(** [seek chan pos] sets the current reading position to [pos] for channel
-    [chan]. This works only for regular files. On files of other kinds, the
+(** [seek ic pos] sets the current reading position to byte [pos] for channel
+    [ici]. This works only for regular files. On files of other kinds, the
     behavior is unspecified. *)
 
 val pos : t -> int64
 (** [pos ic] returns the current reading position for [ic]. *)
 
 val length : t -> int64
-(** [length ic] returns the size (number of characters) of the regular file on
-    which the given channel is opened.  If the channel is opened on a file that
-    is not a regular file, the result is meaningless.  The returned size does
-    not take into account the end-of-line translations that can be performed
-    when reading from a channel opened in text mode. *)
+(** [length ic] is the size (number of bytes) of the regular file on which the
+    given channel is opened.  If the channel is opened on a file that is not a
+    regular file, the result is meaningless.  The returned size does not take
+    into account the end-of-line translations that can be performed when reading
+    from a channel opened in text mode. *)
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic b] sets the channel [ic] to binary mode (if [b] is
@@ -138,3 +148,8 @@ val set_binary_mode : t -> bool -> unit
     end-of-lines will be translated from [\r\n] to [\n].  This function has no
     effect under operating systems that do not distinguish between text mode and
     binary mode. *)
+
+val get_binary_mode : t -> bool
+(** [get_binary_mode oc] returns [true] if [oc] is in binary mode and [false] if
+    it is in text mode. This function always returns [true] in operatring systems
+    that do not distinguish between text mode and binary mode. *)

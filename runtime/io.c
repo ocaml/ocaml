@@ -833,3 +833,9 @@ CAMLprim value caml_terminfo_rows(value vchannel)
 {
   return Val_int(caml_num_rows_fd(Channel(vchannel)->fd));
 }
+
+CAMLprim value caml_ml_channel_binary_mode(value vchannel)
+{
+  CAMLparam1(vchannel);
+  CAMLreturn(Val_bool(caml_channel_binary_mode(*((void **) (Data_custom_val(vchannel))))));
+}
