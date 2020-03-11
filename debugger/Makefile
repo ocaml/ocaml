@@ -39,34 +39,7 @@ DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-utils_modules := $(addprefix utils/,\
-  config build_path_prefix_map misc identifiable numbers arg_helper clflags \
-  consistbl warnings terminfo load_path)
-
-parsing_modules := $(addprefix parsing/,\
-  location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
-  attr_helper builtin_attributes pprintast \
-  lexer camlinternalMenhirLib parser parse)
-
-typing_modules := $(addprefix typing/,\
-  ident path type_immediacy types btype primitive typedtree subst predef \
-  datarepr persistent_env env oprint ctype printtyp mtype envaux)
-
-file_formats_modules := $(addprefix file_formats/,\
-  cmi_format)
-
-lambda_modules := $(addprefix lambda/,\
-  runtimedef)
-
-bytecomp_modules := $(addprefix bytecomp/,\
-  bytesections dll meta symtable opcodes)
-
-other_compiler_modules := toplevel/genprintval
-
-compiler_modules := $(addprefix $(ROOTDIR)/,\
-  $(utils_modules) $(parsing_modules) $(file_formats_modules) \
-  $(lambda_modules) \
-  $(typing_modules) $(bytecomp_modules) $(other_compiler_modules))
+compiler_modules := $(ROOTDIR)/toplevel/genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters debugger_lexer \
@@ -79,9 +52,12 @@ all_modules := $(compiler_modules) $(debugger_modules)
 
 all_objects := $(addsuffix .cmo,$(all_modules))
 
+libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+  $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma
+
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(DYNLINKDIR)/dynlink.cma $(all_objects)
+ocamldebug$(EXE): $(libraries) $(all_objects)
 	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:

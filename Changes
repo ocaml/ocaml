@@ -262,6 +262,10 @@ Working version
 - #9343: Re-enable `-short-paths` for some error messages
   (Leo White, review by Florian Angeletti)
 
+- #9355, #9356: ocamldebug, fix a fatal error when printing values
+  whose type involves a functor application.
+  (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
+
 OCaml 4.10.0
 ------------
 
