@@ -423,76 +423,49 @@ end = struct
 
   let combine ctx = List.map Row.combine ctx
 
-  let ctx_matcher p =
-    let p = normalize_pat p in
-    match p.pat_desc with
-    | Tpat_construct (_, cstr, omegas) -> (
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_construct (_, cstr', args)
-          (* NB: may_constr_equal considers (potential) constructor rebinding *)
-            when Types.may_equal_constr cstr cstr' ->
-              (p, args @ rem)
-          | Tpat_any -> (p, omegas @ rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_constant cst -> (
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_constant cst' when const_compare cst cst' = 0 -> (p, rem)
-          | Tpat_any -> (p, rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_variant (lab, Some omega, _) -> (
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_variant (lab', Some arg, _) when lab = lab' -> (p, arg :: rem)
-          | Tpat_any -> (p, omega :: rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_variant (lab, None, _) -> (
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_variant (lab', None, _) when lab = lab' -> (p, rem)
-          | Tpat_any -> (p, rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_array omegas -> (
-        let len = List.length omegas in
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_array args when List.length args = len -> (p, args @ rem)
-          | Tpat_any -> (p, omegas @ rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_tuple omegas -> (
-        let len = List.length omegas in
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_tuple args when List.length args = len -> (p, args @ rem)
-          | Tpat_any -> (p, omegas @ rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_record (((_, lbl, _) :: _ as l), _) -> (
-        (* Records are normalized *)
-        let len = Array.length lbl.lbl_all in
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_record (((_, lbl', _) :: _ as l'), _)
-            when Array.length lbl'.lbl_all = len ->
-              let l' = all_record_args l' in
-              (p, List.fold_right (fun (_, _, p) r -> p :: r) l' rem)
-          | Tpat_any -> (p, List.fold_right (fun (_, _, p) r -> p :: r) l rem)
-          | _ -> raise NoMatch
-      )
-    | Tpat_lazy omega -> (
-        fun q rem ->
-          match q.pat_desc with
-          | Tpat_lazy arg -> (p, arg :: rem)
-          | Tpat_any -> (p, omega :: rem)
-          | _ -> raise NoMatch
-      )
-    | _ -> fatal_error "Matching.Context.matcher"
+  let ctx_matcher p q rem =
+    let rec expand_record p =
+      match p.pat_desc with
+      | Tpat_record (l, _) ->
+          { p with pat_desc = Tpat_record (all_record_args l, Closed) }
+      | Tpat_alias (p, _, _) -> expand_record p
+      | _ -> p
+    in
+    let ph, omegas =
+      let ph, p_args = Pattern_head.deconstruct (expand_record p) in
+      (ph, List.map (fun _ -> omega) p_args)
+    in
+    let qh, args = Pattern_head.deconstruct (expand_record q) in
+    let yes () = (p, args @ rem) in
+    let no () = raise NoMatch in
+    let yesif b =
+      if b then
+        yes ()
+      else
+        no ()
+    in
+    match (Pattern_head.desc ph, Pattern_head.desc qh) with
+    | Any, _ -> fatal_error "Matching.Context.matcher"
+    | _, Any -> (p, omegas @ rem)
+    | Construct cstr, Construct cstr' ->
+        (* NB: may_equal_constr considers (potential) constructor rebinding *)
+        yesif (Types.may_equal_constr cstr cstr')
+    | Construct _, _ -> no ()
+    | Constant cst, Constant cst' -> yesif (const_compare cst cst' = 0)
+    | Constant _, _ -> no ()
+    | Variant { tag; has_arg }, Variant { tag = tag'; has_arg = has_arg' } ->
+        yesif (tag = tag' && has_arg = has_arg')
+    | Variant _, _ -> no ()
+    | Array n1, Array n2 -> yesif (n1 = n2)
+    | Array _, _ -> no ()
+    | Tuple n1, Tuple n2 -> yesif (n1 = n2)
+    | Tuple _, _ -> no ()
+    | Record l, Record l' ->
+        (* we called expand_record on both arguments so l, l' are full *)
+        yesif (List.length l = List.length l')
+    | Record _, _ -> no ()
+    | Lazy, Lazy -> yes ()
+    | Lazy, _ -> no ()
 
   let specialize q ctx =
     let matcher = ctx_matcher q in
