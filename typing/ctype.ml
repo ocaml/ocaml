@@ -1636,14 +1636,10 @@ let try_expand_safe env ty =
     Btype.backtrack snap; raise Cannot_expand
 
 (* Fully expand the head of a type. *)
-let rec try_expand_rec try_once env visited ty =
+let rec try_expand_head try_once env ty =
   let ty' = try_once env ty in
-  if List.memq ty' visited then ty' else
-  try try_expand_rec try_once env (ty'::visited) ty'
+  try try_expand_head try_once env ty'
   with Cannot_expand -> ty'
-
-let try_expand_head try_once env ty =
-  try_expand_rec try_once env [] ty
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
@@ -2620,12 +2616,16 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
-  let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
+  let create_recursion = false && (t2 != t2') && (deep_occur t1' t2) in
 
   begin match (d1, d2) with (* handle vars and univars specially *)
     (Tunivar _, Tunivar _) ->
       unify_univar t1' t2' !univar_pairs;
       link_type t1' t2'
+  | (Tvar _, Tvar _) ->
+      occur !env t1' t2';
+      occur_univar !env t2';
+      link_type t1' t2';
   | (Tvar _, _) ->
       occur !env t1' t2;
       occur_univar !env t2;
@@ -2640,6 +2640,7 @@ and unify3 env t1 t1' t2 t2' =
     begin match !umode with
     | Expression ->
         occur !env t1' t2';
+        if deep_occur t1' t2 then () else
         if is_self_type d1 (* PR#7711: do not abbreviate self type *)
         then link_type t1' t2'
         else link_type t1' t2
