@@ -461,7 +461,7 @@ end = struct
     | Tuple n1, Tuple n2 -> yesif (n1 = n2)
     | Tuple _, _ -> no ()
     | Record l, Record l' ->
-        (* we called extend_records on both arguments so l, l' are full *)
+        (* we called expand_record on both arguments so l, l' are full *)
         yesif (List.length l = List.length l')
     | Record _, _ -> no ()
     | Lazy, Lazy -> yes ()
