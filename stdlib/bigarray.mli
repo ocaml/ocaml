@@ -467,6 +467,8 @@ module Genarray :
 
   val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t ->
                    (int * int array * int array) option
+  (** [overlap a b] returns length and position of a physical area shared
+     between [a] and [b] if it exists. *)
   end
 
 (** {1 Zero-dimensional arrays} *)
@@ -524,6 +526,9 @@ module Array0 : sig
      given value.  *)
 
   val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> bool
+  (** [overlap a b] returns [true] if [a] and [b] physiscally
+     share the same memory area such as [set a v] will set [b]
+     too. Otherwise, it returns [false]. *)
 end
 
 
@@ -626,6 +631,9 @@ module Array1 : sig
 
   val overlap : ('a, 'b, 'c) t -> ('a, 'b, 'c) t ->
                    (int * int * int) option
+  (** [overlap a b] returns how many elements into [a] and [b]
+     share the same physical memory area, which indices into [a]
+     and which indices into [b]. Otherwise, it returns [None].
 end
 
 
