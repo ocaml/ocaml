@@ -61,7 +61,7 @@ command line, unless the "-noautolink" option is given.
 Force error messages to show absolute paths for file names.
 
 \notop{\item["-annot"]
-Deprecated since OCaml 4.10. Please use "-bin-annot" instead.
+Deprecated since OCaml 4.11. Please use "-bin-annot" instead.
 }%notop
 
 \item["-args" \var{filename}]

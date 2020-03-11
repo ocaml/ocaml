@@ -167,7 +167,7 @@ excluding the filename.
 Show absolute filenames in error messages.
 .TP
 .B \-annot
-Deprecated since OCaml 4.10. Please use
+Deprecated since OCaml 4.11. Please use
 .BR \-bin-annot
 instead.
 .TP
