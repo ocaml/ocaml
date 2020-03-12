@@ -30,35 +30,59 @@ module M :
 (* needs -rectypes *)
 module M = struct
   type 'a t = 'b constraint 'a = 'b list
-  let f (x : 'a t list) (y : 'a) = (x = y)
+  let f1 (x : 'a t list) (y : 'a) = (x = y)
+  let f2 (x : 'a t list) (y : 'a) = (y = x)
 end
 [%%expect{|
 module M :
   sig
     type 'a t = 'b constraint 'a = 'b list
-    val f : 'a list t list -> 'a list -> bool
+    val f1 : 'a list t list -> 'a list -> bool
+    val f2 : 'a list t list -> 'a list -> bool
   end
 |}]
 
 module M = struct
   type 'a t = 'b constraint 'a = 'b list
-  let f (x : 'a list t) (y : 'a) = (x = y)
+  let f1 (x : 'a list t) (y : 'a) = (x = y)
+  let f2 (x : 'a list t) (y : 'a) = (y = x)
 end
 [%%expect{|
 module M :
   sig
     type 'a t = 'b constraint 'a = 'b list
-    val f : 'a list t -> 'a -> bool
+    val f1 : 'a list t -> 'a -> bool
+    val f2 : 'a list t -> 'a -> bool
+  end
+|}]
+
+module M = struct
+  type 'a u = 'a list
+  type 'a t = 'b constraint 'a = 'b u
+  let f1 (x : 'a t u) (y : 'a) = (x = y)
+  let f2 (x : 'a t u) (y : 'a) = (y = x)
+end
+[%%expect{|
+module M :
+  sig
+    type 'a u = 'a list
+    type 'a t = 'b constraint 'a = 'b u
+    val f1 : 'a u t u -> 'a u -> bool
+    val f2 : 'a u t u -> 'a u -> bool
   end
 |}]
 
 (* beware of recursive types *)
 
-let f (x : <a : <a : 'a> as 'b > as 'a) (y : 'b) = (x = y)
+let f1 (x : <a : <a : 'a> as 'b > as 'a) (y : 'b) = (x = y)
+let f2 (x : <a : <a : 'a> as 'b > as 'a) (y : 'b) = (y = x)
 [%%expect{|
-val f : (< a : 'a > as 'a) -> 'a -> bool = <fun>
+val f1 : (< a : 'a > as 'a) -> 'a -> bool = <fun>
+val f2 : (< a : 'a > as 'a) -> 'a -> bool = <fun>
 |}, Principal{|
-val f : (< a : < a : 'a > > as 'a) -> (< a : < a : 'b > > as 'b) -> bool =
+val f1 : (< a : < a : 'a > > as 'a) -> (< a : < a : 'b > > as 'b) -> bool =
+  <fun>
+val f2 : (< a : < a : 'a > > as 'a) -> (< a : < a : 'b > > as 'b) -> bool =
   <fun>
 |}]
 
@@ -172,7 +196,7 @@ module M = struct
       : 'a t
       =
     let t =
-      { other = 0 
+      { other = 0
           ; alphabeta = input.alphabeta
       }
     in

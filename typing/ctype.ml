@@ -2055,19 +2055,29 @@ let expand_trace env trace =
 (**** Unification ****)
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
+(* If [t0] is not a type variable, also look into cached expansions. *)
 let deep_occur t0 ty =
+  let expand = not (is_Tvar t0) in
+  let to_unmark = ref [ty] in
   let rec occur_rec ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       if ty == t0 then raise Occur;
       ty.level <- pivot_level - ty.level;
-      iter_type_expr occur_rec ty
+      iter_type_expr occur_rec ty;
+      if expand then match ty.desc with
+      | Tconstr (path, _args, abbrev) ->
+          begin match find_expans Private path !abbrev with
+            Some ty' -> to_unmark := ty' :: !to_unmark; occur_rec ty'
+          | None -> ()
+          end
+      | _ -> ()
     end
   in
   try
-    occur_rec ty; unmark_type ty; false
+    occur_rec ty; List.iter unmark_type !to_unmark; false
   with Occur ->
-    unmark_type ty; true
+    List.iter unmark_type !to_unmark; true
 
 (*
    1. When unifying two non-abbreviated types, one type is made a link

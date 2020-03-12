@@ -6,11 +6,7 @@ type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 [%%expect{|
 type 'a t = 'a constraint 'a = [ `A of 'a t t ]
 |}, Principal{|
-Line 1, characters 0-32:
-1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-       [ `A of 'a t t ] as 'a
+type 'a t = [ `A of 'b t t ] as 'b constraint 'a = [ `A of 'a t t ]
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
 [%%expect{|
