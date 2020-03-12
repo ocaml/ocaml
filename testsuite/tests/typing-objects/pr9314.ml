@@ -72,6 +72,23 @@ module M :
   end
 |}]
 
+module M = struct
+  type 'a t = 'b constraint 'a = 'b list
+  let f1 (x : ('c list as 'a) t list as 'c) (y : 'a) = (x = y)
+  let f2 (x : ('c list as 'a) t list as 'c) (y : 'a) = (y = x)
+end
+[%%expect{|
+Uncaught exception: Stack overflow
+
+|}, Principal{|
+module M :
+  sig
+    type 'a t = 'b constraint 'a = 'b list
+    val f1 : ('a list t list as 'a) -> ('b list t list as 'b) -> bool
+    val f2 : ('a list t list as 'a) -> ('b list t list as 'b) -> bool
+  end
+|}]
+
 (* beware of recursive types *)
 
 let f1 (x : <a : <a : 'a> as 'b > as 'a) (y : 'b) = (x = y)
