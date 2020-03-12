@@ -78,8 +78,12 @@ module M = struct
   let f2 (x : ('c list as 'a) t list as 'c) (y : 'a) = (y = x)
 end
 [%%expect{|
-Uncaught exception: Stack overflow
-
+module M :
+  sig
+    type 'a t = 'b constraint 'a = 'b list
+    val f1 : ('a list as 'a) -> 'a -> bool
+    val f2 : ('a list as 'a) -> 'a -> bool
+  end
 |}, Principal{|
 module M :
   sig

@@ -1636,10 +1636,14 @@ let try_expand_safe env ty =
     Btype.backtrack snap; raise Cannot_expand
 
 (* Fully expand the head of a type. *)
-let rec try_expand_head try_once env ty =
+let rec try_expand_rec try_once env visited ty =
   let ty' = try_once env ty in
-  try try_expand_head try_once env ty'
+  if List.memq ty' visited then (set_type_desc ty' (Tvar None); ty') else
+  try try_expand_rec try_once env (ty'::visited) ty'
   with Cannot_expand -> ty'
+
+let try_expand_head try_once env ty =
+  try_expand_rec try_once env [] ty
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
