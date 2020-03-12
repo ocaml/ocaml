@@ -65,6 +65,9 @@ and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
 
+\item["-nocwd"]
+Do not add current working directory to the list of include directories.
+
 \item["-impl" \var{file}]
 Process \var{file} as a ".ml" file.
 
