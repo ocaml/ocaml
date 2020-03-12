@@ -135,8 +135,12 @@ intnat caml_collect_current_callstack(value** ptrace, intnat* plen,
     debuginfo info;
     if (descr == NULL) return 0;
     info = debuginfo_extract(descr, alloc_idx);
-    CAMLassert(((uintnat)info & 3) == 0);
-    (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_debuginfo(info));
+    if (info != NULL) {
+      CAMLassert(((uintnat)info & 3) == 0);
+      (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_debuginfo(info));
+    } else {
+      (*ptrace)[trace_pos++] = Val_backtrace_slot(Slot_frame_descr(descr));
+    }
   }
 
   while (trace_pos < max_frames) {
