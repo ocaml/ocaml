@@ -1638,12 +1638,16 @@ let try_expand_safe env ty =
 (* Fully expand the head of a type. *)
 let rec try_expand_rec try_once env visited ty =
   let ty' = try_once env ty in
-  if List.memq ty' visited then (set_type_desc ty' (Tvar None); ty') else
-  try try_expand_rec try_once env (ty'::visited) ty'
-  with Cannot_expand -> ty'
+  if List.memq ty' visited then begin
+    set_type_desc ty' (Tvar None);
+    List.iter (fun ty -> if ty != ty' then link_type ty ty') visited;
+    ty'
+  end else
+    try try_expand_rec try_once env (ty'::visited) ty'
+    with Cannot_expand -> ty'
 
 let try_expand_head try_once env ty =
-  try_expand_rec try_once env [] ty
+  try_expand_rec try_once env [ty] (repr ty)
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
