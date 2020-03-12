@@ -2606,7 +2606,7 @@ and unify2 env t1 t2 =
       (match t2.desc with Tconstr (_, [], _) -> t2' | _ -> t2)
     else (t1, t2)
   in
-  if unify_eq t1 t1' || not (unify_eq t2 t2') then
+  if not (deep_occur t1' t2) && (unify_eq t1 t1' || not (unify_eq t2 t2')) then
     unify3 env t1 t1' t2 t2'
   else
     try unify3 env t2 t2' t1 t1' with Unify trace ->
@@ -2614,18 +2614,14 @@ and unify2 env t1 t2 =
 
 and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
-  (* Assumes either [t1 == t1'] or [t2 != t2'] *)
+  (* Assumes either [deep_occur t2' t1] or [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
-  let create_recursion = false && (t2 != t2') && (deep_occur t1' t2) in
+  let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
 
   begin match (d1, d2) with (* handle vars and univars specially *)
     (Tunivar _, Tunivar _) ->
       unify_univar t1' t2' !univar_pairs;
       link_type t1' t2'
-  | (Tvar _, Tvar _) ->
-      occur !env t1' t2';
-      occur_univar !env t2';
-      link_type t1' t2';
   | (Tvar _, _) ->
       occur !env t1' t2;
       occur_univar !env t2;
@@ -2640,7 +2636,6 @@ and unify3 env t1 t1' t2 t2' =
     begin match !umode with
     | Expression ->
         occur !env t1' t2';
-        if deep_occur t1' t2 then () else
         if is_self_type d1 (* PR#7711: do not abbreviate self type *)
         then link_type t1' t2'
         else link_type t1' t2

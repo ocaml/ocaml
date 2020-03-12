@@ -51,6 +51,19 @@ module M :
     val f : 'a list t -> 'a -> bool
   end
 |}]
+
+(* beware of recursive types *)
+
+let f (x : <a : <a : 'a> as 'b > as 'a) (y : 'b) = (x = y)
+[%%expect{|
+val f : (< a : 'a > as 'a) -> 'a -> bool = <fun>
+|}, Principal{|
+val f : (< a : < a : 'a > > as 'a) -> (< a : < a : 'b > > as 'b) -> bool =
+  <fun>
+|}]
+
+
+(* Original report *)
 module type T = sig
   type 'a alpha = 'b constraint 'a = < alpha : 'b >
   type 'a beta = 'b constraint 'a = < beta : 'b >
@@ -75,7 +88,8 @@ module type T =
       constraint 'a = < delta : 'b; gamma : < alpha : 'c > >
     type 'a beta_of_delta = 'a delta beta
       constraint 'a = < delta : < beta : 'b >; gamma : 'c >
-    val create : < delta : < beta : 'a >; gamma : < alpha : 'a > >
+    val create :
+      < delta : < beta : 'a alpha_of_gamma >; gamma : < alpha : 'b > > as 'a
   end
 |}]
 
@@ -190,5 +204,45 @@ module M :
       (< delta : < beta : 'a >; gamma : < alpha : 'b > > delta,
        < delta : < beta : 'a >; gamma : < alpha : 'b > > alpha_of_gamma)
       Alphabeta.t -> < delta : < beta : 'a >; gamma : < alpha : 'b > > t
+  end
+|}, Principal{|
+module M :
+  sig
+    type 'a alpha = 'b constraint 'a = < alpha : 'b >
+    type 'a beta = 'b constraint 'a = < beta : 'b >
+    type 'a gamma = 'b constraint 'a = < delta : 'c; gamma : 'b >
+    type 'a delta = 'b constraint 'a = < delta : 'b; gamma : 'c >
+    type 'a alpha_of_gamma = 'a gamma alpha
+      constraint 'a = < delta : 'b; gamma : < alpha : 'c > >
+    type 'a beta_of_delta = 'a delta beta
+      constraint 'a = < delta : < beta : 'b >; gamma : 'c >
+    type ('a, 'b) alphabeta
+    module Alphabeta :
+      sig
+        type ('a, 'just_alpha) t = {
+          alphabeta : ('just_alpha, 'a beta) alphabeta;
+        } constraint 'a = < beta : 'b >
+      end
+    type 'a t = {
+      other : int;
+      alphabeta : ('a alpha_of_gamma, 'a beta_of_delta) alphabeta;
+    } constraint 'a = < delta : < beta : 'b >; gamma : < alpha : 'c > >
+    val create :
+      (< delta : < beta : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                          beta_of_delta >;
+         gamma : < alpha : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                           alpha_of_gamma > >
+       delta,
+       < delta : < beta : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                          beta_of_delta >;
+         gamma : < alpha : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                           alpha_of_gamma > >
+       alpha_of_gamma)
+      Alphabeta.t ->
+      < delta : < beta : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                         beta_of_delta >;
+        gamma : < alpha : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                          alpha_of_gamma > >
+      t
   end
 |}]
