@@ -1121,10 +1121,12 @@ static intnat major_collection_slice(intnat howmuch,
       }
 
       /*
+        Disabled to avoid high pausetimes
+
         FIXME: we would like to handle steal interrupts regularly,
         but bad things happen if the GC cycles ends via an STW
         interrupt here.
-      */
+
       caml_handle_incoming_interrupts();
       // FIXME: Is this sufficient to deal with the above case?
       if( saved_major_cycle != caml_major_cycles_completed ) {
@@ -1135,6 +1137,7 @@ static intnat major_collection_slice(intnat howmuch,
         if (budget_left) *budget_left = budget;
         return computed_work;
       }
+      */
     /* need to check if sweeping_done by the incoming interrupt */
     } while (budget > 0 && available != left && !domain_state->sweeping_done);
 
@@ -1154,10 +1157,11 @@ mark_again:
       left = mark(available);
       budget -= available - left;
       /*
+        Disabled to avoid high pausetimes
+
         FIXME: we would like to handle steal interrupts regularly,
         but bad things happen if the GC cycles ends via an STW
         interrupt here.
-      */
       caml_handle_incoming_interrupts();
       if( saved_major_cycle != caml_major_cycles_completed ) {
         if (log_events) {
@@ -1167,6 +1171,7 @@ mark_again:
         if (budget_left) *budget_left = budget;
         return computed_work;
       }
+      */
     } else if (0) {
       if (was_marking) {
         if (log_events) caml_ev_end("major_gc/mark");
