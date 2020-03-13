@@ -113,13 +113,13 @@ domain_state_ptr  .req    r11
 name:
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot__code_begin)
-        .globl  caml_hot__code_begin
-caml_hot__code_begin:
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl  caml_hot.code_begin
+caml_hot.code_begin:
 
-        TEXT_SECTION(caml_hot__code_end)
-        .globl  caml_hot__code_end
-caml_hot__code_end:
+        TEXT_SECTION(caml_hot.code_end)
+        .globl  caml_hot.code_end
+caml_hot.code_end:
 #endif
 
         .set    domain_curr_field, 0
@@ -433,15 +433,15 @@ caml_system__code_end:
 
         .data
         .align  2
-        .globl  caml_system__frametable
-caml_system__frametable:
+        .globl  caml_system.frametable
+caml_system.frametable:
         .word   1               /* one descriptor */
         .word   .Lcaml_retaddr  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots */
         .align  2
-        .type   caml_system__frametable, %object
-        .size   caml_system__frametable, .-caml_system__frametable
+        .type   caml_system.frametable, %object
+        .size   caml_system.frametable, .-caml_system.frametable
 
 /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits

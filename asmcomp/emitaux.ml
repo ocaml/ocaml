@@ -39,7 +39,7 @@ let emit_symbol s =
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     match c with
-      'A'..'Z' | 'a'..'z' | '0'..'9' | '_' ->
+      'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.' ->
         output_char !output_channel c
     | _ ->
         Printf.fprintf !output_channel "$%02x" (Char.code c)
