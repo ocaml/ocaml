@@ -61,13 +61,7 @@ command line, unless the "-noautolink" option is given.
 Force error messages to show absolute paths for file names.
 
 \notop{\item["-annot"]
-Dump detailed information about the compilation (types, bindings,
-tail-calls, etc).  The information for file \var{src}".ml"
-is put into file \var{src}".annot".  In case of a type error, dump
-all the information inferred by the type-checker before the error.
-The \var{src}".annot" file can be used with the emacs commands given in
-"emacs/caml-types.el" to display types and other annotations
-interactively.
+Deprecated since OCaml 4.11. Please use "-bin-annot" instead.
 }%notop
 
 \item["-args" \var{filename}]

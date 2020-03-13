@@ -101,15 +101,12 @@ let parse_impl i =
   |> print_if i.ppf_dump Clflags.dump_source Pprintast.structure
 
 let typecheck_impl i parsetree =
-  let always () = Stypes.dump (Some (annot i)) in
-  Misc.try_finally ~always (fun () ->
-    parsetree
-    |> Profile.(record typing)
-      (Typemod.type_implementation
-         i.source_file i.output_prefix i.module_name i.env)
-    |> print_if i.ppf_dump Clflags.dump_typedtree
-      Printtyped.implementation_with_coercion
-  )
+  parsetree
+  |> Profile.(record typing)
+    (Typemod.type_implementation
+       i.source_file i.output_prefix i.module_name i.env)
+  |> print_if i.ppf_dump Clflags.dump_typedtree
+    Printtyped.implementation_with_coercion
 
 let implementation info ~backend =
   Profile.record_call info.source_file @@ fun () ->

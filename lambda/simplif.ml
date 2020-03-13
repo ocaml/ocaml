@@ -600,12 +600,6 @@ let is_tail_native_heuristic : (int -> bool) ref =
   ref (fun _ -> true)
 
 let rec emit_tail_infos is_tail lambda =
-  let call_kind args =
-    if is_tail
-    && ((not !Clflags.native_code)
-        || (!is_tail_native_heuristic (List.length args)))
-   then Annot.Tail
-   else Annot.Stack in
   match lambda with
   | Lvar _ -> ()
   | Lconst _ -> ()
@@ -615,9 +609,7 @@ let rec emit_tail_infos is_tail lambda =
       && Warnings.is_active Warnings.Expect_tailcall
         then Location.prerr_warning ap.ap_loc Warnings.Expect_tailcall;
       emit_tail_infos false ap.ap_func;
-      list_emit_tail_infos false ap.ap_args;
-      if !Clflags.annotations then
-        Stypes.record (Stypes.An_call (ap.ap_loc, call_kind ap.ap_args))
+      list_emit_tail_infos false ap.ap_args
   | Lfunction {body = lam} ->
       emit_tail_infos true lam
   | Llet (_str, _k, _, lam, body) ->
@@ -671,12 +663,10 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false body
   | Lassign (_, lam) ->
       emit_tail_infos false lam
-  | Lsend (_, meth, obj, args, loc) ->
+  | Lsend (_, meth, obj, args, _loc) ->
       emit_tail_infos false meth;
       emit_tail_infos false obj;
-      list_emit_tail_infos false args;
-      if !Clflags.annotations then
-        Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)));
+      list_emit_tail_infos false args
   | Levent (lam, _) ->
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
