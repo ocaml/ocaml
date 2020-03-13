@@ -5,9 +5,9 @@ jobs:
     name: Tests
     runs-on: ${{ matrix.operating-system }}
     strategy:
-      fail-fast: false
       matrix:
         operating-system: [ubuntu-latest, macos-latest]
+      fail-fast: false
     steps:
     - uses: actions/checkout@master
     - name: Build
