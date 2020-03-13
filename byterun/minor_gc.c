@@ -514,11 +514,6 @@ void caml_empty_minor_heap_domain_clear (struct domain* domain, void* unused)
   clear_table ((struct generic_table *)&minor_tables->major_ref);
   clear_table ((struct generic_table *)&minor_tables->ephe_ref);
   clear_table ((struct generic_table *)&minor_tables->custom);
-
-  asize_t wsize = domain_state->minor_heap_wsz;
-
-  domain_state->young_limit = domain_state->young_start;
-  domain_state->young_ptr = domain_state->young_end;
 }
 
 void caml_empty_minor_heap_promote (struct domain* domain, int participating_count, struct domain** participating, int not_alone)
@@ -661,6 +656,12 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   oldify_mopup (&st, 0);
   caml_ev_end("minor_gc/local_roots/promote");
   caml_ev_end("minor_gc/local_roots");
+
+  /* we reset these pointers before allowing any mutators to be
+     released to avoid races where another domain signals an interrupt
+     and we clobber it */
+  atomic_store_rel(&domain_state->young_limit, domain_state->young_start);
+  atomic_store_rel(&domain_state->young_ptr, domain_state->young_end);
 
   if( not_alone ) {
     atomic_fetch_add_explicit(&domains_finished_minor_gc, 1, memory_order_release);
