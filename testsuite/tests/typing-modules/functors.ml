@@ -268,7 +268,6 @@ Error: The functor application is ill-typed.
 |}]
 
 
-(** FIXME *)
 module M =
   F
     (struct include X include Y end)
@@ -293,6 +292,92 @@ Error: The functor application is ill-typed.
        ...(C) = sig type y = A.y end
      The type `y' is required but not provided
 |}]
+
+
+module M = struct
+  module N = struct
+    type x
+    type y
+  end
+end
+
+
+module Defs = struct
+  module X = struct type x = M.N.x end
+  module Y = struct type y = M.N.y end
+end
+module Missing_X = F(M.N)(Defs.Y)
+[%%expect {|
+module M : sig module N : sig type x type y end end
+module Defs :
+  sig module X : sig type x = M.N.x end module Y : sig type y = M.N.y end end
+Line 13, characters 19-33:
+13 | module Missing_X = F(M.N)(Defs.Y)
+                        ^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         M.N  Defs.Y
+       do not match these parameters:
+         functor (A : ...) (B : ...(B)) (C : ...) -> ...
+  1. Module M.N matches the expected module type
+  2. An argument appears to be missing with module type
+         ...(B) = sig type x = A.x end
+  3. Module Defs.Y matches the expected module type
+|}]
+
+module Too_many_Xs = F(M.N)(Defs.X)(Defs.X)(Defs.Y)
+[%%expect {|
+Line 1, characters 21-51:
+1 | module Too_many_Xs = F(M.N)(Defs.X)(Defs.X)(Defs.Y)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         M.N Defs.X Defs.X Defs.Y
+       do not match these parameters:
+         functor (A : ...) (B : ...)  (C : ...) -> ...
+  1. Module M.N matches the expected module type
+  2. Module Defs.X matches the expected module type
+  3. The following extra argument is provided Defs.X : sig type x = M.N.x end
+  4. Module Defs.Y matches the expected module type
+|}]
+
+
+module X = struct type x = int end
+module Y = struct type y = float end
+module Missing_X_bis = F(struct type x = int type y = float end)(Y)
+[%%expect {|
+module X : sig type x = int end
+module Y : sig type y = float end
+Line 3, characters 23-67:
+3 | module Missing_X_bis = F(struct type x = int type y = float end)(Y)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         ...(S1)  Y
+       do not match these parameters:
+         functor (A : ...) (B : ...(B)) (C : ...) -> ...
+  1. Module ...(S1) matches the expected module type
+  2. An argument appears to be missing with module type
+         ...(B) = sig type x = A.x end
+  3. Module Y matches the expected module type
+|}]
+
+module Too_many_Xs_bis = F(struct type x = int type y = float end)(X)(X)(Y)
+[%%expect {|
+Line 1, characters 25-75:
+1 | module Too_many_Xs_bis = F(struct type x = int type y = float end)(X)(X)(Y)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         ...(S1) X X Y
+       do not match these parameters:
+         functor (A : ...) (B : ...)  (C : ...) -> ...
+  1. Module ...(S1) matches the expected module type
+  2. Module X matches the expected module type
+  3. The following extra argument is provided X : sig type x = int end
+  4. Module Y matches the expected module type
+|}]
+
 
 (** Inclusion side *)
 module type f =
@@ -1185,4 +1270,58 @@ Error: The functor application is ill-typed.
          end
   6. The following extra argument is provided
          F : functor (X : sig module type t module M : t end) -> X.t
+|}]
+
+
+(** The price of Gluttony: glutton update of environment leads to a non-optimal edit distance. *)
+
+module F(X:sig type t end)(Y:sig type t = Y of X.t end)(Z:sig type t = Z of X.t end) = struct end
+
+module X = struct type t = U end
+module Y = struct type t = Y of int end
+module Z = struct type t = Z of int end
+
+module Error=F(X)(struct type t = int end)(Y)(Z)
+[%%expect {|
+module F :
+  functor (X : sig type t end) (Y : sig type t = Y of X.t end)
+    (Z : sig type t = Z of X.t end) -> sig end
+module X : sig type t = U end
+module Y : sig type t = Y of int end
+module Z : sig type t = Z of int end
+Line 9, characters 13-48:
+9 | module Error=F(X)(struct type t = int end)(Y)(Z)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         X ...(S2) Y Z
+       do not match these parameters:
+         functor (X : ...) (Y : ...(Y)) (Z : ...(Z))  -> ...
+  1. Module X matches the expected module type
+  2. Modules do not match:
+       ...(S2) = struct type t = int end
+     is not included in
+       ...(Y) = sig type t = Y of X/2.t end
+     Type declarations do not match:
+       type t = int
+     is not included in
+       type t = Y of X.t
+     Their kinds differ.
+     Line 5, characters 0-32:
+       Definition of module X/1
+     File "_none_", line 1:
+       Definition of module Y/1
+     Line 6, characters 0-39:
+       Definition of module Y/2
+  3. Modules do not match:
+       Y : sig type t = Y.t = Y of int end
+     is not included in
+       ...(Z) = sig type t = Z of X/2.t end
+     Type declarations do not match:
+       type t = Y/2.t = Y of int
+     is not included in
+       type t = Z of X.t
+     Constructors number 1 have different names, Y and Z.
+  4. The following extra argument is provided
+         Z : sig type t = Z.t = Z of int end
 |}]
