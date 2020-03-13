@@ -23,8 +23,13 @@
 extern value caml_ephe_none;
 
 struct caml_ephe_info {
-  value todo;
-  value live;
+  value todo; /* These are ephemerons which need to be marked and swept in the
+                 current cycle. If the ephemeron is alive, after marking, they
+                 go into the live list. */
+  value live; /* These are ephemerons which are alive in the current cycle.
+                 They still need to be swept to get rid of dead keys and
+                 values. Invariant: No keys are unreachable for these
+                 ephemerons. */
   uintnat cycle;
   struct {
     value* todop;
