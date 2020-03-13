@@ -1,0 +1,20 @@
+name: OCaml
+on: [pull_request, push]
+jobs:
+  tests:
+    name: Tests
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ubuntu-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@master
+    - name: Build
+      run: ./tools/ci/travis/travis-ci.sh 
+      env:
+        TRAVIS_EVENT_TYPE: ${{ github.event.event_name }}
+        TRAVIS_COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.sha }}
+        TRAVIS_COMMIT: ${{ github.sha }}
+        CI_KIND: build
+        XARCH: x64
