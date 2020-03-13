@@ -1,5 +1,5 @@
-OCaml 4.09 maintenance branch:
-------------------------------
+OCaml 4.09.1 (16 Mars 2020):
+----------------------------
 
 - #8855, #8858: Links for tools not created when installing with
   --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
