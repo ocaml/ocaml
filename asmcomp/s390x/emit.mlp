@@ -44,10 +44,6 @@ let slot_offset env loc cls =
   | Outgoing n -> n
   | Domainstate _ -> assert false  (* not a stack slot *)
 
-(* Output a symbol *)
-
-let emit_symbol s = Emitaux.emit_symbol '.' s
-
 (* Output function call *)
 
 let emit_call s =
