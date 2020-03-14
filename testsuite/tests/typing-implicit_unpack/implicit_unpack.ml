@@ -321,6 +321,7 @@ module type MapT =
     val for_all : (key -> 'a -> bool) -> 'a t -> bool
     val exists : (key -> 'a -> bool) -> 'a t -> bool
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal : 'a t -> int
     val bindings : 'a t -> (key * 'a) list
@@ -372,6 +373,7 @@ module SSMap :
     val for_all : (key -> 'a -> bool) -> 'a t -> bool
     val exists : (key -> 'a -> bool) -> 'a t -> bool
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal : 'a t -> int
     val bindings : 'a t -> (key * 'a) list

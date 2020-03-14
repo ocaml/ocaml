@@ -152,6 +152,7 @@ module Map : sig
       val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
       val exists: f:(key -> 'a -> bool) -> 'a t -> bool
       val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
+      val filter_map: f:(key -> 'a -> 'b option) -> 'a t -> 'b t
       val partition: f:(key -> 'a -> bool) -> 'a t -> 'a t * 'a t
       val cardinal: 'a t -> int
       val bindings: 'a t -> (key * 'a) list
@@ -205,6 +206,7 @@ module Set : sig
       val for_all : f:(elt -> bool) -> t -> bool
       val exists : f:(elt -> bool) -> t -> bool
       val filter : f:(elt -> bool) -> t -> t
+      val filter_map : f:(elt -> elt option) -> t -> t
       val partition : f:(elt -> bool) -> t -> t * t
       val cardinal : t -> int
       val elements : t -> elt list
