@@ -693,6 +693,8 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
   struct domain *d1, *d2;
   long i;
 
+  if (length == 0) CAMLreturn(Val_unit);
+
   while (1) {
     d1 = Ephe_domain(es);
     d2 = Ephe_domain(ed);
