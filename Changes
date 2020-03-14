@@ -101,7 +101,7 @@ Working version
 
 - #9237: `Format.pp_update_geometry ppf (fun geo -> {geo with ...})`
   for formatter geometry changes that are robust to new geometry fields.
-  (Gabriel Scherer, review by Josh Berdine and ???)
+  (Gabriel Scherer, review by Josh Berdine and Florian Angeletti)
 
 ### Other libraries:
 
