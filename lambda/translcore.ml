@@ -628,9 +628,9 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
       ?(specialised = Default_specialise) lam sargs loc =
   let lapply funct args =
     match funct with
-      Lsend(k, lmet, lobj, largs, loc) ->
+      Lsend(k, lmet, lobj, largs, _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
-    | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
+    | Levent(Lsend(k, lmet, lobj, largs, _), _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
     | Lapply ap ->
         Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
