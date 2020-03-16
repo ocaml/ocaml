@@ -161,6 +161,10 @@ static debuginfo debuginfo_extract(frame_descr* d, int alloc_idx)
   unsigned char* infoptr;
   uint32_t debuginfo_offset;
 
+  /* The special frames marking the top of an ML stack chunk are never
+     returned by caml_next_frame_descriptor, so should never reach here. */
+  CAMLassert(d->frame_size != 0xffff);
+
   if ((d->frame_size & 1) == 0) {
     return NULL;
   }
