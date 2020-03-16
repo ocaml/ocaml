@@ -270,6 +270,9 @@ Working version
   whose type involves a functor application.
   (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
 
+- #9367: Make bytecode and native-code backtraces agree.
+  (Stephen Dolan, review by ??)
+
 OCaml 4.10.0
 ------------
 
