@@ -124,7 +124,7 @@ let check_consistency ppf filename cu =
       inconsistent_source = user;
       original_source = auth;
     } ->
-    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
+    I18n.fprintf ppf "@[<hv 0>The files %s@ and %s@ \
                  disagree over interface %s@]@."
             user auth name;
     raise Load_failed
@@ -165,7 +165,7 @@ let rec load_file recursive ppf name =
     try Some (Load_path.find name) with Not_found -> None
   in
   match filename with
-  | None -> fprintf ppf "Cannot find file %s.@." name; false
+  | None -> I18n.fprintf ppf "Cannot find file %s.@." name; false
   | Some filename ->
       let ic = open_in_bin filename in
       Misc.try_finally
@@ -205,7 +205,7 @@ and really_load_file recursive ppf name filename ic =
             let name = Dll.extract_dll_name dllib in
             try Dll.open_dlls Dll.For_execution [name]
             with Failure reason ->
-              fprintf ppf
+              I18n.fprintf ppf
                 "Cannot load required shared library %s.@.Reason: %s.@."
                 name reason;
               raise Load_failed)
@@ -213,7 +213,7 @@ and really_load_file recursive ppf name filename ic =
         List.iter (load_compunit ic filename ppf) lib.lib_units;
         true
       end else begin
-        fprintf ppf "File %s is not a bytecode object file.@." name;
+        I18n.fprintf ppf "File %s is not a bytecode object file.@." name;
         false
       end
   with Load_failed -> false
@@ -290,7 +290,7 @@ let printer_type ppf typename =
     with
     | path, _ -> path
     | exception Not_found ->
-        fprintf ppf "Cannot find type Topdirs.%s.@." typename;
+        I18n.fprintf ppf "Cannot find type Topdirs.%s.@." typename;
         raise Exit
   in
   printer_type
@@ -346,12 +346,12 @@ let find_printer_type ppf lid =
     match match_printer_type ppf desc with
     | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
     | exception Ctype.Unify _ ->
-      fprintf ppf "%a has a wrong type for a printing function.@."
+      I18n.fprintf ppf "%a has a wrong type for a printing function.@."
       Printtyp.longident lid;
       raise Exit
   end
   | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
+      I18n.fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
 
 let dir_install_printer ppf lid =
@@ -388,7 +388,7 @@ let dir_remove_printer ppf lid =
     begin try
       remove_printer path
     with Not_found ->
-      fprintf ppf "No printer named %a.@." Printtyp.longident lid
+      I18n.fprintf ppf "No printer named %a.@." Printtyp.longident lid
     end
   with Exit -> ()
 
@@ -420,7 +420,7 @@ let dir_trace ppf lid =
       (* Check if this is a primitive *)
       match desc.val_kind with
       | Val_prim _ ->
-          fprintf ppf "%a is an external function and cannot be traced.@."
+          I18n.fprintf ppf "%a is an external function and cannot be traced.@."
           Printtyp.longident lid
       | _ ->
           let clos = eval_value_path !toplevel_env path in
@@ -432,7 +432,7 @@ let dir_trace ppf lid =
           then begin
           match is_traced clos with
           | Some opath ->
-              fprintf ppf "%a is already traced (under the name %a).@."
+              I18n.fprintf ppf "%a is already traced (under the name %a).@."
               Printtyp.path path
               Printtyp.path opath
           | None ->
@@ -447,34 +447,35 @@ let dir_trace ppf lid =
               (* Redirect the code field of the closure to point
                  to the instrumentation function *)
               set_code_pointer clos tracing_function_ptr;
-              fprintf ppf "%a is now traced.@." Printtyp.longident lid
-          end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
+              I18n.fprintf ppf "%a is now traced.@." Printtyp.longident lid
+          end else
+            I18n.fprintf ppf "%a is not a function.@." Printtyp.longident lid
     end
   | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+      I18n.fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
 let dir_untrace ppf lid =
   match Env.find_value_by_name lid !toplevel_env with
   | (path, _desc) ->
       let rec remove = function
       | [] ->
-          fprintf ppf "%a was not traced.@." Printtyp.longident lid;
+          I18n.fprintf ppf "%a was not traced.@." Printtyp.longident lid;
           []
       | f :: rem ->
           if Path.same f.path path then begin
             set_code_pointer f.closure f.actual_code;
-            fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
+            I18n.fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
             rem
           end else f :: remove rem in
       traced_functions := remove !traced_functions
   | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+      I18n.fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
 let dir_untrace_all ppf () =
   List.iter
     (fun f ->
       set_code_pointer f.closure f.actual_code;
-      fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
+      I18n.fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
     !traced_functions;
   traced_functions := []
 
@@ -513,7 +514,7 @@ let show_prim to_sig ppf lid =
       | Longident.Lident s -> s
       | Longident.Ldot (_,s) -> s
       | Longident.Lapply _ ->
-          fprintf ppf "Invalid path %a@." Printtyp.longident lid;
+          I18n.fprintf ppf "Invalid path %a@." Printtyp.longident lid;
           raise Exit
     in
     let id = Ident.create_persistent s in
@@ -522,7 +523,7 @@ let show_prim to_sig ppf lid =
       (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
   with
   | Not_found ->
-      fprintf ppf "@[Unknown element.@]@."
+      I18n.fprintf ppf "@[Unknown element.@]@."
   | Exit -> ()
 
 let all_show_funs = ref []

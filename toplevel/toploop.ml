@@ -338,7 +338,7 @@ let execute_phrase print_outcome ppf phr =
       in
       begin match d with
       | None ->
-          fprintf ppf "Unknown directive `%s'." dir_name;
+          I18n.fprintf ppf "Unknown directive `%s'." dir_name;
           let directives =
             Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table [] in
           Misc.did_you_mean ppf
@@ -353,19 +353,19 @@ let execute_phrase print_outcome ppf phr =
              begin match Int_literal_converter.int n with
              | n -> f n; true
              | exception _ ->
-               fprintf ppf "Integer literal exceeds the range of \
-                            representable integers for directive `%s'.@."
+                 I18n.fprintf ppf "Integer literal exceeds the range of \
+                                   representable integers for directive `%s'.@."
                        dir_name;
                false
              end
           | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
-              fprintf ppf "Wrong integer literal for directive `%s'.@."
+              I18n.fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false
           | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
           | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
           | _ ->
-              fprintf ppf "Wrong type of argument for directive `%s'.@."
+              I18n.fprintf ppf "Wrong type of argument for directive `%s'.@."
                 dir_name;
               false
       end
@@ -426,11 +426,11 @@ let use_file ppf wrap_mod name =
           true
         with
         | Exit -> false
-        | Sys.Break -> fprintf ppf "Interrupted.@."; false
+        | Sys.Break -> I18n.fprintf ppf "Interrupted.@."; false
         | x -> Location.report_exception ppf x; false) in
     if must_close then close_in ic;
     success
-  with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+  with Not_found -> I18n.fprintf ppf "Cannot find file %s.@." name; false
 
 let mod_use_file ppf name = use_file ppf true name
 let use_file ppf name = use_file ppf false name
@@ -529,7 +529,7 @@ let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
   | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
-              else fprintf ppf "Init file not found: \"%s\".@." f
+              else I18n.fprintf ppf "Init file not found: \"%s\".@." f
   | None ->
       match find_ocamlinit () with
       | None -> ()
@@ -565,7 +565,7 @@ let loop ppf =
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "        OCaml version %s@.@." Config.version;
+    I18n.fprintf ppf "        OCaml version %s@.@." Config.version;
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
@@ -594,7 +594,7 @@ let loop ppf =
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
+    | Sys.Break -> I18n.fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done

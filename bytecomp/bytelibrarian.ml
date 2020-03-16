@@ -113,13 +113,11 @@ let create_archive file_list lib_name =
        output_binary_int outchan pos_toc;
     )
 
-open Format
-
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      I18n.fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      fprintf ppf "The file %a is not a bytecode object file"
+      I18n.fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
 
 let () =

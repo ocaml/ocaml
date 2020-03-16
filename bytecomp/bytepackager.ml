@@ -297,25 +297,23 @@ let package_files ~ppf_dump initial_env files targetfile =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
     Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %a" (Ident.name ident)
+      I18n.fprintf ppf "Forward reference to %s in file %a" (Ident.name ident)
         Location.print_filename file
   | Multiple_definition(file, ident) ->
-      fprintf ppf "File %a redefines %s"
+      I18n.fprintf ppf "File %a redefines %s"
         Location.print_filename file
         (Ident.name ident)
   | Not_an_object_file file ->
-      fprintf ppf "%a is not a bytecode object file"
+      I18n.fprintf ppf "%a is not a bytecode object file"
         Location.print_filename file
   | Illegal_renaming(name, file, id) ->
-      fprintf ppf "Wrong file naming: %a@ contains the code for\
-                   @ %s when %s was expected"
+      I18n.fprintf ppf "Wrong file naming: %a@ contains the code for\
+                        @ %s when %s was expected"
         Location.print_filename file name id
   | File_not_found file ->
-      fprintf ppf "File %s not found" file
+      I18n.fprintf ppf "File %s not found" file
 
 let () =
   Location.register_error_of_exn

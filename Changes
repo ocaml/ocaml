@@ -156,6 +156,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #1523: localization hook for compiler-libs
+  (Florian Angeletti, review by ??)
+
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
   building shared libraries like `-output-obj`.
   (Florian Angeletti, review by Nicolás Ojeda Bär)

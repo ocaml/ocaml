@@ -376,54 +376,52 @@ let link ~ppf_dump objfiles output_name =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      I18n.fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      fprintf ppf "The file %a is not a compilation unit description"
+      I18n.fprintf ppf "The file %a is not a compilation unit description"
         Location.print_filename name
   | Missing_implementations l ->
-     let print_references ppf = function
-       | [] -> ()
-       | r1 :: rl ->
-           fprintf ppf "%s" r1;
-           List.iter (fun r -> fprintf ppf ",@ %s" r) rl in
+      let print_references ppf = function
+        | [] -> ()
+        | r1 :: rl ->
+            Format.fprintf ppf "%s" r1;
+            List.iter (fun r -> Format.fprintf ppf ",@ %s" r) rl in
       let print_modules ppf =
         List.iter
-         (fun (md, rq) ->
-            fprintf ppf "@ @[<hov 2>%s referenced from %a@]" md
-            print_references rq) in
-      fprintf ppf
-       "@[<v 2>No implementations provided for the following modules:%a@]"
-       print_modules l
+          (fun (md, rq) ->
+             I18n.fprintf ppf "@ @[<hov 2>%s referenced from %a@]" md
+               print_references rq) in
+      I18n.fprintf ppf
+        "@[<v 2>No implementations provided for the following modules:%a@]"
+        print_modules l
   | Inconsistent_interface(intf, file1, file2) ->
-      fprintf ppf
-       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
-              over interface %s@]"
-       Location.print_filename file1
-       Location.print_filename file2
-       intf
+      I18n.fprintf ppf
+        "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
+         over interface %s@]"
+        Location.print_filename file1
+        Location.print_filename file2
+        intf
   | Inconsistent_implementation(intf, file1, file2) ->
-      fprintf ppf
-       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
-              over implementation %s@]"
-       Location.print_filename file1
-       Location.print_filename file2
-       intf
+      I18n.fprintf ppf
+        "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
+         over implementation %s@]"
+        Location.print_filename file1
+        Location.print_filename file2
+        intf
   | Assembler_error file ->
-      fprintf ppf "Error while assembling %a" Location.print_filename file
+      I18n.fprintf ppf "Error while assembling %a" Location.print_filename file
   | Linking_error ->
-      fprintf ppf "Error during linking"
+      I18n.fprintf ppf "Error during linking"
   | Multiple_definition(modname, file1, file2) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<hov>Files %a@ and %a@ both define a module named %s@]"
         Location.print_filename file1
         Location.print_filename file2
         modname
   | Missing_cmx(filename, name) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<hov>File %a@ was compiled without access@ \
          to the .cmx file@ for module %s,@ \
          which was produced by `ocamlopt -for-pack'.@ \

@@ -783,7 +783,7 @@ let direct_apply env fundesc ufunct uargs ~loc ~attribute =
     | _, Never_inline | None, _ ->
       let dbg = Debuginfo.from_location loc in
         warning_if_forced_inline ~loc ~attribute
-          "Function information unavailable";
+          (I18n.s "Function information unavailable");
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
         bind_params env loc fundesc.fun_float_const_prop params app_args
@@ -955,7 +955,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
           iter first_args
             (Ulet (Immutable, Pgenval, VP.create funct_var, ufunct, new_fun))
         in
-        warning_if_forced_inline ~loc ~attribute "Partial application";
+        warning_if_forced_inline ~loc ~attribute (I18n.s "Partial application");
         (new_fun, approx)
 
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
@@ -965,7 +965,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
           let first_args = List.map (fun (id, _) -> Uvar id) first_args in
           let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
           let dbg = Debuginfo.from_location loc in
-          warning_if_forced_inline ~loc ~attribute "Over-application";
+          warning_if_forced_inline ~loc ~attribute (I18n.s "Over-application");
           let body =
             Ugeneric_apply(direct_apply env ~loc ~attribute
                               fundesc ufunct first_args,
@@ -980,7 +980,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
           result, Value_unknown
       | ((ufunct, _), uargs) ->
           let dbg = Debuginfo.from_location loc in
-          warning_if_forced_inline ~loc ~attribute "Unknown function";
+          warning_if_forced_inline ~loc ~attribute (I18n.s "Unknown function");
           (Ugeneric_apply(ufunct, uargs, dbg), Value_unknown)
       end
   | Lsend(kind, met, obj, args, loc) ->

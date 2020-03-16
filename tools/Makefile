@@ -111,7 +111,7 @@ clean::
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
   numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
+  i18n.cmo warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo \
   camlinternalMenhirLib.cmo parser.cmo \
   pprintast.cmo \
@@ -120,8 +120,8 @@ CSLPROF_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
 ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
-               warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-               clflags.cmo \
+               i18n.cmo warnings.cmo identifiable.cmo numbers.cmo \
+               arg_helper.cmo clflags.cmo \
                terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
                main_args.cmo
 

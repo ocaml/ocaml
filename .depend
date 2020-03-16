@@ -58,6 +58,11 @@ utils/domainstate.cmo : \
 utils/domainstate.cmx : \
     utils/domainstate.cmi
 utils/domainstate.cmi :
+utils/i18n.cmo : \
+    utils/i18n.cmi
+utils/i18n.cmx : \
+    utils/i18n.cmi
+utils/i18n.cmi :
 utils/identifiable.cmo : \
     utils/misc.cmi \
     utils/identifiable.cmi
@@ -130,11 +135,14 @@ utils/terminfo.cmx : \
 utils/terminfo.cmi :
 utils/warnings.cmo : \
     utils/misc.cmi \
+    utils/i18n.cmi \
     utils/warnings.cmi
 utils/warnings.cmx : \
     utils/misc.cmx \
+    utils/i18n.cmx \
     utils/warnings.cmi
-utils/warnings.cmi :
+utils/warnings.cmi : \
+    utils/i18n.cmi
 parsing/ast_helper.cmo : \
     parsing/syntaxerr.cmi \
     parsing/parsetree.cmi \
@@ -310,6 +318,7 @@ parsing/location.cmo : \
     utils/warnings.cmi \
     utils/terminfo.cmi \
     utils/misc.cmi \
+    utils/i18n.cmi \
     utils/clflags.cmi \
     utils/build_path_prefix_map.cmi \
     parsing/location.cmi
@@ -317,6 +326,7 @@ parsing/location.cmx : \
     utils/warnings.cmx \
     utils/terminfo.cmx \
     utils/misc.cmx \
+    utils/i18n.cmx \
     utils/clflags.cmx \
     utils/build_path_prefix_map.cmx \
     parsing/location.cmi
@@ -1174,6 +1184,7 @@ typing/typecore.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    utils/i18n.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     file_formats/cmt_format.cmi \
@@ -1205,6 +1216,7 @@ typing/typecore.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
+    utils/i18n.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     file_formats/cmt_format.cmx \
@@ -1475,6 +1487,7 @@ typing/typemod.cmo : \
     utils/load_path.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
+    utils/i18n.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
@@ -1508,6 +1521,7 @@ typing/typemod.cmx : \
     utils/load_path.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
+    utils/i18n.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
@@ -3335,6 +3349,7 @@ lambda/simplif.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    utils/i18n.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
     lambda/simplif.cmi
@@ -3344,6 +3359,7 @@ lambda/simplif.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    utils/i18n.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
     lambda/simplif.cmi
@@ -3670,6 +3686,7 @@ middle_end/closure/closure.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    utils/i18n.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
     middle_end/convert_primitives.cmi \
@@ -3693,6 +3710,7 @@ middle_end/closure/closure.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    utils/i18n.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \
     middle_end/convert_primitives.cmx \
@@ -4267,6 +4285,7 @@ middle_end/flambda/flambda_middle_end.cmo : \
     middle_end/flambda/inlining_cost.cmi \
     middle_end/flambda/inline_and_simplify.cmi \
     middle_end/flambda/initialize_symbol_to_let_symbol.cmi \
+    utils/i18n.cmi \
     middle_end/flambda/flambda_to_clambda.cmi \
     middle_end/flambda/flambda_iterators.cmi \
     middle_end/flambda/flambda_invariants.cmi \
@@ -4302,6 +4321,7 @@ middle_end/flambda/flambda_middle_end.cmx : \
     middle_end/flambda/inlining_cost.cmx \
     middle_end/flambda/inline_and_simplify.cmx \
     middle_end/flambda/initialize_symbol_to_let_symbol.cmx \
+    utils/i18n.cmx \
     middle_end/flambda/flambda_to_clambda.cmx \
     middle_end/flambda/flambda_iterators.cmx \
     middle_end/flambda/flambda_invariants.cmx \
@@ -4601,6 +4621,7 @@ middle_end/flambda/inline_and_simplify.cmo : \
     middle_end/flambda/inlining_cost.cmi \
     middle_end/flambda/inline_and_simplify_aux.cmi \
     typing/ident.cmi \
+    utils/i18n.cmi \
     middle_end/flambda/freshening.cmi \
     middle_end/flambda/flambda_utils.cmi \
     middle_end/flambda/flambda.cmi \
@@ -4644,6 +4665,7 @@ middle_end/flambda/inline_and_simplify.cmx : \
     middle_end/flambda/inlining_cost.cmx \
     middle_end/flambda/inline_and_simplify_aux.cmx \
     typing/ident.cmx \
+    utils/i18n.cmx \
     middle_end/flambda/freshening.cmx \
     middle_end/flambda/flambda_utils.cmx \
     middle_end/flambda/flambda.cmx \

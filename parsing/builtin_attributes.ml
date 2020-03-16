@@ -41,15 +41,15 @@ let error_of_extension ext =
             { Location.loc; txt = fun ppf -> Format.pp_print_text ppf msg }
         | _ ->
             { Location.loc; txt = fun ppf ->
-                Format.fprintf ppf
+                I18n.fprintf ppf
                   "Invalid syntax for sub-message of extension '%s'." main_txt }
         end
     | {pstr_desc=Pstr_extension (({txt; loc}, _), _)} ->
         { Location.loc; txt = fun ppf ->
-            Format.fprintf ppf "Uninterpreted extension '%s'." txt }
+            I18n.fprintf ppf "Uninterpreted extension '%s'." txt }
     | _ ->
         { Location.loc = main_loc; txt = fun ppf ->
-            Format.fprintf ppf
+            I18n.fprintf ppf
               "Invalid syntax for sub-message of extension '%s'." main_txt }
   in
   match ext with
@@ -137,7 +137,8 @@ let check_deprecated_mutable loc attrs s =
   match deprecated_mutable_of_attrs attrs with
   | None -> ()
   | Some txt ->
-      Location.deprecated loc (Printf.sprintf "mutating field %s" (cat s txt))
+      Location.deprecated loc
+        (I18n.ksprintf I18n.to_string "mutating field %s" (cat s txt))
 
 let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
   match deprecated_mutable_of_attrs attrs1,
@@ -146,7 +147,7 @@ let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
   | None, _ | Some _, Some _ -> ()
   | Some txt, None ->
       Location.deprecated ~def ~use loc
-        (Printf.sprintf "mutating field %s" (cat s txt))
+        (I18n.ksprintf I18n.to_string "mutating field %s" (cat s txt))
 
 let rec attrs_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->
@@ -173,17 +174,18 @@ let check_no_alert attrs =
     (alert_attrs attrs)
 
 let warn_payload loc txt msg =
-  Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
+  Location.prerr_warning loc
+    (Warnings.Attribute_payload (txt, I18n.to_string msg))
 
 let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
         begin try Warnings.parse_options errflag s
-        with Arg.Bad msg -> warn_payload loc txt msg
+        with Arg.Bad msg -> warn_payload loc txt (I18n.raw msg)
         end
     | None ->
-        warn_payload loc txt "A single string literal is expected"
+        warn_payload loc txt (I18n.s "A single string literal is expected")
   in
   let process_alert loc txt = function
     | PStr[{pstr_desc=
@@ -192,14 +194,14 @@ let warning_attribute ?(ppwarning = true) =
                 _)
            }] ->
         begin try Warnings.parse_alert_option s
-        with Arg.Bad msg -> warn_payload loc txt msg
+        with Arg.Bad msg -> warn_payload loc txt (I18n.raw msg)
         end
     | k ->
         match kind_and_message k with
         | Some ("all", _) ->
-            warn_payload loc txt "The alert name 'all' is reserved"
+            warn_payload loc txt (I18n.s "The alert name 'all' is reserved")
         | Some _ -> ()
-        | None -> warn_payload loc txt "Invalid payload"
+        | None -> warn_payload loc txt (I18n.s "Invalid payload")
   in
   function
   | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};

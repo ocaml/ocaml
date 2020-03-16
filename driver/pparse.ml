@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
-
 type error =
   | CannotRun of string
   | WrongMagic of string
@@ -155,7 +153,9 @@ let open_and_check_magic inputfile ast_magic =
       else false
     with
       Outdated_version ->
-        Misc.fatal_error "OCaml and preprocessor have incompatible versions"
+        Misc.fatal_error
+          (I18n.to_string @@
+           I18n.s "OCaml and preprocessor have incompatible versions")
     | _ -> false
   in
   (ic, is_ast_file)
@@ -199,10 +199,10 @@ let file ~tool_name inputfile parse_fun ast_kind =
 
 let report_error ppf = function
   | CannotRun cmd ->
-      fprintf ppf "Error while running external preprocessor@.\
+      I18n.fprintf ppf "Error while running external preprocessor@.\
                    Command line: %s@." cmd
   | WrongMagic cmd ->
-      fprintf ppf "External preprocessor does not produce a valid file@.\
+      I18n.fprintf ppf "External preprocessor does not produce a valid file@.\
                    Command line: %s@." cmd
 
 let () =

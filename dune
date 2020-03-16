@@ -44,7 +44,7 @@
  (modules
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
-   profile terminfo ccomp warnings consistbl strongly_connected_components
+   profile terminfo ccomp i18n warnings consistbl strongly_connected_components
    targetint load_path int_replace_polymorphic_compare
 
    ;; PARSING

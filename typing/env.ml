@@ -560,20 +560,21 @@ let check_shadowing env = function
     when not (!same_constr env
                 cda1.cda_description.cstr_res
                 cda2.cda_description.cstr_res) ->
-      Some "constructor"
+      Some `Constructor
   | `Label (Some (l1, l2))
     when not (!same_constr env l1.lbl_res l2.lbl_res) ->
-      Some "label"
-  | `Value (Some _) -> Some "value"
-  | `Type (Some _) -> Some "type"
-  | `Module (Some _) | `Component (Some _) -> Some "module"
-  | `Module_type (Some _) -> Some "module type"
-  | `Class (Some _) -> Some "class"
-  | `Class_type (Some _) -> Some "class type"
+      Some `Label
+  | `Value (Some _) -> Some `Value
+  | `Type (Some _) -> Some `Type
+  | `Module (Some _) | `Component (Some _) -> Some `Module
+  | `Module_type (Some _) -> Some `Module_type
+  | `Class (Some _) -> Some `Class
+  | `Class_type (Some _) -> Some `Class_type
   | `Constructor _ | `Label _
   | `Value None | `Type None | `Module None | `Module_type None
   | `Class None | `Class_type None | `Component None ->
       None
+
 
 let subst_modtype_maker (subst, scoping, md) =
   {md with md_type = Subst.modtype scoping subst md.md_type}
@@ -2016,9 +2017,9 @@ let open_signature
   let warn_unused =
     Warnings.is_active unused
   and warn_shadow_id =
-    Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
+    Warnings.is_active (Warnings.Open_shadow_identifier (`Type, ""))
   and warn_shadow_lc =
-    Warnings.is_active (Warnings.Open_shadow_label_constructor ("",""))
+    Warnings.is_active (Warnings.Open_shadow_label_constructor (`Label,""))
   in
   if not toplevel && not loc.Location.loc_ghost
      && (warn_unused || warn_shadow_id || warn_shadow_lc)
@@ -2040,9 +2041,10 @@ let open_signature
           shadowed := (kind, s) :: !shadowed;
           let w =
             match kind with
-            | "label" | "constructor" ->
+            | `Label | `Constructor as kind ->
                 Warnings.Open_shadow_label_constructor (kind, s)
-            | _ -> Warnings.Open_shadow_identifier (kind, s)
+            | #Warnings.shadowed_identifier as kind ->
+                Warnings.Open_shadow_identifier (kind, s)
           in
           Location.prerr_warning loc w
       | _ -> ()
@@ -3048,7 +3050,7 @@ let extract_instance_variables env =
 
 let report_lookup_error _loc env ppf = function
   | Unbound_value(lid, hint) -> begin
-      fprintf ppf "Unbound value %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound value %a" !print_longident lid;
       spellcheck ppf extract_values env lid;
       match hint with
       | No_hint -> ()
@@ -3056,89 +3058,91 @@ let report_lookup_error _loc env ppf = function
           let (_, line, _) =
             Location.get_pos_info def_loc.Location.loc_start
           in
-          fprintf ppf
+          I18n.fprintf ppf
             "@.@[%s@ %s %i@]"
             "Hint: If this is a recursive definition,"
             "you should add the 'rec' keyword on line"
             line
     end
   | Unbound_type lid ->
-      fprintf ppf "Unbound type constructor %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound type constructor %a" !print_longident lid;
       spellcheck ppf extract_types env lid;
   | Unbound_module lid ->
-      fprintf ppf "Unbound module %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound module %a" !print_longident lid;
       spellcheck ppf extract_modules env lid;
   | Unbound_constructor lid ->
-      fprintf ppf "Unbound constructor %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound constructor %a" !print_longident lid;
       spellcheck ppf extract_constructors env lid;
   | Unbound_label lid ->
-      fprintf ppf "Unbound record field %a" !print_longident lid;
+     I18n.fprintf ppf "Unbound record field %a" !print_longident lid;
       spellcheck ppf extract_labels env lid;
   | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound class %a" !print_longident lid;
       spellcheck ppf extract_classes env lid;
   | Unbound_modtype lid ->
-      fprintf ppf "Unbound module type %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound module type %a" !print_longident lid;
       spellcheck ppf extract_modtypes env lid;
   | Unbound_cltype lid ->
-      fprintf ppf "Unbound class type %a" !print_longident lid;
+      I18n.fprintf ppf "Unbound class type %a" !print_longident lid;
       spellcheck ppf extract_cltypes env lid;
   | Unbound_instance_variable s ->
-      fprintf ppf "Unbound instance variable %s" s;
+      I18n.fprintf ppf "Unbound instance variable %s" s;
       spellcheck_name ppf extract_instance_variables env s;
   | Not_an_instance_variable s ->
-      fprintf ppf "The value %s is not an instance variable" s;
+      I18n.fprintf ppf "The value %s is not an instance variable" s;
       spellcheck_name ppf extract_instance_variables env s;
   | Masked_instance_variable lid ->
-      fprintf ppf
+      I18n.fprintf ppf
         "The instance variable %a@ \
          cannot be accessed from the definition of another instance variable"
         !print_longident lid
   | Masked_self_variable lid ->
-      fprintf ppf
+      I18n.fprintf ppf
         "The self variable %a@ \
          cannot be accessed from the definition of an instance variable"
         !print_longident lid
   | Masked_ancestor_variable lid ->
-      fprintf ppf
+      I18n.fprintf ppf
         "The ancestor variable %a@ \
          cannot be accessed from the definition of an instance variable"
         !print_longident lid
   | Illegal_reference_to_recursive_module ->
-     fprintf ppf "Illegal recursive module reference"
+      I18n.fprintf ppf "Illegal recursive module reference"
   | Structure_used_as_functor lid ->
-      fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
+      I18n.fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
         !print_longident lid
   | Abstract_used_as_functor lid ->
-      fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
+      I18n.fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
         !print_longident lid
   | Functor_used_as_structure lid ->
-      fprintf ppf "@[The module %a is a functor, \
-                   it cannot have any components@]" !print_longident lid
+      I18n.fprintf ppf
+        "@[The module %a is a functor, it cannot have any components@]"
+        !print_longident lid
   | Abstract_used_as_structure lid ->
-      fprintf ppf "@[The module %a is abstract, \
-                   it cannot have any components@]" !print_longident lid
+      I18n.fprintf ppf
+        "@[The module %a is abstract, it cannot have any components@]"
+        !print_longident lid
   | Generative_used_as_applicative lid ->
-      fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
-                   applied@ in@ type@ expressions@]" !print_longident lid
+      I18n.fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
+                        applied@ in@ type@ expressions@]" !print_longident lid
   | Cannot_scrape_alias(lid, p) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "The module %a is an alias for module %a, which is missing"
         !print_longident lid !print_path p
 
 let report_error ppf = function
   | Missing_module(_, path1, path2) ->
-      fprintf ppf "@[@[<hov>";
+      I18n.fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then
-        fprintf ppf "Internal path@ %s@ is dangling." (Path.name path1)
+        I18n.fprintf ppf "Internal path@ %s@ is dangling." (Path.name path1)
       else
-        fprintf ppf "Internal path@ %s@ expands to@ %s@ which is dangling."
+        I18n.fprintf ppf "Internal path@ %s@ expands to@ %s@ which is dangling."
           (Path.name path1) (Path.name path2);
-      fprintf ppf "@]@ @[%s@ %s@ %s.@]@]"
-        "The compiled interface for module" (Ident.name (Path.head path2))
-        "was not found"
+      I18n.fprintf ppf
+        "@]@ @[The compiled interface for module@ %s@ was not found.@]@]"
+        (Ident.name (Path.head path2))
   | Illegal_value_name(_loc, name) ->
-      fprintf ppf "'%s' is not a valid value identifier."
+      I18n.fprintf ppf "'%s' is not a valid value identifier."
         name
   | Lookup_error(loc, t, err) -> report_lookup_error loc t ppf err
 

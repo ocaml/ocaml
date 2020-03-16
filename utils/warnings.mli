@@ -26,6 +26,10 @@ type loc = {
   loc_ghost: bool;
 }
 
+
+type shadowed_identifier =
+  [`Value|`Type|`Module|`Module_type|`Class|`Class_type]
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -44,8 +48,8 @@ type t =
   | Implicit_public_methods of string list  (* 15 *)
   | Unerasable_optional_argument            (* 16 *)
   | Undeclared_virtual_method of string     (* 17 *)
-  | Not_principal of string                 (* 18 *)
-  | Without_principality of string          (* 19 *)
+  | Not_principal of I18n.s                 (* 18 *)
+  | Without_principality of I18n.s          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
   | Preprocessor of string                  (* 22 *)
@@ -67,11 +71,12 @@ type t =
   | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
-  | Ambiguous_name of string list * string list * bool * string (* 41 *)
+  | Ambiguous_name of string list * string list * bool * I18n.s (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
-  | Open_shadow_identifier of string * string (* 44 *)
-  | Open_shadow_label_constructor of string * string (* 45 *)
+  | Open_shadow_identifier of shadowed_identifier * string (* 44 *)
+  | Open_shadow_label_constructor of
+      [ `Label | `Constructor ] * string    (* 45 *)
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
@@ -81,7 +86,7 @@ type t =
   | Fragile_literal_pattern                 (* 52 *)
   | Misplaced_attribute of string           (* 53 *)
   | Duplicated_attribute of string          (* 54 *)
-  | Inlining_impossible of string           (* 55 *)
+  | Inlining_impossible of I18n.s           (* 55 *)
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
@@ -117,9 +122,9 @@ val defaults_warn_error : string;;
 
 type reporting_information =
   { id : string
-  ; message : string
+  ; message : I18n.s
   ; is_error : bool
-  ; sub_locs : (loc * string) list;
+  ; sub_locs : (loc * I18n.s) list;
   }
 
 val report : t -> [ `Active of reporting_information | `Inactive ]

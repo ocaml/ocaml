@@ -1042,14 +1042,12 @@ let transl_let rec_flag pat_expr_list body =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
   | Free_super_var ->
-      fprintf ppf
+      I18n.fprintf ppf
         "Ancestor names can only be used to select inherited methods"
   | Unreachable_reached ->
-      fprintf ppf "Unreachable expression was reached"
+      I18n.fprintf ppf "Unreachable expression was reached"
 
 let () =
   Location.register_error_of_exn

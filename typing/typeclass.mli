@@ -89,9 +89,13 @@ val type_classes :
            list * Env.t
 *)
 
+type field_type=
+  | Instance_variable
+  | Method
+
 type error =
     Unconsistent_constraint of Ctype.Unification_trace.t
-  | Field_type_mismatch of string * string * Ctype.Unification_trace.t
+  | Field_type_mismatch of field_type * string * Ctype.Unification_trace.t
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of arg_label
@@ -114,8 +118,8 @@ type error =
       Ident.t * Types.class_declaration * Ctype.Unification_trace.t
   | Final_self_clash of Ctype.Unification_trace.t
   | Mutability_mismatch of string * mutable_flag
-  | No_overriding of string * string
-  | Duplicate of string * string
+  | No_overriding of field_type * string
+  | Duplicate of field_type * string
   | Closing_self_type of type_expr
 
 exception Error of Location.t * Env.t * error

@@ -711,39 +711,39 @@ let link objfiles output_name =
 
 (* Error report *)
 
-open Format
-
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %a" Location.print_filename name
+      I18n.fprintf ppf "Cannot find file %a" Location.print_filename name
   | Not_an_object_file name ->
-      fprintf ppf "The file %a is not a bytecode object file"
+      I18n.fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
   | Wrong_object_name name ->
-      fprintf ppf "The output file %s has the wrong name. The extension implies\
-                  \ an object file but the link step was requested" name
+      I18n.fprintf ppf
+        "The output file %s has the wrong name. The extension implies\
+        \ an object file but the link step was requested" name
   | Symbol_error(name, err) ->
-      fprintf ppf "Error while linking %a:@ %a" Location.print_filename name
-      Symtable.report_error err
+      I18n.fprintf ppf
+        "Error while linking %a:@ %a" Location.print_filename name
+        Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<hov>Files %a@ and %a@ \
-                 make inconsistent assumptions over interface %s@]"
+         make inconsistent assumptions over interface %s@]"
         Location.print_filename file1
         Location.print_filename file2
         intf
   | Custom_runtime ->
-      fprintf ppf "Error while building custom runtime system"
+      I18n.fprintf ppf "Error while building custom runtime system"
   | File_exists file ->
-      fprintf ppf "Cannot overwrite existing file %a"
+      I18n.fprintf ppf "Cannot overwrite existing file %a"
         Location.print_filename file
   | Cannot_open_dll file ->
-      fprintf ppf "Error on dynamically loaded library: %a"
+      I18n.fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
   | Required_module_unavailable s ->
-      fprintf ppf "Required module `%s' is unavailable" s
+      I18n.fprintf ppf "Required module `%s' is unavailable" s
   | Camlheader (msg, header) ->
-      fprintf ppf "System error while copying file %s: %s" header msg
+      I18n.fprintf ppf "System error while copying file %s: %s" header msg
 
 let () =
   Location.register_error_of_exn

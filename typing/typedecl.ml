@@ -62,7 +62,7 @@ type error =
   | Deep_unbox_or_untag_attribute of native_repr_kind
   | Immediacy of Typedecl_immediacy.error
   | Separability of Typedecl_separability.error
-  | Bad_unboxed_attribute of string
+  | Bad_unboxed_attribute of I18n.s
   | Boxed_and_unboxed
   | Nonrec_gadt
 
@@ -290,30 +290,30 @@ let transl_declaration env sdecl (id, uid) =
   if raw_status.unboxed && not raw_status.default then begin
     let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
     match sdecl.ptype_kind with
-    | Ptype_abstract    -> bad "it is abstract"
-    | Ptype_open        -> bad "extensible variant types cannot be unboxed"
+    | Ptype_abstract    -> bad (I18n.s "it is abstract")
+    | Ptype_open        -> bad (I18n.s "extensible variant types cannot be unboxed")
     | Ptype_record fields -> begin match fields with
-        | [] -> bad "it has no fields"
-        | _::_::_ -> bad "it has more than one field"
-        | [{pld_mutable = Mutable}] -> bad "it is mutable"
+        | [] -> bad (I18n.s "it has no fields")
+        | _::_::_ -> bad (I18n.s "it has more than one field")
+        | [{pld_mutable = Mutable}] -> bad (I18n.s "it is mutable")
         | [{pld_mutable = Immutable}] -> ()
       end
     | Ptype_variant constructors -> begin match constructors with
-        | [] -> bad "it has no constructor"
-        | (_::_::_) -> bad "it has more than one constructor"
+        | [] -> bad (I18n.s "it has no constructor")
+        | (_::_::_) -> bad (I18n.s "it has more than one constructor")
         | [c] -> begin match c.pcd_args with
             | Pcstr_tuple [] ->
-                bad "its constructor has no argument"
+                bad (I18n.s "its constructor has no argument")
             | Pcstr_tuple (_::_::_) ->
-                bad "its constructor has more than one argument"
+                bad (I18n.s "its constructor has more than one argument")
             | Pcstr_tuple [_]  ->
                 ()
             | Pcstr_record [] ->
-                bad "its constructor has no fields"
+                bad (I18n.s "its constructor has no fields")
             | Pcstr_record (_::_::_) ->
-                bad "its constructor has more than one field"
+                bad (I18n.s "its constructor has more than one field")
             | Pcstr_record [{pld_mutable = Mutable}] ->
-                bad "it is mutable"
+                bad (I18n.s "it is mutable")
             | Pcstr_record [{pld_mutable = Immutable}] ->
                 ()
           end
@@ -1514,34 +1514,42 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 (**** Error report ****)
 
-open Format
+let unbound_type_msg ppf = I18n.fprintf ppf
+    ".@.@[<hov2>In type@ %a@;<1 -2>the variable %a is unbound@]"
 
-let explain_unbound_gen ppf tv tl typ kwd pr =
+let unbound_method_msg ppf = I18n.fprintf ppf
+    ".@.@[<hov2>In method@ %a@;<1 -2>the variable %a is unbound@]"
+
+let unbound_case_msg ppf = I18n.fprintf ppf
+    ".@.@[<hov2>In method@ %a@;<1 -2>the variable %a is unbound@]"
+
+let unbound_field_msg ppf = I18n.fprintf ppf
+    ".@.@[<hov2>In field@ %a@;<1 -2>the variable %a is unbound@]"
+
+let explain_unbound_gen ppf tv tl typ msg pr =
   try
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
     Printtyp.reset_and_mark_loops_list [typ ti; ty0];
-    fprintf ppf
-      ".@.@[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
-      kwd pr ti Printtyp.marked_type_expr tv
+    msg ppf pr ti Printtyp.marked_type_expr tv
   with Not_found -> ()
 
-let explain_unbound ppf tv tl typ kwd lab =
-  explain_unbound_gen ppf tv tl typ kwd
+let explain_unbound ppf tv tl typ msg lab =
+  explain_unbound_gen ppf tv tl typ msg
     (fun ppf ti ->
-       fprintf ppf "%s%a" (lab ti) Printtyp.marked_type_expr (typ ti)
+       Format.fprintf ppf "%s%a" (lab ti) Printtyp.marked_type_expr (typ ti)
     )
 
 let explain_unbound_single ppf tv ty =
   let trivial ty =
-    explain_unbound ppf tv [ty] (fun t -> t) "type" (fun _ -> "") in
+    explain_unbound ppf tv [ty] (fun t -> t) unbound_type_msg (fun _ -> "") in
   match (Ctype.repr ty).desc with
     Tobject(fi,_) ->
       let (tl, rv) = Ctype.flatten_fields fi in
       if rv == tv then trivial ty else
       explain_unbound ppf tv tl (fun (_,_,t) -> t)
-        "method" (fun (lab,_,_) -> lab ^ ": ")
+        unbound_method_msg (fun (lab,_,_) -> lab ^ ": ")
   | Tvariant row ->
       let row = Btype.row_repr row in
       if row.row_more == tv then trivial ty else
@@ -1551,7 +1559,7 @@ let explain_unbound_single ppf tv ty =
         | Reither (_,[t],_,_) -> t
         | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
         | _ -> Btype.newgenty (Ttuple[]))
-        "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
+        unbound_case_msg (fun (lab,_) -> "`" ^ lab ^ " of ")
   | _ -> trivial ty
 
 
@@ -1559,38 +1567,41 @@ let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
   | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
 
-let report_error ppf = function
+let report_error ppf =
+  function
   | Repeated_parameter ->
-      fprintf ppf "A type parameter occurs several times"
+      I18n.fprintf ppf "A type parameter occurs several times"
   | Duplicate_constructor s ->
-      fprintf ppf "Two constructors are named %s" s
+      I18n.fprintf ppf "Two constructors are named %s" s
   | Too_many_constructors ->
-      fprintf ppf
-        "@[Too many non-constant constructors@ -- maximum is %i %s@]"
-        (Config.max_tag + 1) "non-constant constructors"
+      I18n.fprintf ppf
+        "@[Too many non-constant constructors@ -- maximum is %i \
+         non-constant constructors@]"
+        (Config.max_tag + 1)
   | Duplicate_label s ->
-      fprintf ppf "Two labels are named %s" s
+      I18n.fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
-      fprintf ppf "The type abbreviation %s is cyclic" s
+      I18n.fprintf ppf "The type abbreviation %s is cyclic" s
   | Cycle_in_def (s, ty) ->
-      fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
+      I18n.fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
         s Printtyp.type_expr ty
   | Definition_mismatch (ty, None) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
-        "This variant or record definition" "does not match that of type"
+      I18n.fprintf ppf
+        "@[<v>@[<hov>This variant or record definition@ \
+         does not match that of type@;<1 2>%a@]@]"
         Printtyp.type_expr ty
   | Definition_mismatch (ty, Some err) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
-        "This variant or record definition" "does not match that of type"
+      I18n.fprintf ppf "@[<v>@[<hov>This variant or record definition@ \
+                        does not match that of type@;<1 2>%a@]%a@]"
         Printtyp.type_expr ty
-        (Includecore.report_type_mismatch "the original" "this" "definition")
+        (Includecore.report_type_mismatch Definition)
         err
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
       Printtyp.Naming_context.reset ();
-      fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
-        "Constraints are not satisfied in this type."
+      I18n.fprintf ppf "@[Constraints are not satisfied in this type.\
+                        @ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
         !Oprint.out_type (Printtyp.tree_of_typexp false ty)
         !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Non_regular { definition; used_as; defined_as; expansions } ->
@@ -1606,7 +1617,7 @@ let report_error ppf = function
       Printtyp.Naming_context.reset ();
       begin match expansions with
       | [] ->
-          fprintf ppf
+          I18n.fprintf ppf
             "@[<hv>This recursive type is not regular.@ \
              The type constructor %s is defined as@;<1 2>type %a@ \
              but it is used as@;<1 2>%a.@ \
@@ -1616,7 +1627,7 @@ let report_error ppf = function
             !Oprint.out_type (Printtyp.tree_of_typexp false defined_as)
             !Oprint.out_type (Printtyp.tree_of_typexp false used_as)
       | _ :: _ ->
-          fprintf ppf
+          I18n.fprintf ppf
             "@[<hv>This recursive type is not regular.@ \
              The type constructor %s is defined as@;<1 2>type %a@ \
              but it is used as@;<1 2>%a@ \
@@ -1629,24 +1640,22 @@ let report_error ppf = function
             pp_expansions expansions
       end
   | Inconsistent_constraint (env, trace) ->
-      fprintf ppf "The type constraints are not consistent.@.";
+      I18n.fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf env trace
-        (fun ppf -> fprintf ppf "Type")
-        (fun ppf -> fprintf ppf "is not compatible with type")
+        (fun ppf -> I18n.fprintf ppf "Type")
+        (fun ppf -> I18n.fprintf ppf "is not compatible with type")
   | Type_clash (env, trace) ->
       Printtyp.report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "This type constructor expands to type")
-        (function ppf ->
-           fprintf ppf "but is used here with type")
+        (fun ppf -> I18n.fprintf ppf "This type constructor expands to type")
+        (fun ppf -> I18n.fprintf ppf "but is used here with type")
   | Null_arity_external ->
-      fprintf ppf "External identifiers must be functions"
+      I18n.fprintf ppf "External identifiers must be functions"
   | Missing_native_external ->
-      fprintf ppf "@[<hv>An external function with more than 5 arguments \
+      I18n.fprintf ppf "@[<hv>An external function with more than 5 arguments \
                    requires a second stub function@ \
                    for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
-      fprintf ppf "A type variable is unbound in this type declaration";
+      I18n.fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
@@ -1654,148 +1663,145 @@ let report_error ppf = function
               let tl = tys_of_constr_args c.Types.cd_args in
               Btype.newgenty (Ttuple tl)
             )
-            "case" (fun ppf c ->
-                fprintf ppf
+            unbound_case_msg (fun ppf c ->
+                Format.fprintf ppf
                   "%a of %a" Printtyp.ident c.Types.cd_id
                   Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
-            "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
+            unbound_field_msg (fun l -> Ident.name l.Types.ld_id ^ ": ")
       | Type_abstract, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()
       end
   | Unbound_type_var_ext (ty, ext) ->
-      fprintf ppf "A type variable is unbound in this extension constructor";
+      I18n.fprintf ppf
+        "A type variable is unbound in this extension constructor";
       let args = tys_of_constr_args ext.ext_args in
-      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
+      explain_unbound ppf ty args (fun c -> c) unbound_type_msg (fun _ -> "")
   | Cannot_extend_private_type path ->
-      fprintf ppf "@[%s@ %a@]"
-        "Cannot extend private type definition"
+      I18n.fprintf ppf "@[Cannot extend private type definition@ %a@]"
         Printtyp.path path
   | Not_extensible_type path ->
-      fprintf ppf "@[%s@ %a@ %s@]"
-        "Type definition"
+      Format.fprintf ppf "@[Type definition@ %a@ is not extensible@]"
         Printtyp.path path
-        "is not extensible"
   | Extension_mismatch (path, err) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%s@]%a@]"
-        "This extension" "does not match the definition of type"
+      I18n.fprintf ppf
+        "@[<v>@[<hov>This extension@ does not match the definition \
+         of type@;<1 2>%s@]%a@]"
         (Path.name path)
-        (Includecore.report_type_mismatch
-           "the type" "this extension" "definition")
+        (Includecore.report_type_mismatch Definition)
         err
   | Rebind_wrong_type (lid, env, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
-           fprintf ppf "The constructor %a@ has type"
+           I18n.fprintf ppf "The constructor %a@ has type"
              Printtyp.longident lid)
         (function ppf ->
-           fprintf ppf "but was expected to be of type")
+           I18n.fprintf ppf "but was expected to be of type")
   | Rebind_mismatch (lid, p, p') ->
-      fprintf ppf
-        "@[%s@ %a@ %s@ %s@ %s@ %s@ %s@]"
-        "The constructor" Printtyp.longident lid
-        "extends type" (Path.name p)
-        "whose declaration does not match"
-        "the declaration of type" (Path.name p')
-  | Rebind_private lid ->
-      fprintf ppf "@[%s@ %a@ %s@]"
-        "The constructor"
+      I18n.fprintf ppf
+        "@[The constructor %a extends type %s whose declarations dos not \
+            match the declaration of type %s@]"
         Printtyp.longident lid
-        "is private"
+        (Path.name p)
+        (Path.name p')
+  | Rebind_private lid ->
+      I18n.fprintf ppf "@[The constructor@ %a@ is private@]"
+        Printtyp.longident lid
   | Variance (Typedecl_variance.Bad_variance (n, v1, v2)) ->
       let variance (p,n,i) =
-        let inj = if i then "injective " else "" in
-        match p, n with
-          true,  true  -> inj ^ "invariant"
-        | true,  false -> inj ^ "covariant"
-        | false, true  -> inj ^ "contravariant"
-        | false, false -> if inj = "" then "unrestricted" else inj
-      in
-      let suffix n =
-        let teen = (n mod 100)/10 = 1 in
-        match n mod 10 with
-        | 1 when not teen -> "st"
-        | 2 when not teen -> "nd"
-        | 3 when not teen -> "rd"
-        | _ -> "th"
+        match i, p, n with
+        | true,  true,  true  -> I18n.s "injective invariant"
+        | false,  true,  true  -> I18n.s "invariant"
+        | true, true,  false -> I18n.s "injective covariant"
+        | false,  true,  false  -> I18n.s "covariant"
+        | true, false, true  -> I18n.s "injective contravariant"
+        | false, false, true  -> I18n.s "contravariant"
+        | true, false, false -> I18n.s "injective"
+        | false, false, false  -> I18n.s "unrestricted"
       in
       (match n with
        | Variance_not_reflected ->
-           fprintf ppf "@[%s@ %s@ It"
-             "In this definition, a type variable has a variance that"
-             "is not reflected by its occurrence in type parameters."
+           I18n.fprintf ppf
+             "@[In this definition, a type variable has a variance that@ \
+              is not reflected by its occurrence in type parameters.@ \
+              It was expected to be %a,@ but it is %a.@]"
+             I18n.pp (variance v2) I18n.pp (variance v1)
        | No_variable ->
-           fprintf ppf "@[%s@ %s@]"
-             "In this definition, a type variable cannot be deduced"
-             "from the type parameters."
+           I18n.fprintf ppf
+             "@[In this definition, a type variable cannot be deduced@ \
+              from the type parameters.@]"
        | Variance_not_deducible ->
-           fprintf ppf "@[%s@ %s@ It"
-             "In this definition, a type variable has a variance that"
-             "cannot be deduced from the type parameters."
+           I18n.fprintf ppf
+             "@[In this definition, a type variable has a variance that@ \
+              cannot be deduced from the type parameters.@ \
+              It was expected to be %a,@ but it is %a.@]"
+             I18n.pp (variance v2) I18n.pp (variance v1)
        | Variance_not_satisfied n ->
-           fprintf ppf "@[%s@ %s@ The %d%s type parameter"
-             "In this definition, expected parameter"
-             "variances are not satisfied."
-             n (suffix n));
-      (match n with
-       | No_variable -> ()
-       | _ ->
-           fprintf ppf " was expected to be %s,@ but it is %s.@]"
-             (variance v2) (variance v1))
+           I18n.fnprintf ppf n
+             "@[In this definition, expected parameter@ \
+              variances are not satisfied.@ \
+              The %dst type parameter was expected to be %a,@ but it is %a.@]"
+             "@[In this definition, expected parameter@ \
+              variances are not satisfied.@ \
+              The %dth type parameter was expected to be %a,@ but it is %a.@]"
+             n I18n.pp (variance v2) I18n.pp (variance v1)
+      )
   | Unavailable_type_constructor p ->
-      fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
+      I18n.fprintf ppf "The definition of type %a@ is unavailable"
+        Printtyp.path p
   | Bad_fixed_type r ->
-      fprintf ppf "This fixed type %s" r
+      I18n.fprintf ppf "This fixed type %s" r
   | Variance Typedecl_variance.Varying_anonymous ->
-      fprintf ppf "@[%s@ %s@ %s@]"
-        "In this GADT definition," "the variance of some parameter"
-        "cannot be checked"
+      I18n.fprintf ppf
+        "@[In this GADT definition,@ the variance of some parameter@ \
+         cannot be checked@]"
   | Val_in_structure ->
-      fprintf ppf "Value declarations are only allowed in signatures"
+      I18n.fprintf ppf "Value declarations are only allowed in signatures"
   | Multiple_native_repr_attributes ->
-      fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
+      I18n.fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "@[Don't know how to unbox this type.@ \
+      I18n.fprintf ppf "@[Don't know how to unbox this type.@ \
                    Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "@[Don't know how to untag this type.@ \
+      I18n.fprintf ppf "@[Don't know how to untag this type.@ \
                    Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The attribute '%s' should be attached to@ \
          a direct argument or result of the primitive,@ \
          it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Immediacy (Typedecl_immediacy.Bad_immediacy_attribute violation) ->
-      fprintf ppf "@[%a@]" Format.pp_print_text
+      I18n.fprintf ppf "@[%a@]" I18n.pp_print_text
         (match violation with
          | Type_immediacy.Violation.Not_always_immediate ->
-             "Types marked with the immediate attribute must be \
+             I18n.s "Types marked with the immediate attribute must be \
               non-pointer types like int or bool."
          | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
-             "Types marked with the immediate64 attribute must be \
+             I18n.s "Types marked with the immediate64 attribute must be \
               produced using the Stdlib.Sys.Immediate64.Make functor.")
   | Bad_unboxed_attribute msg ->
-      fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
+      I18n.fprintf ppf "@[This type cannot be unboxed because@ %a.@]" I18n.pp msg
   | Separability (Typedecl_separability.Non_separable_evar evar) ->
       let pp_evar ppf = function
         | None ->
-            fprintf ppf "an unnamed existential variable"
+            I18n.fprintf ppf "an unnamed existential variable"
         | Some str ->
-            fprintf ppf "the existential variable %a"
+            I18n.fprintf ppf "the existential variable %a"
               Pprintast.tyvar str in
-      fprintf ppf "@[This type cannot be unboxed because@ \
+      I18n.fprintf ppf "@[This type cannot be unboxed because@ \
                    it might contain both float and non-float values,@ \
                    depending on the instantiation of %a.@ \
                    You should annotate it with [%@%@ocaml.boxed].@]"
         pp_evar evar
   | Boxed_and_unboxed ->
-      fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
+      I18n.fprintf ppf
+        "@[A type cannot be boxed and unboxed at the same time.@]"
   | Nonrec_gadt ->
-      fprintf ppf
-        "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
+      I18n.fprintf ppf
+       "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
 
 let () =
   Location.register_error_of_exn

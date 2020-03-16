@@ -64,9 +64,13 @@ type 'a full_class = {
   req: 'a Typedtree.class_infos;
 }
 
+type field_type=
+  | Instance_variable
+  | Method
+
 type error =
     Unconsistent_constraint of Ctype.Unification_trace.t
-  | Field_type_mismatch of string * string * Ctype.Unification_trace.t
+  | Field_type_mismatch of field_type * string * Ctype.Unification_trace.t
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of arg_label
@@ -89,8 +93,8 @@ type error =
       Ident.t * Types.class_declaration * Ctype.Unification_trace.t
   | Final_self_clash of Ctype.Unification_trace.t
   | Mutability_mismatch of string * mutable_flag
-  | No_overriding of string * string
-  | Duplicate of string * string
+  | No_overriding of field_type * string
+  | Duplicate of field_type * string
   | Closing_self_type of type_expr
 
 exception Error of Location.t * Env.t * error
@@ -280,7 +284,7 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
     with
       Ctype.Unify tr ->
         raise (Error(loc, val_env,
-                     Field_type_mismatch("instance variable", lab, tr)))
+                     Field_type_mismatch(Instance_variable, lab, tr)))
     | Not_found -> None, virt
   in
   let (id, _, _, _) as result =
@@ -308,7 +312,7 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
         let open Ctype.Unification_trace in
         match trace with
         | Diff _ :: Incompatible_fields {name = n; _ } :: rem ->
-            raise(Error(loc, env, Field_type_mismatch ("method", n, rem)))
+            raise(Error(loc, env,Field_type_mismatch (Method, n, rem)))
         | _ -> assert false
       end;
 
@@ -332,7 +336,7 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
                  (cname :: Concr.elements over_vals));
       | Some Override
         when Concr.is_empty over_meths && Concr.is_empty over_vals ->
-        raise (Error(loc, env, No_overriding ("","")))
+        raise (Error(loc, env, No_overriding (Method,"")))
       | _ -> ()
       end;
 
@@ -353,7 +357,7 @@ let virtual_method val_env meths self_type lab priv sty loc =
   let ty = cty.ctyp_type in
   begin
     try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-        raise(Error(loc, val_env, Field_type_mismatch ("method", lab, trace)));
+        raise(Error(loc, val_env, Field_type_mismatch(Method, lab, trace)));
   end;
   cty
 
@@ -365,7 +369,7 @@ let declare_method val_env meths self_type lab priv sty loc =
   in
   let unif ty =
     try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-      raise(Error(loc, val_env, Field_type_mismatch ("method", lab, trace)))
+      raise(Error(loc, val_env, Field_type_mismatch(Method, lab, trace)))
   in
   let sty = Ast_helper.Typ.force_poly sty in
   match sty.ptyp_desc, priv with
@@ -664,15 +668,14 @@ and class_field_aux self_loc cl_num self_type meths vars
 
   | Pcf_val (lab, mut, Cfk_concrete (ovf, sexp)) ->
       if Concr.mem lab.txt local_vals then
-        raise(Error(loc, val_env, Duplicate ("instance variable", lab.txt)));
+        raise(Error(loc, val_env,Duplicate (Instance_variable, lab.txt)));
       if Concr.mem lab.txt warn_vals then begin
         if ovf = Fresh then
           Location.prerr_warning lab.loc
             (Warnings.Instance_variable_override[lab.txt])
       end else begin
         if ovf = Override then
-          raise(Error(loc, val_env,
-                      No_overriding ("instance variable", lab.txt)))
+          raise(Error(loc, val_env,No_overriding (Instance_variable, lab.txt)))
       end;
       if !Clflags.principal then Ctype.begin_def ();
       let exp = type_exp val_env sexp in
@@ -705,13 +708,13 @@ and class_field_aux self_loc cl_num self_type meths vars
         | _ -> Ast_helper.Exp.poly ~loc:expr.pexp_loc expr None
       in
       if Concr.mem lab.txt local_meths then
-        raise(Error(loc, val_env, Duplicate ("method", lab.txt)));
+        raise(Error(loc, val_env, Duplicate (Method, lab.txt)));
       if Concr.mem lab.txt concr_meths then begin
         if ovf = Fresh then
           Location.prerr_warning loc (Warnings.Method_override [lab.txt])
       end else begin
         if ovf = Override then
-          raise(Error(loc, val_env, No_overriding("method", lab.txt)))
+          raise(Error(loc, val_env, No_overriding(Method, lab.txt)))
       end;
       let (_, ty) =
         Ctype.filter_self_method val_env lab.txt priv meths self_type
@@ -738,8 +741,7 @@ and class_field_aux self_loc cl_num self_type meths vars
           end
       | _ -> assert false
       with Ctype.Unify trace ->
-        raise(Error(loc, val_env,
-                    Field_type_mismatch ("method", lab.txt, trace)))
+        raise(Error(loc, val_env,Field_type_mismatch (Method, lab.txt, trace)))
       end;
       let meth_expr = make_method self_loc cl_num expr in
       (* backup variables for Pexp_override *)
@@ -1877,63 +1879,65 @@ let approx_class_declarations env sdecls =
 
 (* Error report *)
 
-open Format
-
 let report_error env ppf = function
   | Repeated_parameter ->
-      fprintf ppf "A type parameter occurs several times"
+      I18n.fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
-      fprintf ppf "The class constraints are not consistent.@.";
+      I18n.fprintf ppf "The class constraints are not consistent.@.";
       Printtyp.report_unification_error ppf env trace
-        (fun ppf -> fprintf ppf "Type")
-        (fun ppf -> fprintf ppf "is not compatible with type")
+        (I18n.dprintf "Type") (I18n.dprintf "is not compatible with type")
   | Field_type_mismatch (k, m, trace) ->
-      Printtyp.report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "The %s %s@ has type" k m)
-        (function ppf ->
-           fprintf ppf "but is expected to have type")
+      let intro = match k with
+        | Method -> I18n.dprintf "The method %s@ has type" m
+        | Instance_variable ->
+            I18n.dprintf "The instance variable %s@ has type" m in
+      Printtyp.report_unification_error ppf env trace intro
+        (I18n.dprintf "but is expected to have type")
   | Structure_expected clty ->
-      fprintf ppf
-        "@[This class expression is not a class structure; it has type@ %a@]"
+      I18n.fprintf ppf
+        "@[This class expression is not a class structure; \
+            it has type@ %a@]"
         Printtyp.class_type clty
   | Cannot_apply _ ->
-      fprintf ppf
+      I18n.fprintf ppf
         "This class expression is not a class function, it cannot be applied"
   | Apply_wrong_label l ->
-      let mark_label = function
-        | Nolabel -> "out label"
-        |  l -> sprintf " label %s" (Btype.prefixed_label_name l) in
-      fprintf ppf "This argument cannot be applied with%s" (mark_label l)
+      begin match l with
+      | Nolabel ->
+          I18n.fprintf ppf
+            "This argument cannot be applied without label"
+      |  l ->
+          I18n.fprintf ppf
+            "This argument cannot be applied with label %s"
+            (Btype.prefixed_label_name l)
+      end
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur | Improve error message *)
-      fprintf ppf "@[%s@ %a@]"
+      I18n.fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
         Printtyp.type_expr ty
   | Unbound_class_2 cl ->
-      fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
+      I18n.fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Unbound_class_type_2 cl ->
-      fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
+      I18n.fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? | Print a trace? *)
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
-      fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
+      I18n.fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
         !Oprint.out_type (Printtyp.tree_of_typexp false abbrev)
         !Oprint.out_type (Printtyp.tree_of_typexp false actual)
         !Oprint.out_type (Printtyp.tree_of_typexp false expected)
   | Constructor_type_mismatch (c, trace) ->
       Printtyp.report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "The expression \"new %s\" has type" c)
-        (function ppf ->
-           fprintf ppf "but is used with type")
+        (I18n.dprintf "The expression \"new %s\" has type" c)
+        (I18n.dprintf "but is used with type")
   | Virtual_class (cl, imm, mets, vals) ->
       let print_mets ppf mets =
-        List.iter (function met -> fprintf ppf "@ %s" met) mets in
+        List.iter (function met -> Format.fprintf ppf "@ %s" met) mets in
       let missings =
         match mets, vals with
           [], _ -> "variables"
@@ -1941,27 +1945,25 @@ let report_error env ppf = function
         | _ -> "methods and variables"
       in
       let print_msg ppf =
-        if imm then fprintf ppf "This object has virtual %s" missings
-        else if cl then fprintf ppf "This class should be virtual"
-        else fprintf ppf "This class type should be virtual"
+        if imm then I18n.fprintf ppf "This object has virtual %s" missings
+        else if cl then I18n.fprintf ppf "This class should be virtual"
+        else I18n.fprintf ppf "This class type should be virtual"
       in
-      fprintf ppf
+      I18n.fprintf ppf
         "@[%t.@ @[<2>The following %s are undefined :%a@]@]"
         print_msg missings print_mets (mets @ vals)
   | Parameter_arity_mismatch(lid, expected, provided) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The class constructor %a@ expects %i type argument(s),@ \
            but is here applied to %i type argument(s)@]"
         Printtyp.longident lid expected provided
   | Parameter_mismatch trace ->
       Printtyp.report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "The type parameter")
-        (function ppf ->
-           fprintf ppf "does not meet its constraint: it should be")
+        (I18n.dprintf "The type parameter")
+        (I18n.dprintf "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
       Printtyp.reset_and_mark_loops_list [params; cstrs];
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
         Printtyp.ident id
@@ -1970,72 +1972,87 @@ let report_error env ppf = function
   | Class_match_failure error ->
       Includeclass.report_error ppf error
   | Unbound_val lab ->
-      fprintf ppf "Unbound instance variable %s" lab
+      I18n.fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
       let print_common ppf kind ty0 real lab ty =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
         List.iter Printtyp.mark_loops [ty; ty1];
-        fprintf ppf
-          "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
-          kind lab
+        ( match kind with
+          | Method ->
+              I18n.fprintf ppf
+                "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
+          | Instance_variable ->
+              I18n.fprintf ppf
+                "The instance variable %s@ has type@;<1 2>%a@ \
+                 where@ %a@ is unbound"
+        )
+          lab
           !Oprint.out_type (Printtyp.tree_of_typexp false ty)
           !Oprint.out_type (Printtyp.tree_of_typexp false ty0)
       in
       let print_reason ppf = function
       | Ctype.CC_Method (ty0, real, lab, ty) ->
-          print_common ppf "method" ty0 real lab ty
+          print_common ppf Method ty0 real lab ty
       | Ctype.CC_Value (ty0, real, lab, ty) ->
-          print_common ppf "instance variable" ty0 real lab ty
+          print_common ppf Instance_variable ty0 real lab ty
       in
       Printtyp.reset ();
-      fprintf ppf
+      I18n.fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"
        printer print_reason reason
   | Non_generalizable_class (id, clty) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The type of this class,@ %a,@ \
            contains type variables that cannot be generalized@]"
         (Printtyp.class_declaration id) clty
   | Cannot_coerce_self ty ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The type of self cannot be coerced to@ \
            the type of the current class:@ %a.@.\
            Some occurrences are contravariant@]"
         Printtyp.type_scheme ty
   | Non_collapsable_conjunction (id, clty, trace) ->
-      fprintf ppf
+      I18n.fprintf ppf
         "@[The type of this class,@ %a,@ \
            contains non-collapsible conjunctive types in constraints.@ %t@]"
         (Printtyp.class_declaration id) clty
         (fun ppf -> Printtyp.report_unification_error ppf env trace
-            (fun ppf -> fprintf ppf "Type")
-            (fun ppf -> fprintf ppf "is not compatible with type")
+            (I18n.dprintf "Type")
+            (I18n.dprintf "is not compatible with type")
         )
   | Final_self_clash trace ->
       Printtyp.report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "This object is expected to have type")
-        (function ppf ->
-           fprintf ppf "but actually has type")
-  | Mutability_mismatch (_lab, mut) ->
-      let mut1, mut2 =
-        if mut = Immutable then "mutable", "immutable"
-        else "immutable", "mutable" in
-      fprintf ppf
-        "@[The instance variable is %s;@ it cannot be redefined as %s@]"
-        mut1 mut2
+        (I18n.dprintf "This object is expected to have type")
+        (I18n.dprintf "but actually has type")
+  | Mutability_mismatch (_lab, Immutable) ->
+      I18n.fprintf ppf
+        "@[The instance variable is immutable;@ \
+         it cannot be redefined as mutable@]"
+  | Mutability_mismatch (_lab, Mutable) ->
+      I18n.fprintf ppf
+        "@[The instance variable is mutable;@ \
+         it cannot be redefined as immutable@]"
   | No_overriding (_, "") ->
-      fprintf ppf "@[This inheritance does not override any method@ %s@]"
-        "instance variable"
-  | No_overriding (kind, name) ->
-      fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name
-  | Duplicate (kind, name) ->
-      fprintf ppf "@[The %s `%s'@ has multiple definitions in this object@]"
-                    kind name
+    I18n.fprintf ppf
+      "@[This inheritance does not override any method@ instance variable@]"
+  | No_overriding (Method, name) ->
+      I18n.fprintf ppf "@[The method `%s'@ has no previous definition@]" name
+  | No_overriding (Instance_variable, name) ->
+      I18n.fprintf ppf
+        "@[The instance variable `%s'@ has no previous definition@]" name
+  | Duplicate (Method, name) ->
+      I18n.fprintf ppf
+        "@[The method `%s'@ has multiple definitions in this object@]"
+        name
+  | Duplicate (Instance_variable, name) ->
+      I18n.fprintf ppf
+        "@[The instance variable `%s'@ \
+         has multiple definitions in this object@]"
+        name
   | Closing_self_type self ->
-    fprintf ppf
+    I18n.fprintf ppf
       "@[Cannot close type of object literal:@ %a@,\
        it has been unified with the self type of a class that is not yet@ \
        completely defined.@]"
