@@ -240,6 +240,7 @@ let load_file = load_file false
 (* Load commands from a file *)
 
 let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
 let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
@@ -248,13 +249,19 @@ let _ = add_directive "use" (Directive_string (dir_use std_out))
       doc = "Read, compile and execute source phrases from the given file.";
     }
 
+let _ = add_directive "use_output" (Directive_string (dir_use_output std_out))
+    {
+      section = section_run;
+      doc = "Execute a command and read, compile and execute source phrases \
+             from its output.";
+    }
+
 let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
     {
       section = section_run;
       doc = "Usage is identical to #use but #mod_use \
              wraps the contents in a module.";
     }
-
 
 (* Install, remove a printer *)
 
