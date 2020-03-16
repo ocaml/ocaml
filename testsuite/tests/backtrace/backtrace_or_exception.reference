@@ -1,0 +1,14 @@
+exception Backtrace_or_exception.Exn
+Raised at file "backtrace_or_exception.ml", line 20, characters 4-13
+Called from file "backtrace_or_exception.ml", line 40, characters 6-10
+---------------------------
+exception Backtrace_or_exception.Exn
+Raised at file "backtrace_or_exception.ml", line 11, characters 4-13
+Called from file "backtrace_or_exception.ml", line 24, characters 8-44
+Re-raised at file "backtrace_or_exception.ml", line 27, characters 4-13
+Called from file "backtrace_or_exception.ml", line 40, characters 6-10
+---------------------------
+exception Backtrace_or_exception.Exn
+Raised at file "backtrace_or_exception.ml", line 36, characters 6-15
+Called from file "backtrace_or_exception.ml", line 40, characters 6-10
+---------------------------

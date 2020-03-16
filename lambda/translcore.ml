@@ -152,9 +152,11 @@ let rec push_defaults loc bindings cases partial =
 
 (* Insertion of debugging events *)
 
-let event_before = Translprim.event_before
+let event_before exp lam =
+  Translprim.event_before exp.exp_loc exp lam
 
-let event_after = Translprim.event_after
+let event_after exp lam =
+  Translprim.event_after exp.exp_loc exp lam
 
 let event_function exp lam =
   if !Clflags.debug && not !Clflags.native_code then

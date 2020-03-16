@@ -15,9 +15,11 @@
 
 (* Insertion of debugging events *)
 
-val event_before : Typedtree.expression -> Lambda.lambda -> Lambda.lambda
+val event_before : Location.t -> Typedtree.expression
+                   -> Lambda.lambda -> Lambda.lambda
 
-val event_after : Typedtree.expression -> Lambda.lambda -> Lambda.lambda
+val event_after : Location.t -> Typedtree.expression
+                  -> Lambda.lambda -> Lambda.lambda
 
 (* Translation of primitives *)
 

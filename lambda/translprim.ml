@@ -31,19 +31,19 @@ exception Error of Location.t * error
 
 (* Insertion of debugging events *)
 
-let event_before exp lam = match lam with
+let event_before loc exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug && not !Clflags.native_code
-  then Levent(lam, {lev_loc = exp.exp_loc;
+  then Levent(lam, {lev_loc = loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = exp.exp_env})
   else lam
 
-let event_after exp lam =
+let event_after loc exp lam =
   if !Clflags.debug && not !Clflags.native_code
-  then Levent(lam, {lev_loc = exp.exp_loc;
+  then Levent(lam, {lev_loc = loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = exp.exp_env})
@@ -669,7 +669,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       let arg =
         match arg_exps with
         | None -> arg
-        | Some [arg_exp] -> event_after arg_exp arg
+        | Some [arg_exp] -> event_after loc arg_exp arg
         | Some _ -> assert false
       in
       Lprim(Praise kind, [arg], loc)
@@ -678,7 +678,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       let raise_arg =
         match arg_exps with
         | None -> Lvar vexn
-        | Some [exn_exp; _] -> event_after exn_exp (Lvar vexn)
+        | Some [exn_exp; _] -> event_after loc exn_exp (Lvar vexn)
         | Some _ -> assert false
       in
       Llet(Strict, Pgenval, vexn, exn,
@@ -806,7 +806,7 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
     if primitive_needs_event_after prim then begin
       match exp with
       | None -> lam
-      | Some exp -> event_after exp lam
+      | Some exp -> event_after loc exp lam
     end else begin
       lam
     end
