@@ -1,4 +1,0 @@
-Fatal error: exception Stdlib.Exit
-Raised at file "pr6920_why_at.ml", line 13, characters 35-45
-Called from file "pr6920_why_at.ml", line 15, characters 2-11
-Called from file "pr6920_why_at.ml", line 21, characters 2-6

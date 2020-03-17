@@ -1,0 +1,4 @@
+Fatal error: exception Stdlib.Exit
+Raised at file "pr6920_why_swallow.ml", line 9, characters 35-45
+Called from file "pr6920_why_swallow.ml", line 12, characters 4-13
+Called from file "pr6920_why_swallow.ml", line 19, characters 2-6
