@@ -1371,6 +1371,7 @@ let simplif_primitive_32bits :
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
+  | Pcompare_bints Pint64 -> Pccall (default_prim "caml_int64_compare")
   | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
