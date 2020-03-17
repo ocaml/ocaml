@@ -98,6 +98,8 @@ static int read_trailer(int fd, struct exec_trailer *trail)
       ? 0 : WRONG_MAGIC;
 }
 
+enum caml_byte_program_mode caml_byte_program_mode = STANDARD;
+
 int caml_attempt_open(char_os **name, struct exec_trailer *trail,
                       int do_open_script)
 {
