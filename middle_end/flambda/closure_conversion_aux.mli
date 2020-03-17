@@ -59,7 +59,7 @@ module Function_decls : sig
       -> params:Ident.t list
       -> body:Lambda.lambda
       -> attr:Lambda.function_attribute
-      -> loc:Location.t
+      -> loc:Lambda.scoped_location
       -> t
 
     val let_rec_ident : t -> Ident.t
@@ -71,7 +71,7 @@ module Function_decls : sig
     val specialise : t -> Lambda.specialise_attribute
     val is_a_functor : t -> bool
     val stub : t -> bool
-    val loc : t -> Location.t
+    val loc : t -> Lambda.scoped_location
 
     (* Like [all_free_idents], but for just one function. *)
     val free_idents : t -> Ident.Set.t

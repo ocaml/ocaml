@@ -264,12 +264,12 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
-  | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch * Location.t
+  | Lprim of primitive * lambda list * scoped_location
+  | Lswitch of lambda * lambda_switch * scoped_location
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+      lambda * (string * lambda) list * lambda option * scoped_location
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -280,7 +280,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
+  | Lsend of meth_kind * lambda * lambda * lambda list * scoped_location
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -290,12 +290,12 @@ and lfunction =
     return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
-    loc : Location.t; }
+    loc : scoped_location; }
 
 and lambda_apply =
   { ap_func : lambda;
     ap_args : lambda list;
-    ap_loc : Location.t;
+    ap_loc : scoped_location;
     ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
     ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
     ap_specialised : specialise_attribute; }
@@ -307,7 +307,7 @@ and lambda_switch =
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
     sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
-  { lev_loc: Location.t;
+  { lev_loc: scoped_location;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.t }
@@ -368,10 +368,10 @@ val transl_prim: string -> string -> lambda
 
 val free_variables: lambda -> Ident.Set.t
 
-val transl_module_path: Location.t -> Env.t -> Path.t -> lambda
-val transl_value_path: Location.t -> Env.t -> Path.t -> lambda
-val transl_extension_path: Location.t -> Env.t -> Path.t -> lambda
-val transl_class_path: Location.t -> Env.t -> Path.t -> lambda
+val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_value_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_extension_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_class_path: scoped_location -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 

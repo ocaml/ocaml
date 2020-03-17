@@ -584,7 +584,7 @@ let rec comp_expr env exp sz cont =
             (getmethod :: Kapply nargs :: cont1)
         end
   | Lfunction{params; body; loc} -> (* assume kind = Curried *)
-      let cont = add_pseudo_event loc !compunit_name cont in
+      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
       let lbl = new_label() in
       let fv = Ident.Set.elements(free_variables exp) in
       let to_compile =
@@ -735,7 +735,7 @@ let rec comp_expr env exp sz cont =
          Kconst (Const_base (Const_int n))::
          Kaddint::cont)
   | Lprim(Pmakearray (kind, _), args, loc) ->
-      let cont = add_pseudo_event loc !compunit_name cont in
+      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
       begin match kind with
         Pintarray | Paddrarray ->
           comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
@@ -780,10 +780,10 @@ let rec comp_expr env exp sz cont =
       in
       comp_args env args sz cont
   | Lprim(Pmakeblock(tag, _mut, _), args, loc) ->
-      let cont = add_pseudo_event loc !compunit_name cont in
+      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
       comp_args env args sz (Kmakeblock(List.length args, tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->
-      let cont = add_pseudo_event loc !compunit_name cont in
+      let cont = add_pseudo_event (raw_location loc) !compunit_name cont in
       comp_args env args sz (Kgetfloatfield n :: cont)
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
@@ -925,7 +925,7 @@ let rec comp_expr env exp sz cont =
       let event kind info =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
-          ev_loc = lev.lev_loc;
+          ev_loc = raw_location lev.lev_loc;
           ev_kind = kind;
           ev_info = info;
           ev_typenv = Env.summary lev.lev_env;

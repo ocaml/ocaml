@@ -55,4 +55,4 @@ let report_error = function
       prerr_string "Unbound identifier "; prerr_string s; prerr_endline "."
 
 let debuginfo ?(loc=Location.symbol_rloc ()) () =
-  Debuginfo.(from_location loc)
+  Debuginfo.(from_location (Lambda.of_raw_location loc))

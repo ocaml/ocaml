@@ -1475,6 +1475,7 @@ struct
   let gtint = Ccmpi Cgt
 
   type act = expression
+  type loc = Debuginfo.t
 
   (* CR mshinwell: GPR#2294 will fix the Debuginfo here *)
 
@@ -1486,8 +1487,7 @@ struct
   let make_if cond ifso ifnot =
     Cifthenelse (cond, Debuginfo.none, ifso, Debuginfo.none, ifnot,
       Debuginfo.none)
-  let make_switch loc arg cases actions =
-    let dbg = Debuginfo.from_location loc in
+  let make_switch dbg arg cases actions =
     let actions = Array.map (fun expr -> expr, dbg) actions in
     make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
@@ -1555,7 +1555,7 @@ module SwitcherBlocks = Switch.Make(SArgBlocks)
 (* Int switcher, arg in [low..high],
    cases is list of individual cases, and is sorted by first component *)
 
-let transl_int_switch loc arg low high cases default = match cases with
+let transl_int_switch dbg arg low high cases default = match cases with
 | [] -> assert false
 | _::_ ->
     let store = StoreExp.mk_store () in
@@ -1595,7 +1595,7 @@ let transl_int_switch loc arg low high cases default = match cases with
     bind "switcher" arg
       (fun a ->
         SwitcherBlocks.zyva
-          loc
+          dbg
           (low,high)
           a
           (Array.of_list inters) store)

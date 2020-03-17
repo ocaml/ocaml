@@ -739,7 +739,8 @@ let is_erasable = function
 let bind_params { backend; mutable_vars; _ } loc fpc params args body =
   let rec aux subst pl al body =
     match (pl, al) with
-      ([], []) -> substitute loc (backend, fpc) subst (Some Int.Map.empty) body
+      ([], []) -> substitute (Debuginfo.from_location loc) (backend, fpc)
+                    subst (Some Int.Map.empty) body
     | (p1 :: pl, a1 :: al) ->
         if is_substituable ~mutable_vars a1 then
           aux (V.Map.add (VP.var p1) a1 subst) pl al body
@@ -770,7 +771,7 @@ let bind_params { backend; mutable_vars; _ } loc fpc params args body =
 
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
-    Location.prerr_warning loc
+    Location.prerr_warning (Debuginfo.Scoped_location.to_location loc)
       (Warnings.Inlining_impossible warning)
 
 (* Generate a direct application *)
@@ -1028,7 +1029,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
               V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos V.Map.empty in
         (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
-              substitute Location.none (backend, !Clflags.float_const_prop) sb
+              substitute Debuginfo.none (backend, !Clflags.float_const_prop) sb
                 None ubody),
          approx)
       end else begin

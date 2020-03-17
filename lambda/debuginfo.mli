@@ -50,6 +50,7 @@ type item = private {
   dinfo_start_bol: int;
   dinfo_end_bol: int;
   dinfo_end_line: int;
+  dinfo_scopes: Scoped_location.scopes;
 }
 
 type t = item list
@@ -71,13 +72,11 @@ val is_none : t -> bool
 
 val to_string : t -> string
 
-val from_location : Location.t -> t
+val from_location : Scoped_location.t -> t
 
 val to_location : t -> Location.t
 
-val concat: t -> t -> t
-
-val inline: Location.t -> t -> t
+val inline : t -> t -> t
 
 val compare : t -> t -> int
 
