@@ -255,6 +255,8 @@ type function_attribute = {
   stub: bool;
 }
 
+type scoped_location = Debuginfo.Scoped_location.t
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant

@@ -17,6 +17,85 @@ open! Int_replace_polymorphic_compare
 open Lexing
 open Location
 
+module Scoped_location = struct
+  type scope_item =
+    | Sc_anonymous_function
+    | Sc_value_definition of string
+    | Sc_module_definition of string
+    | Sc_class_definition of string
+    | Sc_method_definition of string
+
+  type scopes = scope_item list
+
+  let add_parens_if_symbolic = function
+    | "" -> ""
+    | s ->
+       match s.[0] with
+       | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' -> s
+       | _ -> "(" ^ s ^ ")"
+
+  let string_of_scope_item = function
+    | Sc_anonymous_function ->
+       "(fun)"
+    | Sc_value_definition name
+    | Sc_module_definition name
+    | Sc_class_definition name
+    | Sc_method_definition name ->
+       add_parens_if_symbolic name
+
+  let string_of_scopes scopes =
+    let dot acc =
+      match acc with
+      | [] -> []
+      | acc -> "." :: acc in
+    let rec to_strings acc = function
+      | [] -> acc
+        (* Collapse nested anonymous function scopes *)
+      | Sc_anonymous_function :: ((Sc_anonymous_function :: _) as rest) ->
+        to_strings acc rest
+        (* Use class#meth syntax for classes *)
+      | (Sc_method_definition _ as meth) ::
+        (Sc_class_definition _ as cls) :: rest ->
+        to_strings (string_of_scope_item cls :: "#" ::
+                      string_of_scope_item meth :: dot acc) rest
+      | s :: rest ->
+        to_strings (string_of_scope_item s :: dot acc) rest in
+    match scopes with
+    | [] -> "<unknown>"
+    | scopes -> String.concat "" (to_strings [] scopes)
+
+  let enter_anonymous_function ~scopes =
+    Sc_anonymous_function :: scopes
+  let enter_value_definition ~scopes id =
+    Sc_value_definition (Ident.name id) :: scopes
+  let enter_module_definition ~scopes id =
+    Sc_module_definition (Ident.name id) :: scopes
+  let enter_class_definition ~scopes id =
+    Sc_class_definition (Ident.name id) :: scopes
+  let enter_method_definition ~scopes (m : Asttypes.label) =
+    Sc_method_definition m :: scopes
+
+  type t =
+    | Loc_unknown
+    | Loc_known of
+        { loc : Location.t;
+          scopes : scopes; }
+
+  let of_location ~scopes loc =
+    if Location.is_none loc then
+      Loc_unknown
+    else
+      Loc_known { loc; scopes }
+
+  let to_location = function
+    | Loc_unknown -> Location.none
+    | Loc_known { loc; _ } -> loc
+
+  let string_of_scoped_location = function
+    | Loc_unknown -> "??"
+    | Loc_known { loc = _; scopes } -> string_of_scopes scopes
+end
+
 type item = {
   dinfo_file: string;
   dinfo_line: int;

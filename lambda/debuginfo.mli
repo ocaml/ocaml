@@ -13,6 +13,35 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Scoped_location : sig
+  type scope_item =
+    | Sc_anonymous_function
+    | Sc_value_definition of string
+    | Sc_module_definition of string
+    | Sc_class_definition of string
+    | Sc_method_definition of string
+
+  type scopes = scope_item list
+  val string_of_scope_item : scope_item -> string
+  val string_of_scopes : scopes -> string
+
+  val enter_anonymous_function : scopes:scopes -> scopes
+  val enter_value_definition : scopes:scopes -> Ident.t -> scopes
+  val enter_module_definition : scopes:scopes -> Ident.t -> scopes
+  val enter_class_definition : scopes:scopes -> Ident.t -> scopes
+  val enter_method_definition : scopes:scopes -> Asttypes.label -> scopes
+
+  type t =
+    | Loc_unknown
+    | Loc_known of
+        { loc : Location.t;
+          scopes : scopes; }
+
+  val of_location : scopes:scopes -> Location.t -> t
+  val to_location : t -> Location.t
+  val string_of_scoped_location : t -> string
+end
+
 type item = private {
   dinfo_file: string;
   dinfo_line: int;
