@@ -930,7 +930,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
          To detect if the operand is NaN, we use the property:
          for all x, NaN is not equal to x, even if x is NaN.
          Therefore, op3 is 0 if and only if a1 is NaN,
-         and op4 is 0 if and only if a2 is NaN. *)
+         and op4 is 0 if and only if a2 is NaN.
+         See also caml_float_compare_unboxed in runtime/floats.c  *)
       tag_int (add_int (sub_int op1 op2 dbg) (sub_int op3 op4 dbg) dbg) dbg
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2) dbg
