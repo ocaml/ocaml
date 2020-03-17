@@ -139,6 +139,9 @@ Working version
   to the toplevel.
   (Gabriel Scherer, review by Armaël Guéneau)
 
+- #6969: Argument -nocwd added to ocamldep
+  (Muskan Garg, review by Florian Angeletti)
+
 - #9207, #9210: fix ocamlyacc to work correctly with up to 255 entry
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
