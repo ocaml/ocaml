@@ -642,6 +642,12 @@ int caml_try_run_on_all_domains_with_spin_work(
   int i;
   uintnat domains_participating = 0;
 
+  // Don't take the lock if there's already a stw leader
+  if( atomic_load_acq(&stw_leader) ) {
+    caml_handle_incoming_interrupts(); 
+    return 0;
+  }
+
   caml_gc_log("requesting STW");
 
   /* Try to take the lock by setting ourselves as the stw_leader.
