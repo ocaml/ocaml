@@ -43,10 +43,10 @@ let alloc_closure () =
   let x = Sys.opaque_identity 1 in
   ignore (Sys.opaque_identity (fun () -> x))
 
-let floatarray = [| 1.; 2. |]
-let[@inline never] get0 a = a.(0)
+let floatarray = Float.Array.make 2 42.
+external float_get : Float.Array.t -> int -> float = "%floatarray_safe_get"
 let getfloatfield () =
-  ignore (Sys.opaque_identity (get0 floatarray))
+  ignore (Sys.opaque_identity (float_get floatarray 0))
 
 let marshalled =
   Marshal.to_string [Sys.opaque_identity 1] []
