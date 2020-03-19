@@ -19,7 +19,7 @@
 
 (** {1:unit The unit type} *)
 
-type t = unit = ()
+type t = unit = () (**)
 (** The unit type.
 
     The constructor [()] is included here so that it has a path,
