@@ -1131,7 +1131,7 @@ val getpeername : file_descr -> sockaddr
 type msg_flag = Unix.msg_flag =
     MSG_OOB
   | MSG_DONTROUTE
-  | MSG_PEEK
+  | MSG_PEEK (**)
 (** The flags for {!UnixLabels.recv},  {!UnixLabels.recvfrom},
    {!UnixLabels.send} and {!UnixLabels.sendto}. *)
 
