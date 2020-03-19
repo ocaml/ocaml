@@ -1324,7 +1324,7 @@ type socket_type =
 
 type sockaddr =
     ADDR_UNIX of string
-  | ADDR_INET of inet_addr * int
+  | ADDR_INET of inet_addr * int (**)
 (** The type of socket addresses. [ADDR_UNIX name] is a socket
    address in the Unix domain; [name] is a file name in the file
    system. [ADDR_INET(addr,port)] is a socket address in the Internet
