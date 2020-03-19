@@ -27,7 +27,7 @@ this manual that are specific to one operating system are presented as
 shown below:
 
 \begin{unix} This is material specific to the Unix family of operating
-systems, including Linux and \hbox{MacOS~X}.
+systems, including Linux and macOS.
 \end{unix}
 
 \begin{windows} This is material specific to Microsoft Windows
