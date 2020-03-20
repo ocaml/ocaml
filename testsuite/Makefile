@@ -259,7 +259,7 @@ clean:
 .PHONY: report
 report:
 	@if [ ! -f $(TESTLOG) ]; then echo "No $(TESTLOG) file."; exit 1; fi
-	@awk -f summarize.awk < $(TESTLOG)
+	@$(AWK) -f ./summarize.awk < $(TESTLOG)
 
 .PHONY: retry-list
 retry-list:
@@ -274,8 +274,8 @@ retry-list:
 
 .PHONY: retries
 retries:
-	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
-	     -f summarize.awk < $(TESTLOG) > _retries
+	@$(AWK) -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
+	     -f ./summarize.awk < $(TESTLOG) > _retries
 	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
 	@rm -f _retries
 
