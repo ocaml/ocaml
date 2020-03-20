@@ -248,6 +248,9 @@ Working version
   non-development builds.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
+
 ### Bug fixes:
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
