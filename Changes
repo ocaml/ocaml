@@ -1,3 +1,11 @@
+OCaml 4.09 maintenance branch
+-----------------------------
+
+### Build system:
+
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
+
 OCaml 4.09.1 (16 Mars 2020):
 ----------------------------
 
