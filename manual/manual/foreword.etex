@@ -27,7 +27,7 @@ this manual that are specific to one operating system are presented as
 shown below:
 
 \begin{unix} This is material specific to the Unix family of operating
-systems, including Linux and \hbox{MacOS~X}.
+systems, including Linux and macOS.
 \end{unix}
 
 \begin{windows} This is material specific to Microsoft Windows
@@ -67,15 +67,13 @@ The OCaml documentation and user's manual is licensed under a
 \section*{availability}{Availability}
 
 \begin{latexonly}
-The complete OCaml distribution can be accessed via the Web
-sites \url{http://www.ocaml.org/} and \url{http://caml.inria.fr/}.
-The former Web site contains a lot of additional information on OCaml.
+The complete OCaml distribution can be accessed via the website
+\url{https://ocaml.org/}.  This site contains a lot of additional
+information on OCaml.
 \end{latexonly}
 
 \begin{htmlonly}
 The complete OCaml distribution can be accessed via the
-\href{http://www.ocaml.org/}{community Caml Web site} and the
-\href{http://caml.inria.fr/}{older Caml Web site}.
-The \href{http://www.ocaml.org/}{community Caml Web site}
-contains a lot of additional information on OCaml.
+\href{https://ocaml.org/}{ocaml.org website}.
+This site contains a lot of additional information on OCaml.
 \end{htmlonly}
