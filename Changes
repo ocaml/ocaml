@@ -1,3 +1,9 @@
+OCaml 4.07 maintenance branch
+-----------------------------
+
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 

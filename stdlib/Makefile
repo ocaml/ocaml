@@ -292,7 +292,7 @@ SPACE := $(EMPTY) $(EMPTY)
 depend:
 	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" \
+	$(CAMLDEP) -slash -pp "$(AWK) -f ./remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
 	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.ml)) \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
