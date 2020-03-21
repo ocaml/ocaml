@@ -39,6 +39,8 @@ module Bar (X : sig type 'a t := 'a type bar2 = bar = { bar : 'a. ([< `A] as 'a)
 end;;
 [%%expect{|
 type bar = { bar : 'a. ([< `A ] as 'a) -> 'a; }
-Uncaught exception: File "typing/ctype.ml", line 1443, characters 11-17: Assertion failed
-
+module Bar :
+  functor
+    (X : sig type bar2 = bar = { bar : 'a. ([< `A ] as 'a) -> 'a; } end) ->
+    sig val f : X.bar2 -> ([< `A ] as 'a) -> 'a end
 |}]
