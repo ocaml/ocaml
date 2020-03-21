@@ -91,7 +91,7 @@ let iota ?(start = 0) ?(step = 1) len =
   if len < 0 then invalid_arg "List.iota" else
     let rec loop n l =
       if n = len then rev l else
-        loop (n + 1) (((start + n) * step) :: l)
+        loop (n + 1) ((start + (n * step)) :: l)
     in loop 0 [] ;;
 
 let rec map f = function

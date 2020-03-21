@@ -13,7 +13,7 @@ let () =
   let sl = List.init 10 string_of_int in
   assert (List.iota 3 = [0; 1; 2]);
   assert (List.iota 5 ~start:1 = [1; 2; 3; 4; 5]);
-  assert (List.iota 5 ~start:10 ~step:2 = [20; 22; 24; 26; 28]);
+  assert (List.iota 5 ~start:10 ~step:2 = [10; 12; 14; 16; 18]);
   assert (List.exists (fun a -> a < 10) l);
   assert (List.exists (fun a -> a > 0) l);
   assert (List.exists (fun a -> a = 0) l);
