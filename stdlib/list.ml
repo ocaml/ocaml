@@ -90,9 +90,10 @@ let concat = flatten
 let iota ?(start = 0) ?(step = 1) len =
   if len < 0 then invalid_arg "List.iota" else
     let rec loop n l =
-      if n = len then rev l else
-        loop (n + 1) ((start + (n * step)) :: l)
-    in loop 0 [] ;;
+      if n = 0 then l else
+        let n1 = n - 1 in
+        loop n1 ((start + (n1 * step)) :: l)
+    in loop len []
 
 let rec map f = function
     [] -> []
