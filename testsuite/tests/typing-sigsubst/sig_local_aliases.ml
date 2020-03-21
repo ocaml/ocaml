@@ -101,3 +101,19 @@ Line 3, characters 11-12:
                ^
 Error: Unbound type constructor t
 |}]
+
+type ('a, 'b) foo = Foo
+
+type 'a s = 'b list constraint 'a = (int, 'b) foo
+
+module type S = sig
+  type 'a t := 'a s * bool
+  type 'a bar = (int, 'a) foo
+  val x : string bar t
+end
+[%%expect{|
+type ('a, 'b) foo = Foo
+type 'a s = 'b list constraint 'a = (int, 'b) foo
+Uncaught exception: Ctype.Cannot_apply
+
+|}]
