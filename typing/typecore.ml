@@ -2257,6 +2257,14 @@ let generalize_and_check_univars env kind exp ty_expected vars =
   List.iter generalize vars;
   check_univars env kind exp ty_expected vars
 
+
+
+let check_if_arrow exp =
+    let ty = (expand_head exp.exp_env exp.exp_type).desc in
+      match ty with
+      | Tarrow _ -> true
+      | _ -> false
+        
 let check_partial_application statement exp =
   let rec f delay =
     let ty = (expand_head exp.exp_env exp.exp_type).desc in
@@ -2697,11 +2705,23 @@ and type_expect_
   | Pexp_match(sarg, caselist) ->
       begin_def ();
       let arg = type_exp env sarg in
-      end_def ();
+       end_def ();
       if maybe_expansive arg then lower_contravariant env arg.exp_type;
       generalize arg.exp_type;
       let cases, partial =
         type_cases Computation env arg.exp_type ty_expected true loc caselist in
+        let contains_exception_pattern pat =
+        exists_general_pattern { f = fun (type k) (p : k general_pattern) ->
+          match p.pat_desc with
+          | Tpat_exception _ -> true
+          | _ -> false } pat
+        in
+        if ((check_if_arrow arg) &&
+        List.for_all
+        (fun {c_lhs} ->
+            not (contains_exception_pattern c_lhs)
+        ) cases 
+        ) then Location.prerr_warning loc Warnings.Matching_function_type;
       re {
         exp_desc = Texp_match(arg, cases, partial);
         exp_loc = loc; exp_extra = [];
