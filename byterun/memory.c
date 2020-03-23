@@ -175,7 +175,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
 
   /* See Note [MM] above */
   atomic_thread_fence(memory_order_acquire);
-  atomic_store_explicit(Op_atomic_val(*fp), val,
+  atomic_store_explicit(&Op_atomic_val((value)fp)[0], val,
                         memory_order_release);
 }
 
