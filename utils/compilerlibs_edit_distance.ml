@@ -13,6 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let (let*) = Option.bind
+let (let+) x f = Option.map f x
+let (let*!) x f = Option.iter f x
+
+
 type ('a, 'b, 'c, 'd) change =
   | Delete of 'a
   | Insert of 'b
@@ -27,86 +32,182 @@ let map f g = function
   | Keep (x,y,k) -> Keep (f x, g y, k)
   | Change (x,y,k) -> Change (f x, g y, k)
 
-let min_assoc_list l =
+type ('inner,'line,'col) full_state =
+  {
+    line: 'line array;
+    col: 'col array;
+    inner:'inner
+  }
+
+module Matrix = struct
+
+  type ('state,'content,'line,'col) t =
+    { state: ('state,'line,'col) full_state option array array;
+      weight:int array array;
+      patch: 'content option array array;
+      cols:int;
+      lines:int;
+    }
+  let opt_get a n =
+    if n < Array.length a then Some (Array.unsafe_get a n) else None
+  let line m i j = let* st = m.state.(i).(j) in opt_get st.line i
+  let col m i j = let* st = m.state.(i).(j) in opt_get st.col j
+  let patch m i j = m.patch.(i).(j)
+  let shape st = Array.length st.line, Array.length st.col
+
+  let real_shape tbl =
+    let lines = ref tbl.lines in
+    let cols = ref tbl.cols in
+    let max_at i j =
+      let*! st = tbl.state.(i).(j) in
+      let l, c = shape st in
+      if l > !lines then lines := l;
+      if c > !cols then cols := c
+    in
+    for i = 0 to tbl.lines do max_at i tbl.cols done;
+    for j = 0 to tbl.cols do max_at tbl.lines j done;
+    !lines, !cols
+
+  let make ~size =
+    let l1, l2 = size in
+    { state = Array.make_matrix (l1 + 1) (l2 + 1) None;
+      weight = Array.make_matrix (l1 + 1) (l2 + 1) max_int;
+      patch = Array.make_matrix (l1 + 1) (l2 + 1) None;
+      lines=l1;
+      cols=l2;
+    }
+
+  let reshape m (lines,cols) =
+    let copy default a =
+      Array.init (1+lines) (fun i -> Array.init (1+cols) (fun j ->
+          if i <= m.lines && j <= m.cols then
+            a.(i).(j)
+          else default) ) in
+    { state = copy None m.state;
+      weight = copy max_int m.weight;
+      patch = copy None m.patch;
+      lines;
+      cols
+    }
+
+end
+
+
+let select_best_proposition l =
   let rec aux m0 res0 = function
     | [] -> m0, res0
     | (m', res') :: t ->
         let m'', res'' = if m0 <= m' then m0,res0 else m',res' in
         aux m'' res'' t
   in
-  match l with
-  | [] -> invalid_arg "min_assoc_list: empty list"
-  | (m,res)::l -> aux m res l
+  match List.filter_map Fun.id l with
+  | [] -> None
+  | (m,res)::l ->Some(aux m res l)
 
-let compute_matrix ~weight ~cutoff ~test ~update state0 a1 a2 =
-  let l1 = Array.length a1 in
-  let l2 = Array.length a2 in
-  assert (0 < cutoff && cutoff < max_int - l1 - 1);
-  let m = Array.make_matrix (l1 + 1) (l2 + 1) (cutoff + 1) in
-  let state = Array.make_matrix (l1 + 1) (l2 + 2) state0 in
-  let add i j ~x ~s =
-    state.(i).(j) <- s;
-    m.(i).(j) <- x;
+let update_cell m i j ?p ~x ~s =
+  m.Matrix.weight.(i).(j) <- x;
+  m.Matrix.state.(i).(j) <- Some s;
+  m.Matrix.patch.(i).(j) <- p;
+  ()
+
+let compute_col0 ~update ~weight tbl i =
+  let*! st = tbl.Matrix.state.(i-1).(0) in
+  let*! line = Matrix.line tbl (i-1) 0 in
+  let diff = Delete line in
+  update_cell tbl i 0
+    ~x:(weight diff + tbl.Matrix.weight.(i-1).(0))
+    ~s:(update diff st)
+    ~p:diff
+
+let compute_line0 ~update ~weight tbl j =
+  let*! st = tbl.Matrix.state.(0).(j-1) in
+  let*! col = Matrix.col tbl 0 (j-1) in
+  let diff = Insert col  in
+  update_cell tbl 0 j
+    ~x:(weight diff + tbl.Matrix.weight.(0).(j-1))
+    ~s:(update diff st)
+    ~p:diff
+
+let compute_inner_cell ~test ~update ~weight tbl i j =
+  let open Matrix in
+  let compute_proposition i j diff =
+    let* diff = diff in
+    let+ state = tbl.state.(i).(j) in
+    weight diff + tbl.Matrix.weight.(i).(j), (diff, update diff state)
   in
-  let results = Hashtbl.create (l1+l2) in
+  let del =
+    let diff = let+ x = line tbl (i-1) j in Delete x in
+    compute_proposition (i-1) j diff
+  in
+  let insert =
+    let diff = let+ x = col tbl i (j-1) in Insert x in
+    compute_proposition i (j-1) diff
+  in
+  let diag =
+    let diff =
+      let* state = tbl.state.(i-1).(j-1) in
+      let* line = line tbl (i-1) (j-1) in
+      let* col = col tbl (i-1) (j-1) in
+      match test state.inner line col with
+      | Ok ok -> Some (Keep (line, col, ok))
+      | Error err -> Some (Change (line, col, err))
+    in
+    compute_proposition (i-1) (j-1) diff
+  in
+  let*! newweight, (newres, newstate) =
+    select_best_proposition [del;insert;diag]
+  in
+  update_cell tbl i j ~x:newweight ~s:newstate ~p:newres
 
-  add 0 0 ~x:0 ~s:state0;
-  for i = 1 to l1 do
-    let diff = Delete a1.(i-1) in
-    add i 0 ~x:(weight diff + m.(i-1).(0)) ~s:(update diff state.(i-1).(0))
-  done;
-  for j = 1 to l2 do
-    let diff = Insert a2.(j-1) in
-    add 0 j ~x:(weight diff + m.(0).(j-1)) ~s:(update diff state.(0).(j-1))
-  done;
-  if abs (m.(l1).(0) - m.(0).(l2)) > cutoff then None
-  else begin
-    for i = 1 to l1 do
-      for j = max 1 (i - cutoff - 1) to min l2 (i + cutoff + 1) do
-        let propositions = [
-          (let diff = Delete a1.(i-1) in
-           weight diff + m.(i-1).(j), (diff, update diff state.(i-1).(j))
-          );
-          (let diff = Insert a2.(j-1) in
-           weight diff + m.(i).(j-1), (diff, update diff state.(i).(j-1))
-          );
-          (let newres = test state.(i-1).(j-1) a1.(i-1) a2.(j-1) in
-           let diff = match newres with
-             | Ok ok -> Keep (a1.(i-1), a2.(j-1), ok)
-             | Error err -> Change (a1.(i-1), a2.(j-1), err)
-           in
-           weight diff + m.(i-1).(j-1), (diff, update diff state.(i-1).(j-1))
-          );
-        ]
-        in
-        let best, (newres, newstate) = min_assoc_list propositions in
-        Hashtbl.add results (i-1,j-1) newres;
-        add i j ~x:best ~s:newstate
+let compute_matrix ~weight ~test ~update state0 =
+  let open Matrix in
+  let compute_inner_cell = compute_inner_cell ~test ~update ~weight in
+  let m0 = Matrix.make ~size:(0,0) in
+  update_cell m0 0 0 ~x:0 ~s:state0 ?p:None;
+  let rec loop m =
+    let orig_lines = m.lines and orig_cols = m.cols in
+    let ext_lines, ext_cols as ext_shape = Matrix.real_shape m in
+    if ext_lines > orig_lines || ext_cols > orig_cols then
+      let m = Matrix.reshape m ext_shape in
+      for j = orig_cols + 1 to ext_cols do
+        compute_line0 ~update ~weight m j;
+        for i = 1 to orig_lines do
+          compute_inner_cell m i j
+        done
       done;
-    done;
-    Some results
-  end
+      for i = orig_lines + 1 to ext_lines do
+        compute_col0 ~update ~weight m i;
+        for j = 1 to ext_cols do
+          compute_inner_cell m i j
+        done
+      done;
+      loop m
+    else m in
+  loop m0
 
-let construct_patch a1 a2 results =
+let construct_patch mat =
   let rec aux acc (i, j) =
-    if i > 0 && j > 0 then
-      let d = Hashtbl.find results (i-1, j-1) in
-      let next = match d with
-        | Keep _ | Change _ -> (i-1, j-1)
-        | Delete _ -> (i-1, j)
-        | Insert _ -> (i, j-1)
-      in
-      aux (d::acc) next
-    else if j > 0 && i = 0 then
-      aux (Insert a2.(j-1) ::acc) (i, j-1)
-    else if i > 0 && j = 0 then
-      aux (Delete a1.(i-1) ::acc) (i-1, j)
-    else
+    if i = 0 && j = 0 then
       acc
+    else
+      match Matrix.patch mat i j with
+      | None -> acc
+      | Some d ->
+          let next = match d with
+            | Keep _ | Change _ -> (i-1, j-1)
+            | Delete _ -> (i-1, j)
+            | Insert _ -> (i, j-1)
+          in
+          aux (d::acc) next
   in
-  aux [] (Array.length a1, Array.length a2)
+  aux [] (mat.Matrix.lines, mat.Matrix.cols)
 
-let diff ~weight ~cutoff ~test ~update state a1 a2 =
-  Option.map
-    (construct_patch a1 a2)
-    (compute_matrix ~weight ~cutoff ~test ~update state a1 a2)
+
+
+let dynamically_resized_diff ~weight ~test ~update state =
+  construct_patch (compute_matrix ~weight ~test ~update state)
+
+let diff ~weight ~test ~update state line col =
+  let update d fs = { fs with inner = update d fs.inner } in
+  let state = { line; col; inner=state } in
+  dynamically_resized_diff ~weight ~test ~update state

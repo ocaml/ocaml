@@ -848,7 +848,6 @@ module FunctorDiff = struct
     | Keep (x,y,d) -> Keep(x.data,y.data,d)
     | Change(x,y,d) -> Change(x.data,y.data,d)
 
-  let cutoff = 100
   let weight = function
     | Insert _ -> 10
     | Delete _ -> 10
@@ -931,7 +930,7 @@ module FunctorDiff = struct
       res
     in
     let state0 = (env0, Subst.identity) in
-    Diff.diff ~weight ~cutoff ~test ~update
+    Diff.diff ~weight ~test ~update
       state0
       (Array.map param_preprocess @@ Array.of_list l1)
       (Array.map param_preprocess @@ Array.of_list l2)
@@ -949,8 +948,8 @@ module FunctorDiff = struct
         { data; metadata } in
     let params = retrieve_functor_params env0 f in
     let update d s =
-      let preprocess x = { x with data = data_preprocess x.data} in
-      app_update (Diff.map preprocess Fun.id d) s in
+      let process x = { x with data = data_preprocess x.data} in
+      app_update (Diff.map process Fun.id d) s in
     let test (env, subst) x y =
       let arg = data_preprocess x.data and param = y.data in
       let loc = Location.none in
@@ -968,13 +967,10 @@ module FunctorDiff = struct
       res
     in
     let state0 = (env0, Subst.identity) in
-    let patch =
-      Diff.diff ~weight ~cutoff ~test ~update
-        state0
-        (Array.map arg_preprocess @@ Array.of_list args)
-        (Array.map param_preprocess @@ Array.of_list params)
-    in
-    Option.to_result ~none:params patch
+    Diff.diff ~weight ~test ~update
+      state0
+      (Array.map arg_preprocess @@ Array.of_list args)
+      (Array.map param_preprocess @@ Array.of_list params)
 
   (* Simplication for printing *)
 
@@ -1345,14 +1341,6 @@ module Pp = struct
   let dmodtype mty =
     let tmty = Printtyp.tree_of_modtype mty in
     Format.dprintf "%a" !Oprint.out_module_type tmty
-  let simple_functor_param = function
-    | Unit -> Format.dprintf "()"
-    | Named (None, mty) -> dmodtype mty
-    | Named (Some p, mty) ->
-      Format.dprintf "(%s : %t)"
-        (Ident.name p)
-        (dmodtype mty)
-  let simple_argument (_,_,_,param) = simple_functor_param param
 
   let definition_of_functor_param x = match Short_name.functor_param x with
     | Short_name.Unit -> Format.dprintf "()"
@@ -1499,30 +1487,21 @@ module Linearize = struct
     | Result res ->
         module_type ~expansion_token ~eqmode:false ~env ~before ~ctx res
     | Params E.{got; expected; symptom=()} ->
-        match FunctorDiff.arg_diff env ctx got expected with
-        | None ->
-            let got = Pp.dlist Pp.simple_functor_param got in
-            let expected = Pp.dlist Pp.simple_functor_param expected in
-            let main =
-              Format.dprintf
-                "@[<hv 2>Modules do not match:@ \
-                 @[%t@]@;<1 -2>is not included@ @[%t@]@]"
-                got expected
-            in
-            { msgs = dwith_context ctx main :: before; post = None }
-        | Some d ->
-            let d = FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig d in
-            let got = Pp.(params_diff space (got functor_param) d) in
-            let expected = Pp.(params_diff space (expected functor_param) d) in
-            let main =
-              Format.dprintf
-                "@[<hv 2>Modules do not match:@ \
-                 @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
-                 @[functor@ %t@ -> ...@]@]"
-                got expected
-            in
-            let post = if expansion_token then Some (env,d) else None in
-            { msgs = dwith_context ctx main :: before; post }
+        let d =
+          FunctorDiff.arg_diff env ctx got expected
+          |> FunctorDiff.prepare_patch ~drop:false ~ctx:`Sig
+        in
+        let got = Pp.(params_diff space (got functor_param) d) in
+        let expected = Pp.(params_diff space (expected functor_param) d) in
+        let main =
+          Format.dprintf
+            "@[<hv 2>Modules do not match:@ \
+             @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
+             @[functor@ %t@ -> ...@]@]"
+            got expected
+        in
+        let post = if expansion_token then Some (env,d) else None in
+        { msgs = dwith_context ctx main :: before; post }
 
   and signature ~expansion_token ~env:_ ~before ~ctx sgs =
     Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
@@ -1769,25 +1748,18 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
     | None -> ()
     | Some lid -> Format.fprintf ppf "%a " Printtyp.longident lid
   in
-  match FunctorDiff.app_diff env ~f:mty_f ~args with
-  | Error params ->
-      Location.errorf ~loc
-        "@[<hv 2>The functor application %tis ill-typed.@ These arguments:@ \
-         @[%t@]@;<1 -2>do not match these parameters:@;<1 2>@[functor@ %t@ \
-         -> ... @]@]"
-        may_print_app
-        (Pp.dlist Pp.simple_argument args)
-        (Pp.dlist Pp.simple_functor_param params)
-  | Ok d ->
-      let d = FunctorDiff.prepare_patch ~drop:true ~ctx:`App d in
-      Location.errorf ~loc
-        ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
-        "@[<hv>The functor application %tis ill-typed.@ \
-         These arguments:@;<1 2>\
-         @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
-        may_print_app
-        Pp.(params_diff space (got short_argument) d)
-        Pp.(params_diff space (expected functor_param) d)
+  let d =
+    FunctorDiff.app_diff env ~f:mty_f ~args
+    |> FunctorDiff.prepare_patch ~drop:true ~ctx:`App
+  in
+  Location.errorf ~loc
+    ~sub:(Linearize.(param_suberrors app) env ~expansion_token:true d)
+    "@[<hv>The functor application %tis ill-typed.@ \
+     These arguments:@;<1 2>\
+     @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
+    may_print_app
+    Pp.(params_diff space (got short_argument) d)
+    Pp.(params_diff space (expected functor_param) d)
 
 
 (* We could do a better job to split the individual error items

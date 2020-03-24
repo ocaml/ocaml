@@ -28,7 +28,21 @@ type ('a, 'b, 'c, 'd) patch = ('a, 'b, 'c, 'd) change list
 
 val diff :
   weight:(('a, 'b, 'c, 'd) change -> int) ->
-  cutoff:int ->
   test:('state -> 'a -> 'b -> ('c, 'd) result) ->
   update:(('a, 'b, 'c, 'd) change -> 'state -> 'state) ->
-  'state -> 'a array -> 'b array -> ('a, 'b, 'c, 'd) patch option
+  'state -> 'a array -> 'b array -> ('a, 'b, 'c, 'd) patch
+
+
+type ('inner,'line,'col) full_state =
+  {
+    line: 'line array;
+    col: 'col array;
+    inner:'inner
+  }
+
+val dynamically_resized_diff :
+  weight:(('a, 'b, 'c, 'd) change -> int) ->
+  test:('state -> 'a -> 'b -> ('c, 'd) result) ->
+  update:
+    (('a, 'b, 'c, 'd) change -> (('state,'a,'b) full_state as 'fs) -> 'fs) ->
+  'fs -> ('a, 'b, 'c, 'd) patch
