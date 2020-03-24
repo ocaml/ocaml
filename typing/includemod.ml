@@ -333,19 +333,22 @@ let simplify_structure_coercion cc id_pos_list =
   then Tcoerce_none
   else Tcoerce_structure (cc, id_pos_list)
 
-let rec retrieve_functor_params env = function
-  | Mty_ident p ->
+let retrieve_functor_params env x =
+  let rec retrieve_functor_params before env =
+    function
+  | Mty_ident p as res ->
       begin match expand_modtype_path env p with
-      | Ok mty -> retrieve_functor_params env mty
-      | Error _ -> []
+      | Ok mty -> retrieve_functor_params before env mty
+      | Error _ -> List.rev before, res
       end
-  | Mty_alias p ->
+  | Mty_alias p as res ->
       begin match expand_module_alias env p with
-      | Ok mty ->  retrieve_functor_params env mty
-      | Error _ -> []
+      | Ok mty ->  retrieve_functor_params before env mty
+      | Error _ -> List.rev before, res
       end
-  | Mty_functor (p, res) -> p :: retrieve_functor_params env res
-  | Mty_signature _ -> []
+  | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
+  | Mty_signature _ as res -> List.rev before, res in
+  retrieve_functor_params [] env x
 
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
@@ -388,7 +391,7 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
         begin match expand_modtype_path env p1, expand_modtype_path env p2 with
         | Ok p1, Ok p2 ->
             try_modtypes ~loc env ~mark dont_match subst p1 p2
-        | Error e, _ | Ok _, Error e -> dont_match (E.Mt_core e)
+        | Error e, _  | _, Error e -> dont_match (E.Mt_core e)
         end
   | (Mty_ident p1, _) ->
       let p1 = Env.normalize_modtype_path env p1 in
@@ -404,7 +407,7 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
       | Error Incompatible_aliases ->
           begin match mty1 with
           | Mty_functor _ ->
-              let params1 = retrieve_functor_params env mty1 in
+              let params1 = fst @@ retrieve_functor_params env mty1 in
               let d = E.sdiff params1 [] in
               dont_match E.(Functor (Params d))
           | _ ->
@@ -430,8 +433,8 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
           let d = E.sdiff (param1::res.got) (param2::res.expected) in
           dont_match E.(Functor (Params d))
       | Error _, _ ->
-          let params1 = retrieve_functor_params env res1 in
-          let params2 = retrieve_functor_params env res2 in
+          let params1 = fst (retrieve_functor_params env res1) in
+          let params2 = fst (retrieve_functor_params env res2) in
           let d = E.sdiff (param1::params1) (param2::params2) in
           dont_match E.(Functor (Params d))
       | Ok _, Error res ->
@@ -439,8 +442,8 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
       end
   | Mty_functor _, _
   | _, Mty_functor _ ->
-      let params1 = retrieve_functor_params env mty1 in
-      let params2 = retrieve_functor_params env mty2 in
+      let params1 = fst @@ retrieve_functor_params env mty1 in
+      let params2 = fst @@ retrieve_functor_params env mty2 in
       let d = E.sdiff params1 params2 in
       dont_match E.(Functor (Params d))
   | _, Mty_alias _ ->
@@ -890,27 +893,6 @@ module FunctorDiff = struct
             env, subst
       end
 
-  let app_update d ((env, subst) as st) = match data d with
-    | Insert _
-    | Delete _
-    | Keep (None,_,_)
-    | Keep (_,Unit,_)
-    | Change (_,(Unit | Named (None,_)), _ )
-    | Change (None, Named (Some _, _), _) ->
-        st
-    | Keep (Some arg, Named (param_name, _param), _)
-    | Change (Some arg, Named (param_name, _param), _) -> begin
-        let arg' = Subst.modtype Keep subst arg.mty in
-        match arg.path, param_name with
-        | Some arg, Some param ->
-            env,
-            Subst.add_module param arg subst
-        | None, Some param ->
-            Env.add_module ~arg:true param Mp_present arg' env, subst
-        | _, None ->
-            env, subst
-      end
-
   let param_preprocess data =
     let metadata =
       match data with
@@ -935,22 +917,73 @@ module FunctorDiff = struct
       (Array.map param_preprocess @@ Array.of_list l1)
       (Array.map param_preprocess @@ Array.of_list l2)
 
+  let data_preprocess (parg,_,_,fn) =
+    match fn with
+    | Unit -> None
+    | Named(_,mty) -> Some {path=parg; mty}
+
+  type app_state = {
+    res: module_type option;
+    env: Env.t;
+    subst: Subst.t;
+  }
+
+  let arg_preprocess (_,_,_,fn as data) =
+    let metadata =
+      match fn with
+      | Unit ->None
+      | Named(x,_) -> x in
+    { data; metadata }
+
+  let keep_expansible_param = function
+    | Mty_ident _ | Mty_alias _ as mty -> Some mty
+    | Mty_signature _ | Mty_functor _ -> None
+
+  let expand_params st inner =
+    match inner.res with
+    | None -> { st with inner }
+    | Some res ->
+        match retrieve_functor_params inner.env res with
+        | [], _ -> { st with inner }
+        | args, res ->
+            let more = Array.of_list @@ List.map param_preprocess @@ args in
+            let params = Array.append st.col more in
+            let res = keep_expansible_param res in
+            { st with inner= { inner with res }; col = params }
+
+  let app_update d ({inner; _} as st) =
+    match Diff.map data_preprocess Fun.id (data d) with
+    | Insert _
+    | Delete _
+    | Keep (None,_,_)
+    | Keep (_,Unit,_)
+    | Change (_,(Unit | Named (None,_)), _ )
+    | Change (None, Named (Some _, _), _) ->
+        st
+    | Keep (Some arg, Named (param_name, _param), _)
+    | Change (Some arg, Named (param_name, _param), _) -> begin
+        let arg' = Subst.modtype Keep inner.subst arg.mty in
+        match arg.path, param_name with
+        | Some arg, Some param ->
+            let res = Option.map (fun res ->
+              let scope = Ctype.create_scope () in
+              let subst = Subst.add_module param arg Subst.identity in
+              Subst.modtype (Rescope scope) subst res) inner.res in
+            let subst = Subst.add_module param arg inner.subst in
+            expand_params st { st.inner with subst; res }
+        | None, Some param ->
+            let env =
+              Env.add_module ~arg:true param Mp_present arg' inner.env in
+            let res =
+              Option.map (Mtype.nondep_supertype env [param]) inner.res in
+            expand_params st { inner with env; res}
+        | _, None -> st
+      end
+
   let app_diff env0 ~f ~args =
-    let data_preprocess (parg,_,_,fn) =
-        match fn with
-        | Unit -> None
-        | Named(_,mty) -> Some {path=parg; mty} in
-    let arg_preprocess (_,_,_,fn as data) =
-        let metadata =
-          match fn with
-          | Unit ->None
-          | Named(x,_) -> x in
-        { data; metadata } in
-    let params = retrieve_functor_params env0 f in
-    let update d s =
-      let process x = { x with data = data_preprocess x.data} in
-      app_update (Diff.map process Fun.id d) s in
-    let test (env, subst) x y =
+    let params, res = retrieve_functor_params env0 f in
+    let update = app_update in
+    let test state x y =
       let arg = data_preprocess x.data and param = y.data in
       let loc = Location.none in
       let snap = Btype.snapshot () in
@@ -959,18 +992,26 @@ module FunctorDiff = struct
         | None, Named _ | Some _, Unit ->
             Result.Error (E.Incompatible_params(arg,param))
         | Some arg, Named (name, param) ->
-            match modtypes ~loc env ~mark:Mark_neither subst arg.mty param with
+            match
+              modtypes ~loc state.env ~mark:Mark_neither state.subst
+                arg.mty param
+            with
             | Error mty -> Result.Error (E.Mismatch(arg.path, name, mty))
             | Ok _ as x -> x
       in
       Btype.backtrack snap;
       res
     in
-    let state0 = (env0, Subst.identity) in
-    Diff.diff ~weight ~test ~update
-      state0
-      (Array.map arg_preprocess @@ Array.of_list args)
-      (Array.map param_preprocess @@ Array.of_list params)
+    let state0 = {
+      line = Array.map arg_preprocess @@ Array.of_list args;
+      col = Array.map param_preprocess @@ Array.of_list params;
+      inner = { env = env0;
+                subst= Subst.identity;
+                res = keep_expansible_param res;
+              };
+    }
+    in
+    Diff.dynamically_resized_diff ~weight ~test ~update state0
 
   (* Simplication for printing *)
 

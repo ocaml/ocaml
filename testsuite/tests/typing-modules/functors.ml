@@ -1238,38 +1238,73 @@ Error: The functor application is ill-typed.
        These arguments:
          PF PF PF PF PF F
        do not match these parameters:
-         functor (X : ...)      -> ...
+         functor (X : ...) (X : ...) (X : ...) (X : ...) (X : ...)
+         (X : ...(X)) -> ...
   1. Module PF matches the expected module type
-  2. The following extra argument is provided
-         PF :
+  2. Module PF matches the expected module type
+  3. Module PF matches the expected module type
+  4. Module PF matches the expected module type
+  5. Module PF matches the expected module type
+  6. Modules do not match:
+       F : functor (X : sig module type t module M : t end) -> X.t
+     is not included in
+       ...(X) = sig module type t module M : t end
+     Modules do not match:
+       functor (X : ...(X)) -> ...
+     is not included in
+       functor  -> ...
+        An extra argument is provided of module type
+            ...(X) = sig module type t module M : t end
+|}]
+
+(** Hide your arity from the world *)
+
+module M: sig
+  module F:
+    functor (X:sig
+               type x
+               module type t =
+                 functor
+                   (Y:sig type y end)
+                   (Z:sig type z end)
+                   -> sig end
+             end) -> X.t
+end
+= struct
+  module F(X:sig type x end)(Z:sig type z end) = struct end
+end
+[%%expect {|
+Lines 14-16, characters 2-3:
+14 | ..struct
+15 |   module F(X:sig type x end)(Z:sig type z end) = struct end
+16 | end
+Error: Signature mismatch:
+       Modules do not match:
          sig
-           module type t =
-             functor (X : sig module type t module M : t end) -> X.t
-           module M = F
+           module F :
+             functor (X : sig type x end) (Z : sig type z end) -> sig end
          end
-  3. The following extra argument is provided
-         PF :
+       is not included in
          sig
-           module type t =
-             functor (X : sig module type t module M : t end) -> X.t
-           module M = F
+           module F :
+             functor
+               (X : sig
+                      type x
+                      module type t =
+                        functor (Y : sig type y end) (Z : sig type z end) ->
+                          sig end
+                    end)
+               -> X.t
          end
-  4. The following extra argument is provided
-         PF :
-         sig
-           module type t =
-             functor (X : sig module type t module M : t end) -> X.t
-           module M = F
-         end
-  5. The following extra argument is provided
-         PF :
-         sig
-           module type t =
-             functor (X : sig module type t module M : t end) -> X.t
-           module M = F
-         end
-  6. The following extra argument is provided
-         F : functor (X : sig module type t module M : t end) -> X.t
+       In module F:
+       Modules do not match:
+         functor (X : ...(X))  (Z : ...(Z)) -> ...
+       is not included in
+         functor (X : ...(X)) (Y : ...(Y)) (Z : ...(Z)) -> ...
+  1. Module types ...(X) and ...(X) match
+  2. An argument appears to be missing with module type
+         ...(Y) = sig type y end
+  3. Module types ...(Z) and ...(Z) match
 |}]
 
 
