@@ -1571,21 +1571,12 @@ and transl_recmodule_modtypes env sdecls =
       ids sdecls
   in
   let env0 = make_env init in
-  let dcl1 =
-    Warnings.without_warnings
-      (fun () -> transition env0 init)
-  in
+  let dcl1 = transition env0 init in
   let env1 = make_env dcl1 in
   check_recmod_typedecls env1 (map_mtys dcl1);
-  let dcl2 = transition env1 dcl1 in
-(*
-  List.iter
-    (fun (id, mty) ->
-      Format.printf "%a: %a@." Printtyp.ident id Printtyp.modtype mty)
-    dcl2;
-*)
-  let env2 = make_env dcl2 in
-  check_recmod_typedecls env2 (map_mtys dcl2);
+  ignore
+    (Warnings.without_warnings
+       (fun () -> transition env1 dcl1));
   let dcl2 =
     List.map2 (fun pmd (id, id_loc, md, mty) ->
       let tmd =
@@ -1595,9 +1586,9 @@ and transl_recmodule_modtypes env sdecls =
          md_attributes=pmd.pmd_attributes}
       in
       tmd, md.md_uid
-    ) sdecls dcl2
+    ) sdecls dcl1
   in
-  (dcl2, env2)
+  (dcl2, env1)
 
 (* Try to convert a module expression to a module path. *)
 

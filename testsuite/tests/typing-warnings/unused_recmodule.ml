@@ -23,9 +23,5 @@ module M : sig end = struct
   let _ = Foo.create
 end;;
 [%%expect{|
-Line 14, characters 4-10:
-14 |     type t
-         ^^^^^^
-Warning 34: unused type t.
 module M : sig end
 |}];;
