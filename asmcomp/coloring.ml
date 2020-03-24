@@ -74,18 +74,13 @@ let allocate_registers() =
   (* Iterate over all registers preferred by the given register (transitive) *)
   let iter_preferred f reg =
     let rec walk r w =
-      if not r.visited then begin
+      if not (Reg.is_visited r) then begin
+        Reg.mark_visited r;
         f r w;
-        begin match r.prefer with
-            [] -> ()
-          | p  -> r.visited <- true;
-                  List.iter (fun (r1, w1) -> walk r1 (min w w1)) p;
-                  r.visited <- false
-        end
+        List.iter (fun (r1, w1) -> walk r1 (min w w1)) r.prefer
       end in
-    reg.visited <- true;
     List.iter (fun (r, w) -> walk r w) reg.prefer;
-    reg.visited <- false in
+    Reg.clear_visited_marks () in
 
   (* Where to start the search for a suitable register.
      Used to introduce some "randomness" in the choice between registers

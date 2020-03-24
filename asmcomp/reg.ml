@@ -45,7 +45,7 @@ type t =
     mutable prefer: (t * int) list;
     mutable degree: int;
     mutable spill_cost: int;
-    mutable visited: bool }
+    mutable visited: int }
 
 and location =
     Unknown
@@ -62,16 +62,30 @@ type reg = t
 let dummy =
   { raw_name = Raw_name.Anon; stamp = 0; typ = Int; loc = Unknown;
     spill = false; interf = []; prefer = []; degree = 0; spill_cost = 0;
-    visited = false; part = None;
+    visited = 0; part = None;
   }
 
 let currstamp = ref 0
 let reg_list = ref([] : t list)
 
+
+let visit_generation = ref 1
+
+let mark_visited r =
+  r.visited <- !visit_generation
+
+let is_visited r =
+  r.visited = !visit_generation
+
+let clear_visited_marks () =
+  incr visit_generation
+
+let unvisited () = !visit_generation - 1
+
 let create ty =
   let r = { raw_name = Raw_name.Anon; stamp = !currstamp; typ = ty;
             loc = Unknown; spill = false; interf = []; prefer = []; degree = 0;
-            spill_cost = 0; visited = false; part = None; } in
+            spill_cost = 0; visited = unvisited (); part = None; } in
   reg_list := r :: !reg_list;
   incr currstamp;
   r
@@ -96,7 +110,7 @@ let clone r =
 let at_location ty loc =
   let r = { raw_name = Raw_name.R; stamp = !currstamp; typ = ty; loc;
             spill = false; interf = []; prefer = []; degree = 0;
-            spill_cost = 0; visited = false; part = None; } in
+            spill_cost = 0; visited = unvisited (); part = None; } in
   incr currstamp;
   r
 
