@@ -129,6 +129,7 @@ module Uid = struct
   let for_actual_declaration = function
     | Item _ -> true
     | _ -> false
+
 end
 
 (* Maps of methods and instance variables *)

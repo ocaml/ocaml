@@ -806,11 +806,19 @@ let add_types_to_env decls env =
     decls env
 
 (* Translate a set of type declarations, mutually recursive or not *)
-let transl_type_decl env rec_flag sdecl_list =
+let transl_type_decl env rec_flag uids sdecl_list =
   List.iter check_redefined_unit sdecl_list;
+  let _, uids =
+    List.fold_left_map
+      (fun uids _ ->
+         match uids with
+         | [] -> uids, Uid.mk ~current_unit:(Env.get_unit_name ())
+         | uid :: uids -> uids, uid)
+      uids sdecl_list
+  in
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
-  let sdecl_list =
+  let dummy_sdecls =
     List.map
       (fun sdecl ->
          let ptype_name =
@@ -823,16 +831,18 @@ let transl_type_decl env rec_flag sdecl_list =
         {sdecl with
            ptype_name; ptype_kind; ptype_manifest; ptype_loc })
       fixed_types
-    @ sdecl_list
   in
-
+  let dummy_uids =
+    List.map (fun _ -> Uid.internal_not_actually_unique) dummy_sdecls
+  in
+  let sdecl_list = dummy_sdecls @ sdecl_list in
+  let uids = dummy_uids @ uids in
   (* Create identifiers. *)
   let scope = Ctype.create_scope () in
   let ids_list =
-    List.map (fun sdecl ->
-      Ident.create_scoped ~scope sdecl.ptype_name.txt,
-      Uid.mk ~current_unit:(Env.get_unit_name ())
-    ) sdecl_list
+    List.map2 (fun uid sdecl ->
+      Ident.create_scoped ~scope sdecl.ptype_name.txt, uid
+    ) uids sdecl_list
   in
   Ctype.begin_def();
   (* Enter types. *)
@@ -1466,7 +1476,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
 
 (* Approximate a type declaration: just make all types abstract *)
 
-let abstract_type_decl arity =
+let abstract_type_decl loc uid arity =
   let rec make_params n =
     if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
   Ctype.begin_def();
@@ -1480,23 +1490,37 @@ let abstract_type_decl arity =
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
-      type_loc = Location.none;
+      type_loc = loc;
       type_attributes = [];
       type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
-      type_uid = Uid.internal_not_actually_unique;
+      type_uid = uid;
      } in
   Ctype.end_def();
   generalize_decl decl;
   decl
 
-let approx_type_decl sdecl_list =
+let approx_type_decl env in_uids sdecl_list =
   let scope = Ctype.create_scope () in
-  List.map
-    (fun sdecl ->
-      (Ident.create_scoped ~scope sdecl.ptype_name.txt,
-       abstract_type_decl (List.length sdecl.ptype_params)))
-    sdecl_list
+  let rec loop env in_uids = function
+    | [] -> [], env, []
+    | sdecl :: srem ->
+      let uid, in_uids =
+        match in_uids with
+        | [] -> Uid.mk ~current_unit:(Env.get_unit_name ()), []
+        | uid :: in_uids -> uid, in_uids
+      in
+      let decl =
+        abstract_type_decl sdecl.ptype_loc uid
+          (List.length sdecl.ptype_params)
+      in
+      let (id, newenv) =
+        Env.enter_type ~scope sdecl.ptype_name.txt decl env
+      in
+      let rem, env, out_uids = loop newenv in_uids srem in
+      (id, decl) :: rem, env, uid :: out_uids
+  in
+  loop env in_uids sdecl_list
 
 (* Variant of check_abbrev_recursion to check the well-formedness
    conditions on type abbreviations defined within recursive modules. *)

@@ -44,7 +44,7 @@ type class_type_info = {
 }
 
 val class_declarations:
-  Env.t -> Parsetree.class_declaration list ->
+  Env.t -> Uid.t list -> Parsetree.class_declaration list ->
   Typedtree.class_declaration class_info list * Env.t
 
 (*
@@ -53,7 +53,7 @@ and class_declaration =
 *)
 
 val class_descriptions:
-  Env.t -> Parsetree.class_description list ->
+  Env.t -> Uid.t list -> Parsetree.class_description list ->
   Typedtree.class_description class_info list * Env.t
 
 (*
@@ -62,7 +62,8 @@ and class_description =
 *)
 
 val class_type_declarations:
-  Env.t -> Parsetree.class_description list -> class_type_info list * Env.t
+  Env.t -> Uid.t list -> Parsetree.class_description list ->
+  class_type_info list * Env.t
 
 (*
 and class_type_declaration =
@@ -70,7 +71,8 @@ and class_type_declaration =
 *)
 
 val approx_class_declarations:
-  Env.t -> Parsetree.class_description list -> class_type_info list
+  Env.t -> Uid.t list -> Parsetree.class_description list ->
+  class_type_info list * Env.t * Uid.t list
 
 val virtual_methods: Types.class_signature -> label list
 
