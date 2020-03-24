@@ -1524,36 +1524,25 @@ and transl_modtype_decl_aux names env
 and transl_recmodule_modtypes env sdecls =
   let make_env curr =
     List.fold_left
-      (fun env (id, _, mty) ->
+      (fun env (id, _, md, _) ->
          Option.fold ~none:env
-           ~some:(fun id -> Env.add_module ~arg:true id Mp_present mty env) id)
-      env curr in
-  let make_env2 curr =
-    List.fold_left
-      (fun env (id, _, mty) ->
-         Option.fold ~none:env
-           ~some:(fun id ->
-             Env.add_module ~arg:true id Mp_present mty.mty_type env
-           ) id)
+           ~some:(fun id -> Env.add_module_declaration ~check:true ~arg:true
+                              id Mp_present md env) id)
       env curr in
   let transition env_c curr =
     List.map2
-      (fun pmd (id, id_loc, _mty) ->
+      (fun pmd (id, id_loc, md, _) ->
         let tmty =
           Builtin_attributes.warning_scope pmd.pmd_attributes
             (fun () -> transl_modtype env_c pmd.pmd_type)
         in
-        (id, id_loc, tmty))
+        let md = { md with Types.md_type = tmty.mty_type } in
+        (id, id_loc, md, tmty))
       sdecls curr in
-  let map_mtys =
+  let map_mtys curr =
     List.filter_map
-      (fun (id, _, mty) ->
-        Option.map (fun id ->
-           (id, Types.{md_type = mty.mty_type;
-                       md_loc = mty.mty_loc;
-                       md_attributes = mty.mty_attributes;
-                       md_uid = Uid.internal_not_actually_unique; })
-         ) id)
+      (fun (id, _, md, _) -> Option.map (fun id -> (id, md)) id)
+      curr
   in
   let scope = Ctype.create_scope () in
   let ids =
@@ -1572,7 +1561,13 @@ and transl_recmodule_modtypes env sdecls =
   let init =
     List.map2
       (fun id pmd ->
-        (id, pmd.pmd_name, approx_modtype approx_env pmd.pmd_type))
+         let md =
+           { md_type = approx_modtype approx_env pmd.pmd_type;
+             md_loc = pmd.pmd_loc;
+             md_attributes = pmd.pmd_attributes;
+             md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+         in
+        (id, pmd.pmd_name, md, ()))
       ids sdecls
   in
   let env0 = make_env init in
@@ -1580,7 +1575,7 @@ and transl_recmodule_modtypes env sdecls =
     Warnings.without_warnings
       (fun () -> transition env0 init)
   in
-  let env1 = make_env2 dcl1 in
+  let env1 = make_env dcl1 in
   check_recmod_typedecls env1 (map_mtys dcl1);
   let dcl2 = transition env1 dcl1 in
 (*
@@ -1589,17 +1584,17 @@ and transl_recmodule_modtypes env sdecls =
       Format.printf "%a: %a@." Printtyp.ident id Printtyp.modtype mty)
     dcl2;
 *)
-  let env2 = make_env2 dcl2 in
+  let env2 = make_env dcl2 in
   check_recmod_typedecls env2 (map_mtys dcl2);
   let dcl2 =
-    List.map2 (fun pmd (id, id_loc, mty) ->
-      let md =
+    List.map2 (fun pmd (id, id_loc, md, mty) ->
+      let tmd =
         {md_id=id; md_name=id_loc; md_type=mty;
          md_presence=Mp_present;
          md_loc=pmd.pmd_loc;
          md_attributes=pmd.pmd_attributes}
       in
-      md, Uid.mk ~current_unit:(Env.get_unit_name ())
+      tmd, md.md_uid
     ) sdecls dcl2
   in
   (dcl2, env2)
