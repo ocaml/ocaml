@@ -287,7 +287,7 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
 
 - #9367: Make bytecode and native-code backtraces agree.
-  (Stephen Dolan, review by ??)
+  (Stephen Dolan, review by Gabriel Scherer)
 
 OCaml 4.10.0
 ------------
