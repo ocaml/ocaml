@@ -1209,21 +1209,24 @@ Error: Signature mismatch:
 
 (** Abstract module type woes *)
 
-(** Future works: module types must be extended after accepting arguments *)
 
-module F(X:sig module type t module M:t end) = X.M
+module F(X:sig type witness module type t module M:t end) = X.M
 
 module PF = struct
+  type witness
   module type t = module type of F
   module M = F
 end
 
 module U = F(PF)(PF)(PF)
 [%%expect {|
-module F : functor (X : sig module type t module M : t end) -> X.t
+module F :
+  functor (X : sig type witness module type t module M : t end) -> X.t
 module PF :
   sig
-    module type t = functor (X : sig module type t module M : t end) -> X.t
+    type witness
+    module type t =
+      functor (X : sig type witness module type t module M : t end) -> X.t
     module M = F
   end
 module U : PF.t
@@ -1246,16 +1249,140 @@ Error: The functor application is ill-typed.
   4. Module PF matches the expected module type
   5. Module PF matches the expected module type
   6. Modules do not match:
-       F : functor (X : sig module type t module M : t end) -> X.t
+       F :
+       functor (X : sig type witness module type t module M : t end) -> X.t
      is not included in
-       ...(X) = sig module type t module M : t end
+       ...(X) = sig type witness module type t module M : t end
      Modules do not match:
        functor (X : ...(X)) -> ...
      is not included in
        functor  -> ...
         An extra argument is provided of module type
-            ...(X) = sig module type t module M : t end
+            ...(X) = sig type witness module type t module M : t end
 |}]
+
+(** Divergent arities *)
+module type arg = sig type arg end
+module A = struct type arg end
+
+module Add_one' = struct
+  module M(_:arg) = A
+  module type t = module type of M
+end
+
+module Add_one = struct type witness include Add_one' end
+
+module Add_three' = struct
+  module M(_:arg)(_:arg)(_:arg) = A
+  module type t = module type of M
+end
+
+module Add_three = struct
+  include Add_three'
+  type witness
+end
+
+
+module Wrong_intro = F(Add_three')(A)(A)(A)
+[%%expect {|
+module type arg = sig type arg end
+module A : sig type arg end
+module Add_one' :
+  sig
+    module M : arg -> sig type arg = A.arg end
+    module type t = arg -> sig type arg = A.arg end
+  end
+module Add_one :
+  sig
+    type witness
+    module M = Add_one'.M
+    module type t = arg -> sig type arg = A.arg end
+  end
+module Add_three' :
+  sig
+    module M : arg -> arg -> arg -> sig type arg = A.arg end
+    module type t = arg -> arg -> arg -> sig type arg = A.arg end
+  end
+module Add_three :
+  sig
+    module M = Add_three'.M
+    module type t = arg -> arg -> arg -> sig type arg = A.arg end
+    type witness
+  end
+Line 22, characters 21-43:
+22 | module Wrong_intro = F(Add_three')(A)(A)(A)
+                          ^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         Add_three' A A A
+       do not match these parameters:
+         functor (X : ...(X)) arg arg arg -> ...
+  1. Modules do not match:
+       Add_three' :
+       sig
+         module M = Add_three'.M
+         module type t = arg -> arg -> arg -> sig type arg = A.arg end
+       end
+     is not included in
+       ...(X) = sig type witness module type t module M : t end
+     The type `witness' is required but not provided
+  2. Module A matches the expected module type arg
+  3. Module A matches the expected module type arg
+  4. Module A matches the expected module type arg
+|}]
+
+module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
+[%%expect {|
+Line 1, characters 20-51:
+1 | module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         Add_one' Add_three A A A
+       do not match these parameters:
+         functor  (X : ...) arg arg arg -> ...
+  1. The following extra argument is provided
+         Add_one' :
+         sig
+           module M = Add_one'.M
+           module type t = arg -> sig type arg = A.arg end
+         end
+  2. Module Add_three matches the expected module type
+  3. Module A matches the expected module type arg
+  4. Module A matches the expected module type arg
+  5. Module A matches the expected module type arg
+|}]
+
+(** Known lmitation: we choose the wrong environment without the
+    error on Add_one
+**)
+module Mislead_chosen_one = F(Add_one)(Add_three)(A)(A)(A)
+[%%expect {|
+Line 1, characters 28-58:
+1 | module Mislead_chosen_one = F(Add_one)(Add_three)(A)(A)(A)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         Add_one Add_three A A A
+       do not match these parameters:
+         functor (X : ...)  arg   -> ...
+  1. Module Add_one matches the expected module type
+  2. The following extra argument is provided
+         Add_three :
+         sig
+           module M = Add_three'.M
+           module type t = arg -> arg -> arg -> sig type arg = A.arg end
+           type witness = Add_three.witness
+         end
+  3. Module A matches the expected module type arg
+  4. The following extra argument is provided A : sig type arg = A.arg end
+  5. The following extra argument is provided A : sig type arg = A.arg end
+|}]
+
+
+
+
+
 
 (** Hide your arity from the world *)
 
