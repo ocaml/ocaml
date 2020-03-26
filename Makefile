@@ -358,6 +358,7 @@ utils/config.ml: utils/config.mlp config/Makefile Makefile
 	    $(call SUBST,WINDOWS_UNICODE) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST,SYSTHREAD_SUPPORT) \
+      $(call SUBST,STATS) \
 	    $(call SUBST,TARGET) \
 	    $(call SUBST,WITH_FRAME_POINTERS) \
 	    $(call SUBST,WITH_PROFINFO) \
