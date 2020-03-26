@@ -231,12 +231,13 @@ static void free_extern_output(void)
 {
   struct output_block * blk, * nextblk;
 
-  if (extern_userprovided_output != NULL) return;
-  for (blk = extern_output_first; blk != NULL; blk = nextblk) {
-    nextblk = blk->next;
-    caml_stat_free(blk);
+  if (extern_userprovided_output == NULL) {
+    for (blk = extern_output_first; blk != NULL; blk = nextblk) {
+      nextblk = blk->next;
+      caml_stat_free(blk);
+    }
+    extern_output_first = NULL;
   }
-  extern_output_first = NULL;
   extern_free_stack();
 }
 
