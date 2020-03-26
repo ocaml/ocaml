@@ -736,6 +736,11 @@ Error: This expression has type [> `A of a ]
        Type a is not compatible with type b = a
        This instance of a is ambiguous:
        it would escape the scope of its equation
+|}, Principal{|
+Line _, characters 9-15:
+Error: This expression has type ([> `A of b ] as 'a) -> 'a
+       but an expression was expected of type [> `A of a ] -> [> `A of b ]
+       Types for tag `A are incompatible
 |}];;
 
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =

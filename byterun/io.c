@@ -816,3 +816,8 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   }
   CAMLreturn (Val_long(res));
 }
+
+CAMLprim value caml_terminfo_rows(value vchannel)
+{
+  return Val_int(caml_num_rows_fd(Channel(vchannel)->fd));
+}

@@ -13,10 +13,54 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of a few built-in environment modifiers *)
+(* Definition of OCaml-specific variables *)
 
-val expect : Environments.modifiers
+(* The variables are listed in alphabetical order *)
 
-val principal : Environments.modifiers
+val c_preprocessor : Variables.t
 
-val testing : Environments.modifiers
+val compare_programs : Variables.t
+
+val compiler_directory_suffix : Variables.t
+
+val compiler_reference : Variables.t
+
+val compiler_reference2 : Variables.t
+
+val compiler_reference_suffix : Variables.t
+
+val compiler_output : Variables.t
+
+val compiler_output2 : Variables.t
+
+val directories : Variables.t
+
+val flags : Variables.t
+
+val libraries : Variables.t
+
+val modules : Variables.t
+
+val ocamlc_flags : Variables.t
+val ocamlc_default_flags : Variables.t
+
+val ocamlopt_flags : Variables.t
+val ocamlopt_default_flags : Variables.t
+
+val ocaml_exit_status : Variables.t
+
+val ocamlc_byte_exit_status : Variables.t
+
+val ocamlopt_byte_exit_status : Variables.t
+
+val ocamlnat_exit_status : Variables.t
+
+val ocamlc_opt_exit_status : Variables.t
+
+val ocamlopt_opt_exit_status : Variables.t
+
+val ocamlsrcdir : Variables.t
+
+val os_type : Variables.t
+
+val source_modules : Variables.t

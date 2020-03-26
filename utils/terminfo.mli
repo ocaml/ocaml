@@ -18,9 +18,10 @@
 type status =
   | Uninitialised
   | Bad_term
-  | Good_term of int  (* number of lines of the terminal *)
-;;
-external setup : out_channel -> status = "caml_terminfo_setup";;
-external backup : int -> unit = "caml_terminfo_backup";;
-external standout : bool -> unit = "caml_terminfo_standout";;
-external resume : int -> unit = "caml_terminfo_resume";;
+  | Good_term
+
+val setup : out_channel -> status
+val num_lines : out_channel -> int
+val backup : out_channel -> int -> unit
+val standout : out_channel -> bool -> unit
+val resume : out_channel -> int -> unit

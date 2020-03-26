@@ -93,7 +93,7 @@ let print_updating_num_loc_lines ppf f arg =
 
 (* Highlight the locations using standout mode. *)
 
-let highlight_terminfo ppf num_lines lb locs =
+let highlight_terminfo ppf lb locs =
   Format.pp_print_flush ppf ();  (* avoid mixing Format and normal output *)
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
   let pos0 = -lb.lex_abs_pos in
@@ -105,26 +105,26 @@ let highlight_terminfo ppf num_lines lb locs =
     if Bytes.get lb.lex_buffer i = '\n' then incr lines
   done;
   (* If too many lines, give up *)
-  if !lines >= num_lines - 2 then raise Exit;
+  if !lines >= Terminfo.num_lines stdout - 2 then raise Exit;
   (* Move cursor up that number of lines *)
-  flush stdout; Terminfo.backup !lines;
+  flush stdout; Terminfo.backup stdout !lines;
   (* Print the input, switching to standout for the location *)
   let bol = ref false in
   print_string "# ";
   for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
     if !bol then (print_string "  "; bol := false);
     if List.exists (fun loc -> pos = loc.loc_start.pos_cnum) locs then
-      Terminfo.standout true;
+      Terminfo.standout stdout true;
     if List.exists (fun loc -> pos = loc.loc_end.pos_cnum) locs then
-      Terminfo.standout false;
+      Terminfo.standout stdout false;
     let c = Bytes.get lb.lex_buffer (pos + pos0) in
     print_char c;
     bol := (c = '\n')
   done;
   (* Make sure standout mode is over *)
-  Terminfo.standout false;
+  Terminfo.standout stdout false;
   (* Position cursor back to original location *)
-  Terminfo.resume !num_loc_lines;
+  Terminfo.resume stdout !num_loc_lines;
   flush stdout
 
 (* Highlight the location by printing it again. *)
@@ -211,11 +211,11 @@ let rec highlight_locations ppf locs =
             try highlight_dumb ppf lb loc1; true
             with Exit -> false
       end
-  | Terminfo.Good_term num_lines ->
+  | Terminfo.Good_term ->
       begin match !input_lexbuf with
         None -> false
       | Some lb ->
-          try highlight_terminfo ppf num_lines lb locs; true
+          try highlight_terminfo ppf lb locs; true
           with Exit -> false
       end
 

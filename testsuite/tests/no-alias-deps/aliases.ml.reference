@@ -1,5 +1,5 @@
-File "_none_", line 1:
+File "aliases.ml", line 1, characters 12-13:
 Warning 49: no cmi file was found in path for module A
-File "_none_", line 1:
+File "aliases.ml", line 2, characters 12-13:
 Warning 49: no valid cmi file was found in path for module B. b.cmi
 is not a compiled interface

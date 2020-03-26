@@ -236,7 +236,8 @@ let rc node =
 (* Enter a value in the method environment only *)
 let enter_met_env ?check loc lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty; val_kind = Val_unbound;
+    Env.enter_value lab {val_type = ty;
+                         val_kind = Val_unbound Val_unbound_instance_variable;
                          val_attributes = [];
                          Types.val_loc = loc} val_env
   in
@@ -244,7 +245,8 @@ let enter_met_env ?check loc lab kind ty val_env met_env par_env =
    Env.add_value ?check id {val_type = ty; val_kind = kind;
                             val_attributes = [];
                             Types.val_loc = loc} met_env,
-   Env.add_value id {val_type = ty; val_kind = Val_unbound;
+   Env.add_value id {val_type = ty;
+                     val_kind = Val_unbound Val_unbound_instance_variable;
                      val_attributes = [];
                      Types.val_loc = loc} par_env)
 

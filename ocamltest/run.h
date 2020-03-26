@@ -29,7 +29,7 @@ typedef void Logger(void *, const char *, va_list ap);
 typedef struct {
   char_os *program;
   array argv;
-  /* array envp; */
+  array envp;
   char_os *stdin_filename;
   char_os *stdout_filename;
   char_os *stderr_filename;

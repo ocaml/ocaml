@@ -89,18 +89,18 @@ endif
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
-  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c \
-  dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c domain.c \
-	platform.c eventlog.c fiber.c memory.c startup_aux.c
+  signals.c str.c sys.c callback.c weak.c finalise.c \
+  platform.c eventlog.c fiber.c memory.c startup_aux.c domain.c \
+  dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
 OBJS=$(addsuffix .$(O), \
   interp misc fix_code startup_aux startup \
   major_gc minor_gc memory alloc roots globroots \
   fail signals signals_byt printexc backtrace_prim backtrace \
   compare ints floats str array io extern intern \
-  hash sys meta parsing gc_ctrl terminfo md5 obj \
+  hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak finalise custom \
-	domain platform eventlog fiber shared_heap addrmap \
+  domain platform eventlog fiber shared_heap addrmap \
   dynlink spacetime afl $(UNIX_OR_WIN32) bigarray main)
 
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)

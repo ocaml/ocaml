@@ -99,30 +99,35 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 (* ?loc is used to report 'deprecated module' warnings *)
 
 val lookup_value:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * value_description
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * value_description
 val lookup_constructor:
-  ?loc:Location.t -> Longident.t -> t -> constructor_description
+  ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> constructor_description
 val lookup_all_constructors:
-  ?loc:Location.t ->
+  ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> (constructor_description * (unit -> unit)) list
 val lookup_label:
-  ?loc:Location.t -> Longident.t -> t -> label_description
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> label_description
 val lookup_all_labels:
-  ?loc:Location.t ->
+  ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type:
-  ?loc:Location.t -> Longident.t -> t -> Path.t
+  ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> Path.t
   (* Since 4.04, this function no longer returns [type_description].
      To obtain it, you should either call [Env.find_type], or replace
      it by [Typetexp.find_type] *)
 val lookup_module:
-  load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
+  load:bool -> ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> Path.t
 val lookup_modtype:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * modtype_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * class_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * class_type_declaration
 
 val copy_types: string list -> t -> t
   (* Used only in Typecore.duplicate_ident_types. *)

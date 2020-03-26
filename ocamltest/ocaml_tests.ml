@@ -13,16 +13,18 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definitions of built-in tests *)
+(* Tests specific to the OCaml compiler *)
 
 open Tests
 open Builtin_actions
+open Ocaml_actions
 
 let bytecode =
   let opt_actions =
   [
-    compile_bytecode_with_native_compiler;
-    check_ocamlc_dot_opt_output;
+    setup_ocamlc_opt_build_env;
+    ocamlc_opt;
+    check_ocamlc_opt_output;
     compare_bytecode_programs
   ] in
 {
@@ -30,10 +32,11 @@ let bytecode =
   test_run_by_default = true;
   test_actions =
   [
-    compile_bytecode_with_bytecode_compiler;
-    check_ocamlc_dot_byte_output;
-    execute;
-    check_program_output
+    setup_ocamlc_byte_build_env;
+    ocamlc_byte;
+    check_ocamlc_byte_output;
+    run;
+    check_program_output;
   ] @ (if Ocamltest_config.arch<>"none" then opt_actions else [])
 }
 
@@ -42,12 +45,14 @@ let native = {
   test_run_by_default = true;
   test_actions =
   [
-    compile_native_with_bytecode_compiler;
-    check_ocamlopt_dot_byte_output;
-    execute;
+    setup_ocamlopt_byte_build_env;
+    ocamlopt_byte;
+    check_ocamlopt_byte_output;
+    run;
     check_program_output;
-    compile_native_with_native_compiler;
-    check_ocamlopt_dot_opt_output;
+    setup_ocamlopt_opt_build_env;
+    ocamlopt_opt;
+    check_ocamlopt_opt_output;
     compare_native_programs;
   ]
 }
@@ -57,10 +62,12 @@ let toplevel = {
   test_run_by_default = false;
   test_actions =
   [
-    run_in_ocaml;
+    setup_ocaml_build_env;
+    ocaml;
     check_ocaml_output;
 (*
-    run_in_ocamlnat;
+    setup_ocamlnat_build_env;
+    ocamlnat;
     check_ocamlnat_output;
 *)
   ]

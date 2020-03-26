@@ -13,24 +13,29 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Miscellaneous library functions *)
+(* Backends of the OCaml compiler and their properties *)
 
-val concatmap : ('a -> 'b list) -> 'a list -> 'b list
+open Ocamltest_stdlib
 
-val is_blank : char -> bool
+type t = Sys.backend_type
 
-val maybe_quote : string -> string
+let string_of_backend = function
+  | Sys.Bytecode -> "bytecode"
+  | Sys.Native -> "native"
+  | Sys.Other backend_name -> backend_name
 
-val words : string -> string list
+(* Creates a function that returns its first argument for Bytecode,          *)
+(* its second argument for Native code and fails for other backends          *)
+let make_backend_function bytecode_value native_value = function
+  | Sys.Bytecode -> bytecode_value
+  | Sys.Native -> native_value
+  | Sys.Other backend_name ->
+    let error_message =
+      ("Other backend " ^ backend_name ^ " not supported") in
+    raise (Invalid_argument error_message)
 
-val file_is_empty : string -> bool
+let module_extension = make_backend_function "cmo" "cmx"
 
-val string_of_location: Location.t -> string
+let library_extension = make_backend_function "cma" "cmxa"
 
-val run_system_command : string -> unit
-
-val make_directory : string -> unit
-
-val string_of_file : string -> string
-
-val copy_file : string -> string -> unit
+let executable_extension = make_backend_function "byte" "opt"

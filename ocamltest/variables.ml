@@ -26,6 +26,8 @@ exception Empty_variable_name
 
 exception Variable_already_registered
 
+exception No_such_variable of string
+
 let make (name, description) =
   if name="" then raise Empty_variable_name else {
     variable_name = name;
