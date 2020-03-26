@@ -56,9 +56,9 @@ module F: f =
   functor(X:empty)(Y:empty)(Z:empty) -> Empty
 [%%expect {|
 module type f = functor (X : empty) (Y : empty) -> empty
-Line 3, characters 2-45:
+Line 3, characters 9-45:
 3 |   functor(X:empty)(Y:empty)(Z:empty) -> Empty
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor (X : empty) (Y : empty) (Z : empty) -> ...
@@ -73,9 +73,9 @@ module type f = functor (X:a)(Y:b) -> c
 module F:f = functor (X:a)(Y:b)(Z:c) -> Empty
 [%%expect {|
 module type f = functor (X : a) (Y : b) -> c
-Line 2, characters 13-45:
+Line 2, characters 21-45:
 2 | module F:f = functor (X:a)(Y:b)(Z:c) -> Empty
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor (X : a) (Y : b) (Z : c) -> ...
@@ -303,9 +303,9 @@ module F: f = functor (A:sig include x include y end)(Z:sig type y = A.y end) ->
 module type f =
   functor (A : sig type x type y end) (B : sig type x = A.x end)
     (C : sig type y = A.y end) -> sig end
-Line 4, characters 14-91:
+Line 4, characters 22-91:
 4 | module F: f = functor (A:sig include x include y end)(Z:sig type y = A.y end) -> struct end
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor (A : ...(A))  (Z : ...(Z)) -> ...
@@ -327,9 +327,9 @@ module type f =
   functor (B : sig type x type y type u = x type v = y end)
     (Y : sig type yu = Y of B.u end) (Z : sig type zv = Z of B.v end) ->
     sig end
-Line 4, characters 14-97:
+Line 4, characters 22-97:
 4 | module F: f = functor (X:sig include x include y end)(Z:sig type zv = Z of X.y end) -> struct end
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor (X : ...(X))  (Z : ...(Z)) -> ...
@@ -422,7 +422,7 @@ Error: The functor application is ill-typed.
        These arguments:
          ...(S1) P.B ...(S3)
        do not match these parameters:
-         functor (X : x) (B : b) (Y : y) -> ...
+         functor (X : x) (B : b/2) (Y : y) -> ...
   1. Module ...(S1) matches the expected module type x
   2. Modules do not match:
        P.B : b/1
@@ -509,9 +509,9 @@ Error: Signature mismatch:
 
 module X: functor ( X: sig end) -> sig end = functor(X: Set.OrderedType) -> struct end
 [%%expect {|
-Line 1, characters 45-86:
+Line 1, characters 52-86:
 1 | module X: functor ( X: sig end) -> sig end = functor(X: Set.OrderedType) -> struct end
-                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor (X : Set.OrderedType) -> ...
@@ -522,9 +522,9 @@ Error: Signature mismatch:
      does not include
        sig end
      The type `t' is required but not provided
-     File "set.mli", line 49, characters 4-10: Expected declaration
+     File "set.mli", line 52, characters 4-10: Expected declaration
      The value `compare' is required but not provided
-     File "set.mli", line 52, characters 4-31: Expected declaration
+     File "set.mli", line 55, characters 4-31: Expected declaration
 |}]
 
 (** Deeply nested errors *)
@@ -1041,9 +1041,8 @@ module type s =
          end)
     (S : sig type where type the type place end)
     (R : sig type upon type the type heath end) -> sig end
-Lines 10-18, characters 14-15:
-10 | ..............functor
-11 |   (X: sig type when_ type shall type we type tree type meet type again end)
+Lines 11-18, characters 2-15:
+11 | ..(X: sig type when_ type shall type we type tree type meet type again end)
 12 |   (Y:sig type in_ val thunder:in_ val lightning: in_ type pain end)
 13 |   (Z:sig type when_ type the type hurlyburly's type gone  end)
 14 |   (Z:sig type when_ type the type battle's type last type and_ type won end)

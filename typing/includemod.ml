@@ -1377,8 +1377,9 @@ module Pp = struct
     | Diff.Delete _ -> ignore
 
   let space ppf () = Format.fprintf ppf "@ "
-  let dlist ?(sep=space) f l ppf =
-    Format.pp_print_list ~pp_sep:sep (|>) ppf (List.map f l)
+  let dlist ?(sep=space) f l  =
+    let l' = List.map f l in
+    fun ppf -> Format.pp_print_list ~pp_sep:sep (|>) ppf l'
   let params_diff sep f patch =
     let elt (_,x) = decorate f x in
     dlist ~sep elt patch

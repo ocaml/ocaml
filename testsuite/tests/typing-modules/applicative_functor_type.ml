@@ -23,7 +23,7 @@ Error: The functor application Set.Make(M) is ill-typed.
        These arguments:
          M
        do not match these parameters:
-         functor (Ord : Stdlib__Set.OrderedType) -> ...
+         functor (Ord : Set.OrderedType) -> ...
      Modules do not match:
        M : sig type t = M.t val equal : 'a -> 'a -> bool end
      is not included in
