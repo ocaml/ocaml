@@ -101,19 +101,30 @@ type filename = string
 type readenv_position =
   Before_args | Before_compile of filename | Before_link
 
-(* Syntax of OCAMLPARAM: (name=VALUE,)* _ (,name=VALUE)*
-   where VALUE should not contain ',' *)
+(* Syntax of OCAMLPARAM: SEP?(name=VALUE SEP)* _ (SEP name=VALUE)*
+   where VALUE should not contain SEP, and SEP is ',' if unspecified,
+   or ':', '|', ';', ' ' or ',' *)
 exception SyntaxError of string
 
 let parse_args s =
-  let args = String.split_on_char ',' s in
+  let args =
+    let len = String.length s in
+    if len = 0 then []
+    else
+      (* allow first char to specify an alternative separator in ":|; ," *)
+      match s.[0] with
+      | ( ':' | '|' | ';' | ' ' | ',' ) as c ->
+         List.tl (String.split_on_char c s)
+      | _ -> String.split_on_char ',' s
+  in
   let rec iter is_after args before after =
     match args with
       [] ->
       if not is_after then
         raise (SyntaxError "no '_' separator found")
       else
-      (List.rev before, List.rev after)
+        (List.rev before, List.rev after)
+    | "" :: tail -> iter is_after tail before after
     | "_" :: _ when is_after -> raise (SyntaxError "too many '_' separators")
     | "_" :: tail -> iter true tail before after
     | arg :: tail ->
@@ -358,7 +369,9 @@ let read_one_param ppf position name v =
         ccobjs := Misc.rev_split_words v @ !ccobjs
     end
 
-  | "ccopts" ->
+  | "ccopt"
+  | "ccopts"
+    ->
     begin
       match position with
       | Before_link | Before_compile _ ->

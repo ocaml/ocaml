@@ -53,3 +53,6 @@ call_gen_code:
         .align  2
 caml_c_call:
         br      x15
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

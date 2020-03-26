@@ -46,6 +46,8 @@
 /* The table of debug information fragments */
 struct ext_table caml_debug_info;
 
+CAMLexport char_os * caml_cds_file = NULL;
+
 /* Location of fields in the Instruct.debug_event record */
 enum {
   EV_POS = 0,

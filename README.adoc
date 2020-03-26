@@ -1,8 +1,10 @@
 |=====
-| Branch `trunk` | Branch `4.05` | Branch `4.04`
+| Branch `trunk` | Branch `4.06` | Branch `4.05` | Branch `4.04`
 
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.06["TravisCI Build Status (4.06 branch)",link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.06&svg=true["AppVeyor Build Status (4.06 branch)",link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.05["TravisCI Build Status (4.05 branch)",link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.05&svg=true["AppVeyor Build Status (4.05 branch)",link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.04["TravisCI Build Status (4.04 branch)",link="https://travis-ci.org/ocaml/ocaml"]
@@ -73,45 +75,37 @@ Windows, see link:README.win32.adoc[].
 The OCaml manual is distributed in HTML, PDF, Postscript, DVI, and Emacs
 Info files.  It is available at
 
-http://caml.inria.fr/
-
-The community also maintains the Web site http://ocaml.org, with tutorials
-and other useful information for OCaml users.
+http://caml.inria.fr/pub/docs/manual-ocaml/
 
 == Availability
 
 The complete OCaml distribution can be accessed at
 
-http://caml.inria.fr/
+http://ocaml.org/docs/install.html
 
 == Keeping in Touch with the Caml Community
 
-There exists a mailing list of users of the OCaml implementations developed
-at INRIA. The purpose of this list is to share experience, exchange ideas
-(and even code), and report on applications of the OCaml language. Messages
-can be written in English or in French. The list has more than 1000
-subscribers.
-
-Messages to the list should be sent to:
+The OCaml mailing list is the longest-running forum for OCaml users.
+You can email it at
 
 mailto:caml-list@inria.fr[]
 
-You can subscribe to this list via the Web interface at
+You can subscribe and access list archives via the Web interface at
 
 https://sympa.inria.fr/sympa/subscribe/caml-list
 
-Archives of the list are available on the Web site above.
+You can also access a newer discussion forum at
 
-The Usenet news `groups comp.lang.ml` and `comp.lang.functional` also
-contains discussions about the ML family of programming languages, including
-OCaml.
+https://discuss.ocaml.org/
 
-The IRC channel `#ocaml` on https://freenode.net/[Freenode] also has several
-hundred users and welcomes questions.
+There also exist other mailing lists, chat channels, and various other forums
+around the internet for getting in touch with the OCaml and ML family language
+community. These can be accessed at
 
-The OCaml Community website is
+http://ocaml.org/community/
 
-http://ocaml.org/
+In particular, the IRC channel `#ocaml` on https://freenode.net/[Freenode] has a
+long history and welcomes questions.
 
 == Bug Reports and User Feedback
 

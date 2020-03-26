@@ -17,10 +17,6 @@
 
 val bytecode : Tests.t
 
-val expect : Tests.t
-
 val native : Tests.t
-
-val script : Tests.t
 
 val toplevel : Tests.t

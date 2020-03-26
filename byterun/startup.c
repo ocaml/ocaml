@@ -220,30 +220,6 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail, char *na
 
 #endif
 
-/* Invocation of ocamlrun: 4 cases.
-
-   1.  runtime + bytecode
-       user types:  ocamlrun [options] bytecode args...
-       arguments:  ocamlrun [options] bytecode args...
-
-   2.  bytecode script
-       user types:  bytecode args...
-   2a  (kernel 1) arguments:  ocamlrun ./bytecode args...
-   2b  (kernel 2) arguments:  bytecode bytecode args...
-
-   3.  concatenated runtime and bytecode
-       user types:  composite args...
-       arguments:  composite args...
-
-Algorithm:
-  1-  If argument 0 is a valid byte-code file that does not start with #!,
-      then we are in case 3 and we pass the same command line to the
-      OCaml program.
-  2-  In all other cases, we parse the command line as:
-        (whatever) [options] bytecode args...
-      and we strip "(whatever) [options]" from the command line.
-
-*/
 
 extern void caml_init_ieee_floats (void);
 
@@ -389,6 +365,7 @@ CAMLexport value caml_startup_code_exn(
            int pooling,
            char_os **argv)
 {
+  char_os * cds_file;
   char_os * exe_name;
 
   /* Determine options */
@@ -408,6 +385,10 @@ CAMLexport value caml_startup_code_exn(
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
+  cds_file = caml_secure_getenv(_T("CAML_DEBUG_FILE"));
+  if (cds_file != NULL) {
+    caml_cds_file = caml_stat_strdup_os(cds_file);
+  }
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   Caml_state->external_raise = NULL;
