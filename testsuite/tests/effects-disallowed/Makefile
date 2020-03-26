@@ -1,10 +1,11 @@
+#!/bin/sh
 #**************************************************************************
 #*                                                                        *
-#*                                OCaml                                   *
+#*                                 OCaml                                  *
 #*                                                                        *
-#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*            Sebastien Hinderer, projet Gallium, INRIA Paris             *
 #*                                                                        *
-#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*   Copyright 2017 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -13,6 +14,8 @@
 #*                                                                        *
 #**************************************************************************
 
-BASEDIR=../..
-include $(BASEDIR)/makefiles/Makefile.toplevel
-include $(BASEDIR)/makefiles/Makefile.common
+# Commands to run for the 'other-configs' job on Inria's CI
+
+./tools/ci-build -conf -no-native-compiler -no-native
+./tools/ci-build -conf -no-naked-pointers
+./tools/ci-build -conf -flambda -conf -no-naked-pointers
