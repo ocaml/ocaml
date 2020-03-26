@@ -323,5 +323,69 @@
                 ]
           ]
     ]
+  structure_item (extended_indexoperators.ml[26,479+0]..[26,479+22])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (extended_indexoperators.ml[26,479+4]..[26,479+5])
+          Ppat_any
+        expression (extended_indexoperators.ml[26,479+8]..[26,479+22])
+          Pexp_apply
+          expression (extended_indexoperators.ml[26,479+8]..[26,479+22])
+            Pexp_ident ".%()" (extended_indexoperators.ml[26,479+8]..[26,479+22]) ghost
+          [
+            <arg>
+            Nolabel
+              expression (extended_indexoperators.ml[26,479+8]..[26,479+9])
+                Pexp_ident "x" (extended_indexoperators.ml[26,479+8]..[26,479+9])
+            <arg>
+            Nolabel
+              expression (extended_indexoperators.ml[26,479+12]..[26,479+21])
+                Pexp_sequence
+                expression (extended_indexoperators.ml[26,479+12]..[26,479+14])
+                  Pexp_construct "()" (extended_indexoperators.ml[26,479+12]..[26,479+14])
+                  None
+                expression (extended_indexoperators.ml[26,479+16]..[26,479+21])
+                  Pexp_sequence
+                  expression (extended_indexoperators.ml[26,479+16]..[26,479+18])
+                    Pexp_construct "()" (extended_indexoperators.ml[26,479+16]..[26,479+18])
+                    None
+                  expression (extended_indexoperators.ml[26,479+20]..[26,479+21])
+                    Pexp_constant PConst_int (0,None)
+          ]
+    ]
+  structure_item (extended_indexoperators.ml[27,502+0]..[27,502+37])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (extended_indexoperators.ml[27,502+4]..[27,502+5])
+          Ppat_any
+        expression (extended_indexoperators.ml[27,502+8]..[27,502+37])
+          Pexp_apply
+          expression (extended_indexoperators.ml[27,502+8]..[27,502+37])
+            Pexp_ident ".%()" (extended_indexoperators.ml[27,502+8]..[27,502+37]) ghost
+          [
+            <arg>
+            Nolabel
+              expression (extended_indexoperators.ml[27,502+8]..[27,502+9])
+                Pexp_ident "x" (extended_indexoperators.ml[27,502+8]..[27,502+9])
+            <arg>
+            Nolabel
+              expression (extended_indexoperators.ml[27,502+12]..[27,502+36])
+                Pexp_sequence
+                expression (extended_indexoperators.ml[27,502+12]..[27,502+33])
+                  Pexp_apply
+                  expression (extended_indexoperators.ml[27,502+12]..[27,502+25])
+                    Pexp_ident "print_endline" (extended_indexoperators.ml[27,502+12]..[27,502+25])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (extended_indexoperators.ml[27,502+26]..[27,502+33])
+                        Pexp_constant PConst_string("hello",None)
+                  ]
+                expression (extended_indexoperators.ml[27,502+35]..[27,502+36])
+                  Pexp_constant PConst_int (0,None)
+          ]
+    ]
 ]
 

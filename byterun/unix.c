@@ -27,6 +27,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
@@ -163,12 +165,14 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 
 static int cygwin_file_exists(const char * name)
 {
-  int fd;
+  int fd, ret;
+  struct stat st;
   /* Cannot use stat() here because it adds ".exe" implicitly */
   fd = open(name, O_RDONLY);
   if (fd == -1) return 0;
+  ret = fstat(fd, &st);
   close(fd);
-  return 1;
+  return ret == 0 && S_ISREG(st.st_mode);
 }
 
 static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path, const char * name)
@@ -445,5 +449,19 @@ int64_t caml_time_counter(void)
     (int64_t)t.tv_usec * (int64_t)1000;
 #else
 # error "No timesource available"
+#endif
+}
+
+int caml_num_rows_fd(int fd)
+{
+#ifdef TIOCGWINSZ
+  struct winsize w;
+  w.ws_row = -1;
+  if (ioctl(fd, TIOCGWINSZ, &w) == 0)
+    return w.ws_row;
+  else
+    return -1;
+#else
+  return -1;
 #endif
 }

@@ -360,6 +360,12 @@ setting the
 option ensures that this module will
 always be linked if it is put in a library and this library is linked.
 .TP
+.B \-linscan
+Use linear scan register allocation.  Compiling with this allocator is faster
+than with the usual graph coloring allocator, sometimes quite drastically so for
+long functions and modules. On the other hand, the generated code can be a bit
+slower.
+.TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
 .TP

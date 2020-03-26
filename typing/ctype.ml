@@ -995,7 +995,7 @@ let rec copy ?env ?partial ?keep_names ty =
               Tlink ty2
           | _ ->
               (* If the row variable is not generic, we must keep it *)
-              let keep = more.level <> generic_level in
+              let keep = more.level <> generic_level && partial = None in
               let more' =
                 match more.desc with
                   Tsubst ty -> ty

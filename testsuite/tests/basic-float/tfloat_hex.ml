@@ -1,3 +1,5 @@
+(* TEST *)
+
 let try_float_of_string str =
   try
     print_float (float_of_string str);

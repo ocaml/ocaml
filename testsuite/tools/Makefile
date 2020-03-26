@@ -21,8 +21,8 @@ LIBRARIES=../../compilerlibs/ocamlcommon \
           ../../compilerlibs/ocamlbytecomp \
           ../../compilerlibs/ocamltoplevel
 
-$(PROG): $(MAIN).cmo
-	$(OCAMLC) -g -linkall -o $(PROG) $(LIBRARIES:=.cma) $(MAIN).cmo
+$(PROG): $(MAIN).cmo $(LIBRARIES:=.cma)
+	$(OCAMLC) -linkall -o $(PROG) $(LIBRARIES:=.cma) $(MAIN).cmo
 
 include $(BASEDIR)/makefiles/Makefile.common
 

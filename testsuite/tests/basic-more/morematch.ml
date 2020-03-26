@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (**************************************************************)
 (*  This suite tests the pattern-matching compiler            *)
 (*  it should just compile and run.                           *)

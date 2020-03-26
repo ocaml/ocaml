@@ -27,68 +27,17 @@ open Variables (* Should not be necessary with a ppx *)
 let arguments = make ("arguments",
   "Arguments passed to executed programs and scripts")
 
-let c_preprocessor = make ("c_preprocessor",
-  "Command to use to invoke the C preprocessor")
-
-let compiler_directory_suffix = make ("compiler_directory_suffix",
-  "Suffix to add to the directory where the test will be compiled")
-
-let compiler_reference = make ("compiler_reference",
-  "Reference file for compiler output for ocamlc.byte and ocamlopt.byte")
-
-let compiler_reference2 = make ("compiler_reference2",
-  "Reference file for compiler output for ocamlc.opt and ocamlopt.opt")
-
-let compiler_reference_suffix = make ("compiler_reference_suffix",
-  "Suffix to add to the file name containing the reference for compiler output")
-
-let compiler_output = make ("compiler_output",
-  "Where to log output of bytecode compilers")
-
-let compiler_output2 = make ("compiler_output2",
-  "Where to log output of native compilers")
-
-let ocamlc_flags = make ("ocamlc_flags",
-  "Flags passed to ocamlc.byte and ocamlc.opt")
-
-let ocamlc_default_flags = make ("ocamlc_default_flags",
-  "Flags passed by default to ocamlc.byte and ocamlc.opt")
-
 let files = make ("files",
   "Files used by the tests")
 
-let flags = make ("flags",
-  "Flags passed to all the compilers")
+let ld_library_path = make ("ld_library_path",
+  "List of paths to lookup for loading dynamic libraries")
 
-let libraries = make ("libraries",
-  "Libraries the program should be linked with")
+let ocamltest_env = make ("ocamltest_env",
+  "File where hooks write their environment modifiers")
 
-let modules = make ("modules",
-  "Other modules of the test")
-
-let ocamlopt_flags = make ("ocamlopt_flags",
-  "Flags passed to ocamlopt.byte and ocamlopt.opt")
-
-let ocamlopt_default_flags = make ("ocamlopt_default_flags",
-  "Flags passed by default to ocamlopt.byte and ocamlopt.opt")
-
-let ocaml_byte_exit_status = make ("ocaml_byte_exit_status",
-  "Expected exit status of ocaml.byte")
-
-let ocamlc_byte_exit_status = make ("ocamlc_byte_exit_status",
-  "Expected exit status of ocac.byte")
-
-let ocamlopt_byte_exit_status = make ("ocamlopt_byte_exit_status",
-  "Expected exit status of ocamlopt.byte")
-
-let ocaml_opt_exit_status = make ("ocaml_opt_exit_status",
-  "Expected exit status of ocaml.opt")
-
-let ocamlc_opt_exit_status = make ("ocamlc_opt_exit_status",
-  "Expected exit status of ocac.opt")
-
-let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
-  "Expected exit status of ocamlopt.opt")
+let ocamltest_log = make ("ocamltest_log",
+  "Path to log file for the current test")
 
 let output = make ("output",
   "Where the output of executing the program is saved")
@@ -111,15 +60,43 @@ let stderr = make ("stderr", "Default standard error")
 let test_build_directory = make ("test_build_directory",
   "Directory for files produced during a test")
 
+let test_build_directory_prefix = make ("test_build_directory_prefix",
+  "Directory under which all test directories should be created")
+
 let test_file = make ("test_file",
   "Name of file containing the specification of which tests to run")
 
 let test_source_directory = make ("test_source_directory",
   "Directory containing the test source files")
 
+let test_pass = make ("TEST_PASS",
+  "Exit code to let a script report success")
+
+let test_skip = make ("TEST_SKIP",
+  "Exit code to let a script report skipping")
+
+let test_fail = make ("TEST_FAIL",
+  "Exit code to let a script report failure")
+
+
+
 let _ = List.iter register_variable
   [
-    c_preprocessor;
-    ocamlc_default_flags;
-    ocamlopt_default_flags
+    arguments;
+    files;
+    ocamltest_env;
+    ocamltest_log;
+    output;
+    program; program2;
+    reference;
+    script;
+    stdin;
+    stdout;
+    stderr;
+    test_build_directory;
+    test_file;
+    test_source_directory;
+    test_pass;
+    test_skip;
+    test_fail;
   ]

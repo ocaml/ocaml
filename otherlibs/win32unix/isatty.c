@@ -12,13 +12,13 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_isatty(value fd)
 {
-  DWORD lpMode;
-  HANDLE hFile = Handle_val(fd);
-  return (Val_bool((GetFileType(hFile) == FILE_TYPE_CHAR)
-                   && GetConsoleMode(hFile, &lpMode)));
+  return Val_bool(caml_win32_isatty(win_CRT_fd_of_filedescr(fd)));
 }

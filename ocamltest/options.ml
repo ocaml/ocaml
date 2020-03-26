@@ -21,7 +21,7 @@ let show_objects title string_of_object objects =
   List.iter print_object objects;
   exit 0
 
-let string_of_action action = action.Actions.action_name
+let string_of_action = Actions.action_name
 
 let string_of_test test =
   if test.Tests.test_run_by_default
@@ -36,22 +36,20 @@ let show_tests () =
   let tests = Tests.get_registered_tests () in
   show_objects "Available tests are:" string_of_test tests
 
+let log_to_stderr = ref false
+
 let commandline_options =
 [
+  ("-e", Arg.Set log_to_stderr, "Log to stderr instead of a file.");
   ("-show-actions", Arg.Unit show_actions, "Show available actions.");
   ("-show-tests", Arg.Unit show_tests, "Show available tests.");
 ]
 
-let testfile = ref ""
+let files_to_test = ref []
 
-let set_testfile name =
-  if !testfile<> "" then
-  begin
-    Printf.eprintf "Can't deal with more than one test file at the moment\n%!";
-    exit 1
-  end else testfile := name
+let add_testfile name = files_to_test := !files_to_test @ [name]
 
-let usage = "Usage: " ^ Sys.argv.(0) ^ " options testfile"
+let usage = "Usage: " ^ Sys.argv.(0) ^ " options files to test"
 
 let _ =
-  Arg.parse commandline_options set_testfile usage
+  Arg.parse commandline_options add_testfile usage

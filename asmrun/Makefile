@@ -17,11 +17,11 @@ include ../config/Makefile
 
 LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
-  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
+  parsing.c gc_ctrl.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c finalise.c meta.c custom.c main.c roots.c globroots.c \
-  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c \
-  domain.c platform.c eventlog.c backtrace.c startup_aux.c \
-	afl.c bigarray.c fiber.c shared_heap.c
+  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
+  domain.c platform.c eventlog.c fiber.c shared_heap.c addrmap.c \
+  backtrace.c afl.c bigarray.c
 
 # The following variable stores the list of files for which dependencies
 # should be computed. It includes even the files that won't actually be
@@ -73,7 +73,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   major_gc.$(O) minor_gc.$(O) memory.$(O) alloc.$(O) compare.$(O)	\
   ints.$(O) floats.$(O) str.$(O) array.$(O) io.$(O) extern.$(O)		\
   intern.$(O) hash.$(O) sys.$(O) parsing.$(O) gc_ctrl.$(O)		\
-  terminfo.$(O) md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
+  md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
   printexc.$(O) callback.$(O) weak.$(O) finalise.$(O)	\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\

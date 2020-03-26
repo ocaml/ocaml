@@ -308,6 +308,14 @@ modules contained in the library.  When compiling a module (option
 always be linked if it is put in a library and this library is linked.
 }%notop
 
+\nat{%
+\item["-linscan"]
+Use linear scan register allocation.  Compiling with this allocator is faster
+than with the usual graph coloring allocator, sometimes quite drastically so for
+long functions and modules. On the other hand, the generated code can be a bit
+slower.
+}%nat
+
 \comp{%
 \item["-make-runtime"]
 Build a custom runtime system (in the file specified by option "-o")
