@@ -318,6 +318,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
 	    -e 's|%%OUTPUTOBJ%%|$(OUTPUTOBJ)|' \
+      -e 's|%%ENABLE_CALL_COUNTS%%|$(ENABLE_CALL_COUNTS)|' \
 	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
 	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
 	    -e 's|%%EXT_EXE%%|$(EXE)|' \
@@ -347,7 +348,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%FORCE_SAFE_STRING%%|$(FORCE_SAFE_STRING)|' \
 	    -e 's|%%DEFAULT_SAFE_STRING%%|$(DEFAULT_SAFE_STRING)|' \
 	    -e 's|%%WINDOWS_UNICODE%%|$(WINDOWS_UNICODE)|' \
-	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+	    -e 's|%%STATS%%|$(STATS)|' \
+      -e 's|%%SYSTEM%%|$(SYSTEM)|' \
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
