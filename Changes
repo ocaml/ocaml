@@ -109,6 +109,9 @@ Working version
   for formatter geometry changes that are robust to new geometry fields.
   (Gabriel Scherer, review by Josh Berdine and Florian Angeletti)
 
+- #7110: Added Printf.ikbprintf and Printf.ibprintf
+  (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.

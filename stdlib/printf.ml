@@ -22,10 +22,12 @@ let kbprintf k b (Format (fmt, _)) =
   make_printf (fun acc -> bufput_acc b acc; k b) End_of_acc fmt
 let ikfprintf k oc (Format (fmt, _)) =
   make_iprintf k oc fmt
+let ikbprintf = ikfprintf
 
 let fprintf oc fmt = kfprintf ignore oc fmt
 let bprintf b fmt = kbprintf ignore b fmt
 let ifprintf oc fmt = ikfprintf ignore oc fmt
+let ibprintf b fmt = ikbprintf ignore b fmt
 let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 
