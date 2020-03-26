@@ -19,13 +19,15 @@ resources.
 ## Variants
 
 * Parallel Minor GC (default) -- A variant that performs stop-the-world parallel
-  minor collection. The branch is `parallel_minor_gc`.
+  minor collection. The branch is
+  [`parallel_minor_gc`](https://github.com/ocaml-multicore/ocaml-multicore/tree/parallel_minor_gc).
 * Concurrent Minor GC -- A variant that garbage collects each domain's minor
-  heap concurrently. The branch is `master`.
+  heap concurrently. The branch is [`master`](https://github.com/ocaml-multicore/ocaml-multicore/tree/master).
 * Parallel Minor GC + No effect syntax -- This branch does not have syntax
   extension for effects (but includes the compiler and runtime system changes).
-  The branch is `no-effect-syntax`. This branch is useful to install ppx
-  libraries.
+  The branch is
+  [`no-effect-syntax`](https://github.com/ocaml-multicore/ocaml-multicore/tree/no-effect-syntax).
+  This branch is useful to install ppx libraries.
 
 The above variants are kept in sync.
 
