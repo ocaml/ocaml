@@ -22,6 +22,12 @@ resources.
   minor collection. The branch is `parallel_minor_gc`.
 * Concurrent Minor GC -- A variant that garbage collects each domain's minor
   heap concurrently. The branch is `master`.
+* Parallel Minor GC + No effect syntax -- This branch does not have syntax
+  extension for effects (but includes the compiler and runtime system changes).
+  The branch is `no-effect-syntax`. This branch is useful to install ppx
+  libraries.
+
+The above variants are kept in sync.
 
 ## Notes
 
