@@ -36,7 +36,7 @@ camlinternalFormatBasics.cmx : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmi :
 camlinternalLazy.cmo : obj.cmi camlinternalLazy.cmi
 camlinternalLazy.cmx : obj.cmx camlinternalLazy.cmi
-camlinternalLazy.cmi : obj.cmi
+camlinternalLazy.cmi :
 camlinternalMod.cmo : obj.cmi camlinternalOO.cmi camlinternalLazy.cmi \
     array.cmi camlinternalMod.cmi
 camlinternalMod.cmx : obj.cmx camlinternalOO.cmx camlinternalLazy.cmx \
