@@ -150,7 +150,7 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
          let a = f 1
          let b = f 1
          let c = a, a
-         let d = a, a
+         let d = b, b
 
        If [Share_constants] is run before [f] is completely inlined (assuming
        [f] always generates the same result; effects of [f] aren't in fact
@@ -194,12 +194,14 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
       | Plsrint when shift_precond -> S.const_int_expr expr (x lsr y)
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
       | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
+      | Pcompare_ints -> S.const_int_expr expr (compare x y)
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_char x; Value_char y] ->
       begin match p with
       | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
+      | Pcompare_ints -> S.const_int_expr expr (Char.compare x y)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
@@ -225,6 +227,7 @@ let primitive (p : Clambda_primitives.primitive) (args, approxs)
       | Pmulfloat -> S.const_float_expr expr (n1 *. n2)
       | Pdivfloat -> S.const_float_expr expr (n1 /. n2)
       | Pfloatcomp c  -> S.const_float_comparison_expr expr c n1 n2
+      | Pcompare_floats -> S.const_int_expr expr (Float.compare n1 n2)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [A.Value_boxed_int(A.Nativeint, n)] ->

@@ -982,7 +982,8 @@ intnat caml_float_compare_unboxed(double f, double g)
   /* This branchless implementation is from GPR#164.
      Note that [f == f] if and only if f is not NaN.
      We expand each subresult of the expression to
-     avoid sign-extension on 64bit. GPR#2250. */
+     avoid sign-extension on 64bit. GPR#2250.
+     See also translation of Pcompare_floats in asmcomp/cmmgen.ml  */
   intnat res =
     (intnat)(f > g) - (intnat)(f < g) + (intnat)(f == f) - (intnat)(g == g);
   return res;

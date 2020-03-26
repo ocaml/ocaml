@@ -47,6 +47,8 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Plsrint
   | Pasrint
   | Pintcomp _ -> No_effects, No_coeffects
+  | Pcompare_ints | Pcompare_floats | Pcompare_bints _
+    -> No_effects, No_coeffects
   | Pdivbint { is_safe = Unsafe }
   | Pmodbint { is_safe = Unsafe }
   | Pdivint Unsafe

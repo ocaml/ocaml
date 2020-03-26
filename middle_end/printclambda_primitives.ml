@@ -120,6 +120,9 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Plsrint -> fprintf ppf "lsr"
   | Pasrint -> fprintf ppf "asr"
   | Pintcomp(cmp) -> Printlambda.integer_comparison ppf cmp
+  | Pcompare_ints -> fprintf ppf "compare_ints"
+  | Pcompare_floats -> fprintf ppf "compare_floats"
+  | Pcompare_bints bi -> fprintf ppf "compare_bints %s" (boxed_integer_name bi)
   | Poffsetint n -> fprintf ppf "%i+" n
   | Poffsetref n -> fprintf ppf "+:=%i"n
   | Pintoffloat -> fprintf ppf "int_of_float"

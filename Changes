@@ -245,6 +245,9 @@ Working version
 - #7927: refactor val_env met_env par_env to class_env
   (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
 
+- #2324: Replace caml_int_compare and caml_float_compare with primitives.
+  (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
+
 ### Build system:
 
 - #9250: Add --disable-ocamltest to configure and disable building for
