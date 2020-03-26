@@ -359,10 +359,10 @@ $(foreach object_type,$(subst %,,$(object_types)), \
 	$(ASPP) $(ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
 
 domain_state64.inc: caml/domain_state.tbl gen_domain_state64_inc.awk
-	awk -f gen_domain_state64_inc.awk $< > $@
+	$(AWK) -f ./gen_domain_state64_inc.awk $< > $@
 
 domain_state32.inc: caml/domain_state.tbl gen_domain_state32_inc.awk
-	awk -f gen_domain_state32_inc.awk $< > $@
+	$(AWK) -f ./gen_domain_state32_inc.awk $< > $@
 
 amd64nt.obj: amd64nt.asm domain_state64.inc
 	$(ASM)$@ $(ASMFLAGS) $<

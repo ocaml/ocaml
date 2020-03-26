@@ -17,7 +17,7 @@
 case $1 in
   stdlib.cm[iox])
       echo ' -nopervasives -no-alias-deps -w -49' \
-           ' -pp "$AWK -f expand_module_aliases.awk"';;
+           ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   camlinternalOO.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
   camlinternalLazy.cmx) echo ' -afl-inst-ratio 0';;
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)

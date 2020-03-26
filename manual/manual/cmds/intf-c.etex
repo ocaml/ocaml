@@ -296,10 +296,8 @@ containing the C code.  The standard OCaml runtime system "ocamlrun"
 then loads dynamically these libraries, and resolves references to the
 required primitives, before executing the bytecode.
 
-This facility is currently supported and known to work well under
-Linux, MacOS~X, and Windows.  It is supported, but not
-fully tested yet, under FreeBSD, Tru64, Solaris and Irix.  It is not
-supported yet under other Unixes.
+This facility is currently available on all platforms supported by
+OCaml except Cygwin 64 bits.
 
 To dynamically link C code with OCaml code, the C code must first be
 compiled into a shared library (under Unix) or DLL (under Windows).

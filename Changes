@@ -242,6 +242,9 @@ Working version
 - #9305: Avoid polymorphic compare in Ident
   (Leo White, review by Xavier Leroy and Gabriel Scherer)
 
+- #7927: refactor val_env met_env par_env to class_env
+  (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
+
 - #2324: Replace caml_int_compare and caml_float_compare with primitives.
   (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
 
@@ -250,6 +253,9 @@ Working version
 - #9250: Add --disable-ocamltest to configure and disable building for
   non-development builds.
   (David Allsopp, review by Sébastien Hinderer)
+
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
 
 ### Bug fixes:
 
@@ -287,7 +293,7 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer, report by Cyril Six)
 
 - #9367: Make bytecode and native-code backtraces agree.
-  (Stephen Dolan, review by ??)
+  (Stephen Dolan, review by Gabriel Scherer)
 
 OCaml 4.10.0
 ------------
