@@ -1,3 +1,5 @@
+include ../../config/Makefile
+
 ROOT=../..
 OCAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -I $(ROOT)/stdlib -I $(ROOT)/parsing -I $(ROOT)/utils -I $(ROOT)/tools -I $(ROOT)/typing -I $(ROOT)/driver -I $(ROOT)/toplevel -w A-4-9-42
 COMMON=$(ROOT)/compilerlibs/ocamlcommon.cma
@@ -77,3 +79,35 @@ nomli:
 matches:
 	$(OCAMLC) -linkall -o ppx_matches.exe $(COMMON) ppx_matches.ml
 	$(OCAMLC) -c -dsource -ppx ./ppx_matches.exe test_matches.ml
+
+
+## Benchmark ocamllex
+
+.PHONY: bench_ocamllex bench_ocamllex2
+ARGS=-o bench.exe -nostdlib \
+     -I $(ROOT)/otherlibs/$(UNIXLIB) -I $(ROOT)/stdlib -I $(ROOT)/parsing -I $(ROOT)/utils \
+     $(ROOT)/compilerlibs/ocamlcommon.cma unix.cma \
+     my_lexer.ml bench.ml
+bench_ocamllex:
+	@cp $(ROOT)/parsing/lexer.mll my_lexer.mll
+	cp my_lexer2.mll my_lexer.mll
+	@(cd $(ROOT)/lex && make ocamllex)
+	@$(ROOT)/boot/ocamlrun $(ROOT)/lex/ocamllex -ml my_lexer.mll
+	@echo WITH -ml flag:
+	@make -s bench_ocamllex2
+	@$(ROOT)/boot/ocamlrun $(ROOT)/lex/ocamllex -q my_lexer.mll
+	@echo WITHOUT -ml flag:
+	@make -s bench_ocamllex2
+
+bench_ocamllex2:
+	@echo -n "  NATIVE, -inline 1000: "
+	@$(ROOT)/boot/ocamlrun $(ROOT)/ocamlopt -inline 1000 $(ARGS:.cma=.cmxa)
+	@./bench.exe
+
+	@echo -n "  NATIVE, -inline 10  : "
+	@$(ROOT)/boot/ocamlrun $(ROOT)/ocamlopt -inline 10 $(ARGS:.cma=.cmxa)
+	@./bench.exe
+
+	@echo -n "  BYTECODE            : "
+	@$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -custom $(ARGS)
+	@./bench.exe

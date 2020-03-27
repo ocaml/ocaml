@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Testing the hash function Hashtbl.hash *)
 (* What is tested:
      - reproducibility on various platforms, esp. 32/64 bit issues

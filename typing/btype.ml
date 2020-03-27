@@ -582,7 +582,7 @@ let memorize_abbrev mem priv path v v' =
 let rec forget_abbrev_rec mem path =
   match mem with
     Mnil ->
-      assert false
+      mem
   | Mcons (_, path', _, _, rem) when Path.same path path' ->
       rem
   | Mcons (priv, path', v, v', rem) ->

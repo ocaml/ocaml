@@ -1,3 +1,5 @@
+(* TEST
+*)
 
 external caml_string_get_16 : string -> int -> int = "%caml_string_get16"
 external caml_string_get_32 : string -> int -> int32 = "%caml_string_get32"

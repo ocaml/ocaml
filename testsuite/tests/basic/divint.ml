@@ -1,3 +1,5 @@
+(* TEST *)
+
 open Printf
 
 (* Test integer division and modulus, esp. ocamlopt's optimization

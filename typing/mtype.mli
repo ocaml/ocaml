@@ -38,7 +38,8 @@ val no_code_needed_sig: Env.t -> signature -> bool
         (* Determine whether a module needs no implementation code,
            i.e. consists only of type definitions. *)
 val enrich_modtype: Env.t -> Path.t -> module_type -> module_type
-val enrich_typedecl: Env.t -> Path.t -> type_declaration -> type_declaration
+val enrich_typedecl: Env.t -> Path.t -> Ident.t -> type_declaration ->
+  type_declaration
 val type_paths: Env.t -> Path.t -> module_type -> Path.t list
 val contains_type: Env.t -> module_type -> bool
 val remove_aliases: Env.t -> module_type -> module_type

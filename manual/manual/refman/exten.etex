@@ -630,7 +630,7 @@ Alternatively, the selection can be performed within a function:
 \begin{verbatim}
         let draw_using_device device_name picture =
           let module Device =
-            (val (Hashtbl.find_devices device_name) : DEVICE)
+            (val (Hashtbl.find devices device_name) : DEVICE)
           in
             Device.draw picture
 \end{verbatim}

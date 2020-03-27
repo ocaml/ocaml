@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -short-paths "
+   * toplevel
+*)
+
 (** Test that short-path printtyp does not fail on packed module.
 
   Packed modules does not respect the arity of type constructor, which can break

@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (**
   Test raising exceptions from a value-matching branch.
 *)

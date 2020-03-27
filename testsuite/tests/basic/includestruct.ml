@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Test for "include <module-expr>" inside structures *)
 
 module A =

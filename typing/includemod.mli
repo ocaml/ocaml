@@ -23,6 +23,12 @@ val modtypes:
   loc:Location.t -> Env.t ->
   module_type -> module_type -> module_coercion
 
+val check_modtype_inclusion :
+  loc:Location.t -> Env.t -> Types.module_type -> Path.t -> Types.module_type -> unit
+(** [check_modtype_inclusion ~loc env mty1 path1 mty2] checks that the
+    functor application F(M) is well typed, where mty2 is the type of
+    the argument of F and path1/mty1 is the path/unstrenghened type of M. *)
+
 val signatures: Env.t -> signature -> signature -> module_coercion
 
 val compunit:

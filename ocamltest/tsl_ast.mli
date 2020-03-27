@@ -22,6 +22,7 @@ type 'a located = {
 
 type environment_statement =
   | Assignment of string located * string located (* variable = value *)
+  | Append of string located * string located (* variable += value *)
   | Include of string located (* include named environemnt *)
 
 type tsl_item =

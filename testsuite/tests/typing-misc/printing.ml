@@ -1,8 +1,14 @@
+(* TEST
+   * expect
+*)
+
 (* PR#7012 *)
 
 type t = [ 'A_name | `Hi ];;
 [%%expect{|
 Line _, characters 11-18:
+  type t = [ 'A_name | `Hi ];;
+             ^^^^^^^
 Error: The type 'A_name does not expand to a polymorphic variant type
 Hint: Did you mean `A_name?
 |}];;

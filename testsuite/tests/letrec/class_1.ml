@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* class expression are compiled to recursive bindings *)
 class test =
 object

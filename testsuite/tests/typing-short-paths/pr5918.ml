@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -short-paths "
+   * toplevel
+*)
+
 module rec A : sig
  type t
 end = struct

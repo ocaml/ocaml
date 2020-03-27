@@ -1,3 +1,5 @@
+(* TEST *)
+
 open Printf;;
 
 (* PR#5233: Create a dangling pointer and use it to access random parts

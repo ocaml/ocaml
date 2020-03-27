@@ -60,10 +60,11 @@ let rec env_from_summary sum subst =
       | Env_cltype (s, id, desc) ->
           Env.add_cltype id (Subst.cltype_declaration subst desc)
                          (env_from_summary s subst)
-      | Env_open(s, path) ->
+      | Env_open(s, hidden_submodules, path) ->
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
-          begin match Env.open_signature Asttypes.Override path' env with
+          begin match Env.open_signature_from_env_summary path' env
+                        ~hidden_submodules with
           | Some env -> env
           | None -> assert false
           end

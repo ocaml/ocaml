@@ -20,9 +20,21 @@ let f () =
     r := !r * x + y
   done;
   let x2 = Gc.allocated_bytes () in
-  print_int !r;
   assert (!r = 82);
   assert(x1 -. x0 = x2 -. x1) (* check no allocation between x1 and x2 *)
   [@@inline never]
 
 let () = f ()
+
+
+
+(* MPR#7680 *)
+
+let f () =
+  let (a,b) =
+    try (1,2)
+    with _ -> assert false
+  in
+  if a + b = 3 then raise Not_found
+
+let () = try f (); assert false with Not_found -> ()

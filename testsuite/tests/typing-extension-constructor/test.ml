@@ -1,3 +1,6 @@
+(* TEST
+   * toplevel
+*)
 
 type t = ..;;
 type t += A;;

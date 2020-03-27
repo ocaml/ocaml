@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (*
    Implicit unpack allows to omit the signature in (val ...) expressions.
 

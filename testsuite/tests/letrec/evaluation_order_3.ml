@@ -1,3 +1,5 @@
+(* TEST *)
+
 type t = { x : t; y : t }
 
 let p = print_endline

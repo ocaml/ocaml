@@ -15,11 +15,9 @@
 #ifndef CAML_SPACETIME_H
 #define CAML_SPACETIME_H
 
-#ifdef NATIVE_CODE
-
-#include "caml/io.h"
-#include "caml/misc.h"
-#include "caml/stack.h"
+#include "io.h"
+#include "misc.h"
+#include "stack.h"
 
 /* Runtime support for Spacetime profiling.
  * This header file is not intended for the casual user.
@@ -201,8 +199,5 @@ extern void caml_spacetime_automatic_snapshot (void);
 
 #define Get_my_profinfo_with_cached_backtrace(profinfo, size)   \
   profinfo = (uintnat) 0;
-
-#endif /* NATIVE_CODE */
-
 
 #endif

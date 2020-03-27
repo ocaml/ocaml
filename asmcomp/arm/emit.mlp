@@ -367,6 +367,35 @@ let emit_load_symbol_addr dst s =
     1
   end
 
+(* Emit instructions that set [rd] to 1 if integer condition [cmp] holds
+   and set [rd] to 0 otherwise. *)
+
+let emit_set_condition cmp rd =
+  let compthen = name_for_comparison cmp in
+  let compelse = name_for_comparison (negate_integer_comparison cmp) in
+  if !arch < ARMv8 || not !thumb then begin
+    `	ite	{emit_string compthen}\n`;
+    `	mov{emit_string	compthen}	{emit_reg rd}, #1\n`;
+    `	mov{emit_string compelse}	{emit_reg rd}, #0\n`;
+    3
+  end else begin
+    (* T32 mode in ARMv8 deprecates general ITE blocks
+       and favors IT blocks containing only one 16-bit instruction.
+       mov <reg>, #<imm> is 16 bits if <reg> is R0...R7
+                                   and <imm> fits in 8 bits. *)
+    let temp =
+      match rd.loc with
+      | Reg r when r < 8 -> rd  (* can assign rd directly *)
+      | _ -> phys_reg 3  (* use r3 as temporary *) in
+    `	it	{emit_string compthen}\n`;
+    `	mov{emit_string	compthen}	{emit_reg temp}, #1\n`;
+    `	it	{emit_string compelse}\n`;
+    `	mov{emit_string compelse}	{emit_reg temp}, #0\n`;
+    if temp.loc = rd.loc then 4 else begin
+      `	movs	{emit_reg rd}, {emit_reg temp}\n`; 5
+    end
+  end
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -572,19 +601,11 @@ let emit_instr i =
           1 + ninstr
         end
     | Lop(Iintop(Icomp cmp)) ->
-        let compthen = name_for_comparison cmp in
-        let compelse = name_for_comparison (negate_integer_comparison cmp) in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	ite	{emit_string compthen}\n`;
-        `	mov{emit_string	compthen}	{emit_reg i.res.(0)}, #1\n`;
-        `	mov{emit_string compelse}	{emit_reg i.res.(0)}, #0\n`; 4
+        1 + emit_set_condition cmp i.res.(0)
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        let compthen = name_for_comparison cmp in
-        let compelse = name_for_comparison (negate_integer_comparison cmp) in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
-        `	ite	{emit_string compthen}\n`;
-        `	mov{emit_string	compthen}	{emit_reg i.res.(0)}, #1\n`;
-        `	mov{emit_string compelse}	{emit_reg i.res.(0)}, #0\n`; 4
+        1 + emit_set_condition cmp i.res.(0)
     | Lop(Iintop (Icheckbound { label_after_error; } )) ->
         let lbl = bound_error_label ?label:label_after_error i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -929,6 +950,7 @@ let begin_assembly() =
   | ARMv6   -> `	.arch	armv6\n`
   | ARMv6T2 -> `	.arch	armv6t2\n`
   | ARMv7   -> `	.arch	armv7-a\n`
+  | ARMv8   -> `	.arch	armv8-a\n`
   end;
   begin match !fpu with
     Soft      -> `	.fpu	softvfp\n`

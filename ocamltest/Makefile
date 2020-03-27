@@ -26,6 +26,10 @@ else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
 endif
 
+ifeq "$(TOOLCHAIN)" "msvc"
+CPP := $(CPP) 2> nul
+endif
+
 CPPFLAGS += -I../byterun -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
@@ -42,10 +46,10 @@ core := \
   ocamltest_config.mli ocamltest_config.ml.in \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
-  filetype.mli filetype.ml \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
+  result.mli result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
   tsl_ast.mli tsl_ast.ml \
@@ -58,8 +62,14 @@ core := \
 
 ocaml_plugin := \
   ocaml_backends.mli ocaml_backends.ml \
+  ocaml_filetypes.mli ocaml_filetypes.ml \
   ocaml_variables.mli ocaml_variables.ml \
   ocaml_modifiers.mli ocaml_modifiers.ml \
+  ocaml_directories.mli ocaml_directories.ml \
+  ocaml_files.mli ocaml_files.ml \
+  ocaml_flags.mli ocaml_flags.ml \
+  ocaml_commands.mli ocaml_commands.ml \
+  ocaml_compilers.mli ocaml_compilers.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 
@@ -165,14 +175,19 @@ ocamltest.opt$(EXE): $(native_modules)
 
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
+	  -e 's|@@AFL_SUPPORT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
+	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
+	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
 	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
+	  -e 's|@@SPACETIME@@|$(WITH_SPACETIME)|' \
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
+	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
 	  $< > $@
 
 .PHONY: clean

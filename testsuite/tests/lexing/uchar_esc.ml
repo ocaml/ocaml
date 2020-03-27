@@ -1,3 +1,6 @@
+(* TEST
+   * toplevel
+*)
 
 (* Correct escapes and their encoding *)
 

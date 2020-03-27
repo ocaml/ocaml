@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Typed names *)
 
 module Msg : sig

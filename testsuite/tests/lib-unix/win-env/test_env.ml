@@ -1,4 +1,4 @@
-external set_environment_variable: string -> string -> unit = "caml_SetEnvironmentVariable"
+external set_environment_variable: string -> string -> unit = "stub_SetEnvironmentVariable"
 
 let find_env s =
   let env = Unix.environment () in
@@ -22,9 +22,9 @@ let print title = function
   | Some s ->
       Printf.printf "%s -> Some %S\n%!" title s
 
-let foo = "FOO"
-
 let () =
-  set_environment_variable foo "BAR";
-  print "Sys.getenv FOO" (Sys.getenv_opt foo);
-  print "Unix.environment FOO" (find_env foo)
+  set_environment_variable "FOO" "BAR";
+  Unix.putenv "FOO2" "BAR2";
+  print "Sys.getenv FOO" (Sys.getenv_opt "FOO");
+  print "Unix.environment FOO" (find_env "FOO");
+  print "Sys.getenv FOO2" (Sys.getenv_opt "FOO2")

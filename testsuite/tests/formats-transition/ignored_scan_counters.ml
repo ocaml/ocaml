@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Benoit's patch did not support %_[nlNL]; test their behavior *)
 
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)

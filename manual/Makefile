@@ -1,5 +1,6 @@
 all: tools
 	cd manual; ${MAKE} all
+	${MAKE} tests
 #	cd fpcl; ${MAKE} all
 
 clean:
@@ -24,3 +25,8 @@ pregen-etex: tools
 # pregen builds both .etex files and the documentation of the standard library
 pregen: tools
 	cd manual; $(MAKE) files
+
+# test the consistency of the manual and the compiler source
+.PHONY:tests
+tests:
+	${MAKE} -C tests all

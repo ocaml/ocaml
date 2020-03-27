@@ -50,6 +50,7 @@ module Sys : sig
   val make_directory : string -> unit
   val string_of_file : string -> string
   val copy_file : string -> string -> unit
+  val with_chdir : string -> (unit -> 'a) -> 'a
 end
 
 module StringSet : sig

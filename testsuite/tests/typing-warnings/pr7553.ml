@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -w A -strict-sequence "
+   * toplevel
+*)
+
 module A = struct type foo end;;
 
 module rec B : sig

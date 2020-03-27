@@ -1,3 +1,8 @@
+(* TEST
+   include unix
+   include bigarray
+*)
+
 open Bigarray
 
 (* Test harness *)

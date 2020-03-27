@@ -1,3 +1,9 @@
+(* TEST
+   flags = " -w A -strict-sequence "
+   * toplevel
+   * toplevel with principal
+*)
+
 (* comment 9644 of PR#6000 *)
 
 fun b -> if b then format_of_string "x" else "y";;

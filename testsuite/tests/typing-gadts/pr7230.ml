@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type _ t = T : int t;;
 
 (* Should raise Not_found *)

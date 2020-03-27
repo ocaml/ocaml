@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* HOAS to de Bruijn, by chak *)
 (* http://www.cse.unsw.edu.au/~chak/haskell/term-conv/ *)
 

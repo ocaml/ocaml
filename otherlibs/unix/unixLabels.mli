@@ -956,19 +956,19 @@ val getlogin : unit -> string
 
 val getpwnam : string -> passwd_entry
 (** Find an entry in [passwd] with the given name, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 val getgrnam : string -> group_entry
 (** Find an entry in [group] with the given name, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 val getpwuid : int -> passwd_entry
 (** Find an entry in [passwd] with the given user id, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 val getgrgid : int -> group_entry
 (** Find an entry in [group] with the given group id, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 
 (** {1 Internet addresses} *)

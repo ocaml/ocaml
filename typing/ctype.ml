@@ -291,6 +291,16 @@ let associate_fields fields1 fields2 =
   in
   associate [] [] [] (fields1, fields2)
 
+let rec has_dummy_method ty =
+  match repr ty with
+    {desc = Tfield (m, _, _, ty2)} ->
+      m = dummy_method || has_dummy_method ty2
+  | _ -> false
+
+let is_self_type = function
+  | Tobject (ty, _) -> has_dummy_method ty
+  | _ -> false
+
 (**** Check whether an object is open ****)
 
 (* +++ The abbreviation should eventually be expanded *)
@@ -1828,6 +1838,29 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
 
 let univar_pairs = ref []
 
+(* assumption: [ty] is fully generalized. *)
+let reify_univars env ty =
+  let rec subst_univar vars ty =
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      ty.level <- pivot_level - ty.level;
+      match ty.desc with
+      | Tvar name ->
+          save_desc ty ty.desc;
+          let t = newty2 ty.level (Tunivar name) in
+          vars := t :: !vars;
+          ty.desc <- Tsubst t
+      | _ ->
+          iter_type_expr (subst_univar vars) ty
+    end
+  in
+  let vars = ref [] in
+  subst_univar vars ty;
+  unmark_type ty;
+  let ty = copy ~env ty in
+  cleanup_types ();
+  newty2 ty.level (Tpoly(repr ty, !vars))
+
 
                               (*****************)
                               (*  Unification  *)
@@ -2025,7 +2058,9 @@ let rec mcomp type_pairs env t1 t2 =
       with Not_found ->
         TypePairs.add type_pairs (t1', t2') ();
         match (t1'.desc, t2'.desc) with
-          (Tvar _, Tvar _) -> assert false
+        | (Tvar _, _)
+        | (_, Tvar _)  ->
+            ()
         | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
           when l1 = l2 || not (is_optional l1 || is_optional l2) ->
             mcomp type_pairs env t1 t2;
@@ -2435,7 +2470,9 @@ and unify3 env t1 t1' t2 t2' =
     begin match !umode with
     | Expression ->
         occur !env t1' t2';
-        link_type t1' t2
+        if is_self_type d1 (* PR#7711: do not abbreviate self type *)
+        then link_type t1' t2' 
+        else link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'
     end;

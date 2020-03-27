@@ -134,7 +134,7 @@ and type_desc =
     [< `X | `Y > `X ]  (row_closed = true)
 
     type t = [> `X ] as 'a      (row_more = Tvar a)
-    type t = private [> `X ]    (row_more = Tconstr (t#row, [], ref Mnil)
+    type t = private [> `X ]    (row_more = Tconstr (t#row, [], ref Mnil))
 
     And for:
 

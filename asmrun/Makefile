@@ -54,6 +54,10 @@ ifeq "$(TOOLCHAIN)" "msvc"
 DFLAGS = $(CFLAGS) -DDEBUG
 PFLAGS=$(CFLAGS) -DPROFILING $(NATIVECCPROFOPTS)
 ASMOBJS=$(ARCH)nt.$(O)
+ASMFLAGS=
+ifeq ($(WITH_SPACETIME),true)
+ASMFLAGS=/DWITH_SPACETIME
+endif
 else
 DFLAGS = $(CFLAGS) -g -DDEBUG
 PFLAGS=$(CFLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS)
@@ -78,9 +82,9 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
   clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
-  spacetime_offline.$(O) afl.$(O) bigarray.$(O) addrmap.$(O) \
   domain.$(O) platform.$(O) eventlog.$(O) shared_heap.$(O) \
-	fiber.$(O) frame_descriptors.$(O)
+  addrmap.$(O) fiber.$(O) frame_descriptors.$(O) \
+  afl.$(O) bigarray.$(O)
 
 OBJS=$(COBJS) $(ASMOBJS)
 
@@ -169,10 +173,10 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 	$(ASPP) $(ASPPFLAGS) $(SHAREDCCCOMPOPTS) -o $@ $<
 
 %.obj: %.asm
-	$(ASM)$@ $<
+	$(ASM)$@ $(ASMFLAGS) $<
 
 %.pic.obj: %.asm
-	$(ASM)$@ $<
+	$(ASM)$@ $(ASMFLAGS) $<
 
 .PHONY: clean
 clean:

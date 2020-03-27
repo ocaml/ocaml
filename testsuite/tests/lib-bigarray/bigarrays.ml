@@ -1,3 +1,7 @@
+(* TEST
+   include bigarray
+*)
+
 open Bigarray
 open Printf
 open Complex

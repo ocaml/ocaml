@@ -303,8 +303,16 @@ let defaults_warn_error = "-a+31";;
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
 
+let ref_manual_explanation () =
+  (* manual references are checked a posteriori by the manual
+     cross-reference consistency check in manual/tests*)
+  let[@manual.ref "s:comp-warnings"] chapter, section = 9, 5 in
+  Printf.sprintf "(See manual section %d.%d)" chapter section
+
 let message = function
-  | Comment_start -> "this is the start of a comment."
+  | Comment_start ->
+      "this `(*' is the start of a comment.\n\
+       Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
   | Deprecated (s, _, _) ->
       (* Reduce \r\n to \n:
@@ -472,7 +480,7 @@ let message = function
       Printf.sprintf
         "Code should not depend on the actual values of\n\
          this constructor's arguments. They are only for information\n\
-         and may change in future versions. (See manual section 8.5)"
+         and may change in future versions. %t" ref_manual_explanation
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -494,8 +502,8 @@ let message = function
             "variables " ^ String.concat "," vars in
       Printf.sprintf
         "Ambiguous or-pattern variables under guard;\n\
-         %s may match different arguments. (See manual section 8.5)"
-        msg
+         %s may match different arguments. %t"
+        msg ref_manual_explanation
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \

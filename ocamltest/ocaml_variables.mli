@@ -17,6 +17,8 @@
 
 (* The variables are listed in alphabetical order *)
 
+val all_modules : Variables.t
+
 val c_preprocessor : Variables.t
 
 val compare_programs : Variables.t
@@ -38,6 +40,8 @@ val directories : Variables.t
 val flags : Variables.t
 
 val libraries : Variables.t
+
+val module_ : Variables.t
 
 val modules : Variables.t
 
@@ -62,5 +66,3 @@ val ocamlopt_opt_exit_status : Variables.t
 val ocamlsrcdir : Variables.t
 
 val os_type : Variables.t
-
-val source_modules : Variables.t

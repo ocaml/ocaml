@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 let current = ref 0;;
 
 let accum = ref [];;

@@ -19,7 +19,7 @@
 open Format
 
 type abi = EABI | EABI_HF
-type arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7
+type arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7 | ARMv8
 type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 let abi =
@@ -35,6 +35,7 @@ let string_of_arch = function
   | ARMv6   -> "armv6"
   | ARMv6T2 -> "armv6t2"
   | ARMv7   -> "armv7"
+  | ARMv8   -> "armv8"
 
 let string_of_fpu = function
     Soft      -> "soft"
@@ -53,8 +54,10 @@ let (arch, fpu, thumb) =
     | EABI, "armv6"    -> ARMv6,   Soft,      false
     | EABI, "armv6t2"  -> ARMv6T2, Soft,      false
     | EABI, "armv7"    -> ARMv7,   Soft,      false
+    | EABI, "armv8"    -> ARMv8,   Soft,      false
     | EABI, _          -> ARMv4,   Soft,      false
     | EABI_HF, "armv6" -> ARMv6,   VFPv2,     false
+    | EABI_HF, "armv8" -> ARMv8,   VFPv3,     true
     | EABI_HF, _       -> ARMv7,   VFPv3_D16, true
     end in
   (ref def_arch, ref def_fpu, ref def_thumb)
@@ -67,6 +70,7 @@ let farch spec =
            | "armv6"                       -> ARMv6
            | "armv6t2"                     -> ARMv6T2
            | "armv7"                       -> ARMv7
+           | "armv8"                       -> ARMv8
            | spec -> raise (Arg.Bad ("wrong '-farch' option: " ^ spec))
   end
 

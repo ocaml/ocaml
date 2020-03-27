@@ -188,7 +188,7 @@ the top-level of the OCaml distribution by running:
 
   eval $(tools/msvs-promote-path)
 
-If you forget to do this, `make world` will fail relatively
+If you forget to do this, `make world.opt` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
 Now run:
@@ -210,7 +210,8 @@ which indicates where to install everything.
 
 Finally, use `make` to build the system, e.g.
 
-        make world bootstrap opt opt.opt install
+        make world.opt
+        make install
 
 After installing, it is not necessary to keep the Cygwin installation (although
 you may require it to build additional third party libraries and tools).  You
@@ -281,7 +282,8 @@ which indicates where to install everything.
 
 Finally, use `make` to build the system, e.g.
 
-        make world bootstrap opt opt.opt install
+        make world.opt
+        make install
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
@@ -291,12 +293,6 @@ bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
-
-* The default `config/Makefile.mingw` and `config/Makefile.mingw64` pass
-  `-static-libgcc` to the linker. For more information on this topic:
-
-  - http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options
-  - http://caml.inria.fr/mantis/view.php?id=6411
 
 [[seflexdll]]
 == FlexDLL
@@ -327,7 +323,10 @@ done in one of three ways:
 OCaml is then compiled as normal for the port you require, except that before
 compiling `world`, you must compile `flexdll`, i.e.:
 
-  make flexdll world [bootstrap] opt opt.opt flexlink.opt install
+  make flexdll
+  make world.opt
+  make flexlink.opt
+  make install
 
  * You should ignore the error messages that say ocamlopt was not found.
  * `make install` will install FlexDLL by placing `flexlink.exe`

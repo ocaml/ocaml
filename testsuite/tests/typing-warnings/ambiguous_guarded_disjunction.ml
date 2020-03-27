@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -w A -strict-sequence "
+   * toplevel
+*)
+
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
 Printexc.record_backtrace false;;
 
@@ -197,10 +202,86 @@ let not_ambiguous__module_variable x b =  match x with
 
 (* Mixed case *)
 
-type t = A of int * int | B of int * int
+type t2 = A of int * int | B of int * int
 ;;
 
 let ambiguous_xy_but_not_ambiguous_z g = function
   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
   | _ -> 2
+;;
+
+(* Regression test against an erroneous simplification of the algorithm
+
+   One cannot compute the stable variable of the first row of a matrix
+   after its simplification and before splitting the
+   submatrices. Indeed, further splits on the submatrices may reveal
+   that some rows of this first column belong to disjoint submatrices,
+   and thus that the variables are more stable than is visible when
+   looking at the full column.
+*)
+let not_ambiguous__as_disjoint_on_second_column_split = function
+| ((Some a, (1 as b)) | (Some b, (2 as a))) when a = 0 -> ignore a; ignore b
+| _ -> ()
+;;
+
+let () = print_endline "no warning below";;
+(* we check for the ambiguous case first, so there
+   is no warning *)
+let solved_ambiguity_typical_example = function
+  | (Val x, Val y) ->
+      if x < 0 || y < 0
+      then ()
+      else ()
+  | ((Val x, _) | (_, Val x)) when x < 0 -> ()
+  | (_, Rest) -> ()
+  | (_, Val x) ->
+      (* the reader can expect *)
+      assert (x >= 0);
+      (* to hold here. *)
+      ()
+;;
+
+let () = print_endline "yet a warning below";;
+(* if the check for the ambiguous case is guarded,
+   there is still a warning *)
+let guarded_ambiguity = function
+  | (Val x, Val y) when x < 0 || y < 0 -> ()
+  | ((Val y, _) | (_, Val y)) when y < 0 -> ()
+  | (_, Rest) -> ()
+  | (_, Val x) ->
+      (* the reader can expect *)
+      assert (x >= 0);
+      (* to hold here. *)
+      ()
+;;
+
+(* see GPR#1552 *)
+type a = A1 | A2;;
+
+type 'a alg =
+  | Val of 'a
+  | Binop of 'a alg * 'a alg;;
+
+let () = print_endline "warning below";;
+let cmp (pred : a -> bool) (x : a alg) (y : a alg) =
+  match x, y with
+  | Val A1, Val A1 -> ()
+  | ((Val x, _) | (_, Val x)) when pred x -> ()
+  (* below: silence exhaustiveness/fragility warnings *)
+  | (Val (A1 | A2) | Binop _), _ -> ()
+;;
+
+type a = A1;;
+
+type 'a alg =
+  | Val of 'a
+  | Binop of 'a alg * 'a alg;;
+
+let () = print_endline "no warning below";;
+let cmp (pred : a -> bool) (x : a alg) (y : a alg) =
+  match x, y with
+  | Val A1, Val A1 -> ()
+  | ((Val x, _) | (_, Val x)) when pred x -> ()
+  (* below: silence exhaustiveness/fragility warnings *)
+  | (Val A1 | Binop _), _ -> ()
 ;;

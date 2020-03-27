@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Hashtable operations, using maps as a reference *)
 
 open Printf

@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 module M = Map.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let img x m = try Some(M.find x m) with Not_found -> None

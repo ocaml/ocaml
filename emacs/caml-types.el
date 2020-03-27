@@ -669,7 +669,7 @@ The function uses two overlays.
                            (error (message "End of buffer!")))))
                        (setq speed (* speed speed)))))
                   ;; main action, when the motion is inside the window
-                  ;; or on orginal button down event
+                  ;; or on original button down event
                   ((or (caml-mouse-movement-p event)
                        (equal original-event event))
                    (setq cnum (caml-event-point-end event))
@@ -732,7 +732,7 @@ The function uses two overlays.
       ;; However, it could also be a key stroke before mouse release.
       ;; Emacs does not allow to test whether mouse is up or down.
       ;; Not sure it is robust to loop for mouse release after an error
-      ;; occured, as is done for exploration.
+      ;; occurred, as is done for exploration.
       ;; So far, we just ignore next event. (Next line also be uncommenting.)
       (if event (caml-read-event)))))
 

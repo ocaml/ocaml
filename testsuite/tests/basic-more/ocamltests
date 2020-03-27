@@ -8,6 +8,7 @@ pr1271.ml
 pr2719.ml
 pr6216.ml
 record_evaluation_order.ml
+robustmatch.ml
 sequential_and_or.ml
 structural_constants.ml
 tbuffer.ml

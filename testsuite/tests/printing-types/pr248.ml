@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (** Test that weak variables keep their names long enough *)
 
 let f y = fun x -> x

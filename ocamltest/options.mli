@@ -19,4 +19,6 @@ val log_to_stderr : bool ref
 
 val files_to_test : string list ref
 
+val promote : bool ref
+
 val usage : string

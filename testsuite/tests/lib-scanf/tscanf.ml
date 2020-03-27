@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (*
 
 A testbed file for the module Scanf.
