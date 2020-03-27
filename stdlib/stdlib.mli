@@ -1263,6 +1263,7 @@ end
 include module type of struct include Pervasives end
 
 (*MODULE_ALIASES*)
+module Atomic       = Atomic
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
@@ -1273,6 +1274,8 @@ module Callback     = Callback
 module Char         = Char
 module Complex      = Complex
 module Digest       = Digest
+module Domain       = Domain
+module Effects      = Effects
 module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Format       = Format
