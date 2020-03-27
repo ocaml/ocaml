@@ -1501,7 +1501,7 @@ It is also possible to specify attributes using an infix syntax. For instance:
 
 \begin{verbatim}
 let[@foo] x = 2 in x + 1          === (let x = 2 [@@foo] in x + 1)
-begin[@foo][@bar x] ... end       === (begin ... end)[@foo][@@bar x]
+begin[@foo][@bar x] ... end       === (begin ... end)[@foo][@bar x]
 module[@foo] M = ...              === module M = ... [@@foo]
 type[@foo] t = T                  === type t = T [@@foo]
 method[@foo] m = ...              === method m = ... [@@foo]
@@ -1512,7 +1512,7 @@ For "let", the attributes are applied to each bindings:
 \begin{verbatim}
 let[@foo] x = 2 and y = 3 in x + y === (let x = 2 [@@foo] and y = 3 in x + y)
 let[@foo] x = 2
-and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@bar] in x + y)
+and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@@bar] in x + y)
 \end{verbatim}
 
 
