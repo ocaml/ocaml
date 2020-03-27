@@ -254,6 +254,8 @@ end)
 (** The default option list *)
 let default_options = Options.list @
 [
+  "-initially-opened-module", Arg.Set_string Odoc_global.initially_opened_module,
+  M.initially_opened_module;
   "-text", Arg.String (fun s ->
        Odoc_global.files := !Odoc_global.files @ [Odoc_global.Text_file s]),
     M.option_text ;

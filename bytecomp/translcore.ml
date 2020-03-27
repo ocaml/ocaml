@@ -48,6 +48,9 @@ let prim_fresh_oo_id =
   Pccall (Primitive.simple ~name:"caml_fresh_oo_id" ~arity:1 ~alloc:false)
 
 let transl_extension_constructor env path ext =
+  let path =
+    Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path
+  in
   let name =
     match path, !Clflags.for_package with
       None, _ -> Ident.name ext.ext_id

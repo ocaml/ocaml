@@ -10,7 +10,7 @@ cut -c 2- $TMPDIR/stdlib-$$-files \
 exitcode=0
 for i in `cat $TMPDIR/stdlib-$$-modules`; do
   case $i in
-    Camlinternal* | *Labels | Obj | Pervasives) continue;;
+    Stdlib | Camlinternal* | *Labels | Obj | Pervasives) continue;;
   esac
   grep -q -e '"'$i'" & p\.~\\pageref{'$i'} &' $1/manual/manual/library/stdlib.etex || {
     echo "Module $i is missing from stdlib.etex." >&2
