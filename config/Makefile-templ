@@ -172,14 +172,13 @@ RANLIBCMD=ranlib
 # Currently available:
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
-#       num             Arbitrary-precision rational arithmetic
 #       threads         Lightweight concurrent processes
 #       systhreads      Same as threads, requires POSIX threads
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
 #       bigarray        Large, multidimensional numerical arrays
 
-OTHERLIBRARIES=unix str num threads graph dynlink bigarray
+OTHERLIBRARIES=unix str threads graph dynlink bigarray
 
 ### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
 # Needed for the "systhreads" package

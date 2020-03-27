@@ -4,7 +4,7 @@
 
 This part of the manual is a tutorial introduction to the
 OCaml language. A good familiarity with programming in a conventional
-languages (say, Pascal or C) is assumed, but no prior exposure to
+languages (say, C or Java) is assumed, but no prior exposure to
 functional languages is required. The present chapter introduces the
 core language. Chapter~\ref{c:moduleexamples} deals with the
 module system, chapter~\ref{c:objectexamples} with the
@@ -61,10 +61,10 @@ usual basic data types: booleans, characters, and immutable character strings.
 "Hello world";;
 \end{caml_example}
 
-Predefined data structures include tuples, arrays, and lists. General
-mechanisms for defining your own data structures are also provided.
-They will be covered in more details later; for now, we concentrate on lists.
-Lists are either given in extension as a bracketed list of
+Predefined data structures include tuples, arrays, and lists. There are also
+general mechanisms for defining your own data structures, such as records and
+variants, which will be covered in more detail later; for now, we concentrate
+on lists. Lists are either given in extension as a bracketed list of
 semicolon-separated elements, or built from the empty list "[]"
 (pronounce ``nil'') by adding elements in front using the "::"
 (``cons'') operator.
@@ -79,8 +79,8 @@ explicit handling of pointers: the OCaml compiler silently introduces
 pointers where necessary.
 
 As with most OCaml data structures, inspecting and destructuring lists
-is performed by pattern-matching. List patterns have the exact same
-shape as list expressions, with identifier representing unspecified
+is performed by pattern-matching. List patterns have exactly the same
+form as list expressions, with identifiers representing unspecified
 parts of the list. As an example, here is insertion sort on a list:
 \begin{caml_example}{toplevel}
 let rec sort lst =
@@ -110,11 +110,16 @@ sort [3.14; 2.718];;
 The "sort" function above does not modify its input list: it builds
 and returns a new list containing the same elements as the input list,
 in ascending order. There is actually no way in OCaml to modify
-in-place a list once it is built: we say that lists are  {\em immutable}
+a list in-place once it is built: we say that lists are  {\em immutable}
 data structures. Most OCaml data structures are immutable, but a few
 (most notably arrays) are {\em mutable}, meaning that they can be
 modified in-place at any time.
 
+The OCaml notation for the type of a function with multiple arguments is \\
+"arg1_type -> arg2_type -> ... -> return_type".  For example,
+the type inferred for "insert", "'a -> 'a list -> 'a list", means that "insert"
+takes two arguments, an element of any type "'a" and a list with elements of
+the same type "'a" and returns a list of the same type.
 \section{Functions as values}
 \pdfsection{Functions as values}
 
@@ -204,7 +209,7 @@ With this functional update notation, the record on the left-hand side
 of "with" is copied except for the fields on the right-hand side which
 are updated.
 
-The declaration of a variant type lists all possible shapes for values
+The declaration of a variant type lists all possible forms for values
 of that type. Each case is identified by a name, called a constructor,
 which serves both for constructing values of the variant type and
 inspecting them by pattern-matching. Constructor names are capitalized
@@ -262,7 +267,7 @@ type 'a btree = Empty | Node of 'a * 'a btree * 'a btree;;
 \end{caml_example}
 This definition reads as follows: a binary tree containing values of
 type "'a" (an arbitrary type) is either empty, or is a node containing
-one value of type "'a" and two subtrees containing also values of type
+one value of type "'a" and two subtrees also containing values of type
 "'a", that is, two "'a btree".
 
 Operations on binary trees are naturally expressed as recursive functions
@@ -290,9 +295,9 @@ let rec insert x btree =
 Though all examples so far were written in purely applicative style,
 OCaml is also equipped with full imperative features. This includes the
 usual "while" and "for" loops, as well as mutable data structures such
-as arrays. Arrays are either given in extension between "[|" and "|]"
-brackets, or allocated and initialized with the "Array.make"
-function, then filled up later by assignments. For instance, the
+as arrays. Arrays are either created by listing semicolon-separated element
+values between "[|" and "|]" brackets, or allocated and initialized with the
+"Array.make" function, then filled up later by assignments. For instance, the
 function below sums two vectors (represented as float arrays) componentwise.
 \begin{caml_example}{toplevel}
 let add_vect v1 v2 =
@@ -320,7 +325,7 @@ OCaml has no built-in notion of variable -- identifiers whose current
 value can be changed by assignment. (The "let" binding is not an
 assignment, it introduces a new identifier with a new scope.)
 However, the standard library provides references, which are mutable
-indirection cells (or one-element arrays), with operators "!" to fetch
+indirection cells, with operators "!" to fetch
 the current contents of the reference and ":=" to assign the contents.
 Variables can then be emulated by "let"-binding a reference. For
 instance, here is an in-place insertion sort over arrays:
@@ -357,9 +362,9 @@ let ( := ) r newval = r.contents <- newval;;
 \end{caml_example}
 
 In some special cases, you may need to store a polymorphic function in
-a data structure, keeping its polymorphism.  Without user-provided
-type annotations, this is not allowed, as polymorphism is only
-introduced on a global level.  However, you can give explicitly
+a data structure, keeping its polymorphism.  Doing this requires
+user-provided type annotations, since polymorphism is only introduced
+automatically for global definitions.  However, you can explicitly give
 polymorphic types to record fields.
 \begin{caml_example}{toplevel}
 type idref = { mutable id: 'a. 'a -> 'a };;
@@ -374,9 +379,10 @@ g r;;
 
 OCaml provides exceptions for signalling and handling exceptional
 conditions. Exceptions can also be used as a general-purpose non-local
-control structure. Exceptions are declared with the "exception"
-construct, and signalled with the "raise" operator. For instance, the
-function below for taking the head of a list uses an exception  to
+control structure, although this should not be overused since it can
+make the code harder to understand. Exceptions are declared with the
+"exception" construct, and signalled with the "raise" operator. For instance,
+the function below for taking the head of a list uses an exception to
 signal the case where an empty list is given.
 \begin{caml_example}{toplevel}
 exception Empty_list;;
@@ -409,11 +415,12 @@ name_of_binary_digit 0;;
 name_of_binary_digit (-1);;
 \end{caml_example}
 
-The "with" part is actually a regular pattern-matching on the
-exception value. Thus, several exceptions can be caught by one
+The "with" part does pattern matching on the
+exception value with the same syntax and behavior as "match". Thus,
+several exceptions can be caught by one
 "try"\ldots"with" construct. Also, finalization can be performed by
-trapping all exceptions, performing the finalization, then raising
-again the exception:
+trapping all exceptions, performing the finalization, then re-raising
+the exception:
 \begin{caml_example}{toplevel}
 let temporarily_set_reference ref newval funct =
   let oldval = !ref in
@@ -626,7 +633,12 @@ The source code must be put in a file with extension ".ml". It
 consists of a sequence of phrases, which will be evaluated at runtime
 in their order of appearance in the source file. Unlike in interactive
 mode, types and values are not printed automatically; the program must
-call printing functions explicitly to produce some output. Here is a
+call printing functions explicitly to produce some output.  The ";;" used
+in the interactive examples is not required in
+source files created for use with OCaml compilers, but can be helpful
+to mark the end of a top-level expression unambiguously even when
+there are syntax errors.
+Here is a
 sample standalone program to print Fibonacci numbers:
 \begin{verbatim}
 (* File fib.ml *)

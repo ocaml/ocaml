@@ -1,3 +1,8 @@
+(* TEST
+   * toplevel
+   * toplevel with principal
+*)
+
 module Foobar : sig
   type t = private int
 end = struct

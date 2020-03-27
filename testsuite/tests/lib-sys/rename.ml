@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Test the Sys.rename function *)
 
 let writefile filename contents =

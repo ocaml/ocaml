@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* PR#6136 *)
 
 exception Ok

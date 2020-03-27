@@ -24,6 +24,9 @@
 
 open Variables (* Should not be necessary with a ppx *)
 
+let all_modules = make ("all_modules",
+  "All the modules to compile and link")
+
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
 
@@ -63,6 +66,9 @@ let flags = make ("flags",
 let libraries = make ("libraries",
   "Libraries the program should be linked with")
 
+let module_ = make ("module",
+  "Compile one module at once")
+
 let modules = make ("modules",
   "Other modules of the test")
 
@@ -96,12 +102,11 @@ let ocamlsrcdir = make ("ocamlsrcdir",
 let os_type = make ("os_type",
   "The OS we are running on")
 
-let source_modules = make ("source_modules",
-  "Complete list of modules (private)")
-
 let _ = List.iter register_variable
   [
+    all_modules;
     c_preprocessor;
+    compare_programs;
     compiler_directory_suffix;
     compiler_reference;
     compiler_reference2;
@@ -111,6 +116,7 @@ let _ = List.iter register_variable
     directories;
     flags;
     libraries;
+    module_;
     modules;
     ocamlc_flags;
     ocamlc_default_flags;
@@ -123,5 +129,4 @@ let _ = List.iter register_variable
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
     os_type;
-    (* source_modules is intentionally not registered *)
   ]

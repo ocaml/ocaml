@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type t = A of {mutable x: int};;
 fun (A r) -> r.x <- 42;;
 [%%expect{|
@@ -11,5 +15,7 @@ fun (A r) -> r.x <- 42;;
 [%%expect{|
 type t = private A of { mutable x : int; }
 Line _, characters 15-16:
+  fun (A r) -> r.x <- 42;;
+                 ^
 Error: Cannot assign field x of the private type t.A
 |}];;

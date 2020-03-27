@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 let rec build_string f n accu =
   if n <= 0
     then String.concat "" accu

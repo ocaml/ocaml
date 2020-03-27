@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* This will test the parsing of the smallest integer on 32-bit architectures.
    It doesn't do much on 64-bit but at least it doesn't crash.
  *)

@@ -1,3 +1,8 @@
+(* TEST
+   * bytecode
+   flags += " -dparsetree "
+*)
+
 type t = Label (**)
 (** attached to t *)
 

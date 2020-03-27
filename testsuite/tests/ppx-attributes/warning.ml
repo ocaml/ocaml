@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 [@@@ocaml.warning "@A"]
 
 (* Fixture *)

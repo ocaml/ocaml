@@ -198,8 +198,15 @@ for guidance on how to edit the generated files by hand.
 
 2. From the top directory, do:
 
+        make world.opt
++
+if your platform is supported by the native-code compiler (as reported during
+   the auto-configuration), or
+
         make world
 +
+if not.
+
 This builds the OCaml bytecode compiler for the first time.  This phase is
 fairly verbose; consider redirecting the output to a file:
 
@@ -226,38 +233,7 @@ best thing to do is to try a second bootstrapping phase: just do
 `make bootstrap` again.  It will either crash almost immediately, or
 re-re-compile everything correctly and reach the fix-point.
 
-4. If your platform is supported by the native-code compiler (as reported during
-   the auto-configuration), you can now build the native-code compiler.  From
-   the top directory, do:
-
-        make opt
-+
-or:
-
-        make opt > log.opt 2>&1     # in sh
-        make opt >& log.opt         # in csh
-
-5. anchor:step-5[] Compile fast versions of the OCaml compilers, by compiling
-   them with the native-code compiler (you will have only compiled them to
-   bytecode in steps 2-4).  Just do:
-
-        make opt.opt
-+
-Later, you can compile your programs to bytecode using ocamlc.opt instead of
-ocamlc, and to native-code using ocamlopt.opt instead of ocamlopt.  The ".opt"
-compilers should run faster than the normal compilers, especially on large input
-files, but they may take longer to start due to increased code size.  If
-compilation times are an issue on your programs, try the ".opt" compilers to see
-if they make a significant difference.
-+
-An alternative, and faster approach to steps 2 to 5 is
-
-        make world.opt          # to build using native-code compilers
-+
-The result is equivalent to `make world opt opt.opt`, but this may fail if
-anything goes wrong in native-code generation.
-
-6. You can now install the OCaml system. This will create the following commands
+4. You can now install the OCaml system. This will create the following commands
    (in the binary directory selected during autoconfiguration):
 +
 [width="70%",frame="topbot",cols="25%,75%"]
@@ -277,20 +253,17 @@ anything goes wrong in native-code generation.
 | `ocamlcp`    | the bytecode compiler in profiling mode
 |===============================================================================
 +
-and also, if you built them during <<step-5,step 5>>: `ocamlc.opt`,
-`ocamlopt.opt`, `ocamllex.opt`, `ocamldep.opt` and `ocamldoc.opt`
-+
 From the top directory, become superuser and do:
 
         umask 022       # make sure to give read & execute permission to all
         make install
 
-7. Installation is complete. Time to clean up. From the toplevel directory,
+5. Installation is complete. Time to clean up. From the toplevel directory,
    do:
 
         make clean
 
-8. (Optional) The `emacs/` subdirectory contains Emacs-Lisp files for an OCaml
+6. (Optional) The `emacs/` subdirectory contains Emacs-Lisp files for an OCaml
    editing mode and an interface for the debugger.  To install these files,
    change to the `emacs/` subdirectory and do:
 
@@ -303,7 +276,7 @@ or
 In the latter case, the destination directory defaults to the
 `site-lisp` directory of your Emacs installation.
 
-9. After installation, do *not* strip the `ocamldebug` and `ocamlbrowser`
+7. After installation, do *not* strip the `ocamldebug` and `ocamlbrowser`
    executables. These are mixed-mode executables (containing both compiled C
    code and OCaml bytecode) and stripping erases the bytecode!  Other
    executables such as `ocamlrun` can safely be stripped.

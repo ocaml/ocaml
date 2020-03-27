@@ -71,7 +71,7 @@ let () =
 
 (* Wait functions *)
 
-let delay time = ignore(Unix.select [] [] [] time)
+let delay = Unix.sleepf
 
 let wait_read fd = ()
 let wait_write fd = ()

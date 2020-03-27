@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* the legacy parser ignores flags on formatters on which they make no
    sense *)
 

@@ -15,14 +15,7 @@
 
 (* Definition of actions, basic blocks for tests *)
 
-type result =
-  | Pass of Environments.t
-  | Fail of string
-  | Skip of string
-
-val string_of_result : result -> string
-
-type code = out_channel -> Environments.t -> result
+type code = out_channel -> Environments.t -> Result.t * Environments.t
 
 type t
 
@@ -42,6 +35,6 @@ val set_hook : string -> code -> unit
 val clear_hook : string -> unit
 val clear_all_hooks : unit -> unit
 
-val run : out_channel -> Environments.t -> t -> result
+val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
 
 module ActionSet : Set.S with type elt = t

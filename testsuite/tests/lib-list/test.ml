@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Standard test case *)
 let () =
   let l = List.init 10 (fun x -> x) in

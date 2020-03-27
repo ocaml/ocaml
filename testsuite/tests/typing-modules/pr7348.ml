@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module F (X : sig type t = private < foo:int; ..> val x : t end) = struct
   let x : < foo: int; ..> = X.x
 end;;

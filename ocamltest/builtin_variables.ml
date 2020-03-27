@@ -33,8 +33,8 @@ let files = make ("files",
 let ld_library_path = make ("ld_library_path",
   "List of paths to lookup for loading dynamic libraries")
 
-let ocamltest_env = make ("ocamltest_env",
-  "File where hooks write their environment modifiers")
+let ocamltest_response = make ("ocamltest_response",
+  "File used by hooks to send back information.")
 
 let ocamltest_log = make ("ocamltest_log",
   "Path to log file for the current test")
@@ -46,6 +46,9 @@ let program = make ("program",
   "Name of program produced by ocamlc.byte and ocamlopt.byte")
 let program2 = make ("program2",
   "Name of program produced by ocamlc.opt and ocamlopt.opt")
+
+let promote = make ("promote",
+  "Set to \"true\" to overwrite reference files with the test output")
 
 let reference = make ("reference",
   "Path of file to which program output should be compared")
@@ -84,7 +87,7 @@ let _ = List.iter register_variable
   [
     arguments;
     files;
-    ocamltest_env;
+    ocamltest_response;
     ocamltest_log;
     output;
     program; program2;

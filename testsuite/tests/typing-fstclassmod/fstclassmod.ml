@@ -1,3 +1,7 @@
+(* TEST
+   flags = "-w A -warn-error A"
+*)
+
 (* Example of algorithm parametrized with modules *)
 
 let sort (type s) set l =

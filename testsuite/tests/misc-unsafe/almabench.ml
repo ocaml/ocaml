@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -unsafe "
+*)
+
 (*
  * ALMABENCH 1.0.1
  *      OCaml     version

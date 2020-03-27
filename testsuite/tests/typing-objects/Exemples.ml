@@ -1,3 +1,6 @@
+(* TEST
+   * toplevel
+*)
 
 class point x_init = object
   val mutable x = x_init

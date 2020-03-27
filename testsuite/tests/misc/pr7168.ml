@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 let rec f x =
   let x = x+x in  let x = x+x in  let x = x+x in  let x = x+x in
   let x = x+x in  let x = x+x in  let x = x+x in  let x = x+x in

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type t = T : t;;
 
 module M : sig

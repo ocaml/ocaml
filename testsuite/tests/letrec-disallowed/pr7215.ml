@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* From Stephen Dolan *)
 type (_,_) eq = Refl : ('a, 'a) eq;;
 let cast (type a) (type b) (Refl : (a, b) eq) (x : a) = (x : b);;

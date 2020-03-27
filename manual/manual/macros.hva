@@ -6,31 +6,43 @@
 \newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
 \newstyle{a:hover}{color:black;text-decoration:none;background-color:\hover@color}
 
+%Styles for caml-example and friends
 \newstyle{div.caml-output}{color:maroon;}
-\newstyle{div.caml-input::before}{content:"\#"; color:black;}
-\newstyle{div.caml-input}{color:\#006000;}
 \newstyle{div.caml-example pre}{margin:2ex 0px;}
-
+% Styles for toplevel mode only
+\newstyle{div.caml-example.toplevel div.caml-input::before}
+         {content:"\#"; color:black;}
+\newstyle{div.caml-example.toplevel div.caml-input}{color:\#006000;}
 %%%
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
 \newcommand{\machine}{\tt}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newcommand{\firstline}{\ }
-\newcommand{\nextline}{\ \ }
+\newcommand{\examplespace}{\ }
+\newcommand{\nextline}{\examplespace\ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
+\let\?=\@zyva
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\caml}{\begin{alltt}\renewcommand{\;}{}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
-\let\?=\@zyva
 \newcommand{\endcaml}{\activebracetrue\end{alltt}
 }
 \renewcommand{\:}{\renewcommand{\?}{\@zyva}}
 \newcommand{\var}[1]{\textit{#1}}
 
 % Caml-example environment
-\newcommand{\camlexample}{\@open{div}{class="caml-example"}
+\newcommand{\camlexample}[1]{
+  \ifthenelse{\equal{#1}{verbatim}}
+  {\renewcommand{\examplespace}{}}
+  {\renewcommand{\examplespace}{\ }}
+  \fi
+  \@open{div}{class="caml-example #1"}
 }
-\newcommand{\endcamlexample}{\@close{div}}
+\newcommand{\endcamlexample}{
+  \@close{div}
+  \renewcommand{\examplespace}{\ }
+}
+
 \newcommand{\camlinput}{\@open{div}{class="caml-input"}}
 \newcommand{\endcamlinput}{\@close{div}}
 \newcommand{\camloutput}{\@open{div}{class="caml-output ok"}}

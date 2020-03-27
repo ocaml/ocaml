@@ -52,6 +52,12 @@ let expand env value =
 let lookup variable env =
   try Some (expand env (VariableMap.find variable env)) with Not_found -> None
 
+let lookup_as_bool variable env =
+  match lookup variable env with
+  | None -> None
+  | Some "true" -> Some true
+  | Some _ -> Some false
+
 let safe_lookup variable env = match lookup variable env with
   | None -> ""
   | Some value -> value

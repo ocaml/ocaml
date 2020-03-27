@@ -15,8 +15,6 @@
 
 (* Definition of a few OCaml-specific environment modifiers *)
 
-val expect : Environments.modifiers
-
 val principal : Environments.modifiers
 
 val testing : Environments.modifiers

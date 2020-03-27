@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 let rec x = let y = () in x;;
 
 let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;

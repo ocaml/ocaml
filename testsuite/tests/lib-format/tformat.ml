@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (*
 
 A test file for the Format module.

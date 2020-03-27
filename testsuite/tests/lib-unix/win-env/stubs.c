@@ -8,7 +8,7 @@
 
 #include <windows.h>
 
-CAMLprim value caml_SetEnvironmentVariable(value s1, value s2)
+CAMLprim value stub_SetEnvironmentVariable(value s1, value s2)
 {
   WCHAR *w1, *w2;
   w1 = caml_stat_strdup_to_utf16(String_val(s1));

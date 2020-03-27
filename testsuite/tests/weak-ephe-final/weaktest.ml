@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 let debug = false;;
 
 open Printf;;

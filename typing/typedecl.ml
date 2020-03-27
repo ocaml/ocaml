@@ -132,14 +132,17 @@ let rec get_unboxed_type_representation env ty fuel =
   | Tconstr (p, args, _) ->
     begin match Env.find_type p env with
     | exception Not_found -> Some ty
+    | {type_immediate = true; _} -> Some Predef.type_int
     | {type_unboxed = {unboxed = false}} -> Some ty
     | {type_params; type_kind =
          Type_record ([{ld_type = ty2; _}], _)
        | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
        | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
 
-         -> get_unboxed_type_representation env
-             (Ctype.apply env type_params ty2 args) (fuel - 1)
+      ->
+        let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
+        get_unboxed_type_representation env
+          (Ctype.apply env type_params ty2 args) (fuel - 1)
     | {type_kind=Type_abstract} -> None
           (* This case can occur when checking a recursive unboxed type
              declaration. *)

@@ -235,7 +235,7 @@ external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 *)
 
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
-(** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
+(** [__LINE_OF__ expr] returns a pair [(line, expr)], where [line] is the
     line number at which the expression [expr] appears in the file
     currently being parsed by the compiler.
     @since 4.02.0

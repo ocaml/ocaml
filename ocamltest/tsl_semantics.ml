@@ -41,18 +41,26 @@ let apply_modifiers env modifiers_name =
   | Environments.Modifiers_name_not_found name ->
     no_such_modifiers modifiers_name.loc name
 
+let add_or_append f loc variable_name value env =
+  let variable =
+    match Variables.find_variable variable_name with
+    | None ->
+        raise (Variables.No_such_variable variable_name)
+    | Some variable ->
+        variable
+  in
+  try
+    f variable value env
+  with Variables.No_such_variable name ->
+    no_such_variable loc name
+
 let interprete_environment_statement env statement = match statement.node with
   | Assignment (var, value) ->
-    begin
-      let variable_name = var.node in
-      let variable = match Variables.find_variable variable_name with
-        | None -> raise (Variables.No_such_variable variable_name)
-        | Some variable -> variable in
-      try Environments.add variable value.node env with
-      | Variables.No_such_variable name ->
-        no_such_variable statement.loc name
-    end
-  | Include modifiers_name -> apply_modifiers env modifiers_name
+      add_or_append Environments.add statement.loc var.node value.node env
+  | Append (var, value) ->
+      add_or_append Environments.append statement.loc var.node value.node env
+  | Include modifiers_name ->
+      apply_modifiers env modifiers_name
 
 let interprete_environment_statements env l =
   List.fold_left interprete_environment_statement env l

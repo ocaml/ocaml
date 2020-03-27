@@ -19,6 +19,40 @@ open Asttypes
 open Types
 open Format
 
+(* This variant is used to print improved error messages, and does not affect
+   the behavior of the typechecker itself.
+
+   It describes possible explanation for types enforced by a keyword of the
+   language; e.g. "if" requires the condition to be of type bool, and the
+   then-branch to be of type unit if there is no else branch; "for" requires
+   indices to be of type int, and the body to be of type unit.
+*)
+type type_forcing_context =
+  | If_conditional
+  | If_no_else_branch
+  | While_loop_conditional
+  | While_loop_body
+  | For_loop_start_index
+  | For_loop_stop_index
+  | For_loop_body
+  | Assert_condition
+  | Sequence_left_hand_side
+
+(* The combination of a type and a "type forcing context". The intent is that it
+   describes a type that is "expected" (required) by the context. If unifying
+   with such a type fails, then the "explanation" field explains why it was
+   required, in order to display a more enlightening error message.
+*)
+type type_expected = private {
+  ty: type_expr;
+  explanation: type_forcing_context option;
+}
+
+val mk_expected:
+  ?explanation:type_forcing_context ->
+  type_expr ->
+  type_expected
+
 val is_nonexpansive: Typedtree.expression -> bool
 
 val type_binding:
@@ -49,7 +83,7 @@ val check_partial:
         Location.t -> Typedtree.case list -> Typedtree.partial
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
-        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+        Env.t -> Parsetree.expression -> type_expected -> Typedtree.expression
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_approx:
@@ -78,13 +112,13 @@ type error =
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
-  | Expr_type_clash of (type_expr * type_expr) list
+  | Expr_type_clash of (type_expr * type_expr) list * type_forcing_context option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expr * string * Path.t * string * string list
+  | Wrong_name of string * type_expected * string * Path.t * string * string list
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
@@ -100,8 +134,8 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of
       type_expr * type_expr * (type_expr * type_expr) list * bool
-  | Too_many_arguments of bool * type_expr
-  | Abstract_wrong_label of arg_label * type_expr
+  | Too_many_arguments of bool * type_expr * type_forcing_context option
+  | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t

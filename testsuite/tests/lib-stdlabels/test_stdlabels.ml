@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -nolabels "
+*)
+
 module A : module type of Array = ArrayLabels
 module B : module type of Bytes = BytesLabels
 module L : module type of List = ListLabels

@@ -482,14 +482,14 @@ let can_alias env path =
   no_apply path && not (Env.is_functor_arg path env)
 
 let check_modtype_inclusion ~loc env mty1 path1 mty2 =
-  try
-    let aliasable = can_alias env path1 in
-    ignore(modtypes ~loc env [] Subst.identity
-                    (Mtype.strengthen ~aliasable env mty1 path1) mty2)
-  with Error _ ->
-    raise Not_found
+  let aliasable = can_alias env path1 in
+  ignore(modtypes ~loc env [] Subst.identity
+           (Mtype.strengthen ~aliasable env mty1 path1) mty2)
 
-let _ = Env.check_modtype_inclusion := check_modtype_inclusion
+let () =
+  Env.check_modtype_inclusion := (fun ~loc a b c d ->
+    try (check_modtype_inclusion ~loc a b c d : unit)
+    with Error _ -> raise Not_found)
 
 (* Check that an implementation of a compilation unit meets its
    interface. *)

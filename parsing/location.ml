@@ -129,7 +129,7 @@ let highlight_terminfo ppf lb locs =
 
 (* Highlight the location by printing it again. *)
 
-let highlight_dumb ppf lb loc =
+let highlight_dumb ~print_chars ppf lb loc =
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
   let pos0 = -lb.lex_abs_pos in
   (* Do nothing if the buffer does not contain the whole phrase. *)
@@ -143,9 +143,12 @@ let highlight_dumb ppf lb loc =
       if loc.loc_end.pos_cnum   > pos then incr line_end;
     end
   done;
+  Format.fprintf ppf "@[<v>";
   (* Print character location (useful for Emacs) *)
-  Format.fprintf ppf "@[<v>Characters %i-%i:@,"
-                 loc.loc_start.pos_cnum loc.loc_end.pos_cnum;
+  if print_chars then begin
+    Format.fprintf ppf "Characters %i-%i:@,"
+                   loc.loc_start.pos_cnum loc.loc_end.pos_cnum
+  end;
   (* Print the input, underlining the location *)
   Format.pp_print_string ppf "  ";
   let line = ref 0 in
@@ -194,6 +197,9 @@ let highlight_dumb ppf lb loc =
   done;
   Format.fprintf ppf "@]"
 
+let show_code_at_location ppf lb loc =
+  highlight_dumb ~print_chars:false ppf lb loc
+
 (* Highlight the location using one of the supported modes. *)
 
 let rec highlight_locations ppf locs =
@@ -208,7 +214,7 @@ let rec highlight_locations ppf locs =
             try Sys.getenv "TERM" = "norepeat" with Not_found -> false in
           if norepeat then false else
             let loc1 = List.hd locs in
-            try highlight_dumb ppf lb loc1; true
+            try highlight_dumb ~print_chars:true ppf lb loc1; true
             with Exit -> false
       end
   | Terminfo.Good_term ->

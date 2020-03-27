@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 let assert_raise_invalid_argument f v =
   assert (try ignore (f v); false with Invalid_argument _ -> true)
 

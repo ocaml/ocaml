@@ -15,6 +15,10 @@
 
 (* Helper functions when writing actions *)
 
+val pass_or_skip
+  : bool -> string -> string -> out_channel -> Environments.t
+         -> Result.t * Environments.t
+
 val mkreason : string -> string -> int -> string
 
 val testfile : Environments.t -> string
@@ -30,6 +34,8 @@ val files : Environments.t -> string list
 val setup_symlinks : string -> string -> string list -> unit
 
 val setup_build_env : bool -> string list -> Actions.code
+
+val setup_simple_build_env : bool -> string list -> Actions.code
 
 val run_cmd :
   ?environment : string array ->

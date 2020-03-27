@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 let is_empty s =
   try Stream.empty s; true with Stream.Failure -> false
 

@@ -15,9 +15,7 @@
 
 (* Backends of the OCaml compiler and their properties *)
 
-open Ocamltest_stdlib
-
-type t = Sys.backend_type
+type t = Native | Bytecode
 
 val string_of_backend : t -> string
 
