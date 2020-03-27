@@ -106,6 +106,7 @@ FORCE_SAFE_STRING=false
 DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
+AWK=gawk
 
 ########## Configuration for the bytecode compiler
 

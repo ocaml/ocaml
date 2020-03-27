@@ -1364,7 +1364,7 @@ let {foo} = (raise Exit : t);;
 type s = A of int
 let (A x) = (raise Exit : s);;
 [%%expect {|
-Exception: Pervasives.Exit.
+Exception: Stdlib.Pervasives.Exit.
 |}];;
 
 (* PR#5224 *)

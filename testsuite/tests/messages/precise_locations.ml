@@ -86,7 +86,7 @@ end);;
 Line _, characters 0-9:
   open List
   ^^^^^^^^^
-Error (warning 33): unused open List.
+Error (warning 33): unused open Stdlib.List.
 |}];;
 
 type unknown += Foo;;

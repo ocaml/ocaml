@@ -90,3 +90,8 @@ val report_ambiguous_type_error:
 (* for toploop *)
 val print_items: (Env.t -> signature_item -> 'a option) ->
   Env.t -> signature_item list -> (out_sig_item * 'a option) list
+
+(* Simple heuristic to rewrite Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias for
+   Foo__bar. This pattern is used by the stdlib. *)
+val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
+

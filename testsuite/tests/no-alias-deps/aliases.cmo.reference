@@ -1,7 +1,7 @@
 File aliases.cmo
 Unit name: Aliases
 Interfaces imported:
-	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	Pervasives
+	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	Stdlib
 	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	D
 	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	CamlinternalFormatBasics
 	--------------------------------	C
@@ -10,6 +10,6 @@ Interfaces imported:
 	--------------------------------	A
 Required globals:
 	D
-	Pervasives
+	Stdlib
 Uses unsafe features: no
 Force link: no
