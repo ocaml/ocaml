@@ -16,7 +16,8 @@ array.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/signals.h caml/spacetime.h
+  caml/domain.h caml/signals.h caml/spacetime.h caml/io.h \
+  caml/platform.h caml/stack.h
 backtrace.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -211,7 +212,7 @@ obj.$(O): obj.c caml/camlatomic.h caml/config.h caml/m.h caml/s.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
   caml/interp.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
   caml/addrmap.h caml/domain.h caml/prims.h caml/platform.h \
-  caml/spacetime.h
+  caml/spacetime.h caml/io.h caml/stack.h
 parsing.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -317,7 +318,8 @@ array.d.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/signals.h caml/spacetime.h
+  caml/domain.h caml/signals.h caml/spacetime.h caml/io.h \
+  caml/platform.h caml/stack.h
 backtrace.d.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -518,7 +520,7 @@ obj.d.$(O): obj.c caml/camlatomic.h caml/config.h caml/m.h caml/s.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
   caml/interp.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
   caml/addrmap.h caml/domain.h caml/prims.h caml/platform.h \
-  caml/spacetime.h
+  caml/spacetime.h caml/io.h caml/stack.h
 parsing.d.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -624,7 +626,8 @@ array.i.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/signals.h caml/spacetime.h
+  caml/domain.h caml/signals.h caml/spacetime.h caml/io.h \
+  caml/platform.h caml/stack.h
 backtrace.i.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -819,7 +822,7 @@ obj.i.$(O): obj.c caml/camlatomic.h caml/config.h caml/m.h caml/s.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
   caml/interp.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
   caml/addrmap.h caml/domain.h caml/prims.h caml/platform.h \
-  caml/spacetime.h
+  caml/spacetime.h caml/io.h caml/stack.h
 parsing.i.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -925,7 +928,8 @@ array.pic.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/signals.h caml/spacetime.h
+  caml/domain.h caml/signals.h caml/spacetime.h caml/io.h \
+  caml/platform.h caml/stack.h
 backtrace.pic.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -1120,7 +1124,7 @@ obj.pic.$(O): obj.c caml/camlatomic.h caml/config.h caml/m.h caml/s.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
   caml/interp.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
   caml/addrmap.h caml/domain.h caml/prims.h caml/platform.h \
-  caml/spacetime.h
+  caml/spacetime.h caml/io.h caml/stack.h
 parsing.pic.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
   caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
