@@ -984,6 +984,9 @@ OCaml 4.09.0 (19 September 2019):
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #9327, #9401: manual, fix infix attribute examples
+  (Florian Angeletti, report by David Cadé, review by Gabriel Scherer)
+
 ### Tools:
 
 - #2221: ocamldep will now correctly allow a .ml file in an include directory
