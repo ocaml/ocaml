@@ -257,9 +257,6 @@ Working version
   non-development builds.
   (David Allsopp, review by Sébastien Hinderer)
 
-- #9383: Don't assume that AWKPATH includes .
-  (David Allsopp, report by Ian Zimmerman)
-
 ### Bug fixes:
 
 - #7683, #1499: Fixes one case where the evaluation order in native-code
@@ -298,8 +295,11 @@ Working version
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
 
-OCaml 4.10.0
-------------
+OCaml 4.10 maintenance branch
+-----------------------------
+
+OCaml 4.10.0 (21 February 2020)
+-------------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -806,8 +806,16 @@ OCaml 4.10.0
 - #9261: Fix a soundness bug in Rec_check, new in 4.10 (from #8908)
   (Vincent Laviron, review by Jeremy Yallop and Gabriel Scherer)
 
-OCaml 4.09 maintenance branch:
-------------------------------
+OCaml 4.09 maintenance branch
+-----------------------------
+
+### Build system:
+
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
+
+OCaml 4.09.1 (16 Mars 2020)
+---------------------------
 
 - #8855, #8858: Links for tools not created when installing with
   --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
@@ -844,8 +852,8 @@ OCaml 4.09 maintenance branch:
   (Jacques-Henri Jourdan, review by Stephen Dolan, Xavier Leroy and
    Gabriel Scherer)
 
-OCaml 4.09.0 (19 September 2019):
----------------------------------
+OCaml 4.09.0 (19 September 2019)
+--------------------------------
 
 ### Runtime system:
 
