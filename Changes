@@ -159,6 +159,9 @@ Working version
   run a command and evaluate its output.
   (Jérémie Dimino, review by David Allsopp)
 
+- #9402: Remove `sudo:false` from .travis.yml
+  (Hikaru Yoshimura)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
