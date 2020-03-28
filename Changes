@@ -1,11 +1,6 @@
 OCaml 4.10 maintenance branch
 -----------------------------
 
-### Build system:
-
-- #9383: Don't assume that AWKPATH includes .
-  (David Allsopp, report by Ian Zimmerman)
-
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 
@@ -520,6 +515,14 @@ OCaml 4.10.0 (21 February 2020)
 
 OCaml 4.09 maintenance branch:
 ------------------------------
+
+### Build system:
+
+- #9383: Don't assume that AWKPATH includes .
+  (David Allsopp, report by Ian Zimmerman)
+
+OCaml 4.09.1 (16 Mars 2020):
+----------------------------
 
 - #8855, #8858: Links for tools not created when installing with
   --disable-installing-byecode-programs (e.g. ocamldep.opt installed, but
