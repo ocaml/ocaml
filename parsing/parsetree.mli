@@ -148,6 +148,8 @@ and core_type_desc =
         (* (module S) *)
   | Ptyp_extension of extension
         (* [%id] *)
+  | Ptyp_functor of string loc * package_type * core_type
+        (* {M : S} -> ... *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
       (*

@@ -314,6 +314,9 @@ and core_type ctxt f x =
                         (list tyvar_loc ~sep:"@;")  l)
                l)
           sl (core_type ctxt) ct
+    | Ptyp_functor (name, pack, ct) ->
+        pp f "@[<2>@[<hov2>{%s :@ %a}@]@;->@;%a@]" name.txt (package_type ctxt)
+          pack (core_type ctxt) ct
     | _ -> pp f "@[<2>%a@]" (core_type1 ctxt) x
 
 and core_type1 ctxt f x =
@@ -383,16 +386,19 @@ and core_type1 ctxt f x =
         pp f "@[<hov2>%a#%a@]"
           (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")") l
           longident_loc li
-    | Ptyp_package (lid, cstrs) ->
-        let aux f (s, ct) =
-          pp f "type %a@ =@ %a" longident_loc s (core_type ctxt) ct  in
-        (match cstrs with
-         |[] -> pp f "@[<hov2>(module@ %a)@]" longident_loc lid
-         |_ ->
-             pp f "@[<hov2>(module@ %a@ with@ %a)@]" longident_loc lid
-               (list aux  ~sep:"@ and@ ")  cstrs)
+    | Ptyp_package pack ->
+        pp f "@[<hov2>(module@ %a)@]" (package_type ctxt) pack
     | Ptyp_extension e -> extension ctxt f e
     | _ -> paren true (core_type ctxt) f x
+
+and package_type ctxt f (lid, cstrs) =
+  let aux f (s, ct) =
+    pp f "type %a@ =@ %a" longident_loc s (core_type ctxt) ct
+  in
+  (match cstrs with
+   |[] -> longident_loc f lid
+   |_ ->
+       pp f "%a@ with@ %a" longident_loc lid (list aux  ~sep:"@ and@ ")  cstrs)
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)

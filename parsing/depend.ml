@@ -118,6 +118,7 @@ let rec add_type bv ty =
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
   | Ptyp_extension e -> handle_extension e
+  | Ptyp_functor (_, pt, t2) -> add_package_type bv pt; add_type bv t2
 
 and add_package_type bv (lid, l) =
   add bv lid;

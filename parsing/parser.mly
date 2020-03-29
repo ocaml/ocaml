@@ -3300,6 +3300,18 @@ function_type:
         { Ptyp_arrow(label, domain, codomain) }
     )
     { $1 }
+  | mktyp(
+      LBRACE
+      name = mkrhs(UIDENT)
+      COLON
+      mty = module_type
+      RBRACE
+      MINUSGREATER
+      codomain = function_type
+        { let (lid, cstrs, _attrs) = package_type_of_module_type mty in
+          Ptyp_functor (name, (lid, cstrs), codomain) }
+    )
+    { $1 }
 ;
 %inline arg_label:
   | label = optlabel

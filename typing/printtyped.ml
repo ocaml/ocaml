@@ -221,6 +221,10 @@ let rec core_type i ppf x =
   | Ttyp_package { pack_path = s; pack_fields = l } ->
       line i ppf "Ttyp_package %a\n" fmt_path s;
       list i package_with ppf l;
+  | Ttyp_functor (name, {pack_path= s; pack_fields= l; _}, ct) ->
+      line i ppf "Ttyp_functor \"%a\" : %a\n" fmt_ident name.txt fmt_path s;
+      list i package_with ppf l;
+      core_type i ppf ct
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident s;

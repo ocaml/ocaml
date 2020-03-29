@@ -84,6 +84,8 @@ module Typ :
     val package: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list
                  -> core_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> core_type
+    val functor_ : ?loc:loc -> ?attrs:attrs -> str
+                   -> (lid * (lid * core_type) list) -> core_type -> core_type
 
     val force_poly: core_type -> core_type
 

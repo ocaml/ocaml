@@ -153,6 +153,10 @@ module T = struct
         package ~loc ~attrs (map_loc sub lid)
           (List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Ptyp_functor (s, (lid, l), t) ->
+        functor_ ~loc ~attrs (map_loc sub s)
+          (map_loc sub lid, List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
+          (sub.typ sub t)
 
   let map_type_declaration sub
       {ptype_name; ptype_params; ptype_cstrs;

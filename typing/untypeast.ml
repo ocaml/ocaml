@@ -764,6 +764,9 @@ let core_type sub ct =
         let list = List.map (fun v -> mkloc v loc) list in
         Ptyp_poly (list, sub.typ sub ct)
     | Ttyp_package pack -> Ptyp_package (sub.package_type sub pack)
+    | Ttyp_functor (name, pack, ct) ->
+        let name = Location.mkloc (Ident.name name.txt) name.loc in
+        Ptyp_functor (name, sub.package_type sub pack, sub.typ sub ct)
   in
   Typ.mk ~loc ~attrs desc
 
