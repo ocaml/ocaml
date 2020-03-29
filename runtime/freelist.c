@@ -14,7 +14,6 @@
 /**************************************************************************/
 
 #define CAML_INTERNALS
-
 #define FREELIST_DEBUG 0
 #if FREELIST_DEBUG
 #include <stdio.h>
@@ -880,8 +879,8 @@ static int bf_small_map = 0;
    Large free blocks have 5 fields:
    tree fields:
      - isnode flag
-     - left son
-     - right son
+     - left child
+     - right child
    list fields:
      - next
      - prev
