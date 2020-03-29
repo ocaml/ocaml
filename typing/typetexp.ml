@@ -524,13 +524,11 @@ and transl_type_aux env policy styp =
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
   | Ptyp_functor (name, (p, l), st) ->
-      (* TODO: Name uniqueness for nesting. *)
-      let name = Location.mkloc (Ident.create_local name.txt) name.loc in
+      let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
+      let z = narrow () in
+      let mty = !transl_modtype env mty in
+      widen z;
       let pack =
-        let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
-        let z = narrow () in
-        let mty = !transl_modtype env mty in
-        widen z;
         let ptys = List.map (fun (s, pty) ->
                                s, transl_type env policy pty
                             ) l in
@@ -545,6 +543,10 @@ and transl_type_aux env policy styp =
         ; pack_fields = ptys
         ; pack_txt = p }
       in
+      let scoped_ident =
+        Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
+      in
+      let env = Env.add_module scoped_ident Mp_present mty.mty_type env in
       let cty = transl_type env policy st in
       let ty =
         (* TODO: Dummy type. *)
@@ -553,6 +555,7 @@ and transl_type_aux env policy styp =
             raise (Error (styp.ptyp_loc, env, Unbound_type_variable "_"))
           else newvar ()
       in
+      let name = Location.mkloc (Ident.create_unscoped name.txt) name.loc in
       ctyp (Ttyp_functor (name, pack, cty)) ty
 
 and transl_poly_type env policy t =
