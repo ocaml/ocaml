@@ -55,13 +55,20 @@ let ocamllex_flags env =
 let ocamlyacc_flags env =
   Environments.safe_lookup Ocaml_variables.ocamlyacc_flags env
 
-let libraries backend env =
-  let value = Environments.safe_lookup Ocaml_variables.libraries env in
-  let libs = String.words value in
-  let extension = Ocaml_backends.library_extension backend in
-  let add_extension lib = Filename.make_filename lib extension in
-  String.concat " " (List.map add_extension libs)
+let filelist env variable extension =
+  let value = Environments.safe_lookup variable env in
+  let filenames = String.words value in
+  let add_extension filename = Filename.make_filename filename extension in
+  String.concat " " (List.map add_extension filenames)
 
+let libraries backend env =
+  let extension = Ocaml_backends.library_extension backend in
+  filelist env Ocaml_variables.libraries extension
+
+let binary_modules backend env =
+  let extension = Ocaml_backends.module_extension backend in
+  filelist env Ocaml_variables.binary_modules extension
+  
 let backend_default_flags env =
   get_backend_value_from_env env
     Ocaml_variables.ocamlc_default_flags
@@ -122,6 +129,7 @@ let generate_module generator ocamlsrcdir output_variable input log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:output_variable
       ~stderr_variable:output_variable
       ~append:true
@@ -181,7 +189,8 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let expected_exit_status =
     Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in
   let module_names =
-    String.concat " " (List.map Ocaml_filetypes.make_filename modules) in
+    (binary_modules compiler#target env) ^ " " ^
+    (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) in
   let what = Printf.sprintf "Compiling program %s from modules %s"
     program_file module_names in
   Printf.fprintf log "%s\n%!" what;
@@ -210,6 +219,7 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:compiler#output_variable
       ~stderr_variable:compiler#output_variable
       ~append:true
@@ -242,6 +252,7 @@ let compile_module ocamlsrcdir compiler module_ log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:compiler#output_variable
       ~stderr_variable:compiler#output_variable
       ~append:true
@@ -423,6 +434,91 @@ let ocamlopt_opt =
       "ocamlopt.opt"
       (compile Ocaml_compilers.ocamlopt_opt))
 
+let env_with_lib_unix ocamlsrcdir env =
+  let libunixdir = Ocaml_directories.libunix ocamlsrcdir in
+  let newlibs =
+    match Environments.lookup Ocaml_variables.caml_ld_library_path env with
+    | None -> libunixdir
+    | Some libs -> libunixdir ^ " " ^ libs
+  in
+  Environments.add Ocaml_variables.caml_ld_library_path newlibs env
+
+let debug log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Debugging program %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    Ocaml_commands.ocamlrun_ocamldebug ocamlsrcdir;
+    Ocaml_flags.ocamldebug_default_flags ocamlsrcdir;
+    program
+  ] in
+  let systemenv =
+    Array.append
+      dumb_term
+      (Environments.to_system_env (env_with_lib_unix ocamlsrcdir env))
+  in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:systemenv
+      ~stdin_variable: Ocaml_variables.ocamldebug_script
+      ~stdout_variable:Builtin_variables.output
+      ~stderr_variable:Builtin_variables.output
+      ~append:true
+      log (env_with_lib_unix ocamlsrcdir env) commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let ocamldebug = Actions.make "ocamldebug" debug
+
+let objinfo log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let tools_directory = Ocaml_directories.tools ocamlsrcdir in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Running ocamlobjinfo on %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    Ocaml_commands.ocamlrun_ocamlobjinfo ocamlsrcdir;
+    Ocaml_flags.ocamlobjinfo_default_flags;
+    program
+  ] in
+  let ocamllib = [| (Printf.sprintf "OCAMLLIB=%s" tools_directory) |] in
+  let systemenv =
+    Array.concat
+    [
+      dumb_term;
+      ocamllib;
+      (Environments.to_system_env (env_with_lib_unix ocamlsrcdir env))
+    ]
+  in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:systemenv
+      ~stdout_variable:Builtin_variables.output
+      ~stderr_variable:Builtin_variables.output
+      ~append:true
+      log (env_with_lib_unix ocamlsrcdir env) commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
+
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ ocamlsrcdir in
@@ -602,6 +698,7 @@ let compile_module
     Printf.fprintf log "%s\n%!" what;
     let exit_status =
       Actions_helpers.run_cmd
+        ~stdin_variable: Ocaml_variables.compiler_stdin
         ~stdout_variable:compileroutput
         ~stderr_variable:compileroutput
         ~append:true log env commandline in
@@ -675,6 +772,14 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
       expected_exit_status in
     Printf.fprintf log "%s\n%!" what;
     let toplevel_name = toplevel#name ocamlsrcdir in
+    let ocaml_script_as_argument =
+      match
+        Environments.lookup_as_bool
+          Ocaml_variables.ocaml_script_as_argument env
+      with
+      | None -> false 
+      | Some b -> b
+    in
     let commandline =
     [
       toplevel_name;
@@ -684,14 +789,25 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
       directory_flags env;
       Ocaml_flags.include_toplevel_directory ocamlsrcdir;
       flags env;
+      libraries toplevel#backend env;
+      binary_modules toplevel#backend env;
+      if ocaml_script_as_argument then testfile else "";
+      Environments.safe_lookup Builtin_variables.arguments env
     ] in
     let exit_status =
-      Actions_helpers.run_cmd
+      if ocaml_script_as_argument
+      then Actions_helpers.run_cmd
+        ~environment:dumb_term
+        ~stdout_variable:compiler_output_variable
+        ~stderr_variable:compiler_output_variable
+        log env commandline
+      else Actions_helpers.run_cmd
         ~environment:dumb_term
         ~stdin_variable:Builtin_variables.test_file
         ~stdout_variable:compiler_output_variable
         ~stderr_variable:compiler_output_variable
-        log env commandline in
+        log env commandline
+    in
     if exit_status=expected_exit_status
     then (Result.pass, env)
     else begin
@@ -845,6 +961,7 @@ let compile_ocamldoc ocamlsrcdir (basename,filetype as module_) log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:(Environments.to_system_env env)
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:ocamldoc#output_variable
       ~stderr_variable:ocamldoc#output_variable
       ~append:true
@@ -932,6 +1049,7 @@ let run_ocamldoc =
    ] in
   let exit_status =
     Actions_helpers.run_cmd ~environment:(Environments.to_system_env env)
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:ocamldoc#output_variable
       ~stderr_variable:ocamldoc#output_variable
       ~append:true
@@ -982,5 +1100,7 @@ let _ =
     no_afl_instrument;
     setup_ocamldoc_build_env;
     run_ocamldoc;
-    check_ocamldoc_output
+    check_ocamldoc_output;
+    ocamldebug;
+    ocamlobjinfo
   ]

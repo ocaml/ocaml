@@ -26,7 +26,7 @@ open Cmx_format
    improvement feature.
 *)
 val imported_sets_of_closures_table
-  : Flambda.function_declarations option Set_of_closures_id.Tbl.t
+  : Simple_value_approx.function_declarations option Set_of_closures_id.Tbl.t
         (* flambda-only *)
 
 val reset: ?packname:string -> string -> unit
@@ -91,7 +91,7 @@ val set_export_info: Export_info.t -> unit
 val approx_env: unit -> Export_info.t
         (* Returns all the information loaded from external compilation units
            flambda-only *)
-val approx_for_global: Compilation_unit.t -> Export_info.t
+val approx_for_global: Compilation_unit.t -> Export_info.t option
         (* Loads the exported information declaring the compilation_unit
            flambda-only *)
 

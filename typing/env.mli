@@ -265,20 +265,19 @@ open Format
 val report_error: formatter -> error -> unit
 
 
-val mark_value_used: t -> string -> value_description -> unit
-val mark_module_used: t -> string -> Location.t -> unit
-val mark_type_used: t -> string -> type_declaration -> unit
+val mark_value_used: string -> value_description -> unit
+val mark_module_used: string -> Location.t -> unit
+val mark_type_used: string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> t -> string -> type_declaration -> string -> unit
+    constructor_usage -> string -> type_declaration -> string -> unit
 val mark_constructor:
     constructor_usage -> t -> string -> constructor_description -> unit
 val mark_extension_used:
-    constructor_usage -> t -> extension_constructor -> string -> unit
+    constructor_usage -> extension_constructor -> string -> unit
 
 val in_signature: bool -> t -> t
-val implicit_coercion: t -> t
 
 val is_in_signature: t -> bool
 

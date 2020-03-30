@@ -1,3 +1,11 @@
+(* TEST
+flags = " -w a "
+ocamlc_byte_exit_status = "2"
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 (* PR#6992, reported by Stephen Dolan *)
 
 type (_, _) eq = Eq : ('a, 'a) eq

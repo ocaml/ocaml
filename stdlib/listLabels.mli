@@ -351,3 +351,13 @@ val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).
 *)
+
+(** {6 Iterators} *)
+
+val to_seq : 'a list -> 'a Seq.t
+(** Iterate on the list
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a list
+(** Create a list from the iterator
+    @since 4.07 *)

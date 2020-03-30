@@ -27,6 +27,13 @@ let arguments = ref ""
 let default_load_path =
   ref [ Filename.current_dir_name; Config.standard_library ]
 
+let breakpoint = ref true
+let prompt = ref true
+let time = ref true
+let version = ref true
+
+let topdirs_path = ref (Filename.concat Config.standard_library "compiler-libs")
+
 let add_path dir =
   load_path := dir :: except dir !load_path;
   Envaux.reset_cache()

@@ -21,7 +21,7 @@ type 'a located = {
 }
 
 type environment_statement =
-  | Assignment of string located * string located (* variable = value *)
+  | Assignment of bool * string located * string located (* variable = value *)
   | Append of string located * string located
   | Include of string located (* include named environemnt *)
 

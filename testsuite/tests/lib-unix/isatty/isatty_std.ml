@@ -1,3 +1,9 @@
+(* TEST
+include unix
+stdin = "/dev/null"
+stderr = "/dev/null"
+*)
+
 Printf.printf
   "Unix.isatty Unix.stdin = %b\n\
    Unix.isatty Unix.stdout = %b\n\

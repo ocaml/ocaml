@@ -45,6 +45,7 @@ rule token = parse
     { let s = Lexing.lexeme lexbuf in
       match s with
         | "include" -> INCLUDE
+        | "set" -> SET
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }

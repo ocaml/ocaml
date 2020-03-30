@@ -28,7 +28,7 @@ open Typedtree
    then the standard library directory. *)
 let init_path () =
   Config.load_path :=
-    "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
+    "" :: List.rev ( Clflags.std_include_dir () @ !Clflags.include_dirs);
   Env.reset_cache ()
 
 (** Return the initial environment in which compilation proceeds. *)

@@ -35,7 +35,6 @@ STDLIB_MLIS=\
   $(UTILS_MLIS:$(SRC)/utils/%.mli=%.mli) \
   str.mli \
   unix.mli unixLabels.mli \
-  bigarray.mli \
   graphics.mli graphicsX11.mli \
   dynlink.mli \
   thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
@@ -61,9 +60,6 @@ STDLIB_CMIS=$(STDLIB_DEPS:%.mli=%.cmi)
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/stdlib/%.mli
 	cp $< $@
 
-$(STDLIB_UNPREFIXED)/camlinternalBigarray.mli: $(SRC)/stdlib/camlinternalBigarray.ml
-	cp $< $@
-
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/parsing/%.mli
 	cp $< $@
 
@@ -71,12 +67,9 @@ $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/utils/%.mli
 	cp $< $@
 
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/$(UNIXLIB)/%.mli
-	cp $< $@
+	sed 's/Stdlib\.//g' $< > $@
 
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/str/%.mli
-	cp $< $@
-
-$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/bigarray/%.mli
 	cp $< $@
 
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/num/%.mli

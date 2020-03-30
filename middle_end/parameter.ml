@@ -58,8 +58,8 @@ module Set = struct
   let vars l = Variable.Set.of_list (List.map var l)
 end
 
-let rename ?current_compilation_unit ?append p =
-  { var = Variable.rename ?current_compilation_unit ?append p.var }
+let rename ?current_compilation_unit p =
+  { var = Variable.rename ?current_compilation_unit p.var }
 
 let map_var f { var } = { var = f var }
 

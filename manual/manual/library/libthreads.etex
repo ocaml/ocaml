@@ -29,11 +29,11 @@ bytecode programs.  It cannot be used with native-code programs.
 \end{itemize}
 Programs that use system threads must be linked as follows:
 \begin{alltt}
-        ocamlc -thread \var{other options} unix.cma threads.cma \var{other files}
-        ocamlopt -thread \var{other options} unix.cmxa threads.cmxa \var{other files}
+        ocamlc -I +threads \var{other options} unix.cma threads.cma \var{other files}
+        ocamlopt -I +threads \var{other options} unix.cmxa threads.cmxa \var{other files}
 \end{alltt}
 Compilation units that use the "threads" library must also be compiled with
-the "-thread" option (see chapter~\ref{c:camlc}).
+the "-I +threads" option (see chapter~\ref{c:camlc}).
 
 Programs that use VM-level threads must be compiled with the "-vmthread"
 option to "ocamlc" (see chapter~\ref{c:camlc}), and be linked as follows:

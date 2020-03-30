@@ -1,0 +1,10 @@
+File "pr6293_bad.ml", line 10, characters 6-38:
+Error: In this `with' constraint, the new definition of t
+       does not match its original definition in the constrained signature:
+       Type declarations do not match:
+         type t
+       is not included in
+         type t = { a : int; b : int; }
+       File "pr6293_bad.ml", line 9, characters 20-50: Expected declaration
+       File "pr6293_bad.ml", line 10, characters 6-38: Actual declaration
+       Their kinds differ.

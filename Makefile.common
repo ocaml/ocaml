@@ -1,0 +1,30 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This makefile contains common definitions shared by other Makefiles
+# We assume that config/Makefile has already been included
+
+INSTALL ?= install
+INSTALL_DATA ?= $(INSTALL) -m u=rw,g=rw,o=r
+INSTALL_PROG ?= $(INSTALL) -m u=rwx,g=rwx,o=rx
+
+# note: these are defined by lazy expansions
+# as some parts of the makefiles change BINDIR, etc.
+# and expect INSTALL_BINDIR, etc. to stay in synch
+# (see `shellquote` in tools/Makefile)
+INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR = $(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR = $(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR = $(DESTDIR)$(MANDIR)

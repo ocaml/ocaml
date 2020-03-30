@@ -18,24 +18,44 @@
 open Ocamltest_stdlib
 open Actions
 
+let reason_with_fallback env fallback =
+  match Environments.lookup Builtin_variables.reason env with
+  | None -> fallback
+  | Some reason -> reason
+
 let pass = make
   "pass"
   (fun _log env ->
-    let result =
-      Result.pass_with_reason "The pass action always succeeds." in
+    let reason = reason_with_fallback env "the pass action always succeeds" in
+    let result = Result.pass_with_reason reason in
     (result, env))
 
 let skip = make
   "skip"
   (fun _log env ->
-    let result = Result.skip_with_reason "The skip action always skips." in
+    let reason = reason_with_fallback env "the skip action always skips" in
+    let result = Result.skip_with_reason reason in
     (result, env))
 
 let fail = make
   "fail"
   (fun _log env ->
-    let result = Result.fail_with_reason "The fail action always fails." in
+    let reason = reason_with_fallback env "the fail action always fails" in
+    let result = Result.fail_with_reason reason in
     (result, env))
+
+let cd = make
+  "cd"
+  (fun _log env ->
+    let cwd = Environments.safe_lookup Builtin_variables.cwd env in
+    begin
+      try
+        Sys.chdir cwd; (Result.pass, env)
+      with _ ->
+        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
+        let result = Result.fail_with_reason reason in
+        (result, env)
+    end)    
 
 let dumpenv = make
   "dumpenv"
@@ -96,6 +116,12 @@ let arch64 = make
     "64-bit architecture"
     "non-64-bit architecture")
 
+let has_symlink = make
+  "has_symlink"
+  (Actions_helpers.pass_or_skip (Sys.has_symlink () )
+    "symlinks available"
+    "symlinks not available")
+
 let setup_build_env = make
   "setup-build-env"
   (Actions_helpers.setup_build_env true [])
@@ -134,6 +160,7 @@ let _ =
     pass;
     skip;
     fail;
+    cd;
     dumpenv;
     libunix;
     libwin32unix;
@@ -143,6 +170,7 @@ let _ =
     not_bsd;
     arch32;
     arch64;
+    has_symlink;
     setup_build_env;
     run;
     script;

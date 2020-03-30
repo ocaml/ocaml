@@ -21,13 +21,31 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
+  ifeq "$(wildcard ../flexdll/Makefile)" ""
+    FLEXLINK_ENV=
+  else
+    FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
+  endif
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
+  FLEXLINK_ENV=
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
+endif
+
+ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
+WITH_OCAMLDOC := true
+else
+WITH_OCAMLDOC := false
+endif
+
+ifeq "$(WITH_DEBUGGER)" "ocamldebugger"
+WITH_OCAMLDEBUG := true
+else
+WITH_OCAMLDEBUG := false
 endif
 
 CPPFLAGS += -I../byterun -DCAML_INTERNALS
@@ -43,6 +61,7 @@ run := run_$(UNIX_OR_WIN32)
 core := \
   $(run).c \
   run_stubs.c \
+  ocamltest_stdlib_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
@@ -119,23 +138,13 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories = ../utils ../parsing ../stdlib ../compilerlibs
+directories := ../utils ../parsing ../stdlib ../compilerlibs
 
-include_directories = $(addprefix -I , $(directories))
+include_directories := $(addprefix -I , $(directories))
 
-flags = -g -nostdlib $(include_directories) \
+flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
-
-ifeq "$(UNIX_OR_WIN32)" "unix"
-FLEXLINK_ENV=
-else # Windows
-  ifeq "$(wildcard ../flexdll/Makefile)" ""
-    FLEXLINK_ENV=
-  else
-    FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
-  endif
-endif
 
 ocamlc := $(FLEXLINK_ENV) ../byterun/ocamlrun ../ocamlc $(flags)
 
@@ -175,13 +184,6 @@ ocamltest.opt$(EXE): $(native_modules)
 %.$(O): %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
 
-ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
-WITH_OCAMLDOC := true
-else
-WITH_OCAMLDOC := false
-endif
-
-
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
 	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
@@ -198,6 +200,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
 	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
 	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
+	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
 	  $< > $@
 
 .PHONY: clean

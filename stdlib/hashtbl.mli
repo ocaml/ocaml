@@ -216,6 +216,39 @@ val stats : ('a, 'b) t -> statistics
    buckets by size.
    @since 4.00.0 *)
 
+(** {6 Iterators} *)
+
+val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
+(** Iterate on the whole table, in unspecified order.
+
+    The behavior is not defined if the hash table is modified
+    during the iteration.
+
+    @since 4.07 *)
+
+val to_seq_keys : ('a,_) t -> 'a Seq.t
+(** Iterate on 'as, in ascending order
+    @since 4.07 *)
+
+val to_seq_values : (_,'b) t -> 'b Seq.t
+(** Iterate on values, in ascending order of their corresponding 'a
+    @since 4.07 *)
+
+val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+(** Add the given bindings to the table, using {!add}
+    @since 4.07 *)
+
+val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+(** Add the given bindings to the table, using {!replace}
+    @since 4.07 *)
+
+val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
+(** Build a table from the given bindings. The bindings are added
+    in the same order they appear in the sequence, using {!replace_seq},
+    which means that if two pairs have the same key, only the latest one
+    will appear in the table.
+    @since 4.07 *)
+
 (** {1 Functorial interface} *)
 
 (** The functorial interface allows the use of specific comparison
@@ -296,6 +329,24 @@ module type S =
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics (** @since 4.00.0 *)
+
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    (** @since 4.07 *)
+
+    val to_seq_keys : _ t -> key Seq.t
+    (** @since 4.07 *)
+
+    val to_seq_values : 'a t -> 'a Seq.t
+    (** @since 4.07 *)
+
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    (** @since 4.07 *)
+
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    (** @since 4.07 *)
+
+    val of_seq : (key * 'a) Seq.t -> 'a t
+    (** @since 4.07 *)
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
@@ -352,6 +403,24 @@ module type SeededS =
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
+
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    (** @since 4.07 *)
+
+    val to_seq_keys : _ t -> key Seq.t
+    (** @since 4.07 *)
+
+    val to_seq_values : 'a t -> 'a Seq.t
+    (** @since 4.07 *)
+
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    (** @since 4.07 *)
+
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    (** @since 4.07 *)
+
+    val of_seq : (key * 'a) Seq.t -> 'a t
+    (** @since 4.07 *)
   end
 (** The output signature of the functor {!Hashtbl.MakeSeeded}.
     @since 4.00.0 *)

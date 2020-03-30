@@ -53,7 +53,6 @@ let prim_size (prim : Lambda.primitive) args =
   | Parrayrefs _ -> 8
   | Parraysets Pgenarray -> 22
   | Parraysets _ -> 10
-  | Pbittest -> 3
   | Pbigarrayref (_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset (_, ndims, _, _) -> 4 + ndims * 6
   | Psequand | Psequor ->

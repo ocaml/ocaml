@@ -29,7 +29,7 @@ let compare v1 v2 = String.compare v1.variable_name v2.variable_name
 
 exception Empty_variable_name
 
-exception Variable_already_registered
+exception Variable_already_registered of string
 
 exception No_such_variable of string
 
@@ -57,7 +57,7 @@ let (variables : (string, t) Hashtbl.t) = Hashtbl.create 10
 
 let register_variable variable =
   if Hashtbl.mem variables variable.variable_name
-  then raise Variable_already_registered
+  then raise (Variable_already_registered variable.variable_name)
   else Hashtbl.add variables variable.variable_name variable
 
 let find_variable variable_name =

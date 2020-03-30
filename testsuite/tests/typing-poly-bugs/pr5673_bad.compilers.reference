@@ -1,0 +1,11 @@
+File "pr5673_bad.ml", line 31, characters 22-23:
+Error: This expression has type
+         refer1 = < poly : 'a 'b 'c. ('b, 'c) #Classdef.cl2 as 'a >
+       but an expression was expected of type
+         refer2 = < poly : 'd 'b 'c. ('b, 'c) #Classdef.cl2 as 'd >
+       Type
+         ('b, 'c) Classdef.cl1 =
+           < m : 'b -> 'c -> int; raise_trouble : int -> 'b >
+       is not compatible with type
+         < m : 'b -> 'c -> int; raise_trouble : int -> 'b > 
+       The type variable 'e occurs inside 'e

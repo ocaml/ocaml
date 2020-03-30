@@ -19,8 +19,12 @@ val srcdir : unit -> string
 
 val stdlib : string -> string
 
+val libunix : string -> string
+
 val toplevel : string -> string
 
 val runtime : string -> string
 
 val runtime_library : Ocaml_backends.t -> string -> string
+
+val tools : string -> string

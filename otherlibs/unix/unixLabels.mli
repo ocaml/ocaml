@@ -433,9 +433,9 @@ module LargeFile :
 (** {1 Mapping files into memory} *)
 
 val map_file :
-  file_descr -> ?pos:int64 -> kind:('a, 'b) CamlinternalBigarray.kind ->
-  layout:'c CamlinternalBigarray.layout -> shared:bool -> dims:int array ->
-  ('a, 'b, 'c) CamlinternalBigarray.genarray
+  file_descr -> ?pos:int64 -> kind:('a, 'b) Stdlib.Bigarray.kind ->
+  layout:'c Stdlib.Bigarray.layout -> shared:bool -> dims:int array ->
+  ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
 (** Memory mapping of a file as a big array.
   [map_file fd kind layout shared dims]
   returns a big array of kind [kind], layout [layout],

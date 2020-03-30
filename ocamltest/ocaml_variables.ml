@@ -28,6 +28,9 @@ open Variables (* Should not be necessary with a ppx *)
 
 let all_modules = make ("all_modules",
   "All the modules to compile and link")
+  
+let binary_modules = make ("binary_modules",
+  "Additional binary modules to link")
 
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
@@ -70,6 +73,9 @@ let compiler_output = make ("compiler_output",
 
 let compiler_output2 = make ("compiler_output2",
   "Where to log output of native compilers")
+
+let compiler_stdin = make ("compiler_stdin",
+  "standard input of compilers")
 
 let compile_only = make ("compile_only",
   "Compile only (do not link)")
@@ -137,6 +143,12 @@ let ocamlrunparam =
 let ocamlsrcdir = make ("ocamlsrcdir",
   "Where OCaml sources are")
 
+let ocamldebug_flags = make ("ocamldebug_flags",
+  "Flags for ocamldebug")
+
+let ocamldebug_script = make ("ocamldebug_script",
+  "Where ocamldebug should read its commands")
+
 let os_type = make ("os_type",
   "The OS we are running on")
 
@@ -156,15 +168,19 @@ let ocamldoc_reference =
   Variables.make ( "ocamldoc_reference",
                    "Where to find expected ocamldoc output")
 
+let ocaml_script_as_argument =
+  Variables.make ( "ocaml_script_as_argument",
+    "Whether the ocaml script should be passed as argument or on stdin")
 
 let plugins =
   Variables.make ( "plugins", "plugins for ocamlc,ocamlopt or ocamldoc" )
 
-
 let _ = List.iter register_variable
   [
     all_modules;
+    binary_modules;
     c_preprocessor;
+    caml_ld_library_path;
     compare_programs;
     compiler_directory_suffix;
     compiler_reference;
@@ -172,6 +188,7 @@ let _ = List.iter register_variable
     compiler_reference_suffix;
     compiler_output;
     compiler_output2;
+    compiler_stdin;
     compile_only;
     directories;
     flags;
@@ -197,5 +214,8 @@ let _ = List.iter register_variable
     ocamldoc_output;
     ocamldoc_reference;
     ocamldoc_exit_status;
+    ocamldebug_flags;
+    ocamldebug_script;
+    ocaml_script_as_argument;
     plugins
   ]

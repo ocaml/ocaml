@@ -159,7 +159,7 @@ let add_variables' t ids =
       id' :: ids, t) ids ([], t)
 
 let active_add_mutable_variable t id =
-  let id' = Mutable_variable.freshen id in
+  let id' = Mutable_variable.rename id in
   let t = add_sb_mutable_var t id id' in
   id', t
 
@@ -197,7 +197,11 @@ let rewrite_recursive_calls_with_symbols t
   | Inactive -> function_declarations
   | Active _ ->
     let all_free_symbols =
-      Flambda_utils.all_free_symbols function_declarations
+      Variable.Map.fold
+        (fun _ (function_decl : Flambda.function_declaration)
+            syms ->
+          Symbol.Set.union syms function_decl.free_symbols)
+        function_declarations.funs Symbol.Set.empty
     in
     let closure_symbols_used = ref false in
     let closure_symbols =
@@ -230,9 +234,8 @@ let rewrite_recursive_calls_with_symbols t
                 | e -> e)
               ffun.body
           in
-          Flambda.create_function_declaration ~params:ffun.params
-            ~body ~stub:ffun.stub ~dbg:ffun.dbg ~inline:ffun.inline
-            ~specialise:ffun.specialise ~is_a_functor:ffun.is_a_functor)
+          Flambda.update_function_declaration ffun
+            ~params:ffun.params ~body)
           function_declarations.funs
       in
       Flambda.update_function_declarations function_declarations ~funs
@@ -314,10 +317,8 @@ module Project_var = struct
           Flambda_utils.toplevel_substitution subst.sb_var func_decl.body
         in
         let function_decl =
-          Flambda.create_function_declaration ~params
-            ~body ~stub:func_decl.stub ~dbg:func_decl.dbg
-            ~inline:func_decl.inline ~specialise:func_decl.specialise
-            ~is_a_functor:func_decl.is_a_functor
+          Flambda.update_function_declaration func_decl
+            ~params ~body
         in
         function_decl, subst
       in

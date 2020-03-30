@@ -7,8 +7,11 @@ module B : module type of Bytes = BytesLabels
 module L : module type of List = ListLabels
 module S : module type of String = StringLabels
 
-module M : module type of struct include Map end = MoreLabels.Map
-module Se : module type of struct include Set end = MoreLabels.Set
+module M : module type of struct include Map end [@remove_aliases] =
+  MoreLabels.Map
+
+module Se : module type of struct include Set end [@remove_aliases] =
+  MoreLabels.Set
 
 
 (* For  *)
@@ -35,7 +38,7 @@ module Indirection = struct
 end
 module type HS = sig
   type statistics = Indirection.t
-  include module type of struct include Hashtbl end
+  include module type of struct include Hashtbl end [@remove_aliases]
                          with type statistics := Indirection.t
 end
 module H : HS = MoreLabels.Hashtbl

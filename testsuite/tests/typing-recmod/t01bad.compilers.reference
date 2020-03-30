@@ -1,0 +1,2 @@
+File "t01bad.ml", line 10, characters 15-35:
+Error: The type abbreviation A.t is cyclic

@@ -1,3 +1,12 @@
+(* TEST
+
+* libwin32unix
+include unix
+** bytecode
+** native
+
+*)
+
 let console =
   try
     Unix.(openfile "/dev/tty" [O_RDWR] 0)

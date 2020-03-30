@@ -1,5 +1,4 @@
 (* TEST
-   include bigarray
 *)
 
 (** Test the various change_layout for Genarray and the various Array[n] *)

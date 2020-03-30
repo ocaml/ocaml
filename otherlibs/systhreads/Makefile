@@ -16,6 +16,7 @@
 ROOTDIR=../..
 
 include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
@@ -112,25 +113,29 @@ partialclean:
 clean: partialclean
 	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
 
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-THREADS_LIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 
 install:
 	if test -f dllthreads$(EXT_DLL); then \
-	  cp dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/dllthreads$(EXT_DLL)"; fi
-	cp libthreads.$(A) "$(INSTALL_LIBDIR)"
+	  $(INSTALL_PROG) \
+	    dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/dllthreads$(EXT_DLL)"; \
+	fi
+	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
-	mkdir -p "$(THREADS_LIBDIR)"
-	cp $(CMIFILES) $(CMIFILES:.cmi=.cmti) threads.cma "$(THREADS_LIBDIR)"
-	cp $(MLIFILES) "$(INSTALL_LIBDIR)"
-	cp threads.h "$(INSTALL_LIBDIR)/caml"
+	mkdir -p "$(INSTALL_THREADSLIBDIR)"
+	$(INSTALL_DATA) \
+	  $(CMIFILES) $(CMIFILES:.cmi=.cmti) threads.cma \
+	  "$(INSTALL_THREADSLIBDIR)"
+	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) threads.h "$(INSTALL_LIBDIR)/caml"
 
 installopt:
-	cp libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreadsnat.$(A)
-	cp $(THREADS_NCOBJS) threads.cmxa threads.$(A) "$(THREADS_LIBDIR)"
-	cd "$(THREADS_LIBDIR)" && $(RANLIB) threads.$(A)
+	$(INSTALL_DATA) \
+	  $(THREADS_NCOBJS) threads.cmxa threads.$(A) \
+	  "$(INSTALL_THREADSLIBDIR)"
+	cd "$(INSTALL_THREADSLIBDIR)" && $(RANLIB) threads.$(A)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

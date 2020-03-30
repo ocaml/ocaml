@@ -1,0 +1,2 @@
+File "pr5343_bad.ml", line 11, characters 2-14:
+Error: The type abbreviation u is cyclic

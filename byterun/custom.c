@@ -22,6 +22,7 @@
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 /* [size] is a number of bytes */
 CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
@@ -30,7 +31,8 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    mlsize_t max)
 {
   mlsize_t wosize;
-  value result;
+  CAMLparam0();
+  CAMLlocal1(result);
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
   if (wosize <= Max_young_wosize) {
@@ -58,7 +60,7 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
     /* !!caml_adjust_gc_speed(mem,max); */
     result = caml_check_urgent_gc(result);
   }
-  return result;
+  CAMLreturn(result);
 }
 
 struct custom_operations_list {

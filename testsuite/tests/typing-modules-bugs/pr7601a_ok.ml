@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 module type Param1 = sig
   type 'a r = [< `A of int ] as 'a
   val f : ?a:string -> string -> [ `A of _ ] r

@@ -126,6 +126,11 @@ CAMLprim value caml_string_get16(value str, value index)
   return Val_int(res);
 }
 
+CAMLprim value caml_bytes_get16(value str, value index)
+{
+  return caml_string_get16(str,index);
+}
+
 CAMLprim value caml_string_get32(value str, value index)
 {
   intnat res;
@@ -142,6 +147,11 @@ CAMLprim value caml_string_get32(value str, value index)
   res = b4 << 24 | b3 << 16 | b2 << 8 | b1;
 #endif
   return caml_copy_int32(res);
+}
+
+CAMLprim value caml_bytes_get32(value str, value index)
+{
+  return caml_string_get32(str,index);
 }
 
 CAMLprim value caml_string_get64(value str, value index)
@@ -172,7 +182,12 @@ CAMLprim value caml_string_get64(value str, value index)
   return caml_copy_int64(res);
 }
 
-CAMLprim value caml_string_set16(value str, value index, value newval)
+CAMLprim value caml_bytes_get64(value str, value index)
+{
+  return caml_string_get64(str,index);
+}
+
+CAMLprim value caml_bytes_set16(value str, value index, value newval)
 {
   unsigned char b1, b2;
   intnat val;
@@ -191,7 +206,7 @@ CAMLprim value caml_string_set16(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_string_set32(value str, value index, value newval)
+CAMLprim value caml_bytes_set32(value str, value index, value newval)
 {
   unsigned char b1, b2, b3, b4;
   intnat val;
@@ -216,7 +231,7 @@ CAMLprim value caml_string_set32(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_string_set64(value str, value index, value newval)
+CAMLprim value caml_bytes_set64(value str, value index, value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   int64_t val;
@@ -372,12 +387,6 @@ CAMLprim value caml_fill_string(value s, value offset, value len, value init)
   return caml_fill_bytes (s, offset, len, init);
 }
 
-CAMLprim value caml_bitvect_test(value bv, value n)
-{
-  intnat pos = Long_val(n);
-  return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
-}
-
 CAMLexport value caml_alloc_sprintf(const char * format, ...)
 {
   va_list args;
@@ -452,4 +461,14 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   }
   return res;
 #endif
+}
+
+CAMLprim value caml_string_of_bytes(value bv)
+{
+  return bv;
+}
+
+CAMLprim value caml_bytes_of_string(value bv)
+{
+  return bv;
 }
