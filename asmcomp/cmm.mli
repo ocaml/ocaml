@@ -126,7 +126,7 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of float_comparison
-  | Craise of raise_kind
+  | Craise of Lambda.raise_kind
   | Ccheckbound
   | Cpoll
 
