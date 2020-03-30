@@ -508,7 +508,7 @@ let show_prim to_sig ppf lid =
     in
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
-    Printtyp.wrap_printing_env env
+    Printtyp.wrap_printing_env ~error:false env
       (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
   with
   | Not_found ->

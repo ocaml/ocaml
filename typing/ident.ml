@@ -15,7 +15,7 @@
 
 open Format
 
-type t = { stamp: int; name: string; mutable flags: int }
+type t = { stamp: int; name: string; flags: int }
 
 let global_flag = 1
 let predef_exn_flag = 2
@@ -30,7 +30,8 @@ let create s =
 
 let create_predef_exn s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; flags = predef_exn_flag }
+  { name = s; stamp = !currentstamp;
+    flags = predef_exn_flag lor global_flag }
 
 let create_persistent s =
   { name = s; stamp = 0; flags = global_flag }
@@ -40,6 +41,8 @@ let rename i =
   { i with stamp = !currentstamp }
 
 let name i = i.name
+
+let with_name i name = { i with name; }
 
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
 
@@ -71,9 +74,6 @@ let reinit () =
 
 let hide i =
   { i with stamp = -1 }
-
-let make_global i =
-  i.flags <- i.flags lor global_flag
 
 let global i =
   (i.flags land global_flag) <> 0

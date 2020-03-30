@@ -41,3 +41,5 @@ let safe_string = @@FORCE_SAFE_STRING@@
 let flat_float_array = @@FLAT_FLOAT_ARRAY@@
 
 let ocamldoc = @@OCAMLDOC@@
+
+let ocamldebug = @@OCAMLDOC@@

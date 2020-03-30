@@ -1,3 +1,23 @@
+(* TEST
+   include config
+   flags = "-w -55"
+   ocamlc_flags = "config.cmo"
+   ocamlopt_flags = "-inline 20 config.cmx"
+*)
+
+let eliminate_intermediate_float_record () =
+  let r = ref 0. in
+  for n = 1 to 1000 do
+    let open Complex in
+    let c = { re = float n; im = 0. } in
+    (* The following line triggers warning 55 twice when compiled without flambda *)
+    (* It would be better to disable this warning just here but since *)
+    (* this is a backend-warning, this is not currently possible *)
+    (* Hence the use of the -w-55 command-line flag for this test *)
+    r := !r +. (norm [@inlined]) ((add [@inlined]) c i);
+  done;
+  ignore (Sys.opaque_identity !r)
+
 module PR_6686 = struct
   type t =
    | A of float
@@ -33,10 +53,9 @@ let check_noalloc name f =
   let a2 = Gc.allocated_bytes () in
   let alloc = (a2 -. 2. *. a1 +. a0) in
 
-  (* is there a better to test whether we run in native code? *)
-  match Filename.basename Sys.argv.(0) with
-  | "program.byte" | "program.byte.exe" -> ()
-  | "program.native" | "program.native.exe" ->
+  match Sys.backend_type with
+  | Sys.Bytecode -> ()
+  | Sys.Native ->
       if alloc > 100. then
         failwith (Printf.sprintf "%s; alloc = %.0f" name alloc)
   | _ -> assert false
@@ -149,14 +168,6 @@ let ignore_useless_args () =
   ignore (g 0 10 5.)
 
 let () =
-  let flambda =
-    match Sys.getenv "FLAMBDA" with
-    | "true" -> true
-    | "false" -> false
-    | _ -> failwith "Cannot determine is flambda is enabled"
-    | exception Not_found -> failwith "Cannot determine is flambda is enabled"
-  in
-
   check_noalloc "classify float" unbox_classify_float;
   check_noalloc "compare float" unbox_compare_float;
   check_noalloc "float refs" unbox_float_refs;
@@ -164,10 +175,10 @@ let () =
   check_noalloc "unbox only if useful" unbox_only_if_useful;
   check_noalloc "ignore useless args" ignore_useless_args;
 
-  if flambda then begin
+  if Config.flambda then begin
     check_noalloc "float and int32 record" unbox_record;
     check_noalloc "eliminate intermediate immutable float record"
-      Float_inline.eliminate_intermediate_float_record;
+      eliminate_intermediate_float_record;
   end;
 
   check_noalloc "Gc.minor_words" unbox_minor_words;

@@ -43,12 +43,11 @@ val value_descriptions:
 val type_declarations:
   ?equality:bool ->
   loc:Location.t ->
-  Env.t -> string ->
+  Env.t -> mark:bool -> string ->
   type_declaration -> Ident.t -> type_declaration -> type_mismatch list
 
 val extension_constructors:
-  loc:Location.t ->
-  Env.t -> Ident.t ->
+  loc:Location.t -> Env.t -> mark:bool -> Ident.t ->
   extension_constructor -> extension_constructor -> bool
 (*
 val class_types:

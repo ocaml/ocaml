@@ -58,6 +58,10 @@ module type S =
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
+    val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
 module Make(Ord: OrderedType) = struct
@@ -477,4 +481,27 @@ module Make(Ord: OrderedType) = struct
 
     let choose_opt = min_binding_opt
 
+    let add_seq i m =
+      Seq.fold_left (fun m (k,v) -> add k v m) m i
+
+    let of_seq i = add_seq i empty
+
+    let rec seq_of_enum_ c () = match c with
+      | End -> Seq.Nil
+      | More (k,v,t,rest) -> Seq.Cons ((k,v), seq_of_enum_ (cons_enum t rest))
+
+    let to_seq m =
+      seq_of_enum_ (cons_enum m End)
+
+    let to_seq_from low m =
+      let rec aux low m c = match m with
+        | Empty -> c
+        | Node {l; v; d; r; _} ->
+            begin match Ord.compare v low with
+              | 0 -> More (v, d, r, c)
+              | n when n<0 -> aux low r c
+              | _ -> aux low l (More (v, d, r, c))
+            end
+      in
+      seq_of_enum_ (aux low m End)
 end

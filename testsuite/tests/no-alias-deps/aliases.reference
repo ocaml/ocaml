@@ -1,0 +1,15 @@
+File aliases.cmo
+Unit name: Aliases
+Interfaces imported:
+	00000000000000000000000000000000	Stdlib
+	00000000000000000000000000000000	D
+	00000000000000000000000000000000	CamlinternalFormatBasics
+	--------------------------------	C
+	--------------------------------	B
+	00000000000000000000000000000000	Aliases
+	--------------------------------	A
+Required globals:
+	D
+	Stdlib
+Uses unsafe features: no
+Force link: no

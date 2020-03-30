@@ -285,6 +285,9 @@ and set_of_closures = private {
 }
 
 and function_declarations = private {
+  is_classic_mode: bool;
+  (** Indicates whether this [function_declarations] was compiled
+      with -Oclassic. *)
   set_of_closures_id : Set_of_closures_id.t;
   (** An identifier (unique across all Flambda trees currently in memory)
       of the set of closures associated with this set of function
@@ -555,9 +558,25 @@ val create_function_declaration
   -> is_a_functor:bool
   -> function_declaration
 
+(** Create a function declaration based on another function declaration *)
+val update_function_declaration
+  : function_declaration
+  -> params:Parameter.t list
+  -> body:t
+  -> function_declaration
+
 (** Create a set of function declarations given the individual declarations. *)
 val create_function_declarations
-   : funs:function_declaration Variable.Map.t
+   : is_classic_mode:bool
+  -> funs:function_declaration Variable.Map.t
+  -> function_declarations
+
+(** Create a set of function declarations with a given set of closures
+    origin. *)
+val create_function_declarations_with_origin
+   : is_classic_mode:bool
+  -> funs:function_declaration Variable.Map.t
+  -> set_of_closures_origin:Set_of_closures_origin.t
   -> function_declarations
 
 (** Create a set of function declarations based on another set of function
@@ -565,6 +584,12 @@ val create_function_declarations
 val update_function_declarations
    : function_declarations
   -> funs:function_declaration Variable.Map.t
+  -> function_declarations
+
+val create_function_declarations_with_closures_origin
+   : is_classic_mode: bool
+  -> funs:function_declaration Variable.Map.t
+  -> set_of_closures_origin:Set_of_closures_origin.t
   -> function_declarations
 
 val import_function_declarations_for_pack

@@ -108,7 +108,7 @@ let stop_user_input () =
 (* Resume reading user input. *)
 let resume_user_input () =
   if not (List.mem_assoc !user_channel.io_fd !active_files) then begin
-    if !interactif then begin
+    if !interactif && !Parameters.prompt then begin
       print_string !current_prompt;
       flush Pervasives.stdout
       end;

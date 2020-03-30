@@ -7,7 +7,7 @@ let load s =
 
 (* Callback must be linked to load Unix dynamically *)
 let _ = Callback.register
-module CamlinternalBigarray = CamlinternalBigarray
+let _ = Stdlib.Bigarray.float32
 
 let () =
   ignore (Hashtbl.hash 42.0);

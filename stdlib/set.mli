@@ -258,6 +258,25 @@ module type S =
         This is usually more efficient than folding [add] over the list,
         except perhaps for lists with many duplicated elements.
         @since 4.02.0 *)
+
+    (** {6 Iterators} *)
+
+    val to_seq_from : elt -> t -> elt Seq.t
+    (** [to_seq_from x s] iterates on a subset of the elements of [s]
+        in ascending order, from [x] or above.
+        @since 4.07 *)
+
+    val to_seq : t -> elt Seq.t
+    (** Iterate on the whole set, in ascending order
+        @since 4.07 *)
+
+    val add_seq : elt Seq.t -> t -> t
+    (** Add the given elements to the set, in order.
+        @since 4.07 *)
+
+    val of_seq : elt Seq.t -> t
+    (** Build a set from the given bindings
+        @since 4.07 *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

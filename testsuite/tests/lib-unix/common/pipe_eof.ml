@@ -1,3 +1,7 @@
+(* TEST
+include unix
+*)
+
 let drain pipe =
   let max = 2048 in
   let buf = Buffer.create 2048 in

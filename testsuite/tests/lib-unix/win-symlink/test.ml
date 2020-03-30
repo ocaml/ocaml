@@ -1,3 +1,13 @@
+(* TEST
+
+   include unix
+* windows
+** has_symlink
+*** bytecode
+*** native
+
+*)
+
 let link1 = "link1"
 let link2 = "link2"
 

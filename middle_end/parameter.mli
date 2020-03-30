@@ -30,7 +30,6 @@ val var : t -> Variable.t
 (** Rename the inner variable of the parameter *)
 val rename
    : ?current_compilation_unit:Compilation_unit.t
-  -> ?append:string
   -> t
   -> t
 

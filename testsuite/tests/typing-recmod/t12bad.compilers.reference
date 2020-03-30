@@ -1,0 +1,2 @@
+File "t12bad.ml", line 11, characters 4-101:
+Error: In the definition of M.c, type 'b M.c should be 'a M.c

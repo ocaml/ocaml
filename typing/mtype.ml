@@ -107,6 +107,21 @@ and strengthen_decl ~aliasable env md p =
 
 let () = Env.strengthen := strengthen
 
+let scrape_for_type_of env mty =
+  let rec loop env path mty =
+    match mty, path with
+    | Mty_alias(_, path), _ -> begin
+        try
+          let md = Env.find_module path env in
+          loop env (Some path) md.md_type
+        with Not_found -> mty
+      end
+    | mty, Some path ->
+        strengthen ~aliasable:false env mty path
+    | _ -> mty
+  in
+  loop env None mty
+
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
    traversed. *)
@@ -386,14 +401,14 @@ let collect_arg_paths mty =
   PathSet.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
     !paths Ident.Set.empty
 
-let rec remove_aliases env excl mty =
+let rec remove_aliases_mty env excl mty =
   match mty with
     Mty_signature sg ->
       Mty_signature (remove_aliases_sig env excl sg)
   | Mty_alias _ ->
       let mty' = Env.scrape_alias env mty in
       if mty' = mty then mty else
-      remove_aliases env excl mty'
+      remove_aliases_mty env excl mty'
   | mty ->
       mty
 
@@ -406,7 +421,7 @@ and remove_aliases_sig env excl sg =
           Mty_alias _ when Ident.Set.mem id excl ->
             md.md_type
         | mty ->
-            remove_aliases env excl mty
+            remove_aliases_mty env excl mty
       in
       Sig_module(id, {md with md_type = mty} , rs) ::
       remove_aliases_sig (Env.add_module id mty env) excl rem
@@ -416,12 +431,14 @@ and remove_aliases_sig env excl sg =
   | it :: rem ->
       it :: remove_aliases_sig env excl rem
 
-let remove_aliases env sg =
-  let excl = collect_arg_paths sg in
-  (* PathSet.iter (fun p -> Format.eprintf "%a@ " Printtyp.path p) excl;
-  Format.eprintf "@."; *)
-  remove_aliases env excl sg
 
+let scrape_for_type_of ~remove_aliases env mty =
+  if remove_aliases then begin
+    let excl = collect_arg_paths mty in
+    remove_aliases_mty env excl mty
+  end else begin
+    scrape_for_type_of env mty
+  end
 
 (* Lower non-generalizable type variables *)
 

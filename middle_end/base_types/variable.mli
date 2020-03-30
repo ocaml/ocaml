@@ -28,19 +28,20 @@
 
 include Identifiable.S
 
-val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
+val create
+   : ?current_compilation_unit:Compilation_unit.t
+  -> Internal_variable_names.t
+  -> t
 val create_with_same_name_as_ident : Ident.t -> t
-
-val clambda_name : t -> string
-(* CR-someday pchambart: Should we propagate Variable.t into clambda ??? *)
 
 val rename
    : ?current_compilation_unit:Compilation_unit.t
-  -> ?append:string
   -> t
   -> t
 
 val in_compilation_unit : t -> Compilation_unit.t -> bool
+
+val name : t -> string
 
 val unique_name : t -> string
 

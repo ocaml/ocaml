@@ -693,7 +693,7 @@ static uintnat nativeint_deserialize(void * dst)
   default:
     caml_deserialize_error("input_value: ill-formed native integer");
   }
-  return sizeof(long);
+  return sizeof(intnat);
 }
 
 static const struct custom_fixed_length nativeint_length = { 4, 8 };

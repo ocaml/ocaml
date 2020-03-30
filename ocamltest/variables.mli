@@ -25,7 +25,7 @@ val compare : t -> t -> int
 
 exception Empty_variable_name
 
-exception Variable_already_registered
+exception Variable_already_registered of string
 
 exception No_such_variable of string
 

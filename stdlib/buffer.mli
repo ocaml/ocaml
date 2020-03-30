@@ -157,3 +157,24 @@ val truncate : t -> int -> unit
   Note: the internal byte sequence is not shortened.
   Raise [Invalid_argument] if [len < 0] or [len > length b].
   @since 4.05.0 *)
+
+(** {6 Iterators} *)
+
+val to_seq : t -> char Seq.t
+(** Iterate on the buffer, in increasing order.
+    Modification of the buffer during iteration is undefined behavior.
+    @since 4.07 *)
+
+val to_seqi : t -> (int * char) Seq.t
+(** Iterate on the buffer, in increasing order, yielding indices along chars.
+    Modification of the buffer during iteration is undefined behavior.
+    @since 4.07 *)
+
+val add_seq : t -> char Seq.t -> unit
+(** Add chars to the buffer
+    @since 4.07 *)
+
+val of_seq : char Seq.t -> t
+(** Create a buffer from the generator
+    @since 4.07 *)
+

@@ -354,6 +354,38 @@ let stats h =
     max_bucket_length = mbl;
     bucket_histogram = histo }
 
+(** {6 Iterators} *)
+
+let to_seq tbl =
+  (* capture current array, so that even if the table is resized we
+     keep iterating on the same array *)
+  let tbl_data = tbl.data in
+  (* state: index * next bucket to traverse *)
+  let rec aux i buck () = match buck with
+    | Empty ->
+        if i = Array.length tbl_data
+        then Seq.Nil
+        else aux(i+1) tbl_data.(i) ()
+    | Cons {key; data; next} ->
+        Seq.Cons ((key, data), aux i next)
+  in
+  aux 0 Empty
+
+let to_seq_keys m = Seq.map fst (to_seq m)
+
+let to_seq_values m = Seq.map snd (to_seq m)
+
+let add_seq tbl i =
+  Seq.iter (fun (k,v) -> add tbl k v) i
+
+let replace_seq tbl i =
+  Seq.iter (fun (k,v) -> replace tbl k v) i
+
+let of_seq i =
+  let tbl = create 16 in
+  replace_seq tbl i;
+  tbl
+
 (* Functorial interface *)
 
 module type HashedType =
@@ -390,6 +422,12 @@ module type S =
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length: 'a t -> int
     val stats: 'a t -> statistics
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_keys : _ t -> key Seq.t
+    val to_seq_values : 'a t -> 'a Seq.t
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
 module type SeededS =
@@ -412,6 +450,12 @@ module type SeededS =
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_keys : _ t -> key Seq.t
+    val to_seq_values : 'a t -> 'a Seq.t
+    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+    val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
 module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
@@ -531,6 +575,12 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let fold = fold
     let length = length
     let stats = stats
+    let to_seq = to_seq
+    let to_seq_keys = to_seq_keys
+    let to_seq_values = to_seq_values
+    let add_seq = add_seq
+    let replace_seq = replace_seq
+    let of_seq = of_seq
   end
 
 module Make(H: HashedType): (S with type key = H.t) =

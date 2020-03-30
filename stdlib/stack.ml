@@ -42,3 +42,15 @@ let length s = s.len
 let iter f s = List.iter f s.c
 
 let fold f acc s = List.fold_left f acc s.c
+
+(** {6 Iterators} *)
+
+let to_seq s = List.to_seq s.c
+
+let add_seq q i = Seq.iter (fun x -> push x q) i
+
+let of_seq g =
+  let s = create() in
+  add_seq s g;
+  s
+

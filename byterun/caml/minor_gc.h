@@ -20,6 +20,7 @@
 #include "addrmap.h"
 #include "config.h"
 
+
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \
   t *end;                      \

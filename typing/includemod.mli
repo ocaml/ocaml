@@ -19,8 +19,20 @@ open Typedtree
 open Types
 open Format
 
+(** Type describing which arguments of an inclusion to consider as used
+    for the usage warnings. [Mark_both] is the default. *)
+type mark =
+  | Mark_both
+      (** Mark definitions used from both arguments *)
+  | Mark_positive
+      (** Mark definitions used from the positive (first) argument *)
+  | Mark_negative
+      (** Mark definitions used from the negative (second) argument *)
+  | Mark_neither
+      (** Do not mark definitions used from either argument *)
+
 val modtypes:
-  loc:Location.t -> Env.t ->
+  loc:Location.t -> Env.t -> ?mark:mark ->
   module_type -> module_type -> module_coercion
 
 val check_modtype_inclusion :
@@ -29,13 +41,15 @@ val check_modtype_inclusion :
     functor application F(M) is well typed, where mty2 is the type of
     the argument of F and path1/mty1 is the path/unstrenghened type of M. *)
 
-val signatures: Env.t -> signature -> signature -> module_coercion
+val signatures: Env.t -> ?mark:mark ->
+  signature -> signature -> module_coercion
 
 val compunit:
-      Env.t -> string -> signature -> string -> signature -> module_coercion
+      Env.t -> ?mark:mark -> string -> signature ->
+      string -> signature -> module_coercion
 
 val type_declarations:
-  loc:Location.t -> Env.t ->
+  loc:Location.t -> Env.t -> ?mark:mark ->
   Ident.t -> type_declaration -> type_declaration -> unit
 
 val print_coercion: formatter -> module_coercion -> unit

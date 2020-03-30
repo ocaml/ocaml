@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 (* PR 4557 *)
 module PR_4557 = struct
   module F ( X : Set.OrderedType ) = struct

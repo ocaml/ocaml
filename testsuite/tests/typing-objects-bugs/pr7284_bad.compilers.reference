@@ -1,0 +1,4 @@
+File "pr7284_bad.ml", line 35, characters 30-62:
+Error (warning 8): this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+V2 _

@@ -43,7 +43,7 @@ val nat_toplevel_name: Ident.t -> Ident.t * int
 val primitive_declarations: Primitive.description list ref
 
 type error =
-  Circular_dependency of Ident.t
+  Circular_dependency of Ident.t list
 | Conflicting_inline_attributes
 
 exception Error of Location.t * error

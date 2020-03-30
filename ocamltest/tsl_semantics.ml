@@ -41,7 +41,20 @@ let apply_modifiers env modifiers_name =
   | Environments.Modifiers_name_not_found name ->
     no_such_modifiers modifiers_name.loc name
 
-let add_or_append f loc variable_name value env =
+let rec add_to_env decl loc variable_name value env =
+  match (Variables.find_variable variable_name, decl) with
+    | (None, true) ->
+      let newvar = Variables.make (variable_name,"User variable") in
+      Variables.register_variable newvar;
+      add_to_env false loc variable_name value env
+    | (Some variable, false) ->
+      Environments.add variable value env
+    | (None, false) ->
+      raise (Variables.No_such_variable variable_name)
+    | (Some _, true) ->
+      raise (Variables.Variable_already_registered variable_name)
+
+let append_to_env loc variable_name value env =
   let variable =
     match Variables.find_variable variable_name with
     | None ->
@@ -50,15 +63,15 @@ let add_or_append f loc variable_name value env =
         variable
   in
   try
-    f variable value env
+    Environments.append variable value env
   with Variables.No_such_variable name ->
     no_such_variable loc name
 
 let interprete_environment_statement env statement = match statement.node with
-  | Assignment (var, value) ->
-      add_or_append Environments.add statement.loc var.node value.node env
+  | Assignment (decl, var, value) ->
+      add_to_env decl statement.loc var.node value.node env
   | Append (var, value) ->
-      add_or_append Environments.append statement.loc var.node value.node env
+      append_to_env statement.loc var.node value.node env
   | Include modifiers_name ->
       apply_modifiers env modifiers_name
 

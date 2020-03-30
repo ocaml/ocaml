@@ -1,3 +1,36 @@
+(* TEST
+
+files = "reflector.ml"
+
+* setup-ocamlc.byte-build-env
+program = "${test_build_directory}/redirections.byte"
+** ocamlc.byte
+program = "${test_build_directory}/reflector.exe"
+all_modules = "reflector.ml"
+*** ocamlc.byte
+include unix
+program = "${test_build_directory}/redirections.byte"
+all_modules= "redirections.ml"
+**** check-ocamlc.byte-output
+***** run
+****** check-program-output
+
+* setup-ocamlopt.byte-build-env
+program = "${test_build_directory}/redirections.opt"
+** ocamlopt.byte
+program = "${test_build_directory}/reflector.exe"
+all_modules = "reflector.ml"
+*** ocamlopt.byte
+include unix
+program = "${test_build_directory}/redirections.opt"
+all_modules= "redirections.ml"
+**** check-ocamlopt.byte-output
+***** run
+****** check-program-output
+
+*)
+
+
 let cat file =
   let fd = Unix.openfile file [Unix.O_RDONLY] 0 in
   let buf = Bytes.create 1024 in
@@ -12,7 +45,7 @@ let out fd txt =
 let refl =
   Filename.concat Filename.current_dir_name "reflector.exe"
 
-let test_createprocess () =
+let test_createprocess systemenv =
   let f_out =
     Unix.(openfile "./tmpout.txt" [O_WRONLY;O_TRUNC;O_CREAT;O_CLOEXEC] 0o600) in
   let f_err =
@@ -22,8 +55,8 @@ let test_createprocess () =
   let pid =
     Unix.create_process_env
        refl
-       [| refl; "i2o"; "i2e"; "o"; "123"; "e"; "456"; "i2o"; "v"; "XVAR" |]
-       [| "XVAR=xvar" |]
+       [| refl; "-i2o"; "-i2e"; "-o"; "123"; "-e"; "456"; "-i2o"; "-v"; "XVAR" |]
+       (Array.append [| "XVAR=xvar" |] systemenv)
        p_exit f_out f_err in
   out p_entrance "aaaa\n";
   out p_entrance "bbbb\n";
@@ -43,7 +76,7 @@ let test_2ampsup1 () =    (* 2>&1 redirection, cf. GPR#1105 *)
   let pid =
     Unix.create_process
       refl
-      [| refl; "o"; "123"; "e"; "456"; "o"; "789" |]
+      [| refl; "-o"; "123"; "-e"; "456"; "-o"; "789" |]
       Unix.stdin Unix.stdout Unix.stdout in
   let (_, status) = Unix.waitpid [] pid in
   if status <> Unix.WEXITED 0 then
@@ -55,14 +88,14 @@ let test_swap12 () =    (* swapping stdout and stderr *)
   let pid =
     Unix.create_process
       refl
-      [| refl; "e"; "123" |]
+      [| refl; "-e"; "123" |]
       Unix.stdin Unix.stderr Unix.stdout in
   let (_, status) = Unix.waitpid [] pid in
   if status <> Unix.WEXITED 0 then
     out Unix.stdout "!!! reflector exited with an error\n"
 
 let test_open_process_in () =
-  let ic = Unix.open_process_in (refl ^ " o 123 o 456") in
+  let ic = Unix.open_process_in (refl ^ " -o 123 -o 456") in
   out Unix.stdout (input_line ic ^ "\n");
   out Unix.stdout (input_line ic ^ "\n");
   let status = Unix.close_process_in ic in
@@ -70,17 +103,17 @@ let test_open_process_in () =
     out Unix.stdout "!!! reflector exited with an error\n"
 
 let test_open_process_out () =
-  let oc = Unix.open_process_out (refl ^ " i2o i2o i2o") in
+  let oc = Unix.open_process_out (refl ^ " -i2o -i2o -i2o") in
   output_string oc "aa\nbbbb\n"; close_out oc;
   let status = Unix.close_process_out oc in
   if status <> Unix.WEXITED 0 then
     out Unix.stdout "!!! reflector exited with an error\n"
 
-let test_open_process_full () =
+let test_open_process_full systemenv =
   let ((o, i, e) as res) =
     Unix.open_process_full
-      (refl ^ " o 123 i2o e 456 i2e v XVAR")
-      [|"XVAR=xvar"|] in
+      (refl ^ " -o 123 -i2o -e 456 -i2e -v XVAR")
+      (Array.append [|"XVAR=xvar"|] systemenv) in
   output_string i "aa\nbbbb\n"; close_out i;
   for _i = 1 to 3 do 
     out Unix.stdout (input_line o ^ "\n")
@@ -93,12 +126,17 @@ let test_open_process_full () =
     out Unix.stdout "!!! reflector exited with an error\n"
 
 let _ =
+  let ocamlrunparam =
+    match Sys.getenv_opt "OCAMLRUNPARAM" with
+    | None -> [||]
+    | Some v -> [|"OCAMLRUNPARAM=" ^ v|]
+  in
   (* The following 'close' makes things more difficult.
      Under Unix it works fine, but under Win32 create_process 
      gives an error if one of the standard handles is closed. *)
   (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";
-  test_createprocess();
+  test_createprocess ocamlrunparam;
   out Unix.stdout "** create_process 2>&1 redirection\n";
   test_2ampsup1();
   out Unix.stdout "** create_process swap 1-2\n";
@@ -108,6 +146,4 @@ let _ =
   out Unix.stdout "** open_process_out\n";
   test_open_process_out();
   out Unix.stdout "** open_process_full\n";
-  test_open_process_full()
-
-
+  test_open_process_full ocamlrunparam
