@@ -512,6 +512,25 @@ coreboot:
 # Check if fixpoint reached
 	$(MAKE) compare
 
+OLD_STDLIB_CMI=arg.cmi array.cmi arrayLabels.cmi buffer.cmi bytes.cmi bytesLabels.cmi callback.cmi char.cmi complex.cmi digest.cmi ephemeron.cmi filename.cmi format.cmi gc.cmi genlex.cmi hashtbl.cmi int32.cmi int64.cmi lazy.cmi lexing.cmi list.cmi listLabels.cmi map.cmi marshal.cmi moreLabels.cmi nativeint.cmi obj.cmi oo.cmi parsing.cmi printexc.cmi printf.cmi queue.cmi random.cmi scanf.cmi set.cmi sort.cmi spacetime.cmi stack.cmi stdLabels.cmi stream.cmi string.cmi stringLabels.cmi sys.cmi uchar.cmi weak.cmi pervasives.cmi
+
+.PHONY: clean_old_stdlib_cmi
+clean_old_stdlib_cmi:
+	cd boot && rm -f $(OLD_STDLIB_CMI)
+
+.PHONY: coreboot_pervasives_stdlib_change
+coreboot_pervasives_stdlib_change:
+# Save the original bootstrap compiler
+	$(MAKE) backup
+# Promote the new compiler and the new runtime
+	$(MAKE) CAMLRUN=byterun/ocamlrun promote
+# Rebuild the core system
+	$(MAKE) partialclean
+	$(MAKE) clean_old_stdlib_cmi
+	$(MAKE) core
+# Check if fixpoint reached
+	$(MAKE) compare
+
 # Recompile the system using the bootstrap compiler
 
 .PHONY: all
