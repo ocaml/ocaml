@@ -49,6 +49,8 @@ module type Common_options = sig
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
 
+  val _dno_unique_ids : unit -> unit
+  val _dunique_ids : unit -> unit
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit

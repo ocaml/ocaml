@@ -104,7 +104,8 @@ let enter_type rec_flag env sdecl id =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -352,7 +353,7 @@ let make_effect_constructor env type_param sargs sret =
   let targs = List.map (transl_simple_type env false) sargs in
   let args = List.map (fun cty -> cty.ctyp_type) targs in
   let tret = transl_simple_type env false sret in
-  Ctype.unify_var env (Ctype.instance env type_param) tret.ctyp_type;
+  Ctype.unify_var env (Ctype.instance type_param) tret.ctyp_type;
   let ret_type = Ctype.newconstr type_path [tret.ctyp_type] in
   let tret_type =
     { ctyp_desc = Ttyp_constr (type_path, type_lid, targs);
@@ -447,7 +448,6 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
-        assert (scstrs <> []);
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
             [] -> ()
@@ -537,7 +537,8 @@ let transl_declaration env sdecl id =
         type_private = sdecl.ptype_private;
         type_manifest = man;
         type_variance = List.map (fun _ -> Variance.full) params;
-        type_newtype_level = None;
+        type_is_newtype = false;
+        type_expansion_scope = None;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
         type_immediate = false;
@@ -1434,7 +1435,7 @@ let transl_extension_rebind env type_path type_params typext_params priv lid =
   let (args, cstr_res) = Ctype.instance_constructor cdescr in
   let res, ret_type =
     if cdescr.cstr_generalized then
-      let params = Ctype.instance_list env type_params in
+      let params = Ctype.instance_list type_params in
       let res = Ctype.newconstr type_path params in
       let ret_type = Some (Ctype.newconstr type_path params) in
         res, ret_type
@@ -1514,7 +1515,7 @@ let transl_extension_constructor env type_path type_params
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
-            let params = Ctype.instance_list env type_params in
+            let params = Ctype.instance_list type_params in
             let res = Ctype.newconstr type_path params in
             let ret_type = Some (Ctype.newconstr type_path params) in
               res, ret_type
@@ -1663,7 +1664,7 @@ let transl_type_extension extend env loc styext =
   let ttype_params = make_params env styext.ptyext_params in
   let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
   List.iter2 (Ctype.unify_var env)
-    (Ctype.instance_list env type_decl.type_params)
+    (Ctype.instance_list type_decl.type_params)
     type_params;
   let constructors =
     List.map (transl_extension_constructor env type_path
@@ -1989,7 +1990,8 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_private = priv;
       type_manifest = man;
       type_variance = [];
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -2037,7 +2039,8 @@ let abstract_type_decl arity =
       type_private = Public;
       type_manifest = None;
       type_variance = replicate_list Variance.full arity;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = false;

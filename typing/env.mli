@@ -91,10 +91,6 @@ val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
-val add_gadt_instance_level: int -> t -> t
-val gadt_instance_level: t -> type_expr -> int option
-val add_gadt_instances: t -> int -> type_expr list -> unit
-val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
@@ -151,7 +147,6 @@ val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)

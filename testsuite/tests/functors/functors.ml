@@ -1,3 +1,10 @@
+(* TEST
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+      flags = "-dlambda -dno-unique-ids"
+   *** check-ocamlc.byte-output
+*)
+
 module type S = sig
   val foo : int -> int
 end

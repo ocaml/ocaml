@@ -191,7 +191,7 @@ let destroyed_at_oper = function
   | Iop(Ialloc _ | Iintop Imulh) -> [| eax |]
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| eax |]
   | Iop(Iintoffloat) -> [| eax |]
-  | Iifthenelse(Ifloattest(_, _), _, _) -> [| eax |]
+  | Iifthenelse(Ifloattest _, _, _) -> [| eax |]
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs

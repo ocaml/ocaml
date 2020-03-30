@@ -56,7 +56,7 @@ let libwin32unix = make
 
 let windows_OS = "Windows_NT"
 
-let get_OS () = try Sys.getenv "OS" with Not_found -> ""
+let get_OS () = Sys.safe_getenv "OS"
 
 let windows = make
   "windows"
@@ -83,6 +83,18 @@ let not_bsd = make
   (Actions_helpers.pass_or_skip (Ocamltest_config.system <> bsd_system)
     "not on a BSD system"
     "on a BSD system")
+
+let arch32 = make
+  "arch32"
+  (Actions_helpers.pass_or_skip (Sys.word_size = 32)
+    "32-bit architecture"
+    "non-32-bit architecture")
+
+let arch64 = make
+  "arch64"
+  (Actions_helpers.pass_or_skip (Sys.word_size = 64)
+    "64-bit architecture"
+    "non-64-bit architecture")
 
 let setup_build_env = make
   "setup-build-env"
@@ -129,6 +141,8 @@ let _ =
     not_windows;
     bsd;
     not_bsd;
+    arch32;
+    arch64;
     setup_build_env;
     run;
     script;

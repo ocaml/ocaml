@@ -1,3 +1,9 @@
+(* TEST
+   plugins="odoc_test.ml"
+   * ocamldoc
+    flags="-I ${ocamlsrcdir}/ocamldoc"
+*)
+
 module Foo = struct type u type t = int let x = 1 end;;
 module type TFoo = module type of Foo;;
 

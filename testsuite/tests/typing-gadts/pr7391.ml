@@ -60,7 +60,7 @@ let _ =
 - : < child : unit -> child2; previous : child2 option > = <obj>
 |}]
 
-(* Didn't work in 4.03 *)
+(* Didn't work in 4.03, but works in 4.07 *)
 let _ =
   object(self)
     method previous = None
@@ -73,10 +73,23 @@ let _ =
       in o
   end;;
 [%%expect{|
-Line _, characters 16-22:
-          inherit child2
-                  ^^^^^^
-Error: The method parent has type < child : 'a; previous : 'b option >
-       but is expected to have type < previous : < .. > option; .. >
-       Self type cannot escape its class
+- : < child : child2; previous : child2 option > = <obj>
+|}]
+
+(* Also didn't work in 4.03 *)
+
+type gadt = Not_really_though : gadt
+
+let _ =
+  object(self)
+    method previous = None
+    method child Not_really_though =
+      object
+        inherit child1 self
+        inherit child2
+      end
+  end;;
+[%%expect{|
+type gadt = Not_really_though : gadt
+- : < child : gadt -> child2; previous : child2 option > = <obj>
 |}]

@@ -58,9 +58,16 @@ val const_boxed_int_expr
   -> 'a
   -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
-val const_comparison_expr
+val const_integer_comparison_expr
    : Flambda.named
-  -> Lambda.comparison
+  -> Lambda.integer_comparison
+  -> 'a
+  -> 'a
+  -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
+
+val const_float_comparison_expr
+   : Flambda.named
+  -> Lambda.float_comparison
   -> 'a
   -> 'a
   -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t

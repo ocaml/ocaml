@@ -165,8 +165,8 @@ let emit_call_bound_error bd =
 (* Negate a comparison *)
 
 let negate_integer_comparison = function
-    Isigned cmp   -> Isigned(negate_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(negate_comparison cmp)
+  | Isigned cmp   -> Isigned(negate_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(negate_integer_comparison cmp)
 
 (* Names of various instructions *)
 
@@ -726,18 +726,20 @@ let emit_instr i =
             `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
             let comp = name_for_comparison cmp in
             `	b{emit_string comp}	{emit_label lbl}\n`; 2
-        | Ifloattest(cmp, neg) ->
-            let comp = (match (cmp, neg) with
-                          (Ceq, false) | (Cne, true) -> "eq"
-                        | (Cne, false) | (Ceq, true) -> "ne"
-                        | (Clt, false) -> "cc"
-                        | (Clt, true)  -> "cs"
-                        | (Cle, false) -> "ls"
-                        | (Cle, true)  -> "hi"
-                        | (Cgt, false) -> "gt"
-                        | (Cgt, true)  -> "le"
-                        | (Cge, false) -> "ge"
-                        | (Cge, true)  -> "lt") in
+        | Ifloattest cmp ->
+            let comp =
+              match cmp with
+              | CFeq -> "eq"
+              | CFneq -> "ne"
+              | CFlt -> "cc"
+              | CFnlt -> "cs"
+              | CFle -> "ls"
+              | CFnle -> "hi"
+              | CFgt -> "gt"
+              | CFngt -> "le"
+              | CFge -> "ge"
+              | CFnge -> "lt"
+            in
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	fmstat\n`;
             `	b{emit_string comp}	{emit_label lbl}\n`; 3

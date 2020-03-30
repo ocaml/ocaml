@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 (* Classic producer-consumer *)
 
 type 'a prodcons =

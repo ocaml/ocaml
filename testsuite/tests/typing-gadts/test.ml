@@ -1164,3 +1164,69 @@ let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
 [%%expect{|
 val f : ('a, 'b) eq -> ('b, int) eq -> 'a -> 'b -> unit = <fun>
 |}];;
+
+let f : type a b. (a,b) eq -> (a,int) eq -> a -> b -> _ = fun ab aint a b ->
+  let Eq = aint in
+  let x =
+    let Eq = ab in
+    if true then a else b
+  in ignore x
+;; (* ok *)
+[%%expect{|
+Line _, characters 24-25:
+      if true then a else b
+                          ^
+Error: This expression has type b = int
+       but an expression was expected of type a = int
+       Type b = int is not compatible with type int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}];;
+
+let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
+  let Eq = bint in
+  let x =
+    let Eq = ab in
+    if true then a else b
+  in ignore x
+;; (* ok *)
+[%%expect{|
+Line _, characters 24-25:
+      if true then a else b
+                          ^
+Error: This expression has type b = int
+       but an expression was expected of type a = int
+       Type int is not compatible with type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}];;
+
+let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) =
+  let Eq = w1 in
+  let Eq = w2 in
+  if b then x else y
+;;
+[%%expect{|
+Line _, characters 19-20:
+    if b then x else y
+                     ^
+Error: This expression has type b = int
+       but an expression was expected of type a = int
+       Type a = int is not compatible with type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}];;
+
+let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) =
+  let Eq = w1 in
+  let Eq = w2 in
+  if b then y else x
+[%%expect{|
+Line _, characters 19-20:
+    if b then y else x
+                     ^
+Error: This expression has type a = int
+       but an expression was expected of type b = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}];;

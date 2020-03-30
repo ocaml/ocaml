@@ -43,6 +43,7 @@ COMPILEROBJS=\
   ../../utils/arg_helper.cmo ../../utils/clflags.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
+  ../../utils/build_path_prefix_map.cmo \
   ../../parsing/asttypes.cmi \
   ../../parsing/location.cmo ../../parsing/longident.cmo \
   ../../parsing/docstrings.cmo ../../parsing/syntaxerr.cmo \

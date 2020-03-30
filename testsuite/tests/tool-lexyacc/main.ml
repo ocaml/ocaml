@@ -1,3 +1,12 @@
+(* TEST
+   modules = "syntax.ml gram_aux.ml grammar.mly scan_aux.ml scanner.mll lexgen.ml output.ml"
+   files = "input"
+   arguments = "input"
+   ocamllex_flags = " -q "
+   ocamlyacc_flags = " -q "
+   flags = " -w a "
+*)
+
 (* The lexer generator. Command-line parsing. *)
 
 open Syntax

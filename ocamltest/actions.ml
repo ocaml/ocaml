@@ -27,6 +27,8 @@ let action_name a = a.name
 
 let make n c = { name = n; body = c; hook = None }
 
+let update action code = { action with body = code } 
+
 let compare a1 a2 = String.compare a1.name a2.name
 
 let (actions : (string, t) Hashtbl.t) = Hashtbl.create 10
