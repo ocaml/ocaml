@@ -775,6 +775,7 @@ let descriptions =
    64, "-unsafe used with a preprocessor returning a syntax tree.";
    65, "Type declaration defining a new '()' constructor.";
    66, "Unused open! statement.";
+   67, "Unused functor parameter.";
   ]
 ;;
 
