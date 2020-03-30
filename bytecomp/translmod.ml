@@ -836,7 +836,7 @@ let transl_store_subst = ref Ident.Map.empty
 
 let nat_toplevel_name id =
   try match Ident.Map.find id !transl_store_subst with
-    | Lprim(Pfield pos, [Lprim(Pgetglobal glob, [], _)], _) -> (glob,pos)
+    | Lprim(Pfield (pos, _, _), [Lprim(Pgetglobal glob, [], _)], _) -> (glob,pos)
     | _ -> raise Not_found
   with Not_found ->
     fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
@@ -1053,7 +1053,7 @@ let transl_store_structure glob map prims str =
       match cc with
         Tcoerce_none ->
           Ident.Map.add id
-            (Lprim(Pfield pos,
+            (Lprim(Pfield (pos, Pointer, Immutable),
                    [Lprim(Pgetglobal glob, [], Location.none)],
                    Location.none))
             subst

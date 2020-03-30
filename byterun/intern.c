@@ -759,7 +759,7 @@ CAMLexport value caml_input_value_from_block(const char * data, intnat len)
   return input_val_from_block(&h);
 }
 
-CAMLexport value caml_input_val_from_string(value str, intnat ofs)
+CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
 {
   CAMLparam1 (str);
   CAMLlocal1 (obj);
@@ -780,7 +780,12 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 
 CAMLprim value caml_input_value_from_string(value str, value ofs)
 {
-  return caml_input_val_from_string(str, Long_val(ofs));
+  return caml_input_val_from_bytes(str, Long_val(ofs));
+}
+
+CAMLprim value caml_input_value_from_bytes(value str, value ofs)
+{
+  return caml_input_val_from_bytes(str, Long_val(ofs));
 }
 
 /* [ofs] is a [value] that represents a number of bytes
