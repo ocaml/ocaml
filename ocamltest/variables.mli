@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of environment variabless *)
+(* Definition of environment variables *)
+
+type value = string
+
+type exporter = value -> string
 
 type t
 
@@ -27,6 +31,8 @@ exception No_such_variable of string
 
 val make : string * string -> t
 
+val make_with_exporter : exporter -> string * string -> t
+
 val name_of_variable : t -> string
 
 val description_of_variable : t -> string
@@ -34,3 +40,5 @@ val description_of_variable : t -> string
 val register_variable : t -> unit
 
 val find_variable : string -> t option
+
+val string_of_binding : t -> value -> string

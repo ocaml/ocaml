@@ -146,6 +146,8 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _linscan = option "-linscan"
   let _nopervasives = option "-nopervasives"
+  let _dno_unique_ids = option "-dno-unique_ids"
+  let _dunique_ids = option "-dunique_ids"
   let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
   let _dtypedtree = option "-dtypedtree"

@@ -48,7 +48,7 @@ ocamltest_program := $(or \
   $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
   $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
 
-ocamltest := $(FLEXLINK_PREFIX) $(ocamltest_program)
+ocamltest := $(FLEXLINK_PREFIX) SORT=$(SORT) $(ocamltest_program)
 
 .PHONY: default
 default:

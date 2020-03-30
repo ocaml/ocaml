@@ -73,7 +73,7 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Porbint kind when kind = I.kind -> eval I.logor
     | Pxorbint kind when kind = I.kind -> eval I.logxor
     | Pbintcomp (kind, c) when kind = I.kind ->
-      S.const_comparison_expr expr c n1 n2
+      S.const_integer_comparison_expr expr c n1 n2
     | _ -> expr, A.value_unknown Other, C.Benefit.zero
 
   let simplify_binop_int (p : Lambda.primitive) (kind : I.t A.boxed_int)

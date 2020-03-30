@@ -97,8 +97,8 @@ endif
 #############
 
 INCLUDES_DEP=\
-  -I $(ROOTDIR)/parsing \
   -I $(ROOTDIR)/utils \
+  -I $(ROOTDIR)/parsing \
   -I $(ROOTDIR)/typing \
   -I $(ROOTDIR)/driver \
   -I $(ROOTDIR)/bytecomp \

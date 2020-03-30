@@ -1,3 +1,7 @@
+(* TEST
+  * native
+*)
+
 (* Check the effectiveness of optimized compilation of tuple binding
 
    Ref: http://caml.inria.fr/mantis/view.php?id=4800

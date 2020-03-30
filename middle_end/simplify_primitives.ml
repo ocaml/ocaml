@@ -115,7 +115,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
-  | Pintcomp Cneq when phys_equal approxs ->
+  | Pintcomp Cne when phys_equal approxs ->
     S.const_bool_expr expr false
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
        anything about whether the two values concerned are unequal.  To judge
@@ -140,7 +140,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        invalid. *)
   | Pintcomp Ceq when phys_different approxs ->
     S.const_bool_expr expr false
-  | Pintcomp Cneq when phys_different approxs ->
+  | Pintcomp Cne when phys_different approxs ->
     S.const_bool_expr expr true
     (* If two values are structurally different we are certain they can never
        be shared*)
@@ -174,13 +174,13 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Plslint when shift_precond -> S.const_int_expr expr (x lsl y)
       | Plsrint when shift_precond -> S.const_int_expr expr (x lsr y)
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
-      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
+      | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_char x; Value_char y] ->
       begin match p with
-      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
+      | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
@@ -220,7 +220,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Psubfloat -> S.const_float_expr expr (n1 -. n2)
       | Pmulfloat -> S.const_float_expr expr (n1 *. n2)
       | Pdivfloat -> S.const_float_expr expr (n1 /. n2)
-      | Pfloatcomp c  -> S.const_comparison_expr expr c n1 n2
+      | Pfloatcomp c  -> S.const_float_comparison_expr expr c n1 n2
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [A.Value_boxed_int(A.Nativeint, n)] ->

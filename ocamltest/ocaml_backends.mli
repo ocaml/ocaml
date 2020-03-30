@@ -17,6 +17,10 @@
 
 type t = Native | Bytecode
 
+val is_bytecode : t -> bool
+
+val is_native : t -> bool
+
 val string_of_backend : t -> string
 
 val make_backend_function : 'a -> 'a -> t -> 'a

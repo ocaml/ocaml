@@ -758,3 +758,12 @@ R.M.f 3;;
 module rec R : sig module M = M end
 - : int = 3
 |}];;
+
+module M = struct type t end
+module type S = sig module N = M val x : N.t end
+module type T = S with module N := M;;
+[%%expect{|
+module M : sig type t end
+module type S = sig module N = M val x : N.t end
+module type T = sig val x : M.t end
+|}];;

@@ -22,3 +22,5 @@ val stdlib : string -> string
 val toplevel : string -> string
 
 val runtime : string -> string
+
+val runtime_library : Ocaml_backends.t -> string -> string

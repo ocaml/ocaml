@@ -1,3 +1,12 @@
+(* TEST
+   flags = "-g"
+   ocamlrunparam += ",b=1"
+   * bytecode
+     reference = "${test_source_directory}/backtrace_slots.byte.reference"
+   * native
+     reference = "${test_source_directory}/backtrace_slots.opt.reference"
+     compare_programs = "false"
+*)
 
 (* A test for stack backtraces *)
 

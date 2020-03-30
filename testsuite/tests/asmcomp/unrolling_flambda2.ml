@@ -1,3 +1,7 @@
+(* TEST
+   * flambda
+   ** native
+*)
 
 type t = { fn : t -> t -> int -> unit -> unit }
 

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Run the backtrace test
+
+exec > "${output}" 2>&1
+
+for arg in a b c d ''; do
+  "${program}" ${arg} || true
+done

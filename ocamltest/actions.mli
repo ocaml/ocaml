@@ -21,6 +21,8 @@ type t
 
 val action_name : t -> string
 
+val update : t -> code -> t
+
 val make : string -> code -> t
 
 val compare : t -> t -> int

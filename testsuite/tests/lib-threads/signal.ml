@@ -1,10 +1,59 @@
+(* TEST
+
+include systhreads
+
+files = "sigint.c"
+
+* libunix (* excludes mingw32/64 and msvc32/64 *)
+
+** setup-ocamlc.byte-build-env
+
+program = "${test_build_directory}/signal.byte"
+
+*** ocamlc.byte
+
+program = "sigint"
+all_modules = "sigint.c"
+
+**** ocamlc.byte
+
+program = "${test_build_directory}/signal.byte"
+all_modules = "signal.ml"
+
+***** check-ocamlc.byte-output
+****** run
+******* check-program-output
+
+** setup-ocamlopt.byte-build-env
+
+program = "${test_build_directory}/signal.opt"
+
+*** ocamlopt.byte
+
+program = "sigint"
+all_modules = "sigint.c"
+
+**** ocamlc.byte
+
+program = "${test_build_directory}/signal.opt"
+all_modules = "signal.ml"
+
+***** check-ocamlopt.byte-output
+****** run
+******* check-program-output
+
+*)
+
 let signaled = ref false
+
+let counter = ref 0
 
 let sighandler _ =
   signaled := true
 
 let print_message delay c =
-  while not !signaled do
+  while (not !signaled) && (!counter <= 20) do
+    incr counter;
     print_char c; flush stdout; Thread.delay delay
   done
 

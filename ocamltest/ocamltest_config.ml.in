@@ -17,7 +17,7 @@
 
 let arch = "@@ARCH@@"
 
-let afl_support = @@AFL_SUPPORT@@
+let afl_instrument = @@AFL_INSTRUMENT@@
 
 let shared_libraries = @@SHARED_LIBRARIES@@
 
@@ -39,3 +39,5 @@ let ocamlopt_default_flags = "@@OCAMLOPTDEFAULTFLAGS@@"
 let safe_string = @@FORCE_SAFE_STRING@@
 
 let flat_float_array = @@FLAT_FLOAT_ARRAY@@
+
+let ocamldoc = @@OCAMLDOC@@

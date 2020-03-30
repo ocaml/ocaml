@@ -1,3 +1,7 @@
+(* TEST
+   * native
+*)
+
 type 'a typ = Int : int typ | Ptr : int list typ | Int2 : int typ
 
 let f (type a) (t : a typ) (p : int list) : a =

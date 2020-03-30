@@ -106,4 +106,4 @@ $(STDLIB_UNPREFIXED)/pervasives.mli: $(SRC)/stdlib/stdlib.mli $(STDLIB_UNPREFIXE
 
 # Build cmis file inside the STDLIB_UNPREFIXED directories
 $(STDLIB_CMIS): $(STDLIB_DEPS)
-	cd $(STDLIB_UNPREFIXED); make $(notdir $(STDLIB_CMIS))
+	cd $(STDLIB_UNPREFIXED); $(MAKE) $(notdir $(STDLIB_CMIS))
