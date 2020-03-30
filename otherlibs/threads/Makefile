@@ -51,7 +51,7 @@ LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo					\
   $(LIB)/$(P)weak.cmo $(LIB)/$(P)ephemeron.cmo $(LIB)/$(P)filename.cmo			\
   $(LIB)/$(P)complex.cmo $(LIB)/$(P)arrayLabels.cmo $(LIB)/$(P)listLabels.cmo		\
   $(LIB)/$(P)bytesLabels.cmo $(LIB)/$(P)stringLabels.cmo				\
-  $(LIB)/$(P)domain.cmo \
+  $(LIB)/$(P)atomic.cmo $(LIB)/$(P)domain.cmo \
   $(LIB)/$(P)moreLabels.cmo $(LIB)/$(P)stdLabels.cmo
 
 UNIXLIB=../unix

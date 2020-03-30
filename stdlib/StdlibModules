@@ -40,7 +40,6 @@ STDLIB_MODULES=\
   $(P)complex \
   $(P)digest \
   $(P)domain \
-  $(P)effects \
   $(P)ephemeron \
   $(P)filename \
   $(P)format \
