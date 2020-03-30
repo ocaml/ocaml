@@ -94,6 +94,7 @@ type t =
   | Redefining_unit of string               (* 65 *)
   | Unused_open_bang of string              (* 66 *)
   | Unused_functor_parameter of string      (* 67 *)
+  | Matching_function_type                      (* 68 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}
