@@ -119,6 +119,7 @@ let all_predef_exns = [
   ident_sys_blocked_io;
   ident_assert_failure;
   ident_undefined_recursive_module;
+  ident_unhandled;
 ]
 
 let path_match_failure = Pident ident_match_failure

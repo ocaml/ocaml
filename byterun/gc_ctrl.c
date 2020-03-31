@@ -140,10 +140,10 @@ static uintnat norm_pfree (uintnat p)
   return Max (p, 1);
 }
 
-static uintnat norm_pmax (uintnat p)
+/*static uintnat norm_pmax (uintnat p)
 {
   return p;
-}
+}*/
 
 CAMLprim value caml_gc_set(value v)
 {
