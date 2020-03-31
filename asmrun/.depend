@@ -337,7 +337,8 @@ custom.$(O): custom.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/custom.h ../byterun/caml/fail.h \
   ../byterun/caml/memory.h ../byterun/caml/gc.h \
   ../byterun/caml/major_gc.h ../byterun/caml/minor_gc.h \
-  ../byterun/caml/addrmap.h ../byterun/caml/domain.h
+  ../byterun/caml/addrmap.h ../byterun/caml/domain.h \
+  ../byterun/caml/signals.h
 globroots.$(O): globroots.c ../byterun/caml/memory.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/gc.h ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
@@ -531,7 +532,8 @@ bigarray.$(O): bigarray.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/platform.h ../byterun/caml/memory.h \
   ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
-  ../byterun/caml/domain.h ../byterun/caml/hash.h
+  ../byterun/caml/domain.h ../byterun/caml/hash.h \
+  ../byterun/caml/signals.h
 startup_aux.p.$(O): startup_aux.c ../byterun/caml/backtrace.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
   ../byterun/caml/m.h ../byterun/caml/s.h ../byterun/caml/misc.h \
@@ -871,7 +873,8 @@ custom.p.$(O): custom.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/custom.h ../byterun/caml/fail.h \
   ../byterun/caml/memory.h ../byterun/caml/gc.h \
   ../byterun/caml/major_gc.h ../byterun/caml/minor_gc.h \
-  ../byterun/caml/addrmap.h ../byterun/caml/domain.h
+  ../byterun/caml/addrmap.h ../byterun/caml/domain.h \
+  ../byterun/caml/signals.h
 globroots.p.$(O): globroots.c ../byterun/caml/memory.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/gc.h ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
@@ -1065,7 +1068,8 @@ bigarray.p.$(O): bigarray.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/platform.h ../byterun/caml/memory.h \
   ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
-  ../byterun/caml/domain.h ../byterun/caml/hash.h
+  ../byterun/caml/domain.h ../byterun/caml/hash.h \
+  ../byterun/caml/signals.h
 startup_aux.d.$(O): startup_aux.c ../byterun/caml/backtrace.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
   ../byterun/caml/m.h ../byterun/caml/s.h ../byterun/caml/misc.h \
@@ -1405,7 +1409,8 @@ custom.d.$(O): custom.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/custom.h ../byterun/caml/fail.h \
   ../byterun/caml/memory.h ../byterun/caml/gc.h \
   ../byterun/caml/major_gc.h ../byterun/caml/minor_gc.h \
-  ../byterun/caml/addrmap.h ../byterun/caml/domain.h
+  ../byterun/caml/addrmap.h ../byterun/caml/domain.h \
+  ../byterun/caml/signals.h
 globroots.d.$(O): globroots.c ../byterun/caml/memory.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/gc.h ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
@@ -1599,7 +1604,8 @@ bigarray.d.$(O): bigarray.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/platform.h ../byterun/caml/memory.h \
   ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
-  ../byterun/caml/domain.h ../byterun/caml/hash.h
+  ../byterun/caml/domain.h ../byterun/caml/hash.h \
+  ../byterun/caml/signals.h
 startup_aux.i.$(O): startup_aux.c ../byterun/caml/backtrace.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
   ../byterun/caml/m.h ../byterun/caml/s.h ../byterun/caml/misc.h \
@@ -1939,7 +1945,8 @@ custom.i.$(O): custom.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/custom.h ../byterun/caml/fail.h \
   ../byterun/caml/memory.h ../byterun/caml/gc.h \
   ../byterun/caml/major_gc.h ../byterun/caml/minor_gc.h \
-  ../byterun/caml/addrmap.h ../byterun/caml/domain.h
+  ../byterun/caml/addrmap.h ../byterun/caml/domain.h \
+  ../byterun/caml/signals.h
 globroots.i.$(O): globroots.c ../byterun/caml/memory.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/gc.h ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
@@ -2133,4 +2140,5 @@ bigarray.i.$(O): bigarray.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/platform.h ../byterun/caml/memory.h \
   ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/addrmap.h \
-  ../byterun/caml/domain.h ../byterun/caml/hash.h
+  ../byterun/caml/domain.h ../byterun/caml/hash.h \
+  ../byterun/caml/signals.h

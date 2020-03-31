@@ -36,7 +36,7 @@ bigarray.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
   caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/hash.h
+  caml/domain.h caml/hash.h caml/signals.h
 callback.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
   caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -52,7 +52,7 @@ custom.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
   caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h
+  caml/addrmap.h caml/domain.h caml/signals.h
 debugger.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -338,7 +338,7 @@ bigarray.d.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
   caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/hash.h
+  caml/domain.h caml/hash.h caml/signals.h
 callback.d.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
   caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -354,7 +354,7 @@ custom.d.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
   caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h
+  caml/addrmap.h caml/domain.h caml/signals.h
 debugger.d.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -646,7 +646,7 @@ bigarray.i.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
   caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/hash.h
+  caml/domain.h caml/hash.h caml/signals.h
 callback.i.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
   caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -662,7 +662,7 @@ custom.i.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
   caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h
+  caml/addrmap.h caml/domain.h caml/signals.h
 debugger.i.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -948,7 +948,7 @@ bigarray.pic.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
   caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
   caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
-  caml/domain.h caml/hash.h
+  caml/domain.h caml/hash.h caml/signals.h
 callback.pic.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
   caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h \
@@ -964,7 +964,7 @@ custom.pic.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
   caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h
+  caml/addrmap.h caml/domain.h caml/signals.h
 debugger.pic.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
