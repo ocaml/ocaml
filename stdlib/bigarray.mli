@@ -57,6 +57,8 @@
    Each element kind is represented at the type level by one of the
    [*_elt] types defined below (defined with a single constructor instead
    of abstract types for technical injectivity reasons).
+
+   @since 4.07.0 Moved from otherlibs to stdlib.
 *)
 
 type float32_elt = Float32_elt

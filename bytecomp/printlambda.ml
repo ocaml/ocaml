@@ -109,13 +109,6 @@ let record_rep ppf r =
   | Record_extension -> fprintf ppf "ext"
 ;;
 
-let string_of_loc_kind = function
-  | Loc_FILE -> "loc_FILE"
-  | Loc_LINE -> "loc_LINE"
-  | Loc_MODULE -> "loc_MODULE"
-  | Loc_POS -> "loc_POS"
-  | Loc_LOC -> "loc_LOC"
-
 let block_shape ppf shape = match shape with
   | None | Some [] -> ()
   | Some l when List.for_all ((=) Pgenval) l -> ()
@@ -155,7 +148,6 @@ let primitive ppf = function
   | Pignore -> fprintf ppf "ignore"
   | Prevapply -> fprintf ppf "revapply"
   | Pdirapply -> fprintf ppf "dirapply"
-  | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable, shape) ->
@@ -207,7 +199,6 @@ let primitive ppf = function
       in
       fprintf ppf "setfloatfield%s %i" init n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
-  | Plazyforce -> fprintf ppf "force"
   | Prunstack -> fprintf ppf "runstack"
   | Pperform -> fprintf ppf "perform"
   | Presume -> fprintf ppf "resume"
@@ -371,7 +362,6 @@ let name_of_primitive = function
   | Pignore -> "Pignore"
   | Prevapply -> "Prevapply"
   | Pdirapply -> "Pdirapply"
-  | Ploc _ -> "Ploc"
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
@@ -382,7 +372,6 @@ let name_of_primitive = function
   | Pfloatfield _ -> "Pfloatfield"
   | Psetfloatfield _ -> "Psetfloatfield"
   | Pduprecord _ -> "Pduprecord"
-  | Plazyforce -> "Plazyforce"
   | Pccall _ -> "Pccall"
   | Praise _ -> "Praise"
   | Psequand -> "Psequand"

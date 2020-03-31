@@ -83,24 +83,24 @@ let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 let afl_instrument = %%AFL_INSTRUMENT%%
 
 let exec_magic_number = "Caml1999X011"
-and cmi_magic_number = "Caml1999I022"
-and cmo_magic_number = "Caml1999O022"
-and cma_magic_number = "Caml1999A022"
+and cmi_magic_number = "Caml1999I023"
+and cmo_magic_number = "Caml1999O023"
+and cma_magic_number = "Caml1999A023"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y022"
+    "Caml1999y023"
   else
-    "Caml1999Y022"
+    "Caml1999Y023"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z022"
+    "Caml1999z023"
   else
-    "Caml1999Z022"
-and ast_impl_magic_number = "Caml1999M022"
-and ast_intf_magic_number = "Caml1999N022"
-and cmxs_magic_number = "Caml1999D022"
+    "Caml1999Z023"
+and ast_impl_magic_number = "Caml1999M023"
+and ast_intf_magic_number = "Caml1999N023"
+and cmxs_magic_number = "Caml1999D023"
     (* cmxs_magic_number is duplicated in otherlibs/dynlink/natdynlink.ml *)
-and cmt_magic_number = "Caml1999T022"
+and cmt_magic_number = "Caml1999T023"
 
 let load_path = ref ([] : string list)
 
