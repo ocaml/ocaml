@@ -1752,20 +1752,28 @@ let check_coercions env { id; id_loc; clty; ty_id; cltydef; obj_id; obj_abbr;
 
 (*******************************)
 
-let type_classes define_class approx kind env cls =
+let type_classes define_class approx kind env in_uids cls =
   let scope = Ctype.create_scope () in
-  let cls =
-    List.map
-      (function cl ->
-         (cl,
-          Ident.create_scoped ~scope cl.pci_name.txt,
-          Ident.create_scoped ~scope cl.pci_name.txt,
-          Ident.create_scoped ~scope cl.pci_name.txt,
-          Ident.create_scoped ~scope ("#" ^ cl.pci_name.txt),
-          Uid.mk ~current_unit:(Env.get_unit_name ())
-         ))
-      cls
+  let rec loop in_uids = function
+    | [] -> [], []
+    | cl :: srem ->
+      let uid, in_uids =
+        match in_uids with
+        | [] -> Uid.mk ~current_unit:(Env.get_unit_name ()), []
+        | uid :: in_uids -> uid, in_uids
+      in
+      let res =
+        (cl,
+         Ident.create_scoped ~scope cl.pci_name.txt,
+         Ident.create_scoped ~scope cl.pci_name.txt,
+         Ident.create_scoped ~scope cl.pci_name.txt,
+         Ident.create_scoped ~scope ("#" ^ cl.pci_name.txt),
+         uid)
+      in
+      let rem, out_uids = loop in_uids srem in
+      res :: rem, uid :: out_uids
   in
+  let cls, out_uids = loop in_uids cls in
   Ctype.begin_class_def ();
   let (res, env) =
     List.fold_left (initial_env define_class approx) ([], env) cls
@@ -1784,7 +1792,7 @@ let type_classes define_class approx kind env cls =
   let res = List.map2 merge_type_decls res decls in
   let env = List.fold_left (final_env define_class) env res in
   let res = List.map (check_coercions env) res in
-  (res, env)
+  (res, env, out_uids)
 
 let class_num = ref 0
 let class_declaration env sexpr =
@@ -1796,9 +1804,9 @@ let class_description env sexpr =
   let expr = class_type env sexpr in
   (expr, expr.cltyp_type)
 
-let class_declarations env cls =
-  let info, env =
-    type_classes true approx_declaration class_declaration env cls
+let class_declarations env in_uids cls =
+  let info, env, _ =
+    type_classes true approx_declaration class_declaration env in_uids cls
   in
   let ids, exprs =
     List.split
@@ -1809,12 +1817,15 @@ let class_declarations env cls =
   check_recursive_class_bindings env ids exprs;
   info, env
 
-let class_descriptions env cls =
-  type_classes true approx_description class_description env cls
+let class_descriptions env in_uids cls =
+  let (info, env, _) =
+    type_classes true approx_description class_description env in_uids cls
+  in
+  info, env
 
-let class_type_declarations env cls =
-  let (decls, env) =
-    type_classes false approx_description class_description env cls
+let class_type_declarations env in_uids cls =
+  let (decls, env, out_uids) =
+    type_classes false approx_description class_description env in_uids cls
   in
   (List.map
      (fun decl ->
@@ -1827,7 +1838,7 @@ let class_type_declarations env cls =
          clsty_abbr = decl.cls_abbr;
          clsty_info = decl.cls_info})
      decls,
-   env)
+   env, out_uids)
 
 let rec unify_parents env ty cl =
   match cl.cl_desc with
@@ -1877,8 +1888,14 @@ let approx_class sdecl =
   let clty' = Cty.signature ~loc:sdecl.pci_expr.pcty_loc (Csig.mk self' []) in
   { sdecl with pci_expr = clty' }
 
-let approx_class_declarations env sdecls =
-  fst (class_type_declarations env (List.map approx_class sdecls))
+let approx_class_declarations env in_uids sdecls =
+  class_type_declarations env in_uids (List.map approx_class sdecls)
+
+let class_type_declarations env in_uids sdecls =
+  let (cls, env, _) =
+    class_type_declarations env in_uids sdecls
+  in
+  cls, env
 
 (*******************************)
 

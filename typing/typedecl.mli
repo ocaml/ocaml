@@ -19,7 +19,8 @@ open Types
 open Format
 
 val transl_type_decl:
-    Env.t -> Asttypes.rec_flag -> Parsetree.type_declaration list ->
+    Env.t -> Asttypes.rec_flag -> Uid.t list ->
+    Parsetree.type_declaration list ->
     Typedtree.type_declaration list * Env.t
 
 val transl_exception:
@@ -42,10 +43,10 @@ val transl_with_constraint:
     Env.t -> Ident.t -> Path.t option -> Types.type_declaration ->
     Parsetree.type_declaration -> Typedtree.type_declaration
 
-val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
+    Env.t -> Uid.t list ->
     Parsetree.type_declaration list ->
-                                  (Ident.t * type_declaration) list
+    (Ident.t * type_declaration) list * Env.t * Uid.t list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
 val check_coherence:
