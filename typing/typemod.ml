@@ -1830,10 +1830,9 @@ let modtype_of_package env loc p nl tl =
   | Some mty when nl <> [] ->
       package_constraints env loc mty
         (List.combine (List.map Longident.flatten nl) tl)
-  | _ ->
+  | _ | exception Not_found (* missing cmi *) ->
       if nl = [] then Mty_ident p
       else raise(Error(loc, env, Signature_expected))
-  | exception Not_found -> assert false
 
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
