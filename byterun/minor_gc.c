@@ -530,7 +530,6 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   uintnat minor_allocated_bytes = young_end - young_ptr;
   struct oldify_state st = {0};
   value **r;
-  struct caml_ephe_ref_elt *re;
   intnat c, curr_idx;
 
   st.promote_domain = domain;

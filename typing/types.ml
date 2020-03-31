@@ -105,11 +105,7 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound of value_unbound_reason (* Unbound variable *)
-
-and value_unbound_reason =
-  | Val_unbound_instance_variable
-  | Val_unbound_ghost_recursive
+  | Val_unbound                         (* Unbound variable *)
 
 (* Variance *)
 

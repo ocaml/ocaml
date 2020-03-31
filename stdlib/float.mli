@@ -26,6 +26,8 @@
     floating-point computations as expected: for instance,
     [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
     as argument returns [nan] as result.
+
+    @since 4.07.0
 *)
 
 external neg : float -> float = "%negfloat"
