@@ -700,7 +700,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated synonym for the 'deprecated' alert";
+    3, "Deprecated synonym for the 'deprecated' alert.";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
@@ -761,20 +761,21 @@ let descriptions =
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present.";
    52, "Fragile constant pattern.";
-   53, "Attribute cannot appear in this context";
-   54, "Attribute used more than once on an expression";
-   55, "Inlining impossible";
+   53, "Attribute cannot appear in this context.";
+   54, "Attribute used more than once on an expression.";
+   55, "Inlining impossible.";
    56, "Unreachable case in a pattern-matching (based on type information).";
-   57, "Ambiguous or-pattern variables under guard";
-   58, "Missing cmx file";
-   59, "Assignment to non-mutable value";
-   60, "Unused module declaration";
-   61, "Unboxable type in primitive declaration";
-   62, "Type constraint on GADT type declaration";
-   63, "Erroneous printed signature";
-   64, "-unsafe used with a preprocessor returning a syntax tree";
-   65, "Type declaration defining a new '()' constructor";
-   66, "Unused open! statement";
+   57, "Ambiguous or-pattern variables under guard.";
+   58, "Missing cmx file.";
+   59, "Assignment to non-mutable value.";
+   60, "Unused module declaration.";
+   61, "Unboxable type in primitive declaration.";
+   62, "Type constraint on GADT type declaration.";
+   63, "Erroneous printed signature.";
+   64, "-unsafe used with a preprocessor returning a syntax tree.";
+   65, "Type declaration defining a new '()' constructor.";
+   66, "Unused open! statement.";
+   67, "Unused functor parameter.";
   ]
 ;;
 

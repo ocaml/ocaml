@@ -173,6 +173,10 @@ Working version
 - #9325: documented base case for `List.for_all` and `List.exists`
   (Glenn Slotte, review by Florian Angeletti)
 
+- #9403: added a description for warning 67 and added a "." at the end of
+  warnings for consistency.
+  (Muskan Garg, review by Gabriel Scherer and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1664: make -output-complete-obj link the runtime native c libraries when
