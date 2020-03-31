@@ -33,3 +33,38 @@ Line 1, characters 4-23:
 Error: This function should have type unit -> unit
        but its first argument is labelled ?opt
 |}];;
+
+
+(* More examples *)
+
+let f g = ignore (g ?x:(Some 2) ()); g ~x:3 () ;;
+[%%expect{|
+Line 1, characters 37-38:
+1 | let f g = ignore (g ?x:(Some 2) ()); g ~x:3 () ;;
+                                         ^
+Error: This function is applied to arguments
+       in an order different from other calls.
+       This is only allowed when the real type is known.
+|}]
+
+let f g = let _ = g ?x:(Some 2) () in g ~x:3 () ;;
+[%%expect{|
+Line 1, characters 38-39:
+1 | let f g = let _ = g ?x:(Some 2) () in g ~x:3 () ;;
+                                          ^
+Error: This function is applied to arguments
+       in an order different from other calls.
+       This is only allowed when the real type is known.
+|}]
+
+(* principality warning *)
+let f g = ignore (g : ?x:int -> unit -> int); g ~x:3 () ;;
+[%%expect{|
+val f : (?x:int -> unit -> int) -> int = <fun>
+|}, Principal{|
+Line 1, characters 51-52:
+1 | let f g = ignore (g : ?x:int -> unit -> int); g ~x:3 () ;;
+                                                       ^
+Warning 18: using an optional argument here is not principal.
+val f : (?x:int -> unit -> int) -> int = <fun>
+|}]
