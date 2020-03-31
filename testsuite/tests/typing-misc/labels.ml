@@ -45,7 +45,7 @@ Line 1, characters 37-38:
 Error: This function is applied to arguments
        in an order different from other calls.
        This is only allowed when the real type is known.
-|}]
+|}];;
 
 let f g = let _ = g ?x:(Some 2) () in g ~x:3 () ;;
 [%%expect{|
@@ -55,7 +55,7 @@ Line 1, characters 38-39:
 Error: This function is applied to arguments
        in an order different from other calls.
        This is only allowed when the real type is known.
-|}]
+|}];;
 
 (* principality warning *)
 let f g = ignore (g : ?x:int -> unit -> int); g ~x:3 () ;;
@@ -67,4 +67,26 @@ Line 1, characters 51-52:
                                                        ^
 Warning 18: using an optional argument here is not principal.
 val f : (?x:int -> unit -> int) -> int = <fun>
-|}]
+|}];;
+
+let f g = ignore (g : ?x:int -> unit -> int); g ();;
+[%%expect{|
+val f : (?x:int -> unit -> int) -> int = <fun>
+|}, Principal{|
+Line 1, characters 46-47:
+1 | let f g = ignore (g : ?x:int -> unit -> int); g ();;
+                                                  ^
+Warning 19: eliminated optional argument without principality.
+val f : (?x:int -> unit -> int) -> int = <fun>
+|}];;
+
+let f g = ignore (g : x:int -> unit -> int); g ();;
+[%%expect{|
+val f : (x:int -> unit -> int) -> x:int -> int = <fun>
+|}, Principal{|
+Line 1, characters 45-46:
+1 | let f g = ignore (g : x:int -> unit -> int); g ();;
+                                                 ^
+Warning 19: commuted an argument without principality.
+val f : (x:int -> unit -> int) -> x:int -> int = <fun>
+|}];;
