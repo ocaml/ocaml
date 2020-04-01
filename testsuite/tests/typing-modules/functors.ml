@@ -1435,6 +1435,135 @@ Error: Signature mismatch:
 |}]
 
 
+module M: sig
+  module F(X: sig
+      module type T
+      module type t = T -> T -> T
+      module M: t
+    end
+          )(_:X.T)(_:X.T): X.T
+end = struct
+  module F (Wrong: sig type wrong end)
+      (X: sig
+         module type t
+         module M: t
+       end)  = (X.M : X.t)
+end
+[%%expect {|
+Lines 8-14, characters 6-3:
+ 8 | ......struct
+ 9 |   module F (Wrong: sig type wrong end)
+10 |       (X: sig
+11 |          module type t
+12 |          module M: t
+13 |        end)  = (X.M : X.t)
+14 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module F :
+             functor (Wrong : sig type wrong end)
+               (X : sig module type t module M : t end) -> X.t
+         end
+       is not included in
+         sig
+           module F :
+             functor
+               (X : sig
+                      module type T
+                      module type t = T -> T -> T
+                      module M : t
+                    end)
+               -> X.T -> X.T -> X.T
+         end
+       In module F:
+       Modules do not match:
+         functor (Wrong : ...(Wrong)) (X : ...(X)) X/2.T X/2.T -> ...
+       is not included in
+         functor  (X : ...(X)) X/3.T X/3.T -> ...
+  1. An extra argument is provided of module type
+         ...(Wrong) = sig type wrong end
+  2. Module types ...(X) and ...(X) match
+  3. Module types X/3.T and X/2.T match
+  4. Module types X/3.T and X/2.T match
+|}]
+
+
+module M: sig
+  module F(_:sig end)(X:
+           sig
+             module type T
+             module type inner = sig
+               module type t
+               module M: t
+             end
+             module F(X: inner)(_:T -> T->T):
+             sig module type res = X.t end
+             module Y: sig
+               module type t = T -> T -> T
+               module M(X:T)(Y:T): T
+             end
+           end):
+    X.F(X.Y)(X.Y.M).res
+end = struct
+  module F(_:sig type wrong end) (X:
+             sig  module type T end
+          )(Res: X.T)(Res: X.T)(Res: X.T) = Res
+end
+[%%expect {|
+Lines 17-21, characters 6-3:
+17 | ......struct
+18 |   module F(_:sig type wrong end) (X:
+19 |              sig  module type T end
+20 |           )(Res: X.T)(Res: X.T)(Res: X.T) = Res
+21 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module F :
+             sig type wrong end ->
+               functor (X : sig module type T end) (Res : X.T) (Res :
+                 X.T) (Res : X.T)
+               -> X.T
+         end
+       is not included in
+         sig
+           module F :
+             sig end ->
+               functor
+                 (X : sig
+                        module type T
+                        module type inner =
+                          sig module type t module M : t end
+                        module F :
+                          functor (X : inner) -> (T -> T -> T) ->
+                            sig module type res = X.t end
+                        module Y :
+                          sig
+                            module type t = T -> T -> T
+                            module M : functor (X : T) (Y : T) -> T
+                          end
+                      end)
+               -> X.F(X.Y)(X.Y.M).res
+         end
+       In module F:
+       Modules do not match:
+         functor (Arg : ...(Arg)) (X : ...(X)) (Res : X/2.T) (Res : X/2.T)
+         (Res : X/2.T) -> ...
+       is not included in
+         functor sig end (X : ...(X)) X/2.T X/2.T  -> ...
+  1. Module types do not match:
+       ...(Arg) = sig type wrong end
+     does not include
+       sig end
+     The type `wrong' is required but not provided
+  2. Module types ...(X) and ...(X) match
+  3. Module types X/2.T and X/2.T match
+  4. Module types X/2.T and X/2.T match
+  5. An extra argument is provided of module type X/2.T
+|}]
+
+
 (** The price of Gluttony: glutton update of environment leads to a non-optimal edit distance. *)
 
 module F(X:sig type t end)(Y:sig type t = Y of X.t end)(Z:sig type t = Z of X.t end) = struct end

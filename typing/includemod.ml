@@ -90,7 +90,7 @@ and ('arg,'path) functor_param_syndrom =
 and arg_functor_param_syndrom =
   (functor_parameter, Ident.t) functor_param_syndrom
 
-and functor_params_diff = (functor_parameter list) core_diff
+and functor_params_diff = (functor_parameter list * module_type) core_diff
 
 and signature_symptom = {
   env: Env.t;
@@ -407,8 +407,8 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
       | Error Incompatible_aliases ->
           begin match mty1 with
           | Mty_functor _ ->
-              let params1 = fst @@ retrieve_functor_params env mty1 in
-              let d = E.sdiff params1 [] in
+              let params1 = retrieve_functor_params env mty1 in
+              let d = E.sdiff params1 ([],mty2) in
               dont_match E.(Functor (Params d))
           | _ ->
                 dont_match E.(Mt_core Not_an_identifier)
@@ -430,20 +430,24 @@ and try_modtypes ~loc env ~mark dont_match subst mty1 mty2 =
       | Ok Tcoerce_none, Ok Tcoerce_none -> Ok Tcoerce_none
       | Ok cc_arg, Ok cc_res -> Ok (Tcoerce_functor(cc_arg, cc_res))
       | _, Error {E.symptom = E.Functor E.Params res; _} ->
-          let d = E.sdiff (param1::res.got) (param2::res.expected) in
+          let got_params, got_res = res.got in
+          let expected_params, expected_res = res.expected in
+          let d = E.sdiff
+              (param1::got_params, got_res)
+              (param2::expected_params, expected_res) in
           dont_match E.(Functor (Params d))
       | Error _, _ ->
-          let params1 = fst (retrieve_functor_params env res1) in
-          let params2 = fst (retrieve_functor_params env res2) in
-          let d = E.sdiff (param1::params1) (param2::params2) in
+          let params1, res1 = retrieve_functor_params env res1 in
+          let params2, res2 = retrieve_functor_params env res2 in
+          let d = E.sdiff (param1::params1, res1) (param2::params2, res2) in
           dont_match E.(Functor (Params d))
       | Ok _, Error res ->
           dont_match E.(Functor (Result res))
       end
   | Mty_functor _, _
   | _, Mty_functor _ ->
-      let params1 = fst @@ retrieve_functor_params env mty1 in
-      let params2 = fst @@ retrieve_functor_params env mty2 in
+      let params1 = retrieve_functor_params env mty1 in
+      let params2 = retrieve_functor_params env mty2 in
       let d = E.sdiff params1 params2 in
       dont_match E.(Functor (Params d))
   | _, Mty_alias _ ->
@@ -866,7 +870,39 @@ module FunctorDiff = struct
         | Some _,  None | None, Some _ -> 1
       end
 
-  let arg_update d ((env, subst) as st) = match data d with
+  type state = {
+    res: module_type option;
+    env: Env.t;
+    subst: Subst.t;
+  }
+
+  let keep_expansible_param = function
+    | Mty_ident _ | Mty_alias _ as mty -> Some mty
+    | Mty_signature _ | Mty_functor _ -> None
+
+  let param_preprocess data =
+    let metadata =
+      match data with
+      | Named(x,_) -> x
+      | Unit -> None in
+    { data; metadata }
+
+  let need_expansion env array = function
+    | None -> None
+    | Some res ->
+        match retrieve_functor_params env res with
+        | [], _ -> None
+        | params, res ->
+            let more = Array.of_list @@ List.map param_preprocess @@ params  in
+            Some (keep_expansible_param res, Array.append array more)
+
+  let expand_arg_params state inner  =
+    match need_expansion inner.env state.line inner.res with
+    | None -> { state with inner }
+    | Some (res, line) ->
+        { state with line; inner = { inner with res } }
+
+  let arg_update d st = match data d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
@@ -876,57 +912,54 @@ module FunctorDiff = struct
     | Insert (Named (Some p, arg))
     | Delete (Named (Some p, arg))
     | Change (Unit, Named (Some p, arg), _) ->
-        let arg' = Subst.modtype Keep subst arg in
-        Env.add_module p Mp_present arg' env, subst
+        let arg' = Subst.modtype Keep st.inner.subst arg in
+        let env = Env.add_module p Mp_present arg' st.inner.env in
+        expand_arg_params st { st.inner with env }
     | Keep (Named (name1, _), Named (name2, arg2), _)
     | Change (Named (name1, _), Named (name2, arg2), _) -> begin
-        let arg' = Subst.modtype Keep subst arg2 in
+        let arg' = Subst.modtype Keep st.inner.subst arg2 in
         match name1, name2 with
         | Some p1, Some p2 ->
-            Env.add_module p1 Mp_present arg' env,
-            Subst.add_module p2 (Path.Pident p1) subst
+            let env = Env.add_module p1 Mp_present arg' st.inner.env in
+            let subst = Subst.add_module p2 (Path.Pident p1) st.inner.subst in
+            expand_arg_params st { st.inner with env; subst }
         | None, Some p2 ->
-            Env.add_module p2 Mp_present arg' env, subst
+            let env = Env.add_module p2 Mp_present arg' st.inner.env in
+            { st with inner = { st.inner with env } }
         | Some p1, None ->
-            Env.add_module p1 Mp_present arg' env, subst
+            let env = Env.add_module p1 Mp_present arg' st.inner.env in
+            expand_arg_params st { st.inner with env }
         | None, None ->
-            env, subst
+            st
       end
 
-  let param_preprocess data =
-    let metadata =
-      match data with
-      | Named(x,_) -> x
-      | Unit -> None in
-    { data; metadata }
-
-  let arg_diff env0 _ctxt l1 l2 =
+  let arg_diff env0 _ctxt (l1,res1) (l2,_res2) =
     let update = arg_update in
-    let test (env, subst) mty1 mty2 =
+    let test st mty1 mty2 =
       let loc = Location.none in
       let snap = Btype.snapshot () in
       let res, _, _ =
-        functor_param ~loc env ~mark:Mark_neither subst mty1.data mty2.data
+        functor_param ~loc st.env ~mark:Mark_neither st.subst mty1.data
+          mty2.data
       in
       Btype.backtrack snap;
       res
     in
-    let state0 = (env0, Subst.identity) in
-    Diff.diff ~weight ~test ~update
-      state0
-      (Array.map param_preprocess @@ Array.of_list l1)
-      (Array.map param_preprocess @@ Array.of_list l2)
+    let state0 =
+      { line = Array.map param_preprocess @@ Array.of_list l1;
+        col = Array.map param_preprocess @@ Array.of_list l2;
+        inner = {
+          env=env0;
+          subst = Subst.identity;
+          res = keep_expansible_param res1;
+        }
+      } in
+    Diff.dynamically_resized_diff ~weight ~test ~update state0
 
   let data_preprocess (parg,_,_,fn) =
     match fn with
     | Unit -> None
     | Named(_,mty) -> Some {path=parg; mty}
-
-  type app_state = {
-    res: module_type option;
-    env: Env.t;
-    subst: Subst.t;
-  }
 
   let arg_preprocess (_,_,_,fn as data) =
     let metadata =
@@ -935,21 +968,11 @@ module FunctorDiff = struct
       | Named(x,_) -> x in
     { data; metadata }
 
-  let keep_expansible_param = function
-    | Mty_ident _ | Mty_alias _ as mty -> Some mty
-    | Mty_signature _ | Mty_functor _ -> None
-
-  let expand_params st inner =
-    match inner.res with
+  let expand_app_params st inner =
+    match need_expansion inner.env st.col inner.res with
     | None -> { st with inner }
-    | Some res ->
-        match retrieve_functor_params inner.env res with
-        | [], _ -> { st with inner }
-        | args, res ->
-            let more = Array.of_list @@ List.map param_preprocess @@ args in
-            let params = Array.append st.col more in
-            let res = keep_expansible_param res in
-            { st with inner= { inner with res }; col = params }
+    | Some (res, col) ->
+        { st with inner= { inner with res }; col }
 
   let app_update d ({inner; _} as st) =
     match Diff.map data_preprocess Fun.id (data d) with
@@ -970,13 +993,13 @@ module FunctorDiff = struct
               let subst = Subst.add_module param arg Subst.identity in
               Subst.modtype (Rescope scope) subst res) inner.res in
             let subst = Subst.add_module param arg inner.subst in
-            expand_params st { st.inner with subst; res }
+            expand_app_params st { st.inner with subst; res }
         | None, Some param ->
             let env =
               Env.add_module ~arg:true param Mp_present arg' inner.env in
             let res =
               Option.map (Mtype.nondep_supertype env [param]) inner.res in
-            expand_params st { inner with env; res}
+            expand_app_params st { inner with env; res}
         | _, None -> st
       end
 

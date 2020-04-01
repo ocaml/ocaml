@@ -33,6 +33,11 @@ val diff :
   'state -> 'a array -> 'b array -> ('a, 'b, 'c, 'd) patch
 
 
+(** Using the full state make it possible to resize the
+    number of lines and columns dynamically.
+
+    If only one side is ever expanded by the update function,
+    the patch computation is guaranteed to terminate *)
 type ('inner,'line,'col) full_state =
   {
     line: 'line array;
