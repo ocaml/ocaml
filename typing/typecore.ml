@@ -4260,17 +4260,6 @@ and type_application env funct sargs =
             Location.prerr_warning loc w
           end
         in
-        let extract_label name sargs =
-          match extract_label name sargs with
-          | exception Not_found -> None
-          | (l, arg, commuted, in_order) ->
-              if commuted <> [] then begin
-                did_commute := true;
-                may_warn arg.pexp_loc
-                  (Warnings.Not_principal "commuting this argument")
-              end;
-              Some (l, arg, commuted @ in_order)
-        in
         let name = label_name l
         and optional = is_optional l in
         let sargs, arg =
@@ -4289,7 +4278,12 @@ and type_application env funct sargs =
                   (sargs, Some (fun () -> type_argument env sarg0 ty ty0))
           end else
             match extract_label name sargs with
-            | Some (l', sarg0, sargs) ->
+            | Some (l', sarg0, commuted, sargs) ->
+                if commuted then begin
+                  did_commute := true;
+                  may_warn sarg0.pexp_loc
+                    (Warnings.Not_principal "commuting this argument")
+                end;
                 if not optional && is_optional l' then
                   Location.prerr_warning sarg0.pexp_loc
                     (Warnings.Nonoptional_label (Printtyp.string_of_label l));

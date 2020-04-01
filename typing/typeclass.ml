@@ -1106,13 +1106,6 @@ and class_expr_aux cl_num val_env met_env scl =
         match ty_fun, ty_fun0 with
         | Cty_arrow (l, ty, ty_fun), Cty_arrow (_, ty0, ty_fun0)
           when sargs <> [] ->
-            let extract_label name sargs =
-              match Btype.extract_label name sargs with
-              | exception Not_found -> None
-              | (l, arg, commuted, in_order) ->
-                  if commuted <> [] then did_commute := true;
-                  Some (l, arg, commuted @ in_order)
-            in
             let name = Btype.label_name l
             and optional = Btype.is_optional l in
             let sargs, arg =
@@ -1129,8 +1122,9 @@ and class_expr_aux cl_num val_env met_env scl =
                     else
                       (sargs, Some (type_argument val_env sarg0 ty ty0))
               end else
-                match extract_label name sargs with
-                | Some (l', sarg0, sargs) ->
+                match Btype.extract_label name sargs with
+                | Some (l', sarg0, commuted, sargs) ->
+                    did_commute := commuted;
                     if not optional && Btype.is_optional l' then
                       Location.prerr_warning sarg0.pexp_loc
                         (Warnings.Nonoptional_label
