@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type 'a t = 'a array
+(** An alias for the type of arrays. *)
+
 (** Array operations. *)
 
 external length : 'a array -> int = "%array_length"
@@ -24,7 +27,7 @@ external get : 'a array -> int -> 'a = "%array_safe_get"
    The last element has number [Array.length a - 1].
    You can also write [a.(n)] instead of [Array.get a n].
 
-   Raise [Invalid_argument "index out of bounds"]
+   Raise [Invalid_argument]
    if [n] is outside the range 0 to [(Array.length a - 1)]. *)
 
 external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
@@ -32,7 +35,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    element number [n] with [x].
    You can also write [a.(n) <- x] instead of [Array.set a n x].
 
-   Raise [Invalid_argument "index out of bounds"]
+   Raise [Invalid_argument]
    if [n] is outside the range 0 to [Array.length a - 1]. *)
 
 external make : int -> 'a -> 'a array = "caml_make_vect"
@@ -80,7 +83,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    with the notation [m.(x).(y)].
 
    Raise [Invalid_argument] if [dimx] or [dimy] is negative or
-   greater than [Sys.max_array_length].
+   greater than {!Sys.max_array_length}.
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
 
@@ -90,17 +93,20 @@ val create_matrix : int -> int -> 'a -> 'a array array
 
 val append : 'a array -> 'a array -> 'a array
 (** [Array.append v1 v2] returns a fresh array containing the
-   concatenation of the arrays [v1] and [v2]. *)
+   concatenation of the arrays [v1] and [v2].
+
+   Raise [Invalid_argument] if
+   [Array.length v1 + Array.length v2 > Sys.max_array_length]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as [Array.append], but concatenates a list of arrays. *)
+(** Same as {!Array.append}, but concatenates a list of arrays. *)
 
 val sub : 'a array -> int -> int -> 'a array
 (** [Array.sub a start len] returns a fresh array of length [len],
    containing the elements number [start] to [start + len - 1]
    of array [a].
 
-   Raise [Invalid_argument "Array.sub"] if [start] and [len] do not
+   Raise [Invalid_argument] if [start] and [len] do not
    designate a valid subarray of [a]; that is, if
    [start < 0], or [len < 0], or [start + len > Array.length a]. *)
 
@@ -112,7 +118,7 @@ val fill : 'a array -> int -> int -> 'a -> unit
 (** [Array.fill a ofs len x] modifies the array [a] in place,
    storing [x] in elements number [ofs] to [ofs + len - 1].
 
-   Raise [Invalid_argument "Array.fill"] if [ofs] and [len] do not
+   Raise [Invalid_argument] if [ofs] and [len] do not
    designate a valid subarray of [a]. *)
 
 val blit : 'a array -> int -> 'a array -> int -> int -> unit
@@ -122,7 +128,7 @@ val blit : 'a array -> int -> 'a array -> int -> int -> unit
    [v1] and [v2] are the same array, and the source and
    destination chunks overlap.
 
-   Raise [Invalid_argument "Array.blit"] if [o1] and [len] do not
+   Raise [Invalid_argument] if [o1] and [len] do not
    designate a valid subarray of [v1], or if [o2] and [len] do not
    designate a valid subarray of [v2]. *)
 
@@ -131,10 +137,13 @@ val to_list : 'a array -> 'a list
 
 val of_list : 'a list -> 'a array
 (** [Array.of_list l] returns a fresh array containing the elements
-   of [l]. *)
+   of [l].
+
+   Raise [Invalid_argument] if the length of [l] is greater than
+   [Sys.max_array_length].*)
 
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 
 val iter : ('a -> unit) -> 'a array -> unit
@@ -168,44 +177,61 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
    where [n] is the length of the array [a]. *)
 
 
-(** {6 Iterators on two arrays} *)
+(** {1 Iterators on two arrays} *)
 
 
 val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
-   Raise [Invalid_argument] if the arrays are not the same size. *)
+   Raise [Invalid_argument] if the arrays are not the same size.
+   @since 4.03.0 *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 (** [Array.map2 f a b] applies function [f] to all the elements of [a]
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(Array.length a - 1) b.(Array.length b - 1)|]].
-   Raise [Invalid_argument] if the arrays are not the same size. *)
+   Raise [Invalid_argument] if the arrays are not the same size.
+   @since 4.03.0 *)
 
 
-(** {6 Array scanning} *)
+(** {1 Array scanning} *)
 
 
 val for_all : ('a -> bool) -> 'a array -> bool
 (** [Array.for_all p [|a1; ...; an|]] checks if all elements of the array
    satisfy the predicate [p]. That is, it returns
-   [(p a1) && (p a2) && ... && (p an)]. *)
+   [(p a1) && (p a2) && ... && (p an)].
+   @since 4.03.0 *)
 
 val exists : ('a -> bool) -> 'a array -> bool
 (** [Array.exists p [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [p]. That is, it returns
-    [(p a1) || (p a2) || ... || (p an)]. *)
+    [(p a1) || (p a2) || ... || (p an)].
+    @since 4.03.0 *)
+
+val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+(** Same as {!Array.for_all}, but for a two-argument predicate.
+   Raise [Invalid_argument] if the two arrays have different lengths.
+   @since 4.11.0 *)
+
+val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+(** Same as {!Array.exists}, but for a two-argument predicate.
+   Raise [Invalid_argument] if the two arrays have different lengths.
+   @since 4.11.0 *)
 
 val mem : 'a -> 'a array -> bool
-(** [mem a l] is true if and only if [a] is equal
-   to an element of [l]. *)
+(** [mem a l] is true if and only if [a] is structurally equal
+    to an element of [l] (i.e. there is an [x] in [l] such that
+    [compare a x = 0]).
+    @since 4.03.0 *)
 
 val memq : 'a -> 'a array -> bool
 (** Same as {!Array.mem}, but uses physical equality instead of structural
-   equality to compare array elements. *)
+   equality to compare elements.
+   @since 4.03.0 *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : ('a -> 'a -> int) -> 'a array -> unit
@@ -213,9 +239,8 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
    function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see below for a
-   complete specification).  For example, {!Pervasives.compare} is
-   a suitable comparison function, provided there are no floating-point
-   NaN values in the data.  After calling [Array.sort], the
+   complete specification).  For example, {!Stdlib.compare} is
+   a suitable comparison function.  After calling [Array.sort], the
    array is sorted in place in increasing order.
    [Array.sort] is guaranteed to run in constant heap space
    and (at most) logarithmic stack space.
@@ -225,7 +250,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
 
    Specification of the comparison function:
    Let [a] be the array and [cmp] the comparison function.  The following
-   must be true for all x, y, z in a :
+   must be true for all [x], [y], [z] in [a] :
 -   [cmp x y] > 0 if and only if [cmp y x] < 0
 -   if [cmp x y] >= 0 and [cmp y z] >= 0 then [cmp x z] >= 0
 
@@ -239,8 +264,8 @@ val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
    elements that compare equal are kept in their original order) and
    not guaranteed to run in constant heap space.
 
-   The current implementation uses Merge Sort. It uses [n/2]
-   words of heap space, where [n] is the length of the array.
+   The current implementation uses Merge Sort. It uses a temporary
+   array of length [n/2], where [n] is the length of the array.
    It is usually faster than the current implementation of {!Array.sort}.
 *)
 
@@ -250,10 +275,37 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 *)
 
 
+(** {1 Iterators} *)
+
+val to_seq : 'a array -> 'a Seq.t
+(** Iterate on the array, in increasing order. Modifications of the
+    array during iteration will be reflected in the iterator.
+    @since 4.07 *)
+
+val to_seqi : 'a array -> (int * 'a) Seq.t
+(** Iterate on the array, in increasing order, yielding indices along elements.
+    Modifications of the array during iteration will be reflected in the
+    iterator.
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a array
+(** Create an array from the generator
+    @since 4.07 *)
+
 (**/**)
-(** {6 Undocumented functions} *)
+(** {1 Undocumented functions} *)
 
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+
+module Floatarray : sig
+  external create : int -> floatarray = "caml_floatarray_create"
+  external length : floatarray -> int = "%floatarray_length"
+  external get : floatarray -> int -> float = "%floatarray_safe_get"
+  external set : floatarray -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : floatarray -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : floatarray -> int -> float -> unit
+      = "%floatarray_unsafe_set"
+end

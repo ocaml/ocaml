@@ -1,25 +1,20 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                 Jeremie Dimino, Jane Street Europe                  *)
-(*                                                                     *)
-(*  Copyright 2015 Jane Street Group LLC                               *)
-(*                                                                     *)
-(*  All rights reserved.  This file is distributed under the terms of  *)
-(*  the GNU Lesser General Public License version 2.1, with the        *)
-(*  special exception on linking described in the file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(* TEST
+   include ocamlcommon
+   * hasunix
+   include unix
+   arguments = "${ocamlsrcdir}"
+   ** native
+*)
 
 (* This test checks all ml files in the ocaml repository that are accepted
    by the parser satisfy [Ast_invariants].
 
    We don't check the invariants on the output of the parser, so this test
-   is to ensure that we the parser doesn't accept more than [Ast_invariants].
+   is to ensure that the parser doesn't accept more than [Ast_invariants].
 *)
 
-let root = "../../.."
+let root = Sys.argv.(1)
+
 let () = assert (Sys.file_exists (Filename.concat root "VERSION"))
 
 type _ kind =

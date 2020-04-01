@@ -1,4 +1,4 @@
-\section{Built-in types and predefined exceptions}
+\section{s:core-builtins}{Built-in types and predefined exceptions}
 
 The following built-in types and predefined exceptions are always
 defined in the
@@ -6,7 +6,7 @@ compilation environment, but are not part of any module.  As a
 consequence, they can only be referred by their short names.
 
 %\vspace{0.1cm}
-\subsection*{Built-in types}
+\subsection{ss:builtin-types}*{Built-in types}
 %\vspace{0.1cm}
 
 \begin{ocamldoccode}
@@ -103,7 +103,8 @@ type int32
 \index{int32@\verb`int32`}
 \begin{ocamldocdescription}
  The type of signed 32-bit integers.
- See the "Int32"[\moduleref{Int32}] module.
+ Literals for 32-bit integers are suffixed by l.
+ See the \stdmoduleref{Int32} module.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -112,7 +113,8 @@ type int64
 \index{int64@\verb`int64`}
 \begin{ocamldocdescription}
  The type of signed 64-bit integers.
- See the "Int64"[\moduleref{Int64}] module.
+ Literals for 64-bit integers are suffixed by L.
+ See the \stdmoduleref{Int64} module.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -122,7 +124,8 @@ type nativeint
 \begin{ocamldocdescription}
  The type of signed, platform-native integers (32 bits on 32-bit
  processors, 64 bits on 64-bit processors).
- See the "Nativeint"[\moduleref{Nativeint}] module.
+ Literals for native integers are suffixed by n.
+ See the \stdmoduleref{Nativeint} module.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -133,13 +136,12 @@ type ('a, 'b, 'c, 'd, 'e, 'f) format6
   The type of format strings. "'a" is the type of the parameters of
   the format, "'f" is the result type for the "printf"-style
   functions, "'b" is the type of the first argument given to "%a" and
-  "%t" printing functions (see module "Printf"[\moduleref{Printf}]),
+  "%t" printing functions (see module \stdmoduleref{Printf}),
   "'c" is the result type of these functions, and also the type of the
   argument transmitted to the first argument of "kprintf"-style
   functions, "'d" is the result type for the "scanf"-style functions
-  (see module "Scanf"[\moduleref{Scanf}]),
-  and "'e" is the type of the receiver function for the "scanf"-style
-  functions.
+  (see module \stdmoduleref{Scanf}), and "'e" is the type of the receiver function
+  for the "scanf"-style functions.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -147,12 +149,12 @@ type 'a lazy_t
 \end{ocamldoccode}
 \index{lazyt@\verb`lazy_t`}
 \begin{ocamldocdescription}
- This type is used to implement the "Lazy"[\moduleref{Lazy}] module.
+ This type is used to implement the \stdmoduleref{Lazy} module.
  It should not be used directly.
 \end{ocamldocdescription}
 
 %\vspace{0.1cm}
-\subsection*{Predefined exceptions}
+\subsection*{ss:predef-exn}{Predefined exceptions}
 %\vspace{0.1cm}
 
 \begin{ocamldoccode}
@@ -213,8 +215,9 @@ exception Out_of_memory
 \end{ocamldoccode}
 \index{Outofmemory@\verb`Out_of_memory`}
 \begin{ocamldocdescription}
-   Exception raised by the garbage collector
-   when there is insufficient memory to complete the computation.
+   Exception raised by the garbage collector when there is
+   insufficient memory to complete the computation. (Not reliable for
+   allocations on the minor heap.)
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -223,10 +226,9 @@ exception Stack_overflow
 \index{Stackoverflow@\verb`Stack_overflow`}
 \begin{ocamldocdescription}
    Exception raised by the bytecode interpreter when the evaluation
-   stack reaches its maximal size. This often indicates infinite
-   or excessively deep recursion in the user's program.
-   (Not fully implemented by the native-code compiler;
-    see section~\ref{s:compat-native-bytecode}.)
+   stack reaches its maximal size. This often indicates infinite or
+   excessively deep recursion in the user's program. Before 4.10, it
+   was not fully implemented by the native-code compiler.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -274,7 +276,7 @@ exception Undefined_recursive_module of (string * int * int)
 \index{Undefinedrecursivemodule@\verb`Undefined_recursive_module`}
 \begin{ocamldocdescription}
    Exception raised when an ill-founded recursive module definition
-   is evaluated.  (See section~\ref{s-recursive-modules}.)
+   is evaluated.  (See section~\ref{s:recursive-modules}.)
    The arguments are the location of the definition in the source code
    (file name, line number, column number).
 \end{ocamldocdescription}

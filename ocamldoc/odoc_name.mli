@@ -36,16 +36,25 @@ val normalize_name : t -> t
 (** Returns the head of a name. *)
 val head : t -> t
 
-(** Returns the depth of the name, i.e. the numer of levels to the root.
+(** Returns the depth of the name, i.e. the number of levels to the root.
    Example : [Toto.Tutu.name] has depth 3. *)
 val depth : t -> int
 
 (** Returns true if the first name is a prefix of the second name.
-   If the two names are equals, then if is false (strict prefix).*)
+   If the two names are equal, then it is false (strict prefix).*)
 val prefix : t -> t -> bool
+
+(** remove a [Library__] prefix and capitalize the resulting name *)
+val alias_unprefix: t -> t -> t
 
 (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
 val get_relative : t -> t -> t
+
+
+(** [get_relative_opt n1 n2] is [n2] if [n1=""] and
+    [get_relative n1 n2] otherwise *)
+val get_relative_opt : t -> t -> t
+
 
 (** Take two names n1=n3.n4 and n2 = n5.n6 and return n6 if n3=n5 or else n2. *)
 val get_relative_raw : t -> t -> t
@@ -70,5 +79,4 @@ val to_path : t -> Path.t
 (** Get a name from a [Longident.t].*)
 val from_longident : Longident.t -> t
 
-(** Set of Name.t *)
-module Set : Set.S with type elt = t
+module Map : Map.S with type key = t

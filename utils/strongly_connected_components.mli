@@ -14,7 +14,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Kosaraju's algorithm for strongly connected components. *)
+(** Kosaraju's algorithm for strongly connected components.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 module type S = sig
   module Id : Identifiable.S

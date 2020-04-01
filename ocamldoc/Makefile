@@ -13,202 +13,248 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
-CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
+ROOTDIR = ..
 
-# Various commands and dir
-##########################
-ROOTDIR   = ..
-OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
-OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-OCAMLLIB  = $(LIBDIR)
-OCAMLBIN  = $(BINDIR)
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLPP=-pp './remove_DEBUG'
+OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
+
+STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+OCAMLDEP = $(BEST_OCAMLDEP)
+DEPFLAGS = -slash
+OCAMLLEX = $(BEST_OCAMLLEX)
+
+# TODO: figure out whether the DEBUG lines the following preprocessor removes
+# are actually useful.
+# If they are not, then the preprocessor logic (including the
+# remove_DEBUG script and the debug target) could be removed.
+# If they are, it may be better to be able to enable them at run-time
+# rather than compile-time, e.g. through a -debug command-line option.
+# In the following line, "sh" is useful under Windows. Without it,
+# the ./remove_DEBUG command would be executed by cmd.exe which would not
+# know how to handle it.
+OCAMLPP=-pp 'sh ./remove_DEBUG'
 
 # For installation
 ##############
+
 MKDIR=mkdir -p
-CP=cp -f
-OCAMLDOC=./ocamldoc
-ifeq "$(TARGET)" "$(HOST)"
-  ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-    OCAMLDOC_RUN=$(CAMLRUN) -I ../otherlibs/unix -I ../otherlibs/str $(OCAMLDOC)
-  else
-    OCAMLDOC_RUN=$(OCAMLDOC)
-  endif
-else
-  OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
-endif
+CP=cp
+OCAMLDOC=ocamldoc
 OCAMLDOC_OPT=$(OCAMLDOC).opt
+
+# TODO: clarify whether the following really needs to be that complicated
+ifeq "$(UNIX_OR_WIN32)" "unix"
+  ifeq "$(TARGET)" "$(HOST)"
+    ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+      OCAMLDOC_RUN_BYTE=$(OCAMLRUN) -I $(ROOTDIR)/otherlibs/$(UNIXLIB) -I $(ROOTDIR)/otherlibs/str ./$(OCAMLDOC)
+    else
+# if shared-libraries are not supported, unix.cma and str.cma
+# are compiled with -custom, so ocamldoc also uses -custom,
+# and (ocamlrun ocamldoc) does not work.
+      OCAMLDOC_RUN_BYTE=./$(OCAMLDOC)
+    endif
+  else
+    OCAMLDOC_RUN_BYTE=$(OCAMLRUN) ./$(OCAMLDOC)
+  endif
+else # Windows
+  OCAMLDOC_RUN_BYTE = \
+    CAML_LD_LIBRARY_PATH="$(ROOTDIR)/otherlibs/win32unix;$(ROOTDIR)/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
+endif
+
+OCAMLDOC_RUN_OPT=./$(OCAMLDOC_OPT)
+
+OCAMLDOC_RUN_PLUGINS=$(OCAMLDOC_RUN_BYTE)
+
+ifeq "$(wildcard $(OCAMLDOC_OPT))" ""
+  OCAMLDOC_RUN=$(OCAMLDOC_RUN_BYTE)
+else
+  OCAMLDOC_RUN=$(OCAMLDOC_RUN_OPT)
+endif
+
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
-INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/ocamldoc
-INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
-INSTALL_BINDIR=$(DESTDIR)$(OCAMLBIN)
-#MANO: man ocamldoc
-INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
-INSTALL_MLIS=odoc_info.mli
-INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
+OCAMLDOC_LIBMLIS=odoc_info.mli
+OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
+OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ODOC_TEST=odoc_test.cmo
-
 GENERATORS_CMOS= \
-	generators/odoc_todo.cmo \
-	generators/odoc_literate.cmo
-true = $(GENERATORS_CMOS:.cmo=.cmxs)
-false =
-GENERATORS_CMXS := $($(NATDYNLINK))
-
+        generators/odoc_todo.cmo \
+        generators/odoc_literate.cmo
+ifeq "$(NATDYNLINK)" "true"
+GENERATORS_CMXS = $(GENERATORS_CMOS:.cmo=.cmxs)
+else
+GENERATORS_CMXS =
+endif
 
 # Compilation
 #############
-OCAMLSRCDIR=..
-INCLUDES_DEP=-I $(OCAMLSRCDIR)/parsing \
-	-I $(OCAMLSRCDIR)/utils \
-	-I $(OCAMLSRCDIR)/typing \
-	-I $(OCAMLSRCDIR)/driver \
-	-I $(OCAMLSRCDIR)/bytecomp \
-	-I $(OCAMLSRCDIR)/tools \
-	-I $(OCAMLSRCDIR)/toplevel/
 
-INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
-	-I $(OCAMLSRCDIR)/otherlibs/str \
-	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
-	-I $(OCAMLSRCDIR)/otherlibs/$(UNIXLIB) \
-	-I $(OCAMLSRCDIR)/otherlibs/num \
-	-I $(OCAMLSRCDIR)/otherlibs/$(GRAPHLIB)
+INCLUDES_DEP=\
+  -I $(ROOTDIR)/utils \
+  -I $(ROOTDIR)/parsing \
+  -I $(ROOTDIR)/typing \
+  -I $(ROOTDIR)/driver \
+  -I $(ROOTDIR)/bytecomp \
+  -I $(ROOTDIR)/toplevel
 
+INCLUDES_NODEP=\
+  -I $(ROOTDIR)/stdlib \
+  -I $(ROOTDIR)/compilerlibs \
+  -I $(ROOTDIR)/otherlibs/str \
+  -I $(ROOTDIR)/otherlibs/dynlink \
+  -I $(ROOTDIR)/otherlibs/dynlink/native \
+  -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
+
+DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+  -safe-string -strict-sequence -strict-formats -bin-annot -principal
+
 LINKFLAGS=$(INCLUDES) -nostdlib
 
-CMOFILES= odoc_config.cmo \
-	odoc_messages.cmo\
-	odoc_global.cmo\
-	odoc_types.cmo\
-	odoc_misc.cmo\
-	odoc_text_parser.cmo\
-	odoc_text_lexer.cmo\
-	odoc_text.cmo\
-	odoc_name.cmo\
-	odoc_parameter.cmo\
-	odoc_value.cmo\
-	odoc_type.cmo\
-	odoc_extension.cmo\
-	odoc_exception.cmo\
-	odoc_class.cmo\
-	odoc_module.cmo\
-	odoc_print.cmo \
-	odoc_str.cmo\
-	odoc_comments_global.cmo\
-	odoc_parser.cmo\
-	odoc_lexer.cmo\
-	odoc_see_lexer.cmo\
-	odoc_env.cmo\
-	odoc_merge.cmo\
-	odoc_sig.cmo\
-	odoc_ast.cmo\
-	odoc_control.cmo\
-	odoc_inherit.cmo\
-	odoc_search.cmo\
-	odoc_scan.cmo\
-	odoc_cross.cmo\
-	odoc_comments.cmo\
-	odoc_dep.cmo\
-	odoc_analyse.cmo\
-	odoc_info.cmo
+CMOFILES=\
+  odoc_config.cmo \
+  odoc_messages.cmo \
+  odoc_global.cmo \
+  odoc_types.cmo \
+  odoc_misc.cmo \
+  odoc_text_parser.cmo \
+  odoc_text_lexer.cmo \
+  odoc_text.cmo \
+  odoc_name.cmo \
+  odoc_parameter.cmo \
+  odoc_value.cmo \
+  odoc_type.cmo \
+  odoc_extension.cmo \
+  odoc_exception.cmo \
+  odoc_class.cmo \
+  odoc_module.cmo \
+  odoc_print.cmo \
+  odoc_str.cmo \
+  odoc_comments_global.cmo \
+  odoc_parser.cmo \
+  odoc_lexer.cmo \
+  odoc_see_lexer.cmo \
+  odoc_env.cmo \
+  odoc_merge.cmo \
+  odoc_sig.cmo \
+  odoc_ast.cmo \
+  odoc_control.cmo \
+  odoc_inherit.cmo \
+  odoc_search.cmo \
+  odoc_scan.cmo \
+  odoc_cross.cmo \
+  odoc_comments.cmo \
+  odoc_dep.cmo \
+  odoc_analyse.cmo \
+  odoc_info.cmo
 
+CMXFILES = $(CMOFILES:.cmo=.cmx)
+CMIFILES = $(CMOFILES:.cmo=.cmi)
 
-CMXFILES= $(CMOFILES:.cmo=.cmx)
-CMIFILES= $(CMOFILES:.cmo=.cmi)
+EXECMOFILES=\
+  $(CMOFILES) \
+  odoc_dag2html.cmo \
+  odoc_to_text.cmo \
+  odoc_ocamlhtml.cmo \
+  odoc_html.cmo \
+  odoc_man.cmo \
+  odoc_latex_style.cmo \
+  odoc_latex.cmo \
+  odoc_texi.cmo \
+  odoc_dot.cmo \
+  odoc_gen.cmo \
+  odoc_args.cmo \
+  odoc.cmo
 
-EXECMOFILES=$(CMOFILES) \
-	odoc_dag2html.cmo \
-	odoc_to_text.cmo \
-	odoc_ocamlhtml.cmo \
-	odoc_html.cmo \
-	odoc_man.cmo \
-	odoc_latex_style.cmo \
-	odoc_latex.cmo \
-	odoc_texi.cmo \
-	odoc_dot.cmo \
-	odoc_gen.cmo \
-	odoc_args.cmo \
-	odoc.cmo
+EXECMXFILES = $(EXECMOFILES:.cmo=.cmx)
+EXECMIFILES = $(EXECMOFILES:.cmo=.cmi)
 
-EXECMXFILES= $(EXECMOFILES:.cmo=.cmx)
-EXECMIFILES= $(EXECMOFILES:.cmo=.cmi)
+LIBCMOFILES = $(CMOFILES)
+LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
+LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
-LIBCMOFILES=$(CMOFILES)
-LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
-LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
+ifeq "$(STDLIB_MANPAGES)" "true"
+DOCS_TARGET = manpages
+else
+DOCS_TARGET =
+endif
 
-# Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES= \
-	$(OCAMLSRCDIR)/tools/depend.cmo
+.PHONY: all
+all: lib exe generators $(DOCS_TARGET)
 
-OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
-
-
-STDLIB_MLIS=../stdlib/*.mli \
-  ../parsing/*.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../otherlibs/str/str.mli \
-	../otherlibs/bigarray/bigarray.mli \
-	../otherlibs/num/num.mli
-
-all:
-	$(MAKE) exe
-	$(MAKE) lib
-	$(MAKE) generators
-	$(MAKE) manpages
-
+.PHONY: exe
 exe: $(OCAMLDOC)
+
+.PHONY: lib
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
+
+.PHONY: generators
 generators: $(GENERATORS_CMOS)
 
-opt.opt:
-	$(MAKE) exeopt
-	$(MAKE) libopt
-	$(MAKE) generatorsopt
+.PHONY: opt.opt allopt # allopt and opt.opt are synonyms
+opt.opt: exeopt libopt generatorsopt
+allopt: opt.opt
 
+.PHONY: exeopt
 exeopt: $(OCAMLDOC_OPT)
+
+.PHONY: libopt
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
+
+.PHONY: generatorsopt
 generatorsopt: $(GENERATORS_CMXS)
 
+# TODO: the following debug target could be replaced by a DEBUG variable
+.PHONY: debug
 debug:
 	$(MAKE) OCAMLPP=""
 
+OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
+
+OCAMLDOC_BCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cma)
+OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)
+
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
-	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
-	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
+
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
-	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
-	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
-	          $(LIBCMOFILES)
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
+
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
-	            $(LIBCMXFILES)
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
-manpages: stdlib_man/Pervasives.3o
-html_doc: stdlib_html/Pervasives.html
+.PHONY: manpages
+manpages: stdlib_man/Stdlib.3o
 
-dot: $(EXECMOFILES)
-	$(OCAMLDOC_RUN) -dot -dot-reduce -o ocamldoc.dot $(INCLUDES) \
-	odoc*.ml
+.PHONY: html_doc
+html_doc: stdlib_html/Stdlib.html
+
+.PHONY: pdf_doc
+pdf_doc: stdlib_latex/stdlib.pdf
+
+.PHONY: texi_doc
+texi_doc: stdlib_texi/stdlib.texi
+
+.PHONY: dot
+dot: ocamldoc.dot
+
+ocamldoc.dot: $(EXECMOFILES)
+	$(OCAMLDOC_RUN) -dot -dot-reduce -o $@ $(INCLUDES) odoc*.ml
 
 # Parsers and lexers dependencies :
 ###################################
@@ -242,131 +288,245 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
 
 .ml.cmxs:
-	$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
+	$(OCAMLOPT_CMD) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
 
 .mll.ml:
-	$(OCAMLLEX) $<
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 .mly.ml:
-	$(CAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 .mly.mli:
-	$(CAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 # Installation targets
 ######################
-install: dummy
-	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
-	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
-	if test -d "$(INSTALL_CUSTOMDIR)"; then : ; else $(MKDIR) "$(INSTALL_CUSTOMDIR)"; fi
-	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
-	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
-	if test -d "$(INSTALL_MANODIR)"; then : ; else $(MKDIR) "$(INSTALL_MANODIR)"; fi
-	if test -d stdlib_man; then $(CP) stdlib_man/* "$(INSTALL_MANODIR)"; else : ; fi
 
+# TODO: it may be good to split the following rule in several ones, e.g.
+# install-programs, install-doc, install-libs
+
+INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
+
+.PHONY: install
+install:
+	$(MKDIR) "$(INSTALL_BINDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
+	$(MKDIR) "$(INSTALL_MANODIR)"
+	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	$(INSTALL_DATA) \
+	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBCMIS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+endif
+	if test -d stdlib_man; then \
+	  $(INSTALL_DATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
+	else : ; fi
+
+# Note: at the moment, $(INSTALL_MANODIR) is created even if the doc has
+# not been built. This is not clean and should be changed.
+
+.PHONY: installopt
 installopt:
 	if test -f $(OCAMLDOC_OPT); then $(MAKE) installopt_really ; fi
 
+.PHONY: installopt_really
 installopt_really:
-	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
-	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
-	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
-	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) "$(INSTALL_LIBDIR)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_BINDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
+	$(INSTALL_PROG) \
+	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBCMIS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+endif
+	$(INSTALL_DATA) \
+	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+
+# TODO: also split into several rules
 
 # Testing :
 ###########
-test: dummy
+
+.PHONY: test
+test:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
 	$(MKDIR) $@-custom
-	$(OCAMLDOC_RUN) -colorize-code -sort -d $@-custom $(INCLUDES) \
+	$(OCAMLDOC_RUN_PLUGINS) -colorize-code -sort -d $@-custom $(INCLUDES) \
 	-g generators/odoc_literate.cmo -g generators/odoc_todo.cmo \
 	-load $@/ocamldoc.odoc -v
 
-test_stdlib: dummy
+.PHONY: test_stdlib
+test_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	../stdlib/pervasives.ml ../stdlib/*.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../otherlibs/str/str.mli
+	$(ROOTDIR)/stdlib/*.mli \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/str/str.mli
 
-test_stdlib_code: dummy
+.PHONY: test_stdlib_code
+test_stdlib_code:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	`ls ../stdlib/*.ml | grep -v Labels` \
-	../otherlibs/$(UNIXLIB)/unix.ml \
-	../otherlibs/str/str.ml
+	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
+	$(ROOTDIR)/otherlibs/str/str.ml
 
-test_framed: dummy
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
-
-test_latex: dummy
+.PHONY: test_latex
+test_latex:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml \
-	        odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
+	        odoc*.mli test2.txt $(ROOTDIR)/stdlib/*.mli $(ROOTDIR)/otherlibs/unix/unix.mli
 
-test_latex_simple: dummy
+.PHONY: test_latex_simple
+test_latex_simple:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
 	-latextitle 6,subsection -latextitle 7,subsubection \
-	../stdlib/hashtbl.mli \
-	../stdlib/arg.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../stdlib/map.mli
+	$(ROOTDIR)/stdlib/hashtbl.mli \
+	$(ROOTDIR)/stdlib/arg.mli \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/stdlib/map.mli
 
-test_man: dummy
+.PHONY: test_man
+test_man:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
-test_texi: dummy
+.PHONY: test_texi
+test_texi:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
-stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
+# stdlib non-prefixed :
+#######################
+SRC=$(ROOTDIR)
+
+# Documented modules: stdlib + otherlib + utils(?) + parsing(for compiler-libs)
+
+include Makefile.docfiles
+
+stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_man
-	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
+	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" -man-mini \
-	$(STDLIB_MLIS)
+	$(DOC_ALL_TEXT:%=-text %) \
+	$(DOC_ALL_MLIS)
 
-stdlib_html/Pervasives.html: $(STDLIB_MLIS)
+stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_html
-	$(OCAMLDOC_RUN) -d stdlib_html -html $(INCLUDES) \
+	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" \
-	$(STDLIB_MLIS)
+	$(DOC_ALL_TEXT:%=-text %) \
+	$(DOC_ALL_MLIS)
+
+stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL)
+	$(MKDIR) stdlib_texi
+	$(OCAMLDOC_RUN) -texi -o stdlib_texi/stdlib.texi -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-t "OCaml library" \
+	$(DOC_ALL_TEXT:%=-text %) \
+	$(DOC_ALL_MLIS)
 
 
-autotest_stdlib: dummy
+stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL)
+	$(MKDIR) stdlib_latex
+	$(OCAMLDOC_RUN) -latex -o stdlib_latex/stdlib.tex -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-t "OCaml library" \
+	$(DOC_ALL_TEXT:%=-text %) \
+	$(DOC_ALL_MLIS)
+
+stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
+	cd stdlib_latex && pdflatex stdlib && pdflatex stdlib
+
+
+.PHONY: autotest_stdlib
+autotest_stdlib:
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
+	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
-	../stdlib/pervasives.ml ../stdlib/*.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../otherlibs/str/str.mli
+	$(ROOTDIR)/stdlib/*.mli \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/str/str.mli
+
+
+# odoc rules :
+##############
+
+.PHONY: odoc
+odoc:
+	rm -rf odoc
+	$(MKDIR) odoc
+	# .cmti --> .odoc
+	for fn in $(ROOTDIR)/stdlib/stdlib*.cmti; do \
+	  odoc compile $(INCLUDES) --package stdlib $(ROOTDIR)/stdlib/$$fn; \
+	done
+	for lib in str bigarray; do \
+	  odoc compile $(INCLUDES) --package $$lib $(ROOTDIR)/otherlibs/$$lib/$$lib.cmti; \
+	done
+	odoc compile $(INCLUDES) --package unix $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cmti
+	for fn in $(ROOTDIR)/parsing/*.cmti; do \
+	  odoc compile $(INCLUDES) --package parsing $(ROOTDIR)/parsing/$$fn; \
+	done
+	# .odoc --> .html
+	odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/stdlib/stdlib.odoc
+	for lib in str bigarray $(UNIXLIB); do \
+	  odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/otherlibs/$$lib/$$lib.odoc; \
+	done
+	for fn in $(ROOTDIR)/parsing/*.odoc; do \
+	  odoc html $(INCLUDES) --output-dir odoc $$fn; \
+	done
+	for d in odoc/*; do \
+	  lib=`basename $$d`; \
+	  cd $$d; \
+	  echo -e The $$lib 'library.\n\nModules\n:{!modules:' * '}' > ../../index.mld; \
+	  cd ../..; \
+	  odoc html $(INCLUDES) --output-dir odoc --index-for=$$lib index.mld; \
+	  rm -f index.mld; \
+	done
+	cp odoc_index.html odoc/index.html
+	odoc css -o odoc
 
 # backup, clean and depend :
 ############################
 
-clean:: dummy
-	@rm -f *~ \#*\#
-	@rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.$(A) *.$(O)
-	@rm -f odoc_parser.output odoc_text_parser.output
-	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
-	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
-	@rm -rf stdlib_man
-	@rm -f generators/*.cm[aiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
+.PHONY: clean
+clean:
+	rm -f \#*\#
+	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.$(A) *.$(O)
+	rm -f odoc_parser.output odoc_text_parser.output
+	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
+	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
+	rm -rf stdlib_man stdlib_html stdlib_texi stdlib_latex
+	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
-depend::
-	$(CAMLYACC) odoc_text_parser.mly
-	$(CAMLYACC) odoc_parser.mly
-	$(OCAMLLEX) odoc_text_lexer.mll
-	$(OCAMLLEX) odoc_lexer.mll
-	$(OCAMLLEX) odoc_ocamlhtml.mll
-	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
-
-dummy:
+.PHONY: depend
+depend:
+	$(OCAMLYACC) odoc_text_parser.mly
+	$(OCAMLYACC) odoc_parser.mly
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_text_lexer.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_lexer.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_ocamlhtml.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_see_lexer.mll
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
 
 include .depend

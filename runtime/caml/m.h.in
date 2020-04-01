@@ -1,0 +1,100 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+/* Machine-related configuration */
+
+#undef ARCH_SIXTYFOUR
+
+/* Define ARCH_SIXTYFOUR if the processor has a natural word size of 64 bits.
+   That is, sizeof(char *) = 8.
+   Otherwise, leave ARCH_SIXTYFOUR undefined.
+   This assumes sizeof(char *) = 4. */
+
+#undef ARCH_BIG_ENDIAN
+
+/* Define ARCH_BIG_ENDIAN if the processor is big endian (the most
+   significant byte of an integer stored in memory comes first).
+   Leave ARCH_BIG_ENDIAN undefined if the processor is little-endian
+   (the least significant byte comes first).
+*/
+
+#undef ARCH_ALIGN_DOUBLE
+
+/* Define ARCH_ALIGN_DOUBLE if the processor requires doubles to be
+   doubleword-aligned. Leave ARCH_ALIGN_DOUBLE undefined if the processor
+   supports word-aligned doubles. */
+
+#undef HAS_ARCH_CODE32
+
+/* Define HAS_ARCH_CODE32 if, on a 64-bit machine, code pointers fit
+   in 32 bits, i.e. the code segment resides in the low 4G of the
+   addressing space.
+   HAS_ARCH_CODE32 is ignored on 32-bit machines. */
+
+#undef SIZEOF_INT
+#undef SIZEOF_LONG
+#undef SIZEOF_PTR
+#undef SIZEOF_SHORT
+#undef SIZEOF_LONGLONG
+
+/* Define SIZEOF_INT, SIZEOF_LONG, SIZEOF_PTR, SIZEOF_SHORT and
+   SIZEOF_LONGLONG to the sizes in bytes of the C types "int", "long",
+   "char *", "short" and "long long" respectively. */
+
+#undef ARCH_INT64_TYPE
+#undef ARCH_UINT64_TYPE
+
+/* Define ARCH_INT64_TYPE and ARCH_UINT64_TYPE to 64-bit integer types,
+   typically "long long" and "unsigned long long" on 32-bit platforms,
+   and "long" and "unsigned long" on 64-bit platforms.
+   If the C compiler doesn't support any 64-bit integer type,
+   leave both ARCH_INT64_TYPE and ARCH_UINT64_TYPE undefined. */
+
+#undef ARCH_INT64_PRINTF_FORMAT
+
+/* Define ARCH_INT64_PRINTF_FORMAT to the printf format used for formatting
+   values of type ARCH_INT64_TYPE.  This is usually "ll" on 32-bit
+   platforms and "l" on 64-bit platforms.
+   Leave undefined if ARCH_INT64_TYPE is undefined.  */
+
+#undef ARCH_ALIGN_INT64
+
+/* Define ARCH_ALIGN_INT64 if the processor requires 64-bit integers to be
+   doubleword-aligned. Leave ARCH_ALIGN_INT64 undefined if the processor
+   supports word-aligned 64-bit integers.  Leave undefined if
+   64-bit integers are not supported. */
+
+#undef PROFINFO_WIDTH
+
+#undef WITH_SPACETIME
+#undef ENABLE_CALL_COUNTS
+
+#undef ASM_CFI_SUPPORTED
+
+#undef WITH_FRAME_POINTERS
+
+#undef NO_NAKED_POINTERS
+
+#undef WITH_PROFINFO
+
+#undef CAML_WITH_FPIC
+
+#undef CAML_SAFE_STRING
+
+#undef FLAT_FLOAT_ARRAY
+
+#undef FUNCTION_SECTIONS
+
+#undef SUPPORTS_ALIGNED_ATTRIBUTE

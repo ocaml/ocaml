@@ -26,8 +26,25 @@
    longer than about 10000 elements.
 *)
 
+type 'a t = 'a list = [] | (::) of 'a * 'a list (**)
+(** An alias for the type of lists. *)
+
 val length : 'a list -> int
 (** Return the length (number of elements) of the given list. *)
+
+val compare_lengths : 'a list -> 'b list -> int
+(** Compare the lengths of two lists. [compare_lengths l1 l2] is
+   equivalent to [compare (length l1) (length l2)], except that
+   the computation stops after itering on the shortest list.
+   @since 4.05.0
+ *)
+
+val compare_length_with : 'a list -> int -> int
+(** Compare the length of a list to an integer. [compare_length_with l n] is
+   equivalent to [compare (length l) n], except that
+   the computation stops after at most [n] iterations on the list.
+   @since 4.05.0
+*)
 
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
@@ -40,16 +57,31 @@ val hd : 'a list -> 'a
 
 val tl : 'a list -> 'a list
 (** Return the given list without its first element. Raise
-   [Failure "tl"] if the list is empty. *)
+    [Failure "tl"] if the list is empty. *)
 
-val nth : 'a list -> int -> 'a
+val nth: 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
    Raise [Failure "nth"] if the list is too short.
    Raise [Invalid_argument "List.nth"] if [n] is negative. *)
 
+val nth_opt: 'a list -> int -> 'a option
+(** Return the [n]-th element of the given list.
+    The first element (head of the list) is at position 0.
+    Return [None] if the list is too short.
+    Raise [Invalid_argument "List.nth"] if [n] is negative.
+    @since 4.05
+*)
+
 val rev : 'a list -> 'a list
 (** List reversal. *)
+
+val init : int -> (int -> 'a) -> 'a list
+(** [List.init len f] is [[f 0; f 1; ...; f (len-1)]], evaluated left to right.
+
+    @raise Invalid_argument if len < 0.
+    @since 4.06.0
+*)
 
 val append : 'a list -> 'a list -> 'a list
 (** Concatenate two lists.  Same as the infix operator [@].
@@ -67,11 +99,10 @@ val concat : 'a list list -> 'a list
    (length of the argument + length of the longest sub-list). *)
 
 val flatten : 'a list list -> 'a list
-(** Same as [concat].  Not tail-recursive
-   (length of the argument + length of the longest sub-list). *)
+(** An alias for [concat]. *)
 
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 
 val iter : ('a -> unit) -> 'a list -> unit
@@ -103,6 +134,26 @@ val rev_map : ('a -> 'b) -> 'a list -> 'b list
    {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
    more efficient. *)
 
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+(** [filter_map f l] applies [f] to every element of [l], filters
+    out the [None] elements and returns the list of the arguments of
+    the [Some] elements.
+    @since 4.08.0
+*)
+
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** [List.concat_map f l] gives the same result as
+    {!List.concat}[ (]{!List.map}[ f l)]. Tail-recursive.
+
+    @since 4.10.0
+*)
+
+val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+(** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
+    accumulator through calls to [f]
+    @since 4.11.0
+*)
+
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)
@@ -112,7 +163,7 @@ val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
    [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 
-(** {6 Iterators on two lists} *)
+(** {1 Iterators on two lists} *)
 
 
 val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
@@ -145,18 +196,20 @@ val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
    to have different lengths.  Not tail-recursive. *)
 
 
-(** {6 List scanning} *)
+(** {1 List scanning} *)
 
 
 val for_all : ('a -> bool) -> 'a list -> bool
 (** [for_all p [a1; ...; an]] checks if all elements of the list
    satisfy the predicate [p]. That is, it returns
-   [(p a1) && (p a2) && ... && (p an)]. *)
+   [(p a1) && (p a2) && ... && (p an)] for a non-empty list and
+   [true] if the list is empty. *)
 
 val exists : ('a -> bool) -> 'a list -> bool
 (** [exists p [a1; ...; an]] checks if at least one element of
    the list satisfies the predicate [p]. That is, it returns
-   [(p a1) || (p a2) || ... || (p an)]. *)
+   [(p a1) || (p a2) || ... || (p an)] for a non-empty list and
+   [false] if the list is empty. *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 (** Same as {!List.for_all}, but for a two-argument predicate.
@@ -177,7 +230,7 @@ val memq : 'a -> 'a list -> bool
    equality to compare list elements. *)
 
 
-(** {6 List searching} *)
+(** {1 List searching} *)
 
 
 val find : ('a -> bool) -> 'a list -> 'a
@@ -185,6 +238,19 @@ val find : ('a -> bool) -> 'a list -> 'a
    that satisfies the predicate [p].
    Raise [Not_found] if there is no value that satisfies [p] in the
    list [l]. *)
+
+val find_opt: ('a -> bool) -> 'a list -> 'a option
+(** [find_opt p l] returns the first element of the list [l] that
+    satisfies the predicate [p], or [None] if there is no value that
+    satisfies [p] in the list [l].
+    @since 4.05 *)
+
+val find_map: ('a -> 'b option) -> 'a list -> 'b option
+(** [find_map f l] applies [f] to the elements of [l] in order,
+    and returns the first result of the form [Some v], or [None]
+    if none exist.
+    @since 4.10.0
+*)
 
 val filter : ('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
@@ -194,6 +260,13 @@ val filter : ('a -> bool) -> 'a list -> 'a list
 val find_all : ('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!List.filter}. *)
 
+val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
+(** Same as {!List.filter}, but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.11.0
+*)
+
 val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition p l] returns a pair of lists [(l1, l2)], where
    [l1] is the list of all the elements of [l] that
@@ -202,7 +275,7 @@ val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
    The order of the elements in the input list is preserved. *)
 
 
-(** {6 Association lists} *)
+(** {1 Association lists} *)
 
 
 val assoc : 'a -> ('a * 'b) list -> 'b
@@ -213,9 +286,23 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    Raise [Not_found] if there is no value associated with [a] in the
    list [l]. *)
 
+val assoc_opt: 'a -> ('a * 'b) list -> 'b option
+(** [assoc_opt a l] returns the value associated with key [a] in the list of
+   pairs [l]. That is,
+   [assoc_opt a [ ...; (a,b); ...] = b]
+   if [(a,b)] is the leftmost binding of [a] in list [l].
+   Returns [None] if there is no value associated with [a] in the
+   list [l].
+   @since 4.05 *)
+
 val assq : 'a -> ('a * 'b) list -> 'b
 (** Same as {!List.assoc}, but uses physical equality instead of structural
    equality to compare keys. *)
+
+val assq_opt : 'a -> ('a * 'b) list -> 'b option
+(** Same as {!List.assoc_opt}, but uses physical equality instead of structural
+    equality to compare keys.
+    @since 4.05 *)
 
 val mem_assoc : 'a -> ('a * 'b) list -> bool
 (** Same as {!List.assoc}, but simply return true if a binding exists,
@@ -235,7 +322,7 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
    of structural equality to compare keys.  Not tail-recursive. *)
 
 
-(** {6 Lists of pairs} *)
+(** {1 Lists of pairs} *)
 
 
 val split : ('a * 'b) list -> 'a list * 'b list
@@ -252,7 +339,7 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
    have different lengths.  Not tail-recursive. *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : ('a -> 'a -> int) -> 'a list -> 'a list
@@ -261,7 +348,7 @@ val sort : ('a -> 'a -> int) -> 'a list -> 'a list
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see Array.sort for
    a complete specification).  For example,
-   {!Pervasives.compare} is a suitable comparison function.
+   {!Stdlib.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
@@ -292,8 +379,18 @@ val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the
     comparison function [cmp], [merge cmp l1 l2] will return a
-    sorted list containting all the elements of [l1] and [l2].
+    sorted list containing all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).
 *)
+
+(** {1 Iterators} *)
+
+val to_seq : 'a list -> 'a Seq.t
+(** Iterate on the list
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a list
+(** Create a list from the iterator
+    @since 4.07 *)

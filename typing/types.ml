@@ -22,6 +22,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
+    mutable scope: int;
     id: int }
 
 and type_desc =
@@ -44,9 +45,10 @@ and row_desc =
       row_more: type_expr;
       row_bound: unit;
       row_closed: bool;
-      row_fixed: bool;
+      row_fixed: fixed_explanation option;
       row_name: (Path.t * type_expr list) option }
-
+and fixed_explanation =
+  | Univar of type_expr | Fixed_private | Reified of Path.t | Rigid
 and row_field =
     Rpresent of type_expr option
   | Reither of bool * type_expr list * bool * row_field option ref
@@ -77,11 +79,61 @@ module TypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
+(* *)
+
+module Uid = struct
+  type t =
+    | Compilation_unit of string
+    | Item of { comp_unit: string; id: int }
+    | Internal
+    | Predef of string
+
+  include Identifiable.Make(struct
+    type nonrec t = t
+
+    let equal (x : t) y = x = y
+    let compare (x : t) y = compare x y
+    let hash (x : t) = Hashtbl.hash x
+
+    let print fmt = function
+      | Internal -> Format.pp_print_string fmt "<internal>"
+      | Predef name -> Format.fprintf fmt "<predef:%s>" name
+      | Compilation_unit s -> Format.pp_print_string fmt s
+      | Item { comp_unit; id } -> Format.fprintf fmt "%s.%d" comp_unit id
+
+    let output oc t =
+      let fmt = Format.formatter_of_out_channel oc in
+      print fmt t
+  end)
+
+  let id = ref (-1)
+
+  let reinit () = id := (-1)
+
+  let mk  ~current_unit =
+      incr id;
+      Item { comp_unit = current_unit; id = !id }
+
+  let of_compilation_unit_id id =
+    if not (Ident.persistent id) then
+      Misc.fatal_errorf "Types.Uid.of_compilation_unit_id %S" (Ident.name id);
+    Compilation_unit (Ident.name id)
+
+  let of_predef_id id =
+    if not (Ident.is_predef id) then
+      Misc.fatal_errorf "Types.Uid.of_predef_id %S" (Ident.name id);
+    Predef (Ident.name id)
+
+  let internal_not_actually_unique = Internal
+
+  let for_actual_declaration = function
+    | Item _ -> true
+    | _ -> false
+end
+
 (* Maps of methods and instance variables *)
 
-module OrderedString =
-  struct type t = string let compare (x:t) y = compare x y end
-module Meths = Map.Make(OrderedString)
+module Meths = Misc.Stdlib.String.Map
 module Vars = Meths
 
 (* Value descriptions *)
@@ -91,7 +143,8 @@ type value_description =
     val_kind: value_kind;
     val_loc: Location.t;
     val_attributes: Parsetree.attributes;
- }
+    val_uid: Uid.t;
+  }
 
 and value_kind =
     Val_reg                             (* Regular value *)
@@ -104,7 +157,6 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound                         (* Unbound variable *)
 
 (* Variance *)
 
@@ -122,6 +174,7 @@ module Variance = struct
   let union v1 v2 = v1 lor v2
   let inter v1 v2 = v1 land v2
   let subset v1 v2 = (v1 land v2 = v1)
+  let eq (v1 : t) v2 = (v1 = v2)
   let set x b v =
     if b then v lor single x else  v land (lnot (single x))
   let mem x = subset (single x)
@@ -136,6 +189,32 @@ module Variance = struct
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
 end
 
+module Separability = struct
+  type t = Ind | Sep | Deepsep
+  type signature = t list
+  let eq (m1 : t) m2 = (m1 = m2)
+  let rank = function
+    | Ind -> 0
+    | Sep -> 1
+    | Deepsep -> 2
+  let compare m1 m2 = compare (rank m1) (rank m2)
+  let max m1 m2 = if rank m1 >= rank m2 then m1 else m2
+
+  let print ppf = function
+    | Ind -> Format.fprintf ppf "Ind"
+    | Sep -> Format.fprintf ppf "Sep"
+    | Deepsep -> Format.fprintf ppf "Deepsep"
+
+  let print_signature ppf modes =
+    let pp_sep ppf () = Format.fprintf ppf ",@," in
+    Format.fprintf ppf "@[(%a)@]"
+      (Format.pp_print_list ~pp_sep print) modes
+
+  let default_signature ~arity =
+    let default_mode = if Config.flat_float_array then Deepsep else Ind in
+    List.init arity (fun _ -> default_mode)
+end
+
 (* Type definitions *)
 
 type type_declaration =
@@ -145,10 +224,14 @@ type type_declaration =
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
-    type_newtype_level: (int * int) option;
+    type_separability: Separability.t list;
+    type_is_newtype: bool;
+    type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: bool;
+    type_immediate: Type_immediacy.t;
+    type_unboxed: unboxed_status;
+    type_uid: Uid.t;
  }
 
 and type_kind =
@@ -160,8 +243,9 @@ and type_kind =
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
+  | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
-  | Record_extension                    (* Inlined record under extension *)
+  | Record_extension of Path.t          (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -170,6 +254,7 @@ and label_declaration =
     ld_type: type_expr;
     ld_loc: Location.t;
     ld_attributes: Parsetree.attributes;
+    ld_uid: Uid.t;
   }
 
 and constructor_declaration =
@@ -179,20 +264,34 @@ and constructor_declaration =
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
+    cd_uid: Uid.t;
   }
 
 and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of label_declaration list
 
+and unboxed_status =
+  {
+    unboxed: bool;
+    default: bool; (* False if the unboxed field was set from an attribute. *)
+  }
+
+let unboxed_false_default_false = {unboxed = false; default = false}
+let unboxed_false_default_true = {unboxed = false; default = true}
+let unboxed_true_default_false = {unboxed = true; default = false}
+let unboxed_true_default_true = {unboxed = true; default = true}
+
 type extension_constructor =
-    { ext_type_path: Path.t;
-      ext_type_params: type_expr list;
-      ext_args: constructor_arguments;
-      ext_ret_type: type_expr option;
-      ext_private: private_flag;
-      ext_loc: Location.t;
-      ext_attributes: Parsetree.attributes; }
+  { ext_type_path: Path.t;
+    ext_type_params: type_expr list;
+    ext_args: constructor_arguments;
+    ext_ret_type: type_expr option;
+    ext_private: private_flag;
+    ext_loc: Location.t;
+    ext_attributes: Parsetree.attributes;
+    ext_uid: Uid.t;
+  }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -201,7 +300,7 @@ and type_transparence =
 
 (* Type expressions for the class language *)
 
-module Concr = Set.Make(OrderedString)
+module Concr = Misc.Stdlib.String.Set
 
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
@@ -223,6 +322,7 @@ type class_declaration =
     cty_variance: Variance.t list;
     cty_loc: Location.t;
     cty_attributes: Parsetree.attributes;
+    cty_uid: Uid.t;
  }
 
 type class_type_declaration =
@@ -232,39 +332,55 @@ type class_type_declaration =
     clty_variance: Variance.t list;
     clty_loc: Location.t;
     clty_attributes: Parsetree.attributes;
+    clty_uid: Uid.t;
   }
 
 (* Type expressions for the module language *)
 
+type visibility =
+  | Exported
+  | Hidden
+
 type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
-  | Mty_functor of Ident.t * module_type option * module_type
+  | Mty_functor of functor_parameter * module_type
   | Mty_alias of Path.t
+
+and functor_parameter =
+  | Unit
+  | Named of Ident.t option * module_type
+
+and module_presence =
+  | Mp_present
+  | Mp_absent
 
 and signature = signature_item list
 
 and signature_item =
-    Sig_value of Ident.t * value_description
-  | Sig_type of Ident.t * type_declaration * rec_status
-  | Sig_typext of Ident.t * extension_constructor * ext_status
-  | Sig_module of Ident.t * module_declaration * rec_status
-  | Sig_modtype of Ident.t * modtype_declaration
-  | Sig_class of Ident.t * class_declaration * rec_status
-  | Sig_class_type of Ident.t * class_type_declaration * rec_status
+    Sig_value of Ident.t * value_description * visibility
+  | Sig_type of Ident.t * type_declaration * rec_status * visibility
+  | Sig_typext of Ident.t * extension_constructor * ext_status * visibility
+  | Sig_module of
+      Ident.t * module_presence * module_declaration * rec_status * visibility
+  | Sig_modtype of Ident.t * modtype_declaration * visibility
+  | Sig_class of Ident.t * class_declaration * rec_status * visibility
+  | Sig_class_type of Ident.t * class_type_declaration * rec_status * visibility
 
 and module_declaration =
   {
     md_type: module_type;
     md_attributes: Parsetree.attributes;
     md_loc: Location.t;
+    md_uid: Uid.t;
   }
 
 and modtype_declaration =
   {
-    mtd_type: module_type option;  (* Nonte: abstract *)
+    mtd_type: module_type option;  (* Note: abstract *)
     mtd_attributes: Parsetree.attributes;
     mtd_loc: Location.t;
+    mtd_uid: Uid.t;
   }
 
 and rec_status =
@@ -296,13 +412,28 @@ type constructor_description =
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
     cstr_inlined: type_declaration option;
+    cstr_uid: Uid.t;
    }
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
+  | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
+
+let equal_tag t1 t2 =
+  match (t1, t2) with
+  | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
+  | Cstr_block i1, Cstr_block i2 -> i2 = i1
+  | Cstr_unboxed, Cstr_unboxed -> true
+  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) ->
+      Path.same path1 path2 && b1 = b2
+  | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
+
+let may_equal_constr c1 c2 = match c1.cstr_tag,c2.cstr_tag with
+| Cstr_extension _,Cstr_extension _ -> c1.cstr_arity = c2.cstr_arity
+| tag1,tag2 -> equal_tag tag1 tag2
 
 type label_description =
   { lbl_name: string;                   (* Short name *)
@@ -315,4 +446,25 @@ type label_description =
     lbl_private: private_flag;          (* Read-only field? *)
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
+    lbl_uid: Uid.t;
    }
+
+let rec bound_value_identifiers = function
+    [] -> []
+  | Sig_value(id, {val_kind = Val_reg}, _) :: rem ->
+      id :: bound_value_identifiers rem
+  | Sig_typext(id, _, _, _) :: rem -> id :: bound_value_identifiers rem
+  | Sig_module(id, Mp_present, _, _, _) :: rem ->
+      id :: bound_value_identifiers rem
+  | Sig_class(id, _, _, _) :: rem -> id :: bound_value_identifiers rem
+  | _ :: rem -> bound_value_identifiers rem
+
+let signature_item_id = function
+  | Sig_value (id, _, _)
+  | Sig_type (id, _, _, _)
+  | Sig_typext (id, _, _, _)
+  | Sig_module (id, _, _, _, _)
+  | Sig_modtype (id, _, _)
+  | Sig_class (id, _, _, _)
+  | Sig_class_type (id, _, _, _)
+    -> id

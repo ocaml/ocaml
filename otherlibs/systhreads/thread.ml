@@ -57,22 +57,21 @@ let preempt_signal =
   | "Win32" -> Sys.sigterm
   | _       -> Sys.sigvtalrm
 
-let _ =
+let () =
   Sys.set_signal preempt_signal (Sys.Signal_handle preempt);
-  thread_initialize();
-  at_exit
-    (fun () ->
-        thread_cleanup();
-        (* In case of DLL-embedded OCaml the preempt_signal handler
-           will point to nowhere after DLL unloading and an accidental
-           preempt_signal will crash the main program. So restore the
-           default handler. *)
-        Sys.set_signal preempt_signal Sys.Signal_default
-    )
+  thread_initialize ();
+  Callback.register "Thread.at_shutdown" (fun () ->
+    thread_cleanup();
+    (* In case of DLL-embedded OCaml the preempt_signal handler
+       will point to nowhere after DLL unloading and an accidental
+       preempt_signal will crash the main program. So restore the
+       default handler. *)
+    Sys.set_signal preempt_signal Sys.Signal_default
+  )
 
 (* Wait functions *)
 
-let delay time = ignore(Unix.select [] [] [] time)
+let delay = Unix.sleepf
 
 let wait_read fd = ()
 let wait_write fd = ()

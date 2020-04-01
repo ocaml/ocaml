@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module type S = sig type t [@@immediate] end;;
 module F (M : S) : S = M;;
 [%%expect{|
@@ -102,9 +106,11 @@ module B = struct
   type t = string [@@immediate]
 end;;
 [%%expect{|
-Line _, characters 2-31:
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Line 2, characters 2-31:
+2 |   type t = string [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
 |}];;
 
 (* Not guaranteed that t is immediate, so this is an invalid declaration *)
@@ -113,9 +119,11 @@ module C = struct
   type s = t [@@immediate]
 end;;
 [%%expect{|
-Line _, characters 2-26:
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Line 3, characters 2-26:
+3 |   type s = t [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
 |}];;
 
 (* Can't ascribe to an immediate type signature with a non-immediate type *)
@@ -123,7 +131,10 @@ module D : sig type t [@@immediate] end = struct
   type t = string
 end;;
 [%%expect{|
-Line _, characters 42-70:
+Lines 1-3, characters 42-3:
+1 | ..........................................struct
+2 |   type t = string
+3 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = string end
@@ -133,21 +144,23 @@ Error: Signature mismatch:
          type t = string
        is not included in
          type t [@@immediate]
-       the first is not an immediate type.
+       The first is not an immediate type.
 |}];;
 
 (* Same as above but with explicit signature *)
 module M_invalid : S = struct type t = string end;;
 module FM_invalid = F (struct type t = string end);;
 [%%expect{|
-Line _, characters 23-49:
+Line 1, characters 23-49:
+1 | module M_invalid : S = struct type t = string end;;
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match: sig type t = string end is not included in S
        Type declarations do not match:
          type t = string
        is not included in
          type t [@@immediate]
-       the first is not an immediate type.
+       The first is not an immediate type.
 |}];;
 
 (* Can't use a non-immediate type even if mutually recursive *)
@@ -156,7 +169,9 @@ module E = struct
   and s = string
 end;;
 [%%expect{|
-Line _, characters 2-26:
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Line 2, characters 2-26:
+2 |   type t = s [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
 |}];;

@@ -37,7 +37,7 @@ type rhs = operation * valnum array
 
 module Equations = struct
   module Rhs_map =
-    Map.Make(struct type t = rhs let compare = Pervasives.compare end)
+    Map.Make(struct type t = rhs let compare = Stdlib.compare end)
 
   type 'a t =
     { load_equations : 'a Rhs_map.t;
@@ -215,33 +215,33 @@ let insert_move srcs dsts i =
 
 class cse_generic = object (self)
 
-(* Default classification of operations.  Can be overriden in
+(* Default classification of operations.  Can be overridden in
    processor-specific files to classify specific operations better. *)
 
 method class_of_operation op =
   match op with
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
-  | Iconst_int _ | Iconst_float _ | Iconst_symbol _
-  | Iconst_blockheader _ -> Op_pure
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iconst_int _ | Iconst_float _ | Iconst_symbol _ -> Op_pure
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
   | Istore(_,_,asg) -> Op_store asg
   | Ialloc _ -> assert false                   (* treated specially *)
-  | Iintop(Icheckbound) -> Op_checkbound
+  | Iintop(Icheckbound _) -> Op_checkbound
   | Iintop _ -> Op_pure
-  | Iintop_imm(Icheckbound, _) -> Op_checkbound
+  | Iintop_imm(Icheckbound _, _) -> Op_checkbound
   | Iintop_imm(_, _) -> Op_pure
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
+  | Iname_for_debugger _ -> Op_pure
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 
 method is_cheap_operation op =
   match op with
-  | Iconst_int _ | Iconst_blockheader _ -> true
+  | Iconst_int _ -> true
   | _ -> false
 
 (* Forget all equations involving memory loads.  Performed after a
@@ -255,7 +255,7 @@ method private kill_loads n =
 
 method private cse n i =
   match i.desc with
-  | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _)
+  | Iend | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _)
   | Iexit _ | Iraise _ ->
       i
   | Iop (Imove | Ispill | Ireload) ->
@@ -263,7 +263,7 @@ method private cse n i =
          as to the argument reg. *)
       let n1 = set_move n i.arg.(0) i.res.(0) in
       {i with next = self#cse n1 i.next}
-  | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
+  | Iop (Icall_ind _ | Icall_imm _ | Iextcall _) ->
       (* For function calls, we should at least forget:
          - equations involving memory loads, since the callee can
            perform arbitrary memory stores;
@@ -347,12 +347,11 @@ method private cse n i =
      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
       {i with desc = Iswitch(index, Array.map (self#cse n1) cases);
               next = self#cse empty_numbering i.next}
-  | Iloop(body) ->
-      {i with desc = Iloop(self#cse empty_numbering body);
-              next = self#cse empty_numbering i.next}
-  | Icatch(nfail, body, handler) ->
-      {i with desc = Icatch(nfail, self#cse n body,
-                            self#cse empty_numbering handler);
+  | Icatch(rec_flag, handlers, body) ->
+      let aux (nfail, handler) =
+        nfail, self#cse empty_numbering handler
+      in
+      {i with desc = Icatch(rec_flag, List.map aux handlers, self#cse n body);
               next = self#cse empty_numbering i.next}
   | Itrywith(body, handler) ->
       {i with desc = Itrywith(self#cse n body,
@@ -360,6 +359,10 @@ method private cse n i =
               next = self#cse empty_numbering i.next}
 
 method fundecl f =
-  {f with fun_body = self#cse empty_numbering f.fun_body}
+  (* CSE can trigger bad register allocation behaviors, see MPR#7630 *)
+  if List.mem Cmm.No_CSE f.fun_codegen_options then
+    f
+  else
+    {f with fun_body = self#cse empty_numbering f.fun_body }
 
 end

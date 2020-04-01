@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
 let f _ _ _ _ = 0 in f 0 0 0 0;;
 

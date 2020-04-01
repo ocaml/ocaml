@@ -1,17 +1,6 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*                         Alain Frisch, LexiFi                           *)
-(*                                                                        *)
-(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+  * native
+*)
 
 (* Check the effectiveness of optimized compilation of tuple binding
 
@@ -35,9 +24,21 @@ let f () =
     r := !r * x + y
   done;
   let x2 = Gc.allocated_bytes () in
-  print_int !r;
   assert (!r = 82);
   assert(x1 -. x0 = x2 -. x1) (* check no allocation between x1 and x2 *)
   [@@inline never]
 
 let () = f ()
+
+
+
+(* MPR#7680 *)
+
+let f () =
+  let (a,b) =
+    try (1,2)
+    with _ -> assert false
+  in
+  if a + b = 3 then raise Not_found
+
+let () = try f (); assert false with Not_found -> ()

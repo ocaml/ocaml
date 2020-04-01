@@ -1,0 +1,37 @@
+#!/bin/sh
+
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Run check-typo, comparing only files that have changed since a particular
+# git state
+
+check_typo_since() {
+  CHECK_TYPO=$(dirname $0)/check-typo
+  git diff --name-only $1 \
+  | (while IFS= read -r path
+  do
+    if test -e "$path"; then :; else continue; fi
+    $CHECK_TYPO --check-prune "$path" 2>/dev/null
+    if test $? -eq 0; then continue; fi
+    $CHECK_TYPO "$path"
+  done)
+}
+
+case $# in
+    0) echo "usage: check-typo-since <git reference>"; exit 2;;
+    1) check_typo_since $1; break;;
+    *) echo "too many arguments"; exit 2;;
+esac

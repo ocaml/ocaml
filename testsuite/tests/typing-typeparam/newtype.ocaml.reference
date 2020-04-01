@@ -1,0 +1,18 @@
+val property : unit -> ('t -> exn) * (exn -> 't option) = <fun>
+false
+true
+true
+false
+val sort_uniq : ('s -> 's -> int) -> 's list -> 's list = <fun>
+abc,xyz
+Line 2, characters 32-33:
+2 | let f x (type a) (y : a) = (x = y);; (* Fails *)
+                                    ^
+Error: This expression has type a but an expression was expected of type 'a
+       The type constructor a would escape its scope
+Line 3, characters 53-54:
+3 |   method n : 'a -> 'a = fun (type g) (x:g) -> self#m x
+                                                         ^
+Error: This expression has type g but an expression was expected of type 'a
+       The type constructor g would escape its scope
+

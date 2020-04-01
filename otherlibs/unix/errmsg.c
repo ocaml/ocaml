@@ -24,5 +24,5 @@ CAMLprim value unix_error_message(value err)
 {
   int errnum;
   errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
-  return copy_string(strerror(errnum));
+  return caml_copy_string(strerror(errnum));
 }

@@ -1,0 +1,460 @@
+run_unix.$(O): run_unix.c run.h ../runtime/caml/misc.h \
+ ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
+ run_common.h
+run_stubs.$(O): run_stubs.c run.h ../runtime/caml/misc.h \
+ ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
+ ../runtime/caml/mlvalues.h ../runtime/caml/misc.h \
+ ../runtime/caml/domain_state.h ../runtime/caml/mlvalues.h \
+ ../runtime/caml/domain_state.tbl ../runtime/caml/memory.h \
+ ../runtime/caml/gc.h ../runtime/caml/major_gc.h \
+ ../runtime/caml/freelist.h ../runtime/caml/minor_gc.h \
+ ../runtime/caml/address_class.h ../runtime/caml/domain.h \
+ ../runtime/caml/io.h ../runtime/caml/osdeps.h ../runtime/caml/memory.h
+ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
+ ../runtime/caml/config.h ../runtime/caml/m.h ../runtime/caml/s.h \
+ ../runtime/caml/mlvalues.h ../runtime/caml/config.h \
+ ../runtime/caml/misc.h ../runtime/caml/domain_state.h \
+ ../runtime/caml/mlvalues.h ../runtime/caml/domain_state.tbl \
+ ../runtime/caml/memory.h ../runtime/caml/gc.h ../runtime/caml/major_gc.h \
+ ../runtime/caml/freelist.h ../runtime/caml/minor_gc.h \
+ ../runtime/caml/address_class.h ../runtime/caml/domain.h \
+ ../runtime/caml/alloc.h ../runtime/caml/signals.h \
+ ../runtime/caml/osdeps.h ../runtime/caml/memory.h
+actions.cmo : \
+    variables.cmi \
+    result.cmi \
+    environments.cmi \
+    actions.cmi
+actions.cmx : \
+    variables.cmx \
+    result.cmx \
+    environments.cmx \
+    actions.cmi
+actions.cmi : \
+    variables.cmi \
+    result.cmi \
+    environments.cmi
+actions_helpers.cmo : \
+    variables.cmi \
+    strace.cmi \
+    run_command.cmi \
+    result.cmi \
+    ocamltest_stdlib.cmi \
+    modifier_parser.cmi \
+    filecompare.cmi \
+    environments.cmi \
+    builtin_variables.cmi \
+    actions.cmi \
+    actions_helpers.cmi
+actions_helpers.cmx : \
+    variables.cmx \
+    strace.cmx \
+    run_command.cmx \
+    result.cmx \
+    ocamltest_stdlib.cmx \
+    modifier_parser.cmx \
+    filecompare.cmx \
+    environments.cmx \
+    builtin_variables.cmx \
+    actions.cmx \
+    actions_helpers.cmi
+actions_helpers.cmi : \
+    variables.cmi \
+    result.cmi \
+    environments.cmi \
+    actions.cmi
+builtin_actions.cmo : \
+    result.cmi \
+    ocamltest_stdlib.cmi \
+    ocamltest_config.cmi \
+    environments.cmi \
+    builtin_variables.cmi \
+    actions_helpers.cmi \
+    actions.cmi \
+    builtin_actions.cmi
+builtin_actions.cmx : \
+    result.cmx \
+    ocamltest_stdlib.cmx \
+    ocamltest_config.cmx \
+    environments.cmx \
+    builtin_variables.cmx \
+    actions_helpers.cmx \
+    actions.cmx \
+    builtin_actions.cmi
+builtin_actions.cmi : \
+    actions.cmi
+builtin_variables.cmo : \
+    variables.cmi \
+    builtin_variables.cmi
+builtin_variables.cmx : \
+    variables.cmx \
+    builtin_variables.cmi
+builtin_variables.cmi : \
+    variables.cmi
+environments.cmo : \
+    variables.cmi \
+    ocamltest_stdlib.cmi \
+    environments.cmi
+environments.cmx : \
+    variables.cmx \
+    ocamltest_stdlib.cmx \
+    environments.cmi
+environments.cmi : \
+    variables.cmi
+filecompare.cmo : \
+    run_command.cmi \
+    ocamltest_stdlib.cmi \
+    filecompare.cmi
+filecompare.cmx : \
+    run_command.cmx \
+    ocamltest_stdlib.cmx \
+    filecompare.cmi
+filecompare.cmi :
+main.cmo : \
+    tsl_semantics.cmi \
+    tsl_parser.cmi \
+    tsl_lexer.cmi \
+    tests.cmi \
+    result.cmi \
+    options.cmi \
+    ocamltest_stdlib.cmi \
+    environments.cmi \
+    builtin_variables.cmi \
+    actions_helpers.cmi \
+    actions.cmi \
+    main.cmi
+main.cmx : \
+    tsl_semantics.cmx \
+    tsl_parser.cmx \
+    tsl_lexer.cmx \
+    tests.cmx \
+    result.cmx \
+    options.cmx \
+    ocamltest_stdlib.cmx \
+    environments.cmx \
+    builtin_variables.cmx \
+    actions_helpers.cmx \
+    actions.cmx \
+    main.cmi
+main.cmi :
+modifier_parser.cmo : \
+    variables.cmi \
+    tsl_lexer.cmi \
+    ocamltest_stdlib.cmi \
+    environments.cmi \
+    modifier_parser.cmi
+modifier_parser.cmx : \
+    variables.cmx \
+    tsl_lexer.cmx \
+    ocamltest_stdlib.cmx \
+    environments.cmx \
+    modifier_parser.cmi
+modifier_parser.cmi : \
+    environments.cmi
+ocaml_actions.cmo : \
+    result.cmi \
+    ocamltest_stdlib.cmi \
+    ocamltest_config.cmi \
+    ocaml_variables.cmi \
+    ocaml_toplevels.cmi \
+    ocaml_tools.cmi \
+    ocaml_modifiers.cmi \
+    ocaml_flags.cmi \
+    ocaml_filetypes.cmi \
+    ocaml_files.cmi \
+    ocaml_directories.cmi \
+    ocaml_compilers.cmi \
+    ocaml_commands.cmi \
+    ocaml_backends.cmi \
+    filecompare.cmi \
+    environments.cmi \
+    builtin_variables.cmi \
+    actions_helpers.cmi \
+    actions.cmi \
+    ocaml_actions.cmi
+ocaml_actions.cmx : \
+    result.cmx \
+    ocamltest_stdlib.cmx \
+    ocamltest_config.cmx \
+    ocaml_variables.cmx \
+    ocaml_toplevels.cmx \
+    ocaml_tools.cmx \
+    ocaml_modifiers.cmx \
+    ocaml_flags.cmx \
+    ocaml_filetypes.cmx \
+    ocaml_files.cmx \
+    ocaml_directories.cmx \
+    ocaml_compilers.cmx \
+    ocaml_commands.cmx \
+    ocaml_backends.cmx \
+    filecompare.cmx \
+    environments.cmx \
+    builtin_variables.cmx \
+    actions_helpers.cmx \
+    actions.cmx \
+    ocaml_actions.cmi
+ocaml_actions.cmi : \
+    actions.cmi
+ocaml_backends.cmo : \
+    ocaml_backends.cmi
+ocaml_backends.cmx : \
+    ocaml_backends.cmi
+ocaml_backends.cmi :
+ocaml_commands.cmo : \
+    ocaml_files.cmi \
+    ocaml_commands.cmi
+ocaml_commands.cmx : \
+    ocaml_files.cmx \
+    ocaml_commands.cmi
+ocaml_commands.cmi :
+ocaml_compilers.cmo : \
+    variables.cmi \
+    ocamltest_stdlib.cmi \
+    ocaml_variables.cmi \
+    ocaml_tools.cmi \
+    ocaml_files.cmi \
+    ocaml_commands.cmi \
+    ocaml_backends.cmi \
+    builtin_variables.cmi \
+    ocaml_compilers.cmi
+ocaml_compilers.cmx : \
+    variables.cmx \
+    ocamltest_stdlib.cmx \
+    ocaml_variables.cmx \
+    ocaml_tools.cmx \
+    ocaml_files.cmx \
+    ocaml_commands.cmx \
+    ocaml_backends.cmx \
+    builtin_variables.cmx \
+    ocaml_compilers.cmi
+ocaml_compilers.cmi : \
+    variables.cmi \
+    ocaml_tools.cmi \
+    ocaml_backends.cmi
+ocaml_directories.cmo : \
+    ocamltest_stdlib.cmi \
+    ocamltest_config.cmi \
+    ocaml_directories.cmi
+ocaml_directories.cmx : \
+    ocamltest_stdlib.cmx \
+    ocamltest_config.cmx \
+    ocaml_directories.cmi
+ocaml_directories.cmi :
+ocaml_files.cmo : \
+    ocamltest_stdlib.cmi \
+    ocamltest_config.cmi \
+    ocaml_files.cmi
+ocaml_files.cmx : \
+    ocamltest_stdlib.cmx \
+    ocamltest_config.cmx \
+    ocaml_files.cmi
+ocaml_files.cmi :
+ocaml_filetypes.cmo : \
+    ocamltest_config.cmi \
+    ocaml_backends.cmi \
+    ocaml_filetypes.cmi
+ocaml_filetypes.cmx : \
+    ocamltest_config.cmx \
+    ocaml_backends.cmx \
+    ocaml_filetypes.cmi
+ocaml_filetypes.cmi : \
+    ocaml_backends.cmi
+ocaml_flags.cmo : \
+    ocaml_variables.cmi \
+    ocaml_files.cmi \
+    ocaml_directories.cmi \
+    ocaml_backends.cmi \
+    environments.cmi \
+    ocaml_flags.cmi
+ocaml_flags.cmx : \
+    ocaml_variables.cmx \
+    ocaml_files.cmx \
+    ocaml_directories.cmx \
+    ocaml_backends.cmx \
+    environments.cmx \
+    ocaml_flags.cmi
+ocaml_flags.cmi : \
+    ocaml_backends.cmi \
+    environments.cmi
+ocaml_modifiers.cmo : \
+    ocamltest_stdlib.cmi \
+    ocamltest_config.cmi \
+    ocaml_variables.cmi \
+    environments.cmi \
+    ocaml_modifiers.cmi
+ocaml_modifiers.cmx : \
+    ocamltest_stdlib.cmx \
+    ocamltest_config.cmx \
+    ocaml_variables.cmx \
+    environments.cmx \
+    ocaml_modifiers.cmi
+ocaml_modifiers.cmi : \
+    environments.cmi
+ocaml_tests.cmo : \
+    tests.cmi \
+    ocamltest_config.cmi \
+    ocaml_actions.cmi \
+    builtin_actions.cmi \
+    actions_helpers.cmi \
+    ocaml_tests.cmi
+ocaml_tests.cmx : \
+    tests.cmx \
+    ocamltest_config.cmx \
+    ocaml_actions.cmx \
+    builtin_actions.cmx \
+    actions_helpers.cmx \
+    ocaml_tests.cmi
+ocaml_tests.cmi : \
+    tests.cmi
+ocaml_tools.cmo : \
+    variables.cmi \
+    ocamltest_stdlib.cmi \
+    ocaml_variables.cmi \
+    ocaml_files.cmi \
+    environments.cmi \
+    actions_helpers.cmi \
+    ocaml_tools.cmi
+ocaml_tools.cmx : \
+    variables.cmx \
+    ocamltest_stdlib.cmx \
+    ocaml_variables.cmx \
+    ocaml_files.cmx \
+    environments.cmx \
+    actions_helpers.cmx \
+    ocaml_tools.cmi
+ocaml_tools.cmi : \
+    variables.cmi \
+    environments.cmi
+ocaml_toplevels.cmo : \
+    variables.cmi \
+    ocamltest_stdlib.cmi \
+    ocaml_variables.cmi \
+    ocaml_tools.cmi \
+    ocaml_files.cmi \
+    ocaml_compilers.cmi \
+    ocaml_commands.cmi \
+    ocaml_backends.cmi \
+    ocaml_toplevels.cmi
+ocaml_toplevels.cmx : \
+    variables.cmx \
+    ocamltest_stdlib.cmx \
+    ocaml_variables.cmx \
+    ocaml_tools.cmx \
+    ocaml_files.cmx \
+    ocaml_compilers.cmx \
+    ocaml_commands.cmx \
+    ocaml_backends.cmx \
+    ocaml_toplevels.cmi
+ocaml_toplevels.cmi : \
+    variables.cmi \
+    ocaml_tools.cmi \
+    ocaml_compilers.cmi \
+    ocaml_backends.cmi
+ocaml_variables.cmo : \
+    variables.cmi \
+    ocamltest_stdlib.cmi \
+    ocaml_variables.cmi
+ocaml_variables.cmx : \
+    variables.cmx \
+    ocamltest_stdlib.cmx \
+    ocaml_variables.cmi
+ocaml_variables.cmi : \
+    variables.cmi
+ocamltest_config.cmo : \
+    ocamltest_config.cmi
+ocamltest_config.cmx : \
+    ocamltest_config.cmi
+ocamltest_config.cmi :
+ocamltest_stdlib.cmo : \
+    ocamltest_stdlib.cmi
+ocamltest_stdlib.cmx : \
+    ocamltest_stdlib.cmi
+ocamltest_stdlib.cmi :
+options.cmo : \
+    variables.cmi \
+    tests.cmi \
+    actions.cmi \
+    options.cmi
+options.cmx : \
+    variables.cmx \
+    tests.cmx \
+    actions.cmx \
+    options.cmi
+options.cmi :
+result.cmo : \
+    result.cmi
+result.cmx : \
+    result.cmi
+result.cmi :
+run_command.cmo : \
+    ocamltest_stdlib.cmi \
+    run_command.cmi
+run_command.cmx : \
+    ocamltest_stdlib.cmx \
+    run_command.cmi
+run_command.cmi :
+strace.cmo : \
+    variables.cmi \
+    strace.cmi
+strace.cmx : \
+    variables.cmx \
+    strace.cmi
+strace.cmi : \
+    variables.cmi
+tests.cmo : \
+    result.cmi \
+    actions.cmi \
+    tests.cmi
+tests.cmx : \
+    result.cmx \
+    actions.cmx \
+    tests.cmi
+tests.cmi : \
+    result.cmi \
+    environments.cmi \
+    actions.cmi
+tsl_ast.cmo : \
+    tsl_ast.cmi
+tsl_ast.cmx : \
+    tsl_ast.cmi
+tsl_ast.cmi :
+tsl_lexer.cmo : \
+    tsl_parser.cmi \
+    tsl_lexer.cmi
+tsl_lexer.cmx : \
+    tsl_parser.cmx \
+    tsl_lexer.cmi
+tsl_lexer.cmi : \
+    tsl_parser.cmi
+tsl_parser.cmo : \
+    tsl_ast.cmi \
+    tsl_parser.cmi
+tsl_parser.cmx : \
+    tsl_ast.cmx \
+    tsl_parser.cmi
+tsl_parser.cmi : \
+    tsl_ast.cmi
+tsl_semantics.cmo : \
+    variables.cmi \
+    tsl_ast.cmi \
+    tests.cmi \
+    environments.cmi \
+    actions.cmi \
+    tsl_semantics.cmi
+tsl_semantics.cmx : \
+    variables.cmx \
+    tsl_ast.cmx \
+    tests.cmx \
+    environments.cmx \
+    actions.cmx \
+    tsl_semantics.cmi
+tsl_semantics.cmi : \
+    tsl_ast.cmi \
+    tests.cmi \
+    environments.cmi \
+    actions.cmi
+variables.cmo : \
+    variables.cmi
+variables.cmx : \
+    variables.cmi
+variables.cmi :

@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of arrays. *)
+type 'a t = 'a array
+
 (* Array operations *)
 
 external length : 'a array -> int = "%array_length"
@@ -27,8 +30,20 @@ external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
 external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+external unsafe_fill :
+  'a array -> int -> int -> 'a -> unit = "caml_array_fill"
 external create_float: int -> float array = "caml_make_float_vect"
 let make_float = create_float
+
+module Floatarray = struct
+  external create : int -> floatarray = "caml_floatarray_create"
+  external length : floatarray -> int = "%floatarray_length"
+  external get : floatarray -> int -> float = "%floatarray_safe_get"
+  external set : floatarray -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : floatarray -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : floatarray -> int -> float -> unit
+      = "%floatarray_unsafe_set"
+end
 
 let init l f =
   if l = 0 then [||] else
@@ -68,7 +83,7 @@ let sub a ofs len =
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.fill"
-  else for i = ofs to ofs + len - 1 do unsafe_set a i v done
+  else unsafe_fill a ofs len v
 
 let blit a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
@@ -132,7 +147,6 @@ let to_list a =
 let rec list_length accu = function
   | [] -> accu
   | _::t -> list_length (succ accu) t
-;;
 
 let of_list = function
     [] -> [||]
@@ -173,6 +187,26 @@ let for_all p a =
     else false in
   loop 0
 
+let for_all2 p l1 l2 =
+  let n1 = length l1
+  and n2 = length l2 in
+  if n1 <> n2 then invalid_arg "Array.for_all2"
+  else let rec loop i =
+    if i = n1 then true
+    else if p (unsafe_get l1 i) (unsafe_get l2 i) then loop (succ i)
+    else false in
+  loop 0
+
+let exists2 p l1 l2 =
+  let n1 = length l1
+  and n2 = length l2 in
+  if n1 <> n2 then invalid_arg "Array.exists2"
+  else let rec loop i =
+    if i = n1 then false
+    else if p (unsafe_get l1 i) (unsafe_get l2 i) then true
+    else loop (succ i) in
+  loop 0
+
 let mem x a =
   let n = length a in
   let rec loop i =
@@ -189,7 +223,7 @@ let memq x a =
     else loop (succ i) in
   loop 0
 
-exception Bottom of int;;
+exception Bottom of int
 let sort cmp a =
   let maxson l i =
     let i31 = i+i+i+1 in
@@ -236,10 +270,10 @@ let sort cmp a =
     set a i (get a 0);
     trickleup (bubble i 0) e;
   done;
-  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e);
-;;
+  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e)
 
-let cutoff = 5;;
+
+let cutoff = 5
 let stable_sort cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
@@ -289,7 +323,44 @@ let stable_sort cmp a =
     sortto l1 t 0 l2;
     sortto 0 a l2 l1;
     merge l2 l1 t 0 l2 a 0;
-  end;
-;;
+  end
 
-let fast_sort = stable_sort;;
+
+let fast_sort = stable_sort
+
+(** {1 Iterators} *)
+
+let to_seq a =
+  let rec aux i () =
+    if i < length a
+    then
+      let x = unsafe_get a i in
+      Seq.Cons (x, aux (i+1))
+    else Seq.Nil
+  in
+  aux 0
+
+let to_seqi a =
+  let rec aux i () =
+    if i < length a
+    then
+      let x = unsafe_get a i in
+      Seq.Cons ((i,x), aux (i+1))
+    else Seq.Nil
+  in
+  aux 0
+
+let of_rev_list = function
+    [] -> [||]
+  | hd::tl as l ->
+      let len = list_length 0 l in
+      let a = create len hd in
+      let rec fill i = function
+          [] -> a
+        | hd::tl -> unsafe_set a i hd; fill (i-1) tl
+      in
+      fill (len-2) tl
+
+let of_seq i =
+  let l = Seq.fold_left (fun acc x -> x::acc) [] i in
+  of_rev_list l

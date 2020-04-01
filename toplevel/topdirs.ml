@@ -70,8 +70,15 @@ let _ = add_directive "quit" (Directive_none dir_quit)
 
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := d :: !Config.load_path;
-  Dll.add_path [d]
+  Dll.add_path [d];
+  let dir = Load_path.Dir.create d in
+  Load_path.add dir;
+  toplevel_env :=
+    Stdlib.String.Set.fold
+      (fun name env ->
+         Env.add_persistent_structure (Ident.create_persistent name) env)
+      (Env.persistent_structures_of_dir dir)
+      !toplevel_env
 
 let _ = add_directive "directory" (Directive_string dir_directory)
     {
@@ -83,7 +90,13 @@ let _ = add_directive "directory" (Directive_string dir_directory)
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path;
+  let keep id =
+    match Load_path.find_uncap (Ident.name id ^ ".cmi") with
+    | exception Not_found -> true
+    | fn -> Filename.dirname fn <> d
+  in
+  toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
+  Load_path.remove_dir s;
   Dll.remove_path [d]
 
 let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
@@ -105,16 +118,12 @@ let _ = add_directive "cd" (Directive_string dir_cd)
 exception Load_failed
 
 let check_consistency ppf filename cu =
-  try
-    List.iter
-      (fun (name, crco) ->
-       Env.add_import name;
-       match crco with
-         None -> ()
-       | Some crc->
-           Consistbl.check Env.crc_units name crc filename)
-      cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
+  try Env.import_crcs ~source:filename cu.cu_imports
+  with Persistent_env.Consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = user;
+      original_source = auth;
+    } ->
     fprintf ppf "@[<hv 0>The files %s@ and %s@ \
                  disagree over interface %s@]@."
             user auth name;
@@ -124,10 +133,10 @@ let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 8 in
-  let code = Meta.static_alloc code_size in
-  unsafe_really_input ic code 0 compunit.cu_codesize;
-  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  String.unsafe_blit "\000\000\000\001\000\000\000" 0
+  let code = LongString.create code_size in
+  LongString.input_bytes_into code ic compunit.cu_codesize;
+  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+  LongString.blit_string "\000\000\000\001\000\000\000" 0
                      code (compunit.cu_codesize + 1) 7;
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
@@ -138,10 +147,10 @@ let load_compunit ic filename ppf compunit =
       seek_in ic compunit.cu_debug;
       [| input_value ic |]
     end in
-  Meta.add_debug_info code code_size events;
   begin try
     may_trace := true;
-    ignore((Meta.reify_bytecode code code_size) ());
+    let _bytecode, closure = Meta.reify_bytecode code events None in
+    ignore (closure ());
     may_trace := false;
   with exn ->
     record_backtrace ();
@@ -153,19 +162,15 @@ let load_compunit ic filename ppf compunit =
 
 let rec load_file recursive ppf name =
   let filename =
-    try Some (find_in_path !Config.load_path name) with Not_found -> None
+    try Some (Load_path.find name) with Not_found -> None
   in
   match filename with
   | None -> fprintf ppf "Cannot find file %s.@." name; false
   | Some filename ->
       let ic = open_in_bin filename in
-      try
-        let success = really_load_file recursive ppf name filename ic in
-        close_in ic;
-        success
-      with exn ->
-        close_in ic;
-        raise exn
+      Misc.try_finally
+        ~always:(fun () -> close_in ic)
+        (fun () -> really_load_file recursive ppf name filename ic)
 
 and really_load_file recursive ppf name filename ic =
   let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
@@ -180,12 +185,9 @@ and really_load_file recursive ppf name filename ic =
             | (Reloc_getglobal id, _)
               when not (Symtable.is_global_defined id) ->
                 let file = Ident.name id ^ ".cmo" in
-                begin match try Some (Misc.find_in_path_uncap !Config.load_path
-                                        file)
-                      with Not_found -> None
-                with
-                | None -> ()
-                | Some file ->
+                begin match Load_path.find_uncap file with
+                | exception Not_found -> ()
+                | file ->
                     if not (load_file recursive ppf file) then raise Load_failed
                 end
             | _ -> ()
@@ -238,6 +240,7 @@ let load_file = load_file false
 (* Load commands from a file *)
 
 let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_use_output ppf name = ignore(Toploop.use_output ppf name)
 let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
 let _ = add_directive "use" (Directive_string (dir_use std_out))
@@ -246,13 +249,19 @@ let _ = add_directive "use" (Directive_string (dir_use std_out))
       doc = "Read, compile and execute source phrases from the given file.";
     }
 
+let _ = add_directive "use_output" (Directive_string (dir_use_output std_out))
+    {
+      section = section_run;
+      doc = "Execute a command and read, compile and execute source phrases \
+             from its output.";
+    }
+
 let _ = add_directive "mod_use" (Directive_string (dir_mod_use std_out))
     {
       section = section_run;
       doc = "Usage is identical to #use but #mod_use \
              wraps the contents in a module.";
     }
-
 
 (* Install, remove a printer *)
 
@@ -281,12 +290,16 @@ type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
 let printer_type ppf typename =
-  let (printer_type, _) =
-    try
-      Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
-    with Not_found ->
-      fprintf ppf "Cannot find type Topdirs.%s.@." typename;
-      raise Exit in
+  let printer_type =
+    match
+      Env.find_type_by_name
+        (Ldot(Lident "Topdirs", typename)) !toplevel_env
+    with
+    | path, _ -> path
+    | exception Not_found ->
+        fprintf ppf "Cannot find type Topdirs.%s.@." typename;
+        raise Exit
+  in
   printer_type
 
 let match_simple_printer_type desc printer_type =
@@ -294,7 +307,7 @@ let match_simple_printer_type desc printer_type =
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -312,7 +325,7 @@ let match_generic_printer_type desc path args printer_type =
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   Ctype.unify !toplevel_env
     ty_expected
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
@@ -322,7 +335,6 @@ let match_generic_printer_type desc path args printer_type =
 let match_printer_type ppf desc =
   let printer_type_new = printer_type ppf "printer_type_new" in
   let printer_type_old = printer_type ppf "printer_type_old" in
-  Ctype.init_def(Ident.current_time());
   try
     (match_simple_printer_type desc printer_type_new, false)
   with Ctype.Unify _ ->
@@ -336,24 +348,24 @@ let match_printer_type ppf desc =
            false)
 
 let find_printer_type ppf lid =
-  try
-    let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let (ty_arg, is_old_style) = match_printer_type ppf desc in
-    (ty_arg, path, is_old_style)
-  with
-  | Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
-      raise Exit
-  | Ctype.Unify _ ->
+  match Env.find_value_by_name lid !toplevel_env with
+  | (path, desc) -> begin
+    match match_printer_type ppf desc with
+    | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
+    | exception Ctype.Unify _ ->
       fprintf ppf "%a has a wrong type for a printing function.@."
       Printtyp.longident lid;
+      raise Exit
+  end
+  | exception Not_found ->
+      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
 
 let dir_install_printer ppf lid =
   try
     let ((ty_arg, ty), path, is_old_style) =
       find_printer_type ppf lid in
-    let v = eval_path !toplevel_env path in
+    let v = eval_value_path !toplevel_env path in
     match ty with
     | None ->
        let print_function =
@@ -410,59 +422,60 @@ let tracing_function_ptr =
     (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
 
 let dir_trace ppf lid =
-  try
-    let (path, desc) = Env.lookup_value lid !toplevel_env in
-    (* Check if this is a primitive *)
-    match desc.val_kind with
-    | Val_prim _ ->
-        fprintf ppf "%a is an external function and cannot be traced.@."
-        Printtyp.longident lid
-    | _ ->
-        let clos = eval_path !toplevel_env path in
-        (* Nothing to do if it's not a closure *)
-        if Obj.is_block clos
-        && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
-        && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
-            with {desc=Tarrow _} -> true | _ -> false)
-        then begin
-        match is_traced clos with
-        | Some opath ->
-            fprintf ppf "%a is already traced (under the name %a).@."
-            Printtyp.path path
-            Printtyp.path opath
-        | None ->
-            (* Instrument the old closure *)
-            traced_functions :=
-              { path = path;
-                closure = clos;
-                actual_code = get_code_pointer clos;
-                instrumented_fun =
-                  instrument_closure !toplevel_env lid ppf desc.val_type }
-              :: !traced_functions;
-            (* Redirect the code field of the closure to point
-               to the instrumentation function *)
-            set_code_pointer clos tracing_function_ptr;
-            fprintf ppf "%a is now traced.@." Printtyp.longident lid
-        end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
-  with
-  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+  match Env.find_value_by_name lid !toplevel_env with
+  | (path, desc) -> begin
+      (* Check if this is a primitive *)
+      match desc.val_kind with
+      | Val_prim _ ->
+          fprintf ppf "%a is an external function and cannot be traced.@."
+          Printtyp.longident lid
+      | _ ->
+          let clos = eval_value_path !toplevel_env path in
+          (* Nothing to do if it's not a closure *)
+          if Obj.is_block clos
+          && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+          && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
+              with {desc=Tarrow _} -> true | _ -> false)
+          then begin
+          match is_traced clos with
+          | Some opath ->
+              fprintf ppf "%a is already traced (under the name %a).@."
+              Printtyp.path path
+              Printtyp.path opath
+          | None ->
+              (* Instrument the old closure *)
+              traced_functions :=
+                { path = path;
+                  closure = clos;
+                  actual_code = get_code_pointer clos;
+                  instrumented_fun =
+                    instrument_closure !toplevel_env lid ppf desc.val_type }
+                :: !traced_functions;
+              (* Redirect the code field of the closure to point
+                 to the instrumentation function *)
+              set_code_pointer clos tracing_function_ptr;
+              fprintf ppf "%a is now traced.@." Printtyp.longident lid
+          end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
+    end
+  | exception Not_found ->
+      fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
 let dir_untrace ppf lid =
-  try
-    let (path, _desc) = Env.lookup_value lid !toplevel_env in
-    let rec remove = function
-    | [] ->
-        fprintf ppf "%a was not traced.@." Printtyp.longident lid;
-        []
-    | f :: rem ->
-        if Path.same f.path path then begin
-          set_code_pointer f.closure f.actual_code;
-          fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
-          rem
-        end else f :: remove rem in
-    traced_functions := remove !traced_functions
-  with
-  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+  match Env.find_value_by_name lid !toplevel_env with
+  | (path, _desc) ->
+      let rec remove = function
+      | [] ->
+          fprintf ppf "%a was not traced.@." Printtyp.longident lid;
+          []
+      | f :: rem ->
+          if Path.same f.path path then begin
+            set_code_pointer f.closure f.actual_code;
+            fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
+            rem
+          end else f :: remove rem in
+      traced_functions := remove !traced_functions
+  | exception Not_found ->
+      fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
 let dir_untrace_all ppf () =
   List.iter
@@ -483,11 +496,15 @@ let trim_signature = function
       Mty_signature
         (List.map
            (function
-               Sig_module (id, md, rs) ->
-                 Sig_module (id, {md with md_attributes =
-                                    (Location.mknoloc "...", Parsetree.PStr [])
-                                    :: md.md_attributes},
-                             rs)
+               Sig_module (id, pres, md, rs, priv) ->
+                 let attribute =
+                   Ast_helper.Attr.mk
+                     (Location.mknoloc "...")
+                     (Parsetree.PStr [])
+                 in
+                 Sig_module (id, pres, {md with md_attributes =
+                                          attribute :: md.md_attributes},
+                             rs, priv)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
              | item -> item)
@@ -508,7 +525,7 @@ let show_prim to_sig ppf lid =
     in
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
-    Printtyp.wrap_printing_env env
+    Printtyp.wrap_printing_env ~error:false env
       (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
   with
   | Not_found ->
@@ -530,24 +547,76 @@ let reg_show_prim name to_sig doc =
 let () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
-       let _path, desc = Typetexp.find_value env loc lid in
-       [ Sig_value (id, desc) ]
+       let _path, desc = Env.lookup_value ~loc lid env in
+       [ Sig_value (id, desc, Exported) ]
     )
     "Print the signature of the corresponding value."
 
 let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
-       let _path, desc = Typetexp.find_type env loc lid in
-       [ Sig_type (id, desc, Trec_not) ]
+       let _path, desc = Env.lookup_type ~loc lid env in
+       [ Sig_type (id, desc, Trec_first, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
+
+(* Each registered show_prim function is called in turn
+ * and any output produced is sent to std_out.
+ * Two show_prim functions are needed for constructors,
+ * one for exception constructors and another for
+ * non-exception constructors (normal and extensible variants). *)
+let is_exception_constructor env type_expr =
+  Ctype.equal env true [type_expr] [Predef.type_exn]
+
+let is_extension_constructor = function
+  | Cstr_extension _ -> true
+  | _ -> false
+
+let () =
+  (* This show_prim function will only show constructor types
+   * that are not also exception types. *)
+  reg_show_prim "show_constructor"
+    (fun env loc id lid ->
+       let desc = Env.lookup_constructor ~loc Env.Positive lid env in
+       if is_exception_constructor env desc.cstr_res then
+         raise Not_found;
+       let path =
+         match Ctype.repr desc.cstr_res with
+         | {desc=Tconstr(path, _, _)} -> path
+         | _ -> raise Not_found
+       in
+       let type_decl = Env.find_type path env in
+       if is_extension_constructor desc.cstr_tag then
+         let ret_type =
+           if desc.cstr_generalized then Some desc.cstr_res
+           else None
+         in
+         let ext =
+           { ext_type_path = path;
+             ext_type_params = type_decl.type_params;
+             ext_args = Cstr_tuple desc.cstr_args;
+             ext_ret_type = ret_type;
+             ext_private = Asttypes.Public;
+             ext_loc = desc.cstr_loc;
+             ext_attributes = desc.cstr_attributes;
+             ext_uid = desc.cstr_uid; }
+           in
+             [Sig_typext (id, ext, Text_first, Exported)]
+       else
+         (* make up a fake Ident.t as type_decl : Types.type_declaration
+          * does not have an Ident.t yet. Ident.create_presistent is a
+          * good choice because it has no side-effects.
+          * *)
+         let type_id = Ident.create_persistent (Path.name path) in
+         [ Sig_type (type_id, type_decl, Trec_first, Exported) ]
+    )
+    "Print the signature of the corresponding value constructor."
 
 let () =
   reg_show_prim "show_exception"
     (fun env loc id lid ->
-       let desc = Typetexp.find_constructor env loc lid in
-       if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
+       let desc = Env.lookup_constructor ~loc Env.Positive lid env in
+       if not (is_exception_constructor env desc.cstr_res) then
          raise Not_found;
        let ret_type =
          if desc.cstr_generalized then Some Predef.type_exn
@@ -559,43 +628,56 @@ let () =
            ext_args = Cstr_tuple desc.cstr_args;
            ext_ret_type = ret_type;
            ext_private = Asttypes.Public;
-           Types.ext_loc = desc.cstr_loc;
-           Types.ext_attributes = desc.cstr_attributes; }
+           ext_loc = desc.cstr_loc;
+           ext_attributes = desc.cstr_attributes;
+           ext_uid = desc.cstr_uid;
+         }
        in
-         [Sig_typext (id, ext, Text_exception)]
+         [Sig_typext (id, ext, Text_exception, Exported)]
     )
     "Print the signature of the corresponding exception."
 
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
-       let _path, md = Typetexp.find_module env loc lid in
-       [ Sig_module (id, {md with md_type = trim_signature md.md_type},
-                     Trec_not) ]
+       let rec accum_aliases md acc =
+         let acc =
+           Sig_module (id, Mp_present,
+                       {md with md_type = trim_signature md.md_type},
+                       Trec_not, Exported) :: acc in
+         match md.md_type with
+         | Mty_alias path ->
+             let md = Env.find_module path env in
+             accum_aliases md acc
+         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
+             List.rev acc
+       in
+       let _, md = Env.lookup_module ~loc lid env in
+       accum_aliases md []
     )
     "Print the signature of the corresponding module."
 
 let () =
   reg_show_prim "show_module_type"
     (fun env loc id lid ->
-       let _path, desc = Typetexp.find_modtype env loc lid in
-       [ Sig_modtype (id, desc) ]
+       let _path, desc = Env.lookup_modtype ~loc lid env in
+       [ Sig_modtype (id, desc, Exported) ]
     )
     "Print the signature of the corresponding module type."
 
 let () =
   reg_show_prim "show_class"
     (fun env loc id lid ->
-       let _path, desc = Typetexp.find_class env loc lid in
-       [ Sig_class (id, desc, Trec_not) ]
+       let _path, desc = Env.lookup_class ~loc lid env in
+       [ Sig_class (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding class."
 
 let () =
   reg_show_prim "show_class_type"
     (fun env loc id lid ->
-       let _path, desc = Typetexp.find_class_type env loc lid in
-       [ Sig_class_type (id, desc, Trec_not) ]
+       let _path, desc = Env.lookup_cltype ~loc lid env in
+       [ Sig_class_type (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding class type."
 
@@ -612,7 +694,7 @@ let () =
     {
       section = section_env;
       doc = "Print the signatures of components \
-             from any of the above categories.";
+             from any of the categories below.";
     }
 
 let _ = add_directive "trace"

@@ -34,7 +34,8 @@ let word_addressed = false
     3 - 10              function arguments and results
     11 - 12             temporaries
     13                  pointer to small data area
-    14 - 28             general purpose, preserved by C
+    14 - 27             general purpose, preserved by C
+    28                  domain state pointer
     29                  trap pointer
     30                  allocation limit
     31                  allocation pointer
@@ -47,7 +48,7 @@ let word_addressed = false
 let int_reg_name =
   [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
      "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
-     "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
+     "22"; "23"; "24"; "25"; "26"; "27" |]
 
 let float_reg_name =
   [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
@@ -62,7 +63,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 23; 31 |]
+let num_available_registers = [| 22; 31 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -74,8 +75,8 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.make 23 Reg.dummy in
-  for i = 0 to 22 do v.(i) <- Reg.at_location Int (Reg i) done; v
+  let v = Array.make 22 Reg.dummy in
+  for i = 0 to 21 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
   let v = Array.make 31 Reg.dummy in
@@ -89,6 +90,8 @@ let phys_reg n =
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
+
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
 
 (* Calling conventions *)
 
@@ -255,6 +258,43 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* For ELF32 see:
+   "System V Application Binary Interface PowerPC Processor Supplement"
+   http://refspecs.linux-foundation.org/elf/elfspec_ppc.pdf
+
+   For ELF64v1 see:
+   "64-bit PowerPC ELF Application Binary Interface Supplement 1.9"
+   http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html
+
+   For ELF64v2 see:
+   "64-Bit ELF V2 ABI Specification -- Power Architecture"
+   http://openpowerfoundation.org/wp-content/uploads/resources/leabi/
+     content/dbdoclet.50655239___RefHeading___Toc377640569.html
+
+   All of these specifications seem to agree on the numberings we need.
+*)
+
+let int_dwarf_reg_numbers =
+  [| 3; 4; 5; 6; 7; 8; 9; 10;
+     14; 15; 16; 17; 18; 19; 20; 21;
+     22; 23; 24; 25; 26; 27;
+  |]
+
+let float_dwarf_reg_numbers =
+  [| 33; 34; 35; 36; 37; 38; 39;
+     40; 41; 42; 43; 44; 45; 46; 47;
+     48; 49; 50; 51; 52; 53; 54; 55;
+     56; 57; 58; 59; 60; 61; 62; 63;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 1
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -267,42 +307,63 @@ let destroyed_at_c_call =
      100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _ }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
 
+let destroyed_at_reloadretaddr = [| phys_reg 11 |]
+
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 15
-  | _ -> 23
+    Iextcall _ -> 14
+  | _ -> 22
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 15; 18 |]
-  | _ -> [| 23; 30 |]
+    Iextcall _ -> [| 14; 18 |]
+  | _ -> [| 22; 30 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Imultaddf | Imultsubf) -> true
   | Ispecific _ -> false
   | _ -> true
 
 (* Layout of the stack *)
 
-let num_stack_slots = [| 0; 0 |]
-let contains_calls = ref false
+(* See [reserved_stack_space] in emit.mlp. *)
+let reserved_stack_space_required () =
+  match abi with
+  | ELF32 -> false
+  | ELF64v1 | ELF64v2 -> true
+
+let frame_required fd =
+  let is_elf32 =
+    match abi with
+    | ELF32 -> true
+    | ELF64v1 | ELF64v2 -> false
+  in
+  reserved_stack_space_required ()
+    || fd.fun_num_stack_slots.(0) > 0
+    || fd.fun_num_stack_slots.(1) > 0
+    || (fd.fun_contains_calls && is_elf32)
+
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ " " ^
+                 (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                 " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let init () = ()

@@ -139,7 +139,7 @@ let final_rewrite add_function =
   List.iter add_function !to_insert;
   copy (in_channel_length !inchan);
   if !instr_mode then begin
-    let len = string_of_int !prof_counter in
+    let len = Int.to_string !prof_counter in
     if String.length len > 9 then raise (Profiler "too many counters");
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len
@@ -297,8 +297,12 @@ and rw_exp iflag sexp =
       List.iter (rewrite_class_field iflag) cl.pcstr_fields
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
-  | Pexp_open (_ovf, _, e) -> rewrite_exp iflag e
+  | Pexp_open (_, e) -> rewrite_exp iflag e
   | Pexp_pack (smod) -> rewrite_mod iflag smod
+  | Pexp_letop {let_; ands; body; _} ->
+      rewrite_exp iflag let_.pbop_exp;
+      List.iter (fun {pbop_exp; _} -> rewrite_exp iflag pbop_exp) ands;
+      rewrite_exp iflag body
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
 
@@ -367,6 +371,7 @@ and rewrite_class_expr iflag cexpr =
   | Pcl_let (_, spat_sexp_list, cexpr) ->
       rewrite_patexp_list iflag spat_sexp_list;
       rewrite_class_expr iflag cexpr
+  | Pcl_open (_, cexpr)
   | Pcl_constraint (cexpr, _) ->
       rewrite_class_expr iflag cexpr
   | Pcl_extension _ -> ()
@@ -380,7 +385,7 @@ and rewrite_mod iflag smod =
   match smod.pmod_desc with
     Pmod_ident _ -> ()
   | Pmod_structure sstr -> List.iter (rewrite_str_item iflag) sstr
-  | Pmod_functor(_param, _smty, sbody) -> rewrite_mod iflag sbody
+  | Pmod_functor(_param, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
   | Pmod_constraint(smod, _smty) -> rewrite_mod iflag smod
   | Pmod_unpack(sexp) -> rewrite_exp iflag sexp
@@ -490,7 +495,7 @@ let print_version_num () =
 let main () =
   try
     Warnings.parse_options false "a";
-    Arg.parse [
+    Arg.parse_expand [
        "-f", Arg.String (fun s -> dumpfile := s),
              "<file>     Use <file> as dump file (default ocamlprof.dump)";
        "-F", Arg.String (fun s -> special_id := s),
@@ -505,7 +510,13 @@ let main () =
                    "     Print version and exit";
        "-vnum", Arg.Unit print_version_num,
                 "        Print version number and exit";
-      ] process_anon_file usage;
+        "-args", Arg.Expand Arg.read_arg,
+            "<file> Read additional newline separated command line arguments \n\
+            \      from <file>";
+       "-args0", Arg.Expand Arg.read_arg0,
+           "<file> Read additional NUL separated command line arguments from \n\
+           \      <file>"
+    ] process_anon_file usage;
     exit 0
   with
   | Profiler msg ->

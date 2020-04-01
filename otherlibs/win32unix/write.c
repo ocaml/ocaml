@@ -37,17 +37,17 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
       if (Descr_kind_val(fd) == KIND_SOCKET) {
         int ret;
         SOCKET s = Socket_val(fd);
-        enter_blocking_section();
+        caml_enter_blocking_section();
         ret = send(s, iobuf, numbytes, 0);
         if (ret == SOCKET_ERROR) err = WSAGetLastError();
-        leave_blocking_section();
+        caml_leave_blocking_section();
         numwritten = ret;
       } else {
         HANDLE h = Handle_val(fd);
-        enter_blocking_section();
+        caml_enter_blocking_section();
         if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
           err = GetLastError();
-        leave_blocking_section();
+        caml_leave_blocking_section();
       }
       if (err) {
         win32_maperr(err);
@@ -78,17 +78,17 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
       if (Descr_kind_val(fd) == KIND_SOCKET) {
         int ret;
         SOCKET s = Socket_val(fd);
-        enter_blocking_section();
+        caml_enter_blocking_section();
         ret = send(s, iobuf, numbytes, 0);
         if (ret == SOCKET_ERROR) err = WSAGetLastError();
-        leave_blocking_section();
+        caml_leave_blocking_section();
         numwritten = ret;
       } else {
         HANDLE h = Handle_val(fd);
-        enter_blocking_section();
+        caml_enter_blocking_section();
         if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
           err = GetLastError();
-        leave_blocking_section();
+        caml_leave_blocking_section();
       }
       if (err) {
         win32_maperr(err);

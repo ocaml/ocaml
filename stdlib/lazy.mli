@@ -15,13 +15,28 @@
 
 (** Deferred computations. *)
 
-type 'a t = 'a lazy_t
+type 'a t = 'a CamlinternalLazy.t
 (** A value of type ['a Lazy.t] is a deferred computation, called
    a suspension, that has a result of type ['a].  The special
    expression syntax [lazy (expr)] makes a suspension of the
    computation of [expr], without computing [expr] itself yet.
    "Forcing" the suspension will then compute [expr] and return its
-   result.
+   result. Matching a suspension with the special pattern syntax
+   [lazy(pattern)] also computes the underlying expression and
+   tries to bind it to [pattern]:
+
+  {[
+    let lazy_option_map f x =
+    match x with
+    | lazy (Some x) -> Some (Lazy.force f x)
+    | _ -> None
+  ]}
+
+   Note: If lazy patterns appear in multiple cases in a pattern-matching,
+   lazy expressions may be forced even outside of the case ultimately selected
+   by the pattern matching. In the example above, the suspension [x] is always
+   computed.
+
 
    Note: [lazy_t] is the built-in type constructor used by the compiler
    for the [lazy] keyword.  You should not use it directly.  Always use
@@ -40,15 +55,15 @@ type 'a t = 'a lazy_t
 *)
 
 
-exception Undefined;;
+exception Undefined
 
-(* val force : 'a t -> 'a ;; *)
+(* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
    If [x] has already been forced, [Lazy.force x] returns the
    same value again without recomputing it.  If it raised an exception,
    the same exception is raised again.
-   Raise [Undefined] if the forcing of [x] tries to force [x] itself
+   Raise {!Undefined} if the forcing of [x] tries to force [x] itself
    recursively.
 *)
 
@@ -56,10 +71,10 @@ val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its
     result.  If [x] has already been forced, [force_val x]
     returns the same value again without recomputing it.
-    Raise [Undefined] if the forcing of [x] tries to force [x] itself
+    Raise {!Undefined} if the forcing of [x] tries to force [x] itself
     recursively.
     If the computation of [x] raises an exception, it is unspecified
-    whether [force_val x] raises the same exception or [Undefined].
+    whether [force_val x] raises the same exception or {!Undefined}.
 *)
 
 val from_fun : (unit -> 'a) -> 'a t

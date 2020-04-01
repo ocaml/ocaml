@@ -15,13 +15,23 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
+#ifndef DEBUG
+#define NDEBUG
+#endif
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../config/s.h"
+#include <string.h>
+#define CAML_INTERNALS
+#include "caml/config.h"
+#include "caml/mlvalues.h"
+#include "caml/osdeps.h"
+
+#define caml_stat_strdup strdup
 
 /*  machine-dependent definitions                              */
 /*  the following definitions are for the Tahoe                */
@@ -65,11 +75,9 @@
 
 /* defines for constructing filenames */
 
-#define CODE_SUFFIX        ".code.c"
-#define        DEFINES_SUFFIX        ".tab.h"
-#define        OUTPUT_SUFFIX        ".ml"
-#define        VERBOSE_SUFFIX        ".output"
-#define INTERFACE_SUFFIX ".mli"
+#define        OUTPUT_SUFFIX        T(".ml")
+#define        VERBOSE_SUFFIX        T(".output")
+#define INTERFACE_SUFFIX T(".mli")
 
 /* keyword codes */
 
@@ -81,8 +89,6 @@
 #define TEXT 5
 #define TYPE 6
 #define START 7
-#define UNION 8
-#define IDENT 9
 
 /*  symbol classes  */
 
@@ -139,9 +145,15 @@ struct bucket
     short prec;
     char class;
     char assoc;
-    char entry;
+    unsigned char entry;  /* 1..MAX_ENTRY_POINT (0 for unassigned) */
     char true_token;
 };
+
+/* MAX_ENTRY_POINT is the maximal number of entry points into the grammar. */
+/* Entry points are identified by a non-zero byte in the input stream,     */
+/* so there are at most 255 entry points.                                  */
+
+#define MAX_ENTRY_POINT MAXCHAR
 
 /* TABLE_SIZE is the number of entries in the symbol table.      */
 /* TABLE_SIZE must be a power of two.                            */
@@ -203,41 +215,43 @@ struct action
 
 /* global variables */
 
-extern char dflag;
 extern char lflag;
 extern char rflag;
 extern char tflag;
 extern char vflag;
 extern char qflag;
 extern char sflag;
+extern char eflag;
 extern char big_endian;
 
+/* myname should be UTF-8 encoded */
 extern char *myname;
 extern char *cptr;
 extern char *line;
 extern int lineno;
+/* virtual_input_file_name should be UTF-8 encoded */
 extern char *virtual_input_file_name;
 extern int outline;
 
-extern char *action_file_name;
-extern char *entry_file_name;
-extern char *code_file_name;
-extern char *defines_file_name;
-extern char *input_file_name;
-extern char *output_file_name;
-extern char *text_file_name;
-extern char *union_file_name;
-extern char *verbose_file_name;
-extern char *interface_file_name;
+extern char_os *action_file_name;
+extern char_os *entry_file_name;
+extern char_os *code_file_name;
+extern char_os *input_file_name;
+extern char_os *output_file_name;
+extern char_os *text_file_name;
+extern char_os *verbose_file_name;
+extern char_os *interface_file_name;
+
+/* UTF-8 versions of code_file_name and input_file_name */
+extern char *code_file_name_disp;
+extern char *input_file_name_disp;
 
 extern FILE *action_file;
 extern FILE *entry_file;
 extern FILE *code_file;
-extern FILE *defines_file;
 extern FILE *input_file;
 extern FILE *output_file;
 extern FILE *text_file;
-extern FILE *union_file;
 extern FILE *verbose_file;
 extern FILE *interface_file;
 
@@ -249,8 +263,7 @@ extern int ntokens;
 extern int nvars;
 extern int ntags;
 
-extern char unionized;
-extern char line_format[];
+#define line_format "# %d \"%s\"\n"
 
 extern int   start_symbol;
 extern char  **symbol_name;
@@ -299,13 +312,6 @@ extern short final_state;
 
 /* global functions */
 
-#ifdef __GNUC__
-/* Works only in GCC 2.5 and later */
-#define Noreturn __attribute ((noreturn))
-#else
-#define Noreturn
-#endif
-
 extern char *allocate(unsigned int n);
 extern bucket *lookup(char *name);
 extern bucket *make_bucket(char *name);
@@ -330,11 +336,11 @@ extern void lr0 (void);
 extern void make_parser (void);
 extern void no_grammar (void) Noreturn;
 extern void no_space (void) Noreturn;
-extern void open_error (char *filename) Noreturn;
+extern void open_error (char_os *filename) Noreturn;
 extern void output (void);
-extern void over_unionized (char *u_cptr) Noreturn;
 extern void prec_redeclared (void);
 extern void polymorphic_entry_point(char *s) Noreturn;
+extern void forbidden_conflicts (void);
 extern void reader (void);
 extern void reflexive_transitive_closure (unsigned int *R, int n);
 extern void reprec_warning (char *s);
@@ -353,7 +359,6 @@ extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr) Noret
 extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr) Noreturn;
 extern void unterminated_string (int s_lineno, char *s_line, char *s_cptr) Noreturn;
 extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noreturn;
-extern void unterminated_union (int u_lineno, char *u_line, char *u_cptr) Noreturn;
 extern void used_reserved (char *s) Noreturn;
 extern void verbose (void);
 extern void write_section (char **section);

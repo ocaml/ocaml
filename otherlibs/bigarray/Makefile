@@ -13,10 +13,14 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.shared
+LIBNAME=bigarray
+CAMLOBJS=bigarray.cmo
+
+include ../Makefile.otherlibs.common
+
+.PHONY: depend
 
 depend:
-	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

@@ -1,0 +1,6 @@
+  catch rec
+    exit(1)
+  with(1)
+  catch rec
+    exit(1)
+  with(1)

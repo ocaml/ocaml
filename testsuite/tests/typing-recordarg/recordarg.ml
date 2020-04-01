@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 type t = A of {x:int; mutable y:int};;
 let f (A r) = r;;  (* -> escape *)
 let f (A r) = r.x;; (* ok *)

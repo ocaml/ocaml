@@ -1,139 +1,133 @@
+|=====
+| Branch `trunk` | Branch `4.10` | Branch `4.09` | Branch  `4.08`  | Branch  `4.07`  | Branch `4.06` | Branch `4.05`
+
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.10["TravisCI Build Status (4.10 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.10&svg=true["AppVeyor Build Status (4.10 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.09["TravisCI Build Status (4.09 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.09&svg=true["AppVeyor Build Status (4.09 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.08["TravisCI Build Status (4.08 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.08&svg=true["AppVeyor Build Status (4.08 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.07["TravisCI Build Status (4.07 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.07&svg=true["AppVeyor Build Status (4.07 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.06["TravisCI Build Status (4.06 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.06&svg=true["AppVeyor Build Status (4.06 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.05["TravisCI Build Status (4.05 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.05&svg=true["AppVeyor Build Status (4.05 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+|=====
+
 = README =
 
-== OVERVIEW
+== Overview
 
 OCaml is an implementation of the ML language, based on the Caml Light
-dialect extended with a complete class-based object system and a
-powerful module system in the style of Standard ML.
+dialect extended with a complete class-based object system and a powerful
+module system in the style of Standard ML.
 
 OCaml comprises two compilers. One generates bytecode which is then
-interpreted by a C program. This compiler runs quickly, generates
-compact code with moderate memory requirements, and is portable to
-essentially any 32 or 64 bit Unix platform. Performance of generated
-programs is quite good for a bytecoded implementation.  This compiler
-can be used either as a standalone, batch-oriented compiler that
-produces standalone programs, or as an interactive, toplevel-based
-system.
+interpreted by a C program. This compiler runs quickly, generates compact
+code with moderate memory requirements, and is portable to essentially any
+32 or 64 bit Unix platform. Performance of generated programs is quite good
+for a bytecoded implementation.  This compiler can be used either as a
+standalone, batch-oriented compiler that produces standalone programs, or as
+an interactive, toplevel-based system.
 
-The other compiler generates high-performance native code for a number
-of processors. Compilation takes longer and generates bigger code, but
-the generated programs deliver excellent performance, while retaining
-the moderate memory requirements of the bytecode compiler. The
-native-code compiler currently runs on the following platforms:
+The other compiler generates high-performance native code for a number of
+processors. Compilation takes longer and generates bigger code, but the
+generated programs deliver excellent performance, while retaining the
+moderate memory requirements of the bytecode compiler. The native-code
+compiler currently runs on the following platforms:
 
-Tier 1 (actively used and maintained by the core OCaml team):
+|====
+|                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-AMD64 (Opteron)::    Linux, OS X, MS Windows
-IA32 (Pentium)::     Linux, FreeBSD, OS X, MS Windows
-PowerPC::            Linux, OS X
-ARM::                Linux
+| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
+| x86 32 bits    | Linux, Windows                  |  FreeBSD, NetBSD, OpenBSD
+| ARM 64 bits    | Linux                           |  FreeBSD
+| ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
+| Power 64 bits  | Linux                           |
+| Power 32 bits  |                                 |  Linux
+| IBM Z (s390x)  | Linux                           |
+|====
 
-Tier 2 (maintained when possible, with help from users):
+Other operating systems for the processors above have not been tested, but
+the compiler may work under other operating systems with little work.
 
-AMD64::              FreeBSD, OpenBSD, NetBSD
-IA32 (Pentium)::     NetBSD, OpenBSD, Solaris 9
-PowerPC::            NetBSD
-ARM::                NetBSD
-SPARC::              Solaris, Linux, NetBSD
 
-Other operating systems for the processors above have not been tested,
-but the compiler may work under other operating systems with little work.
+== Copyright
 
-Before the introduction of objects, OCaml was known as Caml Special
-Light. OCaml is almost upwards compatible with Caml Special Light,
-except for a few additional reserved keywords that have forced some
-renaming of standard library functions.
+All files marked "Copyright INRIA" in this distribution are copyright 1996,
+1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
+Institut National de Recherche en Informatique et en Automatique (INRIA)
+and distributed under the conditions stated in file LICENSE.
 
-== CONTENTS
+== Installation
 
-  Changes::               what's new with each release
-  INSTALL.adoc::          instructions for installation
-  LICENSE::               license and copyright notice
-  Makefile::              main Makefile
-  README.adoc::           this file
-  README.win32.adoc::     infos on the MS Windows ports of OCaml
-  asmcomp/::              native-code compiler and linker
-  asmrun/::               native-code runtime library
-  boot/::                 bootstrap compiler
-  bytecomp/::             bytecode compiler and linker
-  byterun/::              bytecode interpreter and runtime system
-  config/::               autoconfiguration stuff
-  debugger/::             source-level replay debugger
-  driver/::               driver code for the compilers
-  emacs/::                editing mode and debugger interface for GNU Emacs
-  lex/::                  lexer generator
-  ocamldoc/::             documentation generator
-  otherlibs/::            several external libraries
-  parsing/::              syntax analysis
-  stdlib/::               standard library
-  tools/::                various utilities
-  toplevel/::             interactive system
-  typing/::               typechecking
-  utils/::                utility libraries
-  yacc/::                 parser generator
+See the file link:INSTALL.adoc[] for installation instructions on
+machines running Unix, Linux, OS X and Cygwin.  For native Microsoft
+Windows, see link:README.win32.adoc[].
 
-== COPYRIGHT
+== Documentation
 
-All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
-2007, 2008, 2009, 2010, 2011, 2012 Institut National de Recherche en
-Informatique et en Automatique (INRIA) and distributed under the
-conditions stated in file LICENSE.
+The OCaml manual is distributed in HTML, PDF, and Emacs
+Info files.  It is available at
 
-== INSTALLATION
+http://caml.inria.fr/pub/docs/manual-ocaml/
 
-See the file INSTALL for installation instructions on machines running Unix,
-Linux, OS X and Cygwin.  For native Microsoft Windows, see
-link:README.win32.adoc[].
-
-== DOCUMENTATION
-
-The OCaml manual is distributed in HTML, PDF, Postscript, DVI, and
-Emacs Info files.  It is available at
-
-http://caml.inria.fr/
-
-The community also maintains the Web site http://ocaml.org, with tutorials
-and other useful informations for OCaml users.
-
-== AVAILABILITY
+== Availability
 
 The complete OCaml distribution can be accessed at
 
-http://caml.inria.fr/
+http://ocaml.org/docs/install.html
 
-== KEEPING IN TOUCH WITH THE CAML COMMUNITY
+== Keeping in Touch with the Caml Community
 
-There exists a mailing list of users of the OCaml implementations
-developed at INRIA. The purpose of this list is to share
-experience, exchange ideas (and even code), and report on applications
-of the OCaml language. Messages can be written in English or in
-French. The list has more than 1000 subscribers.
-
-Messages to the list should be sent to:
+The OCaml mailing list is the longest-running forum for OCaml users.
+You can email it at
 
 mailto:caml-list@inria.fr[]
 
-You can subscribe to this list via the Web interface at
+You can subscribe and access list archives via the Web interface at
 
 https://sympa.inria.fr/sympa/subscribe/caml-list
 
-Archives of the list are available on the Web site above.
+You can also access a newer discussion forum at
 
-The Usenet news `groups comp.lang.ml` and `comp.lang.functional`
-also contains discussions about the ML family of programming languages,
-including OCaml.
+https://discuss.ocaml.org/
 
-The IRC channel `#ocaml` on https://freenode.net/[Freenode] also has several
-hundred users and welcomes questions.
+There also exist other mailing lists, chat channels, and various other forums
+around the internet for getting in touch with the OCaml and ML family language
+community. These can be accessed at
 
-== BUG REPORTS AND USER FEEDBACK
+http://ocaml.org/community/
 
-Please report bugs using the Web interface to the bug-tracking system
-at http://caml.inria.fr/bin/caml-bugs
+In particular, the IRC channel `#ocaml` on https://freenode.net/[Freenode] has a
+long history and welcomes questions.
 
-To be effective, bug reports should include a complete program
-(preferably small) that exhibits the unexpected behavior, and the
-configuration you are using (machine type, etc).
+== Bug Reports and User Feedback
 
-You can also contact the implementors directly at mailto:caml@inria.fr[].
+Please report bugs using the issue tracker at
+https://github.com/ocaml/ocaml/issues
+
+To be effective, bug reports should include a complete program (preferably
+small) that exhibits the unexpected behavior, and the configuration you are
+using (machine type, etc).
+
+For information on contributing to OCaml, see link:HACKING.adoc[] and
+link:CONTRIBUTING.md[].

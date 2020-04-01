@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 module type S = sig
   include Set.S
   module E : sig val x : int end
@@ -11,7 +18,7 @@ module Make(O : Set.OrderedType) : S with type elt = O.t =
 
 module rec A : Set.OrderedType = struct
  type t = int
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 and B : S = struct
  module C = Make(A)

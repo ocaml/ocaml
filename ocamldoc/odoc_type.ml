@@ -56,7 +56,7 @@ type object_field = {
 }
 
 type type_manifest =
-  | Other of Types.type_expr (** Type manifest directly taken from Typedtre. *)
+  | Other of Types.type_expr (** Type manifest directly taken from Typedtree. *)
   | Object_type of object_field list
 
 (** Representation of a type. *)

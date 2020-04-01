@@ -1,0 +1,82 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
+(*                                                                        *)
+(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(* The configuration module for ocamltest *)
+
+let arch = "@@ARCH@@"
+
+let afl_instrument = @@AFL_INSTRUMENT@@
+
+let asm = "@@ASM@@"
+
+let cc = "@@CC@@"
+
+let cflags = "@@CFLAGS@@"
+
+let ccomptype = "@@CCOMPTYPE@@"
+
+let shared_libraries = @@SHARED_LIBRARIES@@
+
+let libunix = @@UNIX@@
+
+let systhreads = @@SYSTHREADS@@
+
+let str = @@STR@@
+
+let objext = "@@OBJEXT@@"
+
+let asmext = "@@ASMEXT@@"
+
+let system = "@@SYSTEM@@"
+
+let c_preprocessor = "@@CPP@@"
+
+let ocamlsrcdir = "@@OCAMLSRCDIR@@"
+
+let flambda = @@FLAMBDA@@
+
+let spacetime = @@SPACETIME@@
+
+let ocamlc_default_flags = "@@OCAMLCDEFAULTFLAGS@@"
+let ocamlopt_default_flags = "@@OCAMLOPTDEFAULTFLAGS@@"
+
+let safe_string = @@FORCE_SAFE_STRING@@
+
+let flat_float_array = @@FLAT_FLOAT_ARRAY@@
+
+let ocamldoc = @@OCAMLDOC@@
+
+let ocamldebug = @@OCAMLDEBUG@@
+
+let native_dynlink = @@NATIVE_DYNLINK@@
+
+let shared_library_cflags = "@@SHARED_LIBRARY_CFLAGS@@"
+
+let sharedobjext = "@@SHAREDOBJEXT@@"
+
+let csc = "@@CSC@@"
+
+let csc_flags = "@@CSCFLAGS@@"
+
+let mkdll = "@@MKDLL@@"
+let mkexe = "@@MKEXE@@"
+
+let bytecc_libs = "@@BYTECCLIBS@@"
+
+let nativecc_libs = "@@NATIVECCLIBS@@"
+
+let windows_unicode = @@WINDOWS_UNICODE@@ != 0
+
+let function_sections = @@FUNCTION_SECTIONS@@

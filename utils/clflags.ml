@@ -49,24 +49,29 @@ and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
-and fast = ref false                    (* -unsafe *)
+and debug_full = ref false              (* For full DWARF support *)
+and unsafe = ref false                  (* -unsafe *)
+and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
 and no_check_prims = ref false          (* -no-check-prims *)
 and bytecode_compatible_32 = ref false  (* -compat-32 *)
 and output_c_object = ref false         (* -output-obj *)
 and output_complete_object = ref false  (* -output-complete-obj *)
+and output_complete_executable = ref false  (* -output-complete-exe *)
 and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
+and match_context_rows = ref 32         (* -match-context-rows *)
 and preprocessor = ref(None : string option) (* -pp *)
 and all_ppx = ref ([] : string list)        (* -ppx *)
+let absname = ref false                 (* -absname *)
 let annotations = ref false             (* -annot *)
 let binary_annotations = ref false      (* -annot *)
 and use_threads = ref false             (* -thread *)
-and use_vmthreads = ref false           (* -vmthread *)
 and noassert = ref false                (* -noassert *)
 and verbose = ref false                 (* -verbose *)
+and noversion = ref false               (* -no-version *)
 and noprompt = ref false                (* -noprompt *)
 and nopromptcont = ref false            (* -nopromptcont *)
 and init_file = ref (None : string option)   (* -init *)
@@ -74,6 +79,7 @@ and noinit = ref false                  (* -noinit *)
 and open_modules = ref []               (* -open *)
 and use_prims = ref ""                  (* -use-prims ... *)
 and use_runtime = ref ""                (* -use-runtime ... *)
+and plugin = ref false                  (* -plugin ... *)
 and principal = ref false               (* -principal *)
 and real_paths = ref true               (* -short-paths *)
 and recursive_types = ref false         (* -rectypes *)
@@ -81,7 +87,6 @@ and strict_sequence = ref false         (* -strict-sequence *)
 and strict_formats = ref false          (* -strict-formats *)
 and applicative_functors = ref true     (* -no-app-funct *)
 and make_runtime = ref false            (* -make-runtime *)
-and gprofile = ref false                (* -p *)
 and c_compiler = ref (None: string option) (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
 and dllpaths = ref ([] : string list)   (* -dllpath *)
@@ -90,6 +95,8 @@ and for_package = ref (None: string option) (* -for-pack *)
 and error_size = ref 500                (* -error-size *)
 and float_const_prop = ref true         (* -no-float-const-prop *)
 and transparent_modules = ref false     (* -trans-mod *)
+let unique_ids = ref true               (* -d(no-)unique-ds *)
+let locations = ref true                (* -d(no-)locations *)
 let dump_source = ref false             (* -dsource *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_typedtree = ref false          (* -dtypedtree *)
@@ -102,6 +109,7 @@ and dump_flambda = ref false            (* -dflambda *)
 and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
 and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
+and keep_camlprimc_file = ref false     (* -dcamlprimc *)
 
 let keep_asm_file = ref false           (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
@@ -111,6 +119,7 @@ and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
 let dump_cse = ref false                (* -dcse *)
 let dump_live = ref false               (* -dlive *)
+let dump_avail = ref false              (* -davail *)
 let dump_spill = ref false              (* -dspill *)
 let dump_split = ref false              (* -dsplit *)
 let dump_interf = ref false             (* -dinterf *)
@@ -119,18 +128,25 @@ let dump_regalloc = ref false           (* -dalloc *)
 let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
+let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
-let print_timings = ref false           (* -dtimings *)
+let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
+
+let debug_runavail = ref false          (* -drunavail *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 
-let flambda_invariant_checks = ref true (* -flambda-invariants *)
+let flambda_invariant_checks =
+  ref Config.with_flambda_invariants    (* -flambda-(no-)invariants *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
+
+let insn_sched_default = true
+let insn_sched = ref insn_sched_default (* -[no-]insn-sched *)
 
 let std_include_flag prefix =
   if !no_std_include then ""
@@ -149,13 +165,22 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | _       -> false)
 
 let runtime_variant = ref "";;      (* -runtime-variant *)
+let with_runtime = ref true;;         (* -with-runtime *)
 
 let keep_docs = ref false              (* -keep-docs *)
-let keep_locs = ref false              (* -keep-locs *)
-let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
+let keep_locs = ref true               (* -keep-locs *)
+let unsafe_string =
+  if Config.safe_string then ref false
+  else ref (not Config.default_safe_string)
+                                   (* -safe-string / -unsafe-string *)
 
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)
+
+let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
+let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
+
+let function_sections = ref false      (* -function-sections *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)
@@ -348,9 +373,132 @@ let set_dumped_pass s enabled =
     dumped_passes_list := dumped_passes
   end
 
-let parse_color_setting = function
-  | "auto" -> Some Misc.Color.Auto
-  | "always" -> Some Misc.Color.Always
-  | "never" -> Some Misc.Color.Never
-  | _ -> None
-let color = ref Misc.Color.Auto ;; (* -color *)
+let dump_into_file = ref false (* -dump-into-file *)
+
+type 'a env_reader = {
+  parse : string -> 'a option;
+  print : 'a -> string;
+  usage : string;
+  env_var : string;
+}
+
+let color = ref None (* -color *)
+
+let color_reader = {
+  parse = (function
+    | "auto" -> Some Misc.Color.Auto
+    | "always" -> Some Misc.Color.Always
+    | "never" -> Some Misc.Color.Never
+    | _ -> None);
+  print = (function
+    | Misc.Color.Auto -> "auto"
+    | Misc.Color.Always -> "always"
+    | Misc.Color.Never -> "never");
+  usage = "expected \"auto\", \"always\" or \"never\"";
+  env_var = "OCAML_COLOR";
+}
+
+let error_style = ref None (* -error-style *)
+
+let error_style_reader = {
+  parse = (function
+    | "contextual" -> Some Misc.Error_style.Contextual
+    | "short" -> Some Misc.Error_style.Short
+    | _ -> None);
+  print = (function
+    | Misc.Error_style.Contextual -> "contextual"
+    | Misc.Error_style.Short -> "short");
+  usage = "expected \"contextual\" or \"short\"";
+  env_var = "OCAML_ERROR_STYLE";
+}
+
+let unboxed_types = ref false
+
+(* This is used by the -stop-after option. *)
+module Compiler_pass = struct
+  (* If you add a new pass, the following must be updated:
+     - the variable `passes` below
+     - the manpages in man/ocaml{c,opt}.m
+     - the manual manual/manual/cmds/unified-options.etex
+  *)
+  type t = Parsing | Typing | Scheduling
+
+  let to_string = function
+    | Parsing -> "parsing"
+    | Typing -> "typing"
+    | Scheduling -> "scheduling"
+
+  let of_string = function
+    | "parsing" -> Some Parsing
+    | "typing" -> Some Typing
+    | "scheduling" -> Some Scheduling
+    | _ -> None
+
+  let rank = function
+    | Parsing -> 0
+    | Typing -> 1
+    | Scheduling -> 50
+
+  let passes = [
+    Parsing;
+    Typing;
+    Scheduling;
+  ]
+  let is_compilation_pass _ = true
+  let is_native_only = function
+    | Scheduling -> true
+    | _ -> false
+
+  let enabled is_native t = not (is_native_only t) || is_native
+
+  let available_pass_names ~native =
+    passes
+    |> List.filter (enabled native)
+    |> List.map to_string
+end
+
+let stop_after = ref None (* -stop-after *)
+
+let should_stop_after pass =
+  if Compiler_pass.(rank Typing <= rank pass) && !print_types then true
+  else
+    match !stop_after with
+    | None -> false
+    | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
+
+module String = Misc.Stdlib.String
+
+let arg_spec = ref []
+let arg_names = ref String.Map.empty
+
+let reset_arguments () =
+  arg_spec := [];
+  arg_names := String.Map.empty
+
+let add_arguments loc args =
+  List.iter (function (arg_name, _, _) as arg ->
+    try
+      let loc2 = String.Map.find arg_name !arg_names in
+      Printf.eprintf
+        "Warning: compiler argument %s is already defined:\n" arg_name;
+      Printf.eprintf "   First definition: %s\n" loc2;
+      Printf.eprintf "   New definition: %s\n" loc;
+    with Not_found ->
+      arg_spec := !arg_spec @ [ arg ];
+      arg_names := String.Map.add arg_name loc !arg_names
+  ) args
+
+let print_arguments usage =
+  Arg.usage !arg_spec usage
+
+(* This function is almost the same as [Arg.parse_expand], except
+   that [Arg.parse_expand] could not be used because it does not take a
+   reference for [arg_spec].*)
+let parse_arguments f msg =
+  try
+    let argv = ref Sys.argv in
+    let current = ref (!Arg.current) in
+    Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
+  with
+  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+  | Arg.Help msg -> Printf.printf "%s" msg; exit 0

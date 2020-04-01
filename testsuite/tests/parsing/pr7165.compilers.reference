@@ -1,0 +1,4 @@
+File "pr7165.ml", line 12, characters 1-23:
+12 | #9342101923012312312 ""
+      ^^^^^^^^^^^^^^^^^^^^^^
+Error: Invalid lexer directive "#9342101923012312312 \"\"": line number out of range

@@ -1,3 +1,11 @@
+(* TEST
+
+flags = "-w A"
+
+* bytecode
+
+*)
+
 module M = struct
   type t = int
 

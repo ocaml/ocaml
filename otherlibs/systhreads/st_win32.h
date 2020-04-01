@@ -15,13 +15,14 @@
 
 /* Win32 implementation of the "st" interface */
 
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 #include <winerror.h>
 #include <stdio.h>
 #include <signal.h>
 
-#define INLINE __inline
+#include <caml/osdeps.h>
 
 #if 1
 #define TRACE(x)
@@ -37,7 +38,7 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
-/* Thread-local storage assocaiting a Win32 event to every thread. */
+/* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
 
 /* OS-specific initialization */
@@ -80,6 +81,10 @@ static void st_thread_cleanup(void)
 
 /* Thread termination */
 
+CAMLnoreturn_start
+static void st_thread_exit(void)
+CAMLnoreturn_end;
+
 static void st_thread_exit(void)
 {
   TRACE("st_thread_exit");
@@ -90,13 +95,6 @@ static void st_thread_join(st_thread_id thr)
 {
   TRACE1("st_thread_join", h);
   WaitForSingleObject(thr, INFINITE);
-}
-
-/* Scheduling hints */
-
-static INLINE void st_thread_yield(void)
-{
-  Sleep(0);
 }
 
 /* Thread-specific state */
@@ -112,12 +110,12 @@ static DWORD st_tls_newkey(st_tlskey * res)
     return 0;
 }
 
-static INLINE void * st_tls_get(st_tlskey k)
+Caml_inline void * st_tls_get(st_tlskey k)
 {
   return TlsGetValue(k);
 }
 
-static INLINE void st_tls_set(st_tlskey k, void * v)
+Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   TlsSetValue(k, v);
 }
@@ -133,22 +131,31 @@ static void st_masterlock_init(st_masterlock * m)
   EnterCriticalSection(m);
 }
 
-static INLINE void st_masterlock_acquire(st_masterlock * m)
+Caml_inline void st_masterlock_acquire(st_masterlock * m)
 {
   TRACE("st_masterlock_acquire");
   EnterCriticalSection(m);
   TRACE("st_masterlock_acquire (done)");
 }
 
-static INLINE void st_masterlock_release(st_masterlock * m)
+Caml_inline void st_masterlock_release(st_masterlock * m)
 {
   LeaveCriticalSection(m);
   TRACE("st_masterlock_released");
 }
 
-static INLINE int st_masterlock_waiters(st_masterlock * m)
+Caml_inline int st_masterlock_waiters(st_masterlock * m)
 {
   return 1;                     /* info not maintained */
+}
+
+/* Scheduling hints */
+
+Caml_inline void st_thread_yield(st_masterlock * m)
+{
+  LeaveCriticalSection(m);
+  Sleep(0);
+  EnterCriticalSection(m);
 }
 
 /* Mutexes */
@@ -157,7 +164,7 @@ typedef CRITICAL_SECTION * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = malloc(sizeof(CRITICAL_SECTION));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
   if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
   InitializeCriticalSection(m);
   *res = m;
@@ -167,11 +174,11 @@ static DWORD st_mutex_create(st_mutex * res)
 static DWORD st_mutex_destroy(st_mutex m)
 {
   DeleteCriticalSection(m);
-  free(m);
+  caml_stat_free(m);
   return 0;
 }
 
-static INLINE DWORD st_mutex_lock(st_mutex m)
+Caml_inline DWORD st_mutex_lock(st_mutex m)
 {
   TRACE1("st_mutex_lock", m);
   EnterCriticalSection(m);
@@ -184,7 +191,7 @@ static INLINE DWORD st_mutex_lock(st_mutex m)
 #define PREVIOUSLY_UNLOCKED 0
 #define ALREADY_LOCKED (1<<29)
 
-static INLINE DWORD st_mutex_trylock(st_mutex m)
+Caml_inline DWORD st_mutex_trylock(st_mutex m)
 {
   TRACE1("st_mutex_trylock", m);
   if (TryEnterCriticalSection(m)) {
@@ -196,7 +203,7 @@ static INLINE DWORD st_mutex_trylock(st_mutex m)
   }
 }
 
-static INLINE DWORD st_mutex_unlock(st_mutex m)
+Caml_inline DWORD st_mutex_unlock(st_mutex m)
 {
   TRACE1("st_mutex_unlock", m);
   LeaveCriticalSection(m);
@@ -221,7 +228,7 @@ typedef struct st_condvar_struct {
 
 static DWORD st_condvar_create(st_condvar * res)
 {
-  st_condvar c = malloc(sizeof(struct st_condvar_struct));
+  st_condvar c = caml_stat_alloc_noexc(sizeof(struct st_condvar_struct));
   if (c == NULL) return ERROR_NOT_ENOUGH_MEMORY;
   InitializeCriticalSection(&c->lock);
   c->waiters = NULL;
@@ -233,7 +240,7 @@ static DWORD st_condvar_destroy(st_condvar c)
 {
   TRACE1("st_condvar_destroy", c);
   DeleteCriticalSection(&c->lock);
-  free(c);
+  caml_stat_free(c);
   return 0;
 }
 
@@ -360,28 +367,30 @@ static DWORD st_event_wait(st_event e)
 
 static void st_check_error(DWORD retcode, char * msg)
 {
-  char err[1024];
-  int errlen, msglen;
+  wchar_t err[1024];
+  int errlen, msglen, ret;
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ERROR_NOT_ENOUGH_MEMORY) raise_out_of_memory();
-  if (! FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+  if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
+  ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL,
                       retcode,
                       0,
                       err,
-                      sizeof(err),
-                      NULL)) {
-    sprintf(err, "error code %lx", retcode);
+                      sizeof(err)/sizeof(wchar_t),
+                      NULL);
+  if (! ret) {
+    ret =
+      swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
   }
   msglen = strlen(msg);
-  errlen = strlen(err);
-  str = alloc_string(msglen + 2 + errlen);
+  errlen = win_wide_char_to_multi_byte(err, ret, NULL, 0);
+  str = caml_alloc_string(msglen + 2 + errlen);
   memmove (&Byte(str, 0), msg, msglen);
   memmove (&Byte(str, msglen), ": ", 2);
-  memmove (&Byte(str, msglen + 2), err, errlen);
-  raise_sys_error(str);
+  win_wide_char_to_multi_byte(err, ret, &Byte(str, msglen + 2), errlen);
+  caml_raise_sys_error(str);
 }
 
 /* Variable used to stop the "tick" thread */
@@ -412,12 +421,12 @@ static DWORD st_atfork(void (*fn)(void))
 
 value caml_thread_sigmask(value cmd, value sigs) /* ML */
 {
-  invalid_argument("Thread.sigmask not implemented");
+  caml_invalid_argument("Thread.sigmask not implemented");
   return Val_int(0);            /* not reached */
 }
 
 value caml_wait_signal(value sigs) /* ML */
 {
-  invalid_argument("Thread.wait_signal not implemented");
+  caml_invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
 }

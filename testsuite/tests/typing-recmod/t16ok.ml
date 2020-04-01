@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 (* PR#4450 *)
 
 module PR_4450_1 = struct

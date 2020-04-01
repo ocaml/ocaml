@@ -30,31 +30,36 @@
 CAMLprim value unix_sleep(value duration)
 {
   double d = Double_val(duration);
-  if (d <= 0.0) return Val_unit;
-#if _POSIX_C_SOURCE >= 199309L
+  if (d < 0.0) return Val_unit;
+#if defined(HAS_NANOSLEEP)
   {
     struct timespec t;
     int ret;
-    enter_blocking_section();
     t.tv_sec = (time_t) d;
     t.tv_nsec = (d - t.tv_sec) * 1e9;
     do {
+      caml_enter_blocking_section();
       ret = nanosleep(&t, &t);
+      /* MPR#7903: if we were interrupted by a signal, and this signal
+         is handled in OCaml, we should run its handler now,
+         not at the end of the full sleep duration.  Leaving the blocking
+         section and re-entering it does the job. */
+      caml_leave_blocking_section();
     } while (ret == -1 && errno == EINTR);
-    leave_blocking_section();
     if (ret == -1) uerror("sleep", Nothing);
   }
 #elif defined(HAS_SELECT)
   {
     struct timeval t;
     int ret;
-    enter_blocking_section();
     t.tv_sec = (time_t) d;
     t.tv_usec = (d - t.tv_sec) * 1e6;
     do {
+      caml_enter_blocking_section();
       ret = select(0, NULL, NULL, NULL, &t);
+      /* MPR#7903: same comment as above */
+      caml_leave_blocking_section();
     } while (ret == -1 && errno == EINTR);
-    leave_blocking_section();
     if (ret == -1) uerror("sleep", Nothing);
   }
 #else
@@ -62,9 +67,9 @@ CAMLprim value unix_sleep(value duration)
      We cannot reliably iterate until sleep() returns 0, because the
      remaining time returned by sleep() is generally rounded up. */
   {
-    enter_blocking_section();
+    caml_enter_blocking_section();
     sleep ((unsigned int) d);
-    leave_blocking_section();
+    caml_leave_blocking_section();
   }
 #endif
   return Val_unit;

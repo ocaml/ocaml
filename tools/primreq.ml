@@ -18,21 +18,20 @@
 
 open Config
 open Cmo_format
-
-module StringSet = Set.Make(struct type t = string let compare = compare end)
+module String = Misc.Stdlib.String
 
 let defined = ref true
 let used = ref false
 let exclude_file = ref ""
 
-let primitives = ref StringSet.empty
+let primitives = ref String.Set.empty
 
 let scan_reloc = function
-    (Reloc_primitive s, _) -> primitives := StringSet.add s !primitives
+    (Reloc_primitive s, _) -> primitives := String.Set.add s !primitives
   | _ -> ()
 
 let scan_prim s =
-  primitives := StringSet.add s !primitives
+  primitives := String.Set.add s !primitives
 
 let scan_info cu =
   if !used then List.iter scan_reloc cu.cu_reloc;
@@ -40,8 +39,7 @@ let scan_info cu =
 
 let scan_obj filename =
   let ic = open_in_bin filename in
-  let buffer = String.create (String.length cmo_magic_number) in
-  really_input ic buffer 0 (String.length cmo_magic_number);
+  let buffer = really_input_string ic (String.length cmo_magic_number) in
   if buffer = cmo_magic_number then begin
     let cu_pos = input_binary_int ic in
     seek_in ic cu_pos;
@@ -64,13 +62,13 @@ let exclude filename =
   try
     while true do
       let s = input_line ic in
-      primitives := StringSet.remove s !primitives
+      primitives := String.Set.remove s !primitives
     done
   with End_of_file -> close_in ic
      | x -> close_in ic; raise x
 
 let main() =
-  Arg.parse
+  Arg.parse_expand
     ["-used", Arg.Unit(fun () -> used := true; defined := false),
         "show primitives referenced in the object files";
      "-defined", Arg.Unit(fun () -> defined := true; used := false),
@@ -78,11 +76,17 @@ let main() =
      "-all", Arg.Unit(fun () -> defined := true; used := true),
         "show primitives defined or referenced in the object files";
      "-exclude", Arg.String(fun s -> exclude_file := s),
-        "<file> don't print the primitives mentioned in <file>"]
+     "<file> don't print the primitives mentioned in <file>";
+     "-args", Arg.Expand Arg.read_arg,
+     "<file> Read additional newline separated command line arguments \n\
+     \      from <file>";
+     "-args0", Arg.Expand Arg.read_arg0,
+     "<file> Read additional NUL separated command line arguments from \n\
+     \      <file>";]
     scan_obj
     "Usage: primreq [options] <.cmo and .cma files>\nOptions are:";
   if String.length !exclude_file > 0 then exclude !exclude_file;
-  StringSet.iter
+  String.Set.iter
     (fun s ->
       if s.[0] <> '%' then begin print_string s; print_newline() end)
     !primitives;

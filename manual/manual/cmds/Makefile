@@ -1,43 +1,52 @@
-FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
-  depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
-  warnings-help.tex ocamlbuild.tex flambda.tex
+TOPDIR = ../../..
+include $(TOPDIR)/Makefile.tools
 
-TRANSF=../../tools/transf
-TEXQUOTE=../../tools/texquote2
-FORMAT=../../tools/format-intf
+LD_PATH = "$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
 
+TOOLS = ../../tools
+CAMLLATEX = $(SET_LD_PATH) \
+  $(OCAMLRUN) $(TOPDIR)/tools/caml-tex \
+  -repo-root $(TOPDIR) -n 80 -v false
+TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
+TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+
+FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
+  ocamldep.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
+  warnings-help.tex ocamlbuild.tex flambda.tex spacetime-chapter.tex \
+  afl-fuzz.tex unified-options.tex
+
+WITH_TRANSF = top.tex intf-c.tex flambda.tex spacetime-chapter.tex \
+  afl-fuzz.tex lexyacc.tex debugger.tex
+
+WITH_CAMLEXAMPLE = ocamldoc.tex
+
+
+etex-files: $(FILES)
 all: $(FILES)
 
-clean::
-	rm -f $(FILES)
-	rm -f *~ #*#
 
-.SUFFIXES:
-.SUFFIXES: .tex .etex
+%.tex: %.etex
+	$(TEXQUOTE) < $< > $*.texquote_error.tex
+	mv $*.texquote_error.tex $@
 
-.etex.tex:
-	$(TEXQUOTE) < $*.etex > $*.tex
+$(WITH_TRANSF): %.tex: %.etex
+	$(TRANSF) < $< > $*.transf_error.tex
+	mv $*.transf_error.tex $*.transf_gen.tex
+	$(TEXQUOTE) < $*.transf_gen.tex > $*.texquote_error.tex
+	mv $*.texquote_error.tex $@
 
-ocamldoc.tex: ocamldoc.etex $(TRANSF)
-	$(TRANSF) < ocamldoc.etex | $(TEXQUOTE) > ocamldoc.tex
-
-top.tex: top.etex $(TRANSF)
-	$(TRANSF) < top.etex | $(TEXQUOTE) > top.tex
-
-intf-c.tex: intf-c.etex $(TRANSF)
-	$(TRANSF) < intf-c.etex | $(TEXQUOTE) > intf-c.tex
-
-flambda.tex: flambda.etex $(TRANSF)
-	$(TRANSF) < flambda.etex | $(TEXQUOTE) > flambda.tex
-
-lexyacc.tex: lexyacc.etex $(TRANSF)
-	$(TRANSF) < lexyacc.etex | $(TEXQUOTE) > lexyacc.tex
-
-debugger.tex: debugger.etex $(TRANSF)
-	$(TRANSF) < debugger.etex | $(TEXQUOTE) > debugger.tex
+$(WITH_CAMLEXAMPLE): %.tex: %.etex
+	$(CAMLLATEX) $< -o $*.gen.tex
+	$(TRANSF) < $*.gen.tex > $*.transf_error.tex
+	mv $*.transf_error.tex $*.transf_gen.tex
+	$(TEXQUOTE) < $*.transf_gen.tex > $*.texquote_error.tex
+	mv $*.texquote_error.tex $@
 
 warnings-help.etex: ../warnings-help.etex
-	cp ../warnings-help.etex .
+	cp $< $@
 
-clean::
+
+.PHONY: clean
+clean:
+	rm -f *.tex
 	rm -f warnings-help.etex

@@ -15,9 +15,18 @@
 
 (** Facilities for printing exceptions and inspecting current call stack. *)
 
+type t = exn = ..
+(** The type of exception values. *)
+
 val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
    the exception [e]. *)
+
+val to_string_default: exn -> string
+(** [Printexc.to_string_default e] returns a string representation of the
+    exception [e], ignoring all registered exception printers.
+    @since 4.09
+*)
 
 val print: ('a -> 'b) -> 'a -> 'b
 (** [Printexc.print fn x] applies [fn] to [x] and returns the result.
@@ -42,13 +51,20 @@ val print_backtrace: out_channel -> unit
     on the output channel [oc].  The backtrace lists the program
     locations where the most-recently raised exception was raised
     and where it was propagated through function calls.
+
+    If the call is not inside an exception handler, the returned
+    backtrace is unspecified. If the call is after some
+    exception-catching code (before in the handler, or in a when-guard
+    during the matching of the exception handler), the backtrace may
+    correspond to a later exception than the handled one.
+
     @since 3.11.0
 *)
 
 val get_backtrace: unit -> string
 (** [Printexc.get_backtrace ()] returns a string containing the
     same exception backtrace that [Printexc.print_backtrace] would
-    print.
+    print. Same restriction usage than {!print_backtrace}.
     @since 3.11.0
 *)
 
@@ -85,7 +101,13 @@ val register_printer: (exn -> string option) -> unit
     @since 3.11.2
 *)
 
-(** {6 Raw backtraces} *)
+val use_printers: exn -> string option
+(** [Printexc.use_printers e] returns [None] if there are no registered
+    printers and [Some s] with else as the resulting string otherwise.
+    @since 4.09
+*)
+
+(** {1 Raw backtraces} *)
 
 type raw_backtrace
 (** The abstract type [raw_backtrace] stores a backtrace in
@@ -106,7 +128,7 @@ type raw_backtrace
 val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in
-    a raw format.
+    a raw format. Same restriction usage than {!print_backtrace}.
 
     @since 4.01.0
 *)
@@ -125,9 +147,17 @@ val raw_backtrace_to_string: raw_backtrace -> string
     @since 4.01.0
 *)
 
-(** {6 Current call stack} *)
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+(** Reraise the exception using the given raw_backtrace for the
+    origin of the exception
 
-val get_callstack: int -> raw_backtrace
+    @since 4.05.0
+*)
+
+(** {1 Current call stack} *)
+
+external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 (** [Printexc.get_callstack n] returns a description of the top of the
     call stack on the current program point (for the current thread),
     with at most [n] entries.  (Note: this function is not related to
@@ -136,15 +166,22 @@ val get_callstack: int -> raw_backtrace
     @since 4.01.0
 *)
 
-(** {6 Uncaught exceptions} *)
+(** {1 Uncaught exceptions} *)
+
+val default_uncaught_exception_handler: exn -> raw_backtrace -> unit
+(** [Printexc.default_uncaught_exception_handler] prints the exception and
+    backtrace on standard error output.
+
+    @since 4.11
+*)
 
 val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 (** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
-    for uncaught exceptions. The default handler prints the exception and
-    backtrace on standard error output.
+    for uncaught exceptions. The default handler is
+    {!Printexc.default_uncaught_exception_handler}.
 
     Note that when [fn] is called all the functions registered with
-    {!Pervasives.at_exit} have already been called. Because of this you must
+    {!Stdlib.at_exit} have already been called. Because of this you must
     make sure any output channel [fn] writes on is flushed.
 
     Also note that exceptions raised by user code in the interactive toplevel
@@ -157,10 +194,10 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 *)
 
 
-(** {6 Manipulation of backtrace information}
+(** {1 Manipulation of backtrace information}
 
-    Those function allow to traverse the slots of a raw backtrace,
-    extract information from them in a programmer-friendly format.
+    These functions are used to traverse the slots of a raw backtrace
+    and extract information from them in a programmer-friendly format.
 *)
 
 type backtrace_slot
@@ -200,6 +237,7 @@ type location = {
     @since 4.02
 *)
 
+(** @since 4.02.0 *)
 module Slot : sig
   type t = backtrace_slot
 
@@ -209,6 +247,14 @@ module Slot : sig
       function call.
 
       @since 4.02
+  *)
+
+  val is_inline : t -> bool
+  (** [is_inline slot] is [true] when [slot] refers to a call
+      that got inlined by the compiler, and [false] when it comes from
+      any other context.
+
+      @since 4.04.0
   *)
 
   val location : t -> location option
@@ -237,7 +283,7 @@ module Slot : sig
 end
 
 
-(** {6 Raw backtrace slots} *)
+(** {1 Raw backtrace slots} *)
 
 type raw_backtrace_slot
 (** This type allows direct access to raw backtrace slots, without any
@@ -263,7 +309,7 @@ val raw_backtrace_length : raw_backtrace -> int
 *)
 
 val get_raw_backtrace_slot : raw_backtrace -> int -> raw_backtrace_slot
-(** [get_slot bckt pos] returns the slot in position [pos] in the
+(** [get_raw_backtrace_slot bckt pos] returns the slot in position [pos] in the
     backtrace [bckt].
 
     @since 4.02
@@ -277,7 +323,30 @@ val convert_raw_backtrace_slot : raw_backtrace_slot -> backtrace_slot
 *)
 
 
-(** {6 Exception slots} *)
+val get_raw_backtrace_next_slot :
+    raw_backtrace_slot -> raw_backtrace_slot option
+(** [get_raw_backtrace_next_slot slot] returns the next slot inlined, if any.
+
+    Sample code to iterate over all frames (inlined and non-inlined):
+    {[
+      (* Iterate over inlined frames *)
+      let rec iter_raw_backtrace_slot f slot =
+        f slot;
+        match get_raw_backtrace_next_slot slot with
+        | None -> ()
+        | Some slot' -> iter_raw_backtrace_slot f slot'
+
+      (* Iterate over stack frames *)
+      let iter_raw_backtrace f bt =
+        for i = 0 to raw_backtrace_length bt - 1 do
+          iter_raw_backtrace_slot f (get_raw_backtrace_slot bt i)
+        done
+    ]}
+
+    @since 4.04.0
+*)
+
+(** {1 Exception slots} *)
 
 val exn_slot_id: exn -> int
 (** [Printexc.exn_slot_id] returns an integer which uniquely identifies
@@ -288,7 +357,7 @@ val exn_slot_id: exn -> int
 *)
 
 val exn_slot_name: exn -> string
-(** [Printexc.exn_slot_id exn] returns the internal name of the constructor
+(** [Printexc.exn_slot_name exn] returns the internal name of the constructor
     used to create the exception value [exn].
 
     @since 4.02.0

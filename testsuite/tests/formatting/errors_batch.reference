@@ -1,0 +1,10 @@
+File "hello.ml", line 18, characters 20-27:
+Error: These are the contents of the main error message. It is very long and
+       should wrap across several lines.
+File "hello.ml", line 20, characters 4-8:
+  A located first sub-message.
+File "hello.ml", line 20, characters 6-8:
+  Longer sub-messages that do not fit on the same line as the location get
+  indented.
+  This second sub-message does not have a location;
+  ghost locations of submessages are not printed.

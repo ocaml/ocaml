@@ -28,6 +28,13 @@
    [nativeint] are generally slower than those on [int].  Use [nativeint]
    only when the application requires the extra bit of precision
    over the [int] type.
+
+    Literals for native integers are suffixed by n:
+    {[
+      let zero: nativeint = 0n
+      let one: nativeint = 1n
+      let m_one: nativeint = -1n
+    ]}
 *)
 
 val zero : nativeint
@@ -54,7 +61,13 @@ external mul : nativeint -> nativeint -> nativeint = "%nativeint_mul"
 external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
 (** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
+   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+
+val unsigned_div : nativeint -> nativeint -> nativeint
+(** Same as {!div}, except that arguments and result are interpreted as {e
+    unsigned} native integers.
+
+    @since 4.08.0 *)
 
 external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
 (** Integer remainder.  If [y] is not zero, the result
@@ -63,6 +76,12 @@ external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
    [x = Nativeint.add (Nativeint.mul (Nativeint.div x y) y)
                       (Nativeint.rem x y)].
    If [y = 0], [Nativeint.rem x y] raises [Division_by_zero]. *)
+
+val unsigned_rem : nativeint -> nativeint -> nativeint
+(** Same as {!rem}, except that arguments and result are interpreted as {e
+    unsigned} native integers.
+
+    @since 4.08.0 *)
 
 val succ : nativeint -> nativeint
 (** Successor.
@@ -85,7 +104,7 @@ val max_int : nativeint
    or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : nativeint
-(** The greatest representable native integer,
+(** The smallest representable native integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 
@@ -99,7 +118,7 @@ external logxor : nativeint -> nativeint -> nativeint = "%nativeint_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : nativeint -> nativeint
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : nativeint -> int -> nativeint = "%nativeint_lsl"
 (** [Nativeint.shift_left x y] shifts [x] to the left by [y] bits.
@@ -131,6 +150,13 @@ external to_int : nativeint -> int = "%nativeint_to_int"
    integer (type [int]).  The high-order bit is lost during
    the conversion. *)
 
+val unsigned_to_int : nativeint -> int option
+(** Same as {!to_int}, but interprets the argument as an {e unsigned} integer.
+    Returns [None] if the unsigned value of the argument cannot fit into an
+    [int].
+
+    @since 4.08.0 *)
+
 external of_float : float -> nativeint
   = "caml_nativeint_of_float" "caml_nativeint_of_float_unboxed"
   [@@unboxed] [@@noalloc]
@@ -158,12 +184,22 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
 
 external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Nativeint.max_int+1]].  If the input exceeds {!Nativeint.max_int}
+   it is converted to the signed integer
+   [Int64.min_int + input - Nativeint.max_int - 1].
+
+   Raise [Failure "Nativeint.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
+
+val of_string_opt: string -> nativeint option
+(** Same as [of_string], but return [None] instead of raising.
+    @since 4.05 *)
 
 val to_string : nativeint -> string
 (** Return the string representation of its argument, in decimal. *)
@@ -173,17 +209,23 @@ type t = nativeint
 
 val compare: t -> t -> int
 (** The comparison function for native integers, with the same specification as
-    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Nativeint] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
 
+val unsigned_compare: t -> t -> int
+(** Same as {!compare}, except that arguments are interpreted as {e unsigned}
+    native integers.
+
+    @since 4.08.0 *)
+
 val equal: t -> t -> bool
-(** The equal function for natives ints.
+(** The equal function for native ints.
     @since 4.03.0 *)
 
 (**/**)
 
-(** {6 Deprecated functions} *)
+(** {1 Deprecated functions} *)
 
 external format : string -> nativeint -> string = "caml_nativeint_format"
 (** [Nativeint.format fmt n] return the string representation of the

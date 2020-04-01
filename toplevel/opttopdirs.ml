@@ -34,13 +34,26 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := d :: !Config.load_path
+  let dir = Load_path.Dir.create d in
+  Load_path.add dir;
+  toplevel_env :=
+    Stdlib.String.Set.fold
+      (fun name env ->
+         Env.add_persistent_structure (Ident.create_persistent name) env)
+      (Env.persistent_structures_of_dir dir)
+      !toplevel_env
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path
+  let keep id =
+    match Load_path.find_uncap (Ident.name id ^ ".cmi") with
+    | exception Not_found -> true
+    | fn -> Filename.dirname fn <> d
+  in
+  toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
+  Load_path.remove_dir s
 
 let _ =
   Hashtbl.add directive_table "remove_directory"
@@ -49,7 +62,7 @@ let _ =
 let _ = Hashtbl.add directive_table "show_dirs"
   (Directive_none
      (fun () ->
-        List.iter print_endline !Config.load_path
+        List.iter print_endline (Load_path.get_paths ())
      ))
 
 (* To change the current directory *)
@@ -62,7 +75,7 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 let load_file ppf name0 =
   let name =
-    try Some (find_in_path !Config.load_path name0)
+    try Some (Load_path.find name0)
     with Not_found -> None
   in
   match name with
@@ -72,7 +85,7 @@ let load_file ppf name0 =
       if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
       then
         let cmxs = Filename.temp_file "caml" ".cmxs" in
-        Asmlink.link_shared ppf [name] cmxs;
+        Asmlink.link_shared ~ppf_dump:ppf [name] cmxs;
         cmxs,true
       else
         name,false
@@ -102,8 +115,11 @@ let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
 (* Load commands from a file *)
 
 let dir_use ppf name = ignore(Opttoploop.use_file ppf name)
+let dir_use_output ppf name = ignore(Opttoploop.use_output ppf name)
 
 let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
+let _ = Hashtbl.add directive_table "use_output"
+    (Directive_string (dir_use_output std_out))
 
 (* Install, remove a printer *)
 
@@ -111,44 +127,47 @@ type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
 let match_printer_type ppf desc typename =
-  let (printer_type, _) =
-    try
-      Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
-    with Not_found ->
-      fprintf ppf "Cannot find type Topdirs.%s.@." typename;
-      raise Exit in
-  Ctype.init_def(Ident.current_time());
+  let printer_type =
+    match
+      Env.find_type_by_name
+        (Ldot(Lident "Opttopdirs", typename)) !toplevel_env
+    with
+    | (path, _) -> path
+    | exception Not_found ->
+        fprintf ppf "Cannot find type Topdirs.%s.@." typename;
+        raise Exit
+  in
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   ty_arg
 
 let find_printer_type ppf lid =
-  try
-    let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type ppf desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type ppf desc "printer_type_old", true) in
-    (ty_arg, path, is_old_style)
-  with
-  | Not_found ->
+  match Env.find_value_by_name lid !toplevel_env with
+  | (path, desc) -> begin
+    match match_printer_type ppf desc "printer_type_new" with
+    | ty_arg -> (ty_arg, path, false)
+    | exception Ctype.Unify _ -> begin
+        match match_printer_type ppf desc "printer_type_old" with
+        | ty_arg -> (ty_arg, path, true)
+        | exception Ctype.Unify _ ->
+            fprintf ppf "%a has a wrong type for a printing function.@."
+              Printtyp.longident lid;
+            raise Exit
+      end
+  end
+  | exception Not_found ->
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
-      raise Exit
-  | Ctype.Unify _ ->
-      fprintf ppf "%a has a wrong type for a printing function.@."
-      Printtyp.longident lid;
       raise Exit
 
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
-    let v = eval_path !toplevel_env path in
+    let v = eval_value_path !toplevel_env path in
     let print_function =
       if is_old_style then
         (fun _formatter repr -> Obj.obj v (Obj.obj repr))

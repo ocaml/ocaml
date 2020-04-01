@@ -1,0 +1,62 @@
+= Bootstrapping the compiler
+
+This file explains how to bootstrap the OCaml compiler, i.e. how to
+update the binaries in the link:boot/[] directory.
+
+A bootstrap is required for example when something changes in the
+runtime system (the magic number of bytecode executables, the format of
+bytecode instructions, the set of available primitives) or when the
+format of OCaml compilation object files like .cmi files is modified. In
+particular, given that the .cmi files contain information related to
+types, modifying the way a type is represented will modify the format
+of .cmi files and thus require a bootstrap.
+
+Here is how to perform a change that requires a bootstrap:
+
+1. Make sure you start with a clean source tree (e.g. check with
+   `git status`)
+
+2. Configure your source tree by running:
+
+        ./configure
+
+3. Bring your system to a stable state. Concretely, this means that the
+   boot/ directory should contain a version of ocamlrun and all the
+   \*.cm* files of the standard library. This stable state can be reached
+   by running
+
+        make world
++
+(Actually, running `make coldstart` should be enough but `make world` is
+safer. Similarly, `make world.opt` will also bring you to such a stable
+state but builds more things than actually required.)
+
+4. Now, and only now, edit the sources. Changes here may include adding,
+   removing or renaming a primitive in the runtime, changing the magic
+   number of bytecode executable files, changing the way types are
+   represented or anything else in the format of .cmi files, etc.
+
+5. Run:
+
+        make coreall
++
+This will rebuild runtime/ocamlrun, ocamlc, etc.
+
+6. (optional) The new system can now be tested:
+
+        echo 'let _ = print_string "Hello world!\n"' > foo.ml
+        ./boot/ocamlrun ./ocamlc -I ./stdlib foo.ml
+        ./runtime/ocamlrun a.out
+
+7. We now know the system works and can thus build the new boot/
+   binaries:
+
+        make bootstrap
+
+If you notice that this procedure fails for a given change you are
+trying to implement, please report it so that the procedure can be
+updated to also cope with your change.
+
+If you want to upstream your changes, indicate in the message of the
+commit that the changes need a bootstrap. Perform the bootstrap and
+commit the result of the bootstrap separately, after that commit.

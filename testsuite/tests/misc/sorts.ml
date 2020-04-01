@@ -1,17 +1,5 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*           Damien Doligez, projet Moscova, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+*)
 
 (* Test bench for sorting algorithms. *)
 
@@ -135,17 +123,17 @@ let chkfloats rstate n a =
 ;;
 
 type record = {
-  s1 : string;
-  s2 : string;
+  s1 : bytes;
+  s2 : bytes;
   i1 : int;
   i2 : int;
 };;
 
 let rand_string () =
   let len = Random.int 10 in
-  let s = String.create len in
+  let s = Bytes.create len in
   for i = 0 to len-1 do
-    s.[i] <- Char.chr (Random.int 256);
+    Bytes.set s i (Char.chr (Random.int 256));
   done;
   s
 ;;
@@ -4176,24 +4164,6 @@ let ainsertion_1 cmp a =
   done;
 ;;
 
-(************************************************************************)
-(* merge sort on lists via arrays *)
-
-let array_to_list_in_place a =
-  let l = Array.length a in
-  let rec loop accu n p =
-    if p <= 0 then accu else begin
-      if p = n then begin
-        Obj.truncate (Obj.repr a) p;
-        loop (a.(p-1) :: accu) (n-1000) (p-1)
-      end else begin
-        loop (a.(p-1) :: accu) n (p-1)
-      end
-    end
-  in
-  loop [] l l
-;;
-
 let array_of_list l len =
   match l with
   | [] -> [| |]
@@ -4211,7 +4181,7 @@ let array_of_list l len =
 let lmerge_0a cmp l =
   let a = Array.of_list l in
   amerge_1e cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 let lmerge_0b cmp l =
@@ -4219,19 +4189,19 @@ let lmerge_0b cmp l =
   if len > 256 then Gc.minor ();
   let a = array_of_list l len in
   amerge_1e cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 let lshell_0 cmp l =
   let a = Array.of_list l in
   ashell_2 cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 let lquick_0 cmp l =
   let a = Array.of_list l in
   aquick_3f cmp a;
-  array_to_list_in_place a
+  Array.to_list a
 ;;
 
 (************************************************************************)
@@ -4249,7 +4219,6 @@ let amerge_0 cmp a =    (* cutoff is not yet used *)
 (************************************************************************)
 
 let lold = [
-  "Sort.list", Sort.list, true;
   "lmerge_3", lmerge_3, false;
   "lmerge_4a", lmerge_4a, true;
 ];;
@@ -4385,7 +4354,7 @@ let main () =
   done;
   Printf.printf "\n";
 
-  ignore (String.create (1048576 * !mem));
+  ignore (Bytes.create (1048576 * !mem));
   Gc.full_major ();
 (*
   let a2l = Array.to_list in
@@ -4420,7 +4389,6 @@ let main () =
         let (_, f2, _) = List.nth lold i in
         testonly name stable f1 f2 ll ll;
       done;
-      testonly "Sort.array" false Sort.array Sort.array al al;
       for i = 0 to List.length lnew - 1 do
         let (name, f1, stable) = List.nth lnew i in
         let (_, f2, _) = List.nth lnew i in
@@ -4443,9 +4411,6 @@ let main () =
         let (name, f, stable) = List.nth lold i in bb name f ll;
         let (name, f, stable) = List.nth lold i in bc name f ll;
       done;
-      ba "Sort.array" Sort.array al;
-      bb "Sort.array" Sort.array al;
-      bc "Sort.array" Sort.array al;
       for i = 0 to List.length lnew - 1 do
         let (name, f, stable) = List.nth lnew i in ba name f lc;
         let (name, f, stable) = List.nth lnew i in bb name f lc;
@@ -4462,7 +4427,6 @@ let main () =
       for i = 0 to List.length lold - 1 do
         let (name, f, stable) = List.nth lold i in b name f ll;
       done;
-      b "Sort.array" Sort.array al;
       for i = 0 to List.length lnew - 1 do
         let (name, f, stable) = List.nth lnew i in b name f lc;
       done;

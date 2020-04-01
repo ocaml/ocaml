@@ -1,0 +1,75 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
+/*                   Stephen Dolan, University of Cambridge               */
+/*                                                                        */
+/*   Copyright 2019 Indian Institute of Technology, Madras                */
+/*   Copyright 2019 University of Cambridge                               */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+DOMAIN_STATE(value*, young_ptr)
+DOMAIN_STATE(value*, young_limit)
+/* Minor heap limit. See minor_gc.c. */
+
+DOMAIN_STATE(char*, exception_pointer)
+/* Exception pointer that points into the current stack */
+
+DOMAIN_STATE(void*, young_base)
+DOMAIN_STATE(value*, young_start)
+DOMAIN_STATE(value*, young_end)
+DOMAIN_STATE(value*, young_alloc_start)
+DOMAIN_STATE(value*, young_alloc_end)
+DOMAIN_STATE(value*, young_alloc_mid)
+DOMAIN_STATE(value*, young_trigger)
+DOMAIN_STATE(asize_t, minor_heap_wsz)
+DOMAIN_STATE(intnat, in_minor_collection)
+DOMAIN_STATE(double, extra_heap_resources_minor)
+DOMAIN_STATE(struct caml_ref_table*, ref_table)
+DOMAIN_STATE(struct caml_ephe_ref_table*, ephe_ref_table)
+DOMAIN_STATE(struct caml_custom_table*, custom_table)
+/* See minor_gc.c */
+
+DOMAIN_STATE(value*, stack_low)
+DOMAIN_STATE(value*, stack_high)
+DOMAIN_STATE(value*, stack_threshold)
+DOMAIN_STATE(value*, extern_sp)
+DOMAIN_STATE(value*, trapsp)
+DOMAIN_STATE(value*, trap_barrier)
+DOMAIN_STATE(struct longjmp_buffer*, external_raise)
+DOMAIN_STATE(value, exn_bucket)
+/* See interp.c */
+
+DOMAIN_STATE(char*, top_of_stack)
+DOMAIN_STATE(char*, bottom_of_stack)
+DOMAIN_STATE(uintnat, last_return_address)
+DOMAIN_STATE(value*, gc_regs)
+/* See roots_nat.c */
+
+DOMAIN_STATE(intnat, backtrace_active)
+DOMAIN_STATE(intnat, backtrace_pos)
+DOMAIN_STATE(backtrace_slot*, backtrace_buffer)
+DOMAIN_STATE(value, backtrace_last_exn)
+/* See backtrace.c */
+
+DOMAIN_STATE(intnat, compare_unordered)
+DOMAIN_STATE(intnat, requested_major_slice)
+DOMAIN_STATE(intnat, requested_minor_gc)
+DOMAIN_STATE(struct caml__roots_block *, local_roots)
+
+DOMAIN_STATE(double, stat_minor_words)
+DOMAIN_STATE(double, stat_promoted_words)
+DOMAIN_STATE(double, stat_major_words)
+DOMAIN_STATE(intnat, stat_minor_collections)
+DOMAIN_STATE(intnat, stat_major_collections)
+DOMAIN_STATE(intnat, stat_heap_wsz)
+DOMAIN_STATE(intnat, stat_top_heap_wsz)
+DOMAIN_STATE(intnat, stat_compactions)
+DOMAIN_STATE(intnat, stat_heap_chunks)
+/* See gc_ctrl.c */

@@ -205,6 +205,31 @@ module GenHashTable = struct
       (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
+    let rec find_rec_opt key hkey = function
+      | Empty ->
+          None
+      | Cons(hk, c, rest) when hkey = hk  ->
+          begin match H.equal c key with
+          | ETrue ->
+              begin match H.get_data c with
+              | None ->
+                  (* This case is not impossible because the gc can run between
+                      H.equal and H.get_data *)
+                  find_rec_opt key hkey rest
+              | Some _ as d -> d
+              end
+          | EFalse -> find_rec_opt key hkey rest
+          | EDead ->
+              find_rec_opt key hkey rest
+          end
+      | Cons(_, _, rest) ->
+          find_rec_opt key hkey rest
+
+    let find_opt h key =
+      let hkey = H.hash h.seed key in
+      (* TODO inline 3 iterations *)
+      find_rec_opt key hkey (h.data.(key_index h hkey))
+
     let find_all h key =
       let hkey = H.hash h.seed key in
       let rec find_in_bucket = function
@@ -354,6 +379,39 @@ module GenHashTable = struct
         max_bucket_length = mbl;
         bucket_histogram = histo }
 
+    let to_seq tbl =
+      (* capture current array, so that even if the table is resized we
+         keep iterating on the same array *)
+      let tbl_data = tbl.data in
+      (* state: index * next bucket to traverse *)
+      let rec aux i buck () = match buck with
+        | Empty ->
+            if i = Array.length tbl_data
+            then Seq.Nil
+            else aux(i+1) tbl_data.(i) ()
+        | Cons (_, c, next) ->
+            begin match H.get_key c, H.get_data c with
+              | None, _ | _, None -> aux i next ()
+              | Some key, Some data ->
+                  Seq.Cons ((key, data), aux i next)
+            end
+      in
+      aux 0 Empty
+
+    let to_seq_keys m = Seq.map fst (to_seq m)
+
+    let to_seq_values m = Seq.map snd (to_seq m)
+
+    let add_seq tbl i =
+      Seq.iter (fun (k,v) -> add tbl k v) i
+
+    let replace_seq tbl i =
+      Seq.iter (fun (k,v) -> replace tbl k v) i
+
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
 
   end
 end
@@ -424,6 +482,10 @@ module K1 = struct
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
 
 end
@@ -512,6 +574,10 @@ module K2 = struct
           let hash (_seed: int) x = H2.hash x
         end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
 
 end
@@ -612,5 +678,9 @@ module Kn = struct
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
 end

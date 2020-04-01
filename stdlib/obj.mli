@@ -23,10 +23,19 @@ type t
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
-external is_block : t -> bool = "caml_obj_is_block"
+val [@inline always] is_block : t -> bool
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag"
 external size : t -> int = "%obj_size"
+external reachable_words : t -> int = "caml_obj_reachable_words"
+  (**
+     Computes the total size (in words, including the headers) of all
+     heap blocks accessible from the argument.  Statically
+     allocated blocks are excluded.
+
+     @Since 4.04
+  *)
+
 external field : t -> int -> t = "%obj_field"
 
 (** When using flambda:
@@ -41,19 +50,24 @@ external field : t -> int -> t = "%obj_field"
 
     For experts only:
     [set_field] et al can be made safe by first wrapping the block in
-    [Sys.opaque_identity], so any information about its contents will not
+    {!Sys.opaque_identity}, so any information about its contents will not
     be propagated.
 *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external set_tag : t -> int -> unit = "caml_obj_set_tag"
+  [@@ocaml.deprecated "Use with_tag instead."]
 
-val double_field : t -> int -> float  (* @since 3.11.2 *)
-val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
+val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
+val [@inline always] set_double_field : t -> int -> float -> unit
+  (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
+  [@@ocaml.deprecated]
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
          (* @since 3.12.0 *)
+external with_tag : int -> t -> t = "caml_obj_with_tag"
+  (* @since 4.09.0 *)
 
 val first_non_constant_constructor_tag : int
 val last_non_constant_constructor_tag : int
@@ -76,9 +90,19 @@ val int_tag : int
 val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
+module Extension_constructor :
+sig
+  type t = extension_constructor
+  val of_val : 'a -> t
+  val [@inline always] name : t -> string
+  val [@inline always] id : t -> int
+end
 val extension_constructor : 'a -> extension_constructor
-val extension_name : extension_constructor -> string
-val extension_id : extension_constructor -> int
+  [@@ocaml.deprecated "use Obj.Extension_constructor.of_val"]
+val [@inline always] extension_name : extension_constructor -> string
+  [@@ocaml.deprecated "use Obj.Extension_constructor.name"]
+val [@inline always] extension_id : extension_constructor -> int
+  [@@ocaml.deprecated "use Obj.Extension_constructor.id"]
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
@@ -99,7 +123,10 @@ module Ephemeron: sig
 
   val create: int -> t
   (** [create n] returns an ephemeron with [n] keys.
-      All the keys and the data are initially empty *)
+      All the keys and the data are initially empty.
+      The argument [n] must be between zero
+      and {!max_ephe_length} (limits included).
+  *)
 
   val length: t -> int
   (** return the number of keys *)
@@ -139,4 +166,8 @@ module Ephemeron: sig
 
   val blit_data : t -> t -> unit
   (** Same as {!Ephemeron.K1.blit_data} *)
+
+  val max_ephe_length: int
+  (** Maximum length of an ephemeron, ie the maximum number of keys an
+      ephemeron could contain *)
 end

@@ -1,0 +1,50 @@
+(* TEST
+files = "main.c"
+arguments = "-DSORT -DFUN=quicksort main.c"
+* asmgen
+*)
+
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(function "quicksort" (lo: int hi: int a: val)
+  (if (< lo hi)
+      (letmut (i int lo
+               j int hi
+               pivot int (addraref a hi))
+        (while (< i j)
+          (catch
+              (while 1
+                (if (>= i hi) (exit n25) [])
+                (if (> (addraref a i) pivot) (exit n25) [])
+                (assign i (+ i 1)))
+           with (n25) [])
+          (catch
+              (while 1
+                (if (<= j lo) (exit n35) [])
+                (if (< (addraref a j) pivot) (exit n35) [])
+                (assign j (- j 1)))
+           with (n35) [])
+          (if (< i j)
+              (let temp (addraref a i)
+                   (addraset a i (addraref a j))
+                   (addraset a j temp))
+            []))
+        (let temp (addraref a i)
+             (addraset a i (addraref a hi))
+             (addraset a hi temp))
+        (app "quicksort" lo (- i 1) a unit)
+        (app "quicksort" (+ i 1) hi a unit))
+    []))

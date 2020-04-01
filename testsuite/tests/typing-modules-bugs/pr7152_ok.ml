@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 module M :  sig
   type make_dec
   val add_dec: make_dec -> unit
@@ -30,6 +37,49 @@ end = struct
     module Data = struct
       type t = make_dec
     end
+    let key = Fast.create ()
+  end
+
+  let _ = Dem.key (* force to evaluation the lazy substitution *)
+
+  module EDem = Fast.Register(Dem)
+
+  let add_dec dec =
+    Fast.attach Dem.key dec
+end
+
+(* variant without using a Data module *)
+
+module M' :  sig
+  type make_dec
+  val add_dec: make_dec -> unit
+end = struct
+  type u
+
+  module Fast: sig
+    type 'd t
+    val create: unit -> 'd t
+    module type S = sig
+      type data
+      val key: data t
+    end
+    module Register (D:S): sig end
+    val attach: 'd t -> 'd -> unit
+  end = struct
+    type 'd t = unit
+    let create () = ()
+    module type S = sig
+      type data
+      val key: data t
+    end
+    module Register (D:S) = struct end
+    let attach _ _ = ()
+  end
+
+  type make_dec
+
+  module Dem = struct
+    type data = make_dec
     let key = Fast.create ()
   end
 

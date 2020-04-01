@@ -46,8 +46,8 @@ val newmarkedgenvar: unit -> type_expr
 
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
+val is_Tconstr: type_expr -> bool
 val dummy_method: label
-val default_mty: module_type option -> module_type
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
@@ -68,8 +68,23 @@ val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
+
+val is_fixed: row_desc -> bool
+(* Return whether the row is directly marked as fixed or not *)
+
 val row_fixed: row_desc -> bool
-        (* Return whether the row should be treated as fixed or not *)
+(* Return whether the row should be treated as fixed or not.
+   In particular, [is_fixed row] implies [row_fixed row].
+*)
+
+val fixed_explanation: row_desc -> fixed_explanation option
+(* Return the potential explanation for the fixed row *)
+
+val merge_fixed_explanation:
+  fixed_explanation option -> fixed_explanation option
+  -> fixed_explanation option
+(* Merge two explanations for a fixed row *)
+
 val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int
@@ -80,16 +95,19 @@ val proxy: type_expr -> type_expr
            or a row variable *)
 
 (**** Utilities for private abbreviations with fixed rows ****)
+val row_of_type: type_expr -> type_expr
 val has_constr_row: type_expr -> bool
 val is_row_name: string -> bool
-val is_constr_row: type_expr -> bool
+val is_constr_row: allow_ident:bool -> type_expr -> bool
 
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
         (* Iteration on types *)
+val fold_type_expr: ('a -> type_expr -> 'a) -> 'a -> type_expr -> 'a
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
+val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 
@@ -103,6 +121,7 @@ type type_iterators =
     it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
     it_class_declaration: type_iterators -> class_declaration -> unit;
     it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
+    it_functor_param: type_iterators -> functor_parameter -> unit;
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
     it_type_kind: type_iterators -> type_kind -> unit;
@@ -123,12 +142,25 @@ val copy_row:
     bool -> row_desc -> bool -> type_expr -> row_desc
 val copy_kind: field_kind -> field_kind
 
-val save_desc: type_expr -> type_desc -> unit
+module For_copy : sig
+
+  type copy_scope
+        (* The private state that the primitives below are mutating, it should
+           remain scoped within a single [with_scope] call.
+
+           While it is possible to circumvent that discipline in various
+           ways, you should NOT do that. *)
+
+  val save_desc: copy_scope -> type_expr -> type_desc -> unit
         (* Save a type description *)
-val dup_kind: field_kind option ref -> unit
+
+  val dup_kind: copy_scope -> field_kind option ref -> unit
         (* Save a None field_kind, and make it point to a fresh Fvar *)
-val cleanup_types: unit -> unit
-        (* Restore type descriptions *)
+
+  val with_scope: (copy_scope -> 'a) -> 'a
+        (* [with_scope f] calls [f] and restores saved type descriptions
+           before returning its result. *)
+end
 
 val lowest_level: int
         (* Marked type: ty.level < lowest_level *)
@@ -195,7 +227,10 @@ val undo_compress: snapshot -> unit
 val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
            value if there is an active snapshot *)
+val set_type_desc: type_expr -> type_desc -> unit
+        (* Set directly the desc field, without sharing *)
 val set_level: type_expr -> int -> unit
+val set_scope: type_expr -> int -> unit
 val set_name:
     (Path.t * type_expr list) option ref ->
     (Path.t * type_expr list) option -> unit
@@ -205,8 +240,6 @@ val set_kind: field_kind option ref -> field_kind -> unit
 val set_commu: commutable ref -> commutable -> unit
 val set_typeset: TypeSet.t ref -> TypeSet.t -> unit
         (* Set references, logging the old value *)
-val log_type: type_expr -> unit
-        (* Log the old value of a type, before modifying it by hand *)
 
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref

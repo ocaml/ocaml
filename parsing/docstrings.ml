@@ -59,7 +59,7 @@ let warn_bad_docstrings () =
       (List.rev !docstrings)
 end
 
-(* Docstring constructors and descturctors *)
+(* Docstring constructors and destructors *)
 
 let docstring body loc =
   let ds =
@@ -68,8 +68,10 @@ let docstring body loc =
       ds_attached = Unattached;
       ds_associated = Zero; }
   in
-  docstrings := ds :: !docstrings;
   ds
+
+let register ds =
+  docstrings := ds :: !docstrings
 
 let docstring_body ds = ds.ds_body
 
@@ -88,29 +90,32 @@ let doc_loc = {txt = "ocaml.doc"; loc = Location.none}
 let docs_attr ds =
   let open Parsetree in
   let exp =
-    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, None));
+    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, ds.ds_loc, None));
       pexp_loc = ds.ds_loc;
+      pexp_loc_stack = [];
       pexp_attributes = []; }
   in
   let item =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
   in
-    (doc_loc, PStr [item])
+  { attr_name = doc_loc;
+    attr_payload = PStr [item];
+    attr_loc = Location.none }
 
 let add_docs_attrs docs attrs =
   let attrs =
     match docs.docs_pre with
-    | None -> attrs
+    | None | Some { ds_body=""; _ } -> attrs
     | Some ds -> docs_attr ds :: attrs
   in
   let attrs =
     match docs.docs_post with
-    | None -> attrs
+    | None | Some { ds_body=""; _ } -> attrs
     | Some ds -> attrs @ [docs_attr ds]
   in
   attrs
 
-(* Docstrings attached to consturctors or fields *)
+(* Docstrings attached to constructors or fields *)
 
 type info = docstring option
 
@@ -120,31 +125,36 @@ let info_attr = docs_attr
 
 let add_info_attrs info attrs =
   match info with
-  | None -> attrs
+  | None | Some {ds_body=""; _} -> attrs
   | Some ds -> attrs @ [info_attr ds]
 
-(* Docstrings not attached to a specifc item *)
+(* Docstrings not attached to a specific item *)
 
 type text = docstring list
 
 let empty_text = []
+let empty_text_lazy = lazy []
 
 let text_loc = {txt = "ocaml.text"; loc = Location.none}
 
 let text_attr ds =
   let open Parsetree in
   let exp =
-    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, None));
+    { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, ds.ds_loc, None));
       pexp_loc = ds.ds_loc;
+      pexp_loc_stack = [];
       pexp_attributes = []; }
   in
   let item =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
   in
-    (text_loc, PStr [item])
+  { attr_name = text_loc;
+    attr_payload = PStr [item];
+    attr_loc = Location.none }
 
 let add_text_attrs dsl attrs =
-  (List.map text_attr dsl) @ attrs
+  let fdsl = List.filter (function {ds_body=""} -> false| _ ->true) dsl in
+  (List.map text_attr fdsl) @ attrs
 
 (* Find the first non-info docstring in a list, attach it and return it *)
 let get_docstring ~info dsl =
@@ -239,6 +249,12 @@ let get_text pos =
       get_docstrings dsl
   with Not_found -> []
 
+let get_post_text pos =
+  try
+    let dsl = Hashtbl.find post_table pos in
+      get_docstrings dsl
+  with Not_found -> []
+
 (* Maps from positions to extra docstrings *)
 
 let pre_extra_table : (Lexing.position, docstring list) Hashtbl.t =
@@ -266,7 +282,7 @@ let get_post_extra_text pos =
   with Not_found -> []
 
 (* Docstrings from parser actions *)
-
+module WithParsing = struct
 let symbol_docs () =
   { docs_pre = get_pre_docs (Parsing.symbol_start_pos ());
     docs_post = get_post_docs (Parsing.symbol_end_pos ()); }
@@ -311,6 +327,9 @@ let symbol_text_lazy () =
 let rhs_text pos =
   get_text (Parsing.rhs_start_pos pos)
 
+let rhs_post_text pos =
+  get_post_text (Parsing.rhs_end_pos pos)
+
 let rhs_text_lazy pos =
   let pos = Parsing.rhs_start_pos pos in
     lazy (get_text pos)
@@ -326,7 +345,70 @@ let rhs_pre_extra_text pos =
 
 let rhs_post_extra_text pos =
   get_post_extra_text (Parsing.rhs_end_pos pos)
+end
 
+include WithParsing
+
+module WithMenhir = struct
+let symbol_docs (startpos, endpos) =
+  { docs_pre = get_pre_docs startpos;
+    docs_post = get_post_docs endpos; }
+
+let symbol_docs_lazy (p1, p2) =
+  lazy { docs_pre = get_pre_docs p1;
+         docs_post = get_post_docs p2; }
+
+let rhs_docs pos1 pos2 =
+  { docs_pre = get_pre_docs pos1;
+    docs_post = get_post_docs pos2; }
+
+let rhs_docs_lazy p1 p2 =
+    lazy { docs_pre = get_pre_docs p1;
+           docs_post = get_post_docs p2; }
+
+let mark_symbol_docs (startpos, endpos) =
+  mark_pre_docs startpos;
+  mark_post_docs endpos;
+  ()
+
+let mark_rhs_docs pos1 pos2 =
+  mark_pre_docs pos1;
+  mark_post_docs pos2;
+  ()
+
+let symbol_info endpos =
+  get_info endpos
+
+let rhs_info endpos =
+  get_info endpos
+
+let symbol_text startpos =
+  get_text startpos
+
+let symbol_text_lazy startpos =
+  lazy (get_text startpos)
+
+let rhs_text pos =
+  get_text pos
+
+let rhs_post_text pos =
+  get_post_text pos
+
+let rhs_text_lazy pos =
+  lazy (get_text pos)
+
+let symbol_pre_extra_text startpos =
+  get_pre_extra_text startpos
+
+let symbol_post_extra_text endpos =
+  get_post_extra_text endpos
+
+let rhs_pre_extra_text pos =
+  get_pre_extra_text pos
+
+let rhs_post_extra_text pos =
+  get_post_extra_text pos
+end
 
 (* (Re)Initialise all comment state *)
 

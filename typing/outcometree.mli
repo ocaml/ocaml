@@ -22,10 +22,18 @@
       [Toploop.print_out_sig_item]
       [Toploop.print_out_phrase] *)
 
+(** An [out_name] is a string representation of an identifier which can be
+    rewritten on the fly to avoid name collisions *)
+type out_name = { mutable printed_name: string }
+
 type out_ident =
   | Oide_apply of out_ident * out_ident
   | Oide_dot of out_ident * string
-  | Oide_ident of string
+  | Oide_ident of out_name
+
+type out_string =
+  | Ostr_string
+  | Ostr_bytes
 
 type out_attribute =
   { oattr_name: string }
@@ -43,7 +51,7 @@ type out_value =
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
   | Oval_record of (out_ident * out_value) list
-  | Oval_string of string
+  | Oval_string of string * int * out_string (* string, size-to-print, kind *)
   | Oval_stuff of string
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
@@ -65,12 +73,12 @@ type out_type =
   | Otyp_variant of
       bool * out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
-  | Otyp_module of string * string list * out_type list
+  | Otyp_module of out_ident * string list * out_type list
   | Otyp_attribute of out_type * out_attribute
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list
-  | Ovar_name of out_ident * out_type list
+  | Ovar_typ of out_type
 
 type out_class_type =
   | Octy_constr of out_ident * out_type list
@@ -83,7 +91,7 @@ and out_class_sig_item =
 
 type out_module_type =
   | Omty_abstract
-  | Omty_functor of string * out_module_type option * out_module_type
+  | Omty_functor of (string option * out_module_type) option * out_module_type
   | Omty_ident of out_ident
   | Omty_signature of out_sig_item list
   | Omty_alias of out_ident
@@ -105,7 +113,8 @@ and out_type_decl =
     otype_params: (string * (bool * bool)) list;
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
-    otype_immediate: bool;
+    otype_immediate: Type_immediacy.t;
+    otype_unboxed: bool;
     otype_cstrs: (out_type * out_type) list }
 and out_extension_constructor =
   { oext_name: string;

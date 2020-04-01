@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 List.fold_left;;
 #trace List.fold_left;;
 0;;

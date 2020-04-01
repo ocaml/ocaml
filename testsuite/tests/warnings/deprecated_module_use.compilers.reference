@@ -1,0 +1,24 @@
+File "deprecated_module_use.ml", line 18, characters 5-22:
+18 | open Deprecated_module
+          ^^^^^^^^^^^^^^^^^
+Alert deprecated: module Deprecated_module
+
+  As you could guess, Deprecated_module is deprecated.
+  Please use something else!
+
+File "deprecated_module_use.ml", line 20, characters 9-12:
+20 | type s = M.t
+              ^^^
+Alert deprecated: module Deprecated_module.M
+File "deprecated_module_use.ml", line 20, characters 9-12:
+20 | type s = M.t
+              ^^^
+Alert deprecated: Deprecated_module.M.t
+File "deprecated_module_use.ml", line 22, characters 5-6:
+22 | open M
+          ^
+Alert deprecated: module Deprecated_module.M
+File "deprecated_module_use.ml", line 23, characters 8-9:
+23 | let _ = x
+             ^
+Alert deprecated: Deprecated_module.M.x

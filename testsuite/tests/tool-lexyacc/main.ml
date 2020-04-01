@@ -1,17 +1,12 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+   modules = "syntax.ml gram_aux.ml grammar.mly scan_aux.ml scanner.mll \
+              lexgen.ml output.ml"
+   files = "input"
+   arguments = "input"
+   ocamllex_flags = " -q "
+   ocamlyacc_flags = " -q "
+   flags = " -w a "
+*)
 
 (* The lexer generator. Command-line parsing. *)
 

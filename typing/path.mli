@@ -17,22 +17,27 @@
 
 type t =
     Pident of Ident.t
-  | Pdot of t * string * int
+  | Pdot of t * string
   | Papply of t * t
 
 val same: t -> t -> bool
-val isfree: Ident.t -> t -> bool
-val binding_time: t -> int
-
-val nopos: int
+val compare: t -> t -> int
+val find_free_opt: Ident.t list -> t -> Ident.t option
+val exists_free: Ident.t list -> t -> bool
+val scope: t -> int
+val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 
 val name: ?paren:(string -> bool) -> t -> string
     (* [paren] tells whether a path suffix needs parentheses *)
 val head: t -> Ident.t
 
+val print: Format.formatter -> t -> unit
+
 val heads: t -> Ident.t list
 
 val last: t -> string
+
+val is_uident: string -> bool
 
 type typath =
   | Regular of t
@@ -42,3 +47,6 @@ type typath =
 
 val constructor_typath: t -> typath
 val is_constructor_typath: t -> bool
+
+module Map : Map.S with type key = t
+module Set : Set.S with type elt = t

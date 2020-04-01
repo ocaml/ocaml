@@ -219,11 +219,6 @@ let string_of_rounding = function
   | RoundTruncate -> "roundsd.trunc"
   | RoundNearest -> "roundsd.near"
 
-
-(* These hooks can be used to insert optimization passes on
-   the assembly code. *)
-let assembler_passes = ref ([] : (asm_program -> asm_program) list)
-
 let internal_assembler = ref None
 let register_internal_assembler f = internal_assembler := Some f
 
@@ -232,6 +227,11 @@ let masm =
   match system with
   | S_win32 | S_win64 -> true
   | _ -> false
+
+let use_plt =
+  match system with
+  | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
+  | _ -> !Clflags.dlcode
 
 (* Shall we use an external assembler command ?
    If [binary_content] contains some data, we can directly
@@ -245,8 +245,10 @@ let compile infile outfile =
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
   else
-    Ccomp.command (Config.asm ^ " -o " ^
-                   Filename.quote outfile ^ " " ^ Filename.quote infile)
+    Ccomp.command (Config.asm ^ " " ^
+                   (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                   " -o " ^ Filename.quote outfile ^ " " ^
+                   Filename.quote infile)
 
 let assemble_file infile outfile =
   match !binary_content with
@@ -262,9 +264,6 @@ let reset_asm_code () = asm_code := []
 
 let generate_code asm =
   let instrs = List.rev !asm_code in
-  let instrs =
-    List.fold_left (fun instrs pass -> pass instrs) instrs !assembler_passes
-  in
   begin match asm with
   | Some f -> f instrs
   | None -> ()

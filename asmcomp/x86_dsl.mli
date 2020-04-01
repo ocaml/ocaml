@@ -39,6 +39,7 @@ val ax: arg
 val rax: arg
 val r10: arg
 val r11: arg
+val r13: arg
 val r14: arg
 val r15: arg
 val rsp: arg

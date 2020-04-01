@@ -19,24 +19,56 @@ open Typedtree
 open Types
 open Format
 
-val modtypes: Env.t -> module_type -> module_type -> module_coercion
-val signatures: Env.t -> signature -> signature -> module_coercion
+(** Type describing which arguments of an inclusion to consider as used
+    for the usage warnings. [Mark_both] is the default. *)
+type mark =
+  | Mark_both
+      (** Mark definitions used from both arguments *)
+  | Mark_positive
+      (** Mark definitions used from the positive (first) argument *)
+  | Mark_negative
+      (** Mark definitions used from the negative (second) argument *)
+  | Mark_neither
+      (** Do not mark definitions used from either argument *)
+
+val modtypes:
+  loc:Location.t -> Env.t -> ?mark:mark ->
+  module_type -> module_type -> module_coercion
+
+val strengthened_module_decl:
+  loc:Location.t -> aliasable:bool -> Env.t -> ?mark:mark ->
+  module_declaration -> Path.t -> module_declaration -> module_coercion
+
+val check_modtype_inclusion :
+  loc:Location.t -> Env.t -> Types.module_type -> Path.t -> Types.module_type ->
+  unit
+(** [check_modtype_inclusion ~loc env mty1 path1 mty2] checks that the
+    functor application F(M) is well typed, where mty2 is the type of
+    the argument of F and path1/mty1 is the path/unstrenghened type of M. *)
+
+val signatures: Env.t -> ?mark:mark ->
+  signature -> signature -> module_coercion
+
 val compunit:
-      Env.t -> string -> signature -> string -> signature -> module_coercion
+      Env.t -> ?mark:mark -> string -> signature ->
+      string -> signature -> module_coercion
+
 val type_declarations:
-      Env.t -> Ident.t -> type_declaration -> type_declaration -> unit
+  loc:Location.t -> Env.t -> ?mark:mark ->
+  Ident.t -> type_declaration -> type_declaration -> unit
+
 val print_coercion: formatter -> module_coercion -> unit
 
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
-        * type_declaration * Includecore.type_mismatch list
-  | Extension_constructors of
-      Ident.t * extension_constructor * extension_constructor
+        * type_declaration * Includecore.type_mismatch
+  | Extension_constructors of Ident.t * extension_constructor
+        * extension_constructor * Includecore.extension_constructor_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
-  | Modtype_permutation
+  | Modtype_permutation of Types.module_type * Typedtree.module_coercion
   | Interface_mismatch of string * string
   | Class_type_declarations of
       Ident.t * class_type_declaration * class_type_declaration *
@@ -49,7 +81,10 @@ type symptom =
   | Invalid_module_alias of Path.t
 
 type pos =
-    Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
+  | Module of Ident.t
+  | Modtype of Ident.t
+  | Arg of functor_parameter
+  | Body of functor_parameter
 type error = pos list * Env.t * symptom
 
 exception Error of error list

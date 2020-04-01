@@ -39,6 +39,7 @@ let add_load_dir = "<dir> Add the given directory to the search path for custom\
   "\t\tgenerators"
 let load_file = "<file.cm[o|a|xs]> Load file defining a new documentation generator"
 let werr = " Treat ocamldoc warnings as errors"
+let show_missed_crossref = " Show missed cross-reference opportunities"
 let hide_warnings = " do not print ocamldoc warnings"
 let target_dir = "<dir> Generate files in directory <dir>, rather than in current\n"^
   "\t\tdirectory (for man and HTML generators)"
@@ -107,9 +108,9 @@ let no_header = " Suppress header in generated documentation\n\t\t"^latex_texi_o
 let no_trailer = " Suppress trailer in generated documentation\n\t\t"^latex_texi_only
 let separate_files = " Generate one file per toplevel module "^latex_only
 let latex_title ref_titles =
-  "n,style Associate {n } to the given sectionning style\n"^
+  "n,style Associate {n } to the given sectioning style\n"^
   "\t\t(e.g. 'section') in the latex output "^latex_only^"\n"^
-  "\t\tDefault sectionning is:\n\t\t"^
+  "\t\tDefault sectioning is:\n\t\t"^
   (String.concat "\n\t\t"
      (List.map (fun (n,t) -> Printf.sprintf " %d -> %s" n t) !ref_titles))
 
@@ -202,6 +203,14 @@ let merge_all = ('A', "merge all")
 
 let no_index = " Do not build index for Info files "^texi_only
 let esc_8bits = " Escape accentuated characters in Info files "^texi_only
+let texinfo_title r=
+  "n,style Associate {n } to the given sectioning style\n"^
+  "\t\t(e.g. 'section') in the texInfo output "^texi_only^"\n"^
+  "\t\tDefault sectioning is:\n\t\t"^
+  (String.concat "\n\t\t"
+     (List.map (fun (n,(t,h)) ->
+          Printf.sprintf " %d -> %s, %s " n t h) !r))
+
 let info_section = " Specify section of Info directory "^texi_only
 let info_entry = " Specify Info directory entry "^texi_only
 
@@ -229,6 +238,13 @@ let merge_options =
        merge_all ]
   )
 
+let initially_opened_module = "<module> Name of the module that is initially opened"
+
+let library_namespace =
+  "<module> Name of the library namespace for a prefixed library.\
+   Note: very experimental."
+
+
 let help = " Display this list of options"
 
 
@@ -246,11 +262,13 @@ let bad_magic_number =
 let not_a_module_name s = s^" is not a valid module name"
 let load_file_error f e = "Error while loading file "^f^":\n"^e
 let wrong_format s = "Wrong format for \""^s^"\""
-let errors_occured n = (string_of_int n)^" error(s) encountered"
+let errors_occured n = (Int.to_string n)^" error(s) encountered"
 let parse_error = "Parse error"
 let text_parse_error l c s =
   let lines = Str.split (Str.regexp_string "\n") s in
-  (List.nth lines l) ^ "\n" ^ (String.make c ' ') ^ "^"
+  "Error parsing text:\n"
+  ^ (List.nth lines l) ^ "\n"
+  ^ (String.make c ' ') ^ "^"
 
 let file_not_found_in_paths paths name =
   Printf.sprintf "No file %s found in the load paths: \n%s"
@@ -298,7 +316,7 @@ let module_not_found_in_typedtree m = "Module "^m^" was not found in typed tree.
 let class_not_found_in_typedtree c = "Class "^c^" was not found in typed tree."
 let class_type_not_found_in_typedtree ct = "Class type "^ct^" was not found in typed tree."
 let inherit_classexp_not_found_in_typedtree n =
-  "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
+  "Inheritance class expression number "^(Int.to_string n)^" was not found in typed tree."
 let attribute_not_found_in_typedtree att = "Class attribute "^att^" was not found in typed tree."
 let method_not_found_in_typedtree met = "Class method "^met^" was not found in typed tree."
 let misplaced_comment file pos =
@@ -320,6 +338,12 @@ let cross_value_not_found n = "Value "^n^" not found"
 let cross_type_not_found n = "Type "^n^" not found"
 let cross_recfield_not_found n = Printf.sprintf "Record field %s not found" n
 let cross_const_not_found n = Printf.sprintf "Constructor %s not found" n
+
+let code_could_be_cross_reference n parent =
+  Printf.sprintf "Code element [%s] in %s corresponds to a known \
+                  cross-referenceable element, it might be worthwhile to replace it \
+                  with {!%s}" n parent n
+
 
 let object_end = "object ... end"
 let struct_end = "struct ... end"

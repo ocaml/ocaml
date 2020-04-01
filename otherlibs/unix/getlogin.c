@@ -25,5 +25,5 @@ CAMLprim value unix_getlogin(value unit)
   char * name;
   name = getlogin();
   if (name == NULL) unix_error(ENOENT, "getlogin", Nothing);
-  return copy_string(name);
+  return caml_copy_string(name);
 }

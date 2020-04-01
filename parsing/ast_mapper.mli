@@ -21,7 +21,7 @@
   the -ppx rewriters, handling such details as the serialization format,
   forwarding of command-line flags, and storing state.
 
-  {!mapper} allows to implement AST rewriting using open recursion.
+  {!mapper} enables AST rewriting using open recursion.
   A typical mapper would be based on {!default_mapper}, a deep
   identity mapper, and will fall back on it for handling the syntax it
   does not modify. For example:
@@ -46,15 +46,19 @@ let () =
   the constant [42], can be compiled using
   [ocamlc -o ppx_test -I +compiler-libs ocamlcommon.cma ppx_test.ml].
 
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
   *)
 
 open Parsetree
 
-(** {2 A generic Parsetree mapper} *)
+(** {1 A generic Parsetree mapper} *)
 
 type mapper = {
   attribute: mapper -> attribute -> attribute;
   attributes: mapper -> attribute list -> attribute list;
+  binding_op: mapper -> binding_op -> binding_op;
   case: mapper -> case -> case;
   cases: mapper -> case list -> case list;
   class_declaration: mapper -> class_declaration -> class_declaration;
@@ -67,6 +71,7 @@ type mapper = {
   class_type_declaration: mapper -> class_type_declaration
                           -> class_type_declaration;
   class_type_field: mapper -> class_type_field -> class_type_field;
+  constant: mapper -> constant -> constant;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
   expr: mapper -> expression -> expression;
@@ -79,10 +84,12 @@ type mapper = {
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
   module_declaration: mapper -> module_declaration -> module_declaration;
+  module_substitution: mapper -> module_substitution -> module_substitution;
   module_expr: mapper -> module_expr -> module_expr;
   module_type: mapper -> module_type -> module_type;
   module_type_declaration: mapper -> module_type_declaration
                            -> module_type_declaration;
+  open_declaration: mapper -> open_declaration -> open_declaration;
   open_description: mapper -> open_description -> open_description;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
@@ -93,6 +100,7 @@ type mapper = {
   typ: mapper -> core_type -> core_type;
   type_declaration: mapper -> type_declaration -> type_declaration;
   type_extension: mapper -> type_extension -> type_extension;
+  type_exception: mapper -> type_exception -> type_exception;
   type_kind: mapper -> type_kind -> type_kind;
   value_binding: mapper -> value_binding -> value_binding;
   value_description: mapper -> value_description -> value_description;
@@ -106,16 +114,16 @@ type mapper = {
 val default_mapper: mapper
 (** A default mapper, which implements a "deep identity" mapping. *)
 
-(** {2 Apply mappers to compilation units} *)
+(** {1 Apply mappers to compilation units} *)
 
 val tool_name: unit -> string
 (** Can be used within a ppx preprocessor to know which tool is
     calling it ["ocamlc"], ["ocamlopt"], ["ocamldoc"], ["ocamldep"],
     ["ocaml"], ...  Some global variables that reflect command-line
     options are automatically synchronized between the calling tool
-    and the ppx preprocessor: [Clflags.include_dirs],
-    [Config.load_path], [Clflags.open_modules], [Clflags.for_package],
-    [Clflags.debug]. *)
+    and the ppx preprocessor: {!Clflags.include_dirs},
+    {!Load_path}, {!Clflags.open_modules}, {!Clflags.for_package},
+    {!Clflags.debug}. *)
 
 
 val apply: source:string -> target:string -> mapper -> unit
@@ -127,11 +135,11 @@ val apply: source:string -> target:string -> mapper -> unit
 val run_main: (string list -> mapper) -> unit
 (** Entry point to call to implement a standalone -ppx rewriter from a
     mapper, parametrized by the command line arguments.  The current
-    unit name can be obtained from [Location.input_name].  This
+    unit name can be obtained from {!Location.input_name}.  This
     function implements proper error reporting for uncaught
     exceptions. *)
 
-(** {2 Registration API} *)
+(** {1 Registration API} *)
 
 val register_function: (string -> (string list -> mapper) -> unit) ref
 
@@ -153,7 +161,7 @@ val register: string -> (string list -> mapper) -> unit
     the ppx driver.  *)
 
 
-(** {2 Convenience functions to write mappers} *)
+(** {1 Convenience functions to write mappers} *)
 
 val map_opt: ('a -> 'b) -> 'a option -> 'b option
 
@@ -167,7 +175,7 @@ val attribute_of_warning: Location.t -> string -> attribute
     inserted in a generated Parsetree.  The compiler will be
     responsible for reporting the warning. *)
 
-(** {2 Helper functions to call external mappers} *)
+(** {1 Helper functions to call external mappers} *)
 
 val add_ppx_context_str:
     tool_name:string -> Parsetree.structure -> Parsetree.structure
@@ -190,7 +198,7 @@ val drop_ppx_context_sig:
     restore:bool -> Parsetree.signature -> Parsetree.signature
 (** Same as [drop_ppx_context_str], but for signatures. *)
 
-(** {2 Cookies} *)
+(** {1 Cookies} *)
 
 (** Cookies are used to pass information from a ppx processor to
     a further invocation of itself, when called from the OCaml

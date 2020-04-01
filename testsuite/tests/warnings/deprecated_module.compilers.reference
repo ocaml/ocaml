@@ -1,0 +1,8 @@
+File "deprecated_module.ml", line 16, characters 8-11:
+16 | let _ = M.x
+             ^^^
+Alert deprecated: module M
+File "deprecated_module.ml", line 17, characters 8-9:
+17 | include M
+             ^
+Alert deprecated: module M

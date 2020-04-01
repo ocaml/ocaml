@@ -185,6 +185,28 @@ let get_relative n1 n2 =
   else
     n2
 
+let get_relative_opt n1 n2 =
+  if n1 = "" then n2 else
+    if prefix n1 n2 then
+      let len1 = String.length n1 in
+      try
+        String.sub n2 (len1+1) ((String.length n2) - len1 - 1)
+      with
+        _ -> n2
+    else
+      n2
+
+
+let alias_unprefix ln s =
+  if ln = "" then s else
+  let p = ln ^ "__" in
+  let n, k = String.(length p, length s) in
+  if k > n &&
+     String.sub s 0 n = p then
+    String.( capitalize_ascii @@ sub s n (k-n) )
+  else
+    s
+
 let hide_given_modules l s =
   let rec iter = function
       [] -> s
@@ -209,8 +231,8 @@ let to_path n =
     List.fold_left
       (fun acc_opt -> fun s ->
         match acc_opt with
-          None -> Some (Path.Pident (Ident.create s))
-        | Some acc -> Some (Path.Pdot (acc, s, 0)))
+          None -> Some (Path.Pident (Ident.create_local s))
+        | Some acc -> Some (Path.Pdot (acc, s)))
       None
       (Str.split (Str.regexp "\\.") n)
   with
@@ -219,8 +241,4 @@ let to_path n =
 
 let from_longident = Odoc_misc.string_of_longident
 
-module Set = Set.Make (struct
-  type z = t
-  type t = z
-  let compare = String.compare
-end)
+module Map = Map.Make(String)

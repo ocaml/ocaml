@@ -13,12 +13,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
+(** Warning definitions
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
+
+type loc = {
+  loc_start: Lexing.position;
+  loc_end: Lexing.position;
+  loc_ghost: bool;
+}
 
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string                    (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -40,7 +51,7 @@ type t =
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
-  | All_clauses_guarded                     (* 25 *)
+  | All_clauses_guarded                     (* 8, used to be 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
@@ -53,10 +64,10 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool (* 37 *)
-  | Unused_extension of string * bool * bool   (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
-  | Ambiguous_name of string list * string list * bool (* 41 *)
+  | Ambiguous_name of string list * string list * bool * string (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
@@ -75,9 +86,28 @@ type t =
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
+  | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
+  | Constraint_on_gadt                      (* 62 *)
+  | Erroneous_printed_signature of string   (* 63 *)
+  | Unsafe_without_parsing                  (* 64 *)
+  | Redefining_unit of string               (* 65 *)
+  | Unused_open_bang of string              (* 66 *)
+  | Unused_functor_parameter of string      (* 67 *)
 ;;
 
+type alert = {kind:string; message:string; def:loc; use:loc}
+
 val parse_options : bool -> string -> unit;;
+
+val parse_alert_option: string -> unit
+  (** Disable/enable alerts based on the parameter to the -alert
+      command-line option.  Raises [Arg.Bad] if the string is not a
+      valid specification.
+  *)
+
+val without_warnings : (unit -> 'a) -> 'a
+  (** Run the thunk with all warnings and alerts disabled. *)
 
 val is_active : t -> bool;;
 val is_error : t -> bool;;
@@ -85,9 +115,17 @@ val is_error : t -> bool;;
 val defaults_w : string;;
 val defaults_warn_error : string;;
 
-val print : formatter -> t -> unit;;
+type reporting_information =
+  { id : string
+  ; message : string
+  ; is_error : bool
+  ; sub_locs : (loc * string) list;
+  }
 
-exception Errors of int;;
+val report : t -> [ `Active of reporting_information | `Inactive ]
+val report_alert : alert -> [ `Active of reporting_information | `Inactive ]
+
+exception Errors;;
 
 val check_fatal : unit -> unit;;
 val reset_fatal: unit -> unit
@@ -97,3 +135,6 @@ val help_warnings: unit -> unit
 type state
 val backup: unit -> state
 val restore: state -> unit
+val mk_lazy: (unit -> 'a) -> 'a Lazy.t
+    (** Like [Lazy.of_fun], but the function is applied with
+        the warning/alert settings at the time [mk_lazy] is called. *)

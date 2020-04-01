@@ -13,30 +13,28 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <caml/mlvalues.h>
+#include <caml/osdeps.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_rename(value path1, value path2)
 {
-  static int supports_MoveFileEx = -1; /* don't know yet */
+  wchar_t * wpath1, * wpath2;
   BOOL ok;
 
   caml_unix_check_path(path1, "rename");
   caml_unix_check_path(path2, "rename");
-  if (supports_MoveFileEx < 0) {
-    OSVERSIONINFO VersionInfo;
-    VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    supports_MoveFileEx =
-      (GetVersionEx(&VersionInfo) != 0)
-      && (VersionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT);
-  }
-  if (supports_MoveFileEx > 0)
-    ok = MoveFileEx(String_val(path1), String_val(path2),
-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
-                    MOVEFILE_COPY_ALLOWED);
-  else
-    ok = MoveFile(String_val(path1), String_val(path2));
+  wpath1 = caml_stat_strdup_to_utf16(String_val(path1));
+  wpath2 = caml_stat_strdup_to_utf16(String_val(path2));
+  ok = MoveFileEx(wpath1, wpath2,
+                  MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                  MOVEFILE_COPY_ALLOWED);
+  caml_stat_free(wpath1);
+  caml_stat_free(wpath2);
   if (! ok) {
     win32_maperr(GetLastError());
     uerror("rename", path1);

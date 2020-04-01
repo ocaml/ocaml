@@ -29,14 +29,14 @@
    the [Marshal.from_*] functions is given as ['a], but this is
    misleading: the returned OCaml value does not possess type ['a]
    for all ['a]; it has one, unique type which cannot be determined
-   at compile-type.  The programmer should explicitly give the expected
+   at compile-time.  The programmer should explicitly give the expected
    type of the returned value, using the following syntax:
    - [(Marshal.from_channel chan : type)].
    Anything can happen at run-time if the object in the file does not
    belong to the given type.
 
    Values of extensible variant types, for example exceptions (of
-   extensible type [exn]), returned by the unmarhsaller should not be
+   extensible type [exn]), returned by the unmarshaller should not be
    pattern-matched over through [match ... with] or [try ... with],
    because unmarshalling does not preserve the information required for
    matching their constructors. Structural equalities with other
@@ -90,7 +90,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    digest of the code transmitted along with the code position.)
 
    The exact definition of which free variables are captured in a
-   closure is not specified and can very between bytecode and native
+   closure is not specified and can vary between bytecode and native
    code (and according to optimization flags).  In particular, a
    function value accessing a global reference may or may not include
    the reference in its closure.  If it does, unmarshaling the
@@ -112,7 +112,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
  *)
 
 external to_bytes :
-  'a -> extern_flags list -> bytes = "caml_output_value_to_string"
+  'a -> extern_flags list -> bytes = "caml_output_value_to_bytes"
 (** [Marshal.to_bytes v flags] returns a byte sequence containing
    the representation of [v].
    The [flags] argument has the same meaning as for
@@ -137,7 +137,12 @@ val from_channel : in_channel -> 'a
 (** [Marshal.from_channel chan] reads from channel [chan] the
    byte representation of a structured value, as produced by
    one of the [Marshal.to_*] functions, and reconstructs and
-   returns the corresponding value.*)
+   returns the corresponding value.
+
+   It raises [End_of_file] if the function has already reached the
+   end of file when starting to read from the channel, and raises
+   [Failure "input_value: truncated object"] if it reaches the end
+   of file later during the unmarshalling. *)
 
 val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value

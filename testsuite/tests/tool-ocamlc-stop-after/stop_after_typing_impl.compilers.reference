@@ -1,0 +1,18 @@
+[
+  structure_item (stop_after_typing_impl.ml[13,349+0]..stop_after_typing_impl.ml[13,349+37])
+    Tstr_primitive
+    value_description apply/80 (stop_after_typing_impl.ml[13,349+0]..stop_after_typing_impl.ml[13,349+37])
+      core_type (stop_after_typing_impl.ml[13,349+16]..stop_after_typing_impl.ml[13,349+26])
+        Ttyp_arrow
+        Nolabel
+        core_type (stop_after_typing_impl.ml[13,349+16]..stop_after_typing_impl.ml[13,349+19])
+          Ttyp_constr "int/1!"
+          []
+        core_type (stop_after_typing_impl.ml[13,349+23]..stop_after_typing_impl.ml[13,349+26])
+          Ttyp_constr "int/1!"
+          []
+      [
+        "%apply"
+      ]
+]
+

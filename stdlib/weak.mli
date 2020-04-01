@@ -16,21 +16,23 @@
 (** Arrays of weak pointers and hash sets of weak pointers. *)
 
 
-(** {6 Low-level functions} *)
+(** {1 Low-level functions} *)
 
 type 'a t
 (** The type of arrays of weak pointers (weak arrays).  A weak
    pointer is a value that the garbage collector may erase whenever
    the value is not used any more (through normal pointers) by the
-   program.  Note that finalisation functions are run after the
-   weak pointers are erased.
+   program.  Note that finalisation functions are run before the
+   weak pointers are erased, because the finalisation functions
+   can make values alive again (before 4.03 the finalisation
+   functions were run after).
 
    A weak pointer is said to be full if it points to a value,
    empty if the value was erased by the GC.
 
    Notes:
    - Integers are not allocated and cannot be stored in weak arrays.
-   - Weak arrays cannot be marshaled using {!Pervasives.output_value}
+   - Weak arrays cannot be marshaled using {!Stdlib.output_value}
      nor the functions of the {!Marshal} module.
 *)
 
@@ -38,7 +40,8 @@ type 'a t
 val create : int -> 'a t
 (** [Weak.create n] returns a new weak array of length [n].
    All the pointers are initially empty.  Raise [Invalid_argument]
-   if [n] is negative or greater than {!Sys.max_array_length}[-1].*)
+   if [n] is not comprised between zero and
+   {!Obj.Ephemeron.max_ephe_length} (limits included).*)
 
 val length : 'a t -> int
 (** [Weak.length ar] returns the length (number of elements) of
@@ -66,7 +69,11 @@ val get_copy : 'a t -> int -> 'a option
    the incremental GC from erasing the value in its current cycle
    ([get] may delay the erasure to the next GC cycle).
    Raise [Invalid_argument "Weak.get"] if [n] is not in the range
-   0 to {!Weak.length}[ a - 1].*)
+   0 to {!Weak.length}[ a - 1].
+
+   If the element is a custom block it is not copied.
+
+*)
 
 
 val check : 'a t -> int -> bool
@@ -88,7 +95,7 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
    do not designate a valid subarray of [ar2].*)
 
 
-(** {6 Weak hash sets} *)
+(** {1 Weak hash sets} *)
 
 (** A weak hash set is a hashed set of values.  Each value may
     magically disappear from the set when it is not used by the
@@ -110,7 +117,7 @@ module type S = sig
   type t
     (** The type of tables that contain elements of type [data].
         Note that weak hash sets cannot be marshaled using
-        {!Pervasives.output_value} or the functions of the {!Marshal}
+        {!Stdlib.output_value} or the functions of the {!Marshal}
         module. *)
 
   val create : int -> t
@@ -136,6 +143,12 @@ module type S = sig
   val find : t -> data -> data
     (** [find t x] returns an instance of [x] found in [t].
         Raise [Not_found] if there is no such element. *)
+
+  val find_opt: t -> data -> data option
+    (** [find_opt t x] returns an instance of [x] found in [t]
+        or [None] if there is no such element.
+        @since 4.05
+    *)
 
   val find_all : t -> data -> data list
     (** [find_all t x] returns a list of all the instances of [x]

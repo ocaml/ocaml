@@ -34,7 +34,7 @@ let word_addressed = false
     r8                    trap pointer (preserved)
     r9                    platform register, usually reserved
     r10                   allocation pointer (preserved)
-    r11                   allocation limit (preserved)
+    r11                   domain state pointer (preserved)
     r12                   intra-procedural scratch register (not preserved)
     r13                   stack pointer
     r14                   return address
@@ -42,7 +42,7 @@ let word_addressed = false
    Floating-point register map (VFPv{2,3}):
     d0 - d7               general purpose (not preserved)
     d8 - d15              general purpose (preserved)
-    d16 - d31             generat purpose (not preserved), VFPv3 only
+    d16 - d31             general purpose (not preserved), VFPv3 only
 *)
 
 let int_reg_name =
@@ -106,6 +106,8 @@ let phys_reg n =
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
+
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
 
 (* Calling conventions *)
 
@@ -222,6 +224,40 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* See "DWARF for the ARM architecture" available from developer.arm.com. *)
+
+let int_dwarf_reg_numbers =
+  [| 0; 1; 2; 3; 4; 5; 6; 7; 12 |]
+
+let float_dwarf_reg_numbers_legacy =
+  [| 64; 65; 66; 67; 68; 69; 70; 71;
+     72; 73; 74; 75; 76; 77; 78; 79;
+     80; 81; 82; 83; 84; 85; 86; 87;
+     88; 89; 90; 91; 92; 93; 94; 95;
+  |]
+
+let float_dwarf_reg_numbers =
+  [| 256; 257; 258; 259; 260; 261; 262; 263;
+     264; 265; 266; 267; 268; 269; 270; 271;
+     272; 273; 274; 275; 276; 277; 278; 279;
+     280; 281; 282; 283; 284; 285; 286; 287;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 ->
+    (* Section 3.1 note 4 says that the "new" VFPv3 register numberings
+       (as per [float_dwarf_reg_numbers]) should be used for VFPv2 as well.
+       However we believe that for <= ARMv6 we should use the legacy VFPv2
+       numberings. *)
+    if !arch <= ARMv6 then float_dwarf_reg_numbers_legacy
+    else float_dwarf_reg_numbers
+  | 2 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 13
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -252,10 +288,10 @@ let destroyed_at_c_call =
                          124;125;126;127;128;129;130;131]))
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _)
-  | Iop(Iextcall(_, true)) ->
+    Iop(Icall_ind _ | Icall_imm _)
+  | Iop(Iextcall { alloc = true; _ }) ->
       all_phys_regs
-  | Iop(Iextcall(_, false)) ->
+  | Iop(Iextcall { alloc = false; _}) ->
       destroyed_at_c_call
   | Iop(Ialloc _) ->
       destroyed_at_alloc
@@ -263,23 +299,30 @@ let destroyed_at_oper = function
       [| phys_reg 3; phys_reg 8 |]  (* r3 and r12 destroyed *)
   | Iop(Iintop Imulh) when !arch < ARMv6 ->
       [| phys_reg 8 |]              (* r12 destroyed *)
+  | Iop(Iintop (Icomp _) | Iintop_imm(Icomp _, _))
+    when !arch >= ARMv8 && !thumb ->
+      [| phys_reg 3 |]  (* r3 destroyed *)
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
 
+(* lr is destroyed at [Lreloadretaddr], but lr is not used for register
+   allocation, and thus does not need to (and indeed cannot) occur here. *)
+let destroyed_at_reloadretaddr = [| |]
+
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> if abi = EABI then 0 else 4
+    Iextcall _ -> if abi = EABI then 0 else 4
   | Ialloc _ -> if abi = EABI then 0 else 7
   | Iconst_symbol _ when !Clflags.pic_code -> 7
   | Iintop Imulh when !arch < ARMv6 -> 8
   | _ -> 9
 
 let max_register_pressure = function
-    Iextcall(_, _) -> if abi = EABI then [| 4; 0; 0 |] else [| 4; 8; 8 |]
+    Iextcall _ -> if abi = EABI then [| 4; 0; 0 |] else [| 4; 8; 8 |]
   | Ialloc _ -> if abi = EABI then [| 7; 0; 0 |] else [| 7; 8; 8 |]
   | Iconst_symbol _ when !Clflags.pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
@@ -291,22 +334,30 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
   | Ispecific(Ishiftcheckbound _) -> false
   | _ -> true
 
 (* Layout of the stack *)
 
-let num_stack_slots = [| 0; 0; 0 |]
-let contains_calls = ref false
+let frame_required fd =
+  let num_stack_slots = fd.fun_num_stack_slots in
+  fd.fun_contains_calls
+    || num_stack_slots.(0) > 0
+    || num_stack_slots.(1) > 0
+    || num_stack_slots.(2) > 0
+
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ " " ^
+                 (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                 " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 
 let init () = ()

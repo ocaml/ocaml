@@ -18,7 +18,6 @@
 
 open Format
 open Parser_aux
-open Path
 open Types
 
 (* To name printed and ellipsed values *)
@@ -43,27 +42,25 @@ let find_named_value name =
 let check_depth depth obj ty =
   if depth <= 0 then begin
     let n = name_value obj ty in
-    Some (Outcometree.Oval_stuff ("$" ^ string_of_int n))
+    Some (Outcometree.Oval_stuff ("$" ^ Int.to_string n))
   end else None
 
 module EvalPath =
   struct
     type valu = Debugcom.Remote_value.t
     exception Error
-    let rec eval_path env = function
-      Pident id ->
+    let rec eval_address = function
+    | Env.Aident id ->
         begin try
           Debugcom.Remote_value.global (Symtable.get_global_position id)
         with Symtable.Error _ ->
           raise Error
         end
-    | Pdot(root, _fieldname, pos) ->
-        let v = eval_path env root in
+    | Env.Adot(root, pos) ->
+        let v = eval_address root in
         if not (Debugcom.Remote_value.is_block v)
         then raise Error
         else Debugcom.Remote_value.field v pos
-    | Papply _ ->
-        raise Error
     let same_value = Debugcom.Remote_value.same
   end
 
@@ -102,7 +99,6 @@ let print_named_value max_depth exp env obj ppf ty =
   | _ ->
       let n = name_value obj ty in
       fprintf ppf "$%i" n in
-  Printtyp.reset_and_mark_loops ty;
   fprintf ppf "@[<2>%a:@ %a@ =@ %a@]@."
   print_value_name exp
   Printtyp.type_expr ty

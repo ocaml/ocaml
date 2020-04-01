@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <errno.h>
 #include <sys/types.h>
 #include <caml/mlvalues.h>

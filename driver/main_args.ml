@@ -17,12 +17,23 @@ let mk_a f =
   "-a", Arg.Unit f, " Build a library"
 ;;
 
+let mk_alert f =
+  "-alert", Arg.String f,
+  Printf.sprintf
+    "<list>  Enable or disable alerts according to <list>:\n\
+    \        +<alertname>  enable alert <alertname>\n\
+    \        -<alertname>  disable alert <alertname>\n\
+    \        ++<alertname> treat <alertname> as fatal error\n\
+    \        --<alertname> treat <alertname> as non-fatal\n\
+    \        @<alertname>  enable <alertname> and treat it as fatal error\n\
+    \    <alertname> can be 'all' to refer to all alert names";;
+
 let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"
 ;;
 
 let mk_annot f =
-  "-annot", Arg.Unit f, " Save information in <filename>.annot"
+  "-annot", Arg.Unit f, " (deprecated) Save information in <filename>.annot"
 ;;
 
 let mk_binannot f =
@@ -64,6 +75,12 @@ let mk_config f =
   "-config", Arg.Unit f, " Print configuration values and exit"
 ;;
 
+let mk_config_var f =
+  "-config-var", Arg.String f,
+  " Print the value of a configuration variable, a newline, and exit\n\
+\    (print nothing and exit with error value if the variable does not exist)"
+;;
+
 let mk_custom f =
   "-custom", Arg.Unit f, " Link in custom mode"
 ;;
@@ -75,6 +92,24 @@ let mk_dllib f =
 let mk_dllpath f =
   "-dllpath", Arg.String f,
   "<dir>  Add <dir> to the run-time search path for shared libraries"
+;;
+
+let mk_function_sections f =
+  if Config.function_sections then
+    "-function-sections",  Arg.Unit f,
+    " Generate each function in a separate section if target supports it"
+  else
+    let err () =
+      raise (Arg.Bad "OCaml has been configured without support for \
+                      -function-sections")
+    in
+    "-function-sections", Arg.Unit err, " (option not available)"
+;;
+
+let mk_stop_after ~native f =
+  "-stop-after",
+  Arg.Symbol (Clflags.Compiler_pass.available_pass_names ~native, f),
+  " Stop after the given compilation pass."
 ;;
 
 let mk_dtypes f =
@@ -223,21 +258,33 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_insn_sched f =
+  "-insn-sched", Arg.Unit f,
+  Printf.sprintf " Run the instruction scheduling pass%s"
+    (if Clflags.insn_sched_default then " (default)" else "")
+;;
+
+let mk_no_insn_sched f =
+  "-no-insn-sched", Arg.Unit f,
+  Printf.sprintf " Do not run the instruction scheduling pass%s"
+    (if not Clflags.insn_sched_default then " (default)" else "")
+;;
+
 let mk_keep_docs f =
   "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
 ;;
 
 let mk_no_keep_docs f =
-  "-keep-docs", Arg.Unit f,
+  "-no-keep-docs", Arg.Unit f,
   " Do not keep documentation strings in .cmi files (default)"
 ;;
 
 let mk_keep_locs f =
-  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
+  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files (default)"
 ;;
 
 let mk_no_keep_locs f =
-  "-no-keep-locs", Arg.Unit f, " Do not keep locations in .cmi files (default)"
+  "-no-keep-locs", Arg.Unit f, " Do not keep locations in .cmi files"
 ;;
 
 let mk_labels f =
@@ -246,6 +293,10 @@ let mk_labels f =
 
 let mk_linkall f =
   "-linkall", Arg.Unit f, " Link all modules, even unused ones"
+;;
+
+let mk_linscan f =
+  "-linscan", Arg.Unit f, " Use the linear scan register allocator"
 ;;
 
 let mk_make_runtime f =
@@ -362,10 +413,13 @@ let mk_output_complete_obj f =
   " Output an object file, including runtime, instead of an executable"
 ;;
 
+let mk_output_complete_exe f =
+  "-output-complete-exe", Arg.Unit f,
+  " Output a self-contained executable, including runtime and C stubs"
+;;
+
 let mk_p f =
-  "-p", Arg.Unit f,
-  " Compile and link with profiling support for \"gprof\"\n\
-  \     (not supported on all platforms)"
+  "-p", Arg.Unit f, " (no longer supported)"
 ;;
 
 let mk_pack_byt f =
@@ -383,6 +437,11 @@ let mk_pp f =
 let mk_ppx f =
   "-ppx", Arg.String f,
   "<command>  Pipe abstract syntax trees through preprocessor <command>"
+;;
+
+let mk_plugin f =
+  "-plugin", Arg.String f,
+  "<plugin>  (no longer supported)"
 ;;
 
 let mk_principal f =
@@ -413,12 +472,25 @@ let mk_runtime_variant f =
   "<str>  Use the <str> variant of the run-time system"
 ;;
 
+let mk_with_runtime f =
+  "-with-runtime", Arg.Unit f,
+  "Include the runtime system in the generated program (default)"
+;;
+
+let mk_without_runtime f =
+  "-without-runtime", Arg.Unit f,
+  "Do not include the runtime system in the generated program."
+;;
+
 let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
 ;;
 
 let mk_safe_string f =
-  "-safe-string", Arg.Unit f, " Make strings immutable"
+  "-safe-string", Arg.Unit f,
+  if Config.safe_string then " (was set when configuring the compiler)"
+  else if Config.default_safe_string then " Make strings immutable (default)"
+  else " Make strings immutable"
 ;;
 
 let mk_shared f =
@@ -445,11 +517,15 @@ let mk_strict_sequence f =
 
 let mk_thread f =
   "-thread", Arg.Unit f,
-  " Generate code that supports the system threads library"
+  " (deprecated) same as -I +threads"
 ;;
 
 let mk_dtimings f =
-  "-dtimings", Arg.Unit f, " Print timings"
+  "-dtimings", Arg.Unit f, " Print timings information for each pass";
+;;
+
+let mk_dprofile f =
+  "-dprofile", Arg.Unit f, Profile.options_doc
 ;;
 
 let mk_unbox_closures f =
@@ -465,13 +541,32 @@ let mk_unbox_closures_factor f =
     Clflags.default_unbox_closures_factor
 ;;
 
+let mk_unboxed_types f =
+  "-unboxed-types", Arg.Unit f,
+  " unannotated unboxable types will be unboxed"
+;;
+
+let mk_no_unboxed_types f =
+  "-no-unboxed-types", Arg.Unit f,
+  " unannotated unboxable types will not be unboxed (default)"
+;;
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
 ;;
 
 let mk_unsafe_string f =
-  "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
+  if Config.safe_string then
+    let err () =
+      raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
+                      -unsafe-string is not available")
+    in
+    "-unsafe-string", Arg.Unit err, " (option not available)"
+  else if Config.default_safe_string then
+    "-unsafe-string", Arg.Unit f, " Make strings mutable"
+  else
+    "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
 ;;
 
 let mk_use_runtime f =
@@ -501,10 +596,13 @@ let mk__version f =
   "--version", Arg.Unit f, " Print version and exit"
 ;;
 
+let mk_no_version f =
+  "-no-version", Arg.Unit f, " Do not print version at startup"
+;;
+
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
-  " Generate code that supports the threads library with VM-level\n\
-  \     scheduling"
+  "  (no longer supported)"
 ;;
 
 let mk_vnum f =
@@ -547,7 +645,22 @@ let mk_color f =
   \      never   disable colors\n\
   \    The default setting is 'auto', and the current heuristic\n\
   \    checks that the TERM environment variable exists and is\n\
-  \    not empty or \"dumb\", and that isatty(stderr) holds."
+  \    not empty or \"dumb\", and that isatty(stderr) holds.\n\
+  \  If the option is not specified, these setting can alternatively\n\
+  \  be set through the OCAML_COLOR environment variable."
+;;
+
+let mk_error_style f =
+  "-error-style", Arg.Symbol (["contextual"; "short"], f),
+  Printf.sprintf
+    "  Control the way error messages and warnings are printed\n\
+    \    The following settings are supported:\n\
+    \      short       only print the error and its location\n\
+    \      contextual  like \"short\", but also display the source code\n\
+    \                  snippet corresponding to the location of the error\n\
+    \    The default setting is 'contextual'.\n\
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_ERROR_STYLE environment variable."
 ;;
 
 let mk_where f =
@@ -558,8 +671,19 @@ let mk_nopervasives f =
   "-nopervasives", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_match_context_rows f =
+  "-match-context-rows", Arg.Int f,
+  let[@manual.ref "s:comp-options"] chapter, section = 9, 2 in
+  Printf.sprintf
+  "<n>  (advanced, see manual section %d.%d.)" chapter section
+;;
+
 let mk_use_prims f =
   "-use-prims", Arg.String f, "<file>  (undocumented)"
+;;
+
+let mk_dump_into_file f =
+  "-dump-into-file", Arg.Unit f, " dump output like -dlambda into <target>.dump"
 ;;
 
 let mk_dparsetree f =
@@ -572,6 +696,22 @@ let mk_dtypedtree f =
 
 let mk_drawlambda f =
   "-drawlambda", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dno_unique_ids f =
+  "-dno-unique-ids", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dunique_ids f =
+  "-dunique-ids", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dno_locations f =
+  "-dno-locations", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dlocations f =
+  "-dlocations", Arg.Unit f, " (undocumented)"
 ;;
 
 let mk_dsource f =
@@ -598,6 +738,11 @@ let mk_drawflambda f =
   "-drawflambda", Arg.Unit f, " Print Flambda terms after closure conversion"
 ;;
 
+let mk_dflambda_invariants f =
+  "-dflambda-invariants", Arg.Unit f, " Check Flambda invariants \
+      around each pass"
+;;
+
 let mk_dflambda_no_invariants f =
   "-dflambda-no-invariants", Arg.Unit f, " Do not Check Flambda invariants \
       around each pass"
@@ -615,6 +760,10 @@ let mk_dflambda_verbose f =
 
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dcamlprimc f =
+  "-dcamlprimc", Arg.Unit f, " (undocumented)"
 ;;
 
 let mk_dcmm f =
@@ -635,6 +784,16 @@ let mk_dcse f =
 
 let mk_dlive f =
   "-dlive", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_davail f =
+  "-davail", Arg.Unit f, " Print register availability info when printing \
+    liveness"
+;;
+
+let mk_drunavail f =
+  "-drunavail", Arg.Unit f, " Run register availability pass (for testing \
+    only; needs -g)"
 ;;
 
 let mk_dspill f =
@@ -669,6 +828,10 @@ let mk_dlinear f =
   "-dlinear", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dinterval f =
+  "-dinterval", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 ;;
@@ -696,6 +859,28 @@ let mk_no_strict_formats f =
   \      and instead fix invalid formats.)"
 ;;
 
+let mk_args f =
+  "-args", Arg.Expand f,
+  "<file> Read additional newline-terminated command line arguments\n\
+  \      from <file>"
+;;
+
+let mk_args0 f =
+  "-args0", Arg.Expand f,
+  "<file> Read additional null character terminated command line arguments\n\
+          from <file>"
+;;
+
+let mk_afl_instrument f =
+  "-afl-instrument", Arg.Unit f, "Enable instrumentation for afl-fuzz"
+;;
+
+let mk_afl_inst_ratio f =
+  "-afl-inst-ratio", Arg.Int f,
+  "Configure percentage of branches instrumented\n\
+  \     (advanced, see afl-fuzz docs for AFL_INST_RATIO)"
+;;
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -703,6 +888,7 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
   val _alias_deps : unit -> unit
@@ -724,13 +910,28 @@ module type Common_options = sig
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
-  val _unsafe : unit -> unit
+  val _unboxed_types : unit -> unit
+  val _no_unboxed_types : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
+
+  val anonymous : string -> unit
+end
+
+module type Core_options = sig
+  include Common_options
+
+  val _nopervasives : unit -> unit
+  val _unsafe : unit -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
+
+  val _dno_unique_ids : unit -> unit
+  val _dunique_ids : unit -> unit
+  val _dno_locations : unit -> unit
+  val _dlocations : unit -> unit
 
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
@@ -738,7 +939,6 @@ module type Common_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
-  val anonymous : string -> unit
 end
 
 module type Compiler_options = sig
@@ -750,8 +950,10 @@ module type Compiler_options = sig
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit
+  val _config_var : string -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
+  val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
   val _intf : string -> unit
@@ -767,11 +969,14 @@ module type Compiler_options = sig
   val _output_obj : unit -> unit
   val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
+  val _plugin : string -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _with_runtime : unit -> unit
+  val _without_runtime : unit -> unit
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
@@ -779,14 +984,35 @@ module type Compiler_options = sig
   val _verbose : unit -> unit
   val _where : unit -> unit
   val _color : string -> unit
+  val _error_style : string -> unit
 
-  val _nopervasives : unit -> unit
+  val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
+  val _dprofile : unit -> unit
+  val _dump_into_file : unit -> unit
+
+  val _args: string -> string array
+  val _args0: string -> string array
+end
+;;
+
+module type Toplevel_options = sig
+  include Core_options
+  val _init : string -> unit
+  val _noinit : unit -> unit
+  val _no_version : unit -> unit
+  val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
+  val _stdin : unit -> unit
+  val _args : string -> string array
+  val _args0 : string -> string array
+  val _color : string -> unit
+  val _error_style : string -> unit
 end
 ;;
 
 module type Bytecomp_options = sig
-  include Common_options
+  include Core_options
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
@@ -796,21 +1022,18 @@ module type Bytecomp_options = sig
   val _make_runtime : unit -> unit
   val _vmthread : unit -> unit
   val _use_runtime : string -> unit
+  val _output_complete_exe : unit -> unit
 
   val _dinstr : unit -> unit
+  val _dcamlprimc : unit -> unit
 
   val _use_prims : string -> unit
 end;;
 
 module type Bytetop_options = sig
-  include Common_options
-  val _init : string -> unit
-  val _noinit : unit -> unit
-  val _noprompt : unit -> unit
-  val _nopromptcont : unit -> unit
-  val _stdin : unit -> unit
-
+  include Toplevel_options
   val _dinstr : unit -> unit
+
 end;;
 
 module type Optcommon_options = sig
@@ -837,10 +1060,15 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _insn_sched : unit -> unit
+  val _no_insn_sched : unit -> unit
+  val _linscan : unit -> unit
+  val _no_float_const_prop : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
   val _drawflambda : unit -> unit
+  val _dflambda_invariants : unit -> unit
   val _dflambda_no_invariants : unit -> unit
   val _dflambda_let : int -> unit
   val _dflambda_verbose : unit -> unit
@@ -851,6 +1079,8 @@ module type Optcommon_options = sig
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
+  val _davail : unit -> unit
+  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit
@@ -859,30 +1089,29 @@ module type Optcommon_options = sig
   val _dreload : unit -> unit
   val _dscheduling :  unit -> unit
   val _dlinear :  unit -> unit
+  val _dinterval : unit -> unit
   val _dstartup :  unit -> unit
 end;;
 
 module type Optcomp_options = sig
-  include Common_options
+  include Core_options
   include Compiler_options
   include Optcommon_options
-  val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _afl_instrument : unit -> unit
+  val _afl_inst_ratio : int -> unit
+  val _function_sections : unit -> unit
 end;;
 
 module type Opttop_options = sig
-  include Common_options
+  include Toplevel_options
   include Optcommon_options
-  val _init : string -> unit
-  val _noinit : unit -> unit
-  val _noprompt : unit -> unit
-  val _nopromptcont : unit -> unit
+  val _verbose : unit -> unit
   val _S : unit -> unit
-  val _stdin : unit -> unit
 end;;
 
 module type Ocamldoc_options = sig
@@ -891,10 +1120,6 @@ module type Ocamldoc_options = sig
   val _intf : string -> unit
   val _intf_suffix : string -> unit
   val _pp : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
@@ -909,6 +1134,7 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_alert F._alert;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -917,14 +1143,17 @@ struct
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
     mk_color F._color;
+    mk_error_style F._error_style;
     mk_compat_32 F._compat_32;
     mk_config F._config;
+    mk_config_var F._config_var;
     mk_custom F._custom;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
+    mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -949,19 +1178,24 @@ struct
     mk_noautolink_byt F._noautolink;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_o F._o;
     mk_opaque F._opaque;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_output_complete_obj F._output_complete_obj;
+    mk_output_complete_exe F._output_complete_exe;
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
+    mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
     mk_runtime_variant F._runtime_variant;
+    mk_with_runtime F._with_runtime;
+    mk_without_runtime F._without_runtime;
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
@@ -969,6 +1203,8 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_use_runtime F._use_runtime;
@@ -985,15 +1221,25 @@ struct
     mk_where F._where;
     mk__ F.anonymous;
 
-    mk_nopervasives F._nopervasives;
+    mk_match_context_rows F._match_context_rows;
     mk_use_prims F._use_prims;
+    mk_dno_unique_ids F._dno_unique_ids;
+    mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+    mk_dcamlprimc F._dcamlprimc;
     mk_dtimings F._dtimings;
+    mk_dprofile F._dprofile;
+    mk_dump_into_file F._dump_into_file;
+
+    mk_args F._args;
+    mk_args0 F._args0;
   ]
 end;;
 
@@ -1001,6 +1247,7 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -1014,6 +1261,7 @@ struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -1027,22 +1275,34 @@ struct
     mk_no_strict_sequence F._no_strict_sequence;
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
     mk__version F._version;
+    mk_no_version F._no_version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk__ F.anonymous;
+    mk_color F._color;
+    mk_error_style F._error_style;
 
+    mk_dno_unique_ids F._dno_unique_ids;
+    mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+
+    mk_args F._args;
+    mk_args0 F._args0;
   ]
 end;;
 
@@ -1050,7 +1310,10 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_alert F._alert;
     mk_absname F._absname;
+    mk_afl_instrument F._afl_instrument;
+    mk_afl_inst_ratio F._afl_inst_ratio;
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_inline_branch_factor F._inline_branch_factor;
@@ -1061,11 +1324,15 @@ struct
     mk_clambda_checks F._clambda_checks;
     mk_classic_inlining F._classic_inlining;
     mk_color F._color;
+    mk_error_style F._error_style;
     mk_compact F._compact;
     mk_config F._config;
+    mk_config_var F._config_var;
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
+    mk_function_sections F._function_sections;
+    mk_stop_after ~native:true F._stop_after;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -1078,6 +1345,7 @@ struct
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inlining_report F._inlining_report;
+    mk_insn_sched F._insn_sched;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
@@ -1089,14 +1357,17 @@ struct
     mk_inline_max_depth F._inline_max_depth;
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_linscan F._linscan;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
+    mk_no_insn_sched F._no_insn_sched;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o F._o;
@@ -1108,6 +1379,7 @@ struct
     mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
     mk_pack_opt F._pack;
+    mk_plugin F._plugin;
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -1117,6 +1389,8 @@ struct
     mk_remove_unused_arguments F._remove_unused_arguments;
     mk_rounds F._rounds;
     mk_runtime_variant F._runtime_variant;
+    mk_with_runtime F._with_runtime;
+    mk_without_runtime F._without_runtime;
     mk_S F._S;
     mk_safe_string F._safe_string;
     mk_shared F._shared;
@@ -1129,6 +1403,8 @@ struct
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
     mk_inline_max_unroll F._inline_max_unroll;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
@@ -1142,7 +1418,11 @@ struct
     mk_where F._where;
     mk__ F.anonymous;
 
-    mk_nopervasives F._nopervasives;
+    mk_match_context_rows F._match_context_rows;
+    mk_dno_unique_ids F._dno_unique_ids;
+    mk_dunique_ids F._dunique_ids;
+    mk_dno_locations F._dno_locations;
+    mk_dlocations F._dlocations;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1152,6 +1432,7 @@ struct
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;
     mk_drawflambda F._drawflambda;
+    mk_dflambda_invariants F._dflambda_invariants;
     mk_dflambda_no_invariants F._dflambda_no_invariants;
     mk_dflambda_let F._dflambda_let;
     mk_dflambda_verbose F._dflambda_verbose;
@@ -1160,6 +1441,8 @@ struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
+    mk_davail F._davail;
+    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1168,15 +1451,22 @@ struct
     mk_dreload F._dreload;
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
+    mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
+    mk_dprofile F._dprofile;
+    mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
+
+    mk_args F._args;
+    mk_args0 F._args0;
   ]
 end;;
 
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;
@@ -1196,14 +1486,17 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_labels F._labels;
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
+    mk_linscan F._linscan;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
+    mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o2 F._o2;
@@ -1225,15 +1518,21 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_strict_formats F._no_strict_formats;
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
+    mk_verbose F._verbose;
     mk_version F._version;
     mk__version F._version;
+    mk_no_version F._no_version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk__ F.anonymous;
+    mk_color F._color;
+    mk_error_style F._error_style;
 
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
@@ -1248,6 +1547,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
+    mk_davail F._davail;
+    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1256,6 +1557,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dreload F._dreload;
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
+    mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dump_pass F._dump_pass;
   ]
@@ -1265,6 +1567,7 @@ module Make_ocamldoc_options (F : Ocamldoc_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_I F._I;
     mk_impl F._impl;
     mk_intf F._intf;
@@ -1293,6 +1596,8 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
+    mk_unboxed_types F._unboxed_types;
+    mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe_string F._unsafe_string;
     mk_v F._v;
     mk_verbose F._verbose;
@@ -1304,3 +1609,378 @@ struct
     mk__ F.anonymous;
   ]
 end;;
+
+[@@@ocaml.warning "-40"]
+let options_with_command_line_syntax_inner r after_rest =
+  let rec loop ~name_opt (spec : Arg.spec) : Arg.spec =
+    let option =
+      match name_opt with
+      | None -> ignore
+      | Some name -> (fun () -> r := name :: !r)
+    in
+    let arg a = r := Filename.quote a :: !r in
+    let option_with_arg a = option (); arg a in
+    let rest a =
+      if not !after_rest then (after_rest := true; option ());
+      arg a
+    in
+    match spec with
+    | Unit f -> Unit (fun a -> f a; option ())
+    | Bool f -> Bool (fun a -> f a; option_with_arg (string_of_bool a))
+    | Set r -> Unit (fun () -> r := true; option ())
+    | Clear r -> Unit (fun () -> r := false; option ())
+    | String f -> String (fun a -> f a; option_with_arg a)
+    | Set_string r -> String (fun a -> r := a; option_with_arg a)
+    | Int f -> Int (fun a -> f a; option_with_arg (string_of_int a))
+    | Set_int r -> Int (fun a -> r := a; option_with_arg (string_of_int a))
+    | Float f -> Float (fun a -> f a; option_with_arg (string_of_float a))
+    | Set_float r ->
+       Float (fun a -> r := a; option_with_arg (string_of_float a))
+    | Tuple [] -> Unit option
+    | Tuple (hd :: tl) ->
+       Tuple (loop ~name_opt hd :: List.map (loop ~name_opt:None) tl)
+    | Symbol (l, f) -> Symbol (l, (fun a -> f a; option_with_arg a))
+    | Rest f -> Rest (fun a -> f a; rest a)
+    | Expand f -> Expand f
+  in
+  loop
+
+let options_with_command_line_syntax options r =
+  let rest = ref false in
+  List.map (fun (name, spec, doc) ->
+    (name,
+     options_with_command_line_syntax_inner r rest
+       ~name_opt:(Some name) spec, doc)
+  ) options
+
+module Default = struct
+  open Clflags
+  open Compenv
+  let set r () = r := true
+  let clear r () = r := false
+
+  module Common = struct
+    let _absname = set Clflags.absname
+    let _alert = Warnings.parse_alert_option
+    let _alias_deps = clear transparent_modules
+    let _app_funct = set applicative_functors
+    let _labels = clear classic
+    let _no_alias_deps = set transparent_modules
+    let _no_app_funct = clear applicative_functors
+    let _no_principal = clear principal
+    let _no_rectypes = clear recursive_types
+    let _no_strict_formats = clear strict_formats
+    let _no_strict_sequence = clear strict_sequence
+    let _no_unboxed_types = clear unboxed_types
+    let _noassert = set noassert
+    let _nolabels = set classic
+    let _nostdlib = set no_std_include
+    let _open s = open_modules := (s :: (!open_modules))
+    let _principal = set principal
+    let _rectypes = set recursive_types
+    let _safe_string = clear unsafe_string
+    let _short_paths = clear real_paths
+    let _strict_formats = set strict_formats
+    let _strict_sequence = set strict_sequence
+    let _unboxed_types = set unboxed_types
+    let _unsafe_string = set unsafe_string
+    let _w s = Warnings.parse_options false s
+
+    let anonymous = anonymous
+
+  end
+
+  module Core = struct
+    include Common
+    let _I dir = include_dirs := (dir :: (!include_dirs))
+    let _color = Misc.set_or_ignore color_reader.parse color
+    let _dlambda = set dump_lambda
+    let _dparsetree = set dump_parsetree
+    let _drawlambda = set dump_rawlambda
+    let _dsource = set dump_source
+    let _dtypedtree = set dump_typedtree
+    let _dunique_ids = set unique_ids
+    let _dno_unique_ids = clear unique_ids
+    let _dlocations = set locations
+    let _dno_locations = clear locations
+    let _error_style =
+      Misc.set_or_ignore error_style_reader.parse error_style
+    let _nopervasives = set nopervasives
+    let _ppx s = first_ppx := (s :: (!first_ppx))
+    let _unsafe = set unsafe
+    let _warn_error s = Warnings.parse_options true s
+    let _warn_help = Warnings.help_warnings
+  end
+
+  module Native = struct
+    let _S = set keep_asm_file
+    let _clambda_checks () = clambda_checks := true
+    let _classic_inlining () = classic_inlining := true
+    let _compact = clear optimize_for_speed
+    let _dalloc = set dump_regalloc
+    let _davail () = dump_avail := true
+    let _dclambda = set dump_clambda
+    let _dcmm = set dump_cmm
+    let _dcombine = set dump_combine
+    let _dcse = set dump_cse
+    let _dflambda = set dump_flambda
+    let _dflambda_invariants = set flambda_invariant_checks
+    let _dflambda_let stamp = dump_flambda_let := (Some stamp)
+    let _dflambda_no_invariants = clear flambda_invariant_checks
+    let _dflambda_verbose () =
+      set dump_flambda (); set dump_flambda_verbose ()
+    let _dinterval = set dump_interval
+    let _dinterf = set dump_interf
+    let _dlinear = set dump_linear
+    let _dlive () = dump_live := true
+    let _dprefer = set dump_prefer
+    let _drawclambda = set dump_rawclambda
+    let _drawflambda = set dump_rawflambda
+    let _dreload = set dump_reload
+    let _drunavail () = debug_runavail := true
+    let _dscheduling = set dump_scheduling
+    let _dsel = set dump_selection
+    let _dspill = set dump_spill
+    let _dsplit = set dump_split
+    let _dstartup = set keep_startup_file
+    let _dump_pass pass = set_dumped_pass pass true
+    let _inline spec =
+      Float_arg_helper.parse spec "Syntax: -inline <n> | <round>=<n>[,...]"
+        inline_threshold
+    let _inline_alloc_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+        inline_alloc_cost
+    let _inline_branch_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+        inline_branch_cost
+    let _inline_branch_factor spec =
+      Float_arg_helper.parse spec
+        "Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
+        inline_branch_factor
+    let _inline_call_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-call-cost <n> | <round>=<n>[,...]" inline_call_cost
+    let _inline_indirect_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
+        inline_indirect_cost
+    let _inline_lifting_benefit spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
+        inline_lifting_benefit
+    let _inline_max_depth spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-max-depth <n> | <round>=<n>[,...]" inline_max_depth
+    let _inline_max_unroll spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
+        inline_max_unroll
+    let _inline_prim_cost spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-prim-cost <n> | <round>=<n>[,...]" inline_prim_cost
+    let _inline_toplevel spec =
+      Int_arg_helper.parse spec
+        "Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
+        inline_toplevel_threshold
+    let _inlining_report () = inlining_report := true
+    let _insn_sched = set insn_sched
+    let _no_insn_sched = clear insn_sched
+    let _linscan = set use_linscan
+    let _no_float_const_prop = clear float_const_prop
+    let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
+    let _no_unbox_specialised_args = clear unbox_specialised_args
+    (* CR-someday mshinwell: should stop e.g. -O2 -classic-inlining
+       lgesbert: could be done in main() below, like for -pack and -c, but that
+       would prevent overriding using OCAMLPARAM.
+       mshinwell: We're going to defer this for the moment and add a note in
+       the manual that the behaviour is unspecified in cases such as this.
+       We should refactor the code so that the user's requirements are
+       collected, then checked all at once for illegal combinations, and then
+       transformed into the settings of the individual parameters.
+    *)
+    let _o2 () =
+      default_simplify_rounds := 2;
+      use_inlining_arguments_set o2_arguments;
+      use_inlining_arguments_set ~round:0 o1_arguments
+    let _o3 () =
+      default_simplify_rounds := 3;
+      use_inlining_arguments_set o3_arguments;
+      use_inlining_arguments_set ~round:1 o2_arguments;
+      use_inlining_arguments_set ~round:0 o1_arguments
+    let _remove_unused_arguments = set remove_unused_arguments
+    let _rounds n = simplify_rounds := (Some n)
+    let _unbox_closures = set unbox_closures
+    let _unbox_closures_factor f = unbox_closures_factor := f
+    let _verbose = set verbose
+  end
+
+  module Compiler = struct
+    let _a = set make_archive
+    let _annot = set annotations
+    let _args = Arg.read_arg
+    let _args0 = Arg.read_arg0
+    let _binannot = set binary_annotations
+    let _c = set compile_only
+    let _cc s = c_compiler := (Some s)
+    let _cclib s = defer (ProcessObjects (Misc.rev_split_words s))
+    let _ccopt s = first_ccopts := (s :: (!first_ccopts))
+    let _config = Misc.show_config_and_exit
+    let _config_var = Misc.show_config_variable_and_exit
+    let _dprofile () = profile_columns := Profile.all_columns
+    let _dtimings () = profile_columns := [`Time]
+    let _dump_into_file = set dump_into_file
+    let _for_pack s = for_package := (Some s)
+    let _g = set debug
+    let _i = set print_types
+    let _impl = impl
+    let _intf = intf
+    let _intf_suffix s = Config.interface_suffix := s
+    let _keep_docs = set keep_docs
+    let _keep_locs = set keep_locs
+    let _linkall = set link_everything
+    let _match_context_rows n = match_context_rows := n
+    let _no_keep_docs = clear keep_docs
+    let _no_keep_locs = clear keep_locs
+    let _noautolink = set no_auto_link
+    let _o s = output_name := (Some s)
+    let _opaque = set opaque
+    let _pack = set make_package
+    let _plugin _p = plugin := true
+    let _pp s = preprocessor := (Some s)
+    let _runtime_variant s = runtime_variant := s
+    let _stop_after pass =
+      let module P = Compiler_pass in
+        match P.of_string pass with
+        | None -> () (* this should not occur as we use Arg.Symbol *)
+        | Some pass ->
+          match !stop_after with
+          | None -> stop_after := (Some pass)
+          | Some p ->
+            if not (p = pass) then
+              fatal "Please specify at most one -stop-after <pass>."
+    let _thread = set use_threads
+    let _verbose = set verbose
+    let _version () = print_version_string ()
+    let _vnum () = print_version_string ()
+    let _where () = print_standard_library ()
+    let _with_runtime = set with_runtime
+    let _without_runtime = clear with_runtime
+  end
+
+  module Toplevel = struct
+
+    let print_version () =
+      Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
+      exit 0;
+    ;;
+
+    let print_version_num () =
+      Printf.printf "%s\n" Sys.ocaml_version;
+      exit 0;
+    ;;
+
+    let _args (_:string) = (* placeholder: wrap_expand Arg.read_arg *) [||]
+    let _args0 (_:string) = (* placeholder: wrap_expand Arg.read_arg0 *) [||]
+    let _init s = init_file := (Some s)
+    let _no_version = set noversion
+    let _noinit = set noinit
+    let _noprompt = set noprompt
+    let _nopromptcont = set nopromptcont
+    let _stdin () = (* placeholder: file_argument ""*) ()
+    let _version () = print_version ()
+    let _vnum () = print_version_num ()
+  end
+
+  module Topmain = struct
+    include Toplevel
+    include Core
+    let _dinstr = set dump_instr
+  end
+
+  module Opttopmain = struct
+    include Toplevel
+    include Native
+    include Core
+  end
+
+  module Optmain = struct
+    include Native
+    include Core
+    include Compiler
+    let _afl_inst_ratio n = afl_inst_ratio := n
+    let _afl_instrument = set afl_instrument
+    let _function_sections () =
+      assert Config.function_sections;
+      first_ccopts := ("-ffunction-sections" :: (!first_ccopts));
+      function_sections := true
+    let _nodynlink = clear dlcode
+    let _output_complete_obj () =
+      set output_c_object (); set output_complete_object ()
+    let _output_obj = set output_c_object
+    let _p () =
+      fatal
+        "Profiling with \"gprof\" (option `-p') is only supported up to \
+         OCaml 4.08.0"
+    let _shared () = shared := true; dlcode := true
+    let _v () = print_version_and_library "native-code compiler"
+  end
+
+  module Odoc_args = struct
+    include Common
+    let _I(_:string) =
+      (* placeholder:
+         Odoc_global.include_dirs := (s :: (!Odoc_global.include_dirs))
+      *) ()
+    let _impl (_:string) =
+      (* placeholder:
+         Odoc_global.files := ((!Odoc_global.files) @ [Odoc_global.Impl_file s])
+      *) ()
+    let _intf (_:string) = (* placeholder:
+      Odoc_global.files := ((!Odoc_global.files) @ [Odoc_global.Intf_file s])
+                  *) ()
+    let _intf_suffix s = Config.interface_suffix := s
+    let _pp s = Clflags.preprocessor := (Some s)
+    let _ppx s = Clflags.all_ppx := (s :: (!Clflags.all_ppx))
+    let _thread = set Clflags.use_threads
+    let _v () = Compenv.print_version_and_library "documentation generator"
+    let _verbose = set Clflags.verbose
+    let _version = Compenv.print_version_string
+    let _vmthread = ignore
+    let _vnum = Compenv.print_version_string
+  end
+
+  module Main = struct
+
+    let vmthread_removed_message = "\
+The -vmthread argument of ocamlc is no longer supported\n\
+since OCaml 4.09.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
+
+    include Core
+    include Compiler
+    let _compat_32 = set bytecode_compatible_32
+    let _custom = set custom_runtime
+    let _dcamlprimc = set keep_camlprimc_file
+    let _dinstr = set dump_instr
+    let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
+    let _dllpath s = dllpaths := ((!dllpaths) @ [s])
+    let _make_runtime () =
+      custom_runtime := true; make_runtime := true; link_everything := true
+    let _no_check_prims = set no_check_prims
+    let _output_complete_obj () =
+      output_c_object := true;
+      output_complete_object := true;
+      custom_runtime := true
+    let _output_complete_exe () =
+      _output_complete_obj (); output_complete_executable := true
+    let _output_obj () = output_c_object := true; custom_runtime := true
+    let _use_prims s = use_prims := s
+    let _use_runtime s = use_runtime := s
+    let _v () = print_version_and_library "compiler"
+    let _vmthread () = fatal vmthread_removed_message
+  end
+
+end

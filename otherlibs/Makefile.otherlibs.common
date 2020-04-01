@@ -1,0 +1,145 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Common Makefile for otherlibs
+
+ROOTDIR=../..
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
+
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+
+CAMLC := $(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
+CAMLOPT := $(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
+
+OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
+
+# Compilation options
+COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
+          -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS=-O3
+else
+OPTCOMPFLAGS=
+endif
+ifeq "$(FUNCTION_SECTIONS)" "true"
+OPTCOMPFLAGS += -function-sections
+endif
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+
+# Variables that must be defined by individual libraries:
+# LIBNAME
+# CAMLOBJS
+
+# Variables that can be defined by individual libraries,
+# but have sensible default values:
+COBJS ?=
+EXTRACFLAGS ?=
+EXTRACAMLFLAGS ?=
+LINKOPTS ?=
+LDOPTS ?=
+HEADERS ?=
+CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
+CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
+CLIBNAME ?= $(LIBNAME)
+
+ifeq "$(COBJS)" ""
+STUBSLIB=
+else
+STUBSLIB=lib$(CLIBNAME).$(A)
+endif
+
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+all: $(STUBSLIB) $(LIBNAME).cma $(CMIFILES)
+
+allopt: $(STUBSLIB) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
+opt.opt: allopt
+
+$(LIBNAME).cma: $(CAMLOBJS)
+ifeq "$(COBJS)" ""
+	$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
+else
+	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall \
+	         $(CAMLOBJS) $(LINKOPTS)
+endif
+
+$(LIBNAME).cmxa: $(CAMLOBJS_NAT)
+ifeq "$(COBJS)" ""
+	$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
+else
+	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt '$(CAMLOPT)' -linkall \
+	         $(CAMLOBJS_NAT) $(LINKOPTS)
+endif
+
+$(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB)
+	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+
+lib$(CLIBNAME).$(A): $(COBJS)
+	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+
+install::
+	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
+	  $(INSTALL_PROG) \
+	    dll$(CLIBNAME)$(EXT_DLL) \
+	    "$(INSTALL_STUBLIBDIR)/"; \
+	fi
+ifneq "$(STUBSLIB)" ""
+	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
+endif
+
+	$(INSTALL_DATA) \
+	  $(LIBNAME).cma $(CMIFILES) \
+	  "$(INSTALL_LIBDIR)/"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(CMIFILES:.cmi=.mli) \
+          $(CMIFILES:.cmi=.cmti) \
+	  "$(INSTALL_LIBDIR)/"
+endif
+	if test -n "$(HEADERS)"; then \
+	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
+	fi
+
+installopt:
+	$(INSTALL_DATA) \
+	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
+	   "$(INSTALL_LIBDIR)/"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
+	if test -f $(LIBNAME).cmxs; then \
+	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; \
+	fi
+
+partialclean:
+	rm -f *.cm*
+
+clean:: partialclean
+	rm -f *.dll *.so *.a *.lib *.o *.obj
+
+.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(O)
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+
+.c.$(O):
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

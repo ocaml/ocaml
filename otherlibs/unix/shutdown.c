@@ -35,6 +35,6 @@ CAMLprim value unix_shutdown(value sock, value cmd)
 #else
 
 CAMLprim value unix_shutdown(value sock, value cmd)
-{ invalid_argument("shutdown not implemented"); }
+{ caml_invalid_argument("shutdown not implemented"); }
 
 #endif

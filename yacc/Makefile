@@ -15,25 +15,37 @@
 
 # Makefile for the parser generator.
 
-include ../config/Makefile
+ROOTDIR = ..
 
-CC=$(BYTECC)
-CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
-OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
-  mkpar.$(O) output.$(O) reader.$(O) \
-  skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+WSTR_OBJ = wstr
+else
+WSTR_OBJ =
+endif
+
+ocamlyacc_SOURCES := $(addsuffix .c,\
+  $(WSTR_OBJ) closure error lalr lr0 main mkpar output reader skeleton \
+  symtab verbose warshall)
+
+ocamlyacc_OBJECTS := $(ocamlyacc_SOURCES:.c=.$(O))
+
+generated_files := ocamlyacc$(EXE) $(ocamlyacc_OBJECTS)  version.h
 
 all: ocamlyacc$(EXE)
 
-ocamlyacc$(EXE): $(OBJS)
-	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
+ocamlyacc$(EXE): $(ocamlyacc_OBJECTS)
+	$(MKEXE) -o $@ $^ $(EXTRALIBS)
 
-version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h
+version.h : $(ROOTDIR)/VERSION
+	echo "#define OCAML_VERSION \"`sed -e 1q $< | tr -d '\r'`\"" > $@
 
 clean:
-	rm -f *.$(O) ocamlyacc$(EXE) *~ version.h
+	rm -f $(generated_files)
 
 depend:
 

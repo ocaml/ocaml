@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 module X=struct
   module type SIG=sig type t=int val x:t end
   module F(Y:SIG) : SIG = struct type t=Y.t let x=Y.x end

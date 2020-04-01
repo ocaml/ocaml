@@ -34,7 +34,7 @@ val index : 'a -> 'a list -> int
 (* ### n l -> l' *)
 val list_truncate : int -> 'a list -> 'a list
 
-(* Separe the `n' first elements of `l' and the others. *)
+(* Separate the `n' first elements of `l' and the others. *)
 (* ### n list -> (first, last) *)
 val list_truncate2 : int -> 'a list -> 'a list * 'a list
 
@@ -49,9 +49,6 @@ val string_trim : string -> string
 
 (* isprefix s1 s2 returns true if s1 is a prefix of s2. *)
 val isprefix : string -> string -> bool
-
-(* Split a string at the given delimiter char *)
-val split_string : char -> string -> string list
 
 (*** I/O channels ***)
 

@@ -1,7 +1,15 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
-let s = "abcdefgh" in
-String.unsafe_fill s 0 6 'x';
-if s.[5] <> 'x' then raise Not_found
+let s = Bytes.of_string "abcdefgh" in
+Bytes.unsafe_fill s 0 6 'x';
+if Bytes.get s 5 <> 'x' then raise Not_found
 ;;
 
 (**

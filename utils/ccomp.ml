@@ -21,7 +21,9 @@ let command cmdline =
     prerr_string cmdline;
     prerr_newline()
   end;
-  Sys.command cmdline
+  let res = Sys.command cmdline in
+  if res = 127 then raise (Sys_error cmdline);
+  res
 
 let run_command cmdline = ignore(command cmdline)
 
@@ -56,15 +58,15 @@ let display_msvc_output file name =
   try
     let first = input_line c in
     if first <> Filename.basename name then
-      print_string first;
+      print_endline first;
     while true do
-      print_string (input_line c)
+      print_endline (input_line c)
     done
   with _ ->
     close_in c;
     Sys.remove file
 
-let compile_file name =
+let compile_file ?output ?(opt="") ?stable_name name =
   let (pipe, file) =
     if Config.ccomp_type = "msvc" && not !Clflags.verbose then
       try
@@ -75,19 +77,33 @@ let compile_file name =
         ("", "")
     else
       ("", "") in
+  let debug_prefix_map =
+    match stable_name with
+    | Some stable when Config.c_has_debug_prefix_map ->
+      Printf.sprintf " -fdebug-prefix-map=%s=%s" name stable
+    | Some _ | None -> "" in
   let exit =
     command
       (Printf.sprintf
-         "%s -c %s %s %s %s %s%s"
+         "%s%s %s %s -c %s %s %s %s %s%s"
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
-              if !Clflags.native_code
-              then Config.native_c_compiler
-              else Config.bytecomp_c_compiler)
+              let (cflags, cppflags) =
+                  if !Clflags.native_code
+                  then (Config.ocamlopt_cflags, Config.ocamlopt_cppflags)
+                  else (Config.ocamlc_cflags, Config.ocamlc_cppflags) in
+              (String.concat " " [Config.c_compiler; cflags; cppflags]))
+         debug_prefix_map
+         (match output with
+          | None -> ""
+          | Some o -> Printf.sprintf "%s%s" Config.c_output_obj o)
+         opt
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
-         (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
+         (quote_prefixed "-I"
+            (List.map (Misc.expand_directory Config.standard_library)
+               (List.rev !Clflags.include_dirs)))
          (Clflags.std_include_flag "-I")
          (Filename.quote name)
          (* cl tediously includes the name of the C file as the first thing it
@@ -101,6 +117,19 @@ let compile_file name =
   then display_msvc_output file name;
   exit
 
+let macos_create_empty_archive ~quoted_archive =
+  let result =
+    command (Printf.sprintf "%s rc %s /dev/null" Config.ar quoted_archive)
+  in
+  if result <> 0 then result
+  else
+    let result =
+      command (Printf.sprintf "%s %s 2> /dev/null" Config.ranlib quoted_archive)
+    in
+    if result <> 0 then result
+    else
+      command (Printf.sprintf "%s d %s /dev/null" Config.ar quoted_archive)
+
 let create_archive archive file_list =
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
@@ -110,12 +139,20 @@ let create_archive archive file_list =
                              quoted_archive (quote_files file_list))
   | _ ->
       assert(String.length Config.ar > 0);
-      let r1 =
-        command(Printf.sprintf "%s rc %s %s"
-                Config.ar quoted_archive (quote_files file_list)) in
-      if r1 <> 0 || String.length Config.ranlib = 0
-      then r1
-      else command(Config.ranlib ^ " " ^ quoted_archive)
+      let is_macosx =
+        match Config.system with
+        | "macosx" -> true
+        | _ -> false
+      in
+      if is_macosx && file_list = [] then  (* PR#6550 *)
+        macos_create_empty_archive ~quoted_archive
+      else
+        let r1 =
+          command(Printf.sprintf "%s rc %s %s"
+                  Config.ar quoted_archive (quote_files file_list)) in
+        if r1 <> 0 || String.length Config.ranlib = 0
+        then r1
+        else command(Config.ranlib ^ " " ^ quoted_archive)
 
 let expand_libname name =
   if String.length name < 2 || String.sub name 0 2 <> "-l"
@@ -124,7 +161,7 @@ let expand_libname name =
     let libname =
       "lib" ^ String.sub name 2 (String.length name - 2) ^ Config.ext_lib in
     try
-      Misc.find_in_path !Config.load_path libname
+      Load_path.find libname
     with Not_found ->
       libname
   end
@@ -144,34 +181,35 @@ let remove_Wl cclibs =
     else cclib)
 
 let call_linker mode output_name files extra =
-  let cmd =
-    if mode = Partial then
-      let l_prefix =
-        match Config.ccomp_type with
-        | "msvc" -> "/libpath:"
-        | _ -> "-L"
-      in
-      Printf.sprintf "%s%s %s %s %s"
-        Config.native_pack_linker
-        (Filename.quote output_name)
-        (quote_prefixed l_prefix !Config.load_path)
-        (quote_files (remove_Wl files))
-        extra
-    else
-      Printf.sprintf "%s -o %s %s %s %s %s %s %s"
-        (match !Clflags.c_compiler, mode with
-        | Some cc, _ -> cc
-        | None, Exe -> Config.mkexe
-        | None, Dll -> Config.mkdll
-        | None, MainDll -> Config.mkmaindll
-        | None, Partial -> assert false
-        )
-        (Filename.quote output_name)
-        (if !Clflags.gprofile then Config.cc_profile else "")
-        ""  (*(Clflags.std_include_flag "-I")*)
-        (quote_prefixed "-L" !Config.load_path)
-        (String.concat " " (List.rev !Clflags.all_ccopts))
-        (quote_files files)
-        extra
-  in
-  command cmd = 0
+  Profile.record_call "c-linker" (fun () ->
+    let cmd =
+      if mode = Partial then
+        let l_prefix =
+          match Config.ccomp_type with
+          | "msvc" -> "/libpath:"
+          | _ -> "-L"
+        in
+        Printf.sprintf "%s%s %s %s %s"
+          Config.native_pack_linker
+          (Filename.quote output_name)
+          (quote_prefixed l_prefix (Load_path.get_paths ()))
+          (quote_files (remove_Wl files))
+          extra
+      else
+        Printf.sprintf "%s -o %s %s %s %s %s %s"
+          (match !Clflags.c_compiler, mode with
+          | Some cc, _ -> cc
+          | None, Exe -> Config.mkexe
+          | None, Dll -> Config.mkdll
+          | None, MainDll -> Config.mkmaindll
+          | None, Partial -> assert false
+          )
+          (Filename.quote output_name)
+          ""  (*(Clflags.std_include_flag "-I")*)
+          (quote_prefixed "-L" (Load_path.get_paths ()))
+          (String.concat " " (List.rev !Clflags.all_ccopts))
+          (quote_files files)
+          extra
+    in
+    command cmd = 0
+  )

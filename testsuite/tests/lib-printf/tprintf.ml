@@ -1,14 +1,6 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                                OCaml                                  *)
-(*                                                                       *)
-(*         Damien Doligez, projet Gallium, INRIA Rocquencourt            *)
-(*                                                                       *)
-(*   Copyright 2011 Institut National de Recherche en Informatique et    *)
-(*   en Automatique.  All rights reserved.  This file is distributed     *)
-(*   under the terms of the Q Public License version 1.0.                *)
-(*                                                                       *)
-(*************************************************************************)
+(* TEST
+   include testing
+*)
 
 (*
 
@@ -27,8 +19,13 @@ try
   test (sprintf "%04d/%05i" 42 43 = "0042/00043");
   test (sprintf "%+d/%+i" 42 43 = "+42/+43");
   test (sprintf "% d/% i" 42 43 = " 42/ 43");
-  (*test (sprintf "%#d/%#i" 42 43 = "42/43");*)
-    (* >> '#' is incompatible with 'd' *)
+  test (sprintf "%#d/%#i" 42 43 = "42/43");
+  test (sprintf "%#d/%#i" 123 123 = "123/123");
+  test (sprintf "%#d/%#i" 1234 1234 = "1_234/1_234");
+  test (sprintf "%#d/%#i" 12345 12345 = "12_345/12_345");
+  test (sprintf "%#d/%#i" 123456 123456 = "123_456/123_456");
+  test (sprintf "%#4d/%#5i" 1234 1234 = "1_234/1_234");
+  test (sprintf "%#-6d/%#-7i" 1234 1234 = "1_234 /1_234  ");
   test (sprintf "%4d/%5i" 42 43 = "  42/   43");
   test (sprintf "%*d" (-4) 42 = "42  ");
   test (sprintf "%*d/%*i" 4 42 5 43 = "  42/   43");
@@ -41,8 +38,13 @@ try
   test (sprintf "%04d/%05i" (-42) (-43) = "-042/-0043");
   test (sprintf "%+d/%+i" (-42) (-43) = "-42/-43");
   test (sprintf "% d/% i" (-42) (-43) = "-42/-43");
-  (*test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");*)
-    (* >> '#' is incompatible with 'd' *)
+  test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");
+  test (sprintf "%#d/%#i" (-123) (-123) = "-123/-123");
+  test (sprintf "%#d/%#i" (-1234) (-1234) = "-1_234/-1_234");
+  test (sprintf "%#d/%#i" (-12345) (-12345) = "-12_345/-12_345");
+  test (sprintf "%#d/%#i" (-123456) (-123456) = "-123_456/-123_456");
+  test (sprintf "%#4d/%#5i" (-1234) (-1234) = "-1_234/-1_234");
+  test (sprintf "%#-6d/%#-7i" (-1234) (-1234) = "-1_234/-1_234 ");
   test (sprintf "%4d/%5i" (-42) (-43) = " -42/  -43");
   test (sprintf "%*d" (-4) (-42) = "-42 ");
   test (sprintf "%*d/%*i" 4 (-42) 5 (-43) = " -42/  -43");
@@ -57,8 +59,13 @@ try
     (* >> '+' is incompatible with 'u' *)
   (*test (sprintf "% u" 42 = "42");*)
     (* >> ' ' is incompatible with 'u' *)
-  (*test (sprintf "%#u" 42 = "42");*)
-    (* >> '#' is incompatible with 'u' *)
+  test (sprintf "%#u" 42 = "42");
+  test (sprintf "%#u" 123 = "123");
+  test (sprintf "%#u" 1234 = "1_234");
+  test (sprintf "%#u" 12345 = "12_345");
+  test (sprintf "%#u" 123456 = "123_456");
+  test (sprintf "%#4u" 1234 = "1_234");
+  test (sprintf "%#6u" 1234 = " 1_234");
   test (sprintf "%4u" 42 = "  42");
   test (sprintf "%*u" 4 42 = "  42");
   test (sprintf "%*u" (-4) 42 = "42  ");
@@ -67,8 +74,10 @@ try
   begin match Sys.word_size with
   | 32 ->
      test (sprintf "%u" (-1) = "2147483647");
+     test (sprintf "%#u" (-1) = "2_147_483_647");
   | 64 ->
      test (sprintf "%u" (-1) = "9223372036854775807");
+     test (sprintf "%#u" (-1) = "9_223_372_036_854_775_807");
   | _ -> test false
   end;
 
@@ -276,15 +285,31 @@ try
   test (sprintf "%4F" 3. = "  3.");
   test (sprintf "%-4F" 3. = "3.  ");
   test (sprintf "%04F" 3. = "003.");
-(* plus-padding unsupported
   test (sprintf "%+4F" 3. = " +3.");
-*)
-(* no precision
-  test (sprintf "%.3F" 42.42 = "42.420");
-  test (sprintf "%12.3F" 42.42e42 = "   4.242e+43");
-  test (sprintf "%.3F" 42.00 = "42.000");
-  test (sprintf "%.3F" 0.0042 = "0.004");
-*)
+  test (sprintf "%.3F" 42.42 = "42.4");
+  test (sprintf "%12.3F" 42.42e42 =* "    4.24e+43");
+  test (sprintf "%.3F" 42.00 = "42.");
+  test (sprintf "%.3F" 0.0042 = "0.0042");
+  test (sprintf "%F" nan = "nan");
+  test (sprintf "%F" (-. nan) = "nan");
+  test (sprintf "%F" infinity = "infinity");
+  test (sprintf "%F" neg_infinity = "neg_infinity");
+
+  printf "\n#F\n%!";
+  test (sprintf "%+#F" (+0.) = "+0x0p+0");
+  test (sprintf "%+#F" (-0.) = "-0x0p+0");
+  test (sprintf "%+#F" (+1.) = "+0x1p+0");
+  test (sprintf "%+#F" (-1.) = "-0x1p+0");
+  test (sprintf "%+#F" (+1024.) = "+0x1p+10");
+  test (sprintf "% #F" (+1024.) = " 0x1p+10");
+  test (sprintf "%+#F" (-1024.) = "-0x1p+10");
+  test (sprintf "%#F" 0x123.456 = "0x1.23456p+8");
+  test (sprintf "%#F" 0x123456789ABCDE. = "0x1.23456789abcdep+52");
+  test (sprintf "%#F" epsilon_float = "0x1p-52");
+  test (sprintf "%#F" nan = "nan");
+  test (sprintf "%#F" (-. nan) = "nan");
+  test (sprintf "%#F" infinity = "infinity");
+  test (sprintf "%#F" neg_infinity = "neg_infinity");
 
   printf "\nh\n%!";
   test (sprintf "%+h" (+0.) = "+0x0p+0");
@@ -364,27 +389,33 @@ try
   (*test (sprintf "%-0+ #14.3E" 42.42 =* "+4.242E+01    ");*)
     (* >> '-' is incompatible with '0', '#' is incompatible with 'E' *)
 
-(* %g gives strange results that correspond to neither %f nor %e
   printf "\ng\n%!";
-  test (sprintf "%g" (-42.42) = "-42.42000");
-  test (sprintf "%-15g" (-42.42) = "-42.42000      ");
-  test (sprintf "%015g" (-42.42) = "-00000042.42000");
-  test (sprintf "%+g" 42.42 = "+42.42000");
-  test (sprintf "% g" 42.42 = " 42.42000");
-  test (sprintf "%#g" 42.42 = "42.42000");
-  test (sprintf "%15g" 42.42 = "       42.42000");
-  test (sprintf "%*g" 14 42.42 = "      42.42000");
-  test (sprintf "%-0+ #14g" 42.42 = "+42.42000     ");
-  test (sprintf "%.3g" (-42.42) = "-42.420");
-*)
+  test (sprintf "%g" (-42.42) = "-42.42");
+  test (sprintf "%.3g" (-4242.) =* "-4.24e+03");
+  test (sprintf "%-15g" (-42.42) = "-42.42         ");
+  test (sprintf "%015g" (-42.42) = "-00000000042.42");
+  test (sprintf "%+g" 42.42 = "+42.42");
+  test (sprintf "% g" 42.42 = " 42.42");
+  test (sprintf "%15g" 42.42 = "          42.42");
+  test (sprintf "%*g" 14 42.42 = "         42.42");
+  test (sprintf "%.3g" (-42.42) = "-42.4");
 
-(* Same for %G
   printf "\nG\n%!";
-*)
+  test (sprintf "%G" (-42.42) = "-42.42");
+  test (sprintf "%.3G" (-4242.) =* "-4.24E+03");
+  test (sprintf "%-15G" (-42.42) = "-42.42         ");
+  test (sprintf "%015G" (-42.42) = "-00000000042.42");
+  test (sprintf "%+G" 42.42 = "+42.42");
+  test (sprintf "% G" 42.42 = " 42.42");
+  test (sprintf "%15G" 42.42 = "          42.42");
+  test (sprintf "%*G" 14 42.42 = "         42.42");
+  test (sprintf "%.3G" (-42.42) = "-42.4");
 
   printf "\nB\n%!";
   test (sprintf "%B" true = "true");
+  test (sprintf "%8B" true = "    true");
   test (sprintf "%B" false = "false");
+  test (sprintf "%-8B" false = "false   ");
 
   printf "\nld/li positive\n%!";
   test (sprintf "%ld/%li" 42l 43l = "42/43");

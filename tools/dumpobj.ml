@@ -26,6 +26,7 @@ open Cmo_format
 open Printf
 
 let print_locations = ref true
+let print_reloc_info = ref false
 
 (* Read signed and unsigned integers *)
 
@@ -85,7 +86,7 @@ let print_float f =
 let rec print_struct_const = function
     Const_base(Const_int i) -> printf "%d" i
   | Const_base(Const_float f) -> print_float f
-  | Const_base(Const_string (s, _)) -> printf "%S" s
+  | Const_base(Const_string (s, _, _)) -> printf "%S" s
   | Const_immstring s -> printf "%S" s
   | Const_base(Const_char c) -> printf "%C" c
   | Const_base(Const_int32 i) -> printf "%ldl" i
@@ -121,11 +122,11 @@ let rec print_obj x =
     else if tag = Obj.double_tag then
         printf "%.12g" (Obj.magic x : float)
     else if tag = Obj.double_array_tag then begin
-        let a = (Obj.magic x : float array) in
+        let a = (Obj.magic x : floatarray) in
         printf "[|";
-        for i = 0 to Array.length a - 1 do
+        for i = 0 to Array.Floatarray.length a - 1 do
           if i > 0 then printf ", ";
-          printf "%.12g" a.(i)
+          printf "%.12g" (Array.Floatarray.get a i)
         done;
         printf "|]"
     end else if tag = Obj.custom_tag && same_custom x 0l then
@@ -334,7 +335,8 @@ let op_shapes = [
   opGETVECTITEM, Nothing;
   opSETVECTITEM, Nothing;
   opGETSTRINGCHAR, Nothing;
-  opSETSTRINGCHAR, Nothing;
+  opGETBYTESCHAR, Nothing;
+  opSETBYTESCHAR, Nothing;
   opBRANCH, Disp;
   opBRANCHIF, Disp;
   opBRANCHIFNOT, Disp;
@@ -497,6 +499,8 @@ let dump_obj ic =
   seek_in ic cu_pos;
   let cu = (input_value ic : compilation_unit) in
   reloc := cu.cu_reloc;
+  if !print_reloc_info then
+    List.iter print_reloc cu.cu_reloc;
   if cu.cu_debug > 0 then begin
     seek_in ic cu.cu_debug;
     let evl = (input_value ic : debug_event list) in
@@ -510,13 +514,7 @@ let dump_obj ic =
 
 let read_primitive_table ic len =
   let p = really_input_string ic len in
-  let rec split beg cur =
-    if cur >= len then []
-    else if p.[cur] = '\000' then
-      String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
-    else
-      split beg (cur + 1) in
-  Array.of_list(split 0 0)
+  String.split_on_char '\000' p |> List.filter ((<>) "") |> Array.of_list
 
 (* Print an executable file *)
 
@@ -531,8 +529,9 @@ let dump_exe ic =
     !globals.(i) <- Constant (init_data.(i))
   done;
   ignore(Bytesections.seek_section ic "SYMB");
-  let (_, sym_table) = (input_value ic : int * (Ident.t, int) Tbl.t) in
-  Tbl.iter (fun id pos -> !globals.(pos) <- Global id) sym_table;
+  let sym_table = (input_value ic : Symtable.global_map) in
+  Symtable.iter_global_map
+    (fun id pos -> !globals.(pos) <- Global id) sym_table;
   begin try
     ignore (Bytesections.seek_section ic "DBUG");
     let num_eventlists = input_binary_int ic in
@@ -549,6 +548,13 @@ let dump_exe ic =
 
 let arg_list = [
   "-noloc", Arg.Clear print_locations, " : don't print source information";
+  "-reloc", Arg.Set print_reloc_info, " : print relocation information";
+  "-args", Arg.Expand Arg.read_arg,
+     "<file> Read additional newline separated command line arguments \n\
+     \      from <file>";
+  "-args0", Arg.Expand Arg.read_arg0,
+     "<file> Read additional NUL separated command line arguments from \n\
+     \      <file>";
 ]
 let arg_usage =
   Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files"
@@ -570,7 +576,7 @@ let arg_fun filename =
   printf "## end of ocaml dump of %S\n%!" filename
 
 let main() =
-  Arg.parse arg_list arg_fun arg_usage;
+  Arg.parse_expand arg_list arg_fun arg_usage;
     exit 0
 
 let _ = main ()

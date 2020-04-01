@@ -33,9 +33,9 @@ let word_addressed = false
     0                   temporary, null register for some operations (volatile)
     1                   temporary (volatile)
     2 - 5               function arguments and results (volatile)
-    6                   function arguments and results (persevered by C)
+    6                   function arguments and results (preserved by C)
     7 - 9               general purpose, preserved by C
-    10                  allocation limit (preserved by C)
+    10                  domain state pointer (preserved by C)
     11                  allocation pointer (preserved by C)
     12                  general purpose  (preserved by C)
     13                  trap pointer (preserved by C)
@@ -93,6 +93,8 @@ let phys_reg n =
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
+
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
 
 (* Calling conventions *)
 
@@ -159,6 +161,25 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* See "S/390 ELF Application Binary Interface Supplement"
+   (http://refspecs.linuxfoundation.org/ELF/zSeries/lzsabi0_s390/x1542.html)
+*)
+
+let int_dwarf_reg_numbers = [| 2; 3; 4; 5; 6; 7; 8; 9; 12; |]
+
+let float_dwarf_reg_numbers =
+  [| 16; 17; 18; 19; 20; 21; 22; 23;
+     24; 28; 25; 29; 26; 30; 27; 31;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 15
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -171,41 +192,52 @@ let destroyed_at_c_call =
      100; 101; 102; 103; 104; 105; 106; 107])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _ }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
 
+(* %r14 is destroyed at [Lreloadretaddr], but %r14 is not used for register
+   allocation, and thus does not need to (and indeed cannot) occur here. *)
+let destroyed_at_reloadretaddr = [| |]
+
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 4
+    Iextcall _ -> 4
   | _ -> 9
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 4; 7 |]
+    Iextcall _ -> [| 4; 7 |]
   | _ -> [| 9; 15 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Imultaddf | Imultsubf) -> true
   | _ -> true
 
 (* Layout of the stack *)
 
-let num_stack_slots = [| 0; 0 |]
-let contains_calls = ref false
+let frame_required fd =
+  fd.fun_contains_calls
+    || fd.fun_num_stack_slots.(0) > 0
+    || fd.fun_num_stack_slots.(1) > 0
+
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ " " ^
+                 (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                 " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let init () = ()

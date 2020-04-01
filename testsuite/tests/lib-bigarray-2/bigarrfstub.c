@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <caml/mlvalues.h>
-#include <bigarray.h>
+#include <caml/bigarray.h>
 
 extern void filltab_(void);
 extern void printtab_(float * data, int * dimx, int * dimy);

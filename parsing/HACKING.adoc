@@ -1,0 +1,76 @@
+link:parsetree.mli[Parsetree] and link:asttypes.mli[Asttypes]::
+Parsetree is an Abstract Syntax Tree (AST) representation of OCaml
+source code. It is well annotated with examples and is a recommended
+read before any further exploration of the compiler.
+
+link:location.mli[Location]:: This module contains utilities
+related to locations and error handling. In particular, it contains
+handlers that are used for all the error reporting in the compiler.
+
+link:parser.mly[parser.mly]:: This file contains the grammar used to
+generated the parser -- using the
+link:http://gallium.inria.fr/~fpottier/menhir/[menhir] parser
+generator, which is an external tool that you need to install if you
+wish to modify the parser.
+
+=== Working on the parser grammar
+
+To avoid depending on an external tool, the compiler build system does
+not rebuild the parser from the source grammar link:parser.mly[] each
+time. It works from a versioned copy of the generated parser stored
+in the `boot/menhir` subdirectory.
+
+If you change link:parser.mly[], you need to run the `promote-menhir`
+target of the root Makefile to rebuild the compiler parser. See
+link:../Makefile.menhir[] for the details of the various
+Menhir-related targets and their use.
+
+==== Testing the grammar
+
+The root Makefile contains a `build-all-asts` target that will build,
+for each source `.ml` or `.mli` file in the repository, a `.ml.ast` or
+`.mli.ast` file describing the parsed abstract syntax tree (AST) in
+`-dparsetree` format.
+This rule is rather slow to run, and can safely be run in parallel, so
+we recommend using `-j` (without a number) to maximize parallelism:
+
+----
+make -j build-all-asts
+----
+
+Finally, the 'list-all-asts' target lists all such '.ast' files.
+
+This is intended to be used to test parser changes, in particular
+those that should not modify the parsed AST at all:
+
+1. Before performing any changes, build all AST files and add them to
+   the git index (`make list-all-asts | xargs git add`).
+
+2. Perform any parser change of interest.
+
+3. To test your changes, build AST files again; `git diff` will show
+   any change to an AST file.
+
+4. Before committing any change, remember to remove the `.ast` files
+   from your index (using `git reset HEAD`), and maybe remove them
+   completely (unless you plan to check further changes).
+
+----
+# save pre-change ASTs
+make -j build-all-asts
+make list-all-asts | xargs git add
+
+# do your parser changes
+# ...
+make promote-menhir
+
+# compare new ASTs
+make -j build-all-asts
+git diff # shows any .ml.ast difference
+
+# remove AST files from the index
+make list-all-asts | xargs git reset HEAD
+
+# remove the files (if no further parser change planned)
+make list-all-asts | xargs rm
+----

@@ -18,8 +18,6 @@
 
 let print_DEBUG s = print_string s ; print_newline ()
 
-open Config
-open Misc
 open Format
 open Typedtree
 
@@ -28,22 +26,27 @@ open Typedtree
    The current directory is always searched first,
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
-let init_path () =
-  load_path :=
-    "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
-  Env.reset_cache ()
+let init_path () = Compmisc.init_path ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
-  let initial =
-    if !Clflags.unsafe_string then Env.initial_unsafe_string
-    else Env.initial_safe_string
+  let current = Env.get_unit_name () in
+  let initial = !Odoc_global.initially_opened_module in
+  let initially_opened_module =
+    if initial = current then
+      None
+    else
+      Some initial
   in
-  try
-    if !Clflags.nopervasives then initial else
-    Env.open_pers_signature "Pervasives" initial
-  with Not_found ->
-    fatal_error "cannot open pervasives.cmi"
+  let open_implicit_modules =
+    let ln = !Odoc_global.library_namespace in
+    let ln = if current = ln || ln = initial || ln = "" then [] else [ln] in
+    ln @ List.rev !Clflags.open_modules in
+  Typemod.initial_env
+    ~loc:(Location.in_file "ocamldoc command line")
+    ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
+    ~open_implicit_modules
+    ~initially_opened_module
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
@@ -55,7 +58,7 @@ let preprocess sourcefile =
     exit 2
 
 (** Analysis of an implementation file. Returns (Some typedtree) if
-   no error occured, else None and an error message is printed.*)
+   no error occurred, else None and an error message is printed.*)
 
 let tool_name = "ocamldoc"
 
@@ -75,8 +78,8 @@ let process_implementation_file sourcefile =
   let env = initial_env () in
   try
     let parsetree =
-      Pparse.file ~tool_name Format.err_formatter inputfile
-        (no_docstring Parse.implementation) ast_impl_magic_number
+      Pparse.file ~tool_name inputfile
+        (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree =
       Typemod.type_implementation
@@ -84,21 +87,22 @@ let process_implementation_file sourcefile =
     in
     (Some (parsetree, typedtree), inputfile)
   with
-    e ->
-      match e with
-        Syntaxerr.Error err ->
+  | Syntaxerr.Error _ as exn ->
+      begin match Location.error_of_exn exn with
+      | Some (`Ok err) ->
           fprintf Format.err_formatter "@[%a@]@."
-            Syntaxerr.report_error err;
-          None, inputfile
-      | Failure s ->
-          prerr_endline s;
-          incr Odoc_global.errors ;
-          None, inputfile
-      | e ->
-          raise e
+            Location.print_report err
+      | _ ->
+          assert false
+      end;
+      None, inputfile
+  | Failure s ->
+      prerr_endline s;
+      incr Odoc_global.errors ;
+      None, inputfile
 
 (** Analysis of an interface file. Returns (Some signature) if
-   no error occured, else None and an error message is printed.*)
+   no error occurred, else None and an error message is printed.*)
 let process_interface_file sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
@@ -106,8 +110,8 @@ let process_interface_file sourcefile =
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast =
-    Pparse.file ~tool_name Format.err_formatter inputfile
-      (no_docstring Parse.interface) ast_intf_magic_number
+    Pparse.file ~tool_name inputfile
+      (no_docstring Parse.interface) Pparse.Signature
   in
   let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();
@@ -122,13 +126,11 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 (** Handle an error. *)
 
 let process_error exn =
-  match Location.error_of_exn exn with
-  | Some err ->
-      fprintf Format.err_formatter "@[%a@]@." Location.report_error err
-  | None ->
-      fprintf Format.err_formatter
-        "Compilation error(%s). Use the OCaml compiler to get more details.@."
-        (Printexc.to_string exn)
+  try Location.report_exception Format.err_formatter exn
+  with exn ->
+    fprintf Format.err_formatter
+      "Compilation error(%s). Use the OCaml compiler to get more details.@."
+      (Printexc.to_string exn)
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file sourcefile =
@@ -153,7 +155,7 @@ let process_file sourcefile =
              None
          | Some (parsetree, typedtree) ->
              let file_module = Ast_analyser.analyse_typed_tree file
-                 !Location.input_name parsetree typedtree
+                 input_file parsetree typedtree
              in
              file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
@@ -181,7 +183,7 @@ let process_file sourcefile =
        try
          let (ast, signat, input_file) = process_interface_file file in
          let file_module = Sig_analyser.analyse_signature file
-             !Location.input_name ast signat.sig_type
+             input_file ast signat.sig_type
          in
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
@@ -219,15 +221,16 @@ let process_file sourcefile =
           with Odoc_text.Text_syntax (l, c, s) ->
             raise (Failure (Odoc_messages.text_parse_error l c s))
         in
+         let m_info =
+          Some Odoc_types.{dummy_info with i_desc= Some txt } in
         let m =
           {
             Odoc_module.m_name = mod_name ;
             Odoc_module.m_type = Types.Mty_signature [] ;
-            Odoc_module.m_info = None ;
+            Odoc_module.m_info;
             Odoc_module.m_is_interface = true ;
             Odoc_module.m_file = file ;
-            Odoc_module.m_kind = Odoc_module.Module_struct
-              [Odoc_module.Element_module_comment txt] ;
+            Odoc_module.m_kind = Odoc_module.Module_struct [] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
                 Odoc_types.loc_inter = Some (Location.in_file file) } ;
@@ -276,7 +279,7 @@ let rec remove_class_elements_between_stop_in_class_kind k =
       Odoc_class.Class_constraint (remove_class_elements_between_stop_in_class_kind k1,
                         remove_class_elements_between_stop_in_class_type_kind ctk)
 
-(** Remove the class elements beetween the stop special comments in a class type kind. *)
+(** Remove the class elements between the stop special comments in a class type kind. *)
 and remove_class_elements_between_stop_in_class_type_kind tk =
   match tk with
     Odoc_class.Class_signature (inher, l) ->

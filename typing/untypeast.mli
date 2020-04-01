@@ -20,8 +20,10 @@ val lident_of_path : Path.t -> Longident.t
 type mapper = {
   attribute: mapper -> Typedtree.attribute -> attribute;
   attributes: mapper -> Typedtree.attribute list -> attribute list;
-  case: mapper -> Typedtree.case -> case;
-  cases: mapper -> Typedtree.case list -> case list;
+  binding_op:
+    mapper ->
+    Typedtree.binding_op -> Typedtree.pattern -> binding_op;
+  case: 'k . mapper -> 'k Typedtree.case -> case;
   class_declaration: mapper -> Typedtree.class_declaration -> class_declaration;
   class_description: mapper -> Typedtree.class_description -> class_description;
   class_expr: mapper -> Typedtree.class_expr -> class_expr;
@@ -47,14 +49,18 @@ type mapper = {
   module_binding: mapper -> Typedtree.module_binding -> module_binding;
   module_declaration:
     mapper -> Typedtree.module_declaration -> module_declaration;
+  module_substitution:
+    mapper -> Typedtree.module_substitution -> module_substitution;
   module_expr: mapper -> Typedtree.module_expr -> module_expr;
   module_type: mapper -> Typedtree.module_type -> module_type;
   module_type_declaration:
     mapper -> Typedtree.module_type_declaration -> module_type_declaration;
   package_type: mapper -> Typedtree.package_type -> package_type;
+  open_declaration: mapper -> Typedtree.open_declaration -> open_declaration;
   open_description: mapper -> Typedtree.open_description -> open_description;
-  pat: mapper -> Typedtree.pattern -> pattern;
+  pat: 'k . mapper -> 'k Typedtree.general_pattern -> pattern;
   row_field: mapper -> Typedtree.row_field -> row_field;
+  object_field: mapper -> Typedtree.object_field -> object_field;
   signature: mapper -> Typedtree.signature -> signature;
   signature_item: mapper -> Typedtree.signature_item -> signature_item;
   structure: mapper -> Typedtree.structure -> structure;
@@ -62,6 +68,7 @@ type mapper = {
   typ: mapper -> Typedtree.core_type -> core_type;
   type_declaration: mapper -> Typedtree.type_declaration -> type_declaration;
   type_extension: mapper -> Typedtree.type_extension -> type_extension;
+  type_exception: mapper -> Typedtree.type_exception -> type_exception;
   type_kind: mapper -> Typedtree.type_kind -> type_kind;
   value_binding: mapper -> Typedtree.value_binding -> value_binding;
   value_description: mapper -> Typedtree.value_description -> value_description;

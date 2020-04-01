@@ -18,53 +18,68 @@
 # This file lists all standard library modules.
 # It is used in particular to know what to expunge in toplevels.
 
+P ?= stdlib__
+
+# Modules should be listed in dependency order.
+
 STDLIB_MODULES=\
-  arg \
-  array \
-  arrayLabels \
-  buffer \
-  bytes \
-  bytesLabels \
-  callback \
-  camlinternalFormat \
   camlinternalFormatBasics \
+  stdlib \
+  $(P)pervasives \
+  $(P)seq \
+  $(P)option \
+  $(P)result \
+  $(P)bool \
+  $(P)char \
+  $(P)uchar \
+  $(P)sys \
+  $(P)list \
+  $(P)bytes \
+  $(P)string \
+  $(P)unit \
+  $(P)marshal \
+  $(P)obj \
+  $(P)array \
+  $(P)float \
+  $(P)int \
+  $(P)int32 \
+  $(P)int64 \
+  $(P)nativeint \
+  $(P)lexing \
+  $(P)parsing \
+  $(P)set \
+  $(P)map \
+  $(P)stack \
+  $(P)queue \
   camlinternalLazy \
-  camlinternalMod \
+  $(P)lazy \
+  $(P)stream \
+  $(P)buffer \
+  camlinternalFormat \
+  $(P)printf \
+  $(P)arg \
+  $(P)printexc \
+  $(P)fun \
+  $(P)gc \
+  $(P)digest \
+  $(P)random \
+  $(P)hashtbl \
+  $(P)weak \
+  $(P)format \
+  $(P)scanf \
+  $(P)callback \
   camlinternalOO \
-  char \
-  complex \
-  digest \
-  filename \
-  format \
-  gc \
-  genlex \
-  hashtbl \
-  int32 \
-  int64 \
-  lazy \
-  lexing \
-  list \
-  listLabels \
-  map \
-  marshal \
-  moreLabels \
-  nativeint \
-  obj \
-  oo \
-  parsing \
-  pervasives \
-  printexc \
-  printf \
-  queue \
-  random \
-  scanf \
-  set \
-  sort \
-  stack \
-  stdLabels \
-  stream \
-  string \
-  stringLabels \
-  sys \
-  uchar \
-  weak
+  $(P)oo \
+  camlinternalMod \
+  $(P)genlex \
+  $(P)ephemeron \
+  $(P)filename \
+  $(P)complex \
+  $(P)arrayLabels \
+  $(P)listLabels \
+  $(P)bytesLabels \
+  $(P)stringLabels \
+  $(P)moreLabels \
+  $(P)stdLabels \
+  $(P)spacetime \
+  $(P)bigarray

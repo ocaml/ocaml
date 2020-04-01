@@ -17,7 +17,7 @@
     All functions in this module are for system use only, not for the
     casual user. *)
 
-(** {6 Classes} *)
+(** {1 Classes} *)
 
 type tag
 type label
@@ -57,7 +57,7 @@ val dummy_class :
     string * int * int ->
     (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)
 
-(** {6 Objects} *)
+(** {1 Objects} *)
 
 val copy : (< .. > as 'a) -> 'a
 val create_object : table -> obj
@@ -71,12 +71,12 @@ external sendself : obj -> label -> t = "%sendself"
 external get_public_method : obj -> tag -> closure
     = "caml_get_public_method" [@@noalloc]
 
-(** {6 Table cache} *)
+(** {1 Table cache} *)
 
 type tables
 val lookup_tables : tables -> closure array -> tables
 
-(** {6 Builtins to reduce code size} *)
+(** {1 Builtins to reduce code size} *)
 
 (*
 val get_const : t -> closure
@@ -132,7 +132,7 @@ type impl =
   | SendMeth
   | Closure of closure
 
-(** {6 Parameters} *)
+(** {1 Parameters} *)
 
 (* currently disabled *)
 type params =
@@ -144,7 +144,7 @@ type params =
 
 val params : params
 
-(** {6 Statistics} *)
+(** {1 Statistics} *)
 
 type stats =
   { classes : int;

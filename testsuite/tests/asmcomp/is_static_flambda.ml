@@ -1,3 +1,9 @@
+(* TEST
+   modules = "is_in_static_data.c is_static_flambda_dep.ml"
+   * flambda
+   ** native
+*)
+
 (* Data that should be statically allocated by the compiler (flambda only) *)
 
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"
@@ -61,9 +67,9 @@ let i () =
 
 let () = (i [@inlined never]) ()
 
-module type P = module type of Pervasives
+module type P = module type of Stdlib
 (* Top-level modules should be static *)
-let () = assert(is_in_static_data (module Pervasives:P))
+let () = assert(is_in_static_data (module Stdlib:P))
 
 (* Not constant let rec to test extraction to initialize_symbol *)
 let r = ref 0
@@ -91,3 +97,110 @@ let () =
     try (failwith [@inlined always]) "some other string" with exn -> exn
   in
   assert(is_in_static_data exn)
+
+(* Verify that approximation intersection correctly loads exported
+   approximations.
+
+   Is_static_flambda_dep.pair is a pair with 1 as first element. The
+   intersection of approximations should return a block with
+   approximation: [tag 0: [tag 0: Int 1, Unknown], Unknown] *)
+let f x =
+  let pair =
+    if Sys.opaque_identity x then
+      (1, 2), 3
+    else
+      Is_static_flambda_dep.pair, 4
+  in
+  let n = fst (fst pair) in
+  let res = n, n in
+  assert(is_in_static_data res)
+  [@@inline never]
+
+let () =
+  f true;
+  f false
+
+(* Verify that physical equality/inequality is correctly propagated *)
+
+(* In these tests, tuple can be statically allocated only if it is a
+   known constant since the function is never inlined (hence this
+   code is never at toplevel) *)
+
+let () =
+  let f () =
+    let v = (1, 2) in
+    (* eq is supposed to be considered always true since v is a
+       constant, hence aliased to a symbol.
+       It is not yet optimized away if it is not constant *)
+    let eq = v == v in
+    let n = if eq then 1 else 2 in
+    let tuple = (n,n) in
+    assert(is_in_static_data tuple)
+  in
+  (f [@inlined never]) ()
+
+let () =
+  let f () =
+    let v = (1, 2) in
+    (* same with inequality *)
+    let eq = v != v in
+    let n = if eq then 1 else 2 in
+    let tuple = (n,n) in
+    assert(is_in_static_data tuple)
+  in
+  (f [@inlined never]) ()
+
+let () =
+  let f x =
+    let v1 = Some x in
+    let v2 = None in
+    let eq = v1 == v2 in
+    (* The values are structurally different, so must be physically
+       different *)
+    let n = if eq then 1 else 2 in
+    let tuple = (n,n) in
+    assert(is_in_static_data tuple)
+  in
+  (f [@inlined never]) ()
+
+let () =
+  let f x =
+    let v1 = Some x in
+    let v2 = None in
+    let eq = v1 != v2 in
+    (* same with inequality *)
+    let n = if eq then 1 else 2 in
+    let tuple = (n,n) in
+    assert(is_in_static_data tuple)
+  in
+  (f [@inlined never]) ()
+
+let () =
+  let f x =
+    let v1 = (1, 2) in
+    let v2 = (3, 2) in
+    let eq = v1 == v2 in
+    (* difference is deeper *)
+    let n = if eq then 1 else 2 in
+    let tuple = (n,n) in
+    assert(is_in_static_data tuple)
+  in
+  (f [@inlined never]) ()
+
+module Int = struct
+  type t = int
+  let compare (a:int) b = compare a b
+end
+module IntMap = Map.Make (Int)
+
+let () =
+  let f () =
+    let a = IntMap.empty in
+    let b = (IntMap.add [@inlined]) 1 (Some 1) a in
+    assert(is_in_static_data b);
+    let c = (IntMap.add [@inlined]) 1 (Some 2) b in
+    assert(is_in_static_data c);
+    let d = (IntMap.add [@inlined]) 1 (Some 2) c in
+    assert(is_in_static_data d);
+  in
+  (f [@inlined never]) ()

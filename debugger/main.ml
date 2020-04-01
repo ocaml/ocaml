@@ -152,6 +152,8 @@ let add_include d =
     Misc.expand_directory Config.standard_library d :: !default_load_path
 let set_socket s =
   socket_name := s
+let set_topdirs_path s =
+  topdirs_path := s
 let set_checkpoints n =
   checkpoint_max_count := n
 let set_directory dir =
@@ -182,10 +184,24 @@ let speclist = [
       " Print version and exit";
    "-vnum", Arg.Unit print_version_num,
       " Print version number and exit";
+   "-no-version", Arg.Clear Parameters.version,
+      " Do not print version at startup";
+   "-no-prompt", Arg.Clear Parameters.prompt,
+      " Suppress all prompts";
+   "-no-time", Arg.Clear Parameters.time,
+      " Do not print times";
+   "-no-breakpoint-message", Arg.Clear Parameters.breakpoint,
+      " Do not print message at breakpoint setup and removal";
+   "-topdirs-path", Arg.String set_topdirs_path,
+      " Set path to the directory containing topdirs.cmi";
    ]
 
 let function_placeholder () =
   raise Not_found
+
+let report report_error error =
+  eprintf "Debugger [version %s] environment error:@ @[@;%a@]@.;"
+    Config.version report_error error
 
 let main () =
   Callback.register "Debugger.function_placeholder" function_placeholder;
@@ -195,9 +211,9 @@ let main () =
         "Win32" ->
           (Unix.string_of_inet_addr Unix.inet_addr_loopback)^
           ":"^
-          (string_of_int (10000 + ((Unix.getpid ()) mod 10000)))
+          (Int.to_string (10000 + ((Unix.getpid ()) mod 10000)))
       | _ -> Filename.concat (Filename.get_temp_dir_name ())
-                                ("camldebug" ^ (string_of_int (Unix.getpid ())))
+                                ("camldebug" ^ (Int.to_string (Unix.getpid ())))
       );
     begin try
       Arg.parse speclist anonymous "";
@@ -211,24 +227,22 @@ let main () =
         arguments := !arguments ^ " " ^ (Filename.quote Sys.argv.(j))
       done
     end;
-    printf "\tOCaml Debugger version %s@.@." Config.version;
-    Config.load_path := !default_load_path;
+    if !Parameters.version
+    then printf "\tOCaml Debugger version %s@.@." Config.version;
+    Loadprinter.init();
+    Load_path.init !default_load_path;
     Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
     exit 0
   with
-    Toplevel ->
+  | Toplevel ->
       exit 2
-  | Env.Error e ->
-      eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
-      Env.report_error err_formatter e;
-      eprintf "@]@.";
+  | Persistent_env.Error e ->
+      report Persistent_env.report_error e;
       exit 2
   | Cmi_format.Error e ->
-      eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
-      Cmi_format.report_error err_formatter e;
-      eprintf "@]@.";
+      report Cmi_format.report_error e;
       exit 2
 
 let _ =

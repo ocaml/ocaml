@@ -17,13 +17,13 @@
 
 module Raw_name : sig
   type t
-  val create_from_ident : Ident.t -> t
+  val create_from_var : Backend_var.t -> t
 end
 
 type t =
   { mutable raw_name: Raw_name.t;       (* Name *)
     stamp: int;                         (* Unique stamp *)
-    mutable typ: Cmm.machtype_component;(* Type of contents *)
+    typ: Cmm.machtype_component;        (* Type of contents *)
     mutable loc: location;              (* Actual location *)
     mutable spill: bool;                (* "true" to force stack allocation  *)
     mutable part: int option;           (* Zero-based index of part of value *)

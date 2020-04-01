@@ -147,7 +147,7 @@ deprecated:
 raise_exc:
     T_RAISES Desc
     {
-      (* isolate the exception construtor name *)
+      (* isolate the exception constructor name *)
       let s = $2 in
       match Str.split (Str.regexp (blank^"+")) s with
         []

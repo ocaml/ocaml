@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -unsafe "
+*)
+
 (*
  * ALMABENCH 1.0.1
  *      OCaml     version
@@ -236,7 +240,7 @@ let planetpv epoch np pv =
     let dae = ref ((am -. !ae +. de *. sin !ae) /. (1.0 -. de *. cos !ae)) in
       ae := !ae +. !dae;
       incr k;
-      while !k < 10 or abs_float !dae >= 1e-12 do
+      while !k < 10 || abs_float !dae >= 1e-12 do
         dae := (am -. !ae +. de *. sin !ae) /. (1.0 -. de *. cos !ae);
         ae := !ae +. !dae;
         incr k

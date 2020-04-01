@@ -1,0 +1,6 @@
+File "pr5057a_bad.ml", line 14, characters 48-49:
+14 |   let _ = match flag with `A -> T.mem | `B r -> r in
+                                                     ^
+Error: This expression has type 'a but an expression was expected of type
+         int -> T.t -> bool
+       The type constructor T.t would escape its scope

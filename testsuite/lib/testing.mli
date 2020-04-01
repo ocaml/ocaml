@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Testing auxilliaries. *)
+(* Testing auxiliaries. *)
 
 val test : bool -> unit;;
 (** [test e] tests that [e] evaluates to [true]. *)

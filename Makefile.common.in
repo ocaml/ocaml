@@ -1,0 +1,78 @@
+# @configure_input@
+
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This makefile contains common definitions and rules shared by
+# other Makefiles
+# We assume that Makefile.config has already been included
+
+INSTALL ?= @INSTALL@
+INSTALL_DATA ?= $(INSTALL) -m u=rw,g=rw,o=r
+INSTALL_PROG ?= $(INSTALL) -m u=rwx,g=rwx,o=rx
+
+# note: these are defined by lazy expansions
+# as some parts of the makefiles change BINDIR, etc.
+# and expect INSTALL_BINDIR, etc. to stay in synch
+# (see `shellquote` in tools/Makefile)
+DESTDIR ?=
+INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR = $(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR = $(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR = $(DESTDIR)$(MANDIR)
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+else
+FLEXDLL_SUBMODULE_PRESENT =
+endif
+
+# Use boot/ocamlc.opt if available
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+ifeq (0,$(shell \
+  test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
+  echo $$?))
+  BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
+else
+  BOOT_OCAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc
+endif
+
+ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+  FLEXLINK_ENV =
+  CAMLOPT_CMD = $(CAMLOPT)
+  OCAMLOPT_CMD = $(OCAMLOPT)
+  MKLIB_CMD = $(MKLIB)
+  ocamlc_cmd = $(ocamlc)
+  ocamlopt_cmd = $(ocamlopt)
+else
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe"
+  CAMLOPT_CMD = $(FLEXLINK_ENV) $(CAMLOPT)
+  OCAMLOPT_CMD = $(FLEXLINK_ENV) $(OCAMLOPT)
+  MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)
+  ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
+  ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
+endif
+
+# By default, request ocamllex to be quiet
+OCAMLLEX_FLAGS ?= -q
+
+# The rule to compile C files
+
+# This rule is similar to GNU make's implicit rule, except that it is more
+# general (it supports both .o and .obj)
+
+%.$(O): %.c
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

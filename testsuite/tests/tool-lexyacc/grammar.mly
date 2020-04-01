@@ -1,23 +1,18 @@
-/**************************************************************************/
-/*                                                                        */
-/*                                OCaml                                   */
-/*                                                                        */
-/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
-/*                                                                        */
-/*   Copyright 1996 Institut National de Recherche en Informatique et     */
-/*     en Automatique.                                                    */
-/*                                                                        */
-/*   All rights reserved.  This file is distributed under the terms of    */
-/*   the GNU Lesser General Public License version 2.1, with the          */
-/*   special exception on linking described in the file LICENSE.          */
-/*                                                                        */
-/**************************************************************************/
-
 /* The grammar for lexer definitions */
 
 %{
 open Syntax
 open Gram_aux
+
+(* test f' '"' *)
+let () =
+  let f' = ignore in
+  f' '"'
+
+(* test {|*)|}, {%foo|*)|} and {%%f.oo bar|*)|bar} *)
+(* test {%foo {%| *)
+
+let () = ignore {foo||foo}
 %}
 
 %token <string> Tident
@@ -44,7 +39,8 @@ lexer_definition:
 ;
 header:
     Taction
-        { $1 }
+        { $1 (* '"' test that ocamlyacc can
+                    handle comments correctly"*)" "(*" *) }
   |
         { Location(0,0) }
 ;

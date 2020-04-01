@@ -1,0 +1,67 @@
+File "test_loc_type_eq.ml", line 1, characters 49-76:
+1 | module M : Test_functor.S with type elt = unit = Test_functor.Apply (String)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       ...
+       Type declarations do not match:
+         type elt = String.t
+       is not included in
+         type elt = unit
+       File "test_loc_type_eq.ml", line 1, characters 31-46:
+         Expected declaration
+       File "test_functor.ml", line 8, characters 45-61: Actual declaration
+File "test_loc_modtype_type_eq.ml", line 3, characters 15-42:
+3 | module M : S = Test_functor.Apply (String)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type elt = String.t
+           type t = Test_functor.Apply(String).t
+           val create : elt -> t
+         end
+       is not included in
+         S
+       Type declarations do not match:
+         type elt = String.t
+       is not included in
+         type elt = unit
+       File "test_loc_modtype_type_eq.ml", line 1, characters 36-51:
+         Expected declaration
+       File "test_functor.ml", line 8, characters 45-61: Actual declaration
+File "test_loc_type_subst.ml", line 1, characters 50-77:
+1 | module M : Test_functor.S with type elt := unit = Test_functor.Apply (String)
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type elt = String.t
+           type t = Test_functor.Apply(String).t
+           val create : elt -> t
+         end
+       is not included in
+         sig type t val create : unit -> t end
+       Values do not match:
+         val create : elt -> t
+       is not included in
+         val create : unit -> t
+       File "test_functor.ml", line 5, characters 2-23: Expected declaration
+       File "test_functor.ml", line 5, characters 2-23: Actual declaration
+File "test_loc_modtype_type_subst.ml", line 3, characters 15-42:
+3 | module M : S = Test_functor.Apply (String)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type elt = String.t
+           type t = Test_functor.Apply(String).t
+           val create : elt -> t
+         end
+       is not included in
+         S
+       Values do not match:
+         val create : elt -> t
+       is not included in
+         val create : unit -> t
+       File "test_functor.ml", line 5, characters 2-23: Expected declaration
+       File "test_functor.ml", line 5, characters 2-23: Actual declaration

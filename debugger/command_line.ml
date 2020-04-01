@@ -18,16 +18,15 @@
 
 open Int64ops
 open Format
-open Misc
 open Instruct
 open Unix
 open Debugger_config
 open Types
 open Primitives
 open Unix_tools
-open Parser
+open Debugger_parser
 open Parser_aux
-open Lexer
+open Debugger_lexer
 open Input_handling
 open Question
 open Debugcom
@@ -45,6 +44,8 @@ open Breakpoints
 open Checkpoints
 open Frames
 open Printval
+
+module Lexer = Debugger_lexer
 
 (** Instructions, variables and infos lists. **)
 type dbg_instruction =
@@ -127,14 +128,15 @@ let add_breakpoint_at_pc pc =
     new_breakpoint (any_event_at_pc pc)
   with
   | Not_found ->
-    eprintf "Can\'t add breakpoint at pc %i: no event there.@." pc;
+    eprintf "Can\'t add breakpoint at pc %i:%i: no event there.@."
+            pc.frag pc.pos;
     raise Toplevel
 
 let add_breakpoint_after_pc pc =
   let rec try_add n =
     if n < 3 then begin
       try
-        new_breakpoint (any_event_at_pc (pc + n * 4))
+        new_breakpoint (any_event_at_pc {pc with pos = pc.pos + n * 4})
       with
       | Not_found ->
         try_add (n+1)
@@ -157,11 +159,8 @@ let convert_module mdle =
                               then Filename.chop_suffix m ".ml"
                               else m)
   | None ->
-      try
-        (get_current_event ()).ev_module
-      with
-      | Not_found ->
-          error "Not in a module."
+      try (get_current_event ()).ev_ev.ev_module
+      with Not_found -> error "Not in a module."
 
 (** Toplevel. **)
 let current_line = ref ""
@@ -263,7 +262,7 @@ let instr_dir ppf lexbuf =
   let new_directory = argument_list_eol argument lexbuf in
     if new_directory = [] then begin
       if yes_or_no "Reinitialize directory list" then begin
-        Config.load_path := !default_load_path;
+        Load_path.init !default_load_path;
         Envaux.reset_cache ();
         Hashtbl.clear Debugger_config.load_path_for;
         flush_buffer_list ()
@@ -279,7 +278,7 @@ let instr_dir ppf lexbuf =
           List.iter (function x -> add_path (expand_path x)) new_directory'
     end;
     let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
-    fprintf ppf "@[<2>Directories: %a@]@." print_dirs !Config.load_path;
+    fprintf ppf "@[<2>Directories: %a@]@." print_dirs (Load_path.get_paths ());
     Hashtbl.iter
       (fun mdl dirs ->
          fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs
@@ -304,7 +303,7 @@ let instr_run ppf lexbuf =
   ensure_loaded ();
   reset_named_values ();
   run ();
-  show_current_event ppf;;
+  show_current_event ppf
 
 let instr_reverse ppf lexbuf =
   eol lexbuf;
@@ -503,7 +502,7 @@ let env_of_event =
   function
     None    -> Env.empty
   | Some ev ->
-      Envaux.env_from_summary ev.Instruct.ev_typenv ev.Instruct.ev_typsubst
+      Envaux.env_from_summary ev.ev_ev.ev_typenv ev.ev_ev.ev_typsubst
 
 let print_command depth ppf lexbuf =
   let exprs = expression_list_eol Lexer.lexeme lexbuf in
@@ -562,7 +561,7 @@ let instr_source ppf lexbuf =
     let io_chan =
       try
         io_channel_of_descr
-          (openfile (find_in_path !Config.load_path (expand_path file))
+          (openfile (Load_path.find (expand_path file))
              [O_RDONLY] 0)
       with
       | Not_found -> error "Source file not found."
@@ -614,8 +613,8 @@ let instr_break ppf lexbuf =
              new_breakpoint ev
          | None ->
              error "Can\'t add breakpoint at this point.")
-    | BA_pc pc ->                               (* break PC *)
-        add_breakpoint_at_pc pc
+    | BA_pc {frag; pos} ->                      (* break PC *)
+        add_breakpoint_at_pc {frag; pos}
     | BA_function expr ->                       (* break FUNCTION *)
         let env =
           try
@@ -645,7 +644,7 @@ let instr_break ppf lexbuf =
             let ev =  event_at_pos module_name 0 in
             let ev_pos =
               {Lexing.dummy_pos with
-               pos_fname = (Events.get_pos ev).pos_fname} in
+               pos_fname = (Events.get_pos ev.ev_ev).pos_fname} in
              let buffer =
                try get_buffer ev_pos module_name with
                | Not_found ->
@@ -695,7 +694,7 @@ let instr_frame ppf lexbuf =
       show_current_frame ppf true
     with
     | Not_found ->
-        error ("No frame number " ^ string_of_int frame_number ^ ".")
+        error ("No frame number " ^ Int.to_string frame_number ^ ".")
 
 let instr_backtrace ppf lexbuf =
   let number =
@@ -704,7 +703,7 @@ let instr_backtrace ppf lexbuf =
     | Some x -> x in
   ensure_loaded ();
   match current_report() with
-  | None | Some {rep_type = Exited | Uncaught_exc} -> ()
+  | None | Some {rep_type = Exited | Uncaught_exc | Code_loaded _} -> ()
   | Some _ ->
       let frame_counter = ref 0 in
       let print_frame first_frame last_frame = function
@@ -791,7 +790,10 @@ let instr_list _ppf lexbuf =
         | Not_found -> error ("No source file for " ^ mdle ^ ".") in
       let point =
         if column <> -1 then
-          (point_of_coord buffer line 1) + column
+          try
+            (point_of_coord buffer line 1) + column
+          with Out_of_range ->
+            -1
         else
           -1 in
         let beginning =
@@ -934,8 +936,8 @@ let info_checkpoints ppf lexbuf =
           !checkpoints))
 
 let info_one_breakpoint ppf (num, ev) =
-  fprintf ppf "%3d %10d  %s@." num ev.ev_pos (Pos.get_desc ev);
-;;
+  fprintf ppf "%3d %d:%10d  %s@." num ev.ev_frag ev.ev_ev.ev_pos
+          (Pos.get_desc ev)
 
 let info_breakpoints ppf lexbuf =
   eol lexbuf;
@@ -944,7 +946,7 @@ let info_breakpoints ppf lexbuf =
     fprintf ppf "Num    Address  Where@.";
     List.iter (info_one_breakpoint ppf) (List.rev !breakpoints);
   end
-;;
+
 
 let info_events _ppf lexbuf =
   ensure_loaded ();
@@ -953,6 +955,7 @@ let info_events _ppf lexbuf =
   in
     print_endline ("Module: " ^ mdle);
     print_endline "   Address  Characters        Kind      Repr.";
+    let frag, events = events_in_module mdle in
     List.iter
       (function ev ->
         let start_char, end_char =
@@ -964,7 +967,8 @@ let info_events _ppf lexbuf =
             ev.ev_loc.Location.loc_start.Lexing.pos_cnum,
             ev.ev_loc.Location.loc_end.Lexing.pos_cnum in
         Printf.printf
-           "%10d %6d-%-6d  %10s %10s\n"
+           "%d:%10d %6d-%-6d  %10s %10s\n"
+           frag
            ev.ev_pos
            start_char
            end_char
@@ -980,8 +984,8 @@ let info_events _ppf lexbuf =
            (match ev.ev_repr with
               Event_none        -> ""
             | Event_parent _    -> "(repr)"
-            | Event_child repr  -> string_of_int !repr))
-      (events_in_module mdle)
+            | Event_child repr  -> Int.to_string !repr))
+      events
 
 (** User-defined printers **)
 
@@ -1041,7 +1045,7 @@ With no argument, reset the search path." };
 "exit the debugger." };
      { instr_name = "shell"; instr_prio = false;
        instr_action = instr_shell; instr_repeat = true; instr_help =
-"Execute a given COMMAND thru the system shell." };
+"Execute a given COMMAND through the system shell." };
      { instr_name = "environment"; instr_prio = false;
        instr_action = instr_env; instr_repeat = false; instr_help =
 "environment variable to give to program being debugged when it is started." };
@@ -1091,10 +1095,14 @@ Argument N means do this N times (or till program stops for another reason)." };
      (* Breakpoints *)
      { instr_name = "break"; instr_prio = false;
        instr_action = instr_break; instr_repeat = false; instr_help =
-"Set breakpoint at specified line or function.\
-\nSyntax: break function-name\
+"Set breakpoint.\
+\nSyntax: break\
+\n        break function-name\
 \n        break @ [module] linenum\
-\n        break @ [module] # characternum" };
+\n        break @ [module] linenum columnnum\
+\n        break @ [module] # characternum\
+\n        break frag:pc\
+\n        break pc" };
      { instr_name = "delete"; instr_prio = false;
        instr_action = instr_delete; instr_repeat = false; instr_help =
 "delete some breakpoints.\n\
@@ -1212,7 +1220,11 @@ It can be either:\n\
 "process to follow after forking.\n\
 It can be either :\n\
   child: the newly created process.\n\
-  parent: the process that called fork.\n" }];
+  parent: the process that called fork.\n" };
+     { var_name = "break_on_load";
+       var_action = boolean_variable false break_on_load;
+       var_help =
+"whether to stop after loading new code (e.g. with Dynlink)." }];
 
   info_list :=
     (* info name, function, help *)

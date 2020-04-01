@@ -1,17 +1,5 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*                  Jeremie Dimino, Jane Street Europe                    *)
-(*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+*)
 
 type t = ..
 
@@ -24,13 +12,13 @@ type t += C
 type t += D of int * string
 
 let () =
-  assert (Obj.extension_constructor  M.A
+  assert (Obj.Extension_constructor.of_val  M.A
           == [%extension_constructor M.A]);
-  assert (Obj.extension_constructor (M.B 42)
+  assert (Obj.Extension_constructor.of_val (M.B 42)
           == [%extension_constructor M.B]);
-  assert (Obj.extension_constructor  C
+  assert (Obj.Extension_constructor.of_val  C
           == [%extension_constructor C]);
-  assert (Obj.extension_constructor (D (42, ""))
+  assert (Obj.Extension_constructor.of_val (D (42, ""))
           == [%extension_constructor D])
 
 let () = print_endline "OK"

@@ -36,6 +36,6 @@ CAMLprim value unix_bind(value socket, value address)
 #else
 
 CAMLprim value unix_bind(value socket, value address)
-{ invalid_argument("bind not implemented"); }
+{ caml_invalid_argument("bind not implemented"); }
 
 #endif

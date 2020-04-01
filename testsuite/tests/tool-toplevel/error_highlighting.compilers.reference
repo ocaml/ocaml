@@ -1,0 +1,74 @@
+Line 9, characters 8-15:
+9 | let x = (1 + 2) +. 3. in ();;
+            ^^^^^^^
+Error: This expression has type int but an expression was expected of type
+         float
+Line 2, characters 15-17:
+2 | let x = (1 + 2 in ();;
+                   ^^
+Error: Syntax error: ')' expected
+Line 2, characters 8-9:
+2 | let x = (1 + 2 in ();;
+            ^
+  This '(' might be unmatched
+Line 2, characters 14-16:
+2 | let x = (1 + 2;;
+                  ^^
+Error: Syntax error: ')' expected
+Line 2, characters 8-9:
+2 | let x = (1 + 2;;
+            ^
+  This '(' might be unmatched
+Line 3, characters 8-9:
+3 | let y = 1 +. 2. in
+            ^
+Error: This expression has type int but an expression was expected of type
+         float
+  Hint: Did you mean `1.'?
+Line 4, characters 2-4:
+4 | 2 in
+      ^^
+Error: Syntax error: ')' expected
+Line 2, characters 8-9:
+2 | let x = (1
+            ^
+  This '(' might be unmatched
+Lines 2-4, characters 8-2:
+2 | ........(1
+3 |   +
+4 | 2)...
+Error: This expression has type int but an expression was expected of type
+         float
+Line 2, characters 12-17:
+2 | let x = 1 + "abc" in
+                ^^^^^
+Error: This expression has type string but an expression was expected of type
+         int
+File "error_highlighting_use1.ml", line 1, characters 8-15:
+1 | let x = (1 + 2) +. 3. in ();;
+            ^^^^^^^
+Error: This expression has type int but an expression was expected of type
+         float
+File "error_highlighting_use2.ml", line 1, characters 15-17:
+1 | let x = (1 + 2 in ();;
+                   ^^
+Error: Syntax error: ')' expected
+File "error_highlighting_use2.ml", line 1, characters 8-9:
+1 | let x = (1 + 2 in ();;
+            ^
+  This '(' might be unmatched
+File "error_highlighting_use3.ml", line 3, characters 2-4:
+3 | 2 in
+      ^^
+Error: Syntax error: ')' expected
+File "error_highlighting_use3.ml", line 1, characters 8-9:
+1 | let x = (1
+            ^
+  This '(' might be unmatched
+File "error_highlighting_use4.ml", lines 1-3, characters 8-2:
+1 | ........(1
+2 |   +
+3 | 2)...
+Error: This expression has type int but an expression was expected of type
+         float
+

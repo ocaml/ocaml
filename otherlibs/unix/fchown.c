@@ -33,6 +33,6 @@ CAMLprim value unix_fchown(value fd, value uid, value gid)
 #else
 
 CAMLprim value unix_fchown(value fd, value uid, value gid)
-{ invalid_argument("fchown not implemented"); }
+{ caml_invalid_argument("fchown not implemented"); }
 
 #endif

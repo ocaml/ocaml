@@ -1,0 +1,11 @@
+(* TEST
+files = "main.c"
+arguments = "-DINT_INT -DFUN=catch_fact main.c"
+* asmgen
+*)
+
+(function "catch_fact" (b:int)
+  (catch (exit fact b 1)
+   with (fact c:val acc:val)
+     (if (== c 0) acc
+         (exit fact (- c 1) ( * c acc)))))

@@ -1,0 +1,12 @@
+File "t12bad.ml", lines 11-15, characters 4-7:
+11 | ....sig
+12 |       class ['a] c : 'a -> object
+13 |         method map : ('a -> 'b) -> 'b M.c
+14 |       end
+15 |     end
+Error: This recursive type is not regular.
+       The type constructor M.c is defined as
+         type 'a M.c
+       but it is used as
+         'b M.c.
+       All uses need to match the definition for the recursive type to be regular.

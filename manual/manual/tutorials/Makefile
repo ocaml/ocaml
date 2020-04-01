@@ -1,19 +1,32 @@
-FILES= coreexamples.tex lablexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
+TOPDIR = ../../..
+include $(TOPDIR)/Makefile.tools
 
-CAMLLATEX=../../tools/caml-tex2
-TEXQUOTE=../../tools/texquote2
+LD_PATH = "$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
 
-ALLFILES=$(FILES)
+TOOLS = ../../tools
+CAMLLATEX = $(SET_LD_PATH) \
+  $(OCAMLRUN) $(TOPDIR)/tools/caml-tex \
+  -repo-root $(TOPDIR) -n 80 -v false
+TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
+TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
-all: $(ALLFILES)
 
+FILES = coreexamples.tex lablexamples.tex objectexamples.tex \
+  moduleexamples.tex advexamples.tex polymorphism.tex
+
+
+etex-files: $(FILES)
+all: $(FILES)
+
+
+%.gen.tex: %.etex
+	$(CAMLLATEX) $< -o $@
+
+%.tex: %.gen.tex
+	$(TEXQUOTE) < $< > $*.texquote_error.tex
+	mv $*.texquote_error.tex $@
+
+
+.PHONY: clean
 clean:
-	rm -f $(ALLFILES)
-
-.SUFFIXES:
-.SUFFIXES: .etex .tex
-
-.etex.tex:
-	$(CAMLLATEX) -n 80 -o - $*.etex | $(TEXQUOTE) > $*.tex
-
-$(ALLFILES): $(CAMLLATEX) $(TEXQUOTE)
+	rm -f *.tex

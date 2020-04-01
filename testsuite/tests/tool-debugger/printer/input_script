@@ -1,0 +1,7 @@
+load_printer printer.cmo
+install_printer Printer.p
+set print_depth 2
+break @ Debuggee 18
+run
+print x
+quit

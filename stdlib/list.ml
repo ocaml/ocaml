@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of lists. *)
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+
 (* List operations *)
 
 let rec length_aux len = function
@@ -39,6 +42,14 @@ let nth l n =
     | a::l -> if n = 0 then a else nth_aux l (n-1)
   in nth_aux l n
 
+let nth_opt l n =
+  if n < 0 then invalid_arg "List.nth" else
+  let rec nth_aux l n =
+    match l with
+    | [] -> None
+    | a::l -> if n = 0 then Some a else nth_aux l (n-1)
+  in nth_aux l n
+
 let append = (@)
 
 let rec rev_append l1 l2 =
@@ -47,6 +58,28 @@ let rec rev_append l1 l2 =
   | a :: l -> rev_append l (a :: l2)
 
 let rev l = rev_append l []
+
+let rec init_tailrec_aux acc i n f =
+  if i >= n then acc
+  else init_tailrec_aux (f i :: acc) (i+1) n f
+
+let rec init_aux i n f =
+  if i >= n then []
+  else
+    let r = f i in
+    r :: init_aux (i+1) n f
+
+let rev_init_threshold =
+  match Sys.backend_type with
+  | Sys.Native | Sys.Bytecode -> 10_000
+  (* We don't know the size of the stack, better be safe and assume it's
+     small. *)
+  | Sys.Other _ -> 50
+
+let init len f =
+  if len < 0 then invalid_arg "List.init" else
+  if len > rev_init_threshold then rev (init_tailrec_aux [] 0 len f)
+  else init_aux 0 len f
 
 let rec flatten = function
     [] -> []
@@ -70,7 +103,7 @@ let rev_map f l =
     | a::l -> rmap_f (f a :: accu) l
   in
   rmap_f [] l
-;;
+
 
 let rec iter f = function
     [] -> ()
@@ -106,7 +139,7 @@ let rev_map2 f l1 l2 =
     | (_, _) -> invalid_arg "List.rev_map2"
   in
   rmap2_f [] l1 l2
-;;
+
 
 let rec iter2 f l1 l2 =
   match (l1, l2) with
@@ -158,9 +191,17 @@ let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if compare a x = 0 then b else assoc x l
 
+let rec assoc_opt x = function
+    [] -> None
+  | (a,b)::l -> if compare a x = 0 then Some b else assoc_opt x l
+
 let rec assq x = function
     [] -> raise Not_found
   | (a,b)::l -> if a == x then b else assq x l
+
+let rec assq_opt x = function
+    [] -> None
+  | (a,b)::l -> if a == x then Some b else assq_opt x l
 
 let rec mem_assoc x = function
   | [] -> false
@@ -183,6 +224,18 @@ let rec find p = function
   | [] -> raise Not_found
   | x :: l -> if p x then x else find p l
 
+let rec find_opt p = function
+  | [] -> None
+  | x :: l -> if p x then Some x else find_opt p l
+
+let rec find_map f = function
+  | [] -> None
+  | x :: l ->
+     begin match f x with
+       | Some _ as result -> result
+       | None -> find_map f l
+     end
+
 let find_all p =
   let rec find accu = function
   | [] -> rev accu
@@ -190,6 +243,39 @@ let find_all p =
   find []
 
 let filter = find_all
+
+let filteri p l =
+  let rec aux i acc = function
+  | [] -> rev acc
+  | x::l -> aux (i + 1) (if p i x then x::acc else acc) l
+  in
+  aux 0 [] l
+
+let filter_map f =
+  let rec aux accu = function
+    | [] -> rev accu
+    | x :: l ->
+        match f x with
+        | None -> aux accu l
+        | Some v -> aux (v :: accu) l
+  in
+  aux []
+
+let concat_map f l =
+  let rec aux f acc = function
+    | [] -> rev acc
+    | x :: l ->
+       let xs = f x in
+       aux f (rev_append xs acc) l
+  in aux f [] l
+
+let fold_left_map f accu l =
+  let rec aux accu l_accu = function
+    | [] -> accu, rev l_accu
+    | x :: l ->
+        let accu, x = f accu x in
+        aux accu (x :: l_accu) l in
+  aux accu [] l
 
 let partition p l =
   let rec part yes no = function
@@ -218,15 +304,7 @@ let rec merge cmp l1 l2 =
       if cmp h1 h2 <= 0
       then h1 :: merge cmp t1 l2
       else h2 :: merge cmp l1 t2
-;;
 
-let rec chop k l =
-  if k = 0 then l else begin
-    match l with
-    | _::t -> chop (k-1) t
-    | _ -> assert false
-  end
-;;
 
 let stable_sort cmp l =
   let rec rev_merge l1 l2 accu =
@@ -249,53 +327,55 @@ let stable_sort cmp l =
   in
   let rec sort n l =
     match n, l with
-    | 2, x1 :: x2 :: _ ->
-       if cmp x1 x2 <= 0 then [x1; x2] else [x2; x1]
-    | 3, x1 :: x2 :: x3 :: _ ->
-       if cmp x1 x2 <= 0 then begin
-         if cmp x2 x3 <= 0 then [x1; x2; x3]
-         else if cmp x1 x3 <= 0 then [x1; x3; x2]
-         else [x3; x1; x2]
-       end else begin
-         if cmp x1 x3 <= 0 then [x2; x1; x3]
-         else if cmp x2 x3 <= 0 then [x2; x3; x1]
-         else [x3; x2; x1]
-       end
+    | 2, x1 :: x2 :: tl ->
+        let s = if cmp x1 x2 <= 0 then [x1; x2] else [x2; x1] in
+        (s, tl)
+    | 3, x1 :: x2 :: x3 :: tl ->
+        let s =
+          if cmp x1 x2 <= 0 then
+            if cmp x2 x3 <= 0 then [x1; x2; x3]
+            else if cmp x1 x3 <= 0 then [x1; x3; x2]
+            else [x3; x1; x2]
+          else if cmp x1 x3 <= 0 then [x2; x1; x3]
+          else if cmp x2 x3 <= 0 then [x2; x3; x1]
+          else [x3; x2; x1]
+        in
+        (s, tl)
     | n, l ->
-       let n1 = n asr 1 in
-       let n2 = n - n1 in
-       let l2 = chop n1 l in
-       let s1 = rev_sort n1 l in
-       let s2 = rev_sort n2 l2 in
-       rev_merge_rev s1 s2 []
+        let n1 = n asr 1 in
+        let n2 = n - n1 in
+        let s1, l2 = rev_sort n1 l in
+        let s2, tl = rev_sort n2 l2 in
+        (rev_merge_rev s1 s2 [], tl)
   and rev_sort n l =
     match n, l with
-    | 2, x1 :: x2 :: _ ->
-       if cmp x1 x2 > 0 then [x1; x2] else [x2; x1]
-    | 3, x1 :: x2 :: x3 :: _ ->
-       if cmp x1 x2 > 0 then begin
-         if cmp x2 x3 > 0 then [x1; x2; x3]
-         else if cmp x1 x3 > 0 then [x1; x3; x2]
-         else [x3; x1; x2]
-       end else begin
-         if cmp x1 x3 > 0 then [x2; x1; x3]
-         else if cmp x2 x3 > 0 then [x2; x3; x1]
-         else [x3; x2; x1]
-       end
+    | 2, x1 :: x2 :: tl ->
+        let s = if cmp x1 x2 > 0 then [x1; x2] else [x2; x1] in
+        (s, tl)
+    | 3, x1 :: x2 :: x3 :: tl ->
+        let s =
+          if cmp x1 x2 > 0 then
+            if cmp x2 x3 > 0 then [x1; x2; x3]
+            else if cmp x1 x3 > 0 then [x1; x3; x2]
+            else [x3; x1; x2]
+          else if cmp x1 x3 > 0 then [x2; x1; x3]
+          else if cmp x2 x3 > 0 then [x2; x3; x1]
+          else [x3; x2; x1]
+        in
+        (s, tl)
     | n, l ->
-       let n1 = n asr 1 in
-       let n2 = n - n1 in
-       let l2 = chop n1 l in
-       let s1 = sort n1 l in
-       let s2 = sort n2 l2 in
-       rev_merge s1 s2 []
+        let n1 = n asr 1 in
+        let n2 = n - n1 in
+        let s1, l2 = sort n1 l in
+        let s2, tl = sort n2 l2 in
+        (rev_merge s1 s2 [], tl)
   in
   let len = length l in
-  if len < 2 then l else sort len l
-;;
+  if len < 2 then l else fst (sort len l)
 
-let sort = stable_sort;;
-let fast_sort = stable_sort;;
+
+let sort = stable_sort
+let fast_sort = stable_sort
 
 (* Note: on a list of length between about 100000 (depending on the minor
    heap size and the type of the list) and Sys.max_array_size, it is
@@ -320,13 +400,13 @@ let array_to_list_in_place a =
     end
   in
   loop [] (l-1000) l
-;;
+
 
 let stable_sort cmp l =
   let a = Array.of_list l in
   Array.stable_sort cmp a;
   array_to_list_in_place a
-;;
+
 *)
 
 
@@ -357,77 +437,124 @@ let sort_uniq cmp l =
   in
   let rec sort n l =
     match n, l with
-    | 2, x1 :: x2 :: _ ->
-       let c = cmp x1 x2 in
-       if c = 0 then [x1]
-       else if c < 0 then [x1; x2] else [x2; x1]
-    | 3, x1 :: x2 :: x3 :: _ ->
-       let c = cmp x1 x2 in
-       if c = 0 then begin
-         let c = cmp x2 x3 in
-         if c = 0 then [x2]
-         else if c < 0 then [x2; x3] else [x3; x2]
-       end else if c < 0 then begin
-         let c = cmp x2 x3 in
-         if c = 0 then [x1; x2]
-         else if c < 0 then [x1; x2; x3]
-         else let c = cmp x1 x3 in
-         if c = 0 then [x1; x2]
-         else if c < 0 then [x1; x3; x2]
-         else [x3; x1; x2]
-       end else begin
-         let c = cmp x1 x3 in
-         if c = 0 then [x2; x1]
-         else if c < 0 then [x2; x1; x3]
-         else let c = cmp x2 x3 in
-         if c = 0 then [x2; x1]
-         else if c < 0 then [x2; x3; x1]
-         else [x3; x2; x1]
-       end
+    | 2, x1 :: x2 :: tl ->
+        let s =
+          let c = cmp x1 x2 in
+          if c = 0 then [x1] else if c < 0 then [x1; x2] else [x2; x1]
+        in
+        (s, tl)
+    | 3, x1 :: x2 :: x3 :: tl ->
+        let s =
+          let c = cmp x1 x2 in
+          if c = 0 then
+            let c = cmp x2 x3 in
+            if c = 0 then [x2] else if c < 0 then [x2; x3] else [x3; x2]
+          else if c < 0 then
+            let c = cmp x2 x3 in
+            if c = 0 then [x1; x2]
+            else if c < 0 then [x1; x2; x3]
+            else
+              let c = cmp x1 x3 in
+              if c = 0 then [x1; x2]
+              else if c < 0 then [x1; x3; x2]
+              else [x3; x1; x2]
+          else
+            let c = cmp x1 x3 in
+            if c = 0 then [x2; x1]
+            else if c < 0 then [x2; x1; x3]
+            else
+              let c = cmp x2 x3 in
+              if c = 0 then [x2; x1]
+              else if c < 0 then [x2; x3; x1]
+              else [x3; x2; x1]
+        in
+        (s, tl)
     | n, l ->
-       let n1 = n asr 1 in
-       let n2 = n - n1 in
-       let l2 = chop n1 l in
-       let s1 = rev_sort n1 l in
-       let s2 = rev_sort n2 l2 in
-       rev_merge_rev s1 s2 []
+        let n1 = n asr 1 in
+        let n2 = n - n1 in
+        let s1, l2 = rev_sort n1 l in
+        let s2, tl = rev_sort n2 l2 in
+        (rev_merge_rev s1 s2 [], tl)
   and rev_sort n l =
     match n, l with
-    | 2, x1 :: x2 :: _ ->
-       let c = cmp x1 x2 in
-       if c = 0 then [x1]
-       else if c > 0 then [x1; x2] else [x2; x1]
-    | 3, x1 :: x2 :: x3 :: _ ->
-       let c = cmp x1 x2 in
-       if c = 0 then begin
-         let c = cmp x2 x3 in
-         if c = 0 then [x2]
-         else if c > 0 then [x2; x3] else [x3; x2]
-       end else if c > 0 then begin
-         let c = cmp x2 x3 in
-         if c = 0 then [x1; x2]
-         else if c > 0 then [x1; x2; x3]
-         else let c = cmp x1 x3 in
-         if c = 0 then [x1; x2]
-         else if c > 0 then [x1; x3; x2]
-         else [x3; x1; x2]
-       end else begin
-         let c = cmp x1 x3 in
-         if c = 0 then [x2; x1]
-         else if c > 0 then [x2; x1; x3]
-         else let c = cmp x2 x3 in
-         if c = 0 then [x2; x1]
-         else if c > 0 then [x2; x3; x1]
-         else [x3; x2; x1]
-       end
+    | 2, x1 :: x2 :: tl ->
+        let s =
+          let c = cmp x1 x2 in
+          if c = 0 then [x1] else if c > 0 then [x1; x2] else [x2; x1]
+        in
+        (s, tl)
+    | 3, x1 :: x2 :: x3 :: tl ->
+        let s =
+          let c = cmp x1 x2 in
+          if c = 0 then
+            let c = cmp x2 x3 in
+            if c = 0 then [x2] else if c > 0 then [x2; x3] else [x3; x2]
+          else if c > 0 then
+            let c = cmp x2 x3 in
+            if c = 0 then [x1; x2]
+            else if c > 0 then [x1; x2; x3]
+            else
+              let c = cmp x1 x3 in
+              if c = 0 then [x1; x2]
+              else if c > 0 then [x1; x3; x2]
+              else [x3; x1; x2]
+          else
+            let c = cmp x1 x3 in
+            if c = 0 then [x2; x1]
+            else if c > 0 then [x2; x1; x3]
+            else
+              let c = cmp x2 x3 in
+              if c = 0 then [x2; x1]
+              else if c > 0 then [x2; x3; x1]
+              else [x3; x2; x1]
+        in
+        (s, tl)
     | n, l ->
-       let n1 = n asr 1 in
-       let n2 = n - n1 in
-       let l2 = chop n1 l in
-       let s1 = sort n1 l in
-       let s2 = sort n2 l2 in
-       rev_merge s1 s2 []
+        let n1 = n asr 1 in
+        let n2 = n - n1 in
+        let s1, l2 = sort n1 l in
+        let s2, tl = sort n2 l2 in
+        (rev_merge s1 s2 [], tl)
   in
   let len = length l in
-  if len < 2 then l else sort len l
+  if len < 2 then l else fst (sort len l)
+
+
+let rec compare_lengths l1 l2 =
+  match l1, l2 with
+  | [], [] -> 0
+  | [], _ -> -1
+  | _, [] -> 1
+  | _ :: l1, _ :: l2 -> compare_lengths l1 l2
 ;;
+
+let rec compare_length_with l n =
+  match l with
+  | [] ->
+    if n = 0 then 0 else
+      if n > 0 then -1 else 1
+  | _ :: l ->
+    if n <= 0 then 1 else
+      compare_length_with l (n-1)
+;;
+
+(** {1 Iterators} *)
+
+let to_seq l =
+  let rec aux l () = match l with
+    | [] -> Seq.Nil
+    | x :: tail -> Seq.Cons (x, aux tail)
+  in
+  aux l
+
+let of_seq seq =
+  let rec direct depth seq : _ list =
+    if depth=0
+    then
+      Seq.fold_left (fun acc x -> x::acc) [] seq
+      |> rev (* tailrec *)
+    else match seq() with
+      | Seq.Nil -> []
+      | Seq.Cons (x, next) -> x :: direct (depth-1) next
+  in
+  direct 500 seq

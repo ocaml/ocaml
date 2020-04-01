@@ -20,8 +20,7 @@ open Cmo_format
 (* Functions for batch linking *)
 
 val init: unit -> unit
-val patch_object: bytes -> (reloc_info * int) list -> unit
-val ls_patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
+val patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
 val require_primitive: string -> unit
 val initial_global_table: unit -> Obj.t array
 val output_global_map: out_channel -> unit
@@ -29,6 +28,7 @@ val output_primitive_names: out_channel -> unit
 val output_primitive_table: out_channel -> unit
 val data_global_map: unit -> Obj.t
 val data_primitive_names: unit -> string
+val transl_const: Lambda.structured_constant -> Obj.t
 
 (* Functions for the toplevel *)
 
@@ -39,13 +39,18 @@ val is_global_defined: Ident.t -> bool
 val assign_global_value: Ident.t -> Obj.t -> unit
 val get_global_position: Ident.t -> int
 val check_global_initialized: (reloc_info * int) list -> unit
+val defined_globals: (reloc_info * int) list -> Ident.t list
+val required_globals: (reloc_info * int) list -> Ident.t list
 
 type global_map
 
+val empty_global_map: global_map
 val current_state: unit -> global_map
 val restore_state: global_map -> unit
 val hide_additions: global_map -> unit
 val filter_global_map: (Ident.t -> bool) -> global_map -> global_map
+val iter_global_map : (Ident.t -> int -> unit) -> global_map -> unit
+val is_defined_in_global_map: global_map -> Ident.t -> bool
 
 (* Error report *)
 

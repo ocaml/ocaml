@@ -1,14 +1,5 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                                OCaml                                  *)
-(*                                                                       *)
-(*         Damien Doligez, projet Gallium, INRIA Rocquencourt            *)
-(*                                                                       *)
-(*   Copyright 2008 Institut National de Recherche en Informatique et    *)
-(*   en Automatique.  All rights reserved.  This file is distributed     *)
-(*   under the terms of the Q Public License version 1.0.                *)
-(*                                                                       *)
-(*************************************************************************)
+(* TEST
+*)
 
 (***
    This test evaluate boolean formula composed by conjunction and
@@ -53,7 +44,7 @@ let print_short_bool fmt b =
 
 let rec pp_form fmt = function
   | Constant b ->
-      fprintf fmt "%b" b
+      fprintf fmt "%B" b
   | And a      ->
       fprintf fmt "And[@[%a@]]" (fun fmt -> Array.iter (pp_var fmt)) a
   | Or a       ->
@@ -66,7 +57,7 @@ and pp_var fmt v =
     pp_form v.form
 
 type env = {
-  (** resizeable array for cheap *)
+  (** resizable array for cheap *)
   vars : (int,var) Hashtbl.t;
   (** the ephemerons must be alive *)
   ephes : ephe Stack.t;
@@ -153,9 +144,10 @@ let run test init =
   Stack.clear env.varephe_false;
   Gc.full_major ();
   let res = Hashtbl.fold (fun _ v acc -> acc && check_var v) env.vars true in
-  is_true test "check" res
+  is_true test "check" res;
+  env (* Keep env.varephe_true alive. *)
 
 let () =
   for i = 0 to nb_test do
-    run ("test"^(string_of_int i)) i;
+    ignore (run ("test"^(Int.to_string i)) i);
   done

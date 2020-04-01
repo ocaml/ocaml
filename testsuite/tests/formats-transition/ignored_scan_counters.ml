@@ -1,4 +1,11 @@
+(* TEST
+   * toplevel
+*)
+
 (* Benoit's patch did not support %_[nlNL]; test their behavior *)
+
+(* Ignore OCAMLRUNPARAM=b to be reproducible *)
+Printexc.record_backtrace false;;
 
 (* not supported by Printf or Format: fails at runtime *)
 let () = Printf.printf "%_n"

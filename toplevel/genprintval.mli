@@ -21,17 +21,20 @@ open Format
 module type OBJ =
   sig
     type t
+    val repr : 'a -> t
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
+    val double_array_tag : int
+    val double_field : t -> int -> float
   end
 
 module type EVALPATH =
   sig
     type valu
-    val eval_path: Env.t -> Path.t -> valu
+    val eval_address: Env.address -> valu
     exception Error
     val same_value: valu -> valu -> bool
   end
@@ -66,5 +69,5 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
-module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) :
+module Make(O : OBJ)(_ : EVALPATH with type valu = O.t) :
          (S with type t = O.t)

@@ -23,8 +23,12 @@ val transl_type_decl:
     Typedtree.type_declaration list * Env.t
 
 val transl_exception:
+    Env.t -> Parsetree.extension_constructor ->
+    Typedtree.extension_constructor * Env.t
+
+val transl_type_exception:
     Env.t ->
-    Parsetree.extension_constructor -> Typedtree.extension_constructor * Env.t
+    Parsetree.type_exception -> Typedtree.type_exception * Env.t
 
 val transl_type_extension:
     bool -> Env.t -> Location.t -> Parsetree.type_extension ->
@@ -45,19 +49,13 @@ val approx_type_decl:
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
 val check_coherence:
-    Env.t -> Location.t -> Ident.t -> type_declaration -> unit
+    Env.t -> Location.t -> Path.t -> type_declaration -> unit
 
 (* for fixed types *)
 val is_fixed_type : Parsetree.type_declaration -> bool
 
-(* for typeclass.ml *)
-val compute_variance_decls:
-    Env.t ->
-    (Ident.t * Types.type_declaration * Types.type_declaration *
-     Types.class_declaration * Types.class_type_declaration *
-     'a Typedtree.class_infos) list ->
-    (Types.type_declaration * Types.type_declaration *
-     Types.class_declaration * Types.class_type_declaration) list
+(* for typeopt.ml *)
+val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
 
 type native_repr_kind = Unboxed | Untagged
 
@@ -68,30 +66,38 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch list
+  | Definition_mismatch of type_expr * Includecore.type_mismatch option
   | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
-  | Type_clash of Env.t * (type_expr * type_expr) list
-  | Parameters_differ of Path.t * type_expr * type_expr
+  | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
+  | Type_clash of Env.t * Ctype.Unification_trace.t
+  | Non_regular of {
+      definition: Path.t;
+      used_as: type_expr;
+      defined_as: type_expr;
+      expansions: (type_expr * type_expr) list;
+    }
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
-  | Not_open_type of Path.t
+  | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch list
-  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Extension_mismatch of Path.t * Includecore.type_mismatch
+  | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
-  | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
+  | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
-  | Varying_anonymous
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_immediate_attribute
+  | Immediacy of Typedecl_immediacy.error
+  | Separability of Typedecl_separability.error
+  | Bad_unboxed_attribute of string
+  | Boxed_and_unboxed
+  | Nonrec_gadt
 
 exception Error of Location.t * error
 

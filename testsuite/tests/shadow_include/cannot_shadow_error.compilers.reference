@@ -1,0 +1,8 @@
+File "cannot_shadow_error.ml", line 24, characters 2-36:
+24 |   include Comparable with type t = t
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Illegal shadowing of included type t/9 by t/13
+       File "cannot_shadow_error.ml", line 23, characters 2-19:
+         Type t/9 came from this include
+       File "cannot_shadow_error.ml", line 14, characters 2-23:
+         The value print has no valid type if t/9 is shadowed

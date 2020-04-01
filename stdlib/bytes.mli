@@ -42,21 +42,21 @@
    @since 4.02.0
  *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
 
-external get : bytes -> int -> char = "%string_safe_get"
+external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
-    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
     with [c].
 
     Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
-external create : int -> bytes = "caml_create_string"
+external create : int -> bytes = "caml_create_bytes"
 (** [create n] returns a new byte sequence of length [n]. The
     sequence is uninitialized and contains arbitrary bytes.
 
@@ -130,8 +130,8 @@ val blit : bytes -> int -> bytes -> int -> int -> unit
     do not designate a valid range of [dst]. *)
 
 val blit_string : string -> int -> bytes -> int -> int -> unit
-(** [blit src srcoff dst dstoff len] copies [len] bytes from string
-    [src], starting at index [srcoff], to byte sequence [dst],
+(** [blit_string src srcoff dst dstoff len] copies [len] bytes from
+    string [src], starting at index [srcoff], to byte sequence [dst],
     starting at index [dstoff].
 
     Raise [Invalid_argument] if [srcoff] and [len] do not
@@ -193,11 +193,21 @@ val index : bytes -> char -> int
 
     Raise [Not_found] if [c] does not occur in [s]. *)
 
+val index_opt: bytes -> char -> int option
+(** [index_opt s c] returns the index of the first occurrence of byte [c]
+    in [s] or [None] if [c] does not occur in [s].
+    @since 4.05 *)
+
 val rindex : bytes -> char -> int
 (** [rindex s c] returns the index of the last occurrence of byte [c]
     in [s].
 
     Raise [Not_found] if [c] does not occur in [s]. *)
+
+val rindex_opt: bytes -> char -> int option
+(** [rindex_opt s c] returns the index of the last occurrence of byte [c]
+    in [s] or [None] if [c] does not occur in [s].
+    @since 4.05 *)
 
 val index_from : bytes -> int -> char -> int
 (** [index_from s i c] returns the index of the first occurrence of
@@ -207,6 +217,15 @@ val index_from : bytes -> int -> char -> int
     Raise [Invalid_argument] if [i] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
+val index_from_opt: bytes -> int -> char -> int option
+(** [index_from_opt s i c] returns the index of the first occurrence of
+    byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
+    after position [i].
+    [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
+
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
+    @since 4.05 *)
+
 val rindex_from : bytes -> int -> char -> int
 (** [rindex_from s i c] returns the index of the last occurrence of
     byte [c] in [s] before position [i+1].  [rindex s c] is equivalent
@@ -214,6 +233,15 @@ val rindex_from : bytes -> int -> char -> int
 
     Raise [Invalid_argument] if [i+1] is not a valid position in [s].
     Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+
+val rindex_from_opt: bytes -> int -> char -> int option
+(** [rindex_from_opt s i c] returns the index of the last occurrence
+    of byte [c] in [s] before position [i+1] or [None] if [c] does not
+    occur in [s] before position [i+1].  [rindex_opt s c] is equivalent to
+    [rindex_from s (Bytes.length s - 1) c].
+
+    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+    @since 4.05 *)
 
 val contains : bytes -> char -> bool
 (** [contains s c] tests if byte [c] appears in [s]. *)
@@ -283,7 +311,7 @@ type t = bytes
 
 val compare: t -> t -> int
 (** The comparison function for byte sequences, with the same
-    specification as {!Pervasives.compare}.  Along with the type [t],
+    specification as {!Stdlib.compare}.  Along with the type [t],
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 
@@ -291,7 +319,7 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.03.0 *)
 
-(** {4 Unsafe conversions (for advanced users)}
+(** {1:unsafe Unsafe conversions (for advanced users)}
 
     This section describes unsafe, low-level conversion functions
     between [bytes] and [string]. They do not copy the internal data;
@@ -372,7 +400,7 @@ let bytes_length (s : bytes) =
 
    The caller may not mutate [s] while the string is borrowed (it has
    temporarily given up ownership). This affects concurrent programs,
-   but also higher-order functions: if [String.length] returned
+   but also higher-order functions: if {!String.length} returned
    a closure to be called later, [s] should not be mutated until this
    closure is fully applied and returns ownership.
 *)
@@ -420,14 +448,229 @@ let s = Bytes.of_string "hello"
     [string] type for this purpose.
 *)
 
+(** {1 Iterators} *)
+
+val to_seq : t -> char Seq.t
+(** Iterate on the string, in increasing index order. Modifications of the
+    string during iteration will be reflected in the iterator.
+    @since 4.07 *)
+
+val to_seqi : t -> (int * char) Seq.t
+(** Iterate on the string, in increasing order, yielding indices along chars
+    @since 4.07 *)
+
+val of_seq : char Seq.t -> t
+(** Create a string from the generator
+    @since 4.07 *)
+
+(** {1 Binary encoding/decoding of integers} *)
+
+(** The functions in this section binary encode and decode integers to
+    and from byte sequences.
+
+    All following functions raise [Invalid_argument] if the space
+    needed at index [i] to decode or encode the integer is not
+    available.
+
+    Little-endian (resp. big-endian) encoding means that least
+    (resp. most) significant bytes are stored first.  Big-endian is
+    also known as network byte order.  Native-endian encoding is
+    either little-endian or big-endian depending on {!Sys.big_endian}.
+
+    32-bit and 64-bit integers are represented by the [int32] and
+    [int64] types, which can be interpreted either as signed or
+    unsigned numbers.
+
+    8-bit and 16-bit integers are represented by the [int] type,
+    which has more bits than the binary encoding.  These extra bits
+    are handled as follows: {ul
+    {- Functions that decode signed (resp. unsigned) 8-bit or 16-bit
+    integers represented by [int] values sign-extend
+    (resp. zero-extend) their result.}
+    {- Functions that encode 8-bit or 16-bit integers represented by
+    [int] values truncate their input to their least significant
+    bytes.}}
+*)
+
+val get_uint8 : bytes -> int -> int
+(** [get_uint8 b i] is [b]'s unsigned 8-bit integer starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int8 : bytes -> int -> int
+(** [get_int8 b i] is [b]'s signed 8-bit integer starting at byte index [i].
+    @since 4.08
+*)
+
+val get_uint16_ne : bytes -> int -> int
+(** [get_uint16_ne b i] is [b]'s native-endian unsigned 16-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_uint16_be : bytes -> int -> int
+(** [get_uint16_be b i] is [b]'s big-endian unsigned 16-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_uint16_le : bytes -> int -> int
+(** [get_uint16_le b i] is [b]'s little-endian unsigned 16-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int16_ne : bytes -> int -> int
+(** [get_int16_ne b i] is [b]'s native-endian signed 16-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int16_be : bytes -> int -> int
+(** [get_int16_be b i] is [b]'s big-endian signed 16-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int16_le : bytes -> int -> int
+(** [get_int16_le b i] is [b]'s little-endian signed 16-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int32_ne : bytes -> int -> int32
+(** [get_int32_ne b i] is [b]'s native-endian 32-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int32_be : bytes -> int -> int32
+(** [get_int32_be b i] is [b]'s big-endian 32-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int32_le : bytes -> int -> int32
+(** [get_int32_le b i] is [b]'s little-endian 32-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int64_ne : bytes -> int -> int64
+(** [get_int64_ne b i] is [b]'s native-endian 64-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int64_be : bytes -> int -> int64
+(** [get_int64_be b i] is [b]'s big-endian 64-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val get_int64_le : bytes -> int -> int64
+(** [get_int64_le b i] is [b]'s little-endian 64-bit integer
+    starting at byte index [i].
+    @since 4.08
+*)
+
+val set_uint8 : bytes -> int -> int -> unit
+(** [set_uint8 b i v] sets [b]'s unsigned 8-bit integer starting at byte index
+    [i] to [v].
+    @since 4.08
+*)
+
+val set_int8 : bytes -> int -> int -> unit
+(** [set_int8 b i v] sets [b]'s signed 8-bit integer starting at byte index
+    [i] to [v].
+    @since 4.08
+*)
+
+val set_uint16_ne : bytes -> int -> int -> unit
+(** [set_uint16_ne b i v] sets [b]'s native-endian unsigned 16-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_uint16_be : bytes -> int -> int -> unit
+(** [set_uint16_be b i v] sets [b]'s big-endian unsigned 16-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_uint16_le : bytes -> int -> int -> unit
+(** [set_uint16_le b i v] sets [b]'s little-endian unsigned 16-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int16_ne : bytes -> int -> int -> unit
+(** [set_int16_ne b i v] sets [b]'s native-endian signed 16-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int16_be : bytes -> int -> int -> unit
+(** [set_int16_be b i v] sets [b]'s big-endian signed 16-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int16_le : bytes -> int -> int -> unit
+(** [set_int16_le b i v] sets [b]'s little-endian signed 16-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int32_ne : bytes -> int -> int32 -> unit
+(** [set_int32_ne b i v] sets [b]'s native-endian 32-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int32_be : bytes -> int -> int32 -> unit
+(** [set_int32_be b i v] sets [b]'s big-endian 32-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int32_le : bytes -> int -> int32 -> unit
+(** [set_int32_le b i v] sets [b]'s little-endian 32-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int64_ne : bytes -> int -> int64 -> unit
+(** [set_int64_ne b i v] sets [b]'s native-endian 64-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int64_be : bytes -> int -> int64 -> unit
+(** [set_int64_be b i v] sets [b]'s big-endian 64-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+val set_int64_le : bytes -> int -> int64 -> unit
+(** [set_int64_le b i v] sets [b]'s little-endian 64-bit integer
+    starting at byte index [i] to [v].
+    @since 4.08
+*)
+
+
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
 
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
   bytes -> int -> bytes -> int -> int -> unit
+  = "caml_blit_bytes" [@@noalloc]
+external unsafe_blit_string :
+  string -> int -> bytes -> int -> int -> unit
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
+  bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]

@@ -29,7 +29,7 @@ type compilation_env =
    stack frame.
    The ce_heap component gives the positions of variables residing in the
    heap-allocated environment.
-   The ce_rec component associate offsets to identifiers for functions
+   The ce_rec component associates offsets to identifiers for functions
    bound by the same let rec as the current function.  The offsets
    are used by the OFFSETCLOSURE instruction to recover the closure
    pointer of the desired function from the env register (which
@@ -37,7 +37,7 @@ type compilation_env =
 
 (* Debugging events *)
 
-(* Warning: when you change these types, check byterun/backtrace.c *)
+(* Warning: when you change these types, check runtime/backtrace.c *)
 type debug_event =
   { mutable ev_pos: int;                (* Position in bytecode *)
     ev_module: string;                  (* Name of defining module *)
@@ -98,7 +98,8 @@ type instruction =
   | Kgetvectitem
   | Ksetvectitem
   | Kgetstringchar
-  | Ksetstringchar
+  | Kgetbyteschar
+  | Ksetbyteschar
   | Kbranch of label
   | Kbranchif of label
   | Kbranchifnot of label
@@ -113,7 +114,7 @@ type instruction =
   | Kccall of string * int
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
-  | Kintcomp of comparison
+  | Kintcomp of integer_comparison
   | Koffsetint of int
   | Koffsetref of int
   | Kisint

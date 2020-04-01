@@ -27,10 +27,10 @@ open Lexing;;
 open Location;;
 open Typedtree;;
 
-let output_int oc i = output_string oc (string_of_int i)
+let output_int oc i = output_string oc (Int.to_string i)
 
 type annotation =
-  | Ti_pat   of pattern
+  | Ti_pat : 'k pattern_category * 'k general_pattern -> annotation
   | Ti_expr  of expression
   | Ti_class of class_expr
   | Ti_mod   of module_expr
@@ -40,7 +40,7 @@ type annotation =
 
 let get_location ti =
   match ti with
-    Ti_pat p   -> p.pat_loc
+  | Ti_pat (_, p)   -> p.pat_loc
   | Ti_expr e  -> e.exp_loc
   | Ti_class c -> c.cl_loc
   | Ti_mod m   -> m.mod_loc
@@ -149,8 +149,8 @@ let print_ident_annot pp str k =
 let print_info pp prev_loc ti =
   match ti with
   | Ti_class _ | Ti_mod _ -> prev_loc
-  | Ti_pat  {pat_loc = loc; pat_type = typ; pat_env = env}
-  | Ti_expr {exp_loc = loc; exp_type = typ; exp_env = env} ->
+  | Ti_pat  (_, {pat_loc = loc; pat_type = typ; pat_env = env})
+  | Ti_expr     {exp_loc = loc; exp_type = typ; exp_env = env} ->
       if loc <> prev_loc then begin
         print_location pp loc;
         output_char pp '\n'
@@ -159,7 +159,7 @@ let print_info pp prev_loc ti =
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
       Format.pp_print_string Format.str_formatter "  ";
-      Printtyp.wrap_printing_env env
+      Printtyp.wrap_printing_env ~error:false env
                        (fun () -> Printtyp.type_sch Format.str_formatter typ);
       Format.pp_print_newline Format.str_formatter ();
       let s = Format.flush_str_formatter () in
@@ -194,16 +194,14 @@ let get_info () =
 
 let dump filename =
   if !Clflags.annotations then begin
-    let info = get_info () in
-    let pp =
-      match filename with
-          None -> stdout
-        | Some filename -> open_out filename in
-    sort_filter_phrases ();
-    ignore (List.fold_left (print_info pp) Location.none info);
+    let do_dump _temp_filename pp =
+      let info = get_info () in
+      sort_filter_phrases ();
+      ignore (List.fold_left (print_info pp) Location.none info) in
     begin match filename with
-    | None -> ()
-    | Some _ -> close_out pp
+    | None -> do_dump "" stdout
+    | Some filename ->
+        Misc.output_to_file_via_temporary ~mode:[Open_text] filename do_dump
     end;
     phrases := [];
   end else begin

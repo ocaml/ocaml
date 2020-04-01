@@ -1,51 +1,30 @@
-CFLAGS=-g -O
+TOPDIR=../..
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
+include $(TOPDIR)/Makefile.tools
 
-all: texquote2 transf htmlquote htmlgen dvi2txt caml-tex2
+all: texquote2 transf
 
-dvi2txt:
-	cd dvi_to_txt; ${MAKE}
 
 transf: transf.cmo htmltransf.cmo transfmain.cmo
-	ocamlc -o transf -g transf.cmo htmltransf.cmo transfmain.cmo
+	$(OCAMLC) -o $@ -g $^
 
-transf.ml: transf.mll
-	ocamllex transf.mll
+transfmain.cmo: transf.cmo htmltransf.cmo
 
-htmltransf.ml: htmltransf.mll
-	ocamllex htmltransf.mll
+texquote2: texquote2.ml
+	$(OCAMLC) -o $@ $<
 
-htmlgen: latexmacros.cmo latexscan.cmo latexmain.cmo
-	ocamlc -o htmlgen -g latexmacros.cmo latexscan.cmo latexmain.cmo
+%.cmo: %.ml
+	$(OCAMLC) -c $<
 
-latexscan.ml: latexscan.mll
-	ocamllex latexscan.mll
+%.cmi: %.mli
+	$(OCAMLC) -c $<
 
-caml-tex2: caml_tex2.cmo
-	ocamlc -o caml-tex2 str.cma unix.cma caml_tex2.cmo
-#	ocamlc -custom -o caml-tex2 str.cma unix.cma caml-tex2.cmo \
-#		-cclib -lunix -cclib -lstr
+%.ml: %.mll
+	$(OCAMLLEX) $<
 
-.SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi .c
 
-.ml.cmo:
-	ocamlc -c $<
-
-.mli.cmi:
-	ocamlc -c $<
-
-.c:
-	$(CC) $(CFLAGS) -o $@ $<
-
+.PHONY: clean
 clean:
-	rm -f transf.ml latexscan.ml htmltransf.ml
-	rm -f texquote2 transf htmlquote htmlgen dvi2txt
-	rm -f transf.ml latex.ml
-	rm -f *.o *.cm? *.cmxa
-	rm -f *~ #*#
-	cd dvi_to_txt; ${MAKE} clean
-
-latexmacros.cmo: latexmacros.cmi 
-latexmain.cmo: latexscan.cmo 
-latexscan.cmo: latexmacros.cmi 
-transfmain.cmo: transf.cmo htmltransf.cmo 
+	rm -f *.o *.cm? *.cmx?
+	rm -f transf.ml htmltransf.ml
+	rm -f texquote2 transf

@@ -119,29 +119,30 @@ let ask_kill_program () =
 let initialize_loading () =
   if !debug_loading then begin
     prerr_endline "Loading debugging information...";
-    Printf.fprintf Pervasives.stderr "\tProgram: [%s]\n%!" !program_name;
+    Printf.fprintf Stdlib.stderr "\tProgram: [%s]\n%!" !program_name;
   end;
   begin try access !program_name [F_OK]
   with Unix_error _ ->
     prerr_endline "Program not found.";
     raise Toplevel;
   end;
-  Symbols.read_symbols !program_name;
-  Config.load_path := !Config.load_path @ !Symbols.program_source_dirs;
+  Symbols.clear_symbols ();
+  Symbols.read_symbols 0 !program_name;
+  Load_path.init (Load_path.get_paths () @ !Symbols.program_source_dirs);
   Envaux.reset_cache ();
   if !debug_loading then
     prerr_endline "Opening a socket...";
   open_connection !socket_name
     (function () ->
       go_to _0;
-      Symbols.set_all_events();
+      Symbols.set_all_events 0;
       exit_main_loop ())
 
 (* Ensure the program is already loaded. *)
 let ensure_loaded () =
   if not !loaded then begin
     print_string "Loading program... ";
-    flush Pervasives.stdout;
+    flush Stdlib.stdout;
     if !program_name = "" then begin
       prerr_endline "No program specified.";
       raise Toplevel

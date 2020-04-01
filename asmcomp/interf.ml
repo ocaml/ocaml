@@ -90,7 +90,7 @@ let build_graph fundecl =
     | Iop(Imove | Ispill | Ireload) ->
         add_interf_move i.arg.(0) i.res.(0) i.live;
         interf i.next
-    | Iop(Itailcall_ind) -> ()
+    | Iop(Itailcall_ind _) -> ()
     | Iop(Itailcall_imm _) -> ()
     | Iop _ ->
         add_interf_set i.res i.live;
@@ -105,10 +105,10 @@ let build_graph fundecl =
           interf cases.(i)
         done;
         interf i.next
-    | Iloop body ->
-        interf body; interf i.next
-    | Icatch(_, body, handler) ->
-        interf body; interf handler; interf i.next
+    | Icatch(_rec_flag, handlers, body) ->
+        interf body;
+        List.iter (fun (_, handler) -> interf handler) handlers;
+        interf i.next
     | Iexit _ ->
         ()
     | Itrywith(body, handler) ->
@@ -124,15 +124,14 @@ let build_graph fundecl =
       float arguments in integer registers, PR#6227.) *)
 
   let add_pref weight r1 r2 =
-    if weight > 0 then begin
-      let i = r1.stamp and j = r2.stamp in
-      if i <> j
-      && r1.loc = Unknown
-      && Proc.register_class r1 = Proc.register_class r2
-      && (let p = if i < j then (i, j) else (j, i) in
-          not (IntPairSet.mem p !mat))
-      then r1.prefer <- (r2, weight) :: r1.prefer
-    end in
+    let i = r1.stamp and j = r2.stamp in
+    if i <> j
+    && r1.loc = Unknown
+    && Proc.register_class r1 = Proc.register_class r2
+    && (let p = if i < j then (i, j) else (j, i) in
+        not (IntPairSet.mem p !mat))
+    then r1.prefer <- (r2, weight) :: r1.prefer
+  in
 
   (* Add a mutual preference between two regs *)
   let add_mutual_pref weight r1 r2 =
@@ -148,6 +147,7 @@ let build_graph fundecl =
   (* Compute preferences and spill costs *)
 
   let rec prefer weight i =
+    assert (weight > 0);
     add_spill_cost weight i.arg;
     add_spill_cost weight i.res;
     match i.desc with
@@ -162,25 +162,30 @@ let build_graph fundecl =
     | Iop(Ireload) ->
         add_pref (weight / 4) i.res.(0) i.arg.(0);
         prefer weight i.next
-    | Iop(Itailcall_ind) -> ()
+    | Iop(Itailcall_ind _) -> ()
     | Iop(Itailcall_imm _) -> ()
     | Iop _ ->
         prefer weight i.next
     | Iifthenelse(_tst, ifso, ifnot) ->
-        prefer (weight / 2) ifso;
-        prefer (weight / 2) ifnot;
+        prefer weight ifso;
+        prefer weight ifnot;
         prefer weight i.next
     | Iswitch(_index, cases) ->
         for i = 0 to Array.length cases - 1 do
-          prefer (weight / 2) cases.(i)
+          prefer weight cases.(i)
         done;
         prefer weight i.next
-    | Iloop body ->
-        (* Avoid overflow of weight and spill_cost *)
-        prefer (if weight < 1000 then 8 * weight else weight) body;
+    | Icatch(rec_flag, handlers, body) ->
+        prefer weight body;
+        let weight_h =
+          match rec_flag with
+          | Cmm.Recursive ->
+              (* Avoid overflow of weight and spill_cost *)
+              if weight < 1000 then 8 * weight else weight
+          | Cmm.Nonrecursive ->
+              weight in
+        List.iter (fun (_nfail, handler) -> prefer weight_h handler) handlers;
         prefer weight i.next
-    | Icatch(_, body, handler) ->
-        prefer weight body; prefer weight handler; prefer weight i.next
     | Iexit _ ->
         ()
     | Itrywith(body, handler) ->

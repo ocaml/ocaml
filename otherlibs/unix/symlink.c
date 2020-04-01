@@ -29,8 +29,8 @@ CAMLprim value unix_symlink(value to_dir, value path1, value path2)
   int ret;
   caml_unix_check_path(path1, "symlink");
   caml_unix_check_path(path2, "symlink");
-  p1 = caml_strdup(String_val(path1));
-  p2 = caml_strdup(String_val(path2));
+  p1 = caml_stat_strdup(String_val(path1));
+  p2 = caml_stat_strdup(String_val(path2));
   caml_enter_blocking_section();
   ret = symlink(p1, p2);
   caml_leave_blocking_section();
@@ -50,7 +50,7 @@ CAMLprim value unix_has_symlink(value unit)
 #else
 
 CAMLprim value unix_symlink(value to_dir, value path1, value path2)
-{ invalid_argument("symlink not implemented"); }
+{ caml_invalid_argument("symlink not implemented"); }
 
 CAMLprim value unix_has_symlink(value unit)
 {

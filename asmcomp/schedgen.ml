@@ -17,7 +17,7 @@
 
 open Reg
 open Mach
-open Linearize
+open Linear
 
 (* Representation of the code DAG. *)
 
@@ -114,7 +114,7 @@ let rec longest_path critical_outputs node =
       [] ->
         node.length <-
           if is_critical critical_outputs node.instr.res
-          || node.instr.desc = Lreloadretaddr (* alway critical *)
+          || node.instr.desc = Lreloadretaddr (* always critical *)
           then node.delay
           else 0
     | sons ->
@@ -148,9 +148,9 @@ val mutable trywith_nesting = 0
    that terminate a basic block. *)
 
 method oper_in_basic_block = function
-    Icall_ind -> false
+    Icall_ind _ -> false
   | Icall_imm _ -> false
-  | Itailcall_ind -> false
+  | Itailcall_ind _ -> false
   | Itailcall_imm _ -> false
   | Iextcall _ -> false
   | Istackoffset _ -> false
@@ -185,8 +185,8 @@ method is_load = function
   | _ -> false
 
 method is_checkbound = function
-    Iintop Icheckbound -> true
-  | Iintop_imm(Icheckbound, _) -> true
+    Iintop (Icheckbound _) -> true
+  | Iintop_imm(Icheckbound _, _) -> true
   | _ -> false
 
 method private instr_is_store instr =
@@ -337,7 +337,7 @@ method private reschedule ready_queue date cont =
         (* Remove node from queue *)
         let new_queue = ref (remove_instr node ready_queue) in
         (* Update the start date and number of ancestors emitted of
-           all descendents of this node. Enter those that become ready
+           all descendants of this node. Enter those that become ready
            in the queue. *)
         let issue_cycles = self#instr_issue_cycles node.instr in
         List.iter
@@ -360,7 +360,8 @@ method schedule_fundecl f =
   let rec schedule i try_nesting =
     match i.desc with
     | Lend -> i
-    | Lpushtrap -> { i with next = schedule i.next (try_nesting + 1) }
+    | Lpushtrap { lbl_handler = _; }
+      -> { i with next = schedule i.next (try_nesting + 1) }
     | Lpoptrap -> { i with next = schedule i.next (try_nesting - 1) }
     | _ ->
         if self#instr_in_basic_block i try_nesting then begin
@@ -375,7 +376,7 @@ method schedule_fundecl f =
     else begin
       let critical_outputs =
         match i.desc with
-          Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
+          Lop(Icall_ind _ | Itailcall_ind _) -> [| i.arg.(0) |]
         | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall _) -> [||]
         | Lreturn -> [||]
         | _ -> i.arg in
@@ -383,13 +384,20 @@ method schedule_fundecl f =
       self#reschedule ready_queue 0 (schedule i try_nesting)
     end in
 
-  if f.fun_fast then begin
+  if f.fun_fast && !Clflags.insn_sched then begin
     let new_body = schedule f.fun_body 0 in
     clear_code_dag();
     { fun_name = f.fun_name;
       fun_body = new_body;
       fun_fast = f.fun_fast;
-      fun_dbg  = f.fun_dbg }
+      fun_dbg  = f.fun_dbg;
+      fun_spacetime_shape = f.fun_spacetime_shape;
+      fun_tailrec_entry_point_label = f.fun_tailrec_entry_point_label;
+      fun_contains_calls = f.fun_contains_calls;
+      fun_num_stack_slots = f.fun_num_stack_slots;
+      fun_frame_required = f.fun_frame_required;
+      fun_prologue_required = f.fun_prologue_required;
+    }
   end else
     f
 

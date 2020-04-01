@@ -13,17 +13,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compile a .ml or .mli file *)
+(** Native compilation for .ml and .mli files. *)
 
-open Format
+val interface: source_file:string -> output_prefix:string -> unit
 
-val interface: formatter -> string -> string -> unit
+val implementation:
+   backend:(module Backend_intf.S)
+   -> source_file:string -> output_prefix:string -> unit
 
-val implementation
-   : formatter
-  -> string
-  -> string
-  -> backend:(module Backend_intf.S)
-  -> unit
+(** {2 Internal functions} **)
 
-val c_file: string -> unit
+val clambda :
+  Compile_common.info ->
+  (module Backend_intf.S) ->
+  Typedtree.structure * Typedtree.module_coercion -> unit
+(** [clambda info typed] applies the regular compilation pipeline to the
+    given typechecked implementation and outputs the resulting files.
+*)
+
+val flambda :
+  Compile_common.info ->
+  (module Backend_intf.S) ->
+  Typedtree.structure * Typedtree.module_coercion -> unit
+(** [flambda info backend typed] applies the Flambda compilation pipeline to the
+    given typechecked implementation and outputs the resulting files.
+*)

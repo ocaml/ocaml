@@ -1,10 +1,9 @@
-\chapter{The toplevel system (ocaml)} \label{c:camllight}
-\pdfchapter{The toplevel system (ocaml)}
+\chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
 %HEVEA\cutname{toplevel.html}
 
 This chapter describes the toplevel system for OCaml, that permits
 interactive use of the OCaml system
-through a read-eval-print loop. In this mode, the system repeatedly
+through a read-eval-print loop (REPL). In this mode, the system repeatedly
 reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
 any. The system prints a "#" (sharp) prompt before reading each
@@ -67,20 +66,16 @@ its contents are read as a sequence of OCaml phrases
 and executed as per the "#use" directive
 described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
-If the current directory does not contain an ".ocamlinit" file, but
-the user's home directory (environment variable "HOME") does, the
-latter is read and executed as described below.
+If the current directory does not contain an ".ocamlinit" file,
+the file "XDG_CONFIG_HOME/ocaml/init.ml" is looked up according
+to the XDG base directory specification and used instead (on Windows
+this is skipped). If that file doesn't exist then an [.ocamlinit] file
+in the users' home directory (determined via environment variable "HOME") is
+used if existing.
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
-"ledit", "ocaml2" or "rlwrap"
-\begin{latexonly}
-(see the Caml Hump "http://caml.inria.fr/humps/index_framed_caml.html").
-\end{latexonly}
-\begin{htmlonly}
-(see the
-\ahref{http://caml.inria.fr/humps/index\_framed\_caml.html}{Caml Hump}).
-\end{htmlonly}
+"ledit", or "rlwrap". An improved toplevel, "utop", is also available.
 Another option is to use "ocaml" under Gnu Emacs, which gives the
 full editing power of Emacs (command "run-caml" from library "inf-caml").
 
@@ -112,179 +107,40 @@ of the script:
 
 \end{unix}
 
-\begin{windows}
-In addition to the text-only command "ocaml.exe", which works exactly
-as under Unix (see above), a graphical user interface for the
-toplevel is available under the name "ocamlwin.exe". It should be
-launched from the Windows file manager or program manager.
-This interface provides a text window in which commands can be entered
-and edited, and the toplevel responses are printed.
-\end{windows}
-
-\section{Options} \label{s:toplevel-options}
+\section{s:toplevel-options}{Options}
 
 The following command-line options are recognized by the "ocaml" command.
-
-\begin{options}
-
-\item["-absname"]
-Force error messages to show absolute paths for file names.
-
-\item["-I" \var{directory}]
-Add the given directory to the list of directories searched for
-source and compiled files. By default, the current directory is
-searched first, then the standard library directory. Directories added
-with "-I" are searched after the current directory, in the order in
-which they were given on the command line, but before the standard
-library directory.
-
-If the given directory starts with "+", it is taken relative to the
-standard library directory.  For instance, "-I +labltk" adds the
-subdirectory "labltk" of the standard library to the search path.
-
-Directories can also be added to the list once
-the toplevel is running with the "#directory" directive
-(section~\ref{s:toplevel-directives}).
-
-\item["-init" \var{file}]
-Load the given file instead of the default initialization file.
-The default file is ".ocamlinit" in the current directory if it
-exists, otherwise ".ocamlinit" in the user's home directory.
-
-\item["-labels"]
-Labels are not ignored in types, labels may be used in applications,
-and labelled parameters can be given in any order.  This is the default.
-
-\item["-no-app-funct"]
-Deactivates the applicative behaviour of functors. With this option,
-each functor application generates new types in its result and
-applying the same functor twice to the same argument yields two
-incompatible structures.
-
-\item["-noassert"]
-Do not compile assertion checks.  Note that the special form
-"assert false" is always compiled because it is typed specially.
-
-\item["-nolabels"]
-Ignore non-optional labels in types. Labels cannot be used in
-applications, and parameter order becomes strict.
-
-\item["-noprompt"]
-Do not display any prompt when waiting for input.
-
-\item["-nopromptcont"]
-Do not display the secondary prompt when waiting for continuation
-lines in multi-line inputs.  This should be used e.g. when running
-"ocaml" in an "emacs" window.
-
-\item["-nostdlib"]
-Do not include the standard library directory in the list of
-directories searched for source and compiled files.
-
-\item["-ppx" \var{command}]
-After parsing, pipe the abstract syntax tree through the preprocessor
-\var{command}. The module "Ast_mapper", described in
-chapter~\ref{Ast-underscoremapper}, implements the external interface
-of a preprocessor.
-
-\item["-principal"]
-Check information paths during type-checking, to make sure that all
-types are derived in a principal way.  When using labelled arguments
-and/or polymorphic methods, this flag is required to ensure future
-versions of the compiler will be able to infer types correctly, even
-if internal algorithms change.
-All programs accepted in "-principal" mode are also accepted in the
-default mode with equivalent types, but different binary signatures,
-and this may slow down type checking; yet it is a good idea to
-use it once before publishing source code.
-
-\item["-rectypes"]
-Allow arbitrary recursive types during type-checking.  By default,
-only recursive types where the recursion goes through an object type
-are supported.
-
-\item["-safe-string"]
-Enforce the separation between types "string" and "bytes",
-thereby making strings read-only. This will become the default in
-a future version of OCaml.
-
-\item["-short-paths"]
-When a type is visible under several module-paths, use the shortest
-one when printing the type's name in inferred interfaces and error and
-warning messages. Identifier names starting with an underscore "_" or
-containing double underscores "__" incur a penalty of $+10$ when computing
-their length.
-
-\item["-stdin"]
-Read the standard input as a script file rather than starting an
-interactive session.
-
-\item["-strict-sequence"]
-Force the left-hand part of each sequence to have type unit.
-
-\item["-strict-formats"]
-Reject invalid formats that were accepted in legacy format
-implementations. You should use this flag to detect and fix such
-invalid formats, as they will be rejected by future OCaml versions.
-
-\item["-unsafe"]
-See the corresponding option for "ocamlc", chapter~\ref{c:camlc}.
-Turn bound checking off on array and string accesses (the "v.(i)" and
-"s.[i]" constructs). Programs compiled with "-unsafe" are therefore
-slightly faster, but unsafe: anything can happen if the program
-accesses an array or string outside of its bounds.
-
-\item["-unsafe-string"]
-Identify the types "string" and "bytes",
-thereby making strings writable. For reasons of backward compatibility,
-this is the default setting for the moment, but this will change in a future
-version of OCaml.
-
-\item["-version"]
-Print version string and exit.
-
-\item["-vnum"]
-Print short version number and exit.
-
-\item["-w" \var{warning-list}]
-Enable or disable warnings according to the argument \var{warning-list}.
-See section~\ref{s:comp-options} for the syntax of the argument.
-
-\item["-warn-error" \var{warning-list}]
-Mark as fatal the warnings enabled by the argument \var{warning-list}.
-See section~\ref{s:comp-options} for the syntax of the argument.
-
-\item["-warn-help"]
-Show the description of all available warning numbers.
-
-\item["-" \var{file}]
-Use \var{file} as a script file name, even when it starts with a
-hyphen (-).
-
-\item["-help" or "--help"]
-Display a short usage summary and exit.
-%
-\end{options}
+% Configure boolean variables used by the macros in unified-options.etex
+\compfalse
+\natfalse
+\toptrue
+% unified-options gathers all options across the native/bytecode
+% compilers and toplevel
+\input{unified-options.tex}
 
 \begin{unix}
 The following environment variables are also consulted:
 \begin{options}
-\item["LC_CTYPE"] If set to "iso_8859_1", accented characters (from the
-ISO Latin-1 character set) in string and character literals are
-printed as is; otherwise, they are printed as decimal escape sequences
-("\\"\var{ddd}).
+\item["OCAMLTOP_INCLUDE_PATH"] Additional directories to search for compiled
+  object code files (".cmi", ".cmo" and ".cma"). The specified directories are
+  considered from left to right, after the include directories specified on the
+  command line via "-I" have been searched. Available since OCaml 4.08.
+
+\item["OCAMLTOP_UTF_8"] When printing string values, non-ascii bytes
+($ {} > "\0x7E" $) are printed as decimal escape sequence if "OCAMLTOP_UTF_8" is
+set to false. Otherwise, they are printed unescaped.
 
 \item["TERM"] When printing error messages, the toplevel system
 attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 
-\item["HOME"] Directory where the ".ocamlinit" file is searched.
+\item["XDG_CONFIG_HOME", "HOME"]
+".ocamlinit" lookup procedure (see above).
 \end{options}
 \end{unix}
 
-\section{Toplevel directives}
-\label{s:toplevel-directives}
+\section{s:toplevel-directives}{Toplevel directives}
 
 The following directives control the toplevel behavior, load files in
 memory, and trace program execution.
@@ -342,11 +198,26 @@ will result in an ``unbound value "quit"'' error.
     they were typed on standard input. The reading of the file stops at
     the first error encountered.
 
+  \item["#use_output \""\var{command}"\";;"]
+    Execute a command and evaluate its output as if it had been captured
+    to a file and passed to "#use".
+
   \item["#mod_use \""\var{file-name}"\";;"]
     Similar to "#use" but also wrap the code into a top-level module of the
     same name as capitalized file name without extensions, following
     semantics of the compiler.
   \end{options}
+
+For directives that take file names as arguments, if the given file
+name specifies no directory, the file is searched in the following
+directories:
+\begin{enumerate}
+  \item In script mode, the directory containing the script currently
+    executing; in interactive mode, the current working directory.
+  \item Directories added with the "#directory" directive.
+  \item Directories given on the command line with "-I" options.
+  \item The standard library directory.
+\end{enumerate}
 
 \item[Environment queries]
   \begin{options}
@@ -443,7 +314,7 @@ will result in an ``unbound value "quit"'' error.
 
 \end{options}
 
-\section{The toplevel and the module system} \label{s:toplevel-modules}
+\section{s:toplevel-modules}{The toplevel and the module system}
 
 Toplevel phrases can refer to identifiers defined in compilation units
 with the same mechanisms as for separately compiled units: either by
@@ -465,7 +336,7 @@ implementation of \var{Mod} has been loaded. The error
 ``reference to undefined global \var{Mod}'' will occur only when
 executing a value or module definition that refers to \var{Mod}.
 
-\section{Common errors}
+\section{s:toplevel-common-errors}{Common errors}
 
 This section describes and explains the most frequently encountered
 error messages.
@@ -499,7 +370,7 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 
 \end{options}
 
-\section{Building custom toplevel systems: \texttt{ocamlmktop}}
+\section{s:custom-toplevel}{Building custom toplevel systems: \texttt{ocamlmktop}}
 
 The "ocamlmktop" command builds OCaml toplevels that
 contain user code preloaded at start-up.
@@ -531,7 +402,7 @@ not opened, though; you still have to do
 \end{verbatim}
 yourself, if this is what you wish.
 
-\section{Options}
+\subsection{ss:ocamlmktop-options}{Options}
 
 The following command-line options are recognized by "ocamlmktop".
 
@@ -560,3 +431,25 @@ Specify the name of the toplevel file produced by the linker.
 The default is "a.out".
 
 \end{options}
+
+\section{s:ocamlnat}{The native toplevel: \texttt{ocamlnat}\ (experimental)}
+
+{\bf This section describes a tool that is not yet officially supported %
+but may be found useful.}
+
+OCaml code executing in the traditional toplevel system uses the bytecode
+interpreter.  When increased performance is required, or for testing
+programs that will only execute correctly when compiled to native code,
+the {\em native toplevel} may be used instead.
+
+For the majority of installations the native toplevel will not have been
+installed along with the rest of the OCaml toolchain.  In such circumstances
+it will be necessary to build the OCaml distribution from source.
+From the built source tree of the distribution you may use
+{\tt make natruntop} to build and execute a native toplevel.  (Alternatively
+{\tt make ocamlnat} can be used, which just performs the build step.)
+
+If the {\tt make install} command is run after having built the native
+toplevel then the {\tt ocamlnat} program (either from the source or the
+installation directory) may be invoked directly rather than using
+{\tt make natruntop}.

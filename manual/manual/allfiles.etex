@@ -6,35 +6,32 @@
 \begin{document}
 
 \thispagestyle{empty}
-\begin{center}
+\begin{maintitle}
 ~\vfill
 \Huge           The OCaml system \\
                 release \ocamlversion \\[1cm]
 \Large          Documentation and user's manual \\[1cm]
 \large          Xavier Leroy, \\
-                Damien Doligez, Alain Frisch, Jacques Garrigue, Didier Rémy and Jérôme Vouillon \\[1cm]
+                Damien Doligez, Alain Frisch, Jacques Garrigue, Didier RÃ©my and JÃ©rÃ´me Vouillon \\[1cm]
                 \today \\
                 ~
 \vfill
 \normalsize     Copyright \copyright\ \number\year\ Institut National de
                 Recherche en Informatique et en Automatique
-\end{center}
+\end{maintitle}
 \cleardoublepage
 \setcounter{page}{1}
-
 
 \begin{htmlonly}
 \begin{quote}
 \rule{}{}
 This manual is also available in
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF}.
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.ps.gz}{Postscript},
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.dvi.gz}{DVI},
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain text},
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.pdf}{PDF}.
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain text},
 as a
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman-html.tar.gz}{bundle of HTML files},
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman-html.tar.gz}{bundle of HTML files},
 and as a
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
+\ahref{https://ocaml.org/releases/\ocamlversion/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
 \rule{}{}
 \end{quote}
 \end{htmlonly}
@@ -49,6 +46,7 @@ and as a
 \input{moduleexamples.tex}
 \input{objectexamples.tex}
 \input{lablexamples.tex}
+\input{polymorphism.tex}
 \input{advexamples.tex}
 
 \part{The OCaml language}
@@ -64,7 +62,7 @@ and as a
 \input{runtime.tex}
 \input{native.tex}
 \input{lexyacc.tex}
-\input{depend.tex}
+\input{ocamldep.tex}
 \input{browser.tex}
 \input{ocamldoc.tex}
 \input{debugger.tex}
@@ -73,11 +71,13 @@ and as a
 % \input emacs.tex
 \input{intf-c.tex}
 \input{flambda.tex}
+\input{spacetime-chapter.tex}
+\input{afl-fuzz.tex}
 
 \part{The OCaml library}
 \label{p:library}
 \input{core.tex}
-\input{stdlib.tex}
+\input{stdlib-blurb.tex}
 \input{compilerlibs.tex}
 \input{libunix.tex}
 \input{libnum.tex}

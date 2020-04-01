@@ -1,0 +1,36 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(library
+ (name stdlib)
+ (stdlib
+   (exit_module std_exit)
+   (internal_modules Camlinternal*)
+   (modules_before_stdlib
+     camlinternalFormatBasics))
+ (flags (:standard -w -9 -nolabels))
+ (preprocess
+   (per_module
+     ((action
+        (run awk -v dune_wrapped=true
+               -f %{dep:expand_module_aliases.awk} %{input-file}))
+      stdlib))))
+
+(rule
+ (targets sys.ml)
+ (deps (:version ../VERSION) (:p sys.mlp))
+ (action
+   (with-stdout-to %{targets}
+     (bash
+       "sed -e \"s|%%VERSION%%|`sed -e 1q %{version} | tr -d '\r'`|\" %{p}"))))

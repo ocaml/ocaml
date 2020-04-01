@@ -17,7 +17,7 @@ open Asttypes
 open Parsetree
 
 let string_of_cst = function
-  | Pconst_string(s, _) -> Some s
+  | Pconst_string(s, _, _) -> Some s
   | _ -> None
 
 let string_of_payload = function
@@ -25,166 +25,263 @@ let string_of_payload = function
       string_of_cst c
   | _ -> None
 
-let rec error_of_extension ext =
+let string_of_opt_payload p =
+  match string_of_payload p with
+  | Some s -> s
+  | None -> ""
+
+let error_of_extension ext =
+  let submessage_from main_loc main_txt = function
+    | {pstr_desc=Pstr_extension
+           (({txt = ("ocaml.error"|"error"); loc}, p), _)} ->
+        begin match p with
+        | PStr([{pstr_desc=Pstr_eval
+                     ({pexp_desc=Pexp_constant(Pconst_string(msg,_,_))}, _)}
+               ]) ->
+            { Location.loc; txt = fun ppf -> Format.pp_print_text ppf msg }
+        | _ ->
+            { Location.loc; txt = fun ppf ->
+                Format.fprintf ppf
+                  "Invalid syntax for sub-message of extension '%s'." main_txt }
+        end
+    | {pstr_desc=Pstr_extension (({txt; loc}, _), _)} ->
+        { Location.loc; txt = fun ppf ->
+            Format.fprintf ppf "Uninterpreted extension '%s'." txt }
+    | _ ->
+        { Location.loc = main_loc; txt = fun ppf ->
+            Format.fprintf ppf
+              "Invalid syntax for sub-message of extension '%s'." main_txt }
+  in
   match ext with
   | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
-    let rec sub_from inner =
-      match inner with
-      | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
-          error_of_extension ext :: sub_from rest
-      | _ :: rest ->
-          (Location.errorf ~loc
-             "Invalid syntax for sub-error of extension '%s'." txt) ::
-            sub_from rest
-      | [] -> []
-    in
-    begin match p with
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::
-           {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Pconst_string(if_highlight,_))}, _)}::
-           inner) ->
-        Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::inner) ->
-        Location.error ~loc ~sub:(sub_from inner) msg
-    | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
-    end
+      begin match p with
+      | PStr [] -> raise Location.Already_displayed_error
+      | PStr({pstr_desc=Pstr_eval
+                  ({pexp_desc=Pexp_constant(Pconst_string(msg,_,_))}, _)}::
+             inner) ->
+          let sub = List.map (submessage_from loc txt) inner in
+          Location.error_of_printer ~loc ~sub Format.pp_print_text msg
+      | _ ->
+          Location.errorf ~loc "Invalid syntax for extension '%s'." txt
+      end
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
-let rec deprecated_of_attrs = function
+let kind_and_message = function
+  | PStr[
+      {pstr_desc=
+         Pstr_eval
+           ({pexp_desc=Pexp_apply
+                 ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},
+                  [Nolabel,{pexp_desc=Pexp_constant (Pconst_string(s,_,_))}])
+            },_)}] ->
+      Some (id, s)
+  | PStr[
+      {pstr_desc=
+         Pstr_eval
+           ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},_)}] ->
+      Some (id, "")
+  | _ -> None
+
+let cat s1 s2 =
+  if s2 = "" then s1 else s1 ^ "\n" ^ s2
+
+let alert_attr x =
+  match x.attr_name.txt with
+  | "ocaml.deprecated"|"deprecated" ->
+      Some (x, "deprecated", string_of_opt_payload x.attr_payload)
+  | "ocaml.alert"|"alert" ->
+      begin match kind_and_message x.attr_payload with
+      | Some (kind, message) -> Some (x, kind, message)
+      | None -> None (* note: bad payloads detected by warning_attribute *)
+      end
+  | _ -> None
+
+let alert_attrs l =
+  List.filter_map alert_attr l
+
+let alerts_of_attrs l =
+  List.fold_left
+    (fun acc (_, kind, message) ->
+       let upd = function
+         | None | Some "" -> Some message
+         | Some s -> Some (cat s message)
+       in
+       Misc.Stdlib.String.Map.update kind upd acc
+    )
+    Misc.Stdlib.String.Map.empty
+    (alert_attrs l)
+
+let check_alerts loc attrs s =
+  Misc.Stdlib.String.Map.iter
+    (fun kind message -> Location.alert loc ~kind (cat s message))
+    (alerts_of_attrs attrs)
+
+let check_alerts_inclusion ~def ~use loc attrs1 attrs2 s =
+  let m2 = alerts_of_attrs attrs2 in
+  Misc.Stdlib.String.Map.iter
+    (fun kind msg ->
+       if not (Misc.Stdlib.String.Map.mem kind m2) then
+         Location.alert ~def ~use ~kind loc (cat s msg)
+    )
+    (alerts_of_attrs attrs1)
+
+let rec deprecated_mutable_of_attrs = function
   | [] -> None
-  | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) :: _ ->
-      begin match string_of_payload p with
-      | Some txt ->  Some txt
-      | None -> Some ""
-      end
-  | _ :: tl -> deprecated_of_attrs tl
+  | {attr_name =  {txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _};
+     attr_payload = p} :: _ ->
+     Some (string_of_opt_payload p)
+  | _ :: tl -> deprecated_mutable_of_attrs tl
 
-let check_deprecated loc attrs s =
-  match deprecated_of_attrs attrs with
+let check_deprecated_mutable loc attrs s =
+  match deprecated_mutable_of_attrs attrs with
   | None -> ()
-  | Some "" -> Location.prerr_warning loc (Warnings.Deprecated s)
   | Some txt ->
-      Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+      Location.deprecated loc (Printf.sprintf "mutating field %s" (cat s txt))
 
-let rec check_deprecated_mutable loc attrs s =
-  match attrs with
-  | [] -> ()
-  | ({txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _}, p) :: _ ->
-      let txt =
-        match string_of_payload p with
-        | Some txt -> "\n" ^ txt
-        | None -> ""
-      in
-      Location.prerr_warning loc
-        (Warnings.Deprecated (Printf.sprintf "mutating field %s%s"
-           s txt))
-  | _ :: tl -> check_deprecated_mutable loc tl s
+let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
+  match deprecated_mutable_of_attrs attrs1,
+        deprecated_mutable_of_attrs attrs2
+  with
+  | None, _ | Some _, Some _ -> ()
+  | Some txt, None ->
+      Location.deprecated ~def ~use loc
+        (Printf.sprintf "mutating field %s" (cat s txt))
 
-let rec deprecated_of_sig = function
+let rec attrs_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->
-      begin match deprecated_of_attrs [a] with
-      | None -> deprecated_of_sig tl
-      | Some _ as r -> r
-      end
-  | _ -> None
+      a :: attrs_of_sig tl
+  | _ ->
+      []
 
+let alerts_of_sig sg = alerts_of_attrs (attrs_of_sig sg)
 
-let rec deprecated_of_str = function
+let rec attrs_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
-      begin match deprecated_of_attrs [a] with
-      | None -> deprecated_of_str tl
-      | Some _ as r -> r
-      end
-  | _ -> None
+      a :: attrs_of_str tl
+  | _ ->
+      []
 
+let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
 
-let emit_external_warnings =
-  (* Note: this is run as a preliminary pass when type-checking an
-     interface or implementation.  This allows to cover all kinds of
-     attributes, but the drawback is that it doesn't take local
-     configuration of warnings (with '@@warning'/'@@warnerror'
-     attributes) into account.  We should rather check for
-     'ppwarning' attributes during the actual type-checking, making
-     sure to cover all contexts (easier and more ugly alternative:
-     duplicate here the logic which control warnings locally). *)
-  let open Ast_iterator in
-  {
-    default_iterator with
-    attribute = (fun _ a ->
-        match a with
-        | {txt="ocaml.ppwarning"|"ppwarning"},
-          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (Pconst_string (s, _))},_);
-                pstr_loc}] ->
-            Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
-        | _ -> ()
-      )
-  }
+let check_no_alert attrs =
+  List.iter
+    (fun (a, _, _) ->
+       Location.prerr_warning a.attr_loc
+         (Warnings.Misplaced_attribute a.attr_name.txt)
+    )
+    (alert_attrs attrs)
 
+let warn_payload loc txt msg =
+  Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
 
-let warning_scope = ref []
-
-let warning_enter_scope () =
-  warning_scope := (Warnings.backup ()) :: !warning_scope
-let warning_leave_scope () =
-  match !warning_scope with
-  | [] -> assert false
-  | hd :: tl ->
-      Warnings.restore hd;
-      warning_scope := tl
-
-let warning_attribute attrs =
+let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
         begin try Warnings.parse_options errflag s
-        with Arg.Bad _ ->
-          Location.prerr_warning loc
-            (Warnings.Attribute_payload
-               (txt, "Ill-formed list of warnings"))
+        with Arg.Bad msg -> warn_payload loc txt msg
         end
     | None ->
-        Location.prerr_warning loc
-          (Warnings.Attribute_payload
-             (txt, "A single string literal is expected"))
+        warn_payload loc txt "A single string literal is expected"
   in
-  List.iter
-    (function
-      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
-          process loc txt false payload
-      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
-          process loc txt true payload
-      | _ ->
-          ()
-    )
-    attrs
+  let process_alert loc txt = function
+    | PStr[{pstr_desc=
+              Pstr_eval(
+                {pexp_desc=Pexp_constant(Pconst_string(s,_,_))},
+                _)
+           }] ->
+        begin try Warnings.parse_alert_option s
+        with Arg.Bad msg -> warn_payload loc txt msg
+        end
+    | k ->
+        match kind_and_message k with
+        | Some ("all", _) ->
+            warn_payload loc txt "The alert name 'all' is reserved"
+        | Some _ -> ()
+        | None -> warn_payload loc txt "Invalid payload"
+  in
+  function
+  | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
+     attr_loc;
+     attr_payload;
+     } ->
+      process attr_loc txt false attr_payload
+  | {attr_name = {txt = ("ocaml.warnerror"|"warnerror") as txt; _};
+     attr_loc;
+     attr_payload
+    } ->
+      process attr_loc txt true attr_payload
+  | {attr_name = {txt="ocaml.ppwarning"|"ppwarning"; _};
+     attr_loc = _;
+     attr_payload =
+       PStr [
+         { pstr_desc=
+             Pstr_eval({pexp_desc=Pexp_constant (Pconst_string (s, _, _))},_);
+           pstr_loc }
+       ];
+    } when ppwarning ->
+     Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+  | {attr_name = {txt = ("ocaml.alert"|"alert") as txt; _};
+     attr_loc;
+     attr_payload;
+     } ->
+      process_alert attr_loc txt attr_payload
+  | _ ->
+     ()
 
-let with_warning_attribute attrs f =
+let warning_scope ?ppwarning attrs f =
+  let prev = Warnings.backup () in
   try
-    warning_enter_scope ();
-    warning_attribute attrs;
+    List.iter (warning_attribute ?ppwarning) (List.rev attrs);
     let ret = f () in
-    warning_leave_scope ();
+    Warnings.restore prev;
     ret
   with exn ->
-    warning_leave_scope ();
+    Warnings.restore prev;
     raise exn
 
 
 let warn_on_literal_pattern =
   List.exists
-    (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _)
-        -> true
-      | _ -> false
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern" -> true
+       | _ -> false
     )
 
 let explicit_arity =
   List.exists
-    (function
-      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
-      | _ -> false
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.explicit_arity"|"explicit_arity" -> true
+       | _ -> false
     )
+
+let immediate =
+  List.exists
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.immediate"|"immediate" -> true
+       | _ -> false
+    )
+
+let immediate64 =
+  List.exists
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.immediate64"|"immediate64" -> true
+       | _ -> false
+    )
+
+(* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
+   attributes cannot be input by the user, they are added by the
+   compiler when applying the default setting. This is done to record
+   in the .cmi the default used by the compiler when compiling the
+   source file because the default can change between compiler
+   invocations. *)
+
+let check l a = List.mem a.attr_name.txt l
+
+let has_unboxed attr =
+  List.exists (check ["ocaml.unboxed"; "unboxed"])
+    attr
+
+let has_boxed attr =
+  List.exists (check ["ocaml.boxed"; "boxed"]) attr

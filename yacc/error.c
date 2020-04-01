@@ -19,6 +19,9 @@
 
 #include "defs.h"
 
+/* String displayed if we can't malloc a buffer for the UTF-8 conversion */
+static char *unknown = "<unknown; out of memory>";
+
 void fatal(char *msg)
 {
     fprintf(stderr, "%s: f - %s\n", myname, msg);
@@ -33,9 +36,10 @@ void no_space(void)
 }
 
 
-void open_error(char *filename)
+void open_error(char_os *filename)
 {
-    fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, filename);
+    char *u8 = caml_stat_strdup_of_os(filename);
+    fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, (u8 ? u8 : unknown));
     done(2);
 }
 
@@ -109,24 +113,6 @@ void unterminated_text(int t_lineno, char *t_line, char *t_cptr)
 }
 
 
-void unterminated_union(int u_lineno, char *u_line, char *u_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: unterminated %%union declaration\n",
-            virtual_input_file_name, u_lineno);
-    print_pos(u_line, u_cptr);
-    done(1);
-}
-
-
-void over_unionized(char *u_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: too many %%union declarations\n",
-            virtual_input_file_name, lineno);
-    print_pos(line, u_cptr);
-    done(1);
-}
-
-
 void illegal_tag(int t_lineno, char *t_line, char *t_cptr)
 {
     fprintf(stderr, "File \"%s\", line %d: illegal tag\n",
@@ -191,8 +177,8 @@ token\n", virtual_input_file_name, lineno, s);
 
 void too_many_entries(void)
 {
-    fprintf(stderr, "File \"%s\", line %d: more than 256 entry points\n",
-            virtual_input_file_name, lineno);
+    fprintf(stderr, "File \"%s\", line %d: more than %u entry points\n",
+            virtual_input_file_name, lineno, MAX_ENTRY_POINT);
     done(1);
 }
 
@@ -311,5 +297,13 @@ void polymorphic_entry_point(char *s)
     fprintf(stderr,
             "%s: e - the start symbol `%s' has a polymorphic type\n",
             myname, s);
+    done(1);
+}
+
+void forbidden_conflicts(void)
+{
+    fprintf(stderr,
+            "%s: the grammar has conflicts, but --strict was specified\n",
+            myname);
     done(1);
 }

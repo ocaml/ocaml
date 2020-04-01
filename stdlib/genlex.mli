@@ -67,7 +67,7 @@ val make_lexer : string list -> char Stream.t -> token Stream.t
    belongs to this list, and as [Ident s] otherwise.
    A special character [s] is returned as [Kwd s] if [s]
    belongs to this list, and cause a lexical error (exception
-   [Stream.Error] with the offending lexeme as its parameter) otherwise.
+   {!Stream.Error} with the offending lexeme as its parameter) otherwise.
    Blanks and newlines are skipped. Comments delimited by [(*] and [*)]
-   are skipped as well, and can be nested. A [Stream.Failure] exception
+   are skipped as well, and can be nested. A {!Stream.Failure} exception
    is raised if end of stream is unexpectedly reached.*)

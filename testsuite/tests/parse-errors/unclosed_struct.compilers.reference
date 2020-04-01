@@ -1,0 +1,6 @@
+File "unclosed_struct.ml", line 10, characters 0-0:
+Error: Syntax error: 'end' expected
+File "unclosed_struct.ml", line 8, characters 11-17:
+8 | module M = struct
+               ^^^^^^
+  This 'struct' might be unmatched

@@ -1,17 +1,11 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+
+* hassysthreads
+include systhreads
+** bytecode
+** native
+
+*)
 
 (* Test a file copy function *)
 
@@ -34,7 +28,7 @@ let test msg producer consumer src dst =
 (* File copy with constant-sized chunks *)
 
 let copy_file sz (ic, oc) =
-  let buffer = String.create sz in
+  let buffer = Bytes.create sz in
   let rec copy () =
     let n = input ic buffer 0 sz in
     if n = 0 then () else begin
@@ -48,7 +42,7 @@ let copy_file sz (ic, oc) =
 (* File copy with random-sized chunks *)
 
 let copy_random sz (ic, oc) =
-  let buffer = String.create sz in
+  let buffer = Bytes.create sz in
   let rec copy () =
     let s = 1 + Random.int sz in
     let n = input ic buffer 0 s in

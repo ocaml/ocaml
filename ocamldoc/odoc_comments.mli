@@ -69,7 +69,7 @@ val info_of_string : string -> Odoc_types.info
    and return an {!Odoc_types.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
    The given module list is used for cross reference.
-   @raise Failure is the file could not be opened or there is a
+   @raise Failure if the file could not be opened or there is a
    syntax error.
 *)
 val info_of_comment_file :

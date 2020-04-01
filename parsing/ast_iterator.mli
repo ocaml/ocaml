@@ -13,17 +13,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** {!iterator} allows to implement AST inspection using open recursion.  A
+(** {!iterator} enables AST inspection using open recursion.  A
     typical mapper would be based on {!default_iterator}, a trivial iterator,
-    and will fall back on it for handling the syntax it does not modify. *)
+    and will fall back on it for handling the syntax it does not modify.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 open Parsetree
 
-(** {2 A generic Parsetree iterator} *)
+(** {1 A generic Parsetree iterator} *)
 
 type iterator = {
   attribute: iterator -> attribute -> unit;
   attributes: iterator -> attribute list -> unit;
+  binding_op: iterator -> binding_op -> unit;
   case: iterator -> case -> unit;
   cases: iterator -> case list -> unit;
   class_declaration: iterator -> class_declaration -> unit;
@@ -45,9 +51,11 @@ type iterator = {
   location: iterator -> Location.t -> unit;
   module_binding: iterator -> module_binding -> unit;
   module_declaration: iterator -> module_declaration -> unit;
+  module_substitution: iterator -> module_substitution -> unit;
   module_expr: iterator -> module_expr -> unit;
   module_type: iterator -> module_type -> unit;
   module_type_declaration: iterator -> module_type_declaration -> unit;
+  open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
@@ -56,8 +64,11 @@ type iterator = {
   structure: iterator -> structure -> unit;
   structure_item: iterator -> structure_item -> unit;
   typ: iterator -> core_type -> unit;
+  row_field: iterator -> row_field -> unit;
+  object_field: iterator -> object_field -> unit;
   type_declaration: iterator -> type_declaration -> unit;
   type_extension: iterator -> type_extension -> unit;
+  type_exception: iterator -> type_exception -> unit;
   type_kind: iterator -> type_kind -> unit;
   value_binding: iterator -> value_binding -> unit;
   value_description: iterator -> value_description -> unit;

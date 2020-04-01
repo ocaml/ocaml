@@ -1,0 +1,10 @@
+File "pr4824a_bad.ml", line 10, characters 2-45:
+10 |   struct class c x = object val x = x end end
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       ...
+       Class declarations do not match:
+         class c : 'a -> object val x : 'a end
+       does not match
+         class c : 'a -> object val x : 'b end
+       The instance variable x has type 'a but is expected to have type 'b

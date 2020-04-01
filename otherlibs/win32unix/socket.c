@@ -29,8 +29,7 @@ int socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-CAMLprim value unix_socket(domain, type, proto)
-     value domain, type, proto;
+CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
 {
   SOCKET s;
 
@@ -49,5 +48,9 @@ CAMLprim value unix_socket(domain, type, proto)
     win32_maperr(WSAGetLastError());
     uerror("socket", Nothing);
   }
+  /* This is a best effort, not guaranteed to work, so don't fail on error */
+  SetHandleInformation((HANDLE) s,
+                       HANDLE_FLAG_INHERIT,
+                       unix_cloexec_p(cloexec) ? 0 : HANDLE_FLAG_INHERIT);
   return win_alloc_socket(s);
 }

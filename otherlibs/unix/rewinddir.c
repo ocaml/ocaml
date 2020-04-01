@@ -37,6 +37,6 @@ CAMLprim value unix_rewinddir(value vd)
 #else
 
 CAMLprim value unix_rewinddir(value d)
-{ invalid_argument("rewinddir not implemented"); }
+{ caml_invalid_argument("rewinddir not implemented"); }
 
 #endif

@@ -1,10 +1,12 @@
-strstubs.o: strstubs.c ../../byterun/caml/mlvalues.h \
-  ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
-  ../../byterun/caml/../../config/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/alloc.h ../../byterun/caml/memory.h \
-  ../../byterun/caml/gc.h ../../byterun/caml/major_gc.h \
-  ../../byterun/caml/freelist.h ../../byterun/caml/minor_gc.h \
-  ../../byterun/caml/address_class.h ../../byterun/caml/fail.h
+strstubs.$(O): strstubs.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/domain_state.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/domain_state.tbl ../../runtime/caml/alloc.h \
+ ../../runtime/caml/memory.h ../../runtime/caml/compatibility.h \
+ ../../runtime/caml/domain.h ../../runtime/caml/fail.h
+str.cmo : \
+    str.cmi
+str.cmx : \
+    str.cmi
 str.cmi :
-str.cmo : str.cmi
-str.cmx : str.cmi

@@ -21,9 +21,10 @@ external unsafe_chr: int -> char = "%identity"
 let chr n =
   if n < 0 || n > 255 then invalid_arg "Char.chr" else unsafe_chr n
 
-external string_create: int -> string = "caml_create_string"
-external string_unsafe_set : string -> int -> char -> unit
-                           = "%string_unsafe_set"
+external bytes_create: int -> bytes = "caml_create_bytes"
+external bytes_unsafe_set : bytes -> int -> char -> unit
+                           = "%bytes_unsafe_set"
+external unsafe_to_string : bytes -> string = "%bytes_to_string"
 
 let escaped = function
   | '\'' -> "\\'"
@@ -33,41 +34,39 @@ let escaped = function
   | '\r' -> "\\r"
   | '\b' -> "\\b"
   | ' ' .. '~' as c ->
-      let s = string_create 1 in
-      string_unsafe_set s 0 c;
-      s
+      let s = bytes_create 1 in
+      bytes_unsafe_set s 0 c;
+      unsafe_to_string s
   | c ->
       let n = code c in
-      let s = string_create 4 in
-      string_unsafe_set s 0 '\\';
-      string_unsafe_set s 1 (unsafe_chr (48 + n / 100));
-      string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
-      string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
-      s
+      let s = bytes_create 4 in
+      bytes_unsafe_set s 0 '\\';
+      bytes_unsafe_set s 1 (unsafe_chr (48 + n / 100));
+      bytes_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
+      bytes_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
+      unsafe_to_string s
 
-let lowercase c =
-  if (c >= 'A' && c <= 'Z')
-  || (c >= '\192' && c <= '\214')
-  || (c >= '\216' && c <= '\222')
-  then unsafe_chr(code c + 32)
-  else c
+let lowercase = function
+  | 'A' .. 'Z'
+  | '\192' .. '\214'
+  | '\216' .. '\222' as c ->
+    unsafe_chr(code c + 32)
+  | c -> c
 
-let uppercase c =
-  if (c >= 'a' && c <= 'z')
-  || (c >= '\224' && c <= '\246')
-  || (c >= '\248' && c <= '\254')
-  then unsafe_chr(code c - 32)
-  else c
+let uppercase = function
+  | 'a' .. 'z'
+  | '\224' .. '\246'
+  | '\248' .. '\254' as c ->
+    unsafe_chr(code c - 32)
+  | c -> c
 
-let lowercase_ascii c =
-  if (c >= 'A' && c <= 'Z')
-  then unsafe_chr(code c + 32)
-  else c
+let lowercase_ascii = function
+  | 'A' .. 'Z' as c -> unsafe_chr(code c + 32)
+  | c -> c
 
-let uppercase_ascii c =
-  if (c >= 'a' && c <= 'z')
-  then unsafe_chr(code c - 32)
-  else c
+let uppercase_ascii = function
+  | 'a' .. 'z' as c -> unsafe_chr(code c - 32)
+  | c -> c
 
 type t = char
 

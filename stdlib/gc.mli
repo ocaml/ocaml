@@ -2,10 +2,11 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*            Damien Doligez, projet Para, INRIA Rocquencourt             *)
+(*            Jacques-Henri Jourdan, projet Gallium, INRIA Paris          *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 1996-2016 Institut National de Recherche en Informatique   *)
+(*     et en Automatique.                                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -18,9 +19,7 @@
 type stat =
   { minor_words : float;
     (** Number of words allocated in the minor heap since
-       the program was started.  This number is accurate in
-       byte-code programs, but only an approximation in programs
-       compiled to native code. *)
+       the program was started. *)
 
     promoted_words : float;
     (** Number of words allocated in the minor heap that
@@ -84,10 +83,13 @@ type stat =
 
 type control =
   { mutable minor_heap_size : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.minor_heap_size = ...}"]
     (** The size (in words) of the minor heap.  Changing
        this parameter will trigger a minor collection.  Default: 256k. *)
 
     mutable major_heap_increment : int;
+    [@ocaml.deprecated_mutable
+         "Use {(Gc.get()) with Gc.major_heap_increment = ...}"]
     (** How much to add to the major heap when increasing it. If this
         number is less than or equal to 1000, it is a percentage of
         the current heap size (i.e. setting it to 100 will double the heap
@@ -95,15 +97,17 @@ type control =
         number of words that will be added to the heap. Default: 15. *)
 
     mutable space_overhead : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.space_overhead = ...}"]
     (** The major GC speed is computed from this parameter.
        This is the memory that will be "wasted" because the GC does not
-       immediatly collect unreachable blocks.  It is expressed as a
+       immediately collect unreachable blocks.  It is expressed as a
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
        Default: 80. *)
 
     mutable verbose : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.verbose = ...}"]
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
@@ -121,6 +125,7 @@ type control =
        Default: 0. *)
 
     mutable max_overhead : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.max_overhead = ...}"]
     (** Heap compaction is triggered when the estimated amount
        of "wasted" memory is more than [max_overhead] percent of the
        amount of live data.  If [max_overhead] is set to 0, heap
@@ -128,28 +133,100 @@ type control =
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
        If compaction is permanently disabled, it is strongly suggested
-       to set [allocation_policy] to 1.
+       to set [allocation_policy] to 2.
        Default: 500. *)
 
     mutable stack_limit : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.stack_limit = ...}"]
     (** The maximum size of the stack (in words).  This is only
        relevant to the byte-code runtime, as the native code runtime
        uses the operating system's stack.  Default: 1024k. *)
 
     mutable allocation_policy : int;
-    (** The policy used for allocating in the heap.  Possible
-        values are 0 and 1.  0 is the next-fit policy, which is
-        quite fast but can result in fragmentation.  1 is the
-        first-fit policy, which can be slower in some cases but
-        can be better for programs with fragmentation problems.
-        Default: 0. @since 3.11.0 *)
+    [@ocaml.deprecated_mutable
+         "Use {(Gc.get()) with Gc.allocation_policy = ...}"]
+    (** The policy used for allocating in the major heap.
+        Possible values are 0, 1 and 2.
+
+        - 0 is the next-fit policy, which is usually fast but can
+          result in fragmentation, increasing memory consumption.
+
+        - 1 is the first-fit policy, which avoids fragmentation but
+          has corner cases (in certain realistic workloads) where it
+          is sensibly slower.
+
+        - 2 is the best-fit policy, which is fast and avoids
+          fragmentation. In our experiments it is faster and uses less
+          memory than both next-fit and first-fit.
+          (since OCaml 4.10)
+
+        The current default is next-fit, as the best-fit policy is new
+        and not yet widely tested. We expect best-fit to become the
+        default in the future.
+
+        On one example that was known to be bad for next-fit and first-fit,
+        next-fit takes 28s using 855Mio of memory,
+        first-fit takes 47s using 566Mio of memory,
+        best-fit takes 27s using 545Mio of memory.
+
+        Note: When changing to a low-fragmentation policy, you may
+        need to augment the [space_overhead] setting, for example
+        using [100] instead of the default [80] which is tuned for
+        next-fit. Indeed, the difference in fragmentation behavior
+        means that different policies will have different proportion
+        of "wasted space" for a given program. Less fragmentation
+        means a smaller heap so, for the same amount of wasted space,
+        a higher proportion of wasted space. This makes the GC work
+        harder, unless you relax it by increasing [space_overhead].
+
+        Note: changing the allocation policy at run-time forces
+        a heap compaction, which is a lengthy operation unless the
+        heap is small (e.g. at the start of the program).
+
+        Default: 0.
+
+        @since 3.11.0 *)
 
     window_size : int;
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
         Default: 1. @since 4.03.0 *)
-}
+
+    custom_major_ratio : int;
+    (** Target ratio of floating garbage to major heap size for
+        out-of-heap memory held by custom values located in the major
+        heap. The GC speed is adjusted to try to use this much memory
+        for dead values that are not yet collected. Expressed as a
+        percentage of major heap size. The default value keeps the
+        out-of-heap floating garbage about the same size as the
+        in-heap overhead.
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 44.
+        @since 4.08.0 *)
+
+    custom_minor_ratio : int;
+    (** Bound on floating garbage for out-of-heap memory held by
+        custom values in the minor heap. A minor GC is triggered when
+        this much memory is held by custom values located in the minor
+        heap. Expressed as a percentage of minor heap size.
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 100.
+        @since 4.08.0 *)
+
+    custom_minor_max_size : int;
+    (** Maximum amount of out-of-heap memory for each custom value
+        allocated in the minor heap. When a custom value is allocated
+        on the minor heap and holds more than this many bytes, only
+        this value is counted against [custom_minor_ratio] and the
+        rest is directly counted against [custom_major_ratio].
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 8192 bytes.
+        @since 4.08.0 *)
+  }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
     OCAMLRUNPARAM environment variable.  See the documentation of
@@ -170,6 +247,16 @@ external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)].  This function
     is as fast as [quick_stat]. *)
 
+external minor_words : unit -> (float [@unboxed])
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed"
+(** Number of words allocated in the minor heap since the program was
+    started. This number is accurate in byte-code programs, but only an
+    approximation in programs compiled to native code.
+
+    In native code this function does not allocate.
+
+    @since 4.04 *)
+
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
 
@@ -185,9 +272,8 @@ external major_slice : int -> int = "caml_gc_major_slice"
     Do a minor collection and a slice of major collection. [n] is the
     size of the slice: the GC will do enough work to free (on average)
     [n] words of memory. If [n] = 0, the GC will try to do enough work
-    to ensure that the next slice has no work to do.
-    Return an approximation of the work that the next slice will have
-    to do. *)
+    to ensure that the next automatic slice has no work to do.
+    This function returns an unspecified integer (currently: 0). *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
@@ -210,19 +296,25 @@ val allocated_bytes : unit -> float
    started.  It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
 
-external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
-(** Return the current size of the free space inside the minor heap. *)
+external get_minor_free : unit -> int = "caml_get_minor_free"
+(** Return the current size of the free space inside the minor heap.
+
+    @since 4.03.0 *)
 
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
     Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
-    than the smoothing window. *)
+    than the smoothing window.
+
+    @since 4.03.0 *)
 
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 (** [get_credit ()] returns the current size of the "work done in advance"
     counter of the GC smoothing system. The unit is one millionth of a
-    full GC. *)
+    full GC.
+
+    @since 4.03.0 *)
 
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 (** Return the number of times we tried to map huge pages and had to fall
@@ -258,7 +350,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
    Instead you should make sure that [v] is not in the closure of
    the finalisation function by writing:
-   - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
+   - [ let f = fun x -> ...  let v = ... in Gc.finalise f v ]
 
 
    The [f] function can use all features of OCaml, including
@@ -280,14 +372,34 @@ val finalise : ('a -> unit) -> 'a -> unit
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   Note that values of types [float] and ['a lazy] (for any ['a]) are
-   sometimes allocated and sometimes not, so finalising them is unsafe,
-   and [finalise] will also raise [Invalid_argument] for them.
+   Note that values of types [float] are sometimes allocated and
+   sometimes not, so finalising them is unsafe, and [finalise] will
+   also raise [Invalid_argument] for them. Values of type ['a Lazy.t]
+   (for any ['a]) are like [float] in this respect, except that the
+   compiler sometimes optimizes them in a way that prevents [finalise]
+   from detecting them. In this case, it will not raise
+   [Invalid_argument], but you should still avoid calling [finalise]
+   on lazy values.
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
-   {!Array.make}, and {!Pervasives.ref} are guaranteed to be
+   {!Array.make}, and {!Stdlib.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
+*)
+
+val finalise_last : (unit -> unit) -> 'a -> unit
+(** same as {!finalise} except the value is not given as argument. So
+    you can't use the given value for the computation of the
+    finalisation function. The benefit is that the function is called
+    after the value is unreachable for the last time instead of the
+    first time. So contrary to {!finalise} the value will never be
+    reachable again or used again. In particular every weak pointer
+    and ephemeron that contained this value as key or data is unset
+    before running the finalisation function. Moreover the finalisation
+    functions attached with {!finalise} are always called before the
+    finalisation functions attached with {!finalise_last}.
+
+    @since 4.04
 *)
 
 val finalise_release : unit -> unit
@@ -308,4 +420,93 @@ val create_alarm : (unit -> unit) -> alarm
 
 val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
-   to [a].  Calling [delete_alarm a] again has no effect. *)
+   to [a]. Calling [delete_alarm a] again has no effect. *)
+
+(** [Memprof] is a sampling engine for allocated memory words. Every
+   allocated word has a probability of being sampled equal to a
+   configurable sampling rate. Once a block is sampled, it becomes
+   tracked. A tracked block triggers a user-defined callback as soon
+   as it is allocated, promoted or deallocated.
+
+   Since blocks are composed of several words, a block can potentially
+   be sampled several times. If a block is sampled several times, then
+   each of the callback is called once for each event of this block:
+   the multiplicity is given in the [n_samples] field of the
+   [allocation] structure.
+
+   This engine makes it possible to implement a low-overhead memory
+   profiler as an OCaml library.
+
+   Note: this API is EXPERIMENTAL. It may change without prior
+   notice. *)
+module Memprof :
+  sig
+    type allocation = private
+      { n_samples : int;
+        (** The number of samples in this block (>= 1). *)
+
+        size : int;
+        (** The size of the block, in words, excluding the header. *)
+
+        unmarshalled : bool;
+        (** Whether the block comes from unmarshalling. *)
+
+        callstack : Printexc.raw_backtrace
+        (** The callstack for the allocation. *)
+      }
+    (** The type of metadata associated with allocations. This is the
+       type of records passed to the callback triggered by the
+       sampling of an allocation. *)
+
+    val start :
+      sampling_rate:float ->
+      ?callstack_size:int ->
+      ?minor_alloc_callback:(allocation -> 'minor option) ->
+      ?major_alloc_callback:(allocation -> 'major option) ->
+      ?promote_callback:('minor -> 'major option) ->
+      ?minor_dealloc_callback:('minor -> unit) ->
+      ?major_dealloc_callback:('major -> unit) ->
+      unit -> unit
+    (** Start the sampling with the given parameters. Fails if
+       sampling is already active.
+
+       The parameter [sampling_rate] is the sampling rate in samples
+       per word (including headers). Usually, with cheap callbacks, a
+       rate of 1e-4 has no visible effect on performance, and 1e-3
+       causes the program to run a few percent slower
+
+       The parameter [callstack_size] is the length of the callstack
+       recorded at every sample. Its default is [max_int].
+
+       The parameters *[_callback] are functions called when an event
+       occurs on a sampled block. If such a callback returns [None],
+       then the tracking of this particular block is cancelled. If
+       they return [Some v], then the value [v] will be passed to the
+       next callback for this block. Default callbacks simply return
+       [None] or [()].
+
+       The sampling is temporarily disabled when calling a callback
+       for the current thread. So they do not need to be reentrant if
+       the program is single-threaded. However, if threads are used,
+       it is possible that a context switch occurs during a callback,
+       in this case the callback functions must be reentrant.
+
+       Note that the callback can be postponed slightly after the
+       actual event. The callstack passed to the callback is always
+       accurate, but the program state may have evolved.
+
+       Calling [Thread.exit] in a callback is currently unsafe and can
+       result in undefined behavior. *)
+
+    val stop : unit -> unit
+    (** Stop the sampling. Fails if sampling is not active.
+
+        This function does not allocate memory, but tries to run the
+        postponed callbacks for already allocated memory blocks (of
+        course, these callbacks may allocate).
+
+        All the already tracked blocks are discarded.
+
+        Calling [stop] when a callback is running can lead to
+        callbacks not being called even though some events happened. *)
+end

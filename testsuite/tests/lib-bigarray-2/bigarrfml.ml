@@ -1,17 +1,32 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+
+files = "bigarrf.f bigarrfstub.c"
+last_flags = "-cclib -lgfortran"
+
+* script
+script = "sh ${test_source_directory}/has-gfortran.sh"
+
+** setup-ocamlc.byte-build-env
+*** script
+script = "gfortran -c bigarrf.f"
+**** ocamlc.byte
+all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml"
+***** run
+output = "${test_build_directory}/program-output"
+stdout = "${output}"
+****** check-program-output
+
+** setup-ocamlopt.byte-build-env
+*** script
+script = "gfortran -c bigarrf.f"
+**** ocamlopt.byte
+all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml"
+***** run
+output = "${test_build_directory}/program-output"
+stdout = "${output}"
+****** check-program-output
+
+*)
 
 open Bigarray
 open Printf

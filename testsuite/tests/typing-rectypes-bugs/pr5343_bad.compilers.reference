@@ -1,0 +1,4 @@
+File "pr5343_bad.ml", line 11, characters 2-14:
+11 |   type u = u t and v = v t
+       ^^^^^^^^^^^^
+Error: The type abbreviation u is cyclic

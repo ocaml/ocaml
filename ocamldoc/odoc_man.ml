@@ -287,12 +287,11 @@ class man =
     method man_of_text_element b txt =
       match txt with
       | Odoc_info.Raw s -> bs b (self#escape s)
-      | Odoc_info.Code s ->
-          bs b "\n.B ";
-          bs b ((Str.global_replace (Str.regexp "\n") "\n.B " (self#escape s))^"\n")
+      | Odoc_info.Code s -> self#man_of_code b s
       | Odoc_info.CodePre s ->
-          bs b "\n.B ";
-          bs b ((Str.global_replace (Str.regexp "\n") "\n.B " (self#escape s))^"\n")
+         bs b "\n.EX";
+         self#man_of_code b s;
+         bs b "\n.EE";
       | Odoc_info.Verbatim s ->
           bs b (self#escape s)
       | Odoc_info.Bold t
@@ -319,7 +318,8 @@ class man =
           self#man_of_text2 b t;
           bs b "\n.sp\n"
       | Odoc_info.Title (_, _, t) ->
-          self#man_of_text2 b [Odoc_info.Code (Odoc_info.string_of_text t)]
+          let txt = Odoc_info.string_of_text t in
+          bp b ".SS %s\n" txt
       | Odoc_info.Latex _ ->
           (* don't care about LaTeX stuff in HTML. *)
           ()
@@ -329,9 +329,9 @@ class man =
           self#man_of_text_element b
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       | Odoc_info.Superscript t ->
-          bs b "^{"; self#man_of_text2 b t
+          bs b "^"; self#man_of_text2 b t
       | Odoc_info.Subscript t ->
-          bs b "_{"; self#man_of_text2 b t
+          bs b "_"; self#man_of_text2 b t
       | Odoc_info.Module_list _ ->
           ()
       | Odoc_info.Index_list ->
@@ -345,7 +345,11 @@ class man =
       if String.lowercase_ascii target = "man" then bs b code else ()
 
     (** Print groff string to display code. *)
-    method man_of_code b s = self#man_of_text b [ Code s ]
+    method man_of_code b code =
+      let code = self#escape code in
+      bs b "\n.ft B\n";
+      bs b (Str.global_replace (Str.regexp "\n") "\n.br\n\\&" code);
+      bs b "\n.ft R\n";
 
     (** Take a string and return the string where fully qualified idents
        have been replaced by idents relative to the given module name.*)
@@ -384,17 +388,15 @@ class man =
 
     (** Print groff string to display a [Types.type_expr list].*)
     method man_of_cstr_args ?par b m_name sep l =
-      let s =
         match l with
         | Cstr_tuple l ->
-            Odoc_str.string_of_type_list ?par sep l
+            let s = Odoc_str.string_of_type_list ?par sep l in
+            let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+            bs b "\n.B ";
+            bs b (self#relative_idents m_name s2);
+            bs b "\n"
         | Cstr_record l ->
-            Odoc_str.string_of_record l
-      in
-      let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
-      bs b "\n.B ";
-      bs b (self#relative_idents m_name s2);
-      bs b "\n"
+            self#man_of_record m_name b l
 
     (** Print groff string to display the parameters of a type.*)
     method man_of_type_expr_param_list b m_name t =
@@ -537,17 +539,31 @@ class man =
       self#man_of_info b e.ex_info;
       bs b "\n.sp\n"
 
+
+    method field_comment b = function
+      | None -> ()
+      | Some t ->
+          bs b "  (* ";
+          self#man_of_info b (Some t);
+          bs b " *) "
+
+    (** Print groff string for a record type *)
+    method man_of_record father b l =
+          bs b "{";
+           List.iter (fun r ->
+             bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
+             bs b (r.rf_name^" : ");
+             self#man_of_type_expr b father r.rf_type;
+             bs b ";";
+             self#field_comment b r.rf_text ;
+           ) l;
+          bs b "\n }\n"
+
+
     (** Print groff string for a type. *)
     method man_of_type b t =
       Odoc_info.reset_type_names () ;
       let father = Name.father t.ty_name in
-      let field_comment = function
-        | None -> ()
-        | Some t ->
-          bs b "  (* ";
-          self#man_of_info b (Some t);
-          bs b " *) "
-      in
       bs b ".I type ";
       self#man_of_type_expr_param_list b father t;
       (
@@ -569,7 +585,7 @@ class man =
             bs b (r.of_name^" : ");
             self#man_of_type_expr b father r.of_type;
             bs b ";";
-            field_comment r.of_text ;
+            self#field_comment b r.of_text ;
           ) l;
           bs b "\n >\n"
        | Some (Other typ) ->
@@ -631,15 +647,7 @@ class man =
       | Type_record l ->
           bs b "= ";
           if priv then bs b "private ";
-          bs b "{";
-           List.iter (fun r ->
-             bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
-             bs b (r.rf_name^" : ");
-             self#man_of_type_expr b father r.rf_type;
-             bs b ";";
-             field_comment r.rf_text ;
-           ) l;
-          bs b "\n }\n"
+          self#man_of_record father b l
       | Type_open ->
           bs b "= ..";
           bs b "\n"
@@ -728,7 +736,7 @@ class man =
             (fun (p, desc_opt) ->
               bs b ".sp\n";
               bs b ("\""^p.mp_name^"\"\n");
-              Misc.may (self#man_of_module_type b m_name) p.mp_type;
+              Option.iter (self#man_of_module_type b m_name) p.mp_type;
               bs b "\n";
               (
                match desc_opt with
@@ -806,13 +814,13 @@ class man =
     (** Print groff string for a module comment.*)
     method man_of_module_comment b text =
       bs b "\n.PP\n";
-      self#man_of_text b [Code ("=== "^(Odoc_misc.string_of_text text)^" ===")];
+      self#man_of_text b text;
       bs b "\n.PP\n"
 
     (** Print groff string for a class comment.*)
     method man_of_class_comment b text =
       bs b "\n.PP\n";
-      self#man_of_text b [Code ("=== "^(Odoc_misc.string_of_text text)^" ===")];
+      self#man_of_text b text;
       bs b "\n.PP\n"
 
     method man_of_recfield b modname f =
@@ -837,7 +845,7 @@ class man =
               bs b " * ";
               self#man_of_type_expr b modname ty)
             q
-       | Cstr_record _ -> bs b "{ ... }"
+       | Cstr_record r -> self#man_of_record c.vc_name b r
       );
       bs b "\n.sp\n";
       self#man_of_info b c.vc_text;
@@ -870,7 +878,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^cl.cl_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -928,7 +936,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^ct.clt_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1020,7 +1028,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^mt.mt_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1102,7 +1110,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^m.m_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1208,7 +1216,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
         bs b ".SH NAME\n";
@@ -1279,7 +1287,7 @@ class man =
               self#man_of_module_type_body b mt
 
           | Res_section _ ->
-              (* normaly, we cannot have modules here. *)
+              (* normally, we cannot have modules here. *)
               ()
         in
         List.iter f l;

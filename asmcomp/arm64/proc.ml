@@ -33,7 +33,8 @@ let word_addressed = false
     x0 - x15              general purpose (caller-save)
     x16, x17              temporaries (used by call veeners)
     x18                   platform register (reserved)
-    x19 - x25             general purpose (callee-save)
+    x19 - x24             general purpose (callee-save)
+    x25                   domain state pointer
     x26                   trap pointer
     x27                   alloc pointer
     x28                   alloc limit
@@ -43,14 +44,14 @@ let word_addressed = false
    Floating-point register map:
     d0 - d7               general purpose (caller-save)
     d8 - d15              general purpose (callee-save)
-    d16 - d31             generat purpose (caller-save)
+    d16 - d31             general purpose (caller-save)
 *)
 
 let int_reg_name =
   [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";
      "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15";
-     "x19"; "x20"; "x21"; "x22"; "x23"; "x24"; "x25";
-     "x26"; "x27"; "x28"; "x16"; "x17" |]
+     "x19"; "x20"; "x21"; "x22"; "x23"; "x24";
+     "x25"; "x26"; "x27"; "x28"; "x16"; "x17" |]
 
 let float_reg_name =
   [| "d0";  "d1";  "d2";  "d3";  "d4";  "d5";  "d6";  "d7";
@@ -66,7 +67,7 @@ let register_class r =
   | Float -> 1
 
 let num_available_registers =
-  [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
+  [| 22; 32 |] (* first 22 int regs allocatable; all float regs allocatable *)
 
 let first_available_register =
   [| 0; 100 |]
@@ -103,6 +104,8 @@ let reg_d7 = phys_reg 107
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
+
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
 
 (* Calling conventions *)
 
@@ -169,6 +172,31 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* See "DWARF for the ARM 64-bit architecture (AArch64)" available from
+   developer.arm.com. *)
+
+let int_dwarf_reg_numbers =
+  [| 0; 1; 2; 3; 4; 5; 6; 7;
+     8; 9; 10; 11; 12; 13; 14; 15;
+     19; 20; 21; 22; 23; 24;
+     25; 26; 27; 28; 16; 17;
+  |]
+
+let float_dwarf_reg_numbers =
+  [| 64; 65; 66; 67; 68; 69; 70; 71;
+     72; 73; 74; 75; 76; 77; 78; 79;
+     80; 81; 82; 83; 84; 85; 86; 87;
+     88; 89; 90; 91; 92; 93; 94; 95;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 31
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -184,9 +212,9 @@ let destroyed_at_c_call =
      124;125;126;127;128;129;130;131])
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind | Icall_imm _) | Iop(Iextcall(_, true)) ->
+  | Iop(Icall_ind _ | Icall_imm _) | Iop(Iextcall { alloc = true; }) ->
       all_phys_regs
-  | Iop(Iextcall(_, false)) ->
+  | Iop(Iextcall { alloc = false; }) ->
       destroyed_at_c_call
   | Iop(Ialloc _) ->
       [| reg_x15 |]
@@ -196,40 +224,47 @@ let destroyed_at_oper = function
 
 let destroyed_at_raise = all_phys_regs
 
+let destroyed_at_reloadretaddr = [| |]
+
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall(_, _) -> 8
-  | Ialloc _ -> 25
-  | _ -> 26
+  | Iextcall _ -> 8
+  | Ialloc _ -> 24
+  | _ -> 25
 
 let max_register_pressure = function
-  | Iextcall(_, _) -> [| 10; 8 |]
-  | Ialloc _ -> [| 25; 32 |]
+  | Iextcall _ -> [| 10; 8 |]
+  | Ialloc _ -> [| 24; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _, _) -> [| 26; 31 |]
-  | _ -> [| 26; 32 |]
+  | Iload(Single, _) | Istore(Single, _, _) -> [| 25; 31 |]
+  | _ -> [| 25; 32 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
   | Ispecific(Ishiftcheckbound _) -> false
   | _ -> true
 
 (* Layout of the stack *)
+let frame_required fd =
+  fd.fun_contains_calls
+    || fd.fun_num_stack_slots.(0) > 0
+    || fd.fun_num_stack_slots.(1) > 0
 
-let num_stack_slots = [| 0; 0 |]
-let contains_calls = ref false
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ " " ^
+                 (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                 " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 
 let init () = ()

@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 open Format
+let () = Printtyp.Naming_context.enable false
 
 let new_fmt () =
   let buf = Buffer.create 512 in
@@ -46,23 +47,25 @@ exception Use_code of string
 
 (** Return the given module type where methods and vals have been removed
    from the signatures. Used when we don't want to print a too long module type.
-   @param code when the code is given, we raise the [Use_code] exception is we
-   encouter a signature, to that the calling function can use the code rather
+   @param code when the code is given, we raise the [Use_code] exception if we
+   encounter a signature, so that the calling function can use the code rather
    than the "emptied" type.
 *)
 let simpl_module_type ?code t =
+  let open Types in
   let rec iter t =
     match t with
-      Types.Mty_ident _
-    | Types.Mty_alias _ -> t
-    | Types.Mty_signature _ ->
+      Mty_ident _
+    | Mty_alias _ -> t
+    | Mty_signature _ ->
         (
          match code with
-           None -> Types.Mty_signature []
+           None -> Mty_signature []
          | Some s -> raise (Use_code s)
         )
-    | Types.Mty_functor (id, mt1, mt2) ->
-        Types.Mty_functor (id, Misc.may_map iter mt1, iter mt2)
+    | Mty_functor (Unit, mt) -> Mty_functor (Unit, iter mt)
+    | Mty_functor (Named (name, mt1), mt2) ->
+      Mty_functor (Named (name, iter mt1), iter mt2)
   in
   iter t
 
@@ -83,7 +86,10 @@ let simpl_class_type t =
     | Types.Cty_signature cs ->
         (* we delete vals and methods in order to not print them when
            displaying the type *)
-        let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
+      let tnil =
+        { Types.desc = Types.Tnil ; Types.level = 0
+        ; Types.scope = Btype.lowest_level ; Types.id = 0 }
+      in
         Types.Cty_signature { Types.csig_self = { cs.Types.csig_self with
                                                   Types.desc = Types.Tobject (tnil, ref None) };
                               csig_vars = Types.Vars.empty ;

@@ -72,6 +72,14 @@ let list_concat sep =
   in
   iter
 
+let remove_duplicates (type a) compare (li : a list) =
+  let module S = Set.Make(struct type t = a let compare = compare end) in
+  let maybe_cons ((set, rev_acc) as acc) x =
+    if S.mem x set then acc
+    else (S.add x set, x :: rev_acc) in
+  let (_, rev_acc) = List.fold_left maybe_cons (S.empty, []) li in
+  List.rev rev_acc
+
 let rec string_of_longident li =
   match li with
   | Longident.Lident s -> s
@@ -116,7 +124,7 @@ let rec string_of_text t =
           let rec f n = function
               [] -> "\n"
             | t :: q ->
-                "\n"^(string_of_int n)^". "^(string_of_text t)^
+                "\n"^(Int.to_string n)^". "^(string_of_text t)^
                 (f (n + 1) q)
           in
           f 1 l
@@ -229,14 +237,14 @@ let apply_opt f v_opt =
 let string_of_date ?(absolute=false) ?(hour=true) d =
   let add_0 s = if String.length s < 2 then "0"^s else s in
   let t = (if absolute then Unix.gmtime else Unix.localtime) d in
-  (string_of_int (t.Unix.tm_year + 1900))^"-"^
-  (add_0 (string_of_int (t.Unix.tm_mon + 1)))^"-"^
-  (add_0 (string_of_int t.Unix.tm_mday))^
+  (Int.to_string (t.Unix.tm_year + 1900))^"-"^
+  (add_0 (Int.to_string (t.Unix.tm_mon + 1)))^"-"^
+  (add_0 (Int.to_string t.Unix.tm_mday))^
   (
    if hour then
      " "^
-     (add_0 (string_of_int t.Unix.tm_hour))^":"^
-     (add_0 (string_of_int t.Unix.tm_min))
+     (add_0 (Int.to_string t.Unix.tm_hour))^":"^
+     (add_0 (Int.to_string t.Unix.tm_min))
    else
      ""
   )

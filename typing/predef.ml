@@ -26,8 +26,7 @@ let wrap create s =
   builtin_idents := (s, id) :: !builtin_idents;
   id
 
-let ident_create = wrap Ident.create
-let ident_create_predef_exn = wrap Ident.create_predef_exn
+let ident_create = wrap Ident.create_predef
 
 let ident_int = ident_create "int"
 and ident_char = ident_create "char"
@@ -45,6 +44,7 @@ and ident_int64 = ident_create "int64"
 and ident_lazy_t = ident_create "lazy_t"
 and ident_string = ident_create "string"
 and ident_extension_constructor = ident_create "extension_constructor"
+and ident_floatarray = ident_create "floatarray"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -62,6 +62,7 @@ and path_int64 = Pident ident_int64
 and path_lazy_t = Pident ident_lazy_t
 and path_string = Pident ident_string
 and path_extension_constructor = Pident ident_extension_constructor
+and path_floatarray = Pident ident_floatarray
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -80,20 +81,21 @@ and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
 and type_extension_constructor =
       newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
+and type_floatarray = newgenty (Tconstr(path_floatarray, [], ref Mnil))
 
-let ident_match_failure = ident_create_predef_exn "Match_failure"
-and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"
-and ident_invalid_argument = ident_create_predef_exn "Invalid_argument"
-and ident_failure = ident_create_predef_exn "Failure"
-and ident_not_found = ident_create_predef_exn "Not_found"
-and ident_sys_error = ident_create_predef_exn "Sys_error"
-and ident_end_of_file = ident_create_predef_exn "End_of_file"
-and ident_division_by_zero = ident_create_predef_exn "Division_by_zero"
-and ident_stack_overflow = ident_create_predef_exn "Stack_overflow"
-and ident_sys_blocked_io = ident_create_predef_exn "Sys_blocked_io"
-and ident_assert_failure = ident_create_predef_exn "Assert_failure"
+let ident_match_failure = ident_create "Match_failure"
+and ident_out_of_memory = ident_create "Out_of_memory"
+and ident_invalid_argument = ident_create "Invalid_argument"
+and ident_failure = ident_create "Failure"
+and ident_not_found = ident_create "Not_found"
+and ident_sys_error = ident_create "Sys_error"
+and ident_end_of_file = ident_create "End_of_file"
+and ident_division_by_zero = ident_create "Division_by_zero"
+and ident_stack_overflow = ident_create "Stack_overflow"
+and ident_sys_blocked_io = ident_create "Sys_blocked_io"
+and ident_assert_failure = ident_create "Assert_failure"
 and ident_undefined_recursive_module =
-        ident_create_predef_exn "Undefined_recursive_module"
+        ident_create "Undefined_recursive_module"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -114,21 +116,6 @@ let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
-let decl_abstr =
-  {type_params = [];
-   type_arity = 0;
-   type_kind = Type_abstract;
-   type_loc = Location.none;
-   type_private = Asttypes.Public;
-   type_manifest = None;
-   type_variance = [];
-   type_newtype_level = None;
-   type_attributes = [];
-   type_immediate = false;
-  }
-
-let decl_abstr_imm = {decl_abstr with type_immediate = true}
-
 let cstr id args =
   {
     cd_id = id;
@@ -136,6 +123,7 @@ let cstr id args =
     cd_res = None;
     cd_loc = Location.none;
     cd_attributes = [];
+    cd_uid = Uid.of_predef_id id;
   }
 
 let ident_false = ident_create "false"
@@ -145,47 +133,52 @@ and ident_nil = ident_create "[]"
 and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
-let common_initial_env add_type add_extension empty_env =
-  let decl_bool =
-    {decl_abstr with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
-     type_immediate = true}
-  and decl_unit =
-    {decl_abstr with
-     type_kind = Type_variant([cstr ident_void []]);
-     type_immediate = true}
-  and decl_exn =
-    {decl_abstr with
-     type_kind = Type_open}
-  and decl_array =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_variance = [Variance.full]}
-  and decl_list =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_kind =
-     Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]);
-     type_variance = [Variance.covariant]}
-  and decl_option =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_kind = Type_variant([cstr ident_none []; cstr ident_some [tvar]]);
-     type_variance = [Variance.covariant]}
-  and decl_lazy_t =
-    let tvar = newgenvar() in
-    {decl_abstr with
-     type_params = [tvar];
-     type_arity = 1;
-     type_variance = [Variance.covariant]}
-  in
 
+let mk_add_type add_type type_ident
+      ?manifest ?(immediate=Type_immediacy.Unknown) ?(kind=Type_abstract) env =
+  let decl =
+    {type_params = [];
+     type_arity = 0;
+     type_kind = kind;
+     type_loc = Location.none;
+     type_private = Asttypes.Public;
+     type_manifest = manifest;
+     type_variance = [];
+     type_separability = [];
+     type_is_newtype = false;
+     type_expansion_scope = lowest_level;
+     type_attributes = [];
+     type_immediate = immediate;
+     type_unboxed = unboxed_false_default_false;
+     type_uid = Uid.of_predef_id type_ident;
+    }
+  in
+  add_type type_ident decl env
+
+let common_initial_env add_type add_extension empty_env =
+  let add_type = mk_add_type add_type
+  and add_type1 type_ident
+      ~variance ~separability ?(kind=fun _ -> Type_abstract) env =
+    let param = newgenvar () in
+    let decl =
+      {type_params = [param];
+       type_arity = 1;
+       type_kind = kind param;
+       type_loc = Location.none;
+       type_private = Asttypes.Public;
+       type_manifest = None;
+       type_variance = [variance];
+       type_separability = [separability];
+       type_is_newtype = false;
+       type_expansion_scope = lowest_level;
+       type_attributes = [];
+       type_immediate = Unknown;
+       type_unboxed = unboxed_false_default_false;
+       type_uid = Uid.of_predef_id type_ident;
+      }
+    in
+    add_type type_ident decl env
+  in
   let add_extension id l =
     add_extension id
       { ext_type_path = path_exn;
@@ -194,9 +187,11 @@ let common_initial_env add_type add_extension empty_env =
         ext_ret_type = None;
         ext_private = Asttypes.Public;
         ext_loc = Location.none;
-        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";
-                           loc=Location.none},
-                          Parsetree.PStr[]] }
+        ext_attributes = [Ast_helper.Attr.mk
+                            (Location.mknoloc "ocaml.warn_on_literal_pattern")
+                            (Parsetree.PStr [])];
+        ext_uid = Uid.of_predef_id id;
+      }
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
@@ -213,41 +208,43 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_type ident_int64 decl_abstr (
-  add_type ident_int32 decl_abstr (
-  add_type ident_nativeint decl_abstr (
-  add_type ident_lazy_t decl_lazy_t (
-  add_type ident_option decl_option (
-  add_type ident_list decl_list (
-  add_type ident_array decl_array (
-  add_type ident_exn decl_exn (
-  add_type ident_unit decl_unit (
-  add_type ident_bool decl_bool (
-  add_type ident_float decl_abstr (
-  add_type ident_string decl_abstr (
-  add_type ident_char decl_abstr_imm (
-  add_type ident_int decl_abstr_imm (
-  add_type ident_extension_constructor decl_abstr (
-    empty_env)))))))))))))))))))))))))))
+  add_type ident_int64 (
+  add_type ident_int32 (
+  add_type ident_nativeint (
+  add_type1 ident_lazy_t ~variance:Variance.covariant
+    ~separability:Separability.Ind (
+  add_type1 ident_option ~variance:Variance.covariant
+    ~separability:Separability.Ind
+    ~kind:(fun tvar ->
+      Type_variant([cstr ident_none []; cstr ident_some [tvar]])
+    ) (
+  add_type1 ident_list ~variance:Variance.covariant
+    ~separability:Separability.Ind
+    ~kind:(fun tvar ->
+      Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]])
+    ) (
+  add_type1 ident_array ~variance:Variance.full ~separability:Separability.Ind (
+  add_type ident_exn ~kind:Type_open (
+  add_type ident_unit ~immediate:Always
+    ~kind:(Type_variant([cstr ident_void []])) (
+  add_type ident_bool ~immediate:Always
+    ~kind:(Type_variant([cstr ident_false []; cstr ident_true []])) (
+  add_type ident_float (
+  add_type ident_string (
+  add_type ident_char ~immediate:Always (
+  add_type ident_int ~immediate:Always (
+  add_type ident_extension_constructor (
+  add_type ident_floatarray (
+    empty_env))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
-  let safe_string = add_type ident_bytes decl_abstr common in
-  let decl_bytes_unsafe = {decl_abstr with type_manifest = Some type_string} in
-  let unsafe_string = add_type ident_bytes decl_bytes_unsafe common in
+  let add_type = mk_add_type add_type in
+  let safe_string = add_type ident_bytes common in
+  let unsafe_string = add_type ident_bytes ~manifest:type_string common in
   (safe_string, unsafe_string)
 
 let builtin_values =
-  List.map (fun id -> Ident.make_global id; (Ident.name id, id))
-      [ident_match_failure; ident_out_of_memory; ident_stack_overflow;
-       ident_invalid_argument;
-       ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
-       ident_division_by_zero; ident_sys_blocked_io;
-       ident_assert_failure; ident_undefined_recursive_module ]
+  List.map (fun id -> (Ident.name id, id)) all_predef_exns
 
-(* Start non-predef identifiers at 1000.  This way, more predefs can
-   be defined in this file (above!) without breaking .cmi
-   compatibility. *)
-
-let _ = Ident.set_current_time 999
 let builtin_idents = List.rev !builtin_idents

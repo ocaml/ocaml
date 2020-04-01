@@ -15,7 +15,7 @@
 (**************************************************************************)
 
 open Mach
-open Linearize
+open Linear
 
 module Make (T : Branch_relaxation_intf.S) = struct
   let label_map code =
@@ -45,14 +45,14 @@ module Make (T : Branch_relaxation_intf.S) = struct
     | Some branch ->
       let max_branch_offset =
         (* Remember to cut some slack for multi-word instructions (in the
-           [Linearize] sense of the word) where the branch can be anywhere in
+           [Linear] sense of the word) where the branch can be anywhere in
            the middle.  12 words of slack is plenty. *)
         T.Cond_branch.max_displacement branch - 12
       in
       match instr.desc with
       | Lop (Ialloc _)
-      | Lop (Iintop Icheckbound)
-      | Lop (Iintop_imm (Icheckbound, _))
+      | Lop (Iintop (Icheckbound _))
+      | Lop (Iintop_imm (Icheckbound _, _))
       | Lop (Ispecific _) ->
         (* We assume that any branches eligible for relaxation generated
            by these instructions only branch forward.  We further assume
@@ -86,20 +86,22 @@ module Make (T : Branch_relaxation_intf.S) = struct
           fixup did_fix (pc + T.instr_size instr.desc) instr.next
         else
           match instr.desc with
-          | Lop (Ialloc num_words) ->
-            instr.desc <- T.relax_allocation ~num_words;
+          | Lop (Ialloc { bytes = num_bytes; label_after_call_gc; dbginfo }) ->
+            instr.desc <- T.relax_allocation ~num_bytes
+                            ~dbginfo ~label_after_call_gc;
             fixup true (pc + T.instr_size instr.desc) instr.next
-          | Lop (Iintop Icheckbound) ->
-            instr.desc <- T.relax_intop_checkbound ();
+          | Lop (Iintop (Icheckbound { label_after_error; })) ->
+            instr.desc <- T.relax_intop_checkbound ~label_after_error;
             fixup true (pc + T.instr_size instr.desc) instr.next
-          | Lop (Iintop_imm (Icheckbound, bound)) ->
-            instr.desc <- T.relax_intop_imm_checkbound ~bound;
+          | Lop (Iintop_imm (Icheckbound { label_after_error; }, bound)) ->
+            instr.desc
+              <- T.relax_intop_imm_checkbound ~bound ~label_after_error;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lop (Ispecific specific) ->
             instr.desc <- T.relax_specific_op specific;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lcondbranch (test, lbl) ->
-            let lbl2 = new_label() in
+            let lbl2 = Cmm.new_label() in
             let cont =
               instr_cons (Lbranch lbl) [||] [||]
                 (instr_cons (Llabel lbl2) [||] [||] instr.next)

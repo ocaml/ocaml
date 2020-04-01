@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                David Allsopp, MetaStack Solutions Ltd.                 *
+#*                                                                        *
+#*   Copyright 2017 MetaStack Solutions Ltd.                              *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Bump this on any changes. It's vital that HOOK_VERSION followed by equals
+# appears nowhere else in these sources!
+HOOK_VERSION=4
+
+# For what it's worth, allow for empty trees!
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+  against=HEAD
+else
+  # Initial commit: diff against an empty tree object
+  against=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+fi
+
+# Redirect output to stderr.
+exec 1>&2
+
+# Check to see if the script's been updated
+if git ls-files --error-unmatch tools/pre-commit-githook >/dev/null 2>&1 ; then
+  THEIR_VERSION=$(git cat-file --textconv HEAD:tools/pre-commit-githook \
+                    | sed -ne 's/^HOOK_VERSION=//p')
+  if [[ -n $THEIR_VERSION && $THEIR_VERSION -gt $HOOK_VERSION ]] ; then
+    echo "Note: tools/pre-commit-githook is newer than .git/hooks/pre-commit"
+    echo "      You may wish to update your local githook"
+  fi
+fi
+
+# Git's built-in mechanism for whitespace is neater than ours, so do it first.
+# The strange construction below creates a list of files which have either
+# white-at-eol or white-at-eof included in ocaml-typo in .gitattributes and by
+# prefixing the names with :! causes git diff-index to skip over them.
+if [[ -n $(git diff-index --cached --name-only $against) ]] ; then
+  FILES=$(git diff-index --cached --name-only $against \
+          | xargs git check-attr --cached ocaml-typo \
+          | sed -ne 's/\(.*\): ocaml-typo:.*[ ,]white-at-eo[fl]\(,\|$\)/:!\1/p')
+  if ! git diff-index --check --cached $against -- $FILES ; then
+    exit 1
+  fi
+else
+  exit 0
+fi
+
+# Test to see if any part of the directory name has been marked prune
+not_pruned () {
+  DIR=$(dirname "$1")
+  if [ "$DIR" = "." ] ; then
+    return 0
+  else
+    case ",$(git check-attr typo.prune "$DIR" | sed -e 's/.*: //')," in
+      ,set,)
+      return 1
+      ;;
+      *)
+
+      not_pruned "$DIR"
+      return $?
+    esac
+  fi
+}
+
+# Now run check-typo over all the files in the index
+ERRORS=0
+export OCAML_CT_PREFIX=:
+export OCAML_CT_CAT="git cat-file --textconv"
+export OCAML_CT_CA_FLAG=--cached
+git diff --diff-filter=d --staged --name-only | (while IFS= read -r path
+do
+  if not_pruned "$path" && ! tools/check-typo "./$path" ; then
+    ERRORS=1
+  fi
+done; exit $ERRORS)

@@ -1,0 +1,45 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(rule
+ (targets config.ml)
+ (mode    fallback)
+ (deps    (:mk Makefile)
+          ../Makefile.config
+          config.mlp)
+ (action  (system "make -f %{mk} %{targets}")))
+
+(rule
+ (targets domainstate.ml)
+ (mode    fallback)
+ (deps    (:conf ../Makefile.config)
+          (:c domainstate.ml.c)
+          (:tbl ../runtime/caml/domain_state.tbl))
+ (action
+   (with-stdout-to %{targets}
+     (bash
+       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"
+       ))))
+
+(rule
+ (targets domainstate.mli)
+ (mode    fallback)
+ (deps    (:conf ../Makefile.config)
+          (:c domainstate.mli.c)
+          (:tbl ../runtime/caml/domain_state.tbl))
+ (action
+   (with-stdout-to %{targets}
+     (bash
+       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"
+       ))))

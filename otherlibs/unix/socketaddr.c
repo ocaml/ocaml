@@ -35,8 +35,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
   /* Use a string rather than an abstract block so that it can be
      marshaled safely.  Remember that a is in network byte order,
      hence is marshaled in an endian-independent manner. */
-  res = alloc_string(4);
-  memcpy(String_val(res), a, 4);
+  res = caml_alloc_initialized_string(4, (char *)a);
   return res;
 }
 
@@ -45,8 +44,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
 CAMLexport value alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
-  res = alloc_string(16);
-  memcpy(String_val(res), a, 16);
+  res = caml_alloc_initialized_string(16, (char *)a);
   return res;
 }
 
@@ -62,7 +60,7 @@ void get_sockaddr(value mladr,
     { value path;
       mlsize_t len;
       path = Field(mladr, 0);
-      len = string_length(path);
+      len = caml_string_length(path);
       adr->s_unix.sun_family = AF_UNIX;
       if (len >= sizeof(adr->s_unix.sun_path)) {
         unix_error(ENAMETOOLONG, "", path);
@@ -80,7 +78,7 @@ void get_sockaddr(value mladr,
 #endif
   case 1:                       /* ADDR_INET */
 #ifdef HAS_IPV6
-    if (string_length(Field(mladr, 0)) == 16) {
+    if (caml_string_length(Field(mladr, 0)) == 16) {
       memset(&adr->s_inet6, 0, sizeof(struct sockaddr_in6));
       adr->s_inet6.sin6_family = AF_INET6;
       adr->s_inet6.sin6_addr = GET_INET6_ADDR(Field(mladr, 0));
@@ -104,32 +102,56 @@ void get_sockaddr(value mladr,
   }
 }
 
+value alloc_unix_sockaddr(value path) {
+  CAMLparam1(path);
+  CAMLlocal1(res);
+  res = caml_alloc_small(1, 0);
+  Field(res,0) = path;
+  CAMLreturn(res);
+}
+
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
                      socklen_param_type adr_len, int close_on_error)
 {
   value res;
+#ifndef _WIN32
+  if (adr_len < offsetof(struct sockaddr, sa_data)) {
+    // Only possible for an unnamed AF_UNIX socket, in
+    // which case sa_family might be uninitialized.
+    return alloc_unix_sockaddr(caml_alloc_string(0));
+  }
+#endif
+
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
-    { char * path;
-      value n;
-      /* PR#7039: harden against unnamed sockets */
-      if (adr_len > (char *)&(adr->s_unix.sun_path) - (char *)&(adr->s_unix))
-        path = adr->s_unix.sun_path;
-      else
-        path = "";
-      n = copy_string(path);
-      Begin_root (n);
-        res = alloc_small(1, 0);
-        Field(res,0) = n;
-      End_roots();
+    { /* Based on recommendation in section BUGS of Linux unix(7). See
+         http://man7.org/linux/man-pages/man7/unix.7.html. */
+      mlsize_t struct_offset = offsetof(struct sockaddr_un, sun_path);
+      mlsize_t path_length = 0;
+      if (adr_len > struct_offset) {
+        path_length = adr_len - struct_offset;
+
+        /* paths _may_ be null-terminated, but Linux abstract sockets
+         * start with a null, and may contain internal nulls. */
+        path_length = (
+#ifdef __linux__
+          (adr->s_unix.sun_path[0] == '\0') ? path_length :
+#endif
+          strnlen(adr->s_unix.sun_path, path_length)
+        );
+      }
+
+      res = alloc_unix_sockaddr(
+        caml_alloc_initialized_string(path_length, (char *)adr->s_unix.sun_path)
+      );
       break;
     }
 #endif
   case AF_INET:
     { value a = alloc_inet_addr(&adr->s_inet.sin_addr);
       Begin_root (a);
-        res = alloc_small(2, 1);
+        res = caml_alloc_small(2, 1);
         Field(res,0) = a;
         Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
       End_roots();
@@ -139,7 +161,7 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   case AF_INET6:
     { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
       Begin_root (a);
-        res = alloc_small(2, 1);
+        res = caml_alloc_small(2, 1);
         Field(res,0) = a;
         Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
       End_roots();

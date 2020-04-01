@@ -1,9 +1,0 @@
-
-#     Characters 26-33:
-  type t = [ 'A_name | `Hi ];;
-             ^^^^^^^
-Error: The type 'A_name is not a polymorphic variant type
-Hint: Did you mean `A_name?
-#   val f : 'id_arg -> 'id_arg = <fun>
-#   val f : 'Id_arg -> 'Id_arg = <fun>
-# 

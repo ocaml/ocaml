@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (**
    Test that match allows exceptions to propagate.
 *)

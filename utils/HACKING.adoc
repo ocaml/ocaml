@@ -1,0 +1,50 @@
+== Magic numbers
+
+The magic numbers in `config.mlp` are included in the header of
+compiled files produced by the OCaml compiler. Different kind of files
+(cmi, cmo, cmx, cma, executables, etc.) get different magic numbers,
+and we also change the magic number whenever we change the format of
+the corresponding file.
+
+Note that the `exec_magic_number` value is duplicated as `EXEC_MAGIC`
+in `runtime/caml/exec.h` and they must be kept in sync.
+
+This lets the compiler differentiate files that should be valid files
+of the kind it expects, and files that are passed by mistake, either
+that are not at all valid compiled files, or because they come from
+a different compiler version with an incompatible file format.
+
+We say that we "bump" a magic number when we update its version part
+in config.mlp. To bump all magic numbers is to increment the version
+of every kind of magic number.
+
+=== Updating magic numbers
+
+Previously people tried to update magic numbers as infrequently as
+possible, to maximize the lifetime of tools supporting only a fixed
+version of magic numbers -- so that they would work for as long as the
+underlying representation is compatible.
+
+However, it is more dangerous to forget to update a number than to
+update it too often. If we update too often, at worst tool authors have
+to update their codebase to support more numbers. If we don't update
+often enough, tools break with horrible parsing/deserialization errors
+and their authors can do nothing to prevent it.
+
+We have thus decided to systematically bump all magic numbers on each
+new major release of the compiler. (We don't want to change compiled
+file formats in minor releases, so we shouldn't need to bump magic
+numbers systematically. If a format change was necessary for
+a critical bugfix, then we would still need to bump on a minor
+release.)
+
+This should preferably be done just before the first testing release
+(the first beta, or the first rc if there is no beta) of the new major
+release. We want it to happen after all format-breaking changes have
+been included in the development version, but before the version gets
+tested on a large scale: this is when tool authors may update their
+tools to test the new release, and if you update *after* that you risk
+breaking them again without them noticing.
+
+For example, the magic numbers for 4.10 were updated in
+  6423e5c9d11cfac1c07208aec9f761f37c1640f0

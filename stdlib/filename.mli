@@ -42,20 +42,65 @@ val is_implicit : string -> bool
 
 val check_suffix : string -> string -> bool
 (** [check_suffix name suff] returns [true] if the filename [name]
-   ends with the suffix [suff]. *)
+    ends with the suffix [suff].
+
+    Under Windows ports (including Cygwin), comparison is
+    case-insensitive, relying on [String.lowercase_ascii].  Note that
+    this does not match exactly the interpretation of case-insensitive
+    filename equivalence from Windows.  *)
 
 val chop_suffix : string -> string -> string
 (** [chop_suffix name suff] removes the suffix [suff] from
    the filename [name]. The behavior is undefined if [name] does not
-   end with the suffix [suff]. *)
+   end with the suffix [suff]. [chop_suffix_opt] is thus recommended
+   instead.
+*)
+
+val chop_suffix_opt: suffix:string -> string -> string option
+(** [chop_suffix_opt ~suffix filename] removes the suffix from
+    the [filename] if possible, or returns [None] if the
+    filename does not end with the suffix.
+
+    Under Windows ports (including Cygwin), comparison is
+    case-insensitive, relying on [String.lowercase_ascii].  Note that
+    this does not match exactly the interpretation of case-insensitive
+    filename equivalence from Windows.
+
+    @since 4.08
+*)
+
+
+val extension : string -> string
+(** [extension name] is the shortest suffix [ext] of [name0] where:
+
+    - [name0] is the longest suffix of [name] that does not
+      contain a directory separator;
+    - [ext] starts with a period;
+    - [ext] is preceded by at least one non-period character
+      in [name0].
+
+    If such a suffix does not exist, [extension name] is the empty
+    string.
+
+    @since 4.04
+*)
+
+val remove_extension : string -> string
+(** Return the given file name without its extension, as defined
+    in {!Filename.extension}. If the extension is empty, the function
+    returns the given file name.
+
+    The following invariant holds for any file name [s]:
+
+    [remove_extension s ^ extension s = s]
+
+    @since 4.04
+*)
 
 val chop_extension : string -> string
-(** Return the given file name without its extension. The extension
-   is the shortest suffix starting with a period and not including
-   a directory separator, [.xyz] for instance.
+(** Same as {!Filename.remove_extension}, but raise [Invalid_argument]
+    if the given name has an empty extension. *)
 
-   Raise [Invalid_argument] if the given name does not contain
-   an extension. *)
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.
@@ -72,6 +117,12 @@ val dirname : string -> string
 (** See {!Filename.basename}.
    This function conforms to the specification of POSIX.1-2008 for the
    [dirname] utility. *)
+
+val null : string
+(** [null] is ["/dev/null"] on POSIX and ["NUL"] on Windows. It represents a
+    file on the OS that discards all writes and returns end of file on reads.
+
+    @since 4.10.0 *)
 
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
@@ -141,3 +192,35 @@ val quote : string -> string
     with programs that follow the standard Windows quoting
     conventions.
  *)
+
+val quote_command :
+       string -> ?stdin:string -> ?stdout:string -> ?stderr:string
+              -> string list -> string
+(** [quote_command cmd args] returns a quoted command line, suitable
+    for use as an argument to {!Sys.command}, {!Unix.system}, and the
+    {!Unix.open_process} functions.
+
+    The string [cmd] is the command to call.  The list [args] is
+    the list of arguments to pass to this command.  It can be empty.
+
+    The optional arguments [?stdin] and [?stdout] and [?stderr] are
+    file names used to redirect the standard input, the standard
+    output, or the standard error of the command.
+    If [~stdin:f] is given, a redirection [< f] is performed and the
+    standard input of the command reads from file [f].
+    If [~stdout:f] is given, a redirection [> f] is performed and the
+    standard output of the command is written to file [f].
+    If [~stderr:f] is given, a redirection [2> f] is performed and the
+    standard error of the command is written to file [f].
+    If both [~stdout:f] and [~stderr:f] are given, with the exact
+    same file name [f], a [2>&1] redirection is performed so that the
+    standard output and the standard error of the command are interleaved
+    and redirected to the same file [f].
+
+    Under Unix and Cygwin, the command, the arguments, and the redirections
+    if any are quoted using {!Filename.quote}, then concatenated.
+    Under Win32, additional quoting is performed as required by the
+    [cmd.exe] shell that is called by {!Sys.command}.
+
+    Raise [Failure] if the command cannot be escaped on the current platform.
+*)

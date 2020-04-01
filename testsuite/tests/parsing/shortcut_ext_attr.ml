@@ -1,4 +1,10 @@
-
+(* TEST
+   flags = "-dparsetree"
+   ocamlc_byte_exit_status = "2"
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+   *** check-ocamlc.byte-output
+*)
 (* Expressions *)
 let () =
   let%foo[@foo] x = 3
@@ -11,6 +17,7 @@ let () =
   (if%foo[@foo] () then () else ()) ;
   while%foo[@foo] () do () done ;
   for%foo[@foo] x = () to () do () done ;
+  () ;%foo () ;
   assert%foo[@foo] true ;
   lazy%foo[@foo] x ;
   object%foo[@foo] end ;

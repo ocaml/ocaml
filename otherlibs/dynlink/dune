@@ -1,0 +1,31 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+; mshinwell: Disabled: this needs to build in the same way as the
+; Makefile does, with the [Dynlink_compilerlibs] pack.
+;
+; (library
+;   (name dynlink)
+;   (wrapped false)
+;   (modules dynlink dynlink_compilerlibs dynlink_common dynlink_types
+;      dynlink_platform_intf)
+;   ; the -33 is specific to the hackery done with dune.
+;   (flags (:standard -nostdlib -w -33))
+;   (modules_without_implementation dynlink)
+;   (libraries ocamlcommon stdlib))
+;
+; (rule
+;  (targets dynlink_compilerlibs.ml)
+;  (action (write-file %{targets}
+;            "(* empty because we are linking with ocamlcommon *)")))

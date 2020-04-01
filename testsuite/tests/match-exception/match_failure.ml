@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (**
    Test that value match failure in a match block raises Match_failure.
 *)
@@ -11,7 +14,7 @@ let test_match_partial_match =
     | exception Failure _ -> "failure"
     | exception Invalid_argument _ -> "invalid argument"
     | None -> "None"
-    ) in
+    ) [@ocaml.warning "-8"] in
     assert false
   with
     Match_failure _ ->

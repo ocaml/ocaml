@@ -1,17 +1,9 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
-(*                                                                        *)
-(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+* hasstr
+include str
+** bytecode
+** native
+*)
 
 open Printf
 
@@ -1080,8 +1072,8 @@ let manual_test regexp text =
         with Not_found ->
           ()
       done
-    with Invalid_argument "Str.matched_group" -> (*yuck*)
-      ()
+    with Invalid_argument str as exn ->
+      if str="Str.matched_group" then () else raise exn
     end;
     print_newline()
   with Not_found ->

@@ -1,0 +1,52 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(ocamllex
+ (modules tsl_lexer)
+ (mode fallback))
+
+(ocamlyacc
+ (modules tsl_parser)
+ (mode fallback))
+
+(rule
+ (targets ocamltest_config.ml)
+ (deps ../Makefile.config ../Makefile.common ../Makefile.best_binaries Makefile
+       ./ocamltest_config.ml.in ./getocamloptdefaultflags)
+ (action (run make %{targets})))
+
+;; FIXME: handle UNIX_OR_WIN32 or something similar
+(library
+ (name ocamltest_core_and_plugin)
+ (modes byte)
+ (wrapped false)
+ (flags (:standard -nostdlib))
+ (libraries ocamlcommon stdlib)
+ (modules (:standard \ options main))
+ (c_flags (-DCAML_INTERNALS -I%{project_root}/runtime)) ; fixme
+ (c_names run_unix run_stubs ocamltest_stdlib_stubs))
+
+(rule
+ (targets empty.ml)
+ (deps (source_tree %{project_root}/runtime/caml))
+ (action (write-file %{targets} "(* hack *)")))
+
+(executable
+ (name main)
+ (modes byte)
+ (flags (:standard -nostdlib))
+ (modules options main)
+ (libraries ocamltest_core_and_plugin runtime stdlib))
+
+(rule (copy main.exe ocamltest.byte))

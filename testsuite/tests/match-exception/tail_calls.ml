@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (**
     The success continuation expression is in tail position.
 *)

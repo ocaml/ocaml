@@ -1,0 +1,222 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(env
+ (dev     (flags (:standard -w +a-4-9-40-41-42-44-45-48)))
+ (release (flags (:standard -w +a-4-9-40-41-42-44-45-48))))
+
+;; Too annoying to get to work. Use (copy_files# ...) instead
+; (include_subdirs unqualified)
+; (ignored_subdirs (lex yacc testsuite ocamldoc ocamltest toplevel otherlibs))
+
+(copy_files# utils/*.ml{,i})
+(copy_files# parsing/*.ml{,i})
+(copy_files# typing/*.ml{,i})
+(copy_files# bytecomp/*.ml{,i})
+(copy_files# driver/*.ml{,i})
+(copy_files# asmcomp/*.ml{,i})
+(copy_files# asmcomp/debug/*.ml{,i})
+(copy_files# file_formats/*.ml{,i})
+(copy_files# lambda/*.ml{,i})
+(copy_files# middle_end/*.ml{,i})
+(copy_files# middle_end/closure/*.ml{,i})
+(copy_files# middle_end/flambda/*.ml{,i})
+(copy_files# middle_end/flambda/base_types/*.ml{,i})
+
+(library
+ (name ocamlcommon)
+ (wrapped false)
+ (flags (:standard -principal -nostdlib))
+ (libraries stdlib)
+ (modules_without_implementation
+   annot asttypes cmo_format outcometree parsetree)
+ (modules
+   ;; UTILS
+   config build_path_prefix_map misc identifiable numbers arg_helper clflags
+   profile terminfo ccomp warnings consistbl strongly_connected_components
+   targetint load_path int_replace_polymorphic_compare
+
+   ;; PARSING
+   location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
+   parser lexer parse printast pprintast ast_mapper ast_iterator attr_helper
+   builtin_attributes ast_invariants depend
+   ; manual update: mli only files
+   asttypes parsetree
+
+   ;; TYPING
+   ident path primitive types btype oprint subst predef datarepr
+   cmi_format persistent_env env type_immediacy
+   typedtree printtyped ctype printtyp includeclass mtype envaux includecore
+   tast_iterator tast_mapper cmt_format untypeast includemod
+   typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
+   typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
+   typedecl_unboxed typedecl_separability cmt2annot
+   ; manual update: mli only files
+   annot outcometree
+
+   ;; lambda/
+   debuginfo lambda matching printlambda runtimedef simplif switch
+   translattribute translclass translcore translmod translobj translprim
+
+   ;; bytecomp/
+   meta opcodes bytesections dll symtable
+
+   ;; some of COMP
+   pparse main_args compenv compmisc makedepend compile_common
+   ; manual update: mli only files
+   cmo_format
+   ; manual update: this is required.
+   instruct
+ ))
+
+(library
+ (name ocamlbytecomp)
+ (wrapped false)
+ (flags (:standard -principal -nostdlib))
+ (libraries stdlib ocamlcommon)
+ (modules
+    ;; bytecomp/
+    bytegen bytelibrarian bytelink bytepackager emitcode printinstr
+
+    ;; driver/
+    errors compile
+ ))
+
+(library
+ (name ocamlmiddleend)
+ (wrapped false)
+ (flags (:standard -principal -nostdlib))
+ (libraries stdlib ocamlcommon)
+ (modules_without_implementation
+   cmx_format cmxs_format backend_intf inlining_decision_intf
+   simplify_boxed_integer_ops_intf)
+ (modules
+   ;; file_formats/
+   cmx_format cmxs_format
+
+   ;; middle_end/
+   backend_intf backend_var backend_var clambda clambda_primitives
+   compilation_unit compilenv convert_primitives internal_variable_names
+   linkage_name printclambda printclambda_primitives semantics_of_primitives
+   symbol variable
+
+   ;; middle_end/closure/
+   closure closure_middle_end
+
+   ;; middle_end/flambda/base_types/
+   closure_element closure_id closure_origin export_id id_types mutable_variable
+   set_of_closures_id set_of_closures_origin static_exception tag
+   var_within_closure
+
+   ;; middle_end/flambda/
+   alias_analysis allocated_const augment_specialised_args build_export_info
+   closure_conversion closure_conversion_aux closure_offsets effect_analysis
+   export_info export_info_for_pack extract_projections find_recursive_functions
+   flambda flambda_invariants flambda_iterators flambda_middle_end
+   flambda_to_clambda flambda_utils freshening import_approx inconstant_idents
+   initialize_symbol_to_let_symbol inline_and_simplify inline_and_simplify_aux
+   inlining_cost inlining_decision inlining_decision_intf inlining_stats
+   inlining_stats_types inlining_transforms invariant_params lift_code
+   lift_constants lift_let_to_initialize_symbol parameter pass_wrapper
+   projection ref_to_variables remove_free_vars_equal_to_args
+   remove_unused_arguments remove_unused_closure_vars
+   remove_unused_program_constructs share_constants simple_value_approx
+   simplify_boxed_integer_ops simplify_boxed_integer_ops_intf simplify_common
+   simplify_primitives traverse_for_exported_symbols un_anf unbox_closures
+   unbox_free_vars_of_closures unbox_specialised_args
+ )
+)
+
+(library
+ (name ocamloptcomp)
+ (wrapped false)
+ (flags (:standard -principal -nostdlib))
+ (libraries stdlib ocamlcommon ocamlmiddleend)
+ (modules_without_implementation x86_ast)
+ (modules
+   ;; asmcomp/
+   afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
+   branch_relaxation_intf cmm_helpers cmm cmmgen cmmgen_state coloring comballoc
+   CSE CSEgen
+   deadcode domainstate emit emitaux interf interval linear linearize linscan
+   liveness mach printcmm printlinear printmach proc reg reload reloadgen
+   schedgen scheduling selectgen selection spacetime_profiling spill split
+   strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
+
+   ;; asmcomp/debug/
+   reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
+   compute_ranges
+
+   ;; driver/
+   optcompile opterrors
+ )
+)
+
+;;;;;;;;;;;;;;
+;;; ocamlc ;;;
+;;;;;;;;;;;;;;
+
+(executable
+ (name main)
+ (modes byte)
+ (flags (:standard -principal -nostdlib))
+ (libraries ocamlbytecomp ocamlcommon runtime stdlib)
+ (modules main))
+
+(rule
+ (copy main.exe ocamlc.byte))
+
+;;;;;;;;;;;;;;;;
+;;; ocamlopt ;;;
+;;;;;;;;;;;;;;;;
+
+(executable
+ (name optmain)
+ (modes byte)
+ (flags (:standard -principal -nostdlib))
+ (libraries ocamloptcomp ocamlmiddleend ocamlcommon runtime stdlib)
+ (modules optmain))
+
+(rule
+ (copy optmain.exe ocamlopt.byte))
+
+;;;;;;;;;;;;;;;
+;;; aliases ;;;
+;;;;;;;;;;;;;;;
+
+; mshinwell: The debugger and ocamldoc are currently disabled as Dynlink is
+; not built correctly.
+(alias
+ (name world)
+ (deps ocamlc.byte
+       ocamlopt.byte
+;       debugger/ocamldebug.byte
+;       ocamldoc/ocamldoc.byte
+       ocamltest/ocamltest.byte
+       toplevel/ocaml.byte
+       toplevel/expunge.exe
+       ))
+
+(alias
+  (name libs)
+  (deps
+    ocamloptcomp.cma
+    ocamlmiddleend.cma
+    ocamlcommon.cma
+    runtime/runtime.cma
+    stdlib/stdlib.cma
+    ocamlbytecomp.cma
+    ocamltest/ocamltest_core_and_plugin.cma
+    toplevel/ocamltoplevel.cma
+  ))

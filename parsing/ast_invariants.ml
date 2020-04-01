@@ -19,7 +19,6 @@ open Ast_iterator
 let err = Syntaxerr.ill_formed_ast
 
 let empty_record loc = err loc "Records cannot be empty."
-let empty_variant loc = err loc "Variant types cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
@@ -41,7 +40,6 @@ let iterator =
     let loc = td.ptype_loc in
     match td.ptype_kind with
     | Ptype_record [] -> empty_record loc
-    | Ptype_variant [] -> empty_variant loc
     | _ -> ()
   in
   let typ self ty =
@@ -49,13 +47,18 @@ let iterator =
     let loc = ty.ptyp_loc in
     match ty.ptyp_desc with
     | Ptyp_tuple ([] | [_]) -> invalid_tuple loc
-    | Ptyp_class (id, _) -> simple_longident id
     | Ptyp_package (_, cstrs) ->
       List.iter (fun (id, _) -> simple_longident id) cstrs
     | _ -> ()
   in
   let pat self pat =
-    super.pat self pat;
+    begin match pat.ppat_desc with
+    | Ppat_construct (_, Some ({ppat_desc = Ppat_tuple _} as p))
+      when Builtin_attributes.explicit_arity pat.ppat_attributes ->
+        super.pat self p (* allow unary tuple, see GPR#523. *)
+    | _ ->
+        super.pat self pat
+    end;
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
     | Ppat_tuple ([] | [_]) -> invalid_tuple loc
@@ -66,7 +69,13 @@ let iterator =
     | _ -> ()
   in
   let expr self exp =
-    super.expr self exp;
+    begin match exp.pexp_desc with
+    | Pexp_construct (_, Some ({pexp_desc = Pexp_tuple _} as e))
+      when Builtin_attributes.explicit_arity exp.pexp_attributes ->
+        super.expr self e (* allow unary tuple, see GPR#523. *)
+    | _ ->
+        super.expr self exp
+    end;
     let loc = exp.pexp_loc in
     match exp.pexp_desc with
     | Pexp_tuple ([] | [_]) -> invalid_tuple loc
@@ -77,8 +86,7 @@ let iterator =
     | Pexp_construct (id, _)
     | Pexp_field (_, id)
     | Pexp_setfield (_, id, _)
-    | Pexp_new id
-    | Pexp_open (_, id, _) -> simple_longident id
+    | Pexp_new id -> simple_longident id
     | Pexp_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
     | _ -> ()
@@ -104,8 +112,7 @@ let iterator =
     | _ -> ()
   in
   let open_description self opn =
-    super.open_description self opn;
-    simple_longident opn.popen_lid
+    super.open_description self opn
   in
   let with_constraint self wc =
     super.with_constraint self wc;
@@ -135,6 +142,30 @@ let iterator =
     | Psig_type (_, []) -> empty_type loc
     | _ -> ()
   in
+  let row_field self field =
+    super.row_field self field;
+    let loc = field.prf_loc in
+    match field.prf_desc with
+    | Rtag _ -> ()
+    | Rinherit _ ->
+      if field.prf_attributes = []
+      then ()
+      else err loc
+          "In variant types, attaching attributes to inherited \
+           subtypes is not allowed."
+  in
+  let object_field self field =
+    super.object_field self field;
+    let loc = field.pof_loc in
+    match field.pof_desc with
+    | Otag _ -> ()
+    | Oinherit _ ->
+      if field.pof_attributes = []
+      then ()
+      else err loc
+          "In object types, attaching attributes to inherited \
+           subtypes is not allowed."
+  in
   { super with
     type_declaration
   ; typ
@@ -148,6 +179,8 @@ let iterator =
   ; with_constraint
   ; structure_item
   ; signature_item
+  ; row_field
+  ; object_field
   }
 
 let structure st = iterator.structure iterator st

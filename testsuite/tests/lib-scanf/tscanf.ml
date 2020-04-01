@@ -1,14 +1,7 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                                 OCaml                                 *)
-(*                                                                       *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
-(*                                                                       *)
-(*   Copyright 2002 Institut National de Recherche en Informatique et    *)
-(*   en Automatique.  All rights reserved.  This file is distributed     *)
-(*   under the terms of the Q Public License version 1.0.                *)
-(*                                                                       *)
-(*************************************************************************)
+(* TEST
+   include testing
+   compare_programs = "false" (* See https://github.com/ocaml/ocaml/pull/8853 *)
+*)
 
 (*
 
@@ -462,7 +455,7 @@ let rec scan_elems ib accu =
   bscanf ib " %c " (fun c ->
     match c with
     | '[' when accu = [] ->
-        (* begginning of list: could find either
+        (* beginning of list: could find either
            - an int, if the list is not empty,
            - the char ], if the list is empty. *)
         bscanf ib "%[]]"
@@ -939,7 +932,7 @@ let scan_string_list = scan_list (fun ib -> Scanf.bscanf ib "%S");;
 let scan_bool_list = scan_list (fun ib -> Scanf.bscanf ib "%B");;
 let scan_char_list = scan_list (fun ib -> Scanf.bscanf ib "%C");;
 
-(* [scan_list] is truely polymorphic: scanning a list of lists of items
+(* [scan_list] is truly polymorphic: scanning a list of lists of items
    is a one liner!
 
    Here we scan list of lists of floats. *)
@@ -991,7 +984,7 @@ let test35 () =
 test (test340 () && test35 ())
 ;;
 
-(* The prefered reader functionnals. *)
+(* The preferred reader functionnals. *)
 
 (* To read a list as in OCaml (elements are ``blank + semicolon + blank''
    separated, and the list is enclosed in brackets). *)
@@ -1243,7 +1236,7 @@ let next_char ob () =
 
 let send_string ob s =
   Buffer.add_string ob s; Buffer.add_char ob '\n';;
-let send_int ob i = send_string ob (string_of_int i);;
+let send_int ob i = send_string ob (Int.to_string i);;
 
 let rec reader =
   let count = ref 0 in
@@ -1546,4 +1539,20 @@ let test60 () =
   sscanf "abc" "%1s%s" (fun s1 s2 -> s1 = "a" && s2 = "bc")
 ;;
 
-test (test60 ());
+test (test60 ())
+;;
+
+let test61 () =
+  let test fmt =
+    format_from_string (string_of_format fmt) fmt = fmt
+  in
+  test "%s/%a" &&
+  test "\\ " &&
+  test "\\x" &&
+  test "\\x25s" &&
+  test "\\\"%s" &&
+  test "\\"
+;;
+
+test (test61 ())
+;;

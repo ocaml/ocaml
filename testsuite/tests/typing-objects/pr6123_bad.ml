@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 class virtual name =
 object
 end
@@ -21,3 +25,11 @@ object
   inherit name
 end
 ;;
+[%%expect{|
+Line 15, characters 50-54:
+15 |       let args = List.map (fun ty -> new argument(self, ty)) args_ty in
+                                                       ^^^^
+Error: This expression has type < arguments : 'a; .. >
+       but an expression was expected of type 'b
+       Self type cannot escape its class
+|}]

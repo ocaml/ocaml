@@ -19,22 +19,20 @@
 type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
-let for_primitive (prim : Lambda.primitive) =
+let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pignore | Pidentity -> No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->
-    No_effects, No_coeffects  (* Pduparray (_, Immutable) is allowed only on
-                                 immutable arrays. *)
+      No_effects, No_coeffects  (* Pduparray (_, Immutable) is allowed only on
+                                   immutable arrays. *)
   | Pduparray (_, Mutable) | Pduprecord _ ->
-    Only_generative_effects, Has_coeffects
+      Only_generative_effects, Has_coeffects
   | Pccall { prim_name =
-      ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
-      | "caml_nativeint_format" | "caml_int64_format" ) } ->
-    No_effects, No_coeffects
-  | Plazyforce
+               ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
+               | "caml_nativeint_format" | "caml_int64_format" ) } ->
+      No_effects, No_coeffects
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
   | Pnot
@@ -49,9 +47,18 @@ let for_primitive (prim : Lambda.primitive) =
   | Plsrint
   | Pasrint
   | Pintcomp _ -> No_effects, No_coeffects
-  | Pdivint
-  | Pmodint ->
-    No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
+  | Pcompare_ints | Pcompare_floats | Pcompare_bints _
+    -> No_effects, No_coeffects
+  | Pdivbint { is_safe = Unsafe }
+  | Pmodbint { is_safe = Unsafe }
+  | Pdivint Unsafe
+  | Pmodint Unsafe ->
+      No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
+  | Pdivbint { is_safe = Safe }
+  | Pmodbint { is_safe = Safe }
+  | Pdivint Safe
+  | Pmodint Safe ->
+      Arbitrary_effects, No_coeffects
   | Poffsetint _ -> No_effects, No_coeffects
   | Poffsetref _ -> Arbitrary_effects, Has_coeffects
   | Pintoffloat
@@ -63,12 +70,11 @@ let for_primitive (prim : Lambda.primitive) =
   | Pmulfloat
   | Pdivfloat
   | Pfloatcomp _ -> No_effects, No_coeffects
-  | Pstringlength
+  | Pstringlength | Pbyteslength
   | Parraylength _ ->
-    No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
+      No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
   | Pisint
   | Pisout
-  | Pbittest
   | Pbintofint _
   | Pintofbint _
   | Pcvtbint _
@@ -76,8 +82,6 @@ let for_primitive (prim : Lambda.primitive) =
   | Paddbint _
   | Psubbint _
   | Pmulbint _
-  | Pdivbint _
-  | Pmodbint _
   | Pandbint _
   | Porbint _
   | Pxorbint _
@@ -86,68 +90,55 @@ let for_primitive (prim : Lambda.primitive) =
   | Pasrbint _
   | Pbintcomp _ -> No_effects, No_coeffects
   | Pbigarraydim _ ->
-    No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
+      No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
+  | Pread_symbol _
   | Pfield _
+  | Pfield_computed
   | Pfloatfield _
-  | Pgetglobal _
   | Parrayrefu _
   | Pstringrefu
-  | Pstring_load_16 true
-  | Pstring_load_32 true
-  | Pstring_load_64 true
+  | Pbytesrefu
+  | Pstring_load (_, Unsafe)
+  | Pbytes_load (_, Unsafe)
   | Pbigarrayref (true, _, _, _)
-  | Pbigstring_load_16 true
-  | Pbigstring_load_32 true
-  | Pbigstring_load_64 true ->
-    No_effects, Has_coeffects
+  | Pbigstring_load (_, Unsafe) ->
+      No_effects, Has_coeffects
   | Parrayrefs _
   | Pstringrefs
-  | Pstring_load_16 false
-  | Pstring_load_32 false
-  | Pstring_load_64 false
+  | Pbytesrefs
+  | Pstring_load (_, Safe)
+  | Pbytes_load (_, Safe)
   | Pbigarrayref (false, _, _, _)
-  | Pbigstring_load_16 false
-  | Pbigstring_load_32 false
-  | Pbigstring_load_64 false ->
-    (* May trigger a bounds check exception. *)
-    Arbitrary_effects, Has_coeffects
+  | Pbigstring_load (_, Safe) ->
+      (* May trigger a bounds check exception. *)
+      Arbitrary_effects, Has_coeffects
   | Psetfield _
+  | Psetfield_computed _
   | Psetfloatfield _
-  | Psetglobal _
   | Parraysetu _
   | Parraysets _
-  | Pstringsetu
-  | Pstringsets
-  | Pstring_set_16 _
-  | Pstring_set_32 _
-  | Pstring_set_64 _
+  | Pbytessetu
+  | Pbytessets
+  | Pbytes_set _
   | Pbigarrayset _
-  | Pbigstring_set_16 _
-  | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ ->
-    (* Whether or not some of these are "unsafe" is irrelevant; they always
-       have an effect. *)
-    Arbitrary_effects, No_coeffects
-  | Pctconst _ -> No_effects, No_coeffects
+  | Pbigstring_set _ ->
+      (* Whether or not some of these are "unsafe" is irrelevant; they always
+         have an effect. *)
+      Arbitrary_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
   | Popaque -> Arbitrary_effects, Has_coeffects
-  | Ploc _ ->
-    Misc.fatal_error "[Ploc] should have been eliminated by [Translcore]"
-  | Prevapply _
-  | Pdirapply _
   | Psequand
   | Psequor ->
-    Misc.fatal_errorf "The primitive %a should have been eliminated by the \
-        [Closure_conversion] pass."
-      Printlambda.primitive prim
+      (* Removed by [Closure_conversion] in the flambda pipeline. *)
+      No_effects, No_coeffects
 
 type return_type =
   | Float
   | Other
 
-let return_type_of_primitive (prim:Lambda.primitive) =
+let return_type_of_primitive (prim:Clambda_primitives.primitive) =
   match prim with
   | Pfloatofint
   | Pnegfloat
@@ -159,6 +150,6 @@ let return_type_of_primitive (prim:Lambda.primitive) =
   | Pfloatfield _
   | Parrayrefu Pfloatarray
   | Parrayrefs Pfloatarray ->
-    Float
+      Float
   | _ ->
-    Other
+      Other

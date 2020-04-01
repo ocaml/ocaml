@@ -1,0 +1,8 @@
+File "w03.ml", line 14, characters 8-9:
+14 | let _ = A
+             ^
+Alert deprecated: A
+File "w03.ml", line 17, characters 12-26:
+17 | exception B [@@deprecated]
+                 ^^^^^^^^^^^^^^
+Warning 53: the "deprecated" attribute cannot appear in this context

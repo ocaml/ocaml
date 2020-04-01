@@ -1,0 +1,15 @@
+(* TEST
+files = "main.c"
+arguments = "-DINT_INT -DFUN=pgcd_30030 main.c"
+* asmgen
+*)
+
+(function "pgcd_30030" (a:int)
+  (catch (exit pgcd a 30030)
+   with (pgcd n:val m:val)
+     (if (> n m)
+         (exit pgcd m n)
+         (if (== n 0)
+             m
+             (let (r (mod m n))
+                     (exit pgcd r n))))))

@@ -1,0 +1,252 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*          Damien Doligez, projet Gallium, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2014 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This script is run on our continuous-integration servers to recompile
+# from scratch and run the test suite.
+
+# To know the slave's architecture, this script looks at the OCAML_ARCH
+# environment variable. For a given node NODE, this variable can be defined
+# in Jenkins at the following address:
+# https://ci.inria.fr/ocaml/computer/NODE/configure
+
+# Other environment variables that are honored:
+#   OCAML_CONFIGURE_OPTIONS   additional options for configure
+#   OCAML_JOBS                number of jobs to run in parallel (make -j)
+
+# Command-line arguments:
+# -conf configure-option  add configure-option to configure cmd line
+# -patch1 file-name       apply patch with -p1
+# -no-native              do not build "opt" and "opt.opt"
+# -jNN                    pass "-jNN" option to make for parallel builds
+
+error () {
+  echo "$1" >&2
+  exit 3
+}
+
+arch_error() {
+  configure_url="https://ci.inria.fr/ocaml/computer/${NODE_NAME}/configure"
+  msg="Unknown architecture. Make sure the OCAML_ARCH environment"
+  msg="$msg variable has been defined."
+  msg="$msg\nSee ${configure_url}"
+  error "$msg"
+}
+
+# Kill a task on Windows
+# Errors are ignored
+kill_task()
+{
+  task=$1
+  taskkill /f /im ${task} /t || true
+}
+
+quote1 () {
+  printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
+}
+
+#########################################################################
+# be verbose
+set -x
+
+#########################################################################
+# Save the current directory (on cygwin, /etc/profile changes it)
+jenkinsdir="$(pwd)"
+echo jenkinsdir=${jenkinsdir}
+
+#########################################################################
+# If we are called from a Windows batch script, we must set up the
+# Unix environment variables (e.g. PATH).
+
+case "${OCAML_ARCH}" in
+  bsd|macos|linux) ;;
+  cygwin|cygwin64|mingw|mingw64)
+    . /etc/profile
+    . "$HOME/.profile"
+  ;;
+  msvc)
+    . /etc/profile
+    . "$HOME/.profile"
+    . "$HOME/.msenv32"
+  ;;
+  msvc64)
+    . /etc/profile
+    . "$HOME/.profile"
+    . "$HOME/.msenv64"
+  ;;
+  *) arch_error;;
+esac
+
+#########################################################################
+
+# be considerate towards other potential users of the test machine
+case "${OCAML_ARCH}" in
+  bsd|macos|linux) renice 10 $$ ;;
+esac
+
+# be verbose and stop on error
+set -ex
+
+# On PowerPC, the OCAML_CONFIGURE_OPTIONS is used to specify which C
+# compiler to use. However with the introduction of autoconf the way
+# to do that has changed. Once all the branches on which we do CI will use
+# autoconf, the variable shall be updated on the host. But until then,
+# we leave it with its legacy value and override it here.
+CCOMP=
+case $NODE_NAME in
+  ocaml-ppc-32)
+    CCOMP="CC='gcc -m32'"
+    OCAML_CONFIGURE_OPTIONS=;;
+  ocaml-ppc-64)
+    CCOMP="CC='gcc -m64'"
+    OCAML_CONFIGURE_OPTIONS=;;
+  ocaml-openbsd-64)
+    OCAML_CONFIGURE_OPTIONS='--with-bfd'
+esac
+
+#########################################################################
+# set up variables
+
+# default values
+build=''
+host=''
+conffile=Makefile.config
+make=make
+instdir="$HOME/ocaml-tmp-install"
+confoptions="--enable-ocamltest ${OCAML_CONFIGURE_OPTIONS}"
+make_native=true
+cleanup=false
+check_make_alldepend=false
+dorebase=false
+jobs=''
+
+case "${OCAML_ARCH}" in
+  bsd)
+    make=gmake
+  ;;
+  macos)
+    confoptions="$confoptions --with-bfd "
+  ;;
+  linux)
+    check_make_alldepend=true
+  ;;
+  cygwin)
+    cleanup=true
+    check_make_alldepend=true
+  ;;
+  cygwin64)
+    cleanup=true
+    check_make_alldepend=true
+    dorebase=false
+    confoptions="$confoptions --disable-shared "
+  ;;
+  mingw)
+    build='--build=i686-pc-cygwin'
+    host='--host=i686-w64-mingw32'
+    instdir='C:/ocamlmgw'
+    cleanup=true
+    check_make_alldepend=true
+  ;;
+  mingw64)
+    build='--build=x86_64-unknown-cygwin'
+    host='--host=x86_64-w64-mingw32'
+    instdir='C:/ocamlmgw64'
+    cleanup=true
+    check_make_alldepend=true
+  ;;
+  msvc)
+    build='--build=i686-pc-cygwin'
+    host='--host=i686-pc-windows'
+    instdir='C:/ocamlms'
+    cleanup=true
+  ;;
+  msvc64)
+    build='--build=x86_64-unknown-cygwin'
+    host='--host=x86_64-pc-windows'
+    instdir='C:/ocamlms64'
+    cleanup=true
+  ;;
+  *) arch_error;;
+esac
+
+# Make sure two builds won't use the same install directory
+instdir="$instdir-$$"
+
+case "${OCAML_JOBS}" in
+  [1-9]|[1-9][0-9]) jobs="-j${OCAML_JOBS}" ;;
+esac
+
+#########################################################################
+# On Windows, cleanup processes that may remain from previous run
+
+if $cleanup; then
+  tasks="tee ocamlrun program ocamltest ocamltest.opt"
+  for task in ${tasks}; do kill_task ${task}.exe; done
+fi
+
+#########################################################################
+# Go to the right directory
+
+pwd
+cd "$jenkinsdir"
+
+#########################################################################
+# parse optional command-line arguments (has to be done after the "cd")
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
+    -patch1) patch -f -p1 <"$2"; shift;;
+    -no-native) make_native=false;;
+    -j[1-9]|-j[1-9][0-9]) jobs="$1";;
+    *) error "unknown option $1";;
+  esac
+  shift
+done
+
+#########################################################################
+# Do the work
+
+# Tell gcc to use only ASCII in its diagnostic outputs.
+export LC_ALL=C
+
+git clean -q -f -d -x
+
+if $flambda; then
+  confoptions="$confoptions --enable-flambda --enable-flambda-invariants"
+fi
+
+eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
+
+if $make_native; then
+  $make $jobs --warn-undefined-variables
+  if $check_make_alldepend; then $make --warn-undefined-variables alldepend; fi
+else
+  $make $jobs --warn-undefined-variables
+fi
+if $dorebase; then
+    # temporary solution to the cygwin fork problem
+    # see https://github.com/alainfrisch/flexdll/issues/50
+    rebase -b 0x7cd20000 otherlibs/unix/dllunix.so
+    rebase -b 0x7cdc0000 otherlibs/systhreads/dllthreads.so
+fi
+$make --warn-undefined-variables install
+
+rm -rf "$instdir"
+cd testsuite
+if test -n "$jobs" && test -x /usr/bin/parallel
+then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
+else $make --warn-undefined-variables all
+fi

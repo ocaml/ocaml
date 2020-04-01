@@ -1,0 +1,40 @@
+#!/bin/sh -e
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                David Allsopp, MetaStack Solutions Ltd.                 *
+#*                                                                        *
+#*   Copyright 2019 MetaStack Solutions Ltd.                              *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Remove the autom4te.cache directory to make sure we start in a clean state
+rm -rf autom4te.cache
+
+autoconf --force --warnings=all,error
+
+# Allow pre-processing of configure arguments for Git check-outs
+# The sed call removes dra27's copyright on the whole configure script...
+sed -e '/^#[^!]/d' tools/git-dev-options.sh > configure.tmp
+
+# Some distros have the 2013 --runstatedir patch to autoconf (see
+# http://git.savannah.gnu.org/cgit/autoconf.git/commit/?id=a197431414088a417b407b9b20583b2e8f7363bd
+# in the GNU autoconf repo), and some don't, so ensure its effects are
+# removed for CI consistency...
+# POSIX Notes
+#  - sed -i without a backup file is not portable, hence configure.tmp
+#  - GNU sed's /../,+8d becomes /../{N;..;d;} (and the last ; is important)
+sed -e '/^runstatedir/d' \
+    -e '/-runstatedir /{N;N;N;N;N;N;N;N;d;}' \
+    -e '/--runstatedir=DIR/d' \
+    -e 's/ runstatedir//' \
+    -e '1d' \
+    configure >> configure.tmp
+
+mv -f configure.tmp configure
+chmod +x configure

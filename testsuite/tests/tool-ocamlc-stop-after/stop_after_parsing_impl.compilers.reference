@@ -1,0 +1,36 @@
+[
+  structure_item (stop_after_parsing_impl.ml[12,306+0]..[12,306+24])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (stop_after_parsing_impl.ml[12,306+4]..[12,306+5])
+          Ppat_any
+        expression (stop_after_parsing_impl.ml[12,306+8]..[12,306+24])
+          Pexp_apply
+          expression (stop_after_parsing_impl.ml[12,306+21]..[12,306+22])
+            Pexp_ident "+" (stop_after_parsing_impl.ml[12,306+21]..[12,306+22])
+          [
+            <arg>
+            Nolabel
+              expression (stop_after_parsing_impl.ml[12,306+8]..[12,306+20])
+                Pexp_apply
+                expression (stop_after_parsing_impl.ml[12,306+11]..[12,306+12])
+                  Pexp_ident "+" (stop_after_parsing_impl.ml[12,306+11]..[12,306+12])
+                [
+                  <arg>
+                  Nolabel
+                    expression (stop_after_parsing_impl.ml[12,306+9]..[12,306+10])
+                      Pexp_constant PConst_int (1,None)
+                  <arg>
+                  Nolabel
+                    expression (stop_after_parsing_impl.ml[12,306+13]..[12,306+19])
+                      Pexp_constant PConst_string("true",(stop_after_parsing_impl.ml[12,306+14]..[12,306+18]),None)
+                ]
+            <arg>
+            Nolabel
+              expression (stop_after_parsing_impl.ml[12,306+23]..[12,306+24])
+                Pexp_ident "x" (stop_after_parsing_impl.ml[12,306+23]..[12,306+24])
+          ]
+    ]
+]
+

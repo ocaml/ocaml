@@ -24,7 +24,15 @@
    Performance notice: values of type [int32] occupy more memory
    space than values of type [int], and arithmetic operations on
    [int32] are generally slower than those on [int].  Use [int32]
-   only when the application requires exact 32-bit arithmetic. *)
+   only when the application requires exact 32-bit arithmetic.
+
+    Literals for 32-bit integers are suffixed by l:
+    {[
+      let zero: int32 = 0l
+      let one: int32 = 1l
+      let m_one: int32 = -1l
+    ]}
+*)
 
 val zero : int32
 (** The 32-bit integer 0. *)
@@ -50,13 +58,25 @@ external mul : int32 -> int32 -> int32 = "%int32_mul"
 external div : int32 -> int32 -> int32 = "%int32_div"
 (** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
+   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+
+val unsigned_div : int32 -> int32 -> int32
+(** Same as {!div}, except that arguments and result are interpreted as {e
+    unsigned} 32-bit integers.
+
+    @since 4.08.0 *)
 
 external rem : int32 -> int32 -> int32 = "%int32_mod"
 (** Integer remainder.  If [y] is not zero, the result
    of [Int32.rem x y] satisfies the following property:
    [x = Int32.add (Int32.mul (Int32.div x y) y) (Int32.rem x y)].
    If [y = 0], [Int32.rem x y] raises [Division_by_zero]. *)
+
+val unsigned_rem : int32 -> int32 -> int32
+(** Same as {!rem}, except that arguments and result are interpreted as {e
+    unsigned} 32-bit integers.
+
+    @since 4.08.0 *)
 
 val succ : int32 -> int32
 (** Successor.  [Int32.succ x] is [Int32.add x Int32.one]. *)
@@ -84,7 +104,7 @@ external logxor : int32 -> int32 -> int32 = "%int32_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : int32 -> int32
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : int32 -> int -> int32 = "%int32_lsl"
 (** [Int32.shift_left x y] shifts [x] to the left by [y] bits.
@@ -104,7 +124,8 @@ external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
 
 external of_int : int -> int32 = "%int32_of_int"
 (** Convert the given integer (type [int]) to a 32-bit integer
-    (type [int32]). *)
+    (type [int32]). On 64-bit platforms, the argument is taken
+    modulo 2{^32}. *)
 
 external to_int : int32 -> int = "%int32_to_int"
 (** Convert the given 32-bit integer (type [int32]) to an
@@ -112,6 +133,13 @@ external to_int : int32 -> int = "%int32_to_int"
    is taken modulo 2{^31}, i.e. the high-order bit is lost
    during the conversion.  On 64-bit platforms, the conversion
    is exact. *)
+
+val unsigned_to_int : int32 -> int option
+(** Same as {!to_int}, but interprets the argument as an {e unsigned} integer.
+    Returns [None] if the unsigned value of the argument cannot fit into an
+    [int].
+
+    @since 4.08.0 *)
 
 external of_float : float -> int32
   = "caml_int32_of_float" "caml_int32_of_float_unboxed"
@@ -128,12 +156,25 @@ external to_float : int32 -> float
 
 external of_string : string -> int32 = "caml_int32_of_string"
 (** Convert the given string to a 32-bit integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Int32.max_int+1]].  If the input exceeds {!Int32.max_int}
+   it is converted to the signed integer
+   [Int32.min_int + input - Int32.max_int - 1].
+
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
+   Raise [Failure "Int32.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int32]. *)
+
+val of_string_opt: string -> int32 option
+(** Same as [of_string], but return [None] instead of raising.
+    @since 4.05 *)
+
 
 val to_string : int32 -> string
 (** Return the string representation of its argument, in signed decimal. *)
@@ -159,9 +200,15 @@ type t = int32
 
 val compare: t -> t -> int
 (** The comparison function for 32-bit integers, with the same specification as
-    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Int32] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val unsigned_compare: t -> t -> int
+(** Same as {!compare}, except that arguments are interpreted as {e unsigned}
+    32-bit integers.
+
+    @since 4.08.0 *)
 
 val equal: t -> t -> bool
 (** The equal function for int32s.
@@ -169,7 +216,7 @@ val equal: t -> t -> bool
 
 (**/**)
 
-(** {6 Deprecated functions} *)
+(** {1 Deprecated functions} *)
 
 external format : string -> int32 -> string = "caml_int32_format"
 (** Do not use this deprecated function.  Instead,

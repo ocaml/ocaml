@@ -1,23 +1,12 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                OCaml                                   *)
-(*                                                                        *)
-(*                        Pierre Chambart, OCamlPro                       *)
-(*                                                                        *)
-(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+(* TEST
+   modules = "custom_finalize.c"
+*)
 
 type t
 
 external test_alloc : unit -> t = "caml_test_pr3612_alloc"
 external get_counter : unit -> int = "caml_test_pr3612_counter"
-(* The number of deserialized blocs minus the number of freed blocs *)
+(* The number of deserialized blocks minus the number of freed blocks *)
 
 external init : unit -> unit = "caml_test_pr3612_init"
 

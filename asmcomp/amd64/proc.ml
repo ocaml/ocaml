@@ -26,10 +26,7 @@ let fp = Config.with_frame_pointers
 
 (* Which ABI to use *)
 
-let win64 =
-  match Config.system with
-  | "win64" | "mingw64" | "cygwin" -> true
-  | _                   -> false
+let win64 = Arch.win64
 
 (* Registers available for register allocation *)
 
@@ -47,7 +44,7 @@ let win64 =
     r10         10
     r11         11
     rbp         12
-    r14         trap pointer
+    r14         domain state pointer
     r15         allocation pointer
 
   xmm0 - xmm15  100 - 115  *)
@@ -67,9 +64,16 @@ let win64 =
      xmm0 - xmm3: C function arguments
      rbx, rbp, rsi, rdi r12-r15 are preserved by C
      xmm6-xmm15 are preserved by C
-   Note (PR#5707): r11 should not be used for parameter passing, as it
-     can be destroyed by the dynamic loader according to SVR4 ABI.
-     Linux's dynamic loader also destroys r10.
+   Note (PR#5707, GPR#1304): PLT stubs (used for dynamic resolution of symbols
+     on Unix-like platforms) may clobber any register except those used for:
+       1. C parameter passing;
+       2. C return values;
+       3. C callee-saved registers.
+     This translates to the set { r10, r11 }.  These registers hence cannot
+     be used for OCaml parameter passing and must also be marked as
+     destroyed across [Ialloc] (otherwise a call to caml_call_gc@PLT might
+     clobber these two registers before the assembly stub saves them into
+     the GC regs block).
 *)
 
 let max_arguments_for_tailcalls = 10
@@ -132,8 +136,18 @@ let phys_reg n =
 
 let rax = phys_reg 0
 let rdx = phys_reg 4
+let r10 = phys_reg 10
+let r11 = phys_reg 11
+let r13 = phys_reg 9
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
+
+let destroyed_by_plt_stub =
+  if not X86_proc.use_plt then [| |] else [| r10; r11 |]
+
+let num_destroyed_by_plt_stub = Array.length destroyed_by_plt_stub
+
+let destroyed_by_plt_stub_set = Reg.set_of_array destroyed_by_plt_stub
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
@@ -159,7 +173,8 @@ let calling_conventions first_int last_int first_float last_float make_stack
         end else begin
           loc.(i) <- stack_slot (make_stack !ofs) ty;
           ofs := !ofs + size_int
-        end
+        end;
+        assert (not (Reg.Set.mem loc.(i) destroyed_by_plt_stub_set))
     | Float ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
@@ -175,12 +190,20 @@ let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
+let max_int_args_in_regs () =
+  if Config.spacetime then 9 else 10
+
 let loc_arguments arg =
-  calling_conventions 0 9 100 109 outgoing arg
+  calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 outgoing arg
 let loc_parameters arg =
-  let (loc, _ofs) = calling_conventions 0 9 100 109 incoming arg in loc
+  let (loc, _ofs) =
+    calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 incoming arg
+  in
+  loc
 let loc_results res =
   let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+
+let loc_spacetime_node_hole = r13
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -243,6 +266,22 @@ let loc_external_arguments arg =
 
 let loc_exn_bucket = rax
 
+(** See "System V Application Binary Interface, AMD64 Architecture Processor
+    Supplement" (www.x86-64.org/documentation/abi.pdf) page 57, fig. 3.36. *)
+let int_dwarf_reg_numbers =
+  [| 0; 3; 5; 4; 1; 2; 8; 9; 12; 13; 10; 11; 6 |]
+
+let float_dwarf_reg_numbers =
+  [| 17; 18; 19; 20; 21; 22; 23; 24; 25; 26; 27; 28; 29; 30; 31; 32 |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 7
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -262,15 +301,37 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
+let destroyed_by_spacetime_at_alloc =
+  if Config.spacetime then
+    [| loc_spacetime_node_hole |]
+  else
+    [| |]
+
+let destroyed_at_alloc =
+  let regs =
+    if X86_proc.use_plt then
+      destroyed_by_plt_stub
+    else
+      [| r11 |]
+  in
+  Array.concat [regs; destroyed_by_spacetime_at_alloc]
+
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
-  | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
+  | Iop(Ialloc _) -> destroyed_at_alloc
+  | Iop(Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
+  | Iop (Iintop (Icheckbound _)) when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
+  | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
+  | Itrywith _ -> [| r11 |]
   | _ ->
     if fp then
 (* prevent any use of the frame pointer ! *)
@@ -281,22 +342,27 @@ let destroyed_at_oper = function
 
 let destroyed_at_raise = all_phys_regs
 
+let destroyed_at_reloadretaddr = [| |]
+
 (* Maximal register pressure *)
 
 
 let safe_register_pressure = function
-    Iextcall(_,_) -> if win64 then if fp then 7 else 8 else 0
+    Iextcall _ -> if win64 then if fp then 7 else 8 else 0
   | _ -> if fp then 10 else 11
 
 let max_register_pressure = function
-    Iextcall(_, _) ->
+    Iextcall _ ->
       if win64 then
         if fp then [| 7; 10 |]  else [| 8; 10 |]
         else
         if fp then [| 3; 0 |] else  [| 4; 0 |]
   | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
     if fp then [| 10; 16 |] else [| 11; 16 |]
-  | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
+  | Ialloc _ ->
+    if fp then [| 11 - num_destroyed_by_plt_stub; 16 |]
+    else [| 12 - num_destroyed_by_plt_stub; 16 |]
+  | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
     if fp then [| 11; 16 |] else [| 12; 16 |]
   | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]
@@ -306,17 +372,21 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
-  | Ispecific(Ilea _) -> true
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
+  | Ispecific(Ilea _|Isextend32|Izextend32) -> true
   | Ispecific _ -> false
   | _ -> true
 
 (* Layout of the stack frame *)
 
-let num_stack_slots = [| 0; 0 |]
-let contains_calls = ref false
+let frame_required fd =
+  fp || fd.fun_contains_calls ||
+  fd.fun_num_stack_slots.(0) > 0 || fd.fun_num_stack_slots.(1) > 0
+
+let prologue_required fd =
+  frame_required fd
 
 (* Calling the assembler *)
 

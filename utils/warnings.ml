@@ -13,17 +13,21 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* When you change this, you need to update the documentation:
-   - man/ocamlc.m   in ocaml
-   - man/ocamlopt.m in ocaml
-   - manual/cmds/comp.etex   in the doc sources
-   - manual/cmds/native.etex in the doc sources
+(* When you change this, you need to update:
+   - the list 'description' at the bottom of this file
+   - man/ocamlc.m
 *)
+
+type loc = {
+  loc_start: Lexing.position;
+  loc_end: Lexing.position;
+  loc_ghost: bool;
+}
 
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string                    (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -58,10 +62,10 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool    (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
-  | Ambiguous_name of string list * string list *  bool    (* 41 *)
+  | Ambiguous_name of string list * string list *  bool * string (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
@@ -80,6 +84,14 @@ type t =
   | Ambiguous_pattern of string list        (* 57 *)
   | No_cmx_file of string                   (* 58 *)
   | Assignment_to_non_mutable_value         (* 59 *)
+  | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
+  | Constraint_on_gadt                      (* 62 *)
+  | Erroneous_printed_signature of string   (* 63 *)
+  | Unsafe_without_parsing                  (* 64 *)
+  | Redefining_unit of string               (* 65 *)
+  | Unused_open_bang of string              (* 66 *)
+  | Unused_functor_parameter of string      (* 67 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -88,10 +100,12 @@ type t =
    do NOT reuse one of the holes.
 *)
 
+type alert = {kind:string; message:string; def:loc; use:loc}
+
+
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
-  | Deprecated _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
   | Labels_omitted _ -> 6
@@ -148,9 +162,17 @@ let number = function
   | Ambiguous_pattern _ -> 57
   | No_cmx_file _ -> 58
   | Assignment_to_non_mutable_value -> 59
+  | Unused_module _ -> 60
+  | Unboxable_type_in_prim_decl _ -> 61
+  | Constraint_on_gadt -> 62
+  | Erroneous_printed_signature _ -> 63
+  | Unsafe_without_parsing -> 64
+  | Redefining_unit _ -> 65
+  | Unused_open_bang _ -> 66
+  | Unused_functor_parameter _ -> 67
 ;;
 
-let last_warning_number = 59
+let last_warning_number = 67
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -191,6 +213,8 @@ type state =
   {
     active: bool array;
     error: bool array;
+    alerts: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
+    alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
   }
 
 let current =
@@ -198,19 +222,123 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
+      alerts = (Misc.Stdlib.String.Set.empty, false); (* all enabled *)
+      alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all soft *)
     }
+
+let disabled = ref false
+
+let without_warnings f =
+  Misc.protect_refs [Misc.R(disabled, true)] f
 
 let backup () = !current
 
 let restore x = current := x
 
-let is_active x = (!current).active.(number x);;
-let is_error x = (!current).error.(number x);;
+let is_active x =
+  not !disabled && (!current).active.(number x)
 
-let parse_opt error active flags s =
-  let set i = flags.(i) <- true in
-  let clear i = flags.(i) <- false in
-  let set_all i = active.(i) <- true; error.(i) <- true in
+let is_error x =
+  not !disabled && (!current).error.(number x)
+
+let alert_is_active {kind; _} =
+  not !disabled &&
+  let (set, pos) = (!current).alerts in
+  Misc.Stdlib.String.Set.mem kind set = pos
+
+let alert_is_error {kind; _} =
+  not !disabled &&
+  let (set, pos) = (!current).alert_errors in
+  Misc.Stdlib.String.Set.mem kind set = pos
+
+let mk_lazy f =
+  let state = backup () in
+  lazy
+    (
+      let prev = backup () in
+      restore state;
+      try
+        let r = f () in
+        restore prev;
+        r
+      with exn ->
+        restore prev;
+        raise exn
+    )
+
+let set_alert ~error ~enable s =
+  let upd =
+    match s with
+    | "all" ->
+        (Misc.Stdlib.String.Set.empty, not enable)
+    | s ->
+        let (set, pos) =
+          if error then (!current).alert_errors else (!current).alerts
+        in
+        let f =
+          if enable = pos
+          then Misc.Stdlib.String.Set.add
+          else Misc.Stdlib.String.Set.remove
+        in
+        (f s set, pos)
+  in
+  if error then
+    current := {(!current) with alert_errors=upd}
+  else
+    current := {(!current) with alerts=upd}
+
+let parse_alert_option s =
+  let n = String.length s in
+  let id_char = function
+    | 'a'..'z' | 'A'..'Z' | '_' | '\'' | '0'..'9' -> true
+    | _ -> false
+  in
+  let rec parse_id i =
+    if i < n && id_char s.[i] then parse_id (i + 1) else i
+  in
+  let rec scan i =
+    if i = n then ()
+    else if i + 1 = n then raise (Arg.Bad "Ill-formed list of alert settings")
+    else match s.[i], s.[i+1] with
+      | '+', '+' -> id (set_alert ~error:true ~enable:true) (i + 2)
+      | '+', _ -> id (set_alert ~error:false ~enable:true) (i + 1)
+      | '-', '-' -> id (set_alert ~error:true ~enable:false) (i + 2)
+      | '-', _ -> id (set_alert ~error:false ~enable:false) (i + 1)
+      | '@', _ ->
+          id (fun s ->
+              set_alert ~error:true ~enable:true s;
+              set_alert ~error:false ~enable:true s)
+            (i + 1)
+      | _ -> raise (Arg.Bad "Ill-formed list of alert settings")
+  and id f i =
+    let j = parse_id i in
+    if j = i then raise (Arg.Bad "Ill-formed list of alert settings");
+    let id = String.sub s i (j - i) in
+    f id;
+    scan j
+  in
+  scan 0
+
+let parse_opt error active errflag s =
+  let flags = if errflag then error else active in
+  let set i =
+    if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
+    else flags.(i) <- true
+  in
+  let clear i =
+    if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
+    else flags.(i) <- false
+  in
+  let set_all i =
+    if i = 3 then begin
+      set_alert ~error:false ~enable:true "deprecated";
+      set_alert ~error:true ~enable:true "deprecated"
+    end
+    else begin
+      active.(i) <- true;
+      error.(i) <- true
+    end
+  in
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec get_num n i =
     if i >= String.length s then i, n
@@ -261,27 +389,27 @@ let parse_opt error active flags s =
 let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
-  parse_opt error active (if errflag then error else active) s;
-  current := {error; active}
+  parse_opt error active errflag s;
+  current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
+let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66-67";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
 
+let ref_manual_explanation () =
+  (* manual references are checked a posteriori by the manual
+     cross-reference consistency check in manual/tests*)
+  let[@manual.ref "s:comp-warnings"] chapter, section = 9, 5 in
+  Printf.sprintf "(See manual section %d.%d)" chapter section
+
 let message = function
-  | Comment_start -> "this is the start of a comment."
+  | Comment_start ->
+      "this `(*' is the start of a comment.\n\
+       Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s ->
-      (* Reduce \r\n to \n:
-           - Prevents any \r characters being printed on Unix when processing
-             Windows sources
-           - Prevents \r\r\n being generated on Windows, which affects the
-             testsuite
-       *)
-       "deprecated: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -306,7 +434,7 @@ let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."
   | Partial_match s ->
       "this pattern-matching is not exhaustive.\n\
-       Here is an example of a value that is not matched:\n" ^ s
+       Here is an example of a case that is not matched:\n" ^ s
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
@@ -357,6 +485,7 @@ let message = function
         file1 file2 modname
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
   | Unused_open s -> "unused open " ^ s ^ "."
+  | Unused_open_bang s -> "unused open! " ^ s ^ "."
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
@@ -369,16 +498,21 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) ->
-      "unused extension constructor " ^ s ^ "."
-  | Unused_extension (s, true, _) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        (However, this constructor appears in patterns.)"
-  | Unused_extension (s, false, true) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        It is exported or rebound as a private extension."
+  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+     let kind =
+       if is_exception then "exception" else "extension constructor" in
+     let name = kind ^ " " ^ s in
+     begin match cu_pattern, cu_privatize with
+       | false, false -> "unused " ^ name
+       | true, _ ->
+          name ^
+          " is never used to build values.\n\
+           (However, this constructor appears in patterns.)"
+       | false, true ->
+          name ^
+          " is never used to build values.\n\
+            It is exported or rebound as a private extension."
+     end
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -391,14 +525,16 @@ let message = function
        not visible in the current scope: "
       ^ String.concat " " slist ^ ".\n\
        They will not be selected if the type becomes unknown."
-  | Ambiguous_name ([s], tl, false) ->
+  | Ambiguous_name ([s], tl, false, expansion) ->
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
-  | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (_slist, tl, true) ->
+      ^ expansion
+  | Ambiguous_name (_, _, false, _ ) -> assert false
+  | Ambiguous_name (_slist, tl, true, expansion) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
+      ^ expansion
   | Disambiguated_name s ->
       "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
        it will not compile with OCaml 4.00 or earlier."
@@ -433,9 +569,9 @@ let message = function
       Printf.sprintf "expected tailcall"
   | Fragile_literal_pattern ->
       Printf.sprintf
-        "the argument of this constructor should not be matched against a\n\
-         constant pattern; the actual value of the argument could change\n\
-         in the future."
+        "Code should not depend on the actual values of\n\
+         this constructor's arguments. They are only for information\n\
+         and may change in future versions. %t" ref_manual_explanation
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -457,8 +593,8 @@ let message = function
             "variables " ^ String.concat "," vars in
       Printf.sprintf
         "Ambiguous or-pattern variables under guard;\n\
-         %s may match different arguments. (See manual section 8.5)"
-        msg
+         %s may match different arguments. %t"
+        msg ref_manual_explanation
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
@@ -467,28 +603,96 @@ let message = function
       "A potential assignment to a non-mutable value was detected \n\
         in this source file.  Such assignments may generate incorrect code \n\
         when using Flambda."
+  | Unused_module s -> "unused module " ^ s ^ "."
+  | Unboxable_type_in_prim_decl t ->
+      Printf.sprintf
+        "This primitive declaration uses type %s, whose representation\n\
+         may be either boxed or unboxed. Without an annotation to indicate\n\
+         which representation is intended, the boxed representation has been\n\
+         selected by default. This default choice may change in future\n\
+         versions of the compiler, breaking the primitive implementation.\n\
+         You should explicitly annotate the declaration of %s\n\
+         with [@@boxed] or [@@unboxed], so that its external interface\n\
+         remains stable in the future." t t
+  | Constraint_on_gadt ->
+      "Type constraints do not apply to GADT cases of variant types."
+  | Erroneous_printed_signature s ->
+      "The printed interface differs from the inferred interface.\n\
+       The inferred interface contained items which could not be printed\n\
+       properly due to name collisions between identifiers."
+     ^ s
+     ^ "\nBeware that this warning is purely informational and will not catch\n\
+        all instances of erroneous printed interface."
+  | Unsafe_without_parsing ->
+     "option -unsafe used with a preprocessor returning a syntax tree"
+  | Redefining_unit name ->
+      Printf.sprintf
+        "This type declaration is defining a new '()' constructor\n\
+         which shadows the existing one.\n\
+         Hint: Did you mean 'type %s = unit'?" name
+  | Unused_functor_parameter s -> "unused functor parameter " ^ s ^ "."
 ;;
 
 let nerrors = ref 0;;
 
-let print ppf w =
-  let msg = message w in
-  let num = number w in
-  Format.fprintf ppf "%d: %s" num msg;
-  Format.pp_print_flush ppf ();
-  if (!current).error.(num) then incr nerrors
-;;
+type reporting_information =
+  { id : string
+  ; message : string
+  ; is_error : bool
+  ; sub_locs : (loc * string) list;
+  }
 
-exception Errors of int;;
+let report w =
+  match is_active w with
+  | false -> `Inactive
+  | true ->
+     if is_error w then incr nerrors;
+     `Active
+       { id = string_of_int (number w);
+         message = message w;
+         is_error = is_error w;
+         sub_locs = [];
+       }
+
+let report_alert (alert : alert) =
+  match alert_is_active alert with
+  | false -> `Inactive
+  | true ->
+      let is_error = alert_is_error alert in
+      if is_error then incr nerrors;
+      let message = Misc.normalise_eol alert.message in
+       (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+      let sub_locs =
+        if not alert.def.loc_ghost && not alert.use.loc_ghost then
+          [
+            alert.def, "Definition";
+            alert.use, "Expected signature";
+          ]
+        else
+          []
+      in
+      `Active
+        {
+          id = alert.kind;
+          message;
+          is_error;
+          sub_locs;
+        }
+
+exception Errors;;
 
 let reset_fatal () =
   nerrors := 0
 
 let check_fatal () =
   if !nerrors > 0 then begin
-    let e = Errors !nerrors in
     nerrors := 0;
-    raise e;
+    raise Errors;
   end;
 ;;
 
@@ -496,7 +700,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated feature.";
+    3, "Deprecated synonym for the 'deprecated' alert.";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
@@ -524,9 +728,7 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot \
-      be\n\
-   \    checked.";  (* Now part of warning 8 *) *)
+   25, "Deprecated: now part of warning 8.";
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";
@@ -559,13 +761,21 @@ let descriptions =
    50, "Unexpected documentation comment.";
    51, "Warning on non-tail calls if @tailcall present.";
    52, "Fragile constant pattern.";
-   53, "Attribute cannot appear in this context";
-   54, "Attribute used more than once on an expression";
-   55, "Inlining impossible";
+   53, "Attribute cannot appear in this context.";
+   54, "Attribute used more than once on an expression.";
+   55, "Inlining impossible.";
    56, "Unreachable case in a pattern-matching (based on type information).";
-   57, "Ambiguous or-pattern variables under guard";
-   58, "Missing cmx file";
-   59, "Assignment to non-mutable value";
+   57, "Ambiguous or-pattern variables under guard.";
+   58, "Missing cmx file.";
+   59, "Assignment to non-mutable value.";
+   60, "Unused module declaration.";
+   61, "Unboxable type in primitive declaration.";
+   62, "Type constraint on GADT type declaration.";
+   63, "Erroneous printed signature.";
+   64, "-unsafe used with a preprocessor returning a syntax tree.";
+   65, "Type declaration defining a new '()' constructor.";
+   66, "Unused open! statement.";
+   67, "Unused functor parameter.";
   ]
 ;;
 
@@ -581,7 +791,7 @@ let help_warnings () =
     | l ->
         Printf.printf "  %c warnings %s.\n"
           (Char.uppercase_ascii c)
-          (String.concat ", " (List.map string_of_int l))
+          (String.concat ", " (List.map Int.to_string l))
   done;
   exit 0
 ;;

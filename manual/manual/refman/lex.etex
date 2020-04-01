@@ -1,7 +1,6 @@
-\section{Lexical conventions}
-\pdfsection{Lexical conventions}
+\section{s:lexical-conventions}{Lexical conventions}
 %HEVEA\cutname{lex.html}
-\subsubsection*{Blanks}
+\subsubsection*{sss:lex:blanks}{Blanks}
 
 The following characters are considered as blanks: space,
 horizontal tabulation, carriage return, line feed and form feed. Blanks are
@@ -9,7 +8,7 @@ ignored, but they separate adjacent identifiers, literals and
 keywords that would otherwise be confused as one single identifier,
 literal or keyword.
 
-\subsubsection*{Comments}
+\subsubsection*{sss:lex:comments}{Comments}
 
 Comments are introduced by the two characters  @"(*"@, with no
 intervening blanks, and terminated by the characters @"*)"@, with
@@ -17,7 +16,7 @@ no intervening blanks. Comments are treated as blank characters.
 Comments do not occur inside string or character literals. Nested
 comments are handled correctly.
 
-\subsubsection*{Identifiers}
+\subsubsection*{sss:lex:identifiers}{Identifiers}
 
 \begin{syntax}
 ident: ( letter || "_" ) { letter || "0" \ldots "9" || "_" || "'" } ;
@@ -46,7 +45,7 @@ identifiers and identifiers that begin with a lowercase letter.  The
 underscore character is considered a lowercase letter for this
 purpose.
 
-\subsubsection*{Integer literals}
+\subsubsection*{sss:integer-literals}{Integer literals}
 
 \begin{syntax}
 integer-literal:
@@ -55,6 +54,12 @@ integer-literal:
                             { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
         | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
         | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+;
+int32-literal: integer-literal 'l'
+;
+int64-literal: integer-literal 'L'
+;
+nativeint-literal: integer-literal 'n'
 \end{syntax}
 
 An integer literal is a sequence of one or more digits, optionally
@@ -66,13 +71,16 @@ preceded by a minus sign. By default, integer literals are in decimal
 \entree{"0b", "0B"}{binary (radix 2)}
 \end{tableau}
 (The initial @"0"@ is the digit zero; the @"O"@ for octal is the letter O.)
+An integer literal can be followed by one of the letters "l", "L" or "n"
+to indicate that this integer has type "int32", "int64" or "nativeint"
+respectively, instead of the default type "int" for integer literals.
 The interpretation of integer literals that fall outside the range of
 representable integer values is undefined.
 
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within integer literals.
 
-\subsubsection*{Floating-point literals}
+\subsubsection*{sss:floating-point-literals}{Floating-point literals}
 
 \begin{syntax}
 float-literal:
@@ -80,8 +88,8 @@ float-literal:
           [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
         | ["-"] ("0x"||"0X")
           ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
-          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" } \\
+          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
           [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
 \end{syntax}
 
@@ -108,7 +116,7 @@ It is written in decimal and interpreted as a power of 2.
 For convenience and readability, underscore characters (@"_"@) are accepted
 (and ignored) within floating-point literals.
 
-\subsubsection*{Character literals}
+\subsubsection*{sss:character-literals}{Character literals}
 \label{s:characterliteral}
 
 \begin{syntax}
@@ -141,34 +149,56 @@ The two single quotes enclose either one character different from
 \entree{"\\o"\var{ooo}}{the character with ASCII code \var{ooo} in octal}
 \end{tableau}
 
-\subsubsection*{String literals}
-\label{s:stringliteral}
+\subsubsection*{sss:stringliterals}{String literals}
 
 \begin{syntax}
 string-literal:
           '"' { string-character } '"'
+       |  '{' quoted-string-id '|'  { any-char } '|' quoted-string-id '}'
+;
+quoted-string-id:
+     { 'a'...'z' || '_' }
+;
 ;
 string-character:
           regular-string-char
         | escape-sequence
+        | "\u{" {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }} "}"
         | '\' newline { space || tab }
 \end{syntax}
 
 String literals are delimited by @'"'@ (double quote) characters.
 The two double quotes enclose a sequence of either characters
 different from @'"'@ and @'\'@, or escape sequences from the
-table given above for character literals.
+table given above for character literals, or a Unicode character
+escape sequence.
+
+A Unicode character escape sequence is substituted by the UTF-8
+encoding of the specified Unicode scalar value. The Unicode scalar
+value, an integer in the ranges 0x0000...0xD7FF or 0xE000...0x10FFFF,
+is defined using 1 to 6 hexadecimal digits; leading zeros are allowed.
 
 To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{spaces-or-tabs} (a backslash at the end of a line
 followed by any number of spaces and horizontal tabulations at the
 beginning of the next line) is ignored inside string literals.
 
+Quoted string literals provide an alternative lexical syntax for
+string literals. They are useful to represent strings of arbitrary content
+without escaping. Quoted strings are delimited by a matching pair
+of @'{' quoted-string-id '|'@ and @'|' quoted-string-id '}'@ with
+the same @quoted-string-id@ on both sides. Quoted strings do not interpret
+any character in a special way but requires that the
+sequence @'|' quoted-string-id '}'@ does not occur in the string itself.
+The identifier @quoted-string-id@ is a (possibly empty) sequence of
+lowercase letters and underscores that can be freely chosen to avoid
+such issue (e.g. "{|hello|}", "{ext|hello {|world|}|ext}", ...).
+
+
 The current implementation places practically no restrictions on the
 length of string literals.
 
-\subsubsection*{Naming labels}
-\label{s:labelname}
+\subsubsection*{sss:labelname}{Naming labels}
 
 To avoid ambiguities, naming labels in expressions cannot just be defined
 syntactically as the sequence of the three tokens "~", @ident@ and
@@ -192,14 +222,13 @@ used in grammars, for the sake of readability. Note also that inside
 type expressions, this expansion can be taken literally, {\em i.e.}
 there are really 3 tokens, with optional blanks between them.
 
-\subsubsection*{Prefix and infix symbols}
+\subsubsection*{sss:lex-ops-symbols}{Prefix and infix symbols}
 
 %%  || '`' lowercase-ident '`'
 
 \begin{syntax}
 infix-symbol:
-        ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
-         '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
+        ( core-operator-char || '%' || '<' ) { operator-char }
       | "#" {{ operator-char }}
 ;
 prefix-symbol:
@@ -207,10 +236,15 @@ prefix-symbol:
       | ('?' || '~') {{ operator-char }}
 ;
 operator-char:
-        '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
-        '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
-        '^' || '|' || '~'
+        '~' || '!' || '?' || core-operator-char || '%' || '<' || ':' || '.'
+;
+core-operator-char:
+        '$' || '&' || '*' || '+' || '-' || '/' || '=' || '>' || '@' || '^' || '|'
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:ext-ops]{extension operators},
+\hyperref[s:index-operators]{extended indexing operators},
+and \hyperref[s:binding-operators]{binding operators}.
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
@@ -220,7 +254,7 @@ expressions, but otherwise behave like normal identifiers.
 %% between backquote characters @'`' lowercase-ident '`'@ are also parsed
 %% as infix operators.
 
-\subsubsection*{Keywords}
+\subsubsection*{sss:keywords}{Keywords}
 
 The identifiers below are reserved as keywords, and cannot be employed
 otherwise:
@@ -231,10 +265,10 @@ otherwise:
       functor     if          in          include     inherit     initializer
       land        lazy        let         lor         lsl         lsr
       lxor        match       method      mod         module      mutable
-      new         object      of          open        or          private
-      rec         sig         struct      then        to          true
-      try         type        val         virtual     when        while
-      with        nonrec
+      new         nonrec      object      of          open        or
+      private     rec         sig         struct      then        to
+      true        try         type        val         virtual     when
+      while       with
 \end{verbatim}
 %
 \goodbreak%
@@ -245,9 +279,9 @@ The following character sequences are also keywords:
 %
 \begin{alltt}
 "    !=    #     &     &&    '     (     )     *     +     ,     -"
-"    -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <"
-"    <-    =     >     >]    >}    ?     [     [<    [>    [|    ]"
-"    _     `     {     {<    |     |]    ||    }     ~"
+"    -.    ->    .     ..    .~    :     ::    :=    :>    ;     ;;"
+"    <     <-    =     >     >]    >}    ?     [     [<    [>    [|"
+"    ]     _     `     {     {<    |     |]    ||    }     ~"
 \end{alltt}
 %
 Note that the following identifiers are keywords of the Camlp4
@@ -257,14 +291,14 @@ extensions and should be avoided for compatibility reasons.
     parser    value    $     $$    $:    <:    <<    >>    ??
 \end{verbatim}
 
-\subsubsection*{Ambiguities}
+\subsubsection*{sss:lex-ambiguities}{Ambiguities}
 
 Lexical ambiguities are resolved according to the ``longest match''
 rule: when a character sequence can be decomposed into two tokens in
 several different ways, the decomposition retained is the one with the
 longest first token.
 
-\subsubsection*{Line number directives}
+\subsubsection*{sss:lex-linedir}{Line number directives}
 
 \begin{syntax}
 linenum-directive:

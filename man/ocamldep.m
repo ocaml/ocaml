@@ -95,6 +95,9 @@ the same
 .B \-I
 options that are passed to the compiler.
 .TP
+.B \-nocwd
+Do not add current working directory to the list of include directories.
+.TP
 .BI \-impl \ file
 Process
 .IR file
@@ -165,6 +168,10 @@ as a preprocessor for each source file.
 .BI \-ppx \ command
 Pipe abstract syntax tree through preprocessor
 .IR command .
+.TP
+.B \-shared
+Generate dependencies for native plugin files (.cmxs) in addition to
+native compiled files (.cmx).
 .TP
 .B \-slash
 Under Unix, this option does nothing.

@@ -78,7 +78,8 @@ type instruction =
   | Kgetvectitem
   | Ksetvectitem
   | Kgetstringchar
-  | Ksetstringchar
+  | Kgetbyteschar
+  | Ksetbyteschar
   | Kbranch of label
   | Kbranchif of label
   | Kbranchifnot of label
@@ -93,7 +94,7 @@ type instruction =
   | Kccall of string * int
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
-  | Kintcomp of comparison
+  | Kintcomp of integer_comparison
   | Koffsetint of int
   | Koffsetref of int
   | Kisint
@@ -107,6 +108,6 @@ type instruction =
 let immed_min = -0x40000000
 and immed_max = 0x3FFFFFFF
 
-(* Actually the abstract machine accomodates -0x80000000 to 0x7FFFFFFF,
+(* Actually the abstract machine accommodates -0x80000000 to 0x7FFFFFFF,
    but these numbers overflow the OCaml type int if the compiler runs on
    a 32-bit processor. *)

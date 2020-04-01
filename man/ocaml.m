@@ -38,7 +38,7 @@ that permits interactive use of the OCaml system through a
 read-eval-print loop. In this mode, the system repeatedly reads OCaml
 phrases from the input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any. The
-system prints a # (sharp) prompt before reading each phrase.
+system prints a # (hash) prompt before reading each phrase.
 
 A toplevel phrase can span several lines. It is terminated by ;; (a
 double-semicolon). The syntax of toplevel phrases is as follows.
@@ -170,8 +170,7 @@ are supported.
 .B \-safe\-string
 Enforce the separation between types
 .BR string \ and\  bytes ,
-thereby making strings read-only. This will become the default in
-a future version of OCaml.
+thereby making strings read-only. This is the default.
 .TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest
@@ -185,6 +184,17 @@ interactive session.
 .B \-strict\-sequence
 Force the left-hand part of each sequence to have type unit.
 .TP
+.B \-unboxed\-types
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with
+.BR [@@ocaml.boxed] .
+.TP
+.B \-no-unboxed\-types
+When a type is unboxable  it will be boxed unless annotated with
+.BR [@@ocaml.unboxed] .
+This is the default.
+.TP
 .B \-unsafe
 Turn bound checking off on array and string accesses (the
 .BR v.(i) and s.[i]
@@ -196,15 +206,18 @@ accesses an array or string outside of its bounds.
 .B \-unsafe\-string
 Identify the types
 .BR string \ and\  bytes ,
-thereby making strings writable. For reasons of backward compatibility,
-this is the default setting for the moment, but this will change in a future
-version of OCaml.
+thereby making strings writable.
+This is intended for compatibility with old source code and should not
+be used with new software.
 .TP
 .B \-version
 Print version string and exit.
 .TP
 .B \-vnum
 Print short version number and exit.
+.TP
+.B \-no\-version
+Do not print the version banner at startup.
 .TP
 .BI \-w \ warning\-list
 Enable or disable warnings according to the argument
@@ -227,6 +240,49 @@ for the syntax of the
 .I warning\-list
 argument.
 .TP
+.BI \-color \ mode
+Enable or disable colors in compiler messages (especially warnings and errors).
+The following modes are supported:
+
+.B auto
+use heuristics to enable colors only if the output supports them (an
+ANSI-compatible tty terminal);
+
+.B always
+enable colors unconditionally;
+
+.B never
+disable color output.
+
+The default setting is
+.B auto,
+and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that isatty(stderr) holds.
+
+The environment variable "OCAML_COLOR" is considered if \-color is not
+provided. Its values are auto/always/never as above.
+
+.TP
+.BI \-error\-style \ mode
+Control the way error messages and warnings are printed.
+The following modes are supported:
+
+.B short
+only print the error and its location;
+
+.B contextual
+like "short", but also display the source code snippet corresponding
+to the location of the error.
+
+The default setting is
+.B contextual.
+
+The environment variable "OCAML_ERROR_STYLE" is considered if
+\-error\-style is not provided. Its values are short/contextual as
+above.
+
+.TP
 .B \-warn\-help
 Show the description of all available warning numbers.
 .TP
@@ -246,8 +302,14 @@ is invoked, it will read phrases from an initialization file before
 giving control to the user. The default file is
 .B .ocamlinit
 in the current directory if it exists, otherwise
+.B XDG_CONFIG_HOME/ocaml/init.ml
+according to the XDG base directory specification lookup if it exists (on
+Windows this is skipped), otherwise
 .B .ocamlinit
-in the user's home directory. You can specify a different initialization file
+in the user's home directory (
+.B HOME
+variable).
+You can specify a different initialization file
 by using the
 .BI \-init \ file
 option, and disable initialization files by using the
@@ -260,17 +322,21 @@ directive to read phrases from a file.
 
 .SH ENVIRONMENT VARIABLES
 .TP
-.B LC_CTYPE
-If set to iso_8859_1, accented characters (from the
-ISO Latin-1 character set) in string and character literals are
-printed as is; otherwise, they are printed as decimal escape sequences.
+.B OCAMLTOP_UTF_8
+When printing string values, non-ascii bytes (>0x7E) are printed as
+decimal escape sequence if
+.B OCAMLTOP_UTF_8
+is set to false. Otherwise they are printed unescaped.
 .TP
 .B TERM
 When printing error messages, the toplevel system
 attempts to underline visually the location of the error. It
 consults the TERM variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
-
+.TP
+.B XDG_CONFIG_HOME HOME
+.B .ocamlinit
+lookup procedure (see above).
 .SH SEE ALSO
 .BR ocamlc (1), \ ocamlopt (1), \ ocamlrun (1).
 .br

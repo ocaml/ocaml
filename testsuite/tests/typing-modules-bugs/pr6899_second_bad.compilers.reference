@@ -1,0 +1,5 @@
+File "pr6899_second_bad.ml", line 12, characters 6-9:
+12 |   let bar = wrap ()
+           ^^^
+Error: The type of this expression, _[< `Test ] -> unit,
+       contains type variables that cannot be generalized

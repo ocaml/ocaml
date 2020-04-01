@@ -27,10 +27,10 @@ CAMLprim value unix_connect(socket, address)
   DWORD err = 0;
 
   get_sockaddr(address, &addr, &addr_len);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   if (connect(s, &addr.s_gen, addr_len) == -1)
     err = WSAGetLastError();
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (err) {
     win32_maperr(err);
     uerror("connect", Nothing);

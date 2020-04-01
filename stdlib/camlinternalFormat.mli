@@ -58,10 +58,10 @@ type ('b, 'c, 'e, 'f) fmt_ebb = Fmt_EBB :
      ('b, 'c, 'e, 'f) fmt_ebb
 
 val make_printf :
-  ('b -> ('b, 'c) acc -> 'd) -> 'b -> ('b, 'c) acc ->
+  (('b, 'c) acc -> 'd) -> ('b, 'c) acc ->
   ('a, 'b, 'c, 'c, 'c, 'd) CamlinternalFormatBasics.fmt -> 'a
 
-val make_iprintf : ('b -> 'f) -> 'b -> ('a, 'b, 'c, 'd, 'e, 'f) fmt -> 'a
+val make_iprintf : ('s -> 'f) -> 's -> ('a, 'b, 'c, 'd, 'e, 'f) fmt -> 'a
 
 val output_acc : out_channel -> (out_channel, unit) acc -> unit
 val bufput_acc : Buffer.t -> (Buffer.t, unit) acc -> unit
@@ -91,8 +91,6 @@ val format_of_string_format :
 
 val char_of_iconv : CamlinternalFormatBasics.int_conv -> char
 val string_of_formatting_lit : CamlinternalFormatBasics.formatting_lit -> string
-val string_of_formatting_gen :
-  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.formatting_gen -> string
 
 val string_of_fmtty :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty -> string

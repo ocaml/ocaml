@@ -1,0 +1,9 @@
+Lines 5-6, characters 2-3:
+5 | ..let y = if false then (fun z -> 1) else (fun z -> x 4 + 1) in
+6 |   y..
+Error: This kind of expression is not allowed as right-hand side of `let rec'
+Line 2, characters 17-18:
+2 | let () = ignore (x 42);;
+                     ^
+Error: Unbound value x
+

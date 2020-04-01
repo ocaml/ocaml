@@ -17,7 +17,6 @@
 
 open Misc
 open Longident
-open Path
 open Types
 
 (* Error report *)
@@ -31,45 +30,25 @@ type error =
 
 exception Error of error
 
-(* Symtable has global state, and normally holds the symbol table
-   for the debuggee. We need to switch it temporarily to the
-   symbol table for the debugger. *)
-
-let debugger_symtable = ref (None: Symtable.global_map option)
-
-let use_debugger_symtable fn arg =
-  let old_symtable = Symtable.current_state() in
-  begin match !debugger_symtable with
-  | None ->
-      Dynlink.init();
-      Dynlink.allow_unsafe_modules true;
-      debugger_symtable := Some(Symtable.current_state())
-  | Some st ->
-      Symtable.restore_state st
-  end;
-  try
-    let result = fn arg in
-    debugger_symtable := Some(Symtable.current_state());
-    Symtable.restore_state old_symtable;
-    result
-  with exn ->
-    Symtable.restore_state old_symtable;
-    raise exn
-
 (* Load a .cmo or .cma file *)
 
 open Format
 
 let rec loadfiles ppf name =
   try
-    let filename = find_in_path !Config.load_path name in
-    use_debugger_symtable Dynlink.loadfile filename;
+    let filename = Load_path.find name in
+    Dynlink.allow_unsafe_modules true;
+    Dynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
-      if not (List.mem d !Config.load_path) then
-        Config.load_path := d :: !Config.load_path;
+      if not (List.mem d (Load_path.get_paths ())) then
+        Load_path.add_dir d;
     end;
-    fprintf ppf "File %s loaded@." filename;
+    fprintf ppf "File %s loaded@."
+      (if d <> Filename.current_dir_name then
+         filename
+       else
+         Filename.basename filename);
     true
   with
   | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
@@ -92,56 +71,70 @@ let loadfile ppf name =
 (* Note: evaluation proceeds in the debugger memory space, not in
    the debuggee. *)
 
-let rec eval_path = function
-    Pident id -> Symtable.get_global_value id
-  | Pdot(p, _, pos) -> Obj.field (eval_path p) pos
-  | Papply _ -> fatal_error "Loadprinter.eval_path"
+let rec eval_address = function
+  | Env.Aident id ->
+    assert (Ident.persistent id);
+    let bytecode_or_asm_symbol = Ident.name id in
+    begin match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol with
+    | None ->
+      raise (Symtable.Error (Symtable.Undefined_global bytecode_or_asm_symbol))
+    | Some obj -> obj
+    end
+  | Env.Adot(addr, pos) -> Obj.field (eval_address addr) pos
+
+let eval_value_path env path =
+  match Env.find_value_address path env with
+  | addr -> eval_address addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
 (* since 4.00, "topdirs.cmi" is not in the same directory as the standard
-  libray, so we load it beforehand as it cannot be found in the search path. *)
-let () =
-  let compiler_libs =
-    Filename.concat Config.standard_library "compiler-libs" in
+  library, so we load it beforehand as it cannot be found in the search path. *)
+let init () =
   let topdirs =
-    Filename.concat compiler_libs "topdirs.cmi" in
+    Filename.concat !Parameters.topdirs_path "topdirs.cmi" in
   ignore (Env.read_signature "Topdirs" topdirs)
 
 let match_printer_type desc typename =
-  let (printer_type, _) =
-    try
-      Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
-    with Not_found ->
-      raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename)))) in
-  Ctype.init_def(Ident.current_time());
+  let printer_type =
+    match
+      Env.find_type_by_name
+        (Ldot(Lident "Topdirs", typename)) Env.empty
+    with
+    | path, _ -> path
+    | exception Not_found ->
+        raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename))))
+  in
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify Env.empty
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance Env.empty desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   ty_arg
 
 let find_printer_type lid =
-  try
-    let (path, desc) = Env.lookup_value lid Env.empty in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type desc "printer_type_old", true) in
-    (ty_arg, path, is_old_style)
-  with
-  | Not_found -> raise(Error(Unbound_identifier lid))
-  | Ctype.Unify _ -> raise(Error(Wrong_type lid))
+  match Env.find_value_by_name lid Env.empty with
+  | (path, desc) -> begin
+      match match_printer_type desc "printer_type_new" with
+      | ty_arg -> (ty_arg, path, false)
+      | exception Ctype.Unify _ -> begin
+          match match_printer_type desc "printer_type_old" with
+          | ty_arg -> (ty_arg, path, true)
+          | exception Ctype.Unify _ -> raise(Error(Wrong_type lid))
+        end
+    end
+  | exception Not_found ->
+      raise(Error(Unbound_identifier lid))
 
 let install_printer ppf lid =
   let (ty_arg, path, is_old_style) = find_printer_type lid in
   let v =
     try
-      use_debugger_symtable eval_path path
+      eval_value_path Env.empty path
     with Symtable.Error(Symtable.Undefined_global s) ->
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =

@@ -79,6 +79,9 @@ instead of the default naming convention.
 .B \-q
 This option has no effect.
 .TP
+.B \--strict
+Reject grammars with conflicts.
+.TP
 .B \-v
 Generate a description of the parsing tables and a report on conflicts
 resulting from ambiguities in the grammar. The description is put in

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module B : sig
  type (_, _) t = Eq: ('a, 'a) t
  val f: 'a -> 'b -> ('a, 'b) t
@@ -12,3 +16,8 @@ let of_type: type a. a -> a = fun x ->
   match B.f x 4 with
   | Eq -> 5
 ;;
+[%%expect{|
+module B :
+  sig type (_, _) t = Eq : ('a, 'a) t val f : 'a -> 'b -> ('a, 'b) t end
+val of_type : 'a -> 'a = <fun>
+|}];;

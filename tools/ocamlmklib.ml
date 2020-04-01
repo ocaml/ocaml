@@ -16,13 +16,28 @@
 open Printf
 open Ocamlmklibconfig
 
+let syslib x =
+  if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
+
+let mklib out files opts =
+  if Config.ccomp_type = "msvc"
+  then let machine =
+    if Config.architecture="amd64"
+    then "-machine:AMD64 "
+    else ""
+  in
+  Printf.sprintf "link -lib -nologo %s-out:%s %s %s"
+                 machine out opts files
+  else Printf.sprintf "%s rcs %s %s %s && %s %s"
+                      Config.ar out opts files Config.ranlib out
+
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
 let compiler_path name =
   if Sys.os_type = "Win32" then name else Filename.concat bindir name
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
-and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
+and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)
 and c_objs = ref []         (* .o, .a, .obj, .lib, .dll, .dylib, .so files to
                                pass to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
@@ -64,16 +79,27 @@ let print_version_num () =
 ;;
 
 let parse_arguments argv =
-  let i = ref 1 in
-  let next_arg () =
-    if !i + 1 >= Array.length argv
-    then raise (Bad_argument("Option " ^ argv.(!i) ^ " expects one argument"));
-    incr i; argv.(!i) in
-  while !i < Array.length argv do
-    let s = argv.(!i) in
-    if ends_with s ".cmo" || ends_with s ".cma" then
+  let args = Stack.create () in
+  let push_args ~first arr =
+    for i = Array.length arr - 1 downto first do
+      Stack.push arr.(i) args
+    done
+  in
+  let next_arg s =
+    if Stack.is_empty args
+    then raise (Bad_argument("Option " ^ s ^ " expects one argument"));
+    Stack.pop args
+  in
+  push_args ~first:1 argv;
+  while not (Stack.is_empty args) do
+    let s = Stack.pop args in
+    if s = "-args" then
+      push_args ~first:0 (Arg.read_arg (next_arg s))
+    else if s = "-args0" then
+      push_args ~first:0 (Arg.read_arg0 (next_arg s))
+    else if ends_with s ".cmo" || ends_with s ".cma" then
       bytecode_objs := s :: !bytecode_objs
-    else if ends_with s ".cmx" || ends_with s ".cmxa" then
+    else if ends_with s ".cmx" then
       native_objs := s :: !native_objs
     else if ends_with s ".ml" || ends_with s ".mli" then
      (bytecode_objs := s :: !bytecode_objs;
@@ -83,13 +109,13 @@ let parse_arguments argv =
     then
       c_objs := s :: !c_objs
     else if s = "-cclib" then
-      caml_libs := next_arg () :: "-cclib" :: !caml_libs
+      caml_libs := next_arg s :: "-cclib" :: !caml_libs
     else if s = "-ccopt" then
-      caml_opts := next_arg () :: "-ccopt" :: !caml_opts
+      caml_opts := next_arg s :: "-ccopt" :: !caml_opts
     else if s = "-custom" then
       dynlink := false
     else if s = "-I" then
-      caml_opts := next_arg () :: "-I" :: !caml_opts
+      caml_opts := next_arg s :: "-I" :: !caml_opts
     else if s = "-failsafe" then
       failsafe := true
     else if s = "-g" then
@@ -97,33 +123,39 @@ let parse_arguments argv =
     else if s = "-h" || s = "-help" || s = "--help" then
       raise (Bad_argument "")
     else if s = "-ldopt" then
-      ld_opts := next_arg () :: !ld_opts
+      ld_opts := next_arg s :: !ld_opts
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
     else if starts_with s "-l" then
+      let s =
+        if Config.ccomp_type = "msvc" then
+          String.sub s 2 (String.length s - 2) ^ ".lib"
+        else
+          s
+      in
       c_libs := s :: !c_libs
     else if starts_with s "-L" then
      (c_Lopts := s :: !c_Lopts;
       let l = chop_prefix s "-L" in
       if not (Filename.is_relative l) then rpath := l :: !rpath)
     else if s = "-ocamlcflags" then
-      ocamlc_opts := next_arg () :: !ocamlc_opts
+      ocamlc_opts := next_arg s :: !ocamlc_opts
     else if s = "-ocamlc" then
-      ocamlc := next_arg ()
+      ocamlc := next_arg s
     else if s = "-ocamlopt" then
-      ocamlopt := next_arg ()
+      ocamlopt := next_arg s
     else if s = "-ocamloptflags" then
-      ocamlopt_opts := next_arg () :: !ocamlopt_opts
+      ocamlopt_opts := next_arg s :: !ocamlopt_opts
     else if s = "-o" then
-      output := next_arg()
+      output := next_arg s
     else if s = "-oc" then
-      output_c := next_arg()
+      output_c := next_arg s
     else if s = "-dllpath" || s = "-R" || s = "-rpath" then
-      rpath := next_arg() :: !rpath
+      rpath := next_arg s :: !rpath
     else if starts_with s "-R" then
       rpath := chop_prefix s "-R" :: !rpath
     else if s = "-Wl,-rpath" then
-     (let a = next_arg() in
+     (let a = next_arg s in
       if starts_with a "-Wl,"
       then rpath := chop_prefix a "-Wl," :: !rpath
       else raise (Bad_argument("Option -Wl,-rpath expects a -Wl, argument")))
@@ -140,12 +172,11 @@ let parse_arguments argv =
     else if starts_with s "-F" then
       c_opts := s :: !c_opts
     else if s = "-framework" then
-      (let a = next_arg() in c_opts := a :: s :: !c_opts)
+      (let a = next_arg s in c_opts := a :: s :: !c_opts)
     else if starts_with s "-" then
       prerr_endline ("Unknown option " ^ s)
     else
-      raise (Bad_argument("Don't know what to do with " ^ s));
-    incr i
+      raise (Bad_argument("Don't know what to do with " ^ s))
   done;
   List.iter
     (fun r -> r := List.rev !r)
@@ -157,9 +188,13 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|\
+Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.ml|.mli|.o|.a|.obj|.lib|\
                              .dll|.dylib files>\
 \nOptions are:\
+\n  -args <file>   Read additional newline-terminated command line arguments\
+\n                 from <file>\
+\n  -args0 <file>  Read additional null character terminated command line\
+\n                 arguments from <file>\
 \n  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only\
 \n  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only\
 \n  -custom        Disable dynamic loading\
@@ -242,11 +277,27 @@ let transl_path s =
         in Bytes.to_string (aux 0)
     | _ -> s
 
+let flexdll_dirs =
+  let dirs =
+    let expand = Misc.expand_directory Config.standard_library in
+    List.map expand Config.flexdll_dirs
+  in
+  let f dir =
+    let dir =
+      if String.contains dir ' ' then
+        "\"" ^ dir ^ "\""
+      else
+        dir
+    in
+      "-L" ^ dir
+  in
+  List.map f dirs
+
 let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-          (Printf.sprintf "%s %s -o %s %s %s %s %s %s"
+          (Printf.sprintf "%s %s -o %s %s %s %s %s %s %s"
              Config.mkdll
              (if !debug then "-g" else "")
              (prepostfix "dll" !output_c Config.ext_dll)
@@ -255,6 +306,7 @@ let build_libs () =
              (String.concat " " !ld_opts)
              (make_rpath mksharedlibrpath)
              (String.concat " " !c_libs)
+             (String.concat " " flexdll_dirs)
           )
       in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
@@ -278,7 +330,7 @@ let build_libs () =
                   (Filename.basename !output_c)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt byteccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs));
   if !native_objs <> [] then
@@ -292,7 +344,7 @@ let build_libs () =
                   (String.concat " " !native_objs)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt nativeccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 

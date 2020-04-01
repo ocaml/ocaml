@@ -1,14 +1,6 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                                OCaml                                  *)
-(*                                                                       *)
-(*         Pierre Weis, projet Pomdapi, INRIA Rocquencourt               *)
-(*                                                                       *)
-(*   Copyright 2011 Institut National de Recherche en Informatique et    *)
-(*   en Automatique.  All rights reserved.  This file is distributed     *)
-(*   under the terms of the Q Public License version 1.0.                *)
-(*                                                                       *)
-(*************************************************************************)
+(* TEST
+   include testing
+*)
 
 (*
 
@@ -533,6 +525,14 @@ try
   test (sprintf "@@" = "@");
   test (sprintf "@@@@" = "@@");
   test (sprintf "@@%%" = "@%");
+
+  say "\nDelayed printf\n%!";
+  let t1 = dprintf "%i - %s" 1 "bar" in
+  test (asprintf "foo %t" t1 = "foo 1 - bar");
+  let t2 = dprintf "%a@]" (pp_print_list pp_print_int) [1 ; 2 ; 3] in
+  test (asprintf "foo @[<v>%t@,%s" t2 "bar" = "foo 1\n    2\n    3\nbar");
+  test (asprintf "%t @[<h>%t" t1 t2 = "1 - bar 123");
+
   say "\nend of tests\n%!";
 
 with e ->

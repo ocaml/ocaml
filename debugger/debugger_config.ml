@@ -82,6 +82,9 @@ let make_checkpoints = ref
     "Win32" -> false
   | _ -> true)
 
-(*** Environment variables for debugee. ***)
+(* Whether to break when new code is loaded. *)
+let break_on_load = ref true
+
+(*** Environment variables for debuggee. ***)
 
 let environment = ref []

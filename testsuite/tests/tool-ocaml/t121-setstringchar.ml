@@ -1,7 +1,15 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
-let x = "foo" in
+let x = Bytes.of_string "foo" in
 x.[2] <- 'x';
-if x.[2] <> 'x' then raise Not_found
+if Bytes.get x 2 <> 'x' then raise Not_found
 ;;
 
 (**

@@ -15,6 +15,7 @@
 
 /* POSIX thread implementation of the "st" interface */
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
@@ -24,15 +25,10 @@
 #define _POSIX_PTHREAD_SEMANTICS
 #endif
 #include <signal.h>
+#include <time.h>
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
-#endif
-
-#ifdef __GNUC__
-#define INLINE inline
-#else
-#define INLINE
 #endif
 
 typedef int st_retcode;
@@ -43,6 +39,7 @@ typedef int st_retcode;
 
 static int st_initialize(void)
 {
+  caml_sigmask_hook = pthread_sigmask;
   return 0;
 }
 
@@ -68,12 +65,16 @@ static int st_thread_create(st_thread_id * res,
 
 /* Cleanup at thread exit */
 
-static INLINE void st_thread_cleanup(void)
+Caml_inline void st_thread_cleanup(void)
 {
   return;
 }
 
 /* Thread termination */
+
+CAMLnoreturn_start
+static void st_thread_exit(void)
+CAMLnoreturn_end;
 
 static void st_thread_exit(void)
 {
@@ -86,16 +87,6 @@ static void st_thread_join(st_thread_id thr)
   /* best effort: ignore errors */
 }
 
-/* Scheduling hints */
-
-static void INLINE st_thread_yield(void)
-{
-#ifndef __linux__
-  /* sched_yield() doesn't do what we want in Linux 2.6 and up (PR#2663) */
-  sched_yield();
-#endif
-}
-
 /* Thread-specific state */
 
 typedef pthread_key_t st_tlskey;
@@ -105,18 +96,18 @@ static int st_tls_newkey(st_tlskey * res)
   return pthread_key_create(res, NULL);
 }
 
-static INLINE void * st_tls_get(st_tlskey k)
+Caml_inline void * st_tls_get(st_tlskey k)
 {
   return pthread_getspecific(k);
 }
 
-static INLINE void st_tls_set(st_tlskey k, void * v)
+Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
   pthread_setspecific(k, v);
 }
 
 /* The master lock.  This is a mutex that is held most of the time,
-   so we implement it in a slightly consoluted way to avoid
+   so we implement it in a slightly convoluted way to avoid
    all risks of busy-waiting.  Also, we count the number of waiting
    threads. */
 
@@ -155,9 +146,48 @@ static void st_masterlock_release(st_masterlock * m)
   pthread_cond_signal(&m->is_free);
 }
 
-static INLINE int st_masterlock_waiters(st_masterlock * m)
+CAMLno_tsan  /* This can be called for reading [waiters] without locking. */
+Caml_inline int st_masterlock_waiters(st_masterlock * m)
 {
   return m->waiters;
+}
+
+/* Scheduling hints */
+
+/* This is mostly equivalent to release(); acquire(), but better. In particular,
+   release(); acquire(); leaves both us and the waiter we signal() racing to
+   acquire the lock. Calling yield or sleep helps there but does not solve the
+   problem. Sleeping ourselves is much more reliable--and since we're handing
+   off the lock to a waiter we know exists, it's safe, as they'll certainly
+   re-wake us later.
+*/
+Caml_inline void st_thread_yield(st_masterlock * m)
+{
+  pthread_mutex_lock(&m->lock);
+  /* We must hold the lock to call this. */
+  assert(m->busy);
+
+  /* We already checked this without the lock, but we might have raced--if
+     there's no waiter, there's nothing to do and no one to wake us if we did
+     wait, so just keep going. */
+  if (m->waiters == 0) {
+    pthread_mutex_unlock(&m->lock);
+    return;
+  }
+
+  m->busy = 0;
+  pthread_cond_signal(&m->is_free);
+  m->waiters++;
+  do {
+    /* Note: the POSIX spec prevents the above signal from pairing with this
+       wait, which is good: we'll reliably continue waiting until the next
+       yield() or enter_blocking_section() call (or we see a spurious condvar
+       wakeup, which are rare at best.) */
+       pthread_cond_wait(&m->is_free, &m->lock);
+  } while (m->busy);
+  m->busy = 1;
+  m->waiters--;
+  pthread_mutex_unlock(&m->lock);
 }
 
 /* Mutexes */
@@ -167,10 +197,10 @@ typedef pthread_mutex_t * st_mutex;
 static int st_mutex_create(st_mutex * res)
 {
   int rc;
-  st_mutex m = malloc(sizeof(pthread_mutex_t));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
   if (m == NULL) return ENOMEM;
   rc = pthread_mutex_init(m, NULL);
-  if (rc != 0) { free(m); return rc; }
+  if (rc != 0) { caml_stat_free(m); return rc; }
   *res = m;
   return 0;
 }
@@ -179,11 +209,11 @@ static int st_mutex_destroy(st_mutex m)
 {
   int rc;
   rc = pthread_mutex_destroy(m);
-  free(m);
+  caml_stat_free(m);
   return rc;
 }
 
-static INLINE int st_mutex_lock(st_mutex m)
+Caml_inline int st_mutex_lock(st_mutex m)
 {
   return pthread_mutex_lock(m);
 }
@@ -191,12 +221,12 @@ static INLINE int st_mutex_lock(st_mutex m)
 #define PREVIOUSLY_UNLOCKED 0
 #define ALREADY_LOCKED EBUSY
 
-static INLINE int st_mutex_trylock(st_mutex m)
+Caml_inline int st_mutex_trylock(st_mutex m)
 {
   return pthread_mutex_trylock(m);
 }
 
-static INLINE int st_mutex_unlock(st_mutex m)
+Caml_inline int st_mutex_unlock(st_mutex m)
 {
   return pthread_mutex_unlock(m);
 }
@@ -208,10 +238,10 @@ typedef pthread_cond_t * st_condvar;
 static int st_condvar_create(st_condvar * res)
 {
   int rc;
-  st_condvar c = malloc(sizeof(pthread_cond_t));
+  st_condvar c = caml_stat_alloc_noexc(sizeof(pthread_cond_t));
   if (c == NULL) return ENOMEM;
   rc = pthread_cond_init(c, NULL);
-  if (rc != 0) { free(c); return rc; }
+  if (rc != 0) { caml_stat_free(c); return rc; }
   *res = c;
   return 0;
 }
@@ -220,21 +250,21 @@ static int st_condvar_destroy(st_condvar c)
 {
   int rc;
   rc = pthread_cond_destroy(c);
-  free(c);
+  caml_stat_free(c);
   return rc;
 }
 
-static INLINE int st_condvar_signal(st_condvar c)
+Caml_inline int st_condvar_signal(st_condvar c)
 {
   return pthread_cond_signal(c);
 }
 
-static INLINE int st_condvar_broadcast(st_condvar c)
+Caml_inline int st_condvar_broadcast(st_condvar c)
 {
   return pthread_cond_broadcast(c);
 }
 
-static INLINE int st_condvar_wait(st_condvar c, st_mutex m)
+Caml_inline int st_condvar_wait(st_condvar c, st_mutex m)
 {
   return pthread_cond_wait(c, m);
 }
@@ -250,12 +280,13 @@ typedef struct st_event_struct {
 static int st_event_create(st_event * res)
 {
   int rc;
-  st_event e = malloc(sizeof(struct st_event_struct));
+  st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
   if (e == NULL) return ENOMEM;
   rc = pthread_mutex_init(&e->lock, NULL);
-  if (rc != 0) { free(e); return rc; }
+  if (rc != 0) { caml_stat_free(e); return rc; }
   rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0) { pthread_mutex_destroy(&e->lock); free(e); return rc; }
+  if (rc != 0)
+  { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
   e->status = 0;
   *res = e;
   return 0;
@@ -266,7 +297,7 @@ static int st_event_destroy(st_event e)
   int rc1, rc2;
   rc1 = pthread_mutex_destroy(&e->lock);
   rc2 = pthread_cond_destroy(&e->triggered);
-  free(e);
+  caml_stat_free(e);
   return rc1 != 0 ? rc1 : rc2;
 }
 
@@ -304,15 +335,15 @@ static void st_check_error(int retcode, char * msg)
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ENOMEM) raise_out_of_memory();
+  if (retcode == ENOMEM) caml_raise_out_of_memory();
   err = strerror(retcode);
   msglen = strlen(msg);
   errlen = strlen(err);
-  str = alloc_string(msglen + 2 + errlen);
+  str = caml_alloc_string(msglen + 2 + errlen);
   memmove (&Byte(str, 0), msg, msglen);
   memmove (&Byte(str, msglen), ": ", 2);
   memmove (&Byte(str, msglen + 2), err, errlen);
-  raise_sys_error(str);
+  caml_raise_sys_error(str);
 }
 
 /* Variable used to stop the "tick" thread */
@@ -383,7 +414,7 @@ static value st_encode_sigset(sigset_t * set)
   Begin_root(res)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
-        value newcons = alloc_small(2, 0);
+        value newcons = caml_alloc_small(2, 0);
         Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
         Field(newcons, 1) = res;
         res = newcons;
@@ -402,9 +433,9 @@ value caml_thread_sigmask(value cmd, value sigs) /* ML */
 
   how = sigmask_cmd[Int_val(cmd)];
   st_decode_sigset(sigs, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = pthread_sigmask(how, &set, &oldset);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   st_check_error(retcode, "Thread.sigmask");
   return st_encode_sigset(&oldset);
 }
@@ -416,13 +447,13 @@ value caml_wait_signal(value sigs) /* ML */
   int retcode, signo;
 
   st_decode_sigset(sigs, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = sigwait(&set, &signo);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   st_check_error(retcode, "Thread.wait_signal");
   return Val_int(caml_rev_convert_signal_number(signo));
 #else
-  invalid_argument("Thread.wait_signal not implemented");
+  caml_invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
 #endif
 }

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val module_of_filename : Format.formatter -> string -> string -> string
+val module_of_filename : string -> string -> string
 
 val output_prefix : string -> string
 val extract_output : string option -> string
@@ -28,10 +28,13 @@ val first_ccopts : string list ref
 val first_ppx : string list ref
 val first_include_dirs : string list ref
 val last_include_dirs : string list ref
-val implicit_modules : string list ref
 
 (* return the list of objfiles, after OCAMLPARAM and List.rev *)
-val get_objfiles : unit -> string list
+val get_objfiles : with_ocamlparam:bool -> string list
+val last_objfiles : string list ref
+val first_objfiles : string list ref
+
+val stop_early : bool ref
 
 type filename = string
 
@@ -45,4 +48,31 @@ val readenv : Format.formatter -> readenv_position -> unit
 val is_unit_name : string -> bool
 (* [check_unit_name ppf filename name] prints a warning in [filename]
    on [ppf] if [name] should not be used as a module name. *)
-val check_unit_name : Format.formatter -> string -> string -> unit
+val check_unit_name : string -> string -> unit
+
+(* Deferred actions of the compiler, while parsing arguments *)
+
+type deferred_action =
+  | ProcessImplementation of string
+  | ProcessInterface of string
+  | ProcessCFile of string
+  | ProcessOtherFile of string
+  | ProcessObjects of string list
+  | ProcessDLLs of string list
+
+val c_object_of_filename : string -> string
+
+val defer : deferred_action -> unit
+val anonymous : string -> unit
+val impl : string -> unit
+val intf : string -> unit
+
+val process_deferred_actions :
+  Format.formatter *
+  (source_file:string -> output_prefix:string -> unit) *
+  (* compile implementation *)
+  (source_file:string -> output_prefix:string -> unit) *
+  (* compile interface *)
+  string * (* ocaml module extension *)
+  string -> (* ocaml library extension *)
+  unit
