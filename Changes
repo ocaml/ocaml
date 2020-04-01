@@ -63,12 +63,6 @@ Working version
 - #9316: Use typing information from Clambda for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
 
-- #9344, #9368: Disable exception backtraces in bytecode programs
-  built with "-output-complete-exe". At the moment, such programs do
-  not embed debug information and exception backtraces where causing
-  them to crash.
-  (Jérémie Dimino, review by Nicolás Ojeda Bär)
-
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
@@ -305,6 +299,14 @@ Working version
 
 OCaml 4.10 maintenance branch
 -----------------------------
+
+### Runtime system:
+
+- #9344, #9368: Disable exception backtraces in bytecode programs
+  built with "-output-complete-exe". At the moment, such programs do
+  not embed debug information and exception backtraces where causing
+  them to crash.
+  (Jérémie Dimino, review by Nicolás Ojeda Bär)
 
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
