@@ -1113,10 +1113,7 @@ and class_expr_aux cl_num val_env met_env scl =
                 match sargs with
                 | [] -> assert false
                 | (l', sarg0) :: sargs ->
-                    if !did_commute then
-                      raise(Error(sarg0.pexp_loc, val_env,
-                                  Apply_wrong_label l'))
-                    else if l <> l' && l' <> Nolabel then
+                    if !did_commute || (l <> l' && l' <> Nolabel) then
                       raise(Error(sarg0.pexp_loc, val_env,
                                   Apply_wrong_label l'))
                     else
