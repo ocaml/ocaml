@@ -731,6 +731,8 @@ let emit_instr fallthrough i =
       I.add (int 8) esp;
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
+  | Lop(Iopaque) ->
+      assert (i.arg.(0).loc = i.res.(0).loc)
   | Lop(Ispecific(Ilea addr)) ->
       I.lea (addressing addr DWORD i 0) (reg i.res.(0))
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
