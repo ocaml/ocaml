@@ -67,20 +67,41 @@ let tsl_block_of_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
+type result_summary = No_failure | Some_failure
+let join_summaries sa sb =
+  match sa, sb with
+  | Some_failure, _ | _, Some_failure -> Some_failure
+  | No_failure, No_failure -> No_failure
+
+let summary_of_result res =
+  let open Result in
+  match res.status with
+  | Pass -> No_failure
+  | Skip -> No_failure
+  | Fail -> Some_failure
+
 let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
-  let (msg, b) = match behavior with
-    | Skip_all_tests -> "n/a", Skip_all_tests
+  let (msg, children_behavior, summary) = match behavior with
+    | Skip_all_tests -> "n/a", Skip_all_tests, No_failure
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
       let (result, newenv) = Tests.run log testenv test in
-      let s = Result.string_of_result result in
-      if Result.is_pass result then (s, Run newenv)
-      else (s, Skip_all_tests) in
+      let msg = Result.string_of_result result in
+      let children_behavior =
+        if Result.is_pass result then Run newenv else Skip_all_tests in
+      let summary = summary_of_result result in
+      (msg, children_behavior, summary) in
   Printf.printf "%s\n%!" msg;
-  List.iteri (run_test_i log common_prefix path b) subtrees
+  join_summaries summary
+    (run_test_trees log common_prefix path children_behavior subtrees)
+
+and run_test_trees log common_prefix path behavior trees =
+  List.fold_left join_summaries No_failure
+    (List.mapi (run_test_i log common_prefix path behavior) trees)
+
 and run_test_i log common_prefix path behavior i test_tree =
   let path_prefix = if path="" then "" else path ^ "." in
   let new_path = Printf.sprintf "%s%d" path_prefix (i+1) in
@@ -172,9 +193,8 @@ let test_file test_filename =
        let initial_status =
          if skip_test then Skip_all_tests else Run rootenv
        in
-       List.iteri
-         (run_test_i log common_prefix "" initial_status)
-         test_trees;
+       let _summary =
+         run_test_trees log common_prefix "" initial_status test_trees in
        Actions.clear_all_hooks();
        if not !Options.log_to_stderr then close_out log
     );
