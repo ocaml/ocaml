@@ -88,7 +88,7 @@ let inline env r ~lhs_of_application
       Try_it
     else if self_call then
       Don't_try_it S.Not_inlined.Self_call
-    else if not (E.inlining_allowed env closure_id_being_applied) then
+    else if not (E.inlining_allowed env function_decl.closure_origin) then
       Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
     else if only_use_of_function || always_inline then
       Try_it
@@ -221,7 +221,7 @@ let inline env r ~lhs_of_application
            recursive to avoid having to check whether or not it is recursive *)
         E.inside_unrolled_function env set_of_closures_origin
       in
-      let env = E.inside_inlined_function env closure_id_being_applied in
+      let env = E.inside_inlined_function env function_decl.closure_origin in
       let env =
         if E.inlining_level env = 0
            (* If the function was considered for inlining without considering
@@ -541,7 +541,7 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
           let try_inlining =
             if self_call then
               Don't_try_it S.Not_inlined.Self_call
-            else if not (E.inlining_allowed env closure_id_being_applied) then
+            else if not (E.inlining_allowed env function_decl.closure_origin) then
               Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
             else
               Try_it
@@ -563,7 +563,7 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
                  recursive *)
               E.inside_unrolled_function env function_decls.set_of_closures_origin
             in
-            let env = E.inside_inlined_function env closure_id_being_applied in
+            let env = E.inside_inlined_function env function_decl.closure_origin in
             Changed ((simplify env r body), S.Inlined.Classic_mode)
       in
       let res, decision =
