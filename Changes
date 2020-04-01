@@ -1175,6 +1175,9 @@ OCaml 4.11.0 (19 August 2020)
 - #9392: Visit registers at most once in Coloring.iter_preferred.
   (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
 
+- #9412: Keep Sys.opaque_identity in Cmm and Mach
+  (Stephen Dolan, review by Mark Shinwell and Gabriel Scherer)
+
 - #9549, #9557: Make -flarge-toc the default for PowerPC and introduce
   -fsmall-toc to enable the previous behaviour.
   (David Allsopp, report by Nathaniel Wesley Filardo, review by Xavier Leroy)
