@@ -69,6 +69,11 @@ set.  This option is equivalent to setting the
 .B b
 flag in the OCAMLRUNPARAM environment variable (see below).
 .TP
+.B \-c
+(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
+also enables pooling (as in caml_startup_pooled). This mode can be used
+to detect leaks with a third-party memory debugger.
+.TP
 .BI \-I \ dir
 Search the directory
 .I dir
