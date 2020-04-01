@@ -154,9 +154,11 @@ let test_file test_filename =
   let hookname_prefix = Filename.concat test_source_directory test_prefix in
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
-  ignore (Sys.command ("rm -rf " ^ test_build_directory_prefix));
+  let clean_test_build_directory () =
+    ignore (Sys.command ("rm -rf " ^ test_build_directory_prefix)) in
+  clean_test_build_directory ();
   Sys.make_directory test_build_directory_prefix;
-  Sys.with_chdir test_build_directory_prefix
+  let summary = Sys.with_chdir test_build_directory_prefix
     (fun () ->
        let log =
          if !Options.log_to_stderr then stderr else begin
@@ -193,13 +195,20 @@ let test_file test_filename =
        let initial_status =
          if skip_test then Skip_all_tests else Run rootenv
        in
-       let _summary =
+       let summary =
          run_test_trees log common_prefix "" initial_status test_trees in
        Actions.clear_all_hooks();
-       if not !Options.log_to_stderr then close_out log
-    );
+       if not !Options.log_to_stderr then close_out log;
+       summary
+    ) in
   (* Restore current working directory  *)
-  Sys.chdir cwd
+  Sys.chdir cwd;
+  begin match summary with
+  | Some_failure -> ()
+  | No_failure ->
+      if not !Options.keep_test_dir_on_success then
+        clean_test_build_directory ()
+  end
 
 let is_test s =
   match tsl_block_of_file s with
