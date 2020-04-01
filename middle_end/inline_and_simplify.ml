@@ -604,13 +604,17 @@ and simplify_set_of_closures original_env r
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~dbg:function_decl.dbg
-        ~f:(fun body_env -> simplify body_env r function_decl.body)
+        ~f:(fun body_env ->
+          assert (E.inside_set_of_closures_declaration
+            function_decls.set_of_closures_origin body_env);
+          simplify body_env r function_decl.body)
     in
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
         ~inline:function_decl.inline ~specialise:function_decl.specialise
         ~is_a_functor:function_decl.is_a_functor
+        ~closure_origin:function_decl.closure_origin
     in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fun_var function_decl funs,
@@ -1382,7 +1386,7 @@ and simplify_list env r l =
     else h' :: t', approxs, r
 
 and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
-      ~fun_var =
+      ~fun_var ~new_fun_var =
   let function_decl =
     match Variable.Map.find fun_var set_of_closures.function_decls.funs with
     | exception Not_found ->
@@ -1415,11 +1419,16 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
       ~inline_inside:false
       ~dbg:function_decl.dbg
       ~f:(fun body_env ->
+        assert (E.inside_set_of_closures_declaration
+          function_decls.set_of_closures_origin body_env);
         simplify body_env (R.create ()) function_decl.body)
   in
   let function_decl =
-    Flambda.update_function_declaration function_decl
-      ~params:function_decl.params ~body
+    Flambda.create_function_declaration ~params:function_decl.params
+      ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
+      ~inline:function_decl.inline ~specialise:function_decl.specialise
+      ~is_a_functor:function_decl.is_a_functor
+      ~closure_origin:(Closure_origin.create (Closure_id.wrap new_fun_var))
   in
   function_decl, specialised_args
 
