@@ -914,12 +914,6 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   CAMLreturn(Val_unit);
 }
 
-/* not used anymore, the prototype is only kept until the next bootstrap */
-CAMLprim value caml_memprof_start_byt(value* argv, int argn)
-{
-  return(Val_unit);
-}
-
 CAMLprim value caml_memprof_stop(value unit)
 {
   uintnat i;
