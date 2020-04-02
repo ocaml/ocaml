@@ -790,6 +790,9 @@ let crc_of_unit name =
 let is_imported_opaque modname =
   Persistent_env.is_imported_opaque persistent_env modname
 
+let register_import_as_opaque modname =
+  Persistent_env.register_import_as_opaque persistent_env modname
+
 let reset_declaration_caches () =
   Types.Uid.Tbl.clear value_declarations;
   Types.Uid.Tbl.clear type_declarations;
