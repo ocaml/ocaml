@@ -4,7 +4,9 @@ advexamples.tex polymorphism.tex
 TOPDIR=../../..
 include $(TOPDIR)/Makefile.tools
 
-CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2
+LD_PATH="$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
+
+CAMLLATEX=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/caml-tex2
 TEXQUOTE=../../tools/texquote2
 
 ALLFILES=$(FILES)
@@ -26,4 +28,4 @@ clean:
 	&& mv $*.texquote_error.tex $*.tex\
 	|| printf "Failure when generating %s\n" $*.tex
 
-$(ALLFILES): $(CAMLLATEX) $(TEXQUOTE)
+$(ALLFILES): ../../tools/caml-tex2 $(TEXQUOTE)

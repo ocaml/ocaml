@@ -1,0 +1,11 @@
+File "locs.ml", line 18, characters 19-26
+locs.ml
+22
+Locs
+locs.ml, 26, 19, 26
+File "locs.ml", line 28, characters 14-40
+an expression
+34
+another expression
+locs.ml, 40, 14, 49
+yet another expression

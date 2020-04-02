@@ -1944,22 +1944,69 @@ struct
   let has_concrete_element_type : Typedtree.expression -> bool =
     fun e -> array_kind e <> `Pgenarray
 
+  (* See the note on abstracted arguments in the documentation for
+     Typedtree.Texp_apply *)
+  let is_abstracted_arg : arg_label * expression option -> bool = function
+    | (_, None) -> true
+    | (_, Some _) -> false    
+
   type sd = Static | Dynamic
 
-  let rec classify_expression : Typedtree.expression -> sd =
-    fun exp -> match exp.exp_desc with
-      | Texp_let (_, _, e)
+  let classify_expression : Typedtree.expression -> sd =
+    (* We need to keep track of the size of expressions
+       bound by local declarations, to be able to predict
+       the size of variables. Compare:
+
+         let rec r =
+           let y = fun () -> r ()
+           in y
+
+       and
+
+         let rec r =
+           let y = if Random.bool () then ignore else fun () -> r ()
+           in y
+
+      In both cases the final adress of `r` must be known before `y` is compiled,
+      and this is only possible if `r` has a statically-known size.
+
+      The first definition can be allowed (`y` has a statically-known
+      size) but the second one is unsound (`y` has no statically-known size).
+    *)
+    let rec classify_expression env e = match e.exp_desc with
+      (* binding and variable cases *)
+      | Texp_let (rec_flag, vb, e) ->
+          let env = classify_value_bindings rec_flag env vb in
+          classify_expression env e
+      | Texp_ident (path, _, _) ->
+          classify_path env path
+
+      (* non-binding cases *)
       | Texp_letmodule (_, _, _, e)
       | Texp_sequence (_, e)
-      | Texp_letexception (_, e) -> classify_expression e
+      | Texp_letexception (_, e) ->
+          classify_expression env e
+
       | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
-          classify_expression e
-      | Texp_construct _ -> Static
+          classify_expression env e
+      | Texp_construct _ ->
+          Static
+
       | Texp_record { representation = Record_unboxed _;
                       fields = [| _, Overridden (_,e) |] } ->
-          classify_expression e
-      | Texp_record _ -> Static
-      | Texp_ident _
+          classify_expression env e
+      | Texp_record _ ->
+          Static
+
+      | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
+        when is_ref vd ->
+          Static
+      | Texp_apply (_,args)
+        when List.exists is_abstracted_arg args ->
+          Static
+      | Texp_apply _ ->
+          Dynamic
+
       | Texp_for _
       | Texp_constant _
       | Texp_new _
@@ -1975,17 +2022,68 @@ struct
       | Texp_function _
       | Texp_lazy _
       | Texp_unreachable
-      | Texp_extension_constructor _ -> Static
-      | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
-        when is_ref vd -> Static
-      | Texp_apply _
+      | Texp_extension_constructor _ ->
+          Static
+
       | Texp_match _
       | Texp_ifthenelse _
       | Texp_send _
       | Texp_field _
       | Texp_assert _
       | Texp_try _
-      | Texp_override _ -> Dynamic
+      | Texp_override _ ->
+          Dynamic
+    and classify_value_bindings rec_flag env bindings =
+      (* We use a non-recursive classification, classifying each
+         binding with respect to the old environment
+         (before all definitions), even if the bindings are recursive.
+
+         Note: computing a fixpoint in some way would be more
+         precise, as the following could be allowed:
+
+           let rec topdef =
+             let rec x = y and y = fun () -> topdef ()
+             in x
+      *)
+      ignore rec_flag;
+      let old_env = env in
+      let add_value_binding env vb =
+        match vb.vb_pat.pat_desc with
+        | Tpat_var (id, _loc) ->
+            let size = classify_expression old_env vb.vb_expr in
+            Ident.add id size env
+        | _ ->
+            (* Note: we don't try to compute any size for complex patterns *)
+            env
+      in
+      List.fold_left add_value_binding env bindings
+    and classify_path env = function
+      | Path.Pident x ->
+          begin
+            try Ident.find_same x env
+            with Not_found ->
+              (* an identifier will be missing from the map if either:
+                 - it is a non-local identifier
+                   (bound outside the letrec-binding we are analyzing)
+                 - or it is bound by a complex (let p = e in ...) local binding
+                 - or it is bound within a module (let module M = ... in ...)
+                   that we are not traversing for size computation
+
+                 For non-local identifiers it might be reasonable (although
+                 not completely clear) to consider them Static (they have
+                 already been evaluated), but for the others we must
+                 under-approximate with Dynamic.
+
+                 This could be fixed by a more complete implementation.
+              *)
+              Dynamic
+          end
+      | Path.Pdot _ | Path.Papply _ ->
+          (* local modules could have such paths to local definitions;
+             classify_expression could be extend to compute module
+             shapes more precisely *)
+          Dynamic
+    in classify_expression Ident.empty
 
   let rec expression : Env.env -> Typedtree.expression -> Use.t =
     fun env exp -> match exp.exp_desc with
@@ -2025,11 +2123,14 @@ struct
       | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
         when is_ref vd ->
           Use.guard (expression env arg)
-      | Texp_apply (e, args) ->
-        let arg env (_, eo) = option expression env eo in
-        Use.(join
-                (inspect (expression env e))
-                (inspect (list arg env args)))
+      | Texp_apply (e, args)  ->
+          let arg env (_, eo) = option expression env eo in
+          let ty = Use.join (list arg env args) (expression env e) in
+          if List.exists is_abstracted_arg args
+          then (* evaluate expressions, abstract over the results
+                  let g = f and x = e in fun z -> g ~x z *)
+            Use.discard ty
+          else Use.inspect ty
       | Texp_tuple exprs ->
         Use.guard (list expression env exprs)
       | Texp_array exprs when array_kind exp = `Pfloatarray ->

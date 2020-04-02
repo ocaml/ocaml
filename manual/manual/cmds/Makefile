@@ -6,7 +6,9 @@ FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
 TOPDIR=../../..
 include $(TOPDIR)/Makefile.tools
 
-TRANSF=$(OCAMLRUN) ../../tools/transf
+LD_PATH="$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
+
+TRANSF=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 

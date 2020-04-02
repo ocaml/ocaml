@@ -31,6 +31,11 @@ BLURB=core.tex builtin.tex stdlib.tex compilerlibs.tex \
 
 FILES=$(BLURB) $(INTF)
 
+SRC=../../..
+
+LD_PATH := $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
+SET_LD_PATH=CAML_LD_LIBRARY_PATH=$(LD_PATH)
+
 FORMAT=../../tools/format-intf
 TEXQUOTE=../../tools/texquote2
 
@@ -43,16 +48,16 @@ libs: $(FILES)
 
 OCAMLDOC=$(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
   $(CSLDIR)/ocamldoc/ocamldoc.opt,\
-  $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
+  $(SET_LD_PATH) $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
   -nostdlib -initially-opened-module Pervasives
 
 # Copy and unprefix the standard library when needed
-SRC=../../..
 include $(SRC)/ocamldoc/Makefile.unprefix
+
 
 $(INTF):  interfaces
 interfaces: $(STDLIB_CMIS)
-	 $(OCAMLDOC) -latex \
+	$(OCAMLDOC) -latex \
 	-I $(STDLIB_UNPREFIXED) \
 	$(STDLIB_MLIS) \
 	-sepfiles \
