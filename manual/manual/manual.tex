@@ -14,7 +14,19 @@
 \plaintextfalse
 %\newif\ifpdf
 %\pdffalse
+
 \input{macros.tex}
+
+% Add meta tag to the generated head tag
+\ifouthtml
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{
+\oldmeta
+\begin{rawhtml}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+\end{rawhtml}
+}
+\fi
 
 \usepackage{hyperref}
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother

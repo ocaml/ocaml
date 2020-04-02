@@ -30,6 +30,7 @@
 #endif
 
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
+#include <stddef.h>
 
 #ifdef HAS_STDINT_H
 #include <stdint.h>

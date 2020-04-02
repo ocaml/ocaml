@@ -24,8 +24,9 @@ htmlgen: latexmacros.cmo latexscan.cmo latexmain.cmo
 latexscan.ml: latexscan.mll
 	ocamllex latexscan.mll
 
-caml-tex2: caml_tex2.cmo
-	$(OCAMLC) -o caml-tex2 str.cma unix.cma caml_tex2.cmo
+caml-tex2: caml_tex2.ml
+	$(OCAMLC) $(TOPDIR)/compilerlibs/ocamlcommon.cma -I $(TOPDIR)/parsing \
+	-o caml-tex2 str.cma unix.cma caml_tex2.ml
 
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi .c

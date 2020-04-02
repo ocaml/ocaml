@@ -401,7 +401,10 @@ resulting in cross-reference errors:
 \item Values defined in tuple, as in "let (x,y,z) = (1,2,3)"
 are not kept by OCamldoc.
 \item Avoid the following construction:
-\begin{verbatim}
+\begin{caml_eval}
+module Foo = struct module Bar = struct let x = 1 end end;;
+\end{caml_eval}
+\begin{caml_example*}{verbatim}
 open Foo (* which has a module Bar with a value x *)
 module Foo =
   struct
@@ -411,7 +414,7 @@ module Foo =
       end
   end
   let dummy = Bar.x
-\end{verbatim}
+\end{caml_example*}
 In this case, OCamldoc will associate "Bar.x" to the "x" of module
 "Foo" defined just above, instead of to the "Bar.x" defined in the
 opened module "Foo".
@@ -458,7 +461,10 @@ character separating the two constructors.
 The following sample interface file "foo.mli" illustrates the
 placement rules for comments in ".mli" files.
 
-\begin{verbatim}
+\begin{caml_eval}
+class cl = object end
+\end{caml_eval}
+\begin{caml_example*}{signature}
 (** The first special comment of the file is the comment associated
     with the whole module.*)
 
@@ -494,8 +500,8 @@ type weather2 =
 
 (** The comment for type my_record *)
 type my_record = {
-    val foo : int ;    (** Comment for field foo *)
-    val bar : string ; (** Comment for field bar *)
+    foo : int ;    (** Comment for field foo *)
+    bar : string ; (** Comment for field bar *)
   }
   (** Continuation of comment for type my_record *)
 
@@ -541,8 +547,8 @@ class type my_class_type =
 end
 
 (** The comment for module Foo *)
-module Foo =
-  struct
+module Foo :
+  sig
     (** The comment for x *)
     val x : int
 
@@ -556,8 +562,8 @@ module type my_module_type =
     val x : int
 
     (** The comment for module M. *)
-    module M =
-      struct
+    module M :
+      sig
         (** The comment for value y. *)
         val y : int
 
@@ -566,7 +572,7 @@ module type my_module_type =
 
   end
 
-\end{verbatim}
+\end{caml_example*}
 
 %%%%%%%%%%%%%
 \subsubsection{Comments in {\tt .ml} files}
@@ -584,7 +590,7 @@ character separating the two constructors.
 The following example of file "toto.ml" shows where to place comments
 in a ".ml" file.
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 (** The first special comment of the file is the comment associated
     to the whole module. *)
 
@@ -606,8 +612,8 @@ type weather =
 
 (** The comment for type my_record *)
 type my_record = {
-    val foo : int ;    (** Comment for field foo *)
-    val bar : string ; (** Comment for field bar *)
+    foo : int ;    (** Comment for field foo *)
+    bar : string ; (** Comment for field bar *)
   }
 
 (** The comment for class my_class *)
@@ -640,7 +646,7 @@ class type my_class_type =
 module Foo =
   struct
     (** The comment for x *)
-    val x : int
+    let x = 0
     (** A special comment in the class, but not associated to any element. *)
   end
 
@@ -651,7 +657,7 @@ module type my_module_type =
     val x : int
     (* ... *)
   end
-\end{verbatim}
+\end{caml_example}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The Stop special comment}
@@ -659,7 +665,7 @@ The special comment "(**/**)" tells OCamldoc to discard
 elements placed after this comment, up to the end of the current
 class, class type,  module or module type, or up to the next stop comment.
 For instance:
-\begin{verbatim}
+\begin{caml_example*}{signature}
 class type foo =
   object
     (** comment for method m *)
@@ -683,7 +689,7 @@ val bar : string
 (** The type t appears since in the documentation since the previous stop comment
 toggled off the "no documentation mode". *)
 type t = string
-\end{verbatim}
+\end{caml_example*}
 
 The {\bf\tt -no-stop} option to "ocamldoc" causes the Stop special
 comments to be ignored.
