@@ -886,3 +886,33 @@ Line _, characters 10-37:
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of recursive class expression is not allowed
 |}];;
+
+(* More tests about recursion in class declarations *)
+class a = let _x() = new a in object end;;
+[%%expect{|
+class a : object  end
+|}];;
+
+class a = object end
+and b = let _x() = new a in object end;;
+[%%expect{|
+class a : object  end
+and b : object  end
+|}];;
+
+class a = let x() = new a in let y = x() in object end;;
+[%%expect{|
+Line _, characters 10-54:
+  class a = let x() = new a in let y = x() in object end;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of recursive class expression is not allowed
+|}];;
+
+class a = object end
+and b = let x() = new a in let y = x() in object end;;
+[%%expect{|
+Line _, characters 8-52:
+  and b = let x() = new a in let y = x() in object end;;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of recursive class expression is not allowed
+|}];;

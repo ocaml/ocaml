@@ -1,3 +1,31 @@
+OCaml 4.07 maintenance branch
+-----------------------------
+
+### Bug fixes:
+
+- MPR#7815, GPR#1896: major GC crash with first-fit policy
+  (Stephen Dolan and Damien Doligez, report by Joris Giovannangeli)
+
+- MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
+  permutation of one cell to the right on the sequence.
+  (Thierry Martinez, review by Nicolás Ojeda Bär)
+
+- MPR#7821, GPR#1908: make sure that the compilation of extension
+  constructors doesn't cause the compiler to load more cmi files
+  (Jérémie Dimino)
+
+- MPR#7824, GPR#1914: subtype_row: filter out absent fields when row is closed
+  (Leo White and Thomas Refis, report by talex, review by Jacques Garrigue)
+
+- GPR#1915: rec_check.ml is too permissive for certain class declarations.
+  (Alban Reynaud with Gabriel Scherer, review by Jeremy Yallop)
+
+- MPR#7833, GPR#1946: typecore: only 1k existential per match, not 100k
+  (Thomas Refis, report by Jerome Simeon, review by Jacques Garrigue)
+
+- MPR#7838: -principal causes assertion failure in type checker
+  (Jacques Garrigue, report by Markus Mottl, review by Thomas Refis)
+
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
 
