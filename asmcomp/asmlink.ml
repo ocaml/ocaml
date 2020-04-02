@@ -282,7 +282,7 @@ let make_shared_startup_file ~ppf_dump units =
 let call_linker_shared file_list output_name =
   let exitcode = Ccomp.call_linker Ccomp.Dll output_name file_list "" in
   if not (exitcode = 0)
-  then raise(Error(Linking_error (exitcode)))
+  then raise(Error(Linking_error exitcode))
 
 let link_shared ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
@@ -336,7 +336,7 @@ let call_linker file_list startup_file output_name =
   in
   let exitcode = Ccomp.call_linker mode output_name files c_lib in
   if not (exitcode = 0)
-  then raise(Error(Linking_error (exitcode)))
+  then raise(Error(Linking_error exitcode))
 
 (* Main entry point *)
 
