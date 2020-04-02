@@ -298,6 +298,7 @@ module StringSet :
     val for_all : (elt -> bool) -> t -> bool
     val exists : (elt -> bool) -> t -> bool
     val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
     val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
@@ -343,6 +344,7 @@ module SSet :
     val for_all : (elt -> bool) -> t -> bool
     val exists : (elt -> bool) -> t -> bool
     val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
     val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
@@ -420,6 +422,7 @@ module A :
         val for_all : (elt -> bool) -> t -> bool
         val exists : (elt -> bool) -> t -> bool
         val filter : (elt -> bool) -> t -> t
+        val filter_map : (elt -> elt option) -> t -> t
         val partition : (elt -> bool) -> t -> t * t
         val cardinal : t -> int
         val elements : t -> elt list
@@ -532,6 +535,7 @@ module SInt :
     val for_all : (elt -> bool) -> t -> bool
     val exists : (elt -> bool) -> t -> bool
     val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
     val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list

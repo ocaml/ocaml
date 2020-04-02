@@ -573,8 +573,8 @@ let prepare_to_simplify_set_of_closures ~env
       set_of_closures.free_vars
   in
   let specialised_args =
-    Variable.Map.filter_map set_of_closures.specialised_args
-      ~f:(fun param (spec_to : Flambda.specialised_to) ->
+    set_of_closures.specialised_args |> Variable.Map.filter_map
+      (fun param (spec_to : Flambda.specialised_to) ->
         let keep =
           match only_for_function_decl with
           | None -> true

@@ -688,9 +688,8 @@ let build_transient ~(backend : (module Backend_intf.S))
         ~root_symbol:(Compilenv.current_unit_symbol ())
     in
     let sets_of_closures =
-      Set_of_closures_id.Map.filter_map
-        function_declarations_map
-        ~f:(fun key (fun_decls : Simple_value_approx.function_declarations) ->
+      function_declarations_map |> Set_of_closures_id.Map.filter_map
+        (fun key (fun_decls : Simple_value_approx.function_declarations) ->
           if Set_of_closures_id.Set.mem key relevant_set_of_closures then
             Some fun_decls
           else if begin

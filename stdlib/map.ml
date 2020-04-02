@@ -40,6 +40,7 @@ module type S =
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     val exists: (key -> 'a -> bool) -> 'a t -> bool
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
@@ -424,6 +425,18 @@ module Make(Ord: OrderedType) = struct
           let r' = filter p r in
           if pvd then if l==l' && r==r' then m else join l' v d r'
           else concat l' r'
+
+    let rec filter_map f = function
+        Empty -> Empty
+      | Node {l; v; d; r} ->
+          (* call [f] in the expected left-to-right order *)
+          let l' = filter_map f l in
+          let fvd = f v d in
+          let r' = filter_map f r in
+          begin match fvd with
+            | Some d' -> join l' v d' r'
+            | None -> concat l' r'
+          end
 
     let rec partition p = function
         Empty -> (Empty, Empty)
