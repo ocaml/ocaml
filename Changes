@@ -1,5 +1,5 @@
-OCaml 4.07
-----------
+OCaml 4.07.0 (10 July 2018)
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -366,8 +366,9 @@ OCaml 4.07
 
 ### Compiler distribution build system
 
-- MPR#5219, GPR#1680: use 'install' instead of 'cp' in install scripts
-  (Gabriel Scherer, review by Sébastien Hinderer)
+- MPR#5219, GPR#1680, GPR#1877: use 'install' instead of 'cp'
+  in install scripts.
+  (Gabriel Scherer, review by Sébastien Hinderer and Valentin Gatien-Baron)
 
 - MPR#7679: make sure .a files are erased before calling ar rc, otherwise
   leftover .a files from an earlier compilation may contain unwanted modules
@@ -567,6 +568,11 @@ OCaml 4.07
 
 - GPR#1835: Fix off-by-one errors in Weak.get_copy and Weak.blit
   (KC Sivaramakrishnan)
+
+- GPR#1849: bug in runtime function generic_final_minor_update()
+  that could lead to crashes when Gc.finalise_last is used
+  (report and fix by Yuriy Vostrikov, review by François Bobot)
+
 
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------
