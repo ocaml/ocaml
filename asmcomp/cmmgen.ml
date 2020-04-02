@@ -1082,7 +1082,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
   and elt_size =
     bigarray_elt_size elt_kind in
   (* [array_indexing] can simplify the given expressions *)
-  array_indexing ~typ:Int (log2 elt_size)
+  array_indexing ~typ:Addr (log2 elt_size)
                  (Cop(mk_load_mut Word_int,
                     [field_address b 1 dbg], dbg)) offset dbg
 
@@ -1107,12 +1107,13 @@ let bigarray_get unsafe elt_kind layout b args dbg =
       Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
-        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg)
-          (fun addr ->
-          box_complex dbg
-            (Cop(mk_load_mut kind, [addr], dbg))
-            (Cop(mk_load_mut kind,
-              [Cop(Cadda, [addr; Cconst_int sz], dbg)], dbg)))
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+          bind "reval"
+            (Cop(mk_load_mut kind, [addr], dbg)) (fun reval ->
+              bind "imval"
+                (Cop(mk_load_mut kind,
+                     [Cop(Cadda, [addr; Cconst_int sz], dbg)], dbg)) (fun imval ->
+          box_complex dbg reval imval)))
     | _ ->
             Cop(mk_load_mut (bigarray_word_kind elt_kind),
             [bigarray_indexing unsafe elt_kind layout b args dbg],
