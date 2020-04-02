@@ -50,10 +50,10 @@ README*                  ocaml-typo=missing-header
 /Changes                 ocaml-typo=non-ascii,missing-header
 /INSTALL                 ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
-# appveyor_build.cmd only has missing-header because dra27 too lazy to update
-# check-typo to interpret Cmd-style comments!
-/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
-/appveyor_build.sh       ocaml-typo=non-ascii
+# tools/ci/appveyor/appveyor_build.cmd only has missing-header because
+# dra27 too lazy to update check-typo to interpret Cmd-style comments!
+/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
+/tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
@@ -104,7 +104,9 @@ yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
 # Test suite command fragments
 *.checker text eol=lf
 *.precheck text eol=lf
-*.runner text eol=lf
+# ocamltest hooks which are used in the testsuite
+*.check-program-output text eol=lf
+*.run text eol=lf
 
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
@@ -145,11 +147,17 @@ manual/tools/texexpand text eol=lf
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
+testsuite/tests/basic-more/morematch.ml text eol=lf
+testsuite/tests/basic-more/robustmatch.ml text eol=lf
 testsuite/tests/parsing/*.ml text eol=lf
 testsuite/tests/docstrings/empty.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
+testsuite/tests/typing-objects-bugs/pr3968_bad.ml text eol=lf
+testsuite/tests/typing-recmod/t12bad.ml text eol=lf
+testsuite/tests/typing-safe-linking/b_bad.ml text eol=lf
 testsuite/tests/warnings/w04.ml text eol=lf
+testsuite/tests/warnings/w04_failure.ml text eol=lf
 testsuite/tests/warnings/w32.ml text eol=lf
 
 # These are forced to \n to allow the Cygwin testsuite to pass on a
@@ -157,12 +165,18 @@ testsuite/tests/warnings/w32.ml text eol=lf
 testsuite/tests/formatting/margins.ml text eol=lf
 testsuite/tests/letrec-disallowed/disallowed.ml text eol=lf
 testsuite/tests/letrec-disallowed/extension_constructor.ml text eol=lf
-testsuite/tests/letrec-disallowed/float_block.ml text eol=lf
+testsuite/tests/letrec-disallowed/float_block_allowed.ml text eol=lf
+testsuite/tests/letrec-disallowed/float_block_disallowed.ml text eol=lf
 testsuite/tests/letrec-disallowed/generic_arrays.ml text eol=lf
+testsuite/tests/letrec-disallowed/lazy_.ml text eol=lf
 testsuite/tests/letrec-disallowed/module_constraints.ml text eol=lf
+testsuite/tests/letrec-disallowed/unboxed.ml text eol=lf
 testsuite/tests/letrec-disallowed/pr7215.ml text eol=lf
+testsuite/tests/letrec-disallowed/pr7231.ml text eol=lf
+testsuite/tests/letrec-disallowed/pr7706.ml text eol=lf
 testsuite/tests/lexing/uchar_esc.ml text eol=lf
 testsuite/tests/match-exception-warnings/exhaustiveness_warnings.ml text eol=lf
+testsuite/tests/tool-toplevel/pr7060.ml text eol=lf
 testsuite/tests/typing-extension-constructor/test.ml text eol=lf
 testsuite/tests/typing-extensions/extensions.ml text eol=lf
 testsuite/tests/typing-extensions/open_types.ml text eol=lf

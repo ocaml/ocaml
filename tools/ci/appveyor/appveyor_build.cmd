@@ -89,7 +89,7 @@ set CYGWIN_UPGRADE_REQUIRED=0
 for %%P in (%CYGWIN_PACKAGES%) do call :CheckPackage %%P
 call :UpgradeCygwin
 
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh install" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh install" || exit /b 1
 
 call :SaveVars
 goto :EOF
@@ -97,17 +97,17 @@ goto :EOF
 :build
 rem Run the msvc64 and mingw32 builds
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
 
 rem Reconfigure the environment and run the msvc32 partial build
 call :RestoreVars
 call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh msvc32-only" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh msvc32-only" || exit /b 1
 goto :EOF
 
 :test
 rem Reconfigure the environment for the msvc64 build
 call :RestoreVars
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh test" || exit /b 1
+"%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF

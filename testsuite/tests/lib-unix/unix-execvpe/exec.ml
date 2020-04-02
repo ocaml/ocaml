@@ -1,6 +1,6 @@
 (* TEST
    include unix
-   script = "sh ${test_source_directory}/has-execvpe"
+   script = "sh ${test_source_directory}/has-execvpe.sh"
    * script
    ** bytecode
    ** native

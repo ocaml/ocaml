@@ -155,3 +155,6 @@ val rhs_pre_extra_text : int -> text
 
 (** Fetch additional text following the symbol at the given position *)
 val rhs_post_extra_text : int -> text
+
+(** Fetch text following the symbol at the given position *)
+val rhs_post_text : int -> text

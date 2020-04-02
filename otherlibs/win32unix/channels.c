@@ -23,11 +23,6 @@
 #include <fcntl.h>
 #include <io.h>
 
-#if defined(_MSC_VER) && !defined(_INTPTR_T_DEFINED)
-typedef int intptr_t;
-#define _INTPTR_T_DEFINED
-#endif
-
 int win_CRT_fd_of_filedescr(value handle)
 {
   if (CRT_fd_val(handle) != NO_CRT_FD) {

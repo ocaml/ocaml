@@ -340,6 +340,8 @@ let read_one_param ppf position name v =
       set "flambda-verbose" [ dump_flambda_verbose ] v
   | "flambda-invariants" ->
       set "flambda-invariants" [ flambda_invariant_checks ] v
+  | "linscan" ->
+      set "linscan" [ use_linscan ] v
 
   (* color output *)
   | "color" ->

@@ -127,6 +127,7 @@ let test_file test_filename =
   let hookname_prefix = Filename.concat test_source_directory test_prefix in
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
+  ignore (Sys.command ("rm -rf " ^ test_build_directory_prefix));
   Sys.make_directory test_build_directory_prefix;
   Sys.with_chdir test_build_directory_prefix
     (fun () ->

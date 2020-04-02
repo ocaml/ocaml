@@ -6,7 +6,7 @@
 \begin{document}
 
 \thispagestyle{empty}
-\begin{center}
+\begin{maintitle}
 ~\vfill
 \Huge           The OCaml system \\
                 release \ocamlversion \\[1cm]
@@ -18,7 +18,7 @@
 \vfill
 \normalsize     Copyright \copyright\ \number\year\ Institut National de
                 Recherche en Informatique et en Automatique
-\end{center}
+\end{maintitle}
 \cleardoublepage
 \setcounter{page}{1}
 

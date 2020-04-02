@@ -38,6 +38,7 @@
 code_t caml_start_code;
 asize_t caml_code_size;
 unsigned char * caml_saved_code;
+struct ext_table caml_code_fragments_table;
 
 /* Read the main bytecode block from a file */
 

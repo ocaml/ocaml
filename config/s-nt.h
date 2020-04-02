@@ -17,7 +17,7 @@
 
 #define OCAML_OS_TYPE "Win32"
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || _MSC_VER >= 1600
 #define HAS_STDINT_H
 #endif
 #undef BSD_SIGNALS
