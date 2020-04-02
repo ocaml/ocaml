@@ -127,27 +127,31 @@ module Memprof =
         unmarshalled : bool;
         callstack : Printexc.raw_backtrace }
 
+    type ('minor, 'major) tracker = {
+      alloc_minor: allocation -> 'minor option;
+      alloc_major: allocation -> 'major option;
+      promote: 'minor -> 'major option;
+      dealloc_minor: 'minor -> unit;
+      dealloc_major: 'major -> unit;
+    }
+
+    let null_tracker = {
+      alloc_minor = (fun _ -> None);
+      alloc_major = (fun _ -> None);
+      promote = (fun _ -> None);
+      dealloc_minor = (fun _ -> ());
+      dealloc_major = (fun _ -> ());
+    }
+
     external c_start :
-      float -> int ->
-      (allocation -> 'minor option) ->
-      (allocation -> 'major option) ->
-      ('minor -> 'major option) ->
-      ('minor -> unit) ->
-      ('major -> unit) ->
-      unit
-      = "caml_memprof_start_byt" "caml_memprof_start"
+      float -> int -> ('minor, 'major) tracker -> unit
+      = "caml_memprof_start"
 
     let start
       ~sampling_rate
       ?(callstack_size = max_int)
-      ?(minor_alloc_callback = fun _ -> None)
-      ?(major_alloc_callback = fun _ -> None)
-      ?(promote_callback = fun _ -> None)
-      ?(minor_dealloc_callback = fun _ -> ())
-      ?(major_dealloc_callback = fun _ -> ()) () =
-      c_start sampling_rate callstack_size minor_alloc_callback
-              major_alloc_callback promote_callback minor_dealloc_callback
-              major_dealloc_callback
+      tracker =
+      c_start sampling_rate callstack_size tracker
 
     external stop : unit -> unit = "caml_memprof_stop"
   end

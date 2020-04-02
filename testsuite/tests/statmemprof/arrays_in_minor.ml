@@ -25,12 +25,12 @@ let[@inline never] allocate_arrays lo hi cnt keep =
 
 let check_nosample () =
   Printf.printf "check_nosample\n%!";
-  let cb _ =
+  let alloc _ =
     Printf.printf "Callback called with sampling_rate = 0\n";
     assert(false)
   in
-  start ~callstack_size:10 ~minor_alloc_callback:cb ~major_alloc_callback:cb
-        ~sampling_rate:0. ();
+  start ~callstack_size:10 ~sampling_rate:0.
+    { null_tracker with alloc_minor = alloc; alloc_major = alloc };
   allocate_arrays 1 250 100 false;
   stop ()
 
@@ -44,23 +44,28 @@ let check_counts_full_major force_promote =
   let npromote = ref 0 in
   let ndealloc_minor = ref 0 in
   let ndealloc_major = ref 0 in
-  start ~callstack_size:10
-        ~minor_alloc_callback:(fun info ->
-          if !enable then begin
-            incr nalloc_minor; if !nalloc_minor mod 100 = 0 then Gc.minor ();
-            Some (ref 42)
-          end else begin
-            allocate_arrays 1 250 1 true;
-            None
-          end)
-        ~major_alloc_callback:(fun _ -> assert false)
-        ~promote_callback:(fun k ->
-           assert (!k = 42 && !promotes_allowed);
-           incr npromote; if !npromote mod 1097 = 0 then Gc.minor ();
-           Some (ref 17))
-        ~minor_dealloc_callback:(fun k -> assert (!k = 42); incr ndealloc_minor)
-        ~major_dealloc_callback:(fun r -> assert (!r = 17); incr ndealloc_major)
-        ~sampling_rate:0.01 ();
+  start ~callstack_size:10 ~sampling_rate:0.01
+    {
+      alloc_minor = (fun info ->
+        if !enable then begin
+          incr nalloc_minor; if !nalloc_minor mod 100 = 0 then Gc.minor ();
+          Some (ref 42)
+        end else begin
+          allocate_arrays 1 250 1 true;
+          None
+        end);
+      alloc_major = (fun _ -> assert false);
+      promote = (fun k ->
+        assert (!k = 42 && !promotes_allowed);
+        incr npromote; if !npromote mod 1097 = 0 then Gc.minor ();
+        Some (ref 17));
+      dealloc_minor = (fun k ->
+        assert (!k = 42);
+        incr ndealloc_minor);
+      dealloc_major = (fun r ->
+        assert (!r = 17);
+        incr ndealloc_major);
+    };
   allocate_arrays 1 250 100 true;
   enable := false;
   assert (!ndealloc_minor = 0 && !ndealloc_major = 0);
@@ -100,11 +105,14 @@ let check_no_nested () =
     ()
   in
   let cb' _ = cb (); Some () in
-  start ~callstack_size:10
-        ~minor_alloc_callback:cb' ~major_alloc_callback:cb'
-        ~promote_callback:cb' ~minor_dealloc_callback:cb
-        ~major_dealloc_callback:cb
-        ~sampling_rate:1. ();
+  start ~callstack_size:10 ~sampling_rate:1.
+    {
+      alloc_minor = cb';
+      alloc_major = cb';
+      promote = cb';
+      dealloc_minor = cb;
+      dealloc_major = cb;
+    };
   allocate_arrays 1 250 5 false;
   stop ()
 
@@ -113,16 +121,17 @@ let () = check_no_nested ()
 let check_distrib lo hi cnt rate =
   Printf.printf "check_distrib %d %d %d %f\n%!" lo hi cnt rate;
   let smp = ref 0 in
-  start ~callstack_size:10
-        ~major_alloc_callback:(fun _ -> assert false)
-        ~minor_alloc_callback:(fun info ->
-          assert (info.size >= lo && info.size <= hi);
-          assert (info.n_samples > 0);
-          assert (not info.unmarshalled);
-          smp := !smp + info.n_samples;
-          None
-        )
-        ~sampling_rate:rate ();
+  start ~callstack_size:10 ~sampling_rate:rate
+    { null_tracker with
+      alloc_major = (fun _ -> assert false);
+      alloc_minor = (fun info ->
+        assert (info.size >= lo && info.size <= hi);
+        assert (info.n_samples > 0);
+        assert (not info.unmarshalled);
+        smp := !smp + info.n_samples;
+        None
+      );
+    };
   allocate_arrays lo hi cnt false;
   stop ();
 

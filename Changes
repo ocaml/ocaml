@@ -30,7 +30,7 @@ Working version
   API when the old block is NULL.
   (Jacques-Henri Jourdan, review by Xavier Leroy)
 
-- #8920, #9238, #9239: New API for statistical memory profiling in
+- #8920, #9238, #9239, #9254: New API for statistical memory profiling in
   Memprof.Gc. The new version does no longer use ephemerons and allows
   registering callbacks for promotion and deallocation of memory
   blocks.
