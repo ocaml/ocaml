@@ -156,6 +156,10 @@ Working version
 - #9402: Remove `sudo:false` from .travis.yml
   (Hikaru Yoshimura)
 
+- #9414: testsuite, ocamltest: keep test artifacts only on failure.
+  Use KEEP_TEST_DIR_ON_SUCCESS=1 to keep all artifacts.
+  (Gabriel Scherer, review by Sébastien Hinderer)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
