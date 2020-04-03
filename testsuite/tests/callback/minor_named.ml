@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "minor_named_.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 (* Tests Callback.register and caml_named_value on a young object *)
 
 external incr_ref : unit -> unit = "incr_ref"

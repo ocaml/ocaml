@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "test7_.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 (* Tests nested calls from C (main C) to OCaml (main OCaml) to C (caml_to_c) to
  * OCaml (c_to_caml) to C (printf functions). Effect E is performed in the
  * callback, which does not have a handler. *)

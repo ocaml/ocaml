@@ -1,6 +1,6 @@
 (* TEST
    include unix
-   modules = "callbackprim.c"
+   modules = "test1_.c"
    * libunix
    ** bytecode
    ** native
