@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "stack_overflow_.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 external caml_to_c : (unit -> 'a) -> 'a = "caml_to_c"
 
 let rec deep = function

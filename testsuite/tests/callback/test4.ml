@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "test4_.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 (* Tests nested calls from C (main C) to OCaml (main OCaml) to C (caml_to_c) to
  * OCaml (c_to_caml) to C (printf functions). Exception is raised in a
  * Callback, which unwinds the C stack and gets caught in OCaml. *)

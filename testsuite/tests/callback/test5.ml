@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "test5_.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 (* Tests nested calls from C (main C) to OCaml (main OCaml) to C (caml_to_c) to
  * OCaml (c_to_caml) to C (printf functions). Test calls with arguments passed
  * on the stack from C to OCaml and OCaml to C. *)

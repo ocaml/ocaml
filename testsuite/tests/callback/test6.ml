@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "test6_.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 (* Tests nested calls from C (main C) to OCaml (main OCaml) to C (caml_to_c) to
  * OCaml (c_to_caml) to C (printf functions). Exception is raised in a
  * Callback, which unwinds the C stack and gets caught in OCaml. *)
@@ -20,7 +28,7 @@ let _ =
     printf "[Caml] Call caml_to_c\n%!";
     caml_to_c ();
     printf "[Caml] Return from caml_to_c\n%!"
-  with E -> 
+  with E ->
     (printf "[Caml] Caught exception\n%!";
      try caml_to_c() with E -> printf "[Caml] Caught exceception again\n%!";
      printf "[Caml] Done\n%!")
