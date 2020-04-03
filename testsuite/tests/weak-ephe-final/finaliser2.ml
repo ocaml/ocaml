@@ -1,3 +1,5 @@
+(* TEST *)
+
 let test1 =
   let r' = ref 0 in
   let rec foo () =

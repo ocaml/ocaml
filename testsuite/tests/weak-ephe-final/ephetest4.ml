@@ -1,3 +1,5 @@
+(* TEST *)
+
 module E = Ephemeron.K1
 
 let e = E.create ()

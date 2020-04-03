@@ -1,10 +1,6 @@
 bdd.ml
 boyer.ml
-ephetest.ml
-ephetest2.ml
-ephetest3.ml
 fib.ml
-finaliser.ml
 gcwords.ml
 gpr1370.ml
 hamming.ml
@@ -14,6 +10,3 @@ sieve.ml
 sorts.ml
 takc.ml
 taku.ml
-weaklifetime.ml
-weaklifetime2.ml
-weaktest.ml
