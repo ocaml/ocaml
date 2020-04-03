@@ -1,3 +1,5 @@
+(* TEST *)
+
 module E = Ephemeron.Kn
 
 let test1 =
