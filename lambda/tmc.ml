@@ -83,30 +83,247 @@ let assign_to_dst {var; offset; loc} lam =
   Lprim(Psetfield_computed(Pointer, Heap_initialization),
         [Lvar var; offset; lam], loc)
 
+(** The type [Constr.t] represents a reified constructor with a single hole, which can
+    be either directly applied to a [lambda] term, or be used to create
+    a fresh [lambda destination] with a placeholder.
+ *)
+module Constr = struct
+  type t = {
+    tag : int;
+    flag: Asttypes.mutable_flag;
+    shape : block_shape;
+    before: lambda list;
+    after: lambda list;
+    loc : Debuginfo.Scoped_location.t;
+  }
+
+  let apply ?flag con t =
+    let flag = match flag with None -> con.flag | Some flag -> flag in
+    let block_args = List.append con.before @@ t :: con.after in
+    Lprim (Pmakeblock (con.tag, flag, con.shape), block_args, con.loc)
+
+  let tmc_placeholder = Lconst (Const_base (Const_int 0))
+  (* TODO consider using a more magical constant like 42, for debugging? *)
+
+  let with_placeholder con (body : lambda destination -> lambda -> lambda) : lambda =
+    let k_with_placeholder = apply ~flag:Mutable con tmc_placeholder in
+    let placeholder_pos = List.length con.before in
+    let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
+    let block_var = Ident.create_local "block" in
+    Llet (Strict, Pgenval, block_var, k_with_placeholder,
+          body { var = block_var; offset = placeholder_pos_lam ; loc = con.loc } (Lvar block_var))
+
+  (** We want to delay the application of the constructor to a later time.
+      This may move the constructor application below some effectful
+      expressions (if we move into a context of the form [foo;
+      bar_with_tmc_inside] for example), and we want to preserve the
+      evaluation order of the other arguments of the constructor.  So we bind
+      them before proceeding, unless they are obviously side-effect free. *)
+  let delay_impure : t -> (t -> lambda) -> lambda =
+    let bind_list name lambdas k =
+      let can_be_delayed =
+        (* Note that the delayed subterms will be used
+           exactly once in the linear-static subterm. So
+           we are happy to delay constants, which we would
+           not want to duplicate. *)
+        function
+        | Lvar _ | Lconst _ -> true
+        | _ -> false in
+      let bindings, args =
+        lambdas
+        |> List.mapi (fun i lam ->
+            if can_be_delayed lam then (None, lam)
+            else begin
+              let v = Ident.create_local (Printf.sprintf "arg_%s_%d" name i) in
+              (Some (v, lam), Lvar v)
+            end)
+        |> List.split in
+      let body = k args in
+      List.fold_right (fun binding body ->
+          match binding with
+          | None -> body
+          | Some (v, lam) -> Llet(Strict, Pgenval, v, lam, body)
+        ) bindings body in
+    fun con body ->
+    bind_list "before" con.before @@ fun vbefore ->
+    bind_list "after" con.after @@ fun vafter ->
+    body { con with before = vbefore; after = vafter }
+end
+
 (** The type ['a Dps.t] (destination-passing-style) represents a
-    version of ['a] that is parametrized over a [lambda destination]. *)
-module Dps = struct
-  type 'a t =
-    tail:bool -> dst:lambda destination -> 'a
+    version of ['a] that is parametrized over a [lambda destination].
+    A [lambda Dps.t] is a code fragment in destination-passing-style,
+    a [(lambda * lambda) Dps.t] represents two subterms parametrized
+    over the same destination. *)
+module Dps : sig
+  type 'a dps = tail:bool -> dst:lambda destination -> 'a
   (** A term parameterized over a destination.  The [tail] argument
       is passed by the caller to indicate whether the term will be placed
       in tail-position -- this allows to generate correct @tailcall
       annotations. *)
 
+  type 'a t
+
+  val make : lambda dps -> lambda t
+  val run : lambda t -> lambda dps
+  val delay_constructor : Constr.t -> lambda t -> lambda t
+
+  val return : lambda -> lambda t
+  val map : ('a -> 'b) -> 'a t -> 'b t
+  val pair : 'a t -> 'b t -> ('a * 'b) t
+  val unit : unit t
+end = struct
+  type 'a dps = tail:bool -> dst:lambda destination -> 'a
+
+  type 'a t = {
+    code : delayed:Constr.t list -> 'a dps;
+    delayed_use_count : int;
+  }
+  (** We want to optimize nested constructors, for example:
+
+      {[
+        (x () :: y () :: tmc call)
+      ]}
+
+      which would naively generate (in a DPS context parametrized
+      over a location dst.i):
+
+      {[
+        let dstx = x () :: Placeholder in
+        dst.i <- dstx;
+        let dsty = y () :: Placeholder in
+        dstx.1 <- dsty;
+        tmc dsty.1 call
+      ]}
+
+      when we would rather hope for
+
+      {[
+        let vx = x () in
+        let dsty = y () :: Placeholder in
+        dst.i <- vx :: dsty;
+        tmc dsty.1 call
+      ]}
+
+      The idea is that the unoptimized version first creates a
+      destination site [dstx], which is then used by the following
+      code.  If we keep track of the current destination:
+
+      {[
+        (* Destination is [dst.i] *)
+        let dstx = x () :: Placeholder in
+        dst.i (* Destination *) <- dstx;
+        (* Destination is [dstx.1] *)
+        let dsty = y () :: Placeholder in
+        dstx.1 (* Destination *) <- dsty;
+        (* Destination is [dsty.1] *)
+        tmc dsty.1 call
+      ]}
+
+      Instead of binding the whole newly-created destination, we can
+      simply let-bind the non-placeholder arguments (in order to
+      preserve execution order), and keep track of a list of blocks to
+      be created along with the current destination.  Instead of seeing
+      a DPS fragment as writing to a destination, we see it as a term
+      with shape [dst.i <- C .] where [C .] is a linear context consisting
+      only of constructor applications.
+
+      {[
+        (* Destination is [dst.i <- C .] *)
+        let vx = x () in
+        (* Destination is [dst.i <- C (vx :: .)] *)
+        let vy = y () in
+        (* Destination is [dst.i <- C (vx :: vy :: .)] *)
+        (* Making a call: reify the destination *)
+        let dsty = vy :: Placeholder in
+        dst.i <- vx :: dsty;
+        tmc dsty.1 call
+      ]}
+
+      The [delayed] argument represents the context [C] as a list of
+      reified constructors, to allow both to build the final holey
+      block ([vy :: Placeholder]) at the recursive call site, and
+      the delayed constructor applications ([vx :: dsty]).
+
+      In practice, it is not desirable to perform this simplification
+      when there are multiple TMC calls (e.g. in different branches of
+      an [if] block), because it would cause duplication of the nested
+      constructor applications.  The [delayed_use_count] field keeps track
+      of this information, it counts the number of syntactic use sites
+      of the delayed constructors, if any, in the generated code.
+  *)
+
+  let write_to_dst dst delayed t =
+    assign_to_dst dst @@
+    List.fold_left (fun t con -> Constr.apply con t) t delayed
+
+  let return (v : lambda) : lambda t = {
+    code = (fun ~delayed ~tail:_ ~dst ->
+      write_to_dst dst delayed v
+    );
+    delayed_use_count = 1;
+  }
   (** Create a new destination-passing-style term which is simply
       setting the destination with the given [v], hence "returning"
-      it. *)
-  let return (v : lambda): lambda t = fun ~tail:_ ~dst ->
-    assign_to_dst dst v
+      it.
+   *)
 
-  let map (f : 'a -> 'b) (dps : 'a t) : 'b t = fun ~tail ~dst ->
-    f @@ dps ~tail ~dst
+  let unit : unit t = {
+    code = (fun ~delayed:_ ~tail:_ ~dst:_ ->
+      ()
+    );
+    delayed_use_count = 0;
+  }
 
-  let pair (fa : 'a t) (fb : 'b t) : ('a * 'b) t = fun ~tail ~dst ->
-    (fa ~tail ~dst, fb ~tail ~dst)
+  let map (f : 'a -> 'b) (d : 'a t) : 'b t = {
+    code = (fun ~delayed ~tail ~dst  ->
+      f @@ d.code ~delayed ~tail ~dst);
+    delayed_use_count = d.delayed_use_count;
+  }
 
-  let unit : unit t = fun ~tail:_ ~dst:_ ->
-    ()
+  let pair (da : 'a t) (db : 'b t) : ('a * 'b) t = {
+    code = (fun ~delayed ~tail ~dst ->
+      (da.code ~delayed ~tail ~dst, db.code ~delayed ~tail ~dst));
+    delayed_use_count =
+      da.delayed_use_count + db.delayed_use_count;
+  }
+
+  let run (d : 'a t) : 'a dps =
+    fun ~tail ~dst ->
+    d.code ~tail ~dst ~delayed:[]
+
+  let reify_delay (dps : lambda dps) : lambda t = {
+    code = (fun ~delayed ~tail ~dst ->
+      match delayed with
+      | [] -> dps ~tail ~dst
+      | x :: xs ->
+          Constr.with_placeholder x @@ fun block_dst block ->
+          Lsequence (
+            write_to_dst dst xs block,
+            dps ~tail ~dst:block_dst)
+    );
+    delayed_use_count = 1;
+  }
+
+  let ensures_affine (d : lambda t) : lambda t =
+    if d.delayed_use_count <= 1 then
+      d
+    else
+      reify_delay (run d)
+  (** Ensures that the resulting term does not duplicate delayed
+      constructors by reifying them now if needed.
+   *)
+
+  let make (dps : 'a dps) : 'a t =
+    reify_delay dps
+
+  let delay_constructor con d =
+    let d = ensures_affine d in {
+      code = (fun ~delayed ~tail ~dst ->
+        Constr.delay_impure con @@ fun con ->
+        d.code ~tail ~dst ~delayed:(con :: delayed));
+      delayed_use_count = d.delayed_use_count;
+    }
 end
 
 (** The TMC transformation requires information flows in two opposite
@@ -122,7 +339,7 @@ end
 
     1. A function [choice t] that takes a term and processes it from
     leaves to root; it produces a "code choice", a piece of data of
-    type [Choice.t], that contains information on how to transform the
+    type [lambda Choice.t], that contains information on how to transform the
     input term [t] *parameterized* over the (still missing) contextual
     information.
 
@@ -183,7 +400,7 @@ module Choice = struct
     c.direct ()
 
   let dps (c : lambda t) ~tail ~dst =
-    c.dps ~tail:tail ~dst:dst
+    Dps.run c.dps ~tail ~dst
 
   let pair ((c1, c2) : 'a t * 'b t) : ('a * 'b) t = {
     dps = Dps.pair c1.dps c2.dps;
@@ -242,9 +459,6 @@ and specialized = {
   arity: int;
   dps_id: Ident.t;
 }
-
-let tmc_placeholder = Lconst (Const_base (Const_int 0))
-(* TODO consider using a more magical constant like 42, for debugging? *)
 
 let find_candidate = function
   | Lfunction lfun when lfun.attr.tmc_candidate -> Some lfun
@@ -366,10 +580,9 @@ let rec choice ctx t =
               raise No_tmc
           in
           {
-            Choice.dps = (fun ~tail ~dst ->
-              let f_dps = specialized.dps_id in
+            Choice.dps = Dps.make (fun ~tail ~dst ->
               Lapply { apply with
-                       ap_func = Lvar f_dps;
+                       ap_func = Lvar specialized.dps_id;
                        ap_args = add_dst_args dst apply.ap_args;
                        ap_tailcall =
                          if tail
@@ -383,11 +596,10 @@ let rec choice ctx t =
     with No_tmc -> Choice.return (Lapply apply)
 
   and choice_makeblock ctx (tag, flag, shape) blockargs loc =
-    let k new_flag new_block_args =
-      Lprim (Pmakeblock (tag, new_flag, shape), new_block_args, loc) in
     let choices = List.map (choice ctx) blockargs in
     match Choice.find_tmc_calls choices with
-    | Error args -> Choice.return (k flag args)
+    | Error args ->
+        Choice.return @@ Lprim (Pmakeblock (tag, flag, shape), args, loc)
     | Ok { Choice.rev_before; choice; after } ->
         begin
           (* fail if this settable position is not unique *)
@@ -396,36 +608,25 @@ let rec choice ctx t =
           | Ok _another_choice ->
               failwith "TODO proper error/warning: ambiguous settable position"
         end;
-        let k_with_placeholder =
-          k Mutable
-            (List.rev_append rev_before @@
-             tmc_placeholder ::
-             List.map Choice.direct after)
-        in
-        let placeholder_pos = List.length rev_before in
-        let placeholder_pos_lam = Lconst (Const_base (Const_int placeholder_pos)) in
-        let let_block_in body =
-          let block_var = Ident.create_local "block" in
-          Llet(Strict, Pgenval, block_var, k_with_placeholder,
-               body block_var)
-        in
-        let block_dst block_var = {
-          var = block_var;
-          offset = placeholder_pos_lam;
-          loc;
+        let con = Constr.{
+            tag;
+            flag;
+            shape;
+            before = List.rev rev_before;
+            after = List.map Choice.direct after;
+            loc;
         } in
+        assert choice.has_tmc_calls;
         {
-          Choice.dps = (fun ~tail ~dst:old_dst ->
-            let_block_in @@ fun block_var ->
-            Lsequence(assign_to_dst old_dst (Lvar block_var),
-                      choice.dps ~tail ~dst:(block_dst block_var))
-          );
-          direct = (fun () ->
-            let_block_in @@ fun block_var ->
-            Lsequence(choice.dps ~tail:false ~dst:(block_dst block_var),
-                      Lvar block_var)
-          );
-          has_tmc_calls = choice.has_tmc_calls;
+          Choice.direct = (fun () ->
+            Constr.with_placeholder con @@ fun block_dst block ->
+            Lsequence(Choice.dps choice ~tail:false ~dst:block_dst,
+                      block));
+          dps = Dps.delay_constructor con choice.dps;
+          has_tmc_calls =
+            (* [choice] must have TMC calls, because that is what the
+               [find_tmc_call] function looks for. *)
+            true;
         }
 
   and choice_prim ctx prim primargs loc =
