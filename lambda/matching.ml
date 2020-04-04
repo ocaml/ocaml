@@ -1048,11 +1048,6 @@ let pat_as_constr = function
   | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
-and group_var p =
-  match Pattern_head.desc (Simple.head p) with
-  | Any -> true
-  | _ -> false
-
 let can_group discr pat =
   match (Pattern_head.desc discr, Pattern_head.desc (Simple.head pat)) with
   | Any, Any
@@ -1099,6 +1094,11 @@ let rec omega_like p =
       true
   | Tpat_alias (p, _, _) -> omega_like p
   | Tpat_or (p1, p2, _) -> omega_like p1 || omega_like p2
+  | _ -> false
+
+let simple_omega_like p =
+  match Pattern_head.desc (Simple.head p) with
+  | Any -> true
   | _ -> false
 
 let equiv_pat p q = le_pat p q && le_pat q p
@@ -1291,7 +1291,7 @@ and split_no_or cls args def k =
     collect discr [] [] cls
   and collect group_discr rev_yes rev_no = function
     | [ (((p, ps), _) as cl) ]
-      when rev_yes <> [] && group_var p && List.for_all omega_like ps ->
+      when rev_yes <> [] && simple_omega_like p && List.for_all omega_like ps ->
         (* This enables an extra division in some frequent cases:
                last row is made of variables only
 
@@ -1358,7 +1358,7 @@ and precompile_var args cls def k =
           let var_cls =
             List.map
               (fun ((p, ps), act) ->
-                assert (group_var p);
+                assert (simple_omega_like p);
                 half_simplify_clause ~arg:(fst arg) (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
