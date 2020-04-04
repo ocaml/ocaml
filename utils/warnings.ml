@@ -104,6 +104,7 @@ type t =
   | Unused_functor_parameter of string      (* 67 *)
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
+  | Missing_mli                             (* 70 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -183,9 +184,10 @@ let number = function
   | Unused_functor_parameter _ -> 67
   | Match_on_mutable_state_prevent_uncurry -> 68
   | Unused_field _ -> 69
+  | Missing_mli -> 70
 ;;
 
-let last_warning_number = 69
+let last_warning_number = 70
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -346,6 +348,8 @@ let descriptions =
     ["match-on-mutable-state-prevent-uncurry"];
     69, "Unused record field.",
     ["unused-field"];
+    70, "Missing interface file.",
+    ["missing-mli"]
   ]
 ;;
 
@@ -658,7 +662,7 @@ let parse_options errflag s =
   alerts
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66..69";;
+let defaults_w = "+a-4-6-7-9-27-29-30-32..42-44-45-48-50-60-66..70";;
 let defaults_warn_error = "-a+31";;
 
 let () = ignore @@ parse_options false defaults_w;;
@@ -909,6 +913,8 @@ let message = function
   | Unused_field (s, Not_mutated) ->
       "mutable record field " ^ s ^
       " is never mutated."
+  | Missing_mli ->
+    "Cannot find interface file."
 ;;
 
 let nerrors = ref 0;;
