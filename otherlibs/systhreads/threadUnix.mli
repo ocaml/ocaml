@@ -21,6 +21,8 @@
    (block the calling thread, if required, but do not block all threads
    in the process).  *)
 
+[@@@ocaml.deprecated "Use the Unix module instead of ThreadUnix"]
+
 (** {1 Process handling} *)
 
 val execv : string -> string array -> unit
