@@ -57,11 +57,12 @@ function record_fail() {
     if (!(key in RESULTS) || RESULTS[key] == "s"){
         if (!(key in RESULTS)) ++nresults;
     		testcase = sprintf ("%s/%s", curdir, curfile);
-				if (is_disabled[testcase]) {
-					RESULTS[key] = "d";
-				} else {
-        	RESULTS[key] = "f";
-				}
+			gsub(/[ \t]+$/, "", testcase);
+			if (is_disabled[testcase]) {
+				RESULTS[key] = "d";
+			} else {
+				RESULTS[key] = "f";
+			}
     }
     delete SKIPPED[curdir];
     clear();
@@ -71,6 +72,7 @@ function record_unexp() {
     if (!(key in RESULTS) || RESULTS[key] == "s"){
         if (!(key in RESULTS)) ++nresults;
         testcase = sprintf ("%s/%s", curdir, curfile);
+        gsub(/[ \t]+$/, "", testcase);
         if (is_disabled[testcase]) {
             RESULTS[key] = "d";
         } else {
