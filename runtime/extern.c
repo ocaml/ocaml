@@ -794,7 +794,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   int header_len;
   intnat data_len;
   char * res;
-  struct output_block * blk;
+  struct output_block * blk, * nextblk;
 
   init_extern_output();
   data_len = extern_value(v, flags, header, &header_len);
@@ -804,12 +804,13 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   *len = header_len + data_len;
   memcpy(res, header, header_len);
   res += header_len;
-  for (blk = extern_output_first; blk != NULL; blk = blk->next) {
+  for (blk = extern_output_first; blk != NULL; blk = nextblk) {
     intnat n = blk->end - blk->data;
     memcpy(res, blk->data, n);
     res += n;
+    nextblk = blk->next;
+    caml_stat_free(blk);
   }
-  free_extern_output();
 }
 
 /* Functions for writing user-defined marshallers */
