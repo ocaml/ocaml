@@ -3,6 +3,7 @@
    * bytecode
      compare_programs = "false"
    * native
+     compare_programs = "false"
 *)
 
 (* Test constant propagation through inlining *)
