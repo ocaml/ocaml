@@ -94,6 +94,23 @@ Caml_inline int Must_be_Marked_during_mark(value x)
 #endif
 }
 
+/* True if ar could be in the set (1) (Cf. major_gc.c) */
+static int already_marked (value ar)
+{
+  value old_data;
+  CAMLassert (caml_gc_phase == Phase_mark);
+
+  old_data = Field (ar, CAML_EPHE_DATA_OFFSET);
+  return ( old_data == caml_ephe_none ||
+           (Is_block(old_data) &&
+#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
+            !Is_young (old_data) &&
+#else
+            Is_in_heap(old_data) &&
+#endif
+            Is_white_val(old_data)) );
+}
+
 /* [len] is a number of words (fields) */
 CAMLexport value caml_ephemeron_create (mlsize_t len)
 {
@@ -257,6 +274,7 @@ CAMLexport void caml_ephemeron_set_data (value ar, value el)
 {
   CAMLassert_valid_ephemeron(ar);
 
+  if (caml_gc_phase == Phase_mark && already_marked(ar)) caml_darken (el, NULL);
   if (caml_gc_phase == Phase_clean){
     /* During this phase since we don't know which ephemerons have been
        cleaned we always need to check it. */
@@ -572,6 +590,7 @@ CAMLprim value caml_weak_blit (value ars, value ofs,
 
 CAMLexport void caml_ephemeron_blit_data (value ars, value ard)
 {
+  value data;
   CAMLassert_valid_ephemeron(ars);
   CAMLassert_valid_ephemeron(ard);
 
@@ -579,7 +598,14 @@ CAMLexport void caml_ephemeron_blit_data (value ars, value ard)
     caml_ephe_clean(ars);
     caml_ephe_clean(ard);
   };
-  do_set (ard, CAML_EPHE_DATA_OFFSET, Field (ars, CAML_EPHE_DATA_OFFSET));
+
+  data = Field (ars, CAML_EPHE_DATA_OFFSET);
+  if (caml_gc_phase == Phase_mark &&
+      data != caml_ephe_none &&
+      already_marked(ard))
+    caml_darken (data, NULL);
+
+  do_set (ard, CAML_EPHE_DATA_OFFSET, data);
 }
 
 CAMLprim value caml_ephe_blit_data (value ars, value ard)
