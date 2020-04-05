@@ -440,7 +440,7 @@ exe=""
 iflexdir=""
 SO="so"
 TOOLCHAIN="cc"
-cpp="$cc -E -P"
+cpp="$cc -E -P -x c"
 
 # Choose reasonable options based on compiler kind
 # We select high optimization levels, provided we can turn off:
