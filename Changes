@@ -1571,6 +1571,9 @@ OCaml 4.08.0 (13 June 2019)
 - #8508: refresh \moduleref macro
   (Florian Angeletti, review by Gabriel Scherer)
 
+- 9410: replaced fibonacci example with gcd of coreexamples manual
+  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
+
 ### Code generation and optimizations:
 
 - #7725, #1754: improve AFL instrumentation for objects and lazy values.
