@@ -12500,7 +12500,7 @@ esac
 case $host in #(
   *-*-mingw32) :
     case $ocaml_cv_cc_vendor in #(
-  gcc-01234-*) :
+  gcc-[01234]-*) :
     as_fn_error $? "This version of Mingw GCC is too old.
           Please use GCC version 5 or above." "$LINENO" 5 ;; #(
   gcc-*) :
@@ -12519,12 +12519,12 @@ esac ;; #(
   clang-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
       internal_cflags="$gcc_warnings -fno-common" ;; #(
-  gcc-012-*) :
+  gcc-[012]-*) :
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
       as_fn_error $? "This version of GCC is too old.
         Please use GCC version 4.2 or above." "$LINENO" 5 ;; #(
-  gcc-3-*|gcc-4-01) :
+  gcc-3-*|gcc-4-[01]) :
     # No -fwrapv option before GCC 3.4.
       # Known problems with -fwrapv fixed in 4.2 only.
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This version of GCC is rather old.
@@ -12535,7 +12535,7 @@ $as_echo "$as_me: WARNING: This version of GCC is rather old.
 $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       common_cflags="-std=gnu99 -O";
       internal_cflags="$gcc_warnings" ;; #(
-  gcc-4-234) :
+  gcc-4-[234]) :
     # No -fexcess-precision option before GCC 4.5
       common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
