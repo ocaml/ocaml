@@ -388,8 +388,14 @@ module Analyser =
               | Cstr_record l ->
                   Cstr_record (List.map (get_field env name_comment_list) l)
             in
+            let vc_name = match constructor_name with
+              | "::" ->
+                  (* The only infix constructor is always printed (::) *)
+                  "(::)"
+              | s -> s
+            in
             {
-              vc_name = constructor_name ;
+              vc_name;
               vc_args;
               vc_ret =  Option.map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
