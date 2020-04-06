@@ -31,7 +31,7 @@ let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
   | Ocaml_files.Debug -> " -runtime-variant d"
   | Ocaml_files.Instrumented -> " -runtime-variant i"
 
-let runtime_flags ocamlsrcdir backend c_files =
+let runtime_flags ocamlsrcdir env backend c_files =
   let runtime_library_flags = "-I " ^
     (Ocaml_directories.runtime_library backend ocamlsrcdir) in
   let rt_flags = match backend with
@@ -41,7 +41,12 @@ let runtime_flags ocamlsrcdir backend c_files =
         if c_files then begin (* custom mode *)
           "-custom " ^ (runtime_variant_flags ())
         end else begin (* non-custom mode *)
-          "-use-runtime " ^ (Ocaml_files.ocamlrun ocamlsrcdir)
+          let use_runtime =
+            Environments.lookup_as_bool Ocaml_variables.use_runtime env
+          in
+          if use_runtime = Some false
+          then ""
+          else "-use-runtime " ^ (Ocaml_files.ocamlrun ocamlsrcdir)
         end
       end in
   rt_flags ^ " " ^ runtime_library_flags

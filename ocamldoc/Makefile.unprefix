@@ -98,5 +98,6 @@ $(STDLIB_UNPREFIXED)/pervasives.mli: $(SRC)/stdlib/stdlib.mli $(STDLIB_UNPREFIXE
 	$(AWK) -f $(STDLIB_UNPREFIXED)/extract_pervasives.awk $< > $@
 
 # Build cmis file inside the STDLIB_UNPREFIXED directories
-$(STDLIB_CMIS): $(STDLIB_DEPS)
-	cd $(STDLIB_UNPREFIXED); $(MAKE) $(notdir $(STDLIB_CMIS))
+.PHONY: unprefix_stdlib_for_ocamldoc
+unprefix_stdlib_for_ocamldoc: $(STDLIB_MLIS) $(STDLIB_DEPS)
+	@$(MAKE) -C $(STDLIB_UNPREFIXED) $(notdir $(STDLIB_CMIS))

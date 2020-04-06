@@ -28,6 +28,11 @@ let string_of_test test =
   then (test.Tests.test_name ^ " (run by default)")
   else test.Tests.test_name
 
+let string_of_variable v =
+  Printf.sprintf "%s: %s"
+    (Variables.name_of_variable v)
+    (Variables.description_of_variable v)
+
 let show_actions () =
   let actions = Actions.get_registered_actions () in
   show_objects "Available actions are:" string_of_action actions
@@ -35,6 +40,10 @@ let show_actions () =
 let show_tests () =
   let tests = Tests.get_registered_tests () in
   show_objects "Available tests are:" string_of_test tests
+
+let show_variables () =
+  let variables = Variables.get_registered_variables () in
+  show_objects "Available variables are:" string_of_variable variables
 
 let log_to_stderr = ref false
 
@@ -47,6 +56,7 @@ let commandline_options =
    "Overwrite reference files with the test output (experimental, unstable)");
   ("-show-actions", Arg.Unit show_actions, "Show available actions.");
   ("-show-tests", Arg.Unit show_tests, "Show available tests.");
+  ("-show-variables", Arg.Unit show_variables, "Show available variables.");
 ]
 
 let files_to_test = ref []

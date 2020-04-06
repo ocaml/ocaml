@@ -152,9 +152,19 @@ results in slightly smaller but slightly slower programs. The default is to
 optimize for speed.
 }%nat
 
+\notop{%
 \item["-config"]
 Print the version number of {\machine\ocamlx} and a detailed
 summary of its configuration, then exit.
+}%notop
+
+\notop{%
+\item["-config-var" \var{var}]
+Print the value of a specific configuration variable from the
+"-config" output, then exit. If the variable does not exist, the exit
+code is non-zero. This option is only available since OCaml 4.08,
+so script authors should have a fallback for older versions.
+}%notop
 
 \comp{%
 \item["-custom"]

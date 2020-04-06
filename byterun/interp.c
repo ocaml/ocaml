@@ -1372,9 +1372,9 @@ do_resume: {
 #if _MSC_VER >= 1200
       __assume(0);
 #else
-      caml_fatal_error_arg("Fatal error: bad opcode (%"
-                           ARCH_INTNAT_PRINTF_FORMAT "x)\n",
-                           (char *) (intnat) *(pc-1));
+      caml_fatal_error("bad opcode (%"
+                           ARCH_INTNAT_PRINTF_FORMAT "x)",
+                           (intnat) *(pc-1));
 #endif
     }
   }

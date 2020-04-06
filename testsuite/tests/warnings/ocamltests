@@ -2,6 +2,7 @@ deprecated_module_assigment.ml
 deprecated_module.ml
 deprecated_module_use.ml
 w01.ml
+w03.ml
 w04_failure.ml
 w04.ml
 w06.ml

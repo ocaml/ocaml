@@ -1,3 +1,9 @@
+(* TEST
+files = "main.c"
+arguments = "-DSORT -DFUN=quicksort main.c"
+* asmgen
+*)
+
 (**************************************************************************)
 (*                                                                        *)
 (*                                OCaml                                   *)

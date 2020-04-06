@@ -175,7 +175,11 @@ void caml_alloc_point_here(void);
 
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
 
-CAMLextern void caml_fatal_error (const char *msg) Noreturn;
+CAMLextern void caml_fatal_error (char *, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 1, 2)))
+#endif
+CAMLnoreturn_end;
 CAMLextern void caml_fatal_error_arg (const char *fmt, const char *arg) Noreturn;
 CAMLextern void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
                                        const char *fmt2, const char *arg2) Noreturn;

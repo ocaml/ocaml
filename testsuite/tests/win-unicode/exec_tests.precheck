@@ -1,3 +1,0 @@
-# exec_tests.ml disabled because it fails non-deterministically (at least under CI)
-# seems to be a problem redirecting handles
-exit 1

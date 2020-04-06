@@ -190,6 +190,9 @@ OCAMLOPT_CFLAGS=-O -mms-bitfields
 ### Build partially-linked object file
 PACKLD=$(TOOLPREF)ld -r -o # must have a space after '-o'
 
+### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
+INSTALL_BYTECODE_PROGRAMS=true
+
 ############# Configuration for the contributed libraries
 
 OTHERLIBRARIES=win32unix str win32graph dynlink bigarray systhreads

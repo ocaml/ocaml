@@ -28,7 +28,6 @@ val first_ccopts : string list ref
 val first_ppx : string list ref
 val first_include_dirs : string list ref
 val last_include_dirs : string list ref
-val implicit_modules : string list ref
 
 (* function to call on plugin=XXX *)
 val load_plugin : (string -> unit) ref

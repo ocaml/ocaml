@@ -82,11 +82,7 @@ type ctx = {left:pattern list ; right:pattern list}
 let pretty_ctx ctx =
   List.iter
     (fun {left=left ; right=right} ->
-      prerr_string "LEFT:" ;
-      pretty_line Format.err_formatter left ;
-      prerr_string " RIGHT:" ;
-      pretty_line Format.err_formatter right ;
-      prerr_endline "")
+      Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right)
     ctx
 
 let le_ctx c1 c2 =
@@ -416,27 +412,17 @@ let pretty_cases cases =
   List.iter
     (fun (ps,_l) ->
       List.iter
-        (fun p ->
-          top_pretty Format.str_formatter p ;
-          prerr_string " " ;
-          prerr_string (Format.flush_str_formatter ()))
+        (fun p -> Format.eprintf " %a%!" top_pretty p)
         ps ;
-(*
-      prerr_string " -> " ;
-      Printlambda.lambda Format.str_formatter l ;
-      prerr_string (Format.flush_str_formatter ()) ;
-*)
-      prerr_endline "")
+      Format.eprintf "\n")
     cases
 
 let pretty_def def =
-  prerr_endline "+++++ Defaults +++++" ;
+  Format.eprintf "+++++ Defaults +++++\n" ;
   List.iter
-    (fun (pss,i) ->
-      Printf.fprintf stderr "Matrix for %d\n"  i ;
-      pretty_matrix Format.err_formatter pss)
+    (fun (pss,i) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
     def ;
-  prerr_endline "+++++++++++++++++++++"
+  Format.eprintf "+++++++++++++++++++++\n"
 
 let pretty_pm pm =
   pretty_cases pm.cases ;
@@ -446,13 +432,13 @@ let pretty_pm pm =
 
 let rec pretty_precompiled = function
   | Pm pm ->
-      prerr_endline "++++ PM ++++" ;
+      Format.eprintf "++++ PM ++++\n" ;
       pretty_pm pm
   | PmVar x ->
-      prerr_endline "++++ VAR ++++" ;
+      Format.eprintf "++++ VAR ++++\n" ;
       pretty_precompiled x.inside
   | PmOr x ->
-      prerr_endline "++++ OR ++++" ;
+      Format.eprintf "++++ OR ++++\n" ;
       pretty_pm x.body ;
       pretty_matrix Format.err_formatter x.or_matrix ;
       List.iter
@@ -736,9 +722,33 @@ let pat_as_constr = function
   | {pat_desc=Tpat_construct (_, cstr,_)} -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
-let group_constant = function
-  | {pat_desc= Tpat_constant _} -> true
-  | _                           -> false
+let group_const_int = function
+  | {pat_desc= Tpat_constant Const_int _ } -> true
+  | _                                      -> false
+
+let group_const_char = function
+  | {pat_desc= Tpat_constant Const_char _ } -> true
+  | _                                      -> false
+
+let group_const_string = function
+  | {pat_desc= Tpat_constant Const_string _ } -> true
+  | _                                      -> false
+
+let group_const_float = function
+  | {pat_desc= Tpat_constant Const_float _ } -> true
+  | _                                      -> false
+
+let group_const_int32 = function
+  | {pat_desc= Tpat_constant Const_int32 _ } -> true
+  | _                                      -> false
+
+let group_const_int64 = function
+  | {pat_desc= Tpat_constant Const_int64 _ } -> true
+  | _                                      -> false
+
+let group_const_nativeint = function
+  | {pat_desc= Tpat_constant Const_nativeint _ } -> true
+  | _                                      -> false
 
 and group_constructor = function
   | {pat_desc = Tpat_construct (_,_,_)} -> true
@@ -770,7 +780,13 @@ and group_lazy = function
 
 let get_group p = match p.pat_desc with
 | Tpat_any -> group_var
-| Tpat_constant _ -> group_constant
+| Tpat_constant Const_int _ -> group_const_int
+| Tpat_constant Const_char _ -> group_const_char
+| Tpat_constant Const_string _ -> group_const_string
+| Tpat_constant Const_float _ -> group_const_float
+| Tpat_constant Const_int32 _ -> group_const_int32
+| Tpat_constant Const_int64 _ -> group_const_int64
+| Tpat_constant Const_nativeint _ -> group_const_nativeint
 | Tpat_construct _ -> group_constructor
 | Tpat_tuple _ -> group_tuple
 | Tpat_record _ -> group_record
@@ -1147,7 +1163,7 @@ let split_precompile argo pm =
   let {me=next}, nexts = split_or argo pm.cases pm.args pm.default  in
   if dbg && (nexts <> [] || (match next with PmOr _ -> true | _ -> false))
   then begin
-    prerr_endline "** SPLIT **" ;
+    Format.eprintf "** SPLIT **\n" ;
     pretty_pm pm ;
     pretty_precompiled_res  next nexts
   end ;
@@ -1231,7 +1247,7 @@ let rec matcher_const cst p rem = match p.pat_desc with
 let get_key_constant caller = function
   | {pat_desc= Tpat_constant cst} -> cst
   | p ->
-      prerr_endline ("BAD: "^caller) ;
+      Format.eprintf "BAD: %s" caller ;
       pretty_pat p ;
       assert false
 
@@ -1482,6 +1498,10 @@ let get_mod_field modname field =
 let code_force_lazy_block =
   get_mod_field "CamlinternalLazy" "force_lazy_block"
 
+let code_force_lazy =
+  get_mod_field "CamlinternalLazy" "force"
+;;
+
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
    the value argument is tagged as:
    - forward, take field 0
@@ -1545,13 +1565,25 @@ let inline_lazy_force_switch arg loc =
                sw_failaction = Some varg }, loc ))))
 
 let inline_lazy_force arg loc =
-  if !Clflags.native_code then
-    (* Lswitch generates compact and efficient native code *)
-    inline_lazy_force_switch arg loc
+  if !Clflags.afl_instrument then
+    (* Disable inlining optimisation if AFL instrumentation active,
+       so that the GC forwarding optimisation is not visible in the
+       instrumentation output.
+       (see https://github.com/stedolan/crowbar/issues/14) *)
+    Lapply{ap_should_be_tailcall = false;
+           ap_loc=loc;
+           ap_func=Lazy.force code_force_lazy;
+           ap_args=[arg];
+           ap_inlined=Default_inline;
+           ap_specialised=Default_specialise}
   else
-    (* generating bytecode: Lswitch would generate too many rather big
-       tables (~ 250 elts); conditionals are better *)
-    inline_lazy_force_cond arg loc
+    if !Clflags.native_code then
+      (* Lswitch generates compact and efficient native code *)
+      inline_lazy_force_switch arg loc
+    else
+      (* generating bytecode: Lswitch would generate too many rather big
+         tables (~ 250 elts); conditionals are better *)
+      inline_lazy_force_cond arg loc
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"
@@ -2178,7 +2210,7 @@ let mk_failaction_neg partial ctx def = match partial with
 (* In line with the article and simpler than before *)
 let mk_failaction_pos partial seen ctx defs  =
   if dbg then begin
-    prerr_endline "**POS**" ;
+    Format.eprintf "**POS**\n" ;
     pretty_def defs ;
     ()
   end ;
@@ -2727,14 +2759,13 @@ let rec compile_match repr partial ctx m = match m with
 (* verbose version of do_compile_matching, for debug *)
 
 and do_compile_matching_pr repr partial ctx arg x =
-  prerr_string "COMPILE: " ;
-  prerr_endline (match partial with Partial -> "Partial" | Total -> "Total") ;
-  prerr_endline "MATCH" ;
+  Format.eprintf "COMPILE: %s\nMATCH\n"
+    (match partial with Partial -> "Partial" | Total -> "Total") ;
   pretty_precompiled x ;
-  prerr_endline "CTX" ;
+  Format.eprintf "CTX\n" ;
   pretty_ctx ctx ;
   let (_, jumps) as r =  do_compile_matching repr partial ctx arg x in
-  prerr_endline "JUMPS" ;
+  Format.eprintf "JUMPS\n" ;
   pretty_jumps jumps ;
   r
 

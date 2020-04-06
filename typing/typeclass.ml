@@ -66,7 +66,6 @@ type error =
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
   | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
-  | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
@@ -237,7 +236,8 @@ let rc node =
 (* Enter a value in the method environment only *)
 let enter_met_env ?check loc lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty; val_kind = Val_unbound;
+    Env.enter_value lab {val_type = ty;
+                         val_kind = Val_unbound Val_unbound_instance_variable;
                          val_attributes = [];
                          Types.val_loc = loc} val_env
   in
@@ -245,7 +245,8 @@ let enter_met_env ?check loc lab kind ty val_env met_env par_env =
    Env.add_value ?check id {val_type = ty; val_kind = kind;
                             val_attributes = [];
                             Types.val_loc = loc} met_env,
-   Env.add_value id {val_type = ty; val_kind = Val_unbound;
+   Env.add_value id {val_type = ty;
+                     val_kind = Val_unbound Val_unbound_instance_variable;
                      val_attributes = [];
                      Types.val_loc = loc} par_env)
 
@@ -657,10 +658,7 @@ and class_field_aux self_loc cl_num self_type meths vars
                       No_overriding ("instance variable", lab.txt)))
       end;
       if !Clflags.principal then Ctype.begin_def ();
-      let exp =
-        try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
-          raise(Error(loc, val_env, Make_nongen_seltype ty))
-      in
+      let exp = type_exp val_env sexp in
       if !Clflags.principal then begin
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
@@ -1157,11 +1155,7 @@ and class_expr_aux cl_num val_env met_env scl =
          }
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
-        try
-          Typecore.type_let val_env rec_flag sdefs None
-        with Ctype.Unify [(ty, _)] ->
-          raise(Error(scl.pcl_loc, val_env, Make_nongen_seltype ty))
-      in
+        Typecore.type_let In_class_def val_env rec_flag sdefs None in
       let (vals, met_env) =
         List.fold_right
           (fun (id, id_loc) (vals, met_env) ->
@@ -1291,7 +1285,8 @@ let temp_abbrev loc env id arity =
        type_private = Public;
        type_manifest = Some ty;
        type_variance = Misc.replicate_list Variance.full arity;
-       type_newtype_level = None;
+       type_is_newtype = false;
+       type_expansion_scope = None;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
        type_immediate = false;
@@ -1541,7 +1536,8 @@ let class_infos define_class kind
      type_private = Public;
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> Variance.full) obj_params;
-     type_newtype_level = None;
+     type_is_newtype = false;
+     type_expansion_scope = None;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
@@ -1560,7 +1556,8 @@ let class_infos define_class kind
      type_private = Public;
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> Variance.full) cl_params;
-     type_newtype_level = None;
+     type_is_newtype = false;
+     type_expansion_scope = None;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
@@ -1955,12 +1952,6 @@ let report_error env ppf = function
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"
        printer print_reason reason
-  | Make_nongen_seltype ty ->
-      fprintf ppf
-        "@[<v>@[Self type should not occur in the non-generic type@;<1 2>\
-                %a@]@,\
-           It would escape the scope of its class@]"
-        Printtyp.type_scheme ty
   | Non_generalizable_class (id, clty) ->
       fprintf ppf
         "@[The type of this class,@ %a,@ \
@@ -1975,11 +1966,12 @@ let report_error env ppf = function
   | Non_collapsable_conjunction (id, clty, trace) ->
       fprintf ppf
         "@[The type of this class,@ %a,@ \
-           contains non-collapsible conjunctive types in constraints@]"
-        (Printtyp.class_declaration id) clty;
-      Printtyp.report_unification_error ppf env trace
-        (fun ppf -> fprintf ppf "Type")
-        (fun ppf -> fprintf ppf "is not compatible with type")
+           contains non-collapsible conjunctive types in constraints.@ %t@]"
+        (Printtyp.class_declaration id) clty
+        (fun ppf -> Printtyp.report_unification_error ppf env trace
+            (fun ppf -> fprintf ppf "Type")
+            (fun ppf -> fprintf ppf "is not compatible with type")
+        )
   | Final_self_clash trace ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->

@@ -273,10 +273,10 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLLEX) $<
 
 .mly.ml:
-	$(OCAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 .mly.mli:
-	$(OCAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 # Installation targets
 ######################
@@ -289,15 +289,20 @@ INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
 .PHONY: install
 install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
+	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_MANODIR)"
 	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	  "$(INSTALL_LIBDIR)"
 	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	  $(OCAMLDOC_LIBCMIS) \
+	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)"
+endif
 	if test -d stdlib_man; then \
 	  $(INSTALL_DATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
 	else : ; fi
@@ -312,15 +317,20 @@ installopt:
 .PHONY: installopt_really
 installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
+	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(INSTALL_PROG) \
 	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
 	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	  $(OCAMLDOC_LIBCMIS) \
+	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)"
+endif
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
-	  "$(INSTALL_LIBDIR)/ocamldoc"
+	  "$(INSTALL_LIBDIR)"
 
 # TODO: also split into several rules
 
@@ -388,13 +398,15 @@ test_texi:
 SRC=$(ROOTDIR)
 include Makefile.unprefix
 
-stdlib_man/Pervasives.3o: $(OCAMLDOC) $(STDLIB_MLIS) $(STDLIB_CMIS)
+stdlib_man/Pervasives.3o: $(OCAMLDOC) $(STDLIB_MLIS)
+	$(MAKE) unprefix_stdlib_for_ocamldoc
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib -I stdlib_non_prefixed \
 	-t "OCaml library" -man-mini $(STDLIB_MLIS) \
 	-initially-opened-module Pervasives
 
-stdlib_html/Pervasives.html: $(OCAMLDOC) $(STDLIB_MLIS) $(STDLIB_CMIS)
+stdlib_html/Pervasives.html: $(OCAMLDOC) $(STDLIB_MLIS)
+	$(MAKE) unprefix_stdlib_for_ocamldoc
 	$(MKDIR) stdlib_html
 	$(OCAMLDOC_RUN) -d stdlib_html -html -nostdlib -I stdlib_non_prefixed \
 	-t "OCaml library" $(STDLIB_MLIS) \

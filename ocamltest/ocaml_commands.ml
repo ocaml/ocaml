@@ -37,3 +37,9 @@ let ocamlrun_ocamldebug ocamlsrcdir =
 
 let ocamlrun_ocamlobjinfo ocamlsrcdir =
   ocamlrun ocamlsrcdir Ocaml_files.ocamlobjinfo
+
+let ocamlrun_ocamlmklib ocamlsrcdir =
+  ocamlrun ocamlsrcdir Ocaml_files.ocamlmklib
+
+let ocamlrun_codegen ocamlsrcdir =
+  ocamlrun ocamlsrcdir Ocaml_files.codegen

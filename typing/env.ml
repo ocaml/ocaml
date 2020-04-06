@@ -1051,7 +1051,7 @@ let find_type_expansion path env =
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
               || Btype.has_constr_row body ->
-                  (decl.type_params, body, may_map snd decl.type_newtype_level)
+                  (decl.type_params, body, decl.type_expansion_scope)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.
      Hence, this case is caught by the following clause that also handles
@@ -1067,7 +1067,8 @@ let find_type_expansion_opt path env =
   match decl.type_manifest with
   (* The manifest type of Private abstract data types can still get
      an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
+  | Some body ->
+      (decl.type_params, body, decl.type_expansion_scope)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
@@ -1273,9 +1274,19 @@ let lookup_class =
 let lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let copy_types l env =
-  let f desc = {desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
+type copy_of_types = {
+  to_copy: string list;
+  initial_values: value_description IdTbl.t;
+  new_values: value_description IdTbl.t;
+}
+
+let make_copy_of_types l env : copy_of_types =
+  let f desc = { desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
   let values = List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
+  {to_copy = l; initial_values = env.values; new_values = values}
+
+let do_copy_types { to_copy = l; initial_values; new_values = values } env =
+  if initial_values != env.values then fatal_error "Env.do_copy_types";
   {env with values; summary = Env_copy_types (env.summary, l)}
 
 let mark_value_used name vd =
@@ -1932,7 +1943,7 @@ let enter store_fun name data env =
   let id = Ident.create name in (id, store_fun id data env)
 
 let enter_value ?check = enter (store_value ?check)
-and enter_type ~check = enter (store_type ~check)
+and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
 and enter_module_declaration ?arg id md env =
   add_module_declaration ?arg ~check:true id md env

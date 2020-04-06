@@ -125,6 +125,7 @@ val generic_instance: type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
+val existential_name: constructor_description -> type_expr -> string
 val instance_constructor:
         ?in_pattern:Env.t ref * int ->
         constructor_description -> type_expr list * type_expr
@@ -171,7 +172,7 @@ val get_new_abstract_name : string -> string
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+val unify_gadt: equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit

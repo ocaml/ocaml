@@ -48,8 +48,7 @@ let prim_fresh_oo_id =
 
 let transl_extension_constructor env path ext =
   let path =
-    Printtyp.wrap_printing_env env ~error:true (fun () ->
-      Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path)
+    Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path
   in
   let name =
     match path, !Clflags.for_package with
@@ -477,13 +476,11 @@ and transl_exp0 e =
          do *)
       begin match Typeopt.classify_lazy_argument e with
       | `Constant_or_function ->
-        (* A constant expr (of type <> float if [Config.flat_float_array] is
-           true) gets compiled as itself. *)
+        (* a constant expr of type <> float gets compiled as itself *)
          transl_exp e
-      | `Float_that_cannot_be_shortcut ->
+      | `Float ->
           (* We don't need to wrap with Popaque: this forward
-             block will never be shortcutted since it points to a float
-             and Config.flat_float_array is true. *)
+             block will never be shortcutted since it points to a float. *)
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e], e.exp_loc)
       | `Identifier `Forward_value ->
@@ -504,8 +501,7 @@ and transl_exp0 e =
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
-                             body = transl_exp e}
-         in
+                             body = transl_exp e} in
          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn], e.exp_loc)
       end
   | Texp_object (cs, meths) ->

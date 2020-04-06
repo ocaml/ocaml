@@ -889,21 +889,18 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd optenv proc input output error =
-  let shell =
-    try Sys.getenv "COMSPEC"
-    with Not_found -> raise(Unix_error(ENOEXEC, "open_proc", cmd)) in
+let open_proc prog cmdline optenv proc input output error =
   let pid =
-    win_create_process shell (shell ^ " /c " ^ cmd) optenv
+    win_create_process prog cmdline optenv
                        input output error in
   Hashtbl.add popen_processes proc pid
 
-let open_process_in cmd =
+let open_process_cmdline_in prog cmdline =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
   begin
     try
-      open_proc cmd None (Process_in inchan) stdin in_write stderr
+      open_proc prog cmdline None (Process_in inchan) stdin in_write stderr
     with e ->
       close_in inchan;
       close in_write;
@@ -912,12 +909,12 @@ let open_process_in cmd =
   close in_write;
   inchan
 
-let open_process_out cmd =
+let open_process_cmdline_out prog cmdline =
   let (out_read, out_write) = pipe ~cloexec:true () in
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd None (Process_out outchan) out_read stdout stderr
+      open_proc prog cmdline None (Process_out outchan) out_read stdout stderr
     with e ->
     close_out outchan;
     close out_read;
@@ -926,7 +923,7 @@ let open_process_out cmd =
   close out_read;
   outchan
 
-let open_process cmd =
+let open_process_cmdline prog cmdline =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let (out_read, out_write) =
     try pipe ~cloexec:true ()
@@ -935,7 +932,7 @@ let open_process cmd =
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr
+      open_proc prog cmdline None (Process(inchan, outchan)) out_read in_write stderr
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
@@ -945,7 +942,7 @@ let open_process cmd =
   close in_write;
   (inchan, outchan)
 
-let open_process_full cmd env =
+let open_process_cmdline_full prog cmdline env =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let (out_read, out_write) =
     try pipe ~cloexec:true ()
@@ -959,7 +956,7 @@ let open_process_full cmd env =
   let errchan = in_channel_of_descr err_read in
   begin
     try
-      open_proc cmd (Some (make_process_env env))
+      open_proc prog cmdline (Some (make_process_env env))
                (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write
     with e ->
@@ -972,6 +969,25 @@ let open_process_full cmd env =
   close in_write;
   close err_write;
   (inchan, outchan, errchan)
+
+let open_process_args_in prog args = open_process_cmdline_in prog (make_cmdline args)
+let open_process_args_out prog args = open_process_cmdline_out prog (make_cmdline args)
+let open_process_args prog args = open_process_cmdline prog (make_cmdline args)
+let open_process_args_full prog args = open_process_cmdline_full prog (make_cmdline args)
+
+let open_process_shell fn cmd =
+  let shell =
+    try Sys.getenv "COMSPEC"
+    with Not_found -> raise(Unix_error(ENOEXEC, "open_process_shell", cmd)) in
+  fn shell (shell ^ " /c " ^ cmd)
+let open_process_in cmd =
+  open_process_shell open_process_cmdline_in cmd
+let open_process_out cmd =
+  open_process_shell open_process_cmdline_out cmd
+let open_process cmd =
+  open_process_shell open_process_cmdline cmd
+let open_process_full cmd =
+  open_process_shell open_process_cmdline_full cmd
 
 let find_proc_id fun_name proc =
   try

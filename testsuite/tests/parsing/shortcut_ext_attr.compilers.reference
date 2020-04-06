@@ -687,14 +687,16 @@
     [
       structure_item (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21])
         Pstr_exception
-        extension_constructor (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21])
-          attribute "foo"
-            []
-          pext_name = "X"
-          pext_kind =
-            Pext_decl
-              []
-              None
+        type_exception
+          ptyext_constructor =
+            extension_constructor (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21])
+              attribute "foo"
+                []
+              pext_name = "X"
+              pext_kind =
+                Pext_decl
+                  []
+                  None
     ]
   structure_item (shortcut_ext_attr.ml[88,1782+0]..[88,1782+22]) ghost
     Pstr_extension "foo"
@@ -858,14 +860,16 @@
             [
               signature_item (shortcut_ext_attr.ml[105,2091+2]..[105,2091+23])
                 Psig_exception
-                extension_constructor (shortcut_ext_attr.ml[105,2091+2]..[105,2091+23])
-                  attribute "foo"
-                    []
-                  pext_name = "X"
-                  pext_kind =
-                    Pext_decl
-                      []
-                      None
+                type_exception
+                  ptyext_constructor =
+                    extension_constructor (shortcut_ext_attr.ml[105,2091+2]..[105,2091+23])
+                      attribute "foo"
+                        []
+                      pext_name = "X"
+                      pext_kind =
+                        Pext_decl
+                          []
+                          None
             ]
           signature_item (shortcut_ext_attr.ml[107,2116+2]..[107,2116+24]) ghost
             Psig_extension "foo"

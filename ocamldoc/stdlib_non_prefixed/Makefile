@@ -4,7 +4,7 @@ include $(TOPDIR)/Makefile.tools
 .SUFFIXES:
 
 OCAMLDEP= $(OCAMLRUN) $(TOPDIR)/tools/ocamldep -slash
-OCAMLC_SNP= $(OCAMLRUN) $(TOPDIR)/ocamlc -nostdlib -nopervasives -I $(HERE)
+OCAMLC_SNP= $(OCAMLRUN) $(TOPDIR)/ocamlc -nostdlib -nopervasives
 
 pervasives.cmi: pervasives.mli camlinternalFormatBasics.cmi
 	$(OCAMLC_SNP) -c $<

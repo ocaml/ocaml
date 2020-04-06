@@ -25,6 +25,7 @@ type t =
   | Lexer
   | Grammar
   | Binary_interface
+  | Obj
   | Backend_specific of Ocaml_backends.t * backend_specific
   | Text (* used by ocamldoc for text only documentation *)
 
@@ -41,6 +42,7 @@ let string_of_filetype = function
   | Lexer -> "lexer"
   | Grammar -> "grammar"
   | Binary_interface -> "binary interface"
+  | Obj -> "object"  
   | Backend_specific (backend, filetype) ->
     ((Ocaml_backends.string_of_backend backend) ^ " " ^
       (string_of_backend_specific filetype))
@@ -54,6 +56,7 @@ let extension_of_filetype = function
   | Lexer -> "mll"
   | Grammar -> "mly"
   | Binary_interface -> "cmi"
+  | Obj -> Ocamltest_config.objext
   | Backend_specific (backend, filetype) ->
     begin match (backend, filetype) with
       | (Ocaml_backends.Native, Object) -> "cmx"
@@ -73,6 +76,8 @@ let filetype_of_extension = function
   | "mll" -> Lexer
   | "mly" -> Grammar
   | "cmi" -> Binary_interface
+  | "o" -> Obj
+  | "obj" -> Obj
   | "cmx" -> Backend_specific (Ocaml_backends.Native, Object)
   | "cmxa" -> Backend_specific (Ocaml_backends.Native, Library)
   | "opt" -> Backend_specific (Ocaml_backends.Native, Program)
@@ -80,7 +85,7 @@ let filetype_of_extension = function
   | "cma" -> Backend_specific (Ocaml_backends.Bytecode, Library)
   | "byte" -> Backend_specific (Ocaml_backends.Bytecode, Program)
   | "txt" -> Text
-  | _ -> raise Not_found
+  | _ as e -> Printf.eprintf "Unknown file extension %s\n%!" e; exit 2
 
 let split_filename name =
   let l = String.length name in

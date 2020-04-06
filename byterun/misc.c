@@ -107,10 +107,14 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
-
-CAMLexport void caml_fatal_error (const char *msg)
+CAMLexport void caml_fatal_error (char *msg, ...)
 {
-  fprintf (stderr, "%s", msg);
+  va_list ap;
+  va_start(ap, msg);
+  fprintf (stderr, "Fatal error: ");
+  vfprintf (stderr, msg, ap);
+  va_end(ap);
+  fprintf (stderr, "\n");
   exit(2);
 }
 

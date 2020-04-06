@@ -359,7 +359,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None;
+            type_is_newtype = false;
+            type_expansion_scope = None;
             type_attributes = [];
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
@@ -472,13 +473,15 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             then raise(Error(loc, initial_env, With_cannot_remove_constrained_type));
             fun s path -> Subst.add_type_function path ~params ~body s
        in
-       let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
+       let sub = Subst.change_locs Subst.identity loc in
+       let sub = List.fold_left how_to_extend_subst sub !real_ids in
        Subst.signature sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
+       let sub = Subst.change_locs Subst.identity loc in
        let sub =
          List.fold_left
            (fun s path -> Subst.add_module_path path real_path s)
-           Subst.identity
+           sub
            !real_ids
        in
        Subst.signature sub sg
@@ -541,8 +544,8 @@ let rec approx_modtype env smty =
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
       let arg = may_map (approx_modtype env) sarg in
-      let rarg = Mtype.scrape_for_functor_arg env (Btype.default_mty arg) in
-      let (id, newenv) = Env.enter_module ~arg:true param.txt rarg env in
+      let (id, newenv) =
+      Env.enter_module ~arg:true param.txt (Btype.default_mty arg) env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
   | Pmty_with(sbody, _constraints) ->
@@ -746,10 +749,6 @@ let rec transl_modtype env smty =
   Builtin_attributes.warning_scope smty.pmty_attributes
     (fun () -> transl_modtype_aux env smty)
 
-and transl_modtype_functor_arg env sarg =
-  let mty = transl_modtype env sarg in
-  {mty with mty_type = Mtype.scrape_for_functor_arg env mty.mty_type}
-
 and transl_modtype_aux env smty =
   let loc = smty.pmty_loc in
   match smty.pmty_desc with
@@ -766,7 +765,7 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_signature sg) (Mty_signature sg.sig_type) env loc
         smty.pmty_attributes
   | Pmty_functor(param, sarg, sres) ->
-      let arg = Misc.may_map (transl_modtype_functor_arg env) sarg in
+      let arg = Misc.may_map (transl_modtype env) sarg in
       let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
       let (id, newenv) =
         Env.enter_module ~arg:true param.txt (Btype.default_mty ty_arg) env in
@@ -841,11 +840,11 @@ and transl_signature env sg =
                 Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem,
               final_env
         | Psig_exception sext ->
-            check_name check_typext names sext.pext_name;
-            let (ext, newenv) = Typedecl.transl_exception env sext in
+            check_name check_typext names sext.ptyexn_constructor.pext_name;
+            let (ext, newenv) = Typedecl.transl_type_exception env sext in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception ext) env loc :: trem,
-            Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem,
+            Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception) :: rem,
             final_env
         | Psig_effect seff ->
             let (ext, newenv) = Typedecl.transl_effect env seff in
@@ -1385,8 +1384,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       wrap_constraint env false md (Mty_signature sg')
         Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
-      let mty = may_map (transl_modtype_functor_arg env) smty in
-      let ty_arg = Misc.may_map (fun m -> m.mty_type) mty in
+      let mty = may_map (transl_modtype env) smty in
+      let ty_arg = may_map (fun m -> m.mty_type) mty in
       let (id, newenv), funct_body =
         match ty_arg with None -> (Ident.create "*", env), false
         | Some mty -> Env.enter_module ~arg:true name.txt mty env, true in
@@ -1550,10 +1549,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
            tyext.tyext_constructors [],
          newenv)
     | Pstr_exception sext ->
-        check_name check_typext names sext.pext_name;
-        let (ext, newenv) = Typedecl.transl_exception env sext in
+        check_name check_typext names sext.ptyexn_constructor.pext_name;
+        let (ext, newenv) = Typedecl.transl_type_exception env sext in
         Tstr_exception ext,
-        [Sig_typext(ext.ext_id, ext.ext_type, Text_exception)],
+        [Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception)],
         newenv
     | Pstr_effect seff ->
         let (ext, newenv) = Typedecl.transl_effect env seff in
@@ -1810,7 +1809,8 @@ let type_module_type_of env smod =
                mod_loc = smod.pmod_loc }
     | _ -> type_module env smod
   in
-  let mty = Mtype.scrape_for_type_of ~remove_aliases env tmty.mod_type in
+  let mty = tmty.mod_type in
+  let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));

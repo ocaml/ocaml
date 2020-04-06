@@ -86,10 +86,16 @@ install::
 	fi
 	$(INSTALL_DATA) lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
+
 	$(INSTALL_DATA) \
-	  $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
+	  $(LIBNAME).cma $(CMIFILES) \
+	  "$(INSTALL_LIBDIR)/"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(CMIFILES:.cmi=.mli) \
           $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_LIBDIR)/"
+endif
 	if test -n "$(HEADERS)"; then \
 	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
 	fi

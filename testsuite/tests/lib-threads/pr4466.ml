@@ -2,10 +2,6 @@
 
 include systhreads
 
-* libunix (* Broken on Windows (missing join?), needs to be fixed *)
-** bytecode
-** native
-
 *)
 
 open Printf
@@ -33,10 +29,8 @@ let serve_connection s =
   done
 
 let server sock =
-  while true do
-    let (s, _) = Unix.accept sock in
-    ignore(Thread.create serve_connection s)
-  done
+  let (s, _) = Unix.accept sock in
+  ignore(Thread.create serve_connection s)
 
 let reader s =
   let buf = Bytes.make 16 ' ' in
@@ -59,7 +53,7 @@ let _ =
   Unix.bind serv addr;
   let addr = Unix.getsockname serv in
   Unix.listen serv 5;
-  ignore (Thread.create server serv);
+  let tserv = Thread.create server serv in
   Thread.delay 0.2;
   let client =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
@@ -78,4 +72,6 @@ let _ =
   let a = Thread.create reader client in
   Thread.delay 0.1;
   writer client "3333";
-  Thread.join a
+  Thread.join a;
+  (* Cleanup before exiting *)
+  Thread.join tserv
