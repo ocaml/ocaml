@@ -38,9 +38,6 @@ COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
-ifeq "$(FUNCTION_SECTIONS)" "true"
-OPTCOMPFLAGS += -function-sections
-endif
 
 LIBNAME=threads
 

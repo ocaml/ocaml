@@ -61,9 +61,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
-ifeq "$(FUNCTION_SECTIONS)" "true"
-OPTCOMPFLAGS += -function-sections
-endif
+
 LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
