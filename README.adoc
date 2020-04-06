@@ -88,13 +88,13 @@ Windows, see link:README.win32.adoc[].
 The OCaml manual is distributed in HTML, PDF, and Emacs
 Info files.  It is available at
 
-http://caml.inria.fr/pub/docs/manual-ocaml/
+https://ocaml.org/releases/latest/manual.html
 
 == Availability
 
 The complete OCaml distribution can be accessed at
 
-http://ocaml.org/docs/install.html
+https://ocaml.org/docs/install.html
 
 == Keeping in Touch with the Caml Community
 
@@ -107,6 +107,10 @@ You can subscribe and access list archives via the Web interface at
 
 https://sympa.inria.fr/sympa/subscribe/caml-list
 
+An alternative archive of the mailing list is also available at
+
+https://inbox.ocaml.org/
+
 You can also access a newer discussion forum at
 
 https://discuss.ocaml.org/
@@ -115,7 +119,7 @@ There also exist other mailing lists, chat channels, and various other forums
 around the internet for getting in touch with the OCaml and ML family language
 community. These can be accessed at
 
-http://ocaml.org/community/
+https://ocaml.org/community/
 
 In particular, the IRC channel `#ocaml` on https://freenode.net/[Freenode] has a
 long history and welcomes questions.
