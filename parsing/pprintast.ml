@@ -780,8 +780,9 @@ and extension ctxt f (s, e) =
 and item_extension ctxt f (s, e) =
   pp f "@[<2>[%%%%%s@ %a]@]" s.txt (payload ctxt) e
 
-and exception_declaration ctxt f ext =
-  pp f "@[<hov2>exception@ %a@]" (extension_constructor ctxt) ext
+and exception_declaration ctxt f x =
+  pp f "@[<hov2>exception@ %a@]%a" (extension_constructor ctxt) x.ptyexn_constructor
+    (item_attributes ctxt) x.ptyexn_attributes
 
 and effect_declaration ctxt f ext =
     pp f "@[<hov2>effect@ %a@]" (effect_constructor ctxt) ext

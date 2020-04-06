@@ -555,13 +555,13 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           transl_type_extension item.str_env rootpath tyext body, size
       | Tstr_exception ext ->
-          let id = ext.ext_id in
+          let id = ext.tyexn_constructor.ext_id in
           let path = field_path rootpath id in
           let body, size =
             transl_structure loc (id :: fields) cc rootpath final_env rem
           in
           Llet(Strict, Pgenval, id,
-               transl_extension_constructor item.str_env path ext, body),
+               transl_extension_constructor item.str_env path ext.tyexn_constructor, body),
           size
       | Tstr_effect ext ->
           let id = ext.ext_id in
@@ -739,8 +739,8 @@ let rec defined_idents = function
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ defined_idents rem
-    | Tstr_exception ext -> ext.ext_id :: defined_idents rem
     | Tstr_effect ext -> ext.ext_id :: defined_idents rem
+    | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: defined_idents rem
     | Tstr_module mb -> mb.mb_id :: defined_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
@@ -796,8 +796,8 @@ and all_idents = function
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ all_idents rem
-    | Tstr_exception ext -> ext.ext_id :: all_idents rem
     | Tstr_effect ext -> ext.ext_id :: all_idents rem
+    | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: all_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ all_idents rem
     | Tstr_modtype _ -> all_idents rem
@@ -885,11 +885,11 @@ let transl_store_structure glob map prims str =
             Lsequence(Lambda.subst subst lam,
                       transl_store rootpath (add_idents false ids subst) rem)
         | Tstr_exception ext ->
-            let id = ext.ext_id in
+            let id = ext.tyexn_constructor.ext_id in
             let path = field_path rootpath id in
-            let lam = transl_extension_constructor item.str_env path ext in
+            let lam = transl_extension_constructor item.str_env path ext.tyexn_constructor in
             Lsequence(Llet(Strict, Pgenval, id, Lambda.subst subst lam,
-                           store_ident ext.ext_loc id),
+                           store_ident ext.tyexn_constructor.ext_loc id),
                       transl_store rootpath (add_ident false id subst) rem)
         | Tstr_effect ext ->
             let id = ext.ext_id in
@@ -1092,28 +1092,30 @@ let transl_store_structure glob map prims str =
 
 let build_ident_map restr idlist more_ids =
   let rec natural_map pos map prims = function
-      [] ->
+    | [] ->
         (map, prims, pos)
     | id :: rem ->
-        natural_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) prims rem in
+        natural_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) prims rem
+  in
   let (map, prims, pos) =
     match restr with
-        Tcoerce_none ->
-          natural_map 0 Ident.empty [] idlist
-      | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
-              (* ignore _id_pos_list as the ids are already bound *)
+    | Tcoerce_none ->
+        natural_map 0 Ident.empty [] idlist
+    | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
+        (* ignore _id_pos_list as the ids are already bound *)
         let idarray = Array.of_list idlist in
         let rec export_map pos map prims undef = function
-        [] ->
-          natural_map pos map prims undef
+          | [] ->
+              natural_map pos map prims undef
           | (_source_pos, Tcoerce_primitive p) :: rem ->
-            export_map (pos + 1) map ((pos, p) :: prims) undef rem
+              export_map (pos + 1) map ((pos, p) :: prims) undef rem
           | (source_pos, cc) :: rem ->
-            let id = idarray.(source_pos) in
-            export_map (pos + 1) (Ident.add id (pos, cc) map)
-              prims (list_remove id undef) rem
-        in export_map 0 Ident.empty [] idlist pos_cc_list
-      | _ ->
+              let id = idarray.(source_pos) in
+              export_map (pos + 1) (Ident.add id (pos, cc) map)
+                prims (list_remove id undef) rem
+        in
+        export_map 0 Ident.empty [] idlist pos_cc_list
+    | _ ->
         fatal_error "Translmod.build_ident_map"
   in
   natural_map pos map prims more_ids
@@ -1219,9 +1221,9 @@ let transl_toplevel_item item =
         transl_type_extension item.str_env None tyext
           (make_sequence toploop_setvalue_id idents)
   | Tstr_exception ext ->
-      set_toplevel_unique_name ext.ext_id;
-      toploop_setvalue ext.ext_id
-        (transl_extension_constructor item.str_env None ext)
+      set_toplevel_unique_name ext.tyexn_constructor.ext_id;
+      toploop_setvalue ext.tyexn_constructor.ext_id
+        (transl_extension_constructor item.str_env None ext.tyexn_constructor)
   | Tstr_effect ext ->
       set_toplevel_unique_name ext.ext_id;
       toploop_setvalue ext.ext_id

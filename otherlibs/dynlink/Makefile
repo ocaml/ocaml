@@ -40,7 +40,7 @@ endif
 OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
-  ../../utils/misc.cmo ../../utils/config.cmo \
+  ../../utils/config.cmo ../../utils/misc.cmo \
   ../../utils/identifiable.cmo ../../utils/numbers.cmo \
   ../../utils/arg_helper.cmo ../../utils/clflags.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \
@@ -92,8 +92,13 @@ extract_crc: dynlink.cma extract_crc.cmo
 
 install:
 	$(INSTALL_DATA) \
-	  dynlink.cmi dynlink.cmti dynlink.cma dynlink.mli \
+	  dynlink.cmi dynlink.cma \
 	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  dynlink.cmti dynlink.mli \
+	  "$(INSTALL_LIBDIR)"
+endif
 	$(INSTALL_PROG) \
 	  extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
 

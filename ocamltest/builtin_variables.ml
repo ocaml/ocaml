@@ -22,89 +22,95 @@
   should be similar. Is there a way to enforce this?
 *)
 
-open Variables (* Should not be necessary with a ppx *)
-
-let arguments = make ("arguments",
+let arguments = Variables.make ("arguments",
   "Arguments passed to executed programs and scripts")
 
-let cwd = make ("cwd",
+let cwd = Variables.make ("cwd",
   "Used to change current working directory, but not updated")
 
-let exit_status = make ("exit_status",
+let commandline = Variables.make ("commandline",
+  "Specify the commandline of a tool")
+
+let exit_status = Variables.make ("exit_status",
   "Expected program exit status")
 
-let files = make ("files",
+let files = Variables.make ("files",
   "Files used by the tests")
 
-let ocamltest_response = make ("ocamltest_response",
+let make = Variables.make ("MAKE",
+  "Command used to invoke make")
+
+let ocamltest_response = Variables.make ("ocamltest_response",
   "File used by hooks to send back information.")
 
-let ocamltest_log = make ("ocamltest_log",
+let ocamltest_log = Variables.make ("ocamltest_log",
   "Path to log file for the current test")
 
-let output = make ("output",
+let output = Variables.make ("output",
   "Where the output of executing the program is saved")
 
-let program = make ("program",
+let program = Variables.make ("program",
   "Name of program produced by ocamlc.byte and ocamlopt.byte")
-let program2 = make ("program2",
+let program2 = Variables.make ("program2",
   "Name of program produced by ocamlc.opt and ocamlopt.opt")
 
-let promote = make ("promote",
+let promote = Variables.make ("promote",
   "Set to \"true\" to overwrite reference files with the test output")
 
-let reason = make ("reason",
+let reason = Variables.make ("reason",
   "Let a test report why it passed/skipped/failed.")
 
-let reference = make ("reference",
+let reference = Variables.make ("reference",
   "Path of file to which program output should be compared")
 
 let skip_header_lines =
-  make ( "skip_header_lines",
+  Variables.make ( "skip_header_lines",
          "The number of lines to skip when comparing program output \
           with the reference file")
 
 let skip_header_bytes =
-  make ( "skip_header_bytes",
+  Variables.make ( "skip_header_bytes",
          "The number of bytes to skip when comparing program output \
           with the reference file")
 
-let script = make ("script",
+let script = Variables.make ("script",
   "External script to run")
 
-let stdin = make ("stdin", "Default standard input")
-let stdout = make ("stdout", "Default standard output")
-let stderr = make ("stderr", "Default standard error")
+let stdin = Variables.make ("stdin", "Default standard input")
+let stdout = Variables.make ("stdout", "Default standard output")
+let stderr = Variables.make ("stderr", "Default standard error")
 
-let test_build_directory = make ("test_build_directory",
+let test_build_directory = Variables.make ("test_build_directory",
   "Directory for files produced during a test")
 
-let test_build_directory_prefix = make ("test_build_directory_prefix",
+let test_build_directory_prefix = Variables.make ("test_build_directory_prefix",
   "Directory under which all test directories should be created")
 
-let test_file = make ("test_file",
+let test_file = Variables.make ("test_file",
   "Name of file containing the specification of which tests to run")
 
-let test_source_directory = make ("test_source_directory",
+let test_source_directory = Variables.make ("test_source_directory",
   "Directory containing the test source files")
 
-let test_pass = make ("TEST_PASS",
+let test_pass = Variables.make ("TEST_PASS",
   "Exit code to let a script report success")
 
-let test_skip = make ("TEST_SKIP",
+let test_skip = Variables.make ("TEST_SKIP",
   "Exit code to let a script report skipping")
 
-let test_fail = make ("TEST_FAIL",
+let test_fail = Variables.make ("TEST_FAIL",
   "Exit code to let a script report failure")
 
 
 
-let _ = List.iter register_variable
+let _ = List.iter Variables.register_variable
   [
     arguments;
     cwd;
+    commandline;
     exit_status;
     files;
+    make;
     ocamltest_response;
     ocamltest_log;
     output;

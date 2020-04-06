@@ -153,6 +153,9 @@ RANLIBCMD=ranlib
 # On Solaris:
 #ASPP=as -P
 
+### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
+#INSTALL_BYTECODE_PROGRAMS=true
+
 ### Extra flags to use for assembling .S files in profiling mode
 #ASPPPROFFLAGS=-DPROFILING
 

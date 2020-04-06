@@ -21,6 +21,66 @@ val f : 'a list -> 'a fold = <fun>
 - : int = 6
 |}];;
 
+type pty = {pv : 'a. 'a list};;
+[%%expect {|
+type pty = { pv : 'a. 'a list; }
+|}];;
+
+
+let px = {pv = []};;
+[%%expect {|
+val px : pty = {pv = []}
+|}];;
+
+match px with
+| {pv=[]} -> "OK"
+| {pv=5::_} -> "int"
+| {pv=true::_} -> "bool"
+;;
+[%%expect {|
+Line _, characters 0-77:
+  match px with
+  | {pv=[]} -> "OK"
+  | {pv=5::_} -> "int"
+  | {pv=true::_} -> "bool"
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{pv=false::_}
+- : string = "OK"
+|}];;
+
+match px with
+| {pv=[]} -> "OK"
+| {pv=true::_} -> "bool"
+| {pv=5::_} -> "int"
+;;
+[%%expect {|
+Line _, characters 0-77:
+  match px with
+  | {pv=[]} -> "OK"
+  | {pv=true::_} -> "bool"
+  | {pv=5::_} -> "int"
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{pv=0::_}
+- : string = "OK"
+|}];;
+
+match px with
+| {pv=[]} -> "OK"
+| {pv=5::_} -> "int"
+| {pv=true::_} -> "bool"
+| {pv=false::_} -> "bool"
+;;
+[%%expect {|
+- : string = "OK"
+|}];;
+
+fun {pv=v} -> true::v, 1::v;;
+[%%expect {|
+- : pty -> bool list * int list = <fun>
+|}];;
+
 class ['b] ilist l = object
   val l = l
   method add x = {< l = x :: l >}

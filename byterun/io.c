@@ -47,6 +47,11 @@
 #define SEEK_END 2
 #endif
 
+#if defined(_WIN32)
+#include <io.h>
+#define lseek _lseeki64
+#endif
+
 /* List of opened channels */
 CAMLexport struct channel * caml_all_opened_channels = NULL;
 

@@ -64,6 +64,7 @@ type mapper = {
   typ: mapper -> T.core_type -> core_type;
   type_declaration: mapper -> T.type_declaration -> type_declaration;
   type_extension: mapper -> T.type_extension -> type_extension;
+  type_exception: mapper -> T.type_exception -> type_exception;
   type_kind: mapper -> T.type_kind -> type_kind;
   value_binding: mapper -> T.value_binding -> value_binding;
   value_description: mapper -> T.value_description -> value_description;
@@ -153,10 +154,10 @@ let structure_item sub item =
         Pstr_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tstr_typext tyext ->
         Pstr_typext (sub.type_extension sub tyext)
-    | Tstr_exception ext ->
-        Pstr_exception (sub.extension_constructor sub ext)
     | Tstr_effect ext ->
         Pstr_effect (sub.effect_constructor sub ext)
+    | Tstr_exception ext ->
+        Pstr_exception (sub.type_exception sub ext)
     | Tstr_module mb ->
         Pstr_module (sub.module_binding sub mb)
     | Tstr_recmodule list ->
@@ -249,6 +250,11 @@ let type_extension sub tyext =
     ~priv:tyext.tyext_private
     (map_loc sub tyext.tyext_txt)
     (List.map (sub.extension_constructor sub) tyext.tyext_constructors)
+
+let type_exception sub tyexn =
+  let attrs = sub.attributes sub tyexn.tyexn_attributes in
+  Te.mk_exception ~attrs
+    (sub.extension_constructor sub tyexn.tyexn_constructor)
 
 let extension_constructor sub ext =
   let loc = sub.location sub ext.ext_loc in
@@ -536,10 +542,10 @@ let signature_item sub item =
         Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tsig_typext tyext ->
         Psig_typext (sub.type_extension sub tyext)
-    | Tsig_exception ext ->
-        Psig_exception (sub.extension_constructor sub ext)
     | Tsig_effect ext ->
         Psig_effect (sub.effect_constructor sub ext)
+    | Tsig_exception ext ->
+        Psig_exception (sub.type_exception sub ext)
     | Tsig_module md ->
         Psig_module (sub.module_declaration sub md)
     | Tsig_recmodule list ->
@@ -834,6 +840,7 @@ let default_mapper =
     type_kind = type_kind;
     typ = core_type;
     type_extension = type_extension;
+    type_exception = type_exception;
     extension_constructor = extension_constructor;
     effect_constructor = effect_constructor;
     value_description = value_description;

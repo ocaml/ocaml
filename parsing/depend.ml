@@ -166,6 +166,9 @@ let add_type_extension bv te =
   add bv te.ptyext_path;
   List.iter (add_extension_constructor bv) te.ptyext_constructors
 
+let add_type_exception bv te =
+  add_extension_constructor bv te.ptyexn_constructor
+
 let rec add_class_type bv cty =
   match cty.pcty_desc with
     Pcty_constr(l, tyl) ->
@@ -357,10 +360,10 @@ and add_sig_item (bv, m) item =
       List.iter (add_type_declaration bv) dcls; (bv, m)
   | Psig_typext te ->
       add_type_extension bv te; (bv, m)
-  | Psig_exception pext ->
-      add_extension_constructor bv pext; (bv, m)
   | Psig_effect peff ->
       add_effect_constructor bv peff; (bv, m)
+  | Psig_exception te ->
+      add_type_exception bv te; (bv, m)
   | Psig_module pmd ->
       let m' = add_modtype_binding bv pmd.pmd_type in
       let add = StringMap.add pmd.pmd_name.txt m' in
@@ -439,10 +442,12 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
   | Pstr_typext te ->
       add_type_extension bv te;
       (bv, m)
-  | Pstr_exception pext ->
-      add_extension_constructor bv pext; (bv, m)
   | Pstr_effect peff ->
-      add_effect_constructor bv peff; (bv, m)
+      add_effect_constructor bv peff;
+      (bv, m)
+  | Pstr_exception te ->
+      add_type_exception bv te;
+      (bv, m)
   | Pstr_module x ->
       let b = add_module_binding bv x.pmb_expr in
       let add = StringMap.add x.pmb_name.txt b in

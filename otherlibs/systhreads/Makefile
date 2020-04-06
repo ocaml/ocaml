@@ -124,9 +124,14 @@ install:
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
 	mkdir -p "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) \
-	  $(CMIFILES) $(CMIFILES:.cmi=.cmti) threads.cma \
+	  $(CMIFILES) threads.cma \
+	  "$(INSTALL_THREADSLIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_LIBDIR)"
+endif
 	$(INSTALL_DATA) threads.h "$(INSTALL_LIBDIR)/caml"
 
 installopt:

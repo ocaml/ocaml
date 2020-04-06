@@ -1,3 +1,8 @@
+(* TEST
+files = "main.c"
+arguments = "-DINT_INT -DFUN=catch_exit main.c"
+* asmgen
+*)
 
 (function "catch_exit" (b:int)
   (+ 33

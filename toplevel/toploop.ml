@@ -459,7 +459,6 @@ let _ =
   if !Sys.interactive then (* PR#6108 *)
     invalid_arg "The ocamltoplevel.cma library from compiler-libs \
                  cannot be loaded inside the OCaml toplevel";
-  Clflags.debug := true;
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path false;
@@ -503,6 +502,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
+  Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
     fprintf ppf "        OCaml version %s@.@." Config.version;

@@ -82,6 +82,9 @@ let print_DEBUG s = print_string s; print_newline ()
 %token EOF
 %token <string> Char
 
+%nonassoc below_Char
+%nonassoc Char
+
 /* Start Symbols */
 %start main located_element_list
 %type <Odoc_types.text> main
@@ -177,7 +180,6 @@ text_element:
 list:
 | string { [] (* TODO: a test to check that there is only space characters *) }
 | string list { $2 }
-| list string  { $1 }
 | item { [ $1 ] }
 | item list { $1 :: $2 }
 
@@ -207,7 +209,7 @@ shortcut_enum2:
 
 
 string:
-    Char { $1 }
+    Char %prec below_Char { $1 }
 | Char string { $1^$2 }
 ;
 

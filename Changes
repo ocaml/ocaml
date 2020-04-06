@@ -1,38 +1,118 @@
-OCaml 4.07.1 (4 October 2018)
------------------------------
+Working version
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+- GRP#1705: Allow @@attributes on exceptions
+  (Hugo Heuzard, review by Gabriel Radanne and Thomas Refis)
+
+### Type system:
+
+### Standard library:
+
+- MPR#7795, GPR#1782: Fix off-by-one error in Weak.create
+  (KC Sivaramakrishnan)
+
+- GPR#1731: Format, use raise_notrace to preserve backtraces
+  (Frédéric Bour, report by Jules Villard, review by Gabriel Scherer)
+
+- GPR#1792, MPR#7794: Add Unix.open_process_args{,_in,_out,_full} similar to
+  Unix.open_process{,_in,_out,_full}, but passing an explicit argv array.
+  (Nicolás Ojeda Bär, review by Jérémie Dimino, request by Volker Diels-Grabsch)
+
+- GPR#1182: Add new Printf formats %#d %#Ld %#ld %#nd (idem for %i and %u) for
+  alternative integer formatting.
+  (ygrek, review by Gabriel Scherer)
+
+### Other libraries:
+
+### Compiler user-interface and warnings:
+
+- MPR#7116, GPR#1430: new -config-var option
+  to get the value of a single configuration variable in scripts
+  (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
+   request by Adrien Nader)
+
+- GPR#1733: change the perspective of the unexpected existential error message
+  (Florian Angeletti, review by Gabriel Scherer and Jeremy Yallop)
+
+- GPR#1720: Improve error reporting for missing 'rec' in let-bindings
+  (Arthur Charguéraud and Armaël Guéneau, with help and advice
+   from Gabriel Scherer, Frédéric Bour, Xavier Clerc and Leo White)
+
+- GPR#1737: Update locations during destructive substitutions
+  (Thomas Refis, review by Gabriel Radanne)
+
+- GPR#1748: do not error when instantiating polymorphic fields in patterns
+  (Thomas Refis, review by Gabriel Scherer)
+
+### Code generation and optimizations:
+
+- MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values
+  (Stephen Dolan)
+
+- GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
+  sign-extension operations
+  (LemonBoy, review by Alain Frisch and Xavier Leroy)
+
+### Runtime system:
+
+- GPR#1793: add the -m and -M command-line options to ocamlrun
+  (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
+
+- GPR#1723: Remove internal Meta.static_{alloc,free} primitives.
+  (Stephen Dolan, review by Gabriel Scherer)
+
+### Tools:
+
+- GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
+  modules to open as if they had been passed via the command line -open flag.
+  (Nicolás Ojeda Bär, review by Mark Shinwell)
+
+### Manual and documentation:
+
+- GPR#1788: move the quoted string description to the main chapters
+  (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
+
+### Compiler distribution build system:
+
+- GPR#1776: add -no-install-bytecode-programs and related configure options to
+  control (non-)installation of ".byte" executables
+  (Mark Shinwell, review by Sébastien Hinderer and Gabriel Scherer)
+
+- GPR#1777: add -no-install-source-artifacts and related configure options to
+  control installation of .cmt, .cmti, .mli and .ml files
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Sébastien Hinderer)
+
+- GPR#1781: cleanup of the manual's build process
+  (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
+
+- GPR#1797: remove the deprecated Makefile.nt files
+  (Sébastien Hinderer, review by Nicolas Ojeda Bar)  
+
+### Internal/compiler-libs changes:
+
+- GPR#1745: do not generalize the type of every sub-pattern, only of variables
+  (Thomas Refis, review by Leo White)
+
+- GPR#1746: remove unreachable error variant: Make_seltype_nongen
+  (Florian Angeletti, review by Gabriel Radanne)
+
+- GPR#1747: type_cases: always propagate
+  (Thomas Refis, review by Jacques Garrigue)
 
 ### Bug fixes:
 
-- MPR#7815, GPR#1896: major GC crash with first-fit policy
-  (Stephen Dolan and Damien Doligez, report by Joris Giovannangeli)
+- GPR#1719: fix Pervasives.LargeFile functions under Windows
+  (Alain Frisch)
 
-* MPR#7818, GPR#2051: Remove local aliases in functor argument types,
-  to prevent the aliasing of their target.
-  (Jacques Garrigue, report by mandrykin, review by Leo White)
+- GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
+  (David Allsopp, review by Sébastien Hinderer)
 
-- MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
-  permutation of one cell to the right on the sequence.
-  (Thierry Martinez, review by Nicolás Ojeda Bär)
-
-- MPR#7821, GPR#1908: make sure that the compilation of extension
-  constructors doesn't cause the compiler to load more cmi files
-  (Jérémie Dimino)
-
-- MPR#7824, GPR#1914: subtype_row: filter out absent fields when row is closed
-  (Leo White and Thomas Refis, report by talex, review by Jacques Garrigue)
-
-- GPR#1915: rec_check.ml is too permissive for certain class declarations.
-  (Alban Reynaud with Gabriel Scherer, review by Jeremy Yallop)
-
-- MPR#7833, MPR#7835, MPR#7822, GPR#1997: Track newtype level again
-  (Leo White, reports by Jerome Simeon, Thomas Refis and Florian
-  Angeletti, review by Jacques Garrigue)
-
-- MPR#7838: -principal causes assertion failure in type checker
-  (Jacques Garrigue, report by Markus Mottl, review by Thomas Refis)
-
-OCaml 4.07.0 (10 July 2018)
----------------------------
+OCaml 4.07
+----------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -44,14 +124,61 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1546: Allow empty variants
   (Runhang Li, review by Gabriel Radanne and Jacques Garrigue)
 
+### Type system:
+
+- MPR#7767, GPR#1712: restore legacy treatment of partially-applied
+  labeled functions in 'let rec' bindings.
+  (Jeremy Yallop, report by Ivan Gotovchits, review by Gabriel Scherer)
+
+- MPR#7611, GPR#1491: reject the use of generative functors as applicative
+  (Valentin Gatien-Baron)
+
+- MPR#7706, GPR#1565: in recursive value declarations, track
+  static size of locally-defined variables
+  (Gabriel Scherer, review by Jeremy Yallop and Leo White, report by Leo White)
+
+- MPR#7717, GPR#1593: in recursive value declarations, don't treat
+  unboxed constructor size as statically known
+  (Jeremy Yallop, report by Pierre Chambart, review by Gabriel Scherer)
+
+- GPR#1469: Use the information from [@@immediate] annotations when
+  computing whether a type can be [@@unboxed]
+  (Damien Doligez, report by Stephan Muenzel, review by Alain Frisch)
+
+- GPR#1516: Allow float array construction in recursive bindings
+  when configured with -no-flat-float-array
+  (Jeremy Yallop, report by Gabriel Scherer)
+
+- GPR#1468: Do not enrich type_decls with incoherent manifests
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
+- GPR#1583: propagate refined ty_arg to Parmatch checks
+  (Thomas Refis, review by Jacques Garrigue)
+
+- GPR#1513: Allow compilation units to shadow sub-modules of Pervasives.
+  For instance users can now use a largeFile.ml file in their project.
+  (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel Radanne)
+
+- GPR#1609: Changes to ambivalence scope tracking
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
+- GPR#1628: Treat reraise and raise_notrace as nonexpansive.
+  (Leo White, review by Alain Frisch)
+
+* GPR#1652, MPR#7787, GPR#1743: Don't remove module aliases in `module type of`
+  and `with module`.
+  The old behaviour can be obtained using the `[@remove_aliases]` attribute.
+  (Leo White and Thomas Refis, review by Jacques Garrigue)
+
+* GPR#1778: Fix Soundness bug with non-generalized type variable and
+  local modules.  This is the same bug as MPR#7414, but using local
+  modules instead of non-local ones.
+  (Leo White, review by Jacques Garrigue)
+
 ### Standard library:
 
 - MPR#4170, GPR#1674: add the constant `Float.pi`.
   (Christophe Troestler, review by Damien Doligez)
-
-- MPR#6139, GPR#1685: Move the Bigarray module to the standard library. Keep the
-  bigarray library as on overlay adding the deprecated map_file functions
-  (Jérémie Dimino, review by Mark Shinwell)
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
   with very large values of the exponent.
@@ -61,25 +188,20 @@ OCaml 4.07.0 (10 July 2018)
   Also add `{to,of}_seq` to several standard modules.
   (Simon Cruanes, review by Alain Frisch and François Bobot)
 
-* GPR#1010: pack all standard library modules into a single module Stdlib
-  which is the default opened module (Stdlib itself includes Pervasives) to free
-  up the global namespace for other standard libraries, while still allowing any
-  OCaml standard library module to be referred to as Stdlib.Module). This is
-  implemented efficiently using module aliases (prefixing all modules with
-  Stdlib__, e.g. Stdlib__string).
-  (Jérémie Dimino, David Allsopp and Florian Angeletti, review by David Allsopp
-   and Gabriel Radanne)
-
-- GPR#1637: String.escaped is faster and does not allocate when called with a
+- GPR#1637: String.escaped is faster does and not allocate when called with a
   string that does not contain any characters needing to be escaped.
   (Alain Frisch, review by Xavier Leroy and Gabriel Scherer)
 
-- GPR#1638: add a Float module.
+- GPR#1638: add Float module.
   (Nicolás Ojeda Bär, review by Alain Frisch and Jeremy Yallop)
 
 - GPR#1697: Tune [List.init] tailrec threshold so that it does not stack overflow
   when compiled with the Js_of_ocaml backend.
   (Hugo Heuzard, reviewed by Gabriel Scherer)
+
+- MPR#6139, GPR#1685: Move the Bigarray module to the standard library. Keep the
+  bigarray library as on overlay adding the deprecated map_file functions
+  (Jérémie Dimino, review by Mark Shinwell)
 
 ### Other libraries:
 
@@ -102,7 +224,6 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1533: (a) The implementation of Thread.yield for system thread
   now uses nanosleep(1) for enabling better preemption.
   (b) Thread.delay is now an alias for Unix.sleepf.
-  (Jacques-Henri Jourdan, review by Xavier Leroy and David Allsopp)
 
 ### Compiler user-interface and warnings:
 
@@ -162,9 +283,6 @@ OCaml 4.07.0 (10 July 2018)
   emitted by the bytecode compiler appear more in-order than before.
   (Luc Maranget, advice and review by Damien Doligez)
 
-- GPR#1806: add linscan to OCAMLPARAM options
-  (Raja Boujbel)
-
 ### Code generation and optimizations:
 
 - MPR#7630, GPR#1401: Faster compilation of large modules with Flambda.
@@ -189,10 +307,6 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1487: Treat negated float comparisons more directly
   (Leo White, review by Xavier Leroy)
 
-- GPR#1573: emitcode: merge events after instructions reordering
-  (Thomas Refis and Leo White, with help from David Allsopp, review by Frédéric
-  Bour)
-
 - GPR#1606: Simplify the semantics of Lambda.free_variables and Lambda.subst,
   including some API changes in bytecomp/lambda.mli
   (Pierre Chambart, review by Gabriel Scherer)
@@ -203,17 +317,6 @@ OCaml 4.07.0 (10 July 2018)
 
 * GPR#1617: Make string/bytes distinguishable in the bytecode.
   (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
-
-- GPR#1627: Reduce cmx sizes by sharing variable names (Flambda only)
-  (Fuyong Quah, Leo White, review by Xavier Clerc)
-
-- GPR#1665: reduce the size of cmx files in classic mode by droping the
-  bodies of functions that will not be inlined
-  (Fuyong Quah, review by Leo White and Pierre Chambart)
-
-- GPR#1666: reduce the size of cmx files in classic mode by droping the
-  bodies of functions that cannot be reached from the module block
-  (Fuyong Quah, review by Leo White and Pierre Chambart)
 
 - GPR#1686: Turn off by default flambda invariants checks.
   (Pierre Chambart)
@@ -283,16 +386,16 @@ OCaml 4.07.0 (10 July 2018)
   cyclic dependencies
   (Xavier Leroy, report by Mantis user baileyparker)
 
-- GPR#1537: boot/ocamldep is no longer included in the source distribution;
-  boot/ocamlc -depend can be used in its place.
-  (Nicolás Ojeda Bär, review by Xavier Leroy and Damien Doligez)
-
 - GPR#1585: optimize output of "ocamllex -ml"
   (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
 
 - GPR#1667: add command-line options -no-propt, -no-version, -no-time,
   -no-breakpoint and -topdirs-path to ocamldebug
   (Sébastien Hinderer, review by Damien Doligez)
+
+- GPR#1537: boot/ocamldep is no longer included in the source distribution;
+  boot/ocamlc -depend can be used in its place.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Damien Doligez)
 
 - GPR#1695: add the -null-crc command-line option to ocamlobjinfo.
   (Sébastien Hinderer, review by David Allsopp and Gabriel Scherer)
@@ -339,69 +442,17 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1765: manual, ellipsis in code examples
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- GPR#1779: integrate the Bigarray documentation into the main manual.
+  (Perry E. Metzger, review by Florian Angeletti and Xavier Clerc)
+
 - GPR#1767: change html manual to use relative font sizes
   (Charles Chamberlain, review by Daniel Bünzli, Perry E. Metzger,
   Josh Berdine, and Gabriel Scherer)
 
-- GPR#1779: integrate the Bigarray documentation into the main manual.
-  (Perry E. Metzger, review by Florian Angeletti and Xavier Clerc)
-
-### Type system:
-
-- MPR#7611, GPR#1491: reject the use of generative functors as applicative
-  (Valentin Gatien-Baron)
-
-- MPR#7706, GPR#1565: in recursive value declarations, track
-  static size of locally-defined variables
-  (Gabriel Scherer, review by Jeremy Yallop and Leo White, report by Leo White)
-
-- MPR#7717, GPR#1593: in recursive value declarations, don't treat
-  unboxed constructor size as statically known
-  (Jeremy Yallop, report by Pierre Chambart, review by Gabriel Scherer)
-
-- MPR#7767, GPR#1712: restore legacy treatment of partially-applied
-  labeled functions in 'let rec' bindings.
-  (Jeremy Yallop, report by Ivan Gotovchits, review by Gabriel Scherer)
-
-* MPR#7787, GPR#1652, GPR#1743: Don't remove module aliases in `module type of`
-  and `with module`.
-  The old behaviour can be obtained using the `[@remove_aliases]` attribute.
-  (Leo White and Thomas Refis, review by Jacques Garrigue)
-
-- GPR#1468: Do not enrich type_decls with incoherent manifests
-  (Thomas Refis and Leo White, review by Jacques Garrigue)
-
-- GPR#1469: Use the information from [@@immediate] annotations when
-  computing whether a type can be [@@unboxed]
-  (Damien Doligez, report by Stephan Muenzel, review by Alain Frisch)
-
-- GPR#1513: Allow compilation units to shadow sub-modules of Pervasives.
-  For instance users can now use a largeFile.ml file in their project.
-  (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel Radanne)
-
-- GPR#1516: Allow float array construction in recursive bindings
-  when configured with -no-flat-float-array
-  (Jeremy Yallop, report by Gabriel Scherer)
-
-- GPR#1583: propagate refined ty_arg to Parmatch checks
-  (Thomas Refis, review by Jacques Garrigue)
-
-- GPR#1609: Changes to ambivalence scope tracking
-  (Thomas Refis and Leo White, review by Jacques Garrigue)
-
-- GPR#1628: Treat reraise and raise_notrace as nonexpansive.
-  (Leo White, review by Alain Frisch)
-
-* GPR#1778: Fix Soundness bug with non-generalized type variable and
-  local modules.  This is the same bug as MPR#7414, but using local
-  modules instead of non-local ones.
-  (Leo White, review by Jacques Garrigue)
-
 ### Compiler distribution build system
 
-- MPR#5219, GPR#1680, GPR#1877: use 'install' instead of 'cp'
-  in install scripts.
-  (Gabriel Scherer, review by Sébastien Hinderer and Valentin Gatien-Baron)
+- MPR#5219, GPR#1680: use 'install' instead of 'cp' in install scripts
+  (Gabriel Scherer, review by Sébastien Hinderer)
 
 - MPR#7679: make sure .a files are erased before calling ar rc, otherwise
   leftover .a files from an earlier compilation may contain unwanted modules
@@ -440,6 +491,10 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1567: register all idents relevant for reraise
   (Thomas Refis, review by Alain Frisch and Frédéric Bour)
 
+- GPR#1573: emitcode: merge events after instructions reordering
+  (Thomas Refis and Leo White, with help from David Allsopp, review by Frédéric
+  Bour)
+
 - GPR#1586: testsuite: 'make promote' for ocamltest tests
   (The new "-promote" option for ocamltest is experimental
   and subject to change/removal).
@@ -451,12 +506,23 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1621: expect_test: make sure to not use the installed stdlib
   (Jérémie Dimino, review by Thomas Refis)
 
+- GPR#1627: Reduce cmx sizes by sharing variable names (Flambda only)
+  (Fuyong Quah, Leo White, review by Xavier Clerc)
+
 - GPR#1646 : add ocamldoc test to ocamltest and
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
 - GPR#1663: refactor flambda specialise/inlining handling
   (Leo White and Xavier Clerc, review by Pierre Chambart)
+
+- GPR#1665: reduce the size of cmx files in classic mode by droping the
+  bodies of functions that will not be inlined
+  (Fuyong Quah, review by Leo White and Pierre Chambart)
+
+- GPR#1666: reduce the size of cmx files in classic mode by droping the
+  bodies of functions that cannot be reached from the module block
+  (Fuyong Quah, review by Leo White and Pierre Chambart)
 
 - GPR#1679 : remove Pbittest from primitives in lambda
   (Hugo Heuzard, review by Mark Shinwell)
@@ -542,11 +608,6 @@ OCaml 4.07.0 (10 July 2018)
   ignored when used on streams based on input channels.
   (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
-- MPR#7793, GPR#1766: the toplevel #use directive now accepts sequences of ';;'
-  tokens. This fixes a bug in which certain files accepted by the compiler were
-  rejected by ocamldep.
-  (Nicolás Ojeda Bär, report by Hugo Heuzard, review by Hugo Heuzard)
-
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
@@ -588,23 +649,14 @@ OCaml 4.07.0 (10 July 2018)
   if available
   (Xavier Leroy, review by Max Mouratov)
 
+- MPR#7793, GPR#1766: the toplevel #use directive now accepts sequences of ';;'
+  tokens. This fixes a bug in which certain files accepted by the compiler were
+  rejected by ocamldep.
+  (Nicolás Ojeda Bär, report by Hugo Heuzard, review by Hugo Heuzard)
+
 - GPR#1774: ocamlopt for ARM could generate VFP loads and stores with bad
   offsets, rejected by the assembler.
   (Xavier Leroy, review by Mark Shinwell)
-
-- GPR#1808: handle `[@inlined]` attributes under a module constraint
-  (Xavier Clerc, review by Leo White)
-
-- GPR#1810: use bit-pattern comparison when meeting float approximations
-  (Xavier Clerc, report by Christophe Troestler, review by Nicolás Ojeda Bär
-   and Gabriel Scherer)
-
-- GPR#1835: Fix off-by-one errors in Weak.get_copy and Weak.blit
-  (KC Sivaramakrishnan)
-
-- GPR#1849: bug in runtime function generic_final_minor_update()
-  that could lead to crashes when Gc.finalise_last is used
-  (report and fix by Yuriy Vostrikov, review by François Bobot)
 
 
 OCaml 4.06.1 (16 Feb 2018):
@@ -1606,6 +1658,15 @@ OCaml 4.05.0 (13 Jul 2017):
   an explicit backtrace
   (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
    Frédéric Bour)
+
+* GPR#1010: pack all standard library modules into a single module Stdlib
+  which is the default opened module (Stdlib itself includes Pervasives) to free
+  up the global namespace for other standard libraries, while still allowing any
+  OCaml standard library module to be referred to as Stdlib.Module). This is
+  implemented efficiently using module aliases (prefixing all modules with
+  Stdlib__, e.g. Stdlib__string).
+  (Jérémie Dimino, David Allsopp and Florian Angeletti, review by David Allsopp
+   and Gabriel Radanne)
 
 ### Manual and documentation:
 

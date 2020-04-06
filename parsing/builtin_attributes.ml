@@ -62,11 +62,22 @@ let rec error_of_extension ext =
 let cat s1 s2 =
   if s2 = "" then s1 else s1 ^ "\n" ^ s2
 
-let rec deprecated_of_attrs = function
+let deprecated_attr x =
+  match x with
+  | ({txt = "ocaml.deprecated"|"deprecated"; _},_) -> Some x
+  | _ -> None
+
+let rec deprecated_attrs = function
   | [] -> None
-  | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) :: _ ->
-      Some (string_of_opt_payload p)
-  | _ :: tl -> deprecated_of_attrs tl
+  | hd :: tl ->
+    match deprecated_attr hd with
+    | Some x -> Some x
+    | None -> deprecated_attrs tl
+
+let deprecated_of_attrs l =
+  match deprecated_attrs l with
+  | None -> None
+  | Some (_,p) -> Some (string_of_opt_payload p)
 
 let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
@@ -116,6 +127,12 @@ let rec deprecated_of_str = function
       end
   | _ -> None
 
+
+let check_no_deprecated attrs =
+  match deprecated_attrs attrs with
+  | None -> ()
+  | Some ({txt;loc},_) ->
+    Location.prerr_warning loc (Warnings.Misplaced_attribute txt)
 
 let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =

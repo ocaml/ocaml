@@ -104,7 +104,8 @@ let enter_type rec_flag env sdecl id =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -536,7 +537,8 @@ let transl_declaration env sdecl id =
         type_private = sdecl.ptype_private;
         type_manifest = man;
         type_variance = List.map (fun _ -> Variance.full) params;
-        type_newtype_level = None;
+        type_is_newtype = false;
+        type_expansion_scope = None;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
         type_immediate = false;
@@ -1732,7 +1734,19 @@ let transl_exception env sext =
   | None -> ()
   end;
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
-    ext, newenv
+  ext, newenv
+
+let transl_type_exception env t =
+  Builtin_attributes.check_no_deprecated t.ptyexn_attributes;
+  let contructor, newenv =
+    Builtin_attributes.warning_scope t.ptyexn_attributes
+      (fun () ->
+         transl_exception env t.ptyexn_constructor
+      )
+  in
+  {tyexn_constructor = contructor;
+   tyexn_attributes = t.ptyexn_attributes}, newenv
+
 
 (* Translate an effect declaration *)
 let transl_effect env seff =
@@ -1989,7 +2003,8 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_private = priv;
       type_manifest = man;
       type_variance = [];
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -2037,7 +2052,8 @@ let abstract_type_decl arity =
       type_private = Public;
       type_manifest = None;
       type_variance = replicate_list Variance.full arity;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = false;

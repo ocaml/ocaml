@@ -62,6 +62,7 @@ type iterator = {
   typ: iterator -> core_type -> unit;
   type_declaration: iterator -> type_declaration -> unit;
   type_extension: iterator -> type_extension -> unit;
+  type_exception: iterator -> type_exception -> unit;
   type_kind: iterator -> type_kind -> unit;
   value_binding: iterator -> value_binding -> unit;
   value_description: iterator -> value_description -> unit;
@@ -155,6 +156,10 @@ module T = struct
     List.iter (sub.extension_constructor sub) ptyext_constructors;
     List.iter (iter_fst (sub.typ sub)) ptyext_params;
     sub.attributes sub ptyext_attributes
+
+  let iter_type_exception sub {ptyexn_constructor; ptyexn_attributes} =
+    sub.extension_constructor sub ptyexn_constructor;
+    sub.attributes sub ptyexn_attributes
 
   let iter_extension_constructor_kind sub = function
       Pext_decl(ctl, cto) ->
@@ -259,8 +264,8 @@ module MT = struct
     | Psig_value vd -> sub.value_description sub vd
     | Psig_type (_rf, l) -> List.iter (sub.type_declaration sub) l
     | Psig_typext te -> sub.type_extension sub te
-    | Psig_exception ed -> sub.extension_constructor sub ed
     | Psig_effect ed -> sub.effect_constructor sub ed
+    | Psig_exception ed -> sub.type_exception sub ed
     | Psig_module x -> sub.module_declaration sub x
     | Psig_recmodule l ->
         List.iter (sub.module_declaration sub) l
@@ -305,8 +310,8 @@ module M = struct
     | Pstr_primitive vd -> sub.value_description sub vd
     | Pstr_type (_rf, l) -> List.iter (sub.type_declaration sub) l
     | Pstr_typext te -> sub.type_extension sub te
-    | Pstr_exception ed -> sub.extension_constructor sub ed
     | Pstr_effect ed -> sub.effect_constructor sub ed
+    | Pstr_exception ed -> sub.type_exception sub ed
     | Pstr_module x -> sub.module_binding sub x
     | Pstr_recmodule l -> List.iter (sub.module_binding sub) l
     | Pstr_modtype x -> sub.module_type_declaration sub x
@@ -516,6 +521,7 @@ let default_iterator =
     type_kind = T.iter_type_kind;
     typ = T.iter;
     type_extension = T.iter_type_extension;
+    type_exception = T.iter_type_exception;
     extension_constructor = T.iter_extension_constructor;
     effect_constructor = T.iter_effect_constructor;
     value_description =

@@ -77,6 +77,19 @@ Error: This expression has type int but an expression was expected of type
          foo
 |}];;
 
+let f (r: int) =
+  match r with
+  | { contents = 3 } -> ()
+[%%expect{|
+Line _, characters 4-20:
+    | { contents = 3 } -> ()
+      ^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type int ref
+       but a pattern was expected which matches values of type int
+|}];;
+
+
+
 (* bugs *)
 type foo = { y: int; z: int };;
 type bar = { x: int };;

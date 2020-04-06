@@ -30,3 +30,6 @@ val ocamlrun_ocamldoc : string -> string
 val ocamlrun_ocamldebug : string -> string
 
 val ocamlrun_ocamlobjinfo : string -> string
+
+val ocamlrun_ocamlmklib : string -> string
+val ocamlrun_codegen : string -> string

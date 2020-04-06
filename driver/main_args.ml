@@ -64,6 +64,12 @@ let mk_config f =
   "-config", Arg.Unit f, " Print configuration values and exit"
 ;;
 
+let mk_config_var f =
+  "-config-var", Arg.String f,
+  " Print the value of a configuration variable, a newline, and exit\n\
+\    (print nothing and exit with error value if the variable does not exist)"
+;;
+
 let mk_custom f =
   "-custom", Arg.Unit f, " Link in custom mode"
 ;;
@@ -842,6 +848,7 @@ module type Compiler_options = sig
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit
+  val _config_var : string -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
   val _i : unit -> unit
@@ -1027,6 +1034,7 @@ struct
     mk_color F._color;
     mk_compat_32 F._compat_32;
     mk_config F._config;
+    mk_config_var F._config_var;
     mk_custom F._custom;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
@@ -1190,6 +1198,7 @@ struct
     mk_color F._color;
     mk_compact F._compact;
     mk_config F._config;
+    mk_config_var F._config_var;
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
