@@ -30,6 +30,16 @@ val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
 (** [flip f] reverses the argument order of the binary function
     [f]. For any arguments [x] and [y], [(flip f) x y] is [f y x]. *)
 
+val curry : (('a * 'b) -> 'c) -> ('a -> 'b -> 'c)
+(** [curry f] is the curried form of the uncurried function [f]. For any
+    arguments [x] and [y], [(curry f) x y] is [f (x, y)].
+    @since 4.11.0 *)
+
+val uncurry : ('a -> 'b -> 'c) -> (('a * 'b) -> 'c)
+(** [uncurry f] is the uncurried form of the curried function [f]. For any
+    arguments [x] and [y], [(uncurry f) (x, y)] is [f x y].
+    @since 4.11.0 *)
+
 val negate : ('a -> bool) -> ('a -> bool)
 (** [negate p] is the negation of the predicate function [p]. For any
     argument [x], [(negate p) x] is [not (p x)]. *)

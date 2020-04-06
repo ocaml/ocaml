@@ -19,6 +19,14 @@ let test_flip () =
   assert (Fun.flip List.cons [2] 1 = [1;2]);
   ()
 
+let test_curry () =
+  assert (Fun.curry fst 1 2 = 1);
+  ()
+
+let test_uncurry () =
+  assert (Fun.uncurry Int.add (1, 1) = 2);
+  ()
+
 let test_negate () =
   assert (Fun.negate (Bool.equal true) true = false);
   assert (Fun.negate (Bool.equal true) false = true);
@@ -42,6 +50,8 @@ let tests () =
   test_id ();
   test_const ();
   test_flip ();
+  test_curry ();
+  test_uncurry ();
   test_negate ();
   test_protect ();
   ()

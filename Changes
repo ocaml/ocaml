@@ -115,6 +115,9 @@ Working version
 - #9365: Set.filter_map and Map.filter_map
   (Gabriel Scherer, review by Stephen Dolan and Nicolás Ojeda Bär)
 
+- #9425: Add Fun.curry and Fun.uncurry
+  (Craig Ferguson)
+
 ### Other libraries:
 
 - #9106: Register printer for Unix_error in win32unix, as in unix.
