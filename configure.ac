@@ -561,7 +561,8 @@ AS_CASE([$host],
       [gcc-*],
         [internal_cflags="-Wno-unused $gcc_warnings"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
-        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
+        common_cflags="-O2 -fno-strict-aliasing -fwrapv \
+-fexcess-precision=standard -mms-bitfields"
         internal_cppflags='-DUNICODE -D_UNICODE'
         internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
         internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
@@ -583,12 +584,18 @@ AS_CASE([$host],
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
       internal_cflags="$gcc_warnings"],
-    [gcc-4-*],
+    [gcc-4-[234]],
+      # No -fexcess-precision option before GCC 4.5
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
       internal_cflags="$gcc_warnings"],
+    [gcc-4-*],
+      [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp -fexcess-precision=standard";
+      internal_cflags="$gcc_warnings"],
     [gcc-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+      [common_cflags="-O2 -fno-strict-aliasing -fwrapv \
+-fexcess-precision=standard";
       internal_cflags="$gcc_warnings -fno-common"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD"
