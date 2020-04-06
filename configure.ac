@@ -554,12 +554,18 @@ AS_CASE([$ocaml_cv_cc_vendor],
 # in the macro itself, too
 AS_CASE([$host],
   [*-*-mingw32],
-    [internal_cflags="-Wno-unused $gcc_warnings"
-    # TODO: see whether the code can be fixed to avoid -Wno-unused
-    common_cflags="-O -mms-bitfields"
-    internal_cppflags='-DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    [AS_CASE([$ocaml_cv_cc_vendor],
+      [gcc-[01234]-*],
+        [AC_MSG_ERROR([This version of Mingw GCC is too old.
+          Please use GCC version 5 or above.])],
+      [gcc-*],
+        [internal_cflags="-Wno-unused $gcc_warnings"
+        # TODO: see whether the code can be fixed to avoid -Wno-unused
+        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
+        internal_cppflags='-DUNICODE -D_UNICODE'
+        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+      [AC_MSG_ERROR([Unsupported C compiler for a Mingw build])])],
   [AS_CASE([$ocaml_cv_cc_vendor],
     [clang-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
