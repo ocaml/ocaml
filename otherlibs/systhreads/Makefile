@@ -35,9 +35,6 @@ CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
 
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS += -O3
-endif
 
 LIBNAME=threads
 
