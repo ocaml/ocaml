@@ -261,6 +261,12 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
   | Texp_open (od, e) ->
       sub.open_declaration sub od;
       sub.expr sub e
+  | Texp_functor (_, pack, e) ->
+      sub.package_type sub pack;
+      sub.expr sub e
+  | Texp_functor_apply (e, _, mexpr) ->
+      sub.expr sub e;
+      sub.module_expr sub mexpr
 
 
 let package_type sub {pack_fields; _} =

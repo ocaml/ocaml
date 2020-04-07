@@ -419,6 +419,13 @@ module E = struct
         sub.expr sub body
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
+    | Pexp_functor (s, (li, l), e) ->
+        iter_loc sub s;
+        iter_loc sub li;
+        List.iter (iter_tuple (iter_loc sub) (sub.typ sub)) l;
+        sub.expr sub e
+    | Pexp_functor_apply (e, li) ->
+        sub.expr sub e; iter_loc sub li
 
   let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     iter_loc sub pbop_op;

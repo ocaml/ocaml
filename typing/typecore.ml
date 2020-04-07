@@ -110,6 +110,7 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
+  | Cannot_infer_functor_signature of type_expr
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
@@ -2166,6 +2167,7 @@ let rec is_nonexpansive exp =
   | Texp_constant _
   | Texp_unreachable
   | Texp_function _
+  | Texp_functor _
   | Texp_array [] -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
@@ -2255,7 +2257,8 @@ let rec is_nonexpansive exp =
   | Texp_override _
   | Texp_letexception _
   | Texp_letop _
-  | Texp_extension_constructor _ ->
+  | Texp_extension_constructor _
+  | Texp_functor_apply _ ->
     false
 
 and is_nonexpansive_mod mexp =
@@ -2463,7 +2466,7 @@ let check_partial_application statement exp =
             | Texp_setinstvar _ | Texp_override _ | Texp_assert _
             | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
             | Texp_extension_constructor _ | Texp_ifthenelse (_, _, None)
-            | Texp_function _ ->
+            | Texp_function _ | Texp_functor _ | Texp_functor_apply _ ->
                 check_statement ()
             | Texp_match (_, cases, _) ->
                 List.iter (fun {c_rhs; _} -> check c_rhs) cases
@@ -3754,6 +3757,110 @@ and type_expect_
             exp_type = instance ty_result;
             exp_env = env;
             exp_attributes = sexp.pexp_attributes; }
+
+  | Pexp_functor (name, (p, l), sbody) ->
+      let l, mty = Typetexp.create_package_mty loc env (p, l) in
+      let z = Typetexp.narrow () in
+      let mty = !Typetexp.transl_modtype env mty in
+      Typetexp.widen z;
+      let pack, pack_ty =
+        let ptys =
+          List.map
+            (fun (s, pty) -> (s, Typetexp.transl_simple_type env false pty))
+            l
+        in
+        let path = !Typetexp.transl_modtype_longident p.loc env p.txt in
+        let ty =
+          ( path
+          , List.map (fun (s, _pty) -> s.txt) l
+          , List.map (fun (_, cty) -> cty.ctyp_type) ptys )
+        in
+        ( { pack_path = path
+          ; pack_type = mty.mty_type
+          ; pack_fields = ptys
+          ; pack_txt = p }
+        , ty )
+      in
+      (* Add the package constraints to the module type.
+         This allows types such as
+           'a -> {M : S with type t = 'b} -> (M.t as 'a)
+         to pass typechecking.
+      *)
+      let mty_type =
+        let (_, nl, tl) = pack_ty in
+        !Typetexp.package_constraints env loc mty.mty_type nl tl
+      in
+      begin_def();
+      let scoped_ident =
+        Ident.create_scoped ~scope:(Ctype.get_current_level()) name.txt
+      in
+      let new_env = Env.add_module scoped_ident Mp_present mty_type env in
+      let body = type_expect new_env sbody (mk_expected (newvar ())) in
+      end_def();
+      let ident = Ident.create_unscoped name.txt in
+      (* Substitute [scoped_ident] for [ident]. *)
+      let exp_type =
+        Subst.type_expr
+          (Subst.add_module scoped_ident (Path.Pident ident) Subst.identity)
+          body.exp_type
+      in
+      let ty = Btype.newgenty (Tfunctor (ident, pack_ty, exp_type)) in
+      unify_var env (newvar()) ty;
+      (* Use [scoped_ident] in the AST, for consistency with nodes below. *)
+      rue {
+        exp_desc =
+          Texp_functor(Location.mkloc scoped_ident name.loc, pack, body);
+        exp_loc = loc; exp_extra = [];
+        exp_type = ty;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
+
+  | Pexp_functor_apply (sfunct, lid) ->
+      if !Clflags.principal then begin_def ();
+      let funct = type_exp env sfunct in
+      if !Clflags.principal then begin
+        end_def ();
+        generalize_structure funct.exp_type
+      end;
+      (* This instance generates a new bound identifier that we can erase with
+         a scope escape.
+      *)
+      let funct_ty = instance funct.exp_type in
+      let id, (p, nl, tl), ty_res =
+        match (Ctype.expand_head env funct_ty).desc with
+        | Tfunctor (id, pack, ty) ->
+            id, pack, ty
+        | _ ->
+            raise (Error(loc, env, Cannot_infer_functor_signature funct_ty))
+      in
+      let (modl, tl') =
+        let m =
+          { pmod_desc= Pmod_ident lid
+          ; pmod_loc= loc
+          ; pmod_attributes= []
+        } in
+        !type_package env m p nl
+      in
+      begin try List.iter2 (unify env) tl tl'
+      with Unify trace ->
+        raise(Error(loc, env, Expr_type_clash(trace, None, None)))
+      end;
+      let path =
+        Env.lookup_module_path ~use:true ~loc ~load:true lid.txt env
+      in
+      begin_def ();
+      let subst = Subst.add_module id path Subst.identity in
+      let ty_res = Subst.type_expr subst ty_res in
+      end_def ();
+      check_scope_escape loc env (Ctype.get_current_level ()) ty_res;
+      generalize ty_res;
+      unify_var env (newvar()) ty_res;
+      rue {
+        exp_desc = Texp_functor_apply(funct, mkloc path lid.loc, modl);
+        exp_loc = loc; exp_extra = [];
+        exp_type = ty_res;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
 
   | Pexp_extension ({ txt = ("ocaml.extension_constructor"
                              |"extension_constructor"); _ },
@@ -5568,6 +5675,10 @@ let report_error ~loc env = function
   | Not_a_packed_module ty ->
       Location.errorf ~loc
         "This expression is packed module, but the expected type is@ %a"
+        Printtyp.type_expr ty
+  | Cannot_infer_functor_signature ty ->
+      Location.errorf ~loc
+        "The signature for this functor couldn't be inferred from the type@ %a"
         Printtyp.type_expr ty
   | Unexpected_existential (reason, name, types) ->
       let reason_str =

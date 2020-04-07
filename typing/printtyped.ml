@@ -446,6 +446,13 @@ and expression i ppf x =
       module_expr i ppf o.open_expr;
       attributes i ppf o.open_attributes;
       expression i ppf e;
+  | Texp_functor (s, {pack_path= p; pack_fields= l; _}, e) ->
+      line i ppf "Texp_functor %a %a\n" fmt_ident s.txt fmt_path p;
+      list i package_with ppf l;
+      expression i ppf e
+  | Texp_functor_apply (e, p, _) ->
+      line i ppf "Texp_functor_apply %a\n" fmt_path p.txt;
+      expression i ppf e
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location

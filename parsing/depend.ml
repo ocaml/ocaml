@@ -271,6 +271,8 @@ let rec add_expr bv exp =
       end
   | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
+  | Pexp_functor (_, pack, e) -> add_package_type bv pack; add_expr bv e
+  | Pexp_functor_apply (e, li) -> add_expr bv e; add_module_path bv li
 
 and add_cases bv cases =
   List.iter (add_case bv) cases

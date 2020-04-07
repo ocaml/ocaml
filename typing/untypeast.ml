@@ -511,6 +511,14 @@ let expression sub exp =
                              ])
     | Texp_open (od, exp) ->
         Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
+    | Texp_functor (name, pack, e) ->
+        Pexp_functor
+          ( mkloc (Ident.name name.txt) name.loc
+          , sub.package_type sub pack
+          , sub.expr sub e)
+    | Texp_functor_apply (e, p, _mexpr) ->
+        Pexp_functor_apply
+          (sub.expr sub e, mkloc (lident_of_path p.txt) p.loc)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

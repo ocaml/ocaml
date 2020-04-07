@@ -303,6 +303,10 @@ and rw_exp iflag sexp =
       rewrite_exp iflag let_.pbop_exp;
       List.iter (fun {pbop_exp; _} -> rewrite_exp iflag pbop_exp) ands;
       rewrite_exp iflag body
+  | Pexp_functor (_, _, e) ->
+      rewrite_exp iflag e
+  | Pexp_functor_apply (e, _) ->
+      rewrite_exp iflag e
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
 

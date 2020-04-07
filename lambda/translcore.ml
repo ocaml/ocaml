@@ -231,7 +231,7 @@ and transl_exp1 ~scopes ~in_new_scope e =
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
-      Texp_function _ | Texp_for _ | Texp_while _ -> false
+      Texp_function _ | Texp_for _ | Texp_while _ | Texp_functor _ -> false
     | _ -> true
   in
   if eval_once then transl_exp0 ~scopes ~in_new_scope  e else
@@ -611,6 +611,35 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Llet(pure, Pgenval, oid,
                !transl_module ~scopes Tcoerce_none None od.open_expr, body)
       end
+  | Texp_functor (id, _pack, body) ->
+      let name = Ident.create_local "*functor*" in
+      let kind = Curried in
+      let params = [name, Pgenval] in
+      let return = value_kind body.exp_env body.exp_type in
+      let loc = of_location ~scopes e.exp_loc in
+      let body =
+        let defining_expr =
+          Levent (Lvar name, {
+            lev_loc = loc;
+            lev_kind = Lev_module_definition id.txt;
+            lev_repr = None;
+            lev_env = Env.empty;
+          })
+        in
+        Llet(Strict, Pgenval, id.txt, defining_expr, transl_exp ~scopes body)
+      in
+      let attr = default_function_attribute in
+      let lam = Lfunction{kind; params; return; body; attr; loc} in
+      Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
+  | Texp_functor_apply (funct, _path, modl) ->
+      let arg =
+        (* Fake expression, since we don't have a dedicated expression for the
+           argument.
+        *)
+        {e with exp_desc=Texp_pack modl }
+      in
+      transl_apply ~scopes (transl_exp ~scopes funct) [(Nolabel, Some arg)]
+        (of_location ~scopes e.exp_loc)
 
 and pure_module m =
   match m.mod_desc with

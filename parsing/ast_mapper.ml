@@ -459,6 +459,12 @@ module E = struct
           (List.map (sub.binding_op sub) ands) (sub.expr sub body)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
+    | Pexp_functor (s, (li, l), e) ->
+        functor_ ~loc ~attrs (map_loc sub s)
+          (map_loc sub li, List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
+          (sub.expr sub e)
+    | Pexp_functor_apply (e, li) ->
+        functor_apply ~loc ~attrs (sub.expr sub e) (map_loc sub li)
 
   let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     let open Exp in

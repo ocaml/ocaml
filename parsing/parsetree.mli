@@ -389,6 +389,10 @@ and expression_desc =
         (* [%id] *)
   | Pexp_unreachable
         (* . *)
+  | Pexp_functor of string loc * package_type * expression
+        (* fun {M : S} -> E *)
+  | Pexp_functor_apply of expression * Longident.t loc
+        (* E {M} *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {

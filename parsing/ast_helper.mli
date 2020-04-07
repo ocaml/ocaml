@@ -191,6 +191,11 @@ module Exp:
                -> binding_op list -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
+    val functor_:
+      ?loc:loc -> ?attrs:attrs -> str-> (lid * (lid * core_type) list)
+      -> expression -> expression
+    val functor_apply:
+      ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
