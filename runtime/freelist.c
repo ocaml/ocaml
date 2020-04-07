@@ -879,9 +879,9 @@ static int bf_small_map = 0;
 /* Small free blocks have only one pointer to the next block.
    Large free blocks have 5 fields:
    tree fields:
-     - node flag
-     - left son
-     - right son
+     - isnode flag
+     - left child
+     - right child
    list fields:
      - next
      - prev
