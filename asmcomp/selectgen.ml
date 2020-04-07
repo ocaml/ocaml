@@ -21,28 +21,30 @@ open Cmm
 open Reg
 open Mach
 
+module Int = Numbers.Int
+
 type environment =
-  { vars : (Ident.t, Reg.t array) Tbl.t;
-    static_exceptions : (int, Reg.t array list) Tbl.t;
+  { vars : Reg.t array Ident.Map.t;
+    static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
 
 let env_add id v env =
-  { env with vars = Tbl.add id v env.vars }
+  { env with vars = Ident.Map.add id v env.vars }
 
 let env_add_static_exception id v env =
-  { env with static_exceptions = Tbl.add id v env.static_exceptions }
+  { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
-  Tbl.find id env.vars
+  Ident.Map.find id env.vars
 
 let env_find_static_exception id env =
-  Tbl.find id env.static_exceptions
+  Int.Map.find id env.static_exceptions
 
 let env_empty = {
-  vars = Tbl.empty;
-  static_exceptions = Tbl.empty;
+  vars = Ident.Map.empty;
+  static_exceptions = Int.Map.empty;
 }
 
 (* Infer the type of the result of an operation *)
@@ -83,7 +85,7 @@ let size_expr (env:environment) exp =
     | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
-          Tbl.find id localenv
+          Ident.Map.find id localenv
         with Not_found ->
         try
           let regs = env_find id env in
@@ -97,12 +99,12 @@ let size_expr (env:environment) exp =
     | Cop(op, _, _) ->
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
-        size (Tbl.add id (size localenv arg) localenv) body
+        size (Ident.Map.add id (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
         fatal_error "Selection.size_expr"
-  in size Tbl.empty exp
+  in size Ident.Map.empty exp
 
 (* Swap the two arguments of an integer comparison *)
 
@@ -798,9 +800,8 @@ method emit_expr (env:environment) exp =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
-                (* CR-someday mshinwell: consider how we can do better than
-                   [typ_val] when appropriate. *)
-                (fun id -> let r = self#regs_for typ_val in name_regs id r; r)
+                (fun (id, typ) ->
+                  let r = self#regs_for typ in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
           handlers
@@ -817,7 +818,7 @@ method emit_expr (env:environment) exp =
       let translate_one_handler (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
         let new_env =
-          List.fold_left (fun env (id, r) -> env_add id r env)
+          List.fold_left (fun env ((id, _typ), r) -> env_add id r env)
             env (List.combine ids rs)
         in
         let (r, s) = self#emit_sequence new_env e2 in
@@ -837,14 +838,13 @@ method emit_expr (env:environment) exp =
           let dest_args =
             try env_find_static_exception nfail env
             with Not_found ->
-              fatal_error ("Selection.emit_expr: unboun label "^
+              fatal_error ("Selection.emit_expr: unbound label "^
                            string_of_int nfail)
           in
           (* Intermediate registers to handle cases where some
              registers from src are present in dest *)
           let tmp_regs = Reg.createv_like src in
-          (* Ccatch registers are created with type Val. They must not
-             contain out of heap pointers *)
+          (* Ccatch registers must not contain out of heap pointers *)
           Array.iter (fun reg -> assert(reg.typ <> Addr)) src;
           self#insert_moves src tmp_regs ;
           self#insert_moves tmp_regs (Array.concat dest_args) ;
@@ -1132,7 +1132,8 @@ method emit_tail (env:environment) exp =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
-                (fun id -> let r = self#regs_for typ_val in name_regs id r; r)
+                (fun (id, typ) ->
+                  let r = self#regs_for typ in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
           handlers in
@@ -1145,7 +1146,7 @@ method emit_tail (env:environment) exp =
         assert(List.length ids = List.length rs);
         let new_env =
           List.fold_left
-            (fun env (id,r) -> env_add id r env)
+            (fun env ((id, _typ),r) -> env_add id r env)
             env (List.combine ids rs) in
         nfail, self#emit_tail_sequence new_env e2
       in

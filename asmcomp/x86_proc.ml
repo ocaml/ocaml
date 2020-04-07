@@ -249,8 +249,10 @@ let compile infile outfile =
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
   else
-    Ccomp.command (Config.asm ^ " -o " ^
-                   Filename.quote outfile ^ " " ^ Filename.quote infile)
+    Ccomp.command (Config.asm ^ " " ^
+                   (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                   " -o " ^ Filename.quote outfile ^ " " ^
+                   Filename.quote infile)
 
 let assemble_file infile outfile =
   match !binary_content with

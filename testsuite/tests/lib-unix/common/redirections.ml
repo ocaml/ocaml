@@ -55,7 +55,8 @@ let test_createprocess systemenv =
   let pid =
     Unix.create_process_env
        refl
-       [| refl; "-i2o"; "-i2e"; "-o"; "123"; "-e"; "456"; "-i2o"; "-v"; "XVAR" |]
+       [| refl; "-i2o"; "-i2e"; "-o"; "123"; "-e"; "456"; "-i2o"; "-v"; "XVAR"
+       |]
        (Array.append [| "XVAR=xvar" |] systemenv)
        p_exit f_out f_err in
   out p_entrance "aaaa\n";
@@ -115,7 +116,7 @@ let test_open_process_full systemenv =
       (refl ^ " -o 123 -i2o -e 456 -i2e -v XVAR")
       (Array.append [|"XVAR=xvar"|] systemenv) in
   output_string i "aa\nbbbb\n"; close_out i;
-  for _i = 1 to 3 do 
+  for _i = 1 to 3 do
     out Unix.stdout (input_line o ^ "\n")
   done;
   for _i = 1 to 2 do
@@ -128,7 +129,7 @@ let test_open_process_full systemenv =
 let _ =
   let env = Unix.environment() in
   (* The following 'close' makes things more difficult.
-     Under Unix it works fine, but under Win32 create_process 
+     Under Unix it works fine, but under Win32 create_process
      gives an error if one of the standard handles is closed. *)
   (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";

@@ -1,5 +1,4 @@
 \chapter{The unix library: Unix system calls}
-\pdfchapterfold{-1}{The unix library: Unix system calls}
 %HEVEA\cutname{libunix.html}
 \label{c:unix}
 
@@ -45,7 +44,6 @@ more information on the functions that are not supported under Windows.
 \section{Module \texttt{UnixLabels}: labelized version of the interface}
 \label{UnixLabels}
 \index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
-\pdfsection{Module UnixLabels: labelized version of the interface}
 
 This module is identical to "Unix"~(\ref{Unix}), and only differs by
 the addition of labels. You may see these labels directly by looking

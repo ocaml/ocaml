@@ -48,7 +48,8 @@ let prim_fresh_oo_id =
 
 let transl_extension_constructor env path ext =
   let path =
-    Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path
+    Printtyp.wrap_printing_env env ~error:true (fun () ->
+      Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path)
   in
   let name =
     match path, !Clflags.for_package with
@@ -121,7 +122,7 @@ let rec push_defaults loc bindings cases partial =
       in
       [{case with c_rhs=exp}]
   | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
-      let param = Typecore.name_pattern "param" cases in
+      let param = Typecore.name_cases "param" cases in
       let name = Ident.name param in
       let exp =
         { exp with exp_loc = loc; exp_desc =
@@ -132,7 +133,7 @@ let rec push_defaults loc bindings cases partial =
                            val_attributes = [];
                            Types.val_loc = Location.none;
                           })},
-             cases, [], [], partial) }
+             cases, [], partial) }
       in
       push_defaults loc bindings
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
@@ -155,7 +156,7 @@ let event_function exp lam =
      Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
-                   lev_env = Env.summary exp.exp_env}))
+                   lev_env = exp.exp_env}))
   else
     lam None
 
@@ -179,6 +180,14 @@ let rec cut n l =
   | a::l -> let (l1,l2) = cut (n-1) l in (a::l1,l2)
 
 (* Translation of expressions *)
+
+let rec iter_exn_names f pat =
+  match pat.pat_desc with
+  | Tpat_var (id, _) -> f id
+  | Tpat_alias (p, id, _) ->
+      f id;
+      iter_exn_names f p
+  | _ -> ()
 
 let rec transl_exp e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
@@ -265,17 +274,16 @@ and transl_exp0 e =
       event_after e
         (transl_apply ~should_be_tailcall ~inlined ~specialised
            (transl_exp funct) oargs e.exp_loc)
-  | Texp_match(arg, pat_expr_list, exn_pat_expr_list, [], partial) ->
-      transl_match e arg pat_expr_list exn_pat_expr_list partial
-  | Texp_match(arg, pat_expr_list, exn_pat_expr_list, eff_pat_expr_list, partial) ->
-      transl_handler e arg (Some (pat_expr_list, partial)) exn_pat_expr_list
-        eff_pat_expr_list
-  | Texp_try(body, exn_pat_expr_list, []) ->
-      let id = Typecore.name_pattern "exn" exn_pat_expr_list in
+  | Texp_match(arg, pat_expr_list, [], partial) ->
+      transl_match e arg pat_expr_list partial
+  | Texp_match(arg, pat_expr_list, eff_pat_expr_list, partial) ->
+      transl_handler e arg (Some (pat_expr_list, partial)) [] eff_pat_expr_list
+  | Texp_try(body, pat_expr_list, []) ->
+      let id = Typecore.name_cases "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases_try exn_pat_expr_list))
+               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_try(body, exn_pat_expr_list, eff_pat_expr_list) ->
-    transl_handler e body None exn_pat_expr_list eff_pat_expr_list
+      transl_handler e body None exn_pat_expr_list eff_pat_expr_list
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape el in
       begin try
@@ -321,7 +329,7 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
-  | Texp_record { fields; representation; extended_expression } ->
+  | Texp_record {fields; representation; extended_expression} ->
       transl_record e.exp_loc e.exp_env fields representation
         extended_expression
   | Texp_field(arg, _, lbl) ->
@@ -423,8 +431,9 @@ and transl_exp0 e =
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply{ap_should_be_tailcall=false;
              ap_loc=loc;
-             ap_func=Lprim(Pfield (0, Pointer, Mutable),
-                            [transl_class_path ~loc e.exp_env cl], loc);
+             ap_func=
+               Lprim(Pfield (0, Pointer, Mutable),
+                     [transl_class_path ~loc e.exp_env cl], loc);
              ap_args=[lambda_unit];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
@@ -454,7 +463,7 @@ and transl_exp0 e =
           lev_loc = loc.loc;
           lev_kind = Lev_module_definition id;
           lev_repr = None;
-          lev_env = Env.summary Env.empty;
+          lev_env = Env.empty;
         })
       in
       Llet(Strict, Pgenval, id, defining_expr, transl_exp body)
@@ -476,11 +485,13 @@ and transl_exp0 e =
          do *)
       begin match Typeopt.classify_lazy_argument e with
       | `Constant_or_function ->
-        (* a constant expr of type <> float gets compiled as itself *)
+        (* A constant expr (of type <> float if [Config.flat_float_array] is
+           true) gets compiled as itself. *)
          transl_exp e
-      | `Float ->
+      | `Float_that_cannot_be_shortcut ->
           (* We don't need to wrap with Popaque: this forward
-             block will never be shortcutted since it points to a float. *)
+             block will never be shortcutted since it points to a float
+             and Config.flat_float_array is true. *)
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e], e.exp_loc)
       | `Identifier `Forward_value ->
@@ -502,7 +513,7 @@ and transl_exp0 e =
                              attr = default_function_attribute;
                              loc = e.exp_loc;
                              body = transl_exp e} in
-         Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn], e.exp_loc)
+          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn], e.exp_loc)
       end
   | Texp_object (cs, meths) ->
       let cty = cs.cstr_type in
@@ -550,19 +561,11 @@ and transl_cases ?cont cases =
   List.map (transl_case ?cont) cases
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
-  let rec iter_exn_names f pat =
-    match pat.pat_desc with
-    | Tpat_var (id, _) -> f id
-    | Tpat_alias (p, id, _) ->
-        f id;
-        iter_exn_names f p
-    | _ -> ()
-  in
   iter_exn_names Translprim.add_exception_ident c_lhs;
   Misc.try_finally
     (fun () -> c_lhs, transl_guard c_guard c_rhs)
-    (fun () ->
-       iter_exn_names Translprim.remove_exception_ident c_lhs)
+    ~always:(fun () ->
+        iter_exn_names Translprim.remove_exception_ident c_lhs)
 
 and transl_cases_try cases =
   let cases =
@@ -820,11 +823,50 @@ and transl_record loc env fields repres opt_init_expr =
     end
   end
 
-and transl_match e arg pat_expr_list exn_pat_expr_list partial =
-  let id = Typecore.name_pattern "exn" exn_pat_expr_list
-  and cases = transl_cases pat_expr_list
-  and exn_cases = transl_cases_try exn_pat_expr_list in
+and transl_match e arg pat_expr_list partial =
+  let rewrite_case (val_cases, exn_cases, static_handlers as acc)
+        ({ c_lhs; c_guard; c_rhs } as case) =
+    if c_rhs.exp_desc = Texp_unreachable then acc else
+    let val_pat, exn_pat = split_pattern c_lhs in
+    match val_pat, exn_pat with
+    | None, None -> assert false
+    | Some pv, None ->
+        let val_case =
+          transl_case { case with c_lhs = pv }
+        in
+        val_case :: val_cases, exn_cases, static_handlers
+    | None, Some pe ->
+        let exn_case = transl_case_try { case with c_lhs = pe } in
+        val_cases, exn_case :: exn_cases, static_handlers
+    | Some pv, Some pe ->
+        assert (c_guard = None);
+        let lbl  = next_raise_count () in
+        let static_raise ids =
+          Lstaticraise (lbl, List.map (fun id -> Lvar id) ids)
+        in
+        (* Simplif doesn't like it if binders are not uniq, so we make sure to
+           use different names in the value and the exception branches. *)
+        let ids  = Typedtree.pat_bound_idents pv in
+        let vids = List.map Ident.rename ids in
+        let pv = alpha_pat (List.combine ids vids) pv in
+        (* Also register the names of the exception so Re-raise happens. *)
+        iter_exn_names Translprim.add_exception_ident pe;
+        let rhs =
+          Misc.try_finally
+            (fun () -> event_before c_rhs (transl_exp c_rhs))
+            ~always:(fun () ->
+                iter_exn_names Translprim.remove_exception_ident pe)
+        in
+        (pv, static_raise vids) :: val_cases,
+        (pe, static_raise ids) :: exn_cases,
+        (lbl, ids, rhs) :: static_handlers
+  in
+  let val_cases, exn_cases, static_handlers =
+    let x, y, z = List.fold_left rewrite_case ([], [], []) pat_expr_list in
+    List.rev x, List.rev y, List.rev z
+  in
   let static_catch body val_ids handler =
+    let id = Typecore.name_pattern "exn" (List.map fst exn_cases) in
     let static_exception_id = next_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
@@ -832,20 +874,27 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
        (static_exception_id, val_ids),
        handler)
   in
-  match arg, exn_cases with
-  | {exp_desc = Texp_tuple argl}, [] ->
-    Matching.for_multiple_match e.exp_loc (transl_list argl) cases partial
-  | {exp_desc = Texp_tuple argl}, _ :: _ ->
-    let val_ids = List.map (fun _ -> Typecore.name_pattern "val" []) argl in
-    let lvars = List.map (fun id -> Lvar id) val_ids in
-    static_catch (transl_list argl) val_ids
-      (Matching.for_multiple_match e.exp_loc lvars cases partial)
-  | arg, [] ->
-    Matching.for_function e.exp_loc None (transl_exp arg) cases partial
-  | arg, _ :: _ ->
-    let val_id = Typecore.name_pattern "val" pat_expr_list in
-    static_catch [transl_exp arg] [val_id]
-      (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
+  let classic =
+    match arg, exn_cases with
+    | {exp_desc = Texp_tuple argl}, [] ->
+      assert (static_handlers = []);
+      Matching.for_multiple_match e.exp_loc (transl_list argl) val_cases partial
+    | {exp_desc = Texp_tuple argl}, _ :: _ ->
+      let val_ids = List.map (fun _ -> Typecore.name_pattern "val" []) argl in
+      let lvars = List.map (fun id -> Lvar id) val_ids in
+      static_catch (transl_list argl) val_ids
+        (Matching.for_multiple_match e.exp_loc lvars val_cases partial)
+    | arg, [] ->
+      assert (static_handlers = []);
+      Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
+    | arg, _ :: _ ->
+      let val_id = Typecore.name_cases "val" pat_expr_list in
+      static_catch [transl_exp arg] [val_id]
+        (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)
+  in
+  List.fold_left (fun body (static_exception_id, val_ids, handler) ->
+    Lstaticcatch (body, (static_exception_id, val_ids), handler)
+  ) classic static_handlers
 
 and prim_alloc_stack =
   Pccall (Primitive.simple ~name:"caml_alloc_stack" ~arity:3 ~alloc:true)
@@ -859,7 +908,7 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
                    attr = default_function_attribute; loc = Location.none}
     | Some (val_caselist, partial) ->
         let val_cases = transl_cases val_caselist in
-        let param = Typecore.name_pattern "param" val_caselist in
+        let param = Typecore.name_cases "param" val_caselist in
         Lfunction { kind = Curried; params = [param];
           attr = default_function_attribute; loc = Location.none;
           body = Matching.for_function e.exp_loc None
@@ -867,13 +916,13 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
   in
   let exn_fun =
     let exn_cases = transl_cases exn_caselist in
-    let param = Typecore.name_pattern "exn" exn_caselist in
+    let param = Typecore.name_cases "exn" exn_caselist in
     Lfunction { kind = Curried; params = [param]; loc = Location.none;
       attr = default_function_attribute;
       body = Matching.for_trywith (Lvar param) exn_cases }
   in
   let eff_fun =
-    let param = Typecore.name_pattern "eff" eff_caselist in
+    let param = Typecore.name_cases "eff" eff_caselist in
     let cont = Ident.create "k" in
     let cont_tail = Ident.create "ktail" in
     let eff_cases = transl_cases ~cont eff_caselist in

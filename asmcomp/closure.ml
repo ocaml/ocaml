@@ -22,6 +22,7 @@ open Lambda
 open Switch
 open Clambda
 
+module Int = Numbers.Int
 module Storer =
   Switch.Store
     (struct
@@ -41,9 +42,9 @@ let rec split_list n l =
   end
 
 let rec build_closure_env env_param pos = function
-    [] -> Tbl.empty
+    [] -> Ident.Map.empty
   | id :: rem ->
-      Tbl.add id
+      Ident.Map.add id
         (Uprim(Pfield(pos, Pointer, Immutable), [Uvar env_param], Debuginfo.none))
         (build_closure_env env_param (pos+1) rem)
 
@@ -552,7 +553,7 @@ let subst_debuginfo loc dbg =
 let rec substitute loc fpc sb rn ulam =
   match ulam with
     Uvar v ->
-      begin try Tbl.find v sb with Not_found -> ulam end
+      begin try Ident.Map.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
@@ -575,13 +576,13 @@ let rec substitute loc fpc sb rn ulam =
   | Ulet(str, kind, id, u1, u2) ->
       let id' = Ident.rename id in
       Ulet(str, kind, id', substitute loc fpc sb rn u1,
-           substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
+           substitute loc fpc (Ident.Map.add id (Uvar id') sb) rn u2)
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
       let sb' =
         List.fold_right
-          (fun (id, id', _) s -> Tbl.add id (Uvar id') s)
+          (fun (id, id', _) s -> Ident.Map.add id (Uvar id') s)
           bindings1 sb in
       Uletrec(
         List.map
@@ -632,7 +633,7 @@ let rec substitute loc fpc sb rn ulam =
         match rn with
         | Some rn ->
           begin try
-            Tbl.find nfail rn
+            Int.Map.find nfail rn
           with Not_found ->
             fatal_errorf "Closure.split_list: invalid nfail (%d)" nfail
           end
@@ -643,27 +644,32 @@ let rec substitute loc fpc sb rn ulam =
         match rn with
         | Some rn ->
           let new_nfail = next_raise_count () in
-          new_nfail, Some (Tbl.add nfail new_nfail rn)
+          new_nfail, Some (Int.Map.add nfail new_nfail rn)
         | None -> nfail, rn in
       let ids' = List.map Ident.rename ids in
       let sb' =
         List.fold_right2
-          (fun id id' s -> Tbl.add id (Uvar id') s)
+          (fun id id' s -> Ident.Map.add id (Uvar id') s)
           ids ids' sb
       in
-      Ucatch(nfail, ids', substitute loc fpc sb rn u1, substitute loc fpc sb' rn u2)
+      Ucatch(nfail, ids', substitute loc fpc sb rn u1,
+                          substitute loc fpc sb' rn u2)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute loc fpc sb rn u1, id',
-               substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
+               substitute loc fpc (Ident.Map.add id (Uvar id') sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute loc fpc sb rn u1 with
         Uconst (Uconst_ptr n) ->
-          if n <> 0 then substitute loc fpc sb rn u2 else substitute loc fpc sb rn u3
+          if n <> 0 then
+            substitute loc fpc sb rn u2
+          else
+            substitute loc fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
           substitute loc fpc sb rn u2
       | su1 ->
-          Uifthenelse(su1, substitute loc fpc sb rn u2, substitute loc fpc sb rn u3)
+          Uifthenelse(su1, substitute loc fpc sb rn u2,
+                           substitute loc fpc sb rn u3)
       end
   | Usequence(u1, u2) ->
       Usequence(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
@@ -672,11 +678,11 @@ let rec substitute loc fpc sb rn ulam =
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = Ident.rename id in
       Ufor(id', substitute loc fpc sb rn u1, substitute loc fpc sb rn u2, dir,
-           substitute loc fpc (Tbl.add id (Uvar id') sb) rn u3)
+           substitute loc fpc (Ident.Map.add id (Uvar id') sb) rn u3)
   | Uassign(id, u) ->
       let id' =
         try
-          match Tbl.find id sb with Uvar i -> i | _ -> assert false
+          match Ident.Map.find id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
       Uassign(id', substitute loc fpc sb rn u)
@@ -699,10 +705,10 @@ let no_effects = function
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
-    ([], []) -> substitute loc fpc subst (Some Tbl.empty) body
+    ([], []) -> substitute loc fpc subst (Some Int.Map.empty) body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params_rec loc fpc (Tbl.add p1 a1 subst) pl al body
+        bind_params_rec loc fpc (Ident.Map.add p1 a1 subst) pl al body
       else begin
         let p1' = Ident.rename p1 in
         let u1, u2 =
@@ -713,7 +719,7 @@ let rec bind_params_rec loc fpc subst params args body =
               a1, Uvar p1'
         in
         let body' =
-          bind_params_rec loc fpc (Tbl.add p1 u2 subst) pl al body in
+          bind_params_rec loc fpc (Ident.Map.add p1 u2 subst) pl al body in
         if occurs_var p1 body then Ulet(Immutable, Pgenval, p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
@@ -723,7 +729,7 @@ let rec bind_params_rec loc fpc subst params args body =
 let bind_params loc fpc params args body =
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec loc fpc Tbl.empty (List.rev params) (List.rev args) body
+  bind_params_rec loc fpc Ident.Map.empty (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -815,11 +821,11 @@ let excessive_function_nesting_depth = 5
 exception NotClosed
 
 let close_approx_var fenv cenv id =
-  let approx = try Tbl.find id fenv with Not_found -> Value_unknown in
+  let approx = try Ident.Map.find id fenv with Not_found -> Value_unknown in
   match approx with
     Value_const c -> make_const c
   | approx ->
-      let subst = try Tbl.find id cenv with Not_found -> Uvar id in
+      let subst = try Ident.Map.find id cenv with Not_found -> Uvar id in
       (subst, approx)
 
 let close_var fenv cenv id =
@@ -900,7 +906,7 @@ let rec close fenv cenv = function
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
         let funct_var = Ident.create "funct" in
-        let fenv = Tbl.add funct_var fapprox fenv in
+        let fenv = Ident.Map.add funct_var fapprox fenv in
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
@@ -960,9 +966,9 @@ let rec close fenv cenv = function
           (Ulet(Mutable, kind, id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure lam ->
-          close (Tbl.add id alam fenv) cenv body
+          close (Ident.Map.add id alam fenv) cenv body
       | (_, _) ->
-          let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
+          let (ubody, abody) = close (Ident.Map.add id alam fenv) cenv body in
           (Ulet(Immutable, kind, id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
@@ -975,14 +981,14 @@ let rec close fenv cenv = function
         let clos_ident = Ident.create "clos" in
         let fenv_body =
           List.fold_right
-            (fun (id, _pos, approx) fenv -> Tbl.add id approx fenv)
+            (fun (id, _pos, approx) fenv -> Ident.Map.add id approx fenv)
             infos fenv in
         let (ubody, approx) = close fenv_body cenv body in
         let sb =
           List.fold_right
             (fun (id, pos, _approx) sb ->
-              Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
-            infos Tbl.empty in
+              Ident.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
+            infos Ident.Map.empty in
         (Ulet(Immutable, Pgenval, clos_ident, clos,
               substitute Location.none !Clflags.float_const_prop sb None ubody),
          approx)
@@ -993,7 +999,7 @@ let rec close fenv cenv = function
         | (id, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
             let (ulam, approx) = close_named fenv cenv id lam in
-            ((id, ulam) :: udefs, Tbl.add id approx fenv_body) in
+            ((id, ulam) :: udefs, Ident.Map.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
@@ -1205,7 +1211,7 @@ and close_functions fenv cenv fun_defs =
   let fenv_rec =
     List.fold_right
       (fun (id, _params, _body, fundesc, _dbg) fenv ->
-        Tbl.add id (Value_closure(fundesc, Value_unknown)) fenv)
+        Ident.Map.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
   let env_pos = ref (-1) in
@@ -1228,7 +1234,7 @@ and close_functions fenv cenv fun_defs =
     let cenv_body =
       List.fold_right2
         (fun (id, _params, _body, _fundesc, _dbg) pos env ->
-          Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
+          Ident.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
@@ -1424,7 +1430,7 @@ let intro size lam =
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
-  let (ulam, _approx) = close Tbl.empty Tbl.empty lam in
+  let (ulam, _approx) = close Ident.Map.empty Ident.Map.empty lam in
   let opaque =
     !Clflags.opaque
     || Env.is_imported_opaque (Compilenv.current_unit_name ())

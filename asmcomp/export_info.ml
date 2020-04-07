@@ -277,7 +277,9 @@ let merge (t1 : t) (t2 : t) : t =
     sets_of_closures =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
         t2.sets_of_closures;
-    symbol_id = Symbol.Map.disjoint_union ~print:Export_id.print t1.symbol_id t2.symbol_id;
+    symbol_id =
+      Symbol.Map.disjoint_union ~print:Export_id.print t1.symbol_id
+        t2.symbol_id;
     offset_fun = Closure_id.Map.disjoint_union
         ~eq:int_eq t1.offset_fun t2.offset_fun;
     offset_fv = Var_within_closure.Map.disjoint_union

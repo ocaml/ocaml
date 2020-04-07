@@ -24,6 +24,7 @@ open Types
 open Typedtree
 open Outcometree
 open Ast_helper
+module String = Misc.Stdlib.String
 
 type directive_fun =
    | Directive_none of (unit -> unit)
@@ -39,18 +40,16 @@ type directive_info = {
 
 (* The table of toplevel value bindings and its accessors *)
 
-module StringMap = Map.Make(String)
-
-let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
+let toplevel_value_bindings : Obj.t String.Map.t ref = ref String.Map.empty
 
 let getvalue name =
   try
-    StringMap.find name !toplevel_value_bindings
+    String.Map.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
+  toplevel_value_bindings := String.Map.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -61,7 +60,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          StringMap.find name !toplevel_value_bindings
+          String.Map.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
@@ -240,9 +239,11 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, to_remove_from_sg, newenv) =
+        Typemod.type_toplevel_phrase oldenv sstr
+      in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature sg in
+      let sg' = Typemod.simplify_signature newenv to_remove_from_sg sg in
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let lam = Translmod.transl_toplevel_definition str in
@@ -272,7 +273,7 @@ let execute_phrase print_outcome ppf phr =
                       Ophr_eval (outv, ty)
 
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (pr_item newenv sg'))
+                  | _ -> Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -488,10 +489,15 @@ let set_paths () =
   (* Add whatever -I options have been specified on the command line,
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
-  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
-  load_path := "" :: List.rev (!Compenv.last_include_dirs @
-                               !Clflags.include_dirs @
-                               !Compenv.first_include_dirs) @ !load_path;
+  let expand = Misc.expand_directory Config.standard_library in
+  load_path := List.concat [
+    [ "" ];
+    List.map expand (List.rev !Compenv.first_include_dirs);
+    List.map expand (List.rev !Clflags.include_dirs);
+    List.map expand (List.rev !Compenv.last_include_dirs);
+    !load_path;
+    [expand "+camlp4"];
+  ];
   Dll.add_path !load_path
 
 let initialize_toplevel_env () =

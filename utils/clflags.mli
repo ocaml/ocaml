@@ -76,7 +76,7 @@ val no_std_include : bool ref
 val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
-val fast : bool ref
+val unsafe : bool ref
 val use_linscan : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
@@ -87,9 +87,11 @@ val output_complete_object : bool ref
 val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
+val match_context_rows : int ref
 val open_modules : string list ref
 val preprocessor : string option ref
 val all_ppx : string list ref
+val absname : bool ref
 val annotations : bool ref
 val binary_annotations : bool ref
 val use_threads : bool ref
@@ -131,6 +133,7 @@ val dump_rawflambda : bool ref
 val dump_flambda : bool ref
 val dump_flambda_let : int option ref
 val dump_instr : bool ref
+val keep_camlprimc_file : bool ref
 val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
 val dump_cmm : bool ref
@@ -206,6 +209,8 @@ val afl_inst_ratio : int ref
 val all_passes : string list ref
 val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
+
+val dump_into_file : bool ref
 
 val parse_color_setting : string -> Misc.Color.setting option
 val color : Misc.Color.setting option ref

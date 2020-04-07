@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*               Jeremy Yallop, University of Cambridge                   *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2017 Jeremy Yallop                                         *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -19,7 +18,6 @@ open Types
 
 exception Illegal_expr
 
-module Env' = Env
 module Rec_context =
 struct
   type access =
@@ -67,7 +65,8 @@ struct
     (** The address of a subexpression is not used, but may be bound *)
 
     val inspect : t -> t
-    (** The value of a subexpression is inspected with match, application, etc. *)
+    (** The value of a subexpression is inspected with match, application,
+        etc. *)
 
     val delay : t -> t
     (** An expression appears under 'fun p ->' or 'lazy' *)
@@ -165,58 +164,6 @@ let is_ref : Types.value_description -> bool = function
                           prim_arity = 1 } } ->
         true
   | _ -> false
-
-let scrape env ty =
-  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
-
-let array_element_kind env ty =
-  match scrape env ty with
-  | Tvar _ | Tunivar _ ->
-      `Pgenarray
-  | Tconstr(p, _, _) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        `Pintarray
-      else if Path.same p Predef.path_float then
-        if Config.flat_float_array then `Pfloatarray else `Paddrarray
-      else if Path.same p Predef.path_string
-            || Path.same p Predef.path_array
-            || Path.same p Predef.path_nativeint
-            || Path.same p Predef.path_int32
-            || Path.same p Predef.path_int64 then
-        `Paddrarray
-      else begin
-        try
-          match Env'.find_type p env with
-            {type_kind = Type_abstract} ->
-              `Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
-                cstrs ->
-              `Pintarray
-          | {type_kind = _} ->
-              `Paddrarray
-        with Not_found ->
-          (* This can happen due to e.g. missing -I options,
-              causing some .cmi files to be unavailable.
-              Maybe we should emit a warning. *)
-          `Pgenarray
-      end
-  | _ ->
-      `Paddrarray
-
-let array_type_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
-    when Path.same p Predef.path_array ->
-      array_element_kind env elt_ty
-  | _ ->
-      (* This can happen with e.g. Obj.field *)
-      `Pgenarray
-
-let array_kind exp = array_type_kind exp.exp_env exp.exp_type
-
-let has_concrete_element_type : Typedtree.expression -> bool =
-  fun e -> array_kind e <> `Pgenarray
 
 (* See the note on abstracted arguments in the documentation for
     Typedtree.Texp_apply *)
@@ -372,13 +319,12 @@ let rec expression : Env.env -> Typedtree.expression -> Use.t =
     | Texp_letmodule (x, _, m, e) ->
       let ty = modexp env m in
       Use.join (Use.discard ty) (expression (Ident.add x ty env) e)
-    | Texp_match (e, val_cases, exn_cases, eff_cases, _) ->
+    | Texp_match (e, cases, eff_cases, _) ->
       let t = expression env e in
       let exn_case env {Typedtree.c_rhs} = expression env c_rhs in
-      let cs = list (case ~scrutinee:t) env val_cases
-      and es = list exn_case env exn_cases
+      let cs = list (case ~scrutinee:t) env cases
       and fs = list exn_case env eff_cases in
-      Use.(join (join cs es) fs)
+      Use.(join cs fs)
     | Texp_for (_, _, e1, e2, _, e3) ->
       Use.(join
               (join
@@ -407,14 +353,20 @@ let rec expression : Env.env -> Typedtree.expression -> Use.t =
         else Use.inspect ty
     | Texp_tuple exprs ->
       Use.guard (list expression env exprs)
-    | Texp_array exprs when array_kind exp = `Pfloatarray ->
-      Use.inspect (list expression env exprs)
-    | Texp_array exprs when has_concrete_element_type exp ->
-      Use.guard (list expression env exprs)
-    | Texp_array exprs ->
-      (* This is counted as a use, because constructing a generic array
-          involves inspecting the elements (PR#6939). *)
-      Use.inspect (list expression env exprs)
+    | Texp_array args ->
+      let ty = list expression env args in
+      begin match Typeopt.array_kind exp with
+      | Lambda.Pfloatarray ->
+          (* (flat) float arrays unbox their elements *)
+          Use.inspect ty
+      | Lambda.Pgenarray ->
+          (* This is counted as a use, because constructing a generic array
+             involves inspecting to decide whether to unbox (PR#6939). *)
+          Use.inspect ty
+      | Lambda.Paddrarray | Lambda.Pintarray ->
+          (* non-generic, non-float arrays act as constructors *)
+          Use.guard ty
+      end
     | Texp_construct (_, desc, exprs) ->
       let access_constructor =
         match desc.cstr_tag with
@@ -487,7 +439,7 @@ let rec expression : Env.env -> Typedtree.expression -> Use.t =
         begin match Typeopt.classify_lazy_argument e with
         | `Constant_or_function
         | `Identifier _
-        | `Float ->
+        | `Float_that_cannot_be_shortcut ->
           expression env e
         | `Other ->
           Use.delay (expression env e)
@@ -611,7 +563,7 @@ and class_expr : Env.env -> Typedtree.class_expr -> Use.t =
     | Tcl_structure cs ->
         class_structure env cs
     | Tcl_fun (_, _, args, ce, _) ->
-        let arg env (_, _, e) = expression env e in
+        let arg env (_, e) = expression env e in
         Use.inspect (Use.join (list arg env args)
                         (class_expr env ce))
     | Tcl_apply (ce, args) ->
@@ -619,8 +571,8 @@ and class_expr : Env.env -> Typedtree.class_expr -> Use.t =
         Use.inspect (Use.join (class_expr env ce)
                         (list arg env args))
     | Tcl_let (rec_flag, valbinds, _, ce) ->
-        let _, ty = value_bindings rec_flag env valbinds in
-        Use.(inspect (join ty (class_expr env ce)))
+        let env', ty = value_bindings rec_flag env valbinds in
+        Use.(inspect (join ty (class_expr env' ce)))
     | Tcl_constraint (ce, _, _, _, _) ->
         class_expr env ce
     | Tcl_open (_, _, _, _, ce) ->
@@ -641,7 +593,8 @@ and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
     Use.(join ty
             (join (expression env c_rhs)
                 (inspect (option expression env c_guard))))
-and value_bindings : rec_flag -> Env.env -> Typedtree.value_binding list -> Env.env * Use.t =
+and value_bindings :
+  rec_flag -> Env.env -> Typedtree.value_binding list -> Env.env * Use.t =
   fun rec_flag env bindings ->
     match rec_flag with
     | Recursive ->
@@ -697,8 +650,10 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_variant _ -> true
     | Tpat_record (_, _) -> true
     | Tpat_array _ -> true
-    | Tpat_or (l,r,_) -> is_destructuring_pattern l || is_destructuring_pattern r
+    | Tpat_or (l,r,_) ->
+        is_destructuring_pattern l || is_destructuring_pattern r
     | Tpat_lazy _ -> true
+    | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
   let ty = expression (build_unguarded_env idlist) expr in
@@ -720,8 +675,14 @@ let is_valid_class_expr idlist ce =
       | Tcl_fun (_, _, _, _, _) -> Use.empty
       | Tcl_apply (_, _) -> Use.empty
       | Tcl_let (rec_flag, valbinds, _, ce) ->
-          let _, ty = value_bindings rec_flag env valbinds in
-          Use.join ty (class_expr env ce)
+          (* This rule looks like the `Texp_let` rule in the `expression`
+             function. There is no `Use.discard` here because the
+             occurrences of the variables in [idlist] are only of the form
+             [new id], so they are either absent, Dereferenced, or Guarded
+             (under a delay), never Unguarded, and `discard` would be a no-op.
+          *)
+          let env', ty = value_bindings rec_flag env valbinds in
+          Use.join ty (class_expr env' ce)
       | Tcl_constraint (ce, _, _, _, _) ->
           class_expr env ce
       | Tcl_open (_, _, _, _, ce) ->

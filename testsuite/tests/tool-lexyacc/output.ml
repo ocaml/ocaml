@@ -44,7 +44,7 @@ let enumerate_vect v =
     with Not_found ->
       env := (v.(pos), {pos = [pos]; freq = 1 }) :: !env
   done;
-  Sort.list (fun (e1, occ1) (e2, occ2) -> occ1.freq >= occ2.freq) !env
+  List.sort (fun (e1, occ1) (e2, occ2) -> compare occ2.freq occ1.freq) !env
 
 
 let output_move = function

@@ -22,6 +22,8 @@ open Primitive
 open Types
 open Typetexp
 
+module String = Misc.Stdlib.String
+
 type native_repr_kind = Unboxed | Untagged
 
 type error =
@@ -205,12 +207,6 @@ let set_fixed_row env loc p decl =
 
 (* Translate one type declaration *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare (x:t) y = compare x y
-  end)
-
 let make_params env params =
   let make_param (sty, v) =
     try
@@ -222,12 +218,12 @@ let make_params env params =
 
 let transl_labels env closed lbls =
   assert (lbls <> []);
-  let all_labels = ref StringSet.empty in
+  let all_labels = ref String.Set.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
-       if StringSet.mem name !all_labels then
+       if String.Set.mem name !all_labels then
          raise(Error(loc, Duplicate_label name));
-       all_labels := StringSet.add name !all_labels)
+       all_labels := String.Set.add name !all_labels)
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
@@ -454,12 +450,12 @@ let transl_declaration env sdecl id =
           | (_,_,loc)::_ ->
               Location.prerr_warning loc Warnings.Constraint_on_gadt
         end;
-        let all_constrs = ref StringSet.empty in
+        let all_constrs = ref String.Set.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
-            if StringSet.mem name !all_constrs then
+            if String.Set.mem name !all_constrs then
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
-            all_constrs := StringSet.add name !all_constrs)
+            all_constrs := String.Set.add name !all_constrs)
           scstrs;
         if List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
@@ -617,8 +613,6 @@ let rec check_constraints_rec env loc visited ty =
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end
 
-module SMap = Map.Make(String)
-
 let check_constraints_labels env visited l pl =
   let rec get_loc name = function
       [] -> assert false
@@ -643,14 +637,14 @@ let check_constraints env sdecl (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
         let foldf acc x =
-          SMap.add x.pcd_name.txt x acc
+          String.Map.add x.pcd_name.txt x acc
         in
-        List.fold_left foldf SMap.empty pl
+        List.fold_left foldf String.Map.empty pl
       in
       List.iter
         (fun {Types.cd_id=name; cd_args; cd_res} ->
           let {pcd_args; pcd_res; _} =
-            try SMap.find (Ident.name name) pl_index
+            try String.Map.find (Ident.name name) pl_index
             with Not_found -> assert false in
           begin match cd_args, pcd_args with
           | Cstr_tuple tyl, Pcstr_tuple styl ->
@@ -1882,15 +1876,25 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
 
 
 let check_unboxable env loc ty =
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  try match ty.desc with
-  | Tconstr (p, _, _) ->
-    let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.unboxed then
-      Location.prerr_warning loc
-        (Warnings.Unboxable_type_in_prim_decl (Path.name p))
-  | _ -> ()
-  with Not_found -> ()
+  let check_type acc ty : Path.Set.t =
+    let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+    try match ty.desc with
+      | Tconstr (p, _, _) ->
+        let tydecl = Env.find_type p env in
+        if tydecl.type_unboxed.default then
+          Path.Set.add p acc
+        else acc
+      | _ -> acc
+    with Not_found -> acc
+  in
+  let all_unboxable_types = Btype.fold_type_expr check_type Path.Set.empty ty in
+  Path.Set.fold
+    (fun p () ->
+       Location.prerr_warning loc
+         (Warnings.Unboxable_type_in_prim_decl (Path.name p))
+    )
+    all_unboxable_types
+    ()
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1926,7 +1930,7 @@ let transl_value_decl env loc valdecl =
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      Btype.iter_type_expr (check_unboxable env loc) ty;
+      check_unboxable env loc ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -2076,8 +2080,7 @@ let approx_type_decl sdecl_list =
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
-  let to_check path =
-    List.exists (fun id -> Path.isfree id path) recmod_ids in
+  let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
   check_recursion env loc path decl to_check
 
@@ -2154,15 +2157,20 @@ let report_error ppf = function
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
+      Printtyp.Naming_context.reset ();
       fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
         "Constraints are not satisfied in this type."
-        Printtyp.type_expr ty Printtyp.type_expr ty'
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Parameters_differ (path, ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
+      Printtyp.Naming_context.reset ();
       fprintf ppf
         "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
-        (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
+        (Path.name path)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Inconsistent_constraint (env, trace) ->
       fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf env trace
@@ -2191,7 +2199,7 @@ let report_error ppf = function
             )
             "case" (fun ppf c ->
                 fprintf ppf
-                  "%s of %a" (Ident.name c.Types.cd_id)
+                  "%a of %a" Printtyp.ident c.Types.cd_id
                   Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
@@ -2289,15 +2297,16 @@ let report_error ppf = function
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
-                   int64 and nativeint can be unboxed"
+      fprintf ppf "[@Don't know how to unbox this type.@ \
+                    Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "Don't know how to untag this type. Only int \
-                   can be untagged"
+      fprintf ppf "[@Don't know how to untag this type.@ \
+                   Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
-        "The attribute '%s' should be attached to a direct argument or \
-         result of the primitive, it should not occur deeply into its type"
+        "@[The attribute '%s' should be attached to@ \
+           a direct argument or result of the primitive,@ \
+           it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Bad_immediate_attribute ->
       fprintf ppf "@[%s@ %s@]"

@@ -4,42 +4,42 @@ type t2 = { f : string; } [@@unboxed]
 - : bool = true
 type t3 = B of { g : string; } [@@unboxed]
 - : bool = true
-Characters 29-58:
+Line 3, characters 0-29:
   type t4 = C [@@ocaml.unboxed];;  (* no argument *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because its constructor has no argument.
-Characters 0-45:
+Line 1, characters 0-45:
   type t5 = D of int * string [@@ocaml.unboxed];; (* more than one argument *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        its constructor has more than one argument.
-Characters 0-33:
+Line 1, characters 0-33:
   type t5 = E | F [@@ocaml.unboxed];;          (* more than one constructor *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
-Characters 0-40:
+Line 1, characters 0-40:
   type t6 = G of int | H [@@ocaml.unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
-Characters 0-51:
+Line 1, characters 0-51:
   type t7 = I of string | J of bool [@@ocaml.unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
-Characters 1-50:
+Line 2, characters 0-49:
   type t8 = { h : bool; i : int } [@@ocaml.unboxed];;  (* more than one field *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one field.
-Characters 0-56:
+Line 1, characters 0-56:
   type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        its constructor has more than one argument.
 type t10 = A of t10 [@@unboxed]
-Characters 12-15:
+Line 1, characters 12-15:
   let rec x = A x;;
               ^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
-Characters 121-172:
+Line 5, characters 6-57:
   ......struct
     type t = A of string [@@ocaml.unboxed]
   end..
@@ -54,7 +54,7 @@ Error: Signature mismatch:
          type t = A of string
        Their internal representations differ:
        the first declaration uses unboxed representation.
-Characters 63-96:
+Line 4, characters 6-39:
   ......struct
     type t = A of string
   end..
@@ -69,7 +69,7 @@ Error: Signature mismatch:
          type t = A of string [@@unboxed]
        Their internal representations differ:
        the second declaration uses unboxed representation.
-Characters 48-102:
+Line 4, characters 6-60:
   ......struct
     type t = { f : string } [@@ocaml.unboxed]
   end..
@@ -84,7 +84,7 @@ Error: Signature mismatch:
          type t = { f : string; }
        Their internal representations differ:
        the first declaration uses unboxed representation.
-Characters 66-102:
+Line 4, characters 6-42:
   ......struct
     type t = { f : string }
   end..
@@ -99,7 +99,7 @@ Error: Signature mismatch:
          type t = { f : string; } [@@unboxed]
        Their internal representations differ:
        the second declaration uses unboxed representation.
-Characters 53-112:
+Line 4, characters 6-65:
   ......struct
     type t = A of { f : string } [@@ocaml.unboxed]
   end..
@@ -114,7 +114,7 @@ Error: Signature mismatch:
          type t = A of { f : string; }
        Their internal representations differ:
        the first declaration uses unboxed representation.
-Characters 71-112:
+Line 4, characters 6-47:
   ......struct
     type t = A of { f : string }
   end..
@@ -137,19 +137,19 @@ type t13 = A : 'a t12 -> t13 [@@unboxed]
 type t14
 type t15 = A of t14 [@@unboxed]
 type 'a abs
-Characters 0-45:
+Line 1, characters 0-45:
   type t16 = A : _ abs -> t16 [@@ocaml.unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
-Characters 19-69:
+Line 3, characters 0-50:
   type t18 = A : _ list abs -> t18 [@@ocaml.unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
-Characters 176-256:
+Line 7, characters 6-86:
   ......struct
     type t = A of float [@@ocaml.unboxed]
     type u = { f1 : t; f2 : t }
@@ -164,14 +164,14 @@ Error: Signature mismatch:
        the first declaration uses unboxed float representation.
 module T : sig type t [@@immediate] end
 type 'a s = S : 'a -> 'a s [@@unboxed]
-Characters 0-33:
+Line 1, characters 0-33:
   type t = T : _ s -> t [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
 type 'a s = S : 'a -> 'a option s [@@unboxed]
-Characters 0-33:
+Line 1, characters 0-33:
   type t = T : _ s -> t [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
@@ -179,21 +179,21 @@ Error: This type cannot be unboxed because
        You should annotate it with [@@ocaml.boxed].
 module M :
   sig type 'a r constraint 'a = unit -> 'b val inj : 'b -> (unit -> 'b) r end
-Characters 14-59:
+Line 3, characters 0-45:
   type t = T : (unit -> _) M.r -> t [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
 type 'a s = S : (unit -> 'a) M.r -> 'a option s [@@unboxed]
-Characters 14-47:
+Line 3, characters 0-33:
   type t = T : _ s -> t [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
 type 'a t = T : 'a s -> 'a t [@@unboxed]
-Characters 42-81:
+Line 4, characters 0-39:
   type _ s = S : 'a t -> _ s  [@@unboxed]
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because

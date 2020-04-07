@@ -40,7 +40,7 @@ class foo: foo_t =
   end
 ;;
 [%%expect{|
-Line _, characters 2-156:
+Line 2, characters 2-156:
   ..object(self)
       method foo = "foo"
       method cast: type a. a name -> a =

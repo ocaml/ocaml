@@ -44,9 +44,9 @@ method! reload_operation op arg res =
   | Iabsf | Inegf when !fpu = Soft ->
       (* Soft FP neg and abs also have a "two-address" constraint of sorts.
          64-bit floats are represented by pairs of 32-bit integers,
-	 hence there are two arguments and two results.
-	 The code emitter assumes [arg.(0) = res.(0)] but supports
-	 [arg.(1)] and [res.(1)] being in different registers. *)
+         hence there are two arguments and two results.
+         The code emitter assumes [arg.(0) = res.(0)] but supports
+         [arg.(1)] and [res.(1)] being in different registers. *)
       res'.(0) <- arg'.(0);
       argres'
   | _ ->

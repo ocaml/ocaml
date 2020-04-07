@@ -61,8 +61,8 @@ type spec =
                                    function with each remaining argument *)
   | Expand of (string -> string array) (** If the remaining arguments to process
                                            are of the form
-                                           [["-foo"; "arg"] @ rest] where "foo" is
-                                           registered as [Expand f], then the
+                                           [["-foo"; "arg"] @ rest] where "foo"
+                                           is registered as [Expand f], then the
                                            arguments [f "arg" @ rest] are
                                            processed. Only allowed in
                                            [parse_and_expand_argv_dynamic]. *)
@@ -189,8 +189,8 @@ val read_arg: string -> string array
     @since 4.05.0 *)
 
 val read_arg0: string -> string array
-(** Identical to {!Arg.read_arg} but assumes null character terminated command line
-    arguments.
+(** Identical to {!Arg.read_arg} but assumes null character terminated command
+    line arguments.
     @since 4.05.0 *)
 
 

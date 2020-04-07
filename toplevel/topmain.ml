@@ -33,9 +33,11 @@ let is_expanded pos = pos < !first_nonexpanded_pos
 
 let expand_position pos len =
   if pos < !first_nonexpanded_pos then
-    first_nonexpanded_pos := !first_nonexpanded_pos + len (* Shift the position *)
+    (* Shift the position *)
+    first_nonexpanded_pos := !first_nonexpanded_pos + len
   else
-    first_nonexpanded_pos :=  pos + len + 2 (* New last position *)
+    (* New last position *)
+    first_nonexpanded_pos := pos + len + 2
 
 let prepare ppf =
   Toploop.set_paths ();
@@ -98,10 +100,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
-  let _absname = set Location.absname
-  let _I dir =
-    let dir = Misc.expand_directory Config.standard_library dir in
-    include_dirs := dir :: !include_dirs
+  let _absname = set Clflags.absname
+  let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _labels = clear classic
@@ -129,7 +129,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _no_strict_formats = clear strict_formats
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _version () = print_version ()
   let _vnum () = print_version_num ()

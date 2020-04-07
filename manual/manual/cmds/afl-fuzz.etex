@@ -1,5 +1,4 @@
 \chapter{Fuzzing with afl-fuzz}
-\pdfchapterfold{-9}{Fuzzing with afl-fuzz}
 %HEVEA\cutname{afl-fuzz.html}
 
 \section{Overview}

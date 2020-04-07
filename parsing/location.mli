@@ -50,6 +50,8 @@ val symbol_gloc: unit -> t
   at 1, in the current parser rule. *)
 val rhs_loc: int -> t
 
+val rhs_interval: int -> int -> t
+
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
 
@@ -75,7 +77,7 @@ val default_warning_printer : t -> formatter -> Warnings.t -> unit
 
 val highlight_locations: formatter -> t list -> bool
 
-val show_code_at_location: formatter -> Lexing.lexbuf -> t -> unit
+val show_code_at_location: formatter -> Lexing.lexbuf -> t list -> unit
 
 type 'a loc = {
   txt : 'a;
@@ -100,8 +102,6 @@ val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)
 
-
-val absname: bool ref
 
 (** Support for located errors *)
 

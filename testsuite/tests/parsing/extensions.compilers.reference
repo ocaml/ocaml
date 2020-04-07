@@ -20,7 +20,7 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[10,176+4]..[10,176+46]) ghost
+        pattern (extensions.ml[10,176+4]..[10,176+31]) ghost
           Ppat_constraint
           pattern (extensions.ml[10,176+4]..[10,176+14])
             Ppat_extension "foo"
@@ -76,7 +76,7 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[13,251+4]..[13,251+74]) ghost
+        pattern (extensions.ml[13,251+4]..[13,251+44]) ghost
           Ppat_constraint
           pattern (extensions.ml[13,251+4]..[13,251+23])
             Ppat_extension "foo"
@@ -147,7 +147,7 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[16,344+4]..[16,344+60]) ghost
+        pattern (extensions.ml[16,344+4]..[16,344+37]) ghost
           Ppat_constraint
           pattern (extensions.ml[16,344+4]..[16,344+19])
             Ppat_extension "foo"
@@ -208,7 +208,7 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[20,445+4]..[20,445+60]) ghost
+        pattern (extensions.ml[20,445+4]..[20,445+44]) ghost
           Ppat_constraint
           pattern (extensions.ml[20,445+4]..[20,445+28])
             Ppat_extension "foo"
@@ -252,7 +252,7 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[23,534+4]..[25,606+23]) ghost
+        pattern (extensions.ml[23,534+4]..[24,573+32]) ghost
           Ppat_constraint
           pattern (extensions.ml[23,534+4]..[23,534+38])
             Ppat_extension "foo"

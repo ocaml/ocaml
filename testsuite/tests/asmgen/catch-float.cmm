@@ -1,0 +1,11 @@
+(* TEST
+files = "main.c"
+arguments = "-DFLOAT_CATCH -DFUN=catch_float main.c"
+* asmgen
+*)
+
+(function "catch_float" (b:int)
+  (+f 10.0
+  (catch
+    (exit lbl 100.0)
+   with (lbl x:float) (+f x 1000.0))))

@@ -24,34 +24,32 @@ type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
-module PathMap = Map.Make(Path)
-
 type t =
-  { types: type_replacement PathMap.t;
-    modules: Path.t PathMap.t;
-    modtypes: (Ident.t, module_type) Tbl.t;
+  { types: type_replacement Path.Map.t;
+    modules: Path.t Path.Map.t;
+    modtypes: module_type Ident.Map.t;
     for_saving: bool;
     loc: Location.t option;
   }
 
 let identity =
-  { types = PathMap.empty;
-    modules = PathMap.empty;
-    modtypes = Tbl.empty;
+  { types = Path.Map.empty;
+    modules = Path.Map.empty;
+    modtypes = Ident.Map.empty;
     for_saving = false;
     loc = None;
   }
 
-let add_type_path id p s = { s with types = PathMap.add id (Path p) s.types }
+let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
 let add_type id p s = add_type_path (Pident id) p s
 
 let add_type_function id ~params ~body s =
-  { s with types = PathMap.add id (Type_function { params; body }) s.types }
+  { s with types = Path.Map.add id (Type_function { params; body }) s.types }
 
-let add_module_path id p s = { s with modules = PathMap.add id p s.modules }
+let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
 let add_module id p s = add_module_path (Pident id) p s
 
-let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
+let add_modtype id ty s = { s with modtypes = Ident.Map.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
 
@@ -85,7 +83,7 @@ let attrs s x =
     else x
 
 let rec module_path s path =
-  try PathMap.find path s.modules
+  try Path.Map.find path s.modules
   with Not_found ->
     match path with
     | Pident _ -> path
@@ -97,7 +95,7 @@ let rec module_path s path =
 let modtype_path s = function
     Pident id as p ->
       begin try
-        match Tbl.find id s.modtypes with
+        match Ident.Map.find id s.modtypes with
           | Mty_ident p -> p
           | _ -> fatal_error "Subst.modtype_path"
       with Not_found -> p end
@@ -107,7 +105,7 @@ let modtype_path s = function
       fatal_error "Subst.modtype_path"
 
 let type_path s path =
-  match PathMap.find path s.types with
+  match Path.Map.find path s.types with
   | Path p -> p
   | Type_function _ -> assert false
   | exception Not_found ->
@@ -126,7 +124,7 @@ let type_path s p =
   | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
 
 let to_subst_by_type_function s p =
-  match PathMap.find p s.types with
+  match Path.Map.find p s.types with
   | Path _ -> false
   | Type_function _ -> true
   | exception Not_found -> false
@@ -191,7 +189,7 @@ let rec typexp s ty =
       else match desc with
       | Tconstr (p, args, _abbrev) ->
          let args = List.map (typexp s) args in
-         begin match PathMap.find p s.types with
+         begin match Path.Map.find p s.types with
          | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
          | Path _ -> Tconstr(type_path s p, args, ref Mnil)
          | Type_function { params; body } ->
@@ -418,7 +416,7 @@ let rec modtype s = function
     Mty_ident p as mty ->
       begin match p with
         Pident id ->
-          begin try Tbl.find id s.modtypes with Not_found -> mty end
+          begin try Ident.Map.find id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
           Mty_ident(Pdot(module_path s p, n, pos))
       | Papply _ ->
@@ -476,10 +474,10 @@ and modtype_declaration s decl  =
    and return resulting merged map. *)
 
 let merge_tbls f m1 m2 =
-  Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
+  Ident.Map.fold (fun k d accu -> Ident.Map.add k (f d) accu) m1 m2
 
 let merge_path_maps f m1 m2 =
-  PathMap.fold (fun k d accu -> PathMap.add k (f d) accu) m1 m2
+  Path.Map.fold (fun k d accu -> Path.Map.add k (f d) accu) m1 m2
 
 let keep_latest_loc l1 l2 =
   match l2 with

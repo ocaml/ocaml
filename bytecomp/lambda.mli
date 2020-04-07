@@ -200,6 +200,12 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+val equal_primitive : primitive -> primitive -> bool
+
+val equal_value_kind : value_kind -> value_kind -> bool
+
+val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
+
 type structured_constant =
     Const_base of constant
   | Const_pointer of int
@@ -213,10 +219,17 @@ type inline_attribute =
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
+val equal_inline_attribute : inline_attribute -> inline_attribute -> bool
+
 type specialise_attribute =
   | Always_specialise (* [@specialise] or [@specialise always] *)
   | Never_specialise (* [@specialise never] *)
   | Default_specialise (* no [@specialise] attribute *)
+
+val equal_specialise_attribute
+   : specialise_attribute
+  -> specialise_attribute
+  -> bool
 
 type function_kind = Curried | Tupled
 
@@ -233,6 +246,8 @@ type let_kind = Strict | Alias | StrictOpt | Variable
  *)
 
 type meth_kind = Self | Public | Cached
+
+val equal_meth_kind : meth_kind -> meth_kind -> bool
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
@@ -293,7 +308,7 @@ and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
-    lev_env: Env.summary }
+    lev_env: Env.t }
 
 and lambda_event_kind =
     Lev_before
@@ -346,10 +361,20 @@ val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
-val subst: lambda Ident.Map.t -> lambda -> lambda
-(** Apply a substitution to a lambda-term.
+val subst: (Ident.t -> Types.value_description -> Env.t -> Env.t) ->
+  lambda Ident.Map.t -> lambda -> lambda
+(** [subst env_update_fun s lt] applies a substitution [s] to the lambda-term
+    [lt].
+
     Assumes that the image of the substitution is out of reach
-    of the bound variables of the lambda-term (no capture). *)
+    of the bound variables of the lambda-term (no capture).
+
+    [env_update_fun] is used to refresh the environment contained in debug
+    events.  *)
+
+val rename : Ident.t Ident.Map.t -> lambda -> lambda
+(** A version of [subst] specialized for the case where we're just renaming
+    idents. *)
 
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda

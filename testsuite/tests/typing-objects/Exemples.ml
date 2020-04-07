@@ -95,7 +95,7 @@ class ref x_init = object
   method set y = x <- y
 end;;
 [%%expect{|
-Line _, characters 0-95:
+Line 1, characters 0-95:
   class ref x_init = object
     val mutable x = x_init
     method get = x
@@ -204,7 +204,7 @@ class ['a] color_circle :
 
 let c'' = new color_circle p;;
 [%%expect{|
-Line _, characters 27-28:
+Line 1, characters 27-28:
   let c'' = new color_circle p;;
                              ^
 Error: This expression has type point but an expression was expected of type
@@ -222,7 +222,7 @@ val c'' : color_point color_circle = <obj>
 |}];;
 (c'' :> point circle);;
 [%%expect{|
-Line _, characters 0-21:
+Line 1, characters 0-21:
   (c'' :> point circle);;
   ^^^^^^^^^^^^^^^^^^^^^
 Error: Type
@@ -236,7 +236,7 @@ Error: Type
 |}];;                 (* Fail *)
 fun x -> (x : color_point color_circle :> point circle);;
 [%%expect{|
-Line _, characters 9-55:
+Line 1, characters 9-55:
   fun x -> (x : color_point color_circle :> point circle);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type
@@ -284,7 +284,7 @@ class printable_color_point y c = object (self)
     Format.print_string ")"
 end;;
 [%%expect{|
-Line _, characters 10-27:
+Line 3, characters 10-27:
     inherit printable_point y as super
             ^^^^^^^^^^^^^^^^^
 Warning 13: the following instance variables are overridden by the class printable_point :
@@ -532,7 +532,7 @@ val c2 : int_comparable2 = <obj>
 |}];;
 l#add (c2 :> int_comparable);;
 [%%expect{|
-Line _, characters 6-28:
+Line 1, characters 6-28:
   l#add (c2 :> int_comparable);;
         ^^^^^^^^^^^^^^^^^^^^^^
 Error: Type
@@ -577,7 +577,7 @@ l#add (c3 :> int_comparable);;
 |}];;
 (new sorted_list ())#add c3;;
 [%%expect{|
-Line _, characters 25-27:
+Line 1, characters 25-27:
   (new sorted_list ())#add c3;;
                            ^^
 Error: This expression has type
@@ -591,7 +591,7 @@ Error: This expression has type
            < cmp : int_comparable -> int; setx : int -> unit; x : int >
        The first object type has no method setx
 |}, Principal{|
-Line _, characters 25-27:
+Line 1, characters 25-27:
   (new sorted_list ())#add c3;;
                            ^^
 Error: This expression has type
@@ -612,7 +612,7 @@ let pr l =
   List.map (fun c -> Format.print_int c#x; Format.print_string " ") l;
   Format.print_newline ();;
 [%%expect{|
-Line _, characters 2-69:
+Line 2, characters 2-69:
     List.map (fun c -> Format.print_int c#x; Format.print_string " ") l;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 10: this expression should have type unit.

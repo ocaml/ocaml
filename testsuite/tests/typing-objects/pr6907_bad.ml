@@ -13,7 +13,7 @@ module type S = sig
   class base : 'e -> ['e] t
 end;;
 [%%expect{|
-Line _, characters 2-27:
+Line 2, characters 2-27:
     class base : 'e -> ['e] t
     ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Some type variables are unbound in this type:

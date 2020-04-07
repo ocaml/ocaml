@@ -24,6 +24,7 @@ open Extension
 open Exception
 open Class
 open Module
+module String = Misc.Stdlib.String
 
 let with_parameter_list = ref false
 let css_style = ref None
@@ -229,11 +230,6 @@ module Naming =
     let file_type_class_complete_target name =
       type_prefix^name^".html"
   end
-
-module StringSet = Set.Make (struct
-  type t = string
-  let compare (x:t) y = compare x y
-end)
 
 (** A class with a method to colorize a string which represents OCaml code. *)
 class ocaml_code =
@@ -946,17 +942,17 @@ class html =
     (** The known types names.
        Used to know if we must create a link to a type
        when printing a type. *)
-    val mutable known_types_names = StringSet.empty
+    val mutable known_types_names = String.Set.empty
 
     (** The known class and class type names.
        Used to know if we must create a link to a class
        or class type or not when printing a type. *)
-    val mutable known_classes_names = StringSet.empty
+    val mutable known_classes_names = String.Set.empty
 
     (** The known modules and module types names.
        Used to know if we must create a link to a type or not
        when printing a module type. *)
-    val mutable known_modules_names = StringSet.empty
+    val mutable known_modules_names = String.Set.empty
 
     method index_prefix =
       if !Odoc_global.out_file = Odoc_messages.default_out_file then
@@ -1252,12 +1248,12 @@ class html =
             match_s
             rel
         in
-        if StringSet.mem match_s known_types_names then
+        if String.Set.mem match_s known_types_names then
            "<a href=\""^(Naming.complete_target Naming.mark_type match_s)^"\">"^
            s_final^
            "</a>"
         else
-          if StringSet.mem match_s known_classes_names then
+          if String.Set.mem match_s known_classes_names then
             let (html_file, _) = Naming.html_files match_s in
             "<a href=\""^html_file^"\">"^s_final^"</a>"
           else
@@ -1279,7 +1275,7 @@ class html =
             match_s
             rel
         in
-        if StringSet.mem match_s known_modules_names then
+        if String.Set.mem match_s known_modules_names then
           let (html_file, _) = Naming.html_files match_s in
           "<a href=\""^html_file^"\">"^s_final^"</a>"
         else
@@ -2860,7 +2856,7 @@ class html =
       let types = Odoc_info.Search.types module_list in
       known_types_names <-
         List.fold_left
-          (fun acc t -> StringSet.add t.ty_name acc)
+          (fun acc t -> String.Set.add t.ty_name acc)
           known_types_names
           types ;
       (* Get the names of all class and class types. *)
@@ -2868,12 +2864,12 @@ class html =
       let class_types = Odoc_info.Search.class_types module_list in
       known_classes_names <-
         List.fold_left
-          (fun acc c -> StringSet.add c.cl_name acc)
+          (fun acc c -> String.Set.add c.cl_name acc)
           known_classes_names
           classes ;
       known_classes_names <-
         List.fold_left
-          (fun acc ct -> StringSet.add ct.clt_name acc)
+          (fun acc ct -> String.Set.add ct.clt_name acc)
           known_classes_names
           class_types ;
       (* Get the names of all known modules and module types. *)
@@ -2881,12 +2877,12 @@ class html =
       let modules = Odoc_info.Search.modules module_list in
       known_modules_names <-
         List.fold_left
-          (fun acc m -> StringSet.add m.m_name acc)
+          (fun acc m -> String.Set.add m.m_name acc)
           known_modules_names
           modules ;
       known_modules_names <-
         List.fold_left
-          (fun acc mt -> StringSet.add mt.mt_name acc)
+          (fun acc mt -> String.Set.add mt.mt_name acc)
           known_modules_names
           module_types ;
       (* generate html for each module *)

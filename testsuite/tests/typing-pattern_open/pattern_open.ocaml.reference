@@ -52,15 +52,15 @@ module S :
     type ex = Ex : 'a * 'a -> ex
     val s : unit t
   end
-Characters 58-61:
+Line 2, characters 27-30:
     | S.(Sep), (S.(Sep,Sep), Sep) -> ()
                              ^^^
 Error: Unbound constructor Sep
-Characters 50-52:
+Line 2, characters 17-19:
     | S.(Ex(a,b)), Ex(c,d) -> ()
                    ^^
 Error: Unbound constructor Ex
-Characters 48-49:
+Line 2, characters 15-16:
     | S.(Sep) -> s
                  ^
 Error: Unbound value s

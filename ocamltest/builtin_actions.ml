@@ -55,7 +55,7 @@ let cd = make
         let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
         let result = Result.fail_with_reason reason in
         (result, env)
-    end)    
+    end)
 
 let dumpenv = make
   "dumpenv"

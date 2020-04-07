@@ -10,10 +10,10 @@ let eliminate_intermediate_float_record () =
   for n = 1 to 1000 do
     let open Complex in
     let c = { re = float n; im = 0. } in
-    (* The following line triggers warning 55 twice when compiled without flambda *)
-    (* It would be better to disable this warning just here but since *)
-    (* this is a backend-warning, this is not currently possible *)
-    (* Hence the use of the -w-55 command-line flag for this test *)
+    (* The following line triggers warning 55 twice when compiled without
+       flambda. It would be better to disable this warning just here but since
+       this is a backend-warning, this is not currently possible. Hence the use
+       of the -w-55 command-line flag for this test *)
     r := !r +. (norm [@inlined]) ((add [@inlined]) c i);
   done;
   ignore (Sys.opaque_identity !r)

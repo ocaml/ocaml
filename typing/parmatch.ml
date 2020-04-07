@@ -72,11 +72,11 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
                                                    S
                                                 -------> | "" |
                              U     | S, "" | __/         | () |
-                         --------> | _, () |   \  ¬ S
+                         --------> | _, () |   \ not S
         | U, _, () | __/                        -------> | () |
         | _, S, "" |   \
                         ---------> | S, "" | ----------> | "" |
-                           ¬ U                    S
+                          not U                    S
    v}
 
    where following an edge labelled by a pattern P means "assuming the value I
@@ -443,7 +443,8 @@ let rec normalize_pat q = match q.pat_desc with
         q.pat_type q.pat_env
   | Tpat_lazy _ ->
       make_pat (Tpat_lazy omega) q.pat_type q.pat_env
-  | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
+  | Tpat_or _
+  | Tpat_exception _ -> fatal_error "Parmatch.normalize_pat"
 
 (* Consider a pattern matrix whose first column has been simplified to contain
    only _ or a head constructor
@@ -781,7 +782,8 @@ let row_of_pat pat =
   are simplified, and are not omega/Tpat_any.
 *)
 let full_match closing env =  match env with
-| ({pat_desc = (Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_or _)},_) :: _ ->
+| ({pat_desc = (Tpat_any | Tpat_var _ | Tpat_alias _
+               | Tpat_or _ | Tpat_exception _)},_) :: _ ->
     (* discriminating patterns are simplified *)
     assert false
 | [] -> false
@@ -820,7 +822,8 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
 
-(* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
+(* Written as a non-fragile matching, PR#7451 originated from a fragile matching
+   below. *)
 let should_extend ext env = match ext with
 | None -> false
 | Some ext -> begin match env with
@@ -836,7 +839,7 @@ let should_extend ext env = match ext with
       | Tpat_constant _|Tpat_tuple _|Tpat_variant _
       | Tpat_record  _|Tpat_array _ | Tpat_lazy _
         -> false
-      | Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _
+      | Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _|Tpat_exception _
         -> assert false
       end
 end
@@ -1106,6 +1109,7 @@ let rec has_instance p = match p.pat_desc with
   | Tpat_record (lps,_) -> has_instances (List.map (fun (_,_,x) -> x) lps)
   | Tpat_lazy p
     -> has_instance p
+  | Tpat_exception _ -> assert false
 
 
 and has_instances = function
@@ -1361,7 +1365,8 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
                 exhaust
                   ext pss (List.length (simple_match_args p omega) + n - 1)
               with
-              | Witnesses r -> Witnesses (List.map (fun row ->  (set_args p row)) r)
+              | Witnesses r ->
+                  Witnesses (List.map (fun row ->  (set_args p row)) r)
               | r       -> r in
           let before = try_many try_non_omega constrs in
           if
@@ -1813,8 +1818,19 @@ and lubs ps qs = match ps,qs with
 (* Apply pressure to variants *)
 
 let pressure_variants tdefs patl =
-  let pss = List.map (fun p -> [p;omega]) patl in
-  ignore (pressure_variants (Some tdefs) pss)
+  let add_row pss p_opt =
+    match p_opt with
+    | None -> pss
+    | Some p -> [p; omega] :: pss
+  in
+  let val_pss, exn_pss =
+    List.fold_right (fun pat (vpss, epss)->
+      let (vp, ep) = split_pattern pat in
+      add_row vpss vp, add_row epss ep
+    ) patl ([], [])
+  in
+  ignore (pressure_variants (Some tdefs) val_pss);
+  ignore (pressure_variants (Some tdefs) exn_pss)
 
 (*****************************)
 (* Utilities for diagnostics *)
@@ -1902,6 +1918,8 @@ module Conv = struct
           mkpat (Ppat_array (List.map loop lst))
       | Tpat_lazy p ->
           mkpat (Ppat_lazy (loop p))
+      | Tpat_exception _ ->
+          assert false
     in
     let ps = loop typed in
     (ps, constrs, labels)
@@ -1973,7 +1991,7 @@ let do_check_partial ~pred loc casel pss = match pss with
                     Buffer.add_string buf
                       "\nMatching over values of extensible variant types \
                          (the *extension* above)\n\
-                      must include a wild card pattern in order to be exhaustive."
+                    must include a wild card pattern in order to be exhaustive."
                   ;
                   Buffer.contents buf
                 with _ ->
@@ -2028,6 +2046,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_lazy p
     ->
     collect_paths_from_pat r p
+| Tpat_exception _ -> assert false
 
 
 (*
@@ -2082,8 +2101,8 @@ let check_unused pred casel =
                    - the clause under consideration is not a refutation clause
                      and either:
                      + there are no other lines
-                     + we do not care whether the types prevent this clause to be
-                       reached.
+                     + we do not care whether the types prevent this clause to
+                       be reached.
                      If the clause under consideration *is* a refutation clause
                      then we do need to check more carefully whether it can be
                      refuted or not.  *)
@@ -2159,6 +2178,7 @@ let inactive ~partial pat =
               ldps
         | Tpat_or (p,q,_) ->
             loop p && loop q
+        | Tpat_exception _ -> assert false
       in
       loop pat
   end

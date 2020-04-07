@@ -16,4 +16,3 @@ print_endline (string_of_int (h ()));;
 r.x <- 20;;
 
 print_endline (string_of_int (h ()));;
-

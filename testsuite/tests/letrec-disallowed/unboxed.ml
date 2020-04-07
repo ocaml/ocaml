@@ -7,7 +7,7 @@ let rec x = {x = y} and y = 3L;;
 
 type r = A of r [@@unboxed];;
 let rec y = A y;;
-              
+
 type a = {a: b }[@@unboxed]
 and b = X of a | Y
 

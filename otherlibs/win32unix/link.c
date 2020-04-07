@@ -20,6 +20,7 @@
 #include <caml/memory.h>
 #include <caml/osdeps.h>
 #include "unixsupport.h"
+#include <errno.h>
 #include <windows.h>
 
 typedef
@@ -29,12 +30,16 @@ BOOL (WINAPI *tCreateHardLink)(
   LPSECURITY_ATTRIBUTES lpSecurityAttributes
 );
 
-CAMLprim value unix_link(value path1, value path2)
+CAMLprim value unix_link(value follow, value path1, value path2)
 {
   HMODULE hModKernel32;
   tCreateHardLink pCreateHardLink;
   BOOL result;
   wchar_t * wpath1, * wpath2;
+  if (Is_block(follow) && !Bool_val(Field(follow, 0))) { /* Some false */
+    errno = ENOSYS;
+    uerror("link", path2);
+  }
   hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
   pCreateHardLink =
     (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkW");

@@ -29,7 +29,7 @@ module F : functor () -> S
 |}];;
 module G (X : sig end) : S = F ();; (* fail *)
 [%%expect{|
-Line _, characters 29-33:
+Line 1, characters 29-33:
   module G (X : sig end) : S = F ();; (* fail *)
                                ^^^^
 Error: This expression creates fresh types.
@@ -49,7 +49,7 @@ module M : S
 |}];;
 module M = F(U);; (* fail *)
 [%%expect{|
-Line _, characters 11-12:
+Line 1, characters 11-12:
   module M = F(U);; (* fail *)
              ^
 Error: This is a generative functor. It can only be applied to ()
@@ -60,7 +60,7 @@ module F1 (X : sig end) = struct end;;
 module F2 : functor () -> sig end = F1;; (* fail *)
 [%%expect{|
 module F1 : functor (X : sig  end) -> sig  end
-Line _, characters 36-38:
+Line 2, characters 36-38:
   module F2 : functor () -> sig end = F1;; (* fail *)
                                       ^^
 Error: Signature mismatch:
@@ -73,7 +73,7 @@ module F3 () = struct end;;
 module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
 [%%expect{|
 module F3 : functor () -> sig  end
-Line _, characters 47-49:
+Line 2, characters 47-49:
   module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
                                                  ^^
 Error: Signature mismatch:

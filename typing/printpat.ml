@@ -89,6 +89,8 @@ let rec pretty_val ppf v =
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
       fprintf ppf "@[<2>lazy@ %a@]" pretty_arg v
+  | Tpat_exception v ->
+      fprintf ppf "@[<2>exception@ %a@]" pretty_arg v
   | Tpat_alias (v, x,_) ->
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->

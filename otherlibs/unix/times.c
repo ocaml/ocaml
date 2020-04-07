@@ -25,14 +25,6 @@
 #include <sys/resource.h>
 #endif
 
-#ifndef CLK_TCK
-#ifdef HZ
-#define CLK_TCK HZ
-#else
-#define CLK_TCK 60
-#endif
-#endif
-
 CAMLprim value unix_times(value unit)
 {
 #ifdef HAS_GETRUSAGE
@@ -51,6 +43,14 @@ CAMLprim value unix_times(value unit)
   return res;
 
 #else
+
+#ifndef CLK_TCK
+#ifdef HZ
+#define CLK_TCK HZ
+#else
+#define CLK_TCK 60
+#endif
+#endif
 
   value res;
   struct tms buffer;

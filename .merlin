@@ -1,6 +1,9 @@
 S ./asmcomp
 B ./asmcomp
 
+S ./asmcomp/debug
+B ./asmcomp/debug
+
 S ./middle_end
 B ./middle_end
 

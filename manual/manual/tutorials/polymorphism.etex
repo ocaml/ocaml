@@ -1,7 +1,6 @@
 
 \chapter{Polymorphism and its limitations}%
 \label{c:polymorphism}
-\pdfchapterfold{0}{Tutorial: Polymorphism limitations}
 %HEVEA\cutname{polymorphism.html}
 
 \bigskip
@@ -79,7 +78,7 @@ Therefore, after placing an "int" in "store", we cannot use it to store any
 value other than an "int". More generally, weak types protect the program from
 undue mutation of values with a polymorphic type.
 
-%todo: fix indentation in pdfmanual
+%todo: fix indentation in manual.pdf
 Moreover, weak types cannot appear in the signature of toplevel modules:
 types must be known at compilation time. Otherwise, different compilation
 units could replace the weak type with different and incompatible types.

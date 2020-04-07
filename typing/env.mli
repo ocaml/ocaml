@@ -16,9 +16,7 @@
 (* Environment handling *)
 
 open Types
-
-module PathMap : Map.S with type key = Path.t
-                        and type 'a t = 'a Map.Make(Path).t
+open Misc.Stdlib
 
 type summary =
     Env_empty
@@ -29,11 +27,11 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * Misc.StringSet.t * Path.t
+  | Env_open of summary * String.Set.t * Path.t
   (** The string set argument of [Env_open] represents a list of module names
       to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
-  | Env_constraints of summary * type_declaration PathMap.t
+  | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
 
 type t
@@ -181,7 +179,7 @@ val open_signature_of_initially_opened_module:
 (* Similar to [open_signature] except that sub-modules of the opened modules
    that are in [hidden_submodules] are not added to the environment. *)
 val open_signature_from_env_summary:
-    Path.t -> t -> hidden_submodules:Misc.StringSet.t -> t option
+    Path.t -> t -> hidden_submodules:String.Set.t -> t option
 
 val open_pers_signature: string -> t -> t
 
@@ -214,7 +212,8 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  deprecated:string option -> signature -> string -> string -> Cmi_format.cmi_infos
+  deprecated:string option -> signature -> string -> string ->
+  Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
   deprecated:string option ->
@@ -292,6 +291,9 @@ val set_type_used_callback:
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_modtype_inclusion:
       (loc:Location.t -> t -> module_type -> Path.t -> module_type -> unit) ref
+(* Forward declaration to break mutual recursion with Typemod. *)
+val check_well_formed_module:
+    (t -> Location.t -> string -> module_type -> unit) ref
 (* Forward declaration to break mutual recursion with Typecore. *)
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)

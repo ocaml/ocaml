@@ -106,6 +106,8 @@ and pattern_desc =
          *)
   | Tpat_lazy of pattern
         (** lazy P *)
+  | Tpat_exception of pattern
+        (** exception P *)
 
 and expression =
   { exp_desc: expression_desc;
@@ -171,14 +173,15 @@ and expression_desc =
                          (Labelled "y", Some (Texp_constant Const_int 3))
                         ])
          *)
-  | Texp_match of expression * case list * case list * case list * partial
+  | Texp_match of expression * case list * case list * partial
         (** match E0 with
             | P1 -> E1
-            | P2 -> E2
-            | exception P3 -> E3
+            | P2 | exception P3 -> E2
+            | exception P4 -> E3
             | effect P4 k -> E4
 
-            [Texp_match (E0, [(P1, E1); (P2, E2)], [(P3, E3)], [(P4, E4)], _)]
+            [Texp_match (E0, [(P1, E1); (P2 | exception P3, E2);
+                              (exception P4, E3)], [(P4, E4)],  _)]
          *)
   | Texp_try of expression * case list * case list
         (** try E with
@@ -267,11 +270,11 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      arg_label * pattern * (Ident.t * string loc * expression) list
+      arg_label * pattern * (Ident.t * expression) list
       * class_expr * partial
   | Tcl_apply of class_expr * (arg_label * expression option) list
   | Tcl_let of rec_flag * value_binding list *
-                  (Ident.t * string loc * expression) list * class_expr
+                  (Ident.t * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
   (* Visible instance variables, methods and concrete methods *)
@@ -683,3 +686,7 @@ val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: pattern -> Ident.t list
+val pat_bound_idents_with_loc: pattern -> (Ident.t * string loc) list
+
+(** Splits an or pattern into its value (left) and exception (right) parts. *)
+val split_pattern : pattern -> pattern option * pattern option

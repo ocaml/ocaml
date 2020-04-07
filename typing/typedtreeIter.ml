@@ -253,7 +253,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter (fun (_, _, pat) -> iter_pattern pat) list
         | Tpat_array list -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
-        | Tpat_lazy p -> iter_pattern p
+        | Tpat_lazy p
+        | Tpat_exception p -> iter_pattern p
       end;
       Iter.leave_pattern pat
 
@@ -287,11 +288,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
                   None -> ()
                 | Some exp -> iter_expression exp
             ) list
-        | Texp_match (exp, list1, list2, list3, _) ->
+        | Texp_match (exp, list1, list2, _) ->
             iter_expression exp;
             iter_cases list1;
-            iter_cases list2;
-            iter_cases list3
+            iter_cases list2
         | Texp_try (exp, list1, list2) ->
             iter_expression exp;
             iter_cases list1;
@@ -501,7 +501,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcl_structure clstr -> iter_class_structure clstr
         | Tcl_fun (_label, pat, priv, cl, _partial) ->
           iter_pattern pat;
-          List.iter (fun (_id, _, exp) -> iter_expression exp) priv;
+          List.iter (fun (_id, exp) -> iter_expression exp) priv;
           iter_class_expr cl
 
         | Tcl_apply (cl, args) ->
@@ -514,7 +514,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_let (rec_flat, bindings, ivars, cl) ->
           iter_bindings rec_flat bindings;
-          List.iter (fun (_id, _, exp) -> iter_expression exp) ivars;
+          List.iter (fun (_id, exp) -> iter_expression exp) ivars;
             iter_class_expr cl
 
         | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->

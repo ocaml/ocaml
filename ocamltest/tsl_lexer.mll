@@ -54,12 +54,8 @@ rule token = parse
       comment_start_pos := [Lexing.lexeme_start_p lexbuf];
       comment lexbuf
     }
-  | "\"" [^'"']* "\""
-    { let s = Lexing.lexeme lexbuf in
-      let string_length = (String.length s) -2 in
-      let s' = String.sub s 1 string_length in
-      STRING s'
-    }
+  | '"'
+    { STRING (string "" lexbuf) }
   | _
     {
       let pos = Lexing.lexeme_start_p lexbuf in
@@ -70,6 +66,28 @@ rule token = parse
         file line column (Lexing.lexeme lexbuf) in
       lexer_error message
     }
+(* Backslashes are ignored in strings except at the end of lines where they
+   cause the newline to be ignored. After an escaped newline, any blank
+   characters at the start of the line are ignored and optionally one blank
+   character may be escaped with a backslash.
+
+   In particular, this means that the following:
+script = "some-directory\\
+         \ foo"
+   is interpreted as the OCaml string "some-directory\\ foo".
+   *)
+and string acc = parse
+  | [^ '\\' '"' ]+
+    { string (acc ^ Lexing.lexeme lexbuf) lexbuf }
+  | '\\' newline blank* ('\\' (blank as blank))?
+    { let space =
+        match blank with None -> "" | Some blank -> String.make 1 blank
+      in
+      string (acc ^ space) lexbuf }
+  | '\\'
+    {string (acc ^ "\\") lexbuf}
+  | '"'
+    {acc}
 and comment = parse
   | "(*"
     {

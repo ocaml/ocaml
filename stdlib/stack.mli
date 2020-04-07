@@ -76,4 +76,3 @@ val add_seq : 'a t -> 'a Seq.t -> unit
 val of_seq : 'a Seq.t -> 'a t
 (** Create a stack from the iterator
     @since 4.07 *)
-

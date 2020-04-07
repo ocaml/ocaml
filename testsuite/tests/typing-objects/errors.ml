@@ -4,7 +4,7 @@
 
 class type virtual ['a] c = object constraint 'a = [<`A of int & float] end
 [%%expect {|
-Line _, characters 0-75:
+Line 1, characters 0-75:
   class type virtual ['a] c = object constraint 'a = [<`A of int & float] end
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type of this class,

@@ -44,11 +44,16 @@ let foo bar init a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 =
       let a12 = a11 + 1 in
       let a13 = a12 + 1 in
       match x_in_g with
-      | Some _ -> f_inner x_in_g (y_in_g - baz) a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
-      | None   -> f_inner x_in_g (y_in_g - baz) a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
+      | Some _ ->
+          f_inner x_in_g (y_in_g - baz)
+                  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
+      | None   ->
+          f_inner x_in_g (y_in_g - baz)
+                  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
     in
     f_inner
   in
   let s = Some init in
   let f_through_hide = hide_until_round_2 init f_outer in
-  (f_through_hide [@specialised]) s 10 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
+  (f_through_hide [@specialised])
+    s 10 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13

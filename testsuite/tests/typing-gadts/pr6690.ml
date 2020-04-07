@@ -26,7 +26,7 @@ type 'a local_visit_action
 type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context
-Line _, characters 4-9:
+Line 15, characters 4-9:
     | Local -> fun _ -> raise Exit
       ^^^^^
 Error: This pattern matches values of type
@@ -41,7 +41,7 @@ type 'a local_visit_action
 type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context
-Line _, characters 4-10:
+Line 16, characters 4-10:
     | Global -> fun _ -> raise Exit
       ^^^^^^
 Error: This pattern matches values of type ($1, $1, visit_action) context
@@ -57,7 +57,7 @@ let vexpr (type visit_action)
   | Global -> fun _ -> raise Exit
 ;;
 [%%expect{|
-Line _, characters 4-9:
+Line 4, characters 4-9:
     | Local -> fun _ -> raise Exit
       ^^^^^
 Error: This pattern matches values of type
@@ -66,7 +66,7 @@ Error: This pattern matches values of type
          ($'a, $'a * insert, visit_action) context
        The type constructor $'a would escape its scope
 |}, Principal{|
-Line _, characters 4-10:
+Line 5, characters 4-10:
     | Global -> fun _ -> raise Exit
       ^^^^^^
 Error: This pattern matches values of type ($1, $1, visit_action) context

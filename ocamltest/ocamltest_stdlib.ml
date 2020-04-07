@@ -56,7 +56,7 @@ module List = struct
 end
 
 module String = struct
-  include String
+  include Misc.Stdlib.String
   let string_of_char = String.make 1
 
   let words s =
@@ -175,10 +175,3 @@ module Sys = struct
     try Sys.getenv variable with Not_found -> default_value
   let safe_getenv variable = getenv_with_default_value variable ""
 end
-
-module StringSet = struct
-  include Set.Make (String)
-  let string_of_stringset s = String.concat ", " (elements s)
-end
-
-module StringMap : Map.S with type key = string = Map.Make (String)

@@ -13,4 +13,3 @@ let () =
   at_exit (fun () -> print_endline "Last");
   at_exit (fun () -> print_endline "Raise"; raise My_exception);
   at_exit (fun () -> print_endline "First")
-

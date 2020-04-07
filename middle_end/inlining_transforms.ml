@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 module B = Inlining_cost.Benefit
 module E = Inline_and_simplify_aux.Env
@@ -107,9 +108,14 @@ let inline_by_copying_function_body ~env ~r
       ~function_decl ~function_body
   in
   let body =
-    if function_body.stub &&
-       ((inline_requested <> Lambda.Default_inline)
-        || (specialise_requested <> Lambda.Default_specialise)) then
+    let default_inline =
+      Lambda.equal_inline_attribute inline_requested Default_inline
+    in
+    let default_specialise =
+      Lambda.equal_specialise_attribute specialise_requested Default_specialise
+    in
+    if function_body.stub
+    && ((not default_inline) || (not default_specialise)) then
       (* When the function inlined function is a stub, the annotation
          is reported to the function applications inside the stub.
          This allows to report the annotation to the application the
@@ -508,8 +514,8 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
          match expr with
          | Apply ({ kind = Direct closure_id } as apply) -> begin
              match
-               rewrite_direct_call ~specialised_args ~funs ~direct_call_surrogates
-                 ~state:!state_ref ~closure_id ~apply
+               rewrite_direct_call ~specialised_args ~funs
+                 ~direct_call_surrogates ~state:!state_ref ~closure_id ~apply
              with
              | None -> expr
              | Some (state, expr) ->

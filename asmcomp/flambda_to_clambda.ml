@@ -24,8 +24,10 @@ type 'a for_one_or_more_units = {
 }
 
 type t = {
-  current_unit : Set_of_closures_id.t for_one_or_more_units;
-  imported_units : Simple_value_approx.function_declarations for_one_or_more_units;
+  current_unit :
+    Set_of_closures_id.t for_one_or_more_units;
+  imported_units :
+    Simple_value_approx.function_declarations for_one_or_more_units;
 }
 
 let get_fun_offset t closure_id =

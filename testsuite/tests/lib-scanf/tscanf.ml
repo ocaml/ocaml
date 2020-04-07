@@ -1538,4 +1538,20 @@ let test60 () =
   sscanf "abc" "%1s%s" (fun s1 s2 -> s1 = "a" && s2 = "bc")
 ;;
 
-test (test60 ());
+test (test60 ())
+;;
+
+let test61 () =
+  let test fmt =
+    format_from_string (string_of_format fmt) fmt = fmt
+  in
+  test "%s/%a" &&
+  test "\\ " &&
+  test "\\x" &&
+  test "\\x25s" &&
+  test "\\\"%s" &&
+  test "\\"
+;;
+
+test (test61 ())
+;;

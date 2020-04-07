@@ -26,10 +26,7 @@ open Typedtree
    The current directory is always searched first,
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
-let init_path () =
-  Config.load_path :=
-    "" :: List.rev ( Clflags.std_include_dir () @ !Clflags.include_dirs);
-  Env.reset_cache ()
+let init_path () = Compmisc.init_path false
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
@@ -76,7 +73,7 @@ let process_implementation_file sourcefile =
   let env = initial_env () in
   try
     let parsetree =
-      Pparse.file ~tool_name Format.err_formatter inputfile
+      Pparse.file ~tool_name inputfile
         (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree =
@@ -107,7 +104,7 @@ let process_interface_file sourcefile =
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast =
-    Pparse.file ~tool_name Format.err_formatter inputfile
+    Pparse.file ~tool_name inputfile
       (no_docstring Parse.interface) Pparse.Signature
   in
   let sg = Typemod.type_interface sourcefile (initial_env()) ast in

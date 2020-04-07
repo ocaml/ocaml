@@ -2,4 +2,3 @@
 echo "--- ./script3"
 echo "FOO is $FOO, BAR is $BAR, BUZ is $BUZ"
 echo "$# arguments:  $*"
-

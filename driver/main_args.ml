@@ -603,8 +603,19 @@ let mk_nopervasives f =
   "-nopervasives", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_match_context_rows f =
+  "-match-context-rows", Arg.Int f,
+  let[@manual.ref "s:comp-options"] chapter, section = 9, 2 in
+  Printf.sprintf
+  "<n>  (advanced, see manual section %d.%d.)" chapter section
+;;
+
 let mk_use_prims f =
   "-use-prims", Arg.String f, "<file>  (undocumented)"
+;;
+
+let mk_dump_into_file f =
+  "-dump-into-file", Arg.Unit f, " dump output like -dlambda into <target>.dump"
 ;;
 
 let mk_dparsetree f =
@@ -673,6 +684,10 @@ let mk_dflambda_verbose f =
 
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dcamlprimc f =
+  "-dcamlprimc", Arg.Unit f, " (undocumented)"
 ;;
 
 let mk_dcmm f =
@@ -881,8 +896,10 @@ module type Compiler_options = sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
+  val _dump_into_file : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -915,6 +932,7 @@ module type Bytecomp_options = sig
   val _use_runtime : string -> unit
 
   val _dinstr : unit -> unit
+  val _dcamlprimc : unit -> unit
 
   val _use_prims : string -> unit
 end;;
@@ -1105,6 +1123,7 @@ struct
     mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
+    mk_match_context_rows F._match_context_rows;
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1114,8 +1133,10 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+    mk_dcamlprimc F._dcamlprimc;
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
+    mk_dump_into_file F._dump_into_file;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1283,6 +1304,7 @@ struct
     mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
+    mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
     mk_dsource F._dsource;
@@ -1317,6 +1339,7 @@ struct
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
+    mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
 
     mk_args F._args;

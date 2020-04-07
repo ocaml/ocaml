@@ -14,17 +14,15 @@
 (**************************************************************************)
 
 (** Module dependencies. *)
+module String = Misc.Stdlib.String
 
-module StringSet : Set.S with type elt = string
-module StringMap : Map.S with type key = string
-
-type map_tree = Node of StringSet.t * bound_map
-and  bound_map = map_tree StringMap.t
+type map_tree = Node of String.Set.t * bound_map
+and  bound_map = map_tree String.Map.t
 val make_leaf : string -> map_tree
 val make_node : bound_map -> map_tree
-val weaken_map : StringSet.t -> map_tree -> map_tree
+val weaken_map : String.Set.t -> map_tree -> map_tree
 
-val free_structure_names : StringSet.t ref
+val free_structure_names : String.Set.t ref
 
 (* dependencies found by preprocessing tools (plugins) *)
 val pp_deps : string list ref

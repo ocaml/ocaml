@@ -39,7 +39,7 @@ val intB : [< `TagB ] -> int = <fun>
 val intAorB : [< `TagA of int | `TagB ] -> int = <fun>
 type _ wrapPoly =
     WrapPoly : 'a poly -> ([< `TagA of int | `TagB ] as 'a) wrapPoly
-Line _, characters 23-27:
+Line 25, characters 23-27:
       | WrapPoly ATag -> intA
                          ^^^^
 Error: This expression has type ([< `TagA of 'b ] as 'a) -> 'b
@@ -52,7 +52,7 @@ Error: This expression has type ([< `TagA of 'b ] as 'a) -> 'b
 let _ =  example6 (WrapPoly AandBTags) `TagB (* This causes a seg fault *)
 ;;
 [%%expect{|
-Line _, characters 9-17:
+Line 1, characters 9-17:
   let _ =  example6 (WrapPoly AandBTags) `TagB (* This causes a seg fault *)
            ^^^^^^^^
 Error: Unbound value example6

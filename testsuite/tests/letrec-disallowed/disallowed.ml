@@ -110,7 +110,6 @@ and y = let module M = struct let x = x end in (module M : T)
 let rec x =
   match let _ = y in raise Not_found with
     _ -> "x"
-  | exception Not_found -> "z" 
+  | exception Not_found -> "z"
 and y = match x with
   z -> ("y", z);;
-

@@ -42,7 +42,7 @@ let string_of_filetype = function
   | Lexer -> "lexer"
   | Grammar -> "grammar"
   | Binary_interface -> "binary interface"
-  | Obj -> "object"  
+  | Obj -> "object"
   | Backend_specific (backend, filetype) ->
     ((Ocaml_backends.string_of_backend backend) ^ " " ^
       (string_of_backend_specific filetype))

@@ -45,21 +45,12 @@ HASHBANGSCRIPTS=true
 #CC=gcc
 #BYTECFLAGS=
 
-### Additional compile-time options for $(BYTECC).
-# If using gcc on Intel x86:
-# (the -fno-defer-pop option circumvents a bug in certain versions of gcc)
-#BYTECCCOMPOPTS=-fno-defer-pop -Wall
-# If using gcc and being cautious:
-#BYTECCCOMPOPTS=-Wall
-# Otherwise:
-#BYTECCCOMPOPTS=
-
 ### Additional link-time options for $(BYTECC)
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
-#LDFLAGS=-Wl,-E
+#OC_LDFLAGS=-Wl,-E
 # Otherwise:
-#LDFLAGS=
+#OC_LDFLAGS=
 
 ### Libraries needed
 # On most platforms:
@@ -93,7 +84,7 @@ RANLIBCMD=ranlib
 #CUSTOM_IF_NOT_SHARED=
 #CUSTOM_IF_NOT_SHARED=-custom
 # Options to $(BYTECC) to produce shared objects (e.g. PIC)
-#SHAREDCCCOMPOPTS=-fPIC
+#SHAREDLIB_CFLAGS=-fPIC
 # How to build a shared library, invoked with output .so as first arg
 # and object files as remaining args
 #MKSHAREDLIB=gcc -shared -o

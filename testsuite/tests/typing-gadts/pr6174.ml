@@ -7,7 +7,7 @@ let f : type a o. ((a -> o) -> o) t -> (a -> o) -> o =
  fun C k -> k (fun x -> x);;
 [%%expect{|
 type _ t = C : ((('a -> 'o) -> 'o) -> ('b -> 'o) -> 'o) t
-Line _, characters 24-25:
+Line 3, characters 24-25:
    fun C k -> k (fun x -> x);;
                           ^
 Error: This expression has type $0 but an expression was expected of type

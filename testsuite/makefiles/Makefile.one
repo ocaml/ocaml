@@ -32,7 +32,7 @@ CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
 MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
 
-C_INCLUDES+=-I $(CTOPDIR)/byterun
+C_INCLUDES+=-I $(CTOPDIR)/runtime
 
 .PHONY: default
 default:

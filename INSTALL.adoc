@@ -26,7 +26,7 @@
         ./configure
 +
 This generates the three configuration files `config/Makefile`,
-`byterun/caml/m.h` and `byterun/caml/s.h`.
+`runtime/caml/m.h` and `runtime/caml/s.h`.
 +
 The `configure` script accepts the following options:
 +
@@ -213,25 +213,10 @@ fairly verbose; consider redirecting the output to a file:
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
-[[bootstrap]]
-3. (Optional) To be sure everything works well, you can try to bootstrap the
-   system -- that is, to recompile all OCaml sources with the newly created
-   compiler. From the top directory, do:
+3. (Optional) To be sure everything works well, you can run the test suite
+   that comes with the compiler. To do so, do:
 
-        make bootstrap
-+
-or, better:
-
-        make bootstrap > log.bootstrap 2>&1     # in sh
-        make bootstrap >& log.bootstrap         # in csh
-+
-The `make bootstrap` checks that the bytecode programs compiled with the new
-compiler are identical to the bytecode programs compiled with the old compiler.
-If this is the case, you can be pretty sure the system has been correctly
-compiled. Otherwise, this does not necessarily mean something went wrong.  The
-best thing to do is to try a second bootstrapping phase: just do
-`make bootstrap` again.  It will either crash almost immediately, or
-re-re-compile everything correctly and reach the fix-point.
+        make tests
 
 4. You can now install the OCaml system. This will create the following commands
    (in the binary directory selected during autoconfiguration):
@@ -286,7 +271,7 @@ In the latter case, the destination directory defaults to the
 Read the "common problems" and "machine-specific hints" section at the end of
 this file.
 
-Check the files `m.h` and `s.h` in `byterun/caml/`.
+Check the files `m.h` and `s.h` in `runtime/caml/`.
 Wrong endianness or alignment constraints in `machine.h` will
 immediately crash the bytecode interpreter.
 
@@ -295,12 +280,12 @@ and data segment size (type `limit` under csh or `ulimit -a` under bash). Make
 sure the limit on the stack size is at least 4M.
 
 Try recompiling the runtime system with optimizations turned off (change
-`CFLAGS` in `byterun/Makefile` and `asmrun/Makefile`). The runtime system
+`OC_CFLAGS` in `runtime/Makefile`). The runtime system
 contains some complex, atypical pieces of C code which can uncover bugs in
 optimizing compilers.  Alternatively, try another C compiler (e.g. `gcc` instead
 of the vendor-supplied `cc`).
 
-You can also build a debug version of the runtime system. Go to the `byterun/`
+You can also build a debug version of the runtime system. Go to the `runtime/`
 directory and do `make ocamlrund`.  Then, copy `ocamlrund` to
 `../boot/ocamlrun`, and try again.  This version of the runtime system contains
 lots of assertions and sanity checks that could help you pinpoint the problem.

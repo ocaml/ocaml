@@ -4,7 +4,8 @@ compile_only = "true"
 files = "c.mli d.mli"
 * setup-ocamlc.byte-build-env
 ** script
-script = "cp ${test_source_directory}/b.cmi.invalid ${test_build_directory}/b.cmi"
+script =
+  "cp ${test_source_directory}/b.cmi.invalid ${test_build_directory}/b.cmi"
 *** ocamlc.byte
 all_modules = "c.mli d.mli aliases.ml"
 **** check-ocamlc.byte-output

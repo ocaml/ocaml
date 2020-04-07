@@ -71,7 +71,7 @@ let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
   let (msg, b) = match behavior with
-    | Skip_all_tests -> "skipped", Skip_all_tests
+    | Skip_all_tests -> "n/a", Skip_all_tests
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
@@ -121,8 +121,8 @@ let test_file test_filename =
   let used_tests = tests_in_trees test_trees in
   let used_actions = actions_in_tests used_tests in
   let action_names =
-    let f act names = StringSet.add (Actions.action_name act) names in
-    Actions.ActionSet.fold f used_actions StringSet.empty in
+    let f act names = String.Set.add (Actions.action_name act) names in
+    Actions.ActionSet.fold f used_actions String.Set.empty in
   let test_dirname = Filename.dirname test_filename in
   let test_basename = Filename.basename test_filename in
   let test_prefix = Filename.chop_extension test_basename in
@@ -149,7 +149,7 @@ let test_file test_filename =
            let hook = Actions_helpers.run_hook hook_name in
            Actions.set_hook name hook
          end in
-       StringSet.iter install_hook action_names;
+       String.Set.iter install_hook action_names;
 
        let reference_filename = Filename.concat
            test_source_directory (test_prefix ^ ".reference") in
