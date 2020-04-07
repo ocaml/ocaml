@@ -63,12 +63,12 @@ val f : int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int = <fun>
 
 f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
 [%%expect{|
-Line 1, characters 22-23:
+Line 1, characters 7-8:
 1 | f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
-                          ^
+           ^
 Error: The function applied to this argument has type
-         int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
-This argument cannot be applied with label ~x
+         ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
+This argument cannot be applied with label ~c
 |}]
 ;;
 
@@ -81,30 +81,30 @@ Line 1, characters 14-15:
 1 | f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
                   ^
 Error: The function applied to this argument has type
-         int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
+         ?c:int -> x:int -> int -> int
 This argument cannot be applied without label
 |}]
 ;;
 
 f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
 [%%expect{|
-Line 1, characters 14-15:
+Line 1, characters 12-13:
 1 | f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
-                  ^
+                ^
 Error: The function applied to this argument has type
-         int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
-This argument cannot be applied without label
+         ?b:int -> ?c:int -> x:int -> int -> int
+This argument cannot be applied with label ~c
 |}]
 ;;
 
 f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
 [%%expect{|
-Line 1, characters 14-15:
+Line 1, characters 7-8:
 1 | f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
-                  ^
+           ^
 Error: The function applied to this argument has type
-         int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
-This argument cannot be applied without label
+         ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
+This argument cannot be applied with label ~b
 |}]
 ;;
 
@@ -119,6 +119,6 @@ val f : ?x:'a -> ?y:'b -> unit -> unit = <fun>
 
 f ~y:3;;
 [%%expect{|
-- : ?x:'a -> unit -> unit = <fun>
+- : unit -> unit = <fun>
 |}]
 ;;
