@@ -410,8 +410,6 @@ FUNCTION(caml_raise_exception)
     /* Branch to handler */
         bctr
 .L121:
-        li      0, 0
-        stg     0, Caml_state(backtrace_pos)
         mr      27, 3           /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r3 */
         lg      4, Caml_state(last_return_address) /* arg2: PC of raise */

@@ -183,8 +183,6 @@ caml_raise_exception:
     /* Branch to handler */
         br      %r1;
 .L112:
-        lgfi    %r0, 0
-        stg     %r0, Caml_state(backtrace_pos)
         ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r2 */
         lg      %r3, Caml_state(last_return_address) /* arg2: PC of raise */
