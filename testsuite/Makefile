@@ -62,12 +62,19 @@ else
                                $(ocamltest_program)
 endif
 
+# PROMOTE is only meant to be used internally in recursive calls;
+# users should call the 'promote' target explicitly.
+PROMOTE =
 ifeq "$(PROMOTE)" ""
   OCAMLTEST_PROMOTE_FLAG :=
 else
   OCAMLTEST_PROMOTE_FLAG := -promote
 endif
 
+# KEEP_TEST_DIR_ON_SUCCESS should be set by the user (to a non-empty value)
+# if they want to pass the -keep-test-dir-on-success option to ocamltest,
+# to preserve test data of succesful tests.
+KEEP_TEST_DIR_ON_SUCCESS ?=
 ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
   OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG :=
 else
