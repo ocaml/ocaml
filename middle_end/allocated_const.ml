@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 type t =
   | Float of float
@@ -43,13 +44,13 @@ let compare (x : t) (y : t) =
   in
   match x, y with
   | Float x, Float y -> compare_floats x y
-  | Int32 x, Int32 y -> compare x y
-  | Int64 x, Int64 y -> compare x y
-  | Nativeint x, Nativeint y -> compare x y
+  | Int32 x, Int32 y -> Int32.compare x y
+  | Int64 x, Int64 y -> Int64.compare x y
+  | Nativeint x, Nativeint y -> Nativeint.compare x y
   | Float_array x, Float_array y -> compare_float_lists x y
   | Immutable_float_array x, Immutable_float_array y -> compare_float_lists x y
-  | String x, String y -> compare x y
-  | Immutable_string x, Immutable_string y -> compare x y
+  | String x, String y -> String.compare x y
+  | Immutable_string x, Immutable_string y -> String.compare x y
   | Float _, _ -> -1
   | _, Float _ -> 1
   | Int32 _, _ -> -1

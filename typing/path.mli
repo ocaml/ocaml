@@ -22,7 +22,8 @@ type t =
 
 val same: t -> t -> bool
 val compare: t -> t -> int
-val isfree: Ident.t -> t -> bool
+val find_free_opt: Ident.t list -> t -> Ident.t option
+val exists_free: Ident.t list -> t -> bool
 val binding_time: t -> int
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 
@@ -44,3 +45,6 @@ type typath =
 
 val constructor_typath: t -> typath
 val is_constructor_typath: t -> bool
+
+module Map : Map.S with type key = t
+module Set : Set.S with type elt = t

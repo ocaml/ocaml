@@ -282,7 +282,7 @@ module Manual :
     module type my_module_type  = sig val x : int end[@@ocaml.doc
                                                        " The comment for module type my_module_type. "]
   end ;;
-Line _, characters 12-14:
+Line 128, characters 12-14:
       inherit cl
               ^^
 Error: Unbound class cl

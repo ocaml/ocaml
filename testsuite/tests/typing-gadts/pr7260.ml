@@ -19,7 +19,7 @@ class foo =
 type bar = < bar : unit >
 type _ ty = Int : int ty
 type dyn = Dyn : 'a ty -> dyn
-Line _, characters 0-108:
+Line 7, characters 0-108:
   class foo =
     object (this)
       method foo (Dyn ty) =

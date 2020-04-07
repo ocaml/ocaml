@@ -6,4 +6,3 @@ read before any further exploration of the compiler.
 link:location.mli[Location]:: This module contains utilities
 related to locations and error handling. In particular, it contains
 handlers that are used for all the error reporting in the compiler.
-

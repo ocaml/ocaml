@@ -30,7 +30,7 @@ let modules =
   ref [ "Arg"; "BigArray"; "Buffer"; "Condition"; "Dbm"; "Digest"; "Dynlink";
         "Event"; "Filename"; "Format"; "Gc"; "Genlex"; "Graphics";
         "Lexing"; "Marshal"; "Mutex"; "Parsing"; "Pervasives"; "Queue";
-        "Sort"; "Stack"; "Str"; "Stream"; "Sys";
+        "Stack"; "Str"; "Stream"; "Sys";
         "Thread"; "ThreadUnix"; "Weak" ]
 
 let stdlabels = ["Array"; "List"; "String"]

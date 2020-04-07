@@ -221,13 +221,13 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
     Asmgen.compile_implementation_clambda
-      ~toplevel:need_symbol fn ppf
+      ~toplevel:need_symbol fn ~ppf_dump:ppf
       { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda
-      ~required_globals ~backend ~toplevel:need_symbol fn ppf
-      (Middle_end.middle_end ppf ~prefixname:"" ~backend ~size
+      ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
+      (Middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
@@ -297,9 +297,9 @@ let execute_phrase print_outcome ppf phr =
             [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
         | _ -> sstr, false
       in
-      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, info, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature sg in
+      let sg' = Typemod.simplify_signature newenv info sg in
       (* Why is this done? *)
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
@@ -344,7 +344,7 @@ let execute_phrase print_outcome ppf phr =
                           Ophr_eval (outv, ty)
                       | _ -> assert false
                     else
-                      Ophr_signature (pr_item newenv sg'))
+                      Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -530,9 +530,15 @@ let set_paths () =
   (* Add whatever -I options have been specified on the command line,
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
-  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
-  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
-  ()
+  let expand = Misc.expand_directory Config.standard_library in
+  load_path := List.concat [
+    [ "" ];
+    List.map expand (List.rev !Compenv.first_include_dirs);
+    List.map expand (List.rev !Clflags.include_dirs);
+    List.map expand (List.rev !Compenv.last_include_dirs);
+    !load_path;
+    [expand "+camlp4"];
+  ]
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()

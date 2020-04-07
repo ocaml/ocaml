@@ -6,6 +6,6 @@ ocamlc_byte_exit_status = "2"
 *** check-ocamlc.byte-output
 *)
 
-let t = 
+let t =
   (function `A | `B -> () : 'a) (`A : [`A]);
   (failwith "dummy" : 'a) (* to know how 'a is unified *)

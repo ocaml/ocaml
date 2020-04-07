@@ -100,7 +100,7 @@ let rec process : type a. a linkp2 -> ast_t -> a inline_t =
 ;;
 [%%expect{|
 type _ linkp2 = Kind : 'a linkp -> ([< inkind ] as 'a) linkp2
-Line _, characters 35-43:
+Line 7, characters 35-43:
       | (Kind _, Ast_Text txt)    -> Text txt
                                      ^^^^^^^^
 Error: This expression has type ([< inkind > `Nonlink ] as 'a) inline_t

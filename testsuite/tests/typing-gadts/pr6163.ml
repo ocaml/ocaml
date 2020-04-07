@@ -24,7 +24,7 @@ type aux =
     Aux :
       [ `Succ of [< [< [< [ `Zero ] pre_nat ] pre_nat ] pre_nat ] ] nat ->
       aux
-Line _, characters 4-5:
+Line 14, characters 4-5:
     | _ -> .  (* error *)
       ^
 Error: This match case could not be refuted.

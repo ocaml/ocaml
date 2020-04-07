@@ -337,6 +337,7 @@ let pattern sub pat =
     | Tpat_array list -> Ppat_array (List.map (sub.pat sub) list)
     | Tpat_or (p1, p2, _) -> Ppat_or (sub.pat sub p1, sub.pat sub p2)
     | Tpat_lazy p -> Ppat_lazy (sub.pat sub p)
+    | Tpat_exception p -> Ppat_exception (sub.pat sub p)
   in
   Pat.mk ~loc ~attrs desc
 
@@ -408,16 +409,8 @@ let expression sub exp =
                 None -> list
               | Some exp -> (label, sub.expr sub exp) :: list
           ) list [])
-    | Texp_match (exp, cases, exn_cases, eff_cases, _) ->
+    | Texp_match (exp, cases, eff_cases, _) ->
       let merged_cases = sub.cases sub cases
-        @ (List.map
-            (fun c ->
-              let uc = sub.case sub c in
-              let pat = { uc.pc_lhs
-                          with ppat_desc = Ppat_exception uc.pc_lhs }
-              in
-              { uc with pc_lhs = pat })
-            exn_cases)
         @ List.map
           (fun c ->
             let uc = sub.case sub c in

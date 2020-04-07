@@ -42,7 +42,7 @@ and foo = object(self)
 end;;
 
 [%%expect{|
-Line _, characters 22-26:
+Line 16, characters 22-26:
         inherit child1' self
                         ^^^^
 Error: This expression has type < child : 'a; previous : 'b option; .. >
@@ -139,7 +139,7 @@ class leading_up_to = object(self : 'a)
     end
 end;;
 [%%expect{|
-Line _, characters 4-65:
+Line 4, characters 4-65:
   ....object
         inherit child1 self
         inherit child2
@@ -162,7 +162,7 @@ class assertion_failure = object(self : 'a)
     end
 end;;
 [%%expect{|
-Line _, characters 4-129:
+Line 4, characters 4-129:
   ....object
         inherit child1 self
         inherit child2

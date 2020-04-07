@@ -459,6 +459,11 @@ bytecode executables produced with the option
 .B ocamlc\ \-use\-runtime
 .IR runtime-name .
 .TP
+.B \-match\-context\-rows
+Set number of rows of context used during pattern matching
+compilation. Lower values cause faster compilation, but
+less optimized code. The default value is 32.
+.TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
 .TP
@@ -933,6 +938,15 @@ mutually recursive types.
 
 61
 \ \ Unannotated unboxable type in primitive declaration.
+
+62
+\ \ Type constraint on GADT type declaration
+
+63
+\ \ Erroneous printed signature
+
+64
+\ \ -unsafe used with a preprocessor returning a syntax tree
 
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.

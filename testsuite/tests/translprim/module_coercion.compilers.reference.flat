@@ -1,7 +1,7 @@
 (setglobal Module_coercion!
-  (let (M = (module-defn(M) module_coercion.ml(13):417-1116 (makeblock 0)))
+  (let (M = (module-defn(M) module_coercion.ml(15):436-1135 (makeblock 0)))
     (makeblock 0 M
-      (module-defn(M_int) module_coercion.ml(44):1533-1572
+      (module-defn(M_int) module_coercion.ml(46):1552-1591
         (makeblock 0 (function prim stub (array.length[int] prim))
           (function prim prim stub (array.get[int] prim prim))
           (function prim prim stub (array.unsafe_get[int] prim prim))
@@ -15,7 +15,7 @@
           (function prim prim stub (> prim prim))
           (function prim prim stub (<= prim prim))
           (function prim prim stub (>= prim prim))))
-      (module-defn(M_float) module_coercion.ml(45):1575-1618
+      (module-defn(M_float) module_coercion.ml(47):1594-1637
         (makeblock 0 (function prim stub (array.length[float] prim))
           (function prim prim stub (array.get[float] prim prim))
           (function prim prim stub (array.unsafe_get[float] prim prim))
@@ -29,7 +29,7 @@
           (function prim prim stub (>. prim prim))
           (function prim prim stub (<=. prim prim))
           (function prim prim stub (>=. prim prim))))
-      (module-defn(M_string) module_coercion.ml(46):1621-1666
+      (module-defn(M_string) module_coercion.ml(48):1640-1685
         (makeblock 0 (function prim stub (array.length[addr] prim))
           (function prim prim stub (array.get[addr] prim prim))
           (function prim prim stub (array.unsafe_get[addr] prim prim))
@@ -43,7 +43,7 @@
           (function prim prim stub (caml_string_greaterthan prim prim))
           (function prim prim stub (caml_string_lessequal prim prim))
           (function prim prim stub (caml_string_greaterequal prim prim))))
-      (module-defn(M_int32) module_coercion.ml(47):1669-1712
+      (module-defn(M_int32) module_coercion.ml(49):1688-1731
         (makeblock 0 (function prim stub (array.length[addr] prim))
           (function prim prim stub (array.get[addr] prim prim))
           (function prim prim stub (array.unsafe_get[addr] prim prim))
@@ -57,7 +57,7 @@
           (function prim prim stub (Int32.> prim prim))
           (function prim prim stub (Int32.<= prim prim))
           (function prim prim stub (Int32.>= prim prim))))
-      (module-defn(M_int64) module_coercion.ml(48):1715-1758
+      (module-defn(M_int64) module_coercion.ml(50):1734-1777
         (makeblock 0 (function prim stub (array.length[addr] prim))
           (function prim prim stub (array.get[addr] prim prim))
           (function prim prim stub (array.unsafe_get[addr] prim prim))
@@ -71,7 +71,7 @@
           (function prim prim stub (Int64.> prim prim))
           (function prim prim stub (Int64.<= prim prim))
           (function prim prim stub (Int64.>= prim prim))))
-      (module-defn(M_nativeint) module_coercion.ml(49):1761-1812
+      (module-defn(M_nativeint) module_coercion.ml(51):1780-1831
         (makeblock 0 (function prim stub (array.length[addr] prim))
           (function prim prim stub (array.get[addr] prim prim))
           (function prim prim stub (array.unsafe_get[addr] prim prim))

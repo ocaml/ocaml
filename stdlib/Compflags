@@ -31,6 +31,7 @@ case $1 in
       echo ' -w Ae';;
   stdlib__scanf.cmx|stdlib__scanf.p.cmx) echo ' -inline 9';;
   *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -no-alias-deps';;
-  pervasives.cm[iox]|pervasives.p.cmx) echo ' -nopervasives -no-alias-deps -w -49';;
+  pervasives.cm[iox]|pervasives.p.cmx)
+      echo ' -nopervasives -no-alias-deps -w -49';;
   *) echo ' ';;
 esac

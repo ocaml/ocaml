@@ -22,11 +22,14 @@ module type PrintableComparable = sig
   include Comparable with type t = t
 end
 [%%expect {|
-Line _, characters 2-36:
+Line 3, characters 2-36:
     include Comparable with type t = t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the type name t.
-       Names must be unique in a given structure or signature.
+Error: Illegal shadowing of included type t/1152 by t/1156
+       Line 2, characters 2-19:
+         Type t/1152 came from this include
+       Line 3, characters 2-43:
+         The value print has no valid type if t/1152 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -45,7 +48,7 @@ module type S0 = sig
   and M2 : sig type t = int end
 end with type M.t = int
 [%%expect {|
-Line _, characters 17-115:
+Line 1, characters 17-115:
   .................sig
     module rec M : sig type t = M2.t end
     and M2 : sig type t = int end
@@ -168,7 +171,7 @@ module type S = sig
 end with type 'a t2 := 'a t * bool
 [%%expect {|
 type 'a t constraint 'a = 'b list
-Line _, characters 16-142:
+Line 2, characters 16-142:
   ................sig
     type 'a t2 constraint 'a = 'b list
     type 'a mylist = 'a list
@@ -244,7 +247,7 @@ module type S = sig
   module A = M
 end with type M.t := float
 [%%expect {|
-Line _, characters 16-89:
+Line 1, characters 16-89:
   ................sig
     module M : sig type t end
     module A = M
@@ -272,7 +275,7 @@ module type S =
 (* This particular substitution cannot be made to work *)
 module type S2 = S with type M.t := float
 [%%expect {|
-Line _, characters 17-41:
+Line 1, characters 17-41:
   module type S2 = S with type M.t := float
                    ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This `with' constraint on M.t makes the applicative functor
@@ -306,7 +309,7 @@ module type S3 = sig
 end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
-Line _, characters 17-120:
+Line 2, characters 17-120:
   .................sig
     module rec M : sig type t = A of Id(M2).t end
     and M2 : sig type t end
@@ -349,7 +352,7 @@ module type S = sig
   module Alias = M
 end with module M.N := A
 [%%expect {|
-Line _, characters 16-159:
+Line 1, characters 16-159:
   ................sig
     module M : sig
       module N : sig

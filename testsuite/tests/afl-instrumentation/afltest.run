@@ -29,7 +29,7 @@ for t in `seq 1 $NTESTS`; do
 done
 
 if [ -z "$failures" ]; then
-  echo "all tests passed"; 
+  echo "all tests passed";
   exit ${TEST_PASS}
 else
   exit ${TEST_FAIL};

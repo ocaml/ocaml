@@ -19,7 +19,7 @@ let ok (type a b) (x : (a, b) eq) =
 ;;
 [%%expect{|
 type ('a, 'b) eq = Refl : ('a, 'a) eq
-Line _, characters 4-29:
+Line 4, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
@@ -33,7 +33,7 @@ let fails (type a b) (x : (a, b) eq) =
   | Refl, [(_ : b) | (_ : a)] -> []
 ;;
 [%%expect{|
-Line _, characters 4-29:
+Line 3, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
@@ -45,7 +45,7 @@ Error: This pattern matches values of type (a, b) eq * b list
 (* branches must be unified! *)
 let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
 [%%expect{|
-Line _, characters 35-40:
+Line 1, characters 35-40:
   let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
                                      ^^^^^
 Error: This pattern matches values of type float list

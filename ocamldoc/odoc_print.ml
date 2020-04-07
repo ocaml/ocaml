@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 open Format
+let () = Printtyp.Naming_context.enable false
 
 let new_fmt () =
   let buf = Buffer.create 512 in

@@ -11,14 +11,14 @@ arguments = "-DINT_INT -DFUN=is_even main.c"
 
 (function "is_even" (b:int)
   (catch (exit even b)
-   with (odd v)
+   with (odd v:val)
      (if (== v 0) 0
          (seq
            (extcall "printf_int" "format_odd" v unit)
            (let v2 (- v 1)
              (app "force_spill" 0 int)
              (exit even v2))))
-   and (even v)
+   and (even v:val)
      (if (== v 0) 1
          (seq
            (extcall "printf_int" "format_even" v unit)

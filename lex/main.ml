@@ -88,6 +88,7 @@ let main () =
     close_out oc;
     Common.close_tracker tr;
   with exn ->
+    let bt = Printexc.get_raw_backtrace () in
     close_in ic;
     close_out oc;
     Common.close_tracker tr;
@@ -118,7 +119,7 @@ let main () =
           "File \"%s\":\ntransition table overflow, automaton is too big\n"
           source_name
     | _ ->
-        raise exn
+        Printexc.raise_with_backtrace exn bt
     end;
     exit 3
 

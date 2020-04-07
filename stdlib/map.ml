@@ -351,7 +351,8 @@ module Make(Ord: OrderedType) = struct
       match (l, r) with
         (Empty, _) -> add_min_binding v d r
       | (_, Empty) -> add_max_binding v d l
-      | (Node{l=ll; v=lv; d=ld; r=lr; h=lh}, Node{l=rl; v=rv; d=rd; r=rr; h=rh}) ->
+      | (Node{l=ll; v=lv; d=ld; r=lr; h=lh},
+         Node{l=rl; v=rv; d=rd; r=rr; h=rh}) ->
           if lh > rh + 2 then bal ll lv ld (join lr v d r) else
           if rh > lh + 2 then bal (join l v d rl) rv rd rr else
           create l v d r
@@ -399,7 +400,8 @@ module Make(Ord: OrderedType) = struct
     let rec union f s1 s2 =
       match (s1, s2) with
       | (Empty, s) | (s, Empty) -> s
-      | (Node {l=l1; v=v1; d=d1; r=r1; h=h1}, Node {l=l2; v=v2; d=d2; r=r2; h=h2}) ->
+      | (Node {l=l1; v=v1; d=d1; r=r1; h=h1},
+         Node {l=l2; v=v2; d=d2; r=r2; h=h2}) ->
           if h1 >= h2 then
             let (l2, d2, r2) = split v1 s2 in
             let l = union f l1 l2 and r = union f r1 r2 in

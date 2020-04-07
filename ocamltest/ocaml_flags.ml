@@ -33,7 +33,7 @@ let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
 
 let runtime_flags ocamlsrcdir env backend c_files =
   let runtime_library_flags = "-I " ^
-    (Ocaml_directories.runtime_library backend ocamlsrcdir) in
+    (Ocaml_directories.runtime ocamlsrcdir) in
   let rt_flags = match backend with
     | Ocaml_backends.Native -> runtime_variant_flags ()
     | Ocaml_backends.Bytecode ->

@@ -38,7 +38,7 @@ let event_before exp lam = match lam with
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
-                    lev_env = Env.summary exp.exp_env})
+                    lev_env = exp.exp_env})
   else lam
 
 let event_after exp lam =
@@ -46,7 +46,7 @@ let event_after exp lam =
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
-                    lev_env = Env.summary exp.exp_env})
+                    lev_env = exp.exp_env})
   else lam
 
 type comparison =
@@ -603,6 +603,11 @@ let comparison_primitive comparison comparison_kind =
 let lambda_of_loc kind loc =
   let loc_start = loc.Location.loc_start in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
+  let file =
+    if Filename.is_relative file then
+      file
+    else
+      Location.rewrite_absolute_path file in
   let enum = loc.Location.loc_end.Lexing.pos_cnum -
       loc_start.Lexing.pos_cnum + cnum in
   match kind with

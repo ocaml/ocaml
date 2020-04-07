@@ -47,14 +47,12 @@ let use_debugger_symtable fn arg =
   | Some st ->
       Symtable.restore_state st
   end;
-  try
-    let result = fn arg in
-    debugger_symtable := Some(Symtable.current_state());
-    Symtable.restore_state old_symtable;
-    result
-  with exn ->
-    Symtable.restore_state old_symtable;
-    raise exn
+  Misc.try_finally (fun () ->
+      let result = fn arg in
+      debugger_symtable := Some(Symtable.current_state());
+      result
+    )
+    ~always:(fun () -> Symtable.restore_state old_symtable)
 
 (* Load a .cmo or .cma file *)
 

@@ -29,4 +29,3 @@ external invoke_traced_function : Obj.t -> Obj.t -> Obj.t -> Obj.t
                                 = "caml_invoke_traced_function"
 external get_section_table : unit -> (string * Obj.t) list
                            = "caml_get_section_table"
-

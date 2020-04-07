@@ -41,6 +41,7 @@ CAMLprim value unix_error_message(value err)
                     sizeof(buffer)/sizeof(wchar_t),
                     NULL))
     return caml_copy_string_of_utf16(buffer);
-  swprintf(buffer, sizeof(buffer)/sizeof(wchar_t), L"unknown error #%d", errnum);
+  swprintf(buffer, sizeof(buffer)/sizeof(wchar_t),
+           L"unknown error #%d", errnum);
   return caml_copy_string_of_utf16(buffer);
 }

@@ -1169,7 +1169,7 @@ let end_assembly() =
   (* In profiling mode, for ELF64, emit the helper functions
      for register saving and restoring.  We put one copy of these
      functions in every generated file, instead of defining
-     them once in asmrun/power.S, so that we can call them
+     them once in runtime/power.S, so that we can call them
      without risking to save r2 in the wrong place. *)
   if ppc64 && !Clflags.gprofile then begin
     let save_area = reserved_stack_space + (if abi = ELF64v1 then 8*8 else 0) in

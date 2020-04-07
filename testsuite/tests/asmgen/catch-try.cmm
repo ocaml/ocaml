@@ -9,4 +9,4 @@ arguments = "-DINT_INT -DFUN=catch_exit main.c"
   (catch
     (try (exit lbl 12)
      with var 456)
-   with (lbl x) (+ x 789))))
+   with (lbl x:val) (+ x 789))))

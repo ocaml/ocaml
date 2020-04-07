@@ -21,7 +21,7 @@ let f : [`L of (s, t) eql | `R of silly] -> 'a =
   function `R {silly} -> silly
 ;;
 [%%expect{|
-Line _, characters 2-30:
+Line 2, characters 2-30:
     function `R {silly} -> silly
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.

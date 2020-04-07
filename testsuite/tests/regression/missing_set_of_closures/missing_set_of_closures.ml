@@ -1,7 +1,7 @@
 (* TEST
 files = "a.ml b.ml b2.ml"
 * setup-ocamlopt.byte-build-env
-** script 
+** script
 script = "mkdir -p dir"
 *** script
 script = "cp ${test_source_directory}/dir/c.ml dir/"

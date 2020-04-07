@@ -8,7 +8,7 @@ and C:sig val x: int end = struct let x = B.x end
 and D:sig val x: int end = struct let x = C.x end
 and E:sig val x: int val y:int end = struct let x = D.x let y = 0 end
 [%%expect {|
-Line _, characters 27-49:
+Line 2, characters 27-49:
   and B:sig val x: int end = struct let x = E.y end
                              ^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot safely evaluate the definition of the following cycle
@@ -21,4 +21,3 @@ and N:sig val x: int end = struct let x = M.f () end;;
 [%%expect {|
 Exception: Undefined_recursive_module ("", 1, 43).
 |}]
-

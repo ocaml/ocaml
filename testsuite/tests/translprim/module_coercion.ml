@@ -4,10 +4,12 @@
       flags = "-dlambda -dno-unique-ids"
    *** flat-float-array
    **** check-ocamlc.byte-output
-        compiler_reference = "${test_source_directory}/module_coercion.compilers.reference.flat"
+        compiler_reference =
+          "${test_source_directory}/module_coercion.compilers.reference.flat"
    *** no-flat-float-array
    **** check-ocamlc.byte-output
-       compiler_reference = "${test_source_directory}/module_coercion.compilers.reference.no-flat"
+       compiler_reference =
+         "${test_source_directory}/module_coercion.compilers.reference.no-flat"
 *)
 
 module M = struct

@@ -24,6 +24,7 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+module String = Misc.Stdlib.String
 
 open X86_ast
 open X86_proc
@@ -77,11 +78,11 @@ let slot_offset loc cl =
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
-let symbols_defined = ref StringSet.empty
-let symbols_used = ref StringSet.empty
+let symbols_defined = ref String.Set.empty
+let symbols_used = ref String.Set.empty
 
-let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
-let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s = symbols_defined := String.Set.add s !symbols_defined
+let add_used_symbol s = symbols_used := String.Set.add s !symbols_used
 
 let trap_frame_size = Misc.align 8 stack_alignment
 
@@ -467,8 +468,8 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 (* Record references to external C functions (for MacOSX) *)
-let external_symbols_direct = ref StringSet.empty
-let external_symbols_indirect = ref StringSet.empty
+let external_symbols_direct = ref String.Set.empty
+let external_symbols_indirect = ref String.Set.empty
 
 let emit_instr fallthrough i =
   emit_debug_info i.dbg;
@@ -540,7 +541,7 @@ let emit_instr fallthrough i =
           I.mov (immsym func) eax
         else begin
           external_symbols_indirect :=
-            StringSet.add func !external_symbols_indirect;
+            String.Set.add func !external_symbols_indirect;
           I.mov (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
                               (emit_symbol func))) eax
         end;
@@ -551,7 +552,7 @@ let emit_instr fallthrough i =
           emit_call func
         else begin
           external_symbols_direct :=
-            StringSet.add func !external_symbols_direct;
+            String.Set.add func !external_symbols_direct;
           I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol func)))
         end
       end
@@ -902,12 +903,12 @@ let emit_external_symbol_indirect s =
 
 let emit_external_symbols () =
   D.section [ "__IMPORT"; "__pointers"] None ["non_lazy_symbol_pointers" ];
-  StringSet.iter emit_external_symbol_indirect !external_symbols_indirect;
-  external_symbols_indirect := StringSet.empty;
+  String.Set.iter emit_external_symbol_indirect !external_symbols_indirect;
+  external_symbols_indirect := String.Set.empty;
   D.section [ "__IMPORT"; "__jump_table"] None
     [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ];
-  StringSet.iter emit_external_symbol_direct !external_symbols_direct;
-  external_symbols_direct := StringSet.empty;
+  String.Set.iter emit_external_symbol_direct !external_symbols_direct;
+  external_symbols_direct := String.Set.empty;
   if !Clflags.gprofile then begin
     _label "Lmcount$stub";
     D.indirect_symbol "mcount";
@@ -1071,13 +1072,13 @@ let end_assembly() =
 
   if system = S_win32 then begin
     D.comment "External functions";
-    StringSet.iter
+    String.Set.iter
       (fun s ->
-         if not (StringSet.mem s !symbols_defined) then
+         if not (String.Set.mem s !symbols_defined) then
            D.extrn (emit_symbol s) PROC)
       !symbols_used;
-    symbols_used := StringSet.empty;
-    symbols_defined := StringSet.empty;
+    symbols_used := String.Set.empty;
+    symbols_defined := String.Set.empty;
   end;
 
   let asm =

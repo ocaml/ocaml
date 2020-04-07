@@ -1,11 +1,11 @@
-strstubs.$(O): strstubs.c ../../byterun/caml/mlvalues.h \
-  ../../byterun/caml/config.h ../../byterun/caml/m.h \
-  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
-  ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
-  ../../byterun/caml/domain_state.tbl \
-  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/alloc.h \
-  ../../byterun/caml/memory.h ../../byterun/caml/domain.h \
-  ../../byterun/caml/fail.h
+strstubs.$(O): strstubs.c ../../runtime/caml/mlvalues.h \
+  ../../runtime/caml/config.h ../../runtime/caml/m.h \
+  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+  ../../runtime/caml/camlatomic.h ../../runtime/caml/domain_state.h \
+  ../../runtime/caml/domain_state.tbl \
+  ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/alloc.h \
+  ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
+  ../../runtime/caml/fail.h
 str.cmo : str.cmi
 str.cmx : str.cmi
 str.cmi :

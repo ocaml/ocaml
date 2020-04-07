@@ -17,9 +17,10 @@ open Printf
        (the one connected to the echo server)
 *)
 
-let serve_connection s =
+let server sock =
+  let (s, _) = Unix.accept sock in
   let buf = Bytes.make 1024 '>' in
-  while true do
+  for i = 1 to 3 do
     let n = Unix.recv s buf 2 (Bytes.length buf - 2) [] in
     if n = 0 then begin
       Unix.close s; Thread.exit ()
@@ -27,10 +28,6 @@ let serve_connection s =
       ignore (Unix.send s buf 0 (n + 2) [])
     end
   done
-
-let server sock =
-  let (s, _) = Unix.accept sock in
-  ignore(Thread.create serve_connection s)
 
 let reader s =
   let buf = Bytes.make 16 ' ' in

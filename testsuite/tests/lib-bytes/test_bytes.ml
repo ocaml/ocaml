@@ -4,8 +4,8 @@
 
 let test_raises_invalid_argument f x =
   ignore
-    (Testing.test_raises_exc_p (function Invalid_argument _ -> true | _ -> false)
-         f x)
+    (Testing.test_raises_exc_p
+      (function Invalid_argument _ -> true | _ -> false) f x)
 
 let check b offset s =
   let rec loop i =

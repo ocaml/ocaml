@@ -23,7 +23,7 @@ type status =
   | Bad_term
   | Good_term
 
-let setup oc = 
+let setup oc =
   let term = try Sys.getenv "TERM" with Not_found -> "" in
   (* Same heuristics as in Misc.Color.should_enable_color *)
   if term <> "" && term <> "dumb" && isatty oc

@@ -4,7 +4,8 @@ compile_only = "true"
 
 * setup-ocamlopt.byte-build-env
 ** script
-script = "cp -r ${test_source_directory}/fst ${test_source_directory}/intf ${test_source_directory}/snd ${test_build_directory}"
+script = "cp -r ${test_source_directory}/fst ${test_source_directory}/intf \
+                ${test_source_directory}/snd ${test_build_directory}"
 *** ocamlopt.byte
 flags = "-I intf -opaque"
 all_modules = "intf/opaque_intf.mli"
@@ -12,9 +13,11 @@ all_modules = "intf/opaque_intf.mli"
 flags = "-I intf"
 all_modules = "intf/opaque_impl.mli intf/regular.mli"
 ***** script
-script = "cp intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli fst"
+script = "cp intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi \
+             intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli fst"
 ****** script
-script = "cp intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli snd"
+script = "cp intf/opaque_intf.cmi intf/opaque_impl.cmi intf/regular.cmi \
+             intf/opaque_intf.mli intf/opaque_impl.mli intf/regular.mli snd"
 ******* ocamlopt.byte
 flags = "-I fst -opaque"
 all_modules = "fst/opaque_impl.ml"

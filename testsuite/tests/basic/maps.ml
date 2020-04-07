@@ -54,7 +54,8 @@ let () =
       List.iter (function (k, f) ->
           let m1 = update i f m in
           let m2 = IntMap.update i f m in
-          if not (IntMap.equal ( = ) m1 m2 && ((m1 == m) = (m2 == m))) then begin
+          if not (IntMap.equal ( = ) m1 m2 && ((m1 == m) = (m2 == m))) then
+          begin
             Printf.printf "ERROR: %s: %d -> %d\n" k i j;
             print_endline "expected result:";
             show m1;
@@ -63,10 +64,11 @@ let () =
           end
         )
       [
-        "replace",                          (function None -> None   | Some _ -> Some j);
-        "delete if exists, bind otherwise", (function None -> Some j | Some _ -> None);
-        "delete",                           (function None -> None   | Some _ -> None);
-        "insert",                           (function None -> Some j | Some _ -> Some j);
+        "replace",                 (function None -> None   | Some _ -> Some j);
+        "delete if exists, bind otherwise",
+                                   (function None -> Some j | Some _ -> None);
+        "delete",                  (function None -> None   | Some _ -> None);
+        "insert",                  (function None -> Some j | Some _ -> Some j);
       ]
     done;
   done;

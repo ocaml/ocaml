@@ -28,7 +28,7 @@ open Variables (* Should not be necessary with a ppx *)
 
 let all_modules = make ("all_modules",
   "All the modules to compile and link")
-  
+
 let binary_modules = make ("binary_modules",
   "Additional binary modules to link")
 
@@ -217,7 +217,8 @@ let sharedobjext =
     "Extension of shared object files")
 
 let use_runtime =
-  Variables.make ( "use_runtime", "Whether the -use-runtime option should be used" )
+  Variables.make ("use_runtime",
+    "Whether the -use-runtime option should be used" )
 
 let _ = List.iter register_variable
   [

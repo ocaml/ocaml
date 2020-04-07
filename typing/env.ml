@@ -24,6 +24,8 @@ open Path
 open Types
 open Btype
 
+module String = Misc.Stdlib.String
+
 let add_delayed_check_forward = ref (fun _ -> assert false)
 
 let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t =
@@ -78,9 +80,9 @@ module EnvLazy : sig
   val create : 'a -> ('a,'b) t
   val get_arg : ('a,'b) t -> 'a option
 
-  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns [None] then
-     [t] is recorded in [log]. [backtrack log] will then reset all the recorded [t]s back
-     to their original state. *)
+  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns
+     [None] then [t] is recorded in [log]. [backtrack log] will then reset all
+     the recorded [t]s back to their original state. *)
   val log : unit -> log
   val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
   val backtrack : log -> unit
@@ -150,7 +152,8 @@ end  = struct
 
 end
 
-module PathMap = Map.Make(Path)
+(** Map indexed by the name of module components. *)
+module NameMap = String.Map
 
 type summary =
     Env_empty
@@ -161,9 +164,9 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * StringSet.t * Path.t
+  | Env_open of summary * String.Set.t * Path.t
   | Env_functor_arg of summary * Ident.t
-  | Env_constraints of summary * type_declaration PathMap.t
+  | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
 
 module TycompTbl =
@@ -181,7 +184,7 @@ module TycompTbl =
     }
 
     and 'a opened = {
-      components: (string, 'a list) Tbl.t;
+      components: ('a list) NameMap.t;
       (** Components from the opened module. We keep a list of
           bindings for each name, as in comp_labels and
           comp_constrs. *)
@@ -237,7 +240,7 @@ module TycompTbl =
       | None -> []
       | Some {using; next; components} ->
           let rest = find_all name next in
-          match Tbl.find_str name components with
+          match NameMap.find name components with
           | exception Not_found -> rest
           | opened ->
               List.map
@@ -250,7 +253,7 @@ module TycompTbl =
       match tbl.opened with
       | Some {using = _; next; components} ->
           acc
-          |> Tbl.fold
+          |> NameMap.fold
             (fun _name -> List.fold_right (fun desc -> f desc))
             components
           |> fold_name f next
@@ -297,7 +300,7 @@ module IdTbl =
           its local names to produce a valid path in the current
           environment. *)
 
-      components: (string, 'a * int) Tbl.t;
+      components: ('a * int) NameMap.t;
       (** Components from the opened module. *)
 
       using: (string -> ('a * 'a) option -> unit) option;
@@ -341,12 +344,16 @@ module IdTbl =
         begin match tbl.opened with
         | Some {using; root; next; components} ->
             begin try
-              let (descr, pos) = Tbl.find_str name components in
+              let (descr, pos) = NameMap.find name components in
               let res = Pdot (root, name, pos), descr in
               if mark then begin match using with
               | None -> ()
               | Some f ->
-                  begin try f name (Some (snd (find_name ~mark:false name next), snd res))
+                  begin try
+                    let res =
+                      (snd (find_name ~mark:false name next), snd res)
+                    in
+                    f name (Some res)
                   with Not_found -> f name None
                   end
               end;
@@ -367,9 +374,9 @@ module IdTbl =
         begin match tbl.opened with
         | Some {root; using; next; components} ->
             begin try
-              let (desc, pos) = Tbl.find_str name components in
+              let (desc, pos) = NameMap.find name components in
               let new_desc = f desc in
-              let components = Tbl.add name (new_desc, pos) components in
+              let components = NameMap.add name (new_desc, pos) components in
               {tbl with opened = Some {root; using; next; components}}
             with Not_found ->
               let next = update name f next in
@@ -382,22 +389,26 @@ module IdTbl =
 
 
     let rec find_all name tbl =
-      List.map (fun (id, desc) -> Pident id, desc) (Ident.find_all name tbl.current) @
+      List.map (fun (id, desc) -> Pident id, desc)
+        (Ident.find_all name tbl.current) @
       match tbl.opened with
       | None -> []
       | Some {root; using = _; next; components} ->
           try
-            let (desc, pos) = Tbl.find_str name components in
+            let (desc, pos) = NameMap.find name components in
             (Pdot (root, name, pos), desc) :: find_all name next
           with Not_found ->
             find_all name next
 
     let rec fold_name f tbl acc =
-      let acc = Ident.fold_name (fun id d -> f (Ident.name id) (Pident id, d)) tbl.current acc in
+      let acc =
+        Ident.fold_name (fun id d -> f (Ident.name id) (Pident id, d))
+          tbl.current acc
+      in
       match tbl.opened with
       | Some {root; using = _; next; components} ->
           acc
-          |> Tbl.fold
+          |> NameMap.fold
             (fun name (desc, pos) -> f name (Pdot (root, name, pos), desc))
             components
           |> fold_name f next
@@ -415,8 +426,10 @@ module IdTbl =
       Ident.iter (fun id desc -> f id (Pident id, desc)) tbl.current;
       match tbl.opened with
       | Some {root; using = _; next; components} ->
-          Tbl.iter
-            (fun s (x, pos) -> f (Ident.hide (Ident.create s) (* ??? *)) (Pdot (root, s, pos), x))
+          NameMap.iter
+            (fun s (x, pos) ->
+              f (Ident.hide (Ident.create s) (* ??? *))
+                (Pdot (root, s, pos), x))
             components;
           iter f next
       | None -> ()
@@ -449,7 +462,7 @@ type t = {
   cltypes: class_type_declaration IdTbl.t;
   functor_args: unit Ident.tbl;
   summary: summary;
-  local_constraints: type_declaration PathMap.t;
+  local_constraints: type_declaration Path.Map.t;
   flags: int;
 }
 
@@ -466,12 +479,12 @@ and module_components_repr =
     Structure_comps of structure_components
   | Functor_comps of functor_components
 
-and 'a comp_tbl = (string, ('a * int)) Tbl.t
+and 'a comp_tbl = ('a * int) NameMap.t
 
 and structure_components = {
   mutable comp_values: value_description comp_tbl;
-  mutable comp_constrs: (string, constructor_description list) Tbl.t;
-  mutable comp_labels: (string, label_description list) Tbl.t;
+  mutable comp_constrs: (constructor_description list) NameMap.t;
+  mutable comp_labels: (label_description list) NameMap.t;
   mutable comp_types: (type_declaration * type_descriptions) comp_tbl;
   mutable comp_modules:
    (Subst.t * module_declaration, module_declaration) EnvLazy.t comp_tbl;
@@ -495,6 +508,8 @@ let copy_local ~from env =
     flags = from.flags }
 
 let same_constr = ref (fun _ _ _ -> assert false)
+
+let check_well_formed_module = ref (fun _ -> assert false)
 
 (* Helper to decide whether to report an identifier shadowing
    by some 'open'. For labels and constructors, we do not report
@@ -531,7 +546,7 @@ let empty = {
   modules = IdTbl.empty; modtypes = IdTbl.empty;
   components = IdTbl.empty; classes = IdTbl.empty;
   cltypes = IdTbl.empty;
-  summary = Env_empty; local_constraints = PathMap.empty;
+  summary = Env_empty; local_constraints = Path.Map.empty;
   flags = 0;
   functor_args = Ident.empty;
  }
@@ -609,13 +624,13 @@ let get_components_opt c =
 
 let empty_structure =
   Structure_comps {
-    comp_values = Tbl.empty;
-    comp_constrs = Tbl.empty;
-    comp_labels = Tbl.empty;
-    comp_types = Tbl.empty;
-    comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
-    comp_components = Tbl.empty; comp_classes = Tbl.empty;
-    comp_cltypes = Tbl.empty }
+    comp_values = NameMap.empty;
+    comp_constrs = NameMap.empty;
+    comp_labels = NameMap.empty;
+    comp_types = NameMap.empty;
+    comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
+    comp_components = NameMap.empty; comp_classes = NameMap.empty;
+    comp_cltypes = NameMap.empty }
 
 let get_components c =
   match get_components_opt c with
@@ -644,20 +659,20 @@ let persistent_structures =
 
 let crc_units = Consistbl.create()
 
-let imported_units = ref StringSet.empty
+let imported_units = ref String.Set.empty
 
 let add_import s =
-  imported_units := StringSet.add s !imported_units
+  imported_units := String.Set.add s !imported_units
 
-let imported_opaque_units = ref StringSet.empty
+let imported_opaque_units = ref String.Set.empty
 
 let add_imported_opaque s =
-  imported_opaque_units := StringSet.add s !imported_opaque_units
+  imported_opaque_units := String.Set.add s !imported_opaque_units
 
 let clear_imports () =
   Consistbl.clear crc_units;
-  imported_units := StringSet.empty;
-  imported_opaque_units := StringSet.empty
+  imported_units := String.Set.empty;
+  imported_opaque_units := String.Set.empty
 
 let check_consistency ps =
   try
@@ -861,7 +876,7 @@ let rec find_module_descr path env =
   | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (descr, _pos) = Tbl.find_str s c.comp_components in
+          let (descr, _pos) = NameMap.find s c.comp_components in
           descr
       | Functor_comps _ ->
          raise Not_found
@@ -881,7 +896,7 @@ let find proj1 proj2 path env =
   | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (data, _pos) = Tbl.find_str s (proj2 c) in data
+          let (data, _pos) = NameMap.find s (proj2 c) in data
       | Functor_comps _ ->
           raise Not_found
       end
@@ -908,7 +923,7 @@ let type_of_cstr path = function
 let find_type_full path env =
   match Path.constructor_typath path with
   | Regular p ->
-      (try (PathMap.find p env.local_constraints, ([], []))
+      (try (Path.Map.find p env.local_constraints, ([], []))
        with Not_found -> find_type_full p env)
   | Cstr (ty_path, s) ->
       let (_, (cstrs, _)) =
@@ -939,7 +954,7 @@ let find_type_full path env =
       let exts =
         List.filter
           (function {cstr_tag=Cstr_extension _} -> true | _ -> false)
-          (try Tbl.find_str s comps.comp_constrs
+          (try NameMap.find s comps.comp_constrs
            with Not_found -> assert false)
       in
       match exts with
@@ -966,7 +981,7 @@ let find_module ~alias path env =
   | Pdot(p, s, _pos) ->
       begin match get_components (find_module_descr p env) with
         Structure_comps c ->
-          let (data, _pos) = Tbl.find_str s c.comp_modules in
+          let (data, _pos) = NameMap.find s c.comp_modules in
           EnvLazy.force subst_modtype_maker data
       | Functor_comps _ ->
           raise Not_found
@@ -1114,7 +1129,7 @@ let rec lookup_module_descr_aux ?loc ~mark lid env =
       let (p, descr) = lookup_module_descr ?loc ~mark l env in
       begin match get_components descr with
         Structure_comps c ->
-          let (descr, pos) = Tbl.find_str s c.comp_components in
+          let (descr, pos) = NameMap.find s c.comp_components in
           (Pdot(p, s, pos), descr)
       | Functor_comps _ ->
           raise Not_found
@@ -1179,8 +1194,8 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
       let (p, descr) = lookup_module_descr ?loc ~mark l env in
       begin match get_components descr with
         Structure_comps c ->
-          let (_data, pos) = Tbl.find_str s c.comp_modules in
-          let (comps, _) = Tbl.find_str s c.comp_components in
+          let (_data, pos) = NameMap.find s c.comp_modules in
+          let (comps, _) = NameMap.find s c.comp_components in
           if mark then mark_module_used s comps.loc;
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
@@ -1212,7 +1227,7 @@ let lookup proj1 proj2 ?loc ~mark lid env =
       let (p, desc) = lookup_module_descr ?loc ~mark l env in
       begin match get_components desc with
         Structure_comps c ->
-          let (data, pos) = Tbl.find_str s (proj2 c) in
+          let (data, pos) = NameMap.find s (proj2 c) in
           (Pdot(p, s, pos), data)
       | Functor_comps _ ->
           raise Not_found
@@ -1237,7 +1252,7 @@ let lookup_all_simple proj1 proj2 shadow ?loc ~mark lid env =
       begin match get_components desc with
         Structure_comps c ->
           let comps =
-            try Tbl.find_str s (proj2 c) with Not_found -> []
+            try NameMap.find s (proj2 c) with Not_found -> []
           in
           List.map
             (fun data -> (data, (fun () -> ())))
@@ -1248,7 +1263,7 @@ let lookup_all_simple proj1 proj2 shadow ?loc ~mark lid env =
   | Lapply _ ->
       raise Not_found
 
-let has_local_constraints env = not (PathMap.is_empty env.local_constraints)
+let has_local_constraints env = not (Path.Map.is_empty env.local_constraints)
 
 let cstr_shadow cstr1 cstr2 =
   match cstr1.cstr_tag, cstr2.cstr_tag with
@@ -1281,8 +1296,10 @@ type copy_of_types = {
 }
 
 let make_copy_of_types l env : copy_of_types =
-  let f desc = { desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
-  let values = List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
+  let f desc =
+    {desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
+  let values =
+    List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
   {to_copy = l; initial_values = env.values; new_values = values}
 
 let do_copy_types { to_copy = l; initial_values; new_values = values } env =
@@ -1463,10 +1480,10 @@ let iter_env proj1 proj2 f env () =
       if not visit then () else
       match get_components mcomps with
         Structure_comps comps ->
-          Tbl.iter
+          NameMap.iter
             (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
             (proj2 comps);
-          Tbl.iter
+          NameMap.iter
             (fun s (c, n) ->
               iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
             comps.comp_components
@@ -1506,7 +1523,7 @@ let find_all_comps proj s (p,mcomps) =
   match get_components mcomps with
     Functor_comps _ -> []
   | Structure_comps comps ->
-      try let (c,n) = Tbl.find_str s (proj comps) in [Pdot(p,s,n), c]
+      try let (c,n) = NameMap.find s (proj comps) in [Pdot(p,s,n), c]
       with Not_found -> []
 
 let rec find_shadowed_comps path env =
@@ -1626,8 +1643,8 @@ let prefix_idents root sub sg =
 
 let add_to_tbl id decl tbl =
   let decls =
-    try Tbl.find_str id tbl with Not_found -> [] in
-  Tbl.add id (decl :: decls) tbl
+    try NameMap.find id tbl with Not_found -> [] in
+  NameMap.add id (decl :: decls) tbl
 
 let rec components_of_module ~deprecated ~loc env sub path mty =
   {
@@ -1640,12 +1657,12 @@ and components_of_module_maker (env, sub, path, mty) =
   match scrape_alias env mty with
     Mty_signature sg ->
       let c =
-        { comp_values = Tbl.empty;
-          comp_constrs = Tbl.empty;
-          comp_labels = Tbl.empty; comp_types = Tbl.empty;
-          comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
-          comp_components = Tbl.empty; comp_classes = Tbl.empty;
-          comp_cltypes = Tbl.empty } in
+        { comp_values = NameMap.empty;
+          comp_constrs = NameMap.empty;
+          comp_labels = NameMap.empty; comp_types = NameMap.empty;
+          comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
+          comp_components = NameMap.empty; comp_classes = NameMap.empty;
+          comp_cltypes = NameMap.empty } in
       let pl, sub = prefix_idents path sub sg in
       let env = ref env in
       let pos = ref 0 in
@@ -1654,7 +1671,7 @@ and components_of_module_maker (env, sub, path, mty) =
           Sig_value(id, decl) ->
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
-              Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
+              NameMap.add (Ident.name id) (decl', !pos) c.comp_values;
             begin match decl.val_kind with
               Val_prim _ -> () | _ -> incr pos
             end
@@ -1666,7 +1683,7 @@ and components_of_module_maker (env, sub, path, mty) =
             let labels =
               List.map snd (Datarepr.labels_of_type path decl') in
             c.comp_types <-
-              Tbl.add (Ident.name id)
+              NameMap.add (Ident.name id)
                 ((decl', (constructors, labels)), nopos)
                   c.comp_types;
             List.iter
@@ -1689,7 +1706,7 @@ and components_of_module_maker (env, sub, path, mty) =
         | Sig_module(id, md, _) ->
             let md' = EnvLazy.create (sub, md) in
             c.comp_modules <-
-              Tbl.add (Ident.name id) (md', !pos) c.comp_modules;
+              NameMap.add (Ident.name id) (md', !pos) c.comp_modules;
             let deprecated =
               Builtin_attributes.deprecated_of_attrs md.md_attributes
             in
@@ -1698,23 +1715,23 @@ and components_of_module_maker (env, sub, path, mty) =
                 md.md_type
             in
             c.comp_components <-
-              Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
+              NameMap.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_module ~check:false id md !env;
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
             c.comp_modtypes <-
-              Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
+              NameMap.add (Ident.name id) (decl', nopos) c.comp_modtypes;
             env := store_modtype id decl !env
         | Sig_class(id, decl, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
-              Tbl.add (Ident.name id) (decl', !pos) c.comp_classes;
+              NameMap.add (Ident.name id) (decl', !pos) c.comp_classes;
             incr pos
         | Sig_class_type(id, decl, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
-              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes)
+              NameMap.add (Ident.name id) (decl', !pos) c.comp_cltypes)
         sg pl;
         Some (Structure_comps c)
   | Mty_functor(param, ty_arg, ty_res) ->
@@ -1887,6 +1904,8 @@ let components_of_functor_appl f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     let mty = Subst.modtype sub f.fcomp_res in
+    !check_well_formed_module env Location.(in_file !input_name)
+      ("the signature of " ^ Path.name p) mty;
     let comps = components_of_module ~deprecated:None ~loc:Location.none
         (*???*)
         env Subst.identity p mty in
@@ -1934,7 +1953,7 @@ let add_module ?arg id mty env =
 
 let add_local_type path info env =
   { env with
-    local_constraints = PathMap.add path info env.local_constraints }
+    local_constraints = Path.Map.add path info env.local_constraints }
 
 
 (* Insertion of bindings by name *)
@@ -1983,23 +2002,23 @@ let add_components ?filter_modules slot root env0 comps =
 
   let add w comps env0 = IdTbl.add_open slot w root comps env0 in
 
-  let skipped_modules = ref StringSet.empty in
+  let skipped_modules = ref String.Set.empty in
   let filter tbl env0_tbl =
     match filter_modules with
     | None -> tbl
     | Some f ->
-      Tbl.fold (fun m x acc ->
+      NameMap.fold (fun m x acc ->
         if f m then
-          Tbl.add m x acc
+          NameMap.add m x acc
         else begin
           assert
             (match IdTbl.find_name m env0_tbl~mark:false with
              | (_ : _ * _) -> false
              | exception _ -> true);
-          skipped_modules := StringSet.add m !skipped_modules;
+          skipped_modules := String.Set.add m !skipped_modules;
           acc
         end)
-        tbl Tbl.empty
+        tbl NameMap.empty
   in
 
   let filter_and_add w comps env0 =
@@ -2075,10 +2094,10 @@ let open_signature_of_initially_opened_module root env =
 
 let open_signature_from_env_summary root env ~hidden_submodules =
   let filter_modules =
-    if StringSet.is_empty hidden_submodules then
+    if String.Set.is_empty hidden_submodules then
       None
     else
-      Some (fun m -> not (StringSet.mem m hidden_submodules))
+      Some (fun m -> not (String.Set.mem m hidden_submodules))
   in
   open_signature None root env ?filter_modules
 
@@ -2142,11 +2161,11 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imports () =
-  Consistbl.extract (StringSet.elements !imported_units) crc_units
+  Consistbl.extract (String.Set.elements !imported_units) crc_units
 
 (* Returns true if [s] is an opaque imported module  *)
 let is_imported_opaque s =
-  StringSet.mem s !imported_opaque_units
+  String.Set.mem s !imported_opaque_units
 
 (* Save a signature to a file *)
 
@@ -2164,36 +2183,35 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       (match deprecated with Some s -> [Deprecated s] | None -> []);
     ]
   in
-  try
-    let cmi = {
-      cmi_name = modname;
-      cmi_sign = sg;
-      cmi_crcs = imports;
-      cmi_flags = flags;
-    } in
-    let crc =
-      output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
-         ~mode: [Open_binary] filename
-         (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
-    (* Enter signature in persistent table so that imported_unit()
-       will also return its crc *)
-    let comps =
-      components_of_module ~deprecated ~loc:Location.none
-        empty Subst.identity
-        (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
-    let ps =
-      { ps_name = modname;
-        ps_sig = lazy (Subst.signature Subst.identity sg);
-        ps_comps = comps;
-        ps_crcs = (cmi.cmi_name, Some crc) :: imports;
-        ps_filename = filename;
-        ps_flags = cmi.cmi_flags;
+  Misc.try_finally (fun () ->
+      let cmi = {
+        cmi_name = modname;
+        cmi_sign = sg;
+        cmi_crcs = imports;
+        cmi_flags = flags;
       } in
-    save_pers_struct crc ps;
-    cmi
-  with exn ->
-    remove_file filename;
-    raise exn
+      let crc =
+        output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
+          ~mode: [Open_binary] filename
+          (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
+      (* Enter signature in persistent table so that imported_unit()
+         will also return its crc *)
+      let comps =
+        components_of_module ~deprecated ~loc:Location.none
+          empty Subst.identity
+          (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
+      let ps =
+        { ps_name = modname;
+          ps_sig = lazy (Subst.signature Subst.identity sg);
+          ps_comps = comps;
+          ps_crcs = (cmi.cmi_name, Some crc) :: imports;
+          ps_filename = filename;
+          ps_flags = cmi.cmi_flags;
+        } in
+      save_pers_struct crc ps;
+      cmi
+    )
+    ~exceptionally:(fun () -> remove_file filename)
 
 let save_signature ~deprecated sg modname filename =
   save_signature_with_imports ~deprecated sg modname filename (imports())
@@ -2210,7 +2228,7 @@ let find_all proj1 proj2 f lid env acc =
       let p, desc = lookup_module_descr ~mark:true l env in
       begin match get_components desc with
           Structure_comps c ->
-            Tbl.fold
+            NameMap.fold
               (fun s (data, pos) acc -> f s (Pdot (p, s, pos)) data acc)
               (proj2 c) acc
         | Functor_comps _ ->
@@ -2227,7 +2245,7 @@ let find_all_simple_list proj1 proj2 f lid env acc =
       let (_p, desc) = lookup_module_descr ~mark:true l env in
       begin match get_components desc with
           Structure_comps c ->
-            Tbl.fold
+            NameMap.fold
               (fun _s comps acc ->
                 match comps with
                   [] -> acc
@@ -2263,7 +2281,7 @@ let fold_modules f lid env acc =
       let p, desc = lookup_module_descr ~mark:true l env in
       begin match get_components desc with
           Structure_comps c ->
-            Tbl.fold
+            NameMap.fold
               (fun s (data, pos) acc ->
                 f s (Pdot (p, s, pos))
                     (EnvLazy.force subst_modtype_maker data) acc)
@@ -2299,7 +2317,7 @@ let (initial_safe_string, initial_unsafe_string) =
 (* Return the environment summary *)
 
 let summary env =
-  if PathMap.is_empty env.local_constraints then env.summary
+  if Path.Map.is_empty env.local_constraints then env.summary
   else Env_constraints (env.summary, env.local_constraints)
 
 let last_env = ref empty

@@ -128,7 +128,7 @@ external to_float : int32 -> float
 
 external of_string : string -> int32 = "caml_int32_of_string"
 (** Convert the given string to a 32-bit integer.
-   The string is read in decimal (by default, or if the string 
+   The string is read in decimal (by default, or if the string
    begins with [0u]) or in hexadecimal, octal or binary if the
    string begins with [0x], [0o] or [0b] respectively.
 

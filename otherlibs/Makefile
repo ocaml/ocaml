@@ -31,8 +31,8 @@ endif
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib
-CFLAGS += $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
-CPPFLAGS += -I$(ROOTDIR)/byterun
+OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
 # Compilation options
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
@@ -60,9 +60,11 @@ CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
 CLIBNAME ?= $(LIBNAME)
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: lib$(CLIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 
 allopt: lib$(CLIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
+opt.opt: allopt
 
 $(LIBNAME).cma: $(CAMLOBJS)
 	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall \
@@ -127,4 +129,4 @@ clean:: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 .c.$(O):
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

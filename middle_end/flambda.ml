@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 type call_kind =
   | Indirect
@@ -534,9 +535,9 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
               defining_expr; body; _ } ->
         bound_variable var;
         if all_used_variables
-           || ignore_uses_as_callee <> None
-           || ignore_uses_as_argument <> None
-           || ignore_uses_in_project_var <> None
+           || Misc.Stdlib.Option.is_some ignore_uses_as_callee
+           || Misc.Stdlib.Option.is_some ignore_uses_as_argument
+           || Misc.Stdlib.Option.is_some ignore_uses_in_project_var
         then begin
           (* In these cases we can't benefit from the pre-computed free
              variable sets. *)
@@ -1184,7 +1185,7 @@ let used_params function_decl =
 let compare_const (c1:const) (c2:const) =
   match c1, c2 with
   | Int i1, Int i2 -> compare i1 i2
-  | Char i1, Char i2 -> compare i1 i2
+  | Char i1, Char i2 -> Char.compare i1 i2
   | Const_pointer i1, Const_pointer i2 -> compare i1 i2
   | Int _, (Char _ | Const_pointer _) -> -1
   | (Char _ | Const_pointer _), Int _ -> 1
@@ -1248,6 +1249,12 @@ module Constant_defining_value = struct
       output_string o (Format.asprintf "%a" print v)
   end)
 end
+
+let equal_call_kind (call_kind1 : call_kind) (call_kind2 : call_kind) =
+  match call_kind1, call_kind2 with
+  | Indirect, Indirect -> true
+  | Direct cid1, Direct cid2 -> Closure_id.equal cid1 cid2
+  | (Indirect | Direct _), _ -> false
 
 let equal_specialised_to (spec_to1 : specialised_to)
       (spec_to2 : specialised_to) =

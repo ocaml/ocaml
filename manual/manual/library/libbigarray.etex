@@ -1,5 +1,4 @@
 \chapter{The bigarray library}
-\pdfchapterfold{-1}{The bigarray library}
 %HEVEA\cutname{libbigarray.html}
 
 The "bigarray" library has now been integrated into OCaml's standard

@@ -7,7 +7,7 @@
   Presumably this is because the OCaml runtime opens files, so that handles
   that have actually been closed at execution look open and make the
   test fail.
-  
+
   One possible fix for this would be to make it possible for ocamltest to
   compile C-only programs, which will be a bit of work to handle the
   output of msvc and will also duplicate what the ocaml compiler itslef
@@ -97,7 +97,7 @@ let _ =
                p0;p0';p1;p1';p2;p2';
                s0;s1;s2;
                x0;x0';x1;x1';x2;x2' |] in
-  let untested = 
+  let untested =
     [untested1; untested2; untested3; untested4; untested5]
   in
   let pid =

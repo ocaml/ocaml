@@ -370,10 +370,12 @@ void caml_gr_fail(const char *fmt, const char *arg)
   char buffer[1024];
   const value* graphic_failure_exn;
 
-  graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
-  if (!graphic_failure_exn)
-    caml_invalid_argument("Exception Graphics.Graphic_failure not initialized,"
-                     " must link graphics.cma");
+  if (graphic_failure_exn == NULL) {
+    graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
+    if (graphic_failure_exn == NULL)
+      caml_invalid_argument("Exception Graphics.Graphic_failure not "
+                       "initialized, must link graphics.cma");
+  }
   sprintf(buffer, fmt, arg);
   caml_raise_with_string(*graphic_failure_exn, buffer);
 }

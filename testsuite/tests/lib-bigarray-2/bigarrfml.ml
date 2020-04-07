@@ -4,7 +4,7 @@ files = "bigarrf.f bigarrfstub.c"
 last_flags = "-cclib -lgfortran"
 
 * script
-script = "sh ${test_source_directory}/gfortran-available"
+script = "sh ${test_source_directory}/has-gfortran.sh"
 
 ** setup-ocamlc.byte-build-env
 *** script

@@ -13,12 +13,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "-40"]
+
 (* To assign numbers to globals and primitives *)
 
 open Misc
 open Asttypes
 open Lambda
 open Cmo_format
+
+module String = Misc.Stdlib.String
 
 (* Functions for batch linking *)
 
@@ -30,73 +34,84 @@ type error =
 
 exception Error of error
 
-let empty_numtable = { num_cnt = 0; num_tbl = Tbl.empty }
+module Num_tbl (M : Map.S) = struct
 
-let find_numtable nt key =
-  Tbl.find key nt.num_tbl
+  type t = {
+    cnt: int; (* The next number *)
+    tbl: int M.t ; (* The table of already numbered objects *)
+  }
 
-let enter_numtable nt key =
-  let n = !nt.num_cnt in
-  nt := { num_cnt = n + 1; num_tbl = Tbl.add key n !nt.num_tbl };
-  n
+  let empty = { cnt = 0; tbl = M.empty }
 
-let incr_numtable nt =
-  let n = !nt.num_cnt in
-  nt := { num_cnt = n + 1; num_tbl = !nt.num_tbl };
-  n
+  let find nt key =
+    M.find key nt.tbl
+
+  let enter nt key =
+    let n = !nt.cnt in
+    nt := { cnt = n + 1; tbl = M.add key n !nt.tbl };
+    n
+
+  let incr nt =
+    let n = !nt.cnt in
+    nt := { cnt = n + 1; tbl = !nt.tbl };
+    n
+
+end
+module GlobalMap = Num_tbl(Ident.Map)
+module PrimMap = Num_tbl(Misc.Stdlib.String.Map)
 
 (* Global variables *)
 
-let global_table = ref(empty_numtable : Ident.t numtable)
+let global_table = ref GlobalMap.empty
 and literal_table = ref([] : (int * structured_constant) list)
 
 let is_global_defined id =
-  Tbl.mem id (!global_table).num_tbl
+  Ident.Map.mem id (!global_table).tbl
 
 let slot_for_getglobal id =
   try
-    find_numtable !global_table id
+    GlobalMap.find !global_table id
   with Not_found ->
     raise(Error(Undefined_global(Ident.name id)))
 
 let slot_for_setglobal id =
-  enter_numtable global_table id
+  GlobalMap.enter global_table id
 
 let slot_for_literal cst =
-  let n = incr_numtable global_table in
+  let n = GlobalMap.incr global_table in
   literal_table := (n, cst) :: !literal_table;
   n
 
 (* The C primitives *)
 
-let c_prim_table = ref(empty_numtable : string numtable)
+let c_prim_table = ref PrimMap.empty
 
 let set_prim_table name =
-  ignore(enter_numtable c_prim_table name)
+  ignore(PrimMap.enter c_prim_table name)
 
-let num_of_prim name =
+let of_prim name =
   try
-    find_numtable !c_prim_table name
+    PrimMap.find !c_prim_table name
   with Not_found ->
     if !Clflags.custom_runtime || Config.host <> Config.target
        || !Clflags.no_check_prims
     then
-      enter_numtable c_prim_table name
+      PrimMap.enter c_prim_table name
     else begin
       let symb =
         try Dll.find_primitive name
         with Not_found -> raise(Error(Unavailable_primitive name)) in
-      let num = enter_numtable c_prim_table name in
+      let num = PrimMap.enter c_prim_table name in
       Dll.synchronize_primitive num symb;
       num
     end
 
 let require_primitive name =
-  if name.[0] <> '%' then ignore(num_of_prim name)
+  if name.[0] <> '%' then ignore(of_prim name)
 
 let all_primitives () =
-  let prim = Array.make !c_prim_table.num_cnt "" in
-  Tbl.iter (fun name number -> prim.(number) <- name) !c_prim_table.num_tbl;
+  let prim = Array.make !c_prim_table.cnt "" in
+  String.Map.iter (fun name number -> prim.(number) <- name) !c_prim_table.tbl;
   prim
 
 let data_primitive_names () =
@@ -147,28 +162,30 @@ let init () =
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Initialize the known C primitives *)
-  if String.length !Clflags.use_prims > 0 then begin
-      let ic = open_in !Clflags.use_prims in
-      try
-        while true do
-          set_prim_table (input_line ic)
-        done
-      with End_of_file -> close_in ic
-         | x -> close_in ic; raise x
-  end else if String.length !Clflags.use_runtime > 0 then begin
+  let set_prim_table_from_file primfile =
+    let ic = open_in primfile in
+    Misc.try_finally
+      ~always:(fun () -> close_in ic)
+      (fun () ->
+         try
+           while true do
+             set_prim_table (input_line ic)
+           done
+         with End_of_file -> ()
+      )
+  in
+  if String.length !Clflags.use_prims > 0 then
+    set_prim_table_from_file !Clflags.use_prims
+  else if String.length !Clflags.use_runtime > 0 then begin
     let primfile = Filename.temp_file "camlprims" "" in
-    try
-      if Sys.command(Printf.sprintf "%s -p > %s"
-                                    !Clflags.use_runtime primfile) <> 0
-      then raise(Error(Wrong_vm !Clflags.use_runtime));
-      let ic = open_in primfile in
-      try
-        while true do
-          set_prim_table (input_line ic)
-        done
-      with End_of_file -> close_in ic; remove_file primfile
-         | x -> close_in ic; raise x
-    with x -> remove_file primfile; raise x
+    Misc.try_finally
+      ~always:(fun () -> remove_file primfile)
+      (fun () ->
+         if Sys.command(Printf.sprintf "%s -p > %s"
+                          !Clflags.use_runtime primfile) <> 0
+         then raise(Error(Wrong_vm !Clflags.use_runtime));
+         set_prim_table_from_file primfile
+      )
   end else begin
     Array.iter set_prim_table Runtimedef.builtin_primitives
   end
@@ -191,7 +208,7 @@ let patch_object buff patchlist =
       | (Reloc_setglobal id, pos) ->
           patch_int buff pos (slot_for_setglobal id)
       | (Reloc_primitive name, pos) ->
-          patch_int buff pos (num_of_prim name))
+          patch_int buff pos (of_prim name))
     patchlist
 
 (* Translate structured constants *)
@@ -222,7 +239,7 @@ let rec transl_const = function
 (* Build the initial table of globals *)
 
 let initial_global_table () =
-  let glob = Array.make !global_table.num_cnt (Obj.repr 0) in
+  let glob = Array.make !global_table.cnt (Obj.repr 0) in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- transl_const cst)
     !literal_table;
@@ -242,7 +259,7 @@ let data_global_map () =
 (* Update the in-core table of globals *)
 
 let update_global_table () =
-  let ng = !global_table.num_cnt in
+  let ng = !global_table.cnt in
   if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
   let glob = Meta.global_data() in
   List.iter
@@ -281,10 +298,10 @@ let init_toplevel () =
   try
     let sect = read_sections () in
     (* Locations of globals *)
-    global_table := (Obj.magic (sect.read_struct "SYMB") : Ident.t numtable);
+    global_table := (Obj.magic (sect.read_struct "SYMB") : GlobalMap.t);
     (* Primitives *)
     let prims = sect.read_string "PRIM" in
-    c_prim_table := empty_numtable;
+    c_prim_table := PrimMap.empty;
     let pos = ref 0 in
     while !pos < String.length prims do
       let i = String.index_from prims !pos '\000' in
@@ -337,28 +354,32 @@ let check_global_initialized patchlist =
 
 (* Save and restore the current state *)
 
-type global_map = Ident.t numtable
+type global_map = GlobalMap.t
 
 let current_state () = !global_table
 
 let restore_state st = global_table := st
 
-let hide_additions st =
-  if st.num_cnt > !global_table.num_cnt then
+let hide_additions (st : global_map) =
+  if st.cnt > !global_table.cnt then
     fatal_error "Symtable.hide_additions";
   global_table :=
-    { num_cnt = !global_table.num_cnt;
-      num_tbl = st.num_tbl }
+    {GlobalMap.
+      cnt = !global_table.cnt;
+      tbl = st.tbl }
 
 (* "Filter" the global map according to some predicate.
    Used to expunge the global map for the toplevel. *)
 
-let filter_global_map p gmap =
-  let newtbl = ref Tbl.empty in
-  Tbl.iter
-    (fun id num -> if p id then newtbl := Tbl.add id num !newtbl)
-    gmap.num_tbl;
-  {num_cnt = gmap.num_cnt; num_tbl = !newtbl}
+let filter_global_map p (gmap : global_map) =
+  let newtbl = ref Ident.Map.empty in
+  Ident.Map.iter
+    (fun id num -> if p id then newtbl := Ident.Map.add id num !newtbl)
+    gmap.tbl;
+  {GlobalMap. cnt = gmap.cnt; tbl = !newtbl}
+
+let iter_global_map f (gmap : global_map) =
+  Ident.Map.iter f gmap.tbl
 
 (* Error report *)
 
@@ -382,6 +403,6 @@ let () =
     )
 
 let reset () =
-  global_table := empty_numtable;
+  global_table := GlobalMap.empty;
   literal_table := [];
-  c_prim_table := empty_numtable
+  c_prim_table := PrimMap.empty

@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 module E = Inline_and_simplify_aux.Env
 module B = Inlining_cost.Benefit
@@ -751,7 +752,8 @@ module Make (T : S) = struct
       Some (expr, benefit)
 
   let rewrite_set_of_closures ~env ~duplicate_function ~set_of_closures =
-    Pass_wrapper.with_dump ~pass_name:T.pass_name ~input:set_of_closures
+    Pass_wrapper.with_dump ~ppf_dump:(Inline_and_simplify_aux.Env.ppf_dump env)
+      ~pass_name:T.pass_name ~input:set_of_closures
       ~print_input:Flambda.print_set_of_closures
       ~print_output:(fun ppf (expr, _) -> Flambda.print ppf expr)
       ~f:(fun () ->

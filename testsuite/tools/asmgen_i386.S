@@ -53,6 +53,19 @@ G(caml_c_call):
         .comm   G(young_ptr), 4
         .comm   G(young_start), 4
 
+/* Some tests are designed to cause registers to spill; on
+ * x86 we require the caml_extra_params symbol from the RTS. */
+        .data
+        .globl  G(caml_extra_params)
+G(caml_extra_params):
+#ifndef SYS_solaris
+        .space  64
+#else
+        .zero   64
+#endif
+
+
+
 #if defined(SYS_linux_elf)
     /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits

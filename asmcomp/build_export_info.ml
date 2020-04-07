@@ -652,13 +652,14 @@ let build_transient ~(backend : (module Backend_intf.S))
       let closure_id_to_set_of_closures_id =
         Set_of_closures_id.Map.fold
           (fun set_of_closure_id
-            (function_declarations : Simple_value_approx.function_declarations) acc ->
-             Variable.Map.fold
-               (fun fun_var _ acc ->
+            (function_declarations : Simple_value_approx.function_declarations)
+            acc ->
+              Variable.Map.fold
+                (fun fun_var _ acc ->
                   let closure_id = Closure_id.wrap fun_var in
                   Closure_id.Map.add closure_id set_of_closure_id acc)
-               function_declarations.funs
-               acc)
+                function_declarations.funs
+                acc)
           function_declarations_map
           Closure_id.Map.empty
       in
@@ -710,4 +711,3 @@ let build_transient ~(backend : (module Backend_intf.S))
       ~relevant_imported_closure_ids
       ~relevant_local_vars_within_closure
       ~relevant_imported_vars_within_closure
-

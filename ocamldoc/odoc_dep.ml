@@ -15,24 +15,23 @@
 
 (** Top modules dependencies. *)
 
-module StrS = Depend.StringSet
-module StrM = Depend.StringMap
 module Module = Odoc_module
 module Type = Odoc_type
+module String = Misc.Stdlib.String
 
 let set_to_list s =
   let l = ref [] in
-  StrS.iter (fun e -> l := e :: !l) s;
+  String.Set.iter (fun e -> l := e :: !l) s;
   !l
 
 let impl_dependencies ast =
-  Depend.free_structure_names := StrS.empty;
-  Depend.add_use_file StrM.empty [Parsetree.Ptop_def ast];
+  Depend.free_structure_names := String.Set.empty;
+  Depend.add_use_file String.Map.empty [Parsetree.Ptop_def ast];
   set_to_list !Depend.free_structure_names
 
 let intf_dependencies ast =
-  Depend.free_structure_names := StrS.empty;
-  Depend.add_signature StrM.empty ast;
+  Depend.free_structure_names := String.Set.empty;
+  Depend.add_signature String.Map.empty ast;
   set_to_list !Depend.free_structure_names
 
 
@@ -40,20 +39,15 @@ module Dep =
   struct
     type id = string
 
-    module S = Set.Make (struct
-      type t = string
-      let compare (x:t) y = compare x y
-    end)
-
     let set_to_list s =
       let l = ref [] in
-      S.iter (fun e -> l := e :: !l) s;
+      String.Set.iter (fun e -> l := e :: !l) s;
       !l
 
     type node = {
         id : id ;
-        mutable near : S.t ; (** direct children *)
-        mutable far : (id * S.t) list ; (** indirect children, from which children path *)
+        mutable near : String.Set.t ; (** direct children *)
+        mutable far : (id * String.Set.t) list ; (** indirect children, from which children path *)
         reflex : bool ; (** reflexive or not, we keep
                            information here to remove the node itself from its direct children *)
       }
@@ -62,12 +56,12 @@ module Dep =
 
     let make_node s children =
       let set = List.fold_right
-          S.add
+          String.Set.add
           children
-          S.empty
+          String.Set.empty
       in
       { id = s;
-        near = S.remove s set ;
+        near = String.Set.remove s set ;
         far = [] ;
         reflex = List.mem s children ;
       }
@@ -78,20 +72,20 @@ module Dep =
         make_node s []
 
     let rec trans_closure graph acc n =
-      if S.mem n.id acc then
+      if String.Set.mem n.id acc then
         acc
       else
         (* potential optimisation: use far field if nonempty? *)
-        S.fold
+        String.Set.fold
           (fun child -> fun acc2 ->
             trans_closure graph acc2 (get_node graph child))
           n.near
-          (S.add n.id acc)
+          (String.Set.add n.id acc)
 
     let node_trans_closure graph n =
       let far = List.map
           (fun child ->
-            let set = trans_closure graph S.empty (get_node graph child) in
+            let set = trans_closure graph String.Set.empty (get_node graph child) in
             (child, set)
           )
           (set_to_list n.near)
@@ -102,22 +96,22 @@ module Dep =
       List.iter (node_trans_closure graph) graph
 
     let prune_node graph node =
-      S.iter
+      String.Set.iter
         (fun child ->
           let set_reachables = List.fold_left
               (fun acc -> fun (ch, reachables) ->
                 if child = ch then
                   acc
                 else
-                  S.union acc reachables
+                  String.Set.union acc reachables
               )
-              S.empty
+              String.Set.empty
               node.far
           in
-          let set = S.remove node.id set_reachables in
-          if S.exists (fun n2 -> S.mem child (get_node graph n2).near) set then
+          let set = String.Set.remove node.id set_reachables in
+          if String.Set.exists (fun n2 -> String.Set.mem child (get_node graph n2).near) set then
             (
-             node.near <- S.remove child node.near ;
+             node.near <- String.Set.remove child node.near ;
              node.far <- List.filter (fun (ch,_) -> ch <> child) node.far
             )
           else
@@ -125,7 +119,7 @@ module Dep =
         )
         node.near;
       if node.reflex then
-        node.near <- S.add node.id node.near
+        node.near <- String.Set.add node.id node.near
       else
         ()
 
@@ -192,7 +186,7 @@ let kernel_deps_of_modules modules =
     (fun m ->
       let node = Dep.get_node k m.Module.m_name in
       m.Module.m_top_deps <-
-        List.filter (fun m2 -> Dep.S.mem m2 node.Dep.near) m.Module.m_top_deps)
+        List.filter (fun m2 -> String.Set.mem m2 node.Dep.near) m.Module.m_top_deps)
     modules
 
 (** Return the list of dependencies between the given types,

@@ -131,19 +131,10 @@ let split_chunks phrases =
 
 module Compiler_messages = struct
   let print_loc ppf (loc : Location.t) =
-    let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
-    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
-    Format.fprintf ppf "Line _";
-    if startchar >= 0 then
-      Format.fprintf ppf ", characters %d-%d" startchar endchar;
-    Format.fprintf ppf ":@.";
-    if startchar >= 0 then
-      begin match !Location.input_lexbuf with
-      | None -> ()
-      | Some lexbuf ->
-         Location.show_code_at_location ppf lexbuf loc
-      end;
-    ()
+    Format.fprintf ppf "%a:@." Location.print_loc loc;
+    match !Location.input_lexbuf with
+    | None -> ()
+    | Some lexbuf -> Location.show_code_at_location ppf lexbuf [loc]
 
   let capture ppf ~f =
     Misc.protect_refs
@@ -360,10 +351,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
   let clear r () = r := false
   open Clflags
-  let _absname = set Location.absname
-  let _I dir =
-    let dir = Misc.expand_directory Config.standard_library dir in
-    include_dirs := dir :: !include_dirs
+  let _absname = set absname
+  let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _labels = clear classic
@@ -391,7 +380,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _no_strict_formats = clear strict_formats
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _version () = (* disabled *) ()
   let _vnum () = (* disabled *) ()
@@ -410,6 +399,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
+  let _dcamlprimc = set keep_camlprimc_file
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

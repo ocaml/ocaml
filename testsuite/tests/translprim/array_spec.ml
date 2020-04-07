@@ -4,10 +4,12 @@
       flags = "-dlambda -dno-unique-ids"
    *** flat-float-array
    **** check-ocamlc.byte-output
-        compiler_reference = "${test_source_directory}/array_spec.compilers.reference.flat"
+        compiler_reference =
+          "${test_source_directory}/array_spec.compilers.reference.flat"
    *** no-flat-float-array
    **** check-ocamlc.byte-output
-       compiler_reference = "${test_source_directory}/array_spec.compilers.reference.no-flat"
+       compiler_reference =
+         "${test_source_directory}/array_spec.compilers.reference.no-flat"
 *)
 
 external len : 'a array -> int = "%array_length"

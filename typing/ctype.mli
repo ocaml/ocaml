@@ -24,8 +24,6 @@ exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
 exception Cannot_apply
-exception Recursive_abbrev
-exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -119,8 +117,6 @@ val instance: ?partial:bool -> type_expr -> type_expr
         (* partial=None  -> normal
            partial=false -> newvar() for non generic subterms
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
-val instance_def: type_expr -> type_expr
-        (* use defaults *)
 val generic_instance: type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
 val instance_list: type_expr list -> type_expr list
@@ -172,7 +168,8 @@ val get_new_abstract_name : string -> string
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val unify_gadt: equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+val unify_gadt:
+        equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
@@ -242,23 +239,25 @@ val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
            enforce and returns a function that enforces this
            constraints. *)
 
-val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
+exception Nondep_cannot_erase of Ident.t
+
+val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
-           references to the given module identifier. Raise [Not_found]
-           if no such type exists. *)
+           references to any of the given identifiers.
+           Raise [Nondep_cannot_erase id] if no such type exists because [id],
+           in particular, could not be erased. *)
 val nondep_type_decl:
-        Env.t -> Ident.t -> Ident.t -> bool -> type_declaration ->
-        type_declaration
+        Env.t -> Ident.t list -> bool -> type_declaration -> type_declaration
         (* Same for type declarations. *)
 val nondep_extension_constructor:
-        Env.t -> Ident.t -> extension_constructor ->
+        Env.t -> Ident.t list -> extension_constructor ->
         extension_constructor
           (* Same for extension constructor *)
 val nondep_class_declaration:
-        Env.t -> Ident.t -> class_declaration -> class_declaration
+        Env.t -> Ident.t list -> class_declaration -> class_declaration
         (* Same for class declarations. *)
 val nondep_cltype_declaration:
-        Env.t -> Ident.t -> class_type_declaration -> class_type_declaration
+  Env.t -> Ident.t list -> class_type_declaration -> class_type_declaration
         (* Same for class type declarations. *)
 (*val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit*)
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool

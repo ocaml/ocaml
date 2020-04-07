@@ -17,9 +17,9 @@
 
 open Format
 
-val link: formatter -> string list -> string -> unit
+val link: ppf_dump:formatter -> string list -> string -> unit
 
-val link_shared: formatter -> string list -> string -> unit
+val link_shared: ppf_dump:formatter -> string list -> string -> unit
 
 val call_linker_shared: string list -> string -> unit
 

@@ -1,5 +1,4 @@
 \section{Patterns}
-\pdfsection{Patterns}
 \ikwd{as\@\texttt{as}}
 %HEVEA\cutname{patterns.html}
 \begin{syntax}
@@ -21,13 +20,13 @@ pattern:
   | pattern '::' pattern
   | '[|' pattern { ';' pattern } [ ';' ] '|]'
   | char-literal '..' char-literal
+  | 'exception' pattern
 \end{syntax}
 See also the following language extensions: \hyperref[s:lazypat]{lazy patterns},
 \hyperref[s:local-opens]{local opens},
 \hyperref[s-first-class-modules]{first-class modules},
-\hyperref[s:attributes]{attributes},
-\hyperref[s:extension-nodes]{extension nodes} and
-\hyperref[s:exception-match]{exception cases in pattern matching}.
+\hyperref[s:attributes]{attributes} and
+\hyperref[s:extension-nodes]{extension nodes}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed pattern constructions. The constructions with
@@ -176,3 +175,26 @@ The pattern
 where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
 instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
+
+\subsubsection*{Exception patterns} \label{s:exception-match}
+(Introduced in OCaml 4.02)
+
+A new form of exception pattern, @ 'exception' pattern, @ is allowed
+only as a toplevel pattern under a "match"..."with" pattern-matching
+(other occurrences are rejected by the type-checker).
+
+Cases with such a toplevel pattern are called ``exception cases'',
+as opposed to regular ``value cases''.  Exception cases are applied
+when the evaluation of the matched expression raises an exception.
+The exception value is then matched against all the exception cases
+and re-raised if none of them accept the exception (as with a
+"try"..."with" block).  Since the bodies of all exception and value
+cases are outside the scope of the exception handler, they are all
+considered to be in tail-position: if the "match"..."with" block
+itself is in tail position in the current function, any function call
+in tail position in one of the case bodies results in an actual tail
+call.
+
+A pattern match must contain at least one value case. It is an error if
+all cases are exceptions, because there would be no code to handle
+the return of a value.

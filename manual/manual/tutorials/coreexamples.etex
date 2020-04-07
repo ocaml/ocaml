@@ -1,5 +1,4 @@
 \chapter{The core language} \label{c:core-xamples}
-\pdfchapterfold{-9}{Tutorial: The core language}
 %HEVEA\cutname{coreexamples.html}
 
 This part of the manual is a tutorial introduction to the
@@ -13,7 +12,6 @@ extensions to the core language (labeled arguments and polymorphic
 variants), and chapter~\ref{c:advexamples} gives some advanced examples.
 
 \section{Basics}
-\pdfsection{Basics}
 
 For this overview of OCaml, we use the interactive system, which
 is started by running "ocaml" from the Unix shell, or by launching the
@@ -51,7 +49,6 @@ fib 10;;
 \end{caml_example}
 
 \section{Data types}
-\pdfsection{Data types}
 
 In addition to integers and floating-point numbers, OCaml offers the
 usual basic data types:
@@ -136,7 +133,6 @@ the type inferred for "insert", "'a -> 'a list -> 'a list", means that "insert"
 takes two arguments, an element of any type "'a" and a list with elements of
 the same type "'a" and returns a list of the same type.
 \section{Functions as values}
-\pdfsection{Functions as values}
 
 OCaml is a  functional language: functions in the full mathematical
 sense are supported and can be passed around freely just as any other
@@ -174,7 +170,6 @@ let rec map f l =
 \end{caml_example}
 
 \section{Records and variants}
-\pdfsection{Records and variants}
 \label{s:tut-recvariants}
 
 User-defined data structures include records and variants. Both are
@@ -393,7 +388,6 @@ Consequently, adding explicit type annotations to guide disambiguation is
 more robust than relying on the last defined type disambiguation.
 
 \section{Imperative features}
-\pdfsection{Imperative features}
 
 Though all examples so far were written in purely applicative style,
 OCaml is also equipped with full imperative features. This includes the
@@ -478,7 +472,6 @@ g r;;
 \end{caml_example}
 
 \section{Exceptions}
-\pdfsection{Exceptions}
 
 OCaml provides exceptions for signalling and handling exceptional
 conditions. Exceptions can also be used as a general-purpose non-local
@@ -521,7 +514,18 @@ name_of_binary_digit (-1);;
 The "with" part does pattern matching on the
 exception value with the same syntax and behavior as "match". Thus,
 several exceptions can be caught by one
-"try"\ldots"with" construct. Also, finalization can be performed by
+"try"\ldots"with" construct:
+\begin{caml_example}{toplevel}
+let rec first_named_value values names =
+  try
+    List.assoc (head values) names
+  with
+  | Empty_list -> "no named value"
+  | Not_found -> first_named_value (List.tl values) names;;
+first_named_value [ 0; 10 ] [ 1, "one"; 10, "ten"];;
+\end{caml_example}
+
+Also, finalization can be performed by
 trapping all exceptions, performing the finalization, then re-raising
 the exception:
 \begin{caml_example}{toplevel}
@@ -537,8 +541,40 @@ let temporarily_set_reference ref newval funct =
     raise x;;
 \end{caml_example}
 
+An alternative to "try"\ldots"with" is to catch the exception while
+pattern matching:
+\begin{caml_example}{toplevel}
+let assoc_may_map f x l =
+  match List.assoc x l with
+  | exception Not_found -> None
+  | y -> f y;;
+\end{caml_example}
+Note that this construction is only useful if the exception is raised
+between "match"\ldots"with". Moreover, exceptions can only
+appear at the toplevel of such a pattern match.
+For instance, exception cases cannot currently be combined with an
+or-pattern: "exception A | exception B ->" \ldots .
+
+When exceptions are used as a control structure, it can be useful to make
+them as local as possible by using a locally defined exception.
+For instance, with
+\begin{caml_eval}
+  let ref x: _ ref = {contents=x};;
+\end{caml_eval}
+\begin{caml_example}{toplevel}
+let fixpoint f x =
+  let exception Done in
+  let x = ref x in
+  try while true do
+      let y = f !x in
+      if !x = y then raise Done else x := y
+    done; assert false
+  with Done -> !x;;
+\end{caml_example}
+the function "f" cannot raise a "Done" exception, which removes an
+entire class of misbehaving functions.
+
 \section{Symbolic processing of expressions}
-\pdfsection{Symbolic processing of expressions}
 
 We finish this introduction with a more complete example
 representative of the use of OCaml for symbolic processing: formal
@@ -589,7 +625,6 @@ deriv (Quot(Const 1.0, Var "x")) "x";;
 \end{caml_example}
 
 \section{Pretty-printing}
-\pdfsection{Pretty-printing}
 
 As shown in the examples above, the internal representation (also
 called {\em abstract syntax\/}) of expressions quickly becomes hard to
@@ -727,7 +762,6 @@ print_expr (deriv e "x"); print_newline ();;
 %% expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
 
 \section{Standalone OCaml programs}
-\pdfsection{Standalone OCaml programs}
 
 All examples given so far were executed under the interactive system.
 OCaml code can also be compiled separately and executed

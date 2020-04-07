@@ -18,11 +18,11 @@
 # from scratch and run the test suite.
 
 # To know the slave's architecture, this script looks at the OCAML_ARCH
-# environment variable. For a given node NODe, this variable can be defined
+# environment variable. For a given node NODE, this variable can be defined
 # in Jenkins at the following address:
 # https://ci.inria.fr/ocaml/computer/NODE/configure
 
-# Other environments variables that are honored:
+# Other environment variables that are honored:
 #   OCAML_CONFIGURE_OPTIONS   additional options for configure
 #   OCAML_JOBS                number of jobs to run in parallel (make -j)
 
@@ -204,8 +204,8 @@ case $configure in
     eval "./configure -prefix '$instdir' $confoptions"
   ;;
   nt)
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
+    cp config/m-nt.h runtime/caml/m.h
+    cp config/s-nt.h runtime/caml/s.h
     cp config/Makefile.${OCAML_ARCH} config/Makefile
     sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" config/Makefile
     sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile

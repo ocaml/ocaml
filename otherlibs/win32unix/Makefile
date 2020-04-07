@@ -34,7 +34,7 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
-  socketaddr.c strofaddr.c time.c unlink.c
+  socketaddr.c strofaddr.c time.c unlink.c fsync.c
 
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
@@ -70,7 +70,7 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(CC) -MM $(CPPFLAGS) -I../unix $(ALL_FILES) \
+	$(CC) -MM $(OC_CPPFLAGS) -I../unix $(ALL_FILES) \
 	  | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
 	  unix.ml >> .depend

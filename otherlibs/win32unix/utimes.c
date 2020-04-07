@@ -30,7 +30,8 @@ static void convert_time(double unixTime, FILETIME* ft)
   /* There are 11644473600 seconds between 1 January 1601 (the NT Epoch) and 1
    * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
    */
-  u.QuadPart = (ULONGLONG)(unixTime * 10000000.0) + INT64_LITERAL(116444736000000000U);
+  u.QuadPart =
+    (ULONGLONG)(unixTime * 10000000.0) + INT64_LITERAL(116444736000000000U);
   ft->dwLowDateTime = u.LowPart;
   ft->dwHighDateTime = u.HighPart;
 }
@@ -52,7 +53,11 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   caml_enter_blocking_section();
   hFile = CreateFile(wpath,
                      FILE_WRITE_ATTRIBUTES,
-                     FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                     NULL,
+                     OPEN_EXISTING,
+                     0,
+                     NULL);
   caml_leave_blocking_section();
   caml_stat_free(wpath);
   if (hFile == INVALID_HANDLE_VALUE) {

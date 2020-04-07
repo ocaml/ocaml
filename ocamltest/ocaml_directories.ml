@@ -31,13 +31,7 @@ let toplevel ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "toplevel"]
 
 let runtime ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "byterun"]
-
-let runtime_library backend ocamlsrcdir =
-  let backend_lib_dir = match backend with
-    | Ocaml_backends.Native -> "asmrun"
-    | Ocaml_backends.Bytecode -> "byterun" in
-  Filename.make_path [ocamlsrcdir; backend_lib_dir]
+  Filename.make_path [ocamlsrcdir; "runtime"]
 
 let tools ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "tools"]

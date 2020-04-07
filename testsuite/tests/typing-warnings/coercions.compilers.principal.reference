@@ -1,9 +1,9 @@
-Characters 168-171:
+Line 9, characters 45-48:
   fun b -> if b then format_of_string "x" else "y";;
                                                ^^^
 Warning 18: this coercion to format6 is not principal.
 - : bool -> ('a, 'b, 'c, 'd, 'd, 'a) format6 = <fun>
-Characters 28-48:
+Line 1, characters 28-48:
   fun b -> if b then "x" else format_of_string "y";;
                               ^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type
@@ -17,7 +17,7 @@ module PR7135 :
     type t = M.t
     val lift2 : (int -> int -> int) -> t -> t -> int
   end
-Characters 133-143:
+Line 6, characters 49-59:
     let f x = let y = if true then x else (x:t) in (y :> int)
                                                    ^^^^^^^^^^
 Warning 18: this ground coercion is not principal.

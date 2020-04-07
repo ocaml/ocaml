@@ -1,0 +1,12 @@
+File "pr7402.ml", line 1:
+Warning 63: The printed interface differs from the inferred interface.
+The inferred interface contained items which could not be printed
+properly due to name collisions between identifiers.
+File "pr7402.ml", line 14, characters 0-39:
+  Definition of module M/1
+File "pr7402.ml", line 8, characters 0-70:
+  Definition of module M/2
+Beware that this warning is purely informational and will not catch
+all instances of erroneous printed interface.
+module M : sig type t val v : t end
+module F : sig module M : sig val v : M.t end val v : M/2.t end

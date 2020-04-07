@@ -177,4 +177,3 @@ val add_seq : t -> char Seq.t -> unit
 val of_seq : char Seq.t -> t
 (** Create a buffer from the generator
     @since 4.07 *)
-

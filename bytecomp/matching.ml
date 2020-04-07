@@ -104,7 +104,7 @@ let rec small_enough n = function
       else small_enough (n-1) rem
 
 let ctx_lshift ctx =
-  if small_enough 31 ctx then
+  if small_enough (!Clflags.match_context_rows - 1) ctx then
     List.map lshift ctx
   else (* Context pruning *) begin
     get_mins le_ctx (List.map lforget ctx)
@@ -682,6 +682,7 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_lazy p -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
+| Tpat_exception _ -> assert false
 
 exception Cannot_flatten
 
@@ -2236,7 +2237,7 @@ let mk_failaction_pos partial seen ctx defs  =
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
   let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < 32 then begin
+  if List.length fail_pats < !Clflags.match_context_rows then begin
     let fail,jmps =
       scan_def
         []
@@ -2864,6 +2865,7 @@ let find_in_pat pred =
         find_rec p || find_rec q
     | Tpat_constant _ | Tpat_var _
     | Tpat_any | Tpat_variant (_,None,_) -> false
+    | Tpat_exception _ -> assert false
   end in
   find_rec
 
@@ -2873,6 +2875,7 @@ let is_lazy_pat = function
   | Tpat_tuple _|Tpat_construct _ | Tpat_array _
   | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
       -> false
+  | Tpat_exception _ -> assert false
 
 let is_lazy p = find_in_pat is_lazy_pat p
 
@@ -2889,6 +2892,7 @@ let have_mutable_field p = match p with
 | Tpat_or _
 | Tpat_constant _ | Tpat_var _ | Tpat_any
   -> false
+| Tpat_exception _ -> assert false
 
 let is_mutable p = find_in_pat have_mutable_field p
 
@@ -2950,7 +2954,6 @@ let compile_matching repr handler_fun arg pat_act_list partial =
 
 
 let partial_function loc () =
-  (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable, None),
           [transl_normal_path Predef.path_match_failure;

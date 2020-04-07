@@ -14,10 +14,6 @@
 #*                                                                        *
 #**************************************************************************
 
-PREFIX=~/local
-
-MAKE=make SHELL=dash
-
 # TRAVIS_COMMIT_RANGE has the form   <commit1>...<commit2>
 # TRAVIS_CUR_HEAD is <commit1>
 # TRAVIS_PR_HEAD is <commit2>
@@ -33,11 +29,42 @@ MAKE=make SHELL=dash
 #  TRAVIS_MERGE_BASE
 #
 echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
+echo TRAVIS_COMMIT=$TRAVIS_COMMIT
+if [[ $TRAVIS_EVENT_TYPE = "pull_request" ]] ; then
+  FETCH_HEAD=$(git rev-parse FETCH_HEAD)
+  echo FETCH_HEAD=$FETCH_HEAD
+else
+  FETCH_HEAD=$TRAVIS_COMMIT
+fi
+
+if [[ $TRAVIS_COMMIT != $(git rev-parse FETCH_HEAD) ]] ; then
+  echo "WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!"
+  if git cat-file -e $TRAVIS_COMMIT 2> /dev/null ; then
+    echo "TRAVIS_COMMIT exists, so going with it"
+  else
+    echo "TRAVIS_COMMIT does not exist; setting to FETCH_HEAD"
+    TRAVIS_COMMIT=$FETCH_HEAD
+  fi
+fi
+
+set -x
+
+PREFIX=~/local
+
+MAKE=make SHELL=dash
+
 TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
 case $TRAVIS_EVENT_TYPE in
    # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
    pull_request)
+     DEEPEN=50
+     while ! git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD > /dev/null 2>&1
+     do
+       echo Deepening $TRAVIS_BRANCH by $DEEPEN commits
+       git fetch origin --deepen=$DEEPEN $TRAVIS_BRANCH
+       ((DEEPEN*=2))
+     done
      TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
 esac
 
@@ -157,6 +184,80 @@ EOF
     testsuite > /dev/null && exit 1 || echo pass
 }
 
+# Test to see if any part of the directory name has been marked prune
+not_pruned () {
+  DIR=$(dirname "$1")
+  if [ "$DIR" = "." ] ; then
+    return 0
+  else
+    case ",$(git check-attr ocaml-typo "$DIR" | sed -e 's/.*: //')," in
+      ,prune,)
+      return 1
+      ;;
+      *)
+
+      not_pruned $DIR
+      return $?
+    esac
+  fi
+}
+
+CheckTypoTree () {
+  export OCAML_CT_HEAD=$1
+  export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r $2 --"
+  export OCAML_CT_CAT="git cat-file --textconv"
+  export OCAML_CT_PREFIX="$1:"
+  GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
+  git diff-tree --diff-filter=d --no-commit-id --name-only -r $2 \
+    | (while IFS= read -r path
+  do
+    if not_pruned $path ; then
+      echo "Checking $1: $path"
+      if ! tools/check-typo ./$path ; then
+        touch check-typo-failed
+      fi
+    else
+      echo "NOT checking $1: $path (ocaml-typo=prune)"
+    fi
+  done)
+  rm -f tmp-index
+}
+
+CHECK_ALL_COMMITS=0
+
+CheckTypo () {
+  export OCAML_CT_GIT_INDEX="tmp-index"
+  export OCAML_CT_CA_FLAG="--cached"
+  # Work around an apparent bug in Ubuntu 12.4.5
+  # See https://bugs.launchpad.net/ubuntu/+source/gawk/+bug/1647879
+  export OCAML_CT_AWK="awk --re-interval"
+  rm -f check-typo-failed
+  if test -z "$TRAVIS_COMMIT_RANGE"
+  then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
+  else
+    if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
+    then TRAVIS_COMMIT_RANGE=$TRAVIS_MERGE_BASE..$TRAVIS_PULL_REQUEST_SHA
+    fi
+    if [ $CHECK_ALL_COMMITS -eq 1 ]
+    then
+      for commit in $(git rev-list $TRAVIS_COMMIT_RANGE --reverse)
+      do
+        CheckTypoTree $commit $commit
+      done
+    else
+      if [ -z "$TRAVIS_PULL_REQUEST_SHA" ]
+      then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
+      else CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT_RANGE
+      fi
+    fi
+  fi
+  echo complete
+  if [ -e check-typo-failed ]
+  then exit 1
+  fi
+}
+
+
 case $CI_KIND in
 build) BuildAndTest;;
 changes)
@@ -169,6 +270,9 @@ tests)
     case $TRAVIS_EVENT_TYPE in
         pull_request) CheckTestsuiteModified;;
     esac;;
+check-typo)
+   set +x
+   CheckTypo;;
 *) echo unknown CI kind
    exit 1
    ;;

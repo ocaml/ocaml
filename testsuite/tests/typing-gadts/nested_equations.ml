@@ -16,7 +16,7 @@ let w_bool : bool t = Obj.magic 0;;
 let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
 [%%expect{|
 val w_bool : bool t = Int
-Line _, characters 34-37:
+Line 2, characters 34-37:
   let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
                                     ^^^
 Error: This pattern matches values of type int t
@@ -35,7 +35,7 @@ let w_spec : Arg.spec t = Obj.magic 0;;
 let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
 [%%expect{|
 val w_spec : Arg.spec t = Int
-Line _, characters 38-41:
+Line 2, characters 38-41:
   let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
                                         ^^^
 Error: This pattern matches values of type int t

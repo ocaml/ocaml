@@ -7,7 +7,8 @@ modules = "stubs.c"
 ** native
 *)
 
-external set_environment_variable: string -> string -> unit = "stub_SetEnvironmentVariable"
+external set_environment_variable: string -> string -> unit
+  = "stub_SetEnvironmentVariable"
 
 let find_env s =
   let env = Unix.environment () in

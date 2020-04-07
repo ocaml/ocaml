@@ -1,5 +1,4 @@
 \chapter{The browser/editor (ocamlbrowser)} \label{c:browser}
-\pdfchapter{The browser/editor (ocamlbrowser)}
 %HEVEA\cutname{browser.html}
 
 Since OCaml version 4.02, the OCamlBrowser tool and the Labltk library

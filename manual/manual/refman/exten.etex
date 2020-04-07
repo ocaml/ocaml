@@ -1,5 +1,4 @@
 \chapter{Language extensions} \label{c:extensions}
-\pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
 
 This chapter describes language extensions and convenience features
@@ -1829,35 +1828,6 @@ let y = [%extension_constructor Y]
  x <> y;;
 \end{caml_example}
 
-\section{Exception cases in pattern matching}\label{s:exception-match}
-
-(Introduced in OCaml 4.02)
-
-A new form of exception patterns is allowed, only as a toplevel
-pattern under a "match"..."with" pattern-matching (other occurrences
-are rejected by the type-checker).
-
-\begin{syntax}
-pattern: ...
- | 'exception' pattern
-;
-\end{syntax}
-
-Cases with such a toplevel pattern are called ``exception cases'',
-as opposed to regular ``value cases''.  Exception cases are applied
-when the evaluation of the matched expression raises an exception.
-The exception value is then matched against all the exception cases
-and re-raised if none of them accept the exception (as for a
-"try"..."with" block).  Since the bodies of all exception and value
-cases is outside the scope of the exception handler, they are all
-considered to be in tail-position: if the "match"..."with" block
-itself is in tail position in the current function, any function call
-in tail position in one of the case bodies results in an actual tail
-call.
-
-It is an error if all cases are exception cases in a given pattern
-matching.
-
 \section{Extensible variant types}\label{s:extensible-variants}
 
 (Introduced in OCaml 4.02)
@@ -2097,29 +2067,6 @@ let invalid = function
   | Point p -> p  (* INVALID *)
   | ...
 \end{verbatim}
-
-
-\section{Local exceptions}
-\ikwd{let\@\texttt{let}}
-\ikwd{exception\@\texttt{exception}} \label{s:local-exceptions}
-
-(Introduced in OCaml 4.04)
-
-It is possible to define local exceptions in expressions:
-
-\begin{syntax}
-expr:
-       ...
-     | "let" "exception" constr-decl "in" expr
-\end{syntax}
-
-
-The syntactic scope of the exception constructor is the inner
-expression, but nothing prevents exception values created with this
-constructor from escaping this scope.  Two executions of the definition
-above result in two incompatible exception constructors (as for any
-exception definition).
-
 
 \section{Documentation comments}
 (Introduced in OCaml 4.03)

@@ -60,7 +60,8 @@ CAMLprim value caml_has_symlink(value unit)
 
       if (!GetTokenInformation(hProcess, TokenPrivileges, NULL, 0, &length)) {
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-          TOKEN_PRIVILEGES* privileges = (TOKEN_PRIVILEGES*)caml_stat_alloc(length);
+          TOKEN_PRIVILEGES* privileges =
+            (TOKEN_PRIVILEGES*)caml_stat_alloc(length);
           if (GetTokenInformation(hProcess,
                                   TokenPrivileges,
                                   privileges,
@@ -70,7 +71,9 @@ CAMLprim value caml_has_symlink(value unit)
 
             if (count) {
               LUID_AND_ATTRIBUTES* privs = privileges->Privileges;
-              while (count-- && !(result = luid_eq(privs->Luid, seCreateSymbolicLinkPrivilege)))
+              while (count-- &&
+                     !(result = luid_eq(privs->Luid,
+                                        seCreateSymbolicLinkPrivilege)))
                 privs++;
             }
           }

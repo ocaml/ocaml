@@ -21,7 +21,8 @@ let test_files =
 
 let to_create_and_delete_files =
   [
-    "\xD0\xB2\xD0\xB5\xD1\x80\xD0\xB1\xD0\xBB\xD1\x8E\xD0\xB4\xD1\x8B"; (* "верблюды" *)
+    (* "верблюды" *)
+    "\xD0\xB2\xD0\xB5\xD1\x80\xD0\xB1\xD0\xBB\xD1\x8E\xD0\xB4\xD1\x8B";
     "\xE9\xAA\x86\xE9\xA9\xBC"; (* "骆驼" *)
     "\215\167\215\162\215\158\215\156"; (* "קעמל" *)
     "\216\167\217\136\217\134\217\185"; (* "اونٹ" *)
@@ -44,8 +45,10 @@ let foreign_names2 =
   take (List.length foreign_names) to_create_and_delete_files
 ;;
 
-(* let env0 = *)
-(*   List.sort compare (List.mapi (fun i v -> Printf.sprintf "OCAML_UTF8_VAR%d=%s" i v) foreign_names2) *)
+(* let env0 =
+     List.sort compare
+     (List.mapi (fun i v -> Printf.sprintf "OCAML_UTF8_VAR%d=%s" i v)
+                foreign_names2) *)
 
 (* let read_all ic = *)
 (*   set_binary_mode_in ic false; *)
@@ -111,14 +114,17 @@ let sys_readdir s =
 (*   in *)
 (*   wrap "Unix.open_process_in" f ell cmdline (list quote) *)
 
-(* let open_process_full filter cmdline env = *)
-(*   let f cmdline env = *)
-(*     let (ic, _, _) as proc = Unix.open_process_full cmdline (Array.of_list env) in *)
-(*     let l = read_all ic in *)
-(*     ignore (Unix.close_process_full proc); *)
-(*     List.sort compare (List.filter filter l) *)
-(*   in *)
-(*   wrap2 "Unix.open_process_full" f ell (list quote) cmdline env (list quote) *)
+(* let open_process_full filter cmdline env =
+     let f cmdline env =
+       let (ic, _, _) as proc =
+         Unix.open_process_full cmdline (Array.of_list env)
+       in
+       let l = read_all ic in
+       ignore (Unix.close_process_full proc);
+       List.sort compare (List.filter filter l)
+     in
+     wrap2 "Unix.open_process_full" f ell (list quote) cmdline env (list quote)
+*)
 
 let test_readdir readdir =
   let filter s = List.mem s test_files && Filename.check_suffix s ".txt" in
@@ -229,7 +235,9 @@ let create_file s =
 
 let test_symlink () =
   let foodir = "UNIQU\xE4\xBD\xA0\xE5\xA5\xBD" (* "UNIQU你好" *) in
-  let foofile = "UNIQU\xE4\xBD\xA0\xE5\xA5\xBD/\xE4\xBD\xA0\xE5\xA5\xBD.txt" (* "UNIQU你好/你好.txt" *) in
+  let foofile = "UNIQU\xE4\xBD\xA0\xE5\xA5\xBD/\xE4\xBD\xA0\xE5\xA5\xBD.txt"
+                                                          (* "UNIQU你好/你好.txt" *)
+  in
   let fileln = "\xE4\xBD\xA0\xE5\xA5\xBD-file-ln-s" (* "你好-file-ln-s" *) in
   let dirln = "\xE4\xBD\xA0\xE5\xA5\xBD-dir-ln-s" (* "你好-dir-ln-s" *) in
   Unix.mkdir foodir 0o777;

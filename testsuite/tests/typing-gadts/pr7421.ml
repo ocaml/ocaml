@@ -13,7 +13,7 @@ let f (x : ('a, empty Lazy.t) result) =
   | Ok x -> x
   | Error (lazy _) -> .;;
 [%%expect{|
-Line _, characters 4-18:
+Line 4, characters 4-18:
     | Error (lazy _) -> .;;
       ^^^^^^^^^^^^^^
 Error: This match case could not be refuted.
@@ -24,7 +24,7 @@ let f (x : ('a, empty Lazy.t) result) =
   | Ok x -> x
   | Error (lazy Refl) -> .;;
 [%%expect{|
-Line _, characters 16-20:
+Line 4, characters 16-20:
     | Error (lazy Refl) -> .;;
                   ^^^^
 Error: This pattern matches values of type (int, int) eq

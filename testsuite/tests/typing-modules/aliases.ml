@@ -568,7 +568,7 @@ module type S =
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
   end
 module Int2 : sig type t = int val compare : 'a -> 'a -> int end
-Line _, characters 10-30:
+Line 15, characters 10-30:
     include S with module I := I
             ^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of I
@@ -661,7 +661,7 @@ module rec Bad : A = Bad;;
 [%%expect{|
 module type Alias = sig module N : sig  end module M = N end
 module F : functor (X : sig  end) -> sig type t end
-Line _:
+Line 1:
 Error: Module type declarations do not match:
          module type A = sig module M = F(List) end
        does not match

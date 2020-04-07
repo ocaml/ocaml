@@ -49,7 +49,7 @@ and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
-and fast = ref false                    (* -unsafe *)
+and unsafe = ref false                  (* -unsafe *)
 and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
@@ -60,8 +60,10 @@ and output_complete_object = ref false  (* -output-complete-obj *)
 and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
+and match_context_rows = ref 32         (* -match-context-rows *)
 and preprocessor = ref(None : string option) (* -pp *)
 and all_ppx = ref ([] : string list)        (* -ppx *)
+let absname = ref false                 (* -absname *)
 let annotations = ref false             (* -annot *)
 let binary_annotations = ref false      (* -annot *)
 and use_threads = ref false             (* -thread *)
@@ -105,6 +107,7 @@ and dump_flambda = ref false            (* -dflambda *)
 and dump_flambda_let = ref (None : int option) (* -dflambda-let=... *)
 and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
+and keep_camlprimc_file = ref false     (* -dcamlprimc *)
 
 let keep_asm_file = ref false           (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
@@ -362,6 +365,8 @@ let set_dumped_pass s enabled =
     dumped_passes_list := dumped_passes
   end
 
+let dump_into_file = ref false (* -dump-into-file *)
+
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto
   | "always" -> Some Misc.Color.Always
@@ -371,24 +376,26 @@ let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 
+module String = Misc.Stdlib.String
+
 let arg_spec = ref []
-let arg_names = ref Misc.StringMap.empty
+let arg_names = ref String.Map.empty
 
 let reset_arguments () =
   arg_spec := [];
-  arg_names := Misc.StringMap.empty
+  arg_names := String.Map.empty
 
 let add_arguments loc args =
   List.iter (function (arg_name, _, _) as arg ->
     try
-      let loc2 = Misc.StringMap.find arg_name !arg_names in
+      let loc2 = String.Map.find arg_name !arg_names in
       Printf.eprintf
         "Warning: plugin argument %s is already defined:\n" arg_name;
       Printf.eprintf "   First definition: %s\n" loc2;
       Printf.eprintf "   New definition: %s\n" loc;
     with Not_found ->
       arg_spec := !arg_spec @ [ arg ];
-      arg_names := Misc.StringMap.add arg_name loc !arg_names
+      arg_names := String.Map.add arg_name loc !arg_names
   ) args
 
 let print_arguments usage =

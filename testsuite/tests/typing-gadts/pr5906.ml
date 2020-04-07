@@ -27,7 +27,7 @@ type (_, _, _) binop =
     Eq : ('a, 'a, bool) binop
   | Leq : ('a, 'a, bool) binop
   | Add : (int, int, int) binop
-Line _, characters 2-195:
+Line 12, characters 2-195:
   ..match bop, x, y with
     | Eq, Bool x, Bool y -> Bool (if x then y else not y)
     | Leq, Int x, Int y -> Bool (x <= y)

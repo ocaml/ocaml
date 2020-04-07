@@ -5,10 +5,10 @@
 (** Test the html rendering of ocamldoc documentation tags *)
 
 val heterological: unit
-(** 
+(**
  @author yes
  @param no No description
- @param neither see no description  
+ @param neither see no description
  @deprecated since the start of time
  @return ()
  @see "Documentation_tags.mli" Self reference

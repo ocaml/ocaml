@@ -299,4 +299,3 @@ let of_seq i =
   let b = create 32 in
   add_seq b i;
   b
-

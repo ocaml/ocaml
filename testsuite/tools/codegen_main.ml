@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 open Clflags
 let write_asm_file = ref false
 
@@ -13,8 +28,8 @@ let compile_file filename =
   lb.Lexing.lex_curr_p <- { lb.Lexing.lex_curr_p with pos_fname = filename };
   try
     while true do
-      Asmgen.compile_phrase Format.std_formatter
-                            (Parsecmm.phrase Lexcmm.token lb)
+      Asmgen.compile_phrase ~ppf_dump:Format.std_formatter
+        (Parsecmm.phrase Lexcmm.token lb)
     done
   with
       End_of_file ->

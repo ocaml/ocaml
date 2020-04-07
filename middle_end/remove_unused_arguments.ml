@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 let pass_name = "remove-unused-arguments"
 let () = Clflags.all_passes := pass_name :: !Clflags.all_passes

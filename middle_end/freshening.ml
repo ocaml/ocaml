@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
@@ -66,6 +67,10 @@ let print ppf = function
       tbl.back_mutable_var
 
 let empty = Inactive
+
+let is_empty = function
+  | Inactive -> true
+  | Active _ -> false
 
 let empty_preserving_activation_state = function
   | Inactive -> Inactive

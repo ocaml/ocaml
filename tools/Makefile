@@ -79,9 +79,9 @@ else
 export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
 endif
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot \
-      -use-prims ../byterun/primitives -I ..
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
+CAMLC=$(CAMLRUN) ../boot/ocamlc -g -nostdlib -I ../boot \
+      -use-prims ../runtime/primitives -I ..
+CAMLOPT=$(CAMLRUN) ../ocamlopt -g -nostdlib -I ../stdlib
 ifeq "$(UNIX_OR_WIN32)" "win32"
   ifneq "$(wildcard ../flexdll/Makefile)" ""
     CAMLOPT := OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe" \
@@ -99,7 +99,8 @@ VPATH := $(filter-out -I,$(INCLUDES))
 
 # scrapelabels addlabels
 
-.PHONY: all opt.opt
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+allopt: opt.opt
 
 # The dependency generator
 
@@ -122,16 +123,16 @@ clean::
 # The profiler
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS=config.cmo misc.cmo identifiable.cmo numbers.cmo \
-  arg_helper.cmo clflags.cmo terminfo.cmo \
-  build_path_prefix_map.cmo \
+CSLPROF_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
+  numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos = config.cmo misc.cmo profile.cmo warnings.cmo identifiable.cmo \
-               numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo
+ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
+               warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
+               clflags.cmo main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
 $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
@@ -155,8 +156,8 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo misc.cmo \
-	         ocamlmklib.cmo,)
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 
 ocamlmklibconfig.ml: ../config/Makefile Makefile
@@ -176,15 +177,15 @@ clean::
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=config.cmo misc.cmo identifiable.cmo numbers.cmo \
-		   arg_helper.cmo clflags.cmo ccomp.cmo
+OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
+       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
-OCAML299TO3= lexer299.cmo ocaml299to3.cmo
-LIBRARY3= config.cmo misc.cmo warnings.cmo build_path_prefix_map.cmo location.cmo
+OCAML299TO3=lexer299.cmo ocaml299to3.cmo
+LIBRARY3=config.cmo build_path_prefix_map.cmo misc.cmo warnings.cmo location.cmo
 
 ocaml299to3: $(OCAML299TO3)
 	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)
@@ -216,9 +217,8 @@ clean::
 
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
-ADDLABELS_IMPORTS=config.cmo misc.cmo arg_helper.cmo clflags.cmo \
-  identifiable.cmo numbers.cmo terminfo.cmo \
-  build_path_prefix_map.cmo \
+ADDLABELS_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo arg_helper.cmo \
+  clflags.cmo identifiable.cmo numbers.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -301,11 +301,13 @@ install::
 
 # The bytecode disassembler
 
-DUMPOBJ=opnames.cmo dumpobj.cmo
+DUMPOBJ= \
+          ../compilerlibs/ocamlcommon.cma \
+          ../compilerlibs/ocamlbytecomp.cma \
+          \
+          opnames.cmo dumpobj.cmo
 
-$(call byte_and_opt,dumpobj,config.cmo misc.cmo identifiable.cmo \
-                    numbers.cmo arg_helper.cmo clflags.cmo tbl.cmo \
-                    ident.cmo opcodes.cmo bytesections.cmo $(DUMPOBJ),)
+$(call byte_and_opt,dumpobj,$(DUMPOBJ),)
 
 make_opcodes.ml: make_opcodes.mll
 	$(CAMLLEX) make_opcodes.mll
@@ -313,8 +315,8 @@ make_opcodes.ml: make_opcodes.mll
 make_opcodes: make_opcodes.ml
 	$(CAMLC) make_opcodes.ml -o $@
 
-opnames.ml: ../byterun/caml/instruct.h make_opcodes
-	../byterun/ocamlrun make_opcodes -opnames < $< > $@
+opnames.ml: ../runtime/caml/instruct.h make_opcodes
+	../runtime/ocamlrun make_opcodes -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.ml
@@ -329,8 +331,8 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-objinfo_helper$(EXE): objinfo_helper.c ../byterun/caml/s.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTEXE)$@ \
+objinfo_helper$(EXE): objinfo_helper.c ../runtime/caml/s.h
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OUTPUTEXE)$@ \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
@@ -346,8 +348,12 @@ install::
 	$(INSTALL_PROG) \
 	  objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
+primreq=../compilerlibs/ocamlcommon.cma \
+        ../compilerlibs/ocamlbytecomp.cma \
+        primreq.cmo
+
 # Scan object files for required primitives
-$(call byte_and_opt,primreq,config.cmo primreq.cmo,)
+$(call byte_and_opt,primreq,$(primreq),)
 
 LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
         ../compilerlibs/ocamlbytecomp.cmxa \
@@ -391,8 +397,29 @@ install::
 	  "$(INSTALL_BINDIR)/"
 endif
 
+
 install::
 	cp ocaml-update-c "$(INSTALL_BINDIR)/"
+
+CAMLTEX= ../compilerlibs/ocamlcommon.cma \
+	../compilerlibs/ocamlbytecomp.cma \
+	../compilerlibs/ocamltoplevel.cma \
+	../otherlibs/str/str.cma \
+	../otherlibs/$(UNIXLIB)/unix.cma \
+	caml_tex.ml
+
+#Scan latex files, and run ocaml code examples
+
+caml-tex: INCLUDES+= -I ../otherlibs/str -I ../otherlibs/$(UNIXLIB)
+caml-tex: $(CAMLTEX)
+	../runtime/ocamlrun ../ocamlc -nostdlib -I ../stdlib $(LINKFLAGS) \
+	-linkall -o $@ $(CAMLTEX)
+
+# we need str and unix which depend on the bytecode version of other tools
+# thus we delay building caml-tex to the opt.opt stage
+opt.opt:caml-tex
+clean::
+	rm -f -- caml-tex caml_tex.cm?
 
 # Common stuff
 

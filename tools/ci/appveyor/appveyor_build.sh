@@ -34,13 +34,14 @@ function run {
 }
 
 function set_configuration {
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
+    cp config/m-nt.h runtime/caml/m.h
+    cp config/s-nt.h runtime/caml/s.h
 
     FILE=$(pwd | cygpath -f - -m)/config/Makefile
     echo "Edit $FILE to set PREFIX=$2"
     sed -e "/PREFIX=/s|=.*|=$2|" \
-        -e "/^ *CFLAGS *=/s/\r\?$/ $3\0/" \
+        -e "/RUNTIMED=/s|=.*|=true|" \
+        -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" \
          config/Makefile.$1 > config/Makefile
 #    run "Content of $FILE" cat config/Makefile
 }
@@ -64,7 +65,8 @@ case "$1" in
     for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
       cp $f "$OCAMLROOT/bin/flexdll/"
     done
-    echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile
+    echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
+      >> ~/.bash_profile
     ;;
   msvc32-only)
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32
@@ -82,9 +84,11 @@ case "$1" in
     FULL_BUILD_PREFIX=$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX
     run "ocamlc.opt -version" $FULL_BUILD_PREFIX-msvc64/ocamlc.opt -version
     run "test msvc64" make -C $FULL_BUILD_PREFIX-msvc64 tests
-    run "test mingw32" make -C $FULL_BUILD_PREFIX-mingw32 tests
+    run "test mingw32" make -C $FULL_BUILD_PREFIX-mingw32/testsuite \
+                            USE_RUNTIME="d" all
     run "install msvc64" make -C $FULL_BUILD_PREFIX-msvc64 install
     run "install mingw32" make -C $FULL_BUILD_PREFIX-mingw32 install
+    run "check_all_arches" make -C $FULL_BUILD_PREFIX-msvc64 check_all_arches
     ;;
   *)
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc64
@@ -104,7 +108,9 @@ case "$1" in
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc64
 
     export TERM=ansi
-    script --quiet --return --command "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" ../$BUILD_PREFIX-mingw32/build.log >/dev/null 2>/dev/null &
+    script --quiet --return --command \
+      "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+      ../$BUILD_PREFIX-mingw32/build.log >/dev/null 2>/dev/null &
     BUILD_PID=$!
 
     run "make world" make world
@@ -114,8 +120,12 @@ case "$1" in
 
     set +e
 
-    # For an explanation of the sed command, see https://github.com/appveyor/ci/issues/1824
-    tail --pid=$BUILD_PID -n +1 -f ../$BUILD_PREFIX-mingw32/build.log | sed -e 's/\d027\[K//g' -e 's/\d027\[m/\d027[0m/g' -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
+    # For an explanation of the sed command, see
+    # https://github.com/appveyor/ci/issues/1824
+    tail --pid=$BUILD_PID -n +1 -f ../$BUILD_PREFIX-mingw32/build.log | \
+      sed -e 's/\d027\[K//g' \
+          -e 's/\d027\[m/\d027[0m/g' \
+          -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
     TAIL_PID=$!
     wait $BUILD_PID
     STATUS=$?

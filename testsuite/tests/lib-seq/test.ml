@@ -11,7 +11,7 @@ let () =
       |> Seq.filter (fun x -> x mod 2 = 0)
      |> List.of_seq));
   ()
-;;  
+;;
 
 (* MPR 7820 *)
 let () =
@@ -23,5 +23,3 @@ let () =
 ;;
 
 let () = print_endline "OK";;
-
-
