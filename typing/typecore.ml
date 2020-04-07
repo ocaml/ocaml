@@ -4247,7 +4247,7 @@ and type_application env funct sargs =
     end
   in
   let warned = ref false in
-  let rec type_args args omitted ty_fun ty_fun0 ty_old sargs =
+  let rec type_args args omitted ty_fun ty_fun0 sargs =
     match expand_head env ty_fun, expand_head env ty_fun0 with
       {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun',
       {desc=Tarrow (_, ty0, ty_fun0, _)}
@@ -4319,9 +4319,7 @@ and type_application env funct sargs =
         in
         let omitted =
           if arg = None then (l,ty,lv) :: omitted else omitted in
-        let ty_old = if sargs = [] then ty_fun else ty_old in
-        type_args ((l,arg)::args) omitted ty_fun ty_fun0
-          ty_old sargs
+        type_args ((l,arg)::args) omitted ty_fun ty_fun0 sargs
     | _ -> type_unknown_args args omitted ty_fun0 sargs
   in
   let is_ignore funct =
@@ -4343,7 +4341,7 @@ and type_application env funct sargs =
       ([Nolabel, Some exp], ty_res)
   | _ ->
     let ty = funct.exp_type in
-    type_args [] [] ty (instance ty) ty sargs
+    type_args [] [] ty (instance ty) sargs
 
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
