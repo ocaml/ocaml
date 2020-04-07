@@ -35,6 +35,17 @@ bind.o: bind.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
   ../../runtime/caml/mlvalues.h ../../runtime/caml/domain_state.h \
   ../../runtime/caml/domain_state.tbl \
   ../../runtime/caml/byte_domain_state.tbl unixsupport.h socketaddr.h
+channels.o: channels.c ../../runtime/caml/mlvalues.h \
+  ../../runtime/caml/config.h ../../runtime/caml/m.h \
+  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+  ../../runtime/caml/camlatomic.h ../../runtime/caml/domain_state.h \
+  ../../runtime/caml/domain_state.tbl \
+  ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/io.h \
+  ../../runtime/caml/platform.h ../../runtime/caml/memory.h \
+  ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
+  ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
+  ../../runtime/caml/domain.h ../../runtime/caml/alloc.h \
+  ../../runtime/caml/signals.h unixsupport.h socketaddr.h
 chdir.o: chdir.c ../../runtime/caml/mlvalues.h \
   ../../runtime/caml/config.h ../../runtime/caml/m.h \
   ../../runtime/caml/s.h ../../runtime/caml/misc.h \
@@ -193,6 +204,13 @@ fork.o: fork.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
   ../../runtime/caml/gc.h ../../runtime/caml/major_gc.h \
   ../../runtime/caml/minor_gc.h ../../runtime/caml/addrmap.h \
   ../../runtime/caml/alloc.h ../../runtime/caml/fail.h
+fsync.o: fsync.c ../../runtime/caml/mlvalues.h \
+  ../../runtime/caml/config.h ../../runtime/caml/m.h \
+  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+  ../../runtime/caml/camlatomic.h ../../runtime/caml/domain_state.h \
+  ../../runtime/caml/domain_state.tbl \
+  ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/signals.h \
+  unixsupport.h
 ftruncate.o: ftruncate.c ../../runtime/caml/fail.h \
   ../../runtime/caml/misc.h ../../runtime/caml/config.h \
   ../../runtime/caml/m.h ../../runtime/caml/s.h \
