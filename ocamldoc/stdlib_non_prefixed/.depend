@@ -51,7 +51,7 @@ domain.cmi :
 domainstate.cmi :
 dynlink.cmi : digest.cmi
 emitcode.cmi : misc.cmi instruct.cmi ident.cmi cmo_format.cmi
-env.cmi : warnings.cmi types.cmi subst.cmi string.cmi path.cmi misc.cmi map.cmi \
+env.cmi : warnings.cmi types.cmi subst.cmi string.cmi path.cmi misc.cmi \
     longident.cmi location.cmi ident.cmi format.cmi digest.cmi consistbl.cmi \
     cmi_format.cmi asttypes.cmi
 envaux.cmi : subst.cmi path.cmi format.cmi env.cmi
