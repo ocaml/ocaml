@@ -331,10 +331,14 @@ let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+(* This should be kept in sync with the [is_identchar] function in [env.ml] *)
+
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|']
+let symbolchar_or_hash =
+  symbolchar | '#'
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
@@ -547,9 +551,9 @@ rule token = parse
   | "-"  { MINUS }
   | "-." { MINUSDOT }
 
-  | "!" symbolchar + as op
+  | "!" symbolchar_or_hash + as op
             { PREFIXOP op }
-  | ['~' '?'] symbolchar + as op
+  | ['~' '?'] symbolchar_or_hash + as op
             { PREFIXOP op }
   | ['=' '<' '>' '|' '&' '$'] symbolchar * as op
             { INFIXOP0 op }
@@ -562,7 +566,7 @@ rule token = parse
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar * as op
             { INFIXOP3 op }
-  | '#' (symbolchar | '#') + as op
+  | '#' symbolchar_or_hash + as op
             { HASHOP op }
   | "let" kwdopchar dotsymbolchar * as op
             { LETOP op }
