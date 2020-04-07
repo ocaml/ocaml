@@ -1048,108 +1048,39 @@ let pat_as_constr = function
   | { pat_desc = Tpat_construct (_, cstr, _) } -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
-let group_const_int p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_int _) -> true
-  | _ -> false
-
-let group_const_char p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_char _) -> true
-  | _ -> false
-
-let group_const_string p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_string _) -> true
-  | _ -> false
-
-let group_const_float p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_float _) -> true
-  | _ -> false
-
-let group_const_int32 p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_int32 _) -> true
-  | _ -> false
-
-let group_const_int64 p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_int64 _) -> true
-  | _ -> false
-
-let group_const_nativeint p =
-  match Pattern_head.desc (Simple.head p) with
-  | Constant (Const_nativeint _) -> true
-  | _ -> false
-
-and group_constructor p =
-  match Pattern_head.desc (Simple.head p) with
-  | Construct _ -> true
-  | _ -> false
-
-and group_same_constructor tag p =
-  match Pattern_head.desc (Simple.head p) with
-  | Construct cstr -> Types.equal_tag tag cstr.cstr_tag
-  | _ -> false
-
-and group_variant p =
-  match Pattern_head.desc (Simple.head p) with
-  | Variant _ -> true
-  | _ -> false
-
-and group_var p =
-  match Pattern_head.desc (Simple.head p) with
-  | Any -> true
-  | _ -> false
-
-and group_tuple p =
-  match Pattern_head.desc (Simple.head p) with
-  | Tuple _
-  | Any ->
+let can_group discr pat =
+  match (Pattern_head.desc discr, Pattern_head.desc (Simple.head pat)) with
+  | Any, Any
+  | Constant (Const_int _), Constant (Const_int _)
+  | Constant (Const_char _), Constant (Const_char _)
+  | Constant (Const_string _), Constant (Const_string _)
+  | Constant (Const_float _), Constant (Const_float _)
+  | Constant (Const_int32 _), Constant (Const_int32 _)
+  | Constant (Const_int64 _), Constant (Const_int64 _)
+  | Constant (Const_nativeint _), Constant (Const_nativeint _) ->
       true
-  | _ -> false
-
-and group_record p =
-  match Pattern_head.desc (Simple.head p) with
-  | Record _
-  | Any ->
-      true
-  | _ -> false
-
-and group_array p =
-  match Pattern_head.desc (Simple.head p) with
-  | Array _ -> true
-  | _ -> false
-
-and group_lazy p =
-  match Pattern_head.desc (Simple.head p) with
-  | Lazy -> true
-  | _ -> false
-
-let can_group p =
-  match Pattern_head.desc (Simple.head p) with
-  | Any -> group_var
-  | Constant (Const_int _) -> group_const_int
-  | Constant (Const_char _) -> group_const_char
-  | Constant (Const_string _) -> group_const_string
-  | Constant (Const_float _) -> group_const_float
-  | Constant (Const_int32 _) -> group_const_int32
-  | Constant (Const_int64 _) -> group_const_int64
-  | Constant (Const_nativeint _) -> group_const_nativeint
-  | Construct { cstr_tag = Cstr_extension _ as t } ->
+  | Construct { cstr_tag = Cstr_extension _ as discr_tag }, Construct pat_cstr
+    ->
       (* Extension constructors with distinct names may be equal thanks to
          constructor rebinding. So we need to produce a specialized
          submatrix for each syntactically-distinct constructor (with a threading
          of exits such that each submatrix falls back to the
          potentially-compatible submatrices below it).  *)
-      group_same_constructor t
-  | Construct _ -> group_constructor
-  | Tuple _ -> group_tuple
-  | Record _ -> group_record
-  | Array _ -> group_array
-  | Variant _ -> group_variant
-  | Lazy -> group_lazy
+      Types.equal_tag discr_tag pat_cstr.cstr_tag
+  | Construct _, Construct _
+  | Tuple _, (Tuple _ | Any)
+  | Record _, (Record _ | Any)
+  | Array _, Array _
+  | Variant _, Variant _
+  | Lazy, Lazy ->
+      true
+  | ( _,
+      ( Any
+      | Constant
+          ( Const_int _ | Const_char _ | Const_string _ | Const_float _
+          | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
+      | Construct _ | Tuple _ | Record _ | Array _ | Variant _ | Lazy ) ) ->
+      false
 
 let is_or p =
   match p.pat_desc with
@@ -1163,6 +1094,11 @@ let rec omega_like p =
       true
   | Tpat_alias (p, _, _) -> omega_like p
   | Tpat_or (p1, p2, _) -> omega_like p1 || omega_like p2
+  | _ -> false
+
+let simple_omega_like p =
+  match Pattern_head.desc (Simple.head p) with
+  | Any -> true
   | _ -> false
 
 let equiv_pat p q = le_pat p q && le_pat q p
@@ -1351,11 +1287,11 @@ and split_no_or cls args def k =
      different heads match different values), but this is handled by the
      [can_group] function. *)
   let rec split (cls : Simple.clause list) =
-    let discr = what_is_first_case cls in
+    let discr = Simple.head (what_is_first_case cls) in
     collect discr [] [] cls
   and collect group_discr rev_yes rev_no = function
     | [ (((p, ps), _) as cl) ]
-      when rev_yes <> [] && group_var p && List.for_all omega_like ps ->
+      when rev_yes <> [] && simple_omega_like p && List.for_all omega_like ps ->
         (* This enables an extra division in some frequent cases:
                last row is made of variables only
 
@@ -1381,10 +1317,9 @@ and split_no_or cls args def k =
         insert_split group_discr yes no def k
   and insert_split group_discr yes no def k =
     let precompile_group =
-      if group_var group_discr then
-        precompile_var
-      else
-        do_not_precompile
+      match Pattern_head.desc group_discr with
+      | Any -> precompile_var
+      | _ -> do_not_precompile
     in
     match no with
     | [] -> precompile_group args yes def k
@@ -1395,7 +1330,7 @@ and split_no_or cls args def k =
           (Default_environment.cons matrix idef def)
           ((idef, next) :: nexts)
   and should_split group_discr =
-    match Pattern_head.desc (Simple.head group_discr) with
+    match Pattern_head.desc group_discr with
     | Construct { cstr_tag = Cstr_extension _ } ->
         (* it is unlikely that we will raise anything, so we split now *)
         true
@@ -1423,7 +1358,7 @@ and precompile_var args cls def k =
           let var_cls =
             List.map
               (fun ((p, ps), act) ->
-                assert (group_var p);
+                assert (simple_omega_like p);
                 half_simplify_clause ~arg:(fst arg) (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
