@@ -104,6 +104,11 @@ CAMLexport value caml_process_pending_signals_exn(void)
   return Val_unit;
 }
 
+static void notify_action()
+{
+  Caml_state->young_limit = Caml_state->young_alloc_end;
+}
+
 CAMLno_tsan /* When called from [caml_record_signal], these memory
                accesses may not be synchronized. */
 void caml_set_action_pending(void)
@@ -114,7 +119,7 @@ void caml_set_action_pending(void)
      [caml_modify]), this is only moderately effective on ports that cache
      [Caml_state->young_limit] in a register, so it may take a while before the
      register is reloaded from [Caml_state->young_limit]. */
-  Caml_state->young_limit = Caml_state->young_alloc_end;
+  notify_action();
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -239,8 +244,8 @@ void caml_update_young_limit (void)
     caml_memprof_young_trigger < Caml_state->young_trigger ?
     Caml_state->young_trigger : caml_memprof_young_trigger;
 
-  if(caml_something_to_do)
-    Caml_state->young_limit = Caml_state->young_alloc_end;
+  if (caml_something_to_do)
+    notify_action();
 }
 
 /* Arrange for a garbage collection to be performed as soon as possible */
