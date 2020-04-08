@@ -4181,54 +4181,57 @@ and type_application env funct sargs =
     tvar || List.mem l ls
   in
   let ignored = ref [] in
-  let rec type_unknown_args
-      (args :
-      (Asttypes.arg_label * (unit -> Typedtree.expression) option) list)
-    omitted ty_fun = function
-      [] ->
-        (List.map
-            (function l, None -> l, None
-                | l, Some f -> l, Some (f ()))
-           (List.rev args),
-         instance (result_type omitted ty_fun))
-    | (l1, sarg1) :: sargl ->
-        let (ty1, ty2) =
-          let ty_fun = expand_head env ty_fun in
-          match ty_fun.desc with
-            Tvar _ ->
-              let t1 = newvar () and t2 = newvar () in
-              if ty_fun.level >= t1.level &&
-                 not (is_prim ~name:"%identity" funct)
-              then
-                Location.prerr_warning sarg1.pexp_loc Warnings.Unused_argument;
-              unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
-              (t1, t2)
-          | Tarrow (l,t1,t2,_) when l = l1
-            || !Clflags.classic && l1 = Nolabel && not (is_optional l) ->
-              (t1, t2)
-          | td ->
-              let ty_fun =
-                match td with Tarrow _ -> newty td | _ -> ty_fun in
-              let ty_res = result_type (omitted @ !ignored) ty_fun in
-              match ty_res.desc with
-                Tarrow _ ->
-                  if (!Clflags.classic || not (has_label l1 ty_fun)) then
-                    raise (Error(sarg1.pexp_loc, env,
-                                 Apply_wrong_label(l1, ty_res)))
-                  else
-                    raise (Error(funct.exp_loc, env, Incoherent_label_order))
-              | _ ->
-                  raise(Error(funct.exp_loc, env, Apply_non_function
-                                (expand_head env funct.exp_type)))
-        in
-        let optional = is_optional l1 in
-        let arg1 () =
-          let arg1 = type_expect env sarg1 (mk_expected ty1) in
-          if optional then
-            unify_exp env arg1 (type_option(newvar()));
-          arg1
-        in
-        type_unknown_args ((l1, Some arg1) :: args) omitted ty2 sargl
+  let type_unknown_arg omitted (ty_fun, typed_args) (lbl, sarg) =
+    let (ty1, ty2) =
+      let ty_fun = expand_head env ty_fun in
+      match ty_fun.desc with
+      | Tvar _ ->
+          let t1 = newvar () and t2 = newvar () in
+          if ty_fun.level >= t1.level &&
+             not (is_prim ~name:"%identity" funct)
+          then
+            Location.prerr_warning sarg.pexp_loc Warnings.Unused_argument;
+          unify env ty_fun (newty (Tarrow(lbl,t1,t2,Clink(ref Cunknown))));
+          (t1, t2)
+      | Tarrow (l,t1,t2,_) when l = lbl
+        || !Clflags.classic && lbl = Nolabel && not (is_optional l) ->
+          (t1, t2)
+      | td ->
+          let ty_fun = match td with Tarrow _ -> newty td | _ -> ty_fun in
+          let ty_res = result_type (omitted @ !ignored) ty_fun in
+          match ty_res.desc with
+          | Tarrow _ ->
+              if !Clflags.classic || not (has_label lbl ty_fun) then
+                raise (Error(sarg.pexp_loc, env,
+                             Apply_wrong_label(lbl, ty_res)))
+              else
+                raise (Error(funct.exp_loc, env, Incoherent_label_order))
+          | _ ->
+              raise(Error(funct.exp_loc, env, Apply_non_function
+                            (expand_head env funct.exp_type)))
+    in
+    let arg () =
+      let arg = type_expect env sarg (mk_expected ty1) in
+      if is_optional lbl then
+        unify_exp env arg (type_option(newvar()));
+      arg
+    in
+    (ty2, (lbl, Some arg) :: typed_args)
+  in
+  let type_unknown_args typed_args omitted ty_fun remaining_args =
+    let ty_fun, typed_args =
+      List.fold_left (type_unknown_arg omitted) (ty_fun, typed_args)
+        remaining_args
+    in
+    let args =
+      List.map
+        (function
+          | l, None -> l, None
+          | l, Some f -> l, Some (f ()))
+        (List.rev typed_args)
+    in
+    let result_ty = instance (result_type omitted ty_fun) in
+    args, result_ty
   in
   let ignore_labels =
     !Clflags.classic ||
