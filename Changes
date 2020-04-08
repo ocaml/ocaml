@@ -69,6 +69,9 @@ Working version
 - #9316: Use typing information from Clambda for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury and Xavier Leroy)
 
+- #9426: build the Mingw ports with higher levels of GCC optimization
+  (Xavier Leroy, review by Sébastien Hinderer)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
@@ -284,6 +287,10 @@ Working version
 - #7696, #6608: Record expression deleted when all fields specified
   (Jacques Garrigue, report by Jeremy Yallop)
 
+- #7917, #9426: Use GCC option -fexcess-precision=standard when available,
+  avoiding a problem with x87 excess precision in Float.round.
+  (Xavier Leroy, review by Sébastien Hinderer)
+
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 
@@ -322,6 +329,7 @@ Working version
 - #9428: Fix truncated exception backtrace for C->OCaml callbacks
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
+
 
 OCaml 4.10 maintenance branch
 -----------------------------
