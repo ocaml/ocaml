@@ -4249,7 +4249,7 @@ and type_application env funct sargs =
   let warned = ref false in
   let rec type_args args omitted ty_fun ty_fun0 sargs =
     match expand_head env ty_fun, expand_head env ty_fun0 with
-      {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun',
+    | {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun',
       {desc=Tarrow (_, ty0, ty_fun0, _)}
       when sargs <> [] && commu_repr com = Cok ->
         let may_warn loc w =
@@ -4282,7 +4282,7 @@ and type_application env funct sargs =
         in
         let sargs, arg =
           if ignore_labels then begin
-            (* In classic mode, omitted = [] *)
+            (* No reordering is allowed, process arguments in order *)
             match sargs with
             | [] -> assert false
             | (l', sarg0) :: remaining_sargs ->
@@ -4297,6 +4297,8 @@ and type_application env funct sargs =
                   raise(Error(sarg0.pexp_loc, env,
                               Apply_wrong_label(l', ty_fun')))
           end else
+            (* Arguments can be commuted, try to fetch the argument
+               corresponding to the first parameter. *)
             match extract_label name sargs with
             | Some (l', sarg0, commuted, sargs) ->
                 if commuted then begin
@@ -4312,13 +4314,14 @@ and type_application env funct sargs =
                 if optional && List.mem_assoc Nolabel sargs then
                   eliminate_optional_arg ()
                 else begin
+                  (* No argument was given for this non-optional parameter, we
+                     abstract over it. *)
                   may_warn funct.exp_loc
                     (Warnings.Without_principality "commuted an argument");
                   None
                 end
         in
-        let omitted =
-          if arg = None then (l,ty,lv) :: omitted else omitted in
+        let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
         type_args ((l,arg)::args) omitted ty_fun ty_fun0 sargs
     | _ -> type_unknown_args args omitted ty_fun0 sargs
   in
@@ -4331,11 +4334,9 @@ and type_application env funct sargs =
     | _ -> false
   in
   match sargs with
-    (* Special case for ignore: avoid discarding warning *)
+  | (* Special case for ignore: avoid discarding warning *)
     [Nolabel, sarg] when is_ignore funct ->
-      let ty_arg, ty_res =
-        filter_arrow env (instance funct.exp_type) Nolabel
-      in
+      let ty_arg, ty_res = filter_arrow env (instance funct.exp_type) Nolabel in
       let exp = type_expect env sarg (mk_expected ty_arg) in
       check_partial_application false exp;
       ([Nolabel, Some exp], ty_res)
