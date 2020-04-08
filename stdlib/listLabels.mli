@@ -315,7 +315,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see Array.sort for
    a complete specification).  For example,
-   {!Pervasives.compare} is a suitable comparison function.
+   {!Stdlib.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic

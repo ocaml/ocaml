@@ -33,7 +33,7 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch list
+  | Definition_mismatch of type_expr * Includecore.type_mismatch option
   | Constraint_failed of type_expr * type_expr
   | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
   | Type_clash of Env.t * (type_expr * type_expr) list
@@ -43,7 +43,7 @@ type error =
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch list
+  | Extension_mismatch of Path.t * Includecore.type_mismatch
   | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
@@ -81,6 +81,10 @@ let get_unboxed_from_attributes sdecl =
 
 (* Enter all declared types in the environment as abstract types *)
 
+let add_type ~check id decl env =
+  Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
+    (fun () -> Env.add_type ~check id decl env)
+
 let enter_type rec_flag env sdecl id =
   let needed =
     match rec_flag with
@@ -114,7 +118,7 @@ let enter_type rec_flag env sdecl id =
       type_unboxed = unboxed_false_default_false;
     }
   in
-  Env.add_type ~check:true id decl env
+  add_type ~check:true id decl env
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
@@ -695,9 +699,9 @@ let check_coherence env loc id decl =
             let decl' = Env.find_type path env in
             let err =
               if List.length args <> List.length decl.type_params
-              then [Includecore.Arity]
+              then Some Includecore.Arity
               else if not (Ctype.equal env false args decl.type_params)
-              then [Includecore.Constraint]
+              then Some Includecore.Constraint
               else
                 Includecore.type_declarations ~loc ~equality:true env
                   ~mark:true
@@ -707,12 +711,12 @@ let check_coherence env loc id decl =
                   (Subst.type_declaration
                      (Subst.add_type id path Subst.identity) decl)
             in
-            if err <> [] then
+            if err <> None then
               raise(Error(loc, Definition_mismatch (ty, err)))
           with Not_found ->
             raise(Error(loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(loc, Definition_mismatch (ty, [])))
+      | _ -> raise(Error(loc, Definition_mismatch (ty, None)))
       end
   | _ -> ()
 
@@ -1159,7 +1163,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
   in
   let new_env =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      (fun (id, decl) env -> add_type ~check:true id decl env)
       new_decls env
   in
   let new_variances =
@@ -1348,7 +1352,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Build the final env. *)
   let newenv =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      (fun (id, decl) env -> add_type ~check:true id decl env)
       decls env
   in
   (* Update stubs *)
@@ -1646,16 +1650,18 @@ let transl_type_extension extend env loc styext =
   in
   let err =
     if type_decl.type_arity <> List.length styext.ptyext_params then
-      [Includecore.Arity]
+      Some Includecore.Arity
     else
       if List.for_all2
            (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
            (add_injectivity (List.map snd styext.ptyext_params))
-      then [] else [Includecore.Variance]
+      then None else Some Includecore.Variance
   in
-  if err <> [] then
-    raise (Error(loc, Extension_mismatch (type_path, err)));
+  begin match err with
+  | None -> ()
+  | Some err -> raise (Error(loc, Extension_mismatch (type_path, err)))
+  end;
   let ttype_params = make_params env styext.ptyext_params in
   let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
   List.iter2 (Ctype.unify_var env)
@@ -1701,6 +1707,7 @@ let transl_type_extension extend env loc styext =
       tyext_params = ttype_params;
       tyext_constructors = constructors;
       tyext_private = styext.ptyext_private;
+      tyext_loc = styext.ptyext_loc;
       tyext_attributes = styext.ptyext_attributes; }
   in
     (tyext, newenv)
@@ -1739,6 +1746,7 @@ let transl_type_exception env t =
       )
   in
   {tyexn_constructor = contructor;
+   tyexn_loc = t.ptyexn_loc;
    tyexn_attributes = t.ptyexn_attributes}, newenv
 
 
@@ -2147,13 +2155,18 @@ let report_error ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
         s Printtyp.type_expr ty
-  | Definition_mismatch (ty, errs) ->
+  | Definition_mismatch (ty, None) ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
+        "This variant or record definition" "does not match that of type"
+        Printtyp.type_expr ty
+  | Definition_mismatch (ty, Some err) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
         (Includecore.report_type_mismatch "the original" "this" "definition")
-        errs
+        err
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
@@ -2221,13 +2234,13 @@ let report_error ppf = function
         "Type definition"
         Printtyp.path path
         "is not extensible"
-  | Extension_mismatch (path, errs) ->
+  | Extension_mismatch (path, err) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%s@]%a@]"
         "This extension" "does not match the definition of type"
         (Path.name path)
         (Includecore.report_type_mismatch
            "the type" "this extension" "definition")
-        errs
+        err
   | Rebind_wrong_type (lid, env, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
@@ -2297,10 +2310,10 @@ let report_error ppf = function
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "[@Don't know how to unbox this type.@ \
+      fprintf ppf "@[Don't know how to unbox this type.@ \
                     Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "[@Don't know how to untag this type.@ \
+      fprintf ppf "@[Don't know how to untag this type.@ \
                    Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
@@ -2328,7 +2341,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer loc report_error err)
+        Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

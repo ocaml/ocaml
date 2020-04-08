@@ -17,7 +17,7 @@ include $(BASEDIR)/../config/Makefile
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
 expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
-          -I $(OTOPDIR)/driver -I $(OTOPDIR)/toplevel
+          -I $(OTOPDIR)/driver -I $(OTOPDIR)/typing -I $(OTOPDIR)/toplevel
 expect_LIBRARIES=../../compilerlibs/ocamlcommon \
           ../../compilerlibs/ocamlbytecomp \
           ../../compilerlibs/ocamltoplevel

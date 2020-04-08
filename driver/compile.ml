@@ -40,19 +40,18 @@ let to_bytecode i (typedtree, coercion) =
 let emit_bytecode i (bytecode, required_globals) =
   let cmofile = cmo i in
   let oc = open_out_bin cmofile in
-  Misc.try_finally (fun () ->
-      bytecode
-      |> Profile.(record ~accumulate:true generate)
-        (Emitcode.to_file oc i.modulename cmofile ~required_globals);
-    )
+  Misc.try_finally
     ~always:(fun () -> close_out oc)
     ~exceptionally:(fun () -> Misc.remove_file cmofile)
+    (fun () ->
+       bytecode
+       |> Profile.(record ~accumulate:true generate)
+         (Emitcode.to_file oc i.modulename cmofile ~required_globals);
+    )
 
-let implementation ~sourcefile ~outputprefix =
-  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmo") @@ fun ppf_dump ->
-  let info =
-    init ppf_dump ~init_path:false ~tool_name ~sourcefile ~outputprefix
-  in
-  let frontend info = typecheck_impl info @@ parse_impl info in
-  let backend info typed = emit_bytecode info @@ to_bytecode info typed in
-  wrap_compilation ~frontend ~backend info
+let implementation =
+  Compile_common.implementation
+    ~native:false ~tool_name ~backend:(fun info typed ->
+      let bytecode = to_bytecode info typed in
+      emit_bytecode info bytecode
+    )

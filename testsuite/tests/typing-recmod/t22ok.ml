@@ -24,7 +24,7 @@ module rec A
      type t = Leaf of int | Node of ASet.t
      let compare x y =
        match (x,y) with
-         (Leaf i, Leaf j) -> Pervasives.compare i j
+         (Leaf i, Leaf j) -> Stdlib.compare i j
        | (Leaf i, Node t) -> -1
        | (Node s, Leaf j) -> 1
        | (Node s, Node t) -> ASet.compare s t

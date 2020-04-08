@@ -112,7 +112,7 @@ val of_string_opt: string -> float option
 val to_string : float -> string
 (** Return the string representation of a floating-point number. *)
 
-type fpclass = Pervasives.fpclass =
+type fpclass = Stdlib.fpclass =
     FP_normal           (** Normal number, none of the below *)
   | FP_subnormal        (** Number very close to 0.0, has reduced precision *)
   | FP_zero             (** Number is 0.0 or -0.0 *)

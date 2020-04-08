@@ -515,7 +515,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
 let sort_pattern_variables vs =
   List.sort
     (fun {pv_id = x; _} {pv_id = y; _} ->
-      Pervasives.compare (Ident.name x) (Ident.name y))
+      Stdlib.compare (Ident.name x) (Ident.name y))
     vs
 
 let enter_orpat_variables loc env  p1_vs p2_vs =
@@ -643,7 +643,10 @@ let build_or_pat env loc lid =
       pats
   in
   match pats with
-    [] -> raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
+    [] ->
+      (* empty polymorphic variants: not possible with the concrete language
+         but valid at the ast level *)
+      raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
   | pat :: pats ->
       let r =
         List.fold_left
@@ -2002,7 +2005,8 @@ let create_package_type loc env (p, l) =
    let open Ast_helper in
    List.fold_left
      (fun sexp (name, loc) ->
-       Exp.letmodule ~loc:sexp.pexp_loc ~attrs:[mknoloc "#modulepat",PStr []]
+       Exp.letmodule ~loc:sexp.pexp_loc
+         ~attrs:[Attr.mk (mknoloc "#modulepat") (PStr [])]
          name
          (Mod.unpack ~loc
             (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
@@ -2310,7 +2314,7 @@ and type_expect_
         else With_attributes in
       let scp =
         match sexp.pexp_attributes, rec_flag with
-        | [{txt="#default"},_], _ -> None
+        | [{attr_name = {txt="#default"}; _}], _ -> None
         | _, Recursive -> Some (Annot.Idef loc)
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
@@ -2359,7 +2363,8 @@ and type_expect_
       in
       let pat = Pat.var ~loc:sloc (mknoloc "*opt*") in
       let body =
-        Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
+        Exp.let_ ~loc Nonrecursive
+          ~attrs:[Attr.mk (mknoloc "#default") (PStr [])]
           [Vb.mk spat smatch] sbody
       in
       type_function ?in_function loc sexp.pexp_attributes env
@@ -3369,6 +3374,7 @@ and type_format loc str env =
       let mk_exp_loc pexp_desc = {
         pexp_desc = pexp_desc;
         pexp_loc = loc;
+        pexp_loc_stack = [];
         pexp_attributes = [];
       } and mk_lid_loc lid = {
         txt = lid;
@@ -4954,7 +4960,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
-        Some (Location.error_of_printer loc (report_error env) err)
+        Some (Location.error_of_printer ~loc (report_error env) err)
       | Error_forward err ->
         Some err
       | _ ->

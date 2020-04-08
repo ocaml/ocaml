@@ -119,7 +119,7 @@ let ask_kill_program () =
 let initialize_loading () =
   if !debug_loading then begin
     prerr_endline "Loading debugging information...";
-    Printf.fprintf Pervasives.stderr "\tProgram: [%s]\n%!" !program_name;
+    Printf.fprintf Stdlib.stderr "\tProgram: [%s]\n%!" !program_name;
   end;
   begin try access !program_name [F_OK]
   with Unix_error _ ->
@@ -141,7 +141,7 @@ let initialize_loading () =
 let ensure_loaded () =
   if not !loaded then begin
     print_string "Loading program... ";
-    flush Pervasives.stdout;
+    flush Stdlib.stdout;
     if !program_name = "" then begin
       prerr_endline "No program specified.";
       raise Toplevel

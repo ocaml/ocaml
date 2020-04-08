@@ -1424,7 +1424,7 @@ let {foo} = (raise Exit : t);;
 type s = A of int
 let (A x) = (raise Exit : s);;
 [%%expect {|
-Exception: Stdlib.Pervasives.Exit.
+Exception: Stdlib.Exit.
 |}];;
 
 (* PR#5224 *)
@@ -1598,8 +1598,7 @@ and g = <a:t>
 Line 1, characters 10-11:
   type t = <g>
             ^
-Error: The type constructor g
-is not yet completely defined
+Error: The type constructor g is not yet completely defined
 |}]
 
 type t = int

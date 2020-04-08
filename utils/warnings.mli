@@ -13,6 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Warning definitions
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
+
 type loc = {
   loc_start: Lexing.position;
   loc_end: Lexing.position;

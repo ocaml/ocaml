@@ -30,10 +30,20 @@ let pop s =
   | hd::tl -> s.c <- tl; s.len <- s.len - 1; hd
   | []     -> raise Empty
 
+let pop_opt s =
+  match s.c with
+  | hd::tl -> s.c <- tl; s.len <- s.len - 1; Some hd
+  | []     -> None
+
 let top s =
   match s.c with
   | hd::_ -> hd
-  | []     -> raise Empty
+  | []    -> raise Empty
+
+let top_opt s =
+  match s.c with
+  | hd::_ -> Some hd
+  | []    -> None
 
 let is_empty s = (s.c = [])
 

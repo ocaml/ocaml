@@ -104,13 +104,15 @@ let rec add_type bv ty =
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object (fl, _) ->
       List.iter
-       (function Otag (_, _, t) -> add_type bv t
+       (fun {pof_desc; _} -> match pof_desc with
+         | Otag (_, t) -> add_type bv t
          | Oinherit t -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, _) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
       List.iter
-        (function Rtag(_,_,_,stl) -> List.iter (add_type bv) stl
+        (fun {prf_desc; _} -> match prf_desc with
+          | Rtag(_, _, stl) -> List.iter (add_type bv) stl
           | Rinherit sty -> add_type bv sty)
         fl
   | Ptyp_poly(_, t) -> add_type bv t
@@ -497,7 +499,7 @@ and add_implementation_binding bv l =
 
 and add_top_phrase bv = function
   | Ptop_def str -> add_structure bv str
-  | Ptop_dir (_, _) -> bv
+  | Ptop_dir _ -> bv
 
 and add_class_expr bv ce =
   match ce.pcl_desc with

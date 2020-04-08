@@ -23,12 +23,12 @@ type error =
 exception Error of Location.t * error
 
 let get_no_payload_attribute alt_names attrs =
-  match List.filter (fun (n, _) -> List.mem n.txt alt_names) attrs with
+  match List.filter (fun a -> List.mem a.attr_name.txt alt_names) attrs with
   | [] -> None
-  | [ (name, PStr []) ] -> Some name
-  | [ (name, _) ] ->
+  | [ {attr_name = name; attr_payload = PStr []; attr_loc = _} ] -> Some name
+  | [ {attr_name = name; _} ] ->
     raise (Error (name.loc, No_payload_expected name.txt))
-  | _ :: (name, _) :: _ ->
+  | _ :: {attr_name = name; _} :: _ ->
     raise (Error (name.loc, Multiple_attributes name.txt))
 
 let has_no_payload_attribute alt_names attrs =
@@ -48,7 +48,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer loc report_error err)
+        Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

@@ -77,7 +77,7 @@ module Float = struct
   include Identifiable.Make (struct
     type t = float
 
-    let compare x y = Pervasives.compare x y
+    let compare x y = Stdlib.compare x y
     let output oc x = Printf.fprintf oc "%f" x
     let hash f = Hashtbl.hash f
     let equal (i : float) j = i = j

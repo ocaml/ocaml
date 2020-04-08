@@ -536,7 +536,7 @@
         module_type (shortcut_ext_attr.ml[71,1478+19]..[71,1478+20])
           Pmty_ident "S" (shortcut_ext_attr.ml[71,1478+19]..[71,1478+20])
         module_type (shortcut_ext_attr.ml[72,1503+4]..[73,1535+19])
-          Pmty_functor "_" (_none_[1,0+-1]..[1,0+-1]) ghost
+          Pmty_functor "_" (_none_[0,0+-1]..[0,0+-1]) ghost
           module_type (shortcut_ext_attr.ml[72,1503+5]..[72,1503+27])
             attribute "foo"
               []

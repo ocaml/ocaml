@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Compiler performance recording *)
+(** Compiler performance recording
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 type file = string
 

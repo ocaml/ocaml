@@ -13,6 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Raw printer for {!Parsetree}
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
+
 open Parsetree;;
 open Format;;
 

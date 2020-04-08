@@ -20,13 +20,9 @@ etex-files: $(FILES)
 all: $(FILES)
 
 
-exten.gen.tex: exten.etex
+%.gen.tex: %.etex
 	$(CAMLLATEX) $< -o $*_camltex.tex
 	$(TRANSF) < $*_camltex.tex > $*.transf_error.tex
-	mv $*.transf_error.tex $@
-
-%.gen.tex: %.etex
-	$(TRANSF) < $< > $*.transf_error.tex
 	mv $*.transf_error.tex $@
 
 %.tex: %.gen.tex

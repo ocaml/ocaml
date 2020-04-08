@@ -246,7 +246,7 @@ let is_absent_pat p = match p.pat_desc with
 let const_compare x y =
   match x,y with
   | Const_float f1, Const_float f2 ->
-      Pervasives.compare (float_of_string f1) (float_of_string f2)
+      Stdlib.compare (float_of_string f1) (float_of_string f2)
   | Const_string (s1, _), Const_string (s2, _) ->
       String.compare s1 s2
   | (Const_int _
@@ -256,7 +256,7 @@ let const_compare x y =
     |Const_int32 _
     |Const_int64 _
     |Const_nativeint _
-    ), _ -> Pervasives.compare x y
+    ), _ -> Stdlib.compare x y
 
 let records_args l1 l2 =
   (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
@@ -2453,7 +2453,8 @@ let all_rhs_idents exp =
    and perform "indirect check for them" *)
     let is_unpack exp =
       List.exists
-        (fun (attr, _) -> attr.txt = "#modulepat") exp.exp_attributes
+        (fun attr -> attr.Parsetree.attr_name.txt = "#modulepat")
+        exp.exp_attributes
 
     let leave_expression exp =
       if is_unpack exp then begin match exp.exp_desc with

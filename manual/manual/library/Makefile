@@ -9,26 +9,19 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_PATH)
 OCAMLDOC = $(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
   $(CSLDIR)/ocamldoc/ocamldoc.opt,\
   $(SET_LD_PATH) $(CSLDIR)/runtime/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
-  -nostdlib -initially-opened-module Pervasives
+   -hide Stdlib -lib Stdlib -nostdlib \
+   -pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk"
 
-# Copy and unprefix the standard library when needed
-include $(SRC)/ocamldoc/Makefile.unprefix
+
+#Import mli file lists
+include $(SRC)/ocamldoc/Makefile.docfiles
 
 
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../../tools/texquote2
 
+CORE_INTF = Stdlib.tex
 
-CORE_INTF = Pervasives.tex
-
-STDLIB_INTF = Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
-  Digest.tex Filename.tex Format.tex \
-  Gc.tex Genlex.tex Hashtbl.tex Int32.tex Int64.tex \
-  Lazy.tex Lexing.tex List.tex ListLabels.tex Map.tex Marshal.tex \
-  MoreLabels.tex Nativeint.tex Obj.tex Oo.tex \
-  Parsing.tex Printexc.tex Printf.tex Queue.tex Random.tex Scanf.tex \
-  Set.tex Stack.tex Stream.tex String.tex StringLabels.tex Sys.tex \
-  Weak.tex Callback.tex Buffer.tex StdLabels.tex \
-  Bytes.tex BytesLabels.tex Spacetime.tex
+STDLIB_INTF = $(STDLIB_MODs:%=%.tex)
 
 COMPILER_LIBS_PLUGIN_HOOKS = Pparse.tex Typemod.tex
 
@@ -59,10 +52,10 @@ libs: $(FILES)
 # ocamldoc.out is used as witness for the generation of the stdlib tex files to
 # avoid issues with parallel make invocations.
 $(INTF): ocamldoc.out
-ocamldoc.out: $(STDLIB_MLIS) | unprefix_stdlib_for_ocamldoc
+ocamldoc.out: $(DOC_ALL_MLIS)
 	$(OCAMLDOC) -latex \
-	  -I $(STDLIB_UNPREFIXED) \
-	  $(STDLIB_MLIS) \
+	  $(DOC_ALL_INCLUDES) \
+	  $(DOC_ALL_MLIS) \
 	  -sepfiles \
 	  -latextitle "1,subsection*" \
 	  -latextitle "2,subsubsection*" \
@@ -81,3 +74,4 @@ ocamldoc.out: $(STDLIB_MLIS) | unprefix_stdlib_for_ocamldoc
 .PHONY: clean
 clean:
 	rm -f *.tex ocamldoc.out ocamldoc.sty
+	rm -f compiler_libs.txt

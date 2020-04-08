@@ -131,8 +131,8 @@ module Conflicts = struct
             M.add name { kind = namespace; location; name } !explanations
 
   let pp_explanation ppf r=
-    Format.fprintf ppf "@[<v 2>%aDefinition of %s %s@]"
-      Location.print r.location (Namespace.show r.kind) r.name
+    Format.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
+      Location.print_loc r.location (Namespace.show r.kind) r.name
 
   let pp ppf l =
     Format.fprintf ppf "@[<v>%a@]" (Format.pp_print_list pp_explanation) l
@@ -141,7 +141,7 @@ module Conflicts = struct
   let take () =
     let c = !explanations in
     reset ();
-    c |> M.bindings |> List.map snd |> List.sort Pervasives.compare
+    c |> M.bindings |> List.map snd |> List.sort Stdlib.compare
 
   let print ppf =
     let sep ppf = Format.fprintf ppf "@ " in
@@ -181,8 +181,8 @@ type mapping =
     *)
   | Associated_to_pervasives of out_name
   (** [Associated_to_pervasives out_name] is used when the item
-      [Pervasives.$name] has been associated to the name [$name].
-      Upon a conflict, this name will be expanded to ["Pervasives." ^ name ] *)
+      [Stdlib.$name] has been associated to the name [$name].
+      Upon a conflict, this name will be expanded to ["Stdlib." ^ name ] *)
 
 let hid_start = 0
 
@@ -194,7 +194,7 @@ let find_hid id map =
   try N.find (Ident.binding_time id) map, map with
   Not_found -> add_hid_id id map
 
-let pervasives name = "Pervasives." ^ name
+let pervasives name = "Stdlib." ^ name
 
 let map = Array.make Namespace.size M.empty
 let get namespace = map.(Namespace.id namespace)
@@ -252,7 +252,7 @@ let ident_name_simple namespace id =
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
-      Out_name.set r ("Pervasives." ^ Out_name.print r);
+      Out_name.set r ("Stdlib." ^ Out_name.print r);
       let hid, m = find_hid id N.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
@@ -289,21 +289,6 @@ let non_shadowed_pervasive = function
   | Pdot(Pident id, s, _) as path ->
       Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
-       with Not_found -> true)
-  | Pdot(Pdot (Pident id, "Pervasives", _), s, _) as path ->
-      Ident.same id ident_stdlib &&
-      (* Make sure Stdlib.<s> is the same as Stdlib.Pervasives.<s> *)
-      (try
-         let td =
-           Env.find_type (Env.lookup_type (Lident s) !printing_env)
-             !printing_env
-         in
-         match td.type_private, td.type_manifest with
-         | Private, _ | _, None -> false
-         | Public, Some te ->
-           match (Btype.repr te).desc with
-           | Tconstr (path', _, _) -> Path.same path path'
-           | _ -> false
        with Not_found -> true)
   | _ -> false
 
@@ -371,37 +356,19 @@ let rec tree_of_path namespace = function
   | Papply(p1, p2) ->
       Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
 
-let rec path ppf = function
-  | Pident id ->
-      ident ppf id
-  | Pdot(_, s, _pos) as path
-    when non_shadowed_pervasive path ->
-      pp_print_string ppf s
-  | Pdot(p, s, _pos) ->
-      path ppf p;
-      pp_print_char ppf '.';
-      pp_print_string ppf s
-  | Papply(p1, p2) ->
-      fprintf ppf "%a(%a)" path p1 path p2
-
 let tree_of_path namespace p =
   tree_of_path namespace (rewrite_double_underscore_paths !printing_env p)
+
 let path ppf p =
-  path ppf (rewrite_double_underscore_paths !printing_env p)
+  !Oprint.out_ident ppf (tree_of_path Other p)
 
-let rec string_of_out_ident = function
-  | Oide_ident s -> Out_name.print s
-  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
-  | Oide_apply (id1, id2) ->
-      String.concat ""
-        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
-
-let string_of_path p = string_of_out_ident (tree_of_path Other p)
+let string_of_path p =
+  Format.asprintf "%a" path p
 
 let strings_of_paths namespace p =
   reset_naming_context ();
   let trees = List.map (tree_of_path namespace) p in
-  List.map string_of_out_ident trees
+  List.map (Format.asprintf "%a" !Oprint.out_ident) trees
 
 (* Print a recursive annotation *)
 
@@ -1611,8 +1578,9 @@ and trees_of_sigitem = function
       [tree_of_extension_constructor id ext es]
   | Sig_module(id, md, rs) ->
       let ellipsis =
-        List.exists (function ({txt="..."}, Parsetree.PStr []) -> true
-                            | _ -> false)
+        List.exists (function
+          | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
+          | _ -> false)
           md.md_attributes in
       [tree_of_module id md.md_type rs ~ellipsis]
   | Sig_modtype(id, decl) ->
@@ -1739,10 +1707,11 @@ let trees_of_type_path_expansion (tp,tp') =
     Diff(tree_of_path Type tp, tree_of_path Type tp')
 
 let type_path_expansion ppf = function
-  | Same p -> fprintf ppf "%s" (string_of_out_ident p)
+  | Same p -> !Oprint.out_ident ppf p
   | Diff(p,p') ->
-      fprintf ppf "@[<2>%s@ =@ %s@]" (string_of_out_ident p)
-        (string_of_out_ident p')
+      fprintf ppf "@[<2>%a@ =@ %a@]"
+        !Oprint.out_ident p
+        !Oprint.out_ident p'
 
 let rec trace fst txt ppf = function
   | te :: te2 :: rem ->

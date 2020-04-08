@@ -178,7 +178,6 @@ has excellent documentation.
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
-  experimental/::         experiments not built by default
   flexdll/::              git submodule -- see link:README.win32.adoc[]
   lex/::                  lexer generator
   man/::                  man pages

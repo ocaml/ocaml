@@ -132,13 +132,25 @@ module Toplevel = struct
     if startchar >= 0 then
       locs := (startchar, endchar) :: !locs
 
+  (** Record the main location instead of printing it *)
+  let printer_register_locs =
+    { Location.batch_mode_printer with
+      pp_main_loc = (fun _ _ _ loc -> register_loc loc) }
+
   (** Capture warnings and keep them in a list *)
   let warnings = ref []
-  let print_warning loc _ppf w =
-    if Warnings.report w <> `Inactive then register_loc loc;
-    Location.default_warning_printer loc (snd warning_fmt) w;
-    let w = flush_fmt warning_fmt in
-    warnings := w :: !warnings
+  let report_printer =
+    (* Extend [printer_register_locs] *)
+    let pp self ppf report =
+      match report.Location.kind with
+      | Location.Report_warning _ | Location.Report_warning_as_error _ ->
+          printer_register_locs.pp self (snd warning_fmt) report;
+          let w = flush_fmt warning_fmt in
+          warnings := w :: !warnings
+      | _ ->
+          printer_register_locs.pp self ppf report
+    in
+    { printer_register_locs with pp }
 
   let fatal ic oc fmt =
     Format.kfprintf
@@ -146,14 +158,10 @@ module Toplevel = struct
       self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
 
   let init () =
-    Location.printer := (fun _ _ -> ());
-    Location.warning_printer := print_warning;
+    Location.report_printer := (fun () -> report_printer);
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
-    Location.error_reporter :=
-      (fun _ e -> register_loc e.loc;
-        Location.default_error_reporter (snd error_fmt) e);
     Compmisc.init_path false;
     try
       Toploop.initialize_toplevel_env ();
@@ -188,7 +196,9 @@ module Toplevel = struct
           let str =
             Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
           Ptop_def str
-    with Syntaxerr.Error _ -> raise (Phrase_parsing s)
+    with
+    | Lexer.Error _ | Syntaxerr.Error _ ->
+        raise (Phrase_parsing s)
 
   let take x = let r = !x in x := []; r
 
@@ -497,16 +507,18 @@ module Ellipsis = struct
     let last_loc = ref Location.none in
     let left_mark = ref None (* stored position of [@@@ellipsis.start]*) in
     let location _this loc =
-      (* we rely on the fact that the default iterator call first
+      (* we rely on the fact that the default iterator calls first
          the location subiterator, then the attribute subiterator *)
       last_loc := loc in
-    let attribute _this (attr,_) =
-      let name = attr.Location.txt in
+    let attribute _this attr =
+      let module L = Location in
+      let module P = Parsetree in
+      let name = attr.P.attr_name.L.txt in
       let loc = !last_loc in
-      let start = loc.Location.loc_start.Lexing.pos_cnum in
-      let attr_start = attr.Location.loc.loc_start.Lexing.pos_cnum in
-      let attr_stop = 1 + attr.Location.loc.loc_end.Lexing.pos_cnum in
-      let stop = loc.Location.loc_end.Lexing.pos_cnum in
+      let start = loc.L.loc_start.Lexing.pos_cnum in
+      let attr_start = attr.P.attr_loc.L.loc_start.Lexing.pos_cnum in
+      let attr_stop = attr.P.attr_loc.L.loc_end.Lexing.pos_cnum in
+      let stop = loc.L.loc_end.Lexing.pos_cnum in
       let check_nested () = match !left_mark with
         | Some (first,_) -> raise (Nested_ellipses {first; second=attr_start})
         | None -> () in
@@ -538,7 +550,7 @@ module Ellipsis = struct
 
   let find = function
     | Parsetree.Ptop_def ast -> extract (fun it -> it.structure it) ast
-    | Ptop_dir (_,_) -> []
+    | Ptop_dir _ -> []
 
 end
 
@@ -745,4 +757,4 @@ let _ =
     try close_out (open_out !outfile)
     with _ -> failwith "Cannot open output file"
   end;
-  List.iter process_file (List.rev !files)
+  List.iter process_file (List.rev !files);

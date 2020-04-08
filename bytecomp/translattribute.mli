@@ -15,12 +15,12 @@
 
 val check_attribute
    : Typedtree.expression
-  -> string Location.loc * _
+  -> Parsetree.attribute
   -> unit
 
 val check_attribute_on_module
    : Typedtree.module_expr
-  -> string Location.loc * _
+  -> Parsetree.attribute
   -> unit
 
 val add_inline_attribute

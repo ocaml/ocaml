@@ -62,8 +62,7 @@ let match_expect_extension (ext : Parsetree.extension) =
   match ext with
   | ({Asttypes.txt="expect"|"ocaml.expect"; loc = extid_loc}, payload) ->
     let invalid_payload () =
-      Location.raise_errorf ~loc:extid_loc
-        "invalid [%%%%expect payload]"
+      Location.raise_errorf ~loc:extid_loc "invalid [%%%%expect payload]"
     in
     let string_constant (e : Parsetree.expression) =
       match e.pexp_desc with
@@ -130,16 +129,26 @@ let split_chunks phrases =
   loop phrases [] []
 
 module Compiler_messages = struct
-  let print_loc ppf (loc : Location.t) =
-    Format.fprintf ppf "%a:@." Location.print_loc loc;
+  let printer (lb: Lexing.lexbuf) =
+    let pp_loc _ _ ppf loc =
+      (* We want to highlight locations even coming from a file, but the
+         toplevel printer will only highlight locations from the toplevel. *)
+      Format.fprintf ppf "@[<v>%a:@,%a@]"
+        Location.print_loc loc
+        (Location.highlight_dumb lb) [loc]
+    in
+    { (Location.dumb_toplevel_printer lb)
+      with pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
+
+  let expect_printer () =
     match !Location.input_lexbuf with
-    | None -> ()
-    | Some lexbuf -> Location.show_code_at_location ppf lexbuf [loc]
+    | None -> Location.batch_mode_printer
+    | Some lb -> printer lb
 
   let capture ppf ~f =
     Misc.protect_refs
       [ R (Location.formatter_for_warnings , ppf)
-      ; R (Location.printer                , print_loc)
+      ; R (Location.report_printer         , expect_printer)
       ]
       f
 end
@@ -241,6 +250,7 @@ let eval_expect_file _fname ~file_contents =
     let _ : bool =
       List.fold_left phrases ~init:true ~f:(fun acc phrase ->
         acc &&
+        let snap = Btype.snapshot () in
         try
           exec_phrase ppf phrase
         with exn ->
@@ -251,6 +261,7 @@ let eval_expect_file _fname ~file_contents =
               (Printexc.to_string exn)
               (Printexc.raw_backtrace_to_string bt)
           end;
+          Btype.backtrack snap;
           false
       )
     in
@@ -365,6 +376,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _nopervasives = set nopervasives
   let _open s = open_modules := s :: !open_modules
   let _ppx _s = (* disabled *) ()
   let _principal = set principal

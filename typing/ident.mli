@@ -41,10 +41,10 @@ val same: t -> t -> bool
            [new], or if they are both persistent and have the same
            name. *)
 val compare: t -> t -> int
-val hide: t -> t
-        (* Return an identifier with same name as the given identifier,
-           but stamp different from any stamp returned by new.
-           When put in a 'a tbl, this identifier can only be looked
+
+val create_hidden: string -> t
+        (* Same as [create] but stamp different from any stamp returned by
+           [create]. When put in a 'a tbl, this identifier can only be looked
            up by name. *)
 
 val global: t -> bool

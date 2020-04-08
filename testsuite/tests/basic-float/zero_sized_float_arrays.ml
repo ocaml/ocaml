@@ -11,7 +11,7 @@ let float_array_from_runtime : float array =
   Array.make 0 0.0
 
 let () =
-  assert (Pervasives.compare non_float_array non_float_array_from_runtime = 0);
-  assert (Pervasives.compare non_float_array non_float_array_from_runtime = 0);
-  assert (Pervasives.compare float_array float_array_from_runtime = 0);
-  assert (Pervasives.compare float_array float_array_from_runtime = 0)
+  assert (Stdlib.compare non_float_array non_float_array_from_runtime = 0);
+  assert (Stdlib.compare non_float_array non_float_array_from_runtime = 0);
+  assert (Stdlib.compare float_array float_array_from_runtime = 0);
+  assert (Stdlib.compare float_array float_array_from_runtime = 0)

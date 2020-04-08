@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Auxiliary type for reporting syntax errors *)
+(** Auxiliary type for reporting syntax errors
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 open Format
 
@@ -31,7 +36,7 @@ exception Error of error
 exception Escape_error
 
 val report_error: formatter -> error -> unit
- (** @deprecated Use {!Location.error_of_exn}, {!Location.report_error}. *)
+ (** @deprecated Use {!Location.error_of_exn}, {!Location.print_report}. *)
 
 val location_of_error: error -> Location.t
 val ill_formed_ast: Location.t -> string -> 'a

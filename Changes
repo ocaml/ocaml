@@ -26,6 +26,12 @@ Working version
 
 ### Standard library:
 
+- GPR#1940: Add Option module and Format.pp_print_option
+  (Many fine eyes)
+
+- GPR#1956: Add Result module and Format.pp_print_result
+  (Many fine eyes)
+
 - MPR#2533, GPR#1839, GPR#1949: added Unix.fsync
   (Francois Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
   and ygrek)
@@ -49,6 +55,10 @@ Working version
   Unix.open_process{,_in,_out,_full}, but passing an explicit argv array.
   (Nicolás Ojeda Bär, review by Jérémie Dimino, request by Volker Diels-Grabsch)
 
+- GPR#1999: Add Unix.process{,_in,_out,_full}_pid to retrieve opened process's
+  pid.
+  (Romain Beauxis, review by Nicolás Ojeda Bär)
+
 - GPR#1182: Add new Printf formats %#d %#Ld %#ld %#nd (idem for %i and %u) for
   alternative integer formatting.
   (ygrek, review by Gabriel Scherer)
@@ -63,6 +73,37 @@ Working version
 - GPR#1923: Arg module sometimes misbehaved instead of rejecting invalid
   -keyword=arg inputs
   (Valentin Gatien-Baron, review by Gabriel Scherer)
+
+- GPR#1957: Add Stack.{top_opt,pop_opt} and Queue.{peek_opt,take_opt}.
+  (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+- GPR#1959: Add Format.dprintf, a printing function which ouputs a closure
+  usable with %t.
+  (Gabriel Radanne, request by Armaël Guéneau,
+   review by Florian Angeletti and Gabriel Scherer)
+
+- GPR#1959: Small simplification and optimization to Format.ifprintf
+  (Gabriel Radanne, review by Gabriel Scherer)
+
+- GPR#1855: Add `Pervasives.protect ~finally`, similar to `Misc.try_finally`
+  from the compiler library but using `Printexc.raise_with_backtrace` for
+  preserving backtraces.
+  (Marcello Seri, review by Daniel Bünzli, Gabriel Scherer, François Bobot,
+  Nicolás Ojeda Bär, Xavier Clerc and Boris Yakobowski)
+
+- GPR#1986, MPR#6450: Add Set.disjoint
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+* GPR#1605: Deprecate Stdlib.Pervasives. Following #1010, Pervasives
+  is no longer needed and Stdlib should be used instead.
+  (Jérémie Dimino, review by Nicolás Ojeda Bär)
+
+- GPR#2004: Use common standard library path `lib/ocaml` for Windows,
+  for consistency with OSX & Linux. Previously was located at `lib`.
+  (Bryan Phelps, Jordan Walke, review by David Allsopp)
+
+- GPR#1966: Add Format semantic tags using extensible sum types.
+  (Gabriel Radanne, review by Nicolás Ojeda Bär)
 
 ### Other libraries:
 
@@ -132,6 +173,31 @@ Working version
   (Xavier Clerc, review by Gabriel Scherer, Sébastien Hinderer, and
    Xavier Leroy)
 
+- GPR#1945, GPR#2032: new "-stop-after [parsing|typing]" option
+  to stop compilation after the parsing or typing pass
+  (Gabriel Scherer, review by Jérémie Dimino)
+
+- GRP#1953: Add locations to attributes in the parsetree.
+  (Hugo Heuzard, review by Gabriel Radanne)
+
+- GPR#1954: Add locations to toplevel directives.
+  (Hugo Heuzard, review by Gabriel Radanne)
+
+- GPR#1976: Better error messages for extension constructor type mismatches
+  (Thomas Refis, review by Gabriel Scherer)
+
+* GPR#1979: Remove support for TERM=norepeat when displaying errors
+  (Armaël Guéneau, review by Gabriel Scherer and Florian Angeletti)
+
+- GPR#1993: Expanded error messages for universal quantification failure
+  (Florian Angeletti, review by Jacques Garrigue)
+
+- GPR#1998: More context for unbound type parameter error
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- GPR#1960: The parser keeps previous location when relocating ast node.
+  (Hugo Heuzard, review by Jérémie Dimino)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
@@ -162,11 +228,36 @@ Working version
 
 ### Tools
 
+- MPR#7843, GPR#2013: ocamldoc, better handling of {{!label}text} in the latex
+  backend.
+  (Florian Angeletti, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
   modules to open as if they had been passed via the command line -open flag.
   (Nicolás Ojeda Bär, review by Mark Shinwell)
 
+- GPR#1865: support dark themes in Emacs, and clean up usage of
+  deprecated Emacs APIs
+  (Wilfred Hughes, review by Clément Pit-Claudel)
+
+- GPR#2000: ocamdoc, extended support for "include module type of ..."
+  (Florian Angeletti, review by Jérémie Dimino)
+
 ### Manual and documentation:
+
+- MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
+  (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
+  and Gabriel Scherer)
+
+- MPR#7825: html manual split compilerlibs from stdlib in the html
+  index of modules
+  (Florian Angeletti, review by Perry E. Metzger and Gabriel Scherer)
+
+- GPR#1209, GPR#2008: in the Extension section, use the caml_example environment
+  (uses the compiler to check the example code).
+  This change was made possible by a lot of tooling work from Florian Angeletti:
+  GPR#1702, GPR#1765, GPR#1863, and Gabriel Scherer's GPR#1903.
+  (Gabriel Scherer, review by Florian Angeletti)
 
 - GPR#1788: move the quoted string description to the main chapters.
   (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
@@ -176,6 +267,10 @@ Working version
 
 - GPR#1863: caml-tex2, move to compiler-libs
   (Florian Angeletti, review by Sébastien Hinderer and Gabriel Scherer)
+
+- GPR#2007: move the documentation for 32-bit, 64-bit and native integer
+  literals to the main part of the manual.
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler distribution build system:
 
@@ -207,10 +302,30 @@ Working version
 - GPR#1854: remove the no longer defined BYTECCCOMPOPTS build variable.
   (Sébastien Hinderer, review by Damien Doligez)
 
+- GPR#2024: stop supporting obsolete platforms: Rhapsody (old beta
+  version of MacOS X, BeOS, alpha*-*-linux*, mips-*-irix6*,
+  alpha*-*-unicos, powerpc-*-aix, *-*-solaris2*, mips*-*-irix[56]*,
+  i[3456]86-*-darwin[89].*, i[3456]86-*-solaris*, *-*-sunos* *-*-unicos.
+  (Sébastien Hinderer, review by Xavier Leroy, Damien Doligez, Gabriel
+  Scherer and Armaël Guéneau)
+
 ### Internal/compiler-libs changes:
 
-- GPR#1894: generalize highlight_dumb in location.ml to handle highlighting
-  several locations (Armaël Guéneau, review by Gabriel Scherer)
+- GPR#292: use Menhir as the parser generator for the OCaml parser.
+  Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934
+  (Gabriel Scherer, Nicolás Ojeda Bär, Frédéric Bour and Thomas Refis,
+   review by Nicolás Ojeda Bär, Leo White and David Allsopp)
+
+- GPR#374: use Misc.try_finally for resource cleanup in the compiler
+  codebase. This should fix the problem of catch-and-reraise `try .. with`
+  blocks destroying backtrace information.
+  (François Bobot, help from Gabriel Scherer and Nicolás Ojeda Bär,
+   review by Gabriel Scherer)
+
+- GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
+  part in Compile and Optcompile. This also makes the pipeline more modular.
+  (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
+   review by Mark Shinwell and Gabriel Radanne)
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables.
   (Thomas Refis, review by Leo White)
@@ -230,20 +345,49 @@ Working version
 - GPR#1886: move the Location.absname reference to Clflags.absname
   (Armaël Guéneau, review by Jérémie Dimino)
 
-- GPR#374: use Misc.try_finally for resource cleanup in the compiler
-  codebase. This should fix the problem of catch-and-reraise `try .. with`
-  blocks destroying backtrace information.
-  (François Bobot, Gabriel Scherer, and Nicolás Ojeda Bär, review by Gabriel
-  Scherer)
+- GPR#1894: generalize highlight_dumb in location.ml to handle highlighting
+  several locations
+  (Armaël Guéneau, review by Gabriel Scherer)
 
-- GPR#1703 : Add the module Compile_common, which factorizes the common
-  part in Compile and Optcompile. This also makes the pipeline more modular.
-  (Gabriel Radanne, review by Mark Shinwell)
+- GPR#1903: parsetree, add locations to all nodes with attributes
+  (Gabriel Scherer, review by Thomas Refis)
+
+- GPR#1938: always check ast invariants after preprocessing
+  (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
+
+- GPR#1948: Refactor Stdlib.Format. Notably, use Stdlib.Stack and Stdlib.Queue,
+  and avoid exceptions for control flow.
+  (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+* GPR#1952: refactor the code responsible for displaying errors and warnings
+  `Location.report_error` is removed, use `Location.print_report` instead
+  (Armaël Guéneau, review by Thomas Refis)
+
+- GPR#1996: expose Pprintast.longident to help compiler-libs users print
+  Longident.t values.
+  (Gabriel Scherer, review by Florian Angeletti and Thomas Refis)
+
+- GPR#2030: makefile targets to build AST files of sources
+  for parser testing. See parsing/HACKING.adoc.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 ### Bug fixes:
 
+- MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
+  (Menhir-generated) parser encountered a syntax error in a certain
+  specific state.
+  (François Pottier, report by Stefan Muenzel,
+  review by Frédéric Bour, Thomas Refis, Gabriel Scherer)
+
+- GPR#1626: Do not allow recursive modules in `with module`
+  (Leo White, review by Gabriel Radanne)
+
 - MPR#7726, GPR#1676: Recursive modules, equi-recursive types and stack overflow
   (Jacques Garrigue, report by Jeremy Yallop, review by Leo White)
+
+- MPR#7723, GPR#1698: Ensure `with module` and `with type` do not weaken
+  module aliases.
+  (Leo White, review by Gabriel Radanne and Jacques Garrigue)
 
 - GPR#1719: fix Pervasives.LargeFile functions under Windows.
   (Alain Frisch)
@@ -280,6 +424,23 @@ Working version
   Unboxable_type_in_prim_decl
   (Stefan Muenzel)
 
+- GPR#1958: allow [module M(_:S) = struct end] syntax
+  (Hugo Heuzard, review by Gabriel Scherer)
+
+- GPR#1970: fix order of floatting documentation comments in classes
+  (Hugo Heuzard, review by Nicolás Ojeda Bär)
+
+- GPR#1977: [@@ocaml.warning "..."] attributes attached to type declarations are
+  no longer ignored.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- MPR#7830, GPR#1987: fix ocamldebug crash when printing a value in the scope of
+  an `open` statement for which the `.cmi` is not available.
+  (Nicolás Ojeda Bär, report by Jocelyn Sérot, review by Gabriel Scherer)
+
+- MPR#7408, MPR#7846, GPR#2015: Check arity of primitives.
+  (Hugo Heuzard, review by Nicolás Ojeda Bär)
+
 OCaml 4.07 maintenance branch
 -----------------------------
 
@@ -303,7 +464,10 @@ OCaml 4.07 maintenance branch
   (Alban Reynaud with Gabriel Scherer, review by Jeremy Yallop)
 
 - MPR#7833, GPR#1946: typecore: only 1k existential per match, not 100k
-  (Thomas Refis, report by Jerome Simeon, review by ...)
+  (Thomas Refis, report by Jerome Simeon, review by Jacques Garrigue)
+
+- MPR#7838: -principal causes assertion failure in type checker
+  (Jacques Garrigue, report by Markus Mottl, review by Thomas Refis)
 
 OCaml 4.07.0 (10 July 2018)
 ---------------------------

@@ -24,18 +24,6 @@ goto %1
 
 goto :EOF
 
-:SaveVars
-set OCAML_PREV_PATH=%PATH%
-set OCAML_PREV_LIB=%LIB%
-set OCAML_PREV_INCLUDE=%INCLUDE%
-goto :EOF
-
-:RestoreVars
-set PATH=%OCAML_PREV_PATH%
-set LIB=%OCAML_PREV_LIB%
-set INCLUDE=%OCAML_PREV_INCLUDE%
-goto :EOF
-
 :CheckPackage
 "%CYG_ROOT%\bin\bash.exe" -lc "cygcheck -dc %1" | findstr %1 > nul
 if %ERRORLEVEL% equ 1 (
@@ -59,11 +47,15 @@ goto :EOF
 chcp 65001 > nul
 rem This must be kept in sync with appveyor_build.sh
 set BUILD_PREFIX=🐫реализация
-git worktree add "..\%BUILD_PREFIX%-msvc64" -b appveyor-build-msvc64
-git worktree add "..\%BUILD_PREFIX%-mingw32" -b appveyor-build-mingw32
-git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-msvc32
-cd "..\%BUILD_PREFIX%-mingw32"
-git submodule update --init flexdll
+git worktree add "..\%BUILD_PREFIX%-%PORT%" -b appveyor-build-%PORT%
+if "%PORT%" equ "msvc64" (
+  git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-%PORT%32
+)
+
+cd "..\%BUILD_PREFIX%-%PORT%"
+if "%PORT%" equ "mingw32" (
+  git submodule update --init flexdll
+)
 
 cd "%APPVEYOR_BUILD_FOLDER%"
 appveyor DownloadFile "https://github.com/alainfrisch/flexdll/archive/0.37.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
@@ -80,8 +72,12 @@ rem in the list just so that the Cygwin version is always displayed on the log).
 rem CYGWIN_COMMANDS is a corresponding command to run with --version to test
 rem whether the package works. This is used to verify whether the installation
 rem needs upgrading.
-set CYGWIN_PACKAGES=cygwin make diffutils mingw64-i686-gcc-core
-set CYGWIN_COMMANDS=cygcheck make diff i686-w64-mingw32-gcc
+set CYGWIN_PACKAGES=cygwin make diffutils
+set CYGWIN_COMMANDS=cygcheck make diff
+if "%PORT%" equ "mingw32" (
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc
+)
 
 set CYGWIN_INSTALL_PACKAGES=
 set CYGWIN_UPGRADE_REQUIRED=0
@@ -91,23 +87,26 @@ call :UpgradeCygwin
 
 "%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh install" || exit /b 1
 
-call :SaveVars
 goto :EOF
 
 :build
-rem Run the msvc64 and mingw32 builds
-call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+if "%PORT%" equ "msvc64" (
+  setlocal
+  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+)
+rem Do the main build (either msvc64 or mingw32)
 "%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh" || exit /b 1
 
+if "%PORT%" neq "msvc64" goto :EOF
+
 rem Reconfigure the environment and run the msvc32 partial build
-call :RestoreVars
+endlocal
 call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
 "%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh msvc32-only" || exit /b 1
 goto :EOF
 
 :test
 rem Reconfigure the environment for the msvc64 build
-call :RestoreVars
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
 "%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/tools/ci/appveyor/appveyor_build.sh test" || exit /b 1
 goto :EOF

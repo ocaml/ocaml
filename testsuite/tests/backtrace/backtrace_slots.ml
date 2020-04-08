@@ -25,7 +25,7 @@ let get_backtrace () =
   Array.iteri (fun i slot -> Hashtbl.add table slot i) raw_slots;
   let module S = Set.Make(struct
     type t = Printexc.raw_backtrace_slot
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
   end) in
   let slots = Array.fold_right S.add raw_slots S.empty in
   Array.iteri (fun i slot ->

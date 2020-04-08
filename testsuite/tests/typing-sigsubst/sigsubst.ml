@@ -4,11 +4,10 @@
 
 module type Printable = sig
   type t
-  val print : Format.formatter -> t -> unit
+  val print : t -> unit
 end
 [%%expect {|
-module type Printable =
-  sig type t val print : Format.formatter -> t -> unit end
+module type Printable = sig type t val print : t -> unit end
 |}]
 module type Comparable = sig
   type t
@@ -25,11 +24,11 @@ end
 Line 3, characters 2-36:
     include Comparable with type t = t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/1152 by t/1156
+Error: Illegal shadowing of included type t/1019 by t/1023
        Line 2, characters 2-19:
-         Type t/1152 came from this include
-       Line 3, characters 2-43:
-         The value print has no valid type if t/1152 is shadowed
+         Type t/1019 came from this include
+       Line 3, characters 2-23:
+         The value print has no valid type if t/1019 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -69,11 +68,7 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 module type PrintableComparable =
-  sig
-    type t
-    val print : Format.formatter -> t -> unit
-    val compare : t -> t -> int
-  end
+  sig type t val print : t -> unit val compare : t -> t -> int end
 |}]
 module type PrintableComparable = sig
   include Printable
@@ -81,11 +76,7 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 module type PrintableComparable =
-  sig
-    type t
-    val print : Format.formatter -> t -> unit
-    val compare : t -> t -> int
-  end
+  sig type t val print : t -> unit val compare : t -> t -> int end
 |}]
 module type ComparableInt = Comparable with type t := int
 [%%expect {|
@@ -182,8 +173,8 @@ Error: Destructive substitutions are not supported for constrained
        a type constructor with the same arguments).
 |}]
 
-(* Issue where the typer expands an alias, which breaks the typing of the rest
-   of the signature, but no error is given to the user. *)
+(* Issue where the typer weakens an alias, which breaks the typing of the rest
+   of the signature. (MPR#7723)*)
 module type S = sig
   module M1 : sig type t = int end
   module M2 = M1
@@ -195,11 +186,40 @@ end with type M2.t = int
 module type S =
   sig
     module M1 : sig type t = int end
-    module M2 : sig type t = int end
+    module M2 = M1
     module M3 : sig module M = M2 end
     module F : functor (X : sig module M = M1 end) -> sig type t end
     type t = F(M3).t
   end
+|}]
+
+type (_, _) eq = Refl : ('a, 'a) eq
+
+module Equal (M : Set.OrderedType) (N : Set.OrderedType with type t = M.t) : sig
+  val eq : (Set.Make(M).t, Set.Make(N).t) eq
+end = struct
+  type meq = Eq of (Set.Make(M).t, Set.Make(M).t) eq
+  module type S = sig
+    module N = M
+    type neq = meq = Eq of (Set.Make(M).t, Set.Make(N).t) eq
+  end
+  module type T = S with type N.t = M.t with module N := N;;
+  module rec T : T = T
+  let eq =
+    let T.Eq eq = Eq Refl in
+    eq
+end;;
+[%%expect {|
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 11, characters 18-58:
+    module type T = S with type N.t = M.t with module N := N;;
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of N
+       does not match its original definition in the constrained signature:
+       Modules do not match:
+         sig type t = M.t val compare : t -> t -> int end
+       is not included in
+         (module M)
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they
