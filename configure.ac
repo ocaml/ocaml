@@ -556,8 +556,8 @@ AS_CASE([$host],
   [*-*-mingw32],
     [AS_CASE([$ocaml_cv_cc_vendor],
       [gcc-[[01234]]-*],
-        [AC_MSG_ERROR([This version of Mingw GCC is too old.
-          Please use GCC version 5 or above.])],
+        [AC_MSG_ERROR(m4_normalize([This version of Mingw GCC is too old.
+          Please use GCC version 5 or above.]))],
       [gcc-*],
         [internal_cflags="-Wno-unused $gcc_warnings"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
@@ -574,13 +574,13 @@ AS_CASE([$host],
     [gcc-[[012]]-*],
       # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
       # Plus: C99 support unknown.
-      [AC_MSG_ERROR([This version of GCC is too old.
-        Please use GCC version 4.2 or above.])],
+      [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
+        Please use GCC version 4.2 or above.]))],
     [gcc-3-*|gcc-4-[[01]]],
       # No -fwrapv option before GCC 3.4.
       # Known problems with -fwrapv fixed in 4.2 only.
-      [AC_MSG_WARN([This version of GCC is rather old.
-        Reducing optimization level."]);
+      [AC_MSG_WARN(m4_normalize([This version of GCC is rather old.
+        Reducing optimization level."]));
       AC_MSG_WARN([Consider using GCC version 4.2 or above.]);
       common_cflags="-std=gnu99 -O";
       internal_cflags="$gcc_warnings"],
