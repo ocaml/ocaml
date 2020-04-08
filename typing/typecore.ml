@@ -2186,6 +2186,11 @@ let check_recursive_class_bindings env ids exprs =
          raise(Error(expr.cl_loc, env, Illegal_class_expr)))
     exprs
 
+let is_prim ~name funct =
+  match funct.exp_desc with
+  | Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name; _}}) ->
+      prim_name = name
+  | _ -> false
 (* Approximate the type of an expression, for better recursion *)
 
 let rec approx_type env sty =
@@ -4192,13 +4197,9 @@ and type_application env funct sargs =
           match ty_fun.desc with
             Tvar _ ->
               let t1 = newvar () and t2 = newvar () in
-              let not_identity = function
-                  Texp_ident(_,_,{val_kind=Val_prim
-                                  {Primitive.prim_name="%identity"}}) ->
-                    false
-                | _ -> true
-              in
-              if ty_fun.level >= t1.level && not_identity funct.exp_desc then
+              if ty_fun.level >= t1.level &&
+                 not (is_prim ~name:"%identity" funct)
+              then
                 Location.prerr_warning sarg1.pexp_loc Warnings.Unused_argument;
               unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
               (t1, t2)
@@ -4326,12 +4327,9 @@ and type_application env funct sargs =
     | _ -> type_unknown_args args omitted ty_fun0 sargs
   in
   let is_ignore funct =
-    match funct.exp_desc with
-      Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}) ->
-        (try ignore (filter_arrow env (instance funct.exp_type) Nolabel);
-             true
-        with Unify _ -> false)
-    | _ -> false
+    is_prim ~name:"%ignore" funct &&
+    (try ignore (filter_arrow env (instance funct.exp_type) Nolabel); true
+     with Unify _ -> false)
   in
   match sargs with
   | (* Special case for ignore: avoid discarding warning *)
