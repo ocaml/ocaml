@@ -98,6 +98,7 @@ type error =
   | Recursive_module_require_explicit_type
   | Apply_generative
   | Cannot_scrape_alias of Path.t
+  | Cannot_scrape_package_type of Path.t
   | Badly_formed_signature of string * Typedecl.error
   | Cannot_hide_id of hiding_error
   | Invalid_type_subst_rhs
@@ -1797,43 +1798,43 @@ let check_recmodule_inclusion env bindings =
 
 (* Helper for unpack *)
 
-let rec package_constraints env loc mty constrs =
+let rec package_constraints_sig env loc sg constrs =
+  List.map
+    (function
+      | Sig_type (id, ({type_params=[]} as td), rs, priv)
+        when List.mem_assoc [Ident.name id] constrs ->
+          let ty = List.assoc [Ident.name id] constrs in
+          Sig_type (id, {td with type_manifest = Some ty}, rs, priv)
+      | Sig_module (id, pres, md, rs, priv) ->
+          let rec aux = function
+            | (m :: ((_ :: _) as l), t) :: rest when m = Ident.name id ->
+                (l, t) :: aux rest
+            | _ :: rest -> aux rest
+            | [] -> []
+          in
+          let md =
+            {md with
+             md_type = package_constraints env loc md.md_type (aux constrs)
+            }
+          in
+          Sig_module (id, pres, md, rs, priv)
+      | item -> item
+    )
+    sg
+
+and package_constraints env loc mty constrs =
   if constrs = [] then mty
-  else let sg = extract_sig env loc mty in
-  let sg' =
-    List.map
-      (function
-        | Sig_type (id, ({type_params=[]} as td), rs, priv)
-          when List.mem_assoc [Ident.name id] constrs ->
-            let ty = List.assoc [Ident.name id] constrs in
-            Sig_type (id, {td with type_manifest = Some ty}, rs, priv)
-        | Sig_module (id, _, md, rs, priv) ->
-            let rec aux = function
-              | (m :: ((_ :: _) as l), t) :: rest when m = Ident.name id ->
-                  (l, t) :: aux rest
-              | _ :: rest -> aux rest
-              | [] -> []
-            in
-            let md =
-              {md with
-               md_type = package_constraints env loc md.md_type (aux constrs)
-              }
-            in
-            Sig_module (id, Mp_present, md, rs, priv)
-        | item -> item
-      )
-      sg
-  in
-  Mty_signature sg'
+  else begin
+    match Mtype.scrape env mty with
+    | Mty_signature sg ->
+        Mty_signature (package_constraints_sig env loc sg constrs)
+    | Mty_functor _ | Mty_alias _ -> assert false
+    | Mty_ident p -> raise(Error(loc, env, Cannot_scrape_package_type p))
+  end
 
 let modtype_of_package env loc p nl tl =
-  match (Env.find_modtype p env).mtd_type with
-  | Some mty when nl <> [] ->
-      package_constraints env loc mty
-        (List.combine (List.map Longident.flatten nl) tl)
-  | _ | exception Not_found (* missing cmi *) ->
-      if nl = [] then Mty_ident p
-      else raise(Error(loc, env, Signature_expected))
+  package_constraints env loc (Mty_ident p)
+    (List.combine (List.map Longident.flatten nl) tl)
 
 let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
   let mkmty p nl tl =
@@ -1843,11 +1844,13 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
     let (nl, tl) = List.split ntl in
     modtype_of_package env Location.none p nl tl
   in
-  let mty1 = mkmty p1 nl1 tl1 and mty2 = mkmty p2 nl2 tl2 in
-  let loc = Location.none in
-  match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
-  | Tcoerce_none -> true
-  | _ | exception Includemod.Error _ -> false
+  match mkmty p1 nl1 tl1, mkmty p2 nl2 tl2 with
+  | exception Error(_, _, Cannot_scrape_package_type _) -> false
+  | mty1, mty2 ->
+    let loc = Location.none in
+    match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
+    | Tcoerce_none -> true
+    | _ | exception Includemod.Error _ -> false
 
 let () = Ctype.package_subtype := package_subtype
 
@@ -2901,6 +2904,10 @@ let report_error ppf = function
   | Cannot_scrape_alias p ->
       fprintf ppf
         "This is an alias for module %a, which is missing"
+        path p
+  | Cannot_scrape_package_type p ->
+      fprintf ppf
+        "The type of this packed module refers to %a, which is missing"
         path p
   | Badly_formed_signature (context, err) ->
       fprintf ppf "@[In %s:@ %a@]" context Typedecl.report_error err
