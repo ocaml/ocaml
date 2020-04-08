@@ -281,6 +281,9 @@ Working version
   may not match the one in bytecode.
   (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
 
+- #7696, #6608: Record expression deleted when all fields specified
+  (Jacques Garrigue, report by Jeremy Yallop)
+
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 

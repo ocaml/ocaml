@@ -165,6 +165,17 @@ Error: This expression has type string t
        Type string is not compatible with type int
 |}]
 
+(* PR#7696 *)
+let r = { (assert false) with contents = 1 } ;;
+[%%expect{|
+Line 1, characters 8-44:
+1 | let r = { (assert false) with contents = 1 } ;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 23: all the fields are explicitly listed in this record:
+the 'with' clause is useless.
+Exception: Assert_failure ("", 1, 10).
+|}]
+
 (* reexport *)
 
 type ('a,'b) def = { x:int } constraint 'b = [> `A]
