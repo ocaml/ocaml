@@ -37,6 +37,9 @@ Working version
 - #9075: define to_rev_seq in Set and Map modules.
   (Sébastien Briais, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #9571: Make at_exit and Printexc.register_printer thread-safe.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
+
 ### Other libraries:
 
 * #9206, #9419: update documentation of the threads library;
