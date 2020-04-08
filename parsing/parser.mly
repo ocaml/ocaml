@@ -625,6 +625,31 @@ let mk_directive ~loc name arg =
       pdir_loc = make_loc loc;
     }
 
+type apply_kinds =
+  | Apply_label of (arg_label * expression)
+  | Apply_module of Longident.t Location.loc
+
+let accumulate_apply_kinds e loc labeled_exprs =
+  let e, labeled_exprs, _ =
+    List.fold_left (fun (e, labeled_exprs, loc) (end_pos, apply_kind) ->
+        match apply_kind with
+        | Apply_label labeled_expr -> (* One of [f x], [f ~x], [f ?x]. *)
+            (* Accumulate arguments for a [Pexp_apply]. *)
+            (e, labeled_expr :: labeled_exprs, (fst loc, end_pos))
+        | Apply_module lid -> (* [f {M}] *)
+            let e =
+              (* Consume all accumulated arguments to create a [Pexp_apply]. *)
+              if labeled_exprs = [] then e
+              else mkexp ~loc (Pexp_apply (e, List.rev labeled_exprs))
+            in
+            let loc = (fst loc, end_pos) in
+            let e = mkexp ~loc (Pexp_functor_apply (e, lid)) in
+            (e, [], loc) )
+      (e, [], loc) labeled_exprs
+  in
+  if labeled_exprs = [] then e.pexp_desc
+  else Pexp_apply (e, List.rev labeled_exprs)
+
 %}
 
 /* Tokens */
@@ -2306,8 +2331,8 @@ expr:
       { unclosed "object" $loc($1) "end" $loc($4) }
 ;
 %inline expr_:
-  | simple_expr nonempty_llist(labeled_simple_expr)
-      { Pexp_apply($1, $2) }
+  | simple_expr nonempty_llist(apply_kinds)
+      { accumulate_apply_kinds $1 $loc($1) $2 }
   | expr_comma_list %prec below_COMMA
       { Pexp_tuple($1) }
   | mkrhs(constr_longident) simple_expr %prec below_HASH
@@ -2458,6 +2483,12 @@ labeled_simple_expr:
         (Optional label, mkexpvar ~loc label) }
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
+;
+apply_kinds:
+    labeled_simple_expr
+      { ($endpos, Apply_label $1) }
+  | LBRACE mkrhs(mod_longident) RBRACE
+      { ($endpos, Apply_module $2) }
 ;
 %inline lident_list:
   xs = mkrhs(LIDENT)+
