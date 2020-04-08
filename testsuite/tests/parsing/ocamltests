@@ -1,4 +1,5 @@
 attributes.ml
+broken_invariants.ml
 docstrings.ml
 extended_indexoperators.ml
 extensions.ml
@@ -8,4 +9,5 @@ pr6604_3.ml
 pr6604.ml
 pr6865.ml
 pr7165.ml
+reloc.ml
 shortcut_ext_attr.ml

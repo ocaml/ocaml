@@ -177,7 +177,8 @@ let compose_coercions c1 c2 =
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
-  | {val_kind=Val_prim p} ->
+  | {val_kind=Val_prim p;val_loc} ->
+      Translprim.check_primitive_arity val_loc p;
       primitive_declarations := p :: !primitive_declarations
   | _ -> ()
 
@@ -1272,9 +1273,11 @@ let transl_toplevel_item item =
                     set_idents (pos + 1) ids) in
       Llet(Strict, Pgenval, mid,
            transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_primitive descr ->
+      record_primitive descr.val_val;
+      lambda_unit
   | Tstr_modtype _
   | Tstr_open _
-  | Tstr_primitive _
   | Tstr_type _
   | Tstr_class_type _
   | Tstr_attribute _ ->
@@ -1388,7 +1391,7 @@ let print_cycle ppf =
 
 let report_error ppf = function
     Circular_dependency cycle ->
-      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 4 in
+      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 3 in
       fprintf ppf
         "@[Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \
@@ -1402,7 +1405,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer loc report_error err)
+        Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

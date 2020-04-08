@@ -146,6 +146,10 @@ end = struct
     (** Ambiguous comment on both titi and toto *)
     method toto = tutu ^ "!"
 
+    (** floating 1 *)
+
+    (** floating 2 *)
+
     (** The comment for method m *)
     method m (f : float) = 1
   end
@@ -154,6 +158,10 @@ end = struct
   class type my_class_type = object
     (** The comment for the instance variable x. *)
     val mutable x : int
+
+    (** floating 1 *)
+
+    (** floating 2 *)
 
     (** The comment for method m. *)
     method m : int -> int
@@ -266,12 +274,16 @@ module Manual :
                            " Ambiguous comment on both titi and toto "]
         method toto = tutu ^ "!"[@@ocaml.doc
                                   " Ambiguous comment on both titi and toto "]
+        [@@@ocaml.text " floating 1 "]
+        [@@@ocaml.text " floating 2 "]
         method m (f : float) = 1[@@ocaml.doc " The comment for method m "]
       end[@@ocaml.doc " The comment for class my_class "]
     class type my_class_type =
       object
         val  mutable x : int[@@ocaml.doc
                               " The comment for the instance variable x. "]
+        [@@@ocaml.text " floating 1 "]
+        [@@@ocaml.text " floating 2 "]
         method  m : int -> int[@@ocaml.doc " The comment for method m. "]
       end[@@ocaml.doc " The comment for class type my_class_type "]
     module Foo =

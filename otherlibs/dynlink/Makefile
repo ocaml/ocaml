@@ -21,7 +21,6 @@ include ../../config/Makefile
 include ../../Makefile.common
 
 CAMLRUN ?= ../../boot/ocamlrun
-CAMLYACC ?= ../../boot/ocamlyacc
 
 ROOTDIR   = ../..
 OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib

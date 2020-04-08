@@ -67,12 +67,14 @@ val typecheck_impl :
     its public interface.
 *)
 
-val wrap_compilation :
-  frontend:(info -> 'a) ->
-  backend:(info -> 'a -> unit) -> info -> unit
-(** [wrap_compilation ~frontend ~backend info] calls [frontend] and [backend]
-    in succession while handling options and errors.
-*)
+val implementation :
+  tool_name:string ->
+  native:bool ->
+  backend:(info -> Typedtree.structure * Typedtree.module_coercion -> unit) ->
+  sourcefile:string ->
+  outputprefix:string ->
+  unit
+(** The complete compilation pipeline for implementations. *)
 
 (** {2 Build artifacts} *)
 

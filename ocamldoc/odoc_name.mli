@@ -44,8 +44,17 @@ val depth : t -> int
    If the two names are equal, then it is false (strict prefix).*)
 val prefix : t -> t -> bool
 
+(** remove a [Library__] prefix and capitalize the resulting name *)
+val alias_unprefix: t -> t -> t
+
 (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
 val get_relative : t -> t -> t
+
+
+(** [get_relative_opt n1 n2] is [n2] if [n1=""] and
+    [get_relative n1 n2] otherwise *)
+val get_relative_opt : t -> t -> t
+
 
 (** Take two names n1=n3.n4 and n2 = n5.n6 and return n6 if n3=n5 or else n2. *)
 val get_relative_raw : t -> t -> t

@@ -15,22 +15,19 @@
 
 # The Makefile for ocamltest
 
-include ../config/Makefile
+ROOTDIR = ..
+
+include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
-  ifeq "$(wildcard ../flexdll/Makefile)" ""
-    FLEXLINK_ENV=
-  else
-    FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
-  endif
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
-  FLEXLINK_ENV=
   mkexe := $(MKEXE)
 endif
 
@@ -60,7 +57,7 @@ else
 WITH_OCAMLDEBUG := false
 endif
 
-OC_CPPFLAGS += -I../runtime -DCAML_INTERNALS
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
 
@@ -150,7 +147,7 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := ../utils ../parsing ../stdlib ../compilerlibs
+directories := $(addprefix $(ROOTDIR)/,utils parsing stdlib compilerlibs)
 
 include_directories := $(addprefix -I , $(directories))
 
@@ -158,15 +155,15 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := $(FLEXLINK_ENV) ../runtime/ocamlrun ../ocamlc $(flags)
+ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
 
-ocamlopt := $(FLEXLINK_ENV) ../runtime/ocamlrun ../ocamlopt $(flags)
+ocamlopt := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlopt $(flags)
 
-ocamldep := ../runtime/ocamlrun ../tools/ocamldep -slash
+ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/tools/ocamldep -slash
 
-ocamllex := ../runtime/ocamlrun ../lex/ocamllex
+ocamllex := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/lex/ocamllex
 
-ocamlyacc := ../yacc/ocamlyacc
+ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
 
 ocamlcdefaultflags :=
 
@@ -178,13 +175,13 @@ allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
 ocamltest$(EXE): $(bytecode_modules)
-	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
+	$(ocamlc_cmd) -custom ocamlcommon.cma -o $@ $^
 
 %.cmo: %.ml
 	$(ocamlc) -c $<
 
 ocamltest.opt$(EXE): $(native_modules)
-	$(ocamlopt) ocamlcommon.cmxa -o $@ $^
+	$(ocamlopt_cmd) ocamlcommon.cmxa -o $@ $^
 
 %.cmx: %.ml
 	$(ocamlopt) -c $<

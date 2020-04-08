@@ -240,6 +240,11 @@ let merge_options =
 
 let initially_opened_module = "<module> Name of the module that is initially opened"
 
+let library_namespace =
+  "<module> Name of the library namespace for a prefixed library.\
+   Note: very experimental."
+
+
 let help = " Display this list of options"
 
 

@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Consistency tables: for checking consistency of module CRCs *)
+(** Consistency tables: for checking consistency of module CRCs
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 type t
 

@@ -117,7 +117,7 @@ let merge_info merge_options (m1 : info) (m2 : info) =
         else
           l1 in
   let new_before = List.map (fun (v, t) -> (Str.split version_separators v, v, t)) new_before in
-  let new_before = List.sort Pervasives.compare new_before in
+  let new_before = List.sort Stdlib.compare new_before in
   let new_before = List.map (fun (_, v, t) -> (v, t)) new_before in
   let new_dep =
     match m1.i_deprecated, m2.i_deprecated with

@@ -43,12 +43,22 @@ val take : 'a t -> 'a
 (** [take q] removes and returns the first element in queue [q],
    or raises {!Empty} if the queue is empty. *)
 
+val take_opt : 'a t -> 'a option
+(** [take_opt q] removes and returns the first element in queue [q],
+   or returns [None] if the queue is empty.
+   @since 4.08 *)
+
 val pop : 'a t -> 'a
 (** [pop] is a synonym for [take]. *)
 
 val peek : 'a t -> 'a
 (** [peek q] returns the first element in queue [q], without removing
    it from the queue, or raises {!Empty} if the queue is empty. *)
+
+val peek_opt : 'a t -> 'a option
+(** [peek_opt q] returns the first element in queue [q], without removing
+   it from the queue, or returns [None] if the queue is empty.
+   @since 4.08 *)
 
 val top : 'a t -> 'a
 (** [top] is a synonym for [peek]. *)

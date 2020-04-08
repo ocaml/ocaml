@@ -65,8 +65,10 @@ case "$1" in
     for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
       cp $f "$OCAMLROOT/bin/flexdll/"
     done
-    echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
-      >> ~/.bash_profile
+    if [ "$PORT" = "msvc64" ] ; then
+      echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
+        >> ~/.bash_profile
+    fi
     ;;
   msvc32-only)
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32
@@ -82,54 +84,49 @@ case "$1" in
     ;;
   test)
     FULL_BUILD_PREFIX=$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX
-    run "ocamlc.opt -version" $FULL_BUILD_PREFIX-msvc64/ocamlc.opt -version
-    run "test msvc64" make -C $FULL_BUILD_PREFIX-msvc64 tests
-    run "test mingw32" make -C $FULL_BUILD_PREFIX-mingw32/testsuite \
-                            USE_RUNTIME="d" all
-    run "install msvc64" make -C $FULL_BUILD_PREFIX-msvc64 install
-    run "install mingw32" make -C $FULL_BUILD_PREFIX-mingw32 install
-    run "check_all_arches" make -C $FULL_BUILD_PREFIX-msvc64 check_all_arches
+    run "ocamlc.opt -version" $FULL_BUILD_PREFIX-$PORT/ocamlc.opt -version
+    run "test $PORT" make -C $FULL_BUILD_PREFIX-$PORT tests
+    run "install $PORT" make -C $FULL_BUILD_PREFIX-$PORT install
+    if [ "$PORT" = "msvc64" ] ; then
+      run "check_all_arches" make -C $FULL_BUILD_PREFIX-$PORT check_all_arches
+    fi
     ;;
   *)
-    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc64
+    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT
 
-    tar -xzf $APPVEYOR_BUILD_FOLDER/flexdll.tar.gz
-    cd flexdll-$FLEXDLL_VERSION
-    make MSVC_DETECT=0 CHAINS=msvc64 support
-    cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
-    cd ..
+    if [ "$PORT" = "msvc64" ] ; then
+      tar -xzf $APPVEYOR_BUILD_FOLDER/flexdll.tar.gz
+      cd flexdll-$FLEXDLL_VERSION
+      make MSVC_DETECT=0 CHAINS=msvc64 support
+      cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
+      cd ..
+    fi
 
-    set_configuration msvc64 "$OCAMLROOT" -WX
+    if [ "$PORT" = "msvc64" ] ; then
+      set_configuration msvc64 "$OCAMLROOT" -WX
+    else
+      set_configuration mingw "$OCAMLROOT-mingw32" -Werror
+    fi
 
-    cd ../$BUILD_PREFIX-mingw32
-
-    set_configuration mingw "$OCAMLROOT-mingw32" -Werror
-
-    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc64
+    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT
 
     export TERM=ansi
-    script --quiet --return --command \
-      "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
-      ../$BUILD_PREFIX-mingw32/build.log >/dev/null 2>/dev/null &
-    BUILD_PID=$!
 
-    run "make world" make world
-    run "make bootstrap" make bootstrap
-    run "make opt" make opt
-    run "make opt.opt" make opt.opt
+    if [ "$PORT" = "mingw32" ] ; then
+      # For an explanation of the sed command, see
+      # https://github.com/appveyor/ci/issues/1824
+      script --quiet --return --command \
+        "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+        ../$BUILD_PREFIX-mingw32/build.log |
+          sed -e 's/\d027\[K//g' \
+              -e 's/\d027\[m/\d027[0m/g' \
+              -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
+    else
+      run "make world" make world
+      run "make bootstrap" make bootstrap
+      run "make opt" make opt
+      run "make opt.opt" make opt.opt
+    fi
 
-    set +e
-
-    # For an explanation of the sed command, see
-    # https://github.com/appveyor/ci/issues/1824
-    tail --pid=$BUILD_PID -n +1 -f ../$BUILD_PREFIX-mingw32/build.log | \
-      sed -e 's/\d027\[K//g' \
-          -e 's/\d027\[m/\d027[0m/g' \
-          -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
-    TAIL_PID=$!
-    wait $BUILD_PID
-    STATUS=$?
-    wait $TAIL_PID
-    exit $STATUS
     ;;
 esac

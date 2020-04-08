@@ -521,10 +521,20 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
+    | (Sig_module(id, ({md_type = Mty_alias _} as md), _) as item :: rem,
+       s :: namelist, (Pwith_module _ | Pwith_type _))
+      when Ident.name id = s ->
+        let ((path, _, tcstr), _) =
+          merge env (extract_sig env loc md.md_type) namelist None
+        in
+        let path = path_concat id path in
+        real_ids := path :: !real_ids;
+        (path, lid, tcstr), item :: rem
     | (Sig_module(id, md, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let ((path, _path_loc, tcstr), newsg) =
-          merge env (extract_sig env loc md.md_type) namelist None in
+          merge env (extract_sig env loc md.md_type) namelist None
+        in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
         let item = Sig_module(id, {md with md_type=Mty_signature newsg}, rs) in
@@ -656,8 +666,21 @@ let rec approx_modtype env smty =
         Env.enter_module ~arg:true param.txt (Btype.default_mty arg) env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
-  | Pmty_with(sbody, _constraints) ->
-      approx_modtype env sbody
+  | Pmty_with(sbody, constraints) ->
+      let body = approx_modtype env sbody in
+      List.iter
+        (fun sdecl ->
+          match sdecl with
+          | Pwith_type _ -> ()
+          | Pwith_typesubst _ -> ()
+          | Pwith_module (_, lid') ->
+              (* Lookup the module to make sure that it is not recursive.
+                 (GPR#1626) *)
+              ignore (Typetexp.find_module env lid'.loc lid'.txt)
+          | Pwith_modsubst (_, lid') ->
+              ignore (Typetexp.find_module env lid'.loc lid'.txt))
+        constraints;
+      body
   | Pmty_typeof smod ->
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty
@@ -2342,7 +2365,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
-        Some (Location.error_of_printer loc (report_error env) err)
+        Some (Location.error_of_printer ~loc (report_error env) err)
       | Error_forward err ->
         Some err
       | _ ->

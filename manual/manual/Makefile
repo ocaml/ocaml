@@ -7,10 +7,12 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 OCAMLDOC = $(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
   $(SRC)/ocamldoc/ocamldoc.opt,\
   $(SET_LD_PATH) $(SRC)/runtime/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
-  -hide Pervasives -nostdlib -initially-opened-module Pervasives
+  -hide Stdlib -lib Stdlib -nostdlib \
+  -pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk"
 
-# Copy and unprefix the standard library when needed
-include $(SRC)/ocamldoc/Makefile.unprefix
+
+# Import the list of mli files for the library docs
+include $(SRC)/ocamldoc/Makefile.docfiles
 
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
@@ -37,9 +39,9 @@ index:
 	  && makeindex manual.kwd.idx
 
 
-# libref/style.css is used as witness for the generation of the html stdlib
-# reference.
-html: htmlman/libref/style.css etex-files
+# libref/style.css and comilerlibref/style.css are used as witness
+# for the generation of the html stdlib and compilerlibs reference.
+html: htmlman/libref/style.css htmlman/compilerlibref/style.css etex-files
 	cd htmlman \
 	  && $(HEVEA) $(HTML_FLAGS) \
 	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
@@ -47,12 +49,31 @@ html: htmlman/libref/style.css etex-files
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
 
-htmlman/libref/style.css: style.css $(STDLIB_MLIS) | unprefix_stdlib_for_ocamldoc
+htmlman/libref/style.css: style.css $(STDLIB_MLIS)
 	mkdir -p htmlman/libref
 	$(OCAMLDOC) -colorize-code -sort -html \
 	  -d htmlman/libref \
-	  -I $(STDLIB_UNPREFIXED) \
+	  $(DOC_STDLIB_INCLUDES) \
 	  $(STDLIB_MLIS)
+	cp style.css $@
+
+COMPILERLIBS_MODULES=$(shell echo $(basename $(notdir $(COMPILERLIBS_MLIS))) \
+| sed "s/\<./\U&/g")
+
+library/compiler_libs.txt: library/compiler_libs.mld
+	cp $< $@ && echo "{!modules:$(COMPILERLIBS_MODULES)}" >> $@
+
+
+htmlman/compilerlibref/style.css: library/compiler_libs.txt style.css \
+  $(COMPILERLIBS_MLIS)
+	mkdir -p htmlman/compilerlibref
+	$(OCAMLDOC) -colorize-code -sort -html \
+	  -d htmlman/compilerlibref \
+	  -I $(SRC)/stdlib \
+	  $(DOC_COMPILERLIBS_INCLUDES) \
+          -intro library/compiler_libs.txt \
+          library/compiler_libs.txt \
+	  $(COMPILERLIBS_MLIS)
 	cp style.css $@
 
 
@@ -85,8 +106,10 @@ all:
 release: all
 	cp htmlman/manual.html $(RELEASE)refman.html
 	rm -f htmlman/manual.{html,haux,hmanual*,htoc}
-	tar zcf $(RELEASE)refman-html.tar.gz htmlman/*.* htmlman/libref
-	zip -8 $(RELEASE)refman-html.zip htmlman/*.* htmlman/libref/*.*
+	tar zcf $(RELEASE)refman-html.tar.gz \
+	  htmlman/*.* htmlman/libref htmlman/fonts
+	zip -8 $(RELEASE)refman-html.zip \
+	  htmlman/*.* htmlman/libref/*.* htmlman/fonts/*.*
 	cp texstuff/manual.pdf $(RELEASE)refman.pdf
 	cp textman/manual.txt $(RELEASE)refman.txt
 	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
@@ -139,6 +162,7 @@ clean:
 	$(MAKE) -C refman    clean
 	$(MAKE) -C tutorials clean
 	-rm -f texstuff/*
-	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind *.svg
+	cd htmlman; rm -rf libref compilerlibref index.html \
+	manual*.html *.haux *.hind *.svg
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind

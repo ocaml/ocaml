@@ -1268,7 +1268,7 @@ let run_ocamldoc =
   let load_all =
     List.map (fun name -> "-load " ^ compiled_doc_name (fst name))
     @@ (* sort module in alphabetical order *)
-    List.sort Pervasives.compare modules in
+    List.sort Stdlib.compare modules in
   let with_plugins =
     List.map (fun name -> "-g " ^ ocamldoc_plugin (fst name)) plugins in
   let commandline =

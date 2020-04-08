@@ -67,6 +67,7 @@ let rec env_from_summary sum subst =
                         ~hidden_submodules with
           | Some env -> env
           | None -> assert false
+          | exception Not_found -> raise (Error (Module_not_found path'))
           end
       | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
           Env.add_module_declaration ~check:false

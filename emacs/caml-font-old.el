@@ -17,32 +17,7 @@
 (cond
  ((x-display-color-p)
   (require 'font-lock)
-  (cond
-   ((not (boundp 'font-lock-type-face))
-    ; make the necessary faces
-    (make-face 'Firebrick)
-    (set-face-foreground 'Firebrick "Firebrick")
-    (make-face 'RosyBrown)
-    (set-face-foreground 'RosyBrown "RosyBrown")
-    (make-face 'Purple)
-    (set-face-foreground 'Purple "Purple")
-    (make-face 'MidnightBlue)
-    (set-face-foreground 'MidnightBlue "MidnightBlue")
-    (make-face 'DarkGoldenRod)
-    (set-face-foreground 'DarkGoldenRod "DarkGoldenRod")
-    (make-face 'DarkOliveGreen)
-    (set-face-foreground 'DarkOliveGreen "DarkOliveGreen4")
-    (make-face 'CadetBlue)
-    (set-face-foreground 'CadetBlue "CadetBlue")
-    ; assign them as standard faces
-    (setq font-lock-comment-face 'Firebrick)
-    (setq font-lock-string-face 'RosyBrown)
-    (setq font-lock-keyword-face 'Purple)
-    (setq font-lock-function-name-face 'MidnightBlue)
-    (setq font-lock-variable-name-face 'DarkGoldenRod)
-    (setq font-lock-type-face 'DarkOliveGreen)
-    (setq font-lock-reference-face 'CadetBlue)))
-  ; extra faces for documentation
+  ;; extra faces for documentation
   (make-face 'Stop)
   (set-face-foreground 'Stop "White")
   (set-face-background 'Stop "Red")

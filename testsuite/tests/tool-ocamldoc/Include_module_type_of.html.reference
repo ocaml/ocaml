@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Include_module_type_of" rel="Chapter" href="Include_module_type_of.html"><title>Include_module_type_of</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Include_module_type_of.html">Include_module_type_of</a></h1>
+
+<pre><span id="MODULEInclude_module_type_of"><span class="keyword">module</span> Include_module_type_of</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Include_module_type_of.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<div class="info-desc">
+<p>Test <code class="code"><span class="keyword">include</span>&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;<span class="keyword">of</span>...</code> variants</p>
+</div>
+</div>
+<hr width="100%">
+
+<pre><span id="MODULEA"><span class="keyword">module</span> <a href="Include_module_type_of.A.html">A</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Include_module_type_of.A.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span id="MODULEM"><span class="keyword">module</span> <a href="Include_module_type_of.M.html">M</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Include_module_type_of.M.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span id="MODULEB"><span class="keyword">module</span> <a href="Include_module_type_of.B.html">B</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Include_module_type_of.B.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span class="keyword">include</span> <a href="Include_module_type_of.M.html">Include_module_type_of.M</a></pre>
+</body></html>

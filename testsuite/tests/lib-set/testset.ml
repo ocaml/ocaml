@@ -41,6 +41,9 @@ let test x s1 s2 =
     (let s = S.inter s1 s2 in
      fun i -> S.mem i s = (S.mem i s1 && S.mem i s2));
 
+  checkbool "disjoint"
+    (S.is_empty (S.inter s1 s2) = S.disjoint s1 s2);
+
   check "diff"
     (let s = S.diff s1 s2 in
      fun i -> S.mem i s = (S.mem i s1 && not (S.mem i s2)));

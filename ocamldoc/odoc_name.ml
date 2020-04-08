@@ -185,6 +185,28 @@ let get_relative n1 n2 =
   else
     n2
 
+let get_relative_opt n1 n2 =
+  if n1 = "" then n2 else
+    if prefix n1 n2 then
+      let len1 = String.length n1 in
+      try
+        String.sub n2 (len1+1) ((String.length n2) - len1 - 1)
+      with
+        _ -> n2
+    else
+      n2
+
+
+let alias_unprefix ln s =
+  if ln = "" then s else
+  let p = ln ^ "__" in
+  let n, k = String.(length p, length s) in
+  if k > n &&
+     String.sub s 0 n = p then
+    String.( capitalize_ascii @@ sub s n (k-n) )
+  else
+    s
+
 let hide_given_modules l s =
   let rec iter = function
       [] -> s

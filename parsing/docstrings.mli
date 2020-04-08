@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Documentation comments *)
+(** Documentation comments
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 (** (Re)Initialise all docstring state *)
 val init : unit -> unit
@@ -158,3 +163,61 @@ val rhs_post_extra_text : int -> text
 
 (** Fetch text following the symbol at the given position *)
 val rhs_post_text : int -> text
+
+module WithMenhir: sig
+(** Fetch the item documentation for the current symbol. This also
+    marks this documentation (for ambiguity warnings). *)
+val symbol_docs : Lexing.position * Lexing.position -> docs
+val symbol_docs_lazy : Lexing.position * Lexing.position -> docs Lazy.t
+
+(** Fetch the item documentation for the symbols between two
+    positions. This also marks this documentation (for ambiguity
+    warnings). *)
+val rhs_docs : Lexing.position -> Lexing.position -> docs
+val rhs_docs_lazy : Lexing.position -> Lexing.position -> docs Lazy.t
+
+(** Mark the item documentation for the current symbol (for ambiguity
+    warnings). *)
+val mark_symbol_docs : Lexing.position * Lexing.position -> unit
+
+(** Mark as associated the item documentation for the symbols between
+    two positions (for ambiguity warnings) *)
+val mark_rhs_docs : Lexing.position -> Lexing.position -> unit
+
+(** Fetch the field info for the current symbol. *)
+val symbol_info : Lexing.position -> info
+
+(** Fetch the field info following the symbol at a given position. *)
+val rhs_info : Lexing.position -> info
+
+(** Fetch the text preceding the current symbol. *)
+val symbol_text : Lexing.position -> text
+val symbol_text_lazy : Lexing.position -> text Lazy.t
+
+(** Fetch the text preceding the symbol at the given position. *)
+val rhs_text : Lexing.position -> text
+val rhs_text_lazy : Lexing.position -> text Lazy.t
+
+(** {3 Extra text}
+
+    There may be additional text attached to the delimiters of a block
+    (e.g. [struct] and [end]). This is fetched by the following
+    functions, which are applied to the contents of the block rather
+    than the delimiters. *)
+
+(** Fetch additional text preceding the current symbol *)
+val symbol_pre_extra_text : Lexing.position -> text
+
+(** Fetch additional text following the current symbol *)
+val symbol_post_extra_text : Lexing.position -> text
+
+(** Fetch additional text preceding the symbol at the given position *)
+val rhs_pre_extra_text : Lexing.position -> text
+
+(** Fetch additional text following the symbol at the given position *)
+val rhs_post_extra_text : Lexing.position -> text
+
+(** Fetch text following the symbol at the given position *)
+val rhs_post_text : Lexing.position -> text
+
+end

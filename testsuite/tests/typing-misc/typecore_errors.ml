@@ -98,7 +98,7 @@ Line 1, characters 32-33:
   let c = object val x= 0 val y = x end
                                   ^
 Error: The instance variable x
-cannot be accessed from the definition of another instance variable
+       cannot be accessed from the definition of another instance variable
 |}]
 
 
@@ -240,8 +240,7 @@ val f : int -> unit = <fun>
 Line 3, characters 10-29:
   let x = f (module struct end)
             ^^^^^^^^^^^^^^^^^^^
-Error: This expression is packed module, but the expected type is
-int
+Error: This expression is packed module, but the expected type is int
 |}]
 
 
@@ -292,8 +291,8 @@ Line 1, characters 23-24:
   let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
                          ^
 Error: This function is applied to arguments
-in an order different from other calls.
-This is only allowed when the real type is known.
+       in an order different from other calls.
+       This is only allowed when the real type is known.
 |}]
 
 (** Inlined record *)
@@ -368,8 +367,7 @@ type t = []
 Line 2, characters 18-19:
   let f = function #t -> ()
                     ^
-Error: The type t
-is not a variant type
+Error: The type t is not a variant type
 |}]
 
 let f {x;x=y;x=z} = x

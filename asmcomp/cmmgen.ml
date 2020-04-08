@@ -1505,7 +1505,7 @@ module StoreExpForSwitch =
       let compare_key (cont, index) (cont', index') =
         match cont, cont' with
         | Some i, Some i' when i = i' -> 0
-        | _, _ -> Pervasives.compare index index'
+        | _, _ -> Stdlib.compare index index'
     end)
 
 (* For string switches, we can use a generic store *)
@@ -1517,7 +1517,7 @@ module StoreExp =
       let make_key = function
         | Cexit (i,[]) -> Some i
         | _ -> None
-      let compare_key = Pervasives.compare
+      let compare_key = Stdlib.compare
     end)
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)

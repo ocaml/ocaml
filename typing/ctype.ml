@@ -795,7 +795,10 @@ let rec generalize_expansive env var_level visited ty =
       Tconstr (path, tyl, abbrev) ->
         let variance =
           try (Env.find_type path env).type_variance
-          with Not_found -> List.map (fun _ -> Variance.may_inv) tyl in
+          with Not_found ->
+            (* See testsuite/tests/typing-missing-cmi-2 for an example *)
+            List.map (fun _ -> Variance.may_inv) tyl
+        in
         abbrev := Mnil;
         List.iter2
           (fun v t ->
@@ -816,7 +819,6 @@ let generalize_expansive env ty =
   simple_abbrevs := Mnil;
   generalize_expansive env !nongen_level (Hashtbl.create 7) ty
 
-let generalize_global ty = generalize_structure !global_level ty
 let generalize_structure ty = generalize_structure !current_level ty
 
 (* Correct the levels of type [ty]. *)
@@ -1006,7 +1008,7 @@ let rec copy ?partial ?keep_names ty =
                 match more.desc with
                   Tsubst ty -> ty
                 | Tconstr _ | Tnil ->
-                    if keep then save_desc more more.desc;
+                    save_desc more more.desc;
                     copy more
                 | Tvar _ | Tunivar _ ->
                     save_desc more more.desc;

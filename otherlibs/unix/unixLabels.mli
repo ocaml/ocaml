@@ -660,7 +660,7 @@ val open_process_out : string -> out_channel
    the command to a pipe.  Data written to the returned output channel
    is sent to the standard input of the command.
    Warning: writes on output channels are buffered, hence be careful
-   to call {!Pervasives.flush} at the right times to ensure
+   to call {!Stdlib.flush} at the right times to ensure
    correct synchronization. *)
 
 val open_process : string -> in_channel * out_channel
@@ -689,7 +689,7 @@ val open_process_args_out : string -> string array -> out_channel
 (** Same as {!Unix.open_process_args_in}, but redirect the standard input of the
    command to a pipe.  Data written to the returned output channel is sent to
    the standard input of the command.  Warning: writes on output channels are
-   buffered, hence be careful to call {!Pervasives.flush} at the right times to
+   buffered, hence be careful to call {!Stdlib.flush} at the right times to
    ensure correct synchronization.
 
     @since 4.08.0 *)
@@ -1252,7 +1252,7 @@ val getsockopt_error : file_descr -> error option
 val open_connection : sockaddr -> in_channel * out_channel
 (** Connect to a server at the given address.
    Return a pair of buffered channels connected to the server.
-   Remember to call {!Pervasives.flush} on the output channel at the right
+   Remember to call {!Stdlib.flush} on the output channel at the right
    times to ensure correct synchronization. *)
 
 val shutdown_connection : in_channel -> unit

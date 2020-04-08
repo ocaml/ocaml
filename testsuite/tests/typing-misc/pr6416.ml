@@ -27,13 +27,9 @@ Error: Signature mismatch:
        is not included in
          val f : t/2 -> unit
        Line 6, characters 4-14:
-      type t = B
-      ^^^^^^^^^^
-Definition of type t/1
-Line 2, characters 2-12:
-    type t = A
-    ^^^^^^^^^^
-Definition of type t/2
+         Definition of type t/1
+       Line 2, characters 2-12:
+         Definition of type t/2
 |}]
 
 module N = struct
@@ -56,13 +52,9 @@ Error: Signature mismatch:
          type u = A of t/2
        The types for field A are not equal.
        Line 4, characters 9-19:
-    struct type t = B type u = A of t end
-           ^^^^^^^^^^
-Definition of type t/1
-Line 2, characters 2-11:
-    type t= A
-    ^^^^^^^^^
-Definition of type t/2
+         Definition of type t/1
+       Line 2, characters 2-11:
+         Definition of type t/2
 |}]
 
 module K = struct
@@ -93,13 +85,9 @@ Error: Signature mismatch:
        At position module A(X : <here>) : ...
        Modules do not match: s/2 is not included in s/1
        Line 5, characters 6-19:
-        module type s
-        ^^^^^^^^^^^^^
-Definition of module type s/1
-Line 2, characters 2-15:
-    module type s
-    ^^^^^^^^^^^^^
-Definition of module type s/2
+         Definition of module type s/1
+       Line 2, characters 2-15:
+         Definition of module type s/2
 |}]
 
 module L = struct
@@ -127,13 +115,9 @@ Error: Signature mismatch:
          type t = A of T/2.t
        The types for field A are not equal.
        Line 5, characters 6-34:
-        module T = struct type t end
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of module T/1
-Line 2, characters 2-30:
-    module T = struct type t end
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of module T/2
+         Definition of module T/1
+       Line 2, characters 2-30:
+         Definition of module T/2
 |}]
 
 module O = struct
@@ -157,21 +141,13 @@ Error: Signature mismatch:
        is not included in
          val f : (module s/2) -> t/2 -> t/2
        Line 5, characters 23-33:
-    struct module type s type t = B let f (module X:s) A = B end
-                         ^^^^^^^^^^
-Definition of type t/1
-Line 3, characters 2-12:
-    type t = A
-    ^^^^^^^^^^
-Definition of type t/2
-Line 5, characters 9-22:
-    struct module type s type t = B let f (module X:s) A = B end
-           ^^^^^^^^^^^^^
-Definition of module type s/1
-Line 2, characters 2-15:
-    module type s
-    ^^^^^^^^^^^^^
-Definition of module type s/2
+         Definition of type t/1
+       Line 3, characters 2-12:
+         Definition of type t/2
+       Line 5, characters 9-22:
+         Definition of module type s/1
+       Line 2, characters 2-15:
+         Definition of module type s/2
 |}]
 
 module P = struct
@@ -195,13 +171,9 @@ Error: Signature mismatch:
        is not included in
          val f : a/2 -> (module a) -> a/2
        Line 5, characters 12-22:
-     = struct type a = B let f A _  = B end
-              ^^^^^^^^^^
-Definition of type a/1
-Line 3, characters 2-12:
-    type a = A
-    ^^^^^^^^^^
-Definition of type a/2
+         Definition of type a/1
+       Line 3, characters 2-12:
+         Definition of type a/2
 |}]
 
 module Q = struct
@@ -232,13 +204,9 @@ Error: Signature mismatch:
        The first class type has no method m
        The public method c cannot be hidden
        Line 5, characters 4-74:
-      class a = object method c = let module X = struct type t end in () end
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of class type a/1
-Line 2, characters 2-36:
-    class a = object method m = () end
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of class type a/2
+         Definition of class type a/1
+       Line 2, characters 2-36:
+         Definition of class type a/2
 |}]
 
 module R = struct
@@ -267,13 +235,9 @@ Error: Signature mismatch:
          class type b = a/2
        The first class type has no method m
        Line 5, characters 4-29:
-      class type a = object end
-      ^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of class type a/1
-Line 2, characters 2-42:
-    class type a = object method m: unit end
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of class type a/2
+         Definition of class type a/1
+       Line 2, characters 2-42:
+         Definition of class type a/2
 |}]
 
 module S = struct
@@ -337,13 +301,9 @@ Error: Signature mismatch:
        The method m has type t/2 but is expected to have type t/1
        Type t/2 is not compatible with type t/1 = K.t
        Line 12, characters 4-10:
-      type t
-      ^^^^^^
-Definition of type t/1
-Line 9, characters 2-8:
-    type t
-    ^^^^^^
-Definition of type t/2
+         Definition of type t/1
+       Line 9, characters 2-8:
+         Definition of type t/2
 |}]
 ;;
 
@@ -364,11 +324,9 @@ Error: Signature mismatch:
        is not included in
          type a = M/2.t
        Line 2, characters 14-42:
-  struct type t module M = struct type t end type a = M.t end;;
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of module M/1
-File "_none_", line 1:
-Definition of module M/2
+         Definition of module M/1
+       File "_none_", line 1:
+         Definition of module M/2
 |}]
 
 
@@ -399,21 +357,13 @@ Error: Signature mismatch:
        is not included in
          val f : t/1 -> t/1 -> t/1 -> t/1
        Line 4, characters 0-10:
-  type t = D;;
-  ^^^^^^^^^^
-Definition of type t/1
-Line 1, characters 0-10:
-  type t = A;;
-  ^^^^^^^^^^
-Definition of type t/2
-Line 2, characters 0-10:
-  type t = B;;
-  ^^^^^^^^^^
-Definition of type t/3
-Line 3, characters 0-10:
-  type t = C;;
-  ^^^^^^^^^^
-Definition of type t/4
+         Definition of type t/1
+       Line 1, characters 0-10:
+         Definition of type t/2
+       Line 2, characters 0-10:
+         Definition of type t/3
+       Line 3, characters 0-10:
+         Definition of type t/4
 |}]
 
 (** Check interaction with no-alias-deps *)

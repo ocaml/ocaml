@@ -15,6 +15,8 @@
 
 # The main Makefile
 
+ROOTDIR = .
+
 include config/Makefile
 include Makefile.common
 
@@ -40,7 +42,6 @@ LN = ln -sf
 endif
 
 CAMLRUN ?= boot/ocamlrun
-CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
@@ -80,7 +81,8 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
-  parsing/ast_helper.cmo parsing/parser.cmo \
+  parsing/ast_helper.cmo \
+  parsing/camlinternalMenhirLib.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
@@ -286,15 +288,14 @@ BOOT_FLEXLINK_CMD=
 ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
-  BOOT_FLEXLINK_CMD=
-  FLEXDLL_DIR=
+  BOOT_FLEXLINK_CMD =
+  FLEXDLL_DIR =
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
-  CAMLOPT := OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
-  FLEXDLL_DIR=$(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
+  FLEXDLL_DIR = $(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
 endif
 else
-  FLEXDLL_DIR=
+  FLEXDLL_DIR =
 endif
 
 # The configuration file
@@ -387,8 +388,6 @@ beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 coldstart:
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-	$(MAKE) -C yacc $(BOOT_FLEXLINK_CMD) all
-	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) \
 	  COMPILER="../boot/ocamlc -use-prims ../runtime/primitives" all
 	cd stdlib; cp $(LIBFILES) ../boot
@@ -398,7 +397,7 @@ coldstart:
 .PHONY: coreall
 coreall: runtime
 	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+	$(MAKE) ocamllex ocamltools library
 
 # Build the core system: the minimum needed to make depend and bootstrap
 .PHONY: core
@@ -425,7 +424,6 @@ PROMOTE ?= cp
 promote-common:
 	$(PROMOTE) ocamlc boot/ocamlc
 	$(PROMOTE) lex/ocamllex boot/ocamllex
-	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of cross compiler
@@ -574,9 +572,10 @@ flexlink: flexdll/Makefile
 flexlink.opt:
 	cd flexdll && \
 	mv flexlink.exe flexlink && \
-	$(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
+	($(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
 	           OCAML_CONFIG_FILE=../config/Makefile \
-	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe && \
+	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe || \
+	 (mv flexlink flexlink.exe && false)) && \
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
 
@@ -885,16 +884,6 @@ natruntop:
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
 
-# The parser
-
-parsing/parser.mli parsing/parser.ml: parsing/parser.mly
-	$(CAMLYACC) $(YACCFLAGS) $<
-
-partialclean::
-	rm -f parsing/parser.mli parsing/parser.ml parsing/parser.output
-
-beforedepend:: parsing/parser.mli parsing/parser.ml
-
 # The lexer
 
 parsing/lexer.ml: parsing/lexer.mll
@@ -921,7 +910,7 @@ partialclean::
 
 ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
 
 partialclean::
 	rm -f ocamlc.opt
@@ -935,7 +924,7 @@ partialclean::
 
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
 partialclean::
 	rm -f ocamlopt.opt
@@ -1024,7 +1013,6 @@ otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
   str systhreads threads unix win32graph win32unix
 subdirs := debugger lex ocamldoc ocamltest runtime stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
-  ocamldoc/stdlib_non_prefixed
 
 .PHONY: alldepend
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -1087,6 +1075,46 @@ ocamlyacc:
 
 clean::
 	$(MAKE) -C yacc clean
+
+# The Menhir-generated parser
+
+# In order to avoid a build-time dependency on Menhir,
+# we store the result of the parser generator (which
+# are OCaml source files) and Menhir's runtime libraries
+# (that the parser files rely on) in boot/.
+
+# The rules below do not depend on Menhir being available,
+# they just build the parser from the boot/.
+
+# See Makefile.menhir for the rules to rebuild the parser and update
+# boot/, which require Menhir. The targets in Makefile.menhir
+# (also included here for convenience) must be used after any
+# modification of parser.mly.
+include Makefile.menhir
+
+# To avoid module-name conflicts with compiler-lib users that link
+# with their code with their own MenhirLib module (possibly with
+# a different Menhir version), we rename MenhirLib into
+# CamlinternalMenhirlib -- and replace the module occurrences in the
+# generated parser.ml.
+
+parsing/camlinternalMenhirLib.ml: boot/menhir/menhirLib.ml
+	cp $< $@
+parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
+	cp $< $@
+
+# Copy parsing/parser.ml from boot/
+
+parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
+  tools/check-parser-uptodate-or-warn.sh
+	@tools/check-parser-uptodate-or-warn.sh
+	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+parsing/parser.mli: boot/menhir/parser.mli
+	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+
+
+partialclean:: partialclean-menhir
+
 
 # OCamldoc
 
@@ -1190,7 +1218,7 @@ partialclean::
 # Tools
 
 .PHONY: ocamltools
-ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
+ocamltools: ocamlc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
 	$(MAKE) -C tools all
@@ -1200,7 +1228,7 @@ ocamltoolsopt: ocamlopt
 	$(MAKE) -C tools opt
 
 .PHONY: ocamltoolsopt.opt
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
+ocamltoolsopt.opt: ocamlc.opt ocamllex.opt asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
                    asmcomp/export_info.cmx
 	$(MAKE) -C tools opt.opt
@@ -1289,7 +1317,7 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -linkall -o $@ $^
+	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -o $@ $^
 
 partialclean::
 	rm -f ocamlnat$(EXE)
@@ -1308,6 +1336,35 @@ partialclean::
 	rm -f bytecomp/opcodes.ml
 
 beforedepend:: bytecomp/opcodes.ml
+
+# Testing the parser -- see parsing/HACKING.adoc
+
+SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli')
+
+AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
+
+build-all-asts: $(AST_FILES)
+
+CAMLC_DPARSETREE := \
+	$(CAMLRUN) ./ocamlc -nostdlib -nopervasives \
+	  -stop-after parsing -dparsetree
+
+%.ml.ast: %.ml ocamlc
+	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
+# `|| exit 0` : some source files will fail to parse
+# (for example, they are meant as toplevel scripts
+# rather than source files, or are parse-error tests),
+# we ignore the failure in that case
+
+%.mli.ast: %.mli ocamlc
+	$(CAMLC_DPARSETREE) $< 2> $@ || exit 0
+
+.PHONY: list-all-asts
+list-all-asts:
+	@for f in $(AST_FILES); do echo "'$$f'"; done
+
+partialclean::
+	rm -f $(AST_FILES)
 
 # Default rules
 
@@ -1344,7 +1401,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
+	boot/*.cm* boot/libcamlrun.$(A)
 	rm -f config/Makefile runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc

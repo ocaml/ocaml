@@ -66,10 +66,10 @@ let remove_loc =
   {default_mapper with location = (fun _this _loc -> Location.none)}
 
 let is_not_doc = function
-  | ({Location.txt = "ocaml.doc"}, _) -> false
-  | ({Location.txt = "ocaml.text"}, _) -> false
-  | ({Location.txt = "doc"}, _) -> false
-  | ({Location.txt = "text"}, _) -> false
+  | {Parsetree.attr_name = {Location.txt = "ocaml.doc"}; _} -> false
+  | {Parsetree.attr_name = {Location.txt = "ocaml.text"}; _} -> false
+  | {Parsetree.attr_name = {Location.txt = "doc"}; _} -> false
+  | {Parsetree.attr_name = {Location.txt = "text"}; _} -> false
   | _ -> true
 
 let attrs s x =

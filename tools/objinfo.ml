@@ -209,7 +209,7 @@ let p_list title print = function
 let dump_byte ic =
   Bytesections.read_toc ic;
   let toc = Bytesections.toc () in
-  let toc = List.sort Pervasives.compare toc in
+  let toc = List.sort Stdlib.compare toc in
   List.iter
     (fun (section, _) ->
        try

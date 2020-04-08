@@ -1,0 +1,96 @@
+\documentclass[11pt]{article} 
+\usepackage[latin1]{inputenc} 
+\usepackage[T1]{fontenc} 
+\usepackage{textcomp}
+\usepackage{fullpage} 
+\usepackage{url} 
+\usepackage{ocamldoc}
+\begin{document}
+\tableofcontents
+\section{Module {\tt{Include\_module\_type\_of}} : Test {\tt{include module type of...}} variants}
+\label{Include-underscoremodule-underscoretype-underscoreof}\index{Include-underscoremodule-underscoretype-underscoreof@\verb`Include_module_type_of`}
+
+
+
+
+\ocamldocvspace{0.5cm}
+
+
+
+\begin{ocamldoccode}
+{\tt{module }}{\tt{A}}{\tt{ : }}\end{ocamldoccode}
+\label{Include-underscoremodule-underscoretype-underscoreof.A}\index{A@\verb`A`}
+
+\begin{ocamldocsigend}
+
+
+\label{TYPInclude-underscoremodule-underscoretype-underscoreof.A.t}\begin{ocamldoccode}
+type t 
+\end{ocamldoccode}
+\index{t@\verb`t`}
+\end{ocamldocsigend}
+
+
+
+
+
+
+\begin{ocamldoccode}
+{\tt{module }}{\tt{M}}{\tt{ : }}\end{ocamldoccode}
+\label{Include-underscoremodule-underscoretype-underscoreof.M}\index{M@\verb`M`}
+
+\begin{ocamldocsigend}
+
+
+A module M
+
+\begin{ocamldoccode}
+{\tt{module }}{\tt{Inner}}{\tt{ : }}\end{ocamldoccode}
+\label{Include-underscoremodule-underscoretype-underscoreof.M.Inner}\index{Inner@\verb`Inner`}
+\begin{ocamldocsigend}
+
+
+\label{TYPInclude-underscoremodule-underscoretype-underscoreof.M.Inner.t}\begin{ocamldoccode}
+type t 
+\end{ocamldoccode}
+\index{t@\verb`t`}
+\end{ocamldocsigend}
+
+
+
+
+\begin{ocamldoccode}
+{\tt{module }}{\tt{Alias}}{\tt{ : }}\end{ocamldoccode}
+\label{Include-underscoremodule-underscoretype-underscoreof.M.Alias}\index{Alias@\verb`Alias`}
+{\tt{Include\_module\_type\_of.A}}
+
+
+
+\label{TYPInclude-underscoremodule-underscoretype-underscoreof.M.t}\begin{ocamldoccode}
+type t 
+\end{ocamldoccode}
+\index{t@\verb`t`}
+\end{ocamldocsigend}
+
+
+
+
+
+
+\begin{ocamldoccode}
+{\tt{module }}{\tt{B}}{\tt{ : }}\end{ocamldoccode}
+\label{Include-underscoremodule-underscoretype-underscoreof.B}\index{B@\verb`B`}
+
+\begin{ocamldocsigend}
+
+
+{\tt{include }}{\tt{Include\_module\_type\_of.M}}\end{ocamldocsigend}
+
+
+
+
+
+
+{\tt{include }}{\tt{Include\_module\_type\_of.M}}
+
+\end{document}

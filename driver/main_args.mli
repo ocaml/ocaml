@@ -27,6 +27,7 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _nopervasives : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -72,6 +73,7 @@ module type Compiler_options = sig
   val _config_var : string -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
+  val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
   val _intf : string -> unit
@@ -101,7 +103,6 @@ module type Compiler_options = sig
   val _where : unit -> unit
   val _color : string -> unit
 
-  val _nopervasives : unit -> unit
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit

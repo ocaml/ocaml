@@ -18,7 +18,7 @@ module Make(O : Set.OrderedType) : S with type elt = O.t =
 
 module rec A : Set.OrderedType = struct
  type t = int
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 and B : S = struct
  module C = Make(A)

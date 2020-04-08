@@ -21,7 +21,9 @@ let in_function_declarations (function_decls : Flambda.function_declarations)
       ~backend =
   let module VCC = Strongly_connected_components.Make (Variable) in
   let directed_graph =
-    Flambda_utils.fun_vars_referenced_in_decls function_decls ~backend
+    let module B = (val backend : Backend_intf.S) in
+    Flambda_utils.fun_vars_referenced_in_decls function_decls
+      ~closure_symbol:B.closure_symbol
   in
   let connected_components =
     VCC.connected_components_sorted_from_roots_to_leaf directed_graph
