@@ -4181,7 +4181,8 @@ and type_application env funct sargs =
     tvar || List.mem l ls
   in
   let ignored = ref [] in
-  let type_unknown_arg omitted (ty_fun, typed_args) (lbl, sarg) =
+  let omitted = ref [] in
+  let type_unknown_arg (ty_fun, typed_args) (lbl, sarg) =
     let (ty1, ty2) =
       let ty_fun = expand_head env ty_fun in
       match ty_fun.desc with
@@ -4198,7 +4199,7 @@ and type_application env funct sargs =
           (t1, t2)
       | td ->
           let ty_fun = match td with Tarrow _ -> newty td | _ -> ty_fun in
-          let ty_res = result_type (omitted @ !ignored) ty_fun in
+          let ty_res = result_type (!omitted @ !ignored) ty_fun in
           match ty_res.desc with
           | Tarrow _ ->
               if !Clflags.classic || not (has_label lbl ty_fun) then
@@ -4236,7 +4237,7 @@ and type_application env funct sargs =
     end
   in
   let warned = ref false in
-  let rec type_args args omitted ty_fun ty_fun0 sargs =
+  let rec type_args args ty_fun ty_fun0 sargs =
     match expand_head env ty_fun, expand_head env ty_fun0 with
     | {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun',
       {desc=Tarrow (_, ty0, ty_fun0, _)}
@@ -4307,15 +4308,14 @@ and type_application env funct sargs =
                      abstract over it. *)
                   may_warn funct.exp_loc
                     (Warnings.Without_principality "commuted an argument");
+                  omitted := (l,ty,lv) :: !omitted;
                   None
                 end
         in
-        let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
-        type_args ((l,arg)::args) omitted ty_fun ty_fun0 sargs
+        type_args ((l,arg)::args) ty_fun ty_fun0 sargs
     | _ ->
         let ty_fun, typed_args =
-          List.fold_left (type_unknown_arg omitted) (ty_fun0, args)
-            sargs
+          List.fold_left type_unknown_arg (ty_fun0, args) sargs
         in
         let args =
           List.map
@@ -4324,7 +4324,7 @@ and type_application env funct sargs =
               | l, Some f -> l, Some (f ()))
             (List.rev typed_args)
         in
-        let result_ty = instance (result_type omitted ty_fun) in
+        let result_ty = instance (result_type !omitted ty_fun) in
         args, result_ty
   in
   let is_ignore funct =
@@ -4341,7 +4341,7 @@ and type_application env funct sargs =
       ([Nolabel, Some exp], ty_res)
   | _ ->
     let ty = funct.exp_type in
-    type_args [] [] ty (instance ty) sargs
+    type_args [] ty (instance ty) sargs
 
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
