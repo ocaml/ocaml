@@ -72,10 +72,6 @@ let chunk = function
   | Double -> "float64"
   | Double_u -> "float64u"
 
-let raise_kind fmt = function
-  | Raise_withtrace -> Format.fprintf fmt "raise_withtrace"
-  | Raise_notrace -> Format.fprintf fmt "raise_notrace"
-
 let phantom_defining_expr ppf defining_expr =
   match defining_expr with
   | Cphantom_const_int i -> Targetint.print ppf i
