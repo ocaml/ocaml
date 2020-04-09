@@ -62,8 +62,8 @@ val f1 : (module Foo) -> unit = <fun>
 let f2 = ffoo bar;;
 [%%expect {|
 Line 1, characters 14-17:
-  let f2 = ffoo bar;;
-                ^^^
+1 | let f2 = ffoo bar;;
+                  ^^^
 Error: This expression has type Variants.bar M.t
        but an expression was expected of type Variants.foo M.t
        Type Variants.bar = [ `Bar ] is not compatible with type Variants.foo
@@ -73,8 +73,8 @@ Error: This expression has type Variants.bar M.t
 let f3 = fbar foo;;
 [%%expect {|
 Line 1, characters 14-17:
-  let f3 = fbar foo;;
-                ^^^
+1 | let f3 = fbar foo;;
+                  ^^^
 Error: This expression has type Variants.foo M.t
        but an expression was expected of type Variants.bar M.t
        Type Variants.foo is not compatible with type Variants.bar = [ `Bar ]

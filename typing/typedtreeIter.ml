@@ -353,7 +353,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter (fun (_path, _, exp) ->
                 iter_expression exp
             ) list
-        | Texp_letmodule (_id, _, mexpr, exp) ->
+        | Texp_letmodule (_id, _, _, mexpr, exp) ->
             iter_module_expr mexpr;
             iter_expression exp
         | Texp_letexception (cd, exp) ->
@@ -392,12 +392,15 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_type_declarations rf list
         | Tsig_effect ext ->
             iter_extension_constructor ext
+        | Tsig_typesubst list ->
+            iter_type_declarations Nonrecursive list
         | Tsig_exception ext ->
             iter_type_exception ext
         | Tsig_typext tyext ->
             iter_type_extension tyext
         | Tsig_module md ->
             iter_module_type md.md_type
+        | Tsig_modsubst _ -> ()
         | Tsig_recmodule list ->
             List.iter (fun md -> iter_module_type md.md_type) list
         | Tsig_modtype mtd ->

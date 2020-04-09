@@ -34,7 +34,7 @@ let omega = make_pat Tpat_any Ctype.none Env.empty
 
 let extra_pat =
   make_pat
-    (Tpat_var (Ident.create "+", mknoloc "+"))
+    (Tpat_var (Ident.create_local "+", mknoloc "+"))
     Ctype.none Env.empty
 
 let rec omegas i =
@@ -974,7 +974,7 @@ let some_private_tag = "<some private tag>"
 let build_other ext env = match env with
 | ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
         (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
-        make_pat (Tpat_var (Ident.create "*extension*",
+        make_pat (Tpat_var (Ident.create_local "*extension*",
                             {lid with txt="*extension*"})) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
@@ -1871,7 +1871,7 @@ module Conv = struct
   let fresh name =
     let current = !name_counter in
     name_counter := !name_counter + 1;
-    "#$" ^ name ^ string_of_int current
+    "#$" ^ name ^ Int.to_string current
 
   let conv typed =
     let constrs = Hashtbl.create 7 in
@@ -2459,7 +2459,7 @@ let all_rhs_idents exp =
     let leave_expression exp =
       if is_unpack exp then begin match exp.exp_desc with
       | Texp_letmodule
-          (id_mod,_,
+          (id_mod,_,_,
            {mod_desc=
             Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
            _) ->

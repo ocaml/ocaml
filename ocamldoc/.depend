@@ -186,9 +186,9 @@ odoc_parser.cmo : odoc_types.cmi odoc_comments_global.cmi odoc_parser.cmi
 odoc_parser.cmx : odoc_types.cmx odoc_comments_global.cmx odoc_parser.cmi
 odoc_parser.cmi : odoc_types.cmi
 odoc_print.cmo : ../typing/types.cmi ../typing/printtyp.cmi \
-    ../utils/misc.cmi odoc_print.cmi
+    ../utils/misc.cmi ../typing/btype.cmi odoc_print.cmi
 odoc_print.cmx : ../typing/types.cmx ../typing/printtyp.cmx \
-    ../utils/misc.cmx odoc_print.cmi
+    ../utils/misc.cmx ../typing/btype.cmx odoc_print.cmi
 odoc_print.cmi : ../typing/types.cmi
 odoc_scan.cmo : odoc_value.cmo odoc_types.cmi odoc_type.cmo odoc_module.cmo \
     odoc_extension.cmo odoc_exception.cmo odoc_class.cmo

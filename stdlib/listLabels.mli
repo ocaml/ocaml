@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+(** An alias for the type of lists. *)
+
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive
@@ -352,7 +355,7 @@ val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     Not tail-recursive (sum of the lengths of the arguments).
 *)
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 val to_seq : 'a list -> 'a Seq.t
 (** Iterate on the list

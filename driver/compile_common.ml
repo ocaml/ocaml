@@ -66,8 +66,8 @@ let typecheck_intf info ast =
 
 let emit_signature info ast tsg =
   let sg =
-    let deprecated = Builtin_attributes.deprecated_of_sig ast in
-    Env.save_signature ~deprecated tsg.Typedtree.sig_type
+    let alerts = Builtin_attributes.alerts_of_sig ast in
+    Env.save_signature ~alerts tsg.Typedtree.sig_type
       info.modulename (info.outputprefix ^ ".cmi")
   in
   Typemod.save_signature info.modulename tsg

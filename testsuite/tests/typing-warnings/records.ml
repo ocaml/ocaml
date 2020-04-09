@@ -23,59 +23,59 @@ module OK = struct
 end;;
 [%%expect{|
 Line 3, characters 19-20:
-    let f1 (r:t) = r.x (* ok *)
-                     ^
+3 |   let f1 (r:t) = r.x (* ok *)
+                       ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 4, characters 29-30:
-    let f2 r = ignore (r:t); r.x (* non principal *)
-                               ^
+4 |   let f2 r = ignore (r:t); r.x (* non principal *)
+                                 ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 7, characters 18-19:
-      match r with {x; y} -> y + y (* ok *)
-                    ^
+7 |     match r with {x; y} -> y + y (* ok *)
+                      ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 7, characters 21-22:
-      match r with {x; y} -> y + y (* ok *)
-                       ^
+7 |     match r with {x; y} -> y + y (* ok *)
+                         ^
 Warning 42: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 7, characters 18-19:
-      match r with {x; y} -> y + y (* ok *)
-                    ^
+7 |     match r with {x; y} -> y + y (* ok *)
+                      ^
 Warning 27: unused variable x.
 module OK :
   sig val f1 : M1.t -> int val f2 : M1.t -> int val f3 : M1.t -> int end
 |}, Principal{|
 Line 3, characters 19-20:
-    let f1 (r:t) = r.x (* ok *)
-                     ^
+3 |   let f1 (r:t) = r.x (* ok *)
+                       ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 4, characters 29-30:
-    let f2 r = ignore (r:t); r.x (* non principal *)
-                               ^
+4 |   let f2 r = ignore (r:t); r.x (* non principal *)
+                                 ^
 Warning 18: this type-based field disambiguation is not principal.
 Line 4, characters 29-30:
-    let f2 r = ignore (r:t); r.x (* non principal *)
-                               ^
+4 |   let f2 r = ignore (r:t); r.x (* non principal *)
+                                 ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 7, characters 18-19:
-      match r with {x; y} -> y + y (* ok *)
-                    ^
+7 |     match r with {x; y} -> y + y (* ok *)
+                      ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 7, characters 21-22:
-      match r with {x; y} -> y + y (* ok *)
-                       ^
+7 |     match r with {x; y} -> y + y (* ok *)
+                         ^
 Warning 42: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 7, characters 18-19:
-      match r with {x; y} -> y + y (* ok *)
-                    ^
+7 |     match r with {x; y} -> y + y (* ok *)
+                      ^
 Warning 27: unused variable x.
 module OK :
   sig val f1 : M1.t -> int val f2 : M1.t -> int val f3 : M1.t -> int end
@@ -87,13 +87,13 @@ module F1 = struct
 end;; (* fails *)
 [%%expect{|
 Line 3, characters 25-31:
-    let f r = match r with {x; y} -> y + y
-                           ^^^^^^
+3 |   let f r = match r with {x; y} -> y + y
+                             ^^^^^^
 Warning 41: these field labels belong to several types: M1.u M1.t
 The first one was selected. Please disambiguate if this is wrong.
 Line 3, characters 35-36:
-    let f r = match r with {x; y} -> y + y
-                                     ^
+3 |   let f r = match r with {x; y} -> y + y
+                                       ^
 Error: This expression has type bool but an expression was expected of type
          int
 |}]
@@ -107,29 +107,29 @@ module F2 = struct
 end;; (* fails for -principal *)
 [%%expect{|
 Line 6, characters 8-9:
-         {x; y} -> y + y
-          ^
+6 |        {x; y} -> y + y
+            ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 6, characters 11-12:
-         {x; y} -> y + y
-             ^
+6 |        {x; y} -> y + y
+               ^
 Warning 42: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 6, characters 8-9:
-         {x; y} -> y + y
-          ^
+6 |        {x; y} -> y + y
+            ^
 Warning 27: unused variable x.
 module F2 : sig val f : M1.t -> int end
 |}, Principal{|
 Line 6, characters 7-13:
-         {x; y} -> y + y
-         ^^^^^^
+6 |        {x; y} -> y + y
+           ^^^^^^
 Warning 41: these field labels belong to several types: M1.u M1.t
 The first one was selected. Please disambiguate if this is wrong.
 Line 6, characters 7-13:
-         {x; y} -> y + y
-         ^^^^^^
+6 |        {x; y} -> y + y
+           ^^^^^^
 Error: This pattern matches values of type M1.u
        but a pattern was expected which matches values of type M1.t
 |}]
@@ -145,8 +145,8 @@ module M : sig type t = { x : int; } type u = { x : bool; } end
 let f (r:M.t) = r.M.x;; (* ok *)
 [%%expect{|
 Line 1, characters 18-21:
-  let f (r:M.t) = r.M.x;; (* ok *)
-                    ^^^
+1 | let f (r:M.t) = r.M.x;; (* ok *)
+                      ^^^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 val f : M.t -> int = <fun>
@@ -154,14 +154,14 @@ val f : M.t -> int = <fun>
 let f (r:M.t) = r.x;; (* warning *)
 [%%expect{|
 Line 1, characters 18-19:
-  let f (r:M.t) = r.x;; (* warning *)
-                    ^
+1 | let f (r:M.t) = r.x;; (* warning *)
+                      ^
 Warning 40: x was selected from type M.t.
 It is not visible in the current scope, and will not
 be selected if the type becomes unknown.
 Line 1, characters 18-19:
-  let f (r:M.t) = r.x;; (* warning *)
-                    ^
+1 | let f (r:M.t) = r.x;; (* warning *)
+                      ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 val f : M.t -> int = <fun>
@@ -169,13 +169,13 @@ val f : M.t -> int = <fun>
 let f ({x}:M.t) = x;; (* warning *)
 [%%expect{|
 Line 1, characters 8-9:
-  let f ({x}:M.t) = x;; (* warning *)
-          ^
+1 | let f ({x}:M.t) = x;; (* warning *)
+            ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 1, characters 7-10:
-  let f ({x}:M.t) = x;; (* warning *)
-         ^^^
+1 | let f ({x}:M.t) = x;; (* warning *)
+           ^^^
 Warning 40: this record of type M.t contains fields that are
 not visible in the current scope: x.
 They will not be selected if the type becomes unknown.
@@ -201,13 +201,13 @@ module OK = struct
 end;;
 [%%expect{|
 Line 4, characters 20-21:
-    let f (r:M.t) = r.x
-                      ^
+4 |   let f (r:M.t) = r.x
+                        ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 2-8:
-    open N
-    ^^^^^^
+3 |   open N
+      ^^^^^^
 Warning 33: unused open N.
 module OK : sig val f : M.t -> int end
 |}]
@@ -251,13 +251,13 @@ module OK = struct
 end;; (* ok *)
 [%%expect{|
 Line 3, characters 9-10:
-    let f {x;z} = x,z
-           ^
+3 |   let f {x;z} = x,z
+             ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 8-13:
-    let f {x;z} = x,z
-          ^^^^^
+3 |   let f {x;z} = x,z
+            ^^^^^
 Warning 9: the following labels are not bound in this record pattern:
 y
 Either bind these labels explicitly or add '; _' to the pattern.
@@ -269,8 +269,8 @@ module F3 = struct
 end;; (* fail for missing label *)
 [%%expect{|
 Line 3, characters 10-24:
-    let r = {x=true;z='z'}
-            ^^^^^^^^^^^^^^
+3 |   let r = {x=true;z='z'}
+              ^^^^^^^^^^^^^^
 Error: Some record fields are undefined: y
 |}]
 
@@ -281,13 +281,13 @@ module OK = struct
 end;; (* ok *)
 [%%expect{|
 Line 4, characters 11-12:
-    let r = {x=3; y=true}
-             ^
+4 |   let r = {x=3; y=true}
+               ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 4, characters 16-17:
-    let r = {x=3; y=true}
-                  ^
+4 |   let r = {x=3; y=true}
+                    ^
 Warning 42: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 module OK :
@@ -307,8 +307,8 @@ module F4 = struct
 end;; (* fail but don't warn *)
 [%%expect{|
 Line 4, characters 22-23:
-    let b : bar = {x=3; y=4}
-                        ^
+4 |   let b : bar = {x=3; y=4}
+                          ^
 Error: This record expression is expected to have type bar
        The field y does not belong to type bar
 |}]
@@ -324,8 +324,8 @@ module N : sig type bar = { x : int; y : int; } end
 let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
 [%%expect{|
 Line 1, characters 19-22:
-  let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
-                     ^^^
+1 | let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
+                       ^^^
 Error: The record field N.y belongs to the type N.bar
        but is mixed here with fields of type M.foo
 |}]
@@ -347,18 +347,18 @@ module NM :
 let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
 [%%expect{|
 Line 1, characters 8-28:
-  let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
-          ^^^^^^^^^^^^^^^^^^^^
+1 | let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
+            ^^^^^^^^^^^^^^^^^^^^
 Warning 41: x belongs to several types: MN.bar MN.foo
 The first one was selected. Please disambiguate if this is wrong.
 Line 1, characters 8-28:
-  let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
-          ^^^^^^^^^^^^^^^^^^^^
+1 | let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
+            ^^^^^^^^^^^^^^^^^^^^
 Warning 41: y belongs to several types: NM.foo NM.bar
 The first one was selected. Please disambiguate if this is wrong.
 Line 1, characters 19-23:
-  let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
-                     ^^^^
+1 | let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
+                       ^^^^
 Error: The record field NM.y belongs to the type NM.foo = M.foo
        but is mixed here with fields of type MN.bar = N.bar
 |}]
@@ -382,13 +382,13 @@ module F5 = struct
 end;;
 [%%expect{|
 Line 3, characters 37-38:
-    let f r = ignore (r: foo); {r with x = 2; z = 3}
-                                       ^
+3 |   let f r = ignore (r: foo); {r with x = 2; z = 3}
+                                         ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 44-45:
-    let f r = ignore (r: foo); {r with x = 2; z = 3}
-                                              ^
+3 |   let f r = ignore (r: foo); {r with x = 2; z = 3}
+                                                ^
 Error: This record expression is expected to have type M.foo
        The field z does not belong to type M.foo
 |}]
@@ -410,13 +410,13 @@ module F6 = struct
 end;;
 [%%expect{|
 Line 3, characters 38-39:
-    let f r = ignore (r: foo); { r with x = 3; a = 4 }
-                                        ^
+3 |   let f r = ignore (r: foo); { r with x = 3; a = 4 }
+                                          ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 45-46:
-    let f r = ignore (r: foo); { r with x = 3; a = 4 }
-                                               ^
+3 |   let f r = ignore (r: foo); { r with x = 3; a = 4 }
+                                                 ^
 Error: This record expression is expected to have type M.foo
        The field a does not belong to type M.foo
 |}]
@@ -427,18 +427,18 @@ module F7 = struct
 end;;
 [%%expect{|
 Line 3, characters 11-12:
-    let r = {x=1; y=2}
-             ^
+3 |   let r = {x=1; y=2}
+               ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 16-17:
-    let r = {x=1; y=2}
-                  ^
+3 |   let r = {x=1; y=2}
+                    ^
 Warning 42: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 4, characters 18-19:
-    let r: other = {x=1; y=2}
-                    ^
+4 |   let r: other = {x=1; y=2}
+                      ^
 Error: This record expression is expected to have type M.other
        The field x does not belong to type M.other
 |}]
@@ -452,8 +452,8 @@ module B : sig type t = { x : int; } end
 let f (r : B.t) = r.A.x;; (* fail *)
 [%%expect{|
 Line 1, characters 20-23:
-  let f (r : B.t) = r.A.x;; (* fail *)
-                      ^^^
+1 | let f (r : B.t) = r.A.x;; (* fail *)
+                        ^^^
 Error: The field A.x belongs to the record type A.t
        but a field was expected belonging to the record type B.t
 |}]
@@ -466,8 +466,8 @@ module F8 = struct
 end;;
 [%%expect{|
 Line 3, characters 19-22:
-    let a : t = {x=1;yyz=2}
-                     ^^^
+3 |   let a : t = {x=1;yyz=2}
+                       ^^^
 Error: This record expression is expected to have type t
        The field yyz does not belong to type t
 Hint: Did you mean yyy?
@@ -489,8 +489,8 @@ class g = f A;; (* ok *)
 class f (_ : 'a) (_ : 'a) = object end;;
 [%%expect{|
 Line 1, characters 12-13:
-  class g = f A;; (* ok *)
-              ^
+1 | class g = f A;; (* ok *)
+                ^
 Warning 42: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 class g : f
@@ -499,29 +499,29 @@ class f : 'a -> 'a -> object  end
 class g = f (A : t) A;; (* warn with -principal *)
 [%%expect{|
 Line 1, characters 13-14:
-  class g = f (A : t) A;; (* warn with -principal *)
-               ^
+1 | class g = f (A : t) A;; (* warn with -principal *)
+                 ^
 Warning 42: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 1, characters 20-21:
-  class g = f (A : t) A;; (* warn with -principal *)
-                      ^
+1 | class g = f (A : t) A;; (* warn with -principal *)
+                        ^
 Warning 42: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 class g : f
 |}, Principal{|
 Line 1, characters 13-14:
-  class g = f (A : t) A;; (* warn with -principal *)
-               ^
+1 | class g = f (A : t) A;; (* warn with -principal *)
+                 ^
 Warning 42: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 1, characters 20-21:
-  class g = f (A : t) A;; (* warn with -principal *)
-                      ^
+1 | class g = f (A : t) A;; (* warn with -principal *)
+                        ^
 Warning 18: this type-based constructor disambiguation is not principal.
 Line 1, characters 20-21:
-  class g = f (A : t) A;; (* warn with -principal *)
-                      ^
+1 | class g = f (A : t) A;; (* warn with -principal *)
+                        ^
 Warning 42: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 class g : f
@@ -540,13 +540,13 @@ module Shadow1 = struct
 end;;
 [%%expect{|
 Line 7, characters 15-16:
-    let y : t = {x = 0}
-                 ^
+7 |   let y : t = {x = 0}
+                   ^
 Warning 42: this use of x relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 Line 6, characters 2-8:
-    open M  (* this open is unused, it isn't reported as shadowing 'x' *)
-    ^^^^^^
+6 |   open M  (* this open is unused, it isn't reported as shadowing 'x' *)
+      ^^^^^^
 Warning 33: unused open M.
 module Shadow1 :
   sig
@@ -565,12 +565,12 @@ module Shadow2 = struct
 end;;
 [%%expect{|
 Line 6, characters 2-8:
-    open M  (* this open shadows label 'x' *)
-    ^^^^^^
+6 |   open M  (* this open shadows label 'x' *)
+      ^^^^^^
 Warning 45: this open statement shadows the label x (which is later used)
 Line 7, characters 10-18:
-    let y = {x = ""}
-            ^^^^^^^^
+7 |   let y = {x = ""}
+              ^^^^^^^^
 Warning 41: these field labels belong to several types: M.s t
 The first one was selected. Please disambiguate if this is wrong.
 module Shadow2 :
@@ -591,8 +591,8 @@ module P6235 = struct
 end;;
 [%%expect{|
 Line 5, characters 37-40:
-    let f (u : u) = match u with `Key {loc} -> loc
-                                       ^^^
+5 |   let f (u : u) = match u with `Key {loc} -> loc
+                                         ^^^
 Warning 42: this use of loc relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 module P6235 :
@@ -616,8 +616,8 @@ module P6235' = struct
 end;;
 [%%expect{|
 Line 7, characters 11-14:
-      |`Key {loc} -> loc
-             ^^^
+7 |     |`Key {loc} -> loc
+               ^^^
 Warning 42: this use of loc relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 module P6235' :
@@ -629,19 +629,19 @@ module P6235' :
   end
 |}, Principal{|
 Line 7, characters 10-15:
-      |`Key {loc} -> loc
-            ^^^^^
+7 |     |`Key {loc} -> loc
+              ^^^^^
 Warning 41: these field labels belong to several types: v t
 The first one was selected. Please disambiguate if this is wrong.
 Line 7, characters 10-15:
-      |`Key {loc} -> loc
-            ^^^^^
+7 |     |`Key {loc} -> loc
+              ^^^^^
 Warning 9: the following labels are not bound in this record pattern:
 x
 Either bind these labels explicitly or add '; _' to the pattern.
 Line 7, characters 5-15:
-      |`Key {loc} -> loc
-       ^^^^^^^^^^
+7 |     |`Key {loc} -> loc
+         ^^^^^^^^^^
 Error: This pattern matches values of type [? `Key of v ]
        but a pattern was expected which matches values of type u
        Types for tag `Key are incompatible

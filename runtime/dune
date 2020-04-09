@@ -1,0 +1,58 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(rule
+ (targets primitives)
+ (mode    fallback)
+ (deps    alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c intern.c
+          interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c signals.c
+          str.c sys.c callback.c weak.c finalise.c stacks.c dynlink.c
+          backtrace_byt.c backtrace.c spacetime_byt.c afl.c bigarray.c)
+ (action  (with-stdout-to %{targets} (run %{dep:gen_primitives.sh}))))
+
+(rule
+ (targets libcamlrun.a)
+ (mode    fallback)
+ (deps    ../Makefile.config ../Makefile.common Makefile
+          (glob_files caml/*.h)
+          interp.c misc.c stacks.c fix_code.c startup_aux.c startup_byt.c
+          freelist.c major_gc.c minor_gc.c memory.c alloc.c roots_byt.c
+          globroots.c fail_byt.c signals.c signals_byt.c printexc.c
+          backtrace_byt.c backtrace.c compare.c ints.c floats.c str.c array.c
+          io.c extern.c intern.c hash.c sys.c meta.c parsing.c gc_ctrl.c md5.c
+          obj.c lexing.c callback.c debugger.c weak.c compact.c finalise.c
+          custom.c dynlink.c spacetime_byt.c afl.c unix.c win32.c bigarray.c
+          main.c)
+ (action
+   (progn
+     (bash "touch .depend") ; hack.
+     (run make %{targets})
+     (bash "rm .depend"))))
+
+;; HACK
+(library
+  (name runtime)
+  (modes byte)
+  (wrapped false)
+  (modules runtime)
+  (flags (-nostdlib -nopervasives))
+  (self_build_stubs_archive (runtime)))
+
+(rule
+  (targets libruntime_stubs.a)
+  (action (copy libcamlrun.a %{targets})))
+
+(rule
+  (targets runtime.ml)
+  (action (write-file %{targets} "let linkme = ()")))

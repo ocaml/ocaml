@@ -280,9 +280,9 @@ The following character sequences are also keywords:
 %
 \begin{alltt}
 "    !=    #     &     &&    '     (     )     *     +     ,     -"
-"    -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <"
-"    <-    =     >     >]    >}    ?     [     [<    [>    [|    ]"
-"    _     `     {     {<    |     |]    ||    }     ~"
+"    -.    ->    .     ..    .~    :     ::    :=    :>    ;     ;;"
+"    <     <-    =     >     >]    >}    ?     [     [<    [>    [|"
+"    ]     _     `     {     {<    |     |]    ||    }     ~"
 \end{alltt}
 %
 Note that the following identifiers are keywords of the Camlp4

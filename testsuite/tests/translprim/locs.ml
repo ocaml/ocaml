@@ -7,7 +7,7 @@ let print_file file =
   print_endline file
 
 let print_line line =
-  print_endline (string_of_int line)
+  print_endline (Int.to_string line)
 
 let print_module md =
   print_endline md

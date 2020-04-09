@@ -117,7 +117,6 @@ let match_printer_type ppf desc typename =
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in
-  Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
@@ -148,7 +147,7 @@ let find_printer_type ppf lid =
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
-    let v = eval_path !toplevel_env path in
+    let v = eval_value_path !toplevel_env path in
     let print_function =
       if is_old_style then
         (fun _formatter repr -> Obj.obj v (Obj.obj repr))

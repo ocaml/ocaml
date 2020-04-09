@@ -15,8 +15,8 @@ type _ choice =
 let f : label choice -> bool = function Left -> true;; (* warn *)
 [%%expect {|
 Line 1, characters 31-52:
-  let f : label choice -> bool = function Left -> true;; (* warn *)
-                                 ^^^^^^^^^^^^^^^^^^^^^
+1 | let f : label choice -> bool = function Left -> true;; (* warn *)
+                                   ^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Right

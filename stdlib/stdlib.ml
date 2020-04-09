@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* type 'a option = None | Some of 'a *)
-
 (* Exceptions *)
 
 external register_named_value : string -> 'a -> unit
@@ -25,7 +23,6 @@ let () =
   register_named_value "Pervasives.array_bound_error"
     (Invalid_argument "index out of bounds")
 
-
 external raise : exn -> 'a = "%raise"
 external raise_notrace : exn -> 'a = "%raise_notrace"
 
@@ -33,6 +30,18 @@ let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
+exception Match_failure = Match_failure
+exception Assert_failure = Assert_failure
+exception Invalid_argument = Invalid_argument
+exception Failure = Failure
+exception Not_found = Not_found
+exception Out_of_memory = Out_of_memory
+exception Stack_overflow = Stack_overflow
+exception Sys_error = Sys_error
+exception End_of_file = End_of_file
+exception Division_by_zero = Division_by_zero
+exception Sys_blocked_io = Sys_blocked_io
+exception Undefined_recursive_module = Undefined_recursive_module
 
 (* Effects *)
 
@@ -593,6 +602,7 @@ module Array        = Array
 module ArrayLabels  = ArrayLabels
 module Atomic       = Atomic
 module Bigarray     = Bigarray
+module Bool         = Bool
 module Buffer       = Buffer
 module Bytes        = Bytes
 module BytesLabels  = BytesLabels
@@ -605,9 +615,11 @@ module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float
 module Format       = Format
+module Fun          = Fun
 module Gc           = Gc
 module Genlex       = Genlex
 module Hashtbl      = Hashtbl
+module Int          = Int
 module Int32        = Int32
 module Int64        = Int64
 module Lazy         = Lazy

@@ -21,11 +21,12 @@ open Lambda
 (* Get oo primitives identifiers *)
 
 let oo_prim name =
-  try
-    transl_normal_path
-      (fst (Env.lookup_value (Ldot (Lident "CamlinternalOO", name)) Env.empty))
-  with Not_found ->
-    fatal_error ("Primitive " ^ name ^ " not found.")
+  let env = Env.empty in
+  let lid = Ldot (Lident "CamlinternalOO", name) in
+  match Env.lookup_value lid env with
+  | path, _ -> transl_value_path Location.none env path
+  | exception Not_found ->
+      fatal_error ("Primitive " ^ name ^ " not found.")
 
 (* Share blocks *)
 
@@ -37,7 +38,7 @@ let share c =
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
-        let id = Ident.create "shared" in
+        let id = Ident.create_local "shared" in
         Hashtbl.add consts c id;
         Lvar id
       end
@@ -112,7 +113,7 @@ let transl_label_init_general f =
 
 let transl_label_init_flambda f =
   assert(Config.flambda);
-  let method_cache_id = Ident.create "method_cache" in
+  let method_cache_id = Ident.create_local "method_cache" in
   method_cache := Lvar method_cache_id;
   (* Calling f (usually Translmod.transl_struct) requires the
      method_cache variable to be initialised to be able to generate

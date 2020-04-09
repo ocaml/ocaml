@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of lists. *)
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+
 (* List operations *)
 
 let rec length_aux len = function
@@ -491,7 +494,7 @@ let rec compare_length_with l n =
       compare_length_with l (n-1)
 ;;
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq l =
   let rec aux l () = match l with

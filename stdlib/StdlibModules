@@ -27,6 +27,7 @@ STDLIB_MODULES=\
   $(P)arrayLabels \
   $(P)atomic \
   $(P)bigarray \
+  $(P)bool \
   $(P)buffer \
   $(P)bytes \
   $(P)bytesLabels \
@@ -44,9 +45,11 @@ STDLIB_MODULES=\
   $(P)filename \
   $(P)float \
   $(P)format \
+  $(P)fun \
   $(P)gc \
   $(P)genlex \
   $(P)hashtbl \
+  $(P)int \
   $(P)int32 \
   $(P)int64 \
   $(P)lazy \
@@ -78,4 +81,5 @@ STDLIB_MODULES=\
   $(P)stringLabels \
   $(P)sys \
   $(P)uchar \
+  $(P)unit \
   $(P)weak

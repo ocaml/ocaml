@@ -48,12 +48,14 @@ arch_error() {
   error "$msg"
 }
 
-# Change a variable in config/Makefile
+# Change a variable in Makefile.config
 # Usage: set_config_var <variable name> <new value>
 
+
 set_config_var() {
-  mv config/Makefile config/Makefile.bak
-  (grep -v "^$1=" config/Makefile.bak; echo "$1=$2") > config/Makefile
+  conffile=Makefile.config
+  mv ${conffile} ${conffile}.bak
+  (grep -v "^$1=" ${conffile}.bak; echo "$1=$2") > ${conffile}
 }
 
 # Undefine a macro in a C header file

@@ -15,7 +15,6 @@
 
 (* The interactive toplevel loop *)
 
-open Path
 open Format
 open Config
 open Misc
@@ -62,14 +61,12 @@ type directive_fun =
    | Directive_bool of (bool -> unit)
 
 
-(* Return the value referred to by a path *)
-
 let remembered = ref Ident.empty
 
 let rec remember phrase_name i = function
   | [] -> ()
   | Sig_value  (id, _) :: rest
-  | Sig_module (id, _, _) :: rest
+  | Sig_module (id, _, _, _) :: rest
   | Sig_typext (id, _, _) :: rest
   | Sig_class  (id, _, _) :: rest ->
       remembered := Ident.add id (phrase_name, i) !remembered;
@@ -98,25 +95,41 @@ let toplevel_value id =
   in
   (Obj.magic (global_symbol glob)).(pos)
 
-let rec eval_path = function
-  | Pident id ->
+(* Return the value referred to by a path *)
+
+let rec eval_address = function
+  | Env.Aident id ->
       if Ident.persistent id || Ident.global id
       then global_symbol id
       else toplevel_value id
-  | Pdot(p, _s, pos) ->
-      Obj.field (eval_path p) pos
-  | Papply _ ->
-      fatal_error "Toploop.eval_path"
+  | Env.Adot(a, pos) ->
+      Obj.field (eval_address a) pos
 
-let eval_path env path =
-  eval_path (Env.normalize_path (Some Location.none) env path)
+let eval_path find env path =
+  match find path env with
+  | addr -> eval_address addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
+
+let eval_module_path env path =
+  eval_path Env.find_module_address env path
+
+let eval_value_path env path =
+  eval_path Env.find_value_address env path
+
+let eval_extension_path env path =
+  eval_path Env.find_constructor_address env path
+
+let eval_class_path env path =
+  eval_path Env.find_class_address env path
 
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path env p = try eval_path env p with _ -> raise Error
+  let eval_address addr =
+    try eval_address addr with _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -162,7 +175,8 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
+    String.capitalize_ascii
+      (Filename.remove_extension (Filename.basename name))
   in
   let items =
     List.concat
@@ -297,9 +311,9 @@ let execute_phrase print_outcome ppf phr =
             [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
         | _ -> sstr, false
       in
-      let (str, sg, info, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, names, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature newenv info sg in
+      let sg' = Typemod.Signature_names.simplify newenv names sg in
       (* Why is this done? *)
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
@@ -508,7 +522,6 @@ let refill_lexbuf buffer len =
 
 let _ =
   Sys.interactive := true;
-  Compdynlink.init ();
   Compmisc.init_path true;
   Clflags.dlcode := true;
   ()

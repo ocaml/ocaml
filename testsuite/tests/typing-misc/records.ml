@@ -8,15 +8,15 @@ type t = {x:int;y:int};;
 [%%expect{|
 type t = { x : int; y : int; }
 Line 2, characters 5-6:
-  {x=3;z=2};;
-       ^
+2 | {x=3;z=2};;
+         ^
 Error: Unbound record field z
 |}];;
 fun {x=3;z=2} -> ();;
 [%%expect{|
 Line 1, characters 9-10:
-  fun {x=3;z=2} -> ();;
-           ^
+1 | fun {x=3;z=2} -> ();;
+             ^
 Error: Unbound record field z
 |}];;
 
@@ -24,8 +24,8 @@ Error: Unbound record field z
 {x=3; contents=2};;
 [%%expect{|
 Line 1, characters 6-14:
-  {x=3; contents=2};;
-        ^^^^^^^^
+1 | {x=3; contents=2};;
+          ^^^^^^^^
 Error: The record field contents belongs to the type 'a ref
        but is mixed here with fields of type t
 |}];;
@@ -36,15 +36,15 @@ type u = private {mutable u:int};;
 [%%expect{|
 type u = private { mutable u : int; }
 Line 2, characters 0-5:
-  {u=3};;
-  ^^^^^
+2 | {u=3};;
+    ^^^^^
 Error: Cannot create values of the private type u
 |}];;
 fun x -> x.u <- 3;;
 [%%expect{|
 Line 1, characters 11-12:
-  fun x -> x.u <- 3;;
-             ^
+1 | fun x -> x.u <- 3;;
+               ^
 Error: Cannot assign field u of the private type u
 |}];;
 
@@ -71,8 +71,8 @@ let f (r: int) = r.y <- 3;;
 [%%expect{|
 type foo = { mutable y : int; }
 Line 2, characters 17-18:
-  let f (r: int) = r.y <- 3;;
-                   ^
+2 | let f (r: int) = r.y <- 3;;
+                     ^
 Error: This expression has type int but an expression was expected of type
          foo
 |}];;
@@ -82,8 +82,8 @@ let f (r: int) =
   | { contents = 3 } -> ()
 [%%expect{|
 Line 3, characters 4-20:
-    | { contents = 3 } -> ()
-      ^^^^^^^^^^^^^^^^
+3 |   | { contents = 3 } -> ()
+        ^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type int ref
        but a pattern was expected which matches values of type int
 |}];;
@@ -98,8 +98,8 @@ let f (r: bar) = ({ r with z = 3 } : foo)
 type foo = { y : int; z : int; }
 type bar = { x : int; }
 Line 3, characters 20-21:
-  let f (r: bar) = ({ r with z = 3 } : foo)
-                      ^
+3 | let f (r: bar) = ({ r with z = 3 } : foo)
+                        ^
 Error: This expression has type bar but an expression was expected of type
          foo
 |}];;
@@ -109,16 +109,16 @@ let r : foo = { ZZZ.x = 2 };;
 [%%expect{|
 type foo = { x : int; }
 Line 2, characters 16-21:
-  let r : foo = { ZZZ.x = 2 };;
-                  ^^^^^
+2 | let r : foo = { ZZZ.x = 2 };;
+                    ^^^^^
 Error: Unbound module ZZZ
 |}];;
 
 (ZZZ.X : int option);;
 [%%expect{|
 Line 1, characters 1-6:
-  (ZZZ.X : int option);;
-   ^^^^^
+1 | (ZZZ.X : int option);;
+     ^^^^^
 Error: Unbound module ZZZ
 |}];;
 
@@ -126,8 +126,8 @@ Error: Unbound module ZZZ
 let f (x : Complex.t) = x.Complex.z;;
 [%%expect{|
 Line 1, characters 26-35:
-  let f (x : Complex.t) = x.Complex.z;;
-                            ^^^^^^^^^
+1 | let f (x : Complex.t) = x.Complex.z;;
+                              ^^^^^^^^^
 Error: Unbound record field Complex.z
 |}];;
 
@@ -135,8 +135,8 @@ Error: Unbound record field Complex.z
 { true with contents = 0 };;
 [%%expect{|
 Line 1, characters 2-6:
-  { true with contents = 0 };;
-    ^^^^
+1 | { true with contents = 0 };;
+      ^^^^
 Error: This expression has type bool but an expression was expected of type
          'a ref
 |}];;
@@ -158,8 +158,8 @@ let x = { f = 12; g = 43 };;
 type 'a t = { f : 'a; g : 'a; }
 val x : int t = {f = 12; g = 43}
 Line 3, characters 0-19:
-  {x with f = "hola"};;
-  ^^^^^^^^^^^^^^^^^^^
+3 | {x with f = "hola"};;
+    ^^^^^^^^^^^^^^^^^^^
 Error: This expression has type string t
        but an expression was expected of type int t
        Type string is not compatible with type int

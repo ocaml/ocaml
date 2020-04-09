@@ -24,6 +24,10 @@
 #   updated result. Use it to make permanent changes to the compiler
 #   parser.
 #
+# - demote-menhir undoes the effect of promote-menhir. The files in
+#   the boot/ directory that are affected by promote-menhir and are
+#   under version control are restored to their normal state (HEAD).
+#
 # - test-menhir builds the parser from parser.mly without storing it
 #   in the boot/ directory, and only checks that the generated parser
 #   builds correctly. Use it to quickly check if a parser.mly change
@@ -44,7 +48,7 @@ MENHIR ?= menhir
 
 ## Menhir compilation flags
 
-MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
+MENHIRFLAGS := --explain --dump --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer \
 	--lalr --strict --table -lg 1 -la 1 \
         --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL\
         --unused-token GREATERRBRACKET --fixed-exception
@@ -61,13 +65,13 @@ MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
 
 .PHONY: promote-menhir
 promote-menhir: parsing/parser.mly
-	$(MAKE) import-menhirLib
+	@ $(MAKE) import-menhirLib
 	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
 # The generated parser.ml may contain lexer directives containing
 # the absolute path to Menhir's standard library on the promoter's machine.
 # This is benign but will generate pointless churn if another developer
 # rebuilds the same grammar (from the same Menhir version).
-	for f in $(addprefix parser.,ml mli) ; do \
+	@ for f in $(addprefix parser.,ml mli) ; do \
 	  sed \
 	    's,^#\(.*\)"[^"]*/menhir/standard.mly",#\1"menhir/standard.mly",g' \
 	    parsing/$$f \
@@ -83,11 +87,19 @@ promote-menhir: parsing/parser.mly
 
 .PHONY: import-menhirLib
 import-menhirLib:
-	mkdir -p boot/menhir
-	cp \
+	@ mkdir -p boot/menhir
+	@ cp \
            $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
            boot/menhir
 
+
+## demote-menhir
+
+DEMOTE:=menhirLib.ml menhirLib.mli parser.ml parser.mli
+
+.PHONY: demote-menhir
+demote-menhir:
+	git checkout HEAD -- $(addprefix boot/menhir/,$(DEMOTE))
 
 ## test-menhir
 
@@ -133,3 +145,17 @@ depend-menhir:
 # define in Makefile, so it can only be invoked from the main Makefile
 
 include .depend.menhir
+
+## interpret-menhir
+
+# This rule runs Menhir in interactive mode.
+# The user can enter sentences, such as:
+#   implementation: TYPE LIDENT EQUAL LIDENT EOF
+# and see how Menhir interprets them.
+
+interpret-menhir:
+	@ echo "Please wait, I am building the LALR automaton..."
+	@ $(MENHIR) $(MENHIRFLAGS) parsing/parser.mly \
+	    --interpret \
+	    --interpret-show-cst \
+	    --trace \

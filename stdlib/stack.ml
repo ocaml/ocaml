@@ -53,7 +53,7 @@ let iter f s = List.iter f s.c
 
 let fold f acc s = List.fold_left f acc s.c
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq s = List.to_seq s.c
 

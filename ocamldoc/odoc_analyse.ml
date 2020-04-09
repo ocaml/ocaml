@@ -87,18 +87,19 @@ let process_implementation_file sourcefile =
     in
     (Some (parsetree, typedtree), inputfile)
   with
-    e ->
-      match e with
-        Syntaxerr.Error err ->
+  | Syntaxerr.Error _ as exn ->
+      begin match Location.error_of_exn exn with
+      | Some (`Ok err) ->
           fprintf Format.err_formatter "@[%a@]@."
-            Syntaxerr.report_error err;
-          None, inputfile
-      | Failure s ->
-          prerr_endline s;
-          incr Odoc_global.errors ;
-          None, inputfile
-      | e ->
-          raise e
+            Location.print_report err
+      | _ ->
+          assert false
+      end;
+      None, inputfile
+  | Failure s ->
+      prerr_endline s;
+      incr Odoc_global.errors ;
+      None, inputfile
 
 (** Analysis of an interface file. Returns (Some signature) if
    no error occurred, else None and an error message is printed.*)

@@ -17,6 +17,17 @@ let mk_a f =
   "-a", Arg.Unit f, " Build a library"
 ;;
 
+let mk_alert f =
+  "-alert", Arg.String f,
+  Printf.sprintf
+    "<list>  Enable or disable alerts according to <list>:\n\
+    \        +<alertname>  enable alert <alertname>\n\
+    \        -<alertname>  disable alert <alertname>\n\
+    \        ++<alertname> treat <alertname> as fatal error\n\
+    \        --<alertname> treat <alertname> as non-fatal\n\
+    \        @<alertname>  enable <alertname> and treat it as fatal error\n\
+    \    <alertname> can be 'all' to refer to all alert names";;
+
 let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"
 ;;
@@ -553,8 +564,8 @@ let mk_no_version f =
 
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
-  " Generate code that supports the threads library with VM-level\n\
-  \     scheduling"
+  " (deprecated) Generate code that supports the threads library\n\
+  \     with VM-level scheduling"
 ;;
 
 let mk_vnum f =
@@ -597,7 +608,22 @@ let mk_color f =
   \      never   disable colors\n\
   \    The default setting is 'auto', and the current heuristic\n\
   \    checks that the TERM environment variable exists and is\n\
-  \    not empty or \"dumb\", and that isatty(stderr) holds."
+  \    not empty or \"dumb\", and that isatty(stderr) holds.\n\
+  \  If the option is not specified, these setting can alternatively\n\
+  \  be set through the OCAML_COLOR environment variable."
+;;
+
+let mk_error_style f =
+  "-error-style", Arg.Symbol (["contextual"; "short"], f),
+  Printf.sprintf
+    "  Control the way error messages and warnings are printed\n\
+    \    The following settings are supported:\n\
+    \      short       only print the error and its location\n\
+    \      contextual  like \"short\", but also display the source code\n\
+    \                  snippet corresponding to the location of the error\n\
+    \    The default setting is 'contextual'.\n\
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_ERROR_STYLE environment variable."
 ;;
 
 let mk_where f =
@@ -817,6 +843,7 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
   val _alias_deps : unit -> unit
@@ -901,6 +928,7 @@ module type Compiler_options = sig
   val _verbose : unit -> unit
   val _where : unit -> unit
   val _color : string -> unit
+  val _error_style : string -> unit
 
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
@@ -922,6 +950,8 @@ module type Toplevel_options = sig
   val _stdin : unit -> unit
   val _args : string -> string array
   val _args0 : string -> string array
+  val _color : string -> unit
+  val _error_style : string -> unit
 end
 ;;
 
@@ -1048,6 +1078,7 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_alert F._alert;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -1056,6 +1087,7 @@ struct
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
     mk_color F._color;
+    mk_error_style F._error_style;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1154,6 +1186,7 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -1193,6 +1226,8 @@ struct
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk__ F.anonymous;
+    mk_color F._color;
+    mk_error_style F._error_style;
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1212,6 +1247,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_alert F._alert;
     mk_absname F._absname;
     mk_afl_instrument F._afl_instrument;
     mk_afl_inst_ratio F._afl_inst_ratio;
@@ -1225,6 +1261,7 @@ struct
     mk_clambda_checks F._clambda_checks;
     mk_classic_inlining F._classic_inlining;
     mk_color F._color;
+    mk_error_style F._error_style;
     mk_compact F._compact;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1359,6 +1396,7 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;
@@ -1421,6 +1459,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk__ F.anonymous;
+    mk_color F._color;
+    mk_error_style F._error_style;
 
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
@@ -1454,6 +1494,7 @@ module Make_ocamldoc_options (F : Ocamldoc_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_I F._I;
     mk_impl F._impl;
     mk_intf F._intf;

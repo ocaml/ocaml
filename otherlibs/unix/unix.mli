@@ -493,7 +493,7 @@ module LargeFile :
   regular integers (type [int]), thus allowing operating on files
   whose sizes are greater than [max_int]. *)
 
-(** {6 Mapping files into memory} *)
+(** {1 Mapping files into memory} *)
 
 val map_file :
   file_descr -> ?pos:int64 -> ('a, 'b) Stdlib.Bigarray.kind ->

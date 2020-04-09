@@ -200,7 +200,7 @@ let uncapitalize_ascii s =
 type t = string
 
 let compare (x: t) (y: t) = Stdlib.compare x y
-external equal : string -> string -> bool = "caml_string_equal"
+external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
 
 let split_on_char sep s =
   let r = ref [] in
@@ -224,7 +224,7 @@ let capitalize s =
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq s = bos s |> B.to_seq
 

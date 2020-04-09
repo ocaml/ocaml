@@ -307,6 +307,12 @@ let emit_instr i =
     emit_debug_info i.dbg;
     match i.desc with
       Lend -> ()
+    | Lprologue ->
+      let n = frame_size() in
+      emit_stack_adjust n;
+      if !contains_calls then
+        `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
+      `{emit_label !tailrec_entry_point}:\n`;
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -412,7 +418,7 @@ let emit_instr i =
           | Double | Double_u -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
@@ -654,11 +660,6 @@ let fundecl fundecl =
   emit_string code_space;
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  let n = frame_size() in
-  emit_stack_adjust n;
-  if !contains_calls then
-    `	stg	%r14, {emit_int(n - size_addr)}(%r15)\n`;
-  `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   (* Emit the glue code to call the GC *)
   List.iter emit_call_gc !call_gc_sites;

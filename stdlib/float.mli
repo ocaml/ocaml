@@ -30,6 +30,18 @@
     @since 4.07.0
 *)
 
+val zero : float
+(** The floating point 0.
+   @since 4.08.0 *)
+
+val one : float
+(** The floating-point 1.
+   @since 4.08.0 *)
+
+val minus_one : float
+(** The floating-point -1.
+   @since 4.08.0 *)
+
 external neg : float -> float = "%negfloat"
 (** Unary negation. *)
 
@@ -45,11 +57,32 @@ external mul : float -> float -> float = "%mulfloat"
 external div : float -> float -> float = "%divfloat"
 (** Floating-point division. *)
 
+external fma : float -> float -> float -> float =
+  "caml_fma_float" "caml_fma" [@@unboxed] [@@noalloc]
+(** [fma x y z] returns [x * y + z], with a best effort for computing
+   this expression with a single rounding, using either hardware
+   instructions (providing full IEEE compliance) or a software
+   emulation.  Note: since software emulation of the fma is costly,
+   make sure that you are using hardware fma support if performance
+   matters.  @since 4.08.0 *)
+
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
 (** [rem a b] returns the remainder of [a] with respect to [b].  The returned
     value is [a -. n *. b], where [n] is the quotient [a /. b] rounded towards
     zero to an integer. *)
+
+val succ : float -> float
+(** [succ x] returns the floating point number right after [x] i.e.,
+   the smallest floating-point number greater than [x].  See also
+   {!next_after}.
+   @since 4.08.0 *)
+
+val pred : float -> float
+(** [pred x] returns the floating-point number right before [x] i.e.,
+   the greatest floating-point number smaller than [x].  See also
+   {!next_after}.
+   @since 4.08.0 *)
 
 external abs : float -> float = "%absfloat"
 (** [abs f] returns the absolute value of [f]. *)
@@ -80,6 +113,27 @@ val min_float : float
 val epsilon : float
 (** The difference between [1.0] and the smallest exactly representable
     floating-point number greater than [1.0]. *)
+
+val is_finite : float -> bool
+(** [is_finite x] is [true] iff [x] is finite i.e., not infinite and
+   not {!nan}.
+
+   @since 4.08.0 *)
+
+val is_infinite : float -> bool
+(** [is_infinite x] is [true] iff [x] is {!infinity} or {!neg_infinity}.
+
+   @since 4.08.0 *)
+
+val is_nan : float -> bool
+(** [is_nan x] is [true] iff [x] is not a number (see {!nan}).
+
+   @since 4.08.0 *)
+
+val is_integer : float -> bool
+(** [is_integer x] is [true] iff [x] is an integer.
+
+   @since 4.08.0 *)
 
 external of_int : int -> float = "%floatofint"
 (** Convert an integer to floating-point. *)
@@ -204,6 +258,22 @@ external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
 (** Hyperbolic tangent.  Argument is in radians. *)
 
+external trunc : float -> float = "caml_trunc_float" "caml_trunc"
+                                    [@@unboxed] [@@noalloc]
+(** [trunc x] rounds [x] to the nearest integer whose absolute value is
+   less than or equal to [x].
+
+   @since 4.08.0 *)
+
+external round : float -> float = "caml_round_float" "caml_round"
+                                    [@@unboxed] [@@noalloc]
+(** [round x] rounds [x] to the nearest integer with ties (fractional
+   values of 0.5) rounded away from zero, regardless of the current
+   rounding direction.  If [x] is an integer, [+0.], [-0.], [nan], or
+   infinite, [x] itself is returned.
+
+   @since 4.08.0 *)
+
 external ceil : float -> float = "caml_ceil_float" "ceil"
 [@@unboxed] [@@noalloc]
 (** Round above to an integer value.
@@ -217,13 +287,36 @@ external floor : float -> float = "caml_floor_float" "floor"
     equal to [f].
     The result is returned as a float. *)
 
-external copysign : float -> float -> float
+external next_after : float -> float -> float
+  = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
+(** [next_after x y] returns the next representable floating-point
+   value following [x] in the direction of [y].  More precisely, if
+   [y] is greater (resp. less) than [x], it returns the smallest
+   (resp. largest) representable number greater (resp. less) than [x].
+   If [x] equals [y], the function returns [y].  If [x] or [y] is
+   [nan], a [nan] is returned.
+   Note that [next_after max_float infinity = infinity] and that
+   [next_after 0. infinity] is the smallest denormalized positive number.
+   If [x] is the smallest denormalized positive number,
+   [next_after x 0. = 0.]
+
+   @since 4.08.0 *)
+
+external copy_sign : float -> float -> float
   = "caml_copysign_float" "caml_copysign"
 [@@unboxed] [@@noalloc]
-(** [copysign x y] returns a float whose absolute value is that of [x]
+(** [copy_sign x y] returns a float whose absolute value is that of [x]
     and whose sign is that of [y].  If [x] is [nan], returns [nan].
     If [y] is [nan], returns either [x] or [-. x], but it is not
     specified which. *)
+
+external sign_bit : (float [@unboxed]) -> bool
+  = "caml_signbit_float" "caml_signbit" [@@noalloc]
+(** [sign_bit x] is [true] iff the sign bit of [x] is set.
+    For example [sign_bit 1.] and [signbit 0.] are [false] while
+    [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
+
+    @since 4.08.0 *)
 
 external frexp : float -> float * int = "caml_frexp_float"
 (** [frexp f] returns the pair of the significant
@@ -252,6 +345,45 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for floating-point numbers, compared using {!compare}. *)
+
+val min : t -> t -> t
+(** [min x y] returns the minimum of [x] and [y].  It returns [nan]
+   when [x] or [y] is [nan].  Moreover [min (-0.) (+0.) = -0.]
+
+   @since 4.08.0 *)
+
+val max : float -> float -> float
+(** [max x y] returns the maximum of [x] and [y].  It returns [nan]
+   when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.]
+
+   @since 4.08.0 *)
+
+val min_max : float -> float -> float * float
+(** [min_max x y] is [(min x y, max x y)], just more efficient.
+
+   @since 4.08.0 *)
+
+val min_num : t -> t -> t
+(** [min_num x y] returns the minimum of [x] and [y] treating [nan] as
+   missing values.  If both [x] and [y] are [nan], [nan] is returned.
+   Moreover [min_num (-0.) (+0.) = -0.]
+
+   @since 4.08.0 *)
+
+val max_num : t -> t -> t
+(** [max_num x y] returns the maximum of [x] and [y] treating [nan] as
+   missing values.  If both [x] and [y] are [nan] [nan] is returned.
+   Moreover [max_num (-0.) (+0.) = +0.]
+
+   @since 4.08.0 *)
+
+val min_max_num : float -> float -> float * float
+(** [min_max_num x y] is [(min_num x y, max_num x y)], just more
+   efficient.  Note that in particular [min_max_num x nan = (x, x)]
+   and [min_max_num nan y = (y, y)].
+
+   @since 4.08.0 *)
+
 
 val hash: t -> int
 (** The hash function for floating-point numbers. *)

@@ -376,7 +376,7 @@ let bprint_ignored_flag buf ign_flag =
 
 let bprint_pad_opt buf pad_opt = match pad_opt with
   | None -> ()
-  | Some width -> buffer_add_string buf (string_of_int width)
+  | Some width -> buffer_add_string buf (Int.to_string width)
 
 (***)
 
@@ -386,7 +386,7 @@ fun buf pad -> match pad with
   | No_padding -> ()
   | Lit_padding (padty, n) ->
     bprint_padty buf padty;
-    buffer_add_string buf (string_of_int n);
+    buffer_add_string buf (Int.to_string n);
   | Arg_padding padty ->
     bprint_padty buf padty;
     buffer_add_char buf '*'
@@ -397,7 +397,7 @@ let bprint_precision : type a b . buffer -> (a, b) precision -> unit =
   | No_precision -> ()
   | Lit_precision n ->
     buffer_add_char buf '.';
-    buffer_add_string buf (string_of_int n);
+    buffer_add_string buf (Int.to_string n);
   | Arg_precision ->
     buffer_add_string buf ".*"
 
@@ -1415,7 +1415,7 @@ let format_of_fconv fconv prec =
     buffer_add_char buf '%';
     bprint_fconv_flag buf fconv;
     buffer_add_char buf '.';
-    buffer_add_string buf (string_of_int prec);
+    buffer_add_string buf (Int.to_string prec);
     buffer_add_char buf symb;
     buffer_contents buf
 

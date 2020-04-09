@@ -20,7 +20,7 @@ module Debug_info : sig
 
   val compare : t -> t -> int
 
-  val holds_value_of : t -> Ident.t
+  val holds_value_of : t -> Backend_var.t
   (** The identifier that the register holds (part of) the value of. *)
 
   val part_of_value : t -> int
@@ -39,7 +39,7 @@ type reg_with_debug_info = t
 
 val create
    : reg:Reg.t
-  -> holds_value_of:Ident.t
+  -> holds_value_of:Backend_var.t
   -> part_of_value:int
   -> num_parts_of_value:int
   -> which_parameter:int option

@@ -105,9 +105,6 @@ val print_locs: formatter -> t list -> unit
 val highlight_terminfo:
   Lexing.lexbuf -> formatter -> t list -> unit
 
-val highlight_dumb:
-  Lexing.lexbuf -> formatter -> t list -> unit
-
 
 (** {1 Reporting errors and warnings} *)
 
@@ -119,8 +116,10 @@ val msg: ?loc:t -> ('a, Format.formatter, unit, msg) format4 -> 'a
 
 type report_kind =
   | Report_error
-  | Report_warning of int
-  | Report_warning_as_error of int
+  | Report_warning of string
+  | Report_warning_as_error of string
+  | Report_alert of string
+  | Report_alert_as_error of string
 
 type report = {
   kind : report_kind;
@@ -158,7 +157,6 @@ type report_printer = {
 val batch_mode_printer: report_printer
 
 val terminfo_toplevel_printer: Lexing.lexbuf -> report_printer
-val dumb_toplevel_printer: Lexing.lexbuf -> report_printer
 
 val best_toplevel_printer: unit -> report_printer
 (** Detects the terminal capabilities and selects an adequate printer *)
@@ -205,8 +203,35 @@ val prerr_warning: t -> Warnings.t -> unit
 (** Same as [print_warning], but uses [!formatter_for_warnings] as output
    formatter. *)
 
+(** {1 Reporting alerts} *)
+
+(** {2 Converting an [Alert.t] into a [report]} *)
+
+val report_alert: t -> Warnings.alert -> report option
+(** [report_alert loc w] produces a report for the given alert [w], or
+   [None] if the alert is not to be printed. *)
+
+val alert_reporter: (t -> Warnings.alert -> report option) ref
+(** Hook for intercepting alerts. *)
+
+val default_alert_reporter: t -> Warnings.alert -> report option
+(** Original alert reporter for use in hooks. *)
+
+(** {2 Printing alerts} *)
+
+val print_alert: t -> formatter -> Warnings.alert -> unit
+(** Prints an alert. This is simply the composition of [report_alert] and
+   [print_report]. *)
+
+val prerr_alert: t -> Warnings.alert -> unit
+(** Same as [print_alert], but uses [!formatter_for_warnings] as output
+   formatter. *)
+
 val deprecated: ?def:t -> ?use:t -> t -> string -> unit
-(** Prints a deprecation warning. *)
+(** Prints a deprecation alert. *)
+
+val alert: ?def:t -> ?use:t -> kind:string -> t -> string -> unit
+(** Prints an arbitrary alert. *)
 
 
 (** {1 Reporting errors} *)

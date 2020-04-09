@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type 'a t = 'a array
+(** An alias for the type of arrays. *)
+
 (** Array operations. *)
 
 external length : 'a array -> int = "%array_length"
@@ -158,7 +161,7 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
    where [n] is the length of the array [a]. *)
 
 
-(** {6 Iterators on two arrays} *)
+(** {1 Iterators on two arrays} *)
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
@@ -175,7 +178,7 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @since 4.05.0 *)
 
 
-(** {6 Array scanning} *)
+(** {1 Array scanning} *)
 
 
 val exists : f:('a -> bool) -> 'a array -> bool
@@ -256,7 +259,7 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 *)
 
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 val to_seq : 'a array -> 'a Seq.t
 (** Iterate on the array, in increasing order

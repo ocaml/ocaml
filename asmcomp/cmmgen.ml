@@ -24,7 +24,10 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+
 module String = Misc.Stdlib.String
+module V = Backend_var
+module VP = Backend_var.With_provenance
 
 (* Environments used for translation to Cmm. *)
 
@@ -33,28 +36,28 @@ type boxed_number =
   | Boxed_integer of boxed_integer * Debuginfo.t
 
 type env = {
-  unboxed_ids : (Ident.t * boxed_number) Ident.tbl;
-  environment_param : Ident.t option;
+  unboxed_ids : (V.t * boxed_number) V.tbl;
+  environment_param : V.t option;
 }
 
 let empty_env =
   {
-    unboxed_ids =Ident.empty;
+    unboxed_ids =V.empty;
     environment_param = None;
   }
 
 let create_env ~environment_param =
-  { unboxed_ids = Ident.empty;
+  { unboxed_ids = V.empty;
     environment_param;
   }
 
 let is_unboxed_id id env =
-  try Some (Ident.find_same id env.unboxed_ids)
+  try Some (V.find_same id env.unboxed_ids)
   with Not_found -> None
 
 let add_unboxed_id id unboxed_id bn env =
   { env with
-    unboxed_ids = Ident.add id (unboxed_id, bn) env.unboxed_ids;
+    unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
 
 (* Local binding of complex expressions *)
@@ -64,7 +67,7 @@ let bind name arg fn =
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
-  | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
+  | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
   match arg with
@@ -76,7 +79,7 @@ let bind_nonvar name arg fn =
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
-  | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
+  | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
     (* cf. runtime/caml/gc.h *)
@@ -131,6 +134,10 @@ let int_const n =
 
 let cint_const n =
   Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
+
+let targetint_const n =
+  Targetint.add (Targetint.shift_left (Targetint.of_int n) 1)
+    Targetint.one
 
 let add_no_overflow n x c dbg =
   let d = n + x in
@@ -539,7 +546,8 @@ let map_ccatch f rec_flag handlers body =
 
 let rec unbox_float dbg cmm =
   match cmm with
-  | Cop(Calloc, [_header; c], _) -> c
+  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header ->
+      c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
@@ -605,7 +613,7 @@ let get_field env ptr n dbg =
       match ptr with
       | Cvar ptr ->
         (* Loads from the current function's closure are immutable. *)
-        if Ident.same environment_param ptr then Immutable
+        if V.same environment_param ptr then Immutable
         else Mutable
       | _ -> Mutable
   in
@@ -729,8 +737,8 @@ let float_array_set arr ofs newval dbg =
 
 let string_length exp dbg =
   bind "str" exp (fun str ->
-    let tmp_var = Ident.create "tmp" in
-    Clet(tmp_var,
+    let tmp_var = V.create_local "tmp" in
+    Clet(VP.create tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
                    [get_size str dbg;
@@ -762,7 +770,7 @@ let call_cached_method obj tag cache pos args dbg =
   let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
-      Cconst_symbol("caml_send" ^ string_of_int arity) ::
+      Cconst_symbol("caml_send" ^ Int.to_string arity) ::
         obj :: tag :: cache :: args,
       dbg)
 
@@ -772,12 +780,12 @@ let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args, dbg)
   else begin
-    let id = Ident.create "alloc" in
+    let id = V.create_local "alloc" in
     let rec fill_fields idx = function
       [] -> Cvar id
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1 dbg,
                           fill_fields (idx + 2) el) in
-    Clet(id,
+    Clet(VP.create id,
          Cop(Cextcall("caml_alloc", typ_val, true, None),
                  [Cconst_int wordsize; Cconst_int tag], dbg),
          fill_fields 1 args)
@@ -829,15 +837,15 @@ type rhs_kind =
 ;;
 let rec expr_size env = function
   | Uvar id ->
-      begin try Ident.find_same id env with Not_found -> RHS_nonrec end
+      begin try V.find_same id env with Not_found -> RHS_nonrec end
   | Uclosure(fundecls, clos_vars) ->
       RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(_str, _kind, id, exp, body) ->
-      expr_size (Ident.add id (expr_size env exp) env) body
+      expr_size (V.add (VP.var id) (expr_size env exp) env) body
   | Uletrec(bindings, body) ->
       let env =
         List.fold_right
-          (fun (id, exp) env -> Ident.add id (expr_size env exp) env)
+          (fun (id, exp) env -> V.add (VP.var id) (expr_size env exp) env)
           bindings env
       in
       expr_size env body
@@ -855,7 +863,7 @@ let rec expr_size env = function
       RHS_block sz
   | Uprim (Pduprecord (Record_unboxed _, _), _, _) ->
       assert false
-  | Uprim (Pduprecord (Record_extension, sz), _, _) ->
+  | Uprim (Pduprecord (Record_extension _, sz), _, _) ->
       RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
       RHS_floatblock sz
@@ -870,12 +878,12 @@ let rec expr_size env = function
 (* Record application and currying functions *)
 
 let apply_function n =
-  Compilenv.need_apply_fun n; "caml_apply" ^ string_of_int n
+  Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n
 let curry_function n =
   Compilenv.need_curry_fun n;
   if n >= 0
-  then "caml_curry" ^ string_of_int n
-  else "caml_tuplify" ^ string_of_int (-n)
+  then "caml_curry" ^ Int.to_string n
+  else "caml_tuplify" ^ Int.to_string (-n)
 
 (* Comparisons *)
 
@@ -924,11 +932,15 @@ let box_int_constant bi n =
   | Pint32 -> Uconst_int32 (Nativeint.to_int32 n)
   | Pint64 -> Uconst_int64 (Int64.of_nativeint n)
 
+let caml_nativeint_ops = "caml_nativeint_ops"
+let caml_int32_ops = "caml_int32_ops"
+let caml_int64_ops = "caml_int64_ops"
+
 let operations_boxed_int bi =
   match bi with
-    Pnativeint -> "caml_nativeint_ops"
-  | Pint32 -> "caml_int32_ops"
-  | Pint64 -> "caml_int64_ops"
+    Pnativeint -> caml_nativeint_ops
+  | Pint32 -> caml_int32_ops
+  | Pint64 -> caml_int64_ops
 
 let alloc_header_boxed_int bi =
   match bi with
@@ -958,18 +970,34 @@ let split_int64_for_32bit_target arg dbg =
     Ctuple [Cop (mk_load_mut Thirtytwo_unsigned, [first], dbg);
             Cop (mk_load_mut Thirtytwo_unsigned, [second], dbg)])
 
+let alloc_matches_boxed_int bi ~hdr ~ops =
+  match bi, hdr, ops with
+  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedintnat_header
+        && String.equal sym caml_nativeint_ops
+  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedint32_header
+        && String.equal sym caml_int32_ops
+  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedint64_header
+        && String.equal sym caml_int64_ops
+  | (Pnativeint | Pint32 | Pint64), _, _ -> false
+
 let rec unbox_int bi arg dbg =
   match arg with
-    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
-    when bi = Pint32 && size_int = 8 && big_endian ->
+    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
+    when bi = Pint32 && size_int = 8 && big_endian
+      && alloc_matches_boxed_int bi ~hdr ~ops ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
         dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg)
-    when bi = Pint32 && size_int = 8 && not big_endian ->
+  | Cop(Calloc, [hdr; ops; contents], _dbg)
+    when bi = Pint32 && size_int = 8 && not big_endian
+      && alloc_matches_boxed_int bi ~hdr ~ops ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32], dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg) ->
+  | Cop(Calloc, [hdr; ops; contents], _dbg)
+    when alloc_matches_boxed_int bi ~hdr ~ops ->
       contents
   | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
   | Cifthenelse(cond, e1, e2) ->
@@ -1352,6 +1380,14 @@ let check_bound unsafe dbg a1 a2 k =
 let default_prim name =
   Primitive.simple ~name ~arity:0(*ignored*) ~alloc:true
 
+let int64_native_prim name arity ~alloc =
+  let u64 = Unboxed_integer Pint64 in
+  let rec make_args = function 0 -> [] | n -> u64 :: make_args (n - 1) in
+  Primitive.make ~name ~native_name:(name ^ "_native")
+    ~alloc
+    ~native_repr_args:(make_args arity)
+    ~native_repr_res:u64
+
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
@@ -1361,15 +1397,24 @@ let simplif_primitive_32bits = function
       Pccall (default_prim "caml_int64_of_nativeint")
   | Pcvtbint(Pint64, Pnativeint) ->
       Pccall (default_prim "caml_int64_to_nativeint")
-  | Pnegbint Pint64 -> Pccall (default_prim "caml_int64_neg")
-  | Paddbint Pint64 -> Pccall (default_prim "caml_int64_add")
-  | Psubbint Pint64 -> Pccall (default_prim "caml_int64_sub")
-  | Pmulbint Pint64 -> Pccall (default_prim "caml_int64_mul")
-  | Pdivbint {size=Pint64} -> Pccall (default_prim "caml_int64_div")
-  | Pmodbint {size=Pint64} -> Pccall (default_prim "caml_int64_mod")
-  | Pandbint Pint64 -> Pccall (default_prim "caml_int64_and")
-  | Porbint Pint64 ->  Pccall (default_prim "caml_int64_or")
-  | Pxorbint Pint64 -> Pccall (default_prim "caml_int64_xor")
+  | Pnegbint Pint64 -> Pccall (int64_native_prim "caml_int64_neg" 1
+                                 ~alloc:false)
+  | Paddbint Pint64 -> Pccall (int64_native_prim "caml_int64_add" 2
+                                 ~alloc:false)
+  | Psubbint Pint64 -> Pccall (int64_native_prim "caml_int64_sub" 2
+                                 ~alloc:false)
+  | Pmulbint Pint64 -> Pccall (int64_native_prim "caml_int64_mul" 2
+                                 ~alloc:false)
+  | Pdivbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_div" 2
+                                        ~alloc:true)
+  | Pmodbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_mod" 2
+                                        ~alloc:true)
+  | Pandbint Pint64 -> Pccall (int64_native_prim "caml_int64_and" 2
+                                 ~alloc:false)
+  | Porbint Pint64 ->  Pccall (int64_native_prim "caml_int64_or" 2
+                                 ~alloc:false)
+  | Pxorbint Pint64 -> Pccall (int64_native_prim "caml_int64_xor" 2
+                                 ~alloc:false)
   | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
   | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
   | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
@@ -1380,9 +1425,9 @@ let simplif_primitive_32bits = function
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
   | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
   | Pbytes_load_64(_) -> Pccall (default_prim "caml_bytes_get64")
   | Pbytes_set_64(_) -> Pccall (default_prim "caml_bytes_set64")
@@ -1396,13 +1441,13 @@ let simplif_primitive p =
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
   | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | Pbigarrayref(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
 
@@ -1791,6 +1836,30 @@ let rec transl env e =
               (call_met obj args))
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
+  | Uphantom_let (var, defining_expr, body) ->
+      let defining_expr =
+        match defining_expr with
+        | None -> None
+        | Some defining_expr ->
+          let defining_expr =
+            match defining_expr with
+            | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
+              Cphantom_const_symbol sym
+            | Uphantom_read_symbol_field { sym; field; } ->
+              Cphantom_read_symbol_field { sym; field; }
+            | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
+              Cphantom_const_int (targetint_const i)
+            | Uphantom_var var -> Cphantom_var var
+            | Uphantom_read_field { var; field; } ->
+              Cphantom_read_field { var; field; }
+            | Uphantom_offset_var { var; offset_in_words; } ->
+              Cphantom_offset_var { var; offset_in_words; }
+            | Uphantom_block { tag; fields; } ->
+              Cphantom_block { tag; fields; }
+          in
+          Some defining_expr
+      in
+      Cphantom_let (var, defining_expr, transl env body)
   | Uletrec(bindings, body) ->
       transl_letrec env bindings (transl env body)
 
@@ -1798,7 +1867,7 @@ let rec transl env e =
   | Uprim(prim, args, dbg) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          Cconst_symbol (Ident.name id)
+          Cconst_symbol (V.name id)
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
@@ -1930,7 +1999,7 @@ let rec transl env e =
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       let raise_num = next_raise_count () in
-      let id_prev = Ident.rename id in
+      let id_prev = VP.rename id in
       return_unit
         (Clet
            (id, transl env low,
@@ -1938,18 +2007,18 @@ let rec transl env e =
               ccatch
                 (raise_num, [],
                  Cifthenelse
-                   (Cop(Ccmpi tst, [Cvar id; high], dbg),
+                   (Cop(Ccmpi tst, [Cvar (VP.var id); high], dbg),
                     Cexit (raise_num, []),
                     Cloop
                       (Csequence
                          (remove_unit(transl env body),
-                         Clet(id_prev, Cvar id,
+                         Clet(id_prev, Cvar (VP.var id),
                           Csequence
-                            (Cassign(id,
-                               Cop(inc, [Cvar id; Cconst_int 2],
+                            (Cassign(VP.var id,
+                               Cop(inc, [Cvar (VP.var id); Cconst_int 2],
                                  dbg)),
                              Cifthenelse
-                               (Cop(Ccmpi Ceq, [Cvar id_prev; high],
+                               (Cop(Ccmpi Ceq, [Cvar (VP.var id_prev); high],
                                   dbg),
                                 Cexit (raise_num,[]), Ctuple [])))))),
                  Ctuple []))))
@@ -2175,7 +2244,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       let dbg' = Debuginfo.none in
       transl_sequand env arg1 dbg arg2 dbg' Then_true_else_false
         (Cconst_pointer 3) (Cconst_pointer 1)
-      (* let id = Ident.create "res1" in
+      (* let id = V.create_local "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
@@ -2687,9 +2756,9 @@ and transl_let env str kind id exp body =
          there may be constant closures inside that need lifting out. *)
       Clet(id, transl env exp, transl env body)
   | Boxed (boxed_number, _false) ->
-      let unboxed_id = Ident.create (Ident.name id) in
-      Clet(unboxed_id, transl_unbox_number dbg env boxed_number exp,
-           transl (add_unboxed_id id unboxed_id boxed_number env) body)
+      let unboxed_id = V.create_local (VP.name id) in
+      Clet(VP.create unboxed_id, transl_unbox_number dbg env boxed_number exp,
+           transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
@@ -2810,7 +2879,7 @@ and transl_switch loc env arg index cases = match Array.length cases with
 and transl_letrec env bindings cont =
   let dbg = Debuginfo.none in
   let bsz =
-    List.map (fun (id, exp) -> (id, exp, expr_size Ident.empty exp))
+    List.map (fun (id, exp) -> (id, exp, expr_size V.empty exp))
       bindings
   in
   let op_alloc prim sz =
@@ -2836,7 +2905,7 @@ and transl_letrec env bindings cont =
     | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
         let op =
           Cop(Cextcall("caml_update_dummy", typ_void, false, None),
-              [Cvar id; transl env exp], dbg) in
+              [Cvar (VP.var id); transl env exp], dbg) in
         Csequence(op, fill_blocks rem)
     | (_id, _exp, RHS_nonrec) :: rem ->
         fill_blocks rem
@@ -3150,18 +3219,18 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 
 let cache_public_method meths tag cache dbg =
   let raise_num = next_raise_count () in
-  let li = Ident.create "li" and hi = Ident.create "hi"
-  and mi = Ident.create "mi" and tagged = Ident.create "tagged" in
+  let li = V.create_local "li" and hi = V.create_local "hi"
+  and mi = V.create_local "mi" and tagged = V.create_local "tagged" in
   Clet (
-  li, Cconst_int 3,
+  VP.create li, Cconst_int 3,
   Clet (
-  hi, Cop(mk_load_mut Word_int, [meths], dbg),
+  VP.create hi, Cop(mk_load_mut Word_int, [meths], dbg),
   Csequence(
   ccatch
     (raise_num, [],
      Cloop
        (Clet(
-        mi,
+        VP.create mi,
         Cop(Cor,
             [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg); Cconst_int 1],
                dbg);
@@ -3183,7 +3252,7 @@ let cache_public_method meths tag cache dbg =
            Ctuple [])))),
      Ctuple []),
   Clet (
-    tagged,
+    VP.create tagged,
       Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
         Cconst_int(1 - 3 * size_addr)], dbg),
     Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg),
@@ -3202,17 +3271,17 @@ let cache_public_method meths tag cache dbg =
 
 let apply_function_body arity =
   let dbg = Debuginfo.none in
-  let arg = Array.make arity (Ident.create "arg") in
-  for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
-  let clos = Ident.create "clos" in
+  let arg = Array.make arity (V.create_local "arg") in
+  for i = 1 to arity - 1 do arg.(i) <- V.create_local "arg" done;
+  let clos = V.create_local "clos" in
   let env = empty_env in
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_val,
           [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg)
     else begin
-      let newclos = Ident.create "clos" in
-      Clet(newclos,
+      let newclos = V.create_local "clos" in
+      Clet(VP.create newclos,
            Cop(Capply typ_val,
                [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg),
            app_fun newclos (n+1))
@@ -3231,25 +3300,26 @@ let apply_function_body arity =
 let send_function arity =
   let dbg = Debuginfo.none in
   let (args, clos', body) = apply_function_body (1+arity) in
-  let cache = Ident.create "cache"
+  let cache = V.create_local "cache"
   and obj = List.hd args
-  and tag = Ident.create "tag" in
+  and tag = V.create_local "tag" in
   let clos =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
-    let meths = Ident.create "meths" and cached = Ident.create "cached" in
-    let real = Ident.create "real" in
+    let meths = V.create_local "meths" and cached = V.create_local "cached" in
+    let real = V.create_local "real" in
     let mask = get_mut_field (Cvar meths) (Cconst_int 1) dbg in
+
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg);
                               Cconst_int(3*size_addr-1)], dbg) in
     let tag' = Cop(mk_load_mut Word_int, [tag_pos], dbg) in
     Clet (
-    meths, get_mut_field obj (Cconst_int 0) dbg,
+    VP.create meths, get_mut_field obj (Cconst_int 0) dbg,
     Clet (
-    cached,
+    VP.create cached,
       Cop(Cand, [Cop(mk_load_mut Word_int, [cache], dbg); mask], dbg),
     Clet (
-    real,
+    VP.create real,
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg),
                 cache_public_method (Cvar meths) tag cache dbg,
                 cached_pos),
@@ -3258,15 +3328,15 @@ let send_function arity =
                                            Cconst_int(2*size_addr - 1)], dbg);
                               Cconst_int log2_size_addr], dbg)) dbg)))
   in
-  let body = Clet(clos', clos, body) in
+  let body = Clet(VP.create clos', clos, body) in
   let cache = cache in
   let fun_args =
     [obj, typ_val; tag, typ_int; cache, typ_val]
     @ List.map (fun id -> (id, typ_val)) (List.tl args) in
-  let fun_name = "caml_send" ^ string_of_int arity in
+  let fun_name = "caml_send" ^ Int.to_string arity in
   Cfunction
    {fun_name;
-    fun_args = fun_args;
+    fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
     fun_body = body;
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none }
@@ -3274,10 +3344,10 @@ let send_function arity =
 let apply_function arity =
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
-  let fun_name = "caml_apply" ^ string_of_int arity in
+  let fun_name = "caml_apply" ^ Int.to_string arity in
   Cfunction
    {fun_name;
-    fun_args = List.map (fun id -> (id, typ_val)) all_args;
+    fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
     fun_body = body;
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
@@ -3289,17 +3359,17 @@ let apply_function arity =
 
 let tuplify_function arity =
   let dbg = Debuginfo.none in
-  let arg = Ident.create "arg" in
-  let clos = Ident.create "clos" in
+  let arg = V.create_local "arg" in
+  let clos = V.create_local "clos" in
   let env = empty_env in
   let rec access_components i =
     if i >= arity
     then []
     else get_field env (Cvar arg) i dbg :: access_components(i+1) in
-  let fun_name = "caml_tuplify" ^ string_of_int arity in
+  let fun_name = "caml_tuplify" ^ Int.to_string arity in
   Cfunction
    {fun_name;
-    fun_args = [arg, typ_val; clos, typ_val];
+    fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
     fun_body =
       Cop(Capply typ_val,
           get_field env (Cvar clos) 2 dbg :: access_components 0 @ [Cvar clos],
@@ -3339,8 +3409,8 @@ let tuplify_function arity =
 let max_arity_optimized = 15
 let final_curry_function arity =
   let dbg = Debuginfo.none in
-  let last_arg = Ident.create "arg" in
-  let last_clos = Ident.create "clos" in
+  let last_arg = V.create_local "arg" in
+  let last_clos = V.create_local "clos" in
   let env = empty_env in
   let rec curry_fun args clos n =
     if n = 0 then
@@ -3351,22 +3421,22 @@ let final_curry_function arity =
     else
       if n = arity - 1 || arity > max_arity_optimized then
         begin
-      let newclos = Ident.create "clos" in
-      Clet(newclos,
+      let newclos = V.create_local "clos" in
+      Clet(VP.create newclos,
            get_field env (Cvar clos) 3 dbg,
            curry_fun (get_field env (Cvar clos) 2 dbg :: args) newclos (n-1))
         end else
         begin
-          let newclos = Ident.create "clos" in
-          Clet(newclos,
+          let newclos = V.create_local "clos" in
+          Clet(VP.create newclos,
                get_field env (Cvar clos) 4 dbg,
                curry_fun (get_field env (Cvar clos) 3 dbg :: args)
                          newclos (n-1))
     end in
   Cfunction
-   {fun_name = "caml_curry" ^ string_of_int arity ^
-               "_" ^ string_of_int (arity-1);
-    fun_args = [last_arg, typ_val; last_clos, typ_val];
+   {fun_name = "caml_curry" ^ Int.to_string arity ^
+               "_" ^ Int.to_string (arity-1);
+    fun_args = [VP.create last_arg, typ_val; VP.create last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none }
@@ -3377,25 +3447,25 @@ let rec intermediate_curry_functions arity num =
   if num = arity - 1 then
     [final_curry_function arity]
   else begin
-    let name1 = "caml_curry" ^ string_of_int arity in
-    let name2 = if num = 0 then name1 else name1 ^ "_" ^ string_of_int num in
-    let arg = Ident.create "arg" and clos = Ident.create "clos" in
+    let name1 = "caml_curry" ^ Int.to_string arity in
+    let name2 = if num = 0 then name1 else name1 ^ "_" ^ Int.to_string num in
+    let arg = V.create_local "arg" and clos = V.create_local "clos" in
     Cfunction
      {fun_name = name2;
-      fun_args = [arg, typ_val; clos, typ_val];
+      fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
       fun_body =
          if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
                [alloc_closure_header 5 Debuginfo.none;
-                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1));
                 int_const (arity - num - 1);
-                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1) ^ "_app");
                 Cvar arg; Cvar clos],
                dbg)
          else
            Cop(Calloc,
                 [alloc_closure_header 4 Debuginfo.none;
-                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1));
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
       fun_codegen_options = [];
@@ -3404,7 +3474,7 @@ let rec intermediate_curry_functions arity num =
       (if arity <= max_arity_optimized && arity - num > 2 then
           let rec iter i =
             if i <= arity then
-              let arg = Ident.create (Printf.sprintf "arg%d" i) in
+              let arg = V.create_local (Printf.sprintf "arg%d" i) in
               (arg, typ_val) :: iter (i+1)
             else []
           in
@@ -3415,15 +3485,19 @@ let rec intermediate_curry_functions arity num =
                   (get_field env (Cvar clos) 2 dbg) :: args @ [Cvar clos],
                   dbg)
             else
-              let newclos = Ident.create "clos" in
-              Clet(newclos,
+              let newclos = V.create_local "clos" in
+              Clet(VP.create newclos,
                    get_field env (Cvar clos) 4 dbg,
                    iter (i-1) (get_field env (Cvar clos) 3 dbg :: args) newclos)
           in
+          let fun_args =
+            List.map (fun (arg, ty) -> VP.create arg, ty)
+              (direct_args @ [clos, typ_val])
+          in
           let cf =
             Cfunction
-              {fun_name = name1 ^ "_" ^ string_of_int (num+1) ^ "_app";
-               fun_args = direct_args @ [clos, typ_val];
+              {fun_name = name1 ^ "_" ^ Int.to_string (num+1) ^ "_app";
+               fun_args;
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
                fun_codegen_options = [];

@@ -201,13 +201,13 @@ Now run:
 
 followed by:
 
-        cp config/Makefile.msvc config/Makefile
+        cp config/Makefile.msvc Makefile.config
 
 for 32-bit, or:
 
-        cp config/Makefile.msvc64 config/Makefile
+        cp config/Makefile.msvc64 Makefile.config
 
-for 64-bit. Then, edit `config/Makefile` as needed, following the comments in
+for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
 which indicates where to install everything.
 
@@ -273,13 +273,13 @@ Now run:
 
 followed by:
 
-        cp config/Makefile.mingw config/Makefile
+        cp config/Makefile.mingw Makefile.config
 
 for 32-bit, or:
 
-        cp config/Makefile.mingw64 config/Makefile
+        cp config/Makefile.mingw64 Makefile.config
 
-for 64-bit. Then, edit `config/Makefile` as needed, following the comments in
+for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
 which indicates where to install everything.
 
@@ -353,7 +353,7 @@ are UTF-8 encoded strings.  In addition to filenames,
 this applies to environment variables and command-line arguments.
 
 The mode must be decided before building the system, by tweaking
-the `WINDOWS_UNICODE` variable in `config/Makefile`.  A value of 1
+the `WINDOWS_UNICODE` variable in `Makefile.config`.  A value of 1
 enables the the new "Unicode" mode, while a value of 0 maintains
 the legacy mode.
 

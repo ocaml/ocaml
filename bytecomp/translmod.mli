@@ -42,12 +42,20 @@ val nat_toplevel_name: Ident.t -> Ident.t * int
 
 val primitive_declarations: Primitive.description list ref
 
+type unsafe_component =
+  | Unsafe_module_binding
+  | Unsafe_functor
+  | Unsafe_non_function
+  | Unsafe_typext
+
+type unsafe_info = { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+
 type error =
-  Circular_dependency of Ident.t list
+  Circular_dependency of (Ident.t * unsafe_info) list
 | Conflicting_inline_attributes
 
 exception Error of Location.t * error
 
-val report_error: Format.formatter -> error -> unit
+val report_error: Location.t -> error -> Location.error
 
 val reset: unit -> unit

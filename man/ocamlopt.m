@@ -242,6 +242,25 @@ The environment variable "OCAML_COLOR" is considered if \-color is not
 provided. Its values are auto/always/never as above.
 
 .TP
+.BI \-error\-style \ mode
+Control the way error messages and warnings are printed.
+The following modes are supported:
+
+.B short
+only print the error and its location;
+
+.B contextual
+like "short", but also display the source code snippet corresponding
+to the location of the error.
+
+The default setting is
+.B contextual.
+
+The environment variable "OCAML_ERROR_STYLE" is considered if
+\-error\-style is not provided. Its values are short/contextual as
+above.
+
+.TP
 .B \-compact
 Optimize the produced code for space rather than for time. This
 results in smaller but slightly slower programs. The default is to

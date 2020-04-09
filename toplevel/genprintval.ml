@@ -39,7 +39,7 @@ module type OBJ =
 module type EVALPATH =
   sig
     type valu
-    val eval_path: Env.t -> Path.t -> valu
+    val eval_address: Env.address -> valu
     exception Error
     val same_value: valu -> valu -> bool
   end
@@ -133,22 +133,22 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                      O.t -> Outcometree.out_value) gen_printer)
 
     let printers = ref ([
-      ( Pident(Ident.create "print_int"),
+      ( Pident(Ident.create_local "print_int"),
         Simple (Predef.type_int,
                 (fun x -> Oval_int (O.obj x : int))) );
-      ( Pident(Ident.create "print_float"),
+      ( Pident(Ident.create_local "print_float"),
         Simple (Predef.type_float,
                 (fun x -> Oval_float (O.obj x : float))) );
-      ( Pident(Ident.create "print_char"),
+      ( Pident(Ident.create_local "print_char"),
         Simple (Predef.type_char,
                 (fun x -> Oval_char (O.obj x : char))) );
-      ( Pident(Ident.create "print_int32"),
+      ( Pident(Ident.create_local "print_int32"),
         Simple (Predef.type_int32,
                 (fun x -> Oval_int32 (O.obj x : int32))) );
-      ( Pident(Ident.create "print_nativeint"),
+      ( Pident(Ident.create_local "print_nativeint"),
         Simple (Predef.type_nativeint,
                 (fun x -> Oval_nativeint (O.obj x : nativeint))) );
-      ( Pident(Ident.create "print_int64"),
+      ( Pident(Ident.create_local "print_int64"),
         Simple (Predef.type_int64,
                 (fun x -> Oval_int64 (O.obj x : int64)) ))
     ] : (Path.t * printer) list)
@@ -201,7 +201,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       match ty_path with
       | Pident _ ->
           Oide_ident name
-      | Pdot(p, _s, _pos) ->
+      | Pdot(p, _s) ->
           if try
                match (lookup_fun (Lident (Out_name.print name)) env).desc with
                | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
@@ -222,7 +222,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     (* An abstract type *)
 
     let abstract_type =
-      Ctype.newty (Tconstr (Pident (Ident.create "abstract"), [], ref Mnil))
+      let id = Ident.create_local "abstract" in
+      let ty = Btype.newgenty (Tconstr (Pident id, [], ref Mnil)) in
+      ty
 
     (* The main printing function *)
 
@@ -425,7 +427,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     | None ->
                         let pos =
                           match rep with
-                          | Record_extension -> 1
+                          | Record_extension _ -> 1
                           | _ -> 0
                         in
                         let unbx =
@@ -552,10 +554,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Cstr_extension(p, _) -> p
             | _ -> raise Not_found
         in
+        let addr = Env.find_constructor_address path env in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)
-        if not (EVP.same_value slot (EVP.eval_path env path))
+        if not (EVP.same_value slot (EVP.eval_address addr))
         then raise Not_found;
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)

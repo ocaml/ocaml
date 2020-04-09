@@ -35,6 +35,8 @@ _ocamltest
 .vscode
 _ocamltestd
 *.odoc
+.merlin
+_build
 
 # local to root directory
 
@@ -48,6 +50,7 @@ _ocamltestd
 
 # specific files and patterns in sub-directories
 
+/Makefile.config
 /asmcomp/emit.ml
 /asmcomp/arch.ml
 /asmcomp/proc.ml
@@ -62,8 +65,6 @@ _ocamltestd
 /bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
 
-/config/Makefile
-
 /debugger/lexer.ml
 /debugger/parser.ml
 /debugger/parser.mli
@@ -71,6 +72,12 @@ _ocamltestd
 /driver/compdynlink.mlopt
 /driver/compdynlink.mlbyte
 /driver/compdynlink.mli
+/driver/compdynlink_common.ml
+/driver/compdynlink_common.mli
+/driver/compdynlink_platform_intf.ml
+/driver/compdynlink_platform_intf.mli
+/driver/compdynlink_types.ml
+/driver/compdynlink_types.mli
 
 /emacs/ocamltags
 /emacs/*.elc
@@ -99,6 +106,8 @@ _ocamltestd
 /ocamldoc/odoc_text_parser.mli
 /ocamldoc/stdlib_man
 /ocamldoc/stdlib_html
+/ocamldoc/stdlib_latex
+/ocamldoc/stdlib_texi
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
 /ocamldoc/test_latex
@@ -112,6 +121,7 @@ _ocamltestd
 /ocamltest/tsl_parser.mli
 
 /otherlibs/dynlink/extract_crc
+/otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli

@@ -24,7 +24,7 @@ let option_with_arg opt arg =
   compargs := (Filename.quote arg) :: opt :: !compargs
 ;;
 let option_with_int opt arg =
-  compargs := (string_of_int arg) :: opt :: !compargs
+  compargs := (Int.to_string arg) :: opt :: !compargs
 ;;
 
 let make_archive = ref false;;
@@ -48,6 +48,7 @@ let incompatible o =
 module Options = Main_args.Make_bytecomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _absname = option "-absname"
+  let _alert = option_with_arg "-alert"
   let _annot = option "-annot"
   let _binannot = option "-bin-annot"
   let _c = option "-c"
@@ -121,6 +122,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _warn_error = option_with_arg "-warn-error"
   let _warn_help = option "-warn-help"
   let _color s = option_with_arg "-color" s
+  let _error_style s = option_with_arg "-error-style" s
   let _where = option "-where"
   let _nopervasives = option "-nopervasives"
   let _match_context_rows n = option_with_int "-match-context-rows" n

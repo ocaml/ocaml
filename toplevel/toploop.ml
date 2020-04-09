@@ -15,7 +15,6 @@
 
 (* The interactive toplevel loop *)
 
-open Path
 open Format
 open Config
 open Misc
@@ -53,8 +52,8 @@ let setvalue name v =
 
 (* Return the value referred to by a path *)
 
-let rec eval_path = function
-  | Pident id ->
+let rec eval_address = function
+  | Env.Aident id ->
       if Ident.persistent id || Ident.global id then
         Symtable.get_global_value id
       else begin
@@ -64,20 +63,34 @@ let rec eval_path = function
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
-  | Pdot(p, _s, pos) ->
-      Obj.field (eval_path p) pos
-  | Papply _ ->
-      fatal_error "Toploop.eval_path"
+  | Env.Adot(p, pos) ->
+      Obj.field (eval_address p) pos
 
-let eval_path env path =
-  eval_path (Env.normalize_path (Some Location.none) env path)
+let eval_path find env path =
+  match find path env with
+  | addr -> eval_address addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
+
+let eval_module_path env path =
+  eval_path Env.find_module_address env path
+
+let eval_value_path env path =
+  eval_path Env.find_value_address env path
+
+let eval_extension_path env path =
+  eval_path Env.find_constructor_address env path
+
+let eval_class_path env path =
+  eval_path Env.find_class_address env path
 
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path env p = try eval_path env p with Symtable.Error _ -> raise Error
+  let eval_address addr =
+    try eval_address addr with Symtable.Error _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 
@@ -123,7 +136,8 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
+    String.capitalize_ascii
+      (Filename.remove_extension (Filename.basename name))
   in
   let items =
     List.concat
@@ -239,11 +253,9 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
-      let (str, sg, to_remove_from_sg, newenv) =
-        Typemod.type_toplevel_phrase oldenv sstr
-      in
+      let (str, sg, sn, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature newenv to_remove_from_sg sg in
+      let sg' = Typemod.Signature_names.simplify newenv sn sg in
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let lam = Translmod.transl_toplevel_definition str in
@@ -383,7 +395,9 @@ let use_file ppf wrap_mod name =
     (* Skip initial #! line if any *)
     Lexer.skip_hash_bang lb;
     let success =
-      protect_refs [ R (Location.input_name, filename) ] (fun () ->
+      protect_refs [ R (Location.input_name, filename);
+                     R (Location.input_lexbuf, Some lb); ]
+        (fun () ->
         try
           List.iter
             (fun ph ->

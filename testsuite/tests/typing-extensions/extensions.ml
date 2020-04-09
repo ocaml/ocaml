@@ -310,8 +310,10 @@ type foo +=
   | Bar of int
 ;;
 
-let extension_name e = Obj.extension_name (Obj.extension_constructor e);;
-let extension_id e = Obj.extension_id (Obj.extension_constructor e);;
+let extension_name e = Obj.Extension_constructor.name
+                         (Obj.Extension_constructor.of_val e);;
+let extension_id e = Obj.Extension_constructor.id
+                       (Obj.Extension_constructor.of_val e);;
 
 let n1 = extension_name Foo
 ;;
@@ -333,8 +335,8 @@ type foo += Foo
 let f = is_foo Foo
 ;;
 
-let _ = Obj.extension_constructor 7 (* Invald_arg *)
+let _ = Obj.Extension_constructor.of_val 7 (* Invalid_arg *)
 ;;
 
-let _ = Obj.extension_constructor (object method m = 3 end) (* Invald_arg *)
+let _ = Obj.Extension_constructor.of_val (object method m = 3 end) (* Invalid_arg *)
 ;;

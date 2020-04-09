@@ -694,7 +694,7 @@ let mk_alpha_env arg aliases ids =
         | Some v -> v
         | _      -> raise Cannot_flatten
       else
-        Ident.create (Ident.name id))
+        Ident.create_local (Ident.name id))
     ids
 
 let rec explode_or_pat arg patl mk_action rem vars aliases = function
@@ -1480,20 +1480,14 @@ let prim_obj_tag =
 
 let get_mod_field modname field =
   lazy (
-    try
-      let mod_ident = Ident.create_persistent modname in
-      let env = Env.open_pers_signature modname Env.initial_safe_string in
-      let p = try
+    match Env.open_pers_signature modname Env.initial_safe_string with
+    | exception Not_found -> fatal_error ("Module "^modname^" unavailable.")
+    | env -> begin
         match Env.lookup_value (Longident.Lident field) env with
-        | (Path.Pdot(_,_,i), _) -> i
-        | _ -> fatal_error ("Primitive "^modname^"."^field^" not found.")
-      with Not_found ->
-        fatal_error ("Primitive "^modname^"."^field^" not found.")
-      in
-      Lprim(Pfield(p, Pointer, Immutable),
-            [Lprim(Pgetglobal mod_ident, [], Location.none)],
-            Location.none)
-    with Not_found -> fatal_error ("Module "^modname^" unavailable.")
+        | exception Not_found ->
+            fatal_error ("Primitive "^modname^"."^field^" not found.")
+        | (path, _) -> transl_value_path Location.none env path
+      end
   )
 
 let code_force_lazy_block =
@@ -1514,9 +1508,9 @@ let code_force_lazy =
 *)
 
 let inline_lazy_force_cond arg loc =
-  let idarg = Ident.create "lzarg" in
+  let idarg = Ident.create_local "lzarg" in
   let varg = Lvar idarg in
-  let tag = Ident.create "tag" in
+  let tag = Ident.create_local "tag" in
   let force_fun = Lazy.force code_force_lazy_block in
   let test_tag t =
     Lprim(Pintcomp Ceq, [Lvar tag; Lconst(Const_base(Const_int t))], loc)
@@ -1543,7 +1537,7 @@ let inline_lazy_force_cond arg loc =
                  varg))))
 
 let inline_lazy_force_switch arg loc =
-  let idarg = Ident.create "lzarg" in
+  let idarg = Ident.create_local "lzarg" in
   let varg = Lvar idarg in
   let force_fun = Lazy.force code_force_lazy_block in
   Llet(Strict, Pgenval, idarg, arg,
@@ -1674,7 +1668,7 @@ let make_record_matching env loc all_labels def = function
               Lprim (Pfield (lbl.lbl_pos, ptr, lbl.lbl_mut), [arg], loc)
             | Record_unboxed _ -> arg
             | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [arg], loc)
-            | Record_extension ->
+            | Record_extension _ ->
               Lprim (Pfield (lbl.lbl_pos + 1, ptr, lbl.lbl_mut), [arg], loc)
           in
           let str =
@@ -1766,7 +1760,7 @@ let prim_string_compare =
 let bind_sw arg k = match arg with
 | Lvar _ -> k arg
 | _ ->
-    let id = Ident.create "switch" in
+    let id = Ident.create_local "switch" in
     Llet (Strict,Pgenval,id,arg,k (Lvar id))
 
 
@@ -1959,7 +1953,7 @@ module SArg = struct
     let newvar,newarg = match arg with
     | Lvar v -> v,arg
     | _      ->
-        let newvar = Ident.create "switcher" in
+        let newvar = Ident.create_local "switcher" in
         newvar,Lvar newvar in
     bind Alias newvar arg (body newarg)
   let make_const i = Lconst (Const_base (Const_int i))
@@ -2363,11 +2357,11 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
         match nonconsts with
           [] -> default
         | _ ->
-            let tag = Ident.create "tag" in
+            let tag = Ident.create_local "tag" in
             let tests =
               List.fold_right
                 (fun (path, act) rem ->
-                   let ext = transl_extension_path ex_pat.pat_env path in
+                   let ext = transl_extension_path loc ex_pat.pat_env path in
                    Lifthenelse(Lprim(Pintcomp Ceq, [Lvar tag; ext], loc),
                                act, rem))
                 nonconsts
@@ -2378,7 +2372,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
       in
         List.fold_right
           (fun (path, act) rem ->
-             let ext = transl_extension_path ex_pat.pat_env path in
+             let ext = transl_extension_path loc ex_pat.pat_env path in
              Lifthenelse(Lprim(Pintcomp Ceq, [arg; ext], loc),
                          act, rem))
           consts
@@ -2450,7 +2444,7 @@ let call_switcher_variant_constant loc fail arg int_lambda_list =
 
 
 let call_switcher_variant_constr loc fail arg int_lambda_list =
-  let v = Ident.create "variant" in
+  let v = Ident.create_local "variant" in
   Llet(Alias, Pgenval, v, Lprim(Pfield(0, Pointer, Immutable), [arg], loc),
        call_switcher loc
          fail (Lvar v) min_int max_int int_lambda_list)
@@ -2512,7 +2506,7 @@ let combine_array loc arg kind partial ctx def
     (len_lambda_list, total1, _pats)  =
   let fail, local_jumps = mk_failaction_neg partial  ctx def in
   let lambda1 =
-    let newvar = Ident.create "len" in
+    let newvar = Ident.create_local "len" in
     let switch =
       call_switcher loc
         fail (Lvar newvar)
@@ -2715,7 +2709,7 @@ let rec name_pattern default = function
       | Tpat_alias(_, id, _) -> id
       | _ -> name_pattern default rem
       end
-  | _ -> Ident.create default
+  | _ -> Ident.create_local default
 
 let arg_to_var arg cls = match arg with
 | Lvar v -> v,arg
@@ -2954,13 +2948,16 @@ let compile_matching repr handler_fun arg pat_act_list partial =
 
 
 let partial_function loc () =
+  let slot =
+    transl_extension_path loc
+      Env.initial_safe_string Predef.path_match_failure
+  in
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable, None),
-          [transl_normal_path Predef.path_match_failure;
-           Lconst(Const_block(0,
-              [Const_base(Const_string (fname, None));
-               Const_base(Const_int line);
-               Const_base(Const_int char)]))], loc)], loc)
+          [slot; Lconst(Const_block(0,
+                   [Const_base(Const_string (fname, None));
+                    Const_base(Const_int line);
+                    Const_base(Const_int char)]))], loc)], loc)
 
 let for_function loc repr param pat_act_list partial =
   compile_matching repr (partial_function loc) param pat_act_list partial
@@ -3214,7 +3211,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       let next, nexts = split_precompile None pm1 in
 
       let size = List.length paraml
-      and idl = List.map (fun _ -> Ident.create "*match*") paraml in
+      and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
       let args =  List.map (fun id -> Lvar id, Alias) idl in
 
       let flat_next = flatten_precompiled size args next
@@ -3251,7 +3248,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
 
 let param_to_var param = match param with
 | Lvar v -> v,None
-| _ -> Ident.create "*match*",Some param
+| _ -> Ident.create_local "*match*",Some param
 
 let bind_opt (v,eo) k = match eo with
 | None -> k

@@ -52,7 +52,7 @@ let subst_lambda ~subst_rec ~free ~subst : _ lambda -> _ = function
           ~f:(fun ~key ~data acc ->
                 if Names.mem s used then data::acc else acc) in
       if List.exists used_expr ~f:(fun t -> Names.mem s (free t)) then
-        let name = s ^ string_of_int (next_id ()) in
+        let name = s ^ Int.to_string (next_id ()) in
         `Abs(name,
              subst_rec ~subst:(Subst.add ~key:s ~data:(`Var name) subst) t)
       else

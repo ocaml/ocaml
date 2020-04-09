@@ -58,7 +58,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
-    mutable scope: int option;
+    mutable scope: int;
     id: int }
 
 and type_desc =
@@ -279,6 +279,7 @@ module Variance : sig
   val union  : t -> t -> t
   val inter  : t -> t -> t
   val subset : t -> t -> bool
+  val eq : t -> t -> bool
   val set : f -> bool -> t -> t
   val mem : f -> t -> bool
   val conjugate : t -> t                (* exchange positive and negative *)
@@ -297,7 +298,7 @@ type type_declaration =
     type_variance: Variance.t list;
     (* covariant, contravariant, weakly contravariant, injective *)
     type_is_newtype: bool;
-    type_expansion_scope: int option;
+    type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool; (* true iff type should not be a pointer *)
@@ -315,7 +316,7 @@ and record_representation =
   | Record_float                        (* All fields are floats *)
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
-  | Record_extension                    (* Inlined record under extension *)
+  | Record_extension of Path.t          (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -410,11 +411,11 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of Ident.t * module_type option * module_type
-  | Mty_alias of alias_presence * Path.t
+  | Mty_alias of Path.t
 
-and alias_presence =
-  | Mta_present
-  | Mta_absent
+and module_presence =
+  | Mp_present
+  | Mp_absent
 
 and signature = signature_item list
 
@@ -422,7 +423,7 @@ and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
   | Sig_typext of Ident.t * extension_constructor * ext_status
-  | Sig_module of Ident.t * module_declaration * rec_status
+  | Sig_module of Ident.t * module_presence * module_declaration * rec_status
   | Sig_modtype of Ident.t * modtype_declaration
   | Sig_class of Ident.t * class_declaration * rec_status
   | Sig_class_type of Ident.t * class_type_declaration * rec_status

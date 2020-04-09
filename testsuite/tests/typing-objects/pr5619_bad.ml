@@ -41,13 +41,13 @@ class foo: foo_t =
 ;;
 [%%expect{|
 Line 2, characters 2-156:
-  ..object(self)
-      method foo = "foo"
-      method cast: type a. a name -> a =
-        function
-            Foo -> (self :> foo_t)
-          | _ -> raise Exit
-    end
+2 | ..object(self)
+3 |     method foo = "foo"
+4 |     method cast: type a. a name -> a =
+5 |       function
+6 |           Foo -> (self :> foo_t)
+7 |         | _ -> raise Exit
+8 |   end
 Error: The class type
          object method cast : 'a name -> 'a method foo : string end
        is not matched by the class type foo_t

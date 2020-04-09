@@ -48,6 +48,9 @@ extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
 extern uintnat caml_allocation_policy;    /*        see freelist.c */
+extern uintnat caml_custom_major_ratio;   /* see custom.c */
+extern uintnat caml_custom_minor_ratio;   /* see custom.c */
+extern uintnat caml_custom_minor_max_bsz; /* see custom.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -120,7 +123,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (8);
+  res = caml_alloc_tuple (11);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));  /* s */
   Store_field (res, 2, Val_long (caml_percent_free));           /* o */
   Store_field (res, 3, Val_long (caml_params->verb_gc));        /* v */
@@ -129,6 +132,10 @@ CAMLprim value caml_gc_get(value v)
 #else
   Store_field (res, 5, Val_long (0));
 #endif
+  Store_field (res, 8, Val_long (caml_custom_major_ratio));     /* M */
+  Store_field (res, 9, Val_long (caml_custom_minor_ratio));     /* m */
+  Store_field (res, 10, Val_long (caml_custom_minor_max_bsz));  /* n */
+  CAMLreturn (res);
 
   CAMLreturn (res);
 }
@@ -145,10 +152,21 @@ static uintnat norm_pfree (uintnat p)
   return p;
 }*/
 
+static uintnat norm_custom_maj (uintnat p)
+{
+  return Max (p, 1);
+}
+
+static uintnat norm_custom_min (uintnat p)
+{
+  return Max (p, 1);
+}
+
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf;
   uintnat newminwsz;
+  uintnat new_custom_maj, new_custom_min, new_custom_sz;
 
 #ifndef NATIVE_CODE
   caml_change_max_stack_size (Long_field (v, 5));
@@ -168,6 +186,31 @@ CAMLprim value caml_gc_set(value v)
     caml_gc_message (0x20, "New minor heap size: %"
                      ARCH_SIZET_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
     caml_set_minor_heap_size (newminwsz);
+  }
+
+  /* These fields were added in 4.08.0. */
+  if (Wosize_val (v) >= 11){
+    new_custom_maj = norm_custom_maj (Field (v, 8));
+    if (new_custom_maj != caml_custom_major_ratio){
+      caml_custom_major_ratio = new_custom_maj;
+      caml_gc_message (0x20, "New custom major ratio: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_custom_major_ratio);
+    }
+    new_custom_min = norm_custom_min (Field (v, 9));
+    if (new_custom_min != caml_custom_minor_ratio){
+      caml_custom_minor_ratio = new_custom_min;
+      caml_gc_message (0x20, "New custom minor ratio: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_custom_minor_ratio);
+    }
+    new_custom_sz = Field (v, 10);
+    if (new_custom_sz != caml_custom_minor_max_bsz){
+      caml_custom_minor_max_bsz = new_custom_sz;
+      caml_gc_message (0x20, "New custom minor size limit: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_custom_minor_max_bsz);
+    }
   }
 
   return Val_unit;
@@ -257,6 +300,13 @@ void caml_init_gc ()
   caml_percent_free = norm_pfree (caml_params->init_percent_free);
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
+
+  caml_custom_major_ratio =
+      norm_custom_maj (caml_params->init_custom_major_ratio);
+  caml_custom_minor_ratio =
+      norm_custom_min (caml_params->init_custom_minor_ratio);
+  caml_custom_minor_max_bsz = caml_params->init_custom_minor_max_bsz;
+
   caml_setup_eventlog();
   caml_gc_phase = Phase_sweep_and_mark_main;
   #ifdef NATIVE_CODE

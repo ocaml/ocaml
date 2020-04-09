@@ -18,6 +18,9 @@
 open Lambda
 open Cmm
 
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
 module type I = sig
   val string_block_length : Cmm.expression -> Cmm.expression
   val transl_switch :
@@ -62,13 +65,13 @@ module Make(I:I) = struct
   let pp_match chan tag idxs cases =
     Printf.eprintf
       "%s: idx=[%s]\n" tag
-      (String.concat "; " (List.map string_of_int idxs)) ;
+      (String.concat "; " (List.map Int.to_string idxs)) ;
     do_pp_cases chan cases
 
 (* Utilities *)
 
-  let gen_cell_id () = Ident.create "cell"
-  let gen_size_id () = Ident.create "size"
+  let gen_cell_id () = V.create_local "cell"
+  let gen_size_id () = V.create_local "size"
 
   let mk_let_cell id str ind body =
     let dbg = Debuginfo.none in
@@ -293,7 +296,7 @@ module Make(I:I) = struct
         else
           let lt,midkey,ge = split_env len env in
           mk_lt id midkey (comp_rec lt) (comp_rec ge) in
-      mk_let_cell id str idx (comp_rec env)
+      mk_let_cell (VP.create id) str idx (comp_rec env)
 
 (*
   Recursive 'list of cells' compile function:
@@ -352,7 +355,7 @@ module Make(I:I) = struct
       let id = gen_size_id () in
       let loc = Debuginfo.to_location dbg in
       let switch = I.transl_switch loc (Cvar id) 1 max_int size_cases default in
-      mk_let_size id str switch
+      mk_let_size (VP.create id) str switch
 
 (*
   Compilation entry point: we choose to switch

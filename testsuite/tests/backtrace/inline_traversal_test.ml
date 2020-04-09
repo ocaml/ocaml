@@ -40,7 +40,7 @@ let () =
       let location = match Slot.location x with
         | None -> "<unknown>"
         | Some {filename; line_number; _} ->
-            filename ^ ":" ^ string_of_int line_number
+            filename ^ ":" ^ Int.to_string line_number
       in
       Printf.printf "- %s%s%s\n"
         location

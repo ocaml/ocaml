@@ -13,8 +13,8 @@
 let x = function 0. .. 1. -> ()
 [%%expect {|
 Line 8, characters 17-25:
-  let x = function 0. .. 1. -> ()
-                   ^^^^^^^^
+8 | let x = function 0. .. 1. -> ()
+                     ^^^^^^^^
 Error: Only character intervals are supported in patterns.
 |}]
 
@@ -23,8 +23,8 @@ let f = function None None -> 0
 
 [%%expect{|
 Line 1, characters 17-26:
-  let f = function None None -> 0
-                   ^^^^^^^^^
+1 | let f = function None None -> 0
+                     ^^^^^^^^^
 Error: The constructor None expects 0 argument(s),
        but is applied here to 1 argument(s)
 |}]
@@ -32,8 +32,8 @@ Error: The constructor None expects 0 argument(s),
 let x = None None
 [%%expect{|
 Line 1, characters 8-17:
-  let x = None None
-          ^^^^^^^^^
+1 | let x = None None
+            ^^^^^^^^^
 Error: The constructor None expects 0 argument(s),
        but is applied here to 1 argument(s)
 |}]
@@ -45,8 +45,8 @@ let f = function (A (x:_)) -> 0
 [%%expect{|
 type t = A of { x : int; }
 Line 2, characters 20-25:
-  let f = function (A (x:_)) -> 0
-                      ^^^^^
+2 | let f = function (A (x:_)) -> 0
+                        ^^^^^
 Error: This form is not allowed as the type of the inlined record could escape.
 |}]
 
@@ -55,8 +55,8 @@ Error: This form is not allowed as the type of the inlined record could escape.
 let f = function Some(exception Not_found) -> 0
 [%%expect{|
 Line 1, characters 21-42:
-  let f = function Some(exception Not_found) -> 0
-                       ^^^^^^^^^^^^^^^^^^^^^
+1 | let f = function Some(exception Not_found) -> 0
+                         ^^^^^^^^^^^^^^^^^^^^^
 Error: Exception patterns are not allowed in this position.
 |}]
 
@@ -64,8 +64,8 @@ Error: Exception patterns are not allowed in this position.
 let f = function [%ext] -> 0
 [%%expect{|
 Line 1, characters 19-22:
-  let f = function [%ext] -> 0
-                     ^^^
+1 | let f = function [%ext] -> 0
+                       ^^^
 Error: Uninterpreted extension 'ext'.
 |}]
 
@@ -75,8 +75,8 @@ Error: Uninterpreted extension 'ext'.
 let rec f x = ( (), () : _ -> _ -> _ )
 [%%expect{|
 Line 3, characters 14-38:
-  let rec f x = ( (), () : _ -> _ -> _ )
-                ^^^^^^^^^^^^^^^^^^^^^^^^
+3 | let rec f x = ( (), () : _ -> _ -> _ )
+                  ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type 'a * 'b
        but an expression was expected of type 'c -> 'd -> 'e
 |}]
@@ -84,8 +84,8 @@ Error: This expression has type 'a * 'b
 let rec g x = ( ((), ()) : _ -> _ :> _ )
 [%%expect{|
 Line 1, characters 14-40:
-  let rec g x = ( ((), ()) : _ -> _ :> _ )
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec g x = ( ((), ()) : _ -> _ :> _ )
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type 'a * 'b
        but an expression was expected of type 'c -> 'd
 |}]
@@ -95,8 +95,8 @@ Error: This expression has type 'a * 'b
 let c = object val x= 0 val y = x end
 [%%expect{|
 Line 1, characters 32-33:
-  let c = object val x= 0 val y = x end
-                                  ^
+1 | let c = object val x= 0 val y = x end
+                                    ^
 Error: The instance variable x
        cannot be accessed from the definition of another instance variable
 |}]
@@ -107,8 +107,8 @@ Error: The instance variable x
 let f x = match x with exception Not_found -> ();;
 [%%expect{|
 Line 3, characters 10-48:
-  let f x = match x with exception Not_found -> ();;
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 | let f x = match x with exception Not_found -> ();;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: None of the patterns in this 'match' expression match values.
 |}]
 
@@ -119,8 +119,8 @@ let r = { x= 1; x= 1}
 [%%expect{|
 type r = { x : int; }
 Line 2, characters 8-21:
-  let r = { x= 1; x= 1}
-          ^^^^^^^^^^^^^
+2 | let r = { x= 1; x= 1}
+            ^^^^^^^^^^^^^
 Error: The record field label x is defined several times
 |}]
 
@@ -129,8 +129,8 @@ let () = { x = 1 }.x <- 2
 
 [%%expect{|
 Line 1, characters 9-25:
-  let () = { x = 1 }.x <- 2
-           ^^^^^^^^^^^^^^^^
+1 | let () = { x = 1 }.x <- 2
+             ^^^^^^^^^^^^^^^^
 Error: The record field x is not mutable
 |}]
 
@@ -140,8 +140,8 @@ Error: The record field x is not mutable
 let () = for Some i = 3 to 4 do () done;
 [%%expect{|
 Line 3, characters 13-19:
-  let () = for Some i = 3 to 4 do () done;
-               ^^^^^^
+3 | let () = for Some i = 3 to 4 do () done;
+                 ^^^^^^
 Error: Invalid for-loop index: only variables and _ are allowed.
 |}]
 
@@ -158,8 +158,8 @@ end;;
 [%%expect{|
 class virtual v : object method virtual m : int end
 Line 7, characters 18-23:
-    method x: int = super#m
-                    ^^^^^
+7 |   method x: int = super#m
+                      ^^^^^
 Error: This expression has no method m
 |}]
 
@@ -169,8 +169,8 @@ let x = new v
 
 [%%expect{|
 Line 3, characters 8-13:
-  let x = new v
-          ^^^^^
+3 | let x = new v
+            ^^^^^
 Error: Cannot instantiate the virtual class v
 |}]
 
@@ -180,8 +180,8 @@ let x = object val x = 1 method m = x<-0 end
 
 [%%expect{|
 Line 1, characters 36-40:
-  let x = object val x = 1 method m = x<-0 end
-                                      ^^^^
+1 | let x = object val x = 1 method m = x<-0 end
+                                        ^^^^
 Error: The instance variable x is not mutable
 |}]
 
@@ -190,8 +190,8 @@ let x = object(self) method m = self <-0 end
 
 [%%expect{|
 Line 1, characters 32-40:
-  let x = object(self) method m = self <-0 end
-                                  ^^^^^^^^
+1 | let x = object(self) method m = self <-0 end
+                                    ^^^^^^^^
 Error: The value self is not an instance variable
 |}]
 
@@ -201,8 +201,8 @@ class c = object val x = 0 method m: c = {< x=0; x=1 >} end
 
 [%%expect{|
 Line 3, characters 41-55:
-  class c = object val x = 0 method m: c = {< x=0; x=1 >} end
-                                           ^^^^^^^^^^^^^^
+3 | class c = object val x = 0 method m: c = {< x=0; x=1 >} end
+                                             ^^^^^^^^^^^^^^
 Error: The instance variable x is overridden several times
 |}]
 
@@ -212,8 +212,8 @@ let f x = {< y = x >}
 
 [%%expect{|
 Line 3, characters 10-21:
-  let f x = {< y = x >}
-            ^^^^^^^^^^^
+3 | let f x = {< y = x >}
+              ^^^^^^^^^^^
 Error: This object duplication occurs outside a method definition
 |}]
 
@@ -224,8 +224,8 @@ class c = object val x = 0 method m: c = {< y=1 >} end
 
 [%%expect{|
 Line 3, characters 41-50:
-  class c = object val x = 0 method m: c = {< y=1 >} end
-                                           ^^^^^^^^^
+3 | class c = object val x = 0 method m: c = {< y=1 >} end
+                                             ^^^^^^^^^
 Error: Unbound instance variable y
 |}]
 
@@ -238,8 +238,8 @@ let x = f (module struct end)
 module type empty = sig  end
 val f : int -> unit = <fun>
 Line 3, characters 10-29:
-  let x = f (module struct end)
-            ^^^^^^^^^^^^^^^^^^^
+3 | let x = f (module struct end)
+              ^^^^^^^^^^^^^^^^^^^
 Error: This expression is packed module, but the expected type is int
 |}]
 
@@ -250,16 +250,16 @@ let x = [%extension_constructor A]
 [%%expect {|
 type t = A
 Line 2, characters 32-33:
-  let x = [%extension_constructor A]
-                                  ^
+2 | let x = [%extension_constructor A]
+                                    ^
 Error: This constructor is not an extension constructor.
 |}]
 
 let x = [%extension_constructor]
 [%%expect {|
 Line 1, characters 8-32:
-  let x = [%extension_constructor]
-          ^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let x = [%extension_constructor]
+            ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Invalid [%extension_constructor] payload, a constructor is expected.
 |}]
 
@@ -267,8 +267,8 @@ Error: Invalid [%extension_constructor] payload, a constructor is expected.
 let x = format_of_string "%z"
 [%%expect {|
 Line 1, characters 25-29:
-  let x = format_of_string "%z"
-                           ^^^^
+1 | let x = format_of_string "%z"
+                             ^^^^
 Error: invalid format "%z": at character number 1, invalid conversion "%z"
 |}]
 
@@ -279,8 +279,8 @@ let y = f ~y:1
 [%%expect {|
 val f : x:int -> int = <fun>
 Line 4, characters 13-14:
-  let y = f ~y:1
-               ^
+4 | let y = f ~y:1
+                 ^
 Error: The function applied to this argument has type x:int -> int
 This argument cannot be applied with label ~y
 |}]
@@ -288,8 +288,8 @@ This argument cannot be applied with label ~y
 let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
 [%%expect {|
 Line 1, characters 23-24:
-  let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
-                         ^
+1 | let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
+                           ^
 Error: This function is applied to arguments
        in an order different from other calls.
        This is only allowed when the real type is known.
@@ -301,8 +301,8 @@ let x = A 1
 [%%expect {|
 type t = A of { x : int; }
 Line 2, characters 8-11:
-  let x = A 1
-          ^^^
+2 | let x = A 1
+            ^^^
 Error: This constructor expects an inlined record argument.
 |}]
 
@@ -313,8 +313,8 @@ let rec A x = A (A ())
 [%%expect {|
 type 'a t = A of 'a
 Line 2, characters 8-11:
-  let rec A x = A (A ())
-          ^^^
+2 | let rec A x = A (A ())
+            ^^^
 Error: Only variables are allowed as left-hand side of `let rec'
 |}]
 
@@ -323,8 +323,8 @@ Error: Only variables are allowed as left-hand side of `let rec'
 let quadratic (x,x) = x * x
 [%%expect {|
 Line 3, characters 17-18:
-  let quadratic (x,x) = x * x
-                   ^
+3 | let quadratic (x,x) = x * x
+                     ^
 Error: Variable x is bound several times in this matching
 |}]
 
@@ -334,8 +334,8 @@ let f (A x|B x) = 0
 [%%expect {|
 type t = A of int | B of float | C
 Line 2, characters 6-15:
-  let f (A x|B x) = 0
-        ^^^^^^^^^
+2 | let f (A x|B x) = 0
+          ^^^^^^^^^
 Error: The variable x on the left-hand side of this or-pattern has type
        int but on the right-hand side it has type float
 |}]
@@ -345,8 +345,8 @@ Error: The variable x on the left-hand side of this or-pattern has type
 let f (A x|C) = 0
 [%%expect {|
 Line 3, characters 6-13:
-  let f (A x|C) = 0
-        ^^^^^^^
+3 | let f (A x|C) = 0
+          ^^^^^^^
 Error: Variable x must occur on both sides of this | pattern
 |}]
 
@@ -354,8 +354,8 @@ Error: Variable x must occur on both sides of this | pattern
 let f (A x|B y) = 0
 [%%expect {|
 Line 1, characters 6-15:
-  let f (A x|B y) = 0
-        ^^^^^^^^^
+1 | let f (A x|B y) = 0
+          ^^^^^^^^^
 Error: Variable x must occur on both sides of this | pattern
 |}]
 
@@ -365,16 +365,16 @@ let f = function #t -> ()
 [%%expect {|
 type t = []
 Line 2, characters 18-19:
-  let f = function #t -> ()
-                    ^
+2 | let f = function #t -> ()
+                      ^
 Error: The type t is not a variant type
 |}]
 
 let f {x;x=y;x=z} = x
 [%%expect {|
 Line 1, characters 6-17:
-  let f {x;x=y;x=z} = x
-        ^^^^^^^^^^^
+1 | let f {x;x=y;x=z} = x
+          ^^^^^^^^^^^
 Error: The record field label x is defined several times
 |}]
 
@@ -383,8 +383,8 @@ Error: The record field label x is defined several times
 let x = ([`B]:>[`A])
 [%%expect {|
 Line 3, characters 9-13:
-  let x = ([`B]:>[`A])
-           ^^^^
+3 | let x = ([`B]:>[`A])
+             ^^^^
 Error: This expression cannot be coerced to type [ `A ]; it has type
          [> `B ] list
        but is here used with type [< `A ]
@@ -396,8 +396,8 @@ let o = object method m = instance <- 0 end
 
 [%%expect{|
 Line 3, characters 26-39:
-  let o = object method m = instance <- 0 end
-                            ^^^^^^^^^^^^^
+3 | let o = object method m = instance <- 0 end
+                              ^^^^^^^^^^^^^
 Error: Unbound instance variable instance
 |}]
 
@@ -408,8 +408,8 @@ let x = function
   | `c7diagq -> ()
 [%%expect{|
 Line 3, characters 4-12:
-    | `c7diagq -> ()
-      ^^^^^^^^
+3 |   | `c7diagq -> ()
+        ^^^^^^^^
 Error: Variant tags `azdwbie and `c7diagq have the same hash value.
        Change one of them.
 |}]
@@ -418,8 +418,8 @@ Error: Variant tags `azdwbie and `c7diagq have the same hash value.
 let x =  `azdwbie = `c7diagq
 [%%expect{|
 Line 1, characters 20-28:
-  let x =  `azdwbie = `c7diagq
-                      ^^^^^^^^
+1 | let x =  `azdwbie = `c7diagq
+                        ^^^^^^^^
 Error: Variant tags `azdwbie and `c7diagq have the same hash value.
        Change one of them.
 |}]
@@ -435,8 +435,8 @@ let x  = function
 [%%expect{|
 type 'a x = X : [> `azdwbie ] x | Y : [> `c7diagq ] x
 Line 7, characters 4-5:
-    | Y  -> ()
-      ^
+7 |   | Y  -> ()
+        ^
 Error: Variant tags `azdwbie and `c7diagq have the same hash value.
        Change one of them.
 |}]
@@ -449,8 +449,8 @@ let f = function {x; y} -> x
 type t = { x : unit; }
 type s = { y : unit; }
 Line 3, characters 21-22:
-  let f = function {x; y} -> x
-                       ^
+3 | let f = function {x; y} -> x
+                         ^
 Error: The record field y belongs to the type s
        but is mixed here with fields of type t
 |}]
@@ -461,15 +461,15 @@ Error: The record field y belongs to the type s
 let x = [%ocaml.error "Expression error"]
 [%%expect {|
 Line 3, characters 10-21:
-  let x = [%ocaml.error "Expression error"]
-            ^^^^^^^^^^^
+3 | let x = [%ocaml.error "Expression error"]
+              ^^^^^^^^^^^
 Error: Expression error
 |}]
 
 let f [%ocaml.error "Pattern error"] = ()
 [%%expect {|
 Line 1, characters 8-19:
-  let f [%ocaml.error "Pattern error"] = ()
-          ^^^^^^^^^^^
+1 | let f [%ocaml.error "Pattern error"] = ()
+            ^^^^^^^^^^^
 Error: Pattern error
 |}]

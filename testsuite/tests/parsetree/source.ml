@@ -720,7 +720,7 @@ end = struct
   let ik =
     { tag = Int;
       label = "int";
-      write = string_of_int;
+      write = Int.to_string;
       read = int_of_string }
 
   let () = Hashtbl.add readTbl "int" (K ik)
@@ -838,7 +838,7 @@ let apply x =
   (module N : S)
 
 let () =
-  let int = forget (create string_of_int succ 0) in
+  let int = forget (create Int.to_string succ 0) in
   let str = forget (create (fun s -> s) (fun s -> s ^ s) "X") in
   List.iter print (List.map apply [int; apply int; apply (apply str)])
 
@@ -911,7 +911,7 @@ module rec Print : sig
 end = struct
   let to_string (type s) t x =
     match t with
-    | Int eq -> string_of_int (TypEq.apply eq x)
+    | Int eq -> Int.to_string (TypEq.apply eq x)
     | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
     | Pair p ->
         let module P = (val p : PAIR with type t = s) in
@@ -946,7 +946,7 @@ let f = function
   | Some _ [@foooo]-> 2
   | None -> 3
 ;;
-print_endline (string_of_int (f (Some (module struct let x = false end))));;
+print_endline (Int.to_string (f (Some (module struct let x = false end))));;
 type 'a ty =
   | Int : int ty
   | Bool : bool ty
@@ -3182,7 +3182,7 @@ open Typ
 let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
   fun (type s) t x ->
     match (t : s typ) with
-    | Int eq -> string_of_int (TypEq.apply eq x)
+    | Int eq -> Int.to_string (TypEq.apply eq x)
     | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
     | Pair (module P) ->
         let (x1, x2) = TypEq.apply P.eq x in
@@ -3288,7 +3288,7 @@ let subst_lambda ~subst_rec ~free ~subst : _ lambda -> _ = function
           ~f:(fun ~key ~data acc ->
                 if Names.mem s used then data::acc else acc) in
       if List.exists used_expr ~f:(fun t -> Names.mem s (free t)) then
-        let name = s ^ string_of_int (next_id ()) in
+        let name = s ^ Int.to_string (next_id ()) in
         `Abs(name,
              subst_rec ~subst:(Subst.add ~key:s ~data:(`Var name) subst) t)
       else
@@ -3469,7 +3469,7 @@ class ['a] lambda_ops (ops : ('a,'a) #ops Lazy.t) =
               ~f:(fun ~key ~data acc ->
                 if Names.mem s used then data::acc else acc) in
           if List.exists used_expr ~f:(fun t -> Names.mem s (!!free t)) then
-            let name = s ^ string_of_int (next_id ()) in
+            let name = s ^ Int.to_string (next_id ()) in
             `Abs(name,
                  !!subst ~sub:(Subst.add ~key:s ~data:(`Var name) sub) t)
           else
@@ -3656,7 +3656,7 @@ let lambda_ops (ops : ('a,'a) #ops Lazy.t) =
               ~f:(fun ~key ~data acc ->
                 if Names.mem s used then data::acc else acc) in
           if List.exists used_expr ~f:(fun t -> Names.mem s (!!free t)) then
-            let name = s ^ string_of_int (next_id ()) in
+            let name = s ^ Int.to_string (next_id ()) in
             `Abs(name,
                  !!subst ~sub:(Subst.add ~key:s ~data:(`Var name) sub) t)
           else
@@ -4746,7 +4746,7 @@ module C : sig module L : module type of List end = A
 include D'
 (*
 let () =
-  print_endline (string_of_int D'.M.y)
+  print_endline (Int.to_string D'.M.y)
 *)
 open A
 let f =
@@ -7355,3 +7355,12 @@ module Indexop = struct
 end
 
 type t = |
+
+
+(* GPR#2034 *)
+
+let x = `  Foo
+let x = ` (* wait for it *) Bar
+type (+' a, -' a', ' a'b', 'ab', ' abcd', ' (* ! *) x) t =
+  ' a * ' a' * ' a'b' * 'ab' * ' abcd' * ' (* !! *) x
+  as ' a'

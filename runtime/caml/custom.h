@@ -60,6 +60,10 @@ CAMLextern value caml_alloc_custom(const struct custom_operations * ops,
                                    mlsize_t mem, /*resources consumed*/
                                    mlsize_t max  /*max resources*/);
 
+CAMLextern value caml_alloc_custom_mem(const struct custom_operations * ops,
+                                       uintnat size, /*size in bytes*/
+                                       mlsize_t mem  /*memory consumed*/);
+
 CAMLextern void caml_register_custom_operations(const struct custom_operations * ops);
 
 /* In domain_state.tbl: intnat compare_unordered; */

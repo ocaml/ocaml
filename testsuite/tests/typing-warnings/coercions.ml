@@ -10,8 +10,8 @@ fun b -> if b then format_of_string "x" else "y"
 - : bool -> ('a, 'b, 'c, 'd, 'd, 'a) format6 = <fun>
 |}, Principal{|
 Line 1, characters 45-48:
-  fun b -> if b then format_of_string "x" else "y"
-                                               ^^^
+1 | fun b -> if b then format_of_string "x" else "y"
+                                                 ^^^
 Warning 18: this coercion to format6 is not principal.
 - : bool -> ('a, 'b, 'c, 'd, 'd, 'a) format6 = <fun>
 |}]
@@ -20,8 +20,8 @@ Warning 18: this coercion to format6 is not principal.
 fun b -> if b then "x" else format_of_string "y"
 [%%expect {|
 Line 1, characters 28-48:
-  fun b -> if b then "x" else format_of_string "y"
-                              ^^^^^^^^^^^^^^^^^^^^
+1 | fun b -> if b then "x" else format_of_string "y"
+                                ^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type
          ('a, 'b, 'c, 'd, 'd, 'a) format6 =
            ('a, 'b, 'c, 'd, 'd, 'a) CamlinternalFormatBasics.format6
@@ -63,8 +63,8 @@ end;;
 module Test1 : sig type t = private int val f : t -> int end
 |}, Principal{|
 Line 3, characters 49-59:
-    let f x = let y = if true then x else (x:t) in (y :> int)
-                                                   ^^^^^^^^^^
+3 |   let f x = let y = if true then x else (x:t) in (y :> int)
+                                                     ^^^^^^^^^^
 Warning 18: this ground coercion is not principal.
 module Test1 : sig type t = private int val f : t -> int end
 |}]
