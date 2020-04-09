@@ -2926,25 +2926,31 @@ sig_exception_declaration:
 ;
 
 effect_core_type_list:
-  | tys = inline_separated_nonempty_llist(STAR, atomic_type)
-    %prec below_HASH
-      { Pcstr_tuple tys }
+  inline_separated_nonempty_llist(STAR, atomic_type)
+      { $1 }
+;
+
+effect_constructor_arguments:
+  | COLON effect_core_type_list MINUSGREATER atomic_type %prec below_HASH
+                                  { ($2, $4) }
+  | COLON atomic_type %prec below_HASH
+                                  { ([], $2) }
+;
 
 effect_declaration:
   | effect_constructor_declaration      { $1 }
   | effect_constructor_rebind           { $1 }
 ;
+
 effect_constructor_declaration:
-  | mkrhs(constr_ident) attributes
-    COLON effect_core_type_list MINUSGREATER atomic_type
-      post_item_attributes
-      { Te.effect_decl $1 $6 ~args:$4
-          ~loc:(make_loc $sloc) ~attrs:($7 @ $2) }
-  | mkrhs(constr_ident) attributes
-    COLON atomic_type post_item_attributes
-      { Te.effect_decl $1 $4
-          ~loc:(make_loc $sloc) ~attrs:($5 @ $2) }
-;
+  id = mkrhs(constr_ident)
+  attrs1 = attributes
+  args_res = effect_constructor_arguments
+  attrs2 = post_item_attributes
+    { let args, res = args_res in
+      Te.effect_decl id res ~args ~loc:(make_loc $sloc) ~attrs:(attrs2@attrs1)
+    }
+
 effect_constructor_rebind:
   | mkrhs(constr_ident) attributes
     EQUAL mkrhs(constr_longident) post_item_attributes
