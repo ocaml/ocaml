@@ -143,9 +143,8 @@ static uintnat callback_idx;
 
 /* Structure for thread-local variables. */
 struct caml_memprof_th_ctx {
-  /* [suspended] is used for masking memprof callbacks when
-     a callback is running or when an uncaught exception handler is
-     called. */
+  /* [suspended] is used for masking memprof sampling and callbacks
+     when a callback is running. */
   int suspended;
 
   /* [callback_status] contains:

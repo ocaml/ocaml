@@ -24,11 +24,11 @@
 #include "caml/callback.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
+#include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
-#include "caml/memory.h"
-#include "caml/memprof.h"
+#include "caml/signals.h"
 
 struct stringbuf {
   char * ptr;
@@ -142,11 +142,10 @@ void caml_fatal_uncaught_exception(value exn)
   handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");
 
-  /* If the callback allocates, memprof could be called. In this case,
-     memprof's callback could raise an exception while
-     [handle_uncaught_exception] is running, so that the printing of
-     the exception fails. */
-  caml_memprof_set_suspended(1);
+  /* Prevent asynchronous exceptions while [handle_uncaught_exception]
+     is running, to prevent the printing from failing. The mask stays
+     until the end of the program. */
+  caml_mask(CAML_MASK_UNINTERRUPTIBLE);
 
   if (handle_uncaught_exception != NULL)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */
