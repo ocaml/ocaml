@@ -60,8 +60,9 @@ compare_b.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
 custom_b.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
-  caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h caml/signals.h
+  caml/fail.h caml/gc_ctrl.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/shared_heap.h \
+  caml/roots.h caml/signals.h
 debugger_b.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -418,8 +419,9 @@ compare_bd.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
 custom_bd.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
-  caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h caml/signals.h
+  caml/fail.h caml/gc_ctrl.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/shared_heap.h \
+  caml/roots.h caml/signals.h
 debugger_bd.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -782,8 +784,9 @@ compare_bi.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
 custom_bi.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
-  caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h caml/signals.h
+  caml/fail.h caml/gc_ctrl.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/shared_heap.h \
+  caml/roots.h caml/signals.h
 debugger_bi.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -1140,8 +1143,9 @@ compare_bpic.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.
 custom_bpic.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
-  caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
-  caml/addrmap.h caml/domain.h caml/signals.h
+  caml/fail.h caml/gc_ctrl.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/shared_heap.h \
+  caml/roots.h caml/signals.h
 debugger_bpic.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
@@ -1494,9 +1498,9 @@ compare_n.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
   caml/alloc.h
 custom_n.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
-  caml/domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
-  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
-  caml/signals.h
+  caml/domain_state.tbl caml/custom.h caml/fail.h caml/gc_ctrl.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/shared_heap.h caml/roots.h caml/signals.h
 debugger_n.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/debugger.h caml/memory.h caml/gc.h \
@@ -1834,9 +1838,9 @@ compare_nd.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
   caml/alloc.h
 custom_nd.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
-  caml/domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
-  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
-  caml/signals.h
+  caml/domain_state.tbl caml/custom.h caml/fail.h caml/gc_ctrl.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/shared_heap.h caml/roots.h caml/signals.h
 debugger_nd.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/debugger.h caml/memory.h caml/gc.h \
@@ -2180,9 +2184,9 @@ compare_ni.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
   caml/alloc.h
 custom_ni.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
-  caml/domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
-  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
-  caml/signals.h
+  caml/domain_state.tbl caml/custom.h caml/fail.h caml/gc_ctrl.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/shared_heap.h caml/roots.h caml/signals.h
 debugger_ni.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/debugger.h caml/memory.h caml/gc.h \
@@ -2520,9 +2524,9 @@ compare_np.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
   caml/alloc.h
 custom_np.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
-  caml/domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
-  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
-  caml/signals.h
+  caml/domain_state.tbl caml/custom.h caml/fail.h caml/gc_ctrl.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/shared_heap.h caml/roots.h caml/signals.h
 debugger_np.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/debugger.h caml/memory.h caml/gc.h \
@@ -2860,9 +2864,9 @@ compare_npic.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.
   caml/alloc.h
 custom_npic.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
-  caml/domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
-  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
-  caml/signals.h
+  caml/domain_state.tbl caml/custom.h caml/fail.h caml/gc_ctrl.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/shared_heap.h caml/roots.h caml/signals.h
 debugger_npic.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
   caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/debugger.h caml/memory.h caml/gc.h \
