@@ -4218,21 +4218,6 @@ and type_application env funct sargs =
     in
     (ty2, (lbl, Some arg) :: typed_args)
   in
-  let type_unknown_args typed_args omitted ty_fun remaining_args =
-    let ty_fun, typed_args =
-      List.fold_left (type_unknown_arg omitted) (ty_fun, typed_args)
-        remaining_args
-    in
-    let args =
-      List.map
-        (function
-          | l, None -> l, None
-          | l, Some f -> l, Some (f ()))
-        (List.rev typed_args)
-    in
-    let result_ty = instance (result_type omitted ty_fun) in
-    args, result_ty
-  in
   let ignore_labels =
     !Clflags.classic ||
     begin
@@ -4327,7 +4312,20 @@ and type_application env funct sargs =
         in
         let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
         type_args ((l,arg)::args) omitted ty_fun ty_fun0 sargs
-    | _ -> type_unknown_args args omitted ty_fun0 sargs
+    | _ ->
+        let ty_fun, typed_args =
+          List.fold_left (type_unknown_arg omitted) (ty_fun0, args)
+            sargs
+        in
+        let args =
+          List.map
+            (function
+              | l, None -> l, None
+              | l, Some f -> l, Some (f ()))
+            (List.rev typed_args)
+        in
+        let result_ty = instance (result_type omitted ty_fun) in
+        args, result_ty
   in
   let is_ignore funct =
     is_prim ~name:"%ignore" funct &&
