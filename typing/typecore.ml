@@ -4180,10 +4180,10 @@ and type_application env funct sargs =
     let ls, tvar = list_labels env ty_fun in
     tvar || List.mem l ls
   in
-  let ignored = ref [] in
-  let omitted = ref [] in
+  let eliminated_optional_arguments = ref [] in
+  let omitted_non_optional_arguments = ref [] in
   let type_unknown_arg (ty_fun, typed_args) (lbl, sarg) =
-    let (ty1, ty2) =
+    let (ty_arg, ty_res) =
       let ty_fun = expand_head env ty_fun in
       match ty_fun.desc with
       | Tvar _ ->
@@ -4199,7 +4199,11 @@ and type_application env funct sargs =
           (t1, t2)
       | td ->
           let ty_fun = match td with Tarrow _ -> newty td | _ -> ty_fun in
-          let ty_res = result_type (!omitted @ !ignored) ty_fun in
+          let ty_res =
+            result_type
+              (!omitted_non_optional_arguments @ !eliminated_optional_arguments)
+              ty_fun
+          in
           match ty_res.desc with
           | Tarrow _ ->
               if !Clflags.classic || not (has_label lbl ty_fun) then
@@ -4212,12 +4216,12 @@ and type_application env funct sargs =
                             (expand_head env funct.exp_type)))
     in
     let arg () =
-      let arg = type_expect env sarg (mk_expected ty1) in
+      let arg = type_expect env sarg (mk_expected ty_arg) in
       if is_optional lbl then
         unify_exp env arg (type_option(newvar()));
       arg
     in
-    (ty2, (lbl, Some arg) :: typed_args)
+    (ty_res, (lbl, Some arg) :: typed_args)
   in
   let ignore_labels =
     !Clflags.classic ||
@@ -4251,14 +4255,14 @@ and type_application env funct sargs =
         in
         let name = label_name l
         and optional = is_optional l in
-        let use_arg sarg0 l' =
+        let use_arg sarg l' =
           Some (
             if not optional || is_optional l' then
-              (fun () -> type_argument env sarg0 ty ty0)
+              (fun () -> type_argument env sarg ty ty0)
             else begin
-              may_warn sarg0.pexp_loc
+              may_warn sarg.pexp_loc
                 (Warnings.Not_principal "using an optional argument here");
-              (fun () -> option_some env (type_argument env sarg0
+              (fun () -> option_some env (type_argument env sarg
                                             (extract_option_type env ty)
                                             (extract_option_type env ty0)))
             end
@@ -4267,38 +4271,39 @@ and type_application env funct sargs =
         let eliminate_optional_arg () =
           may_warn funct.exp_loc
             (Warnings.Without_principality "eliminated optional argument");
-          ignored := (l,ty,lv) :: !ignored;
+          eliminated_optional_arguments :=
+            (l,ty,lv) :: !eliminated_optional_arguments;
           Some (fun () -> option_none env (instance ty) Location.none)
         in
-        let sargs, arg =
+        let remaining_sargs, arg =
           if ignore_labels then begin
             (* No reordering is allowed, process arguments in order *)
             match sargs with
             | [] -> assert false
-            | (l', sarg0) :: remaining_sargs ->
+            | (l', sarg) :: remaining_sargs ->
                 if name = label_name l' || (not optional && l' = Nolabel) then
-                  (remaining_sargs, use_arg sarg0 l')
+                  (remaining_sargs, use_arg sarg l')
                 else if optional &&
                         not (List.exists (fun (l, _) -> name = label_name l)
                                remaining_sargs)
                 then
                   (sargs, eliminate_optional_arg ())
                 else
-                  raise(Error(sarg0.pexp_loc, env,
+                  raise(Error(sarg.pexp_loc, env,
                               Apply_wrong_label(l', ty_fun')))
           end else
             (* Arguments can be commuted, try to fetch the argument
                corresponding to the first parameter. *)
             match extract_label name sargs with
-            | Some (l', sarg0, commuted, sargs) ->
+            | Some (l', sarg, commuted, remaining_sargs) ->
                 if commuted then begin
-                  may_warn sarg0.pexp_loc
+                  may_warn sarg.pexp_loc
                     (Warnings.Not_principal "commuting this argument")
                 end;
                 if not optional && is_optional l' then
-                  Location.prerr_warning sarg0.pexp_loc
+                  Location.prerr_warning sarg.pexp_loc
                     (Warnings.Nonoptional_label (Printtyp.string_of_label l));
-                sargs, use_arg sarg0 l'
+                remaining_sargs, use_arg sarg l'
             | None ->
                 sargs,
                 if optional && List.mem_assoc Nolabel sargs then
@@ -4308,23 +4313,31 @@ and type_application env funct sargs =
                      abstract over it. *)
                   may_warn funct.exp_loc
                     (Warnings.Without_principality "commuted an argument");
-                  omitted := (l,ty,lv) :: !omitted;
+                  omitted_non_optional_arguments :=
+                    (l,ty,lv) :: !omitted_non_optional_arguments;
                   None
                 end
         in
-        type_args ((l,arg)::args) ty_fun ty_fun0 sargs
+        type_args ((l,arg)::args) ty_fun ty_fun0 remaining_sargs
     | _ ->
+        (* We're not looking at a *known* function type anymore, or there are no
+           arguments left. *)
         let ty_fun, typed_args =
           List.fold_left type_unknown_arg (ty_fun0, args) sargs
         in
         let args =
+          (* Force typing of arguments.
+             Careful: the order matters here. Using [List.rev_map] would be
+             incorrect. *)
           List.map
             (function
               | l, None -> l, None
               | l, Some f -> l, Some (f ()))
             (List.rev typed_args)
         in
-        let result_ty = instance (result_type !omitted ty_fun) in
+        let result_ty =
+          instance (result_type !omitted_non_optional_arguments ty_fun)
+        in
         args, result_ty
   in
   let is_ignore funct =
