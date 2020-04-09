@@ -55,14 +55,14 @@ type operation =
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Iloadmut
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { words : int; label_after_call_gc : label option;
+  | Ialloc of { bytes : int; label_after_call_gc : label option;
         spacetime_index : int; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
-  | Iname_for_debugger of { ident : Ident.t; which_parameter : int option;
+  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
       provenance : unit option; is_assignment : bool; }
   | Ipoll
 

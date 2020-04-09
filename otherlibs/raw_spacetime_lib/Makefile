@@ -19,7 +19,7 @@ LIBNAME=raw_spacetime_lib
 COBJS=spacetime_offline.$(O)
 CAMLOBJS=raw_spacetime_lib.cmo
 
-include ../Makefile
+include ../Makefile.otherlibs.common
 
 .PHONY: depend
 depend:

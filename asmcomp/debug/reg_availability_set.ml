@@ -15,6 +15,7 @@
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 module RD = Reg_with_debug_info
+module V = Backend_var
 
 type t =
   | Ok of RD.Set.t
@@ -69,15 +70,15 @@ let canonicalise availability =
   match availability with
   | Unreachable -> Unreachable
   | Ok availability ->
-    let regs_by_ident = Ident.Tbl.create 42 in
+    let regs_by_ident = V.Tbl.create 42 in
     RD.Set.iter (fun reg ->
         match RD.debug_info reg with
         | None -> ()
         | Some debug_info ->
           let name = RD.Debug_info.holds_value_of debug_info in
-          if not (Ident.persistent name) then begin
-            match Ident.Tbl.find regs_by_ident name with
-            | exception Not_found -> Ident.Tbl.add regs_by_ident name reg
+          if not (V.persistent name) then begin
+            match V.Tbl.find regs_by_ident name with
+            | exception Not_found -> V.Tbl.add regs_by_ident name reg
             | (reg' : RD.t) ->
               (* We prefer registers that are assigned to the stack since
                  they probably give longer available ranges (less likely to
@@ -89,12 +90,12 @@ let canonicalise availability =
               | _, Unknown
               | Unknown, _ -> ()
               | Stack _, Reg _ ->
-                Ident.Tbl.remove regs_by_ident name;
-                Ident.Tbl.add regs_by_ident name reg
+                V.Tbl.remove regs_by_ident name;
+                V.Tbl.add regs_by_ident name reg
           end)
       availability;
     let result =
-      Ident.Tbl.fold (fun _ident reg availability ->
+      V.Tbl.fold (fun _ident reg availability ->
           RD.Set.add reg availability)
         regs_by_ident
         RD.Set.empty

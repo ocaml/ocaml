@@ -12,15 +12,17 @@
 #*                                                                        *
 #**************************************************************************
 
-BASEDIR=..
-include $(BASEDIR)/../config/Makefile
+BASEDIR = ..
+
+ROOTDIR = ../..
+
+include $(ROOTDIR)/Makefile.config
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
 expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
           -I $(OTOPDIR)/driver -I $(OTOPDIR)/typing -I $(OTOPDIR)/toplevel
-expect_LIBRARIES=../../compilerlibs/ocamlcommon \
-          ../../compilerlibs/ocamlbytecomp \
-          ../../compilerlibs/ocamltoplevel
+expect_LIBRARIES := $(addprefix $(ROOTDIR)/compilerlibs/,\
+  ocamlcommon ocamlbytecomp ocamltoplevel)
 
 codegen_INCLUDES=\
   -I $(OTOPDIR)/parsing \

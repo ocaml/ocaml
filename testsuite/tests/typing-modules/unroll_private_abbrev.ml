@@ -29,8 +29,8 @@ let y =
 ;;
 [%%expect{|
 Line 2, characters 8-41:
-    match (M.bar :> [ `Bar of M.t | `Foo ]) with
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 |   match (M.bar :> [ `Bar of M.t | `Foo ]) with
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type M.t is not a subtype of [ `Bar of M.t | `Foo ]
        Type M.t = [ `Bar of M.t | `Foo ] is not a subtype of M.t
 |}]
@@ -73,8 +73,8 @@ let y =
 ;;
 [%%expect{|
 Line 2, characters 8-48:
-    match (N.from M.bar :> [ `Bar of N.s | `Foo ]) with
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 |   match (N.from M.bar :> [ `Bar of N.s | `Foo ]) with
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type N.s is not a subtype of [ `Bar of N.s | `Foo ]
        Type N.s = [ `Bar of N.s | `Foo ] is not a subtype of N.s
 |}]

@@ -63,6 +63,12 @@ external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
    argument is zero.  This division rounds the real quotient of
    its arguments towards zero, as specified for {!Stdlib.(/)}. *)
 
+val unsigned_div : nativeint -> nativeint -> nativeint
+(** Same as {!div}, except that arguments and result are interpreted as {e
+    unsigned} native integers.
+
+    @since 4.08.0 *)
+
 external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
 (** Integer remainder.  If [y] is not zero, the result
    of [Nativeint.rem x y] satisfies the following properties:
@@ -70,6 +76,12 @@ external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
    [x = Nativeint.add (Nativeint.mul (Nativeint.div x y) y)
                       (Nativeint.rem x y)].
    If [y = 0], [Nativeint.rem x y] raises [Division_by_zero]. *)
+
+val unsigned_rem : nativeint -> nativeint -> nativeint
+(** Same as {!rem}, except that arguments and result are interpreted as {e
+    unsigned} native integers.
+
+    @since 4.08.0 *)
 
 val succ : nativeint -> nativeint
 (** Successor.
@@ -138,6 +150,13 @@ external to_int : nativeint -> int = "%nativeint_to_int"
    integer (type [int]).  The high-order bit is lost during
    the conversion. *)
 
+val unsigned_to_int : nativeint -> int option
+(** Same as {!to_int}, but interprets the argument as an {e unsigned} integer.
+    Returns [None] if the unsigned value of the argument cannot fit into an
+    [int].
+
+    @since 4.08.0 *)
+
 external of_float : float -> nativeint
   = "caml_nativeint_of_float" "caml_nativeint_of_float_unboxed"
   [@@unboxed] [@@noalloc]
@@ -193,6 +212,12 @@ val compare: t -> t -> int
     {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Nativeint] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val unsigned_compare: t -> t -> int
+(** Same as {!compare}, except that arguments are interpreted as {e unsigned}
+    native integers.
+
+    @since 4.08.0 *)
 
 val equal: t -> t -> bool
 (** The equal function for native ints.

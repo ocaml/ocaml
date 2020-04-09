@@ -878,12 +878,12 @@ asmcomp/build_export_info.cmx : middle_end/base_types/variable.cmx \
     asmcomp/build_export_info.cmi
 asmcomp/build_export_info.cmi : middle_end/flambda.cmi \
     asmcomp/export_info.cmi middle_end/backend_intf.cmi
-asmcomp/clambda.cmo : bytecomp/lambda.cmi typing/ident.cmi \
-    middle_end/debuginfo.cmi parsing/asttypes.cmi asmcomp/clambda.cmi
-asmcomp/clambda.cmx : bytecomp/lambda.cmx typing/ident.cmx \
-    middle_end/debuginfo.cmx parsing/asttypes.cmi asmcomp/clambda.cmi
-asmcomp/clambda.cmi : bytecomp/lambda.cmi typing/ident.cmi \
-    middle_end/debuginfo.cmi parsing/asttypes.cmi
+asmcomp/clambda.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
+    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/clambda.cmi
+asmcomp/clambda.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
+    asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/clambda.cmi
+asmcomp/clambda.cmi : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
+    asmcomp/backend_var.cmi parsing/asttypes.cmi
 asmcomp/closure.cmo : utils/warnings.cmi bytecomp/switch.cmi \
     bytecomp/simplif.cmi bytecomp/semantics_of_primitives.cmi \
     typing/primitive.cmi utils/numbers.cmi utils/misc.cmi \

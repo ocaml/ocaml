@@ -42,12 +42,33 @@ val is_implicit : string -> bool
 
 val check_suffix : string -> string -> bool
 (** [check_suffix name suff] returns [true] if the filename [name]
-   ends with the suffix [suff]. *)
+    ends with the suffix [suff].
+
+    Under Windows ports (including Cygwin), comparison is
+    case-insensitive, relying on [String.lowercase_ascii].  Note that
+    this does not match exactly the interpretation of case-insensitive
+    filename equivalence from Windows.  *)
 
 val chop_suffix : string -> string -> string
 (** [chop_suffix name suff] removes the suffix [suff] from
    the filename [name]. The behavior is undefined if [name] does not
-   end with the suffix [suff]. *)
+   end with the suffix [suff]. It is thus recommmended to use
+   [chop_suffix_opt] instead.
+*)
+
+val chop_suffix_opt: suffix:string -> string -> string option
+(** [chop_suffix_opt ~suffix filename] removes the suffix from
+    the [filename] if possible, or returns [None] if the
+    filename does not end with the suffix.
+
+    Under Windows ports (including Cygwin), comparison is
+    case-insensitive, relying on [String.lowercase_ascii].  Note that
+    this does not match exactly the interpretation of case-insensitive
+    filename equivalence from Windows.
+
+    @since 4.08
+*)
+
 
 val extension : string -> string
 (** [extension name] is the shortest suffix [ext] of [name0] where:

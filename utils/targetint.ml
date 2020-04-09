@@ -28,7 +28,9 @@ module type S = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
+  val unsigned_div : t -> t -> t
   val rem : t -> t -> t
+  val unsigned_rem : t -> t -> t
   val succ : t -> t
   val pred : t -> t
   val abs : t -> t
@@ -53,8 +55,10 @@ module type S = sig
   val of_string : string -> t
   val to_string : t -> string
   val compare: t -> t -> int
+  val unsigned_compare : t -> t -> int
   val equal: t -> t -> bool
   val repr: t -> repr
+  val print : Format.formatter -> t -> unit
 end
 
 let size = Sys.word_size
@@ -80,6 +84,7 @@ module Int32 = struct
   let of_int64 = Int64.to_int32
   let to_int64 = Int64.of_int32
   let repr x = Int32 x
+  let print ppf t = Format.fprintf ppf "%ld" t
 end
 
 module Int64 = struct
@@ -88,6 +93,7 @@ module Int64 = struct
   let of_int64 x = x
   let to_int64 x = x
   let repr x = Int64 x
+  let print ppf t = Format.fprintf ppf "%Ld" t
 end
 
 include (val

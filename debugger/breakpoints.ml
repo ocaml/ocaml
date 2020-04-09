@@ -193,7 +193,7 @@ let remove_breakpoint number =
         )
   with
     Not_found ->
-      prerr_endline ("No breakpoint number " ^ (string_of_int number) ^ ".");
+      prerr_endline ("No breakpoint number " ^ (Int.to_string number) ^ ".");
       raise Not_found
 
 let remove_all_breakpoints () =

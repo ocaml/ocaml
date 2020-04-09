@@ -58,6 +58,10 @@ val div : t -> t -> t
    argument is zero.  This division rounds the real quotient of
    its arguments towards zero, as specified for {!Stdlib.(/)}. *)
 
+val unsigned_div : t -> t -> t
+(** Same as {!div}, except that arguments and result are interpreted as {e
+    unsigned} integers. *)
+
 val rem : t -> t -> t
 (** Integer remainder.  If [y] is not zero, the result
    of [Targetint.rem x y] satisfies the following properties:
@@ -65,6 +69,10 @@ val rem : t -> t -> t
    [x = Targetint.add (Targetint.mul (Targetint.div x y) y)
                       (Targetint.rem x y)].
    If [y = 0], [Targetint.rem x y] raises [Division_by_zero]. *)
+
+val unsigned_rem : t -> t -> t
+(** Same as {!rem}, except that arguments and result are interpreted as {e
+    unsigned} integers. *)
 
 val succ : t -> t
 (** Successor.
@@ -181,6 +189,10 @@ val compare: t -> t -> int
     allows the module [Targetint] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
 
+val unsigned_compare: t -> t -> int
+(** Same as {!compare}, except that arguments are interpreted as {e unsigned}
+    integers. *)
+
 val equal: t -> t -> bool
 (** The equal function for target ints. *)
 
@@ -190,3 +202,6 @@ type repr =
 
 val repr : t -> repr
 (** The concrete representation of a native integer. *)
+
+val print : Format.formatter -> t -> unit
+(** Print a target integer to a formatter. *)

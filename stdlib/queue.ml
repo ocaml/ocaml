@@ -147,7 +147,7 @@ let transfer q1 q2 =
       q2.last <- q1.last;
       clear q1
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq q =
   let rec aux c () = match c with

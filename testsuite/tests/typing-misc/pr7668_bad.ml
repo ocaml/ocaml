@@ -21,8 +21,8 @@ val partition_map :
   ('a -> [< `Left of 'b | `Right of 'c ]) -> 'a list -> 'b list * 'c list =
   <fun>
 Line 12, characters 35-96:
-  ...................................partition_map (fun x -> if x then `Left ()
-  else `Right ()) xs
+12 | ...................................partition_map (fun x -> if x then `Left ()
+13 | else `Right ()) xs
 Error: This expression has type unit list * unit list
        but an expression was expected of type int list * int list
        Type unit is not compatible with type int

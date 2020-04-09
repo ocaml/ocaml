@@ -91,7 +91,7 @@ val transfer : 'a t -> 'a t -> unit
    sequence [iter (fun x -> add x q2) q1; clear q1], but runs
    in constant time. *)
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 val to_seq : 'a t -> 'a Seq.t
 (** Iterate on the queue, in front-to-back order.

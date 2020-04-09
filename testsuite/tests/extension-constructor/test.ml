@@ -12,13 +12,13 @@ type t += C
 type t += D of int * string
 
 let () =
-  assert (Obj.extension_constructor  M.A
+  assert (Obj.Extension_constructor.of_val  M.A
           == [%extension_constructor M.A]);
-  assert (Obj.extension_constructor (M.B 42)
+  assert (Obj.Extension_constructor.of_val (M.B 42)
           == [%extension_constructor M.B]);
-  assert (Obj.extension_constructor  C
+  assert (Obj.Extension_constructor.of_val  C
           == [%extension_constructor C]);
-  assert (Obj.extension_constructor (D (42, ""))
+  assert (Obj.Extension_constructor.of_val (D (42, ""))
           == [%extension_constructor D])
 
 let () = print_endline "OK"

@@ -224,6 +224,40 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* See "DWARF for the ARM architecture" available from developer.arm.com. *)
+
+let int_dwarf_reg_numbers =
+  [| 0; 1; 2; 3; 4; 5; 6; 7; 12 |]
+
+let float_dwarf_reg_numbers_legacy =
+  [| 64; 65; 66; 67; 68; 69; 70; 71;
+     72; 73; 74; 75; 76; 77; 78; 79;
+     80; 81; 82; 83; 84; 85; 86; 87;
+     88; 89; 90; 91; 92; 93; 94; 95;
+  |]
+
+let float_dwarf_reg_numbers =
+  [| 256; 257; 258; 259; 260; 261; 262; 263;
+     264; 265; 266; 267; 268; 269; 270; 271;
+     272; 273; 274; 275; 276; 277; 278; 279;
+     280; 281; 282; 283; 284; 285; 286; 287;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 ->
+    (* Section 3.1 note 4 says that the "new" VFPv3 register numberings
+       (as per [float_dwarf_reg_numbers]) should be used for VFPv2 as well.
+       However we believe that for <= ARMv6 we should use the legacy VFPv2
+       numberings. *)
+    if !arch <= ARMv6 then float_dwarf_reg_numbers_legacy
+    else float_dwarf_reg_numbers
+  | 2 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 13
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -273,6 +307,10 @@ let destroyed_at_oper = function
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
+
+(* lr is destroyed at [Lreloadretaddr], but lr is not used for register
+   allocation, and thus does not need to (and indeed cannot) occur here. *)
+let destroyed_at_reloadretaddr = [| |]
 
 (* Maximal register pressure *)
 

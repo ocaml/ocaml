@@ -4,24 +4,24 @@ type foo += A | B of int
 val is_a : foo -> bool = <fun>
 type foo
 Line 2, characters 0-20:
-  type foo += A of int (* Error type is not open *)
-  ^^^^^^^^^^^^^^^^^^^^
+2 | type foo += A of int (* Error type is not open *)
+    ^^^^^^^^^^^^^^^^^^^^
 Error: Type definition foo is not extensible
 type foo = private ..
 Line 2, characters 12-20:
-  type foo += A of int (* Error type is private *)
-              ^^^^^^^^
+2 | type foo += A of int (* Error type is private *)
+                ^^^^^^^^
 Error: Cannot extend private type definition foo
 type 'a foo = ..
 Line 2, characters 0-29:
-  type ('a, 'b) foo += A of int (* Error: type parameter mismatch *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type ('a, 'b) foo += A of int (* Error: type parameter mismatch *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This extension does not match the definition of type foo
        They have different arities.
 module type S = sig type foo = private .. type foo += A of float end
 Line 7, characters 2-24:
-    type foo += B of float (* Error: foo does not have an extensible type *)
-    ^^^^^^^^^^^^^^^^^^^^^^
+7 |   type foo += B of float (* Error: foo does not have an extensible type *)
+      ^^^^^^^^^^^^^^^^^^^^^^
 Error: Type definition foo is not extensible
 type foo = ..
 module M :
@@ -43,13 +43,13 @@ val get_num : 'a foo -> 'a -> 'a option = <fun>
 type 'a foo = .. constraint 'a = [> `Var ]
 type 'a foo += A of 'a
 Line 2, characters 10-11:
-  let a = A 9 (* ERROR: Constraints not met *)
-            ^
+2 | let a = A 9 (* ERROR: Constraints not met *)
+              ^
 Error: This expression has type int but an expression was expected of type
          [> `Var ]
 Line 2, characters 19-22:
-  type 'a foo += B : int foo (* ERROR: Constraints not met *)
-                     ^^^
+2 | type 'a foo += B : int foo (* ERROR: Constraints not met *)
+                       ^^^
 Error: This type int should be an instance of type [> `Var ]
 type foo = ..
 module M : sig type foo += A of int end
@@ -58,26 +58,26 @@ module type S = sig type foo += private A of int end
 module M_S : S
 val is_s : foo -> bool = <fun>
 Line 2, characters 9-17:
-  let a2 = M_S.A 20 (* ERROR: Cannot create a value using a private constructor *)
-           ^^^^^^^^
+2 | let a2 = M_S.A 20 (* ERROR: Cannot create a value using a private constructor *)
+             ^^^^^^^^
 Error: Cannot create values of the private type foo
 type foo = ..
 module M : sig type foo += A1 of int end
 type foo += A2 of int
 type bar = ..
 Line 2, characters 17-21:
-  type bar += A3 = M.A1    (* Error: rebind wrong type *)
-                   ^^^^
+2 | type bar += A3 = M.A1    (* Error: rebind wrong type *)
+                     ^^^^
 Error: The constructor M.A1 has type foo but was expected to be of type bar
 module M : sig type foo += private B1 of int end
 type foo += private B2 of int
 Line 2, characters 17-21:
-  type foo += B3 = M.B1  (* Error: rebind private extension *)
-                   ^^^^
+2 | type foo += B3 = M.B1  (* Error: rebind private extension *)
+                     ^^^^
 Error: The constructor M.B1 is private
 Line 2, characters 16-23:
-  type foo += C = Unknown  (* Error: unbound extension *)
-                  ^^^^^^^
+2 | type foo += C = Unknown  (* Error: unbound extension *)
+                    ^^^^^^^
 Error: Unbound constructor Unknown
 module M : sig type foo = private .. type foo += A1 of int end
 type M.foo += A2 of int
@@ -89,21 +89,21 @@ type 'a foo2 += D of int | E of 'a | F : int foo2
 type +'a foo = ..
 type 'a foo += A of (int -> 'a)
 Line 2, characters 0-31:
-  type 'a foo += B of ('a -> int)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type 'a foo += B of ('a -> int)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
        but it is injective contravariant.
 Line 2, characters 0-39:
-  type _ foo += C : ('a -> int) -> 'a foo
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type _ foo += C : ('a -> int) -> 'a foo
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
        but it is injective contravariant.
 type 'a bar = ..
 Line 2, characters 0-32:
-  type +'a bar += D of (int -> 'a) (* ERROR: type variances do not match *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type +'a bar += D of (int -> 'a) (* ERROR: type variances do not match *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This extension does not match the definition of type bar
        Their variances do not agree.
 module M : sig type exn += Foo of int * float | Bar : 'a list -> exn  end

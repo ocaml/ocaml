@@ -14,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
+[@@@ocaml.warning "+a-4-30-40-41-42-66"]
 open! Int_replace_polymorphic_compare
 
 type flambda_kind =
@@ -464,7 +464,7 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
           raise (Sequential_logical_operator_primitives_must_be_expanded prim)
         | Pgetglobal id ->
           if no_access_to_global_module_identifiers
-            && not (Ident.is_predef_exn id) then
+            && not (Ident.is_predef id) then
           begin
             raise (Access_to_global_module_identifier prim)
           end

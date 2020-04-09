@@ -1132,7 +1132,7 @@ exception Error of string
 let lucexn  e =
   try
     try  raise e  with Error msg -> msg
-  with Found (s,r) -> s^string_of_int r
+  with Found (s,r) -> s^Int.to_string r
 
 let () =
   test "lucexn1" lucexn  (Error "coucou") "coucou" ;

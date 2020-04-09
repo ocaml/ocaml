@@ -334,15 +334,17 @@ let assign_global_value id v =
 (* Check that all globals referenced in the given patch list
    have been initialized already *)
 
+let defined_globals patchlist =
+  List.fold_left (fun accu rel ->
+      match rel with
+      | (Reloc_setglobal id, _pos) -> id :: accu
+      | _ -> accu)
+    []
+    patchlist
+
 let check_global_initialized patchlist =
   (* First determine the globals we will define *)
-  let defined_globals =
-    List.fold_left
-      (fun accu rel ->
-        match rel with
-          (Reloc_setglobal id, _pos) -> id :: accu
-        | _ -> accu)
-      [] patchlist in
+  let defined_globals = defined_globals patchlist in
   (* Then check that all referenced, not defined globals have a value *)
   let check_reference = function
       (Reloc_getglobal id, _pos) ->
@@ -380,6 +382,11 @@ let filter_global_map p (gmap : global_map) =
 
 let iter_global_map f (gmap : global_map) =
   Ident.Map.iter f gmap.tbl
+
+let is_defined_in_global_map (gmap : global_map) id =
+  Ident.Map.mem id gmap.tbl
+
+let empty_global_map = GlobalMap.empty
 
 (* Error report *)
 

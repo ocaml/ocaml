@@ -29,7 +29,7 @@ type loc = {
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string * loc * loc        (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -91,11 +91,22 @@ type t =
   | Constraint_on_gadt                      (* 62 *)
   | Erroneous_printed_signature of string   (* 63 *)
   | Unsafe_without_parsing                  (* 64 *)
+  | Redefining_unit of string               (* 65 *)
+  | Unused_open_bang of string              (* 66 *)
 ;;
+
+type alert = {kind:string; message:string; def:loc; use:loc}
 
 val parse_options : bool -> string -> unit;;
 
+val parse_alert_option: string -> unit
+  (** Disable/enable alerts based on the parameter to the -alert
+      command-line option.  Raises [Arg.Bad] if the string is not a
+      valid specification.
+  *)
+
 val without_warnings : (unit -> 'a) -> 'a
+  (** Run the thunk with all warnings and alerts disabled. *)
 
 val is_active : t -> bool;;
 val is_error : t -> bool;;
@@ -104,13 +115,14 @@ val defaults_w : string;;
 val defaults_warn_error : string;;
 
 type reporting_information =
-  { number : int
+  { id : string
   ; message : string
   ; is_error : bool
   ; sub_locs : (loc * string) list;
   }
 
 val report : t -> [ `Active of reporting_information | `Inactive ]
+val report_alert : alert -> [ `Active of reporting_information | `Inactive ]
 
 exception Errors;;
 
@@ -124,4 +136,4 @@ val backup: unit -> state
 val restore: state -> unit
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
-        the warning settings at the time [mk_lazy] is called. *)
+        the warning/alert settings at the time [mk_lazy] is called. *)

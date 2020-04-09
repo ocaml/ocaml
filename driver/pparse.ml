@@ -184,6 +184,7 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
         seek_in ic 0;
         let lexbuf = Lexing.from_channel ic in
         Location.init lexbuf inputfile;
+        Location.input_lexbuf := Some lexbuf;
         Profile.record_call "parser" (fun () -> parse_fun lexbuf)
       end
     with x -> close_in ic; raise x

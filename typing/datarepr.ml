@@ -86,7 +86,7 @@ let constructor_args priv cd_args cd_res path rep =
           type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
           type_is_newtype = false;
-          type_expansion_scope = None;
+          type_expansion_scope = Btype.lowest_level;
           type_loc = Location.none;
           type_attributes = [];
           type_immediate = false;
@@ -130,7 +130,7 @@ let constructor_descrs ty_path decl cstrs =
             else Record_inlined idx_nonconst
           in
           constructor_args decl.type_private cd_args cd_res
-            (Path.Pdot (ty_path, cstr_name, Path.nopos)) representation
+            (Path.Pdot (ty_path, cstr_name)) representation
         in
         let cstr =
           { cstr_name;
@@ -159,7 +159,7 @@ let extension_descr path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
-      path_ext Record_extension
+      path_ext (Record_extension path_ext)
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
@@ -177,7 +177,7 @@ let extension_descr path_ext ext =
       cstr_inlined;
     }
 
-let none = {desc = Ttuple []; level = -1; scope = None; id = -1}
+let none = {desc = Ttuple []; level = -1; scope = Btype.generic_level; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;

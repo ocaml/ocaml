@@ -20,6 +20,9 @@
 
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern value caml_ephe_none;
 
 struct caml_ephe_info {
@@ -48,7 +51,10 @@ struct caml_ephe_info {
        others       3..:  keys;
 
     A weak pointer is an ephemeron with the data at caml_ephe_none
-    If fields are added, don't forget to update weak.ml [additional_values].
+    If fields are added, don't forget to update weak.ml, [additional_values],
+    and obj.ml, [Ephemeron.additional_values].
+
+
  */
 
 #define Ephe_link(e) (*(Op_val(e) + CAML_EPHE_LINK_OFFSET))
@@ -60,5 +66,9 @@ void caml_ephe_clean(struct domain* d, value e);
 value caml_bias_ephe_list(value, struct domain*);
 
 #endif /* CAML_INTERNALS */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_WEAK_H */

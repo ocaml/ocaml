@@ -1,0 +1,48 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+;; We're just reusing the stuff from boot/ here.
+;; One could add a dune file in boot/menhir/ with the appropriate rules if we
+;; want to regenerate the parser while building with dune, but it doesn't seem
+;; essential right now.
+
+(rule
+ (targets camlinternalMenhirLib.ml)
+ (mode    fallback)
+ (action  (copy# ../boot/menhir/menhirLib.ml %{targets})))
+
+(rule
+ (targets camlinternalMenhirLib.mli)
+ (mode    fallback)
+ (action  (copy# ../boot/menhir/menhirLib.mli %{targets})))
+
+(rule
+ (targets parser.ml)
+ (mode    fallback)
+ (deps    (:dep ../boot/menhir/parser.ml))
+ (action
+   (with-stdout-to %{targets}
+     (bash "cat %{dep} | sed 's/MenhirLib/CamlinternalMenhirLib/g'"))))
+
+(rule
+ (targets parser.mli)
+ (mode    fallback)
+ (deps    (:dep ../boot/menhir/parser.mli))
+ (action
+   (with-stdout-to %{targets}
+     (bash "cat %{dep} | sed 's/MenhirLib/CamlinternalMenhirLib/g'"))))
+
+(ocamllex
+ (modules lexer)
+ (mode fallback))

@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 open Misc
-open Path
 open Asttypes
 
 type compile_time_constant =
@@ -448,7 +447,9 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
+  | _ ->
+      let id = Ident.create_local "let" in
+      Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -456,7 +457,7 @@ let name_lambda_list args fn =
   | (Lvar _ as arg) :: rem ->
       name_list (arg :: names) rem
   | arg :: rem ->
-      let id = Ident.create "let" in
+      let id = Ident.create_local "let" in
       Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
@@ -616,30 +617,32 @@ let rec patch_guarded patch = function
 
 (* Translate an access path *)
 
-let rec transl_normal_path = function
-    Pident id ->
+let rec transl_address loc = function
+  | Env.Aident id ->
       if Ident.global id
-      then Lprim(Pgetglobal id, [], Location.none)
+      then Lprim(Pgetglobal id, [], loc)
       else Lvar id
-  | Pdot(p, _s, pos) ->
+  | Env.Adot(addr, pos) ->
       Lprim(Pfield(pos, Pointer, Immutable),
-            [transl_normal_path p], Location.none)
-  | Papply _ ->
-      fatal_error "Lambda.transl_path"
+                   [transl_address loc addr], loc)
 
-(* Translation of identifiers *)
+let transl_path find loc env path =
+  match find path env with
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
+  | addr -> transl_address loc addr
 
-let transl_module_path ?(loc=Location.none) env path =
-  transl_normal_path (Env.normalize_path (Some loc) env path)
+let transl_module_path loc env path =
+  transl_path Env.find_module_address loc env path
 
-let transl_value_path ?(loc=Location.none) env path =
-  transl_normal_path (Env.normalize_path_prefix (Some loc) env path)
+let transl_value_path loc env path =
+  transl_path Env.find_value_address loc env path
 
-let transl_class_path = transl_value_path
-let transl_extension_path = transl_value_path
+let transl_extension_path loc env path =
+  transl_path Env.find_constructor_address loc env path
 
-(* compatibility alias, deprecated in the .mli *)
-let transl_path = transl_value_path
+let transl_class_path loc env path =
+  transl_path Env.find_class_address loc env path
 
 (* Compile a sequence of expressions *)
 

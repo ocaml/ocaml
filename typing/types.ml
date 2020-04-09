@@ -22,7 +22,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
-    mutable scope: int option;
+    mutable scope: int;
     id: int }
 
 and type_desc =
@@ -125,6 +125,7 @@ module Variance = struct
   let union v1 v2 = v1 lor v2
   let inter v1 v2 = v1 land v2
   let subset v1 v2 = (v1 land v2 = v1)
+  let eq (v1 : t) v2 = (v1 = v2)
   let set x b v =
     if b then v lor single x else  v land (lnot (single x))
   let mem x = subset (single x)
@@ -150,7 +151,7 @@ type type_declaration =
     type_manifest: type_expr option;
     type_variance: Variance.t list;
     type_is_newtype: bool;
-    type_expansion_scope: int option;
+    type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool;
@@ -168,7 +169,7 @@ and record_representation =
   | Record_float                        (* All fields are floats *)
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
-  | Record_extension                    (* Inlined record under extension *)
+  | Record_extension of Path.t          (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -258,11 +259,11 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of Ident.t * module_type option * module_type
-  | Mty_alias of alias_presence * Path.t
+  | Mty_alias of Path.t
 
-and alias_presence =
-  | Mta_present
-  | Mta_absent
+and module_presence =
+  | Mp_present
+  | Mp_absent
 
 and signature = signature_item list
 
@@ -270,7 +271,7 @@ and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
   | Sig_typext of Ident.t * extension_constructor * ext_status
-  | Sig_module of Ident.t * module_declaration * rec_status
+  | Sig_module of Ident.t * module_presence * module_declaration * rec_status
   | Sig_modtype of Ident.t * modtype_declaration
   | Sig_class of Ident.t * class_declaration * rec_status
   | Sig_class_type of Ident.t * class_type_declaration * rec_status

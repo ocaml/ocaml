@@ -103,7 +103,8 @@ module type S =
         @since 4.08.0 *)
 
     val diff: t -> t -> t
-    (** Set difference. *)
+    (** Set difference: [diff s1 s2] contains the elements of [s1]
+       that are not in [s2]. *)
 
     val compare: t -> t -> int
     (** Total ordering between sets. Can be used as the ordering function
@@ -263,7 +264,7 @@ module type S =
         except perhaps for lists with many duplicated elements.
         @since 4.02.0 *)
 
-    (** {6 Iterators} *)
+    (** {1 Iterators} *)
 
     val to_seq_from : elt -> t -> elt Seq.t
     (** [to_seq_from x s] iterates on a subset of the elements of [s]

@@ -48,6 +48,7 @@ type mapper = {
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> T.module_binding -> module_binding;
   module_declaration: mapper -> T.module_declaration -> module_declaration;
+  module_substitution: mapper -> T.module_substitution -> module_substitution;
   module_expr: mapper -> T.module_expr -> module_expr;
   module_type: mapper -> T.module_type -> module_type;
   module_type_declaration:
@@ -99,7 +100,7 @@ let map_opt f = function None -> None | Some e -> Some (f e)
 
 let rec lident_of_path = function
   | Path.Pident id -> Longident.Lident (Ident.name id)
-  | Path.Pdot (p, s, _) -> Longident.Ldot (lident_of_path p, s)
+  | Path.Pdot (p, s) -> Longident.Ldot (lident_of_path p, s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lident_of_path p1, lident_of_path p2)
 
@@ -108,7 +109,7 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 (** Try a name [$name$0], check if it's free, if not, increment and repeat. *)
 let fresh_name s env =
   let rec aux i =
-    let name = s ^ string_of_int i in
+    let name = s ^ Int.to_string i in
     try
       let _ = Env.lookup_value (Lident name) env in
       name
@@ -122,7 +123,7 @@ let fresh_name s env =
 let constant = function
   | Const_char c -> Pconst_char c
   | Const_string (s,d) -> Pconst_string (s,d)
-  | Const_int i -> Pconst_integer (string_of_int i, None)
+  | Const_int i -> Pconst_integer (Int.to_string i, None)
   | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
   | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
   | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
@@ -492,7 +493,7 @@ let expression sub exp =
         Pexp_override (List.map (fun (_path, lid, exp) ->
               (map_loc sub lid, sub.expr sub exp)
           ) list)
-    | Texp_letmodule (_id, name, mexpr, exp) ->
+    | Texp_letmodule (_id, name, _pres, mexpr, exp) ->
         Pexp_letmodule (name, sub.module_expr sub mexpr,
           sub.expr sub exp)
     | Texp_letexception (ext, exp) ->
@@ -538,6 +539,8 @@ let signature_item sub item =
         Psig_value (sub.value_description sub v)
     | Tsig_type (rec_flag, list) ->
         Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
+    | Tsig_typesubst list ->
+        Psig_typesubst (List.map (sub.type_declaration sub) list)
     | Tsig_typext tyext ->
         Psig_typext (sub.type_extension sub tyext)
     | Tsig_effect ext ->
@@ -546,6 +549,8 @@ let signature_item sub item =
         Psig_exception (sub.type_exception sub ext)
     | Tsig_module md ->
         Psig_module (sub.module_declaration sub md)
+    | Tsig_modsubst ms ->
+        Psig_modsubst (sub.module_substitution sub ms)
     | Tsig_recmodule list ->
         Psig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype mtd ->
@@ -569,6 +574,13 @@ let module_declaration sub md =
   Md.mk ~loc ~attrs
     (map_loc sub md.md_name)
     (sub.module_type sub md.md_type)
+
+let module_substitution sub ms =
+  let loc = sub.location sub ms.ms_loc in
+  let attrs = sub.attributes sub ms.ms_attributes in
+  Ms.mk ~loc ~attrs
+    (map_loc sub ms.ms_name)
+    (map_loc sub ms.ms_txt)
 
 let include_infos f sub incl =
   let loc = sub.location sub incl.incl_loc in
@@ -853,6 +865,7 @@ let default_mapper =
     pat = pattern;
     expr = expression;
     module_declaration = module_declaration;
+    module_substitution = module_substitution;
     module_type_declaration = module_type_declaration;
     module_binding = module_binding;
     package_type = package_type ;

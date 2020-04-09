@@ -33,6 +33,7 @@ let string_buff = Buffer.create 256
 let reset_string_buffer () = Buffer.clear string_buff
 
 let store_string_char c = Buffer.add_char string_buff c
+let store_string_uchar u = Buffer.add_utf_8_uchar string_buff u
 let store_string_chars s = Buffer.add_string string_buff s
 
 let get_stored_string () = Buffer.contents string_buff
@@ -70,21 +71,31 @@ let warning lexbuf msg =
     (p.Lexing.pos_cnum - p.Lexing.pos_bol + 1) msg;
   flush stderr
 
-let decimal_code  c d u =
+let hex_digit_value d =
+  let d = Char.code d in
+  if d >= 97 then d - 87 else
+  if d >= 65 then d - 55 else
+  d - 48
+
+let decimal_code c d u =
   100 * (Char.code c - 48) + 10 * (Char.code d - 48) + (Char.code u - 48)
 
+let hexadecimal_code s =
+  let rec loop acc i =
+    if i < String.length s then
+      let value = hex_digit_value s.[i] in
+      loop (16 * acc + value) (i + 1)
+    else acc in
+  loop 0 0
+
+let char_for_octal_code c d u =
+  let c = 64 * (Char.code c - 48) +
+           8 * (Char.code d - 48) +
+               (Char.code u - 48) in
+  Char.chr c
+
 let char_for_hexadecimal_code d u =
-  let d1 = Char.code d in
-  let val1 = if d1 >= 97 then d1 - 87
-             else if d1 >= 65 then d1 - 55
-             else d1 - 48
-  in
-  let d2 = Char.code u in
-  let val2 = if d2 >= 97 then d2 - 87
-             else if d2 >= 65 then d2 - 55
-             else d2 - 48
-  in
-  Char.chr (val1 * 16 + val2)
+  Char.chr (16 * (hex_digit_value d) + (hex_digit_value u))
 
 let incr_loc lexbuf delta =
   let pos = lexbuf.Lexing.lex_curr_p in
@@ -160,6 +171,8 @@ rule main = parse
           (Printf.sprintf "illegal escape sequence \\%c%c%c" c d u)
       else
         Tchar v }
+  | "'" '\\' 'o' (['0'-'3'] as c) (['0'-'7'] as d) (['0'-'7'] as u) "'"
+    { Tchar(Char.code(char_for_octal_code c d u)) }
   | "'" '\\' 'x'
        (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u) "'"
        { Tchar(Char.code(char_for_hexadecimal_code d u)) }
@@ -200,7 +213,7 @@ rule main = parse
 and string = parse
     '"'
     { () }
-   | '\\' ('\013'* '\010') ([' ' '\009'] * as spaces)
+  | '\\' ('\013'* '\010') ([' ' '\009'] * as spaces)
     { incr_loc lexbuf (String.length spaces);
       string lexbuf }
   | '\\' (backslash_escapes as c)
@@ -208,14 +221,29 @@ and string = parse
       string lexbuf }
   | '\\' (['0'-'9'] as c) (['0'-'9'] as d) (['0'-'9']  as u)
     { let v = decimal_code c d u in
-      if in_pattern () && v > 255 then
-       warning lexbuf
-        (Printf.sprintf
-          "illegal backslash escape in string: '\\%c%c%c'" c d u) ;
-      store_string_char (Char.chr v);
+      if in_pattern () then
+        if v > 255 then
+          raise_lexical_error lexbuf
+            (Printf.sprintf
+              "illegal backslash escape in string: '\\%c%c%c'" c d u)
+        else
+          store_string_char (Char.chr v);
       string lexbuf }
- | '\\' 'x' (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u)
+  | '\\' 'o' (['0'-'3'] as c) (['0'-'7'] as d) (['0'-'7'] as u)
+    { store_string_char (char_for_octal_code c d u);
+      string lexbuf }
+  | '\\' 'x' (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u)
     { store_string_char (char_for_hexadecimal_code d u) ;
+      string lexbuf }
+  | '\\' 'u' '{' (['0'-'9' 'a'-'f' 'A'-'F'] + as s) '}'
+    { let v = hexadecimal_code s in
+      if in_pattern () then
+        if not (Uchar.is_valid v) then
+          raise_lexical_error lexbuf
+            (Printf.sprintf
+              "illegal uchar escape in string: '\\u{%s}'" s)
+        else
+          store_string_uchar (Uchar.unsafe_of_int v);
       string lexbuf }
   | '\\' (_ as c)
     {if in_pattern () then
@@ -236,10 +264,22 @@ and string = parse
     { store_string_char c;
       string lexbuf }
 
+and quoted_string delim = parse
+  | '\013'* '\010'
+    { incr_loc lexbuf 0;
+      quoted_string delim lexbuf }
+  | eof
+    { raise (Lexical_error ("unterminated string", "", 0, 0)) }
+  | '|' (['a'-'z' '_'] * as delim') '}'
+    { if delim <> delim' then
+      quoted_string delim lexbuf }
+  | _
+    { quoted_string delim lexbuf }
+
 (*
-   Lexers comment and action are quite similar,
-   they should lex both strings and characters,
-   in order not to be confused by what is inside then
+   Lexers comment and action are quite similar.
+   They should lex strings, quoted strings and characters,
+   in order not to be confused by what is inside them.
 *)
 
 and comment = parse
@@ -253,6 +293,9 @@ and comment = parse
       string lexbuf;
       reset_string_buffer();
       comment lexbuf }
+  | '{' (['a'-'z' '_'] * as delim) '|'
+    { quoted_string delim lexbuf;
+      comment lexbuf }
   | "'"
     { skip_char lexbuf ;
       comment lexbuf }
@@ -261,6 +304,8 @@ and comment = parse
   | '\010'
     { incr_loc lexbuf 0;
       comment lexbuf }
+  | identstart identbody *
+    { comment lexbuf }
   | _
     { comment lexbuf }
 
@@ -276,10 +321,13 @@ and action = parse
       handle_lexical_error string lexbuf;
       reset_string_buffer();
       action lexbuf }
- | "'"
+  | '{' (['a'-'z' '_'] * as delim) '|'
+    { quoted_string delim lexbuf;
+      action lexbuf }
+  | "'"
     { skip_char lexbuf ;
       action lexbuf }
- | "(*"
+  | "(*"
     { comment_depth := 1;
       comment lexbuf;
       action lexbuf }
@@ -288,17 +336,20 @@ and action = parse
   | '\010'
     { incr_loc lexbuf 0;
       action lexbuf }
+  | identstart identbody *
+    { action lexbuf }
   | _
     { action lexbuf }
 
 and skip_char = parse
-  | '\\'? '\010' "'"
+  | '\\'? ('\013'* '\010') "'"
      { incr_loc lexbuf 1;
      }
-  | [^ '\\' '\''] "'" (* regular character *)
+  | [^ '\\' '\'' '\010' '\013'] "'" (* regular character *)
 (* one character and numeric escape sequences *)
   | '\\' _ "'"
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | '\\' 'o' ['0'-'7'] ['0'-'7'] ['0'-'7'] "'"
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
      {()}
 (* Perilous *)

@@ -15,6 +15,10 @@ tests/lib-dynlink-native/main
 tests/weak-ephe-final/'weaktest.ml' with 1 (native)
 tests/weak-ephe-final/'weaktest.ml' with 2 (bytecode)
 
+# TODO: port the new Ephemeron C-api to multicore
+#  https://github.com/ocaml/ocaml/pull/676
+ephe-c-api
+
 # ocamldebug is broken (#34)
 tool-debugger
 

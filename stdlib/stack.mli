@@ -72,7 +72,7 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
     and [xn] the bottom element. The stack is unchanged.
     @since 4.03 *)
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 val to_seq : 'a t -> 'a Seq.t
 (** Iterate on the stack, top to bottom.

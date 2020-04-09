@@ -37,10 +37,10 @@ type error =
 exception Error of error
 
 let abstract_type =
-  Btype.newgenty (Tconstr (Pident (Ident.create "<abstr>"), [], ref Mnil))
+  Btype.newgenty (Tconstr (Pident (Ident.create_local "<abstr>"), [], ref Mnil))
 
-let rec path event = function
-    Pident id ->
+let rec address path event = function
+  | Env.Aident id ->
       if Ident.global id then
         try
           Debugcom.Remote_value.global (Symtable.get_global_position id)
@@ -61,13 +61,17 @@ let rec path event = function
         | None ->
             raise(Error(Unbound_identifier id))
         end
-  | Pdot(root, _fieldname, pos) ->
-      let v = path event root in
+  | Env.Adot(root, pos) ->
+      let v = address path event root in
       if not (Debugcom.Remote_value.is_block v) then
-        raise(Error(Not_initialized_yet root));
+        raise(Error(Not_initialized_yet path));
       Debugcom.Remote_value.field v pos
-  | Papply _ ->
-      fatal_error "Eval.path: Papply"
+
+let value_path event env path =
+  match Env.find_value_address path env with
+  | addr -> address path event addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
 
 let rec expression event env = function
     E_ident lid ->
@@ -78,11 +82,11 @@ let rec expression event env = function
              let (p0, _) =
                Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
              in
-             let v = path event p0 in
-             let i = path event p in
+             let v = value_path event env p0 in
+             let i = value_path event env p in
              Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
          | _ ->
-             path event p
+             value_path event env p
          end,
          Ctype.correct_levels valdesc.val_type)
       with Not_found ->

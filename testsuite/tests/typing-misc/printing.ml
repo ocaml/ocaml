@@ -7,8 +7,8 @@
 type t = [ 'A_name | `Hi ];;
 [%%expect{|
 Line 1, characters 11-18:
-  type t = [ 'A_name | `Hi ];;
-             ^^^^^^^
+1 | type t = [ 'A_name | `Hi ];;
+               ^^^^^^^
 Error: The type 'A_name does not expand to a polymorphic variant type
 Hint: Did you mean `A_name?
 |}];;
@@ -43,3 +43,11 @@ let f x = (x :> G.t);;
 module G = M.N
 val f : [< G.t ] -> G.t = <fun>
 |}]
+
+
+(* GPR#2034 *)
+
+type (+' a', -' a'b, 'cd') t = ' a'b -> ' a'  * 'cd';;
+[%%expect{|
+type (' a', ' a'b, 'cd') t = ' a'b -> ' a' * 'cd'
+|}];;

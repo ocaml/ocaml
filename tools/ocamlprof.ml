@@ -139,7 +139,7 @@ let final_rewrite add_function =
   List.iter add_function !to_insert;
   copy (in_channel_length !inchan);
   if !instr_mode then begin
-    let len = string_of_int !prof_counter in
+    let len = Int.to_string !prof_counter in
     if String.length len > 9 then raise (Profiler "too many counters");
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len

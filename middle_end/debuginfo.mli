@@ -17,7 +17,10 @@ type item = private {
   dinfo_file: string;
   dinfo_line: int;
   dinfo_char_start: int;
-  dinfo_char_end: int
+  dinfo_char_end: int;
+  dinfo_start_bol: int;
+  dinfo_end_bol: int;
+  dinfo_end_line: int;
 }
 
 type t = item list

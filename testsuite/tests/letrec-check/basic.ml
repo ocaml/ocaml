@@ -25,8 +25,8 @@ val x : unit = ()
 let rec x = let y = () in x;;
 [%%expect{|
 Line 1, characters 12-27:
-  let rec x = let y = () in x;;
-              ^^^^^^^^^^^^^^^
+1 | let rec x = let y = () in x;;
+                ^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -79,24 +79,24 @@ val y : unit -> unit = <fun>
 let rec x = ignore x;;
 [%%expect{|
 Line 1, characters 12-20:
-  let rec x = ignore x;;
-              ^^^^^^^^
+1 | let rec x = ignore x;;
+                ^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
 let rec x = y 0 and y _ = ();;
 [%%expect{|
 Line 1, characters 12-15:
-  let rec x = y 0 and y _ = ();;
-              ^^^
+1 | let rec x = y 0 and y _ = ();;
+                ^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
 let rec b = if b then true else false;;
 [%%expect{|
 Line 1, characters 12-37:
-  let rec b = if b then true else false;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec b = if b then true else false;;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -112,16 +112,19 @@ val x : 'a option -> unit = <fun>
 val y : 'a list -> unit = <fun>
 |}];;
 
+(* this is accepted as all fields are overriden *)
 let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 [%%expect{|
 val x : int ref = {contents = 3}
 |}];;
 
+(* this is rejected as `c` will be dereferenced during the copy,
+   and is not yet fully defined *)
 let rec c = { c with Complex.re = 1.0 };;
 [%%expect{|
 Line 1, characters 12-39:
-  let rec c = { c with Complex.re = 1.0 };;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec c = { c with Complex.re = 1.0 };;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -158,8 +161,8 @@ let rec x = r := x;;
 [%%expect{|
 val r : unit ref = {contents = ()}
 Line 2, characters 12-18:
-  let rec x = r := x;;
-              ^^^^^^
+2 | let rec x = r := x;;
+                ^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -170,9 +173,9 @@ let rec x =
 and y = x; ();;
 [%%expect{|
 Line 2, characters 2-52:
-  ..for i = 0 to 1 do
-      let z = y in ignore z
-    done
+2 | ..for i = 0 to 1 do
+3 |     let z = y in ignore z
+4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -183,9 +186,9 @@ let rec x =
 and y = 10;;
 [%%expect{|
 Line 2, characters 2-33:
-  ..for i = 0 to y do
-      ()
-    done
+2 | ..for i = 0 to y do
+3 |     ()
+4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -196,9 +199,9 @@ let rec x =
 and y = 0;;
 [%%expect{|
 Line 2, characters 2-34:
-  ..for i = y to 10 do
-      ()
-    done
+2 | ..for i = y to 10 do
+3 |     ()
+4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -209,9 +212,9 @@ let rec x =
 and y = x; ();;
 [%%expect{|
 Line 2, characters 2-49:
-  ..while false do
-      let y = x in ignore y
-    done
+2 | ..while false do
+3 |     let y = x in ignore y
+4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -222,9 +225,9 @@ let rec x =
 and y = false;;
 [%%expect{|
 Line 2, characters 2-26:
-  ..while y do
-      ()
-    done
+2 | ..while y do
+3 |     ()
+4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -235,9 +238,9 @@ let rec x =
 and y = false;;
 [%%expect{|
 Line 2, characters 2-45:
-  ..while y do
-      let y = x in ignore y
-    done
+2 | ..while y do
+3 |     let y = x in ignore y
+4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -246,16 +249,16 @@ Error: This kind of expression is not allowed as right-hand side of `let rec'
 let rec x = y.contents and y = { contents = 3 };;
 [%%expect{|
 Line 1, characters 12-22:
-  let rec x = y.contents and y = { contents = 3 };;
-              ^^^^^^^^^^
+1 | let rec x = y.contents and y = { contents = 3 };;
+                ^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
 let rec x = assert y and y = true;;
 [%%expect{|
 Line 1, characters 12-20:
-  let rec x = assert y and y = true;;
-              ^^^^^^^^
+1 | let rec x = assert y and y = true;;
+                ^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -288,8 +291,8 @@ let _ =
 ;;
 [%%expect{|
 Line 6, characters 14-26:
-    let rec x = Stdlib.ref y
-                ^^^^^^^^^^^^
+6 |   let rec x = Stdlib.ref y
+                  ^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -305,8 +308,8 @@ let foo p x =
 ;;
 [%%expect{|
 Line 3, characters 4-52:
-      if p then (fun y -> x + g y) else (fun y -> g y)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |     if p then (fun y -> x + g y) else (fun y -> g y)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -318,8 +321,8 @@ and y = match x with
   z -> ("y", z);;
 [%%expect{|
 Line 2, characters 2-85:
-  ..match let _ = y in raise Not_found with
-      _ -> "x"
-    | exception Not_found -> "z"
+2 | ..match let _ = y in raise Not_found with
+3 |     _ -> "x"
+4 |   | exception Not_found -> "z"
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

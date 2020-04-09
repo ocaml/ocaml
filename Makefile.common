@@ -14,7 +14,7 @@
 #**************************************************************************
 
 # This makefile contains common definitions shared by other Makefiles
-# We assume that config/Makefile has already been included
+# We assume that Makefile.config has already been included
 
 INSTALL ?= install
 INSTALL_DATA ?= $(INSTALL) -m u=rw,g=rw,o=r

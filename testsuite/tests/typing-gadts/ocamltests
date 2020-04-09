@@ -3,6 +3,7 @@ didier.ml
 dynamic_frisch.ml
 nested_equations.ml
 omega07.ml
+or_patterns.ml
 pr5332.ml
 pr5689.ml
 pr5785.ml

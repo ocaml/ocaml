@@ -34,8 +34,8 @@ type error =
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of (type_expr * type_expr) list
-  | Alias_type_mismatch of (type_expr * type_expr) list
+  | Type_mismatch of Ctype.Unification_trace.t
+  | Alias_type_mismatch of Ctype.Unification_trace.t
   | Present_has_conjunction of string
   | Present_has_no_type of string
   | Constructor_mismatch of type_expr * type_expr
@@ -100,7 +100,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
          error (Wrong_use_of_module (mlid, `Functor_used_as_structure))
       | Mty_ident _ ->
          error (Wrong_use_of_module (mlid, `Abstract_used_as_structure))
-      | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
+      | Mty_alias p -> error (Cannot_scrape_alias(mlid, p))
       | Mty_signature _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
@@ -112,7 +112,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
            error (Wrong_use_of_module (flid, `Structure_used_as_functor))
         | Mty_ident _ ->
            error (Wrong_use_of_module (flid, `Abstract_used_as_functor))
-        | Mty_alias(_, p) -> error (Cannot_scrape_alias(flid, p))
+        | Mty_alias p -> error (Cannot_scrape_alias(flid, p))
         | Mty_functor (_, None, _) ->
            error (Wrong_use_of_module (flid, `Generative_used_as_applicative))
         | Mty_functor (_, Some mty_param, _) -> mty_param
@@ -121,7 +121,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       let mpath = Env.lookup_module ~load:true mlid env in
       let mmd = Env.find_module mpath env in
       begin match Env.scrape_alias env mmd.md_type with
-      | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
+      | Mty_alias p -> error (Cannot_scrape_alias(mlid, p))
       | mty_arg ->
          let details =
            try Includemod.check_modtype_inclusion
@@ -154,7 +154,7 @@ let find_type env loc lid =
       env loc lid
   in
   let decl = Env.find_type path env in
-  Builtin_attributes.check_deprecated loc decl.type_attributes (Path.name path);
+  Builtin_attributes.check_alerts loc decl.type_attributes (Path.name path);
   (path, decl)
 
 let find_constructor =
@@ -171,7 +171,7 @@ let find_class env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_class (fun lid -> Unbound_class lid) env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
+  Builtin_attributes.check_alerts loc decl.cty_attributes (Path.name path);
   r
 
 let find_value env loc lid =
@@ -179,7 +179,7 @@ let find_value env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
+  Builtin_attributes.check_alerts loc decl.val_attributes (Path.name path);
   r
 
 let lookup_module ?(load=false) env loc lid =
@@ -190,7 +190,7 @@ let lookup_module ?(load=false) env loc lid =
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in
   let decl = Env.find_module path env in
-  (* No need to check for deprecated here, this is done in Env. *)
+  (* No need to check for alerts here, this is done in Env. *)
   (path, decl)
 
 let find_modtype env loc lid =
@@ -198,7 +198,7 @@ let find_modtype env loc lid =
     find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
       env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.mtd_attributes (Path.name path);
+  Builtin_attributes.check_alerts loc decl.mtd_attributes (Path.name path);
   r
 
 let find_class_type env loc lid =
@@ -206,7 +206,7 @@ let find_class_type env loc lid =
     find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
       env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.clty_attributes (Path.name path);
+  Builtin_attributes.check_alerts loc decl.clty_attributes (Path.name path);
   r
 
 let unbound_constructor_error env lid =
@@ -318,10 +318,6 @@ let transl_type_param env styp =
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
 
-let rec swap_list = function
-    x :: y :: l -> y :: x :: swap_list l
-  | l -> l
-
 type policy = Fixed | Extensible | Univars
 
 let rec transl_type env policy styp =
@@ -398,7 +394,9 @@ and transl_type_aux env policy styp =
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_param env ty' cty.ctyp_type with Unify trace ->
-             raise (Error(sty.ptyp_loc, env, Type_mismatch (swap_list trace))))
+             let trace = Unification_trace.swap trace in
+             raise (Error(sty.ptyp_loc, env, Type_mismatch trace))
+        )
         (List.combine stl args) params;
       let constr =
         newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
@@ -451,7 +449,9 @@ and transl_type_aux env policy styp =
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_var env ty' cty.ctyp_type with Unify trace ->
-             raise (Error(sty.ptyp_loc, env, Type_mismatch (swap_list trace))))
+             let trace = Unification_trace.swap trace in
+             raise (Error(sty.ptyp_loc, env, Type_mismatch trace))
+        )
         (List.combine stl args) params;
         let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
       let ty =
@@ -501,7 +501,7 @@ and transl_type_aux env policy styp =
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
-            let trace = swap_list trace in
+            let trace = Unification_trace.swap trace in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
           end;
           ty
@@ -512,7 +512,7 @@ and transl_type_aux env policy styp =
             TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
-            let trace = swap_list trace in
+            let trace = Unification_trace.swap trace in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
           end;
           if !Clflags.principal then begin
@@ -891,7 +891,7 @@ let fold_types = fold_simple Env.fold_types
 let fold_modules = fold_simple Env.fold_modules
 let fold_constructors = fold_descr Env.fold_constructors (fun d -> d.cstr_name)
 let fold_labels = fold_descr Env.fold_labels (fun d -> d.lbl_name)
-let fold_classs = fold_simple Env.fold_classs
+let fold_classes = fold_simple Env.fold_classes
 let fold_modtypes = fold_simple Env.fold_modtypes
 let fold_cltypes = fold_simple Env.fold_cltypes
 
@@ -914,7 +914,7 @@ let report_error env ppf = function
         but is here applied to %i argument(s)@]"
       longident lid expected provided
   | Bound_type_variable name ->
-    fprintf ppf "Already bound type parameter '%s" name
+    fprintf ppf "Already bound type parameter %a" Pprintast.tyvar name
   | Recursive_type ->
     fprintf ppf "This type is recursive"
   | Unbound_row_variable lid ->
@@ -936,7 +936,13 @@ let report_error env ppf = function
   | Present_has_conjunction l ->
       fprintf ppf "The present constructor %s has a conjunctive type" l
   | Present_has_no_type l ->
-      fprintf ppf "The present constructor %s has no type" l
+      fprintf ppf
+        "@[<v>@[The constructor %s is missing from the upper bound@ \
+         (between '<'@ and '>')@ of this polymorphic variant@ \
+         but is present in@ its lower bound (after '>').@]@,\
+         @[Hint: Either add `%s in the upper bound,@ \
+         or remove it@ from the lower bound.@]@]"
+         l l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
         Printtyp.reset_and_mark_loops_list [ty; ty'];
@@ -964,8 +970,8 @@ let report_error env ppf = function
       fprintf ppf "The type variable name %s is not allowed in programs" name
   | Cannot_quantify (name, v) ->
       fprintf ppf
-        "@[<hov>The universal type variable '%s cannot be generalized:@ "
-        name;
+        "@[<hov>The universal type variable %a cannot be generalized:@ "
+        Pprintast.tyvar name;
       if Btype.is_Tvar v then
         fprintf ppf "it escapes its scope"
       else if Btype.is_Tunivar v then
@@ -994,7 +1000,7 @@ let report_error env ppf = function
       spellcheck ppf fold_labels env lid;
   | Unbound_class lid ->
       fprintf ppf "Unbound class %a" longident lid;
-      spellcheck ppf fold_classs env lid;
+      spellcheck ppf fold_classes env lid;
   | Unbound_modtype lid ->
       fprintf ppf "Unbound module type %a" longident lid;
       spellcheck ppf fold_modtypes env lid;

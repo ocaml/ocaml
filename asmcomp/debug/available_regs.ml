@@ -18,6 +18,7 @@ module M = Mach
 module R = Reg
 module RAS = Reg_availability_set
 module RD = Reg_with_debug_info
+module V = Backend_var
 
 (* This pass treats [avail_at_exit] like a "result" structure whereas the
    equivalent in [Liveness] is like an "environment".  (Which means we need
@@ -108,7 +109,8 @@ let rec available_regs (instr : M.instruction)
                 match RD.debug_info reg with
                 | None -> reg
                 | Some debug_info ->
-                  if Ident.same (RD.Debug_info.holds_value_of debug_info) ident
+                  if V.same
+                    (RD.Debug_info.holds_value_of debug_info) ident
                   then RD.clear_debug_info reg
                   else reg)
               avail_before

@@ -17,7 +17,7 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun

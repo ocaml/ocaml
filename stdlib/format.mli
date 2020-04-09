@@ -376,7 +376,25 @@ val set_max_indent : int -> unit
 (** [pp_set_max_indent ppf d] sets the maximum indentation limit of lines
   to [d] (in characters):
   once this limit is reached, new pretty-printing boxes are rejected to the
-  left, if they do not fit on the current line.
+  left, unless the enclosing box fully fits on the current line.
+  As an illustration,
+  {[ set_margin 10; set_max_indent 5; printf "@[123456@[7@]89A@]@." ]}
+  yields
+  {[
+    123456
+    789A
+  ]}
+  because the nested box ["@[7@]"] is opened after the maximum indentation
+  limit ([7>5]) and its parent box does not fit on the current line.
+  Either decreasing the length of the parent box to make it fit on a line:
+  {[ printf "@[123456@[7@]89@]@." ]}
+  or opening an intermediary box before the maximum indentation limit which
+  fits on the current line
+  {[ printf "@[123@[456@[7@]89@]A@]@." ]}
+  avoids the rejection to the left of the inner boxes and print respectively
+  ["123456789"] and ["123456789A"] .
+  Note also that vertical boxes never fit on a line whereas horizontal boxes
+  always fully fit on the current line.
 
   Nothing happens if [d] is smaller than 2.
   If [d] is too large, the limit is set to the maximum

@@ -15,6 +15,8 @@
 
 open Printf
 
+type t = exn = ..
+
 let printers = ref []
 
 let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"

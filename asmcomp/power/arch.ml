@@ -47,7 +47,7 @@ type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of                       (* allocation in large functions *)
-      { words : int; label_after_call_gc : int (*Cmm.label*) option; }
+      { bytes : int; label_after_call_gc : int (*Cmm.label*) option; }
 
 (* note: we avoid introducing a dependency to Cmm since this dep
    is not detected when "make depend" is run under amd64 *)
@@ -118,5 +118,5 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf ->
       fprintf ppf "%a *f %a -f %a"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
-  | Ialloc_far { words; _ } ->
-      fprintf ppf "alloc_far %d" words
+  | Ialloc_far { bytes; _ } ->
+      fprintf ppf "alloc_far %d" bytes

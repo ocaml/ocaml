@@ -95,7 +95,7 @@ let wait_for_connection checkpoint =
 (* Select a checkpoint as current. *)
 let set_current_checkpoint checkpoint =
   if !debug_time_travel then
-    prerr_endline ("Select: " ^ (string_of_int checkpoint.c_pid));
+    prerr_endline ("Select: " ^ (Int.to_string checkpoint.c_pid));
   if not checkpoint.c_valid then
     wait_for_connection checkpoint;
   current_checkpoint := checkpoint;
@@ -104,7 +104,7 @@ let set_current_checkpoint checkpoint =
 (* Kill `checkpoint'. *)
 let kill_checkpoint checkpoint =
   if !debug_time_travel then
-    prerr_endline ("Kill: " ^ (string_of_int checkpoint.c_pid));
+    prerr_endline ("Kill: " ^ (Int.to_string checkpoint.c_pid));
   if checkpoint.c_pid > 0 then          (* Ghosts don't have to be killed ! *)
     (if not checkpoint.c_valid then
        wait_for_connection checkpoint;
@@ -241,7 +241,7 @@ let duplicate_current_checkpoint () =
            Checkpoint_done pid ->
              (new_checkpoint.c_pid <- pid;
               if !debug_time_travel then
-                prerr_endline ("Waiting for connection: " ^ string_of_int pid))
+                prerr_endline ("Waiting for connection: " ^ Int.to_string pid))
          | Checkpoint_failed ->
              prerr_endline
                "A fork failed. Reducing maximum number of checkpoints.";
@@ -373,7 +373,7 @@ let set_file_descriptor pid fd =
            true)
   in
     if !debug_time_travel then
-      prerr_endline ("New connection: " ^(string_of_int pid));
+      prerr_endline ("New connection: " ^(Int.to_string pid));
     find (!current_checkpoint::!checkpoints)
 
 (* Kill all the checkpoints. *)

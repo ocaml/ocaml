@@ -83,6 +83,18 @@ module Unix = struct
     String.length name >= String.length suff &&
     String.sub name (String.length name - String.length suff)
                     (String.length suff) = suff
+
+  let chop_suffix_opt ~suffix filename =
+    let len_s = String.length suffix and len_f = String.length filename in
+    if len_f >= len_s then
+      let r = String.sub filename (len_f - len_s) len_s in
+      if r = suffix then
+        Some (String.sub filename 0 (len_f - len_s))
+      else
+        None
+    else
+      None
+
   let temp_dir_name =
     try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
   let quote = generic_quote "'\\''"
@@ -110,6 +122,19 @@ module Win32 = struct
    (let s = String.sub name (String.length name - String.length suff)
                             (String.length suff) in
     String.lowercase_ascii s = String.lowercase_ascii suff)
+
+  let chop_suffix_opt ~suffix filename =
+    let len_s = String.length suffix and len_f = String.length filename in
+    if len_f >= len_s then
+      let r = String.sub filename (len_f - len_s) len_s in
+      if String.lowercase_ascii r = String.lowercase_ascii suffix then
+        Some (String.sub filename 0 (len_f - len_s))
+      else
+        None
+    else
+      None
+
+
   let temp_dir_name =
     try Sys.getenv "TEMP" with Not_found -> "."
   let quote s =
@@ -163,6 +188,7 @@ module Cygwin = struct
   let is_relative = Win32.is_relative
   let is_implicit = Win32.is_implicit
   let check_suffix = Win32.check_suffix
+  let chop_suffix_opt = Win32.chop_suffix_opt
   let temp_dir_name = Unix.temp_dir_name
   let quote = Unix.quote
   let basename = generic_basename is_dir_sep current_dir_name
@@ -170,23 +196,27 @@ module Cygwin = struct
 end
 
 let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep,
-     is_relative, is_implicit, check_suffix, temp_dir_name, quote, basename,
+     is_relative, is_implicit, check_suffix, chop_suffix_opt,
+     temp_dir_name, quote, basename,
      dirname) =
   match Sys.os_type with
   | "Win32" ->
       (Win32.current_dir_name, Win32.parent_dir_name, Win32.dir_sep,
        Win32.is_dir_sep,
        Win32.is_relative, Win32.is_implicit, Win32.check_suffix,
+       Win32.chop_suffix_opt,
        Win32.temp_dir_name, Win32.quote, Win32.basename, Win32.dirname)
   | "Cygwin" ->
       (Cygwin.current_dir_name, Cygwin.parent_dir_name, Cygwin.dir_sep,
        Cygwin.is_dir_sep,
        Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
+       Cygwin.chop_suffix_opt,
        Cygwin.temp_dir_name, Cygwin.quote, Cygwin.basename, Cygwin.dirname)
   | _ -> (* normally "Unix" *)
       (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep,
        Unix.is_dir_sep,
        Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
+       Unix.chop_suffix_opt,
        Unix.temp_dir_name, Unix.quote, Unix.basename, Unix.dirname)
 
 let concat dirname filename =

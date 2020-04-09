@@ -229,11 +229,11 @@ case $configure in
   nt)
     cp config/m-nt.h runtime/caml/m.h
     cp config/s-nt.h runtime/caml/s.h
-    cp config/Makefile.${OCAML_ARCH} config/Makefile
-    sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" config/Makefile
-    sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile
+    cp config/Makefile.${OCAML_ARCH} Makefile.config
+    sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" Makefile.config
+    sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' Makefile.config
     if $flambda; then
-      sed -i 's%FLAMBDA=.\+%FLAMBDA=true%' config/Makefile
+      sed -i 's%FLAMBDA=.\+%FLAMBDA=true%' Makefile.config
     fi
   ;;
   *) error "internal error";;

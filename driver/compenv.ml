@@ -253,6 +253,8 @@ let read_one_param ppf position name v =
   |  "w"  ->               Warnings.parse_options false v
   (* warn-errors *)
   | "wwe" ->               Warnings.parse_options false v
+  (* alerts *)
+  | "alert" ->             Warnings.parse_alert_option v
 
   (* inlining *)
   | "inline" ->
@@ -342,12 +344,19 @@ let read_one_param ppf position name v =
 
   (* color output *)
   | "color" ->
-      begin match parse_color_setting v with
+      begin match color_reader.parse v with
       | None ->
         Printf.ksprintf (print_error ppf)
-          "bad value %s for \"color\", \
-           (expected \"auto\", \"always\" or \"never\")" v
+          "bad value %s for \"color\", (%s)" v color_reader.usage
       | Some setting -> color := Some setting
+      end
+
+  | "error-style" ->
+      begin match error_style_reader.parse v with
+      | None ->
+          Printf.ksprintf (print_error ppf)
+            "bad value %s for \"error-style\", (%s)" v error_style_reader.usage
+      | Some setting -> error_style := Some setting
       end
 
   | "intf-suffix" -> Config.interface_suffix := v

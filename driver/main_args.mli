@@ -18,6 +18,7 @@
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
   val _alias_deps : unit -> unit
@@ -102,6 +103,7 @@ module type Compiler_options = sig
   val _verbose : unit -> unit
   val _where : unit -> unit
   val _color : string -> unit
+  val _error_style : string -> unit
 
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
@@ -123,6 +125,8 @@ module type Toplevel_options = sig
   val _stdin : unit -> unit
   val _args: string -> string array
   val _args0: string -> string array
+  val _color : string -> unit
+  val _error_style : string -> unit
 
 end
 ;;

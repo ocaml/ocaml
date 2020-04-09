@@ -354,7 +354,7 @@ let stats h =
     max_bucket_length = mbl;
     bucket_histogram = histo }
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq tbl =
   (* capture current array, so that even if the table is resized we

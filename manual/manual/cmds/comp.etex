@@ -423,6 +423,11 @@ let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
   this attribute set: "Invalid_argument", "Failure", "Sys_error" will
   all raise this warning if you match for a specific string argument.
 
+  Additionally, built-in exceptions with a structured argument that
+  includes a string also have the attribute set: "Assert_failure" and
+  "Match_failure" will raise the warning for a pattern that uses a
+  literal string to match the first element of their tuple argument.
+
   If your code raises this warning, you should {\em not} change the
   way you test for the specific string to avoid the warning (for
   example using a string equality inside the right-hand-side instead

@@ -33,7 +33,7 @@ DIFF=diff -q
 SORT=sort
 SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
-# The variables above may be overridden by .../config/Makefile
+# The variables above may be overridden by .../Makefile.config
 # OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
 #   arguments given to the OCaml compiler.
 # CTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
@@ -48,7 +48,7 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   variable. Note that for Windows we add Unix-syntax directory names in
 #   PATH, and Cygwin will translate it to Windows syntax.
 
-include $(TOPDIR)/config/Makefile
+include $(TOPDIR)/Makefile.config
 
 ifneq ($(USE_RUNTIME),)
 #Check USE_RUNTIME value

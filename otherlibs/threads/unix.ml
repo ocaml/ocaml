@@ -887,7 +887,7 @@ let getnameinfo_emulation addr opts =
           let kind = if List.mem NI_DGRAM opts then "udp" else "tcp" in
           (getservbyport p kind).s_name
         with Not_found ->
-          string_of_int p in
+          Int.to_string p in
       { ni_hostname = hostname; ni_service = service }
 
 let getnameinfo addr opts =

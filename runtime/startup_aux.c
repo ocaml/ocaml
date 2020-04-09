@@ -50,6 +50,9 @@ static void init_startup_params()
   params.init_minor_heap_wsz = Minor_heap_def;
   params.init_heap_chunk_sz = Heap_chunk_def;
   params.init_heap_wsz = Init_heap_def;
+  params.init_custom_major_ratio = Custom_major_ratio_def;
+  params.init_custom_minor_ratio = Custom_minor_ratio_def;
+  params.init_custom_minor_max_bsz = Custom_minor_max_bsz_def;
   params.init_max_stack_wsz = Max_stack_def;
   params.init_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
 #ifdef DEBUG
@@ -98,6 +101,9 @@ void caml_parse_ocamlrunparam(void)
       //case _T('H'): scanmult (opt, &caml_use_huge_pages); break;
       case _T('i'): scanmult (opt, &params.init_heap_chunk_sz); break;
       case _T('l'): scanmult (opt, &params.init_max_stack_wsz); break;
+      case _T('M'): scanmult (opt, &params.init_custom_major_ratio); break;
+      case _T('m'): scanmult (opt, &params.init_custom_minor_ratio); break;
+      case _T('n'): scanmult (opt, &params.init_custom_minor_max_bsz); break;
       case _T('o'): scanmult (opt, &params.init_percent_free); break;
       case _T('O'): scanmult (opt, &params.init_max_percent_free); break;
       case _T('p'): scanmult (opt, &params.parser_trace); break;

@@ -502,7 +502,7 @@ static void extern_rec(value v)
         serialize(v, &sz_32, &sz_64);
         if (sz_32 != fixed_length->bsize_32 ||
             sz_64 != fixed_length->bsize_64)
-          caml_fatal_error_arg(
+          caml_fatal_error(
             "output_value: incorrect fixed sizes specified by %s",
             ident);
       }

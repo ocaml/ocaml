@@ -1,4 +1,14 @@
 File "pr3968_bad.ml", line 20, characters 0-165:
+20 | object
+21 |   val l = e1
+22 |   val r = e2
+23 |   method eval env =
+24 |       match l with
+25 |     | `Abs(var,body) ->
+26 |         Hashtbl.add env var r;
+27 |         body
+28 |     | _ -> `App(l,r);
+29 | end
 Error: The class type
          object
            val l :

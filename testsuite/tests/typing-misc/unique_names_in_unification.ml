@@ -12,8 +12,8 @@ end;;
 type t = A
 val x : t = A
 Line 5, characters 27-28:
-    let f: t -> t = fun B -> x
-                             ^
+5 |   let f: t -> t = fun B -> x
+                               ^
 Error: This expression has type t/2 but an expression was expected of type
          t/1
        Line 4, characters 2-12:
@@ -35,8 +35,8 @@ end;;
 module M : sig type t = B end
 val y : M.t = M.B
 Line 7, characters 34-35:
-    let f : M.t -> M.t = fun M.C -> y
-                                    ^
+7 |   let f : M.t -> M.t = fun M.C -> y
+                                      ^
 Error: This expression has type M/2.t but an expression was expected of type
          M/1.t
        Line 4, characters 2-41:
@@ -52,8 +52,8 @@ let f: t -> t = fun D -> x;;
 [%%expect{|
 type t = D
 Line 2, characters 25-26:
-  let f: t -> t = fun D -> x;;
-                           ^
+2 | let f: t -> t = fun D -> x;;
+                             ^
 Error: This expression has type t/1 but an expression was expected of type
          t/2
        Line 1, characters 0-10:
@@ -76,8 +76,8 @@ let x: ttt = let rec y = A y in y;;
 [%%expect{|
 type nonrec ttt = X of ttt
 Line 2, characters 32-33:
-  let x: ttt = let rec y = A y in y;;
-                                  ^
+2 | let x: ttt = let rec y = A y in y;;
+                                    ^
 Error: This expression has type ttt/2 but an expression was expected of type
          ttt/1
        Line 1, characters 0-26:

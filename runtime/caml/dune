@@ -1,0 +1,29 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(rule
+ (targets jumptbl.h)
+ (mode    fallback)
+ (deps (:h instruct.h))
+ (action
+   (with-stdout-to %{targets}
+     (bash "cat %{h} | tr -d '\\r' | \
+            sed -n -e '/^  /s/ \\([A-Z]\\)/ \\&\\&lbl_\\1/gp' -e '/^}/q'"))))
+
+(rule
+ (targets version.h)
+ (mode    fallback)
+ (action
+   (with-stdout-to %{targets}
+     (run %{dep:../../tools/make-version-header.sh} %{dep:../../VERSION}))))

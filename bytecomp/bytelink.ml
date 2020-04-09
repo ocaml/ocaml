@@ -567,7 +567,7 @@ let link objfiles output_name =
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   let missing_modules =
-    Ident.Set.filter (fun id -> not (Ident.is_predef_exn id)) !missing_globals
+    Ident.Set.filter (fun id -> not (Ident.is_predef id)) !missing_globals
   in
   begin
     match Ident.Set.elements missing_modules with

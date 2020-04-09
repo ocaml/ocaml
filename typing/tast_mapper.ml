@@ -40,6 +40,7 @@ type mapper =
     module_binding: mapper -> module_binding -> module_binding;
     module_coercion: mapper -> module_coercion -> module_coercion;
     module_declaration: mapper -> module_declaration -> module_declaration;
+    module_substitution: mapper -> module_substitution -> module_substitution;
     module_expr: mapper -> module_expr -> module_expr;
     module_type: mapper -> module_type -> module_type;
     module_type_declaration:
@@ -54,8 +55,8 @@ type mapper =
     structure_item: mapper -> structure_item -> structure_item;
     typ: mapper -> core_type -> core_type;
     type_declaration: mapper -> type_declaration -> type_declaration;
-    type_declarations: mapper -> (rec_flag * type_declaration list) ->
-      (rec_flag * type_declaration list);
+    type_declarations: mapper -> (rec_flag * type_declaration list)
+      -> (rec_flag * type_declaration list);
     type_extension: mapper -> type_extension -> type_extension;
     type_exception: mapper -> type_exception -> type_exception;
     type_kind: mapper -> type_kind -> type_kind;
@@ -92,6 +93,8 @@ let module_type_declaration sub x =
 let module_declaration sub x =
   let md_type = sub.module_type sub x.md_type in
   {x with md_type}
+
+let module_substitution _ x = x
 
 let include_infos f x = {x with incl_mod = f x.incl_mod}
 
@@ -336,10 +339,11 @@ let expr sub x =
           path,
           List.map (tuple3 id id (sub.expr sub)) list
         )
-    | Texp_letmodule (id, s, mexpr, exp) ->
+    | Texp_letmodule (id, s, pres, mexpr, exp) ->
         Texp_letmodule (
           id,
           s,
+          pres,
           sub.module_expr sub mexpr,
           sub.expr sub exp
         )
@@ -382,6 +386,9 @@ let signature_item sub x =
     | Tsig_type (rec_flag, list) ->
         let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
         Tsig_type (rec_flag, list)
+    | Tsig_typesubst list ->
+        let (_, list) = sub.type_declarations sub (Nonrecursive, list) in
+        Tsig_typesubst list
     | Tsig_typext te ->
         Tsig_typext (sub.type_extension sub te)
     | Tsig_effect ext ->
@@ -390,6 +397,8 @@ let signature_item sub x =
         Tsig_exception (sub.type_exception sub ext)
     | Tsig_module x ->
         Tsig_module (sub.module_declaration sub x)
+    | Tsig_modsubst x ->
+        Tsig_modsubst (sub.module_substitution sub x)
     | Tsig_recmodule list ->
         Tsig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype x ->
@@ -443,8 +452,8 @@ let module_coercion sub = function
   | Tcoerce_none -> Tcoerce_none
   | Tcoerce_functor (c1,c2) ->
       Tcoerce_functor (sub.module_coercion sub c1, sub.module_coercion sub c2)
-  | Tcoerce_alias (p, c1) ->
-      Tcoerce_alias (p, sub.module_coercion sub c1)
+  | Tcoerce_alias (env, p, c1) ->
+      Tcoerce_alias (sub.env sub env, p, sub.module_coercion sub c1)
   | Tcoerce_structure (l1, l2) ->
       let l1' = List.map (fun (i,c) -> i, sub.module_coercion sub c) l1 in
       let l2' =
@@ -697,6 +706,7 @@ let default =
     module_binding;
     module_coercion;
     module_declaration;
+    module_substitution;
     module_expr;
     module_type;
     module_type_declaration;

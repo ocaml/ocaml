@@ -23,7 +23,7 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_extension of summary * Ident.t * extension_constructor
-  | Env_module of summary * Ident.t * module_declaration
+  | Env_module of summary * Ident.t * module_presence * module_declaration
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
@@ -33,6 +33,10 @@ type summary =
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
+
+type address =
+  | Aident of Ident.t
+  | Adot of address * int
 
 type t
 
@@ -69,21 +73,35 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
 val find_type_expansion:
-    Path.t -> t -> type_expr list * type_expr * int option
+    Path.t -> t -> type_expr list * type_expr * int
 val find_type_expansion_opt:
-    Path.t -> t -> type_expr list * type_expr * int option
+    Path.t -> t -> type_expr list * type_expr * int
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+
+val find_value_address: Path.t -> t -> address
+val find_module_address: Path.t -> t -> address
+val find_class_address: Path.t -> t -> address
+val find_constructor_address: Path.t -> t -> address
+
 val add_functor_arg: Ident.t -> t -> t
 val is_functor_arg: Path.t -> t -> bool
-val normalize_path: Location.t option -> t -> Path.t -> Path.t
-(* Normalize the path to a concrete value or module.
+
+val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the path to a concrete module.
    If the option is None, allow returning dangling paths.
    Otherwise raise a Missing_module error, and may add forgotten
    head as required global. *)
+
+val normalize_type_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the prefix part of the type path *)
+
 val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
-(* Only normalize the prefix part of the path *)
+(* Normalize the prefix part of other kinds of paths
+   (value/modtype/etc) *)
+
+
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
@@ -92,7 +110,7 @@ val has_local_constraints: t -> bool
 
 (* Lookup by long identifiers *)
 
-(* ?loc is used to report 'deprecated module' warnings *)
+(* ?loc is used to report 'deprecated module' warnings and other alerts *)
 
 val lookup_value:
   ?loc:Location.t -> ?mark:bool ->
@@ -142,9 +160,10 @@ val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
-val add_module: ?arg:bool -> Ident.t -> module_type -> t -> t
+val add_module:
+  ?arg:bool -> Ident.t -> module_presence -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
-  module_declaration -> t -> t
+  module_presence -> module_declaration -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
@@ -188,14 +207,23 @@ val open_pers_signature: string -> t -> t
 val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
-val enter_type: string -> type_declaration -> t -> Ident.t * t
-val enter_extension: string -> extension_constructor -> t -> Ident.t * t
-val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
+val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
+val enter_extension:
+  scope:int -> string -> extension_constructor -> t -> Ident.t * t
+val enter_module:
+  scope:int -> ?arg:bool -> string -> module_presence ->
+  module_type -> t -> Ident.t * t
 val enter_module_declaration:
-    ?arg:bool -> Ident.t -> module_declaration -> t -> t
-val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
-val enter_class: string -> class_declaration -> t -> Ident.t * t
-val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
+    ?arg:bool -> Ident.t -> module_presence -> module_declaration -> t -> t
+val enter_modtype:
+  scope:int -> string -> modtype_declaration -> t -> Ident.t * t
+val enter_class: scope:int -> string -> class_declaration -> t -> Ident.t * t
+val enter_cltype:
+  scope:int -> string -> class_type_declaration -> t -> Ident.t * t
+
+(* Same as [add_signature] but refreshes (new stamp) and rescopes bound idents
+   in the process. *)
+val enter_signature: scope:int -> signature -> t -> signature * t
 
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
@@ -212,11 +240,11 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  deprecated:string option -> signature -> string -> string ->
+  alerts:string Misc.Stdlib.String.Map.t -> signature -> string -> string ->
   Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-  deprecated:string option ->
+  alerts:string Misc.Stdlib.String.Map.t ->
   signature -> string -> string -> (string * Digest.t option) list
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
@@ -325,7 +353,7 @@ val fold_modules:
 val fold_modtypes:
   (string -> Path.t -> modtype_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
-val fold_classs:
+val fold_classes:
   (string -> Path.t -> class_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_cltypes:
@@ -335,6 +363,8 @@ val fold_cltypes:
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit
+
+val print_address : Format.formatter -> address -> unit
 
 module Persistent_signature : sig
   type t =

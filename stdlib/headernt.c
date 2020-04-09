@@ -90,7 +90,7 @@ static BOOL WINAPI ctrl_handler(DWORD event)
 #if WINDOWS_UNICODE
 #define CP CP_UTF8
 #else
-#define CP CP_THREAD_ACP
+#define CP CP_ACP
 #endif
 
 static void write_console(HANDLE hOut, WCHAR *wstr)

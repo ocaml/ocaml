@@ -23,8 +23,8 @@ type (_, _) comp = Eq : ('a, 'a) comp | Diff : ('a, 'b) comp
 module U : sig type t = T end
 module M : sig type t = T val comp : (U.t, t) comp end
 Line 16, characters 0-33:
-  match M.comp with | Diff -> false;;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 | match M.comp with | Diff -> false;;
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
@@ -46,8 +46,8 @@ match M.comp with | Diff -> false;;
 module U : sig type t = { x : int; } end
 module M : sig type t = { x : int; } val comp : (U.t, t) comp end
 Line 11, characters 0-33:
-  match M.comp with | Diff -> false;;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | match M.comp with | Diff -> false;;
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq

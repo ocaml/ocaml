@@ -20,7 +20,7 @@ type error =
 
 exception Error of error
 
-let tbl_ident = (Hashtbl.create 57 : (string, Ident.t) Hashtbl.t)
+let tbl_ident = (Hashtbl.create 57 : (string, Backend_var.t) Hashtbl.t)
 let tbl_label = (Hashtbl.create 57 : (string, int) Hashtbl.t)
 
 let ident_name s =
@@ -29,9 +29,9 @@ let ident_name s =
   | n -> String.sub s 0 n
 
 let bind_ident s =
-  let id = Ident.create (ident_name s) in
+  let id = Backend_var.create_local (ident_name s) in
   Hashtbl.add tbl_ident s id;
-  id
+  Backend_var.With_provenance.create id
 
 let find_ident s =
   try
@@ -40,7 +40,7 @@ let find_ident s =
     raise(Error(Unbound s))
 
 let unbind_ident id =
-  Hashtbl.remove tbl_ident (Ident.name id)
+  Hashtbl.remove tbl_ident (Backend_var.With_provenance.name id)
 
 let find_label s =
   try

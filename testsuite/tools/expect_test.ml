@@ -129,27 +129,9 @@ let split_chunks phrases =
   loop phrases [] []
 
 module Compiler_messages = struct
-  let printer (lb: Lexing.lexbuf) =
-    let pp_loc _ _ ppf loc =
-      (* We want to highlight locations even coming from a file, but the
-         toplevel printer will only highlight locations from the toplevel. *)
-      Format.fprintf ppf "@[<v>%a:@,%a@]"
-        Location.print_loc loc
-        (Location.highlight_dumb lb) [loc]
-    in
-    { (Location.dumb_toplevel_printer lb)
-      with pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
-
-  let expect_printer () =
-    match !Location.input_lexbuf with
-    | None -> Location.batch_mode_printer
-    | Some lb -> printer lb
-
   let capture ppf ~f =
     Misc.protect_refs
-      [ R (Location.formatter_for_warnings , ppf)
-      ; R (Location.report_printer         , expect_printer)
-      ]
+      [ R (Location.formatter_for_warnings, ppf) ]
       f
 end
 
@@ -363,6 +345,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let clear r () = r := false
   open Clflags
   let _absname = set absname
+  let _alert = Warnings.parse_alert_option
   let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
@@ -412,6 +395,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
   let _dcamlprimc = set keep_camlprimc_file
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

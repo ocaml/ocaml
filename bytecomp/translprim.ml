@@ -91,7 +91,7 @@ let used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
   match path with
     Some (Path.Pdot _ as path) ->
-      let path = Env.normalize_path (Some loc) env path in
+      let path = Env.normalize_path_prefix (Some loc) env path in
       let unit = Path.head path in
       if Ident.global unit && not (Hashtbl.mem used_primitives path)
       then Hashtbl.add used_primitives path loc
@@ -687,7 +687,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       in
       Lprim(Praise kind, [arg], loc)
   | Raise_with_backtrace, [exn; bt] ->
-      let vexn = Ident.create "exn" in
+      let vexn = Ident.create_local "exn" in
       let raise_arg =
         match arg_exps with
         | None -> Lvar vexn
@@ -744,7 +744,7 @@ let transl_primitive loc p env ty path =
     | Some prim -> prim
   in
   let rec make_params n =
-    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1)
+    if n <= 0 then [] else Ident.create_local "prim" :: make_params (n-1)
   in
   let params = make_params p.prim_arity in
   let args = List.map (fun id -> Lvar id) params in

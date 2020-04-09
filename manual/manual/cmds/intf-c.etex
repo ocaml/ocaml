@@ -1593,7 +1593,7 @@ With "ocamlopt", you should do:
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
-are shown in the configuration file "config/Makefile" generated during
+are shown in the configuration file "Makefile.config" generated during
 compilation of OCaml, as the variable "OC_LDFLAGS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
@@ -1844,6 +1844,15 @@ The "deserialize" field can be set to "custom_deserialize_default"
 to indicate that deserialization is not supported.  In this case,
 do not register the "struct custom_operations" with the deserializer
 using "register_custom_operations" (see below).
+
+\item "const struct custom_fixed_length* fixed_length" \\
+Normally, space in the serialized output is reserved to write the
+"bsize_32" and "bsize_64" fields returned by "serialize". However, for
+very short custom blocks, this space can be larger than the data
+itself! As a space optimisation, if "serialize" always returns the
+same values for "bsize_32" and "bsize_64", then these values may be
+specified in the "fixed_length" structure, and do not consume space in
+the serialized output.
 \end{itemize}
 
 \item "const struct custom_fixed_length* fixed_length" \\
@@ -1864,7 +1873,8 @@ functions, and do not use "CAMLreturn" to return the result.
 
 \subsection{Allocating custom blocks}
 
-Custom blocks must be allocated via the "caml_alloc_custom" function:
+Custom blocks must be allocated via "caml_alloc_custom" or
+"caml_alloc_custom_mem":
 \begin{center}
 "caml_alloc_custom("\var{ops}", "\var{size}", "\var{used}", "\var{max}")"
 \end{center}
@@ -1915,6 +1925,18 @@ or if the previous discussion made little sense to you, just take
 $\var{used} = 0$ and $\var{max} = 1$.  But if you later find that the
 finalization functions are not called ``often enough'', consider
 increasing the $\var{used} / \var{max}$ ratio.
+
+\begin{center}
+"caml_alloc_custom_mem("\var{ops}", "\var{size}", "\var{used}")"
+\end{center}
+Use this function when your custom block holds only out-of-heap memory
+(memory allocated with "malloc" or "caml_stat_alloc") and no other
+resources. "used" should be the number of bytes of out-of-heap
+memory that are held by your custom block. This function works like
+"caml_alloc_custom" except that the "max" parameter is under the
+control of the user (via the "custom_major_ratio",
+"custom_minor_ratio", and "custom_minor_max_size" parameters) and
+proportional to the heap sizes.
 
 \subsection{Accessing custom blocks}
 

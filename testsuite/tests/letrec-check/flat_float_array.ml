@@ -34,8 +34,8 @@ val f : bytes -> bytes array = <fun>
 let f z = let rec x = [| y; z |] and y = z in x;;
 [%%expect {|
 Line 1, characters 22-32:
-  let f z = let rec x = [| y; z |] and y = z in x;;
-                        ^^^^^^^^^^
+1 | let f z = let rec x = [| y; z |] and y = z in x;;
+                          ^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}]
 
@@ -46,7 +46,7 @@ Error: This kind of expression is not allowed as right-hand side of `let rec'
 let f (z: float) = let rec x = [| y; z |] and y = z in x;;
 [%%expect {|
 Line 1, characters 31-41:
-  let f (z: float) = let rec x = [| y; z |] and y = z in x;;
-                                 ^^^^^^^^^^
+1 | let f (z: float) = let rec x = [| y; z |] and y = z in x;;
+                                   ^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}]

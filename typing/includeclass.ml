@@ -21,7 +21,7 @@ let class_types env cty1 cty2 =
   Ctype.match_class_types env cty1 cty2
 
 let class_type_declarations ~loc env cty1 cty2 =
-  Builtin_attributes.check_deprecated_inclusion
+  Builtin_attributes.check_alerts_inclusion
     ~def:cty1.clty_loc
     ~use:cty2.clty_loc
     loc
@@ -57,7 +57,7 @@ let include_err ppf =
       fprintf ppf
         "The classes do not have the same number of type parameters"
   | CM_Type_parameter_mismatch (env, trace) ->
-      Printtyp.report_unification_error ppf env ~unif:false trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
           fprintf ppf "A type parameter has type")
         (function ppf ->
@@ -70,19 +70,19 @@ let include_err ppf =
           "is not matched by the class type"
           Printtyp.class_type cty2)
   | CM_Parameter_mismatch (env, trace) ->
-      Printtyp.report_unification_error ppf env ~unif:false trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
           fprintf ppf "A parameter has type")
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Val_type_mismatch (lab, env, trace) ->
-      Printtyp.report_unification_error ppf env ~unif:false trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
           fprintf ppf "The instance variable %s@ has type" lab)
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Meth_type_mismatch (lab, env, trace) ->
-      Printtyp.report_unification_error ppf env ~unif:false trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
           fprintf ppf "The method %s@ has type" lab)
         (function ppf ->
