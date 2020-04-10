@@ -104,5 +104,5 @@ val add_seq : 'a t -> 'a Seq.t -> unit
     @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a t
-(** Create an array from the generator
+(** Create a queue from the generator
     @since 4.07 *)

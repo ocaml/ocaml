@@ -550,10 +550,16 @@ let assoc_may_map f x l =
   | y -> f y;;
 \end{caml_example}
 Note that this construction is only useful if the exception is raised
-between "match"\ldots"with". Moreover, exceptions can only
-appear at the toplevel of such a pattern match.
-For instance, exception cases cannot currently be combined with an
-or-pattern: "exception A | exception B ->" \ldots .
+between "match"\ldots"with". Exception patterns can be combined
+with ordinary patterns at the toplevel,
+\begin{caml_example}{toplevel}
+let flat_assoc_opt x l =
+  match List.assoc x l with
+  | None | exception Not_found -> None
+  | Some _ as v -> v;;
+\end{caml_example}
+but they cannot be nested inside other patterns. For instance,
+the pattern "Some (exception A)" is invalid.
 
 When exceptions are used as a control structure, it can be useful to make
 them as local as possible by using a locally defined exception.

@@ -19,65 +19,7 @@
    (internal_modules Camlinternal*)
    (modules_before_stdlib
      camlinternalFormatBasics))
- (flags (:standard -w -9))
- ;; We're listing the modules here to avoid building the Labels ones.
- (modules
-  arg
-  array
-  bigarray
-  bool
-  buffer
-  bytes
-  callback
-  camlinternalFormat
-  camlinternalFormatBasics
-  camlinternalLazy
-  camlinternalMod
-  camlinternalOO
-  char
-  complex
-  digest
-  ephemeron
-  filename
-  float
-  format
-  fun
-  gc
-  genlex
-  hashtbl
-  int
-  int32
-  int64
-  lazy
-  lexing
-  list
-  map
-  marshal
-  nativeint
-  obj
-  oo
-  option
-  parsing
-  pervasives
-  printexc
-  printf
-  queue
-  random
-  result
-  scanf
-  seq
-  set
-  spacetime
-  stack
-  stdlib
-  stream
-  string
-  sys
-  uchar
-  weak
-  ;; booh
-  std_exit
-  )
+ (flags (:standard -w -9 -nolabels))
  (preprocess
    (per_module
      ((action

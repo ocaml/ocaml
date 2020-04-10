@@ -43,7 +43,7 @@ let add_default_argument_wrappers lam =
         Lfunction {kind; params; body = fbody; attr; loc}, body) ->
       begin match
         Simplif.split_default_wrapper ~id ~kind ~params
-          ~body:fbody ~attr ~loc
+          ~body:fbody ~return:Pgenval ~attr ~loc
       with
       | [fun_id, def] -> Llet (Alias, Pgenval, fun_id, def, body)
       | [fun_id, def; inner_fun_id, def_inner] ->
@@ -59,7 +59,7 @@ let add_default_argument_wrappers lam =
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr; loc}) ->
                    Simplif.split_default_wrapper ~id ~kind ~params ~body
-                     ~attr ~loc
+                     ~return:Pgenval ~attr ~loc
                  | _ -> assert false)
                defs)
         in
@@ -205,7 +205,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body ~attr ~loc
+          ~params:(List.map fst params) ~body ~attr ~loc
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -250,7 +250,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             in
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
-                ~closure_bound_var ~kind ~params ~body
+                ~closure_bound_var ~kind ~params:(List.map fst params) ~body
                 ~attr ~loc
             in
             Some function_declaration
@@ -482,7 +482,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
-    let vars = List.map (Variable.create_with_same_name_as_ident) ids in
+    let ids = List.map fst ids in
+    let vars = List.map Variable.create_with_same_name_as_ident ids in
     Static_catch (st_exn, vars, close t env body,
       close t (Env.add_vars env ids vars) handler)
   | Ltrywith (body, id, handler) ->
@@ -622,8 +623,8 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
        names. *)
     let closure_bound_var = Variable.rename let_bound_var in
     let decl =
-      Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body ~attr ~loc
+      Function_decl.create ~let_rec_ident ~closure_bound_var ~kind
+        ~params:(List.map fst params) ~body ~attr ~loc
     in
     let set_of_closures_var = Variable.rename let_bound_var in
     let set_of_closures =

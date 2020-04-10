@@ -34,6 +34,7 @@ endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
@@ -44,7 +45,7 @@ OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
 OTHERS= $(P)pervasives.cmo $(P)seq.cmo $(P)option.cmo $(P)result.cmo \
   $(P)bool.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   $(P)bytes.cmo $(P)string.cmo $(P)fun.cmo $(P)unit.cmo \
-  $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
+  $(P)marshal.cmo $(P)obj.cmo $(P)array.cmo $(P)float.cmo \
   $(P)int.cmo $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
   $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
@@ -304,13 +305,14 @@ SPACE := $(EMPTY) $(EMPTY)
 # it looks for the .cmx file (not .p.cmx).
 .PHONY: depend
 depend:
-	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
+	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" \
+	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
-	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.ml)) \
+	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.ml)) \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
+	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
+	  stdlib.ml \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -Ee \
 	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \

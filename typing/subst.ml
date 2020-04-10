@@ -387,44 +387,44 @@ let extension_constructor s ext =
 
 let rec rename_bound_idents s sg = function
     [] -> sg, s
-  | Sig_type(id, td, rs) :: rest ->
+  | Sig_type(id, td, rs, vis) :: rest ->
       let id' = Ident.rename id in
       rename_bound_idents
         (add_type id (Pident id') s)
-        (Sig_type(id', td, rs) :: sg)
+        (Sig_type(id', td, rs, vis) :: sg)
         rest
-  | Sig_module(id, pres, md, rs) :: rest ->
+  | Sig_module(id, pres, md, rs, vis) :: rest ->
       let id' = Ident.rename id in
       rename_bound_idents
         (add_module id (Pident id') s)
-        (Sig_module (id', pres, md, rs) :: sg)
+        (Sig_module (id', pres, md, rs, vis) :: sg)
         rest
-  | Sig_modtype(id, mtd) :: rest ->
+  | Sig_modtype(id, mtd, vis) :: rest ->
       let id' = Ident.rename id in
       rename_bound_idents
         (add_modtype id (Mty_ident(Pident id')) s)
-        (Sig_modtype(id', mtd) :: sg)
+        (Sig_modtype(id', mtd, vis) :: sg)
         rest
-  | Sig_class(id, cd, rs) :: rest ->
+  | Sig_class(id, cd, rs, vis) :: rest ->
       (* cheat and pretend they are types cf. PR#6650 *)
       let id' = Ident.rename id in
       rename_bound_idents
         (add_type id (Pident id') s)
-        (Sig_class(id', cd, rs) :: sg)
+        (Sig_class(id', cd, rs, vis) :: sg)
         rest
-  | Sig_class_type(id, ctd, rs) :: rest ->
+  | Sig_class_type(id, ctd, rs, vis) :: rest ->
       (* cheat and pretend they are types cf. PR#6650 *)
       let id' = Ident.rename id in
       rename_bound_idents
         (add_type id (Pident id') s)
-        (Sig_class_type(id', ctd, rs) :: sg)
+        (Sig_class_type(id', ctd, rs, vis) :: sg)
         rest
-  | Sig_value(id, vd) :: rest ->
+  | Sig_value(id, vd, vis) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents s (Sig_value(id', vd) :: sg) rest
-  | Sig_typext(id, ec, es) :: rest ->
+      rename_bound_idents s (Sig_value(id', vd, vis) :: sg) rest
+  | Sig_typext(id, ec, es, vis) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents s (Sig_typext(id',ec,es) :: sg) rest
+      rename_bound_idents s (Sig_typext(id',ec,es,vis) :: sg) rest
 
 let rec modtype s = function
     Mty_ident p as mty ->
@@ -456,20 +456,20 @@ and signature s sg =
 
 and signature_item s comp =
   match comp with
-    Sig_value(id, d) ->
-      Sig_value(id, value_description s d)
-  | Sig_type(id, d, rs) ->
-      Sig_type(id, type_declaration s d, rs)
-  | Sig_typext(id, ext, es) ->
-      Sig_typext(id, extension_constructor s ext, es)
-  | Sig_module(id, pres, d, rs) ->
-      Sig_module(id, pres, module_declaration s d, rs)
-  | Sig_modtype(id, d) ->
-      Sig_modtype(id, modtype_declaration s d)
-  | Sig_class(id, d, rs) ->
-      Sig_class(id, class_declaration s d, rs)
-  | Sig_class_type(id, d, rs) ->
-      Sig_class_type(id, cltype_declaration s d, rs)
+    Sig_value(id, d, vis) ->
+      Sig_value(id, value_description s d, vis)
+  | Sig_type(id, d, rs, vis) ->
+      Sig_type(id, type_declaration s d, rs, vis)
+  | Sig_typext(id, ext, es, vis) ->
+      Sig_typext(id, extension_constructor s ext, es, vis)
+  | Sig_module(id, pres, d, rs, vis) ->
+      Sig_module(id, pres, module_declaration s d, rs, vis)
+  | Sig_modtype(id, d, vis) ->
+      Sig_modtype(id, modtype_declaration s d, vis)
+  | Sig_class(id, d, rs, vis) ->
+      Sig_class(id, class_declaration s d, rs, vis)
+  | Sig_class_type(id, d, rs, vis) ->
+      Sig_class_type(id, cltype_declaration s d, rs, vis)
 
 and module_declaration s decl =
   {

@@ -4,7 +4,7 @@
      float_a = (makearray[addr] 1. 2. 3.)
      addr_a = (makearray[addr] "a" "b" "c"))
     (seq (array.length[int] int_a) (array.length[addr] float_a)
-      (array.length[addr] addr_a) (function a (array.length[addr] a))
+      (array.length[addr] addr_a) (function a : int (array.length[addr] a))
       (array.get[int] int_a 0) (array.get[addr] float_a 0)
       (array.get[addr] addr_a 0) (function a (array.get[addr] a 0))
       (array.unsafe_get[int] int_a 0) (array.unsafe_get[addr] float_a 0)

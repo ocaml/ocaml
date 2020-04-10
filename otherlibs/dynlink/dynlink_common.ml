@@ -153,55 +153,59 @@ module Make (P : Dynlink_platform_intf.S) = struct
       inited := true
     end
 
-  let check_interface_imports filename ui ifaces ~allowed_units =
+  let set_loaded_implem filename ui implems =
+    String.Map.add (UH.name ui) (UH.crc ui, filename, DT.Loaded) implems
+
+  let set_loaded filename ui (state : State.t) =
+    { state with implems = set_loaded_implem filename ui state.implems }
+
+  let check_interface_imports filename ui ifaces =
     List.fold_left (fun ifaces (name, crc) ->
-        let add_interface crc =
-          if String.Set.mem name allowed_units then
-            String.Map.add name (crc, filename) ifaces
-          else
-            raise (DT.Error (Unavailable_unit name))
-        in
         match String.Map.find name ifaces with
-        | exception Not_found ->
-          begin match crc with
-          | None -> add_interface Name
-          | Some crc -> add_interface (Contents crc)
+        | exception Not_found -> begin
+            match crc with
+            | None -> String.Map.add name (Name, filename) ifaces
+            | Some crc -> String.Map.add name (Contents crc, filename) ifaces
           end
         | old_crc, _old_src ->
           match old_crc, crc with
           | (Name | Contents _), None -> ifaces
-          | Name, Some crc -> add_interface (Contents crc)
+          | Name, Some crc ->
+            String.Map.add name (Contents crc, filename) ifaces
           | Contents old_crc, Some crc ->
             if old_crc <> crc then raise (DT.Error (Inconsistent_import name))
             else ifaces)
       ifaces
       (UH.interface_imports ui)
 
-  let check_implementation_imports filename ui implems =
+  let check_implementation_imports ~allowed_units filename ui implems =
     List.iter (fun (name, crc) ->
-        match String.Map.find name implems with
-        | exception Not_found -> raise (DT.Error (Unavailable_unit name))
-        | ((old_crc, _old_src, unit_state) : implem) ->
-          begin match old_crc, crc with
-          | (None | Some _), None -> ()
-          | None, Some _crc ->
-            (* The [None] behaves like a CRC different from every other. *)
+      if not (String.Set.mem name allowed_units) then begin
+        raise (DT.Error (Unavailable_unit name))
+      end;
+      match String.Map.find name implems with
+      | exception Not_found -> raise (DT.Error (Unavailable_unit name))
+      | ((old_crc, _old_src, unit_state) : implem) ->
+        begin match old_crc, crc with
+        | (None | Some _), None -> ()
+        | None, Some _crc ->
+          (* The [None] behaves like a CRC different from every other. *)
+          raise (DT.Error (Inconsistent_implementation name))
+        | Some old_crc, Some crc ->
+          if old_crc <> crc then begin
             raise (DT.Error (Inconsistent_implementation name))
-          | Some old_crc, Some crc ->
-            if old_crc <> crc then begin
-              raise (DT.Error (Inconsistent_implementation name))
-            end
-          end;
-          match unit_state with
-          | Not_initialized ->
+          end
+        end;
+        match unit_state with
+        | Not_initialized ->
+          raise (DT.Error (Linking_error (
+            filename, Uninitialized_global name)))
+        | Check_inited i ->
+          if P.num_globals_inited () < i then begin
             raise (DT.Error (Linking_error (
               filename, Uninitialized_global name)))
-          | Check_inited i ->
-            if P.num_globals_inited () < i then begin
-              raise (DT.Error (Linking_error (
-                filename, Uninitialized_global name)))
-            end
-          | Loaded -> ())
+          end
+        | Loaded -> ())
       (UH.implementation_imports ui)
 
   let check_name filename ui priv ifaces implems =
@@ -229,15 +233,19 @@ module Make (P : Dynlink_platform_intf.S) = struct
           check_name filename ui priv state.ifaces implems)
         state.implems units
     in
-    let allowed_units = String.Set.union state.allowed_units new_units in
     let ifaces =
       List.fold_left (fun ifaces ui ->
-          check_interface_imports filename ui ifaces
-            ~allowed_units:allowed_units)
+          check_interface_imports filename ui ifaces)
         state.ifaces units
     in
-    List.iter (fun ui -> check_implementation_imports filename ui implems)
-      units;
+    let allowed_units = String.Set.union state.allowed_units new_units in
+    let (_ : implem String.Map.t) =
+      List.fold_left
+        (fun acc ui ->
+           check_implementation_imports ~allowed_units filename ui acc;
+           set_loaded_implem filename ui acc)
+        implems units
+    in
     let defined_symbols =
       List.fold_left (fun defined_symbols ui ->
           let descr =
@@ -323,19 +331,6 @@ module Make (P : Dynlink_platform_intf.S) = struct
     if Filename.is_implicit fname then Filename.concat (Sys.getcwd ()) fname
     else fname
 
-  let set_loaded filename units (state : State.t) =
-    let implems =
-      List.fold_left (fun implems ui ->
-          String.Map.add (UH.name ui) (UH.crc ui, filename, DT.Loaded)
-            implems)
-        state.implems
-        units
-    in
-    { state with implems; }
-
-  let run_units handle priv units =
-    List.iter (fun unit_header -> P.run handle ~unit_header ~priv) units
-
   let load priv filename =
     init ();
     let filename = dll_filename filename in
@@ -344,10 +339,13 @@ module Make (P : Dynlink_platform_intf.S) = struct
     | handle, units ->
       try
         global_state := check filename units !global_state ~priv;
-        run_units handle priv units;
-        if not priv then begin
-          global_state := set_loaded filename units !global_state
-        end;
+        List.iter
+          (fun unit_header ->
+             P.run handle ~unit_header ~priv;
+             if not priv then begin
+               global_state := set_loaded filename unit_header !global_state
+             end)
+          units;
         P.finish handle
       with exn ->
         P.finish handle;

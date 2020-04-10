@@ -151,6 +151,7 @@ let classify_expression : Typedtree.expression -> sd =
         classify_path env path
 
     (* non-binding cases *)
+    | Texp_open (_, e)
     | Texp_letmodule (_, _, _, _, e)
     | Texp_sequence (_, e)
     | Texp_letexception (_, e) ->
@@ -200,7 +201,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_field _
     | Texp_assert _
     | Texp_try _
-    | Texp_override _ ->
+    | Texp_override _
+    | Texp_letop _ ->
         Dynamic
   and classify_value_bindings rec_flag env bindings =
     (* We use a non-recursive classification, classifying each
@@ -791,6 +793,12 @@ let rec expression : Typedtree.expression -> term_judg =
           Delay
       in
       expression e << lazy_mode
+    | Texp_letop{let_; ands; body; _} ->
+        let case_env c m = fst (case c m) in
+        join [
+          list binding_op (let_ :: ands) << Dereference;
+          case_env body << Delay
+        ]
     | Texp_unreachable ->
       (*
         ----------
@@ -799,6 +807,12 @@ let rec expression : Typedtree.expression -> term_judg =
       empty
     | Texp_extension_constructor (_lid, pth) ->
       path pth << Dereference
+    | Texp_open (od, e) ->
+      open_declaration od >> expression e
+
+and binding_op : Typedtree.binding_op -> term_judg =
+  fun bop ->
+    join [path bop.bop_op_path; expression bop.bop_exp]
 
 and class_structure : Typedtree.class_structure -> term_judg =
   fun cs -> list class_field cs.cstr_fields
@@ -949,13 +963,8 @@ and structure_item : Typedtree.structure_item -> bind_judg =
     | Tstr_class_type _
     | Tstr_attribute _ ->
       env
-    | Tstr_open _ ->
-      (* TODO: open introduces term/module variables in scope,
-         we could/should remove them from the environment.
-
-         See also Texp_open (in exp_extra, outside the normal matching path)
-         and Tcl_open. *)
-      env
+    | Tstr_open od ->
+      open_declaration od m env
     | Tstr_class classes ->
         let class_ids =
           let class_id ({ci_id_class = id; _}, _) = id in
@@ -966,18 +975,7 @@ and structure_item : Typedtree.structure_item -> bind_judg =
           (list class_declaration classes m)
           (Env.remove_list class_ids env)
     | Tstr_include { incl_mod = mexp; incl_type = mty; _ } ->
-      let included_ids =
-        let sigitem_id = function
-          | Sig_value (id, _)
-          | Sig_type (id, _, _)
-          | Sig_typext (id, _, _)
-          | Sig_module (id, _, _, _)
-          | Sig_modtype (id, _)
-          | Sig_class (id, _, _)
-          | Sig_class_type (id, _, _)
-            -> id
-        in
-        List.map sigitem_id mty in
+      let included_ids = List.map Types.signature_item_id mty in
       Env.join (modexp mexp m) (Env.remove_list included_ids env)
 
 (* G |- module M = E : m -| G *)
@@ -991,6 +989,12 @@ and module_binding : (Ident.t * Typedtree.module_expr) -> bind_judg =
       let mM, env = Env.take id env in
       let judg_E = modexp mexp << (Mode.join mM Guard) in
       Env.join (judg_E m) env
+
+and open_declaration : Typedtree.open_declaration -> bind_judg =
+  fun { open_expr = mexp; open_bound_items = sg; _ } m env ->
+      let judg_E = modexp mexp in
+      let bound_ids = List.map Types.signature_item_id sg in
+      Env.join (judg_E m) (Env.remove_list bound_ids env)
 
 and recursive_module_bindings
   : (Ident.t * Typedtree.module_expr) list -> bind_judg =
@@ -1021,7 +1025,7 @@ and class_expr : Typedtree.class_expr -> term_judg =
       value_bindings rec_flag bindings >> class_expr ce
     | Tcl_constraint (ce, _, _, _, _) ->
         class_expr ce
-    | Tcl_open (_, _, _, _, ce) ->
+    | Tcl_open (_, ce) ->
         class_expr ce
 
 and extension_constructor : Typedtree.extension_constructor -> term_judg =
@@ -1161,7 +1165,7 @@ let is_valid_class_expr idlist ce =
         value_bindings rec_flag bindings mode (class_expr mode ce)
       | Tcl_constraint (ce, _, _, _, _) ->
         class_expr mode ce
-      | Tcl_open (_, _, _, _, ce) ->
+      | Tcl_open (_, ce) ->
         class_expr mode ce
   in
   match Env.unguarded (class_expr Return ce) idlist with

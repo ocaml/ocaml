@@ -370,10 +370,17 @@ and expression_desc =
 
            (module ME : S) is represented as
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
-  | Pexp_open of override_flag * Longident.t loc * expression
+  | Pexp_open of open_declaration * expression
         (* M.(E)
            let open M in E
            let! open M in E *)
+  | Pexp_letop of {
+      let_ : binding_op;
+      ands : binding_op list;
+      body : expression;
+    }
+        (* let* P = E in E
+           let* P = E and* P = E in E *)
   | Pexp_extension of extension
         (* [%id] *)
   | Pexp_unreachable
@@ -385,6 +392,14 @@ and case =   (* (P -> E) or (P when E0 -> E) *)
      pc_guard: expression option;
      pc_rhs: expression;
     }
+
+and binding_op =
+  {
+    pbop_op : string loc;
+    pbop_pat : pattern;
+    pbop_exp : expression;
+    pbop_loc : Location.t;
+  }
 
 (* Value descriptions *)
 
@@ -557,7 +572,7 @@ and class_type_desc =
          *)
   | Pcty_extension of extension
         (* [%id] *)
-  | Pcty_open of override_flag * Longident.t loc * class_type
+  | Pcty_open of open_description * class_type
         (* let open M in CT *)
 
 and class_signature =
@@ -649,7 +664,7 @@ and class_expr_desc =
         (* (CE : CT) *)
   | Pcl_extension of extension
   (* [%id] *)
-  | Pcl_open of override_flag * Longident.t loc * class_expr
+  | Pcl_open of open_description * class_expr
   (* let open M in CE *)
 
 
@@ -801,9 +816,9 @@ and module_type_declaration =
    S       (abstract module type declaration, pmtd_type = None)
 *)
 
-and open_description =
+and 'a open_infos =
     {
-     popen_lid: Longident.t loc;
+     popen_expr: 'a;
      popen_override: override_flag;
      popen_loc: Location.t;
      popen_attributes: attributes;
@@ -812,6 +827,15 @@ and open_description =
                               shadowing' warning)
    open  X - popen_override = Fresh
  *)
+
+and open_description = Longident.t loc open_infos
+(* open M.N
+   open M(N).O *)
+
+and open_declaration = module_expr open_infos
+(* open M.N
+   open M(N).O
+   open struct ... end *)
 
 and 'a include_infos =
     {
@@ -898,7 +922,7 @@ and structure_item_desc =
         (* module rec X1 = ME1 and ... and Xn = MEn *)
   | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
-  | Pstr_open of open_description
+  | Pstr_open of open_declaration
         (* open X *)
   | Pstr_class of class_declaration list
         (* class c1 = ... and ... and cn = ... *)

@@ -85,7 +85,7 @@ let rec apply_coercion loc strict restr arg =
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create_local "funarg" in
       let carg = apply_coercion loc Alias cc_arg (Lvar param) in
-      apply_coercion_result loc strict arg [param] [carg] cc_res
+      apply_coercion_result loc strict arg [param, Pgenval] [carg] cc_res
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
       Translprim.transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (env, path, cc) ->
@@ -102,22 +102,27 @@ and apply_coercion_result loc strict funct params args cc_res =
     let param = Ident.create_local "funarg" in
     let arg = apply_coercion loc Alias cc_arg (Lvar param) in
     apply_coercion_result loc strict funct
-      (param :: params) (arg :: args) cc_res
+      ((param, Pgenval) :: params) (arg :: args) cc_res
   | _ ->
-    name_lambda strict funct (fun id ->
-      Lfunction{kind = Curried; params = List.rev params;
-                attr = { default_function_attribute with
-                         is_a_functor = true;
-                         stub = true; };
-                loc = loc;
-                body = apply_coercion
-                         loc Strict cc_res
-                         (Lapply{ap_should_be_tailcall=false;
-                                 ap_loc=loc;
-                                 ap_func=Lvar id;
-                                 ap_args=List.rev args;
-                                 ap_inlined=Default_inline;
-                                 ap_specialised=Default_specialise})})
+      name_lambda strict funct
+        (fun id ->
+           Lfunction
+             {
+               kind = Curried;
+               params = List.rev params;
+               return = Pgenval;
+               attr = { default_function_attribute with
+                        is_a_functor = true;
+                        stub = true; };
+               loc = loc;
+               body = apply_coercion
+                   loc Strict cc_res
+                   (Lapply{ap_should_be_tailcall=false;
+                           ap_loc=loc;
+                           ap_func=Lvar id;
+                           ap_args=List.rev args;
+                           ap_inlined=Default_inline;
+                           ap_specialised=Default_specialise})})
 
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
@@ -228,7 +233,7 @@ let init_shape id modl =
   and init_shape_struct env sg =
     match sg with
       [] -> []
-    | Sig_value(subid, {val_kind=Val_reg; val_type=ty; val_loc=loc}) :: rem ->
+    | Sig_value(subid, {val_kind=Val_reg; val_type=ty; val_loc=loc},_) :: rem ->
         let init_v =
           match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
@@ -239,23 +244,23 @@ let init_shape id modl =
               let not_a_function = {reason=Unsafe_non_function; loc; subid } in
               raise (Initialization_failure not_a_function) in
         init_v :: init_shape_struct env rem
-    | Sig_value(_, {val_kind=Val_prim _}) :: rem ->
+    | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
         init_shape_struct env rem
     | Sig_value _ :: _rem ->
         assert false
-    | Sig_type(id, tdecl, _) :: rem ->
+    | Sig_type(id, tdecl, _, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
-    | Sig_typext (subid, {ext_loc=loc},_) :: _ ->
+    | Sig_typext (subid, {ext_loc=loc},_,_) :: _ ->
         raise (Initialization_failure {reason=Unsafe_typext; loc; subid})
-    | Sig_module(id, Mp_present, md, _) :: rem ->
+    | Sig_module(id, Mp_present, md, _, _) :: rem ->
         init_shape_mod id md.md_loc env md.md_type ::
         init_shape_struct (Env.add_module_declaration ~check:false
                              id Mp_present md env) rem
-    | Sig_module(id, Mp_absent, md, _) :: rem ->
+    | Sig_module(id, Mp_absent, md, _, _) :: rem ->
         init_shape_struct
           (Env.add_module_declaration ~check:false
                              id Mp_absent md env) rem
-    | Sig_modtype(id, minfo) :: rem ->
+    | Sig_modtype(id, minfo, _) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
         Const_pointer 2 (* camlinternalMod.Class *)
@@ -373,22 +378,6 @@ let compile_recmodule compile_rhs bindings cont =
           bindings))
     cont
 
-(* Extract the list of "value" identifiers bound by a signature.
-   "Value" identifiers are identifiers for signature components that
-   correspond to a run-time value: values, extensions, modules, classes.
-   Note: manifest primitives do not correspond to a run-time value! *)
-
-let rec bound_value_identifiers = function
-    [] -> []
-  | Sig_value(id, {val_kind = Val_reg}) :: rem ->
-      id :: bound_value_identifiers rem
-  | Sig_typext(id, _, _) :: rem -> id :: bound_value_identifiers rem
-  | Sig_module(id, Mp_present, _, _) :: rem ->
-      id :: bound_value_identifiers rem
-  | Sig_class(id, _, _) :: rem -> id :: bound_value_identifiers rem
-  | _ :: rem -> bound_value_identifiers rem
-
-
 (* Code to translate class entries in a structure *)
 
 let transl_class_bindings cl_list =
@@ -445,7 +434,7 @@ let rec compile_functor mexp coercion root_path loc =
     List.fold_left (fun (params, body) (param, loc, arg_coercion) ->
         let param' = Ident.rename param in
         let arg = apply_coercion loc Alias arg_coercion (Lvar param') in
-        let params = param' :: params in
+        let params = (param', Pgenval) :: params in
         let body = Llet (Alias, Pgenval, param, arg, body) in
         params, body)
       ([], transl_module res_coercion body_path body)
@@ -454,9 +443,11 @@ let rec compile_functor mexp coercion root_path loc =
   Lfunction {
     kind = Curried;
     params;
+    return = Pgenval;
     attr = {
       inline = inline_attribute;
       specialise = Default_specialise;
+      local = Default_local;
       is_a_functor = true;
       stub = false;
     };
@@ -678,17 +669,39 @@ and transl_structure loc fields cc rootpath final_env = function
           Llet(pure_module modl, Pgenval, mid,
                transl_module Tcoerce_none None modl, body),
           size
+
+      | Tstr_open od ->
+          let pure = pure_module od.open_expr in
+          (* this optimization shouldn't be needed because Simplif would
+             actually remove the [Llet] when it's not used.
+             But since [scan_used_globals] runs before Simplif, we need to do
+             it. *)
+          begin match od.open_bound_items with
+          | [] when pure = Alias ->
+              transl_structure loc fields cc rootpath final_env rem
+          | _ ->
+              let ids = bound_value_identifiers od.open_bound_items in
+              let mid = Ident.create_local "open" in
+              let rec rebind_idents pos newfields = function
+                  [] ->
+                  transl_structure loc newfields cc rootpath final_env rem
+                | id :: ids ->
+                  let body, size =
+                    rebind_idents (pos + 1) (id :: newfields) ids
+                  in
+                  Llet(Alias, Pgenval, id,
+                       Lprim(Pfield (pos, Pointer, Mutable), [Lvar mid], od.open_loc),
+                       body),
+                  size
+              in
+              let body, size = rebind_idents 0 fields ids in
+              Llet(pure, Pgenval, mid,
+                    transl_module Tcoerce_none None od.open_expr, body), size
+          end
       | Tstr_modtype _
-      | Tstr_open _
       | Tstr_class_type _
       | Tstr_attribute _ ->
           transl_structure loc fields cc rootpath final_env rem
-
-and pure_module m =
-  match m.mod_desc with
-    Tmod_ident _ -> Alias
-  | Tmod_constraint (m,_,_,_) -> pure_module m
-  | _ -> Strict
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -777,7 +790,8 @@ let rec defined_idents = function
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
     | Tstr_modtype _ -> defined_idents rem
-    | Tstr_open _ -> defined_idents rem
+    | Tstr_open od ->
+      bound_value_identifiers od.open_bound_items @ defined_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type _ -> defined_idents rem
@@ -800,7 +814,12 @@ let rec more_idents = function
     | Tstr_effect _ -> more_idents rem
     | Tstr_recmodule _ -> more_idents rem
     | Tstr_modtype _ -> more_idents rem
-    | Tstr_open _ -> more_idents rem
+    | Tstr_open od ->
+        let rest = more_idents rem in
+        begin match od.open_expr.mod_desc with
+        | Tmod_structure str -> all_idents str.str_items @ rest
+        | _ -> rest
+        end
     | Tstr_class _ -> more_idents rem
     | Tstr_class_type _ -> more_idents rem
     | Tstr_include{incl_mod={mod_desc =
@@ -835,7 +854,15 @@ and all_idents = function
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ all_idents rem
     | Tstr_modtype _ -> all_idents rem
-    | Tstr_open _ -> all_idents rem
+    | Tstr_open od ->
+        let rest = all_idents rem in
+        begin match od.open_expr.mod_desc with
+        | Tmod_structure str ->
+          bound_value_identifiers od.open_bound_items
+          @ all_idents str.str_items
+          @ rest
+        | _ -> bound_value_identifiers od.open_bound_items @ rest
+        end
     | Tstr_class cl_list ->
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type _ -> all_idents rem
@@ -1094,8 +1121,52 @@ let transl_store_structure glob map prims aliases str =
                  Lambda.subst no_env_update subst
                    (transl_module Tcoerce_none None modl),
                  store_idents 0 ids)
+        | Tstr_open od ->
+            begin match od.open_expr.mod_desc with
+            | Tmod_structure str ->
+                let lam =
+                  transl_store rootpath subst lambda_unit str.str_items
+                in
+                let ids = Array.of_list (defined_idents str.str_items) in
+                let ids0 = bound_value_identifiers od.open_bound_items in
+                let subst = !transl_store_subst in
+                let rec store_idents pos = function
+                  | [] -> transl_store rootpath subst cont rem
+                  | id :: idl ->
+                      Llet(Alias, Pgenval, id, Lvar ids.(pos),
+                           Lsequence(store_ident od.open_loc id,
+                                     store_idents (pos + 1) idl))
+                in
+                Lsequence(lam, Lambda.subst no_env_update subst
+                                 (store_idents 0 ids0))
+            | _ ->
+                let pure = pure_module od.open_expr in
+                (* this optimization shouldn't be needed because Simplif would
+                   actually remove the [Llet] when it's not used.
+                   But since [scan_used_globals] runs before Simplif, we need to
+                   do it. *)
+                match od.open_bound_items with
+                | [] when pure = Alias -> transl_store rootpath subst cont rem
+                | _ ->
+                    let ids = bound_value_identifiers od.open_bound_items in
+                    let mid = Ident.create_local "open" in
+                    let loc = od.open_loc in
+                    let rec store_idents pos = function
+                        [] ->
+                          transl_store rootpath (add_idents true ids subst) cont
+                            rem
+                      | id :: idl ->
+                          Llet(Alias, Pgenval, id,
+                               Lprim(Pfield (pos, Pointer, Mutable), [Lvar mid], loc),
+                               Lsequence(store_ident loc id,
+                                         store_idents (pos + 1) idl))
+                    in
+                    Llet(pure, Pgenval, mid,
+                         Lambda.subst no_env_update subst
+                           (transl_module Tcoerce_none None od.open_expr),
+                         store_idents 0 ids)
+          end
         | Tstr_modtype _
-        | Tstr_open _
         | Tstr_class_type _
         | Tstr_attribute _ ->
             transl_store rootpath subst cont rem
@@ -1341,8 +1412,29 @@ let transl_toplevel_item item =
   | Tstr_primitive descr ->
       record_primitive descr.val_val;
       lambda_unit
+  | Tstr_open od ->
+      let pure = pure_module od.open_expr in
+      (* this optimization shouldn't be needed because Simplif would
+          actually remove the [Llet] when it's not used.
+          But since [scan_used_globals] runs before Simplif, we need to do
+          it. *)
+      begin match od.open_bound_items with
+      | [] when pure = Alias -> lambda_unit
+      | _ ->
+          let ids = bound_value_identifiers od.open_bound_items in
+          let mid = Ident.create_local "open" in
+          let rec set_idents pos = function
+              [] ->
+                lambda_unit
+            | id :: ids ->
+                Lsequence(toploop_setvalue id
+                            (Lprim(Pfield (pos, Pointer, Mutable), [Lvar mid], Location.none)),
+                          set_idents (pos + 1) ids)
+          in
+          Llet(pure, Pgenval, mid,
+               transl_module Tcoerce_none None od.open_expr, set_idents 0 ids)
+      end
   | Tstr_modtype _
-  | Tstr_open _
   | Tstr_module {mb_presence=Mp_absent}
   | Tstr_type _
   | Tstr_class_type _
@@ -1473,7 +1565,7 @@ let explanation_submsg (id, {reason;loc;subid}) =
 
 let report_error loc = function
   | Circular_dependency cycle ->
-      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 3 in
+      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 2 in
       Location.errorf ~loc ~sub:(List.map explanation_submsg cycle)
         "Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \

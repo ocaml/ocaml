@@ -13,6 +13,7 @@ float.ml
 float_physical_equality.ml
 includestruct.ml
 localexn.ml
+localfunction.ml
 maps.ml
 min_int.ml
 opt_variants.ml

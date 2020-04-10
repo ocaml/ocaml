@@ -29,6 +29,7 @@ module String = Misc.Stdlib.String
 type mapper = {
   attribute: mapper -> attribute -> attribute;
   attributes: mapper -> attribute list -> attribute list;
+  binding_op: mapper -> binding_op -> binding_op;
   case: mapper -> case -> case;
   cases: mapper -> case list -> case list;
   class_declaration: mapper -> class_declaration -> class_declaration;
@@ -60,6 +61,7 @@ type mapper = {
   module_type: mapper -> module_type -> module_type;
   module_type_declaration: mapper -> module_type_declaration
                            -> module_type_declaration;
+  open_declaration: mapper -> open_declaration -> open_declaration;
   open_description: mapper -> open_description -> open_description;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
@@ -241,8 +243,8 @@ module CT = struct
     | Pcty_arrow (lab, t, ct) ->
         arrow ~loc ~attrs lab (sub.typ sub t) (sub.class_type sub ct)
     | Pcty_extension x -> extension ~loc ~attrs (sub.extension sub x)
-    | Pcty_open (ovf, lid, ct) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.class_type sub ct)
+    | Pcty_open (o, ct) ->
+        open_ ~loc ~attrs (sub.open_description sub o) (sub.class_type sub ct)
 
   let map_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs}
     =
@@ -364,7 +366,7 @@ module M = struct
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub.module_binding sub) l)
     | Pstr_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
-    | Pstr_open x -> open_ ~loc (sub.open_description sub x)
+    | Pstr_open x -> open_ ~loc (sub.open_declaration sub x)
     | Pstr_class l -> class_ ~loc (List.map (sub.class_declaration sub) l)
     | Pstr_class_type l ->
         class_type ~loc (List.map (sub.class_type_declaration sub) l)
@@ -449,10 +451,22 @@ module E = struct
     | Pexp_newtype (s, e) ->
         newtype ~loc ~attrs (map_loc sub s) (sub.expr sub e)
     | Pexp_pack me -> pack ~loc ~attrs (sub.module_expr sub me)
-    | Pexp_open (ovf, lid, e) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.expr sub e)
+    | Pexp_open (o, e) ->
+        open_ ~loc ~attrs (sub.open_declaration sub o) (sub.expr sub e)
+    | Pexp_letop {let_; ands; body} ->
+        letop ~loc ~attrs (sub.binding_op sub let_)
+          (List.map (sub.binding_op sub) ands) (sub.expr sub body)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
+
+  let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
+    let open Exp in
+    let op = map_loc sub pbop_op in
+    let pat = sub.pat sub pbop_pat in
+    let exp = sub.expr sub pbop_exp in
+    let loc = sub.location sub pbop_loc in
+    binding_op op pat exp loc
+
 end
 
 module P = struct
@@ -514,8 +528,8 @@ module CE = struct
     | Pcl_constraint (ce, ct) ->
         constraint_ ~loc ~attrs (sub.class_expr sub ce) (sub.class_type sub ct)
     | Pcl_extension x -> extension ~loc ~attrs (sub.extension sub x)
-    | Pcl_open (ovf, lid, ce) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.class_expr sub ce)
+    | Pcl_open (o, ce) ->
+        open_ ~loc ~attrs (sub.open_description sub o) (sub.class_expr sub ce)
 
   let map_kind sub = function
     | Cfk_concrete (o, e) -> Cfk_concrete (o, sub.expr sub e)
@@ -600,6 +614,7 @@ let default_mapper =
 
     pat = P.map;
     expr = E.map;
+    binding_op = E.map_binding_op;
 
     module_declaration =
       (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->
@@ -636,14 +651,21 @@ let default_mapper =
       );
 
 
-    open_description =
-      (fun this {popen_lid; popen_override; popen_attributes; popen_loc} ->
-         Opn.mk (map_loc this popen_lid)
+    open_declaration =
+      (fun this {popen_expr; popen_override; popen_attributes; popen_loc} ->
+         Opn.mk (this.module_expr this popen_expr)
            ~override:popen_override
            ~loc:(this.location this popen_loc)
            ~attrs:(this.attributes this popen_attributes)
       );
 
+    open_description =
+      (fun this {popen_expr; popen_override; popen_attributes; popen_loc} ->
+         Opn.mk (map_loc this popen_expr)
+           ~override:popen_override
+           ~loc:(this.location this popen_loc)
+           ~attrs:(this.attributes this popen_attributes)
+      );
 
     include_description =
       (fun this {pincl_mod; pincl_attributes; pincl_loc} ->

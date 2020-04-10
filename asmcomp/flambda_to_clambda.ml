@@ -309,7 +309,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     let env_handler, ids =
       List.fold_right (fun var (env, ids) ->
           let id, env = Env.add_fresh_ident env var in
-          env, VP.create id :: ids)
+          env, (VP.create id, Lambda.Pgenval) :: ids)
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,
@@ -530,7 +530,11 @@ and to_clambda_set_of_closures t env
     in
     { label = Compilenv.function_label closure_id;
       arity = Flambda_utils.function_arity function_decl;
-      params = List.map (fun var -> VP.create var) (params @ [env_var]);
+      params =
+        List.map
+          (fun var -> VP.create var, Lambda.Pgenval)
+          (params @ [env_var]);
+      return = Lambda.Pgenval;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = Some env_var;
@@ -570,7 +574,8 @@ and to_clambda_closed_set_of_closures t env symbol
     in
     { label = Compilenv.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
-      params = List.map (fun var -> VP.create var) params;
+      params = List.map (fun var -> VP.create var, Lambda.Pgenval) params;
+      return = Lambda.Pgenval;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = None;
@@ -647,7 +652,7 @@ let to_clambda_program t env constants (program : Flambda.program) =
           fields
       in
       let init_fields =
-        Misc.Stdlib.List.filter_map (function
+        List.filter_map (function
             | (i, field, None) -> Some (i, field)
             | (_, _, Some _) -> None)
           fields

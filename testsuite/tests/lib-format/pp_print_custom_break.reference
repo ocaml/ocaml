@@ -1,0 +1,159 @@
+# Printing arrays: last trailing semicolon is optional
+
+## The "v" box
+```
+[
+  Foo;
+  Baz;
+  Bar;
+  Qux;
+  Quux;
+  Quuz;
+  Corge;
+  Grault;
+  Garply;
+]
+```
+
+## The "b" box
+```
+[
+  Foo; Baz; Bar; Qux; Quux;
+  Quuz; Corge; Grault; Garply;
+]
+```
+
+## The "h" box
+```
+[Foo; Baz; Bar; Qux; Quux; Quuz; Corge; Grault; Garply]
+```
+
+## The "hv" box
+```
+[
+  Foo;
+  Baz;
+  Bar;
+  Qux;
+  Quux;
+  Quuz;
+  Corge;
+  Grault;
+  Garply;
+]
+```
+
+## The "hov" box
+```
+[
+  Foo; Baz; Bar; Qux; Quux;
+  Quuz; Corge; Grault; Garply;
+]
+```
+
+# Printing statements: terminator is optional after newline
+
+## The "v" box
+```
+{
+  Foo
+  Baz
+  Bar
+  Qux
+  Quux
+  Quuz
+  Corge
+  Grault
+  Garply
+}
+```
+
+## The "b" box
+```
+{
+  Foo; Baz; Bar; Qux; Quux
+  Quuz; Corge; Grault; Garply
+}
+```
+
+## The "h" box
+```
+{Foo; Baz; Bar; Qux; Quux; Quuz; Corge; Grault; Garply}
+```
+
+## The "hv" box
+```
+{
+  Foo
+  Baz
+  Bar
+  Qux
+  Quux
+  Quuz
+  Corge
+  Grault
+  Garply
+}
+```
+
+## The "hov" box
+```
+{
+  Foo; Baz; Bar; Qux; Quux
+  Quuz; Corge; Grault; Garply
+}
+```
+
+# Printing function: first pipe character is optional
+
+## The "v" box
+```
+function
+| Foo -> ()
+| Baz -> ()
+| Bar -> ()
+| Qux -> ()
+| Quux -> ()
+| Quuz -> ()
+| Corge -> ()
+| Grault -> ()
+| Garply -> ()
+```
+
+## The "b" box
+```
+function Foo -> ()
+| Baz -> () | Bar -> ()
+| Qux -> () | Quux -> ()
+| Quuz -> () | Corge -> ()
+| Grault -> () | Garply -> ()
+```
+
+## The "h" box
+```
+function Foo -> () | Baz -> () | Bar -> () | Qux -> () | Quux -> () | Quuz -> () | Corge -> () | Grault -> () | Garply -> ()
+```
+
+## The "hv" box
+```
+function
+| Foo -> ()
+| Baz -> ()
+| Bar -> ()
+| Qux -> ()
+| Quux -> ()
+| Quuz -> ()
+| Corge -> ()
+| Grault -> ()
+| Garply -> ()
+```
+
+## The "hov" box
+```
+function Foo -> ()
+| Baz -> () | Bar -> ()
+| Qux -> () | Quux -> ()
+| Quuz -> () | Corge -> ()
+| Grault -> () | Garply -> ()
+```
+
