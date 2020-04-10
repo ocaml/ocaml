@@ -48,3 +48,57 @@ Line 1, characters 28-32:
 Error: The function applied to this argument has type ?x:'a -> 'b
 This argument cannot be applied with label ~y
 |}]
+
+(** Show that optional arguments can be commuted, to some degree. *)
+
+let f i ?(a=0) ?(b=0) ?(c=0) ~x j =
+  i + a + b + c + x + j
+;;
+[%%expect{|
+val f : int -> ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int = <fun>
+|}]
+;;
+
+(* [a], [b] and [c] can be commuted without issues *)
+
+f 3 ~c:2 ~a:1 ~b:0 ~x:4 5;;
+[%%expect{|
+- : int = 15
+|}]
+;;
+
+(* Now, for all of the following, the error appears on the first non optional
+   argument, but compare the reported function types: *)
+
+f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
+[%%expect{|
+Line 1, characters 14-15:
+1 | f 3 ~a:1 ~b:2 5 ~c:0 ~x:4;;
+                  ^
+Error: The function applied to this argument has type
+         ?c:int -> x:int -> int -> int
+This argument cannot be applied without label
+|}]
+;;
+
+f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
+[%%expect{|
+Line 1, characters 14-15:
+1 | f 3 ~a:1 ~c:2 5 ~b:0 ~x:4;;
+                  ^
+Error: The function applied to this argument has type
+         ?b:int -> ?c:int -> x:int -> int -> int
+This argument cannot be applied without label
+|}]
+;;
+
+f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
+[%%expect{|
+Line 1, characters 14-15:
+1 | f 3 ~b:1 ~c:2 5 ~a:0 ~x:4;;
+                  ^
+Error: The function applied to this argument has type
+         ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
+This argument cannot be applied without label
+|}]
+;;
