@@ -171,6 +171,10 @@ let value_kind env ty =
   | _ ->
       Pgenval
 
+let function_return_value_kind env ty =
+  match is_function_type env ty with
+  | Some (_lhs, rhs) -> value_kind env rhs
+  | None -> Pgenval
 
 (** Whether a forward block is needed for a lazy thunk on a value, i.e.
     if the value can be represented as a float/forward/lazy *)
@@ -205,3 +209,7 @@ let classify_lazy_argument : Typedtree.expression ->
        `Identifier `Other
     | _ ->
        `Other
+
+let value_kind_union k1 k2 =
+  if k1 = k2 then k1
+  else Pgenval

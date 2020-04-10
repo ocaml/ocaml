@@ -36,6 +36,20 @@ let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!="; "::" ]
 
+let letop s =
+  String.length s > 3
+  && s.[0] = 'l'
+  && s.[1] = 'e'
+  && s.[2] = 't'
+  && List.mem s.[3] infix_symbols
+
+let andop s =
+  String.length s > 3
+  && s.[0] = 'a'
+  && s.[1] = 'n'
+  && s.[2] = 'd'
+  && List.mem s.[3] infix_symbols
+
 (* determines if the string is an infix string.
    checks backwards, first allowing a renaming postfix ("_102") which
    may have resulted from Pexp -> Texp -> Pexp translation, then checking
@@ -47,6 +61,8 @@ let fixity_of_string  = function
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
   | s when s.[0] = '.' -> `Mixfix s
+  | s when letop s -> `Letop s
+  | s when andop s -> `Andop s
   | _ -> `Normal
 
 let view_fixity_of_exp = function
@@ -56,6 +72,7 @@ let view_fixity_of_exp = function
 
 let is_infix  = function `Infix _ -> true | _  -> false
 let is_mixfix = function `Mixfix _ -> true | _ -> false
+let is_kwdop = function `Letop _ | `Andop _ -> true | _ -> false
 
 let first_is c str =
   str <> "" && str.[0] = c
@@ -70,6 +87,7 @@ let needs_parens txt =
   let fix = fixity_of_string txt in
   is_infix fix
   || is_mixfix fix
+  || is_kwdop fix
   || first_is_in prefix_symbols txt
 
 (* some infixes need spaces around parens to avoid clashes with comment
@@ -574,7 +592,8 @@ and expression ctxt f x =
         paren true (expression reset_ctxt) f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
         paren true (expression reset_ctxt) f x
-    | Pexp_let _ | Pexp_letmodule _ | Pexp_open _ | Pexp_letexception _
+    | Pexp_let _ | Pexp_letmodule _ | Pexp_open _
+      | Pexp_letexception _ | Pexp_letop _
         when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_fun (l, e0, p, e) ->
@@ -694,11 +713,17 @@ and expression ctxt f x =
     | Pexp_poly (e, Some ct) ->
         pp f "@[<hov2>(!poly!@ %a@ : %a)@]"
           (simple_expr ctxt) e (core_type ctxt) ct
-    | Pexp_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+    | Pexp_open (o, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]"
+          (override o.popen_override) (module_expr ctxt) o.popen_expr
           (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
+    | Pexp_letop {let_; ands; body} ->
+        pp f "@[<2>@[<v>%a@,%a@] in@;<1 -2>%a@]"
+          (binding_op ctxt) let_
+          (list ~sep:"@," (binding_op ctxt)) ands
+          (expression ctxt) body
     | Pexp_extension e -> extension ctxt f e
     | Pexp_unreachable -> pp f "."
     | _ -> expression1 ctxt f x
@@ -863,8 +888,9 @@ and class_type ctxt f x =
   | Pcty_extension e ->
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
-  | Pcty_open (ovf, lid, e) ->
-      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+  | Pcty_open (o, e) ->
+      pp f "@[<2>let open%s %a in@;%a@]"
+        (override o.popen_override) longident_loc o.popen_expr
         (class_type ctxt) e
 
 (* [class type a = object end] *)
@@ -985,8 +1011,9 @@ and class_expr ctxt f x =
           (class_expr ctxt) ce
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
-    | Pcl_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+    | Pcl_open (o, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]"
+          (override o.popen_override) longident_loc o.popen_expr
           (class_expr ctxt) e
 
 and module_type ctxt f x =
@@ -1094,7 +1121,7 @@ and signature_item ctxt f x : unit =
   | Psig_open od ->
       pp f "@[<hov2>open%s@ %a@]%a"
         (override od.popen_override)
-        longident_loc od.popen_lid
+        longident_loc od.popen_expr
         (item_attributes ctxt) od.popen_attributes
   | Psig_include incl ->
       pp f "@[<hov2>include@ %a@]%a"
@@ -1256,6 +1283,10 @@ and bindings ctxt f (rf,l) =
         (binding "let" rf) x
         (list ~sep:"@," (binding "and" Nonrecursive)) xs
 
+and binding_op ctxt f x =
+  pp f "@[<2>%s %a@;=@;%a@]"
+    x.pbop_op.txt (pattern ctxt) x.pbop_pat (expression ctxt) x.pbop_exp
+
 and structure_item ctxt f x =
   match x.pstr_desc with
   | Pstr_eval (e, attrs) ->
@@ -1297,7 +1328,7 @@ and structure_item ctxt f x =
   | Pstr_open od ->
       pp f "@[<2>open%s@;%a@]%a"
         (override od.popen_override)
-        longident_loc od.popen_lid
+        (module_expr ctxt) od.popen_expr
         (item_attributes ctxt) od.popen_attributes
   | Pstr_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
       pp f "@[<hov2>module@ type@ %s%a@]%a"

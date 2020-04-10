@@ -45,12 +45,13 @@ let f x = x + 1 [@@inline never]
 
 let () =
   try
-    if Dynlink.is_native then
+    if Dynlink.is_native then begin
       Dynlink.loadfile "test1_plugin.cmxs"
-    else
+    end else begin
       Dynlink.loadfile "test1_plugin.cmo"
+    end;
+    assert false
   with
   | Dynlink.Error (
       Dynlink.Linking_error (_,
         Dynlink.Uninitialized_global "Test1_inited_second")) -> ()
-  | exn -> raise exn

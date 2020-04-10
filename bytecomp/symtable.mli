@@ -40,6 +40,7 @@ val assign_global_value: Ident.t -> Obj.t -> unit
 val get_global_position: Ident.t -> int
 val check_global_initialized: (reloc_info * int) list -> unit
 val defined_globals: (reloc_info * int) list -> Ident.t list
+val required_globals: (reloc_info * int) list -> Ident.t list
 
 type global_map
 

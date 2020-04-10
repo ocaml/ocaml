@@ -478,7 +478,7 @@ let trim_signature = function
       Mty_signature
         (List.map
            (function
-               Sig_module (id, pres, md, rs) ->
+               Sig_module (id, pres, md, rs, priv) ->
                  let attribute =
                    Ast_helper.Attr.mk
                      (Location.mknoloc "...")
@@ -486,7 +486,7 @@ let trim_signature = function
                  in
                  Sig_module (id, pres, {md with md_attributes =
                                           attribute :: md.md_attributes},
-                             rs)
+                             rs, priv)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
              | item -> item)
@@ -530,7 +530,7 @@ let () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_value env loc lid in
-       [ Sig_value (id, desc) ]
+       [ Sig_value (id, desc, Exported) ]
     )
     "Print the signature of the corresponding value."
 
@@ -538,7 +538,7 @@ let () =
   reg_show_prim "show_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_type env loc lid in
-       [ Sig_type (id, desc, Trec_not) ]
+       [ Sig_type (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding type constructor."
 
@@ -561,7 +561,7 @@ let () =
            Types.ext_loc = desc.cstr_loc;
            Types.ext_attributes = desc.cstr_attributes; }
        in
-         [Sig_typext (id, ext, Text_exception)]
+         [Sig_typext (id, ext, Text_exception, Exported)]
     )
     "Print the signature of the corresponding exception."
 
@@ -573,7 +573,7 @@ let () =
          let acc =
            Sig_module (id, Mp_present,
                        {md with md_type = trim_signature md.md_type},
-                       Trec_not) :: acc in
+                       Trec_not, Exported) :: acc in
          match md.md_type with
          | Mty_alias path -> accum_aliases path acc
          | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
@@ -588,7 +588,7 @@ let () =
   reg_show_prim "show_module_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_modtype env loc lid in
-       [ Sig_modtype (id, desc) ]
+       [ Sig_modtype (id, desc, Exported) ]
     )
     "Print the signature of the corresponding module type."
 
@@ -596,7 +596,7 @@ let () =
   reg_show_prim "show_class"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_class env loc lid in
-       [ Sig_class (id, desc, Trec_not) ]
+       [ Sig_class (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding class."
 
@@ -604,7 +604,7 @@ let () =
   reg_show_prim "show_class_type"
     (fun env loc id lid ->
        let _path, desc = Typetexp.find_class_type env loc lid in
-       [ Sig_class_type (id, desc, Trec_not) ]
+       [ Sig_class_type (id, desc, Trec_not, Exported) ]
     )
     "Print the signature of the corresponding class type."
 

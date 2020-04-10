@@ -114,10 +114,10 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * integer_comparison
-  (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
+  (* Operations on Bigarrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
-  (* size of the nth dimension of a big array *)
+  (* size of the nth dimension of a Bigarray *)
   | Pbigarraydim of int
   (* load/set 16,32,64 bits from a string: (unsafe)*)
   | Pstring_load_16 of bool
@@ -232,7 +232,8 @@ let equal_inline_attribute x y =
   match x, y with
   | Always_inline, Always_inline
   | Never_inline, Never_inline
-  | Default_inline, Default_inline ->
+  | Default_inline, Default_inline
+    ->
     true
   | Unroll u, Unroll v ->
     u = v
@@ -253,6 +254,11 @@ let equal_specialise_attribute x y =
   | (Always_specialise | Never_specialise | Default_specialise), _ ->
     false
 
+type local_attribute =
+  | Always_local (* [@local] or [@local always] *)
+  | Never_local (* [@local never] *)
+  | Default_local (* [@local maybe] or no [@local] attribute *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -271,6 +277,7 @@ type shared_code = (int * int) list
 type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
+  local: local_attribute;
   is_a_functor: bool;
   stub: bool;
 }
@@ -287,7 +294,7 @@ type lambda =
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -300,7 +307,8 @@ type lambda =
 
 and lfunction =
   { kind: function_kind;
-    params: Ident.t list;
+    params: (Ident.t * value_kind) list;
+    return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
     loc: Location.t; }
@@ -346,6 +354,7 @@ let lambda_unit = Lconst const_unit
 let default_function_attribute = {
   inline = Default_inline;
   specialise = Default_specialise;
+  local = Default_local;
   is_a_functor = false;
   stub = false;
 }
@@ -466,7 +475,7 @@ let iter_opt f = function
   | None -> ()
   | Some e -> f e
 
-let iter_head_constructor f = function
+let shallow_iter ~tail ~non_tail:f = function
     Lvar _
   | Lconst _ -> ()
   | Lapply{ap_func = fn; ap_args = args} ->
@@ -474,31 +483,37 @@ let iter_head_constructor f = function
   | Lfunction{body} ->
       f body
   | Llet(_str, _k, _id, arg, body) ->
-      f arg; f body
+      f arg; tail body
   | Lletrec(decl, body) ->
-      f body;
+      tail body;
       List.iter (fun (_id, exp) -> f exp) decl
+  | Lprim (Pidentity, [l], _) ->
+      tail l
+  | Lprim (Psequand, [l1; l2], _)
+  | Lprim (Psequor, [l1; l2], _) ->
+      f l1;
+      tail l2
   | Lprim(_p, args, _loc) ->
       List.iter f args
   | Lswitch(arg, sw,_) ->
       f arg;
-      List.iter (fun (_key, case) -> f case) sw.sw_consts;
-      List.iter (fun (_key, case) -> f case) sw.sw_blocks;
-      iter_opt f sw.sw_failaction
+      List.iter (fun (_key, case) -> tail case) sw.sw_consts;
+      List.iter (fun (_key, case) -> tail case) sw.sw_blocks;
+      iter_opt tail sw.sw_failaction
   | Lstringswitch (arg,cases,default,_) ->
       f arg ;
-      List.iter (fun (_,act) -> f act) cases ;
-      iter_opt f default
+      List.iter (fun (_,act) -> tail act) cases ;
+      iter_opt tail default
   | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, _, e2) ->
-      f e1; f e2
+      tail e1; tail e2
   | Ltrywith(e1, _, e2) ->
-      f e1; f e2
+      f e1; tail e2
   | Lifthenelse(e1, e2, e3) ->
-      f e1; f e2; f e3
+      f e1; tail e2; tail e3
   | Lsequence(e1, e2) ->
-      f e1; f e2
+      f e1; tail e2
   | Lwhile(e1, e2) ->
       f e1; f e2
   | Lfor(_v, e1, e2, _dir, e3) ->
@@ -507,10 +522,13 @@ let iter_head_constructor f = function
       f e
   | Lsend (_k, met, obj, args, _) ->
       List.iter f (met::obj::args)
-  | Levent (lam, _evt) ->
-      f lam
+  | Levent (e, _evt) ->
+      tail e
   | Lifused (_v, e) ->
-      f e
+      tail e
+
+let iter_head_constructor f l =
+  shallow_iter ~tail:f ~non_tail:f l
 
 let rec free_variables = function
   | Lvar id -> Ident.Set.singleton id
@@ -519,7 +537,7 @@ let rec free_variables = function
       free_variables_list (free_variables fn) args
   | Lfunction{body; params} ->
       Ident.Set.diff (free_variables body)
-        (Ident.Set.of_list params)
+        (Ident.Set.of_list (List.map fst params))
   | Llet(_str, _k, id, arg, body) ->
       Ident.Set.union
         (free_variables arg)
@@ -555,7 +573,7 @@ let rec free_variables = function
       Ident.Set.union
         (Ident.Set.diff
            (free_variables handler)
-           (Ident.Set.of_list params))
+           (Ident.Set.of_list (List.map fst params)))
         (free_variables body)
   | Ltrywith(body, param, handler) ->
       Ident.Set.union
@@ -659,7 +677,7 @@ let rec make_sequence fn = function
 let subst update_env s lam =
   let rec subst s lam =
     let remove_list l s =
-      List.fold_left (fun s id -> Ident.Map.remove id s) s l
+      List.fold_left (fun s (id, _kind) -> Ident.Map.remove id s) s l
     in
     let module M = Ident.Map in
     match lam with
@@ -669,9 +687,13 @@ let subst update_env s lam =
     | Lapply ap ->
         Lapply{ap with ap_func = subst s ap.ap_func;
                       ap_args = subst_list s ap.ap_args}
-    | Lfunction{kind; params; body; attr; loc} ->
-        let s = List.fold_right Ident.Map.remove params s in
-        Lfunction{kind; params; body = subst s body; attr; loc}
+    | Lfunction lf ->
+        let s =
+          List.fold_right
+            (fun (id, _) s -> Ident.Map.remove id s)
+            lf.params s
+        in
+        Lfunction {lf with body = subst s lf.body}
     | Llet(str, k, id, arg, body) ->
         Llet(str, k, id, subst s arg, subst (Ident.Map.remove id s) body)
     | Lletrec(decl, body) ->
@@ -735,75 +757,78 @@ let rename idmap lam =
   let s = Ident.Map.map (fun new_id -> Lvar new_id) idmap in
   subst update_env s lam
 
-let rec map f lam =
-  let lam =
-    match lam with
-    | Lvar _ -> lam
-    | Lconst _ -> lam
-    | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
-          ap_inlined; ap_specialised } ->
-        Lapply {
-          ap_func = map f ap_func;
-          ap_args = List.map (map f) ap_args;
-          ap_loc;
-          ap_should_be_tailcall;
-          ap_inlined;
-          ap_specialised;
-        }
-    | Lfunction { kind; params; body; attr; loc; } ->
-        Lfunction { kind; params; body = map f body; attr; loc; }
-    | Llet (str, k, v, e1, e2) ->
-        Llet (str, k, v, map f e1, map f e2)
-    | Lletrec (idel, e2) ->
-        Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
-    | Lprim (p, el, loc) ->
-        Lprim (p, List.map (map f) el, loc)
-    | Lswitch (e, sw, loc) ->
-        Lswitch (map f e,
-          { sw_numconsts = sw.sw_numconsts;
-            sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
-            sw_numblocks = sw.sw_numblocks;
-            sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
-            sw_failaction = Misc.may_map (map f) sw.sw_failaction;
-          },
-          loc)
-    | Lstringswitch (e, sw, default, loc) ->
-        Lstringswitch (
-          map f e,
-          List.map (fun (s, e) -> (s, map f e)) sw,
-          Misc.may_map (map f) default,
-          loc)
-    | Lstaticraise (i, args) ->
-        Lstaticraise (i, List.map (map f) args)
-    | Lstaticcatch (body, id, handler) ->
-        Lstaticcatch (map f body, id, map f handler)
-    | Ltrywith (e1, v, e2) ->
-        Ltrywith (map f e1, v, map f e2)
-    | Lifthenelse (e1, e2, e3) ->
-        Lifthenelse (map f e1, map f e2, map f e3)
-    | Lsequence (e1, e2) ->
-        Lsequence (map f e1, map f e2)
-    | Lwhile (e1, e2) ->
-        Lwhile (map f e1, map f e2)
-    | Lfor (v, e1, e2, dir, e3) ->
-        Lfor (v, map f e1, map f e2, dir, map f e3)
-    | Lassign (v, e) ->
-        Lassign (v, map f e)
-    | Lsend (k, m, o, el, loc) ->
-        Lsend (k, map f m, map f o, List.map (map f) el, loc)
-    | Levent (l, ev) ->
-        Levent (map f l, ev)
-    | Lifused (v, e) ->
-        Lifused (v, map f e)
-  in
-  f lam
+let shallow_map f = function
+  | Lvar _
+  | Lconst _ as lam -> lam
+  | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
+             ap_inlined; ap_specialised } ->
+      Lapply {
+        ap_func = f ap_func;
+        ap_args = List.map f ap_args;
+        ap_loc;
+        ap_should_be_tailcall;
+        ap_inlined;
+        ap_specialised;
+      }
+  | Lfunction { kind; params; return; body; attr; loc; } ->
+      Lfunction { kind; params; return; body = f body; attr; loc; }
+  | Llet (str, k, v, e1, e2) ->
+      Llet (str, k, v, f e1, f e2)
+  | Lletrec (idel, e2) ->
+      Lletrec (List.map (fun (v, e) -> (v, f e)) idel, f e2)
+  | Lprim (p, el, loc) ->
+      Lprim (p, List.map f el, loc)
+  | Lswitch (e, sw, loc) ->
+      Lswitch (f e,
+               { sw_numconsts = sw.sw_numconsts;
+                 sw_consts = List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
+                 sw_numblocks = sw.sw_numblocks;
+                 sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
+                 sw_failaction = Misc.may_map f sw.sw_failaction;
+               },
+               loc)
+  | Lstringswitch (e, sw, default, loc) ->
+      Lstringswitch (
+        f e,
+        List.map (fun (s, e) -> (s, f e)) sw,
+        Misc.may_map f default,
+        loc)
+  | Lstaticraise (i, args) ->
+      Lstaticraise (i, List.map f args)
+  | Lstaticcatch (body, id, handler) ->
+      Lstaticcatch (f body, id, f handler)
+  | Ltrywith (e1, v, e2) ->
+      Ltrywith (f e1, v, f e2)
+  | Lifthenelse (e1, e2, e3) ->
+      Lifthenelse (f e1, f e2, f e3)
+  | Lsequence (e1, e2) ->
+      Lsequence (f e1, f e2)
+  | Lwhile (e1, e2) ->
+      Lwhile (f e1, f e2)
+  | Lfor (v, e1, e2, dir, e3) ->
+      Lfor (v, f e1, f e2, dir, f e3)
+  | Lassign (v, e) ->
+      Lassign (v, f e)
+  | Lsend (k, m, o, el, loc) ->
+      Lsend (k, f m, f o, List.map f el, loc)
+  | Levent (l, ev) ->
+      Levent (f l, ev)
+  | Lifused (v, e) ->
+      Lifused (v, f e)
+
+let map f =
+  let rec g lam = f (shallow_map g lam) in
+  g
 
 (* To let-bind expressions to variables *)
 
-let bind str var exp body =
+let bind_with_value_kind str (var, kind) exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, Pgenval, var, exp, body)
+  | _ -> Llet(str, kind, var, exp, body)
+
+let bind str var exp body =
+  bind_with_value_kind str (var, Pgenval) exp body
 
 let negate_integer_comparison = function
   | Ceq -> Cne

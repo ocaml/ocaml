@@ -285,9 +285,6 @@ and expression_extra i ppf x attrs =
       attributes i ppf attrs;
       option i core_type ppf cto1;
       core_type i ppf cto2;
-  | Texp_open (ovf, m, _, _) ->
-      line i ppf "Texp_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
-      attributes i ppf attrs;
   | Texp_poly cto ->
       line i ppf "Texp_poly\n";
       attributes i ppf attrs;
@@ -413,10 +410,21 @@ and expression i ppf x =
   | Texp_pack me ->
       line i ppf "Texp_pack";
       module_expr i ppf me
+  | Texp_letop {let_; ands; param = _; body; partial = _} ->
+      line i ppf "Texp_letop";
+      binding_op (i+1) ppf let_;
+      list (i+1) binding_op ppf ands;
+      case i ppf body
   | Texp_unreachable ->
       line i ppf "Texp_unreachable"
   | Texp_extension_constructor (li, _) ->
       line i ppf "Texp_extension_constructor %a" fmt_longident li
+  | Texp_open (o, e) ->
+      line i ppf "Texp_open %a\n"
+        fmt_override_flag o.open_override;
+      module_expr i ppf o.open_expr;
+      attributes i ppf o.open_attributes;
+      expression i ppf e;
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
@@ -424,6 +432,11 @@ and value_description i ppf x =
   attributes i ppf x.val_attributes;
   core_type (i+1) ppf x.val_desc;
   list (i+1) string ppf x.val_prim;
+
+and binding_op i ppf x =
+  line i ppf "binding_op %a %a\n" fmt_path x.bop_op_path
+    fmt_location x.bop_loc;
+  expression i ppf x.bop_exp
 
 and type_parameter i ppf (x, _variance) = core_type i ppf x
 
@@ -508,8 +521,10 @@ and class_type i ppf x =
       arg_label i ppf l;
       core_type i ppf co;
       class_type i ppf cl;
-  | Tcty_open (ovf, m, _, _, e) ->
-      line i ppf "Tcty_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
+  | Tcty_open (o, e) ->
+      line i ppf "Tcty_open %a %a\n"
+        fmt_override_flag o.open_override
+        fmt_path (fst o.open_expr);
       class_type i ppf e
 
 and class_signature i ppf { csig_self = ct; csig_fields = l } =
@@ -591,8 +606,10 @@ and class_expr i ppf x =
       class_expr i ppf ce;
       class_type i ppf ct
   | Tcl_constraint (ce, None, _, _, _) -> class_expr i ppf ce
-  | Tcl_open (ovf, m, _, _, e) ->
-      line i ppf "Tcty_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
+  | Tcl_open (o, e) ->
+      line i ppf "Tcl_open %a %a\n"
+        fmt_override_flag o.open_override
+        fmt_path (fst o.open_expr);
       class_expr i ppf e
 
 and class_structure i ppf { cstr_self = p; cstr_fields = l } =
@@ -706,8 +723,8 @@ and signature_item i ppf x =
       modtype_declaration i ppf x.mtd_type
   | Tsig_open od ->
       line i ppf "Tsig_open %a %a\n"
-           fmt_override_flag od.open_override
-           fmt_path od.open_path;
+        fmt_override_flag od.open_override
+        fmt_path (fst od.open_expr);
       attributes i ppf od.open_attributes
   | Tsig_include incl ->
       line i ppf "Tsig_include\n";
@@ -812,9 +829,9 @@ and structure_item i ppf x =
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
   | Tstr_open od ->
-      line i ppf "Tstr_open %a %a\n"
-           fmt_override_flag od.open_override
-           fmt_path od.open_path;
+      line i ppf "Tstr_open %a\n"
+        fmt_override_flag od.open_override;
+      module_expr i ppf od.open_expr;
       attributes i ppf od.open_attributes
   | Tstr_class (l) ->
       line i ppf "Tstr_class\n";

@@ -29,7 +29,8 @@ LINKFLAGS=-linkall -I $(UNIXDIR)
 YACCFLAGS=
 CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
-DEPFLAGS=$(INCLUDES)
+DEPFLAGS=-slash
+DEPINCLUDES=$(INCLUDES)
 
 DIRECTORIES=$(UNIXDIR) $(addprefix $(ROOTDIR)/,\
   utils parsing typing bytecomp toplevel driver)
@@ -92,7 +93,7 @@ clean::
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) -slash $(DEPFLAGS) *.mli *.ml \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 lexer.ml: lexer.mll

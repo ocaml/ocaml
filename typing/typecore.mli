@@ -176,6 +176,9 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Empty_pattern
+  | Letop_type_clash of string * Ctype.Unification_trace.t
+  | Andop_type_clash of string * Ctype.Unification_trace.t
+  | Bindings_type_clash of Ctype.Unification_trace.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -189,6 +192,11 @@ val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 val type_open:
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
    Longident.t loc -> Path.t * Env.t)
+    ref
+(* Forward declaration, to be filled in by Typemod.type_open_decl *)
+val type_open_decl:
+  (?used_slot:bool ref -> Env.t -> Parsetree.open_declaration ->
+   Typedtree.open_declaration * Types.signature * Env.t)
     ref
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:

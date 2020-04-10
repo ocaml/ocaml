@@ -46,10 +46,12 @@ val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
+        (*
 val type_open_:
         ?used_slot:bool ref -> ?toplevel:bool ->
         Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
+        *)
 val modtype_of_package:
         Env.t -> Location.t ->
         Path.t -> Longident.t list -> type_expr list -> module_type
@@ -88,6 +90,13 @@ type hiding_error =
       shadowed_item_kind: Sig_component_kind.t;
       shadowed_item_loc: Location.t;
       shadower_id: Ident.t;
+      user_id: Ident.t;
+      user_kind: Sig_component_kind.t;
+      user_loc: Location.t;
+    }
+  | Appears_in_signature of {
+      opened_item_id: Ident.t;
+      opened_item_kind: Sig_component_kind.t;
       user_id: Ident.t;
       user_kind: Sig_component_kind.t;
       user_loc: Location.t;

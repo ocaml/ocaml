@@ -1725,43 +1725,43 @@ let scrape_alias env mty = scrape_alias env mty
 
 let rec prefix_idents root sub = function
     [] -> ([], sub)
-  | Sig_value(id, _) :: rem ->
+  | Sig_value(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let (pl, final_sub) = prefix_idents root sub rem in
       (p::pl, final_sub)
-  | Sig_type(id, _, _) :: rem ->
+  | Sig_type(id, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let (pl, final_sub) =
         prefix_idents root (Subst.add_type id p sub) rem
       in
       (p::pl, final_sub)
-  | Sig_typext(id, _, _) :: rem ->
+  | Sig_typext(id, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
       (* we extend the substitution in case of an inlined record *)
       let (pl, final_sub) =
         prefix_idents root (Subst.add_type id p sub) rem
       in
       (p::pl, final_sub)
-  | Sig_module(id, _, _, _) :: rem ->
+  | Sig_module(id, _, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let (pl, final_sub) =
         prefix_idents root (Subst.add_module id p sub) rem
       in
       (p::pl, final_sub)
-  | Sig_modtype(id, _) :: rem ->
+  | Sig_modtype(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let (pl, final_sub) =
         prefix_idents root (Subst.add_modtype id (Mty_ident p) sub) rem
       in
       (p::pl, final_sub)
-  | Sig_class(id, _, _) :: rem ->
+  | Sig_class(id, _, _, _) :: rem ->
       (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id) in
       let (pl, final_sub) =
         prefix_idents root (Subst.add_type id p sub) rem
       in
       (p::pl, final_sub)
-  | Sig_class_type(id, _, _) :: rem ->
+  | Sig_class_type(id, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let (pl, final_sub) =
         prefix_idents root (Subst.add_type id p sub) rem
@@ -1843,7 +1843,7 @@ and components_of_module_maker (env, sub, path, addr, mty) =
       in
       List.iter2 (fun item path ->
         match item with
-          Sig_value(id, decl) ->
+          Sig_value(id, decl, _) ->
             let decl' = Subst.value_description sub decl in
             let addr =
               match decl.val_kind with
@@ -1852,7 +1852,7 @@ and components_of_module_maker (env, sub, path, addr, mty) =
             in
             c.comp_values <-
               NameMap.add (Ident.name id) (decl', addr) c.comp_values;
-        | Sig_type(id, decl, _) ->
+        | Sig_type(id, decl, _, _) ->
             let decl' = Subst.type_declaration sub decl in
             Datarepr.set_row_name decl' (Subst.type_path sub (Path.Pident id));
             let constructors =
@@ -1874,13 +1874,13 @@ and components_of_module_maker (env, sub, path, addr, mty) =
                   add_to_tbl descr.lbl_name descr c.comp_labels)
               labels;
             env := store_type_infos id decl !env
-        | Sig_typext(id, ext, _) ->
+        | Sig_typext(id, ext, _, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
             let addr = next_address () in
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, Some addr) c.comp_constrs
-        | Sig_module(id, pres, md, _) ->
+        | Sig_module(id, pres, md, _, _) ->
             let md' = EnvLazy.create (sub, md) in
             let addr =
               match pres with
@@ -1904,17 +1904,17 @@ and components_of_module_maker (env, sub, path, addr, mty) =
             c.comp_components <-
               NameMap.add (Ident.name id) (comps, addr) c.comp_components;
             env := store_module ~check:false id addr pres md !env
-        | Sig_modtype(id, decl) ->
+        | Sig_modtype(id, decl, _) ->
             let decl' = Subst.modtype_declaration sub decl in
             c.comp_modtypes <-
               NameMap.add (Ident.name id) decl' c.comp_modtypes;
             env := store_modtype id decl !env
-        | Sig_class(id, decl, _) ->
+        | Sig_class(id, decl, _, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
               NameMap.add (Ident.name id) (decl', next_address ())
                 c.comp_classes
-        | Sig_class_type(id, decl, _) ->
+        | Sig_class_type(id, decl, _, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
               NameMap.add (Ident.name id) decl' c.comp_cltypes)
@@ -2194,14 +2194,14 @@ let enter_module ~scope ?arg s presence mty env =
 
 let add_item comp env =
   match comp with
-    Sig_value(id, decl)     -> add_value id decl env
-  | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
-  | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_module(id, presence, md, _) ->
+    Sig_value(id, decl, _)    -> add_value id decl env
+  | Sig_type(id, decl, _, _)  -> add_type ~check:false id decl env
+  | Sig_typext(id, ext, _, _) -> add_extension ~check:false id ext env
+  | Sig_module(id, presence, md, _, _) ->
       add_module_declaration ~check:false id presence md env
-  | Sig_modtype(id, decl)   -> add_modtype id decl env
-  | Sig_class(id, decl, _)  -> add_class id decl env
-  | Sig_class_type(id, decl, _) -> add_cltype id decl env
+  | Sig_modtype(id, decl, _)  -> add_modtype id decl env
+  | Sig_class(id, decl, _, _) -> add_class id decl env
+  | Sig_class_type(id, decl, _, _) -> add_cltype id decl env
 
 let rec add_signature sg env =
   match sg with
@@ -2213,44 +2213,44 @@ let refresh_signature ~scope sg =
     let open Subst in
     function
       [] -> sg, s
-    | Sig_type(id, td, rs) :: rest ->
+    | Sig_type(id, td, rs, vis) :: rest ->
         let id' = Ident.create_scoped ~scope (Ident.name id) in
         refresh_bound_idents
           (add_type id (Pident id') s)
-          (Sig_type(id', td, rs) :: sg)
+          (Sig_type(id', td, rs, vis) :: sg)
           rest
-    | Sig_module(id, pres, md, rs) :: rest ->
+    | Sig_module(id, pres, md, rs, vis) :: rest ->
         let id' = Ident.create_scoped ~scope (Ident.name id) in
         refresh_bound_idents
           (add_module id (Pident id') s)
-          (Sig_module (id', pres, md, rs) :: sg)
+          (Sig_module (id', pres, md, rs, vis) :: sg)
           rest
-    | Sig_modtype(id, mtd) :: rest ->
+    | Sig_modtype(id, mtd, vis) :: rest ->
         let id' = Ident.create_scoped ~scope (Ident.name id) in
         refresh_bound_idents
           (add_modtype id (Mty_ident(Pident id')) s)
-          (Sig_modtype(id', mtd) :: sg)
+          (Sig_modtype(id', mtd, vis) :: sg)
           rest
-    | Sig_class(id, cd, rs) :: rest ->
+    | Sig_class(id, cd, rs, vis) :: rest ->
         (* cheat and pretend they are types cf. PR#6650 *)
         let id' = Ident.create_scoped ~scope (Ident.name id) in
         refresh_bound_idents
           (add_type id (Pident id') s)
-          (Sig_class(id', cd, rs) :: sg)
+          (Sig_class(id', cd, rs, vis) :: sg)
           rest
-    | Sig_class_type(id, ctd, rs) :: rest ->
+    | Sig_class_type(id, ctd, rs, vis) :: rest ->
         (* cheat and pretend they are types cf. PR#6650 *)
         let id' = Ident.create_scoped ~scope (Ident.name id) in
         refresh_bound_idents
           (add_type id (Pident id') s)
-          (Sig_class_type(id', ctd, rs) :: sg)
+          (Sig_class_type(id', ctd, rs, vis) :: sg)
           rest
-    | Sig_value(id, vd) :: rest ->
+    | Sig_value(id, vd, vis) :: rest ->
         let id' = Ident.create_local (Ident.name id) in
-        refresh_bound_idents s (Sig_value(id', vd) :: sg) rest
-    | Sig_typext(id, ec, es) :: rest ->
+        refresh_bound_idents s (Sig_value(id', vd, vis) :: sg) rest
+    | Sig_typext(id, ec, es, vis) :: rest ->
         let id' = Ident.create_scoped ~scope (Ident.name id) in
-        refresh_bound_idents s (Sig_typext(id',ec,es) :: sg) rest
+        refresh_bound_idents s (Sig_typext(id',ec,es,vis) :: sg) rest
   in
   let (sg', s') = refresh_bound_idents Subst.identity [] sg in
   List.rev_map (Subst.signature_item s') sg'

@@ -237,7 +237,10 @@ val fill_circle : int -> int -> int -> unit
 
 type image
 (** The abstract type for images, in internal representation.
-   Externally, images are represented as matrices of colors. *)
+   Externally, images are represented as matrices of colors.
+   Images are bound to the current graphics window and should not be reused
+   after closing this graphics window with {!close_graph}.
+*)
 
 val transp : color
 (** In matrices of colors, this color represent a 'transparent'

@@ -105,7 +105,7 @@ Line 1, characters 8-15:
 Error: Cannot create values of the private type Test2.t
 Line 3, characters 40-63:
 3 | module Test2 : module type of Test with type t = private Test.t = Test;;
-                                            <alert>^^^^^^^^^^^^^^^^^^^^^^^</alert>
+                                            ^^^^^^^^^^^^^^^^^^^^^^^
 Alert deprecated: spurious use of private
 module Test2 : sig type t = Test.t = private A end
 type t = private < x : int; .. >

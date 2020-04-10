@@ -425,7 +425,7 @@ let highlight_quote ppf
     highlight_tag
     locs
   =
-  let iset = ISet.of_intervals @@ Misc.Stdlib.List.filter_map (fun loc ->
+  let iset = ISet.of_intervals @@ List.filter_map (fun loc ->
     let s, e = loc.loc_start, loc.loc_end in
     if s.pos_cnum = -1 || e.pos_cnum = -1 then None
     else Some ((s, s.pos_cnum), (e, e.pos_cnum - 1))
@@ -671,8 +671,8 @@ let batch_mode_printer : report_printer =
       | Report_warning_as_error _
       | Report_alert_as_error _
       | Report_error -> "error"
-      | Report_warning _ -> "warning"
-      | Report_alert _ -> "alert"
+      | Report_warning _
+      | Report_alert _ -> "warning"
     in
     let highlight ppf loc =
       match error_style () with

@@ -33,7 +33,17 @@ module Bytecode = struct
     let crc _t = None
 
     let interface_imports (t : t) = t.cu_imports
-    let implementation_imports _t = []
+    let implementation_imports (t : t) =
+      let required =
+        t.cu_required_globals
+        @ Symtable.required_globals t.cu_reloc
+      in
+      let required =
+        List.filter (fun id -> not (Ident.is_predef id)) required
+      in
+      List.map
+        (fun ident -> Ident.name ident, None)
+        required
 
     let defined_symbols (t : t) =
       List.map (fun ident -> Ident.name ident)

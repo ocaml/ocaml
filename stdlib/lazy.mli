@@ -21,7 +21,22 @@ type 'a t = 'a CamlinternalLazy.t
    expression syntax [lazy (expr)] makes a suspension of the
    computation of [expr], without computing [expr] itself yet.
    "Forcing" the suspension will then compute [expr] and return its
-   result.
+   result. Matching a suspension with the special pattern syntax
+   [lazy(pattern)] also computes the underlying expression and
+   tries to bind it to [pattern]:
+
+  {[
+    let lazy_option_map f x =
+    match x with
+    | lazy (Some x) -> Some (Lazy.force f x)
+    | _ -> None
+  ]}
+
+   Note: If lazy patterns appear in multiple cases in a pattern-matching,
+   lazy expressions may be forced even outside of the case ultimately selected
+   by the pattern matching. In the example above, the suspension [x] is always
+   computed.
+
 
    Note: [lazy_t] is the built-in type constructor used by the compiler
    for the [lazy] keyword.  You should not use it directly.  Always use

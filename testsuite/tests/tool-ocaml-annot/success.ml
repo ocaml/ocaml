@@ -1,7 +1,7 @@
 (* TEST
 
 flags = "-annot"
-script = "sh ${test_source_directory}/check-annot success"
+script = "sh ${test_source_directory}/check-annot.sh success"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

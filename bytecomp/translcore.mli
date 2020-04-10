@@ -20,6 +20,8 @@ open Asttypes
 open Typedtree
 open Lambda
 
+val pure_module : module_expr -> let_kind
+
 val transl_exp: expression -> lambda
 val transl_apply: ?should_be_tailcall:bool
                   -> ?inlined:inline_attribute

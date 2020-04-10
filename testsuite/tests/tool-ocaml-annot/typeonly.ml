@@ -2,7 +2,7 @@
 
 flags = "-i -annot"
 compile_only = "true"
-script = "sh ${test_source_directory}/check-annot typeonly"
+script = "sh ${test_source_directory}/check-annot.sh typeonly"
 
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

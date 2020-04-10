@@ -436,11 +436,11 @@ val map_file :
   file_descr -> ?pos:int64 -> kind:('a, 'b) Stdlib.Bigarray.kind ->
   layout:'c Stdlib.Bigarray.layout -> shared:bool -> dims:int array ->
   ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
-(** Memory mapping of a file as a big array.
+(** Memory mapping of a file as a Bigarray.
   [map_file fd kind layout shared dims]
-  returns a big array of kind [kind], layout [layout],
+  returns a Bigarray of kind [kind], layout [layout],
   and dimensions as specified in [dims].  The data contained in
-  this big array are the contents of the file referred to by
+  this Bigarray are the contents of the file referred to by
   the file descriptor [fd] (as opened previously with
   [Unix.openfile], for example).  The optional [pos] parameter
   is the byte offset in the file of the data being mapped;
@@ -454,10 +454,10 @@ val map_file :
   affected.
 
   [Genarray.map_file] is much more efficient than reading
-  the whole file in a big array, modifying that big array,
+  the whole file in a Bigarray, modifying that Bigarray,
   and writing it afterwards.
 
-  To adjust automatically the dimensions of the big array to
+  To adjust automatically the dimensions of the Bigarray to
   the actual size of the file, the major dimension (that is,
   the first dimension for an array with C layout, and the last
   dimension for an array with Fortran layout) can be given as
@@ -466,11 +466,11 @@ val map_file :
   number of sub-arrays as determined by the non-major dimensions,
   otherwise [Failure] is raised.
 
-  If all dimensions of the big array are given, the file size is
-  matched against the size of the big array.  If the file is larger
-  than the big array, only the initial portion of the file is
-  mapped to the big array.  If the file is smaller than the big
-  array, the file is automatically grown to the size of the big array.
+  If all dimensions of the Bigarray are given, the file size is
+  matched against the size of the Bigarray.  If the file is larger
+  than the Bigarray, only the initial portion of the file is
+  mapped to the Bigarray.  If the file is smaller than the big
+  array, the file is automatically grown to the size of the Bigarray.
   This requires write permissions on [fd].
 
   Array accesses are bounds-checked, but the bounds are determined by

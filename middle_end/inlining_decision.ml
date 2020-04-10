@@ -493,7 +493,8 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
         | Some _ -> Default_inline
         | None -> inline_requested
       end
-    | Always_inline | Default_inline | Never_inline -> inline_requested
+    | Always_inline | Default_inline | Never_inline ->
+        inline_requested
   in
   let original =
     Flambda.Apply {

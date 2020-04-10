@@ -122,3 +122,9 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 val report_error : Env.t -> formatter -> error -> unit
+
+(* Forward decl filled in by Typemod.type_open_descr *)
+val type_open_descr :
+  (?used_slot:bool ref ->
+   Env.t -> Parsetree.open_description -> Typedtree.open_description * Env.t)
+    ref

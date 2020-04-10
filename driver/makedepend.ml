@@ -189,17 +189,32 @@ let print_filename s =
 ;;
 
 let print_dependencies target_files deps =
-  let rec print_items pos = function
-    [] -> print_string "\n"
-  | dep :: rem ->
-    if !one_line || (pos + 1 + String.length dep <= 77) then begin
-        if pos <> 0 then print_string " "; print_filename dep;
-        print_items (pos + String.length dep + 1) rem
-      end else begin
-        print_string escaped_eol; print_filename dep;
-        print_items (String.length dep + 4) rem
-      end in
-  print_items 0 (target_files @ [depends_on] @ deps)
+  let pos = ref 0 in
+  let print_on_same_line item =
+    if !pos <> 0 then print_string " ";
+    print_filename item;
+    pos := !pos + String.length item + 1;
+  in
+  let print_on_new_line item =
+    print_string escaped_eol;
+    print_filename item;
+    pos := String.length item + 4;
+  in
+  let print_compact item =
+    if !one_line || (!pos + 1 + String.length item <= 77)
+    then print_on_same_line item
+    else print_on_new_line item
+  in
+  let print_dep item =
+    if !one_line
+    then print_on_same_line item
+    else print_on_new_line item
+  in
+  List.iter print_compact target_files;
+  print_string " "; print_string depends_on;
+  pos := !pos + String.length depends_on + 1;
+  List.iter print_dep deps;
+  print_string "\n"
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;

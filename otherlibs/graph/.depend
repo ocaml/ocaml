@@ -55,9 +55,15 @@ text.o: text.c libgraph.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/misc.h ../../runtime/caml/alloc.h \
  ../../runtime/caml/mlvalues.h
-graphics.cmo : graphics.cmi
-graphics.cmx : graphics.cmi
+graphics.cmo : \
+    graphics.cmi
+graphics.cmx : \
+    graphics.cmi
 graphics.cmi :
-graphicsX11.cmo : graphics.cmi graphicsX11.cmi
-graphicsX11.cmx : graphics.cmx graphicsX11.cmi
+graphicsX11.cmo : \
+    graphics.cmi \
+    graphicsX11.cmi
+graphicsX11.cmx : \
+    graphics.cmx \
+    graphicsX11.cmi
 graphicsX11.cmi :
