@@ -385,6 +385,10 @@ Working version
 - #9421, #9427: fix printing of (::) in ocamldoc
   (Florian Angeletti, report by Yawar Amin, review by Damien Doligez)
 
+- #9440: for a type extension constructor with parameterised arguments,
+  REPL displayed <poly> for each as opposed to the concrete values used.
+  (Christian Quinn, review by Gabriel Scherer)
+
 - #9469: Better backtraces for lazy values
   (Leo White, review by Nicolás Ojeda Bär)
 
