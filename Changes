@@ -280,6 +280,9 @@ Working version
 
 ### Bug fixes:
 
+- #9148: for a type extension constructor with parameterised arguments,
+  REPL displayed <poly> for each as opposed to the concrete values used.
+
 - #7683, #1499: Fixes one case where the evaluation order in native-code
   may not match the one in bytecode.
   (Nicolás Ojeda Bär, report by Pierre Chambart, review by Gabriel Scherer)
