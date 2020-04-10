@@ -37,7 +37,25 @@
 #define NSIG 64
 #endif
 
-CAMLexport int volatile caml_something_to_do = 0;
+/* When an action is pending, either [action_pending] is 1, or
+   there is a function currently running which will end by either
+   executing all actions, or set [action_pending] back to 1. We
+   set it to 0 when starting executing all callbacks.
+
+   In the case there are two different callbacks (say, a signal and a
+   finaliser) arriving at the same time, then the processing of one
+   awaits the return of the other. In case of long-running callbacks,
+   we may want to run the second one without waiting the end of the
+   first one. We do this by provoking an additional polling every
+   minor collection and every major slice. To guarantee a low latency
+   for signals, we avoid delaying signal handlers in that case by
+   calling them first.
+
+   FIXME: We could get into caml_process_pending_actions when
+   action_pending is seen as set but not caml_pending_signals,
+   making us miss the signal.
+*/
+static int volatile action_pending = 0;
 
 /* The set of pending signals (received but not yet processed) */
 
@@ -113,7 +131,7 @@ CAMLno_tsan /* When called from [caml_record_signal], these memory
                accesses may not be synchronized. */
 void caml_set_action_pending(void)
 {
-  caml_something_to_do = 1;
+  action_pending = 1;
 
   /* When this function is called without [caml_c_call] (e.g., in
      [caml_modify]), this is only moderately effective on ports that cache
@@ -124,8 +142,7 @@ void caml_set_action_pending(void)
 
 /* Record the delivery of a signal, and arrange for it to be processed
    as soon as possible:
-   - via caml_something_to_do, processed in
-     caml_process_pending_actions_exn.
+   - via action_pending, processed in caml_process_pending_actions_exn.
    - by playing with the allocation limit, processed in
      caml_garbage_collection and caml_alloc_small_dispatch.
 */
@@ -153,7 +170,7 @@ CAMLexport void (*caml_enter_blocking_section_hook)(void) =
 CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
 
-CAMLno_tsan /* The read of [caml_something_to_do] is not synchronized. */
+CAMLno_tsan /* The read of [signals_are_pending] is not synchronized. */
 CAMLexport void caml_enter_blocking_section(void)
 {
   while (1){
@@ -250,7 +267,7 @@ void caml_update_young_limit (void)
 
   Caml_state->young_limit = Caml_state->young_limit_c;
 
-  if (caml_something_to_do)
+  if (action_pending)
     notify_action();
 }
 
@@ -272,11 +289,17 @@ void caml_request_minor_gc (void)
   caml_update_young_limit();
 }
 
+CAMLno_tsan /* The access to [action_pending] is not synchronized. */
+int caml_check_pending_actions()
+{
+  return action_pending;
+}
+
 value caml_do_pending_actions_exn(void)
 {
   value exn;
 
-  caml_something_to_do = 0;
+  action_pending = 0;
 
   // Do any pending minor collection or major slice
   caml_check_urgent_gc(Val_unit);
@@ -300,16 +323,16 @@ value caml_do_pending_actions_exn(void)
 exception:
   /* If an exception is raised during an asynchronous callback, then
      it might be the case that we did not run all the callbacks we
-     needed. Therefore, we set [caml_something_to_do] again in order
+     needed. Therefore, we set [action_pending] again in order
      to force reexamination of callbacks. */
   caml_set_action_pending();
   return exn;
 }
 
-CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
+CAMLno_tsan /* The access to [action_pending] is not synchronized. */
 Caml_inline value process_pending_actions_with_root_exn(value extra_root)
 {
-  if (caml_something_to_do) {
+  if (action_pending) {
     CAMLparam1(extra_root);
     value exn = caml_do_pending_actions_exn();
     if (Is_exception_result(exn))
@@ -317,12 +340,6 @@ Caml_inline value process_pending_actions_with_root_exn(value extra_root)
     CAMLdrop;
   }
   return extra_root;
-}
-
-CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
-int caml_check_pending_actions()
-{
-  return caml_something_to_do;
 }
 
 value caml_process_pending_actions_with_root_exn(value extra_root)

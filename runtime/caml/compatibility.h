@@ -261,7 +261,6 @@
 
 /* **** signals.c */
 #define pending_signals caml_pending_signals
-#define something_to_do caml_something_to_do
 #define enter_blocking_section_hook caml_enter_blocking_section_hook
 #define leave_blocking_section_hook caml_leave_blocking_section_hook
 #define enter_blocking_section caml_enter_blocking_section

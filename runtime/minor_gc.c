@@ -527,7 +527,8 @@ void caml_alloc_small_dispatch (intnat wosize, int flags,
       caml_check_urgent_gc (Val_unit);
       /* In the case of long-running C code that regularly polls with
          caml_process_pending_actions, force a query of all callbacks
-         at every minor collection or major slice. */
+         at every minor collection or major slice. (See documentation
+         of action_pending in signals.c.) */
       caml_set_action_pending();
     }
 
