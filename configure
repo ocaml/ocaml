@@ -13674,6 +13674,8 @@ fi; system=elf ;; #(
     arch=arm; model=armv7; system=linux_eabi ;; #(
   armv6t2*-*-linux-gnueabi) :
     arch=arm; model=armv6t2; system=linux_eabi ;; #(
+  armv6hl-*-linux-gnueabi) :
+    arch=arm; model=armv6; system=linux_eabihf ;; #(
   armv6*-*-linux-gnueabi) :
     arch=arm; model=armv6; system=linux_eabi ;; #(
   armv6*-*-freebsd*) :
