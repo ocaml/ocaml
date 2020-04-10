@@ -6,6 +6,8 @@ strstubs.$(O): strstubs.c ../../runtime/caml/mlvalues.h \
   ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/alloc.h \
   ../../runtime/caml/memory.h ../../runtime/caml/domain.h \
   ../../runtime/caml/fail.h
-str.cmo : str.cmi
-str.cmx : str.cmi
+str.cmo : \
+    str.cmi
+str.cmx : \
+    str.cmi
 str.cmi :
