@@ -441,7 +441,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           lbl_list pos obj unbx
                     end
                 | {type_kind = Type_open} ->
-                    tree_of_extension path depth obj
+                    tree_of_extension path ty_list depth obj
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"
@@ -541,7 +541,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         in
         Oval_constr (lid, args)
 
-    and tree_of_extension type_path depth bucket =
+    and tree_of_extension type_path ty_list depth bucket =
       let slot =
         if O.tag bucket <> 0 then bucket
         else O.field bucket 0
@@ -568,10 +568,23 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
            identifier contained in the exception bucket *)
         if not (EVP.same_value slot (EVP.eval_address addr))
         then raise Not_found;
+        let type_params =
+          match (Ctype.repr cstr.cstr_res).desc with
+            Tconstr (_,params,_) ->
+             params
+          | _ -> assert false
+        in
+        let args=
+          List.map
+            (function ty ->
+                       try Ctype.apply env type_params ty ty_list with
+                         Ctype.Cannot_apply -> abstract_type)
+            cstr.cstr_args
+        in
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
            1 depth bucket
-           cstr.cstr_args false
+           args false
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x
