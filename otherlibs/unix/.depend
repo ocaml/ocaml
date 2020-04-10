@@ -759,9 +759,16 @@ write.o: write.c ../../runtime/caml/mlvalues.h \
   ../../runtime/caml/byte_domain_state.tbl ../../runtime/caml/memory.h \
   ../../runtime/caml/domain.h ../../runtime/caml/alloc.h \
   ../../runtime/caml/signals.h unixsupport.h
-unix.cmo : unix.cmi
-unix.cmx : unix.cmi
+unix.cmo : \
+    unix.cmi
+unix.cmx : \
+    unix.cmi
 unix.cmi :
-unixLabels.cmo : unix.cmi unixLabels.cmi
-unixLabels.cmx : unix.cmx unixLabels.cmi
-unixLabels.cmi : unix.cmi
+unixLabels.cmo : \
+    unix.cmi \
+    unixLabels.cmi
+unixLabels.cmx : \
+    unix.cmx \
+    unixLabels.cmi
+unixLabels.cmi : \
+    unix.cmi
