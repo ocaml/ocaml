@@ -132,7 +132,7 @@ OCaml 4.11
   (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
 
 - #9441: Add RISC-V RV64G native-code backend.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
 
 ### Standard library:
 
