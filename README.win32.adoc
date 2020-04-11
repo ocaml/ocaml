@@ -196,16 +196,11 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        cp config/m-nt.h runtime/caml/m.h
-        cp config/s-nt.h runtime/caml/s.h
-
-followed by:
-
-        cp config/Makefile.msvc Makefile.config
+        ./configure --build=i686-pc-cygwin --host=i686-pc-windows
 
 for 32-bit, or:
 
-        cp config/Makefile.msvc64 Makefile.config
+        ./configure --build=x86_64-unknown-cygwin --host=x86_64-pc-windows
 
 for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
@@ -268,16 +263,11 @@ the WinZip Options Window.)
 
 Now run:
 
-        cp config/m-nt.h runtime/caml/m.h
-        cp config/s-nt.h runtime/caml/s.h
-
-followed by:
-
-        cp config/Makefile.mingw Makefile.config
+        ./configure --build=i686-pc-cygwin --host=i686-w64-mingw32
 
 for 32-bit, or:
 
-        cp config/Makefile.mingw64 Makefile.config
+        ./configure --build=x86_64-unknown-cygwin --host=x86_64-w64-mingw32
 
 for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,

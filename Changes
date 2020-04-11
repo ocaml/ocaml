@@ -496,6 +496,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Stephen Dolan and
   Damien Doligez)
 
+* GPR#2139: use autoconf to generate the compiler's configuration script
+  (Sébastien Hinderer, review by Damien Doligez and David Allsopp)
+
 - GPR#2148: fix a parallel build bug involving CamlinternalLazy.
   (Stephen Dolan, review by Gabriel Scherer and Nicolas Ojeda Bar)
 

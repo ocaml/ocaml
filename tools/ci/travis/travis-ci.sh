@@ -80,15 +80,19 @@ critical errors that must be understood and fixed before your pull
 request can be merged.
 ------------------------------------------------------------------------
 EOF
+
+  configure_flags="\
+    --prefix=$PREFIX \
+    --enable-flambda-invariants \
+    $CONFIG_ARG"
   case $XARCH in
   x64)
-    ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG
+    ./configure $configure_flags
     ;;
   i386)
-    ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG \
-      -host i686-pc-linux-gnu
+    ./configure --build=x86_64-pc-linux-gnu --host=i386-pc-linux-gnu \
+      AS="as" ASPP="gcc -c" \
+      $configure_flags
     ;;
   *)
     echo unknown arch

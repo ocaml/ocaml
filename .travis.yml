@@ -19,7 +19,7 @@ git:
   submodules: false
 script:
   - >
-    mkdir ~/inst && ./configure -prefix ~/inst -with-debug-runtime -no-instrumented-runtime &&
+    mkdir ~/inst && ./configure --prefix ~/inst --with-debug-runtime --disable-instrumented-runtime &&
     make -j4 world.opt &&
     OCAMLRUNPARAM=v=0,V=1 make -C testsuite all-enabled
 
@@ -30,6 +30,5 @@ matrix:
     os: linux
     env:
     - USE_RUNTIME: d
-
   - compiler: clang
     os: osx

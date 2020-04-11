@@ -22,8 +22,8 @@ set -e
 mainjob=./tools/ci/inria/main
 main="${mainjob} -j8"
 
-${main} -conf -no-native-compiler -no-native
-${main} -conf -no-naked-pointers
-${main} -conf -no-flat-float-array
-${main} -conf -flambda -conf -no-naked-pointers
+${main} -conf --disable-native-compiler -no-native
+${main} -conf --disable-naked-pointers
+${main} -conf --disable-flat-float-array
+${main} -conf --enable-flambda -conf --disable-naked-pointers
 OCAMLRUNPARAM="c=1" ${main}

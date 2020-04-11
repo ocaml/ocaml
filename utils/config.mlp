@@ -150,7 +150,7 @@ let default_executable_name =
 
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
-let stats = %%STATS%%;;
+let stats = %%COLLECT_STATS%%;;
 let flexdll_dirs = [%%FLEXDLL_DIR%%];;
 
 type configuration_value =
