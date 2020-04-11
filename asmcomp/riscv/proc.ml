@@ -218,37 +218,6 @@ let external_calling_conventions
               ofs := !ofs + size_float
             end
         end
-    | [| arg1; arg2 |] ->
-        (* Passing of 64-bit quantities to external functions on 32-bit
-           platform. *)
-        assert (size_int = 4);
-        begin match arg1.typ, arg2.typ with
-        | Int, Int ->
-            int := Misc.align !int 2;
-            if !int <= last_int - 1 then begin
-              let reg_lower = phys_reg !int in
-              let reg_upper = phys_reg (!int + 1) in
-              loc.(i) <- [| reg_lower; reg_upper |];
-              int := !int + 2
-            end else begin
-              let size_int64 = 8 in
-              ofs := Misc.align !ofs size_int64;
-              let ofs_lower = !ofs in
-              let ofs_upper = !ofs + size_int in
-              let stack_lower = stack_slot (make_stack ofs_lower) Int in
-              let stack_upper = stack_slot (make_stack ofs_upper) Int in
-              loc.(i) <- [| stack_lower; stack_upper |];
-              ofs := !ofs + size_int64
-            end
-        | _ ->
-            let f = function
-              | Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F"
-            in
-            fatal_error
-              (Printf.sprintf "Proc.calling_conventions: bad register \
-                               type(s) for multi-register argument: %s, %s"
-                 (f arg1.typ) (f arg2.typ))
-        end
     | _ ->
         fatal_error "Proc.calling_conventions: bad number of register for \
                      multi-register argument"
