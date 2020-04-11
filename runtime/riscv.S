@@ -64,7 +64,7 @@ FUNCTION(caml_call_gc)
         STORE   sp, Caml_state(bottom_of_stack)
         /* Set up stack space, saving return address */
         /* (1 reg for RA, 1 reg for FP, 21 allocatable int regs,
-	    20 caller-save float regs) * 8 */
+            20 caller-save float regs) * 8 */
         /* + 1 for alignment */
         addi    sp, sp, -0x160
         STORE   ra, 0x8(sp)

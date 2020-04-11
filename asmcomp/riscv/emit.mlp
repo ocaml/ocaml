@@ -284,7 +284,7 @@ let emit_instr i =
         match (src, dst) with
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
             `	mv      {emit_reg dst}, {emit_reg src}\n`
-        | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
+        | {loc = Reg _; typ = Float}, {loc = Reg _} ->
             `	fmv.d   {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack s} ->
             let ofs = slot_offset s (register_class dst) in
@@ -298,7 +298,8 @@ let emit_instr i =
         | {loc = Stack s; typ = Float}, {loc = Reg _} ->
             let ofs = slot_offset s (register_class src) in
             emit_float_load dst ofs
-        | _ ->
+        | {loc = Stack _}, {loc = Stack _}
+        | {loc = Unknown}, _ | _, {loc = Unknown} ->
             Misc.fatal_error "Emit: Imove"
       end
   | Lop(Iconst_int n) ->
