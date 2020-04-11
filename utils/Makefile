@@ -72,7 +72,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
 	    $(call SUBST,SYSTEM) \
 	    $(call SUBST,SYSTHREAD_SUPPORT) \
-	    $(call SUBST,STATS) \
+	    $(call SUBST,COLLECT_STATS) \
 	    $(call SUBST,TARGET) \
 	    $(call SUBST,WITH_FRAME_POINTERS) \
 	    $(call SUBST,WITH_PROFINFO) \

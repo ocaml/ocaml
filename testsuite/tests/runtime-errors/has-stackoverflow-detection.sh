@@ -1,5 +1,5 @@
 #!/bin/sh
-if grep -q HAS_STACK_OVERFLOW_DETECTION ${ocamlsrcdir}/runtime/caml/s.h; then
+if grep -q "#define HAS_STACK_OVERFLOW_DETECTION" ${ocamlsrcdir}/runtime/caml/s.h; then
   test_result=${TEST_PASS};
 else
   test_result=${TEST_SKIP};
