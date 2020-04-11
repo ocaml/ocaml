@@ -16,6 +16,9 @@ OCaml 4.10 maintenance branch
 
 ### Bug fixes:
 
+- #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
+  (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
+
 - #9165: Add missing -function-sections and -O3 flags in Makefiles.
   (Greta Yorsh, review by David Allsopp)
 
