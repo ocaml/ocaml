@@ -24,8 +24,8 @@ let command_line_options = []
 (* Specific operations *)
 
 type specific_operation =
-  | Imultaddf of bool                   (* multiply, optionally negate, and add *)
-  | Imultsubf of bool                   (* multiply, optionally negate, and subtract *)
+  | Imultaddf of bool        (* multiply, optionally negate, and add *)
+  | Imultsubf of bool        (* multiply, optionally negate, and subtract *)
 
 let spacetime_node_hole_pointer_is_live_before = function
   | Imultaddf _ | Imultsubf _ -> false
@@ -43,7 +43,10 @@ let is_immediate n =
 let big_endian = false
 
 let rv64 =
-  match Config.model with "riscv64" -> true | "riscv32" -> false | _ -> assert false
+  match Config.model with
+  | "riscv64" -> true
+  | "riscv32" -> false
+  | _ -> assert false
 
 let size_addr = if rv64 then 8 else 4
 let size_int = size_addr
