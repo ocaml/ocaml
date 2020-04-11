@@ -54,7 +54,7 @@ let slot_offset loc cls =
 (* Output a symbol *)
 
 let emit_symbol s =
-  emit_symbol '.' s
+  emit_symbol '$' s
 
 let emit_jump op s =
   if !Clflags.dlcode || !Clflags.pic_code
