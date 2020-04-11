@@ -116,7 +116,7 @@ FUNCTION(caml_call_gc)
         fsd     ft10, 0x150(sp)
         fsd     ft11, 0x158(sp)
         /* Store pointer to saved integer registers in caml_gc_regs */
-        addi    TMP, sp, 16
+        addi    TMP, sp, 0x10
         STORE   TMP, Caml_state(gc_regs)
         /* Save current allocation pointer for debugging purposes */
         STORE   ALLOC_PTR, Caml_state(young_ptr)
