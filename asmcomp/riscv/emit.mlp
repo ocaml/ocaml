@@ -358,10 +358,8 @@ let emit_instr i =
       in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`
   | Lop(Istore(Single, Iindexed ofs, _)) ->
-      `	fmv.x.d	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}\n`;
-      `	fcvt.s.d	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}\n`;
-      `	fsw	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`;
-      `	fmv.d.x	{emit_reg i.arg.(0)}, {emit_reg reg_tmp1}\n`
+      `	fcvt.s.d	ft0, {emit_reg i.arg.(0)}\n`; (* ft0 is marked as destroyed for this operation *)
+      `	fsw	ft0, {emit_int ofs}({emit_reg i.arg.(1)})\n`
   | Lop(Istore(chunk, Iindexed ofs, _)) ->
       let instr =
         match chunk with
