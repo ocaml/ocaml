@@ -475,7 +475,7 @@ let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
 
 let apply_tailcall_attribute ppf tailcall =
   if tailcall then
-    fprintf ppf " @@tailcall"
+    fprintf ppf " tailcall"
 
 let apply_inlined_attribute ppf = function
   | Default_inline -> ()
