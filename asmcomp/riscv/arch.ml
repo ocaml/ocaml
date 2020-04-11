@@ -36,7 +36,7 @@ type addressing_mode =
   | Iindexed of int                     (* reg + displ *)
 
 let is_immediate n =
-  (n <= 2047) && (n >= -2048)
+  (n <= 0x7FF) && (n >= -0x800)
 
 (* Sizes, endianness *)
 
