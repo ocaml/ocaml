@@ -294,6 +294,9 @@ Working version
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
 
+- #9068, #9437: ocamlopt -output-complete-obj failure on FreeBSD 12
+  (Xavier Leroy, report by Hannes Mehnert, review by Sébastien Hinderer)
+
 - #9097: Do not emit references to dead labels introduced by #2321 (spacetime).
   (Greta Yorsh, review by Mark Shinwell)
 

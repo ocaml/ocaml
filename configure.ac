@@ -1029,20 +1029,18 @@ AS_CASE(["$arch,$system"],
   [s390x,elf],
     [default_as="${toolpref}as -m 64 -march=$model"
     default_aspp="${toolpref}gcc -c -Wa,-march=$model"],
-  [arm,freebsd|arm64,freebsd],
-    [default_as="${toolpref}cc -c"
-    default_aspp="${toolpref}cc -c"],
+  [*,freebsd],
+    [default_as="${toolpref}cc -c -Wno-trigraphs"
+    default_aspp="${toolpref}cc -c -Wno-trigraphs"],
   [*,dragonfly],
     [default_as="${toolpref}as"
     default_aspp="${toolpref}cc -c"],
-  [*,freebsd],
-    [default_as="${toolpref}as"
-    default_aspp="${toolpref}cc -c"],
   [amd64,*|arm,*|arm64,*|i386,*],
-    [default_as="${toolpref}as"
-    AS_CASE([$ocaml_cv_cc_vendor],
-      [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
-      [default_aspp="${toolpref}gcc -c"])])
+    [AS_CASE([$ocaml_cv_cc_vendor],
+      [clang-*], [default_as="${toolpref}clang -c -Wno-trigraphs"
+                  default_aspp="${toolpref}clang -c -Wno-trigraphs"],
+      [default_as="${toolpref}as"
+      default_aspp="${toolpref}gcc -c"])])
 
 AS_IF([test "$with_pic"],
   [fpic=true
