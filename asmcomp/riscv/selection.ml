@@ -38,8 +38,6 @@ method select_addressing _ = function
 
 method! select_operation op args dbg =
   match (op, args) with
-  (* RISC-V does not support immediate operands for multiply high *)
-  | (Cmulhi, _) -> (Iintop Imulh, args)
   (* Recognize (neg-)mult-add and (neg-)mult-sub instructions *)
   | (Caddf, [Cop(Cmulf, [arg1; arg2], _); arg3])
   | (Caddf, [arg3; Cop(Cmulf, [arg1; arg2], _)]) ->
@@ -53,7 +51,9 @@ method! select_operation op args dbg =
   (* RISC-V does not support immediate operands for comparison operators *)
   | (Ccmpi comp, args) -> (Iintop(Icomp (Isigned comp)), args)
   | (Ccmpa comp, args) -> (Iintop(Icomp (Iunsigned comp)), args)
+  (* RISC-V does not support immediate operands for multiply/multiply high *)
   | (Cmuli, _) -> (Iintop Imul, args)
+  | (Cmulhi, _) -> (Iintop Imulh, args)
   | _ ->
       super#select_operation op args dbg
 
