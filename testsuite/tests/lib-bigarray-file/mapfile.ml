@@ -1,4 +1,5 @@
 (* TEST
+   * hasunix
    include unix
 *)
 

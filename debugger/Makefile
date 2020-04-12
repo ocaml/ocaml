@@ -28,7 +28,7 @@ COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
 LINKFLAGS=-linkall -I $(UNIXDIR)
 YACCFLAGS=
 CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 

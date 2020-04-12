@@ -295,7 +295,7 @@ let main () =
     else if !make_package then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+      Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
           (get_objfiles ~with_ocamlparam:false) target ~backend);
       Warnings.check_fatal ();
@@ -303,7 +303,7 @@ let main () =
     else if !shared then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+      Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmlink.link_shared ~ppf_dump
           (get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
@@ -325,7 +325,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+      Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmlink.link ~ppf_dump (get_objfiles ~with_ocamlparam:true) target);
       Warnings.check_fatal ();
     end;

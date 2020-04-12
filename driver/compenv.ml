@@ -594,12 +594,12 @@ let process_action
   | ProcessImplementation name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
-      implementation ~sourcefile:name ~outputprefix:opref;
+      implementation ~source_file:name ~output_prefix:opref;
       objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
-      interface ~sourcefile:name ~outputprefix:opref;
+      interface ~source_file:name ~output_prefix:opref;
       if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   | ProcessCFile name ->
       readenv ppf (Before_compile name);

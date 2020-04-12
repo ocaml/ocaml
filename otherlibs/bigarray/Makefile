@@ -33,6 +33,6 @@ mmap_ba.$(O): ../unix/mmap_ba.c
 .PHONY: depend
 
 depend:
-	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml > .depend
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

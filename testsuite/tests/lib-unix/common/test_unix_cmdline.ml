@@ -2,31 +2,32 @@
 
 files = "cmdline_prog.ml"
 
-* setup-ocamlc.byte-build-env
+* hasunix
+** setup-ocamlc.byte-build-env
 program = "${test_build_directory}/test_unix_cmdline.byte"
-** ocamlc.byte
-program = "${test_build_directory}/cmdline_prog.exe"
-all_modules = "cmdline_prog.ml"
 *** ocamlc.byte
+program = "${test_build_directory}/cmdline_prog.exe"
+all_modules = "cmdline_prog.ml"
+**** ocamlc.byte
 include unix
 program = "${test_build_directory}/test_unix_cmdline.byte"
 all_modules= "test_unix_cmdline.ml"
-**** check-ocamlc.byte-output
-***** run
-****** check-program-output
+***** check-ocamlc.byte-output
+****** run
+******* check-program-output
 
-* setup-ocamlopt.byte-build-env
+** setup-ocamlopt.byte-build-env
 program = "${test_build_directory}/test_unix_cmdline.opt"
-** ocamlc.byte
+*** ocamlc.byte
 program = "${test_build_directory}/cmdline_prog.exe"
 all_modules = "cmdline_prog.ml"
-*** ocamlopt.byte
+**** ocamlopt.byte
 include unix
 program = "${test_build_directory}/test_unix_cmdline.opt"
 all_modules= "test_unix_cmdline.ml"
-**** check-ocamlopt.byte-output
-***** run
-****** check-program-output
+***** check-ocamlopt.byte-output
+****** run
+******* check-program-output
 
 *)
 

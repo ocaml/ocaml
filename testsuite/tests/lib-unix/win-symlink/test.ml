@@ -1,7 +1,7 @@
 (* TEST
 
+* libwin32unix
    include unix
-* windows
 ** has_symlink
 *** bytecode
 *** native

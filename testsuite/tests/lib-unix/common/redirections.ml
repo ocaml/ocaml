@@ -2,31 +2,32 @@
 
 files = "reflector.ml"
 
-* setup-ocamlc.byte-build-env
+* hasunix
+** setup-ocamlc.byte-build-env
 program = "${test_build_directory}/redirections.byte"
-** ocamlc.byte
-program = "${test_build_directory}/reflector.exe"
-all_modules = "reflector.ml"
 *** ocamlc.byte
+program = "${test_build_directory}/reflector.exe"
+all_modules = "reflector.ml"
+**** ocamlc.byte
 include unix
 program = "${test_build_directory}/redirections.byte"
 all_modules= "redirections.ml"
-**** check-ocamlc.byte-output
-***** run
-****** check-program-output
+***** check-ocamlc.byte-output
+****** run
+******* check-program-output
 
-* setup-ocamlopt.byte-build-env
+** setup-ocamlopt.byte-build-env
 program = "${test_build_directory}/redirections.opt"
-** ocamlopt.byte
+*** ocamlopt.byte
 program = "${test_build_directory}/reflector.exe"
 all_modules = "reflector.ml"
-*** ocamlopt.byte
+**** ocamlopt.byte
 include unix
 program = "${test_build_directory}/redirections.opt"
 all_modules= "redirections.ml"
-**** check-ocamlopt.byte-output
-***** run
-****** check-program-output
+***** check-ocamlopt.byte-output
+****** run
+******* check-program-output
 
 *)
 

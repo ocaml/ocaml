@@ -2310,6 +2310,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/printclambda.cmi \
     typing/primitive.cmi \
     asmcomp/polling.cmi \
+    typing/path.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     parsing/location.cmi \
@@ -2357,6 +2358,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/printclambda.cmx \
     typing/primitive.cmx \
     asmcomp/polling.cmx \
+    typing/path.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     parsing/location.cmx \
@@ -2588,19 +2590,25 @@ asmcomp/build_export_info.cmi : \
     asmcomp/export_info.cmi \
     middle_end/backend_intf.cmi
 asmcomp/clambda.cmo : \
+    typing/path.cmi \
     bytecomp/lambda.cmi \
+    typing/ident.cmi \
     middle_end/debuginfo.cmi \
     asmcomp/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/clambda.cmi
 asmcomp/clambda.cmx : \
+    typing/path.cmx \
     bytecomp/lambda.cmx \
+    typing/ident.cmx \
     middle_end/debuginfo.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/clambda.cmi
 asmcomp/clambda.cmi : \
+    typing/path.cmi \
     bytecomp/lambda.cmi \
+    typing/ident.cmi \
     middle_end/debuginfo.cmi \
     asmcomp/backend_var.cmi \
     parsing/asttypes.cmi
@@ -2774,6 +2782,7 @@ asmcomp/compilenv.cmo : \
     middle_end/base_types/symbol.cmi \
     middle_end/simple_value_approx.cmi \
     middle_end/base_types/set_of_closures_id.cmi \
+    typing/path.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     middle_end/base_types/linkage_name.cmi \
@@ -2792,6 +2801,7 @@ asmcomp/compilenv.cmx : \
     middle_end/base_types/symbol.cmx \
     middle_end/simple_value_approx.cmx \
     middle_end/base_types/set_of_closures_id.cmx \
+    typing/path.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     middle_end/base_types/linkage_name.cmx \
@@ -6103,6 +6113,3 @@ driver/compdynlink.cmo : \
     driver/compdynlink_common.cmi \
     bytecomp/cmo_format.cmi \
     driver/compdynlink.cmi
-driver/compdynlink_platform_intf.cmx : \
-    driver/compdynlink_types.cmx \
-    driver/compdynlink_platform_intf.cmi

@@ -184,13 +184,16 @@ Working version
   hint that can emit non-whitespace characters.
   (Vladimir Keleshev and Pierre Weis, review by Josh Berdine, Gabriel Radanne)
 
+- GPR#2183: Fix segfault in Array.create_float with -no-flat-float-array
+  (Damien Doligez, review by Gabriel Scherer and Jeremy Yallop)
+
 - GPR#2185: Add `List.filter_map`
   (Thomas Refis, review by Alain Frisch and Gabriel Scherer)
 
-### Other libraries:
+- GPR#1525: Make function set_max_indent respect documentation
+  (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
 
-- GPR#2104, PR#4127, PR#7709: Fix Thread.sigmask.
-  (Jacques-Henri Jourdan, review by Jérémie Dimino)
+### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
   symlinks.
@@ -376,6 +379,9 @@ Working version
 
 ### Tools
 
+- GPR#2182: Split Emacs caml-mode as an independent project.
+  (Christophe Troestler, review by Gabriel Scherer)
+
 - MPR#7843, GPR#2013: ocamldoc, better handling of {{!label}text} in the latex
   backend.
   (Florian Angeletti, review by Nicolás Ojeda Bär and Gabriel Scherer)
@@ -489,6 +495,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Damien Doligez, Gabriel
   Scherer and Armaël Guéneau)
 
+- GPR#2053: allow unix, vmthreads and str not to be built.
+  (David Allsopp, review by Sébastien Hinderer)
+
 * GPR#2059: stop defining OCAML_STDLIB_DIR in s.h.
   (Sébastien Hinderer, review by David Allsopp and Damien Doligez)
 
@@ -526,8 +535,9 @@ Working version
 - GPR#1610: Remove positions from paths
   (Leo White, review by Frédéric Bour and Thomas Refis)
 
-- GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
-  part in Compile and Optcompile. This also makes the pipeline more modular.
+- GPR#1703, GPR#1944, GPR#2213: Add the module Compile_common,
+  which factorizes the common part in Compile and Optcompile.
+  This also makes the pipeline more modular.
   (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
    review by Mark Shinwell and Gabriel Radanne)
 
@@ -624,6 +634,9 @@ Working version
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
 
+- GPR#2088: Add [Clambda.usymbol_provenance].
+  (Mark Shinwell, review by Damien Doligez)
+
 - GPR#2152, GPR#2517: refactorize the fixpoint to compute type-system
   properties of mutually-recursive type declarations.
   (Gabriel Scherer and Rodolphe Lepigre, review by Armaël Guéneau)
@@ -634,8 +647,6 @@ Working version
 
 * GPR#2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
-
-### Bug fixes:
 
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
   extension.
