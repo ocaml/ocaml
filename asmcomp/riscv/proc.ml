@@ -84,7 +84,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 21; 32 |]
+let num_available_registers = [| 22; 32 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -246,19 +246,20 @@ let regs_are_volatile _ = false
 let destroyed_at_c_call =
   (* s0-s11 and fs0-fs11 are callee-save *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20;
+    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 21;
      100; 101; 102; 103; 104; 105; 106; 107; 110; 111; 112; 113; 114; 115; 116;
      117; 128; 129; 130; 131])
 
 let destroyed_at_alloc =
   (* t0-t3 are used for PLT stubs *)
-  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20|] else [| |]
+  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20; 21|] else [| |]
 
 let destroyed_at_oper = function
   | Iop(Icall_ind _ | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
   | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
   | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
+  | Iswitch _ -> [| phys_reg 21 |]
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -269,11 +270,11 @@ let destroyed_at_reloadretaddr = [| |]
 
 let safe_register_pressure = function
   | Iextcall _ -> 15
-  | _ -> 21
+  | _ -> 22
 
 let max_register_pressure = function
   | Iextcall _ -> [| 15; 18 |]
-  | _ -> [| 21; 30 |]
+  | _ -> [| 22; 30 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)

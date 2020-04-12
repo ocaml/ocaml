@@ -16,12 +16,12 @@
 /* Asm part of the runtime system, RISC-V processor, 64-bit mode */
 /* Must be preprocessed by cpp */
 
-#define ARG_DOMAIN_STATE_PTR t1
+#define ARG_DOMAIN_STATE_PTR t0
 #define DOMAIN_STATE_PTR s0
 #define TRAP_PTR s1
 #define ALLOC_PTR s10
 #define ALLOC_LIMIT s11
-#define TMP t0
+#define TMP t1
 #define ARG t2
 
 #define STORE sd

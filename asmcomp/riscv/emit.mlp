@@ -82,8 +82,7 @@ let rodata_space =
 
 (* Names for special regs *)
 
-let reg_tmp1 = phys_reg 21
-let reg_tmp2 = phys_reg 22
+let reg_tmp = phys_reg 22
 let reg_t2 = phys_reg 16
 let reg_domain_state_ptr = phys_reg 23
 let reg_trap = phys_reg 24
@@ -106,16 +105,16 @@ let emit_stack_adjustment = function
   | n when is_immediate n ->
       `	addi	sp, sp, {emit_int n}\n`
   | n ->
-      `	li	{emit_reg reg_tmp1}, {emit_int n}\n`;
-      `	add	sp, sp, {emit_reg reg_tmp1}\n`
+      `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
+      `	add	sp, sp, {emit_reg reg_tmp}\n`
 
 let emit_mem_op op src ofs =
   if is_immediate ofs then
     `	{emit_string op}	{emit_string src}, {emit_int ofs}(sp)\n`
   else begin
-    `	li	{emit_reg reg_tmp1}, {emit_int ofs}\n`;
-    `	add	{emit_reg reg_tmp1}, sp, {emit_reg reg_tmp1}\n`;
-    `	{emit_string op}	{emit_string src}, 0({emit_reg reg_tmp1})\n`
+    `	li	{emit_reg reg_tmp}, {emit_int ofs}\n`;
+    `	add	{emit_reg reg_tmp}, sp, {emit_reg reg_tmp}\n`;
+    `	{emit_string op}	{emit_string src}, 0({emit_reg reg_tmp})\n`
   end
 
 let emit_store src ofs =
@@ -307,7 +306,7 @@ let emit_instr i =
   | Lop(Iconst_float f) ->
       let lbl = new_label() in
       float_literals := (f, lbl) :: !float_literals;
-      `	fld	{emit_reg i.res.(0)}, {emit_label lbl}, {emit_reg reg_tmp1}\n`
+      `	fld	{emit_reg i.res.(0)}, {emit_label lbl}, {emit_reg reg_tmp}\n`
   | Lop(Iconst_symbol s) ->
       `	la	{emit_reg i.res.(0)}, {emit_symbol s}\n`
   | Lop(Icall_ind {label_after = label}) ->
@@ -358,7 +357,8 @@ let emit_instr i =
       in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`
   | Lop(Istore(Single, Iindexed ofs, _)) ->
-      `	fcvt.s.d	ft0, {emit_reg i.arg.(0)}\n`; (* ft0 is marked as destroyed for this operation *)
+      (* ft0 is marked as destroyed for this operation *)
+      `	fcvt.s.d	ft0, {emit_reg i.arg.(0)}\n`;
       `	fsw	ft0, {emit_int ofs}({emit_reg i.arg.(1)})\n`
   | Lop(Istore(chunk, Iindexed ofs, _)) ->
       let instr =
@@ -379,8 +379,8 @@ let emit_instr i =
       if is_immediate n then
         `	addi	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, {emit_int n}\n`
       else begin
-        `	li	{emit_reg reg_tmp1}, {emit_int n}\n`;
-        `	add	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, {emit_reg reg_tmp1}\n`
+        `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
+        `	add	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}\n`
       end;
       `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_lim}, {emit_label lbl_call_gc}\n`;
       `{emit_label lbl_after_alloc}:\n`;
@@ -430,8 +430,8 @@ let emit_instr i =
       Misc.fatal_error "Emit.emit_instr (Iintop_imm (Icomp _, _))"
   | Lop(Iintop_imm(Icheckbound {label_after_error = label; _}, n)) ->
       let lbl = bound_error_label ?label i.dbg in
-      `	li	{emit_reg reg_tmp1}, {emit_int n}\n`;
-      `	bleu	{emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, {emit_label lbl}\n`
+      `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
+      `	bleu	{emit_reg i.arg.(0)}, {emit_reg reg_tmp}, {emit_label lbl}\n`
   | Lop(Iintop_imm(op, n)) ->
       let instr = name_for_intop_imm op in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
@@ -486,40 +486,41 @@ let emit_instr i =
             | CFeq | CFlt | CFgt | CFle | CFge -> "bnez"
           in
           begin match cmp with
-          | CFeq | CFneq -> `	feq.d	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-          | CFlt | CFnlt -> `	flt.d	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-          | CFgt | CFngt -> `	flt.d	{emit_reg reg_tmp1}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
-          | CFle | CFnle -> `	fle.d	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-          | CFge | CFnge -> `	fle.d	{emit_reg reg_tmp1}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
+          | CFeq | CFneq -> `	feq.d	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+          | CFlt | CFnlt -> `	flt.d	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+          | CFgt | CFngt -> `	flt.d	{emit_reg reg_tmp}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
+          | CFle | CFnle -> `	fle.d	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+          | CFge | CFnge -> `	fle.d	{emit_reg reg_tmp}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
           end;
-          `	{emit_string branch}	{emit_reg reg_tmp1}, {emit_label lbl}\n`
+          `	{emit_string branch}	{emit_reg reg_tmp}, {emit_label lbl}\n`
       | Ioddtest ->
-          `	andi	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, 1\n`;
-          `	bnez	{emit_reg reg_tmp1}, {emit_label lbl}\n`
+          `	andi	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, 1\n`;
+          `	bnez	{emit_reg reg_tmp}, {emit_label lbl}\n`
       | Ieventest ->
-          `	andi	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, 1\n`;
-          `	beqz	{emit_reg reg_tmp1}, {emit_label lbl}\n`
+          `	andi	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, 1\n`;
+          `	beqz	{emit_reg reg_tmp}, {emit_label lbl}\n`
       end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
-      `	addi	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, -1\n`;
+      `	addi	{emit_reg reg_tmp}, {emit_reg i.arg.(0)}, -1\n`;
       begin match lbl0 with
       | None -> ()
-      | Some lbl -> `	bltz	{emit_reg reg_tmp1}, {emit_label lbl}\n`
+      | Some lbl -> `	bltz	{emit_reg reg_tmp}, {emit_label lbl}\n`
       end;
       begin match lbl1 with
       | None -> ()
-      | Some lbl -> `	beqz	{emit_reg reg_tmp1}, {emit_label lbl}\n`
+      | Some lbl -> `	beqz	{emit_reg reg_tmp}, {emit_label lbl}\n`
       end;
       begin match lbl2 with
       | None -> ()
-      | Some lbl -> `	bgtz	{emit_reg reg_tmp1}, {emit_label lbl}\n`
+      | Some lbl -> `	bgtz	{emit_reg reg_tmp}, {emit_label lbl}\n`
       end
   | Lswitch jumptbl ->
+      (* t0 is marked as destroyed for this operation *)
       let lbl = new_label() in
-      `	la	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
-      `	slli	{emit_reg reg_tmp2}, {emit_reg i.arg.(0)}, 2\n`;
-      `	add	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_reg reg_tmp2}\n`;
-      `	jr	{emit_reg reg_tmp1}\n`;
+      `	la	{emit_reg reg_tmp}, {emit_label lbl}\n`;
+      `	slli	t0, {emit_reg i.arg.(0)}, 2\n`;
+      `	add	{emit_reg reg_tmp}, {emit_reg reg_tmp}, t0\n`;
+      `	jr	{emit_reg reg_tmp}\n`;
       `{emit_label lbl}:\n`;
       for i = 0 to Array.length jumptbl - 1 do
         `	j	{emit_label jumptbl.(i)}\n`
@@ -531,10 +532,10 @@ let emit_instr i =
       let delta = 16 * delta_traps in
       stack_offset := !stack_offset + delta
   | Lpushtrap {lbl_handler} ->
-      `	la	{emit_reg reg_tmp1}, {emit_label lbl_handler}\n`;
+      `	la	{emit_reg reg_tmp}, {emit_label lbl_handler}\n`;
       `	addi	sp, sp, -16\n`;
       stack_offset := !stack_offset + 16;
-      emit_store reg_tmp1 size_addr;
+      emit_store reg_tmp size_addr;
       emit_store reg_trap 0;
       `	mv	{emit_reg reg_trap}, sp\n`
   | Lpoptrap ->
@@ -553,10 +554,10 @@ let emit_instr i =
           record_frame Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           `	mv	sp, {emit_reg reg_trap}\n`;
-	  emit_load reg_tmp1 size_addr;
+	  emit_load reg_tmp size_addr;
 	  emit_load reg_trap 0;
           `	addi	sp, sp, 16\n`;
-          `	jr	{emit_reg reg_tmp1}\n`
+          `	jr	{emit_reg reg_tmp}\n`
       end
 
 (* Emit a sequence of instructions *)
