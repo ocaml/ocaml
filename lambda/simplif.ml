@@ -219,23 +219,28 @@ let simplify_exits lam =
       | Prevapply, [x; Lapply ap]
       | Prevapply, [x; Levent (Lapply ap,_)] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Prevapply, [x; f] -> Lapply {ap_should_be_tailcall=false;
-                                     ap_loc=loc;
-                                     ap_func=f;
-                                     ap_args=[x];
-                                     ap_inlined=Default_inline;
-                                     ap_specialised=Default_specialise}
-
+      | Prevapply, [x; f] ->
+          Lapply {
+            ap_loc=loc;
+            ap_func=f;
+            ap_args=[x];
+            ap_tailcall=Default_tailcall;
+            ap_inlined=Default_inline;
+            ap_specialised=Default_specialise;
+          }
         (* Simplify %apply, for n-ary functions with n > 1 *)
       | Pdirapply, [Lapply ap; x]
       | Pdirapply, [Levent (Lapply ap,_); x] ->
         Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-      | Pdirapply, [f; x] -> Lapply {ap_should_be_tailcall=false;
-                                     ap_loc=loc;
-                                     ap_func=f;
-                                     ap_args=[x];
-                                     ap_inlined=Default_inline;
-                                     ap_specialised=Default_specialise}
+      | Pdirapply, [f; x] ->
+          Lapply {
+            ap_loc=loc;
+            ap_func=f;
+            ap_args=[x];
+            ap_tailcall=Default_tailcall;
+            ap_inlined=Default_inline;
+            ap_specialised=Default_specialise;
+          }
         (* Simplify %identity *)
       | Pidentity, [e] -> e
 
@@ -606,11 +611,18 @@ let rec emit_tail_infos is_tail lambda =
   | Lvar _ -> ()
   | Lconst _ -> ()
   | Lapply ap ->
-      if ap.ap_should_be_tailcall
-      && not is_tail
-      && Warnings.is_active Warnings.Expect_tailcall
-        then Location.prerr_warning (to_location ap.ap_loc)
-               Warnings.Expect_tailcall;
+      begin match ap.ap_tailcall with
+      | Default_tailcall -> ()
+      | Should_be_tailcall ->
+          (* Note: we may want to instead check the call_kind,
+             which takes [is_tail_native_heuristic] into accout.
+             But then this means getting different warnings depending
+             on whether the native or bytecode compiler is used. *)
+          if not is_tail
+          && Warnings.is_active Warnings.Expect_tailcall
+          then Location.prerr_warning (to_location ap.ap_loc)
+                 Warnings.Expect_tailcall;
+      end;
       emit_tail_infos false ap.ap_func;
       list_emit_tail_infos false ap.ap_args
   | Lfunction {body = lam} ->
@@ -710,7 +722,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
             ap_func = Lvar inner_id;
             ap_args = args;
             ap_loc = Loc_unknown;
-            ap_should_be_tailcall = false;
+            ap_tailcall = Default_tailcall;
             ap_inlined = Default_inline;
             ap_specialised = Default_specialise;
           }

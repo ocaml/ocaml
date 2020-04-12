@@ -676,12 +676,14 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz (add_const_unit cont)
   | Lprim(Pdirapply, [func;arg], loc)
   | Lprim(Prevapply, [arg;func], loc) ->
-      let exp = Lapply{ap_should_be_tailcall=false;
-                       ap_loc=loc;
-                       ap_func=func;
-                       ap_args=[arg];
-                       ap_inlined=Default_inline;
-                       ap_specialised=Default_specialise} in
+      let exp = Lapply{
+        ap_loc=loc;
+        ap_func=func;
+        ap_args=[arg];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      } in
       comp_expr env exp sz cont
   | Lprim(Pnot, [arg], _) ->
       let newcont =

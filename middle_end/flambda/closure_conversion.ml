@@ -225,8 +225,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure)) ~name)
-  | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall = _;
-        ap_inlined; ap_specialised; } ->
+  | Lapply { ap_func; ap_args; ap_loc;
+             ap_tailcall = _; ap_inlined; ap_specialised; } ->
     Lift_code.lifting_helper (close_list t env ap_args)
       ~evaluation_order:`Right_to_left
       ~name:Names.apply_arg
@@ -418,10 +418,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       { ap_func = funct;
         ap_args = [arg];
         ap_loc = loc;
-        ap_should_be_tailcall = false;
         (* CR-someday lwhite: it would be nice to be able to give
-           inlined attributes to functions applied with the application
+           application attributes to functions applied with the application
            operators. *)
+        ap_tailcall = Default_tailcall;
         ap_inlined = Default_inline;
         ap_specialised = Default_specialise;
       }

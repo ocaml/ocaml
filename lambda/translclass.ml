@@ -50,12 +50,14 @@ let lapply ap =
       Lapply ap
 
 let mkappl (func, args) =
-  Lapply {ap_should_be_tailcall=false;
-          ap_loc=Loc_unknown;
-          ap_func=func;
-          ap_args=args;
-          ap_inlined=Default_inline;
-          ap_specialised=Default_specialise};;
+  Lapply {
+    ap_loc=Loc_unknown;
+    ap_func=func;
+    ap_args=args;
+    ap_tailcall=Default_tailcall;
+    ap_inlined=Default_inline;
+    ap_specialised=Default_specialise;
+  };;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -488,12 +490,14 @@ let transl_class_rebind ~scopes cl vf =
     let obj_init = Ident.create_local "obj_init"
     and self = Ident.create_local "self" in
     let obj_init0 =
-      lapply {ap_should_be_tailcall=false;
-              ap_loc=Loc_unknown;
-              ap_func=Lvar obj_init;
-              ap_args=[Lvar self];
-              ap_inlined=Default_inline;
-              ap_specialised=Default_specialise}
+      lapply {
+        ap_loc=Loc_unknown;
+        ap_func=Lvar obj_init;
+        ap_args=[Lvar self];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      }
     in
     let _, path_lam, obj_init' =
       transl_class_rebind_0 ~scopes self obj_init0 cl vf in
