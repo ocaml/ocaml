@@ -2568,7 +2568,7 @@ class c =
   ...
 \end{verbatim}
 
-\section{Let operators\label{s:let-operators} }
+\section{Binding operators\label{s:binding-operators} }
 (Introduced in 4.08.0)
 
 \begin{syntax}
@@ -2589,8 +2589,7 @@ expr:
 ;
 \end{syntax}
 
-This extension provides a convenient syntax for working with monads and
-applicatives. Users can define {\em let operators}:
+Users can define {\em let operators}:
 
 \begin{caml_example}{verbatim}
 let ( let* ) o f =
@@ -2664,25 +2663,36 @@ let sum3 z1 z2 z3 =
     (fun ((x1, x2), x3) -> x1 + x2 + x3)
 \end{caml_example}
 
-\begin{caml_eval}
-type 'a t
-\end{caml_eval}
+\subsection{Rationale}
 
-For monads, the intention is that "(let*)" is bound to the "bind"
-operation, and "(and*)" is bound to the monoidal product operation:
+This extension is intended to provide a convenient syntax for working
+with monads and applicatives.
 
-\begin{caml_example*}{signature}
-val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
-val ( and* ): 'a t -> 'b t -> ('a * 'b) t
+An applicative should provide a module implementing the following
+interface:
+
+\begin{caml_example*}{verbatim}
+module type Applicative_syntax = sig
+  type 'a t
+  val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
+  val ( and+ ): 'a t -> 'b t -> ('a * 'b) t
+end
 \end{caml_example*}
 
-For applicatives, the intention is that "(let+)" is bound to the "map"
-operation, and "(and+)" is again bound to the monoidal product
-operation:
+where "(let+)" is bound to the "map" operation and "(and+)" is bound to
+the monoidal product operation.
 
-\begin{caml_example*}{signature}
-val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
-val ( and+ ): 'a t -> 'b t -> ('a * 'b) t
+A monad should provide a module implementing the following interface:
+
+\begin{caml_example*}{verbatim}
+module type Monad_syntax = sig
+  include Applicative_syntax
+  val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
+  val ( and* ): 'a t -> 'b t -> ('a * 'b) t
+end
 \end{caml_example*}
+
+where "(let*)" is bound to the "bind" operation, and "(and*)" is also
+bound to the monoidal product operation.
 
 %HEVEA\cutend

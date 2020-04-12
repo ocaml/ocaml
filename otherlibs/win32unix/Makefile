@@ -72,7 +72,7 @@ else
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
 	$(CC) -MM $(OC_CPPFLAGS) -I../unix $(ALL_FILES) \
 	  | sed -e 's/\.o/.$$(O)/g' > .depend
-	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
 	  unix.ml >> .depend
 endif
 

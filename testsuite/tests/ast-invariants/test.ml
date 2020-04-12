@@ -1,8 +1,9 @@
 (* TEST
    include ocamlcommon
+   * hasunix
    include unix
    arguments = "${ocamlsrcdir}"
-   * native
+   ** native
 *)
 
 (* This test checks all ml files in the ocaml repository that are accepted

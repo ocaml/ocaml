@@ -31,6 +31,10 @@ let shared_libraries = @@SHARED_LIBRARIES@@
 
 let libunix = @@UNIX@@
 
+let systhreads = @@SYSTHREADS@@
+
+let str = @@STR@@
+
 let objext = "@@OBJEXT@@"
 
 let system = "@@SYSTEM@@"

@@ -1,4 +1,5 @@
 (* TEST
+   * hasstr
    include str
 *)
 

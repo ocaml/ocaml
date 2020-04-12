@@ -16,9 +16,9 @@
 (** Bytecode compilation for .ml and .mli files. *)
 
 val interface:
-  sourcefile:string -> outputprefix:string -> unit
+  source_file:string -> output_prefix:string -> unit
 val implementation:
-  sourcefile:string -> outputprefix:string -> unit
+  source_file:string -> output_prefix:string -> unit
 
 (** {2 Internal functions} **)
 

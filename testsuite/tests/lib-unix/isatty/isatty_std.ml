@@ -1,4 +1,5 @@
 (* TEST
+* hasunix
 include unix
 stdin = "/dev/null"
 stderr = "/dev/null"

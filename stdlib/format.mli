@@ -441,6 +441,7 @@ val set_max_indent : int -> unit
   always fully fit on the current line.
 
   Nothing happens if [d] is smaller than 2.
+
   If [d] is too large, the limit is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
 

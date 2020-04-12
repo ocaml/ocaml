@@ -1,5 +1,6 @@
 (* TEST
 
+* hassysthreads
 include systhreads
 
 *)
