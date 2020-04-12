@@ -252,7 +252,8 @@ let destroyed_at_c_call =
 
 let destroyed_at_alloc =
   (* t0-t3 are used for PLT stubs *)
-  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20; 21|] else [| |]
+  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20; 21|]
+  else [| |]
 
 let destroyed_at_oper = function
   | Iop(Icall_ind _ | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
