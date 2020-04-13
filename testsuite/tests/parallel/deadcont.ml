@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 (*
   Test handling of continuations created by a domain that has since terminated.
   Bug report and testcase by Žiga Lukšič, see:

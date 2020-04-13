@@ -1,3 +1,9 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
 
 (*
  * Copyright (c) 2015, Théo Laurent <theo.laurent@ens.fr>

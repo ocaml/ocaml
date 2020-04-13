@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 type u = U of unit
 let () =
   (* See https://github.com/ocaml-multicore/ocaml-multicore/issues/252 *)

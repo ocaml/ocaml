@@ -1,3 +1,5 @@
+(* TEST
+ *)
 
 module Segfault = struct
   module Nondet = struct

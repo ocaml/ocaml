@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Tests RESUMETERM with extra_args != 0 in bytecode,
    by calling a handler with a tail-continue that returns a function *)
 effect E : int

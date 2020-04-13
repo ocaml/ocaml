@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 let rec loop () =
   Domain.Sync.poll ();
   loop ()

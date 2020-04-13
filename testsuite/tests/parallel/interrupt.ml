@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 open Domain.Sync
 
 let n = 25

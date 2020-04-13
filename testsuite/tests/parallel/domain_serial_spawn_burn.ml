@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 open Domain
 
 (* This test looks to spawn domains while doing a bunch of explicit minor and major GC calls

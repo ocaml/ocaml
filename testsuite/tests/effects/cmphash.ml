@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect Yield : unit
 
 let `Cont k =

@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect E : int -> int
 effect F : unit
 

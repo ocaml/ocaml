@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect Foo : int -> int
 
 let r =
