@@ -54,7 +54,7 @@ endif
 all: $(tools)
 
 $(expect_PROG): $(expect_LIBS:=.cma) $(expect_MAIN).cmo
-	$(OCAMLC) -linkall -o $@ $^
+	$(OCAMLC) $(CUSTOM) -linkall -o $@ $^
 
 $(expect_PROG): COMPFLAGS = $(expect_OCAMLFLAGS)
 
@@ -63,7 +63,7 @@ $(codegen_PROG): COMPFLAGS = $(codegen_OCAMLFLAGS)
 codegen_main.cmo: parsecmm.cmo
 
 $(codegen_PROG): $(codegen_OBJECTS)
-	$(OCAMLC) -o $@ $(codegen_LIBS:=.cma) $^
+	$(OCAMLC) $(CUSTOM) -o $@ $(codegen_LIBS:=.cma) $^
 
 parsecmm.mli parsecmm.ml: parsecmm.mly
 	$(OCAMLYACC) -q parsecmm.mly
