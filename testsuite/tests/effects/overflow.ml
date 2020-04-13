@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect E : unit
 let f a b c d e f g h =
    let bb = b + b in

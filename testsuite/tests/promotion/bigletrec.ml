@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 (* check that promotion occurs when immutable objects are assigned to *)
 
 (* will always be shared, because it's big *)

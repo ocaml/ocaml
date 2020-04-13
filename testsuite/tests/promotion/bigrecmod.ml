@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 module type Big = sig
   type a
 

@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect E : unit
 exception X
 

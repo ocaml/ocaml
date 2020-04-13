@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 let main_join n =
   let a = Array.init n (fun _ -> false) in
   Array.init n (fun i -> Domain.spawn (fun () ->

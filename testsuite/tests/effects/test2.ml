@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 open Printf
 
 effect E : int -> int

@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 exception E
 effect Yield : unit
 effect Fork : (unit -> string) -> unit

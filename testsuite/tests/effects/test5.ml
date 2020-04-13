@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect Foo : int -> int
 
 let f () = (perform (Foo 3)) (* 3 + 1 *)

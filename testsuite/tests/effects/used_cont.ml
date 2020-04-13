@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect E : unit
 
 let r = ref None

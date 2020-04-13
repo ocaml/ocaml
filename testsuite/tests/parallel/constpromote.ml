@@ -1,3 +1,10 @@
+(* TEST
+* hasunix
+include unix
+** bytecode
+** native
+*)
+
 (* when run with the bytecode debug runtime, this test
    used to trigger a bug where the constant [13]
    remained unpromoted *)

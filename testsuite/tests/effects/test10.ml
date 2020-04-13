@@ -1,3 +1,6 @@
+(* TEST
+ *)
+
 effect Peek : int
 effect Poke : unit
 
