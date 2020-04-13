@@ -196,18 +196,7 @@ END {
                     ++ ignored;
                 }
             }
-        printf("\n");
-        printf("Summary:\n");
-            printf("  %3d tests passed\n", passed);
-            printf("  %3d tests skipped\n", skipped);
-            printf("  %3d tests failed\n", failed);
-        		printf("  %3d tests disabled\n", ndisabled);
-            printf("  %3d unexpected errors\n", unexped);
-            printf("  %3d tests considered", nresults);
-            if (nresults == passed + skipped + failed + ndisabled + unexped){
-                printf ("\n");
-            }else{
-                printf (" (totals don't add up??)");
+
             printf("\n");
             if (skipped != 0){
                 printf("\nList of skipped tests:\n");
@@ -230,18 +219,18 @@ END {
             printf("  %3d tests passed\n", passed);
             printf("  %3d tests skipped\n", skipped);
             printf("  %3d tests failed\n", failed);
+            printf("  %3d tests disabled\n", ndisabled);
             printf("  %3d tests not started (parent test skipped or failed)\n",
                    ignored);
             printf("  %3d unexpected errors\n", unexped);
             printf("  %3d tests considered", nresults);
-            if (nresults != passed + skipped + ignored + failed + unexped){
+            if (nresults != passed + skipped + ignored + failed + ndisabled + unexped){
                 printf (" (totals don't add up??)");
             }
             printf ("\n");
             if (reran != 0){
                 printf("  %3d test dir re-runs\n", reran);
             }
-            printf("\n");
             if (failed || unexped){
                 printf("#### Something failed. Exiting with error status.\n\n");
                 exit 4;
