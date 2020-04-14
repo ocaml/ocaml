@@ -8,8 +8,8 @@
 # These depend on marshalling of closures or Custom_tag objects (#75)
 lib-marshal
 tests/typing-objects/'Tests.ml' with 1 (expect)
-tests/lib-dynlink-bytecode/main
-tests/lib-dynlink-native/main
+tests/lib-dynlink-bytecode/'main.ml' with 1.1.1.1.1.1.1.1.1.1 (check-program-output)
+tests/lib-dynlink-native/'main.ml' with 1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.2.1.1.1.1.1.1.1.1.1.1.1 (check-program-output)
 
 # Obj.truncate is incompatible with multicore (ocaml/ocaml#1725)
 tests/weak-ephe-final/'weaktest.ml' with 1 (native)
