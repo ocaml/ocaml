@@ -294,7 +294,7 @@ and pattern_extra i ppf (extra_pat, _, attrs) =
      line i ppf "Tpat_extra_type %a\n" fmt_path id;
      attributes i ppf attrs;
   | Tpat_open (id,_,_) ->
-     line i ppf "Tpat_extra_open \"%a\"\n" fmt_path id;
+     line i ppf "Tpat_extra_open %a\n" fmt_path id;
      attributes i ppf attrs;
 
 and expression_extra i ppf x attrs =
@@ -407,7 +407,7 @@ and expression i ppf x =
       expression i ppf e
   | Texp_new (li, _, _) -> line i ppf "Texp_new %a\n" fmt_path li;
   | Texp_setinstvar (_, s, _, e) ->
-      line i ppf "Texp_setinstvar \"%a\"\n" fmt_path s;
+      line i ppf "Texp_setinstvar %a\n" fmt_path s;
       expression i ppf e;
   | Texp_override (_, l) ->
       line i ppf "Texp_override\n";
