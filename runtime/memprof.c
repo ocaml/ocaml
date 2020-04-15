@@ -365,17 +365,18 @@ static struct tracking_state {
 
 /* Reallocate the [trackst] array if it is either too small or too
    large.
+   [grow] is the number of free cells needed.
    Returns 1 if reallocation succeeded --[trackst.alloc_len] is at
    least [trackst.len]--, and 0 otherwise. */
-static int realloc_trackst(void)
+static int realloc_trackst(uintnat grow)
 {
-  uintnat new_alloc_len;
+  uintnat new_alloc_len, new_len = trackst.len + grow;
   struct tracked* new_entries;
-  if (trackst.len <= trackst.alloc_len &&
-     (4*trackst.len >= trackst.alloc_len ||
+  if (new_len <= trackst.alloc_len &&
+     (4*new_len >= trackst.alloc_len ||
       trackst.alloc_len == MIN_TRACKST_ALLOC_LEN))
     return 1;
-  new_alloc_len = trackst.len * 2;
+  new_alloc_len = new_len * 2;
   if (new_alloc_len < MIN_TRACKST_ALLOC_LEN)
     new_alloc_len = MIN_TRACKST_ALLOC_LEN;
   new_entries = caml_stat_resize_noexc(trackst.entries,
@@ -391,11 +392,9 @@ Caml_inline uintnat new_tracked(uintnat n_samples, uintnat wosize,
                                 value block, value user_data)
 {
   struct tracked *t;
-  trackst.len++;
-  if (!realloc_trackst()) {
-    trackst.len--;
+  if (!realloc_trackst(1))
     return Invalid_index;
-  }
+  trackst.len++;
   t = &trackst.entries[trackst.len - 1];
   t->block = block;
   t->n_samples = n_samples;
@@ -547,7 +546,7 @@ static void flush_deleted(void)
   trackst.delete = trackst.len = j;
   CAMLassert(trackst.callback <= trackst.len);
   CAMLassert(trackst.young <= trackst.len);
-  realloc_trackst();
+  realloc_trackst(0);
 }
 
 static void check_action_pending(void)
