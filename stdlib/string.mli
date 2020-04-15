@@ -424,6 +424,126 @@ val uncapitalize : string -> string
 
     @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
+(** {1 Binary decoding of integers} *)
+
+(** The functions in this section binary decode integers from strings.
+
+    All following functions raise [Invalid_argument] if the characters
+    needed at index [i] to decode the integer are not available.
+
+    Little-endian (resp. big-endian) encoding means that least
+    (resp. most) significant bytes are stored first.  Big-endian is
+    also known as network byte order.  Native-endian encoding is
+    either little-endian or big-endian depending on {!Sys.big_endian}.
+
+    32-bit and 64-bit integers are represented by the [int32] and
+    [int64] types, which can be interpreted either as signed or
+    unsigned numbers.
+
+    8-bit and 16-bit integers are represented by the [int] type,
+    which has more bits than the binary encoding.  These extra bits
+    are sign-extended (or zero-extended) for functions which decode 8-bit
+    or 16-bit integers and represented them with [int] values.
+*)
+
+val get_uint8 : string -> int -> int
+(** [get_uint8 b i] is [b]'s unsigned 8-bit integer starting at character
+    index [i].
+
+    @since 4.13.0
+*)
+
+val get_int8 : string -> int -> int
+(** [get_int8 b i] is [b]'s signed 8-bit integer starting at character
+    index [i].
+
+    @since 4.13.0
+*)
+
+val get_uint16_ne : string -> int -> int
+(** [get_uint16_ne b i] is [b]'s native-endian unsigned 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_uint16_be : string -> int -> int
+(** [get_uint16_be b i] is [b]'s big-endian unsigned 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_uint16_le : string -> int -> int
+(** [get_uint16_le b i] is [b]'s little-endian unsigned 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int16_ne : string -> int -> int
+(** [get_int16_ne b i] is [b]'s native-endian signed 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int16_be : string -> int -> int
+(** [get_int16_be b i] is [b]'s big-endian signed 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int16_le : string -> int -> int
+(** [get_int16_le b i] is [b]'s little-endian signed 16-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int32_ne : string -> int -> int32
+(** [get_int32_ne b i] is [b]'s native-endian 32-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int32_be : string -> int -> int32
+(** [get_int32_be b i] is [b]'s big-endian 32-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int32_le : string -> int -> int32
+(** [get_int32_le b i] is [b]'s little-endian 32-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int64_ne : string -> int -> int64
+(** [get_int64_ne b i] is [b]'s native-endian 64-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int64_be : string -> int -> int64
+(** [get_int64_be b i] is [b]'s big-endian 64-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
+val get_int64_le : string -> int -> int64
+(** [get_int64_le b i] is [b]'s little-endian 64-bit integer
+    starting at character index [i].
+
+    @since 4.13.0
+*)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)

@@ -383,6 +383,8 @@ let of_seq i =
 
 (** {6 Binary encoding/decoding of integers} *)
 
+(* The get_ functions are all duplicated in string.ml *)
+
 external get_uint8 : bytes -> int -> int = "%bytes_safe_get"
 external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
 external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
