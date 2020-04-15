@@ -136,6 +136,12 @@ val concat : sep:string -> string list -> string
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
+val cat : string -> string -> string
+(** [cat s1 s2] concatenates s1 and s2 ([s1 ^ s2]).
+
+    @since 4.13.0
+*)
+
 (** {1:predicates Predicates and comparisons} *)
 
 val equal : t -> t -> bool

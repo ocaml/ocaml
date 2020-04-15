@@ -76,6 +76,8 @@ let concat sep = function
             (B.create (sum_lengths 0 seplen l))
             0 sep seplen l
 
+let cat = ( ^ )
+
 (* duplicated in bytes.ml *)
 let iter f s =
   for i = 0 to length s - 1 do f (unsafe_get s i) done
