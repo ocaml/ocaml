@@ -1,7 +1,6 @@
-
-# * *     effect E : unit
-#           Characters 76-77:
-     | effect E k when (continue k (); false) -> assert false
-                                 ^
+effect E : unit
+Line 4, characters 31-32:
+4 |    | effect E k when (continue k (); false) -> assert false
+                                   ^
 Error: Unbound value k
-# 
+
