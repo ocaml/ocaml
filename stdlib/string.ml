@@ -221,6 +221,7 @@ let ends_with ~suffix s =
     else aux (i + 1)
   in diff >= 0 && aux 0
 
+(* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
   let j = ref (length s) in

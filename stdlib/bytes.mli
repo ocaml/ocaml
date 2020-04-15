@@ -453,6 +453,21 @@ let s = Bytes.of_string "hello"
 *)
 
 
+val split_on_char: char -> bytes -> bytes list
+(** [split_on_char sep s] returns the list of all (possibly empty)
+    subsequences of [s] that are delimited by the [sep] character.
+
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      byte sequence equal to the input ([Bytes.concat (Bytes.make 1 sep)
+      (Bytes.split_on_char sep s) = s]).
+    - No byte sequence in the result contains the [sep] character.
+
+    @since 4.13.0
+*)
+
 (** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t

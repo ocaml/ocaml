@@ -84,8 +84,9 @@ Working version
 
 ### Standard library:
 
-- #9448: Add String.{empty,cat} as dual of Bytes.{empty,cat} and
-  String.{of,to}_bytes as aliases of Bytes.{to,of}_string.
+- #9448: Add String.{empty,cat} as dual of Bytes.{empty,cat},
+  String.{of,to}_bytes as aliases of Bytes.{to,of}_string, and
+  Bytes.split_on_char as dual of String.split_on_char.
   (David Allsopp, review by Damien Doligez, Gabriel Scherer and others)
 
 - #9533: Added String.starts_with and String.ends_with.
