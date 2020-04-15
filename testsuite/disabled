@@ -25,6 +25,8 @@ tool-debugger
 # the pre-multicore threads library is broken (#100)
 lib-systhreads
 lib-threads
+tests/backtrace/'callstack.ml' with 1.1.1 (native)
+tests/backtrace/'callstack.ml' with 1.1.2 (bytecode)
 
 # Uses obj.reachable_words whose definition in multicore isn't clear (think racy programs)
 lib-obj
