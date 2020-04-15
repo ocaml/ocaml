@@ -287,7 +287,25 @@ and transl_exp0 e =
   | Texp_match(arg, pat_expr_list, [], partial) ->
       transl_match e arg pat_expr_list partial
   | Texp_match(arg, pat_expr_list, eff_pat_expr_list, partial) ->
-      transl_handler e arg (Some (pat_expr_list, partial)) [] eff_pat_expr_list
+  (* need to separate the values from exceptions for tansl_handler *)
+      let split_case (val_cases, exn_cases as acc)
+            ({ c_lhs; c_rhs } as case) =
+        if c_rhs.exp_desc = Texp_unreachable then acc else
+        let val_pat, exn_pat = split_pattern c_lhs in
+        match val_pat, exn_pat with
+        | None, None -> assert false
+        | Some pv, None ->
+            { case with c_lhs = pv } :: val_cases, exn_cases
+        | None, Some pe ->
+            val_cases, { case with c_lhs = pe } :: exn_cases
+        | Some _pv, Some _pe ->
+            assert false (* FIXME: handle this case *)
+      in
+      let pat_expr_list, exn_pat_expr_list =
+        let x, y = List.fold_left split_case ([], []) pat_expr_list in
+        List.rev x, List.rev y
+      in
+      transl_handler e arg (Some (pat_expr_list, partial)) exn_pat_expr_list eff_pat_expr_list
   | Texp_try(body, pat_expr_list, []) ->
       let id = Typecore.name_cases "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
