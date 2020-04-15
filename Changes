@@ -35,6 +35,11 @@ Working version
   (Nicolás Ojeda Bär, review by Stephen Dolan, Gabriel Scherer, Mark Shinwell,
   and Xavier Leroy)
 
+- #9449: Memprof: guarantee that an allocation callback is always run
+   in the same thread the allocation takes place.
+  (Jacques-Henri Jourdan, review by Stephen Dolan and
+   Guillaume Munch-Maccagnoni)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
@@ -173,6 +178,8 @@ OCaml 4.11
   registering callbacks for promotion and deallocation of memory
   blocks.
   The new API no longer gives the block tags to the allocation callback.
+  It provides the guarantee that allocation callbacks are run in the
+  same thread as the allocation.
   (Stephen Dolan and Jacques-Henri Jourdan, review by Damien Doligez
    and Gabriel Scherer)
 

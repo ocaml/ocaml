@@ -44,6 +44,7 @@ extern void caml_memprof_shutdown(void);
 
 struct caml_memprof_th_ctx {
   int suspended, callback_running;
+  uintnat first_alloc_callback_idx;
 };
 extern void caml_memprof_init_th_ctx(struct caml_memprof_th_ctx* ctx);
 extern void caml_memprof_stop_th_ctx(struct caml_memprof_th_ctx* ctx);
