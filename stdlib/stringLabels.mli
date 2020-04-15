@@ -101,6 +101,20 @@ val empty : string
     @since 4.13.0
 *)
 
+val of_bytes : bytes -> string
+(** Return a new string that contains the same bytes as the given byte
+    sequence.
+
+    @since 4.13.0
+*)
+
+val to_bytes : string -> bytes
+(** Return a new byte sequence that contains the same bytes as the given
+    string.
+
+    @since 4.13.0
+*)
+
 external length : string -> int = "%string_length"
 (** [length s] is the length (number of bytes/characters) of [s]. *)
 

@@ -44,6 +44,8 @@ let init n f =
 let empty = ""
 let copy s =
   B.copy (bos s) |> bts
+let of_bytes = B.to_string
+let to_bytes = B.of_string
 let sub s ofs len =
   B.sub (bos s) ofs len |> bts
 let fill =

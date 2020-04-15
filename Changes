@@ -84,7 +84,8 @@ Working version
 
 ### Standard library:
 
-- #9448: Add String.empty as dual of Bytes.empty.
+- #9448: Add String.empty as dual of Bytes.empty and String.{of,to}_bytes as
+  aliases of Bytes.{to,of}_string.
   (David Allsopp, review by Damien Doligez, Gabriel Scherer and others)
 
 - #9533: Added String.starts_with and String.ends_with.
