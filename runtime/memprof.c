@@ -977,11 +977,6 @@ CAMLprim value caml_memprof_stop(value unit)
 
   if (!started) caml_failwith("Gc.Memprof.stop: not started.");
 
-  /* This call to [caml_memprof_stop] will discard all the previously
-     tracked blocks. We try one last time to call the postponed
-     callbacks. */
-  caml_raise_if_exception(caml_memprof_handle_postponed_exn());
-
   /* Discard the tracked blocks. */
   for (i = 0; i < trackst.len; i++)
     if (trackst.entries[i].idx_ptr != NULL)

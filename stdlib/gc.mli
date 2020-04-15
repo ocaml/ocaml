@@ -536,11 +536,10 @@ module Memprof :
     val stop : unit -> unit
     (** Stop the sampling. Fails if sampling is not active.
 
-        This function does not allocate memory, but tries to run the
-        postponed callbacks for already allocated memory blocks (of
-        course, these callbacks may allocate).
+        This function does not allocate memory.
 
-        All the already tracked blocks are discarded.
+        All the already tracked blocks are discarded. If there are
+        pending postponed callbacks, they may be discarded.
 
         Calling [stop] when a callback is running can lead to
         callbacks not being called even though some events happened. *)
