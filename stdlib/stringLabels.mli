@@ -95,6 +95,12 @@ val init : int -> f:(int -> char) -> string
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
     @since 4.02.0 *)
 
+val empty : string
+(** The empty string.
+
+    @since 4.13.0
+*)
+
 external length : string -> int = "%string_length"
 (** [length s] is the length (number of bytes/characters) of [s]. *)
 

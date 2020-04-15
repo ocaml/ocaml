@@ -41,6 +41,7 @@ let make n c =
   B.make n c |> bts
 let init n f =
   B.init n f |> bts
+let empty = ""
 let copy s =
   B.copy (bos s) |> bts
 let sub s ofs len =
