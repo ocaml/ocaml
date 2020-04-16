@@ -261,7 +261,8 @@ Working version
   (Gabriel Scherer, Thomas Refis, Florian Angeletti and Jacques Garrigue,
    reviewing each other without self-loops)
 
-- #9321, #9322, #9359, #9361, #9417: refactor the pattern-matching compiler
+- #9321, #9322, #9359, #9361, #9417, #9447: refactor the
+  pattern-matching compiler
   (Thomas Refis and Gabriel Scherer, review by Florian Angeletti)
 
 - #9211, #9215, #9222: fix Makefile dependencies in

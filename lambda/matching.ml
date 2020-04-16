@@ -216,8 +216,6 @@ end = struct
   let erase p = { p with pat_desc = erase_desc p.pat_desc }
 end
 
-let omega_ : [> `Any ] pattern_data = { Parmatch.omega with pat_desc = `Any }
-
 module Half_simple : sig
   (** Half-simplified patterns are patterns where:
         - records are expanded so that they possess all fields
@@ -1020,18 +1018,17 @@ let half_simplify_nonempty ~arg (cls : Typedtree.pattern Non_empty_clause.t) :
 let half_simplify_clause ~arg (cls : Typedtree.pattern list clause) =
   cls |> Non_empty_clause.of_initial |> half_simplify_nonempty ~arg
 
-let half_simplify_cases ~arg cls = List.map (half_simplify_clause ~arg) cls
-
 (* Once matchings are *fully* simplified, one can easily find
    their nature. *)
 
 let rec what_is_cases ~skip_any cases =
   match cases with
-  | [] -> omega_
+  | [] -> Pattern_head.omega
   | ((p, _), _) :: rem -> (
-      match Pattern_head.desc (Simple.head p) with
+      let head = Simple.head p in
+      match Pattern_head.desc head with
       | Any when skip_any -> what_is_cases ~skip_any rem
-      | _ -> p
+      | _ -> head
     )
 
 let what_is_first_case = what_is_cases ~skip_any:false
@@ -1205,7 +1202,7 @@ let as_matrix cases =
     Some precompilation of or-patterns and
     variable pattern occurs. Mostly this means that bindings
     are performed now,  being replaced by let-bindings
-    in actions (cf. half_simplify_cases).
+    in actions (cf. Half_simple.of_clause).
 
     Additionally, if the match argument is a variable, matchings whose
     first column is made of variables only are split further
@@ -1287,7 +1284,7 @@ and split_no_or cls args def k =
      different heads match different values), but this is handled by the
      [can_group] function. *)
   let rec split (cls : Simple.clause list) =
-    let discr = Simple.head (what_is_first_case cls) in
+    let discr = what_is_first_case cls in
     collect discr [] [] cls
   and collect group_discr rev_yes rev_no = function
     | [ (((p, ps), _) as cl) ]
@@ -1359,6 +1356,10 @@ and precompile_var args cls def k =
             List.map
               (fun ((p, ps), act) ->
                 assert (simple_omega_like p);
+
+                (* we learned by pattern-matching on [args]
+                   that [p::ps] has at least two arguments,
+                   so [ps] must be non-empty *)
                 half_simplify_clause ~arg:(fst arg) (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
@@ -1495,24 +1496,21 @@ let dbg_split_and_precompile pm next nexts =
     pretty_precompiled_res next nexts
   )
 
-let split_and_precompile_nonempty v pm =
-  let pm =
-    { pm with cases = List.map (half_simplify_nonempty ~arg:(Lvar v)) pm.cases }
-  in
-  let { me = next }, nexts = split_or (Some v) pm.cases pm.args pm.default in
-  dbg_split_and_precompile pm next nexts;
-  (next, nexts)
-
 let split_and_precompile_simplified pm =
   let { me = next }, nexts = split_no_or pm.cases pm.args pm.default [] in
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
-let split_and_precompile ~arg_id ~arg_lambda pm =
-  let pm = { pm with cases = half_simplify_cases ~arg:arg_lambda pm.cases } in
-  let { me = next }, nexts = split_or arg_id pm.cases pm.args pm.default in
+let split_and_precompile_half_simplified ~arg pm =
+  let { me = next }, nexts = split_or arg pm.cases pm.args pm.default in
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
+
+let split_and_precompile ~arg_id ~arg_lambda pm =
+  let pm =
+    { pm with cases = List.map (half_simplify_clause ~arg:arg_lambda) pm.cases }
+  in
+  split_and_precompile_half_simplified ~arg:arg_id pm
 
 (* General divide functions *)
 
@@ -2764,7 +2762,7 @@ let split_extension_cases tag_lambda_list =
   in
   split_rec tag_lambda_list
 
-let combine_constructor loc arg ex_pat cstr partial ctx def
+let combine_constructor loc arg pat_env cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   match cstr.cstr_tag with
   | Cstr_extension _ ->
@@ -2790,7 +2788,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
               let tests =
                 List.fold_right
                   (fun (path, act) rem ->
-                    let ext = transl_extension_path loc ex_pat.pat_env path in
+                    let ext = transl_extension_path loc pat_env path in
                     Lifthenelse
                       (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
                   nonconsts default
@@ -2799,7 +2797,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
         in
         List.fold_right
           (fun (path, act) rem ->
-            let ext = transl_extension_path loc ex_pat.pat_env path in
+            let ext = transl_extension_path loc pat_env path in
             Lifthenelse (Lprim (Pintcomp Ceq, [ arg; ext ], loc), act, rem))
           consts nonconst_lambda
       in
@@ -3141,7 +3139,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
 (* To find reasonable names for variables *)
 
 let rec name_pattern default = function
-  | (pat :: _, _) :: rem -> (
+  | ((pat, _), _) :: rem -> (
       match pat.pat_desc with
       | Tpat_var (id, _) -> id
       | Tpat_alias (_, id, _) -> id
@@ -3168,9 +3166,8 @@ let arg_to_var arg cls =
 *)
 
 let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
-  match m with
-  | { cases = []; args = [] } -> comp_exit ctx m
-  | { cases = ([], action) :: rem } ->
+  match m.cases with
+  | ([], action) :: rem ->
       if is_guarded action then
         let lambda, total =
           compile_match None partial ctx { m with cases = rem }
@@ -3178,65 +3175,47 @@ let rec compile_match repr partial ctx (m : initial_clause pattern_matching) =
         (event_branch repr (patch_guarded lambda action), total)
       else
         (event_branch repr action, Jumps.empty)
-  | { args = (arg, str) :: argl } ->
-      let v, newarg = arg_to_var arg m.cases in
-      let first_match, rem =
-        split_and_precompile ~arg_id:(Some v) ~arg_lambda:newarg
-          { m with args = (newarg, Alias) :: argl }
-      in
-      let lam, total =
-        comp_match_handlers
-          (( if dbg then
-             do_compile_matching_pr
-           else
-             do_compile_matching
-           )
-             repr)
-          partial ctx first_match rem
-      in
-      (bind_check str v arg lam, total)
-  | _ -> assert false
+  | nonempty_cases ->
+      compile_match_nonempty repr partial ctx
+        { m with cases = List.map Non_empty_clause.of_initial nonempty_cases }
 
-and compile_simplified repr partial ctx (m : Simple.clause pattern_matching) =
-  match m with
-  | { cases = []; args = [] } -> comp_exit ctx m
-  | { args = ((Lvar v as arg), str) :: argl } ->
-      let first_match, rem =
-        split_and_precompile_simplified { m with args = (arg, Alias) :: argl }
-      in
-      let lam, total =
-        comp_match_handlers
-          (( if dbg then
-             do_compile_matching_pr
-           else
-             do_compile_matching
-           )
-             repr)
-          partial ctx first_match rem
-      in
-      (bind_check str v arg lam, total)
-  | _ -> assert false
-
-and compile_half_compiled repr partial ctx
+and compile_match_nonempty repr partial ctx
     (m : Typedtree.pattern Non_empty_clause.t pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
-  | { args = ((Lvar v as arg), str) :: argl } ->
+  | { args = (arg, str) :: argl } ->
+      let v, newarg = arg_to_var arg m.cases in
+      let args = (newarg, Alias) :: argl in
+      let cases = List.map (half_simplify_nonempty ~arg:newarg) m.cases in
+      let m = { m with args; cases } in
       let first_match, rem =
-        split_and_precompile_nonempty v { m with args = (arg, Alias) :: argl }
-      in
-      let lam, total =
-        comp_match_handlers
-          (( if dbg then
-             do_compile_matching_pr
-           else
-             do_compile_matching
-           )
-             repr)
-          partial ctx first_match rem
-      in
-      (bind_check str v arg lam, total)
+        split_and_precompile_half_simplified ~arg:(Some v) m in
+      combine_handlers repr partial ctx (v, str, arg) first_match rem
   | _ -> assert false
+
+and compile_match_simplified repr partial ctx
+    (m : Simple.clause pattern_matching) =
+  match m with
+  | { cases = []; args = [] } -> comp_exit ctx m
+  | { args = ((Lvar v as arg), str) :: argl } ->
+      let args = (arg, Alias) :: argl in
+      let m = { m with args } in
+      let first_match, rem = split_and_precompile_simplified m in
+      combine_handlers repr partial ctx (v, str, arg) first_match rem
+  | _ -> assert false
+
+and combine_handlers repr partial ctx (v, str, arg) first_match rem =
+  let lam, total =
+    comp_match_handlers
+      (( if dbg then
+         do_compile_matching_pr
+       else
+         do_compile_matching
+       )
+         repr)
+      partial ctx first_match rem
+  in
+  (bind_check str v arg lam, total)
 
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr repr partial ctx x =
@@ -3269,48 +3248,46 @@ and do_compile_matching repr partial ctx pmh =
             *)
             assert false
       in
-      let pat = what_is_cases pm.cases in
-      let ph = Simple.head pat in
-      let pat = General.erase pat in
+      let ph = what_is_cases pm.cases in
+      let pomega = Pattern_head.to_omega_pattern ph in
+      let ploc = Pattern_head.loc ph in
       match Pattern_head.desc ph with
       | Any -> compile_no_test divide_var Context.rshift repr partial ctx pm
       | Tuple l ->
-          compile_no_test
-            (divide_tuple l (normalize_pat pat))
-            Context.combine repr partial ctx pm
+          compile_no_test (divide_tuple l pomega) Context.combine repr partial
+            ctx pm
       | Record [] -> assert false
       | Record (lbl :: _) ->
           compile_no_test
-            (divide_record lbl.lbl_all (normalize_pat pat))
+            (divide_record lbl.lbl_all pomega)
             Context.combine repr partial ctx pm
       | Constant cst ->
           compile_test
             (compile_match repr partial)
             partial divide_constant
-            (combine_constant pat.pat_loc arg cst partial)
+            (combine_constant ploc arg cst partial)
             ctx pm
       | Construct cstr ->
           compile_test
             (compile_match repr partial)
             partial divide_constructor
-            (combine_constructor pat.pat_loc arg pat cstr partial)
+            (combine_constructor ploc arg (Pattern_head.env ph) cstr partial)
             ctx pm
       | Array _ ->
-          let kind = Typeopt.array_pattern_kind pat in
+          let kind = Typeopt.array_pattern_kind pomega in
           compile_test
             (compile_match repr partial)
             partial (divide_array kind)
-            (combine_array pat.pat_loc arg kind partial)
+            (combine_array ploc arg kind partial)
             ctx pm
       | Lazy ->
-          compile_no_test
-            (divide_lazy (normalize_pat pat))
-            Context.combine repr partial ctx pm
+          compile_no_test (divide_lazy pomega) Context.combine repr partial ctx
+            pm
       | Variant { cstr_row = row } ->
           compile_test
             (compile_match repr partial)
             partial (divide_variant !row)
-            (combine_variant pat.pat_loc !row arg partial)
+            (combine_variant ploc !row arg partial)
             ctx pm
     )
   | PmVar { inside = pmh } ->
@@ -3319,7 +3296,7 @@ and do_compile_matching repr partial ctx pmh =
       in
       (lam, Jumps.map Context.rshift total)
   | PmOr { body; handlers } ->
-      let lam, total = compile_simplified repr partial ctx body in
+      let lam, total = compile_match_simplified repr partial ctx body in
       compile_orhandlers (compile_match repr partial) lam total ctx handlers
 
 and compile_no_test divide up_ctx repr partial ctx to_match =
@@ -3707,9 +3684,9 @@ let flatten_precompiled size args pmh =
 
 let compile_flattened repr partial ctx pmh =
   match pmh with
-  | FPm pm -> compile_half_compiled repr partial ctx pm
+  | FPm pm -> compile_match_nonempty repr partial ctx pm
   | FPmOr { body = b; handlers = hs } ->
-      let lam, total = compile_half_compiled repr partial ctx b in
+      let lam, total = compile_match_nonempty repr partial ctx b in
       compile_orhandlers (compile_match repr partial) lam total ctx hs
 
 let do_for_multiple_match loc paraml pat_act_list partial =
