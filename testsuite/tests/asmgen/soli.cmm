@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DUNIT_INT -DFUN=solitaire main.c"
+arguments = "-ccopt -DUNIT_INT -ccopt -DFUN=solitaire main.c"
 * asmgen
 *)
 

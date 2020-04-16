@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DSORT -DFUN=quicksort main.c"
+arguments = "-ccopt -DSORT -ccopt -DFUN=quicksort main.c"
 * asmgen
 *)
 

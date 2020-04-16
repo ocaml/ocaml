@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DCHECKBOUND main.c"
+arguments = "-ccopt -DCHECKBOUND main.c"
 * asmgen
 *)
 

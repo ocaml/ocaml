@@ -1,8 +1,7 @@
 (* TEST
 files = "main.c"
-arguments = "-DUNIT_INT -DFUN=takmain main.c"
-* asmgen
-*)
+arguments = "-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c"
+* asmgen*)
 
 (**************************************************************************)
 (*                                                                        *)

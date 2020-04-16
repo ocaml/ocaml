@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DINT_FLOAT -DFUN=is_even main.c"
+arguments = "-ccopt -DINT_FLOAT -ccopt -DFUN=is_even main.c"
 * asmgen
 *)
 
