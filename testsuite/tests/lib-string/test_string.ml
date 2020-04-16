@@ -40,6 +40,12 @@ let () =
   done
 ;;
 
+let () =
+  let s = String.init 256 char_of_int in
+  let encoded = String.to_hex s in
+  Printf.printf "%s\n" encoded;
+  assert(String.of_hex encoded = s)
+
 (* GPR#805/815/833 *)
 
 let ()  =

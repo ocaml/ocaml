@@ -213,6 +213,15 @@ let split_on_char sep s =
   done;
   sub s 0 !j :: !r
 
+let to_hex s =
+  bos s |> B.to_hex |> bts
+
+let of_hex s =
+  bos s |> B.of_hex |> bts
+
+let of_hex_opt s =
+  bos s |> B.of_hex_opt |> Option.map bts
+
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]
 let uppercase s =

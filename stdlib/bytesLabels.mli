@@ -302,6 +302,30 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.05.0 *)
 
+val to_hex : bytes -> bytes
+(** Return the given byte sequence as a byte sequence of US-ASCII lowercase
+    hexadecimal digits.
+
+    @since 4.12.0
+*)
+
+val of_hex : bytes -> bytes
+(** Convert a sequence of US-ASCII hexadecimal digits back into the
+    corresponding byte sequence.
+
+    @raise Failure if the argument is not an even number of US-ASCII hexadecimal
+                   characters.
+
+    @since 4.12.0
+*)
+
+val of_hex_opt : bytes -> bytes option
+(** [of_hex_opt b] is [Some (of_hex b)] or [None] if {!of_hex} would have
+    raised.
+
+    @since 4.12.0
+*)
+
 (** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t

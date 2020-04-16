@@ -17,6 +17,8 @@ Working version
 
 ### Standard library:
 
+- #9446: Generalise Digest.{to,from}_hex to {Bytes,String}.{to,of}_hex.
+  (David Allsopp, review by Daniel Bünzli and Alain Frisch)
 
 ### Other libraries:
 

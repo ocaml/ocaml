@@ -322,6 +322,40 @@ type t = bytes
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : t -> t -> bool = "caml_bytes_equal" [@@noalloc]
 
+let char_hex n =
+  Char.unsafe_chr (n + if n < 10 then Char.code '0' else (Char.code 'a' - 10))
+
+let to_hex s =
+  let l = length s in
+  let result = create (l * 2) in
+  for i = 0 to (l - 1) do
+    let x = Char.code (unsafe_get s i) in
+    unsafe_set result (i * 2) (char_hex (x lsr 4));
+    unsafe_set result (i * 2 + 1) (char_hex (x land 0x0f));
+  done;
+  result
+
+let of_hex b =
+  let l = length b in
+  if l mod 2 <> 0 then failwith "String.of_hex / Bytes.of_hex";
+  let digit c =
+    match c with
+    | '0'..'9' -> Char.code c - Char.code '0'
+    | 'A'..'F' -> Char.code c - Char.code 'A' + 10
+    | 'a'..'f' -> Char.code c - Char.code 'a' + 10
+    | _ -> failwith "String.of_hex / Bytes.of_hex"
+  in
+  let byte i = digit (unsafe_get b i) lsl 4 + digit (unsafe_get b (i + 1)) in
+  let result = create (l / 2) in
+  for i = 0 to (l / 2 - 1) do
+    unsafe_set result i (Char.chr (byte (2 * i)));
+  done;
+  result
+
+let of_hex_opt b =
+  try Some (of_hex b)
+  with Failure _ -> None
+
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]
 let uppercase s = map Char.uppercase s

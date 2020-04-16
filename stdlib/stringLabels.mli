@@ -297,6 +297,30 @@ val split_on_char: sep:char -> string -> string list
     @since 4.05.0
 *)
 
+val to_hex : string -> string
+(** Return the given string as a sequence of US-ASCII lowercase hexadecimal
+    digits.
+
+    @since 4.12.0
+*)
+
+val of_hex : string -> string
+(** Convert a sequence of US-ASCII hexadecimal digits back into the
+    corresponding string.
+
+    @raise Failure if the argument is not an even number of US-ASCII hexadecimal
+                   characters.
+
+    @since 4.12.0
+*)
+
+val of_hex_opt : string -> string option
+(** [of_hex_opt s] is [Some (of_hex s)] or [None] if {!of_hex} would have
+    raised.
+
+    @since 4.12.0
+*)
+
 (** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t
