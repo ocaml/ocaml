@@ -384,8 +384,9 @@ CAMLexport value caml_startup_code_exn(
            int pooling,
            char_os **argv)
 {
-  char_os * cds_file;
   char_os * exe_name;
+
+  CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
@@ -397,23 +398,19 @@ CAMLexport value caml_startup_code_exn(
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-  CAML_INIT_DOMAIN_STATE;
-
   caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  cds_file = caml_secure_getenv(_T("CAML_DEBUG_FILE"));
-  if (cds_file != NULL) {
-    caml_cds_file = caml_stat_strdup_os(cds_file);
-  }
+
+  /* Initialize the abstract machine */
+  caml_init_gc ();
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   Caml_state->external_raise = NULL;
-  /* Initialize the abstract machine */
-  caml_init_gc ();
+  caml_init_argv(exe_name, argv);
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */
