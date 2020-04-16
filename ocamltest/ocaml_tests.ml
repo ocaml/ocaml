@@ -122,9 +122,9 @@ let asmgen_actions =
   else if Ocamltest_config.spacetime then [asmgen_skip_on_spacetime]
   else if msvc64 then [asmgen_skip_on_msvc64]
   else [
-    setup_simple_build_env;
+    setup_ocamlc_opt_build_env;
     codegen;
-    cc;
+    ocamlc_opt;
   ]
 
 let asmgen =

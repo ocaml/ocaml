@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DINT_INT -DFUN=pgcd_30030 main.c"
+arguments = "-ccopt -DINT_INT -ccopt -DFUN=pgcd_30030 main.c"
 * asmgen
 *)
 

@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DINT_INT -DFUN=fib main.c"
+arguments = "-ccopt -DINT_INT -ccopt -DFUN=fib main.c"
 * asmgen
 *)
 

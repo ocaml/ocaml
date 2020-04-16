@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DINT_INT -DFUN=catch_exit main.c"
+arguments = "-ccopt -DINT_INT -ccopt -DFUN=catch_exit main.c"
 * asmgen
 *)
 

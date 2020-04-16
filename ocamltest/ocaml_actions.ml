@@ -591,19 +591,40 @@ let mklib log env =
 
 let ocamlmklib = Actions.make "ocamlmklib" mklib
 
-let finalise_codegen_cc ocamlsrcdir test_basename _log env =
-  let test_module =
-    Filename.make_filename test_basename "s"
-  in
-  let archmod = Ocaml_files.asmgen_archmod ocamlsrcdir in
-  let modules = test_module ^ " " ^ archmod in
-  let program = Filename.make_filename test_basename "out" in
-  let env = Environments.add_bindings
-  [
-    Ocaml_variables.modules, modules;
-    Builtin_variables.program, program;
-  ] env in
-  (Result.pass, env)
+let finalise_codegen_cc ocamlsrcdir test_basename log env =
+  (* HACKED for multicore asmgen tests *)
+  let obj = Filename.make_filename test_basename Ocamltest_config.objext in
+  let src = Filename.make_filename test_basename "s" in
+  let what = "Running assembler on codegen" in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline = [Ocamltest_config.asm; "-o"; obj; src] in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:Ocaml_variables.compiler_output
+      ~stderr_variable:Ocaml_variables.compiler_output
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then begin
+    let archmod = Ocaml_files.asmgen_archmod ocamlsrcdir in
+    let modules = obj ^ " " ^ archmod in
+    let program = Filename.make_filename test_basename "out" in
+    let env = Environments.add_bindings
+    [
+      Builtin_variables.program, program;
+      Ocaml_variables.all_modules, modules;
+      Ocaml_variables.flags,
+        (Environments.safe_lookup Builtin_variables.arguments env);
+    ] env in
+    (Result.pass, env)
+  end else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
 
 let finalise_codegen_msvc ocamlsrcdir test_basename log env =
   let obj = Filename.make_filename test_basename Ocamltest_config.objext in

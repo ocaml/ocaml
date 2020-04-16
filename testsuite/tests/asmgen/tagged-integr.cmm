@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DINT_FLOAT -DFUN=test main.c"
+arguments = "-ccopt -DINT_FLOAT -ccopt -DFUN=test main.c"
 * asmgen
 *)
 

@@ -1,6 +1,6 @@
 (* TEST
 files = "main.c"
-arguments = "-DFLOAT_CATCH -DFUN=catch_try_float main.c"
+arguments = "-ccopt -DFLOAT_CATCH -ccopt -DFUN=catch_try_float main.c"
 * asmgen
 *)
 
