@@ -284,7 +284,8 @@ partialclean::
 compilerlibs/ocamlcommon.cmxa: $(COMMON_CMI) $(COMMON:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $(COMMON:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A)
+	rm -f compilerlibs/ocamlcommon.cmxa \
+	      compilerlibs/ocamlcommon.a compilerlibs/ocamlcommon.lib
 
 
 compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMI) $(BYTECOMP)
@@ -295,7 +296,8 @@ partialclean::
 compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMI) $(BYTECOMP:.cmo=.cmx)
 	$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $(BYTECOMP:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A)
+	rm -f compilerlibs/ocamlbytecomp.cmxa \
+	      compilerlibs/ocamlbytecomp.a compilerlibs/ocamlbytecomp.lib
 
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END_CMI) $(MIDDLE_END)
@@ -305,7 +307,8 @@ compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END_CMI) $(MIDDLE_END:%.cmo=%.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma \
 	      compilerlibs/ocamlmiddleend.cmxa \
-	      compilerlibs/ocamlmiddleend.$(A)
+	      compilerlibs/ocamlmiddleend.a \
+	      compilerlibs/ocamlmiddleend.lib
 
 
 compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMI) $(OPTCOMP)
@@ -316,7 +319,8 @@ partialclean::
 compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP_CMI) $(OPTCOMP:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(OPTCOMP:.cmo=.cmx)
 partialclean::
-	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
+	rm -f compilerlibs/ocamloptcomp.cmxa \
+	      compilerlibs/ocamloptcomp.a compilerlibs/ocamloptcomp.lib
 
 
 compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMI) $(TOPLEVEL)
@@ -328,4 +332,4 @@ compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(OPTTOPLEVEL:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa \
-	  compilerlibs/ocamlopttoplevel.$(A)
+	  compilerlibs/ocamlopttoplevel.a compilerlibs/ocamlopttoplevel.lib

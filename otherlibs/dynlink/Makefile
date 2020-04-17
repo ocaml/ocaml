@@ -21,8 +21,8 @@
 
 ROOTDIR = ../..
 
-include $(ROOTDIR)/Makefile.config
-include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
@@ -255,11 +255,12 @@ installopt:
 partialclean:
 	rm -f extract_crc *.cm[ioaxt] *.cmti *.cmxa \
 	      byte/*.cm[iot] byte/*.cmti \
-	      native/*.cm[ixt] native/*.cmti native/*.$(O) \
-	      $(LOCAL_SRC)/*.cm[ioaxt] $(LOCAL_SRC)/*.cmti $(LOCAL_SRC)/*.$(O)
+	      native/*.cm[ixt] native/*.cmti native/*.o native/*.obj \
+	      $(LOCAL_SRC)/*.cm[ioaxt] $(LOCAL_SRC)/*.cmti \
+        $(LOCAL_SRC)/*.o $(LOCAL_SRC)/*.obj
 
 clean: partialclean
-	rm -f *.$(A) *.$(O) *.so *.dll dynlink_platform_intf.mli \
+	rm -f *.a *.lib *.o *.obj *.so *.dll dynlink_platform_intf.mli \
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
 	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli
 

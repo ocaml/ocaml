@@ -17,8 +17,21 @@
 
 ROOTDIR = .
 
+# The configure and *clean targets can all be run without running ./configure
+# first.
+# If no goals were specified (i.e. `make`), add defaultentry (since it requires
+# ./configure to be run)
+CAN_BE_UNCONFIGURED := $(strip \
+  $(filter-out partialclean clean distclean configure, \
+	$(if $(MAKECMDGOALS),$(MAKECMDGOALS),defaultentry)))
+
+ifeq "$(CAN_BE_UNCONFIGURED)" ""
+-include Makefile.config
+-include Makefile.common
+else
 include Makefile.config
 include Makefile.common
+endif
 
 .PHONY: defaultentry
 ifeq "$(NATIVE_COMPILER)" "true"
@@ -126,6 +139,9 @@ utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
+
+configure: configure.ac aclocal.m4 VERSION tools/autogen
+	tools/autogen
 
 .PHONY: partialclean
 partialclean::
@@ -738,7 +754,7 @@ stdlib/libcamlrun.$(A): runtime/libcamlrun.$(A)
 	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
 clean::
 	$(MAKE) -C runtime clean
-	rm -f stdlib/libcamlrun.$(A)
+	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 otherlibs_all := bigarray dynlink raw_spacetime_lib \
   str systhreads unix win32unix
@@ -768,7 +784,7 @@ runtime/libasmrun.$(A): makeruntimeopt ;
 stdlib/libasmrun.$(A): runtime/libasmrun.$(A)
 	cp $< $@
 clean::
-	rm -f stdlib/libasmrun.$(A)
+	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
 
 # The standard library
 
@@ -1007,7 +1023,7 @@ ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -o $@ $^
 
 partialclean::
-	rm -f ocamlnat$(EXE)
+	rm -f ocamlnat ocamlnat.exe
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
@@ -1050,8 +1066,8 @@ partialclean::
            lambda middle_end/closure middle_end/flambda \
            middle_end/flambda/base_types asmcomp/debug \
            driver toplevel tools; do \
-	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
-	    $$d/*.$(O) $$d/*.$(SO); \
+	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.s $$d/*.asm \
+	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
 .PHONY: depend
@@ -1065,15 +1081,19 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
-	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	boot/*.cm* boot/libcamlrun.$(A) boot/ocamlc.opt
-	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
+	rm -f boot/ocamlrun boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
+	boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
+	rm -f Makefile.config Makefile.common runtime/caml/m.h runtime/caml/s.h
+	rm -rf autom4te.cache
+	rm -f config.log config.status libtool
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log*
 
 include .depend
 
+
+ifneq "$(strip $(CAN_BE_UNCONFIGURED))" ""
 Makefile.config Makefile.common: config.status
 
 config.status:
@@ -1087,3 +1107,4 @@ config.status:
 	@echo "	make install"
 	@echo "should work."
 	@false
+endif

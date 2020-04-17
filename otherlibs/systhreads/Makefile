@@ -15,8 +15,8 @@
 
 ROOTDIR=../..
 
-include $(ROOTDIR)/Makefile.config
-include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
@@ -113,7 +113,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
+	rm -f dllthreads*.so dllthreads*.dll *.a *.lib *.o *.obj
 
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 

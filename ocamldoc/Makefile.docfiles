@@ -15,8 +15,8 @@
 # Define the lists of mli file used by ocamldoc to generate the stdlib
 # + otherlibs + compilerlibs documentation
 
-include $(SRC)/Makefile.config
-include $(SRC)/stdlib/StdlibModules
+-include $(SRC)/Makefile.config
+-include $(SRC)/stdlib/StdlibModules
 PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
 UTILS_MLIS := $(wildcard $(SRC)/utils/*.mli)
 STR_MLIS = $(addprefix $(SRC)/otherlibs/str/, str.mli)

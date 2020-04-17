@@ -142,7 +142,6 @@ menhir-bench.bash typo.missing-header typo.utf8
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
 configure.ac text eol=lf
-autogen text eol=lf
 build-aux/compile text eol=lf
 build-aux/config.guess text eol=lf
 build-aux/config.sub text eol=lf
@@ -153,6 +152,7 @@ ocamltest/getocamloptdefaultflags text eol=lf
 ocamltest/ocamltest.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
+tools/autogen text eol=lf
 tools/ci/inria/remove-sinh-primitive.patch text eol=lf
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
