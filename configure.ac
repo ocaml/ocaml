@@ -987,6 +987,27 @@ AS_IF([test -z "$PARTIALLD"],
 AS_IF([test $arch != "none" && $arch64 ],
   [otherlibraries="$otherlibraries raw_spacetime_lib"])
 
+# Disable PIE at link time when ocamlopt does not produce position-independent
+# code and the system produces PIE executables by default and demands PIC
+# object files to do so.
+# This issue does not affect amd64 (x86_64) and s390x (Z systems),
+# since ocamlopt produces PIC object files by default.
+# Currently the problem is known for Alpine Linux on platforms other
+# than amd64 and s390x (issue #7562), and probably affects all Linux
+# distributions that use the musl standard library and dynamic loader.
+# Other systems have PIE by default but can cope with non-PIC object files,
+# e.g. Ubuntu >= 17.10 for i386, which uses the glibc dynamic loader.
+
+AS_CASE([$arch],
+  [amd64|s390x|none],
+    # ocamlopt generates PIC code or doesn't generate code at all
+    [],
+  [AS_CASE([$host],
+    [*-linux-musl],
+       # Alpine and other musl-based Linux distributions
+       [common_cflags="-no-pie $common_cflags"],
+    [])])
+
 # Assembler
 
 AS_IF([test -n "$host_alias"], [toolpref="${host_alias}-"], [toolpref=""])
