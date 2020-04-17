@@ -445,7 +445,7 @@ let use_file ppf wrap_mode name =
     | filename ->
       let ic = open_in_bin filename in
       Misc.try_finally ~always:(fun () -> close_in ic)
-        (fun () -> use_channel ppf false ic name filename)
+        (fun () -> use_channel ppf wrap_mode ic name filename)
     | exception Not_found ->
       fprintf ppf "Cannot find file %s.@." name;
       false

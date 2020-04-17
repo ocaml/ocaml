@@ -176,7 +176,7 @@ Working version
   points to the grammar.
   (Andreas Abel, review by Xavier Leroy)
 
-- #9283: add a new toplevel directive `#use_output "<command>"` to
+- #9283, #9455, #9457: add a new toplevel directive `#use_output "<command>"` to
   run a command and evaluate its output.
   (Jérémie Dimino, review by David Allsopp)
 
