@@ -206,10 +206,4 @@ let exec_with_temporary_breakpoint pc funct =
     in
       Exec.protect (function () -> insert_position pc);
       temporary_breakpoint_position := Some pc;
-      try
-        funct ();
-        Exec.protect remove
-      with
-        x ->
-          Exec.protect remove;
-          raise x
+      Fun.protect ~finally:(fun () -> Exec.protect remove) funct
