@@ -436,16 +436,16 @@ let use_output ppf command =
          fprintf ppf "Command exited with code %d.@." n;
          false)
 
-let use_file ppf wrap_mode name =
+let use_file ppf wrap_mod name =
   match name with
   | "" ->
-    use_channel ppf wrap_mode stdin name "(stdin)"
+    use_channel ppf wrap_mod stdin name "(stdin)"
   | _ ->
     match Load_path.find name with
     | filename ->
       let ic = open_in_bin filename in
       Misc.try_finally ~always:(fun () -> close_in ic)
-        (fun () -> use_channel ppf wrap_mode ic name filename)
+        (fun () -> use_channel ppf wrap_mod ic name filename)
     | exception Not_found ->
       fprintf ppf "Cannot find file %s.@." name;
       false
