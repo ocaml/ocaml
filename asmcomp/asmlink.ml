@@ -29,7 +29,7 @@ type error =
   | Inconsistent_interface of modname * filepath * filepath
   | Inconsistent_implementation of modname * filepath * filepath
   | Assembler_error of filepath
-  | Linking_error
+  | Linking_error of int
   | Multiple_definition of modname * filepath * filepath
   | Missing_cmx of filepath * modname
 
@@ -280,8 +280,9 @@ let make_shared_startup_file ~ppf_dump units =
   Emit.end_assembly ()
 
 let call_linker_shared file_list output_name =
-  if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
-  then raise(Error Linking_error)
+  let exitcode = Ccomp.call_linker Ccomp.Dll output_name file_list "" in
+  if not (exitcode = 0)
+  then raise(Error(Linking_error exitcode))
 
 let link_shared ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
@@ -333,8 +334,9 @@ let call_linker file_list startup_file output_name =
     else if !Clflags.output_c_object then Ccomp.Partial
     else Ccomp.Exe
   in
-  if not (Ccomp.call_linker mode output_name files c_lib)
-  then raise(Error Linking_error)
+  let exitcode = Ccomp.call_linker mode output_name files c_lib in
+  if not (exitcode = 0)
+  then raise(Error(Linking_error exitcode))
 
 (* Main entry point *)
 
@@ -414,8 +416,8 @@ let report_error ppf = function
        intf
   | Assembler_error file ->
       fprintf ppf "Error while assembling %a" Location.print_filename file
-  | Linking_error ->
-      fprintf ppf "Error during linking"
+  | Linking_error exitcode ->
+      fprintf ppf "Error during linking (exit code %d)" exitcode
   | Multiple_definition(modname, file1, file2) ->
       fprintf ppf
         "@[<hov>Files %a@ and %a@ both define a module named %s@]"
