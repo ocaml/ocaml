@@ -467,9 +467,6 @@ let emit_global_label s =
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-(* Record references to external C functions (for MacOSX) *)
-let external_symbols_direct = ref String.Set.empty
-let external_symbols_indirect = ref String.Set.empty
 
 (* Emission of the profiling prelude *)
 
@@ -487,7 +484,6 @@ let emit_profile () =
   match system with
   | S_linux_elf | S_gnu -> call_mcount "mcount"
   | S_bsd_elf -> call_mcount ".mcount"
-  | S_macosx -> call_mcount "Lmcount$stub"
   | _ -> () (*unsupported yet*)
 
 let emit_instr fallthrough i =
@@ -564,24 +560,11 @@ let emit_instr fallthrough i =
   | Lop(Iextcall { func; alloc; label_after; }) ->
       add_used_symbol func;
       if alloc then begin
-        if system <> S_macosx then
-          I.mov (immsym func) eax
-        else begin
-          external_symbols_indirect :=
-            String.Set.add func !external_symbols_indirect;
-          I.mov (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
-                              (emit_symbol func))) eax
-        end;
+        I.mov (immsym func) eax;
         emit_call "caml_c_call";
         record_frame i.live false i.dbg ~label:label_after
       end else begin
-        if system <> S_macosx then
-          emit_call func
-        else begin
-          external_symbols_direct :=
-            String.Set.add func !external_symbols_direct;
-          I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol func)))
-        end
+        emit_call func
       end
   | Lop(Istackoffset n) ->
       if n < 0
@@ -880,9 +863,10 @@ let emit_instr fallthrough i =
         D.long (ConstLabel (emit_label jumptbl.(i)))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
+  | Lentertrap ->
+      ()
+  | Lpushtrap { lbl_handler; } ->
+      I.push (label lbl_handler);
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
       I.push (sym32 "caml_exception_pointer");
@@ -904,7 +888,8 @@ let emit_instr fallthrough i =
           I.pop (sym32 "caml_exception_pointer");
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
-          I.ret ()
+          I.pop ebx;
+          I.jmp ebx
       end
 
 let rec emit_all fallthrough i =
@@ -915,32 +900,6 @@ let rec emit_all fallthrough i =
       emit_all
         (system = S_win32 || Linearize.has_fallthrough i.desc)
         i.next
-
-(* Emission of external symbol references (for MacOSX) *)
-
-let emit_external_symbol_direct s =
-  _label (Printf.sprintf "L%s$stub" (emit_symbol s));
-  D.indirect_symbol (emit_symbol s);
-  I.hlt (); I.hlt (); I.hlt (); I.hlt () ; I.hlt ()
-
-let emit_external_symbol_indirect s =
-  _label (Printf.sprintf "L%s$non_lazy_ptr" (emit_symbol s));
-  D.indirect_symbol (emit_symbol s);
-  D.long (const 0)
-
-let emit_external_symbols () =
-  D.section [ "__IMPORT"; "__pointers"] None ["non_lazy_symbol_pointers" ];
-  String.Set.iter emit_external_symbol_indirect !external_symbols_indirect;
-  external_symbols_indirect := String.Set.empty;
-  D.section [ "__IMPORT"; "__jump_table"] None
-    [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ];
-  String.Set.iter emit_external_symbol_direct !external_symbols_direct;
-  external_symbols_direct := String.Set.empty;
-  if !Clflags.gprofile then begin
-    _label "Lmcount$stub";
-    D.indirect_symbol "mcount";
-    I.hlt (); I.hlt (); I.hlt () ; I.hlt () ; I.hlt ()
-  end
 
 (* Emission of a function declaration *)
 
@@ -955,13 +914,7 @@ let fundecl fundecl =
   D.text ();
   add_def_symbol fundecl.fun_name;
   D.align (if system = S_win32 then 4 else 16);
-  if system = S_macosx
-  && not !Clflags.output_c_object
-  && is_generic_function fundecl.fun_name
-  then (* PR#4690 *)
-    D.private_extern (emit_symbol fundecl.fun_name)
-  else
-    D.global (emit_symbol fundecl.fun_name);
+  D.global (emit_symbol fundecl.fun_name);
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
@@ -1027,9 +980,7 @@ let begin_assembly() =
   emit_global_label "data_begin";
 
   D.text ();
-  emit_global_label "code_begin";
-  if system = S_macosx then I.nop (); (* PR#4690 *)
-  ()
+  emit_global_label "code_begin"
 
 let end_assembly() =
   if !float_constants <> [] then begin
@@ -1038,8 +989,6 @@ let end_assembly() =
   end;
 
   D.text ();
-  if system = S_macosx then I.nop ();
-  (* suppress "ld warning: atom sorting error" *)
 
   emit_global_label "code_end";
 
@@ -1066,7 +1015,6 @@ let end_assembly() =
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
 
-  if system = S_macosx then emit_external_symbols ();
   if system = S_linux_elf then
     (* Mark stack as non-executable, PR#4564 *)
     D.section [".note.GNU-stack"] (Some "") ["%progbits"];

@@ -129,6 +129,7 @@ case "$1" in
     export TERM=ansi
 
     if [ "$PORT" = "mingw32" ] ; then
+      set -o pipefail
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \

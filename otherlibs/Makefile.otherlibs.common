@@ -53,21 +53,35 @@ CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
 CLIBNAME ?= $(LIBNAME)
 
-.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
-all: lib$(CLIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
+ifeq "$(COBJS)" ""
+STUBSLIB=
+else
+STUBSLIB=lib$(CLIBNAME).$(A)
+endif
 
-allopt: lib$(CLIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+all: $(STUBSLIB) $(LIBNAME).cma $(CMIFILES)
+
+allopt: $(STUBSLIB) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
 opt.opt: allopt
 
 $(LIBNAME).cma: $(CAMLOBJS)
+ifeq "$(COBJS)" ""
+	$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
+else
 	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall \
 	         $(CAMLOBJS) $(LINKOPTS)
+endif
 
 $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
+ifeq "$(COBJS)" ""
+	$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
+else
 	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt '$(CAMLOPT)' -linkall \
 	         $(CAMLOBJS_NAT) $(LINKOPTS)
+endif
 
-$(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
+$(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB)
 	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
 lib$(CLIBNAME).$(A): $(COBJS)
@@ -79,8 +93,10 @@ install::
 	    dll$(CLIBNAME)$(EXT_DLL) \
 	    "$(INSTALL_STUBLIBDIR)/"; \
 	fi
-	$(INSTALL_DATA) lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
+ifneq "$(STUBSLIB)" ""
+	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
+endif
 
 	$(INSTALL_DATA) \
 	  $(LIBNAME).cma $(CMIFILES) \

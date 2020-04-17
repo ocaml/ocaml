@@ -1697,7 +1697,7 @@ bytecomp/bytelibrarian.cmi :
 bytecomp/bytelink.cmo : \
     utils/warnings.cmi \
     bytecomp/symtable.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
@@ -1798,7 +1798,7 @@ bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : \
     bytecomp/translmod.cmi \
     typing/primitive.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/lambda.cmi \
@@ -1940,8 +1940,11 @@ bytecomp/meta.cmx : \
     bytecomp/meta.cmi
 bytecomp/meta.cmi : \
     bytecomp/instruct.cmi
-bytecomp/opcodes.cmo :
-bytecomp/opcodes.cmx :
+bytecomp/opcodes.cmo : \
+    bytecomp/opcodes.cmi
+bytecomp/opcodes.cmx : \
+    bytecomp/opcodes.cmi
+bytecomp/opcodes.cmi :
 bytecomp/printinstr.cmo : \
     bytecomp/printlambda.cmi \
     parsing/location.cmi \
@@ -2798,6 +2801,7 @@ asmcomp/cmmgen.cmo : \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/clambda_primitives.cmi \
@@ -2823,6 +2827,7 @@ asmcomp/cmmgen.cmx : \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
     asmcomp/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/clambda_primitives.cmx \
@@ -2834,6 +2839,20 @@ asmcomp/cmmgen.cmx : \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmi : \
     asmcomp/cmx_format.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/clambda.cmi
+asmcomp/cmmgen_state.cmo : \
+    utils/misc.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/clambda.cmi \
+    asmcomp/cmmgen_state.cmi
+asmcomp/cmmgen_state.cmx : \
+    utils/misc.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/clambda.cmx \
+    asmcomp/cmmgen_state.cmi
+asmcomp/cmmgen_state.cmi : \
+    utils/misc.cmi \
     asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : \
@@ -6046,7 +6065,7 @@ toplevel/topdirs.cmo : \
     typing/predef.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     parsing/longident.cmi \
@@ -6257,7 +6276,7 @@ driver/compdynlink.cmx : \
     driver/compdynlink.cmi
 driver/compdynlink.cmo : \
     bytecomp/symtable.cmi \
-    bytecomp/opcodes.cmo \
+    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     typing/ident.cmi \

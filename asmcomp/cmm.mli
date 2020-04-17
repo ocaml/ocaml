@@ -179,7 +179,6 @@ and expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
-  | Cloop of expression
   | Ccatch of
       rec_flag
         * (int * (Backend_var.With_provenance.t * machtype) list

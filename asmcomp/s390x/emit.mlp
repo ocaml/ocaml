@@ -608,11 +608,12 @@ let emit_instr i =
           `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
         done;
         emit_string code_space
-    | Lsetuptrap lbl ->
-        `	brasl	%r14, {emit_label lbl}\n`;
-    | Lpushtrap ->
+    | Lentertrap ->
+        ()
+    | Lpushtrap { lbl_handler; } ->
         stack_offset := !stack_offset + 16;
         emit_stack_adjust 16;
+        `	larl	%r14, {emit_label lbl_handler}\n`;
         `	stg	%r14, 0(%r15)\n`;
         `	stg	%r13, {emit_int size_addr}(%r15)\n`;
         `	lgr	%r13, %r15\n`

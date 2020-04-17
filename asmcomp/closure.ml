@@ -1078,6 +1078,7 @@ let rec close fenv cenv = function
       let args = close_list fenv cenv args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_reperform", args, dbg), Value_unknown)
+  | Lprim (Pmakearray _, [], _loc) -> make_const_ref (Uconst_block (0, []))
   | Lprim(p, args, loc) ->
       let p = Convert_primitives.convert p in
       let dbg = Debuginfo.from_location loc in

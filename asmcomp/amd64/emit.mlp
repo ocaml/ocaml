@@ -941,15 +941,24 @@ let emit_instr fallthrough i =
                          ConstLabel lbl))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
+  | Lentertrap ->
+      ()
+  | Lpushtrap { lbl_handler; } ->
+      let load_label_addr s arg =
+        if !Clflags.pic_code then
+          I.lea (mem64_rip NONE (emit_label s)) arg
+        else
+          I.mov (sym (emit_label s)) arg
+      in
+      load_label_addr lbl_handler r11;
+      cfi_adjust_cfa_offset 8;
+      I.push r11;
+      stack_offset := !stack_offset + 8;
       cfi_adjust_cfa_offset 8;
       I.push (domain_field Domainstate.Domain_exn_handler);
-      cfi_adjust_cfa_offset 8;
+      stack_offset := !stack_offset + 8;
       I.sub rsp (mem64 NONE 0 RSP);
-      I.mov rsp (domain_field Domainstate.Domain_exn_handler);
-      stack_offset := !stack_offset + 16
+      I.mov rsp (domain_field Domainstate.Domain_exn_handler)
   | Lpoptrap ->
       I.add rsp (mem64 NONE 0 RSP);
       I.pop (domain_field Domainstate.Domain_exn_handler);
@@ -972,7 +981,8 @@ let emit_instr fallthrough i =
           I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
           I.add rsp (mem64 NONE 0 RSP);
           I.pop (domain_field Domainstate.Domain_exn_handler);
-          I.ret ()
+          I.pop r11;
+          I.jmp r11
       end
 
 let rec emit_all fallthrough i =
@@ -999,7 +1009,7 @@ let preproc_fun fun_body _fun_name =
         in
         let (r',a') = match i.desc with
           | Lop (Istackoffset n) -> (upd_size r n, a+n)
-          | Lpushtrap -> (upd_size r 16, a+16)
+          | Lpushtrap _ -> (upd_size r 16, a+16)
           | Lpoptrap -> (r, a-16)
           | Lop (Iextcall _ | Ialloc _ | Iintop (Icheckbound _)
                  | Iintop_imm (Icheckbound _, _)) ->

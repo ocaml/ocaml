@@ -311,7 +311,7 @@ method is_simple_expr = function
       | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
       | Ccmpf _ | Ccheckbound -> List.for_all self#is_simple_expr args
       end
-  | Cassign _ | Cifthenelse _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _
+  | Cassign _ | Cifthenelse _ | Cswitch _ | Ccatch _ | Cexit _
   | Ctrywith _ -> false
 
 (* Analyses the effects and coeffects of an expression.  This is used across
@@ -357,7 +357,7 @@ method effects_of exp =
         EC.none
     in
     EC.join from_op (EC.join_list_map args self#effects_of)
-  | Cassign _ | Cswitch _ | Cloop _ | Ccatch _ | Cexit _ | Ctrywith _ ->
+  | Cassign _ | Cswitch _ | Ccatch _ | Cexit _ | Ctrywith _ ->
     EC.arbitrary
 
 (* Says whether an integer constant is a suitable immediate argument *)
@@ -797,10 +797,6 @@ method emit_expr (env:environment) exp =
                       rsel [||];
           r
       end
-  | Cloop(ebody) ->
-      let (_rarg, sbody) = self#emit_sequence env ebody in
-      self#insert (Iloop(sbody#extract)) [||] [||];
-      Some [||]
   | Ccatch(_, [], e1) ->
       self#emit_expr env e1
   | Ccatch(rec_flag, handlers, body) ->

@@ -172,7 +172,9 @@ ASMCOMP=\
   asmcomp/import_approx.cmo \
   asmcomp/un_anf.cmo \
   asmcomp/afl_instrument.cmo \
-  asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
+  asmcomp/strmatch.cmo \
+  asmcomp/cmmgen_state.cmo \
+  asmcomp/cmmgen.cmo \
   asmcomp/interval.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo \
   asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
@@ -301,13 +303,10 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard flexdll/Makefile)
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   BOOT_FLEXLINK_CMD =
-  FLEXDLL_DIR =
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
-  FLEXDLL_DIR = $(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
 endif
 else
-  FLEXDLL_DIR =
 endif
 
 # The configuration file
@@ -1307,13 +1306,17 @@ toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 bytecomp/opcodes.ml: runtime/caml/instruct.h tools/make_opcodes
 	runtime/ocamlrun tools/make_opcodes -opcodes < $< > $@
 
+bytecomp/opcodes.mli: bytecomp/opcodes.ml
+	$(CAMLC) -i $< > $@
+
 tools/make_opcodes: tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
+	rm -f bytecomp/opcodes.mli
 
-beforedepend:: bytecomp/opcodes.ml
+beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
 # Testing the parser -- see parsing/HACKING.adoc
 

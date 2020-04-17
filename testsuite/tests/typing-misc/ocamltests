@@ -14,6 +14,7 @@ pr6939-no-flat-float-array.ml
 pr7103.ml
 pr7228.ml
 pr7668_bad.ml
+pr7937.ml
 printing.ml
 records.ml
 scope_escape.ml

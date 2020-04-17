@@ -116,6 +116,29 @@ module Stdlib : sig
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
+
+    val is_prefix
+       : equal:('a -> 'a -> bool)
+      -> 'a list
+      -> of_:'a list
+      -> bool
+    (** Returns [true] iff the given list, with respect to the given equality
+        function on list members, is a prefix of the list [of_]. *)
+
+    type 'a longest_common_prefix_result = private {
+      longest_common_prefix : 'a list;
+      first_without_longest_common_prefix : 'a list;
+      second_without_longest_common_prefix : 'a list;
+    }
+
+    val find_and_chop_longest_common_prefix
+       : equal:('a -> 'a -> bool)
+      -> first:'a list
+      -> second:'a list
+      -> 'a longest_common_prefix_result
+    (** Returns the longest list that, with respect to the provided equality
+        function, is a prefix of both of the given lists.  The input lists,
+        each with such longest common prefix removed, are also returned. *)
   end
 
   module Option : sig
@@ -350,6 +373,8 @@ module Color : sig
 
   type setting = Auto | Always | Never
 
+  val default_setting : setting
+
   val setup : setting option -> unit
   (* [setup opt] will enable or disable color handling on standard formatters
      according to the value of color setting [opt].
@@ -364,6 +389,8 @@ module Error_style : sig
   type setting =
     | Contextual
     | Short
+
+  val default_setting : setting
 end
 
 val normalise_eol : string -> string

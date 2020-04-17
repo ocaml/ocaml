@@ -673,6 +673,7 @@ CFLAGS
 LIBTOOL
 ac_ct_LD
 LD
+WINDOWS_UNICODE_MODE
 PARTIALLD
 target_os
 target_vendor
@@ -867,6 +868,7 @@ target_alias
 AS
 ASPP
 PARTIALLD
+WINDOWS_UNICODE_MODE
 CC
 CFLAGS
 LDFLAGS
@@ -1560,6 +1562,8 @@ Some influential environment variables:
   AS          which assembler to use
   ASPP        which assembler (with preprocessor) to use
   PARTIALLD   how to build partial (relocatable) object files
+  WINDOWS_UNICODE_MODE
+              how to handle Unicode under Windows: ansi, compatible
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3141,6 +3145,8 @@ fi
 if test "${with_reserved_header_bits+set}" = set; then :
   withval=$with_reserved_header_bits;
 fi
+
+
 
 
 # There are two configure-time string safety options,
@@ -12311,7 +12317,6 @@ esac
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     unix_or_win32="win32"
-    exeext=".exe"
     unixlib="win32unix"
     graphlib="win32graph"
     cc_profile='' ;; #(
@@ -12320,6 +12325,12 @@ case $host in #(
   unixlib="unix"
   graphlib="graph"
   cc_profile='-pg' ;;
+esac
+case $host in #(
+  *-*-cygwin*|*-*-mingw32|*-pc-windows) :
+    exeext=".exe" ;; #(
+  *) :
+    exeext='' ;;
 esac
 
 otherlibraries="dynlink"
@@ -13433,10 +13444,6 @@ if test x"$enable_shared" != "xno"; then :
     natdynlink=true ;; #(
   x86_64-*-linux*) :
     natdynlink=true ;; #(
-  i[3456]86-*-darwin*) :
-    if $arch64; then :
-  natdynlink=true
-fi ;; #(
   x86_64-*-darwin*) :
     natdynlink=true ;; #(
   s390x*-*-linux*) :
@@ -13524,12 +13531,6 @@ case $host in #(
     arch=i386; system=beos ;; #(
   i[3456]86-*-cygwin) :
     arch=i386; system=cygwin ;; #(
-  i[3456]86-*-darwin*) :
-    if $arch64; then :
-  arch=amd64
-else
-  arch=i386
-fi; system=macosx ;; #(
   i[3456]86-*-gnu*) :
     arch=i386; system=gnu ;; #(
   i[3456]86-*-mingw32) :
@@ -13764,8 +13765,6 @@ case "$arch,$system" in #(
     profiling=true ;; #(
   amd64,macosx) :
     profiling=true ;; #(
-  i386,macosx) :
-    profiling=true ;; #(
   amd64,linux) :
     profiling=true ;; #(
   amd64,openbsd) :
@@ -13963,6 +13962,13 @@ fi
   ac_fn_c_check_func "$LINENO" "fma" "ac_cv_func_fma"
 if test "x$ac_cv_func_fma" = xyes; then :
 
+      case $target in #(
+  x86_64-*-cygwin) :
+     ;; #(
+  *) :
+    $as_echo "#define HAS_WORKING_FMA 1" >>confdefs.h
+ ;;
+esac
 else
   has_c99_float_ops=false
 fi
@@ -15362,7 +15368,7 @@ esac
 $as_echo_n "checking whether stack overflows can be detected... " >&6; }
 
 case $arch,$system in #(
-  i386,linux_elf|amd64,linux|amd64,macosx|i386,macosx \
+  i386,linux_elf|amd64,linux|amd64,macosx \
     |amd64,openbsd|i386,bsd_elf) :
     $as_echo "#define HAS_STACK_OVERFLOW_DETECTION 1" >>confdefs.h
 
@@ -16985,7 +16991,14 @@ fi
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     max_testsuite_dir_retries=1
+    case $WINDOWS_UNICODE_MODE in #(
+  ansi) :
+    windows_unicode=0 ;; #(
+  compatible|"") :
     windows_unicode=1 ;; #(
+  *) :
+    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
+esac ;; #(
   *) :
     max_testsuite_dir_retries=0
   windows_unicode=0 ;;

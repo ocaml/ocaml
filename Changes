@@ -3,10 +3,22 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Code generation and optimizations:
+
+- GPR#2278: Remove native code generation support for 32-bit Intel macOS,
+  iOS and other Darwin targets.
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives
   (Pierre Chambart, review by Vincent Laviron and Mark Shinwell)
+
+- GPR#1965: remove loop constructors in Cmm and Mach
+  (Vincent Laviron)
+
+- GPR#1973: fix compilation of catches with multiple handlers
+  (Vincent Laviron)
 
 - GPR#2228: refactoring the handling of .cmi files by moving it from
   Env to a new module Persistent_env
@@ -15,10 +27,38 @@ Working version
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
+- GPR#2237: Reorder linearisation of Trywith to avoid a call instruction
+  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell)
+
+- GPR#2265: Add bytecomp/opcodes.mli
+  (Mark Shinwell, review by Nicolas Ojeda Bar)
+
+- GPR#2280: Don't make more Clambda constants after starting Cmmgen
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
+  [Misc.Stdlib.List]
+  (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
   (Stephen Dolan, review by Gabriel Scherer and Damien Doligez)
+
+* GPR#2240: Constify "identifier" in struct custom_operations
+  (Cedric Cellier, review by Xavier Leroy)
+
+### Other libraries:
+
+- GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
+  unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
+  (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
+
+### Bug fixes:
+
+- MPR#7937, GPR#2287: fix uncaught Unify exception when looking for type
+  declaration
+  (Florian Angeletti, review by Jacques Garrigue)
 
 OCaml 4.08.0
 ------------
@@ -68,9 +108,10 @@ OCaml 4.08.0
 - GPR#1909: unsharing pattern types
   (Thomas Refis, with help from Leo White, review by Jacques Garrigue)
 
-- GPR#1942: simplification of the static check for recursive definitions
+- GPR#1942, GPR#2244: simplification of the static check
+  for recursive definitions
   (Alban Reynaud and Gabriel Scherer,
-   review by Jeremy Yallop and Armaël Guéneau)
+   review by Jeremy Yallop, Armaël Guéneau and Damien Doligez)
 
 * MPR#7814, GPR#2041, GPR#2235: allow modules from include directories
   to shadow other ones, even in the toplevel
@@ -184,7 +225,7 @@ OCaml 4.08.0
   min_max_num to module Float.
   (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
 
-- GPR#1354: Add fma support to Float module.
+- GPR#1354, GPR#2177: Add fma support to Float module.
   (Laurent Thévenoux, review by Alain Frisch, Jacques-Henri Jourdan,
   Xavier Leroy)
 
@@ -226,6 +267,16 @@ OCaml 4.08.0
 
 ### Other libraries:
 
+- GPR#2222: Set default status in waitpid when pid is zero. Otherwise,
+  status value is undefined.
+  (Romain Beauxis and Xavier Leroy, review by Stephen Dolan)
+
+* GPR#2104, GPR#2211, PR#4127, PR#7709: Fix Thread.sigmask. When
+  system threads are loaded, Unix.sigprocmask is now an alias for
+  Thread.sigmask. This changes the behavior at least on MacOS, where
+  Unix.sigprocmask used to change the masks of all threads.
+  (Jacques-Henri Jourdan, review by Jérémie Dimino)
+
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
   symlinks.
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
@@ -237,6 +288,11 @@ OCaml 4.08.0
 * PR#4208, PR#4229, PR#4839, PR#6462, PR#6957, PR#6950, GPR#1063, GPR#2176:
   Make (nat)dynlink sound
   (Mark Shinwell, Leo White, Nicolás Ojeda Bär, Pierre Chambart)
+
+- GPR#2263: Delete the deprecated Bigarray.*.map_file functions in
+  favour of `*_of_genarray (Unix.map_file ...)` functions instead. The
+  `Unix.map_file` function was introduced in OCaml 4.06.0 onwards.
+  (Jérémie Dimino, reviewed by David Allsopp and Anil Madhavapeddy)
 
 ### Compiler user-interface and warnings:
 
@@ -283,7 +339,7 @@ OCaml 4.08.0
 - GPR#1748: do not error when instantiating polymorphic fields in patterns.
   (Thomas Refis, review by Gabriel Scherer)
 
-- MPR#6913: new -match-context-rows option
+- MPR#6913, GPR#1786: new -match-context-rows option
   to control the degree of optimization in the pattern matching compiler.
   (Dwight Guth, review by Gabriel Scherer and Luc Maranget)
 
@@ -457,6 +513,9 @@ OCaml 4.08.0
   (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
   and Gabriel Scherer)
 
+- MPR#7547, GPR#2273: Tutorial on Lazy expressions and patterns in OCaml Manual
+  (Ulugbek Abdullaev, review by Florian Angeletti and Gabriel Scherer)
+
 - MPR#7720, GPR#1596, precise the documentation
   of the maximum indentation limit in Format.
   (Florian Angeletti, review by Richard Bonichon and Pierre Weis)
@@ -551,7 +610,25 @@ OCaml 4.08.0
 - GPR#2148: fix a parallel build bug involving CamlinternalLazy.
   (Stephen Dolan, review by Gabriel Scherer and Nicolas Ojeda Bar)
 
+- GPR#2264, MPR#7904: the configure script now sets the Unicode handling mode
+  under Windows according to the value of the variable WINDOWS_UNICODE_MODE. If
+  WINDOWS_UNICODE_MODE is "ansi" then it is assumed to be the current code page
+  encoding. If WINDOWS_UNICODE_MODE is "compatible" or empty or not set at all,
+  then encoding is UTF-8 with code page fallback.
+  (Nicolás Ojeda Bär, review by Sébastien Hinderer and David Allsopp)
+
+- GPR#2266: ensure Cygwin ports configure with `EXE=.exe`, or the compiler is
+  unable to find the camlheader files (subtle regression of GPR#2139/2041)
+  (David Allsopp, report and review by Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
+
+- MPR#7918, GPR#1703, GPR#1944, GPR#2213, GPR#2257: Add the module
+  Compile_common, which factorizes the common part in Compile and
+  Optcompile. This also makes the pipeline more modular.
+  (Gabriel Radanne, help from Gabriel Scherer and Valentin
+   Gatien-Baron, review by Mark Shinwell and Gabriel Radanne,
+   regression spotted by Clément Franchini)
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
   Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934, GPR#2151,
@@ -572,14 +649,8 @@ OCaml 4.08.0
   pull requests; see CONTRIBUTING.md for more details.
   (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
 
-- GPR#1610: Remove positions from paths
+- GPR#1610, GPR#2252: Remove positions from paths
   (Leo White, review by Frédéric Bour and Thomas Refis)
-
-- GPR#1703, GPR#1944, GPR#2213: Add the module Compile_common,
-  which factorizes the common part in Compile and Optcompile.
-  This also makes the pipeline more modular.
-  (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
-   review by Mark Shinwell and Gabriel Radanne)
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables.
   (Thomas Refis, review by Leo White)
@@ -645,8 +716,9 @@ OCaml 4.08.0
 * GPR#2041: add a cache for looking up files in the load path
   (Jérémie Dimino, review by Alain Frisch and David Allsopp)
 
-- GPR#2047: a new type for unification traces
-  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
+- GPR#2047, GPR#2269: a new type for unification traces
+  (Florian Angeletti, report by Leo White (GPR#2269),
+   review by Thomas Refis and Gabriel Scherer)
 
 - GPR#2055: Add [Linearize.Lprologue].
   (Mark Shinwell, review by Pierre Chambart)
@@ -691,9 +763,9 @@ OCaml 4.08.0
   intermediate language, as a preparation step for more future optimizations
   (Pierre Chambart and Alain Frisch, cross-reviewed by themselves)
 
-- GPR#2160: restore -no-shared-libs support and ensure testsuite runs correctly
+- GPR#2160: restore --disable-shared support and ensure testsuite runs correctly
   when compiled without shared library support.
-  (David Allsopp, review by ???)
+  (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
 
 * GPR#2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
@@ -803,6 +875,14 @@ OCaml 4.08.0
 
 - GPR#2231: Env: always freshen persistent signatures before using them
   (Thomas Refis and Leo White, review by Gabriel Radanne)
+
+- MPR#7923, GPR#2259: fix regression in FlexDLL bootstrapped build caused by
+  refactoring the root Makefile for Dune in GPR#2093)
+  (David Allsopp, report by Marc Lasson)
+
+- MPR#7929, GPR#2261: Subst.signature: call cleanup_types exactly once
+  (Thomas Refis, review by Gabriel Scherer and Jacques Garrigue,
+  report by Daniel Bünzli and Jon Ludlam)
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------

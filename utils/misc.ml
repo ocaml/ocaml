@@ -150,6 +150,33 @@ module Stdlib = struct
           | t::q -> aux (n-1) (t::acc) q
       in
       aux n [] l
+
+    let rec is_prefix ~equal t ~of_ =
+      match t, of_ with
+      | [], [] -> true
+      | _::_, [] -> false
+      | [], _::_ -> true
+      | x1::t, x2::of_ -> equal x1 x2 && is_prefix ~equal t ~of_
+
+    type 'a longest_common_prefix_result = {
+      longest_common_prefix : 'a list;
+      first_without_longest_common_prefix : 'a list;
+      second_without_longest_common_prefix : 'a list;
+    }
+
+    let find_and_chop_longest_common_prefix ~equal ~first ~second =
+      let rec find_prefix ~longest_common_prefix_rev l1 l2 =
+        match l1, l2 with
+        | elt1 :: l1, elt2 :: l2 when equal elt1 elt2 ->
+          let longest_common_prefix_rev = elt1 :: longest_common_prefix_rev in
+          find_prefix ~longest_common_prefix_rev l1 l2
+        | l1, l2 ->
+          { longest_common_prefix = List.rev longest_common_prefix_rev;
+            first_without_longest_common_prefix = l1;
+            second_without_longest_common_prefix = l2;
+          }
+      in
+      find_prefix ~longest_common_prefix_rev:[] first second
   end
 
   module Option = struct
@@ -689,10 +716,17 @@ module Color = struct
 
   type setting = Auto | Always | Never
 
+  let default_setting = Auto
+
   let setup =
     let first = ref true in (* initialize only once *)
     let formatter_l =
       [Format.std_formatter; Format.err_formatter; Format.str_formatter]
+    in
+    let enable_color = function
+      | Auto -> should_enable_color ()
+      | Always -> true
+      | Never -> false
     in
     fun o ->
       if !first then (
@@ -700,10 +734,8 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-            | Some Always -> true
-            | Some Auto -> should_enable_color ()
-            | Some Never -> false
-            | None -> should_enable_color ())
+          | Some s -> enable_color s
+          | None -> enable_color default_setting)
       );
       ()
 end
@@ -712,6 +744,8 @@ module Error_style = struct
   type setting =
     | Contextual
     | Short
+
+  let default_setting = Contextual
 end
 
 let normalise_eol s =

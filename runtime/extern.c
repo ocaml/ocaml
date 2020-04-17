@@ -477,7 +477,7 @@ static void extern_rec(value v)
     case Custom_tag: {
       uintnat sz_32, sz_64;
       char * size_header;
-      char * ident = Custom_ops_val(v)->identifier;
+      char const * ident = Custom_ops_val(v)->identifier;
       void (*serialize)(value v, uintnat * bsize_32,
                         uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
