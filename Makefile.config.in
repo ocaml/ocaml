@@ -29,10 +29,14 @@ CONFIGURE_ARGS=@CONFIGURE_ARGS@
 TOP_BUILDDIR = @top_builddir@
 
 ## Installation directories
-
 prefix=@prefix@
 
 exec_prefix=@exec_prefix@
+
+## Installation commands
+INSTALL?=@INSTALL@
+INSTALL_DATA?=$(INSTALL) -m u=rw,g=rw,o=r
+INSTALL_PROG?=$(INSTALL) -m u=rwx,g=rwx,o=rx
 
 ### Where to install the binaries
 BINDIR=@bindir@
