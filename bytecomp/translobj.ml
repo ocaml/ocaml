@@ -13,20 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Misc
 open Asttypes
-open Longident
 open Lambda
 
 (* Get oo primitives identifiers *)
 
-let oo_prim name =
-  let env = Env.empty in
-  let lid = Ldot (Lident "CamlinternalOO", name) in
-  match Env.lookup_value lid env with
-  | path, _ -> transl_value_path Location.none env path
-  | exception Not_found ->
-      fatal_error ("Primitive " ^ name ^ " not found.")
+let oo_prim = Lambda.transl_prim "CamlinternalOO"
 
 (* Share blocks *)
 

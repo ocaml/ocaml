@@ -39,7 +39,7 @@ INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
 utils_modules := $(addprefix utils/,\
   config build_path_prefix_map misc identifiable numbers arg_helper clflags \
-  consistbl warnings terminfo)
+  consistbl warnings terminfo load_path)
 
 parsing_modules := $(addprefix parsing/,\
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \

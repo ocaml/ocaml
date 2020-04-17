@@ -96,6 +96,12 @@ case "${OCAML_ARCH}" in
   bsd|macos|linux) renice 10 $$ ;;
 esac
 
+# work around a bug (in ocamltest maybe? -- to be investigated) that leaves
+# some processes running in an infinite loop after the tests are done
+case "${OCAML_ARCH}" in
+  bsd) ulimit -t 1800 ;;
+esac
+
 # be verbose and stop on error
 set -ex
 

@@ -3,6 +3,14 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Internal/compiler-libs changes:
+
+- GPR#2229: Env: remove prefix_idents cache
+  (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
+
+OCaml 4.08.0
+------------
+
 ### Language features:
 
 - MPR#6422, MPR#7083, GPR#305, GPR#1568: Allow "exception" under or-patterns
@@ -51,6 +59,10 @@ Working version
 - GPR#1942: simplification of the static check for recursive definitions
   (Alban Reynaud and Gabriel Scherer,
    review by Jeremy Yallop and Armaël Guéneau)
+
+* MPR#7814, GPR#2041, GPR#2235: allow modules from include directories
+  to shadow other ones, even in the toplevel
+  (Jérémie Dimino, review by Alain Frisch and David Allsopp)
 
 ### Standard library:
 
@@ -101,6 +113,10 @@ Working version
   pid.
   (Romain Beauxis, review by Nicolás Ojeda Bär)
 
+- GPR#2220: Remove duplicate process management code in
+  otherlibs/threads/unix.ml
+  (Romain Beauxis, review by Gabriel Scherer and Alain Frisch)
+
 - GPR#1182: Add new Printf formats %#d %#Ld %#ld %#nd (idem for %i and %u) for
   alternative integer formatting.
   (ygrek, review by Gabriel Scherer)
@@ -127,11 +143,14 @@ Working version
 - GPR#1959: Small simplification and optimization to Format.ifprintf
   (Gabriel Radanne, review by Gabriel Scherer)
 
-- GPR#1855: Add `Pervasives.protect ~finally`, similar to `Misc.try_finally`
-  from the compiler library but using `Printexc.raise_with_backtrace` for
-  preserving backtraces.
-  (Marcello Seri, review by Daniel Bünzli, Gabriel Scherer, François Bobot,
-  Nicolás Ojeda Bär, Xavier Clerc and Boris Yakobowski)
+- GPR#1855, GPR#2118: Add `Fun.protect ~finally` for enforcing local
+  invariants whether a function raises or not, similar to
+  `unwind-protect` in Lisp and `FINALLY` in Modula-2. It is careful
+  about preserving backtraces and treating exceptions in finally as
+  errors.
+  (Marcello Seri and Guillaume Munch-Maccagnoni, review by Daniel
+  Bünzli, Gabriel Scherer, François Bobot, Nicolás Ojeda Bär, Xavier
+  Clerc, Boris Yakobowski, Damien Doligez, and Xavier Leroy)
 
 - GPR#1986, MPR#6450: Add Set.disjoint
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
@@ -192,6 +211,10 @@ Working version
 
 - GPR#1525: Make function set_max_indent respect documentation
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
+
+- GPR#2233: Unix: fix handling of Linux abstract socket paths when receiving a
+  Unix socket address from the operating system.
+  (Tim Cuthbertson, review by Jérémie Dimino)
 
 ### Other libraries:
 
@@ -413,6 +436,10 @@ Working version
   on a new line, for more readable diffs of versioned dependencies.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- GPR#2223: ocamltest: fix the "bsd" and "not-bsd" built-in actions to
+  recognize all BSD variants
+  (Damien Doligez, review by Sébastien Hinderer and David Allsopp)
+
 ### Manual and documentation:
 
 - MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
@@ -433,11 +460,13 @@ Working version
   GPR#1702, GPR#1765, GPR#1863, and Gabriel Scherer's GPR#1903.
   (Gabriel Scherer, review by Florian Angeletti)
 
-- GPR#1788, 1831, 2007, 2198, move language extensions to the core chapters:
+- GPR#1788, 1831, 2007, 2198, 2232, move language extensions to the core
+  chapters:
      - GPR#1788: quoted string description
      - GPR#1831: local exceptions and exception cases
      - GPR#2007: 32-bit, 64-bit and native integer literals
      - GPR#2198: lazy patterns
+     - GPR#2232: short object copy notation
   (Florian Angeletti, review by Xavier Clerc, Perry E. Metzger, Gabriel Scherer
    and Jeremy Yallop)
 
@@ -580,6 +609,9 @@ Working version
 - GPR#1938: always check ast invariants after preprocessing
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
 
+- GPR#1941: refactor the command line parsing of ocamlcp and ocamloptp
+  (Valentin Gatien-Baron, review by Florian Angeletti)
+
 - GPR#1948: Refactor Stdlib.Format. Notably, use Stdlib.Stack and Stdlib.Queue,
   and avoid exceptions for control flow.
   (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
@@ -598,6 +630,9 @@ Working version
 - GPR#2030: makefile targets to build AST files of sources
   for parser testing. See parsing/HACKING.adoc.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
+* GPR#2041: add a cache for looking up files in the load path
+  (Jérémie Dimino, review by Alain Frisch and David Allsopp)
 
 - GPR#2047: a new type for unification traces
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
@@ -645,8 +680,17 @@ Working version
   intermediate language, as a preparation step for more future optimizations
   (Pierre Chambart and Alain Frisch, cross-reviewed by themselves)
 
+- GPR#2160: restore -no-shared-libs support and ensure testsuite runs correctly
+  when compiled without shared library support.
+  (David Allsopp, review by ???)
+
 * GPR#2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
+
+- GPR#2112: Fix Thread.yield unfairness with busy threads yielding to each
+  other.
+  (Andrew Hunter, review by Jacques-Henri Jourdan, Spiros Eliopoulos, Stephen
+  Weeks, & Mark Shinwell)
 
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
   extension.
@@ -745,6 +789,9 @@ Working version
 
 - GPR#2175: Apply substitution to all modules when packing
   (Leo White, review by Gabriel Scherer)
+
+- GPR#2231: Env: always freshen persistent signatures before using them
+  (Thomas Refis and Leo White, review by Gabriel Radanne)
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------

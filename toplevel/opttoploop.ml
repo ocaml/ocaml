@@ -193,9 +193,25 @@ let parse_mod_use_file name lb =
        ]
    ]
 
-(* Hooks for initialization *)
+(* Hook for initialization *)
 
 let toplevel_startup_hook = ref (fun () -> ())
+
+type event = ..
+type event +=
+  | Startup
+  | After_setup
+
+let hooks = ref []
+
+let add_hook f = hooks := f :: !hooks
+
+let () =
+  add_hook (function
+      | Startup -> !toplevel_startup_hook ()
+      | _ -> ())
+
+let run_hooks hook = List.iter (fun f -> f hook) !hooks
 
 (* Load in-core and execute a lambda term *)
 
@@ -437,7 +453,7 @@ let use_file ppf wrap_mod name =
       if name = "" then
         ("(stdin)", stdin, false)
       else begin
-        let filename = find_in_path !Config.load_path name in
+        let filename = Load_path.find name in
         let ic = open_in_bin filename in
         (filename, ic, true)
       end
@@ -544,14 +560,17 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   let expand = Misc.expand_directory Config.standard_library in
-  load_path := List.concat [
-    [ "" ];
-    List.map expand (List.rev !Compenv.first_include_dirs);
-    List.map expand (List.rev !Clflags.include_dirs);
-    List.map expand (List.rev !Compenv.last_include_dirs);
-    !load_path;
-    [expand "+camlp4"];
-  ]
+  let current_load_path = Load_path.get_paths () in
+  let load_path = List.concat [
+      [ "" ];
+      List.map expand (List.rev !Compenv.first_include_dirs);
+      List.map expand (List.rev !Clflags.include_dirs);
+      List.map expand (List.rev !Compenv.last_include_dirs);
+      current_load_path;
+      [expand "+camlp4"];
+    ]
+  in
+  Load_path.init load_path
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
@@ -570,6 +589,7 @@ let loop ppf =
   Location.input_name := "//toplevel//";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
+  run_hooks After_setup;
   load_ocamlinit ppf;
   while true do
     let snap = Btype.snapshot () in
@@ -619,6 +639,7 @@ let run_script ppf name args =
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
+  run_hooks After_setup;
   let explicit_name =
     (* Prevent use_silently from searching in the path. *)
     if Filename.is_implicit name

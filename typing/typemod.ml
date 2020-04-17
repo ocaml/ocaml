@@ -152,37 +152,56 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
-let type_initially_opened_module env module_name =
-  let loc = Location.in_file "compiler internals" in
-  let lid = { Asttypes.loc; txt = Longident.Lident module_name } in
-  let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
-  match Env.open_signature_of_initially_opened_module path env with
-  | Some env -> path, env
-  | None ->
-      let md = Env.find_module path env in
-      ignore (extract_sig_open env lid.loc md.md_type);
-      assert false
-
 let initial_env ~loc ~safe_string ~initially_opened_module
-      ~open_implicit_modules =
+    ~open_implicit_modules =
   let env =
     if safe_string then
       Env.initial_safe_string
     else
       Env.initial_unsafe_string
   in
-  let env =
-    match initially_opened_module with
-    | None -> env
-    | Some name ->
-      snd (type_initially_opened_module env name)
-  in
-  let open_implicit_module env m =
+  let open_module env m =
     let open Asttypes in
     let lid = {loc; txt = Longident.parse m } in
     snd (type_open_ Override env lid.loc lid)
   in
-  List.fold_left open_implicit_module env open_implicit_modules
+  let add_units env units =
+    String.Set.fold
+      (fun name env ->
+         Env.add_persistent_structure (Ident.create_persistent name) env)
+      units
+      env
+  in
+  let units =
+    List.rev_map Env.persistent_structures_of_dir (Load_path.get ())
+  in
+  let env, units =
+    match initially_opened_module with
+    | None -> (env, units)
+    | Some m ->
+        (* Locate the directory that contains [m], adds the units it
+           contains to the environment and open [m] in the resulting
+           environment. *)
+        let rec loop before after =
+          match after with
+          | [] -> None
+          | units :: after ->
+              if String.Set.mem m units then
+                Some (units, List.rev_append before after)
+              else
+                loop (units :: before) after
+        in
+        let env, units =
+          match loop [] units with
+          | None ->
+              (env, units)
+          | Some (units_containing_m, other_units) ->
+              (add_units env units_containing_m, other_units)
+        in
+        (open_module env m, units)
+  in
+  let env = List.fold_left add_units env units in
+  List.fold_left open_module env open_implicit_modules
 
 let type_open_descr ?used_slot ?toplevel env sod =
   let (path, newenv) =
@@ -2437,7 +2456,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         if Sys.file_exists sourceintf then begin
           let intf_file =
             try
-              find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
+              Load_path.find_uncap (modulename ^ ".cmi")
             with Not_found ->
               raise(Error(Location.in_file sourcefile, Env.empty,
                           Interface_not_compiled sourceintf)) in

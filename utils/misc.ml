@@ -207,6 +207,13 @@ module Stdlib = struct
       include String
       let hash = Hashtbl.hash
     end)
+
+    let for_all f t =
+      let len = String.length t in
+      let rec loop i =
+        i = len || (f t.[i] && loop (i + 1))
+      in
+      loop 0
   end
 
   external compare : 'a -> 'a -> int = "%compare"
@@ -873,3 +880,9 @@ let debug_prefix_map_flags () =
 let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
   arg
+
+type filepath = string
+type modname = string
+type crcs = (modname * Digest.t option) list
+
+type alerts = string Stdlib.String.Map.t

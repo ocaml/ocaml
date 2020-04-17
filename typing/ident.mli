@@ -73,7 +73,7 @@ val find_all: string -> 'a tbl -> (t * 'a) list
 val fold_name: (t -> 'a -> 'b -> 'b) -> 'a tbl -> 'b -> 'b
 val fold_all: (t -> 'a -> 'b -> 'b) -> 'a tbl -> 'b -> 'b
 val iter: (t -> 'a -> unit) -> 'a tbl -> unit
-
+val remove: t -> 'a tbl -> 'a tbl
 
 (* Idents for sharing keys *)
 

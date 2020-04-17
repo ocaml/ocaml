@@ -363,6 +363,13 @@ val shallow_iter:
 (** Same as [iter_head_constructor], but use a different callback for
     sub-terms which are in tail position or not. *)
 
+val transl_prim: string -> string -> lambda
+(** Translate a value from a persistent module. For instance:
+
+    {[
+      transl_internal_value "CamlinternalLazy" "force"
+    ]}
+*)
 
 val free_variables: lambda -> Ident.Set.t
 

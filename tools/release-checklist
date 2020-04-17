@@ -22,6 +22,10 @@ and the OCamlLabs folks (for OPAM testing).
 ```
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
+
+export WORKTREE=~/o/4.08
+  # make this point to the git worktree for the branch you are releasing
+
 export MAJOR=4
 export MINOR=07
 export BUGFIX=1
@@ -39,7 +43,7 @@ export ARCHIVE_PATH="$OCAML_RELEASE_ARCHIVE_PATH"
 export WEB_HOST="$OCAML_RELEASE_WEB_HOST"
 export WEB_PATH="$OCAML_RELEASE_WEB_PATH"
 
-export DIST=$ARCHIVE_PATH/ocaml/ocaml-$MAJOR.$MINOR
+export DIST=$ARCHIVE_PATH/ocaml/ocaml-\$MAJOR.\$MINOR
 EOF
 source /tmp/env-$USER.sh
 echo $VERSION
@@ -49,6 +53,7 @@ echo $VERSION
 ## 1: check repository state
 
 ```
+cd $WORKTREE
 git status  # check that the local repo is in a clean state
 git pull
 ```
@@ -180,7 +185,7 @@ git commit -m "OPAM switches for $VERSION"
 ## 7: build the release archives
 
 ```
-cd .../ocaml
+cd $WORKTREE
 TMPDIR=/tmp/ocaml-release
 git checkout $VERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
@@ -194,6 +199,13 @@ xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
 
 ## 8: upload the archives and compute checksums
 
+For the first beta of a major version, create the distribution directory on
+the server:
+```
+ssh $ARCHIVE_HOST "mkdir -p $DIST"
+```
+
+Upload the archives:
 ```
 scp ocaml-$VERSION.tar.{xz,gz} $ARCHIVE_HOST:$DIST
 ```
@@ -249,6 +261,7 @@ $MAJOR.$MINOR ($BRANCH) value and the exact same manual -- this is frequent if
 it was a release candidate.
 
 ```
+cd $WORKTREE
 make world.opt
 make install
 export PATH="$INSTDIR/bin:$PATH"
@@ -257,7 +270,8 @@ make clean
 make
 rm -rf /tmp/release
 mkdir -p /tmp/release
-RELEASENAME="ocaml-$BRANCH-" RELEASE=/tmp/release/$RELEASENAME make release
+RELEASENAME="ocaml-$BRANCH-"
+make -C manual release RELEASE=/tmp/release/$RELEASENAME
 scp /tmp/release/* $ARCHIVE_HOST:$DIST/
 
 
@@ -267,13 +281,15 @@ ssh $ARCHIVE_HOST "cd $DIST; sha512sum ocaml-$BRANCH-refman* >>SHA512SUM"
 ```
 
 Releasing the manual online happens on another machine:
+Do this ONLY FOR A PRODUCTION RELEASE
 
 ```
+scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
 ssh $ARCHIVE_HOST
-source /tmp/env.sh
-scp /tmp/env.sh $WEB_HOST:/tmp
+source /tmp/env-$USER.sh
+scp /tmp/env-$USER.sh $WEB_HOST:/tmp
 ssh $WEB_HOST
-source /tmp/env.sh
+source /tmp/env-$USER.sh
 
 cd $WEB_PATH/caml/pub/docs
 mkdir -p manual-ocaml-$BRANCH

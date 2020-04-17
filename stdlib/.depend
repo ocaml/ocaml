@@ -278,8 +278,10 @@ stdlib__format.cmi : \
     stdlib.cmi \
     stdlib__buffer.cmi
 stdlib__fun.cmo : \
+    stdlib__printexc.cmi \
     stdlib__fun.cmi
 stdlib__fun.cmx : \
+    stdlib__printexc.cmx \
     stdlib__fun.cmi
 stdlib__fun.cmi :
 stdlib__gc.cmo : \
@@ -934,8 +936,10 @@ stdlib__format.p.cmx : \
     stdlib__buffer.cmx \
     stdlib__format.cmi
 stdlib__fun.cmo : \
+    stdlib__printexc.cmi \
     stdlib__fun.cmi
 stdlib__fun.p.cmx : \
+    stdlib__printexc.cmx \
     stdlib__fun.cmi
 stdlib__gc.cmo : \
     stdlib__sys.cmi \
