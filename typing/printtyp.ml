@@ -1900,13 +1900,7 @@ let explanation intro prev env = function
             type_expr x type_expr y)
 
 let mismatch intro env trace =
-  let rec mismatch intro env = function
-    | [] -> None
-    | [h] -> explanation intro None env h
-    | h :: (prev :: _ as rem) -> match explanation intro (Some prev) env h with
-      | Some _ as m -> m
-      | None -> mismatch intro env rem in
-  mismatch intro env (List.rev trace)
+  Trace.explain trace (fun ~prev h -> explanation intro prev env h)
 
 let explain mis ppf =
   match mis with

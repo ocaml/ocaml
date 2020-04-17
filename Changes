@@ -40,6 +40,9 @@ Working version
   [Misc.Stdlib.List]
   (Mark Shinwell, review by Alain Frisch and Stephen Dolan)
 
+- GPR#2286: Functorise [Consistbl]
+  (Mark Shinwell, review by Gabriel Radanne)
+
 ### Runtime system:
 
 - GPR#1725: Deprecate Obj.set_tag
@@ -53,6 +56,12 @@ Working version
 - GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
+
+### Compiler user-interface and warnings:
+
+- GPR#2301: Hint on type error on int literal
+  (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
+  Gabriel Scherer and Armaël Guéneau)
 
 ### Bug fixes:
 
@@ -285,8 +294,8 @@ OCaml 4.08.0
 - GPR#2038: Deprecate vm threads
   (Jérémie Dimino)
 
-* PR#4208, PR#4229, PR#4839, PR#6462, PR#6957, PR#6950, GPR#1063, GPR#2176:
-  Make (nat)dynlink sound
+* PR#4208, PR#4229, PR#4839, PR#6462, PR#6957, PR#6950, GPR#1063, GPR#2176,
+  GPR#2297: Make (nat)dynlink sound.
   (Mark Shinwell, Leo White, Nicolás Ojeda Bär, Pierre Chambart)
 
 - GPR#2263: Delete the deprecated Bigarray.*.map_file functions in

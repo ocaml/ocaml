@@ -159,6 +159,8 @@ let scan_file obj_name tolink =
 
 (* Consistency check between interfaces *)
 
+module Consistbl = Consistbl.Make (Misc.Stdlib.String)
+
 let crc_interfaces = Consistbl.create ()
 let interfaces = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
