@@ -97,11 +97,6 @@ CAMLprim value caml_obj_make_forward (value blk, value fwd)
   return Val_unit;
 }
 
-CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
-{
-  return caml_obj_make_forward(blk, fwd);
-}
-
 /* [size] is a value encoding a number of blocks */
 CAMLprim value caml_obj_block(value tag, value size)
 {
