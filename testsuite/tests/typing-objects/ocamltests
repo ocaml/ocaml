@@ -9,4 +9,5 @@ pr5858.ml
 pr6123_bad.ml
 pr6383.ml
 pr6907_bad.ml
+self_cannot_be_closed.ml
 Tests.ml

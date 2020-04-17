@@ -216,6 +216,7 @@ val dump_into_file : bool ref
 (* Support for flags that can also be set from an environment variable *)
 type 'a env_reader = {
   parse : string -> 'a option;
+  print : 'a -> string;
   usage : string;
   env_var : string;
 }

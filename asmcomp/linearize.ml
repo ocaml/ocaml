@@ -39,8 +39,8 @@ and instruction_desc =
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
-  | Lsetuptrap of label
-  | Lpushtrap
+  | Lentertrap
+  | Lpushtrap of { lbl_handler : label; }
   | Lpoptrap
   | Lraise of Lambda.raise_kind
 
@@ -131,7 +131,7 @@ let rec discard_dead_code n =
   | Llabel _ -> n
 (* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
    as this may cause a stack imbalance later during assembler generation. *)
-  | Lpoptrap | Lpushtrap -> n
+  | Lpoptrap | Lpushtrap _ -> n
   | Lop(Istackoffset _) -> n
   | _ -> discard_dead_code n.next
 
@@ -250,11 +250,6 @@ let rec linear i n =
                    i !n2
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
-  | Iloop body ->
-      let lbl_head = Cmm.new_label() in
-      let n1 = linear i.Mach.next n in
-      let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
-      cons_instr (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
@@ -273,7 +268,8 @@ let rec linear i n =
       let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
+          | _ -> cons_instr (Llabel lbl_handler)
+                   (linear handler (add_branch lbl_end n)))
           n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in
@@ -287,9 +283,11 @@ let rec linear i n =
          only to inform the later pass about this stack offset
          (corresponding to N traps).
        *)
+      let lbl_dummy = lbl in
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr Lpushtrap i) (tt - 1)
+        else
+          loop (cons_instr (Lpushtrap { lbl_handler = lbl_dummy; }) i) (tt - 1)
       in
       let n1 = loop (linear i.Mach.next n) !try_depth in
       let rec loop i tt =
@@ -299,14 +297,19 @@ let rec linear i n =
       loop (add_branch lbl n1) !try_depth
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
+      let (lbl_handler, n2) =
+        get_label (cons_instr Lentertrap (linear handler n1))
+      in
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
-      let (lbl_body, n2) =
-        get_label (instr_cons Lpushtrap i.Mach.arg [| |]
-                    (linear body (cons_instr Lpoptrap n1))) in
+      let n3 = cons_instr (Lpushtrap { lbl_handler; })
+                 (linear body
+                    (cons_instr
+                       Lpoptrap
+                       (add_branch lbl_join n2))) in
       decr try_depth;
-      instr_cons (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (linear handler (add_branch lbl_join n2))
+      n3
+
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 

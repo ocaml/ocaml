@@ -71,6 +71,7 @@ _build
 
 /bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
+/bytecomp/opcodes.mli
 
 /debugger/lexer.ml
 /debugger/parser.ml

@@ -142,7 +142,7 @@ let norm = function
 let ctype_apply_env_empty = ref (fun _ -> assert false)
 
 (* Similar to [Ctype.nondep_type_rec]. *)
-let rec typexp s ty =
+let rec typexp scope s ty =
   let ty = repr ty in
   match ty.desc with
     Tvar _ | Tunivar _ as desc ->
@@ -151,7 +151,9 @@ let rec typexp s ty =
           if s.for_saving then newpersty (norm desc)
           else newty2 ty.level desc
         in
-        save_desc ty desc; ty.desc <- Tsubst ty'; ty'
+        For_copy.save_desc scope ty desc;
+        ty.desc <- Tsubst ty';
+        ty'
       else ty
   | Tsubst ty ->
       ty
@@ -165,7 +167,7 @@ let rec typexp s ty =
 *)
   | _ ->
     let desc = ty.desc in
-    save_desc ty desc;
+    For_copy.save_desc scope ty desc;
     let tm = row_of_type ty in
     let has_fixed_row =
       not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm in
@@ -181,7 +183,7 @@ let rec typexp s ty =
         | _ -> assert false
       else match desc with
       | Tconstr (p, args, _abbrev) ->
-         let args = List.map (typexp s) args in
+         let args = List.map (typexp scope s) args in
          begin match Path.Map.find p s.types with
          | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
          | Path _ -> Tconstr(type_path s p, args, ref Mnil)
@@ -189,15 +191,18 @@ let rec typexp s ty =
             (!ctype_apply_env_empty params body args).desc
          end
       | Tpackage(p, n, tl) ->
-          Tpackage(modtype_path s p, n, List.map (typexp s) tl)
+          Tpackage(modtype_path s p, n, List.map (typexp scope s) tl)
       | Tobject (t1, name) ->
-          Tobject (typexp s t1,
-                 ref (match !name with
-                        None -> None
-                      | Some (p, tl) ->
-                         if to_subst_by_type_function s p
-                         then None
-                         else Some (type_path s p, List.map (typexp s) tl)))
+          let t1' = typexp scope s t1 in
+          let name' =
+            match !name with
+            | None -> None
+            | Some (p, tl) ->
+                if to_subst_by_type_function s p
+                then None
+                else Some (type_path s p, List.map (typexp scope s) tl)
+          in
+          Tobject (t1', ref name')
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -216,9 +221,9 @@ let rec typexp s ty =
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
-                | Tconstr _ | Tnil -> typexp s more
+                | Tconstr _ | Tnil -> typexp scope s more
                 | Tunivar _ | Tvar _ ->
-                    save_desc more more.desc;
+                    For_copy.save_desc scope more more.desc;
                     if s.for_saving then newpersty (norm more.desc) else
                     if dup && is_Tvar more then newgenty more.desc else more
                 | _ -> assert false
@@ -227,7 +232,7 @@ let rec typexp s ty =
               more.desc <- Tsubst(newgenty(Ttuple[more';ty']));
               (* Return a new copy *)
               let row =
-                copy_row (typexp s) true row (not dup) more' in
+                copy_row (typexp scope s) true row (not dup) more' in
               match row.row_name with
               | Some (p, tl) ->
                  Tvariant {row with row_name =
@@ -238,8 +243,8 @@ let rec typexp s ty =
                   Tvariant row
           end
       | Tfield(_label, kind, _t1, t2) when field_kind_repr kind = Fabsent ->
-          Tlink (typexp s t2)
-      | _ -> copy_type_desc (typexp s) desc
+          Tlink (typexp scope s t2)
+      | _ -> copy_type_desc (typexp scope s) desc
       end;
     ty'
 
@@ -247,143 +252,137 @@ let rec typexp s ty =
    Always make a copy of the type. If this is not done, type levels
    might not be correct.
 *)
-let type_expr s ty =
-  let ty' = typexp s ty in
-  cleanup_types ();
-  ty'
+let type_expr s ty = For_copy.with_scope (fun scope -> typexp scope s ty)
 
-let label_declaration s l =
+let label_declaration scope s l =
   {
     ld_id = l.ld_id;
     ld_mutable = l.ld_mutable;
-    ld_type = typexp s l.ld_type;
+    ld_type = typexp scope s l.ld_type;
     ld_loc = loc s l.ld_loc;
     ld_attributes = attrs s l.ld_attributes;
   }
 
-let constructor_arguments s = function
+let constructor_arguments scope s = function
   | Cstr_tuple l ->
-      Cstr_tuple (List.map (typexp s) l)
+      Cstr_tuple (List.map (typexp scope s) l)
   | Cstr_record l ->
-      Cstr_record (List.map (label_declaration s) l)
+      Cstr_record (List.map (label_declaration scope s) l)
 
-let constructor_declaration s c =
+let constructor_declaration scope s c =
   {
     cd_id = c.cd_id;
-    cd_args = constructor_arguments s c.cd_args;
-    cd_res = may_map (typexp s) c.cd_res;
+    cd_args = constructor_arguments scope s c.cd_args;
+    cd_res = may_map (typexp scope s) c.cd_res;
     cd_loc = loc s c.cd_loc;
     cd_attributes = attrs s c.cd_attributes;
   }
 
-let type_declaration s decl =
-  let decl =
-    { type_params = List.map (typexp s) decl.type_params;
-      type_arity = decl.type_arity;
-      type_kind =
-        begin match decl.type_kind with
-          Type_abstract -> Type_abstract
-        | Type_variant cstrs ->
-            Type_variant (List.map (constructor_declaration s) cstrs)
-        | Type_record(lbls, rep) ->
-            Type_record (List.map (label_declaration s) lbls, rep)
-        | Type_open -> Type_open
-        end;
-      type_manifest =
-        begin
-          match decl.type_manifest with
-            None -> None
-          | Some ty -> Some(typexp s ty)
-        end;
-      type_private = decl.type_private;
-      type_variance = decl.type_variance;
-      type_is_newtype = false;
-      type_expansion_scope = Btype.lowest_level;
-      type_loc = loc s decl.type_loc;
-      type_attributes = attrs s decl.type_attributes;
-      type_immediate = decl.type_immediate;
-      type_unboxed = decl.type_unboxed;
-    }
-  in
-  cleanup_types ();
-  decl
+let type_declaration' scope s decl =
+  { type_params = List.map (typexp scope s) decl.type_params;
+    type_arity = decl.type_arity;
+    type_kind =
+      begin match decl.type_kind with
+        Type_abstract -> Type_abstract
+      | Type_variant cstrs ->
+          Type_variant (List.map (constructor_declaration scope s) cstrs)
+      | Type_record(lbls, rep) ->
+          Type_record (List.map (label_declaration scope s) lbls, rep)
+      | Type_open -> Type_open
+      end;
+    type_manifest =
+      begin
+        match decl.type_manifest with
+          None -> None
+        | Some ty -> Some(typexp scope s ty)
+      end;
+    type_private = decl.type_private;
+    type_variance = decl.type_variance;
+    type_is_newtype = false;
+    type_expansion_scope = Btype.lowest_level;
+    type_loc = loc s decl.type_loc;
+    type_attributes = attrs s decl.type_attributes;
+    type_immediate = decl.type_immediate;
+    type_unboxed = decl.type_unboxed;
+  }
 
-let class_signature s sign =
-  { csig_self = typexp s sign.csig_self;
+let type_declaration s decl =
+  For_copy.with_scope (fun scope -> type_declaration' scope s decl)
+
+let class_signature scope s sign =
+  { csig_self = typexp scope s sign.csig_self;
     csig_vars =
-      Vars.map (function (m, v, t) -> (m, v, typexp s t)) sign.csig_vars;
+      Vars.map (function (m, v, t) -> (m, v, typexp scope s t)) sign.csig_vars;
     csig_concr = sign.csig_concr;
     csig_inher =
-      List.map (fun (p, tl) -> (type_path s p, List.map (typexp s) tl))
+      List.map (fun (p, tl) -> (type_path s p, List.map (typexp scope s) tl))
         sign.csig_inher;
   }
 
-let rec class_type s =
-  function
-    Cty_constr (p, tyl, cty) ->
-      Cty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
+let rec class_type scope s = function
+  | Cty_constr (p, tyl, cty) ->
+      let p' = type_path s p in
+      let tyl' = List.map (typexp scope s) tyl in
+      let cty' = class_type scope s cty in
+      Cty_constr (p', tyl', cty')
   | Cty_signature sign ->
-      Cty_signature (class_signature s sign)
+      Cty_signature (class_signature scope s sign)
   | Cty_arrow (l, ty, cty) ->
-      Cty_arrow (l, typexp s ty, class_type s cty)
+      Cty_arrow (l, typexp scope s ty, class_type scope s cty)
+
+let class_declaration' scope s decl =
+  { cty_params = List.map (typexp scope s) decl.cty_params;
+    cty_variance = decl.cty_variance;
+    cty_type = class_type scope s decl.cty_type;
+    cty_path = type_path s decl.cty_path;
+    cty_new =
+      begin match decl.cty_new with
+      | None    -> None
+      | Some ty -> Some (typexp scope s ty)
+      end;
+    cty_loc = loc s decl.cty_loc;
+    cty_attributes = attrs s decl.cty_attributes;
+  }
 
 let class_declaration s decl =
-  let decl =
-    { cty_params = List.map (typexp s) decl.cty_params;
-      cty_variance = decl.cty_variance;
-      cty_type = class_type s decl.cty_type;
-      cty_path = type_path s decl.cty_path;
-      cty_new =
-        begin match decl.cty_new with
-          None    -> None
-        | Some ty -> Some (typexp s ty)
-        end;
-      cty_loc = loc s decl.cty_loc;
-      cty_attributes = attrs s decl.cty_attributes;
-    }
-  in
-  (* Do not clean up if saving: next is cltype_declaration *)
-  if not s.for_saving then cleanup_types ();
-  decl
+  For_copy.with_scope (fun scope -> class_declaration' scope s decl)
+
+let cltype_declaration' scope s decl =
+  { clty_params = List.map (typexp scope s) decl.clty_params;
+    clty_variance = decl.clty_variance;
+    clty_type = class_type scope s decl.clty_type;
+    clty_path = type_path s decl.clty_path;
+    clty_loc = loc s decl.clty_loc;
+    clty_attributes = attrs s decl.clty_attributes;
+  }
 
 let cltype_declaration s decl =
-  let decl =
-    { clty_params = List.map (typexp s) decl.clty_params;
-      clty_variance = decl.clty_variance;
-      clty_type = class_type s decl.clty_type;
-      clty_path = type_path s decl.clty_path;
-      clty_loc = loc s decl.clty_loc;
-      clty_attributes = attrs s decl.clty_attributes;
-    }
-  in
-  (* Do clean up even if saving: type_declaration may be recursive *)
-  cleanup_types ();
-  decl
+  For_copy.with_scope (fun scope -> cltype_declaration' scope s decl)
 
 let class_type s cty =
-  let cty = class_type s cty in
-  cleanup_types ();
-  cty
+  For_copy.with_scope (fun scope -> class_type scope s cty)
 
-let value_description s descr =
-  { val_type = type_expr s descr.val_type;
+let value_description' scope s descr =
+  { val_type = typexp scope s descr.val_type;
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
     val_attributes = attrs s descr.val_attributes;
    }
 
+let value_description s descr =
+  For_copy.with_scope (fun scope -> value_description' scope s descr)
+
+let extension_constructor' scope s ext =
+  { ext_type_path = type_path s ext.ext_type_path;
+    ext_type_params = List.map (typexp scope s) ext.ext_type_params;
+    ext_args = constructor_arguments scope s ext.ext_args;
+    ext_ret_type = may_map (typexp scope s) ext.ext_ret_type;
+    ext_private = ext.ext_private;
+    ext_attributes = attrs s ext.ext_attributes;
+    ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
+
 let extension_constructor s ext =
-  let ext =
-    { ext_type_path = type_path s ext.ext_type_path;
-      ext_type_params = List.map (typexp s) ext.ext_type_params;
-      ext_args = constructor_arguments s ext.ext_args;
-      ext_ret_type = may_map (typexp s) ext.ext_ret_type;
-      ext_private = ext.ext_private;
-      ext_attributes = attrs s ext.ext_attributes;
-      ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
-  in
-    cleanup_types ();
-    ext
+  For_copy.with_scope (fun scope -> extension_constructor' scope s ext)
 
 let rec rename_bound_idents s sg = function
     [] -> sg, s
@@ -451,25 +450,30 @@ and signature s sg =
      substitution... *)
   let (sg', s') = rename_bound_idents s [] sg in
   (* ... then apply it to each signature component in turn *)
-  List.rev_map (signature_item s') sg'
+  For_copy.with_scope (fun scope ->
+    List.rev_map (signature_item' scope s') sg'
+  )
 
 
-and signature_item s comp =
+and signature_item' scope s comp =
   match comp with
     Sig_value(id, d, vis) ->
-      Sig_value(id, value_description s d, vis)
+      Sig_value(id, value_description' scope s d, vis)
   | Sig_type(id, d, rs, vis) ->
-      Sig_type(id, type_declaration s d, rs, vis)
+      Sig_type(id, type_declaration' scope s d, rs, vis)
   | Sig_typext(id, ext, es, vis) ->
-      Sig_typext(id, extension_constructor s ext, es, vis)
+      Sig_typext(id, extension_constructor' scope s ext, es, vis)
   | Sig_module(id, pres, d, rs, vis) ->
       Sig_module(id, pres, module_declaration s d, rs, vis)
   | Sig_modtype(id, d, vis) ->
       Sig_modtype(id, modtype_declaration s d, vis)
   | Sig_class(id, d, rs, vis) ->
-      Sig_class(id, class_declaration s d, rs, vis)
+      Sig_class(id, class_declaration' scope s d, rs, vis)
   | Sig_class_type(id, d, rs, vis) ->
-      Sig_class_type(id, cltype_declaration s d, rs, vis)
+      Sig_class_type(id, cltype_declaration' scope s d, rs, vis)
+
+and signature_item s comp =
+  For_copy.with_scope (fun scope -> signature_item' scope s comp)
 
 and module_declaration s decl =
   {
@@ -498,8 +502,8 @@ let merge_path_maps f m1 m2 =
 let type_replacement s = function
   | Path p -> Path (type_path s p)
   | Type_function { params; body } ->
-     let params = List.map (typexp s) params in
-     let body = typexp s body in
+     let params = List.map (type_expr s) params in
+     let body = type_expr s body in
      Type_function { params; body }
 
 (* Composition of substitutions:

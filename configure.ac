@@ -313,6 +313,9 @@ AC_ARG_WITH([reserved-header-bits],
   [AS_HELP_STRING([--with-reserved-header-bits=BITS],
     [reserve BITS bits in block headers for profiling info])])
 
+AC_ARG_VAR([WINDOWS_UNICODE_MODE],
+  [how to handle Unicode under Windows: ansi, compatible])
+
 # There are two configure-time string safety options,
 # --(enable|disable)-force-safe-string and
 # --with-default-string=safe|unsafe that
@@ -419,7 +422,6 @@ AS_CASE([$host],
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [unix_or_win32="win32"
-    exeext=".exe"
     unixlib="win32unix"
     graphlib="win32graph"
     cc_profile=''],
@@ -427,6 +429,10 @@ AS_CASE([$host],
   unixlib="unix"
   graphlib="graph"
   cc_profile='-pg'])
+AS_CASE([$host],
+  [*-*-cygwin*|*-*-mingw32|*-pc-windows],
+    [exeext=".exe"],
+  [exeext=''])
 
 otherlibraries="dynlink"
 AS_IF([test x"$enable_unix_lib" != "xno"],
@@ -755,7 +761,6 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[i[3456]86-*-linux*]], [natdynlink=true],
     [[i[3456]86-*-gnu*]], [natdynlink=true],
     [[x86_64-*-linux*]], [natdynlink=true],
-    [[i[3456]86-*-darwin*]], [AS_IF([$arch64], [natdynlink=true])],
     [x86_64-*-darwin*], [natdynlink=true],
     [s390x*-*-linux*], [natdynlink=true],
     [powerpc*-*-linux*], [natdynlink=true],
@@ -797,8 +802,6 @@ AS_CASE([$host],
     [arch=i386; system=beos],
   [[i[3456]86-*-cygwin]],
     [arch=i386; system=cygwin],
-  [[i[3456]86-*-darwin*]],
-    [AS_IF([$arch64], [arch=amd64], [arch=i386]); system=macosx],
   [[i[3456]86-*-gnu*]],
     [arch=i386; system=gnu],
   [[i[3456]86-*-mingw32]],
@@ -908,7 +911,6 @@ AS_CASE(["$arch,$system"],
   [i386,gnu], [profiling=true],
   [i386,bsd_elf], [profiling=true],
   [amd64,macosx], [profiling=true],
-  [i386,macosx], [profiling=true],
   [amd64,linux], [profiling=true],
   [amd64,openbsd], [profiling=true],
   [amd64,freebsd], [profiling=true],
@@ -1007,7 +1009,9 @@ AS_CASE([$host],
   AS_IF([$has_c99_float_ops],
     [AC_CHECK_FUNC([hypot], [], [has_c99_float_ops=false])])
   AS_IF([$has_c99_float_ops],
-    [AC_CHECK_FUNC([fma], [], [has_c99_float_ops=false])])
+    [AC_CHECK_FUNC([fma], [
+      AS_CASE([$target],[x86_64-*-cygwin],[],[AC_DEFINE([HAS_WORKING_FMA])])],
+      [has_c99_float_ops=false])])
   AS_IF([$has_c99_float_ops],
     [AC_CHECK_FUNC([copysign], [AC_DEFINE([HAS_C99_FLOAT_OPS])])])])
 
@@ -1455,7 +1459,7 @@ AS_CASE([$enable_debug_runtime],
 AC_MSG_CHECKING([whether stack overflows can be detected])
 
 AS_CASE([$arch,$system],
-  [i386,linux_elf|amd64,linux|amd64,macosx|i386,macosx \
+  [i386,linux_elf|amd64,linux|amd64,macosx \
     |amd64,openbsd|i386,bsd_elf],
     [AC_DEFINE([HAS_STACK_OVERFLOW_DETECTION])
     AC_MSG_RESULT([yes])],
@@ -1707,7 +1711,12 @@ AS_IF([test x"$mandir" = x'${datarootdir}/man'],
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [max_testsuite_dir_retries=1
-    windows_unicode=1],
+    AS_CASE([$WINDOWS_UNICODE_MODE],
+      [ansi],
+        [windows_unicode=0],
+      [compatible|""],
+        [windows_unicode=1],
+      [AC_MSG_ERROR([unexpected windows unicode mode])])],
   [max_testsuite_dir_retries=0
   windows_unicode=0])
 

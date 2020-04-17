@@ -580,6 +580,80 @@ let fixpoint f x =
 the function "f" cannot raise a "Done" exception, which removes an
 entire class of misbehaving functions.
 
+\section{Lazy expressions}
+
+OCaml allows us to defer some computation until later when we need the result of
+ that computation. 
+
+We use "lazy (expr)" to delay the evaluation of some expression "expr". For 
+example, we can defer the computation of "1+1" until we need the result of that
+expression, "2". Let us see how we initialize a lazy expression. 
+
+\begin{caml_example}{toplevel}
+  let lazy_two = lazy ( print_endline "lazy_two evaluation"; 1 + 1 );;
+\end{caml_example}
+
+We added "print_endline \"lazy_two evaluation\"" to see when the lazy
+ expression is being evaluated.
+
+The value of "lazy_two" is displayed as "<lazy>", which means the expression 
+has not been evaluated yet, and its final value is unknown.
+
+Note that "lazy_two" has type "int lazy_t". However, the type "'a lazy_t" is an 
+internal type name, so the type "'a Lazy.t" should be preferred when possible.
+
+When we finally need the result of a lazy expression, we can call "Lazy.force"  
+on that expression to force its evaluation. The function "force" comes from 
+standard-library module 
+\href{https://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html}{"Lazy"}.
+
+\begin{caml_example}{toplevel}
+  Lazy.force lazy_two;;
+\end{caml_example}
+
+Notice that our function call above prints ``lazy_two evaluation'' and then 
+returns the plain value of the computation. 
+
+Now if we look at the value of "lazy_two", we see that it is not displayed as 
+"<lazy>" anymore but as "lazy 2".
+
+\begin{caml_example}{toplevel}
+  lazy_two;;
+\end{caml_example}
+
+This is because "Lazy.force" memoizes the result of the forced expression. In other 
+words, every subsequent call of "Lazy.force" on that expression returns the 
+result of the first computation without recomputing the lazy expression. Let us 
+force "lazy_two" once again. 
+
+\begin{caml_example}{toplevel}
+  Lazy.force lazy_two;;
+\end{caml_example}
+
+The expression is not evaluated this time; notice that ``lazy_two evaluation'' is
+not printed. The result of the initial computation is simply returned. 
+
+Lazy patterns provide another way to force a lazy expression. 
+
+\begin{caml_example}{toplevel}
+  let lazy_l = lazy ([1; 2] @ [3; 4]);;
+  let lazy l = lazy_l;;
+\end{caml_example}
+
+We can also use lazy patterns in pattern matching.
+
+\begin{caml_example}{toplevel}
+  let maybe_eval lazy_guard lazy_expr = 
+    match lazy_guard, lazy_expr with
+    | lazy false, _ -> "matches if (Lazy.force lazy_guard = false); lazy_expr not forced"
+    | lazy true, lazy _ -> "matches if (Lazy.force lazy_guard = true); lazy_expr forced";;
+\end{caml_example}
+
+The lazy expression "lazy_expr" is forced only if the "lazy_guard" value yields 
+"true" once computed. Indeed, a simple wildcard pattern (not lazy) never forces 
+the lazy expression's evaluation. However, a pattern with keyword "lazy", even 
+if it is wildcard, always forces the evaluation of the deferred computation.
+
 \section{Symbolic processing of expressions}
 
 We finish this introduction with a more complete example

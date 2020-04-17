@@ -527,8 +527,8 @@ module BR = Branch_relaxation.Make (struct
         + begin match lbl1 with None -> 0 | Some _ -> 1 end
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
-    | Lsetuptrap _ -> 2
-    | Lpushtrap -> 3
+    | Lentertrap -> 0
+    | Lpushtrap _ -> 4
     | Lpoptrap -> 1
     | Lraise k ->
       begin match k with
@@ -951,12 +951,10 @@ let emit_instr i =
             `	.word	{emit_label jumptbl.(j)} - {emit_label lbltbl}\n`
         done
 *)
-    | Lsetuptrap lbl ->
-        let lblnext = new_label() in
-        `	adr	{emit_reg reg_tmp1}, {emit_label lblnext}\n`;
-        `	b	{emit_label lbl}\n`;
-        `{emit_label lblnext}:\n`
-    | Lpushtrap ->
+    | Lentertrap ->
+        ()
+    | Lpushtrap { lbl_handler; } ->
+        `	adr	{emit_reg reg_tmp1}, {emit_label lbl_handler}\n`;
         stack_offset := !stack_offset + 16;
         `	str	{emit_reg reg_trap_off}, [sp, #-16]!\n`;
         `	str	{emit_reg reg_tmp1}, [sp, #8]\n`;

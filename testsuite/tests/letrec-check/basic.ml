@@ -326,3 +326,38 @@ Line 2, characters 2-85:
 4 |   | exception Not_found -> "z"
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
+
+
+(* To compute the dependencies of mutually-recursive bindings,
+   transitive dependencies must be taken into account.
+
+   The example below was causing a segfault in 4.08+dev.
+*)
+let rec wrong =
+  (* x depends on y,
+     and y depends on wrong,
+     so it is important to notice that x transitively depends on wrong;
+
+     an earlier version of our letrec analysis would only report that
+     y depends on wrong, which seems safe as y is not used in the
+     body.
+  *)
+  let rec x = ref y
+  and y = ref wrong
+  in ref ("foo" ^ ! ! !x);;
+[%%expect{|
+Line 10, characters 2-65:
+10 | ..let rec x = ref y
+11 |   and y = ref wrong
+12 |   in ref ("foo" ^ ! ! !x)..
+Error: This kind of expression is not allowed as right-hand side of `let rec'
+|}]
+
+(* in this case, x does not depend on y, so everything is fine *)
+let rec okay =
+  let rec x = ref "bar"
+  and _y = ref okay in
+  ref ("foo" ^ ! x);;
+[%%expect{|
+val okay : string ref = {contents = "foobar"}
+|}]

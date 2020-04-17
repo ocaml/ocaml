@@ -137,10 +137,6 @@ let rec insert_poll_aux delta instr =
              desc = Itrywith(insert_poll_aux delta e,
                              insert_poll_aux delta h);
              next = insert_poll_aux delta instr.next }
-        | Iloop i ->
-           { instr with
-             desc = Iloop (insert_poll_instr (insert_poll_aux 0 i));
-             next = insert_poll_aux delta instr.next }
         | _ -> { instr with next = (insert_poll_aux delta instr.next) }
     end
 

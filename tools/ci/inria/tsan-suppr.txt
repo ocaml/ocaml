@@ -1,5 +1,6 @@
 # The treatment of pending signals involves unsynchronized accesses
 fun:caml_record_signal
 fun:caml_process_pending_signals
+fun:caml_leave_blocking_section
 # st_masterlock_waiters polls m->waiters without locking
 fun:st_masterlock_waiters

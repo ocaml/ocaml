@@ -51,6 +51,11 @@
 /* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
    In particular, it should provide expm1(), log1p(), hypot(), copysign(). */
 
+#undef HAS_WORKING_FMA
+
+/* Define HAS_WORKING_FMA if the fma function is correctly implemented. The
+   newlib library (intentionally) just has return x * y + z. */
+
 #undef HAS_GETRUSAGE
 
 #undef HAS_TIMES

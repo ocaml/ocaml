@@ -1876,6 +1876,8 @@ let explain_escape intro prev ctx e =
 
 
 let explain_object = function
+  | Trace.Self_cannot_be_closed ->
+      Some (dprintf "@,Self type cannot be unified with a closed object type")
   | Trace.Missing_field (pos,f) ->
       Some(dprintf "@,@[The %a object type has no method %s@]" print_pos pos f)
   | Trace.Abstract_row pos -> Some(

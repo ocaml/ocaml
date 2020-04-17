@@ -49,7 +49,7 @@ compiler currently runs on the following platforms:
 Tier 1 (actively used and maintained by the core OCaml team):
 
 AMD64 (Opteron)::    Linux, OS X, MS Windows
-IA32 (Pentium)::     Linux, FreeBSD, OS X, MS Windows
+IA32 (Pentium)::     Linux, FreeBSD, MS Windows
 PowerPC::            Linux, OS X
 ARM::                Linux
 

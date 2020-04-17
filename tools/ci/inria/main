@@ -143,7 +143,7 @@ case "${OCAML_ARCH}" in
   cygwin64)
     cleanup=true
     check_make_alldepend=true
-    dorebase=true
+    dorebase=false
     confoptions="$confoptions --disable-shared "
   ;;
   mingw)
