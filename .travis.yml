@@ -19,7 +19,7 @@ git:
   submodules: false
 script:
   - >
-    mkdir ~/inst && ./configure --prefix ~/inst --with-debug-runtime --disable-instrumented-runtime &&
+    mkdir ~/inst && ./configure --prefix ~/inst --with-debug-runtime &&
     make -j4 world.opt &&
     OCAMLRUNPARAM=v=0,V=1 make -C testsuite all-enabled
 
