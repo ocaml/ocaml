@@ -4181,7 +4181,7 @@ and type_application env funct sargs =
     tvar || List.mem l ls
   in
   let eliminated_optional_arguments = ref [] in
-  let omitted_non_optional_arguments = ref [] in
+  let omitted_parameters = ref [] in
   let type_unknown_arg (ty_fun, typed_args) (lbl, sarg) =
     let (ty_arg, ty_res) =
       let ty_fun = expand_head env ty_fun in
@@ -4200,8 +4200,7 @@ and type_application env funct sargs =
       | td ->
           let ty_fun = match td with Tarrow _ -> newty td | _ -> ty_fun in
           let ty_res =
-            result_type
-              (!omitted_non_optional_arguments @ !eliminated_optional_arguments)
+            result_type (!omitted_parameters @ !eliminated_optional_arguments)
               ty_fun
           in
           match ty_res.desc with
@@ -4309,12 +4308,11 @@ and type_application env funct sargs =
                 if optional && List.mem_assoc Nolabel sargs then
                   eliminate_optional_arg ()
                 else begin
-                  (* No argument was given for this non-optional parameter, we
-                     abstract over it. *)
+                  (* No argument was given for this parameter, we abstract over
+                     it. *)
                   may_warn funct.exp_loc
                     (Warnings.Without_principality "commuted an argument");
-                  omitted_non_optional_arguments :=
-                    (l,ty,lv) :: !omitted_non_optional_arguments;
+                  omitted_parameters := (l,ty,lv) :: !omitted_parameters;
                   None
                 end
         in
@@ -4335,9 +4333,7 @@ and type_application env funct sargs =
               | l, Some f -> l, Some (f ()))
             (List.rev typed_args)
         in
-        let result_ty =
-          instance (result_type !omitted_non_optional_arguments ty_fun)
-        in
+        let result_ty = instance (result_type !omitted_parameters ty_fun) in
         args, result_ty
   in
   let is_ignore funct =
