@@ -2379,6 +2379,9 @@ OCaml 4.07.0 (10 July 2018)
   platforms, making this option unusable on platforms where it wasn't.
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
 
+- #9349: Support [@inlined hint] attribute.
+  (Leo White, review by Stephen Dolan)
+
 ### Runtime system:
 
 - #515 #676 #7173: Add a public C API for weak arrays and

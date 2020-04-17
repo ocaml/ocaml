@@ -1317,7 +1317,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
           in
           let magic_scale_constant = 8. in
           int_of_float (inline_threshold *. magic_scale_constant) + n
-      | Always_inline -> max_int
+      | Always_inline | Hint_inline -> max_int
       | Never_inline -> min_int
       | Unroll _ -> assert false
     in

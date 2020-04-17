@@ -3,7 +3,7 @@ File "w55.ml", line 25, characters 10-26:
                ^^^^^^^^^^^^^^^^
 Warning 55: Cannot inline: Function information unavailable
 File "w55.ml", line 29, characters 10-27:
-29 | let i x = (!h [@inlined]) x
+29 | let i x = (!r [@inlined]) x
                ^^^^^^^^^^^^^^^^^
 Warning 55: Cannot inline: Unknown function
 File "w55.ml", line 33, characters 10-26:

@@ -772,7 +772,8 @@ let simplify_local_functions lam =
     | {local = Always_local; _}
     | {local = Default_local; inline = (Never_inline | Default_inline); _}
       -> true
-    | {local = Default_local; inline = (Always_inline | Unroll _); _}
+    | {local = Default_local;
+       inline = (Always_inline | Unroll _ | Hint_inline); _}
     | {local = Never_local; _}
       -> false
   in
