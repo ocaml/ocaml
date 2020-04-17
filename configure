@@ -2900,7 +2900,7 @@ VERSION=4.12.0+dev0-2020-04-22
 
 ## Generated files
 
-ac_config_files="$ac_config_files Makefile.common"
+ac_config_files="$ac_config_files Makefile.build_config"
 
 ac_config_files="$ac_config_files Makefile.config"
 
@@ -18074,7 +18074,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "Makefile.common") CONFIG_FILES="$CONFIG_FILES Makefile.common" ;;
+    "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "tools/eventlog_metadata") CONFIG_FILES="$CONFIG_FILES tools/eventlog_metadata" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;

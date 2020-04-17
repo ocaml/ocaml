@@ -40,7 +40,7 @@ _build
 
 # local to root directory
 
-/Makefile.common
+/Makefile.build_config
 /Makefile.config
 /autom4te.cache
 /ocamlc
