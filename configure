@@ -2997,11 +2997,12 @@ else
 fi
 
 
+# Disable instrumented-runtime with multicore
 # Check whether --enable-instrumented-runtime was given.
 if test "${enable_instrumented_runtime+set}" = set; then :
   enableval=$enable_instrumented_runtime;
 else
-  enable_instrumented_runtime=auto
+  enable_instrumented_runtime=no
 fi
 
 

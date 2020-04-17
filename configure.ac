@@ -217,11 +217,12 @@ AC_ARG_WITH([dllibs],
   [otherdllibs=$withval],
   [otherdllibs=""])
 
+# Disable instrumented-runtime with multicore
 AC_ARG_ENABLE([instrumented-runtime],
   [AS_HELP_STRING([--enable-instrumented-runtime],
     [build the instrumented runtime @<:@default=auto@:>@])],
   [],
-  [enable_instrumented_runtime=auto])
+  [enable_instrumented_runtime=no])
 
 AC_ARG_ENABLE([vmthreads],
   [AS_HELP_STRING([--disable-vmthreads],
