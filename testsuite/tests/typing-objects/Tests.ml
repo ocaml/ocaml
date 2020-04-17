@@ -93,7 +93,7 @@ class ['a] c :
 |}];;
 new c;;
 [%%expect{|
-- : (< f : 'a > as 'a) -> 'a c = <fun>
+- : ('a c as 'a) -> 'a = <fun>
 |}];;
 (* class ['a] c :
   'a -> object ('a) constraint 'a = < f : 'a; .. > method f : 'a end *)

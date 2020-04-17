@@ -89,6 +89,7 @@ end
 
 exception Unify of Unification_trace.t
 exception Tags of label * label
+exception Cyclic_type of Location.t * Env.t * type_expr list
 exception Subtype of Unification_trace.t * Unification_trace.t
 exception Cannot_expand
 exception Cannot_apply

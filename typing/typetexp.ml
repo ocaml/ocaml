@@ -649,6 +649,11 @@ let globalize_used_variables env fixed =
           raise (Error(loc, env, Type_mismatch trace)))
       !r
 
+let transl_type env mode styp =
+  try transl_type env mode styp with
+    Ctype.Cyclic_type (_loc, env, tyl) ->
+      raise (Ctype.Cyclic_type (styp.ptyp_loc, env, tyl))
+
 let transl_simple_type env fixed styp =
   univars := []; used_variables := TyVarMap.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
@@ -801,6 +806,14 @@ let report_error env ppf = function
       fprintf ppf "@[The type %a@ is not an object type@]"
         Printtyp.type_expr ty
 
+let report_cycle _env ppf tyl =
+  wrap_printing_env ~error:true Env.empty (fun () ->
+    fprintf ppf "@[<hv>Cycle detected in type:@;<0 2>@[%t@]@]"
+      (fun ppf ->
+        Printtyp.reset_and_mark_loops_list tyl;
+        List.iter
+          (fun ty -> fprintf ppf "@ %a =>" Printtyp.marked_type_expr  ty) tyl))
+
 let () =
   Location.register_error_of_exn
     (function
@@ -808,6 +821,8 @@ let () =
         Some (Location.error_of_printer ~loc (report_error env) err)
       | Error_forward err ->
         Some err
+      | Ctype.Cyclic_type (loc, env, tyl) ->
+        Some (Location.error_of_printer ~loc (report_cycle env) tyl)
       | _ ->
         None
     )

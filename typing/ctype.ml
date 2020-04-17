@@ -160,6 +160,9 @@ exception Unify = Trace.Unify
 
 exception Tags of label * label
 
+exception Cyclic_type of Location.t * Env.t * type_expr list
+  (* See [Typetexp.report_cyclic] *)
+
 let () =
   Location.register_error_of_exn
     (function
@@ -1638,16 +1641,14 @@ let try_expand_safe env ty =
 (* Fully expand the head of a type. *)
 let rec try_expand_rec try_once env visited ty =
   let ty' = try_once env ty in
-  if List.memq ty' visited then begin
-    set_type_desc ty' (Tvar None);
-    List.iter (fun ty -> if ty != ty' then link_type ty ty') visited;
-    ty'
-  end else
-    try try_expand_rec try_once env (ty'::visited) ty'
-    with Cannot_expand -> ty'
+  if List.memq ty' visited then
+    raise (Cyclic_type (Location.in_file !Location.input_name,
+                        env, List.rev (ty' :: visited)))
+  else try try_expand_rec try_once env (ty' :: visited) ty'
+  with Cannot_expand -> ty'
 
 let try_expand_head try_once env ty =
-  try_expand_rec try_once env [ty] (repr ty)
+  try_expand_rec try_once env [] ty
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
@@ -2063,29 +2064,19 @@ let expand_trace env trace =
 (**** Unification ****)
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
-(* If [t0] is not a type variable, also look into cached expansions. *)
 let deep_occur t0 ty =
-  let expand = not (is_Tvar t0) in
-  let to_unmark = ref [ty] in
   let rec occur_rec ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       if ty == t0 then raise Occur;
       ty.level <- pivot_level - ty.level;
-      iter_type_expr occur_rec ty;
-      if expand then match ty.desc with
-      | Tconstr (path, _args, abbrev) ->
-          begin match find_expans Private path !abbrev with
-            Some ty' -> to_unmark := ty' :: !to_unmark; occur_rec ty'
-          | None -> ()
-          end
-      | _ -> ()
+      iter_type_expr occur_rec ty
     end
   in
   try
-    occur_rec ty; List.iter unmark_type !to_unmark; false
+    occur_rec ty; unmark_type ty; false
   with Occur ->
-    List.iter unmark_type !to_unmark; true
+    unmark_type ty; true
 
 (*
    1. When unifying two non-abbreviated types, one type is made a link
@@ -2624,7 +2615,7 @@ and unify2 env t1 t2 =
       (match t2.desc with Tconstr (_, [], _) -> t2' | _ -> t2)
     else (t1, t2)
   in
-  if not (deep_occur t1' t2) && (unify_eq t1 t1' || not (unify_eq t2 t2')) then
+  if unify_eq t1 t1' || not (unify_eq t2 t2') then
     unify3 env t1 t1' t2 t2'
   else
     try unify3 env t2 t2' t1 t1' with Unify trace ->
@@ -2632,7 +2623,7 @@ and unify2 env t1 t2 =
 
 and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
-  (* Assumes either [deep_occur t2' t1] or [t1 == t1'] or [t2 != t2'] *)
+  (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
 
