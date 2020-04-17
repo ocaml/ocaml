@@ -291,7 +291,7 @@ Working version
 - #2324: Replace caml_int_compare and caml_float_compare with primitives.
   (Greta Yorsh, review by Stephen Dolan and Vincent Laviron)
 
-- #9411: type_args: merge sargs and more_sargs
+* #9411: forbid optional arguments reordering with -nolabels
   (Thomas Refis, review by Frédéric Bour and Jacques Garrigue)
 
 - #9452: Add locations to docstring attributes
