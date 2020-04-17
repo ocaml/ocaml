@@ -552,7 +552,6 @@ typing/env.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/datarepr.cmi \
-    utils/config.cmi \
     typing/cmi_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -572,7 +571,6 @@ typing/env.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/datarepr.cmx \
-    utils/config.cmx \
     typing/cmi_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
@@ -829,6 +827,7 @@ typing/persistent_env.cmo : \
     utils/warnings.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     utils/consistbl.cmi \
     utils/config.cmi \
     typing/cmi_format.cmi \
@@ -838,6 +837,7 @@ typing/persistent_env.cmx : \
     utils/warnings.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
+    utils/load_path.cmx \
     utils/consistbl.cmx \
     utils/config.cmx \
     typing/cmi_format.cmx \
@@ -1987,6 +1987,7 @@ bytecomp/runtimedef.cmi :
 bytecomp/simplif.cmo : \
     utils/warnings.cmi \
     typing/stypes.cmi \
+    typing/primitive.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/lambda.cmi \
@@ -1998,6 +1999,7 @@ bytecomp/simplif.cmo : \
 bytecomp/simplif.cmx : \
     utils/warnings.cmx \
     typing/stypes.cmx \
+    typing/primitive.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     bytecomp/lambda.cmx \
@@ -2359,6 +2361,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/printcmm.cmi \
     asmcomp/printclambda.cmi \
     typing/primitive.cmi \
+    asmcomp/polling.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
@@ -2406,6 +2409,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/printcmm.cmx \
     asmcomp/printclambda.cmx \
     typing/primitive.cmx \
+    asmcomp/polling.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
@@ -2950,7 +2954,9 @@ asmcomp/emit.cmo : \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
+    bytecomp/lambda.cmi \
     asmcomp/emitaux.cmi \
+    utils/domainstate.cmi \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
@@ -2970,7 +2976,9 @@ asmcomp/emit.cmx : \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
+    bytecomp/lambda.cmx \
     asmcomp/emitaux.cmx \
+    utils/domainstate.cmx \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
@@ -3194,6 +3202,7 @@ asmcomp/linearize.cmo : \
     asmcomp/proc.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/cmm.cmi \
@@ -3203,6 +3212,7 @@ asmcomp/linearize.cmx : \
     asmcomp/proc.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/cmm.cmx \
@@ -3210,6 +3220,7 @@ asmcomp/linearize.cmx : \
 asmcomp/linearize.cmi : \
     asmcomp/reg.cmi \
     asmcomp/mach.cmi \
+    bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/linscan.cmo : \
@@ -3247,6 +3258,7 @@ asmcomp/mach.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
+    bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi \
     asmcomp/backend_var.cmi \
@@ -3256,6 +3268,7 @@ asmcomp/mach.cmx : \
     asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx \
     asmcomp/reg.cmx \
+    bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx \
     asmcomp/cmm.cmx \
     asmcomp/backend_var.cmx \
@@ -3264,6 +3277,7 @@ asmcomp/mach.cmx : \
 asmcomp/mach.cmi : \
     asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi \
+    bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi \
     asmcomp/backend_var.cmi \
@@ -3339,16 +3353,16 @@ asmcomp/printcmm.cmi : \
     asmcomp/cmm.cmi
 asmcomp/printlinear.cmo : \
     asmcomp/printmach.cmi \
-    asmcomp/printcmm.cmi \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
+    bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmx : \
     asmcomp/printmach.cmx \
-    asmcomp/printcmm.cmx \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
+    bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmi : \
@@ -3359,6 +3373,7 @@ asmcomp/printmach.cmo : \
     asmcomp/proc.cmi \
     asmcomp/printcmm.cmi \
     asmcomp/mach.cmi \
+    bytecomp/lambda.cmi \
     asmcomp/interval.cmi \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
@@ -3373,6 +3388,7 @@ asmcomp/printmach.cmx : \
     asmcomp/proc.cmx \
     asmcomp/printcmm.cmx \
     asmcomp/mach.cmx \
+    bytecomp/lambda.cmx \
     asmcomp/interval.cmx \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
