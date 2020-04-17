@@ -139,7 +139,7 @@ type error =
       Ctype.Unification_trace.t * type_forcing_context option
       * Typedtree.expression_desc option
   | Apply_non_function of type_expr
-  | Apply_wrong_label of arg_label * type_expr
+  | Apply_wrong_label of arg_label * type_expr * bool
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t

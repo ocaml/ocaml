@@ -80,7 +80,7 @@ type error =
       Ctype.Unification_trace.t * type_forcing_context option
       * expression_desc option
   | Apply_non_function of type_expr
-  | Apply_wrong_label of arg_label * type_expr
+  | Apply_wrong_label of arg_label * type_expr * bool
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
@@ -4207,7 +4207,7 @@ and type_application env funct sargs =
           | Tarrow _ ->
               if !Clflags.classic || not (has_label lbl ty_fun) then
                 raise (Error(sarg.pexp_loc, env,
-                             Apply_wrong_label(lbl, ty_res)))
+                             Apply_wrong_label(lbl, ty_res, false)))
               else
                 raise (Error(funct.exp_loc, env, Incoherent_label_order))
           | _ ->
@@ -4292,7 +4292,7 @@ and type_application env funct sargs =
                   (sargs, eliminate_optional_arg ())
                 else
                   raise(Error(sarg.pexp_loc, env,
-                              Apply_wrong_label(l', ty_fun')))
+                              Apply_wrong_label(l', ty_fun', optional)))
           end else
             (* Arguments can be commuted, try to fetch the argument
                corresponding to the first parameter. *)
@@ -5240,12 +5240,20 @@ let report_error ~loc env = function
             Printtyp.type_expr typ
             "This is not a function; it cannot be applied."
       end
-  | Apply_wrong_label (l, ty) ->
+  | Apply_wrong_label (l, ty, extra_info) ->
       let print_label ppf = function
         | Nolabel -> fprintf ppf "without label"
         | l -> fprintf ppf "with label %s" (prefixed_label_name l)
       in
-      Location.errorf ~loc
+      let extra_info =
+        if not extra_info then
+          []
+        else
+          [ Location.msg
+              "Since OCaml 4.11, optional arguments do not commute when \
+               -nolabels is given" ]
+      in
+      Location.errorf ~loc ~sub:extra_info
         "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
          This argument cannot be applied %a@]"
         Printtyp.type_expr ty print_label l
