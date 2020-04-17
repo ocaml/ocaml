@@ -379,6 +379,9 @@ Working version
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
 
+- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+  (Greta Yorsh, review by David Allsopp)
+
 OCaml 4.10 maintenance branch
 -----------------------------
 
