@@ -5,6 +5,13 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#1579: Add a separate types for clambda primitives
+  (Pierre Chambart, review by Vincent Laviron and Mark Shinwell)
+
+- GPR#2228: refactoring the handling of .cmi files by moving it from
+  Env to a new module Persistent_env
+  (Gabriel Scherer, review by Jérémie Dimino and Thomas Refis)
+
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 

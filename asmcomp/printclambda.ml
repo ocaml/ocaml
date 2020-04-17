@@ -157,7 +157,8 @@ and lam ppf = function
   | Uprim(prim, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim lams largs
+      fprintf ppf "@[<2>(%a%a)@]"
+        Printclambda_primitives.primitive prim lams largs
   | Uswitch(larg, sw, _dbg) ->
       let print_case tag index i ppf =
         for j = 0 to Array.length index - 1 do

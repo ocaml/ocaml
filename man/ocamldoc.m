@@ -115,7 +115,7 @@ displaying and processing by
 The
 .IR dot (1)
 tool is available from
-.IR http://www.research.att.com/sw/tools/graphviz/ .
+.IR https://graphviz.org/ .
 The textual representation of the graph is written to the file
 .IR ocamldoc.out ,
 or to the file specified with the

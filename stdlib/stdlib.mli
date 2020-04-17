@@ -19,9 +19,10 @@
     compilation. All components of this module can therefore be
     referred by their short name, without prefixing them by [Stdlib].
 
-    It particular, it provides the basic operations over the built-in types
-    (numbers, booleans, byte sequences, strings, exceptions, references,
-    lists, arrays, input-output channels, ...).
+    It particular, it provides the basic operations over the built-in
+    types (numbers, booleans, byte sequences, strings, exceptions,
+    references, lists, arrays, input-output channels, ...) and the
+    {{!modules}standard library modules}.
 *)
 
 (** {1 Exceptions} *)
@@ -1352,7 +1353,7 @@ val do_at_exit : unit -> unit
 
 (**/**)
 
-(** {1 Standard library modules } *)
+(** {1:modules Standard library modules } *)
 
 (*MODULE_ALIASES*)
 module Arg          = Arg

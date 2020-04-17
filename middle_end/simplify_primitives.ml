@@ -84,27 +84,28 @@ let is_empty = function
   | _ :: _ -> false
 
 let is_pisint = function
-  | Lambda.Pisint -> true
+  | Clambda_primitives.Pisint -> true
   | _ -> false
 
 let is_pstring_length = function
-  | Lambda.Pstringlength -> true
+  | Clambda_primitives.Pstringlength -> true
   | _ -> false
 
 let is_pbytes_length = function
-  | Lambda.Pbyteslength -> true
+  | Clambda_primitives.Pbyteslength -> true
   | _ -> false
 
 let is_pstringrefs = function
-  | Lambda.Pstringrefs -> true
+  | Clambda_primitives.Pstringrefs -> true
   | _ -> false
 
 let is_pbytesrefs = function
-  | Lambda.Pbytesrefs -> true
+  | Clambda_primitives.Pbytesrefs -> true
   | _ -> false
 
-let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
-      ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
+let primitive (p : Clambda_primitives.primitive) (args, approxs)
+      expr dbg ~size_int
+    : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag_int, Asttypes.Immutable, shape) ->
@@ -119,12 +120,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     A.value_block tag (Array.of_list approxs), C.Benefit.zero
   | Praise _ ->
     expr, A.value_bottom, C.Benefit.zero
-  | Pignore -> begin
-      match args, A.descrs approxs with
-      | [arg], [(Value_int 0 | Value_constptr 0)] ->
-        S.const_ptr_expr (Flambda.Expr (Var arg)) 0
-      | _ -> S.const_ptr_expr expr 0
-    end
   | Pmakearray(_, _) when is_empty approxs ->
     Prim (Pmakeblock(0, Asttypes.Immutable, Some []), [], dbg),
     A.value_block (Tag.create_exn 0) [||], C.Benefit.zero
@@ -173,7 +168,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     match A.descrs approxs with
     | [Value_int x] ->
       begin match p with
-      | Pidentity -> S.const_int_expr expr x
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pnegint -> S.const_int_expr expr (-x)
       | Pbswap16 -> S.const_int_expr expr (S.swap16 x)
@@ -212,27 +206,9 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       begin match p with
       (* [Pidentity] should probably never appear, but is here for
          completeness. *)
-      | Pidentity -> S.const_ptr_expr expr x
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pisint -> S.const_bool_expr expr true
       | Poffsetint y -> S.const_ptr_expr expr (x + y)
-      | Pctconst c ->
-        begin match c with
-        | Big_endian -> S.const_bool_expr expr big_endian
-        | Word_size -> S.const_int_expr expr (8*size_int)
-        | Int_size -> S.const_int_expr expr (8*size_int - 1)
-        | Max_wosize ->
-          (* CR-someday mshinwell: this function should maybe not live here. *)
-          S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
-        | Ostype_unix ->
-          S.const_bool_expr expr (String.equal Sys.os_type "Unix")
-        | Ostype_win32 ->
-          S.const_bool_expr expr (String.equal Sys.os_type "Win32")
-        | Ostype_cygwin ->
-          S.const_bool_expr expr (String.equal Sys.os_type "Cygwin")
-        | Backend_type ->
-          S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
-        end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_float (Some x)] when fpc ->

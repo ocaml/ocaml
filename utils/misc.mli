@@ -453,8 +453,30 @@ val print_if :
   Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
 (** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
 
+
 type filepath = string
 type modname = string
 type crcs = (modname * Digest.t option) list
 
 type alerts = string Stdlib.String.Map.t
+
+
+module EnvLazy: sig
+  type ('a,'b) t
+
+  type log
+
+  val force : ('a -> 'b) -> ('a,'b) t -> 'b
+  val create : 'a -> ('a,'b) t
+  val get_arg : ('a,'b) t -> 'a option
+  val create_forced : 'b -> ('a, 'b) t
+  val create_failed : exn -> ('a, 'b) t
+
+  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns
+     [None] then [t] is recorded in [log]. [backtrack log] will then reset all
+     the recorded [t]s back to their original state. *)
+  val log : unit -> log
+  val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
+  val backtrack : log -> unit
+
+end

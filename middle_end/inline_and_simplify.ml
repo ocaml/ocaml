@@ -991,8 +991,6 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
     simplify_free_variables_named env args ~f:(fun env args args_approxs ->
       let tree = Flambda.Prim (prim, args, dbg) in
       begin match prim, args, args_approxs with
-      | Pgetglobal _, _, _ ->
-        Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
       (* CR-someday mshinwell: Optimise [Pfield_computed]. *)
       | Pfield (field_index, _, _), [arg], [arg_approx] ->
         let projection : Projection.t = Field (field_index, arg) in
@@ -1049,7 +1047,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           | _ ->
             kind
         in
-        let prim : Lambda.primitive = match prim with
+        let prim : Clambda_primitives.primitive = match prim with
           | Parraysetu _ -> Parraysetu kind
           | Parraysets _ -> Parraysets kind
           | _ -> assert false
@@ -1070,7 +1068,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         let expr, approx, benefit =
           let module Backend = (val (E.backend env) : Backend_intf.S) in
           Simplify_primitives.primitive p (args, args_approxs) tree dbg
-            ~size_int:Backend.size_int ~big_endian:Backend.big_endian
+            ~size_int:Backend.size_int
         in
         let r = R.map_benefit r (B.(+) benefit) in
         let approx =

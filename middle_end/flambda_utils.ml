@@ -192,7 +192,7 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
   | Prim (p1, al1, _), Prim (p2, al2, _) ->
-    Lambda.equal_primitive p1 p2
+    Clambda_primitives.equal p1 p2
       && Misc.Stdlib.List.equal Variable.equal al1 al2
   | Prim _, _ | _, Prim _ -> false
   | Expr e1, Expr e2 -> same e1 e2
@@ -735,7 +735,7 @@ module Switch_storer = Switch.Store (struct
   and key_named =
     | Symbol of Symbol.t
     | Const of Flambda.const
-    | Prim of Lambda.primitive * Variable.t list
+    | Prim of Clambda_primitives.primitive * Variable.t list
     | Expr of key
 
   exception Not_comparable

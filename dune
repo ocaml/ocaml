@@ -41,7 +41,7 @@
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
-   targetint
+   targetint load_path
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -65,7 +65,8 @@
    translattribute translprim translcore translclass translmod simplif
    runtimedef meta opcodes bytesections dll symtable pparse main_args compenv
    compmisc compdynlink_types compdynlink_platform_intf compdynlink_common
-   compdynlink compplugin makedepend compile_common
+   compdynlink compplugin makedepend compile_common clambda_primitives
+   printclambda_primitives
    ; manual update: mli only files
    cmo_format
    ; manual update: this is required.
@@ -127,7 +128,7 @@
    inline_and_simplify_aux remove_free_vars_equal_to_args extract_projections
    augment_specialised_args unbox_free_vars_of_closures unbox_specialised_args
    unbox_closures inlining_transforms inlining_decision inline_and_simplify
-   ref_to_variables flambda_invariants middle_end
+   ref_to_variables flambda_invariants middle_end convert_primitives
    ; manual update: mli only files
    backend_intf inlining_decision_intf simplify_boxed_integer_ops_intf
  )

@@ -1,7 +1,9 @@
 (* TEST
 
 * hassysthreads
-include systhreads
+  include systhreads
+** native
+   compare_programs = "false"
 
 *)
 

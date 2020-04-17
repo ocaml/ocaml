@@ -19,12 +19,8 @@
 type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
-let for_primitive (prim : Lambda.primitive) =
+let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pignore | Pidentity ->
-      No_effects, No_coeffects
-  | Pbytes_to_string | Pbytes_of_string ->
-      No_effects, No_coeffects
   | Pmakeblock _ | Ppoll
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
@@ -94,43 +90,30 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbintcomp _ -> No_effects, No_coeffects
   | Pbigarraydim _ ->
       No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
+  | Pread_symbol _
   | Pfield _
   | Pfield_computed
   | Pfloatfield _
-  | Pgetglobal _
   | Parrayrefu _
   | Pstringrefu
   | Pbytesrefu
-  | Pstring_load_16 true
-  | Pstring_load_32 true
-  | Pstring_load_64 true
-  | Pbytes_load_16 true
-  | Pbytes_load_32 true
-  | Pbytes_load_64 true
+  | Pstring_load (_, Unsafe)
+  | Pbytes_load (_, Unsafe)
   | Pbigarrayref (true, _, _, _)
-  | Pbigstring_load_16 true
-  | Pbigstring_load_32 true
-  | Pbigstring_load_64 true ->
+  | Pbigstring_load (_, Unsafe) ->
       No_effects, Has_coeffects
   | Parrayrefs _
   | Pstringrefs
   | Pbytesrefs
-  | Pstring_load_16 false
-  | Pstring_load_32 false
-  | Pstring_load_64 false
-  | Pbytes_load_16 false
-  | Pbytes_load_32 false
-  | Pbytes_load_64 false
+  | Pstring_load (_, Safe)
+  | Pbytes_load (_, Safe)
   | Pbigarrayref (false, _, _, _)
-  | Pbigstring_load_16 false
-  | Pbigstring_load_32 false
-  | Pbigstring_load_64 false ->
+  | Pbigstring_load (_, Safe) ->
       (* May trigger a bounds check exception. *)
       Arbitrary_effects, Has_coeffects
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
-  | Psetglobal _
   | Patomic_load _
   | Patomic_exchange
   | Patomic_cas
@@ -139,26 +122,16 @@ let for_primitive (prim : Lambda.primitive) =
   | Parraysets _
   | Pbytessetu
   | Pbytessets
-  | Pbytes_set_16 _
-  | Pbytes_set_32 _
-  | Pbytes_set_64 _
+  | Pbytes_set _
   | Pbigarrayset _
-  | Pbigstring_set_16 _
-  | Pbigstring_set_32 _
-  | Pbigstring_set_64 _ ->
+  | Pbigstring_set _ ->
       (* Whether or not some of these are "unsafe" is irrelevant; they always
          have an effect. *)
       Arbitrary_effects, No_coeffects
-  | Pctconst _ -> No_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
   | Popaque -> Arbitrary_effects, Has_coeffects
-  | Prevapply
-  | Pdirapply ->
-      (* Removed by [Simplif], but there is no reason to prevent using
-         the current analysis function before/during Simplif. *)
-      Arbitrary_effects, Has_coeffects
   | Psequand
   | Psequor ->
       (* Removed by [Closure_conversion] in the flambda pipeline. *)
@@ -168,7 +141,7 @@ type return_type =
   | Float
   | Other
 
-let return_type_of_primitive (prim:Lambda.primitive) =
+let return_type_of_primitive (prim:Clambda_primitives.primitive) =
   match prim with
   | Pfloatofint
   | Pnegfloat
