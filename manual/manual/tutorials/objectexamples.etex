@@ -723,7 +723,7 @@ parameter.
 let sum (lst : _ #iterator) = lst#fold (fun x y -> x+y) 0;;
 \end{caml_example}
 Of course the constraint may also be an explicit method type.
-Only occurences of quantified variables are required.
+Only occurrences of quantified variables are required.
 \begin{caml_example}{toplevel}
 let sum lst =
   (lst : < fold : 'a. ('a -> _ -> 'a) -> 'a -> 'a; .. >)#fold (+) 0;;

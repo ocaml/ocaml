@@ -57,7 +57,7 @@ and pp_var fmt v =
     pp_form v.form
 
 type env = {
-  (** resizeable array for cheap *)
+  (** resizable array for cheap *)
   vars : (int,var) Hashtbl.t;
   (** the ephemerons must be alive *)
   ephes : ephe Stack.t;

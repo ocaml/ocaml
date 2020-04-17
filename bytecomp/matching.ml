@@ -882,7 +882,7 @@ let rebuild_nexts arg nexts k =
     in actions (cf. simplify_cases).
 
     Additionally, if the match argument is a variable, matchings whose
-    first column is made of variables only are splitted further
+    first column is made of variables only are split further
     (cf. precompile_var).
 
 *)
@@ -1067,7 +1067,7 @@ and precompile_var  args cls def k = match args with
 | []  -> assert false
 | _::((Lvar v as av,_) as arg)::rargs ->
     begin match cls with
-    | [_] -> (* as splitted as it can *)
+    | [_] -> (* as split as it can *)
         dont_precompile_var args cls def k
     | _ ->
 (* Precompile *)
@@ -2534,7 +2534,7 @@ let rec event_branch repr lam =
 
    compile_list (for compiling switch results) catch Unused
 
-   comp_match_handlers (for compiling splitted matches)
+   comp_match_handlers (for compiling split matches)
    may reraise Unused
 
 

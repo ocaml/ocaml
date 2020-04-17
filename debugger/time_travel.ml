@@ -257,7 +257,7 @@ let duplicate_current_checkpoint () =
 (* --- about this exception. *)
 let interrupted = ref false
 
-(* Informations about last breakpoint encountered *)
+(* Information about last breakpoint encountered *)
 let last_breakpoint = ref None
 
 (* Ensure we stop on an event. *)

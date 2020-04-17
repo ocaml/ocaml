@@ -182,7 +182,7 @@ LPWORKER worker_pop (void)
   }
   nWorkersCurrent++;
   nWorkersMax = (nWorkersCurrent > nWorkersMax ? nWorkersCurrent : nWorkersMax);
-  DEBUG_PRINT("Workers running current/runnning max/waiting: %d/%d/%d",
+  DEBUG_PRINT("Workers running current/running max/waiting: %d/%d/%d",
       nWorkersCurrent,
       nWorkersMax,
       list_length((LPLIST)lpWorkers));
@@ -222,7 +222,7 @@ void worker_push(LPWORKER lpWorker)
     bFreeWorker = FALSE;
   };
   nWorkersCurrent--;
-  DEBUG_PRINT("Workers running current/runnning max/waiting: %d/%d/%d",
+  DEBUG_PRINT("Workers running current/running max/waiting: %d/%d/%d",
       nWorkersCurrent,
       nWorkersMax,
       list_length((LPLIST)lpWorkers));

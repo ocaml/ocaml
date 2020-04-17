@@ -630,7 +630,7 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
   candidate = NULL;
   aQueries = NULL;
 
-  /* Polling socket can be done mulitple handle at the same time. You just
+  /* Polling socket can be done multiple handle at the same time. You just
      need one worker to use it. Try to find if there is already a worker
      handling this kind of request.
      Only one event can be associated with a given socket which means

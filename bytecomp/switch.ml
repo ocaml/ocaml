@@ -134,7 +134,7 @@ end
   Adaptation of
    R.L. Berstein
    ``Producing good code for the case statement''
-   Sofware Practice and Experience, 15(10) (1985)
+   Software Practice and Experience, 15(10) (1985)
  and
    D.L. Spuler
     ``Two-Way Comparison Search Trees, a Generalisation of Binary Search Trees

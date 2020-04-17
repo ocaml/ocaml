@@ -171,10 +171,10 @@ and function_declaration = private {
 (* CR-soon mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
 (* when [is_classic_mode] is [false], functions in [function_declarations]
-   are guranteed to have function bodies (ie:
+   are guaranteed to have function bodies (ie:
    [function_declaration.function_body] will be of the [Some] variant).
 
-   When it [is_classic_mode] is [true], however, no gurantees about the
+   When it [is_classic_mode] is [true], however, no guarantees about the
    function_bodies are given.
 *)
 and value_set_of_closures = private {

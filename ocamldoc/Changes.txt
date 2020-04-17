@@ -80,7 +80,7 @@ Release 3.08.0:
  - mod: one section per to module in latex output + improve latex output
  - mod: odoc_latex: use buffers instead of string concatenation
  - add: new ocamldoc man page, thanks to Samuel Mimram
- - fix: useless parenthesis around agruments of arguments of a type constructor in
+ - fix: useless parentheses around arguments of arguments of a type constructor in
      type definitions, and aournd arguments of exceptions in exception definitions.
  - fix: blank lines in verbatim, latex, code pre, code and ele ref modes
      are now accepted
@@ -110,7 +110,7 @@ Release 3.08.0:
  - fix: bug preventing to get the code in a .mli
  - fix: missing spaces after carriage return in types (Odoc_misc.string_of_type_expr)
  - fixes: some bugs in the text parser
-     ( ]} meaning end of code and somehting else instead of end of precode)
+     ( ]} meaning end of code and something else instead of end of precode)
  - add: in Odoc_info: text_of_string, text_string_of_text, info_of_string
  - fix: better output of titles in html (use more the style)
  - add: -intro option to use a file content as ocamldoc comment to use as
@@ -144,7 +144,7 @@ Release 3.05 :
    .ml and .mli when merging
  - option -werr becomes -warn-error
  - possibility to define and reference section labels
-   Exemple:
+   Example:
     (** {2:mysectionlabel My title bla bla bla} *)
    in module Foo
 

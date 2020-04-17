@@ -373,7 +373,7 @@ exception Not_simple
 let max_raw = 32
 
 let make_key e =
-  let count = ref 0   (* Used for controling size *)
+  let count = ref 0   (* Used for controlling size *)
   and make_key = Ident.make_key_generator () in
   (* make_key is used for normalizing let-bound variables *)
   let rec tr_rec env e =

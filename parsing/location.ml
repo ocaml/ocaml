@@ -562,7 +562,7 @@ let lines_around_from_file
    input.
 
    It first tries to read from [!input_lexbuf], then if that fails (because the
-   lexbuf no longers contains the input we want), it reads from [!input_name]
+   lexbuf no longer contains the input we want), it reads from [!input_name]
    directly *)
 let lines_around_from_current_input ~start_pos ~end_pos =
   (* Be a bit defensive, and do not try to open one of the possible

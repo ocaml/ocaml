@@ -1043,7 +1043,7 @@ With no argument, reset the search path." };
 "exit the debugger." };
      { instr_name = "shell"; instr_prio = false;
        instr_action = instr_shell; instr_repeat = true; instr_help =
-"Execute a given COMMAND thru the system shell." };
+"Execute a given COMMAND through the system shell." };
      { instr_name = "environment"; instr_prio = false;
        instr_action = instr_env; instr_repeat = false; instr_help =
 "environment variable to give to program being debugged when it is started." };

@@ -2966,7 +2966,7 @@ case $host in #(
   syslib='-l$(1)' ;;
 esac
 
-# Environment variables that are taken into acocunt
+# Environment variables that are taken into account
 
 
 
@@ -11127,7 +11127,7 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
-  # Ideally, we could use ldconfig to report *all* directores which are
+  # Ideally, we could use ldconfig to report *all* directories which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
   # 'ldconfig -N -X -v | grep ^/' on 64bit Fedora does not report /usr/lib64,
@@ -13278,7 +13278,7 @@ $as_echo "$ac_cv_c_bigendian" >&6; }
 
      ;; #(
    *)
-     as_fn_error $? "could not determine endiannes." "$LINENO" 5 ;;
+     as_fn_error $? "could not determine endianness." "$LINENO" 5 ;;
  esac
 
 
@@ -16913,13 +16913,14 @@ else
   ocamldoc=ocamldoc
 fi
 
-if test x"$enable_flambda" = "xyes"
+if test x"$enable_flambda" = "xyes"; then :
   flambda=true
   if test x"$enable_flambda_invariants" = "xyes"; then :
   flambda_invariants=true
 else
   flambda_invariants=false
-fi; then :
+fi
+else
   flambda=false
   flambda_invariants=false
 fi

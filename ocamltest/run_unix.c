@@ -148,7 +148,7 @@ static void update_environment(array local_env)
 }
 
 /*
-  This function should retunr an exitcode that can itslef be returned
+  This function should return an exitcode that can itself be returned
   to its father through the exit system call.
   So it returns 0 to report success and 1 to report an error
 
@@ -231,7 +231,7 @@ child_failed:
  * Its termination status as returned by wait(2)
  * A string giving a prefix for the core file name.
    (the file will be called prefix.pid.core but may come from a
-   diffferent process)
+   different process)
  * Returns the code to return if this is the child process
  */
 static int handle_process_termination(

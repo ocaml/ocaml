@@ -45,11 +45,11 @@ ocamltest needs to know two things:
 
 1. Where the sources of the OCaml compiler to test are located.
 This is determined while OCaml is built. The default location can be
-overriden by defining the OCAMLSRCDIR environment variable.
+overridden by defining the OCAMLSRCDIR environment variable.
 
 2. Which directory to use to build tests. The default value for this is
 "ocamltest" under Filename.get_temp_dir_name(). This value can be
-overriden by defining the OCAMLTESTDIR environemnt variable.
+overridden by defining the OCAMLTESTDIR environment variable.
 
 # Running tests
 
@@ -122,7 +122,7 @@ find tests -name 'Makefile'
 In other words, the directories that still need to be migrated are
 the subdirectories of testsuite/tests that still contain a Makefile.
 
-Once you knwo which directory you want to migrate, say foo, here is
+Once you know which directory you want to migrate, say foo, here is
 what you should do:
 
 Read foo/Makefile to see how many tests the directory contains and how
@@ -146,7 +146,7 @@ comment that looks like this:
 *)
 
 In particular, if the test's main file is foo.ml and the test uses
-modules m1.ml and m2.ml, the test block will look like ths:
+modules m1.ml and m2.ml, the test block will look like this:
 
 (* TEST
   modules = "m1.ml m2.ml"
