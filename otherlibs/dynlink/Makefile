@@ -22,7 +22,7 @@
 ROOTDIR = ../..
 
 -include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun

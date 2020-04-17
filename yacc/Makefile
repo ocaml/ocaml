@@ -18,7 +18,7 @@
 ROOTDIR = ..
 
 -include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.common
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 

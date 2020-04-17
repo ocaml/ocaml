@@ -27,11 +27,11 @@ CAN_BE_UNCONFIGURED := $(strip \
 
 ifeq "$(CAN_BE_UNCONFIGURED)" ""
 -include Makefile.config
--include Makefile.common
 else
 include Makefile.config
-include Makefile.common
 endif
+
+include Makefile.common
 
 .PHONY: defaultentry
 ifeq "$(NATIVE_COMPILER)" "true"
@@ -1083,7 +1083,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
-	rm -f Makefile.config Makefile.common runtime/caml/m.h runtime/caml/s.h
+	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
 	rm -rf autom4te.cache
 	rm -f config.log config.status libtool
 	rm -f tools/*.bak
@@ -1094,7 +1094,7 @@ include .depend
 
 
 ifneq "$(strip $(CAN_BE_UNCONFIGURED))" ""
-Makefile.config Makefile.common: config.status
+Makefile.config: config.status
 
 config.status:
 	@echo "Please refer to the installation instructions:"

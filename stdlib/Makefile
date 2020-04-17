@@ -16,7 +16,7 @@
 ROOTDIR = ..
 
 -include $(ROOTDIR)/Makefile.config
--include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.common
 
 TARGET_BINDIR ?= $(BINDIR)
 
