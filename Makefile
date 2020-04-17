@@ -39,7 +39,6 @@ else
 defaultentry: world
 endif
 
-MKDIR=mkdir -p
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
 else
@@ -752,19 +751,14 @@ clean::
 
 otherlibs_all := bigarray dynlink raw_spacetime_lib \
   str systhreads unix win32unix
-subdirs := debugger lex ocamldoc ocamltest runtime stdlib tools \
+subdirs := debugger lex ocamldoc ocamltest stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
 
 .PHONY: alldepend
-ifeq "$(TOOLCHAIN)" "msvc"
-alldepend:
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
 alldepend: depend
 	for dir in $(subdirs); do \
 	  $(MAKE) -C $$dir depend || exit; \
 	done
-endif
 
 # The runtime system for the native-code compiler
 

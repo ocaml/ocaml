@@ -60,7 +60,8 @@ set -x
 
 PREFIX=~/local
 
-MAKE=make SHELL=dash
+MAKE="make $MAKE_ARG"
+SHELL=dash
 
 TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
@@ -106,12 +107,14 @@ EOF
       --disable-ocamldoc \
       --disable-native-compiler \
       --enable-ocamltest \
+      --disable-dependency-generation \
       $CONFIG_ARG"
   else
     configure_flags="\
       --prefix=$PREFIX \
       --enable-flambda-invariants \
       --enable-ocamltest \
+      --disable-dependency-generation \
       $CONFIG_ARG"
   fi
   case $XARCH in
@@ -154,7 +157,7 @@ EOF
   cd ..
   if command -v pdflatex &>/dev/null  ; then
     echo Ensuring that all library documentation compiles
-    make -C ocamldoc html_doc pdf_doc texi_doc
+    $MAKE -C ocamldoc html_doc pdf_doc texi_doc
   fi
   $MAKE install
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then

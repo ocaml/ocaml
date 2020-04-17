@@ -127,7 +127,7 @@ echo "======== old school build =========="
 git clean -q -f -d -x
 
 instdir="$HOME/ocaml-tmp-install-$$"
-./configure --prefix "$instdir"
+./configure --prefix "$instdir" --disable-dependency-generation
 
 # Build the system without using world.opt
 make $jobs world
@@ -149,7 +149,7 @@ git clean -q -f -d -x
 # We cannot give the sanitizer options as part of -cc because
 # then various autoconfiguration tests fail.
 # Instead, we'll fix OC_CFLAGS a posteriori.
-./configure CC=clang-9 --disable-stdlib-manpages
+./configure CC=clang-9 --disable-stdlib-manpages --disable-dependency-generation
 
 # These are the undefined behaviors we want to check
 # Others occur on purpose e.g. signed arithmetic overflow
@@ -200,7 +200,7 @@ echo "======== clang 9, thread sanitizer =========="
 
 git clean -q -f -d -x
 
-./configure CC=clang-9 --disable-stdlib-manpages
+./configure CC=clang-9 --disable-stdlib-manpages --disable-dependency-generation
 
 # Select thread sanitizer
 # Don't optimize too much to get better backtraces of errors

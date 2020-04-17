@@ -34,6 +34,7 @@ matrix:
         - texlive-fonts-recommended
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--disable-shared
   - env: CI_KIND=build XARCH=x64 MIN_BUILD=1
+  - env: CI_KIND=build XARCH=x64 CONFIG_ARG=--enable-dependency-generation MAKE_ARG=-j
   - env: CI_KIND=changes
   - env: CI_KIND=manual
   - env: CI_KIND=check-typo
