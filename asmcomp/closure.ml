@@ -21,6 +21,7 @@ open Primitive
 open Lambda
 open Switch
 open Clambda
+module P = Clambda_primitives
 
 module Int = Numbers.Int
 module Storer =
@@ -51,7 +52,7 @@ let rec build_closure_env env_param pos = function
     [] -> V.Map.empty
   | id :: rem ->
       V.Map.add id
-        (Uprim(Pfield(pos, Pointer, Immutable), [Uvar env_param], Debuginfo.none))
+        (Uprim(P.Pfield(pos, Pointer, Immutable), [Uvar env_param], Debuginfo.none))
           (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -60,8 +61,7 @@ let rec build_closure_env env_param pos = function
    contain the right names if the -for-pack option is active. *)
 
 let getglobal dbg id =
-  Uprim(Pgetglobal (V.create_persistent (Compilenv.symbol_for_global id)),
-        [], dbg)
+  Uprim(P.Pread_symbol (Compilenv.symbol_for_global id), [], dbg)
 
 (* Check if a variable occurs in a [clambda] term. *)
 
@@ -111,10 +111,9 @@ let occurs_var var u =
    some threshold *)
 
 let prim_size prim args =
+  let open Clambda_primitives in
   match prim with
-    Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
-  | Pgetglobal _ -> 1
-  | Psetglobal _ -> 1
+  | Pread_symbol _ -> 1
   | Pmakeblock _ -> 5 + List.length args
   | Pfield(_, isptr, Mutable) ->
       begin match isptr with
@@ -225,10 +224,13 @@ let is_pure_prim p =
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
-let rec is_pure_clambda = function
+let rec is_pure = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure_clambda args
+  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure args
+  | Uoffset(arg, _) -> is_pure arg
+  | Ulet(Immutable, _, _var, def, body) ->
+      is_pure def && is_pure body
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -242,6 +244,7 @@ let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
 
 let make_integer_comparison cmp x y =
+  let open Clambda_primitives in
   make_const_bool
     (match cmp with
        Ceq -> x = y
@@ -274,6 +277,7 @@ let make_const_int64 n = make_const_ref (Uconst_int64 n)
    floating-point computations is allowed *)
 
 let simplif_arith_prim_pure fpc p (args, approxs) dbg =
+  let open Clambda_primitives in
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
   (* int (or enumerated type) *)
@@ -459,6 +463,7 @@ let field_approx n = function
   | _ -> Value_unknown
 
 let simplif_prim_pure fpc p (args, approxs) dbg =
+  let open Clambda_primitives in
   match p, args, approxs with
   (* Block construction *)
   | Pmakeblock(tag, Immutable, _kind), _, _ ->
@@ -479,7 +484,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   | Pfield (n, _, _), _, [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
     when n < List.length l ->
       make_const (List.nth l n)
-  | Pfield(n, _, _), [ Uprim(Pmakeblock _, ul, _) ], [approx]
+  | Pfield(n, _, _), [ Uprim(P.Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
@@ -487,9 +492,6 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
      _,
      [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
-  (* Identity *)
-  | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
-      (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
       begin match a1 with
@@ -498,31 +500,18 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       | Value_closure _ | Value_tuple _ -> make_const_bool false
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
-  (* Compile-time constants *)
-  | Pctconst c, _, _ ->
-      begin match c with
-        | Big_endian -> make_const_bool Arch.big_endian
-        | Word_size -> make_const_int (8*Arch.size_int)
-        | Int_size -> make_const_int (8*Arch.size_int - 1)
-        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
-        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
-        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
-        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
-        | Backend_type ->
-            make_const_ptr 0 (* tag 0 is the same as Native here *)
-      end
   (* Catch-all *)
   | _ ->
       simplif_arith_prim_pure fpc p (args, approxs) dbg
 
 let simplif_prim fpc p (args, approxs as args_approxs) dbg =
-  if List.for_all is_pure_clambda args
+  if List.for_all is_pure args
   then simplif_prim_pure fpc p args_approxs dbg
   else
     (* XXX : always return the same approxs as simplif_prim_pure? *)
     let approx =
       match p with
-      | Pmakeblock(_, Immutable, _kind) ->
+      | P.Pmakeblock(_, Immutable, _kind) ->
           Value_tuple (Array.of_list approxs)
       | _ ->
           Value_unknown
@@ -681,7 +670,7 @@ let rec substitute loc fpc sb rn ulam =
             substitute loc fpc sb rn u2
           else
             substitute loc fpc sb rn u3
-      | Uprim(Pmakeblock _, _, _) ->
+      | Uprim(P.Pmakeblock _, _, _) ->
           substitute loc fpc sb rn u2
       | su1 ->
           Uifthenelse(su1, substitute loc fpc sb rn u2,
@@ -718,7 +707,7 @@ let is_simple_argument = function
 
 let no_effects = function
   | Uclosure _ -> true
-  | u -> is_pure_clambda u
+  | u -> is_pure u
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
@@ -731,8 +720,9 @@ let rec bind_params_rec loc fpc subst params args body =
         let p1' = VP.rename p1 in
         let u1, u2 =
           match VP.name p1, a1 with
-          | "*opt*", Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
-              a, Uprim(Pmakeblock(0, Immutable, kind), [Uvar (VP.var p1')], dbg)
+          | "*opt*", Uprim(P.Pmakeblock(0, Immutable, kind), [a], dbg) ->
+              a, Uprim(P.Pmakeblock(0, Immutable, kind),
+                       [Uvar (VP.var p1')], dbg)
           | _ ->
               a1, Uvar (VP.var p1')
         in
@@ -754,13 +744,6 @@ let bind_params loc fpc params args body =
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
-let rec is_pure = function
-    Lvar _ -> true
-  | Lconst _ -> true
-  | Lprim(p, args,_) -> is_pure_prim p && List.for_all is_pure args
-  | Levent(lam, _ev) -> is_pure lam
-  | _ -> false
-
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
     Location.prerr_warning loc
@@ -768,7 +751,7 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 (* Generate a direct application *)
 
-let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
+let direct_apply fundesc ufunct uargs ~loc ~attribute =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let app =
@@ -786,7 +769,7 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
      If the function is not closed, we evaluate ufunct as part of the
      arguments.
      If the function is closed, we force the evaluation of ufunct first. *)
-  if not fundesc.fun_closed || is_pure funct
+  if not fundesc.fun_closed || is_pure ufunct
   then app
   else Usequence(ufunct, app)
 
@@ -802,25 +785,25 @@ let strengthen_approx appl approx =
 (* If a term has approximation Value_integer or Value_constptr and is pure,
    replace it by an integer constant *)
 
-let check_constant_result lam ulam approx =
+let check_constant_result ulam approx =
   match approx with
-    Value_const c when is_pure lam -> make_const c
-  | Value_global_field (id, i) when is_pure lam ->
+    Value_const c when is_pure ulam -> make_const c
+  | Value_global_field (id, i) when is_pure ulam ->
       begin match ulam with
-      | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
+      | Uprim(P.Pfield _, [Uprim(P.Pread_symbol _, _, _)], _) -> (ulam, approx)
       | _ ->
           let glb =
-            Uprim(Pgetglobal (V.create_persistent id), [], Debuginfo.none)
+            Uprim(P.Pread_symbol id, [], Debuginfo.none)
           in
-          Uprim(Pfield(i, Pointer, Immutable), [glb], Debuginfo.none), approx
+          Uprim(P.Pfield(i, Pointer, Immutable), [glb], Debuginfo.none), approx
       end
   | _ -> (ulam, approx)
 
 (* Evaluate an expression with known value for its side effects only,
    or discard it if it's pure *)
 
-let sequence_constant_expr lam ulam1 (ulam2, approx2 as res2) =
-  if is_pure lam then res2 else (Usequence(ulam1, ulam2), approx2)
+let sequence_constant_expr ulam1 (ulam2, approx2 as res2) =
+  if is_pure ulam1 then res2 else (Usequence(ulam1, ulam2), approx2)
 
 (* Maintain the approximation of the global structure being defined *)
 
@@ -896,15 +879,15 @@ let rec close fenv cenv = function
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
-         [Uprim(Pmakeblock _, uargs, _)])
+         [Uprim(P.Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~attribute fundesc funct ufunct uargs in
+            direct_apply ~loc ~attribute fundesc ufunct uargs in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~attribute fundesc funct ufunct uargs in
+            direct_apply ~loc ~attribute fundesc ufunct uargs in
           (app, strengthen_approx app approx_res)
 
       | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
@@ -958,7 +941,7 @@ let rec close fenv cenv = function
           warning_if_forced_inline ~loc ~attribute "Over-application";
           let body =
             Ugeneric_apply(direct_apply ~loc ~attribute
-                              fundesc funct ufunct first_args,
+                              fundesc ufunct first_args,
                            rem_args, dbg)
           in
           let result =
@@ -986,7 +969,7 @@ let rec close fenv cenv = function
           let (ubody, abody) = close fenv cenv body in
           (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
       | (_, Value_const _)
-        when str = Alias || is_pure lam ->
+        when str = Alias || is_pure ulam ->
           close (V.Map.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
@@ -1025,6 +1008,28 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
+  (* Compile-time constants *)
+  | Lprim(Pctconst c, [arg], _loc) ->
+      let cst, approx =
+        match c with
+        | Big_endian -> make_const_bool Arch.big_endian
+        | Word_size -> make_const_int (8*Arch.size_int)
+        | Int_size -> make_const_int (8*Arch.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
+        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
+        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
+        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
+        | Backend_type ->
+            make_const_ptr 0 (* tag 0 is the same as Native here *)
+      in
+      let arg, _approx = close fenv cenv arg in
+      let id = Ident.create_local "dummy" in
+      Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
+  | Lprim(Pignore, [arg], _loc) ->
+      let expr, approx = make_const_ptr 0 in
+      Usequence(fst (close fenv cenv arg), expr), approx
+  | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
+      close fenv cenv arg
   | Lprim(Pdirapply,[funct;arg], loc)
   | Lprim(Prevapply,[arg;funct], loc) ->
       close fenv cenv (Lapply{ap_should_be_tailcall=false;
@@ -1033,32 +1038,31 @@ let rec close fenv cenv = function
                               ap_args=[arg];
                               ap_inlined=Default_inline;
                               ap_specialised=Default_specialise})
-  | Lprim(Pgetglobal id, [], loc) as lam ->
+  | Lprim(Pgetglobal id, [], loc) ->
       let dbg = Debuginfo.from_location loc in
-      check_constant_result lam
-                            (getglobal dbg id)
+      check_constant_result (getglobal dbg id)
                             (Compilenv.global_approx id)
   | Lprim(Pfield (n, ptr, mut), [lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
       let dbg = Debuginfo.from_location loc in
-      check_constant_result lam (Uprim(Pfield (n, ptr, mut), [ulam], dbg))
+      check_constant_result (Uprim(P.Pfield (n, ptr, mut), [ulam], dbg))
                             (field_approx n approx)
   | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
       let dbg = Debuginfo.from_location loc in
-      (Uprim(Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
+      (Uprim(P.Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
        Value_unknown)
   | Lprim(Praise k, [arg], loc) ->
       let (ulam, _approx) = close fenv cenv arg in
       let dbg = Debuginfo.from_location loc in
-      (Uprim(Praise k, [ulam], dbg),
+      (Uprim(P.Praise k, [ulam], dbg),
        Value_unknown)
   | Lprim(Pperform, [arg], loc) ->
       let (arg, _approx) = close fenv cenv arg in
       let dbg = Debuginfo.from_location loc in
-      let alloc_cont = Uprim(Pmakeblock(Obj.cont_tag, Mutable, None),
+      let alloc_cont = Uprim(P.Pmakeblock(Obj.cont_tag, Mutable, None),
                              [Uconst (Uconst_int 0)],
                              dbg) in
       (Udirect_apply ("caml_perform", [arg; alloc_cont], dbg), Value_unknown)
@@ -1075,6 +1079,7 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_reperform", args, dbg), Value_unknown)
   | Lprim(p, args, loc) ->
+      let p = Convert_primitives.convert p in
       let dbg = Debuginfo.from_location loc in
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) dbg
@@ -1138,7 +1143,7 @@ let rec close fenv cenv = function
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
         (uarg, Value_const (Uconst_ptr n)) ->
-          sequence_constant_expr arg uarg
+          sequence_constant_expr uarg
             (close fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
           let (uifso, _) = close fenv cenv ifso in

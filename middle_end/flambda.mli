@@ -151,7 +151,7 @@ and named =
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
   | Project_var of project_var
-  | Prim of Lambda.primitive * Variable.t list * Debuginfo.t
+  | Prim of Clambda_primitives.primitive * Variable.t list * Debuginfo.t
   | Expr of t  (** ANF escape hatch. *)
 
 (* CR-someday mshinwell: use [letcont]-style construct to remove e.g.

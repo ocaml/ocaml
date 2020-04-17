@@ -201,7 +201,7 @@ generatorsopt: $(GENERATORS_CMXS)
 debug:
 	$(MAKE) OCAMLPP=""
 
-OCAMLDOC_LIBRARIES = unix str dynlink ocamlcommon
+OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 
 OCAMLDOC_BCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cma)
 OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)

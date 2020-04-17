@@ -85,7 +85,7 @@ and named =
   | Project_closure of project_closure
   | Move_within_set_of_closures of move_within_set_of_closures
   | Project_var of project_var
-  | Prim of Lambda.primitive * Variable.t list * Debuginfo.t
+  | Prim of Clambda_primitives.primitive * Variable.t list * Debuginfo.t
   | Expr of t
 
 and let_expr = {
@@ -348,7 +348,7 @@ and print_named ppf (named : named) =
   | Set_of_closures (set_of_closures) ->
     print_set_of_closures ppf set_of_closures
   | Prim(prim, args, dbg) ->
-    fprintf ppf "@[<2>(%a<%s>%a)@]" Printlambda.primitive prim
+    fprintf ppf "@[<2>(%a<%s>%a)@]" Printclambda_primitives.primitive prim
       (Debuginfo.to_string dbg)
       Variable.print_list args
   | Expr expr ->

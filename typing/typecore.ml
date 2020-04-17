@@ -5240,7 +5240,9 @@ let () =
     )
 
 let () =
-  Env.add_delayed_check_forward := add_delayed_check
+  Persistent_env.add_delayed_check_forward := add_delayed_check;
+  Env.add_delayed_check_forward := add_delayed_check;
+  ()
 
 (* drop ?recarg argument from the external API *)
 let type_expect ?in_function env e ty = type_expect ?in_function env e ty

@@ -41,7 +41,7 @@ let ignore_bool (_ : bool) = ()
 let ignore_string (_ : string) = ()
 let ignore_static_exception (_ : Static_exception.t) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
-let ignore_primitive ( _ : Lambda.primitive) = ()
+let ignore_primitive ( _ : Clambda_primitives.primitive) = ()
 let ignore_const (_ : Flambda.const) = ()
 let ignore_allocated_const (_ : Allocated_const.t) = ()
 let ignore_set_of_closures_id (_ : Set_of_closures_id.t) = ()
@@ -74,12 +74,8 @@ exception Free_variables_set_is_lying of
 exception Set_of_closures_free_vars_map_has_wrong_range of Variable.Set.t
 exception Static_exception_not_caught of Static_exception.t
 exception Static_exception_caught_in_multiple_places of Static_exception.t
-exception Access_to_global_module_identifier of Lambda.primitive
-exception Pidentity_should_not_occur
-exception Pdirapply_should_be_expanded
-exception Prevapply_should_be_expanded
 exception Sequential_logical_operator_primitives_must_be_expanded of
-  Lambda.primitive
+  Clambda_primitives.primitive
 exception Var_within_closure_bound_multiple_times of Var_within_closure.t
 exception Declared_closure_from_another_unit of Compilation_unit.t
 exception Closure_id_is_bound_multiple_times of Closure_id.t
@@ -456,21 +452,12 @@ let variable_and_symbol_invariants (program : Flambda.program) =
   in
   loop_program_body env program.program_body
 
-let primitive_invariants flam ~no_access_to_global_module_identifiers =
+let primitive_invariants flam =
   Flambda_iterators.iter_named (function
       | Prim (prim, _, _) ->
         begin match prim with
         | Psequand | Psequor ->
           raise (Sequential_logical_operator_primitives_must_be_expanded prim)
-        | Pgetglobal id ->
-          if no_access_to_global_module_identifiers
-            && not (Ident.is_predef id) then
-          begin
-            raise (Access_to_global_module_identifier prim)
-          end
-        | Pidentity -> raise Pidentity_should_not_occur
-        | Pdirapply -> raise Pdirapply_should_be_expanded
-        | Prevapply -> raise Prevapply_should_be_expanded
         | _ -> ()
         end
       | _ -> ())
@@ -678,7 +665,7 @@ let _every_move_within_set_of_closures_is_to_a_function_in_the_free_vars
                          (fun_var, missing_dependencies)))
           funs)
 
-let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
+let check_exn ?(kind=Normal) (flam:Flambda.program) =
   ignore kind;
   try
     variable_and_symbol_invariants flam;
@@ -695,7 +682,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     (* every_move_within_set_of_closures_is_to_a_function_in_the_free_vars
         flam; *)
     Flambda_iterators.iter_exprs_at_toplevel_of_program flam ~f:(fun flam ->
-      primitive_invariants flam ~no_access_to_global_module_identifiers:cmxfile;
+      primitive_invariants flam;
       every_static_exception_is_caught flam;
       every_static_exception_is_caught_at_a_single_position flam;
       every_declared_closure_is_from_current_compilation_unit flam)
@@ -772,7 +759,7 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Sequential_logical_operator_primitives_must_be_expanded prim ->
       Format.eprintf ">> Sequential logical operator primitives must be \
           expanded (see closure_conversion.ml): %a"
-        Printlambda.primitive prim
+        Printclambda_primitives.primitive prim
     | Var_within_closure_bound_multiple_times var ->
       Format.eprintf ">> Variable within a closure is bound multiple times: \
           %a"
@@ -801,21 +788,6 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Static_exception_caught_in_multiple_places static_exn ->
       Format.eprintf ">> Static exception caught in multiple places: %a"
         Static_exception.print static_exn
-    | Access_to_global_module_identifier prim ->
-      (* CR-someday mshinwell: backend-specific checks should move to another
-         module, in the asmcomp/ directory. *)
-      Format.eprintf ">> Forbidden access to a global module identifier (not \
-          allowed in Flambda that will be exported to a .cmx file): %a"
-        Printlambda.primitive prim
-    | Pidentity_should_not_occur ->
-      Format.eprintf ">> The Pidentity primitive should never occur in an \
-        Flambda expression (see closure_conversion.ml)"
-    | Pdirapply_should_be_expanded ->
-      Format.eprintf ">> The Pdirapply primitive should never occur in an \
-        Flambda expression (see simplif.ml); use Apply instead"
-    | Prevapply_should_be_expanded ->
-      Format.eprintf ">> The Prevapply primitive should never occur in an \
-        Flambda expression (see simplif.ml); use Apply instead"
     | Move_to_a_closure_not_in_the_free_variables (start_from, move_to) ->
       Format.eprintf ">> A Move_within_set_of_closures from the closure %a \
         to closures that are not parts of its free variables: %a"

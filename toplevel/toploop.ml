@@ -492,14 +492,8 @@ let _ =
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path false;
-  List.iter
-    (fun (name, crco) ->
-      Env.add_import name;
-      match crco with
-        None -> ()
-      | Some crc->
-          Consistbl.set Env.crc_units name crc Sys.executable_name)
-    crc_intfs
+  Env.import_crcs ~source:Sys.executable_name crc_intfs;
+  ()
 
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()
