@@ -207,7 +207,7 @@ AC_ARG_ENABLE([debug-runtime],
 
 AC_ARG_ENABLE([debugger],
   [AS_HELP_STRING([--enable-debugger],
-    [build the debugger @<:@default=yes@:>@])],
+    [build the debugger @<:@default=auto@:>@])],
   [],
   [enable_debugger=auto])
 
@@ -298,7 +298,7 @@ AC_ARG_ENABLE([native-compiler],
 
 AC_ARG_ENABLE([flambda],
   [AS_HELP_STRING([--enable-flambda],
-    [enable flmabda optimizations])])
+    [enable flambda optimizations])])
 
 AC_ARG_ENABLE([flambda-invariants],
   [AS_HELP_STRING([--enable-flambda-invariants],
@@ -336,8 +336,8 @@ AC_ARG_WITH([reserved-header-bits],
 # expect --enable-force-safe-string to become the default in the future.
 
 AC_ARG_ENABLE([force-safe-string],
-  [AS_HELP_STRING([--disable-force-safe-string],
-    [do not force strings to be safe])])
+  [AS_HELP_STRING([--enable-force-safe-string],
+    [force strings to be safe])])
 
 AC_ARG_WITH([default-string],
   [AS_HELP_STRING([--with-default-string=mode],
@@ -370,7 +370,11 @@ AS_IF([test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"],
 # Allow the MSVC linker to be found even if ld isn't installed.
 # User-specified LD still takes precedence.
 AC_CHECK_TOOLS([LD],[ld link])
+# libtool expects host_os=mingw for native Windows
+old_host_os=$host_os
+AS_IF([test x"$host_os" = "xwindows"],[host_os=mingw])
 LT_INIT
+host_os=$old_host_os
 
 # Extracting information from libtool's configuration
 AS_IF([test -n "$RANLIB" ],
@@ -543,6 +547,14 @@ AS_CASE([$host],
 
 # Adjust according to target
 
+# On Windows we do not take $enable_shared because it does not seem
+# to work. This should be better understood later
+#AS_CASE([$target],
+#  [*-pc-windows],
+#    [enable_shared=yes])
+
+AS_IF([test x"$enable_shared" = "xno"],[with_sharedlibs=false])
+
 AS_CASE([$CC,$host],
   [*,*-*-darwin*],
     [mkexe="$mkexe -Wl,-no_compact_unwind";
@@ -706,6 +718,18 @@ AS_IF([test x"$enable_shared" != "xno"],
       [mksharedlib="$CC -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
       shared_libraries_supported=true],
+    [*-*-mingw32],
+      [mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
+      shared_libraries_supported=$with_sharedlibs],
+    [*-pc-windows],
+      [mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
+      shared_libraries_supported=$with_sharedlibs],
+    [*-*-cygwin*],
+      [mksharedlib="$flexlink"
+      mkmaindll="$flexlink -maindll"
+      shared_libraries_supported=true],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
@@ -716,29 +740,13 @@ AS_IF([test x"$enable_shared" != "xno"],
       natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true])])
 
-# On Windows we do not take $enable_shared because it does not seem
-# to work. This should be better understood later
-AS_CASE([$host],
-  [*-*-cygwin*],
-    [mksharedlib="$flexlink"
-    mkmaindll="$flexlink -maindll"
-    shared_libraries_supported=$with_sharedlibs],
-  [*-*-mingw32],
-    [mksharedlib='$(FLEXLINK)'
-    mkmaindll='$(FLEXLINK) -maindll'
-    shared_libraries_supported=$with_sharedlibs],
-  [*-pc-windows],
-    [mksharedlib='$(FLEXLINK)'
-    mkmaindll='$(FLEXLINK) -maindll'
-    shared_libraries_supported=$with_sharedlibs])
-
 AS_IF([test -z "$mkmaindll"], [mkmaindll=$mksharedlib])
 
 # Configure native dynlink
 
 natdynlink=false
 
-AS_IF([test x"$enable_shared" != "no"],
+AS_IF([test x"$enable_shared" != "xno"],
   [AS_CASE(["$host"],
     [*-*-cygwin*], [natdynlink=true],
     [*-*-mingw32], [natdynlink=true],
@@ -1311,14 +1319,16 @@ AS_CASE([$host],
   [AC_CHECK_FUNC([strtod_l], [AC_DEFINE([HAS_STRTOD_L])])])
 
 ## shared library support
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
-    [supports_shared_libraries=$shared_libraries_supported; dllibs=""],
-  [AC_CHECK_FUNC([dlopen],
-    [supports_shared_libraries=true dllibs=""],
-    [AC_CHECK_LIB([dl], [dlopen],
-      [supports_shared_libraries=true dllibs="-ldl $otherdllibs"],
-      [supports_shared_libraries=false])])])
+AS_IF([$shared_libraries_supported],
+  [AS_CASE([$host],
+    [*-*-mingw32|*-pc-windows],
+      [supports_shared_libraries=$shared_libraries_supported; dllibs=""],
+    [AC_CHECK_FUNC([dlopen],
+      [supports_shared_libraries=true dllibs=""],
+      [AC_CHECK_LIB([dl], [dlopen],
+        [supports_shared_libraries=true dllibs="-ldl $otherdllibs"],
+        [supports_shared_libraries=false])])])],
+  [supports_shared_libraries=false])
 
 AS_IF([$supports_shared_libraries],
   [AC_MSG_NOTICE([Dynamic loading of shared libraries is supported.])

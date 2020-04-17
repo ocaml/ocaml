@@ -1536,3 +1536,46 @@ struct
     mk__ F.anonymous;
   ]
 end;;
+
+[@@@ocaml.warning "-40"]
+let options_with_command_line_syntax_inner r after_rest =
+  let rec loop ~name_opt (spec : Arg.spec) : Arg.spec =
+    let option =
+      match name_opt with
+      | None -> ignore
+      | Some name -> (fun () -> r := name :: !r)
+    in
+    let arg a = r := Filename.quote a :: !r in
+    let option_with_arg a = option (); arg a in
+    let rest a =
+      if not !after_rest then (after_rest := true; option ());
+      arg a
+    in
+    match spec with
+    | Unit f -> Unit (fun a -> f a; option ())
+    | Bool f -> Bool (fun a -> f a; option_with_arg (string_of_bool a))
+    | Set r -> Unit (fun () -> r := true; option ())
+    | Clear r -> Unit (fun () -> r := false; option ())
+    | String f -> String (fun a -> f a; option_with_arg a)
+    | Set_string r -> String (fun a -> r := a; option_with_arg a)
+    | Int f -> Int (fun a -> f a; option_with_arg (string_of_int a))
+    | Set_int r -> Int (fun a -> r := a; option_with_arg (string_of_int a))
+    | Float f -> Float (fun a -> f a; option_with_arg (string_of_float a))
+    | Set_float r ->
+       Float (fun a -> r := a; option_with_arg (string_of_float a))
+    | Tuple [] -> Unit option
+    | Tuple (hd :: tl) ->
+       Tuple (loop ~name_opt hd :: List.map (loop ~name_opt:None) tl)
+    | Symbol (l, f) -> Symbol (l, (fun a -> f a; option_with_arg a))
+    | Rest f -> Rest (fun a -> f a; rest a)
+    | Expand f -> Expand f
+  in
+  loop
+
+let options_with_command_line_syntax options r =
+  let rest = ref false in
+  List.map (fun (name, spec, doc) ->
+    (name,
+     options_with_command_line_syntax_inner r rest
+       ~name_opt:(Some name) spec, doc)
+  ) options

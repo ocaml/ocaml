@@ -167,7 +167,8 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := $(addprefix $(ROOTDIR)/,utils parsing stdlib compilerlibs)
+directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
+                                       compilerlibs)
 
 include_directories := $(addprefix -I , $(directories))
 
@@ -191,19 +192,21 @@ ocamlcdefaultflags :=
 
 ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
 
+.SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
+
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamltest$(EXE)
 allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
 ocamltest$(EXE): $(bytecode_modules)
-	$(ocamlc_cmd) -custom ocamlcommon.cma -o $@ $^
+	$(ocamlc_cmd) -custom ocamlcommon.cma ocamlbytecomp.cma -o $@ $^
 
 %.cmo: %.ml
 	$(ocamlc) -c $<
 
 ocamltest.opt$(EXE): $(native_modules)
-	$(ocamlopt_cmd) ocamlcommon.cmxa -o $@ $^
+	$(ocamlopt_cmd) ocamlcommon.cmxa ocamlbytecomp.cmxa -o $@ $^
 
 %.cmx: %.ml
 	$(ocamlopt) -c $<
@@ -220,7 +223,7 @@ ocamltest.opt$(EXE): $(native_modules)
 %.$(O): %.c
 	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -c $<
 
-ocamltest_config.ml: ocamltest_config.ml.in Makefile
+ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
 	sed \
 	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \

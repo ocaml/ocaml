@@ -45,7 +45,6 @@ exception Undefined_recursive_module = Undefined_recursive_module
 
 (* Effects *)
 
-
 type ('a, 'b) stack
 external take_cont : ('a, 'b) continuation -> ('a, 'b) stack = "caml_continuation_use"
 external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
@@ -61,20 +60,6 @@ let reperform e k =
   match perform e with
   | v -> continue k v
   | exception e -> discontinue k e
-
-type raw_backtrace
-external get_raw_backtrace:
-  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
-external raise_with_backtrace: exn -> raw_backtrace -> 'a
-  = "%raise_with_backtrace"
-
-let protect ~(finally: unit -> unit) work =
-  match work () with
-  | result -> finally (); result
-  | exception work_exn ->
-    let work_bt = get_raw_backtrace () in
-    finally ();
-    raise_with_backtrace work_exn work_bt
 
 (* Composition operators *)
 

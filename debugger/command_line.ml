@@ -18,7 +18,6 @@
 
 open Int64ops
 open Format
-open Misc
 open Instruct
 open Unix
 open Debugger_config
@@ -263,7 +262,7 @@ let instr_dir ppf lexbuf =
   let new_directory = argument_list_eol argument lexbuf in
     if new_directory = [] then begin
       if yes_or_no "Reinitialize directory list" then begin
-        Config.load_path := !default_load_path;
+        Load_path.init !default_load_path;
         Envaux.reset_cache ();
         Hashtbl.clear Debugger_config.load_path_for;
         flush_buffer_list ()
@@ -279,7 +278,7 @@ let instr_dir ppf lexbuf =
           List.iter (function x -> add_path (expand_path x)) new_directory'
     end;
     let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
-    fprintf ppf "@[<2>Directories: %a@]@." print_dirs !Config.load_path;
+    fprintf ppf "@[<2>Directories: %a@]@." print_dirs (Load_path.get_paths ());
     Hashtbl.iter
       (fun mdl dirs ->
          fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs
@@ -562,7 +561,7 @@ let instr_source ppf lexbuf =
     let io_chan =
       try
         io_channel_of_descr
-          (openfile (find_in_path !Config.load_path (expand_path file))
+          (openfile (Load_path.find (expand_path file))
              [O_RDONLY] 0)
       with
       | Not_found -> error "Source file not found."

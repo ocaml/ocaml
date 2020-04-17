@@ -358,30 +358,6 @@ For example, @module-path'.['pattern']'@ is equivalent to
 @module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
-\section{Object copy short notations} \label{s:object-notations}
-\ikwd{with\@\texttt{with}}
-
-(Introduced in OCaml 4.03)
-
-\begin{syntax}
-expr:
-     ...
-  | '{' '<' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '>' '}'
-\end{syntax}
-
-In an object copy expression,
-a single identifier @id@ stands for @id '=' id@, and a qualified identifier
-@module-path '.' id@ stands for @module-path '.' id '=' id@.
-For example, all following methods are equivalent:
-\begin{caml_example*}{verbatim}
-object
-  val x=0. val y=0. val z=0.
-  method f_0 x y = {< x; y >}
-  method f_1 x y = {< x = x; y >}
-  method f_2 x y = {< x=x ; y = y >}
-end
-\end{caml_example*}
-
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}

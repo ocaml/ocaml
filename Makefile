@@ -73,6 +73,7 @@ OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
   utils/clflags.cmo utils/profile.cmo \
+  utils/load_path.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
@@ -1355,7 +1356,7 @@ partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
 	         middle_end/base_types asmcomp/debug driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
-	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
+	    $$d/*.$(O) $$d/*.$(SO) $$d/*~; \
 	done
 	rm -f *~
 

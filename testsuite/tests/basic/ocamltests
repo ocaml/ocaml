@@ -28,4 +28,5 @@ stringmatch.ml
 switch_opts.ml
 tailcalls.ml
 trigraph.ml
+unit_naming.ml
 zero_divided_by_n.ml

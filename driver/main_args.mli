@@ -254,3 +254,13 @@ module Make_bytetop_options (F : Bytetop_options) : Arg_list;;
 module Make_optcomp_options (F : Optcomp_options) : Arg_list;;
 module Make_opttop_options (F : Opttop_options) : Arg_list;;
 module Make_ocamldoc_options (F : Ocamldoc_options) : Arg_list;;
+
+(** [options_with_command_line_syntax options r] returns [options2] that behaves
+    like [options], but additionally pushes command line argument on [r] (quoted
+    by [Filename.quote] when necessary).
+    This is meant for ocaml{c,opt}p, which use this to forward most of their
+    arguments to ocaml{c,opt}. *)
+val options_with_command_line_syntax
+  : (string * Arg.spec * string) list
+  -> string list ref
+  -> (string * Arg.spec * string) list

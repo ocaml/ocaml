@@ -144,6 +144,8 @@ module Stdlib : sig
     module Set : Set.S with type elt = string
     module Map : Map.S with type key = string
     module Tbl : Hashtbl.S with type key = string
+
+    val for_all : (char -> bool) -> t -> bool
   end
 
   external compare : 'a -> 'a -> int = "%compare"
@@ -450,3 +452,9 @@ val debug_prefix_map_flags: unit -> string list
 val print_if :
   Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
 (** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
+
+type filepath = string
+type modname = string
+type crcs = (modname * Digest.t option) list
+
+type alerts = string Stdlib.String.Map.t

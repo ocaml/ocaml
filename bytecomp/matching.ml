@@ -1467,7 +1467,9 @@ let prim_obj_tag =
 
 let get_mod_field modname field =
   lazy (
-    match Env.open_pers_signature modname Env.initial_safe_string with
+    let mod_ident = Ident.create_persistent modname in
+    let env = Env.add_persistent_structure mod_ident Env.initial_safe_string in
+    match Env.open_pers_signature modname env with
     | exception Not_found -> fatal_error ("Module "^modname^" unavailable.")
     | env -> begin
         match Env.lookup_value (Longident.Lident field) env with
