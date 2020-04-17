@@ -1978,6 +1978,9 @@ let rec transl env e =
         ->
           fatal_error "Cmmgen.transl:prim, wrong arity"
       | ((Pfield_computed|Psequand
+         | Prunstack | Pperform | Presume | Preperform | Ppoll
+         | Patomic_load _ | Patomic_exchange
+         | Patomic_cas | Patomic_fetch_add
          | Psequor | Pnot | Pnegint | Paddint | Psubint
          | Pmulint | Pandint | Porint | Pxorint | Plslint
          | Plsrint | Pasrint | Pintoffloat | Pfloatofint
@@ -2260,6 +2263,8 @@ and transl_prim_1 env p arg dbg =
         | Immediate -> Cop (Cload {memory_chunk=Word_int ; mutability=Mutable ; is_atomic=true} , [ptr], dbg)
         | Pointer -> Cop (Cloadmut {is_atomic=true}, [ptr; Cconst_int 0], dbg) )
   | (Pfield_computed | Psequand | Psequor
+    | Prunstack | Pperform | Presume | Preperform
+    | Patomic_exchange | Patomic_cas | Patomic_fetch_add
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
     | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
@@ -2541,6 +2546,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Patomic_fetch_add ->
      Cop (Cextcall ("caml_atomic_fetch_add", typ_int, false, None),
           [transl env arg1; transl env arg2], dbg)
+  | Prunstack | Pperform | Presume | Preperform | Ppoll
+  | Patomic_cas | Patomic_load _
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
   | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _
@@ -2678,6 +2685,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
      Cop (Cextcall ("caml_atomic_cas", typ_int, false, None),
           [transl env arg1; transl env arg2; transl env arg3], dbg)
 
+  | Prunstack | Pperform | Presume | Preperform | Ppoll
+  | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
   | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
