@@ -1950,8 +1950,9 @@ let rec transl env e =
           (Array.map (transl env) s.us_actions_consts)
           dbg
       else if Array.length s.us_index_consts = 0 then
-        transl_switch loc env (get_tag (transl env arg) dbg)
-          s.us_index_blocks s.us_actions_blocks
+        bind "switch" (transl env arg) (fun arg ->
+          transl_switch loc env (get_tag arg dbg)
+            s.us_index_blocks s.us_actions_blocks)
       else
         bind "switch" (transl env arg) (fun arg ->
           Cifthenelse(
@@ -2838,6 +2839,7 @@ and transl_sequor env arg1 dbg1 arg2 dbg2 approx then_ else_ =
          (transl_if env arg2 dbg2 approx shareable_then else_))
     then_
 
+(* This assumes that [arg] can be safely discarded if it is not used. *)
 and transl_switch loc env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
 | 1 -> transl env cases.(0)

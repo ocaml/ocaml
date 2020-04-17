@@ -235,6 +235,18 @@ let simplify_exits lam =
                                      ap_args=[x];
                                      ap_inlined=Default_inline;
                                      ap_specialised=Default_specialise}
+        (* Simplify %identity *)
+      | Pidentity, [e] -> e
+
+        (* Simplify Obj.with_tag *)
+      | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
+        [Lconst (Const_base (Const_int tag));
+         Lprim (Pmakeblock (_, mut, shape), fields, loc)] ->
+         Lprim (Pmakeblock(tag, mut, shape), fields, loc)
+      | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
+        [Lconst (Const_base (Const_int tag));
+         Lconst (Const_block (_, fields))] ->
+         Lconst (Const_block (tag, fields))
 
       | _ -> Lprim(p, ll, loc)
      end

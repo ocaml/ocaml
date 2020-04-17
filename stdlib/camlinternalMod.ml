@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
+
 type shape =
   | Function
   | Lazy
@@ -56,12 +58,10 @@ let rec update_mod shape o n =
       if Obj.tag n = Obj.lazy_tag then
         Obj.set_field o 0 (Obj.field n 0)
       else if Obj.tag n = Obj.forward_tag then begin (* PR#4316 *)
-        Obj.set_tag o Obj.forward_tag;
-        Obj.set_field o 0 (Obj.field n 0)
+        make_forward o (Obj.field n 0)
       end else begin
         (* forwarding pointer was shortcut by GC *)
-        Obj.set_tag o Obj.forward_tag;
-        Obj.set_field o 0 n
+        make_forward o n
       end
   | Class ->
       assert (Obj.tag n = 0 && Obj.size n = 4);

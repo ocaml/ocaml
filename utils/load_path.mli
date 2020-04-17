@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Manangement of include directories.
+(** Management of include directories.
 
     This module offers a high level interface to locating files in the
     load path, which is constructed from [-I] command line flags and a few

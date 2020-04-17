@@ -19,14 +19,14 @@ type 'a t = 'a lazy_t
 
 exception Undefined
 
-external forward_lazy : Obj.t -> Obj.t -> unit = "caml_obj_forward_lazy"
-
 (* [update_tag blk old new] updates the tag [blk] from [old] to [new] using a
  * CAS loop (in order to handle concurrent conflicts with the GC marking).
  * Returns [true] if the update is successful. Return [false] if the tag of
  * [blk] is not [old]. *)
 
 external update_tag : Obj.t -> int -> int -> bool = "caml_obj_update_tag"
+
+external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
 
 (* Assume [blk] is a block with tag lazy *)
 let force_lazy_block (blk : 'arg lazy_t) =
@@ -38,7 +38,7 @@ let force_lazy_block (blk : 'arg lazy_t) =
     let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
     try
       let result = closure () in
-      forward_lazy b (Obj.repr result);
+      make_forward b (Obj.repr result);
       result
     with e ->
       Obj.set_field b 0 (Obj.repr (fun () -> raise e));
@@ -56,7 +56,7 @@ let force_val_lazy_block (blk : 'arg lazy_t) =
   else begin
     let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
     let result = closure () in
-    forward_lazy b (Obj.repr result);
+    make_forward b (Obj.repr result);
     result
   end
 

@@ -84,7 +84,7 @@ CAMLprim value caml_obj_update_tag (value blk, value old_tag, value new_tag)
   return Val_false;
 }
 
-CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
+CAMLprim value caml_obj_make_forward (value blk, value fwd)
 {
   /* Modify field before setting tag */
   caml_modify_field(blk, 0, fwd);
@@ -97,6 +97,10 @@ CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
   return Val_unit;
 }
 
+CAMLprim value caml_obj_forward_lazy (value blk, value fwd)
+{
+  return caml_obj_make_forward(blk, fwd);
+}
 
 /* [size] is a value encoding a number of blocks */
 CAMLprim value caml_obj_block(value tag, value size)
@@ -105,16 +109,16 @@ CAMLprim value caml_obj_block(value tag, value size)
 }
 
 /* Spacetime profiling assumes that this function is only called from OCaml. */
-CAMLprim value caml_obj_dup(value arg)
+CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 {
-  CAMLparam1 (arg);
+  CAMLparam2 (new_tag_v, arg);
   CAMLlocal2 (res, x);
   mlsize_t sz, i;
   tag_t tg;
 
   sz = Wosize_val(arg);
-  if (sz == 0) CAMLreturn (arg);
-  tg = Tag_val(arg);
+  tg = (tag_t)Long_val(new_tag_v);
+  if (sz == 0) CAMLreturn (Atom(tg));
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
@@ -132,6 +136,12 @@ CAMLprim value caml_obj_dup(value arg)
   }
 
   CAMLreturn (res);
+}
+
+/* Spacetime profiling assumes that this function is only called from OCaml. */
+CAMLprim value caml_obj_dup(value arg)
+{
+  return caml_obj_with_tag(Val_long(Tag_val(arg)), arg);
 }
 
 /* Shorten the given block to the given size and return void.

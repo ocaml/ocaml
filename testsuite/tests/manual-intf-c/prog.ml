@@ -2,7 +2,7 @@
 (* Tests from manual, section intf-c *)
 (*
   This test is currently skipped because there is no proper way to
-  figure out whether Curses is avaiblable or not. If it becomes possible
+  figure out whether Curses is available or not. If it becomes possible
   to figure that out, it would be nice to be able to check that the test
   compiles. Executing seems lessrelevant.
 *)

@@ -86,7 +86,7 @@ module Manual : sig
     (** The comment for variable x. *)
     val mutable x : int
 
-    (** The commend for method m. *)
+    (** The comment for method m. *)
     method m : int -> int
 
     (** This is a docstring that OCaml <= 4.07.1 misplaces.
@@ -246,7 +246,7 @@ module Manual :
         [@@@ocaml.text
           " This is a docstring that OCaml <= 4.07.1 drops.\n        For some reason, when a class type begins with two docstrings,\n        it keeps only the second one.\n        This is fixed by GPR#2151. "]
         val  mutable x : int[@@ocaml.doc " The comment for variable x. "]
-        method  m : int -> int[@@ocaml.doc " The commend for method m. "]
+        method  m : int -> int[@@ocaml.doc " The comment for method m. "]
         [@@@ocaml.text
           " This is a docstring that OCaml <= 4.07.1 misplaces.\n        For some reason, when a class type ends with two docstrings,\n        it keeps both of them, but exchanges their order.\n        This is again fixed by GPR#2151. "]
         [@@@ocaml.text " Another docstring that OCaml <= 4.07.1 misplaces. "]

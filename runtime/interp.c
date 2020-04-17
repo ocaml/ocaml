@@ -281,7 +281,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     accu = raise_exn_bucket;
     pc = saved_pc; saved_pc = NULL;
     if (pc != NULL) pc += 2;
-        /* +2 adjustement for the sole purpose of backtraces */
+        /* +2 adjustment for the sole purpose of backtraces */
     goto raise_exception;
   }
   domain_state->external_raise = &exception_ctx;

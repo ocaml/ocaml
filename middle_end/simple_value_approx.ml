@@ -679,7 +679,7 @@ let equal_floats f1 f2 =
    The approximation for [f 1] and [f 2] could both contain the
    description of [g]. But if [f] where inlined, a new [g] would
    be created in each branch, leading to incompatible description.
-   And we must never make the descrition for a function less
+   And we must never make the description for a function less
    precise that it used to be: its information are needed for
    rewriting [Project_var] and [Project_closure] constructions
    in [Flambdainline.loop]

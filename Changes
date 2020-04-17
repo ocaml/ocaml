@@ -8,6 +8,11 @@ Working version
 - GPR#2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
+### Runtime system:
+
+- GPR#1725: Deprecate Obj.set_tag
+  (Stephen Dolan, review by Gabriel Scherer and Damien Doligez)
+
 OCaml 4.08.0
 ------------
 
@@ -135,7 +140,7 @@ OCaml 4.08.0
 - GPR#1957: Add Stack.{top_opt,pop_opt} and Queue.{peek_opt,take_opt}.
   (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
-- GPR#1959: Add Format.dprintf, a printing function which ouputs a closure
+- GPR#1959: Add Format.dprintf, a printing function which outputs a closure
   usable with %t.
   (Gabriel Radanne, request by Armaël Guéneau,
    review by Florian Angeletti and Gabriel Scherer)
@@ -211,10 +216,6 @@ OCaml 4.08.0
 
 - GPR#1525: Make function set_max_indent respect documentation
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
-
-- GPR#2233: Unix: fix handling of Linux abstract socket paths when receiving a
-  Unix socket address from the operating system.
-  (Tim Cuthbertson, review by Jérémie Dimino)
 
 ### Other libraries:
 
@@ -367,6 +368,9 @@ OCaml 4.08.0
 
 - MPR#6242, GPR#2143: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
+
+- GPR#2239: Fix match miscompilation with flambda
+  (Leo White, review by Alain Frisch)
 
 ### Runtime system:
 
@@ -1006,11 +1010,11 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1627: Reduce cmx sizes by sharing variable names (Flambda only).
   (Fuyong Quah, Leo White, review by Xavier Clerc)
 
-- GPR#1665: reduce the size of cmx files in classic mode by droping the
+- GPR#1665: reduce the size of cmx files in classic mode by dropping the
   bodies of functions that will not be inlined.
   (Fuyong Quah, review by Leo White and Pierre Chambart)
 
-- GPR#1666: reduce the size of cmx files in classic mode by droping the
+- GPR#1666: reduce the size of cmx files in classic mode by dropping the
   bodies of functions that cannot be reached from the module block.
   (Fuyong Quah, review by Leo White and Pierre Chambart)
 
@@ -1826,7 +1830,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 * MPR#7478, GPR#1037: ocamldoc, do not use as a module preamble documentation
   comments that occur after the first module element. This change may break
-  existing documenation. In particular, module preambles must now come before
+  existing documentation. In particular, module preambles must now come before
   any `open` statement.
   (Florian Angeletti, review by David Allsopp and report by Daniel Bünzli)
 
@@ -3472,7 +3476,7 @@ OCaml 4.03.0 (25 Apr 2016):
   this is the semantics they wanted).
   (Alain Frisch, request by Martin Jambon and John Whitington)
 
-- PR#6920: fix debug informations around uses of %apply or %revapply
+- PR#6920: fix debug information around uses of %apply or %revapply
   (Jérémie Dimino, report by Daniel Bünzli)
 
 - PR#6939: Segfault with improper use of let-rec
@@ -4068,7 +4072,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#6980: Assert failure from polymorphic variants and existentials
   (Jacques Garrigue, report by Leo White)
 
-- PR#6981: Ctype.Unify(_) with associated functor arg refering to previous one
+- PR#6981: Ctype.Unify(_) with associated functor arg referring to previous one
   (Jacques Garrigue, report by Nicholas Labich)
 
 - PR#6982: unexpected type error when packing a module alias
@@ -4184,7 +4188,7 @@ OCaml 4.03.0 (25 Apr 2016):
   (Jacques Garrigue, report by Stephen Dolan)
 
 - PR#7324: OCaml 4.03.0 type checker dies with an assert failure when
-  given some cyclic recusive module expression
+  given some cyclic recursive module expression
   (Jacques Garrigue, report by jmcarthur)
 
 - PR#7368: Manual major GC fails to compact the heap
@@ -4257,7 +4261,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#6367, GPR#25: introduce Asttypes.arg_label to encode labelled arguments
   (Frédéric Bour and Jacques Garrigue)
 
-- PR#6452, GPR#140: add internal suport for custom printing formats
+- PR#6452, GPR#140: add internal support for custom printing formats
   (Jérémie Dimino)
 
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
@@ -4280,7 +4284,7 @@ OCaml 4.03.0 (25 Apr 2016):
   (Simon Cruanes)
 
 * PR#6816: reject integer and float literals directly followed by an identifier.
-  This was prevously read as two separate tokens.
+  This was previously read as two separate tokens.
   [let abc = 1 in (+) 123abc] was accepted and is now rejected.
   (Hugo Heuzard)
 
@@ -4619,7 +4623,7 @@ Bug fixes:
   (Stephen Dolan, Mark Shinwell)
 
 Feature wishes:
-- PR#6452, GPR#140: add internal suport for custom printing formats
+- PR#6452, GPR#140: add internal support for custom printing formats
   (Jérémie Dimino)
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
   (whitequark)
@@ -4886,7 +4890,7 @@ Bug fixes:
   (Jacques Garrigue and John Whitington)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
   (Jacques Garrigue and Grégoire Henry, report by Chantal Keller)
-- PR#6175: open! was not suppored by camlp4
+- PR#6175: open! was not supported by camlp4
   (Hongbo Zhang)
 - PR#6184: ocamlbuild: `ocamlfind ocamldep` does not support -predicate
   (Jacques-Pascal Deplaix)
@@ -5217,7 +5221,7 @@ Bug fixes:
   (Damien Doligez, report by Markus Mottl)
 * PR#5580: missed opportunities for constant propagation
   (Xavier Leroy and John Carr)
-- PR#5611: avoid clashes betwen .cmo files and output files during linking
+- PR#5611: avoid clashes between .cmo files and output files during linking
   (Wojciech Meyer)
 - PR#5662: typo in md5.c
   (Olivier Andrieu)
@@ -5231,7 +5235,7 @@ Bug fixes:
   (Fabrice Le Fessant)
 - PR#5697: better location for warnings on statement expressions
   (Dan Bensen)
-- PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
+- PR#5698: remove hardcoded limit of 200000 labels in emitaux.ml
   (Fabrice Le Fessant, report by Marcin Sawicki)
 - PR#5702: bytecomp/bytelibrarian lib_sharedobjs was defined but never used
   (Hongbo Zhang, Fabrice Le Fessant)
@@ -5304,7 +5308,7 @@ Bug fixes:
 - PR#5824: Generate more efficient code for immediate right shifts.
   (Pierre Chambart, review by Xavier Leroy)
 - PR#5825: Add a toplevel primitive to use source file wrapped with the
-  coresponding module
+  corresponding module
   (Grégoire Henry, Wojciech Meyer, caml-list discussion)
 - PR#5833: README.win32 can leave the wrong flexlink in the path
   (Damien Doligez, report by William Smith)
@@ -5324,7 +5328,7 @@ Bug fixes:
   (Alain Frisch, Gabriel Scherer, report by Julien Moutinho)
 - PR#5877: multiple "open" can become expensive in memory
   (Fabrice Le Fessant and Alain Frisch)
-- PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
+- PR#5880: 'Genlex.make_lexer' documentation mentions the wrong exception
   (Xavier Clerc, report by Virgile Prevosto)
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
   supported.
@@ -5573,7 +5577,7 @@ Native-code compiler:
 OCamldoc:
 - PR#5645: ocamldoc doesn't handle module/type substitution in signatures
 - PR#5544: improve HTML output (less formatting in html code)
-- PR#5522: allow refering to record fields and variant constructors
+- PR#5522: allow referring to record fields and variant constructors
 - fix PR#5419 (error message in french)
 - fix PR#5535 (no cross ref to class after dump+load)
 * Use first class modules for custom generators, to be able to
@@ -6471,7 +6475,7 @@ Standard library:
     and prints nothing (useful to print conditionally).
 - Scanf:
     new function format_from_string to convert a string to a format string;
-    new %r conversion to accomodate user defined scanners.
+    new %r conversion to accommodate user defined scanners.
 - Filename: improved Win32 implementation of Filename.quote.
 - List: List.nth now tail-recursive.
 - Sys: added Sys.is_directory.  Some functions (e.g. Sys.command) that
@@ -7491,7 +7495,7 @@ Both compilers:
 - Option -warn-error to turn warnings into errors.
 - Option -where to print the location of the standard library directory.
 - Assertions are now type-checked even if the -noassert option is given,
-  thus -noassert can no longe change the types of modules.
+  thus -noassert can no longer change the types of modules.
 
 Bytecode compiler and bytecode interpreter:
 - Print stack backtrace when a program aborts due to an uncaught exception
@@ -7509,7 +7513,7 @@ Native-code compiler:
 - Removed spurious dependency on the -lcurses library.
 
 Toplevel environment:
-- Revised handling of top-level value definitions, allows reclaimation
+- Revised handling of top-level value definitions, allows reclamation
   of definitions that are shadowed by later definitions with the same names.
   (E.g. "let x = <big list>;; let x = 1;;" allows <big list> to be reclaimed.)
 - Revised the tracing facility so that for standard library functions,
@@ -8275,7 +8279,7 @@ Objective Caml 1.03 (29 Oct 1996):
     exp() or log() cause a domain error; fixed bug with
     String.length "literal";
   - Sparc, Mips, HPPA: removed marking of scanned stack frames
-    (benefits do not outweight cost).
+    (benefits do not outweigh cost).
 
 * Standard library:
   - Arg.parse now prints documentation for command-line options;
@@ -8435,7 +8439,7 @@ marshaling to/from strings.
 
 * Thread library: much better support for I/O and blocking system calls.
 
-* Graphics library: faster reclaimation of unused pixmaps.
+* Graphics library: faster reclamation of unused pixmaps.
 
 * Unix library: new functions {set,clear}_nonblock, {set,clear}_close_on_exec,
 {set,get}itimer, inet_addr_any, {get,set}sockopt.
