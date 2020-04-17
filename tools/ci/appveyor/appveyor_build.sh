@@ -17,6 +17,9 @@ set -e
 
 BUILD_PID=0
 
+# This must correspond with the entry in appveyor.yml
+CACHE_DIRECTORY=/cygdrive/c/projects/cache
+
 if [[ -z $APPVEYOR_PULL_REQUEST_HEAD_COMMIT ]] ; then
   MAKE="make -j"
 else
@@ -62,7 +65,12 @@ function set_configuration {
         ;;
     esac
 
-    ./configure $build $host --prefix="$2" --enable-ocamltest
+    mkdir -p "$CACHE_DIRECTORY"
+    ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
+                $build $host --prefix="$2" --enable-ocamltest || ( \
+      rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
+      ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
+                  $build $host --prefix="$2" --enable-ocamltest )
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"
