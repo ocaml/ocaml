@@ -119,6 +119,11 @@ val f : ?x:'a -> ?y:'b -> unit -> unit = <fun>
 
 f ~y:3;;
 [%%expect{|
-- : unit -> unit = <fun>
+Line 1, characters 5-6:
+1 | f ~y:3;;
+         ^
+Error: The function applied to this argument has type
+         ?x:'a -> ?y:'b -> unit -> unit
+This argument cannot be applied with label ~y
 |}]
 ;;

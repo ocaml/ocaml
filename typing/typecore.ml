@@ -4282,9 +4282,12 @@ and type_application env funct sargs =
             | (l', sarg) :: remaining_sargs ->
                 if name = label_name l' || (not optional && l' = Nolabel) then
                   (remaining_sargs, use_arg sarg l')
-                else if optional &&
-                        not (List.exists (fun (l, _) -> name = label_name l)
-                               remaining_sargs)
+                else if
+                  optional &&
+                  not (List.exists (fun (l, _) -> name = label_name l)
+                         remaining_sargs) &&
+                  List.exists (function (Nolabel, _) -> true | _ -> false)
+                    sargs
                 then
                   (sargs, eliminate_optional_arg ())
                 else
