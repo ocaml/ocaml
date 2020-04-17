@@ -102,3 +102,18 @@ Error: The function applied to this argument has type
 This argument cannot be applied without label
 |}]
 ;;
+
+(* Example given by Jacques when reviewing
+   https://github.com/ocaml/ocaml/pull/9411 *)
+
+let f ?x ?y () = ();;
+[%%expect{|
+val f : ?x:'a -> ?y:'b -> unit -> unit = <fun>
+|}]
+;;
+
+f ~y:3;;
+[%%expect{|
+- : ?x:'a -> unit -> unit = <fun>
+|}]
+;;
