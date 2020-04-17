@@ -60,7 +60,7 @@ module Native = struct
   let num_globals_inited () = ndl_globals_inited ()
 
   (* Copied from config.ml -- this file cannot depend on that. *)
-  let cmxs_magic_number = "Caml1999D023"
+  let cmxs_magic_number = "Caml1999D025"
 
   let fold_initial_units ~init ~f =
     let rank = ref 0 in
