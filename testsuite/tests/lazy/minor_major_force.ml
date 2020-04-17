@@ -1,3 +1,6 @@
+(* TEST
+   ocamlopt_flags += " -O3 "
+*)
 
 (*
   - create a record with a mutable field that has a lazy value in it
