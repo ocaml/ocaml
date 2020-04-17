@@ -339,6 +339,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
     | handle, units ->
       try
         global_state := check filename units !global_state ~priv;
+        P.run_shared_startup handle;
         List.iter
           (fun unit_header ->
              P.run handle ~unit_header ~priv;
