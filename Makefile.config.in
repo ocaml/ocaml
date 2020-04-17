@@ -35,8 +35,8 @@ exec_prefix=@exec_prefix@
 
 ## Installation commands
 INSTALL?=@INSTALL@
-INSTALL_DATA?=$(INSTALL) -m u=rw,g=rw,o=r
-INSTALL_PROG?=$(INSTALL) -m u=rwx,g=rwx,o=rx
+INSTALL_DATA?=@INSTALL_DATA@
+INSTALL_PROG?=@INSTALL_PROGRAM@
 
 ### Where to install the binaries
 BINDIR=@bindir@

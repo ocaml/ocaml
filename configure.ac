@@ -170,7 +170,6 @@ AC_SUBST([stdlib_manpages])
 
 ## Generated files
 
-AC_CONFIG_FILES([Makefile.common])
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
