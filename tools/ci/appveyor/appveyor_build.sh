@@ -16,7 +16,12 @@
 set -e
 
 BUILD_PID=0
-MAKE=make
+
+if [[ -z $APPVEYOR_PULL_REQUEST_HEAD_COMMIT ]] ; then
+  MAKE="make -j"
+else
+  MAKE=make
+fi
 
 function run {
     NAME=$1
@@ -142,7 +147,8 @@ case "$1" in
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \
-        "$MAKE -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+        "$MAKE -C ../$BUILD_PREFIX-mingw32 flexdll && "\
+"$MAKE -C ../$BUILD_PREFIX-mingw32 world.opt" \
         "../$BUILD_PREFIX-mingw32/build.log" |
           sed -e 's/\d027\[K//g' \
               -e 's/\d027\[m/\d027[0m/g' \
