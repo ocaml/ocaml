@@ -16,6 +16,7 @@
 set -e
 
 BUILD_PID=0
+MAKE=make
 
 function run {
     NAME=$1
@@ -93,10 +94,10 @@ case "$1" in
 
     set_configuration msvc "$OCAMLROOT-msvc32" -WX
 
-    run 'make world' make world
-    run 'make runtimeopt' make runtimeopt
-    run 'make -C otherlibs/systhreads libthreadsnat.lib' \
-         make -C otherlibs/systhreads libthreadsnat.lib
+    run "$MAKE world" $MAKE world
+    run "$MAKE runtimeopt" $MAKE runtimeopt
+    run "$MAKE -C otherlibs/systhreads libthreadsnat.lib" \
+         $MAKE -C otherlibs/systhreads libthreadsnat.lib
 
     exit 0
     ;;
@@ -108,10 +109,11 @@ case "$1" in
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
     fi
-    run "test $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" tests
-    run "install $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" install
+    run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
+    run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
-      run 'check_all_arches' make -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
+      run "$MAKE check_all_arches" \
+           $MAKE -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
     fi
     ;;
   *)
@@ -120,7 +122,7 @@ case "$1" in
     if [[ $PORT = 'msvc64' ]] ; then
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
-      make MSVC_DETECT=0 CHAINS=msvc64 support
+      $MAKE MSVC_DETECT=0 CHAINS=msvc64 support
       cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
       cd ..
     fi
@@ -140,16 +142,16 @@ case "$1" in
       # For an explanation of the sed command, see
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \
-        "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+        "$MAKE -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
         "../$BUILD_PREFIX-mingw32/build.log" |
           sed -e 's/\d027\[K//g' \
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
     else
-      run 'make world' make world
-      run 'make bootstrap' make bootstrap
-      run 'make opt' make opt
-      run 'make opt.opt' make opt.opt
+      run "$MAKE world" $MAKE world
+      run "$MAKE bootstrap" $MAKE bootstrap
+      run "$MAKE opt" $MAKE opt
+      run "$MAKE opt.opt" $MAKE opt.opt
     fi
 
     ;;
