@@ -346,13 +346,17 @@ Working version
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #9406, #9409: fix an error with packed module types from missing
+  cmis.
+  (Florian Angeletti, report by Thomas Leonard, review by Gabriel Radanne
+   and Gabriel Scherer)
+
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
 
 - #9428: Fix truncated exception backtrace for C->OCaml callbacks
   on Power and Z System
   (Xavier Leroy, review by Nicolás Ojeda Bär)
-
 
 OCaml 4.10 maintenance branch
 -----------------------------
