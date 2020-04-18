@@ -23,6 +23,9 @@ Working version
   (KC Sivaramakrishnan, review by David Allsopp, Xavier Leroy, Mark Shinwell
   and Leo White)
 
+- #9466: Memprof: optimize random samples generation.
+  (Jacques-Henri Jourdan review by Xavier Leroy and Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #9441: Add RISC-V RV64G native-code backend.
