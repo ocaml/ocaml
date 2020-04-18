@@ -85,6 +85,12 @@ val new_label: unit -> label
 
 type rec_flag = Nonrecursive | Recursive
 
+type let_kind =
+  | Immutable
+  (** for immutable let-bindings, the type is inferred from the definition *)
+  | Mutable of machtype
+  (** mutable let-bindings need to agree on a type for all future updates *)
+
 type phantom_defining_expr =
   (* CR-soon mshinwell: Convert this to [Targetint.OCaml.t] (or whatever the
      representation of "target-width OCaml integers of type [int]"
@@ -158,9 +164,7 @@ and expression =
   | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
-  | Clet of Backend_var.With_provenance.t * expression * expression
-  | Clet_mut of Backend_var.With_provenance.t * machtype
-                * expression * expression
+  | Clet of let_kind * Backend_var.With_provenance.t * expression * expression
   | Cphantom_let of Backend_var.With_provenance.t
       * phantom_defining_expr option * expression
   (* Cassign must refer to a variable bound by Clet_mut *)

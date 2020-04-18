@@ -100,6 +100,12 @@ let new_label() = incr label_counter; !label_counter
 
 type rec_flag = Nonrecursive | Recursive
 
+type let_kind =
+  | Immutable
+  (** for immutable let-bindings, the type is inferred from the definition *)
+  | Mutable of machtype
+  (** mutable let-bindings need to agree on a type for all future updates *)
+
 type phantom_defining_expr =
   | Cphantom_const_int of Targetint.t
   | Cphantom_const_symbol of string
@@ -151,9 +157,7 @@ type expression =
   | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
-  | Clet of Backend_var.With_provenance.t * expression * expression
-  | Clet_mut of Backend_var.With_provenance.t * machtype
-                * expression * expression
+  | Clet of let_kind * Backend_var.With_provenance.t * expression * expression
   | Cphantom_let of Backend_var.With_provenance.t
       * phantom_defining_expr option * expression
   | Cassign of Backend_var.t * expression
@@ -210,7 +214,7 @@ let reset () =
   label_counter := 99
 
 let iter_shallow_tail f = function
-  | Clet(_, _, body) | Cphantom_let (_, _, body) | Clet_mut(_, _, _, body) ->
+  | Clet(_, _, _, body) | Cphantom_let (_, _, body) ->
       f body;
       true
   | Cifthenelse(_cond, _ifso_dbg, ifso, _ifnot_dbg, ifnot, _dbg) ->
@@ -247,10 +251,8 @@ let iter_shallow_tail f = function
       false
 
 let rec map_tail f = function
-  | Clet(id, exp, body) ->
-      Clet(id, exp, map_tail f body)
-  | Clet_mut(id, kind, exp, body) ->
-      Clet_mut(id, kind, exp, map_tail f body)
+  | Clet(kind, id, exp, body) ->
+      Clet(kind, id, exp, map_tail f body)
   | Cphantom_let(id, exp, body) ->
       Cphantom_let (id, exp, map_tail f body)
   | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
@@ -286,10 +288,8 @@ let rec map_tail f = function
       f c
 
 let map_shallow f = function
-  | Clet (id, e1, e2) ->
-      Clet (id, f e1, f e2)
-  | Clet_mut (id, kind, e1, e2) ->
-      Clet_mut (id, kind, f e1, f e2)
+  | Clet (kind, id, e1, e2) ->
+      Clet (kind, id, f e1, f e2)
   | Cphantom_let (id, de, e) ->
       Cphantom_let (id, de, f e)
   | Cassign (id, e) ->

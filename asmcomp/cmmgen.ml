@@ -106,7 +106,7 @@ let invert_then_else = function
   | Then_false_else_true -> Then_true_else_false
   | Unknown -> Unknown
 
-let mut_from_env env ptr =
+let mut_from_env env ptr : Asttypes.mutable_flag =
   match env.environment_param with
   | None -> Mutable
   | Some environment_param ->
@@ -627,8 +627,8 @@ let rec transl env e =
       let raise_num = next_raise_count () in
       let id_prev = VP.create (V.create_local "*id_prev*") in
       return_unit dbg
-        (Clet_mut
-           (id, typ_int, transl env low,
+        (Clet
+           (Mutable typ_int, id, transl env low,
             bind_nonvar "bound" (transl env high) (fun high ->
               ccatch
                 (raise_num, [],
@@ -640,7 +640,7 @@ let rec transl env e =
                     create_loop
                       (Csequence
                          (remove_unit(transl env body),
-                         Clet(id_prev, Cvar (VP.var id),
+                         Clet(Immutable, id_prev, Cvar (VP.var id),
                           Csequence
                             (Cassign(VP.var id,
                                Cop(inc, [Cvar (VP.var id); Cconst_int (2, dbg)],
@@ -874,7 +874,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
         dbg (Cconst_pointer (3, dbg))
         dbg' (Cconst_pointer (1, dbg))
       (* let id = V.create_local "res1" in
-      Clet(id, transl env arg1,
+      Clet(Immutable, id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
       let dbg' = Debuginfo.none in
@@ -1119,7 +1119,7 @@ and transl_unbox_sized size dbg env exp =
   | Thirty_two -> transl_unbox_int dbg env Pint32 exp
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 
-and transl_let env str kind id exp body =
+and transl_let env (str : Asttypes.mutable_flag) kind id exp body =
   let dbg = Debuginfo.none in
   let cexp = transl env exp in
   let unboxing =
@@ -1153,9 +1153,9 @@ and transl_let env str kind id exp body =
       (* N.B. [body] must still be traversed even if [exp] will never return:
          there may be constant closures inside that need lifting out. *)
       begin match str, kind with
-      | Immutable, _ -> Clet(id, cexp, transl env body)
-      | Mutable, Pintval -> Clet_mut(id, typ_int, cexp, transl env body)
-      | Mutable, _ -> Clet_mut(id, typ_val, cexp, transl env body)
+      | Immutable, _ -> Clet(Immutable, id, cexp, transl env body)
+      | Mutable, Pintval -> Clet(Mutable typ_int, id, cexp, transl env body)
+      | Mutable, _ -> Clet(Mutable typ_val, id, cexp, transl env body)
       end
   | Boxed (boxed_number, false) ->
       let unboxed_id = V.create_local (VP.name id) in
@@ -1164,9 +1164,9 @@ and transl_let env str kind id exp body =
       let body =
         transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body in
       begin match str, boxed_number with
-      | Immutable, _ -> Clet (v, cexp, body)
-      | Mutable, Boxed_float _ -> Clet_mut (v, typ_float, cexp, body)
-      | Mutable, Boxed_integer _ -> Clet_mut (v, typ_int, cexp, body)
+      | Immutable, _ -> Clet (Immutable, v, cexp, body)
+      | Mutable, Boxed_float _ -> Clet (Mutable typ_float, v, cexp, body)
+      | Mutable, Boxed_integer _ -> Clet (Mutable typ_int, v, cexp, body)
       end
 
 and make_catch ncatch body handler dbg = match body with
@@ -1326,24 +1326,27 @@ and transl_letrec env bindings cont =
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, _exp, RHS_block sz) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy" [int_const dbg sz],
-          init_blocks rem)
+        Clet(Immutable, id,
+             op_alloc "caml_alloc_dummy" [int_const dbg sz],
+             init_blocks rem)
     | (id, _exp, RHS_infix { blocksize; offset}) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy_infix"
-             [int_const dbg blocksize; int_const dbg offset],
+        Clet(Immutable, id,
+             op_alloc "caml_alloc_dummy_infix"
+               [int_const dbg blocksize; int_const dbg offset],
              init_blocks rem)
     | (id, _exp, RHS_floatblock sz) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
-          init_blocks rem)
+        Clet(Immutable, id,
+             op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
+             init_blocks rem)
     | (id, _exp, RHS_nonrec) :: rem ->
-        Clet (id, Cconst_int (0, dbg), init_blocks rem)
+        Clet (Immutable, id, Cconst_int (0, dbg), init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
     | (_id, _exp,
        (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
         fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
-        Clet(id, transl env exp, fill_nonrec rem)
+        Clet(Immutable, id, transl env exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
     | (id, exp, (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->

@@ -41,10 +41,11 @@ let rec with_afl_logging b dbg =
     let cur_pos = V.create_local "pos" in
     let afl_area = V.create_local "shared_mem" in
     let op oper args = Cop (oper, args, dbg) in
-    Clet(VP.create afl_area,
+    Clet(Immutable, VP.create afl_area,
       op (Cload (Word_int, Asttypes.Mutable)) [afl_area_ptr dbg],
-      Clet(VP.create cur_pos, op Cxor [op (Cload (Word_int, Asttypes.Mutable))
-        [afl_prev_loc dbg]; Cconst_int (cur_location, dbg)],
+      Clet(Immutable, VP.create cur_pos,
+           op Cxor [op (Cload (Word_int, Asttypes.Mutable)) [afl_prev_loc dbg];
+                    Cconst_int (cur_location, dbg)],
       Csequence(
         op (Cstore(Byte_unsigned, Assignment))
           [op Cadda [Cvar afl_area; Cvar cur_pos];
@@ -72,9 +73,7 @@ and instrument = function
      Cswitch (instrument e, cases, handlers, dbg)
 
   (* these cases add no logging, but instrument subexpressions *)
-  | Clet (v, e, body) -> Clet (v, instrument e, instrument body)
-  | Clet_mut (v, k, e, body) ->
-    Clet_mut (v, k, instrument e, instrument body)
+  | Clet (kind, v, e, body) -> Clet (kind, v, instrument e, instrument body)
   | Cphantom_let (v, defining_expr, body) ->
     Cphantom_let (v, defining_expr, instrument body)
   | Cassign (v, e) -> Cassign (v, instrument e)

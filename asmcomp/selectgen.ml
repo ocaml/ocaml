@@ -123,7 +123,7 @@ let size_expr (env:environment) exp =
         List.fold_right (fun e sz -> size localenv e + sz) el 0
     | Cop(op, _, _) ->
         size_machtype(oper_result_type op)
-    | Clet(id, arg, body) ->
+    | Clet(Immutable, id, arg, body) ->
         size (V.Map.add (VP.var id) (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
@@ -319,7 +319,7 @@ method is_simple_expr = function
   | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
-  | Clet(_id, arg, body) | Clet_mut(_id, _, arg, body) ->
+  | Clet(_kind, _id, arg, body) ->
     self#is_simple_expr arg && self#is_simple_expr body
   | Cphantom_let(_var, _defining_expr, body) -> self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
@@ -355,7 +355,7 @@ method effects_of exp =
   | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
   | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
-  | Clet (_id, arg, body) | Clet_mut (_id, _, arg, body) ->
+  | Clet (_kind, _id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
   | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
@@ -679,15 +679,10 @@ method emit_expr (env:environment) exp =
       with Not_found ->
         Misc.fatal_error("Selection.emit_expr: unbound var " ^ V.unique_name v)
       end
-  | Clet(v, e1, e2) ->
+  | Clet(kind, v, e1, e2) ->
       begin match self#emit_expr env e1 with
-        None -> None
-      | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
-      end
-  | Clet_mut(v, k, e1, e2) ->
-      begin match self#emit_expr env e1 with
-        None -> None
-      | Some r1 -> self#emit_expr (self#bind_let_mut env v k r1) e2
+      | None -> None
+      | Some r1 -> self#emit_expr (self#bind_let env kind v r1) e2
       end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_expr env body
@@ -896,7 +891,7 @@ method private emit_sequence (env:environment) exp =
   let r = s#emit_expr env exp in
   (r, s)
 
-method private bind_let (env:environment) v r1 =
+method private bind_let_immutable (env:environment) v r1 =
   if all_regs_anonymous r1 then begin
     name_regs v r1;
     env_add v r1 env
@@ -907,11 +902,16 @@ method private bind_let (env:environment) v r1 =
     env_add v rv env
   end
 
-method private bind_let_mut (env:environment) v k r1 =
-  let rv = Reg.createv k in
+method private bind_let_mutable (env:environment) mty v r1 =
+  let rv = Reg.createv mty in
   name_regs v rv;
   self#insert_moves env r1 rv;
   env_add ~mut:Mutable v rv env
+
+method private bind_let (env:environment) kind v r1 =
+  match kind with
+  | Immutable -> self#bind_let_immutable env v r1
+  | Mutable mty -> self#bind_let_mutable env mty v r1
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass
@@ -1067,16 +1067,11 @@ method private emit_return (env:environment) exp =
 
 method emit_tail (env:environment) exp =
   match exp with
-    Clet(v, e1, e2) ->
+    Clet(kind, v, e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> ()
-      | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
+      | Some r1 -> self#emit_tail (self#bind_let env kind v r1) e2
       end
-  | Clet_mut (v, k, e1, e2) ->
-     begin match self#emit_expr env e1 with
-       None -> ()
-     | Some r1 -> self#emit_tail (self#bind_let_mut env v k r1) e2
-     end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_tail env body
   | Cop((Capply ty) as op, args, dbg) ->

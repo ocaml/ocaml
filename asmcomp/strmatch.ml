@@ -79,11 +79,11 @@ module Make(I:I) = struct
       Cop(Cload (Word_int, Asttypes.Mutable),
         [Cop(Cadda,[str;Cconst_int(Arch.size_int*ind, dbg)], dbg)],
         dbg) in
-    Clet(id, cell, body)
+    Clet(Immutable, id, cell, body)
 
   let mk_let_size id str body =
     let size = I.string_block_length str in
-    Clet(id, size, body)
+    Clet(Immutable, id, size, body)
 
   let mk_cmp_gen cmp_op id nat ifso ifnot =
     let dbg = Debuginfo.none in

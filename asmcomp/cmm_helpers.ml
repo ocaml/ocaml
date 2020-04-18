@@ -27,7 +27,9 @@ let bind name arg fn =
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
-  | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
+  | _ ->
+      let id = V.create_local name in
+      Clet(Immutable, VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
   match arg with
@@ -39,7 +41,9 @@ let bind_nonvar name arg fn =
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
-  | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
+  | _ ->
+      let id = V.create_local name in
+      Clet(Immutable, VP.create id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
     (* cf. runtime/caml/gc.h *)
@@ -580,15 +584,25 @@ let rec remove_unit = function
       Ccatch(rec_flag, List.map map_h handlers, remove_unit body)
   | Ctrywith(body, exn, handler, dbg) ->
       Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
-  | Clet(id, c1, c2) ->
-      Clet(id, c1, remove_unit c2)
+  | Clet(kind, id, def, body) ->
+      Clet(kind, id, def, remove_unit body)
+  | Cphantom_let(id, def, body) ->
+      Cphantom_let(id, def, remove_unit body)
   | Cop(Capply _mty, args, dbg) ->
       Cop(Capply typ_void, args, dbg)
   | Cop(Cextcall(proc, _mty, alloc, label_after), args, dbg) ->
       Cop(Cextcall(proc, typ_void, alloc, label_after), args, dbg)
   | Cexit (_,_) as c -> c
   | Ctuple [] as c -> c
-  | c -> Csequence(c, Ctuple [])
+  | (Cconst_int _ | Cconst_natint _
+    | Cconst_float _
+    | Cconst_symbol _
+    | Cconst_pointer _ | Cconst_natpointer _
+    | Cblockheader _
+    | Cvar _
+    | Cassign _
+    | Ctuple (_::_)
+    | Cop (_, _, _)) as c -> Csequence(c, Ctuple [])
 
 (* Access to block fields *)
 
@@ -726,7 +740,7 @@ let float_array_set arr ofs newval dbg =
 let string_length exp dbg =
   bind "str" exp (fun str ->
     let tmp_var = V.create_local "tmp" in
-    Clet(VP.create tmp_var,
+    Clet(Immutable, VP.create tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
                    [get_size str dbg;
@@ -775,7 +789,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
       [] -> Cvar id
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
                           fill_fields (idx + 2) el) in
-    Clet(VP.create id,
+    Clet(Immutable, VP.create id,
          Cop(Cextcall("caml_alloc", typ_val, true, None),
                  [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
          fill_fields 1 args)
@@ -951,8 +965,10 @@ let rec low_32 dbg = function
                Cconst_int (32, _)], _)
   | Cop(Cand, [x; Cconst_natint (0xFFFFFFFFn, _)], _) ->
     low_32 dbg x
-  | Clet(id, e, body) ->
-    Clet(id, e, low_32 dbg body)
+  | Clet(kind, id, e, body) ->
+    Clet(kind, id, e, low_32 dbg body)
+  | Cphantom_let(id, def, body) ->
+    Cphantom_let(id, def, low_32 dbg body)
   | x -> x
 
 (* sign_extend_32 sign-extends values from 32 bits to the word size.
@@ -1701,15 +1717,15 @@ let cache_public_method meths tag cache dbg =
   let cconst_int i = Cconst_int (i, dbg) in
   let li = V.create_local "*li*" and hi = V.create_local "*hi*"
   and mi = V.create_local "*mi*" and tagged = V.create_local "*tagged*" in
-  Clet_mut (
-  VP.create li, typ_int, cconst_int 3,
-  Clet_mut (
-  VP.create hi, typ_int, Cop(Cload (Word_int, Mutable), [meths], dbg),
+  Clet (Mutable typ_int,
+  VP.create li, cconst_int 3,
+  Clet (Mutable typ_int,
+  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg),
   Csequence(
   ccatch
     (raise_num, [],
      create_loop
-       (Clet(
+       (Clet (Immutable,
         VP.create mi,
         Cop(Cor,
             [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg); cconst_int 1],
@@ -1736,7 +1752,7 @@ let cache_public_method meths tag cache dbg =
        dbg,
      Ctuple [],
      dbg),
-  Clet (
+  Clet (Immutable,
     VP.create tagged,
       Cop(Caddi, [lsl_const (Cvar li) log2_size_addr dbg;
         cconst_int(1 - 3 * size_addr)], dbg),
@@ -1772,7 +1788,7 @@ let apply_function_body arity =
           dbg ())
     else begin
       let newclos = V.create_local "clos" in
-      Clet(VP.create newclos,
+      Clet(Immutable, VP.create newclos,
            Cop(Capply typ_val,
                [get_field_gen Asttypes.Mutable (Cvar clos) 0 (dbg ());
                 Cvar arg.(n); Cvar clos], dbg ()),
@@ -1810,13 +1826,13 @@ let send_function arity =
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
                               cconst_int(3*size_addr-1)], dbg ()) in
     let tag' = Cop(Cload (Word_int, Mutable), [tag_pos], dbg ()) in
-    Clet (
+    Clet (Immutable,
     VP.create meths, Cop(Cload (Word_val, Mutable), [obj], dbg ()),
-    Clet (
+    Clet (Immutable,
     VP.create cached,
       Cop(Cand, [Cop(Cload (Word_int, Mutable), [cache], dbg ()); mask],
           dbg ()),
-    Clet (
+    Clet (Immutable,
     VP.create real,
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg ()),
                 dbg (),
@@ -1829,7 +1845,7 @@ let send_function arity =
        cconst_int(2*size_addr-1)], dbg ())], dbg ()))))
 
   in
-  let body = Clet(VP.create clos', clos, body) in
+  let body = Clet(Immutable, VP.create clos', clos, body) in
   let cache = cache in
   let fun_name = "caml_send" ^ Int.to_string arity in
   let fun_args =
@@ -1928,7 +1944,7 @@ let final_curry_function arity =
       if n = arity - 1 || arity > max_arity_optimized then
         begin
       let newclos = V.create_local "clos" in
-      Clet(VP.create newclos,
+      Clet(Immutable, VP.create newclos,
            get_field_gen Asttypes.Mutable (Cvar clos) 3 (dbg ()),
            curry_fun (get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
                       :: args)
@@ -1936,7 +1952,7 @@ let final_curry_function arity =
         end else
         begin
           let newclos = V.create_local "clos" in
-          Clet(VP.create newclos,
+          Clet(Immutable, VP.create newclos,
                get_field_gen Asttypes.Mutable (Cvar clos) 4 (dbg ()),
                curry_fun
                  (get_field_gen Asttypes.Mutable (Cvar clos) 3 (dbg ()) :: args)
@@ -2002,7 +2018,7 @@ let rec intermediate_curry_functions arity num =
                   dbg ())
             else
               let newclos = V.create_local "clos" in
-              Clet(VP.create newclos,
+              Clet(Immutable, VP.create newclos,
                    get_field_gen Asttypes.Mutable (Cvar clos) 4 (dbg ()),
                    iter (i-1)
                      (get_field_gen Asttypes.Mutable (Cvar clos) 3 (dbg ())

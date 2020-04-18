@@ -24,14 +24,14 @@ let rec make_letdef def body =
     [] -> body
   | (id, def) :: rem ->
       unbind_ident id;
-      Clet(id, def, make_letdef rem body)
+      Clet(Immutable, id, def, make_letdef rem body)
 
 let rec make_letmutdef def body =
   match def with
     [] -> body
   | (id, ty, def) :: rem ->
       unbind_ident id;
-      Clet_mut(id, ty, def, make_letmutdef rem body)
+      Clet(Mutable ty, id, def, make_letmutdef rem body)
 
 let make_switch n selector caselist =
   let index = Array.make n 0 in

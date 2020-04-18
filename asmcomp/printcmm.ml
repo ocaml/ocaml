@@ -154,26 +154,26 @@ let rec expr ppf = function
   | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
   | Cconst_natpointer (n, _dbg) -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id
-  | Clet(id, def, (Clet(_, _, _) as body)) ->
+  | Clet(Immutable, id, def, (Clet(Immutable, _, _, _) as body)) ->
       let print_binding id ppf def =
         fprintf ppf "@[<2>%a@ %a@]"
           VP.print id expr def in
       let rec in_part ppf = function
-        | Clet(id, def, body) ->
+        | Clet(Immutable, id, def, body) ->
             fprintf ppf "@ %a" (print_binding id) def;
             in_part ppf body
         | exp -> exp in
       fprintf ppf "@[<2>(let@ @[<1>(%a" (print_binding id) def;
       let exp = in_part ppf body in
       fprintf ppf ")@]@ %a)@]" sequence exp
-  | Clet(id, def, body) ->
+  | Clet(Immutable, id, def, body) ->
      fprintf ppf
       "@[<2>(let@ @[<2>%a@ %a@]@ %a)@]"
       VP.print id expr def sequence body
-  | Clet_mut(id, kind, def, body) ->
+  | Clet(Mutable mty, id, def, body) ->
     fprintf ppf
       "@[<2>(let_mut@ @[<2>%a: %a@ %a@]@ %a)@]"
-      VP.print id machtype kind expr def sequence body
+      VP.print id machtype mty expr def sequence body
   | Cphantom_let(var, def, (Cphantom_let(_, _, _) as body)) ->
       let print_binding var ppf def =
         fprintf ppf "@[<2>%a@ %a@]" VP.print var
