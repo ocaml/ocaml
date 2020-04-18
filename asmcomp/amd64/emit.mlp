@@ -1146,7 +1146,7 @@ let end_assembly() =
     };
 
   if system = S_linux then begin
-    let frametable = Compilenv.make_symbol (Some "frametable") in
+    let frametable = emit_symbol (Compilenv.make_symbol (Some "frametable")) in
     D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
   end;
 
