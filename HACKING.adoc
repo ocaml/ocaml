@@ -304,6 +304,27 @@ If `boot/ocamlc` changes (e.g. because you ran `make bootstrap`), then
 the build will revert to the slower bytecode-compiled `ocamlc` until
 you do the above step again.
 
+=== Using merlin
+
+When building the compiler as described above, the cmi and cmt files that are
+produced are 99% of the time not readable by merlin, because it is usually
+updated to support new versions of the compiler after they get released.
+
+Therefore, to use merlin on the compiler, you want to build the compiler with an
+older version of itself. The easiest way to do this is to install the latest
+released version of the compiler, install dune, and run:
+
+----
+dune build @libs
+----
+
+which will do a bytecode build of all the distribution (without linking the
+executables), as well as generate a .merlin file.
+
+N.B. for this to work properly, you need to have run the configure script, and
+the workspace needs to be clean (otherwise dune will complain that build
+artefacts are present among the sources).
+
 === Continuous integration
 
 ==== Github's CI: Travis and AppVeyor
