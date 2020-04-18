@@ -264,6 +264,21 @@ module Env : sig
 
   (** Appends the locations of inlined call-sites to the [~dbg] argument *)
   val add_inlined_debuginfo : t -> dbg:Debuginfo.t -> Debuginfo.t
+
+  (** Adds a variable as a known immutable constructed block with the given key
+      (size and tag), implying that it can be reused. *)
+  val add_constructed_block :
+    t -> Flambda.switch_block_key -> Variable.t -> t
+
+  (** Checks is a variable is pointing to a known already constructed immutable
+      block *)
+  val is_constructed_block : t -> Variable.t -> bool
+
+  (** Finds a variable pointing to an already constructed immutable block having
+      the given tag and arguments *)
+  val find_constructed_block :
+    t -> tag:int -> Variable.t list -> Variable.t option
+
 end
 
 module Result : sig

@@ -411,6 +411,10 @@ OCaml 4.10.0 (21 February 2020)
 - #6662, #8908: allow writing "module _ = E" to ignore module expressions
   (Thomas Refis, review by Gabriel Radanne)
 
+- #8958: Optmimise match cases that return a non-mutable block that is equal to
+  a matched block (flambda)
+  (Mark Shinwell and Louis Gesbert)
+
 ### Runtime system:
 
 - #8809, #9292: Add a best-fit allocator for the major heap; still

@@ -630,8 +630,8 @@ let rec emit_tail_infos is_tail lambda =
       list_emit_tail_infos false l
   | Lswitch (lam, sw, _loc) ->
       emit_tail_infos false lam;
-      list_emit_tail_infos_fun snd is_tail sw.sw_consts;
-      list_emit_tail_infos_fun snd is_tail sw.sw_blocks;
+      List.iter (fun (_, lam) -> emit_tail_infos is_tail lam) sw.sw_consts;
+      List.iter (fun (_, lam) -> emit_tail_infos is_tail lam) sw.sw_blocks;
       Option.iter  (emit_tail_infos is_tail) sw.sw_failaction
   | Lstringswitch (lam, sw, d, _) ->
       emit_tail_infos false lam;
@@ -671,8 +671,6 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
       emit_tail_infos is_tail lam
-and list_emit_tail_infos_fun f is_tail =
-  List.iter (fun x -> emit_tail_infos is_tail (f x))
 and list_emit_tail_infos is_tail =
   List.iter (emit_tail_infos is_tail)
 

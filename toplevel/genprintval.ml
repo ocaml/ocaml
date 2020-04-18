@@ -386,10 +386,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 | {type_kind = Type_variant constr_list; type_unboxed} ->
                     let unbx = type_unboxed.unboxed in
                     let tag =
-                      if unbx then Cstr_unboxed
+                      if unbx then Datarepr.Unboxed
                       else if O.is_block obj
-                      then Cstr_block(O.tag obj)
-                      else Cstr_constant(O.obj obj) in
+                      then Datarepr.Block(O.tag obj)
+                      else Datarepr.Constant(O.obj obj) in
                     let {cd_id;cd_args;cd_res} =
                       Datarepr.find_constr_by_tag tag constr_list in
                     let type_params =
