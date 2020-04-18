@@ -247,6 +247,11 @@ let box_int dbg bi arg =
 
 (* Boxed numbers *)
 
+let typ_of_boxed_number = function
+  | Boxed_float _ -> Cmm.typ_float
+  | Boxed_integer (Pint64, _) when size_int = 4 -> [|Int;Int|]
+  | Boxed_integer _ -> Cmm.typ_int
+
 let equal_unboxed_integer ui1 ui2 =
   match ui1, ui2 with
   | Pnativeint, Pnativeint -> true
@@ -687,11 +692,6 @@ and transl_catch env nfail ids body handler dbg =
   in
   let env_body = add_notify_catch nfail report env in
   let body = transl env_body body in
-  let typ_of_bn = function
-    | Boxed_float _ -> Cmm.typ_float
-    | Boxed_integer (Pint64, _) when size_int = 4 -> [|Int;Int|]
-    | Boxed_integer _ -> Cmm.typ_int
-  in
   let new_env, rewrite, ids =
     List.fold_right
       (fun (id, _kind, u) (env, rewrite, ids) ->
@@ -704,7 +704,7 @@ and transl_catch env nfail ids body handler dbg =
              let unboxed_id = V.create_local (VP.name id) in
              add_unboxed_id (VP.var id) unboxed_id bn env,
              (unbox_number Debuginfo.none bn) :: rewrite,
-             (VP.create unboxed_id, typ_of_bn bn) :: ids
+             (VP.create unboxed_id, typ_of_boxed_number bn) :: ids
       )
       ids (env, [], [])
   in
@@ -1165,8 +1165,7 @@ and transl_let env str kind id exp body =
         transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body in
       begin match str, boxed_number with
       | Immutable, _ -> Clet (v, cexp, body)
-      | Mutable, Boxed_float _ -> Clet_mut (v, typ_float, cexp, body)
-      | Mutable, Boxed_integer _ -> Clet_mut (v, typ_int, cexp, body)
+      | Mutable, bn -> Clet_mut (v, typ_of_boxed_number bn, cexp, body)
       end
 
 and make_catch ncatch body handler dbg = match body with
