@@ -349,6 +349,9 @@ Working version
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
 
+* #9388: Prohibit signature local types with constraints
+  (Leo White, review by Jacques Garrigue)
+
 - #9406, #9409: fix an error with packed module types from missing
   cmis.
   (Florian Angeletti, report by Thomas Leonard, review by Gabriel Radanne
