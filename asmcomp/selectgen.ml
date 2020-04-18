@@ -891,27 +891,21 @@ method private emit_sequence (env:environment) exp =
   let r = s#emit_expr env exp in
   (r, s)
 
-method private bind_let_immutable (env:environment) v r1 =
-  if all_regs_anonymous r1 then begin
+method private bind_let (env:environment) kind v r1 =
+  if kind = Immutable && all_regs_anonymous r1 then begin
+    (* if the binding has kind [Mutable mty], we cannot reuse r1 as its type
+       may be less general than [mty]. *)
     name_regs v r1;
     env_add v r1 env
   end else begin
-    let rv = Reg.createv_like r1 in
+    let mut, rv = match kind with
+      | Immutable -> (Immutable: Asttypes.mutable_flag), Reg.createv_like r1
+      | Mutable mty -> (Mutable: Asttypes.mutable_flag), Reg.createv mty
+    in
     name_regs v rv;
     self#insert_moves env r1 rv;
-    env_add v rv env
+    env_add ~mut v rv env
   end
-
-method private bind_let_mutable (env:environment) mty v r1 =
-  let rv = Reg.createv mty in
-  name_regs v rv;
-  self#insert_moves env r1 rv;
-  env_add ~mut:Mutable v rv env
-
-method private bind_let (env:environment) kind v r1 =
-  match kind with
-  | Immutable -> self#bind_let_immutable env v r1
-  | Mutable mty -> self#bind_let_mutable env mty v r1
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass
