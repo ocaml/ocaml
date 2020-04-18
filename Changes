@@ -226,6 +226,9 @@ Working version
   from intermediate-representation dumps (-dfoo).
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #9393: Improve recursive module usage warnings
+  (Leo White, review by Thomas Refis)
+
 - #2141: generate .annot files from cmt data; deprecate -annot.
   (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
   Doligez)
