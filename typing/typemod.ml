@@ -1237,10 +1237,13 @@ and transl_signature env sg =
                  td.typ_private = Private
               then
                 raise (Error (td.typ_loc, env, Invalid_type_subst_rhs));
+              let params = td.typ_type.type_params in
+              if params_are_constrained params
+              then raise(Error(loc, env, With_cannot_remove_constrained_type));
               let info =
                   let subst =
                     Subst.add_type_function (Pident td.typ_id)
-                      ~params:td.typ_type.type_params
+                      ~params
                       ~body:(Option.get td.typ_type.type_manifest)
                       Subst.identity
                   in
