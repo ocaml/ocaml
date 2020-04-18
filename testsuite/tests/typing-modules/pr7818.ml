@@ -316,9 +316,9 @@ module type S' =
   end
 module Asc : sig type t = int val compare : int -> int -> int end
 module Desc : sig type t = int val compare : int -> int -> int end
-Line 15, characters 16-64:
+Line 15, characters 0-69:
 15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t
        Constructors do not match:
          E of (MkT(M.T).t, MkT(M.T).t) eq
