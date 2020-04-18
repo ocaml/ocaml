@@ -32,15 +32,20 @@ type int_conv =
   | Int_Cd | Int_Ci | Int_Cu       (*  %#d | %#i | %#u *)
 
 (* Float conversion. *)
-type float_conv =
-  | Float_f | Float_pf | Float_sf  (*  %f | %+f | % f  *)
-  | Float_e | Float_pe | Float_se  (*  %e | %+e | % e  *)
-  | Float_E | Float_pE | Float_sE  (*  %E | %+E | % E  *)
-  | Float_g | Float_pg | Float_sg  (*  %g | %+g | % g  *)
-  | Float_G | Float_pG | Float_sG  (*  %G | %+G | % G  *)
-  | Float_F                        (*  %F              *)
-  | Float_h | Float_ph | Float_sh  (*  %h | %+h | % h  *)
-  | Float_H | Float_pH | Float_sH  (*  %H | %+H | % H  *)
+type float_flag_conv =
+  | Float_flag_                    (* %[feEgGFhH] *)
+  | Float_flag_p                   (* %+[feEgGFhH] *)
+  | Float_flag_s                   (* % [feEgGFhH] *)
+type float_kind_conv =
+  | Float_f                        (*  %f | %+f | % f  *)
+  | Float_e                        (*  %e | %+e | % e  *)
+  | Float_E                        (*  %E | %+E | % E  *)
+  | Float_g                        (*  %g | %+g | % g  *)
+  | Float_G                        (*  %G | %+G | % G  *)
+  | Float_F                        (*  %F | %+F | % F  *)
+  | Float_h                        (*  %h | %+h | % h  *)
+  | Float_H                        (*  %H | %+H | % H  *)
+type float_conv = float_flag_conv * float_kind_conv
 
 (***)
 
@@ -386,7 +391,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
       int_conv * ('x, 'y) padding * ('y, int64 -> 'a) precision *
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x, 'b, 'c, 'd, 'e, 'f) fmt
-  | Float :                                                  (* %[feEgGF] *)
+  | Float :                                                  (* %[feEgGFhH] *)
       float_conv * ('x, 'y) padding * ('y, float -> 'a) precision *
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x, 'b, 'c, 'd, 'e, 'f) fmt

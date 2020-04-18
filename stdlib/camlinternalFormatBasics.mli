@@ -22,11 +22,12 @@ type int_conv =
   | Int_x | Int_Cx | Int_X | Int_CX | Int_o | Int_Co | Int_u
   | Int_Cd | Int_Ci | Int_Cu
 
-type float_conv =
-  | Float_f | Float_pf | Float_sf | Float_e | Float_pe | Float_se
-  | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
-  | Float_G | Float_pG | Float_sG | Float_F
-  | Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH
+type float_flag_conv =
+  | Float_flag_ | Float_flag_p | Float_flag_s
+type float_kind_conv =
+  | Float_f | Float_e | Float_E | Float_g | Float_G
+  | Float_F | Float_h | Float_H
+type float_conv = float_flag_conv * float_kind_conv
 
 type char_set = string
 
@@ -197,7 +198,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
     int_conv * ('x, 'y) padding * ('y, int64 -> 'a) precision *
     ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('x, 'b, 'c, 'd, 'e, 'f) fmt
-| Float :                                                  (* %[feEgGF] *)
+| Float :                                                  (* %[feEgGFhH] *)
     float_conv * ('x, 'y) padding * ('y, float -> 'a) precision *
     ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('x, 'b, 'c, 'd, 'e, 'f) fmt

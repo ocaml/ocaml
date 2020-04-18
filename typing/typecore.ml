@@ -3676,29 +3676,21 @@ and type_format loc str env =
         | Int_o  -> mk_constr "Int_o"  [] | Int_Co -> mk_constr "Int_Co" []
         | Int_u  -> mk_constr "Int_u"  [] | Int_Cd -> mk_constr "Int_Cd" []
         | Int_Ci -> mk_constr "Int_Ci" [] | Int_Cu -> mk_constr "Int_Cu" []
-      and mk_fconv fconv = match fconv with
+      and mk_fconv fconv =
+        let flag = match fst fconv with
+        | Float_flag_ -> mk_constr "Float_flag_" []
+        | Float_flag_p -> mk_constr "Float_flag_p" []
+        | Float_flag_s -> mk_constr "Float_flag_s" [] in
+        let kind = match snd fconv with
         | Float_f  -> mk_constr "Float_f"  []
-        | Float_pf -> mk_constr "Float_pf" []
-        | Float_sf -> mk_constr "Float_sf" []
         | Float_e  -> mk_constr "Float_e"  []
-        | Float_pe -> mk_constr "Float_pe" []
-        | Float_se -> mk_constr "Float_se" []
         | Float_E  -> mk_constr "Float_E"  []
-        | Float_pE -> mk_constr "Float_pE" []
-        | Float_sE -> mk_constr "Float_sE" []
         | Float_g  -> mk_constr "Float_g"  []
-        | Float_pg -> mk_constr "Float_pg" []
-        | Float_sg -> mk_constr "Float_sg" []
         | Float_G  -> mk_constr "Float_G"  []
-        | Float_pG -> mk_constr "Float_pG" []
-        | Float_sG -> mk_constr "Float_sG" []
         | Float_h  -> mk_constr "Float_h"  []
-        | Float_ph -> mk_constr "Float_ph" []
-        | Float_sh -> mk_constr "Float_sh" []
         | Float_H  -> mk_constr "Float_H"  []
-        | Float_pH -> mk_constr "Float_pH" []
-        | Float_sH -> mk_constr "Float_sH" []
-        | Float_F  -> mk_constr "Float_F"  []
+        | Float_F  -> mk_constr "Float_F"  [] in
+        mk_exp_loc (Pexp_tuple [flag; kind])
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []
         | Char_counter  -> mk_constr "Char_counter"  []
