@@ -61,7 +61,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      and the decimal-point character is removed if there is no fractional
      part remaining.
    - [h] or [H]: convert a floating-point argument to hexadecimal notation,
-     in the style [0xh.hhhh e+-dd] (hexadecimal mantissa, exponent in
+     in the style [0xh.hhhh p+-dd] (hexadecimal mantissa, exponent in
      decimal and denotes a power of 2).
    - [B]: convert a boolean argument to the string [true] or [false]
    - [b]: convert a boolean argument (deprecated; do not use in new
@@ -110,8 +110,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    The optional [precision] is a dot [.] followed by an integer
    indicating how many digits follow the decimal point in the [%f],
-   [%e], and [%E] conversions. For instance, [%.4f] prints a [float] with
-   4 fractional digits.
+   [%e], [%E], [%h], and [%H] conversions or the maximum number of
+   significant digits to appear for the [%F], [%g] and [%G] conversions.
+   For instance, [%.4f] prints a [float] with 4 fractional digits.
 
    The integer in a [width] or [precision] can also be specified as
    [*], in which case an extra integer argument is taken to specify
