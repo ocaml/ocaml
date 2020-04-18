@@ -1101,61 +1101,62 @@ and class_expr_aux cl_num val_env met_env scl =
           true
         end
       in
-      let rec type_args args omitted ty_fun ty_fun0 sargs more_sargs =
+      let rec type_args args omitted ty_fun ty_fun0 sargs =
         match ty_fun, ty_fun0 with
         | Cty_arrow (l, ty, ty_fun), Cty_arrow (_, ty0, ty_fun0)
-          when sargs <> [] || more_sargs <> [] ->
+          when sargs <> [] ->
             let name = Btype.label_name l
             and optional = Btype.is_optional l in
-            let sargs, more_sargs, arg =
-              if ignore_labels && not (Btype.is_optional l) then begin
-                match sargs, more_sargs with
-                  (l', sarg0)::_, _ ->
-                    raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l'))
-                | _, (l', sarg0)::more_sargs ->
-                    if l <> l' && l' <> Nolabel then
-                      raise(Error(sarg0.pexp_loc, val_env,
-                                  Apply_wrong_label l'))
-                    else ([], more_sargs,
-                          Some (type_argument val_env sarg0 ty ty0))
-                | _ ->
-                    assert false
-              end else try
-                let (l', sarg0, sargs, more_sargs) =
-                  try
-                    let (l', sarg0, sargs1, sargs2) =
-                      Btype.extract_label name sargs
-                    in (l', sarg0, sargs1 @ sargs2, more_sargs)
-                  with Not_found ->
-                    let (l', sarg0, sargs1, sargs2) =
-                      Btype.extract_label name more_sargs
-                    in (l', sarg0, sargs @ sargs1, sargs2)
-                in
-                if not optional && Btype.is_optional l' then
-                  Location.prerr_warning sarg0.pexp_loc
-                    (Warnings.Nonoptional_label (Printtyp.string_of_label l));
-                sargs, more_sargs,
+            let use_arg sarg l' =
+              Some (
                 if not optional || Btype.is_optional l' then
-                  Some (type_argument val_env sarg0 ty ty0)
+                  type_argument val_env sarg ty ty0
                 else
                   let ty' = extract_option_type val_env ty
                   and ty0' = extract_option_type val_env ty0 in
-                  let arg = type_argument val_env sarg0 ty' ty0' in
-                  Some (option_some val_env arg)
-              with Not_found ->
-                sargs, more_sargs,
-                if Btype.is_optional l
-                   && (List.mem_assoc Nolabel sargs
-                       || List.mem_assoc Nolabel more_sargs)
-                then
-                  Some (option_none val_env ty0 Location.none)
-                else None
+                  let arg = type_argument val_env sarg ty' ty0' in
+                  option_some val_env arg
+              )
+            in
+            let eliminate_optional_arg () =
+              Some (option_none val_env ty0 Location.none)
+            in
+            let remaining_sargs, arg =
+              if ignore_labels then begin
+                match sargs with
+                | [] -> assert false
+                | (l', sarg) :: remaining_sargs ->
+                    if name = Btype.label_name l' ||
+                       (not optional && l' = Nolabel)
+                    then
+                      (remaining_sargs, use_arg sarg l')
+                    else if
+                      optional &&
+                      not (List.exists (fun (l, _) -> name = Btype.label_name l)
+                             remaining_sargs)
+                    then
+                      (sargs, eliminate_optional_arg ())
+                    else
+                      raise(Error(sarg.pexp_loc, val_env, Apply_wrong_label l'))
+              end else
+                match Btype.extract_label name sargs with
+                | Some (l', sarg, _, remaining_sargs) ->
+                    if not optional && Btype.is_optional l' then
+                      Location.prerr_warning sarg.pexp_loc
+                        (Warnings.Nonoptional_label
+                           (Printtyp.string_of_label l));
+                    remaining_sargs, use_arg sarg l'
+                | None ->
+                    sargs,
+                    if Btype.is_optional l && List.mem_assoc Nolabel sargs then
+                      eliminate_optional_arg ()
+                    else
+                      None
             in
             let omitted = if arg = None then (l,ty0) :: omitted else omitted in
-            type_args ((l,arg)::args) omitted ty_fun ty_fun0
-              sargs more_sargs
+            type_args ((l,arg)::args) omitted ty_fun ty_fun0 remaining_sargs
         | _ ->
-            match sargs @ more_sargs with
+            match sargs with
               (l, sarg0)::_ ->
                 if omitted <> [] then
                   raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l))
@@ -1169,10 +1170,7 @@ and class_expr_aux cl_num val_env met_env scl =
       in
       let (args, cty) =
         let (_, ty_fun0) = Ctype.instance_class [] cl.cl_type in
-        if ignore_labels then
-          type_args [] [] cl.cl_type ty_fun0 [] sargs
-        else
-          type_args [] [] cl.cl_type ty_fun0 sargs []
+        type_args [] [] cl.cl_type ty_fun0 sargs
       in
       rc {cl_desc = Tcl_apply (cl, args);
           cl_loc = scl.pcl_loc;

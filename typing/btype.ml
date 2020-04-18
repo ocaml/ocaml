@@ -691,10 +691,12 @@ let prefixed_label_name = function
   | Optional s -> "?" ^ s
 
 let rec extract_label_aux hd l = function
-    [] -> raise Not_found
+  | [] -> None
   | (l',t as p) :: ls ->
-      if label_name l' = l then (l', t, List.rev hd, ls)
-      else extract_label_aux (p::hd) l ls
+      if label_name l' = l then
+        Some (l', t, hd <> [], List.rev_append hd ls)
+      else
+        extract_label_aux (p::hd) l ls
 
 let extract_label l ls = extract_label_aux [] l ls
 

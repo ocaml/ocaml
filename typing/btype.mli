@@ -205,8 +205,11 @@ val prefixed_label_name : arg_label -> label
 
 val extract_label :
     label -> (arg_label * 'a) list ->
-    arg_label * 'a * (arg_label * 'a) list * (arg_label * 'a) list
-    (* actual label, value, before list, after list *)
+    (arg_label * 'a * bool * (arg_label * 'a) list) option
+(* actual label,
+   value,
+   whether (label, value) was at the head of the list,
+   list without the extracted (label, value) *)
 
 (**** Utilities for backtracking ****)
 
