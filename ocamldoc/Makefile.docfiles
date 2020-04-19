@@ -13,14 +13,12 @@
 #**************************************************************************
 
 # Define the lists of mli file used by ocamldoc to generate the stdlib
-# + otherlibs + compilerlibs + plugin hooks documentation
+# + otherlibs + compilerlibs documentation
 
 include $(SRC)/Makefile.config
 include $(SRC)/stdlib/StdlibModules
 PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
 UTILS_MLIS := $(wildcard $(SRC)/utils/*.mli)
-TYPING_MLIS := $(SRC)/typing/typemod.mli
-BYTECOMP_MLIS := $(SRC)/bytecomp/simplif.mli
 STR_MLIS = $(addprefix $(SRC)/otherlibs/str/, str.mli)
 UNIX_MLIS = $(addprefix $(SRC)/otherlibs/unix/, unix.mli unixLabels.mli)
 GRAPHICS_MLIS = $(addprefix $(SRC)/otherlibs/graph/, graphics.mli graphicsX11.mli)
@@ -59,8 +57,6 @@ STDLIB_MLIS=\
 COMPILERLIBS_MLIS=\
   $(PARSING_MLIS) \
   $(UTILS_MLIS) \
-  $(TYPING_MLIS) \
-  $(BYTECOMP_MLIS) \
   $(DRIVER_MLIS)
 
 DOC_STDLIB_TEXT = $(SRC)/stdlib/ocaml_operators.mld

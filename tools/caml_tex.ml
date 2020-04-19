@@ -132,10 +132,12 @@ module Toplevel = struct
     if startchar >= 0 then
       locs := (startchar, endchar) :: !locs
 
-  (** Record the main location instead of printing it *)
+  (** Record locations in the main error and suberrors without printing them *)
   let printer_register_locs =
     { Location.batch_mode_printer with
-      pp_main_loc = (fun _ _ _ loc -> register_loc loc) }
+      pp_main_loc = (fun _ _ _ loc -> register_loc loc);
+      pp_submsg_loc = (fun _ _ _ loc -> register_loc loc);
+    }
 
   (** Capture warnings and keep them in a list *)
   let warnings = ref []
@@ -162,7 +164,7 @@ module Toplevel = struct
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
-    Compmisc.init_path false;
+    Compmisc.init_path ();
     try
       Toploop.initialize_toplevel_env ();
       Sys.interactive := false

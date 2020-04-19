@@ -38,6 +38,7 @@ module Native = struct
   external ndl_run : handle -> string -> unit = "caml_natdynlink_run"
   external ndl_getmap : unit -> global_map list = "caml_natdynlink_getmap"
   external ndl_globals_inited : unit -> int = "caml_natdynlink_globals_inited"
+  external ndl_loadsym : string -> Obj.t = "caml_natdynlink_loadsym"
 
   module Unit_header = struct
     type t = Cmx_format.dynunit
@@ -94,6 +95,11 @@ module Native = struct
       raise (DT.Error (Not_a_bytecode_file filename))
     end;
     handle, header.dynu_units
+
+  let unsafe_get_global_value ~bytecode_or_asm_symbol =
+    match ndl_loadsym bytecode_or_asm_symbol with
+    | exception _ -> None
+    | obj -> Some obj
 
   let finish _handle = ()
 end

@@ -18,9 +18,10 @@
 \camlexample{toplevel}
 \caml\camlinput\?[@@@warning "+A"];;
 \endcamlinput\endcaml
-\caml\camlinput\?1 + \<2.\> ;;
+\caml\camlinput\?1 \<+\> \<2.\> ;;
 \endcamlinput\camlerror\:Error: This expression has type float but an expression was expected of type
 \:         int
+\:  Hint: Did you mean to use \textasciigrave\-+.\textquotesingle\-?
 \endcamlerror\endcaml
 \caml\camlinput\?let f \<x\> = () ;;
 \endcamlinput\camlwarn\:Warning 27: unused variable x.

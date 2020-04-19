@@ -31,16 +31,16 @@ let _dummy = (Ok (Obj.magic 0), Err "")
 
 external ndl_run_toplevel: string -> string -> res
   = "caml_natdynlink_run_toplevel"
-external ndl_loadsym: string -> Obj.t = "caml_natdynlink_loadsym"
 
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
-  try ndl_loadsym sym
-  with _ -> fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
+  match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym with
+  | None ->
+    fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
+  | Some obj -> obj
 
 let need_symbol sym =
-  try ignore (ndl_loadsym sym); false
-  with _ -> true
+  Option.is_none (Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym)
 
 let dll_run dll entry =
   match (try Result (Obj.magic (ndl_run_toplevel dll entry))
@@ -241,7 +241,7 @@ let backend = (module Backend : Backend_intf.S)
 
 let load_lambda ppf ~module_ident ~required_globals lam size =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
-  let slam = Simplif.simplify_lambda "//toplevel//" lam in
+  let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
 
   let dll =
@@ -437,9 +437,6 @@ let preprocess_phrase ppf phr =
         let str =
           Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
         in
-        let str =
-          Pparse.ImplementationHooks.apply_hooks
-            { Misc.sourcefile = "//toplevel//" } str in
         Ptop_def str
     | phr -> phr
   in
@@ -538,7 +535,7 @@ let refill_lexbuf buffer len =
 
 let _ =
   Sys.interactive := true;
-  Compmisc.init_path true;
+  Compmisc.init_path ();
   Clflags.dlcode := true;
   ()
 
@@ -635,7 +632,7 @@ let hack_argv new_argv =
 let run_script ppf name args =
   hack_argv args;
   Arg.current := 0;
-  Compmisc.init_path ~dir:(Filename.dirname name) true;
+  Compmisc.init_path ~dir:(Filename.dirname name) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;

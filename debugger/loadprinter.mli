@@ -26,7 +26,7 @@ val remove_printer : Longident.t -> unit
 (* Error report *)
 
 type error =
-  | Load_failure of Compdynlink.error
+  | Load_failure of Dynlink.error
   | Unbound_identifier of Longident.t
   | Unavailable_module of string * Longident.t
   | Wrong_type of Longident.t

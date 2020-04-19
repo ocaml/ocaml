@@ -68,7 +68,6 @@ let absname = ref false                 (* -absname *)
 let annotations = ref false             (* -annot *)
 let binary_annotations = ref false      (* -annot *)
 and use_threads = ref false             (* -thread *)
-and use_vmthreads = ref false           (* -vmthread *)
 and noassert = ref false                (* -noassert *)
 and verbose = ref false                 (* -verbose *)
 and noversion = ref false               (* -no-version *)
@@ -79,6 +78,7 @@ and noinit = ref false                  (* -noinit *)
 and open_modules = ref []               (* -open *)
 and use_prims = ref ""                  (* -use-prims ... *)
 and use_runtime = ref ""                (* -use-runtime ... *)
+and plugin = ref false                  (* -plugin ... *)
 and principal = ref false               (* -principal *)
 and real_paths = ref true               (* -short-paths *)
 and recursive_types = ref false         (* -rectypes *)
@@ -143,6 +143,9 @@ let flambda_invariant_checks =
   ref Config.with_flambda_invariants    (* -flambda-(no-)invariants *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
+
+let insn_sched_default = true
+let insn_sched = ref insn_sched_default (* -[no-]insn-sched *)
 
 let std_include_flag prefix =
   if !no_std_include then ""
@@ -457,7 +460,7 @@ let add_arguments loc args =
     try
       let loc2 = String.Map.find arg_name !arg_names in
       Printf.eprintf
-        "Warning: plugin argument %s is already defined:\n" arg_name;
+        "Warning: compiler argument %s is already defined:\n" arg_name;
       Printf.eprintf "   First definition: %s\n" loc2;
       Printf.eprintf "   New definition: %s\n" loc;
     with Not_found ->

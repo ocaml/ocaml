@@ -9,6 +9,13 @@ Working version
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
+### Compiler user-interface and warnings:
+
+* GPR#2276: Remove support for compiler plugins and hooks (also adds
+  [Dynlink.unsafe_get_global_value])
+  (Mark Shinwell, Xavier Clerc, review by Nicolás Ojeda Bär,
+  Florian Angeletti, David Allsopp and Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1579: Add a separate types for clambda primitives
@@ -59,15 +66,25 @@ Working version
 
 ### Other libraries:
 
+- MPR#7903, GPR#2306: Make Thread.delay interruptible by signals again
+  (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
+
 - GPR#2248: Unix alloc_sockaddr: Fix read of uninitialized memory for an
   unbound Unix socket. Add support for receiving abstract (Linux) socket paths.
   (Tim Cuthbertson, review by Sébastien Hinderer and Jérémie Dimino)
+
+- GPR#2289: Delete the vmthreads library. This library was deprecated in 4.08.0.
+  (Jérémie Dimino)
 
 ### Compiler user-interface and warnings:
 
 - GPR#2301: Hint on type error on int literal
   (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
   Gabriel Scherer and Armaël Guéneau)
+
+- GPR#2307: Hint on type error on int's operators
+  (Jules Aguillon, with help from Armaël Guéneau,
+   review by Gabriel Scherer and Florian Angeletti)
 
 ### Bug fixes:
 
@@ -447,6 +464,10 @@ OCaml 4.08.0
 - MPR#6242, GPR#2143: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
+- GPR#2082: New options [-insn-sched] and [-no-insn-sched] to control
+  instruction scheduling.
+  (Mark Shinwell, review by Damien Doligez)
+
 - GPR#2239: Fix match miscompilation with flambda
   (Leo White, review by Alain Frisch)
 
@@ -523,6 +544,10 @@ OCaml 4.08.0
   (Damien Doligez, review by Sébastien Hinderer and David Allsopp)
 
 ### Manual and documentation:
+
+- MPR#7548: printf example in the tutorial part of the manual
+ (Kostikova Oxana, rewiew by Gabriel Scherer, Florian Angeletti,
+ Marcello Seri and Armaël Guéneau)
 
 - MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
   (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
@@ -635,6 +660,9 @@ OCaml 4.08.0
 - GPR#2266: ensure Cygwin ports configure with `EXE=.exe`, or the compiler is
   unable to find the camlheader files (subtle regression of GPR#2139/2041)
   (David Allsopp, report and review by Sébastien Hinderer)
+
+- MPR#7919, GPR#2311: Fix assembler detection in configure
+  (Sébastien Hinderer, review by David Allsopp)
 
 ### Internal/compiler-libs changes:
 

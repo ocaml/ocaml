@@ -221,19 +221,10 @@ let parse_file ~tool_name invariant_fun parse kind sourcefile =
        file_aux ~tool_name inputfile parse invariant_fun kind)
     ~always:(fun () -> remove_preprocessed inputfile)
 
-module ImplementationHooks = Misc.MakeHooks(struct
-    type t = Parsetree.structure
-  end)
-module InterfaceHooks = Misc.MakeHooks(struct
-    type t = Parsetree.signature
-  end)
-
 let parse_implementation ~tool_name sourcefile =
   parse_file ~tool_name Ast_invariants.structure
       (parse Structure) Structure sourcefile
-  |> ImplementationHooks.apply_hooks { Misc.sourcefile }
 
 let parse_interface ~tool_name sourcefile =
   parse_file ~tool_name Ast_invariants.signature
     (parse Signature) Signature sourcefile
-  |> InterfaceHooks.apply_hooks { Misc.sourcefile }

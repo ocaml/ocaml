@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val init_path : ?dir:string -> bool -> unit
+val init_path : ?dir:string -> unit -> unit
 val initial_env : unit -> Env.t
 
 (* Support for flags that can also be set from an environment variable *)

@@ -355,6 +355,8 @@ module Make (P : Dynlink_platform_intf.S) = struct
   let loadfile filename = load false filename
   let loadfile_private filename = load true filename
 
+  let unsafe_get_global_value = P.unsafe_get_global_value
+
   let is_native = P.is_native
   let adapt_filename = P.adapt_filename
 end

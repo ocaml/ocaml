@@ -5,8 +5,7 @@ This chapter describes the OCaml front-end, which declares the abstract
 syntax tree used by the compiler, provides a way to parse, print
 and pretty-print OCaml code, and ultimately allows to write abstract
 syntax tree preprocessors invoked via the {\tt -ppx} flag (see chapters~\ref{c:camlc}
-and~\ref{c:nativecomp}) and plugins invoked via the {\tt -plugin} flag
-(see chapter~\ref{c:plugins}).
+and~\ref{c:nativecomp}).
 
 It is important to note that the exported front-end interface follows the evolution of the OCaml language and implementation, and thus does not provide {\bf any} backwards compatibility guarantees.
 
@@ -55,20 +54,4 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 \input{Parsetree.tex}
 \input{Pprintast.tex}
 % \input{Printast.tex}
-\fi
-
-\ifouthtml
-The following modules provides hooks for compiler plugins:
-\begin{links}
-\item \ahref{compilerlibref/Pparse.html}{Module \texttt{Pparse}: OCaml parser driver}
-\item \ahref{compilerlibref/Typemod.html}{Module \texttt{Typemod}:
-OCaml module type checking}
-\item \ahref{compilerlibref/Simplif.html}{Module \texttt{Simplif}: Lambda simplification}
-\item \ahref{compilerlibref/Clflags.html}{Module \texttt{Clflags}: command line flags}
-\end{links}
-\else
-\input{Pparse.tex}
-\input{Typemod.tex}
-\input{Simplif.tex}
-\input{Clflags.tex}
 \fi

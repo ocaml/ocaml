@@ -349,6 +349,9 @@ in a slight expansion in code size. Higher values for the
 option cause larger and larger functions to become candidate for
 inlining, but can result in a serious increase in code size.
 .TP
+.B \-insn\-sched
+Enables the instruction scheduling pass in the compiler backend.
+.TP
 .BI \-intf \ filename
 Compile the file
 .I filename
@@ -425,6 +428,9 @@ and pass the correct C libraries and options on the command line.
 .B \-nodynlink
 Allow the compiler to use some optimizations that are valid only for code
 that is never dynlinked.
+.TP
+.B \-no\-insn\-sched
+Disables the instruction scheduling pass in the compiler backend.
 .TP
 .B -nostdlib
 Do not automatically add the standard library directory to the list of
@@ -532,15 +538,6 @@ with
 See
 .IR "The OCaml user's manual" ,
 chapter "Native-code compilation" for more details.
-.TP
-.BI \-plugin \ plugin
-Dynamically load the code of the given
-.I plugin
-(a .cmo, .cma or .cmxs file) in the compiler. The plugin must exist in
-the same kind of code as the compiler (ocamlopt.byte must load bytecode
-plugins, while ocamlopt.opt must load native code plugins), and
-extension adaptation is done automatically for .cma files (to .cmxs files
-if the compiler is compiled in native code).
 .TP
 .BI \-pp \ command
 Cause the compiler to call the given

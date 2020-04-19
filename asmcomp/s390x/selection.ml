@@ -105,15 +105,15 @@ method select_logical op lo hi = function
       (Iintop op, args)
 
 
-method! insert_op_debug op dbg rs rd =
+method! insert_op_debug env op dbg rs rd =
   try
     let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
-    self#insert_moves rs rsrc;
-    self#insert_debug (Iop op) dbg rsrc rdst;
-    self#insert_moves rdst rd;
+    self#insert_moves env rs rsrc;
+    self#insert_debug env (Iop op) dbg rsrc rdst;
+    self#insert_moves env rdst rd;
     rd
   with Use_default ->
-    super#insert_op_debug op dbg rs rd
+    super#insert_op_debug env op dbg rs rd
 
 end
 
