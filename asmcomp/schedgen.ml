@@ -384,7 +384,7 @@ method schedule_fundecl f =
       self#reschedule ready_queue 0 (schedule i try_nesting)
     end in
 
-  if f.fun_fast then begin
+  if f.fun_fast && !Clflags.insn_sched then begin
     let new_body = schedule f.fun_body 0 in
     clear_code_dag();
     { fun_name = f.fun_name;

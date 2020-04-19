@@ -105,7 +105,7 @@ let main () =
       Filename.check_suffix filename ".cmt" ||
         Filename.check_suffix filename ".cmti"
     then begin
-      Compmisc.init_path false;
+      Compmisc.init_path ();
       let cmt = Cmt_format.read_cmt filename in
       if !gen_annot then
         Cmt2annot.gen_annot ~save_cmt_info: !save_cmt_info

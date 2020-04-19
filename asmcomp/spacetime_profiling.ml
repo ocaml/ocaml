@@ -352,7 +352,7 @@ class virtual instruction_selection = object (self)
       disable_instrumentation <- false;
       let node = Lazy.force !spacetime_node_ident in
       let node_reg = Selectgen.env_find node env in
-      self#insert_moves node_temp_reg node_reg
+      self#insert_moves env node_temp_reg node_reg
     end
 
   method! emit_blockheader env n dbg =
@@ -450,7 +450,7 @@ class virtual instruction_selection = object (self)
         | None -> assert false
         | Some (node_hole, reg) -> node_hole, reg
       in
-      self#insert_moves [| Proc.loc_spacetime_node_hole |] node_hole_reg;
+      self#insert_moves env [| Proc.loc_spacetime_node_hole |] node_hole_reg;
       self#emit_prologue f ~node_hole ~env;
       match !reverse_shape with
       | [] -> None

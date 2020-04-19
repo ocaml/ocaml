@@ -245,6 +245,18 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_insn_sched f =
+  "-insn-sched", Arg.Unit f,
+  Printf.sprintf " Run the instruction scheduling pass%s"
+    (if Clflags.insn_sched_default then " (default)" else "")
+;;
+
+let mk_no_insn_sched f =
+  "-no-insn-sched", Arg.Unit f,
+  Printf.sprintf " Do not run the instruction scheduling pass%s"
+    (if not Clflags.insn_sched_default then " (default)" else "")
+;;
+
 let mk_keep_docs f =
   "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
 ;;
@@ -413,7 +425,7 @@ let mk_ppx f =
 
 let mk_plugin f =
   "-plugin", Arg.String f,
-  "<plugin>  Load dynamic plugin <plugin>"
+  "<plugin>  (no longer supported)"
 ;;
 
 let mk_principal f =
@@ -564,8 +576,7 @@ let mk_no_version f =
 
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
-  " (deprecated) Generate code that supports the threads library\n\
-  \     with VM-level scheduling"
+  "  (no longer supported)"
 ;;
 
 let mk_vnum f =
@@ -1003,6 +1014,8 @@ module type Optcommon_options = sig
   val _no_unbox_specialised_args : unit -> unit
   val _o2 : unit -> unit
   val _o3 : unit -> unit
+  val _insn_sched : unit -> unit
+  val _no_insn_sched : unit -> unit
 
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
@@ -1281,6 +1294,7 @@ struct
     mk_inline_indirect_cost F._inline_indirect_cost;
     mk_inline_lifting_benefit F._inline_lifting_benefit;
     mk_inlining_report F._inlining_report;
+    mk_insn_sched F._insn_sched;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_docs F._keep_docs;
@@ -1299,6 +1313,7 @@ struct
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
+    mk_no_insn_sched F._no_insn_sched;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_nopervasives F._nopervasives;

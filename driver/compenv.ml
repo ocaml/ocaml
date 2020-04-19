@@ -179,8 +179,6 @@ let float_setter ppf name option s =
          ("OCAMLPARAM", Printf.sprintf "non-float parameter for \"%s\"" name))
 *)
 
-let load_plugin = ref (fun _ -> ())
-
 let check_bool ppf name s =
   match s with
   | "0" -> false
@@ -341,6 +339,8 @@ let read_one_param ppf position name v =
       set "flambda-invariants" [ flambda_invariant_checks ] v
   | "linscan" ->
       set "linscan" [ use_linscan ] v
+  | "insn-sched" -> set "insn-sched" [ insn_sched ] v
+  | "no-insn-sched" -> clear "insn-sched" [ insn_sched ] v
 
   (* color output *)
   | "color" ->
@@ -427,8 +427,6 @@ let read_one_param ppf position name v =
   | "timings" | "profile" ->
      let if_on = if name = "timings" then [ `Time ] else Profile.all_columns in
      profile_columns := if check_bool ppf name v then if_on else []
-
-  | "plugin" -> !load_plugin v
 
   | "stop-after" ->
     let module P = Clflags.Compiler_pass in

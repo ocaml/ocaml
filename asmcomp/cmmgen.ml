@@ -115,6 +115,10 @@ let string_header len =
 let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
+let caml_nativeint_ops = "caml_nativeint_ops"
+let caml_int32_ops = "caml_int32_ops"
+let caml_int64_ops = "caml_int64_ops"
+
 
 let alloc_float_header dbg = Cblockheader (float_header, dbg)
 let alloc_floatarray_header len dbg = Cblockheader (floatarray_header len, dbg)
@@ -969,23 +973,23 @@ and emit_string_constant s cont =
 and emit_boxed_int32_constant n cont =
   let n = Nativeint.of_int32 n in
   if size_int = 8 then
-    Csymbol_address "caml_int32_ops" :: Cint32 n :: Cint32 0n :: cont
+    Csymbol_address caml_int32_ops :: Cint32 n :: Cint32 0n :: cont
   else
-    Csymbol_address "caml_int32_ops" :: Cint n :: cont
+    Csymbol_address caml_int32_ops :: Cint n :: cont
 
 and emit_boxed_nativeint_constant n cont =
-  Csymbol_address "caml_nativeint_ops" :: Cint n :: cont
+  Csymbol_address caml_nativeint_ops :: Cint n :: cont
 
 and emit_boxed_int64_constant n cont =
   let lo = Int64.to_nativeint n in
   if size_int = 8 then
-    Csymbol_address "caml_int64_ops" :: Cint lo :: cont
+    Csymbol_address caml_int64_ops :: Cint lo :: cont
   else begin
     let hi = Int64.to_nativeint (Int64.shift_right n 32) in
     if big_endian then
-      Csymbol_address "caml_int64_ops" :: Cint hi :: Cint lo :: cont
+      Csymbol_address caml_int64_ops :: Cint hi :: Cint lo :: cont
     else
-      Csymbol_address "caml_int64_ops" :: Cint lo :: Cint hi :: cont
+      Csymbol_address caml_int64_ops :: Cint lo :: Cint hi :: cont
   end
 
 (* Boxed integers *)
@@ -1003,10 +1007,6 @@ let box_int_constant sym bi n =
       let n = Int64.of_nativeint n in
       emit_block sym Local boxedint64_header
         (emit_boxed_int64_constant n [])
-
-let caml_nativeint_ops = "caml_nativeint_ops"
-let caml_int32_ops = "caml_int32_ops"
-let caml_int64_ops = "caml_int64_ops"
 
 let operations_boxed_int bi =
   match bi with

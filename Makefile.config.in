@@ -73,8 +73,12 @@ AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 # our own symbols):
 OC_LDFLAGS=@oc_ldflags@
 
-### How to invoke the C preprocessor
+### How to invoke the C preprocessor through the C compiler
 CPP=@CPP@
+
+### How to invoke the C preprocessor directly, just to expand macros
+### (at the moment this is used only in one test in the testsuite)
+DIRECT_CPP=@DIRECT_CPP@
 
 ### How to invoke ranlib
 RANLIB=@RANLIB@
@@ -161,7 +165,6 @@ CC_PROFILE=@cc_profile@
 # Currently available:
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
-#       threads         Lightweight concurrent processes
 #       systhreads      Same as threads, requires POSIX threads
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode

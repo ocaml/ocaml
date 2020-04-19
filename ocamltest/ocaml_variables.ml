@@ -206,7 +206,7 @@ let ocaml_script_as_argument =
     "Whether the ocaml script should be passed as argument or on stdin")
 
 let plugins =
-  Variables.make ( "plugins", "plugins for ocamlc,ocamlopt or ocamldoc" )
+  Variables.make ( "plugins", "plugins for ocamldoc" )
 
 let shared_library_cflags =
   Variables.make ("shared_library_cflags",

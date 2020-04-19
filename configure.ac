@@ -73,6 +73,7 @@ AC_SUBST([CC])
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+AC_SUBST([DIRECT_CPP])
 AC_SUBST([ac_tool_prefix])
 AC_SUBST([exeext])
 AC_SUBST([OBJEXT])
@@ -224,9 +225,10 @@ AC_ARG_ENABLE([instrumented-runtime],
   [],
   [enable_instrumented_runtime=no])
 
-AC_ARG_ENABLE([vmthreads],
-  [AS_HELP_STRING([--disable-vmthreads],
-    [disable the bytecode threads library])])
+AC_ARG_ENABLE([vmthreads], [],
+  [AC_MSG_ERROR([The vmthreads library is no longer available. \
+It was deleted in OCaml 4.09.])],
+  [])
 
 AC_ARG_ENABLE([systhreads],
   [AS_HELP_STRING([--disable-systhreads],
@@ -408,12 +410,22 @@ AS_CASE([$host],
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2) && ${RANLIB} \$(1)"
   ])
 
-# C preprocessor: we do not rely on AC_PROG_CPP because it returns
-# 'fcc -E' while we really need cpp
-AC_CHECK_TOOL([DIRECT_CPP],[cpp])
+# Determine how to call the C preprocessor directly.
+# Most of the time, calling the C preprocessor through the C compiler is
+# desirable and even important.
+# In some cases, though, we want to use the C preprocessor only to
+# expand macros. In such cases, it is much more convenient to be able
+# to invoke it directly rather than through the C compiler, for instance
+# because, when invoked directly, the C preprocessor does not require
+# to be invoked on a file with a '.c' extension
+# We thus figure out how to invoke the C preprocessor directly but
+# let the CPP variable untouched, except for the MSVC port where we set it
+# manually to make sure the backward compatibility is preserved
 AS_CASE([$host],
-  [*-pc-windows], [CPP="$CC -nologo -EP"],
-#  [CPP=$DIRECT_CPP])
+  [*-pc-windows],
+    [DIRECT_CPP="$CC -nologo -EP";
+    CPP="$DIRECT_CPP"],
+#   [AC_CHECK_TOOL([DIRECT_CPP],[cpp])])
 #  TODO: why can we not use $DIRECT_CPP in multicore, fix this?
   [CPP="$CC -E -P"])
 
@@ -943,7 +955,7 @@ AS_CASE(["$arch,$system"],
   [amd64,win64],
     [default_as="ml64 -nologo -Cp -c -Fo"],
   [amd64,macosx],
-    [AS_CASE([$ccfamily],
+    [AS_CASE([$ocaml_cv_cc_vendor],
       [clang-*],
         [default_as='clang -arch x86_64 -Wno-trigraphs -c'
         default_aspp='clang -arch x86_64 -Wno-trigraphs -c'],
@@ -980,7 +992,7 @@ AS_CASE(["$arch,$system"],
     default_aspp="${toolpref}cc -c"],
   [amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd],
     [default_as="${toolpref}as"
-    AS_CASE([$ccfamily],
+    AS_CASE([$ocaml_cv_cc_vendor],
       [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
       [default_aspp="${toolpref}gcc -c"])])
 
@@ -1495,17 +1507,6 @@ AS_IF([test x"$enable_systhreads" = "xno"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
-
-## Determine if the bytecode thread library is supported
-
-AS_IF([test x"$enable_vmthreads" = "xno"],
-  [AC_MSG_NOTICE([the bytecode threads library is disabled])],
-  [AS_IF([$select && $setitimer && $gettimeofday && $wait],
-    [otherlibraries="$otherlibraries threads"
-    AC_MSG_NOTICE([the bytecode threads library is supported])],
-    [AS_IF([test x"$enable_vmthreads" = "xyes"],
-      [AC_MSG_NOTICE([the bytecode threads library is not available])],
-      [AC_MSG_NOTICE([the bytecode threads library is not supported])])])])
 
 ## XWindow
 

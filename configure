@@ -643,7 +643,6 @@ DIRECT_LD
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
-DIRECT_CPP
 CPP
 LT_SYS_LIBRARY_PATH
 OTOOL64
@@ -778,6 +777,7 @@ libext
 OBJEXT
 exeext
 ac_tool_prefix
+DIRECT_CPP
 CC
 VERSION
 CONFIGURE_ARGS
@@ -1499,7 +1499,7 @@ Optional Features:
   --enable-debugger       build the debugger [default=auto]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
-  --disable-vmthreads     disable the bytecode threads library
+
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-graph-lib     do not build the graphics library
   --disable-str-lib       do not build the str library
@@ -2788,6 +2788,7 @@ VERSION=4.09.0+multicore_dev0
 
 
 
+
  # TODO: rename this variable
 
 
@@ -3012,7 +3013,8 @@ fi
 
 # Check whether --enable-vmthreads was given.
 if test "${enable_vmthreads+set}" = set; then :
-  enableval=$enable_vmthreads;
+  enableval=$enable_vmthreads; as_fn_error $? "The vmthreads library is no longer available. \
+It was deleted in OCaml 4.09." "$LINENO" 5
 fi
 
 
@@ -12209,105 +12211,23 @@ fi
    ;;
 esac
 
-# C preprocessor: we do not rely on AC_PROG_CPP because it returns
-# 'fcc -E' while we really need cpp
-if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}cpp", so it can be a program name with args.
-set dummy ${ac_tool_prefix}cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_DIRECT_CPP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$DIRECT_CPP"; then
-  ac_cv_prog_DIRECT_CPP="$DIRECT_CPP" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_DIRECT_CPP="${ac_tool_prefix}cpp"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-DIRECT_CPP=$ac_cv_prog_DIRECT_CPP
-if test -n "$DIRECT_CPP"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DIRECT_CPP" >&5
-$as_echo "$DIRECT_CPP" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_prog_DIRECT_CPP"; then
-  ac_ct_DIRECT_CPP=$DIRECT_CPP
-  # Extract the first word of "cpp", so it can be a program name with args.
-set dummy cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_ac_ct_DIRECT_CPP+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$ac_ct_DIRECT_CPP"; then
-  ac_cv_prog_ac_ct_DIRECT_CPP="$ac_ct_DIRECT_CPP" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_DIRECT_CPP="cpp"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-ac_ct_DIRECT_CPP=$ac_cv_prog_ac_ct_DIRECT_CPP
-if test -n "$ac_ct_DIRECT_CPP"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_DIRECT_CPP" >&5
-$as_echo "$ac_ct_DIRECT_CPP" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_ct_DIRECT_CPP" = x; then
-    DIRECT_CPP=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    DIRECT_CPP=$ac_ct_DIRECT_CPP
-  fi
-else
-  DIRECT_CPP="$ac_cv_prog_DIRECT_CPP"
-fi
-
+# Determine how to call the C preprocessor directly.
+# Most of the time, calling the C preprocessor through the C compiler is
+# desirable and even important.
+# In some cases, though, we want to use the C preprocessor only to
+# expand macros. In such cases, it is much more convenient to be able
+# to invoke it directly rather than through the C compiler, for instance
+# because, when invoked directly, the C preprocessor does not require
+# to be invoked on a file with a '.c' extension
+# We thus figure out how to invoke the C preprocessor directly but
+# let the CPP variable untouched, except for the MSVC port where we set it
+# manually to make sure the backward compatibility is preserved
 case $host in #(
   *-pc-windows) :
-    CPP="$CC -nologo -EP" ;; #(
+    DIRECT_CPP="$CC -nologo -EP";
+    CPP="$DIRECT_CPP" ;; #(
   *) :
-    #  [CPP=$DIRECT_CPP])
+    #   [AC_CHECK_TOOL([DIRECT_CPP],[cpp])])
 #  TODO: why can we not use $DIRECT_CPP in multicore, fix this?
   CPP="$CC -E -P" ;;
 esac
@@ -13816,7 +13736,7 @@ case "$arch,$system" in #(
   amd64,win64) :
     default_as="ml64 -nologo -Cp -c -Fo" ;; #(
   amd64,macosx) :
-    case $ccfamily in #(
+    case $ocaml_cv_cc_vendor in #(
   clang-*) :
     default_as='clang -arch x86_64 -Wno-trigraphs -c'
         default_aspp='clang -arch x86_64 -Wno-trigraphs -c' ;; #(
@@ -13858,7 +13778,7 @@ esac ;; #(
     default_aspp="${toolpref}cc -c" ;; #(
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd) :
     default_as="${toolpref}as"
-    case $ccfamily in #(
+    case $ocaml_cv_cc_vendor in #(
   clang-*) :
     default_aspp="${toolpref}clang -c -Wno-trigraphs" ;; #(
   *) :
@@ -16063,27 +15983,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
 esac
-fi
-
-## Determine if the bytecode thread library is supported
-
-if test x"$enable_vmthreads" = "xno"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is disabled" >&5
-$as_echo "$as_me: the bytecode threads library is disabled" >&6;}
-else
-  if $select && $setitimer && $gettimeofday && $wait; then :
-  otherlibraries="$otherlibraries threads"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is supported" >&5
-$as_echo "$as_me: the bytecode threads library is supported" >&6;}
-else
-  if test x"$enable_vmthreads" = "xyes"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not available" >&5
-$as_echo "$as_me: the bytecode threads library is not available" >&6;}
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not supported" >&5
-$as_echo "$as_me: the bytecode threads library is not supported" >&6;}
-fi
-fi
 fi
 
 ## XWindow

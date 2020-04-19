@@ -182,5 +182,5 @@ let main () =
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then exit 2;
-  Compmisc.init_path false;
+  Compmisc.init_path ();
   Toploop.loop Format.std_formatter

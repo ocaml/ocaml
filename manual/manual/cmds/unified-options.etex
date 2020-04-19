@@ -569,17 +569,6 @@ contents can be referenced as "P.A", "P.B" and "P.C" in the remainder
 of the program.
 }%comp
 
-
-\notop{%
-\item["-plugin" \var{plugin}]
-Dynamically load the code of the given \var{plugin}
-(a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
-the same kind of code as the compiler ({\machine \ocamlx.byte} must load
-bytecode plugins, while {\machine \ocamlx.opt} must load native code plugins),
-and extension adaptation is done automatically for ".cma" files (to ".cmxs"
-files if the compiler is compiled in native code).
-}%notop
-
 \notop{%
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
@@ -722,13 +711,6 @@ Print all external commands before they are executed,
 \nat{in particular invocations of the assembler, C compiler, and linker.}
 \comp{in particular invocations of the C compiler and linker in "-custom" mode.}
 Useful to debug C library problems.
-
-\comp{%
-\item["-vmthread"]
-Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
-in combination with the VM-level "threads" library described in
-chapter~\ref{c:threads}.
-}%comp
 
 \notop{%
 \item["-version" or "-vnum"]
