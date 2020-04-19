@@ -250,10 +250,10 @@ let find_dyn_offset filename =
     Fun.protect
       ~finally:(fun () -> remove_file tempfile)
       (fun () ->
-         let rc = Sys.command (sprintf "%s %s > %s"
-                                 (Filename.quote helper)
-                                 (Filename.quote filename)
-                                 tempfile) in
+         let rc =
+           Sys.command
+             (Filename.quote_command helper ~stdout:tempfile [filename])
+         in
          if rc <> 0 then failwith "cannot read";
          let tc = Scanf.Scanning.from_file tempfile in
          Fun.protect
