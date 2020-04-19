@@ -1,5 +1,4 @@
 (* TEST
-   exit_status = "-6"
 *)
 
 let debug = false

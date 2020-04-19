@@ -88,11 +88,12 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
     At the start of mark phase, (1) and (2) are empty.
 
     In mark phase:
-      - the ephemerons in (1) have a data alive or none
-        (nb: new ephemerons are added in this part by weak.c)
-      - the ephemerons in (2) have at least a white key or are white
-        if ephe_list_pure is true, otherwise they are in an unknown state and
-        must be checked again.
+      - An ephemeron in (1) have a data alive (grey/black if in the heap)
+        or none (nb: new ephemerons are added in this part by weak.c)
+      - An ephemeron in (2):
+         - is in any state if ephe_list_pure is false
+         - otherwise has at least a white key or is white or its data is black or none.
+           The third case can happen only using a set_* of weak.c
       - the ephemerons in (3) are in an unknown state and must be checked
 
     At the end of mark phase, (3) is empty and ephe_list_pure is true.
@@ -111,7 +112,7 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
     - the ephemerons in (3) should be cleaned or removed if white.
 
  */
-static int ephe_list_pure;
+int ephe_list_pure;
 /** The ephemerons is pure if since the start of its iteration
     no value have been darkened. */
 static value *ephes_checked_if_pure;
