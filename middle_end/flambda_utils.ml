@@ -120,7 +120,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal a1 a2
       && Misc.Stdlib.List.equal
         (fun (s1, e1) (s2, e2) -> String.equal s1 s2 && same e1 e2) s1 s2
-      && Misc.Stdlib.Option.equal same d1 d2
+      && Option.equal same d1 d2
   | String_switch _, _ | _, String_switch _ -> false
   | Static_raise (e1, a1), Static_raise (e2, a2) ->
     Static_exception.equal e1 e2 && Misc.Stdlib.List.equal Variable.equal a1 a2
@@ -230,7 +230,7 @@ and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
     && Numbers.Int.Set.equal fs1.numblocks fs2.numblocks
     && Misc.Stdlib.List.equal samecase fs1.consts fs2.consts
     && Misc.Stdlib.List.equal samecase fs1.blocks fs2.blocks
-    && Misc.Stdlib.Option.equal same fs1.failaction fs2.failaction
+    && Option.equal same fs1.failaction fs2.failaction
 
 let can_be_merged = same
 

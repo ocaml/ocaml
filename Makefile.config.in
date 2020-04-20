@@ -76,10 +76,6 @@ OC_LDFLAGS=@oc_ldflags@
 ### How to invoke the C preprocessor through the C compiler
 CPP=@CPP@
 
-### How to invoke the C preprocessor directly, just to expand macros
-### (at the moment this is used only in one test in the testsuite)
-DIRECT_CPP=@DIRECT_CPP@
-
 ### How to invoke ranlib
 RANLIB=@RANLIB@
 RANLIBCMD=@RANLIBCMD@
@@ -150,15 +146,6 @@ ASPP=@ASPP@
 ### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
 INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 
-### Extra flags to use for assembling .S files in profiling mode
-ASPPPROFFLAGS=@asppprofflags@
-
-### true if profiling with gprof is supported, false otherwise
-PROFILING=@profiling@
-
-### Option to give to the C compiler for profiling
-CC_PROFILE=@cc_profile@
-
 ############# Configuration for the contributed libraries
 
 ### Which libraries to compile and install
@@ -166,7 +153,6 @@ CC_PROFILE=@cc_profile@
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
 #       systhreads      Same as threads, requires POSIX threads
-#       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
 #       bigarray        Large, multidimensional numerical arrays
 OTHERLIBRARIES=@otherlibraries@
@@ -176,18 +162,8 @@ OTHERLIBRARIES=@otherlibraries@
 PTHREAD_LINK=@pthread_link@
 PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
 
-### -I options for finding the X11/*.h includes
-# Needed for the "graph" package
-X11_INCDDIR=@x_includes@
-X11_INCLUDES=$(addprefix -I,$(X11_INCDDIR))
-
-### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
-# Needed for the "graph" package
-X11_LINK=@x_libraries@
-
 UNIX_OR_WIN32=@unix_or_win32@
 UNIXLIB=@unixlib@
-GRAPHLIB=@graphlib@
 LIBBFD_LINK=@libbfd_link@
 LIBBFD_INCLUDE=@libbfd_include@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@

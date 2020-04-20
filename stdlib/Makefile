@@ -18,7 +18,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc
@@ -33,7 +32,7 @@ OPTCOMPFLAGS=
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
@@ -76,22 +75,9 @@ ifeq "$(RUNTIMEI)" "true"
 all: camlheaderi target_camlheaderi
 endif
 
-ifeq "$(PROFILING)" "true"
-PROFILINGTARGET = prof
-else
-PROFILINGTARGET = noprof
-endif
-
 .PHONY: allopt opt.opt # allopt and opt.opt are synonyms
-allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILINGTARGET)
+allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
-
-.PHONY: allopt-noprof
-allopt-noprof:
-
-.PHONY: allopt-prof
-allopt-prof: stdlib.p.cmxa std_exit.p.cmx
-	rm -f std_exit.p.cmi
 
 LEGACY_OBJS=$(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", \
                                   $(filter stdlib__%,$(OBJS)))
@@ -125,7 +111,7 @@ install::
 endif
 
 .PHONY: installopt
-installopt: installopt-default installopt-$(PROFILINGTARGET)
+installopt: installopt-default
 
 .PHONY: installopt-default
 installopt-default:
@@ -133,16 +119,6 @@ installopt-default:
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
-
-.PHONY: installopt-noprof
-installopt-noprof:
-
-.PHONY: installopt-prof
-installopt-prof:
-	$(INSTALL_DATA) \
-	  stdlib.p.cmxa stdlib.p.$(A) std_exit.p.cmx std_exit.p.$(O) \
-	  "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.p.$(A)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 HEADERPROGRAM = header.c
@@ -231,9 +207,6 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
-stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
-	$(CAMLOPT) -a -o $@ $^
-
 sys.ml: $(ROOTDIR)/VERSION sys.mlp
 	sed -e "s|%%VERSION%%|`sed -e 1q $< | tr -d '\r'`|" sys.mlp > $@
 
@@ -244,7 +217,7 @@ clean::
 clean::
 	rm -f $(CAMLHEADERS)
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
+.SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 export AWK
 
@@ -267,29 +240,18 @@ stdlib__%.cmx: %.ml
 	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
 	           -o $@ -c $<
 
-%.p.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
-	           -p -c -o $@ $<
-
-stdlib__%.p.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
-	           -p -c -o $@ $<
-
 # Dependencies on the compiler
-COMPILER_DEPS=$(filter-out -use-prims, $(COMPILER))
+COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
 $(OBJS) std_exit.cmo: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Stdlib (not tracked by ocamlc -depend)
 
 $(OTHERS) std_exit.cmo: stdlib.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: stdlib.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A) *.odoc
@@ -301,20 +263,12 @@ include .depend
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
-# Note that .p.cmx targets do not depend (for compilation) upon other
-# .p.cmx files.  When the compiler imports another compilation unit,
-# it looks for the .cmx file (not .p.cmx).
 .PHONY: depend
 depend:
 	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
 	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
-	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.ml)) \
-	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
-	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
-	  stdlib.ml \
-	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -Ee \
 	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \
 	  .depend.tmp > .depend

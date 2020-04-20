@@ -634,7 +634,6 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-XMKMF
 PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
@@ -703,10 +702,8 @@ libunwind_available
 call_counts
 spacetime
 frame_pointers
-cc_profile
 profinfo_width
 profinfo
-profiling
 install_source_artifacts
 install_bytecode_programs
 mksharedlibrpath
@@ -717,7 +714,6 @@ sharedlib_cflags
 asm_cfi_supported
 AS
 ASPP
-asppprofflags
 libbfd_link
 libbfd_include
 x_libraries
@@ -762,7 +758,6 @@ extralibs
 syslib
 outputobj
 outputexe
-graphlib
 unixlib
 unix_or_win32
 collect_stats
@@ -860,7 +855,6 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
-with_x
 '
       ac_precious_vars='build_alias
 host_alias
@@ -875,8 +869,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 LT_SYS_LIBRARY_PATH
-CPP
-XMKMF'
+CPP'
 
 
 # Initialize some variables set by options.
@@ -1474,10 +1467,6 @@ _ACEOF
 
   cat <<\_ACEOF
 
-X features:
-  --x-includes=DIR    X include files are in DIR
-  --x-libraries=DIR   X library files are in DIR
-
 System types:
   --build=BUILD     configure for building on BUILD [guessed]
   --host=HOST       cross-compile to build programs to run on HOST [BUILD]
@@ -1501,7 +1490,6 @@ Optional Features:
                           build the instrumented runtime [default=auto]
 
   --disable-systhreads    disable the Win32/POSIX threads library
-  --disable-graph-lib     do not build the graphics library
   --disable-str-lib       do not build the str library
   --disable-unix-lib      do not build the unix library
   --disable-bigarray-lib  do not build the legacy separate bigarray library
@@ -1556,7 +1544,6 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
-  --with-x                use the X Window System
 
 Some influential environment variables:
   AS          which assembler to use
@@ -1574,7 +1561,6 @@ Some influential environment variables:
   LT_SYS_LIBRARY_PATH
               User-defined run-time library search path.
   CPP         C preprocessor
-  XMKMF       Path to xmkmf, Makefile generator for X Window System
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2788,11 +2774,7 @@ VERSION=4.09.0+multicore_dev0
 
 
 
-
  # TODO: rename this variable
-
-
-
 
 
 
@@ -3040,7 +3022,9 @@ fi
 
 # Check whether --enable-graph-lib was given.
 if test "${enable_graph_lib+set}" = set; then :
-  enableval=$enable_graph_lib;
+  enableval=$enable_graph_lib; as_fn_error $? "The graphics library is no longer distributed with OCaml \
+since version 4.09. It is now distributed as a separate \"graphics\" package: \
+https://github.com/ocaml/graphics" "$LINENO" 5
 fi
 
 
@@ -12224,12 +12208,11 @@ esac
 # manually to make sure the backward compatibility is preserved
 case $host in #(
   *-pc-windows) :
-    DIRECT_CPP="$CC -nologo -EP";
-    CPP="$DIRECT_CPP" ;; #(
+    CPP="$CC -nologo -EP";
+#  TODO: why can we not use $CPP in multicore, fix this?
+  CPP="$CC -E -P" ;; #(
   *) :
-    #   [AC_CHECK_TOOL([DIRECT_CPP],[cpp])])
-#  TODO: why can we not use $DIRECT_CPP in multicore, fix this?
-  CPP="$CC -E -P" ;;
+     ;;
 esac
 
 # Libraries to build depending on the host
@@ -12238,13 +12221,10 @@ case $host in #(
   *-*-mingw32|*-pc-windows) :
     unix_or_win32="win32"
     unixlib="win32unix"
-    graphlib="win32graph"
-    cc_profile='' ;; #(
+     ;; #(
   *) :
     unix_or_win32="unix"
-  unixlib="unix"
-  graphlib="graph"
-  cc_profile='-pg' ;;
+  unixlib="unix" ;;
 esac
 case $host in #(
   *-*-cygwin*|*-*-mingw32|*-pc-windows) :
@@ -12365,6 +12345,9 @@ $as_echo "$ocaml_cv_cc_vendor" >&6; }
 ## Determine which flags to use for the C compiler
 
 case $ocaml_cv_cc_vendor in #(
+  xlc-*) :
+    outputobj='-o $(EMPTY)'; gcc_warnings="-qflag=i:i" ;; #(
+  # all warnings enabled
   msvc-*) :
     outputobj=-Fo; CPP="cl -nologo -EP"; gcc_warnings="" ;; #(
   *) :
@@ -12435,6 +12418,9 @@ $as_echo "$as_me: WARNING: Consider using GCC version 4.2 or above." >&2;};
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+  xlc-*) :
+    common_cflags="-O5 -qtune=balanced -qnoipa -qinline $CFLAGS";
+      internal_cflags="$gcc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
 esac ;;
@@ -12551,7 +12537,11 @@ fi
 fi ;; #(
   *,x86_64-*-linux*) :
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
-
+ ;; #(
+  xlc*,powerpc-ibm-aix*) :
+    mkexe="$mkexe "
+     oc_ldflags="-brtl -bexpfull"
+    $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   *) :
      ;;
@@ -13286,19 +13276,20 @@ _ACEOF
 
 
 if ! $arch64; then :
-  if test x"$ac_cv_alignof_double" = "x8" ; then :
-  if test "$target_cpu" != "i686" ; then :
+  case $target_cpu in #(
+  i686) :
+     ;; #(
+  *) :
+    if test "$ac_cv_alignof_double" -gt 4; then :
   $as_echo "#define ARCH_ALIGN_DOUBLE 1" >>confdefs.h
 
 fi
-fi
-  if test x"$ac_cv_alignof_long" = "x8" ; then :
-  $as_echo "#define ARCH_ALIGN_INT64 1" >>confdefs.h
-
+    if test "$ac_cv_alignof_long" -gt 4; then :
+  $as_echo "#define ARCH_ALIGN_LONG 1" >>confdefs.h
 
 fi
-
-
+     ;;
+esac
 fi
 
 # Shared library support
@@ -13328,6 +13319,14 @@ if test x"$enable_shared" != "xno"; then :
     mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true ;; #(
+  powerpc-ibm-aix*) :
+    case $CC in #(
+  xlc*) :
+    mksharedlib="$CC -qmkshrobj -G"
+                shared_libraries_supported=true ;; #(
+  *) :
+     ;;
+esac ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
@@ -13400,6 +13399,8 @@ if test x"$enable_shared" != "xno"; then :
     natdynlink=true ;; #(
   aarch64-*-linux*) :
     natdynlink=true ;; #(
+  aarch64-*-freebsd*) :
+    natdynlink=true ;; #(
   *) :
      ;;
 esac
@@ -13467,10 +13468,6 @@ case $host in #(
 else
   model=ppc
 fi; system=elf ;; #(
-  powerpc-*-netbsd*) :
-    arch=power; model=ppc; system=netbsd ;; #(
-  powerpc-*-openbsd*) :
-    arch=power; model=ppc; system=bsd_elf ;; #(
   s390x*-*-linux*) :
     arch=s390x; model=z10; system=elf ;; #(
   armv6*-*-linux-gnueabihf) :
@@ -13521,6 +13518,8 @@ fi; system=elf ;; #(
     arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
     arch=arm64; system=linux ;; #(
+  aarch64-*-freebsd*) :
+    arch=arm64; system=freebsd ;; #(
   x86_64-*-cygwin*) :
     arch=amd64; system=cygwin
  ;; #(
@@ -13674,49 +13673,7 @@ if test $arch != "none" && $arch64 ; then :
   otherlibraries="$otherlibraries raw_spacetime_lib"
 fi
 
-# Profiling
-
-case "$arch,$system" in #(
-  i386,linux_elf) :
-    profiling=true ;; #(
-  i386,gnu) :
-    profiling=true ;; #(
-  i386,bsd_elf) :
-    profiling=true ;; #(
-  amd64,macosx) :
-    profiling=true ;; #(
-  amd64,linux) :
-    profiling=true ;; #(
-  amd64,openbsd) :
-    profiling=true ;; #(
-  amd64,freebsd) :
-    profiling=true ;; #(
-  amd64,netbsd) :
-    profiling=true ;; #(
-  arm,netbsd) :
-    profiling=true ;; #(
-  amd64,gnu) :
-    profiling=true ;; #(
-  arm,linux*) :
-    profiling=true ;; #(
-  power,elf) :
-    profiling=true ;; #(
-  power,bsd*) :
-    profiling=true ;; #(
-  power,netbsd) :
-    profiling=true ;; #(
-  *) :
-    profiling=false ;;
-esac
-
 # Assembler
-
-case $host in #(
-  *-*-mingw32|*-pc-windows) :
-    asppprofflags='' ;; #(
-  *) :
-    asppprofflags='-DPROFILING' ;;
-esac
 
 if test -n "$host_alias"; then :
   toolpref="${host}-"
@@ -13767,7 +13724,7 @@ esac ;; #(
   s390x,elf) :
     default_as="${toolpref}as -m 64 -march=$model"
     default_aspp="${toolpref}gcc -c -Wa,-march=$model" ;; #(
-  arm,freebsd) :
+  arm,freebsd|arm64,freebsd) :
     default_as="${toolpref}cc -c"
     default_aspp="${toolpref}cc -c" ;; #(
   *,dragonfly) :
@@ -13776,7 +13733,7 @@ esac ;; #(
   *,freebsd) :
     default_as="${toolpref}as"
     default_aspp="${toolpref}cc -c" ;; #(
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd) :
+  amd64,*|arm,*|arm64,*|i386,*) :
     default_as="${toolpref}as"
     case $ocaml_cv_cc_vendor in #(
   clang-*) :
@@ -13824,18 +13781,6 @@ $as_echo "$as_me: POSIX signal handling found." >&6;}
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: assuming signals have the System V semantics." >&5
 $as_echo "$as_me: assuming signals have the System V semantics." >&6;}
-    for ac_func in sigsetmask
-do :
-  ac_fn_c_check_func "$LINENO" "sigsetmask" "ac_cv_func_sigsetmask"
-if test "x$ac_cv_func_sigsetmask" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_SIGSETMASK 1
-_ACEOF
- $as_echo "#define HAS_SIGSETMASK 1" >>confdefs.h
-
-fi
-done
-
 
 
 fi
@@ -14194,17 +14139,6 @@ if test "x$ac_cv_func_getcwd" = xyes; then :
 fi
 
 
-ac_fn_c_check_func "$LINENO" "getpriority" "ac_cv_func_getpriority"
-if test "x$ac_cv_func_getpriority" = xyes; then :
-  ac_fn_c_check_func "$LINENO" "setpriority" "ac_cv_func_setpriority"
-if test "x$ac_cv_func_setpriority" = xyes; then :
-  $as_echo "#define HAS_GETPRIORITY 1" >>confdefs.h
-
-fi
-
-fi
-
-
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition
@@ -14235,13 +14169,6 @@ esac
 ac_fn_c_check_func "$LINENO" "utimes" "ac_cv_func_utimes"
 if test "x$ac_cv_func_utimes" = xyes; then :
   $as_echo "#define HAS_UTIMES 1" >>confdefs.h
-
-fi
-
-
-ac_fn_c_check_func "$LINENO" "dup2" "ac_cv_func_dup2"
-if test "x$ac_cv_func_dup2" = xyes; then :
-  $as_echo "#define HAS_DUP2 1" >>confdefs.h
 
 fi
 
@@ -14384,80 +14311,6 @@ fi
 
 fi
 
-
-
-## Asynchronous I/O
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for asynchronous I/O" >&5
-$as_echo_n "checking for asynchronous I/O... " >&6; }
-if test "$cross_compiling" = yes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-int signalled;
-
-void sigio_handler(int arg)
-{
-  signalled = 1;
-}
-
-int main(void)
-{
-#if defined(SIGIO) && defined(FASYNC) && defined(F_SETFL) && defined(F_SETOWN)
-  int p[2];
-  int ret;
-#define OUT 0
-#define IN 1
-  if (socketpair(PF_UNIX, SOCK_STREAM, 0, p) == -1) return 1;
-  signalled = 0;
-  signal(SIGIO, sigio_handler);
-  ret = fcntl(p[OUT], F_GETFL, 0);
-  fcntl(p[OUT], F_SETFL, ret | FASYNC);
-  fcntl(p[OUT], F_SETOWN, getpid());
-  switch(fork()) {
-  case -1:
-    return 1;
-  case 0:
-    close(p[OUT]);
-    write(p[IN], "x", 1);
-    sleep(1);
-    exit(0);
-  default:
-    close(p[IN]);
-    while(wait(NULL) == -1 && errno == EINTR) /*nothing*/;
-  }
-  if (signalled) return 0; else return 1;
-#else
-  return 1;
-#endif
-}
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-
-    $as_echo "#define HAS_ASYNC_IO 1" >>confdefs.h
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
 
 
 ## setitimer
@@ -14712,8 +14565,12 @@ fi
 
 
 ## -fdebug-prefix-map support by the C compiler
-case $host in #(
-  *-*-mingw32|*-pc-windows) :
+case $CC,$host in #(
+  *,*-*-mingw32) :
+    cc_has_debug_prefix_map=false ;; #(
+  *,*-pc-windows) :
+    cc_has_debug_prefix_map=false ;; #(
+  xlc*,powerpc-ibm-aix*) :
     cc_has_debug_prefix_map=false ;; #(
   *) :
 
@@ -15982,233 +15839,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
-esac
-fi
-
-## XWindow
-
-if test x"$enable_graph_lib" = "xno" ; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the graph library has been disabled" >&5
-$as_echo "$as_me: the graph library has been disabled" >&6;}
-else
-  case $host in #(
-  *-*-mingw32|*-pc-windows) :
-    otherlibraries="$otherlibraries win32graph" ;; #(
-  *) :
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for X" >&5
-$as_echo_n "checking for X... " >&6; }
-
-
-# Check whether --with-x was given.
-if test "${with_x+set}" = set; then :
-  withval=$with_x;
-fi
-
-# $have_x is `yes', `no', `disabled', or empty when we do not yet know.
-if test "x$with_x" = xno; then
-  # The user explicitly disabled X.
-  have_x=disabled
-else
-  case $x_includes,$x_libraries in #(
-    *\'*) as_fn_error $? "cannot use X directory names containing '" "$LINENO" 5;; #(
-    *,NONE | NONE,*) if ${ac_cv_have_x+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  # One or both of the vars are not set, and there is no cached value.
-ac_x_includes=no ac_x_libraries=no
-rm -f -r conftest.dir
-if mkdir conftest.dir; then
-  cd conftest.dir
-  cat >Imakefile <<'_ACEOF'
-incroot:
-	@echo incroot='${INCROOT}'
-usrlibdir:
-	@echo usrlibdir='${USRLIBDIR}'
-libdir:
-	@echo libdir='${LIBDIR}'
-_ACEOF
-  if (export CC; ${XMKMF-xmkmf}) >/dev/null 2>/dev/null && test -f Makefile; then
-    # GNU make sometimes prints "make[1]: Entering ...", which would confuse us.
-    for ac_var in incroot usrlibdir libdir; do
-      eval "ac_im_$ac_var=\`\${MAKE-make} $ac_var 2>/dev/null | sed -n 's/^$ac_var=//p'\`"
-    done
-    # Open Windows xmkmf reportedly sets LIBDIR instead of USRLIBDIR.
-    for ac_extension in a so sl dylib la dll; do
-      if test ! -f "$ac_im_usrlibdir/libX11.$ac_extension" &&
-	 test -f "$ac_im_libdir/libX11.$ac_extension"; then
-	ac_im_usrlibdir=$ac_im_libdir; break
-      fi
-    done
-    # Screen out bogus values from the imake configuration.  They are
-    # bogus both because they are the default anyway, and because
-    # using them would break gcc on systems where it needs fixed includes.
-    case $ac_im_incroot in
-	/usr/include) ac_x_includes= ;;
-	*) test -f "$ac_im_incroot/X11/Xos.h" && ac_x_includes=$ac_im_incroot;;
-    esac
-    case $ac_im_usrlibdir in
-	/usr/lib | /usr/lib64 | /lib | /lib64) ;;
-	*) test -d "$ac_im_usrlibdir" && ac_x_libraries=$ac_im_usrlibdir ;;
-    esac
-  fi
-  cd ..
-  rm -f -r conftest.dir
-fi
-
-# Standard set of common directories for X headers.
-# Check X11 before X11Rn because it is often a symlink to the current release.
-ac_x_header_dirs='
-/usr/X11/include
-/usr/X11R7/include
-/usr/X11R6/include
-/usr/X11R5/include
-/usr/X11R4/include
-
-/usr/include/X11
-/usr/include/X11R7
-/usr/include/X11R6
-/usr/include/X11R5
-/usr/include/X11R4
-
-/usr/local/X11/include
-/usr/local/X11R7/include
-/usr/local/X11R6/include
-/usr/local/X11R5/include
-/usr/local/X11R4/include
-
-/usr/local/include/X11
-/usr/local/include/X11R7
-/usr/local/include/X11R6
-/usr/local/include/X11R5
-/usr/local/include/X11R4
-
-/usr/X386/include
-/usr/x386/include
-/usr/XFree86/include/X11
-
-/usr/include
-/usr/local/include
-/usr/unsupported/include
-/usr/athena/include
-/usr/local/x11r5/include
-/usr/lpp/Xamples/include
-
-/usr/openwin/include
-/usr/openwin/share/include'
-
-if test "$ac_x_includes" = no; then
-  # Guess where to find include files, by looking for Xlib.h.
-  # First, try using that file with no special directory specified.
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <X11/Xlib.h>
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-  # We can compile using X headers with no special include directory.
-ac_x_includes=
-else
-  for ac_dir in $ac_x_header_dirs; do
-  if test -r "$ac_dir/X11/Xlib.h"; then
-    ac_x_includes=$ac_dir
-    break
-  fi
-done
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-fi # $ac_x_includes = no
-
-if test "$ac_x_libraries" = no; then
-  # Check for the libraries.
-  # See if we find them without any special options.
-  # Don't add to $LIBS permanently.
-  ac_save_LIBS=$LIBS
-  LIBS="-lX11 $LIBS"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <X11/Xlib.h>
-int
-main ()
-{
-XrmInitialize ()
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  LIBS=$ac_save_LIBS
-# We can link X programs with no special library path.
-ac_x_libraries=
-else
-  LIBS=$ac_save_LIBS
-for ac_dir in `$as_echo "$ac_x_includes $ac_x_header_dirs" | sed s/include/lib/g`
-do
-  # Don't even attempt the hair of trying to link an X program!
-  for ac_extension in a so sl dylib la dll; do
-    if test -r "$ac_dir/libX11.$ac_extension"; then
-      ac_x_libraries=$ac_dir
-      break 2
-    fi
-  done
-done
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-fi # $ac_x_libraries = no
-
-case $ac_x_includes,$ac_x_libraries in #(
-  no,* | *,no | *\'*)
-    # Didn't find X, or a directory has "'" in its name.
-    ac_cv_have_x="have_x=no";; #(
-  *)
-    # Record where we found X for the cache.
-    ac_cv_have_x="have_x=yes\
-	ac_x_includes='$ac_x_includes'\
-	ac_x_libraries='$ac_x_libraries'"
-esac
-fi
-;; #(
-    *) have_x=yes;;
-  esac
-  eval "$ac_cv_have_x"
-fi # $with_x != no
-
-if test "$have_x" != yes; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_x" >&5
-$as_echo "$have_x" >&6; }
-  no_x=yes
-else
-  # If each of the values was on the command line, it overrides each guess.
-  test "x$x_includes" = xNONE && x_includes=$ac_x_includes
-  test "x$x_libraries" = xNONE && x_libraries=$ac_x_libraries
-  # Update the cache value to reflect the command line values.
-  ac_cv_have_x="have_x=yes\
-	ac_x_includes='$x_includes'\
-	ac_x_libraries='$x_libraries'"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: libraries $x_libraries, headers $x_includes" >&5
-$as_echo "libraries $x_libraries, headers $x_includes" >&6; }
-fi
-
-    if test -z "$no_x"; then :
-  if test -z $x_libraries; then :
-  x_libraries="-lX11"
-else
-  x_libraries="-L$x_libraries -lX11"
-fi
-      { $as_echo "$as_me:${as_lineno-$LINENO}: X has been found" >&5
-$as_echo "$as_me: X has been found" >&6;}
-      otherlibraries="$otherlibraries graph"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the graph library will be built" >&5
-$as_echo "$as_me: the graph library will be built" >&6;}
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: X has not been found" >&5
-$as_echo "$as_me: X has not been found" >&6;}
-      if test x"$enable_graph_lib" = "xyes" ; then :
-  as_fn_error $? "can not build the graph library which was requested" "$LINENO" 5
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the graph library will not be built" >&5
-$as_echo "$as_me: the graph library will not be built" >&6;}
-fi
-fi ;;
 esac
 fi
 

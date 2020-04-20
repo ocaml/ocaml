@@ -47,7 +47,6 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,BYTECCLIBS) \
 	    $(call SUBST,CC) \
 	    $(call SUBST,CCOMPTYPE) \
-	    $(call SUBST,CC_PROFILE) \
 	    $(call SUBST,OUTPUTOBJ) \
 	    $(call SUBST,EXT_ASM) \
 	    $(call SUBST,EXT_DLL) \
@@ -73,7 +72,6 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,OCAMLOPT_CFLAGS) \
 	    $(call SUBST,OCAMLOPT_CPPFLAGS) \
 	    $(call SUBST,PACKLD) \
-	    $(call SUBST,PROFILING) \
 	    $(call SUBST,PROFINFO_WIDTH) \
 	    $(call SUBST,RANLIBCMD) \
 	    $(call SUBST,FORCE_SAFE_STRING) \

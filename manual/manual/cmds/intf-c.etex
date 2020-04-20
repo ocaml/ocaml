@@ -1440,15 +1440,15 @@ above:
 \end{verbatim}
 
 The pointer returned by "caml_named_value" is constant and can safely
-be cached in a C variable to avoid repeated name lookups. On the other
-hand, the value pointed to can change during garbage collection and
-must always be recomputed at the point of use. Here is a more
-efficient variant of "call_caml_f" above that calls "caml_named_value"
-only once:
+be cached in a C variable to avoid repeated name lookups. The value
+pointed to cannot be changed from C. However, it might change during
+garbage collection, so must always be recomputed at the point of
+use. Here is a more efficient variant of "call_caml_f" above that
+calls "caml_named_value" only once:
 \begin{verbatim}
     void call_caml_f(int arg)
     {
-        static value * closure_f = NULL;
+        static const value * closure_f = NULL;
         if (closure_f == NULL) {
             /* First time around, look up by name */
             closure_f = caml_named_value("test function");
@@ -1684,14 +1684,14 @@ Here is the C stub code for calling these functions from C:
 
 int fib(int n)
 {
-  static value * fib_closure = NULL;
+  static const value * fib_closure = NULL;
   if (fib_closure == NULL) fib_closure = caml_named_value("fib");
   return Int_val(caml_callback(*fib_closure, Val_int(n)));
 }
 
 char * format_result(int n)
 {
-  static value * format_result_closure = NULL;
+  static const value * format_result_closure = NULL;
   if (format_result_closure == NULL)
     format_result_closure = caml_named_value("format_result");
   return strdup(String_val(caml_callback(*format_result_closure, Val_int(n))));
@@ -1797,7 +1797,7 @@ default comparison function simply raises "Failure".
 
 \item "intnat (*hash)(value v)" \\
 The "hash" field contains a pointer to a C function that is called
-whenever OCaml's generic hash operator (see module "Hashtbl") is
+whenever OCaml's generic hash operator (see module \stdmoduleref{Hashtbl}) is
 applied to a custom block.  The C function can return an arbitrary
 integer representing the hash value of the data contained in the
 given custom block.  The hash value must be compatible with the

@@ -199,6 +199,10 @@ let speclist = [
 let function_placeholder () =
   raise Not_found
 
+let report report_error error =
+  eprintf "Debugger [version %s] environment error:@ @[@;%a@]@.;"
+    Config.version report_error error
+
 let main () =
   Callback.register "Debugger.function_placeholder" function_placeholder;
   try
@@ -232,17 +236,13 @@ let main () =
     kill_program ();
     exit 0
   with
-    Toplevel ->
+  | Toplevel ->
       exit 2
-  | Env.Error e ->
-      eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
-      Env.report_error err_formatter e;
-      eprintf "@]@.";
+  | Persistent_env.Error e ->
+      report Persistent_env.report_error e;
       exit 2
   | Cmi_format.Error e ->
-      eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
-      Cmi_format.report_error err_formatter e;
-      eprintf "@]@.";
+      report Cmi_format.report_error e;
       exit 2
 
 let _ =

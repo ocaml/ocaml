@@ -198,3 +198,6 @@
 {\enditemize}
 
 \newenvironment{maintitle}{\@open{div}{class="maintitle"}}{\@close{div}}
+
+%%% References to modules in the standard library
+\newcommand{\stdmoduleref}[1]{\ahref{libref/#1.html}{\texttt{#1}}}

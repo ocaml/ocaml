@@ -34,6 +34,9 @@ val not_bsd : Actions.t
 val arch32 : Actions.t
 val arch64 : Actions.t
 
+(** Whether the compiler target is POWER architecture. *)
+val arch_power : Actions.t
+
 val has_symlink : Actions.t
 
 val setup_build_env : Actions.t

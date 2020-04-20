@@ -132,6 +132,7 @@ let print_global_table table =
     table
 
 open Cmx_format
+open Cmxs_format
 
 let print_cmx_infos (ui, crc) =
   print_general_infos

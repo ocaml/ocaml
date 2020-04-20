@@ -54,20 +54,3 @@ type library_infos =
   { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ MD5s *)
     lib_ccobjs: string list;            (* C object files needed *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)
-
-(* Each .cmxs dynamically-loaded plugin contains a symbol
-   "caml_plugin_header" containing the following info
-   (as an externed record) *)
-
-type dynunit = {
-  dynu_name: modname;
-  dynu_crc: Digest.t;
-  dynu_imports_cmi: crcs;
-  dynu_imports_cmx: crcs;
-  dynu_defines: string list;
-}
-
-type dynheader = {
-  dynu_magic: string;
-  dynu_units: dynunit list;
-}

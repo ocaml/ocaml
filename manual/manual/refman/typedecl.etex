@@ -170,7 +170,9 @@ constructors or fields given in the representation remain attached to
 the defined type constructor. The type expression in the equation part
 must agree with the representation: it must be of the same kind
 (record or variant) and have exactly the same constructors or fields,
-in the same order, with the same arguments.
+in the same order, with the same arguments. Moreover, the new type
+constructor must have the same arity and the same type constraints as the
+original type constructor.
 \end{description}
 
 The type variables appearing as type parameters can optionally be

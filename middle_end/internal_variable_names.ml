@@ -319,8 +319,8 @@ let anon_fn_with_loc (loc: Location.t) =
     if startchar >= 0 then Format.fprintf ppf ",%i--%i" startchar endchar in
   if loc.Location.loc_ghost then "anon_fn"
   else
-    Format.asprintf "anon_fn[%a:%i%t]"
-      Location.print_filename file line pp_chars
+    Format.asprintf "anon_fn[%s:%i%t]"
+      (Filename.basename file) line pp_chars
 
 let of_primitive : Lambda.primitive -> string = function
   | Pidentity -> pidentity

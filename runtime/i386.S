@@ -59,64 +59,6 @@
 #define CFI_ADJUST(n)
 #endif
 
-#if defined(PROFILING)
-#if defined(SYS_linux_elf) || defined(SYS_gnu)
-#define PROFILE_CAML \
-        pushl %ebp; CFI_ADJUST(4); \
-        movl %esp, %ebp; \
-        pushl %eax; CFI_ADJUST(4); \
-        pushl %ecx; CFI_ADJUST(4); \
-        pushl %edx; CFI_ADJUST(4); \
-        call mcount; \
-        popl %edx; CFI_ADJUST(-4); \
-        popl %ecx; CFI_ADJUST(-4); \
-        popl %eax; CFI_ADJUST(-4); \
-        popl %ebp; CFI_ADJUST(-4)
-#define PROFILE_C \
-        pushl %ebp; CFI_ADJUST(4); \
-        movl %esp, %ebp; \
-        call mcount; \
-        popl %ebp; CFI_ADJUST(-4)
-#elif defined(SYS_bsd_elf)
-#define PROFILE_CAML \
-        pushl %ebp; CFI_ADJUST(4); \
-        movl %esp, %ebp; \
-        pushl %eax; CFI_ADJUST(4); \
-        pushl %ecx; CFI_ADJUST(4); \
-        pushl %edx; CFI_ADJUST(4); \
-        call .mcount; \
-        popl %edx; CFI_ADJUST(-4); \
-        popl %ecx; CFI_ADJUST(-4); \
-        popl %eax; CFI_ADJUST(-4); \
-        popl %ebp; CFI_ADJUST(-4)
-#define PROFILE_C \
-        pushl %ebp; CFI_ADJUST(4); \
-        movl %esp, %ebp; \
-        call .mcount; \
-        popl %ebp; CFI_ADJUST(-4)
-#elif defined(SYS_macosx)
-#define PROFILE_CAML \
-        pushl %ebp; CFI_ADJUST(4); \
-        movl %esp, %ebp; \
-        pushl %eax; CFI_ADJUST(4); \
-        pushl %ecx; CFI_ADJUST(4); \
-        pushl %edx; CFI_ADJUST(4); \
-        call Lmcount$stub;  \
-        popl %edx; CFI_ADJUST(-4); \
-        popl %ecx; CFI_ADJUST(-4); \
-        popl %eax; CFI_ADJUST(-4); \
-        popl %ebp; CFI_ADJUST(-4)
-#define PROFILE_C \
-        pushl %ebp; CFI_ADJUST(4); \
-        movl %esp, %ebp; \
-        call Lmcount$stub; \
-        popl %ebp; CFI_ADJUST(-4)
-#endif
-#else
-#define PROFILE_CAML
-#define PROFILE_C
-#endif
-
 /* PR#6038: GCC and Clang seem to require 16-byte alignment nowadays,
    even if only MacOS X's ABI formally requires it. */
 #define ALIGN_STACK(amount) subl $ amount, %esp ; CFI_ADJUST(amount)
@@ -130,7 +72,6 @@ G(caml_system__code_begin):
 
 FUNCTION(caml_call_gc)
         CFI_STARTPROC
-        PROFILE_CAML
     /* Record lowest stack address and return address */
         movl    0(%esp), %eax
         movl    %eax, G(caml_last_return_address)
@@ -170,7 +111,6 @@ LBL(105):
 
 FUNCTION(caml_alloc1)
         CFI_STARTPROC
-        PROFILE_CAML
         movl    G(caml_young_ptr), %eax
         subl    $8, %eax
         movl    %eax, G(caml_young_ptr)
@@ -190,7 +130,6 @@ LBL(100):
 
 FUNCTION(caml_alloc2)
         CFI_STARTPROC
-        PROFILE_CAML
         movl    G(caml_young_ptr), %eax
         subl    $12, %eax
         movl    %eax, G(caml_young_ptr)
@@ -210,7 +149,6 @@ LBL(101):
 
 FUNCTION(caml_alloc3)
         CFI_STARTPROC
-        PROFILE_CAML
         movl    G(caml_young_ptr), %eax
         subl    $16, %eax
         movl    %eax, G(caml_young_ptr)
@@ -230,7 +168,6 @@ LBL(102):
 
 FUNCTION(caml_allocN)
         CFI_STARTPROC
-        PROFILE_CAML
         subl    G(caml_young_ptr), %eax /* eax = size - caml_young_ptr */
         negl    %eax                    /* eax = caml_young_ptr - size */
         cmpl    G(caml_young_limit), %eax
@@ -257,7 +194,6 @@ LBL(103):
 
 FUNCTION(caml_c_call)
         CFI_STARTPROC
-        PROFILE_CAML
     /* Record lowest stack address and return address */
         movl    (%esp), %edx
         movl    %edx, G(caml_last_return_address)
@@ -278,7 +214,6 @@ FUNCTION(caml_c_call)
 
 FUNCTION(caml_start_program)
         CFI_STARTPROC
-        PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
         pushl   %esi; CFI_ADJUST(4)
@@ -355,7 +290,6 @@ LBL(110):
 
 FUNCTION(caml_raise_exception)
         CFI_STARTPROC
-        PROFILE_C
         testl   $1, G(caml_backtrace_active)
         jne     LBL(112)
         movl    4(%esp), %eax
@@ -382,7 +316,6 @@ LBL(112):
 
 FUNCTION(caml_callback_exn)
         CFI_STARTPROC
-        PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
         pushl   %esi; CFI_ADJUST(4)
@@ -397,7 +330,6 @@ FUNCTION(caml_callback_exn)
 
 FUNCTION(caml_callback2_exn)
         CFI_STARTPROC
-        PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
         pushl   %esi; CFI_ADJUST(4)
@@ -413,7 +345,6 @@ FUNCTION(caml_callback2_exn)
 
 FUNCTION(caml_callback3_exn)
         CFI_STARTPROC
-        PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx; CFI_ADJUST(4)
         pushl   %esi; CFI_ADJUST(4)
@@ -472,14 +403,6 @@ G(caml_extra_params):
         .space  64
 #else
         .zero   64
-#endif
-
-#if defined(PROFILING) && defined(SYS_macosx)
-        .section __IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5
-Lmcount$stub:
-        .indirect_symbol mcount
-        hlt ; hlt ; hlt ; hlt ; hlt
-        .subsections_via_symbols
 #endif
 
 #if defined(SYS_linux_elf)

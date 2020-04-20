@@ -76,10 +76,7 @@ SHAREDLIB_CFLAGS=
 MKSHAREDLIBRPATH=
 ASM=$(TOOLPREF)as
 ASPP=$(TOOLPREF)gcc -c
-ASPPPROFFLAGS=
-PROFILING=false
 DYNLINKOPTS=
-CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 NATDYNLINK=true
@@ -90,7 +87,6 @@ ASM_CFI_SUPPORTED=false
 WITH_FRAME_POINTERS=false
 UNIX_OR_WIN32=win32
 UNIXLIB=win32unix
-GRAPHLIB=win32graph
 FLAMBDA=false
 WITH_FLAMBDA_INVARIANTS=false
 WITH_PROFINFO=false
@@ -189,7 +185,7 @@ INSTALL_BYTECODE_PROGRAMS=true
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix str win32graph dynlink bigarray systhreads
+OTHERLIBRARIES=win32unix str dynlink bigarray systhreads
 
 ############# for the testsuite makefiles
 OTOPDIR=$(WINTOPDIR)

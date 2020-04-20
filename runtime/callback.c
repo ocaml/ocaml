@@ -70,7 +70,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
   domain_state->current_stack->sp[narg + 3] = closure;
   res = caml_interprete(code, sizeof(code));
-  if (Is_exception_result(res)) domain_state->current_stack->sp += narg + 4; /* PR#1228 */
+  if (Is_exception_result(res)) domain_state->current_stack->sp += narg + 4; /* PR#3419 */
 
   Assert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;

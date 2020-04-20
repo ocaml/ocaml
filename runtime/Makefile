@@ -81,10 +81,6 @@ BYTECODE_STATIC_LIBRARIES += libcamlruni.$(A)
 NATIVE_STATIC_LIBRARIES += libasmruni.$(A)
 endif
 
-ifeq "$(PROFILING)" "true"
-NATIVE_STATIC_LIBRARIES += libasmrunp.$(A)
-endif
-
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_BYTECODE_SHARED_LIBRARIES)" "true"
 BYTECODE_STATIC_LIBRARIES += libcamlrun_pic.$(A)
@@ -114,9 +110,6 @@ libasmrun_OBJECTS := $(NATIVE_C_SOURCES:.c=_n.$(O)) $(ASM_OBJECTS)
 libasmrund_OBJECTS := $(NATIVE_C_SOURCES:.c=_nd.$(O)) $(ASM_OBJECTS)
 
 libasmruni_OBJECTS := $(NATIVE_C_SOURCES:.c=_ni.$(O)) $(ASM_OBJECTS)
-
-libasmrunp_OBJECTS := $(NATIVE_C_SOURCES:.c=_np.$(O)) \
-  $(ASM_OBJECTS:.$(O)=_libasmrunp.$(O))
 
 libasmrunpic_OBJECTS := $(NATIVE_C_SOURCESS:.c=_npic.$(O)) \
   $(ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
@@ -164,15 +157,10 @@ OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
 
 ifeq "$(TOOLCHAIN)" "msvc"
-OC_PROF_CFLAGS=
-OC_PROF_CPPFLAGS=-DPROFILING
 ASMFLAGS=
 ifeq ($(WITH_SPACETIME),true)
 ASMFLAGS=/DWITH_SPACETIME
 endif
-else
-OC_PROF_CFLAGS=-pg
-OC_PROF_CPPFLAGS=-DPROFILING
 endif
 
 ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime
@@ -323,9 +311,6 @@ libasmrund.$(A): $(libasmrund_OBJECTS)
 libasmruni.$(A): $(libasmruni_OBJECTS)
 	$(call MKLIB,$@, $^)
 
-libasmrunp.$(A): $(libasmrunp_OBJECTS)
-	$(call MKLIB,$@, $^)
-
 libasmrun_pic.$(A): $(libasmrunpic_OBJECTS)
 	$(call MKLIB,$@, $^)
 
@@ -345,9 +330,6 @@ libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 %_nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_DEBUG_CPPFLAGS)
 
 %_ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_INSTR_CPPFLAGS)
-
-%_np.$(O): OC_CFLAGS += $(OC_PROF_CFLAGS)
-%_np.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(OC_PROF_CPPFLAGS)
 
 %_npic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 %_npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
@@ -375,9 +357,6 @@ $(foreach object_type, $(object_types), \
           echo "unhappy with the preprocessor. Check your assembler, or";\
           echo "try producing $*.o by hand.";\
           exit 2; }
-
-%_libasmrunp.o: %.S
-	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $@ $<
 
 %_libasmrunpic.o: %.S
 	$(ASPP) $(ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
@@ -414,8 +393,6 @@ depend: *.c caml/opnames.h caml/jumptbl.h caml/version.h
 	  sed -e 's/\([^.]*\)\.o/\1_nd.$$(O)/' >> .depend
 	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) $(OC_INSTR_CPPFLAGS) *.c | \
 	  sed -e 's/\([^.]*\)\.o/\1_ni.$$(O)/' >> .depend
-	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) $(OC_PROF_CPPFLAGS) *.c | \
-	  sed -e 's/\([^.]*\)\.o/\1_np.$$(O)/' >> .depend
 	$(CC) -MM $(NATIVE_DEP_CPPFLAGS) *.c | \
 	  sed -e 's/\([^.]*\)\.o/\1_npic.$$(O)/' >> .depend
 endif

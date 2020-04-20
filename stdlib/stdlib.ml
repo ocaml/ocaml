@@ -636,4 +636,5 @@ module String       = String
 module StringLabels = StringLabels
 module Sys          = Sys
 module Uchar        = Uchar
+module Unit         = Unit
 module Weak         = Weak

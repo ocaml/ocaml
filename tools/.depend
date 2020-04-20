@@ -79,7 +79,7 @@ cvt_emit.cmx :
 dumpobj.cmo : \
     ../bytecomp/symtable.cmi \
     opnames.cmo \
-    ../bytecomp/opcodes.cmo \
+    ../bytecomp/opcodes.cmi \
     ../parsing/location.cmi \
     ../bytecomp/lambda.cmi \
     ../bytecomp/instruct.cmi \
@@ -140,6 +140,7 @@ objinfo.cmo : \
     ../asmcomp/export_info.cmi \
     ../utils/config.cmi \
     ../middle_end/base_types/compilation_unit.cmi \
+    ../asmcomp/cmxs_format.cmi \
     ../asmcomp/cmx_format.cmi \
     ../typing/cmt_format.cmi \
     ../bytecomp/cmo_format.cmi \
@@ -155,6 +156,7 @@ objinfo.cmx : \
     ../asmcomp/export_info.cmx \
     ../utils/config.cmx \
     ../middle_end/base_types/compilation_unit.cmx \
+    ../asmcomp/cmxs_format.cmi \
     ../asmcomp/cmx_format.cmi \
     ../typing/cmt_format.cmx \
     ../bytecomp/cmo_format.cmi \

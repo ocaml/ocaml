@@ -68,6 +68,7 @@ _build
 
 /boot/ocamlrun
 /boot/camlheader
+/boot/ocamlc.opt
 
 /bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
@@ -121,11 +122,15 @@ _build
 
 /otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
+/otherlibs/dynlink/byte/dynlink.mli
+/otherlibs/dynlink/native/dynlink.mli
+/otherlibs/dynlink/dynlink_compilerlibs/Makefile
+/otherlibs/dynlink/dynlink_compilerlibs/*.ml
+/otherlibs/dynlink/dynlink_compilerlibs/*.mli
+/otherlibs/dynlink/dynlink_compilerlibs/.depend
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli
-/otherlibs/win32graph/graphics.ml
-/otherlibs/win32graph/graphics.mli
 /otherlibs/win32unix/unixLabels.ml*
 /otherlibs/win32unix/unix.mli
 /otherlibs/win32unix/access.c

@@ -1004,8 +1004,12 @@ intnat caml_float_compare_unboxed(double f, double g)
   /* If one or both of f and g is NaN, order according to the convention
      NaN = NaN and NaN < x for all other floats x. */
   /* This branchless implementation is from GPR#164.
-     Note that [f == f] if and only if f is not NaN. */
-  return (f > g) - (f < g) + (f == f) - (g == g);
+     Note that [f == f] if and only if f is not NaN.
+     We expand each subresult of the expression to
+     avoid sign-extension on 64bit. GPR#2250. */
+  intnat res =
+    (intnat)(f > g) - (intnat)(f < g) + (intnat)(f == f) - (intnat)(g == g);
+  return res;
 }
 
 #endif

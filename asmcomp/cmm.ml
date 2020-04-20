@@ -162,12 +162,12 @@ and operation =
   | Cpoll
 
 type expression =
-    Cconst_int of int
-  | Cconst_natint of nativeint
-  | Cconst_float of float
-  | Cconst_symbol of string
-  | Cconst_pointer of int
-  | Cconst_natpointer of nativeint
+    Cconst_int of int * Debuginfo.t
+  | Cconst_natint of nativeint * Debuginfo.t
+  | Cconst_float of float * Debuginfo.t
+  | Cconst_symbol of string * Debuginfo.t
+  | Cconst_pointer of int * Debuginfo.t
+  | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
@@ -177,15 +177,18 @@ type expression =
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
-  | Cifthenelse of expression * expression * expression
-  | Cswitch of expression * int array * expression array * Debuginfo.t
+  | Cifthenelse of expression * Debuginfo.t * expression
+      * Debuginfo.t * expression * Debuginfo.t
+  | Cswitch of expression * int array * (expression * Debuginfo.t) array
+      * Debuginfo.t
   | Ccatch of
       rec_flag
         * (int * (Backend_var.With_provenance.t * machtype) list
-          * expression) list
+          * expression * Debuginfo.t) list
         * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Backend_var.With_provenance.t * expression
+      * Debuginfo.t
 
 type codegen_option =
   | Reduce_code_size
@@ -217,8 +220,8 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
-let ccatch (i, ids, e1, e2)=
-  Ccatch(Nonrecursive, [i, ids, e2], e1)
+let ccatch (i, ids, e1, e2, dbg) =
+  Ccatch(Nonrecursive, [i, ids, e2, dbg], e1)
 
 let reset () =
   label_counter := 99

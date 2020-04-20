@@ -50,8 +50,6 @@
 
 /* Support for profiling with gprof */
 
-#define PROFILE
-
 /******************************************************************************/
 /* Access to the current domain state block. */
 /******************************************************************************/
@@ -277,7 +275,6 @@ caml_system__code_begin:
 
 FUNCTION(caml_call_gc)
 CFI_STARTPROC
-        PROFILE
         SWITCH_OCAML_TO_C(TMP)
         SAVE_ALL_REGS_AND_CALL(caml_garbage_collection)
         SWITCH_C_TO_OCAML(TMP)
@@ -288,7 +285,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_call_realloc_stack)
 CFI_STARTPROC
-        PROFILE
         SWITCH_OCAML_TO_C(TMP)
         SAVE_ALL_REGS_AND_CALL(caml_realloc_stack)
         SWITCH_C_TO_OCAML(TMP)
@@ -301,7 +297,6 @@ CFI_ENDPROC
 /* Arguments: x0 = base; x1 = offset. */
 FUNCTION(caml_call_read_barrier)
 CFI_STARTPROC
-        PROFILE
         SWITCH_OCAML_TO_C(TMP)
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
@@ -385,7 +380,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_alloc1)
 CFI_STARTPROC
-        PROFILE
 1:      sub     ALLOC_PTR, ALLOC_PTR, 16
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
@@ -401,7 +395,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_alloc2)
 CFI_STARTPROC
-        PROFILE
 1:      sub     ALLOC_PTR, ALLOC_PTR, 24
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
@@ -417,7 +410,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_alloc3)
 CFI_STARTPROC
-        PROFILE
 1:      sub     ALLOC_PTR, ALLOC_PTR, 32
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
@@ -433,7 +425,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_allocN)
 CFI_STARTPROC
-        PROFILE
 1:      sub     ALLOC_PTR, ALLOC_PTR, ARG
         cmp     ALLOC_PTR, ALLOC_LIMIT
         b.lo    2f
@@ -458,7 +449,6 @@ CFI_STARTPROC
     /* Arguments:
         C arguments : x0 to x7, d0 to d7
         C function  : ARG */
-        PROFILE
     /* Switch from OCaml to C */
         SWITCH_OCAML_TO_C(TMP)
     /* Make alloc ptr available to the C code */
@@ -548,7 +538,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_start_program)
 CFI_STARTPROC
-        PROFILE
         PUSH_CALLEE_SAVE_REGS
     /* Load caml_young_ptr into ALLOC_PTR (was passed as an argument from C) */
         mov     ALLOC_PTR, x0
@@ -663,7 +652,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_raise_exn)
 CFI_STARTPROC
-        PROFILE
 .Lcaml_raise_exn:
     /* Test if backtrace is active */
         LOAD_TL_VAR(caml_backtrace_active, TMP)
@@ -694,7 +682,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_raise_exception)
 CFI_STARTPROC
-        PROFILE
         mov     ALLOC_PTR, x0
         mov     x0, x1
         LOAD_TL_VAR(caml_system_exnptr_offset, TRAP_OFF)
@@ -711,7 +698,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_callback_asm)
 CFI_STARTPROC
-        PROFILE
         PUSH_CALLEE_SAVE_REGS
     /* Initial shuffling of arguments
        (x0 = alloc ptr, x1 = closure, x2 = first arg) */
@@ -726,7 +712,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_callback2_asm)
 CFI_STARTPROC
-        PROFILE
         PUSH_CALLEE_SAVE_REGS
     /* Initial shuffling of arguments
        (x0 = alloc ptr, x1 = closure, x2 = arg1, x3 = arg2) */
@@ -743,7 +728,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_callback3_asm)
 CFI_STARTPROC
-        PROFILE
         PUSH_CALLEE_SAVE_REGS
     /* Initial shuffling of arguments
        (x0 = alloc ptr, x1 = closure, x2 = arg1, x3 = arg2, x4 = arg3) */
@@ -898,7 +882,6 @@ CFI_ENDPROC
 
 FUNCTION(caml_ml_array_bound_error)
 CFI_STARTPROC
-        PROFILE
     /* Load address of [caml_array_bound_error] in ARG */
         ADDRGLOBAL(ARG, caml_array_bound_error)
     /* Call that function */

@@ -401,9 +401,7 @@ let mk_output_complete_obj f =
 ;;
 
 let mk_p f =
-  "-p", Arg.Unit f,
-  " Compile and link with profiling support for \"gprof\"\n\
-  \     (not supported on all platforms)"
+  "-p", Arg.Unit f, " (no longer supported)"
 ;;
 
 let mk_pack_byt f =
@@ -1073,10 +1071,6 @@ module type Ocamldoc_options = sig
   val _intf : string -> unit
   val _intf_suffix : string -> unit
   val _pp : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
   val _thread : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit

@@ -200,9 +200,8 @@
   \addcontentsline{toc}{chapter}{#2}
   \@input{#1.ind}}
 
-%%% Pour les references des modules
-\newcommand{\moduleref}[1]{\ref{#1}}
-%%% Fin des hacks
+%%% References to modules in the standard library
+\newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
 
 \newenvironment{maintitle}{\begin{center}}{\end{center}}
 

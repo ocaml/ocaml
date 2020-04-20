@@ -1,9 +1,15 @@
 (* TEST
    flags = "-pp '${c_preprocessor}'"
+   ocaml_filetype_flag = "-impl"
    * bytecode
      compare_programs = "false"
    * native
      compare_programs = "false"
+*)
+
+(* This file has extension .ml.c because it needs to be preprocessed
+   by the C preprocessor, which requires a .c extension when called
+   through the C compiler
 *)
 
 (* Test constant propagation through inlining *)

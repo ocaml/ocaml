@@ -44,6 +44,7 @@
 README*                  typo.missing-header
 *.adoc                   typo.missing-header
 stdlib/*.mld             typo.missing-header
+tools/mantis2gh_stripped.csv typo.missing-header
 
 *.adoc                   typo.long-line=may
 
@@ -58,7 +59,7 @@ stdlib/*.mld             typo.missing-header
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
 /tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
 /tools/ci/inria/remove-sinh-primitive.patch typo.white-at-eol typo.missing-header typo.long-line
-/tools/release-checklist                    typo.missing-header
+/tools/release-checklist                    typo.missing-header typo.very-long-line
 
 # ignore auto-generated .depend files
 .depend                  typo.prune
@@ -94,8 +95,6 @@ ocamldoc/odoc_index.html typo.missing-header
 otherlibs/win32unix/readlink.c    typo.long-line
 otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
-
-runtime/i386.S      typo.long-line
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 

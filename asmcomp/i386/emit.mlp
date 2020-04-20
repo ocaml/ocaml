@@ -468,30 +468,11 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 
-(* Emission of the profiling prelude *)
-
-let call_mcount mcount =
-  I.push eax;
-  I.mov esp ebp;
-  I.push ecx;
-  I.push edx;
-  I.call (sym mcount);
-  I.pop edx;
-  I.pop ecx;
-  I.pop eax
-
-let emit_profile () =
-  match system with
-  | S_linux_elf | S_gnu -> call_mcount "mcount"
-  | S_bsd_elf -> call_mcount ".mcount"
-  | _ -> () (*unsupported yet*)
-
 let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    if !Clflags.gprofile then emit_profile();
     let n = frame_size() - 4 in
     if n > 0 then  begin
       I.sub (int n) esp;

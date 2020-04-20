@@ -35,6 +35,16 @@ else
 FLEXDLL_SUBMODULE_PRESENT =
 endif
 
+# Use boot/ocamlc.opt if available
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+ifeq (0,$(shell \
+  test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
+  echo $$?))
+  BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
+else
+  BOOT_OCAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc
+endif
+
 ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   FLEXLINK_ENV =
   CAMLOPT_CMD = $(CAMLOPT)

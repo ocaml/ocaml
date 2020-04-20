@@ -1,3 +1,4 @@
 tfloat_hex.ml
 tfloat_record.ml
 zero_sized_float_arrays.ml
+float_literals.ml

@@ -338,7 +338,7 @@ method effects_of exp =
   | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
-  | Cifthenelse (cond, ifso, ifnot) ->
+  | Cifthenelse (cond, _ifso_dbg, ifso, _ifnot_dbg, ifnot, _dbg) ->
     EC.join (self#effects_of cond)
       (EC.join (self#effects_of ifso) (self#effects_of ifnot))
   | Cop (op, args, _) ->
@@ -417,7 +417,7 @@ method select_checkbound_extra_args () = []
 
 method select_operation op args _dbg =
   match (op, args) with
-  | (Capply _, Cconst_symbol func :: rem) ->
+  | (Capply _, Cconst_symbol (func, _dbg) :: rem) ->
     let label_after = Cmm.new_label () in
     (Icall_imm { func; label_after; }, rem)
   | (Capply _, _) ->
@@ -482,39 +482,39 @@ method select_operation op args _dbg =
   | _ -> Misc.fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
-    [arg; Cconst_int n] when self#is_immediate n ->
+    [arg; Cconst_int (n, _)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
+  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int n; arg] when self#is_immediate n ->
+  | [Cconst_int (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_pointer n; arg] when self#is_immediate n ->
+  | [Cconst_pointer (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith op = function
-    [arg; Cconst_int n] when self#is_immediate n ->
+    [arg; Cconst_int (n, _)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
+  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_shift op = function
-    [arg; Cconst_int n] when n >= 0 && n < Arch.size_int * 8 ->
+    [arg; Cconst_int (n, _)] when n >= 0 && n < Arch.size_int * 8 ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith_comp cmp = function
-    [arg; Cconst_int n] when self#is_immediate n ->
+    [arg; Cconst_int (n, _)] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
+  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [Cconst_int n; arg] when self#is_immediate n ->
+  | [Cconst_int (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
-  | [Cconst_pointer n; arg] when self#is_immediate n ->
+  | [Cconst_pointer (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
       (Iintop(Icomp cmp), args)
@@ -522,29 +522,29 @@ method private select_arith_comp cmp = function
 (* Instruction selection for conditionals *)
 
 method select_condition = function
-    Cop(Ccmpi cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
+    Cop(Ccmpi cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
-  | Cop(Ccmpi cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [arg1; Cconst_pointer (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_pointer (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_pointer (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_pointer (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
-  | Cop(Ccmpa cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args, _) ->
       (Ifloattest cmp, Ctuple args)
-  | Cop(Cand, [arg; Cconst_int 1], _) ->
+  | Cop(Cand, [arg; Cconst_int (1, _)], _) ->
       (Ioddtest, arg)
   | arg ->
       (Itruetest, arg)
@@ -634,13 +634,13 @@ method emit_blockheader env n _dbg =
   let r = self#regs_for typ_int in
   Some(self#insert_op env (Iconst_int n) [||] r)
 
-method about_to_emit_call _env _insn _arg = None
+method about_to_emit_call _env _insn _arg _dbg = None
 
 (* Prior to a function call, update the Spacetime node hole pointer hard
    register. *)
 
 method private maybe_emit_spacetime_move env ~spacetime_reg =
-  Misc.Stdlib.Option.iter (fun reg ->
+  Option.iter (fun reg ->
       self#insert_moves env reg [| Proc.loc_spacetime_node_hole |])
     spacetime_reg
 
@@ -649,22 +649,22 @@ method private maybe_emit_spacetime_move env ~spacetime_reg =
 
 method emit_expr (env:environment) exp =
   match exp with
-    Cconst_int n ->
+    Cconst_int (n, _dbg) ->
       let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_int(Nativeint.of_int n)) [||] r)
-  | Cconst_natint n ->
+  | Cconst_natint (n, _dbg) ->
       let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_int n) [||] r)
-  | Cconst_float n ->
+  | Cconst_float (n, _dbg) ->
       let r = self#regs_for typ_float in
       Some(self#insert_op env (Iconst_float (Int64.bits_of_float n)) [||] r)
-  | Cconst_symbol n ->
+  | Cconst_symbol (n, _dbg) ->
       let r = self#regs_for typ_val in
       Some(self#insert_op env (Iconst_symbol n) [||] r)
-  | Cconst_pointer n ->
+  | Cconst_pointer (n, _dbg) ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
       Some(self#insert_op env (Iconst_int(Nativeint.of_int n)) [||] r)
-  | Cconst_natpointer n ->
+  | Cconst_natpointer (n, _dbg) ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
       Some(self#insert_op env (Iconst_int n) [||] r)
   | Cblockheader(n, dbg) ->
@@ -710,8 +710,12 @@ method emit_expr (env:environment) exp =
           self#insert_debug env  (Iraise k) dbg rd [||];
           None
       end
-  | Cop(Ccmpf _, _, _) ->
-      self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
+  | Cop(Ccmpf _, _, dbg) ->
+      self#emit_expr env
+        (Cifthenelse (exp,
+          dbg, Cconst_int (1, dbg),
+          dbg, Cconst_int (0, dbg),
+          dbg))
   | Cop(op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> None
@@ -726,7 +730,7 @@ method emit_expr (env:environment) exp =
               let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
               let loc_res = Proc.loc_results rd in
               let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
+                self#about_to_emit_call env (Iop new_op) [| r1.(0) |] dbg
               in
               self#insert_move_args env rarg loc_arg stack_ofs;
               self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -740,7 +744,7 @@ method emit_expr (env:environment) exp =
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
               let loc_res = Proc.loc_results rd in
               let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| |]
+                self#about_to_emit_call env (Iop new_op) [| |] dbg
               in
               self#insert_move_args env r1 loc_arg stack_ofs;
               self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -749,7 +753,7 @@ method emit_expr (env:environment) exp =
               Some rd
           | Iextcall r ->
               let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| |]
+                self#about_to_emit_call env (Iop new_op) [| |] dbg
               in
               let (loc_arg, stack_ofs) = self#emit_extcall_args env new_args in
               self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -779,7 +783,7 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some _ -> self#emit_expr env e2
       end
-  | Cifthenelse(econd, eif, eelse) ->
+  | Cifthenelse(econd, _ifso_dbg, eif, _ifnot_dbg, eelse, _dbg) ->
       let (cond, earg) = self#select_condition econd in
       begin match self#emit_expr env earg with
         None -> None
@@ -795,7 +799,9 @@ method emit_expr (env:environment) exp =
       begin match self#emit_expr env esel with
         None -> None
       | Some rsel ->
-          let rscases = Array.map (self#emit_sequence env) ecases in
+          let rscases =
+            Array.map (fun (case, _dbg) -> self#emit_sequence env case) ecases
+          in
           let r = join_array env rscases in
           self#insert env (Iswitch(index,
                                    Array.map (fun (_, s) -> s#extract) rscases))
@@ -806,25 +812,25 @@ method emit_expr (env:environment) exp =
       self#emit_expr env e1
   | Ccatch(rec_flag, handlers, body) ->
       let handlers =
-        List.map (fun (nfail, ids, e2) ->
+        List.map (fun (nfail, ids, e2, dbg) ->
             let rs =
               List.map
                 (fun (id, typ) ->
                   let r = self#regs_for typ in name_regs id r; r)
                 ids in
-            (nfail, ids, rs, e2))
+            (nfail, ids, rs, e2, dbg))
           handlers
       in
       let env =
         (* Since the handlers may be recursive, and called from the body,
            the same environment is used for translating both the handlers and
            the body. *)
-        List.fold_left (fun env (nfail, _ids, rs, _e2) ->
+        List.fold_left (fun env (nfail, _ids, rs, _e2, _dbg) ->
             env_add_static_exception nfail rs env)
           env handlers
       in
       let (r_body, s_body) = self#emit_sequence env body in
-      let translate_one_handler (nfail, ids, rs, e2) =
+      let translate_one_handler (nfail, ids, rs, e2, _dbg) =
         assert(List.length ids = List.length rs);
         let new_env =
           List.fold_left (fun env ((id, _typ), r) -> env_add id r env)
@@ -861,7 +867,7 @@ method emit_expr (env:environment) exp =
           self#insert env (Iexit nfail) [||] [||];
           None
       end
-  | Ctrywith(e1, v, e2) ->
+  | Ctrywith(e1, v, e2, _dbg) ->
       let (r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_val in
       let (r2, s2) = self#emit_sequence (env_add v rv env) e2 in
@@ -1063,7 +1069,7 @@ method emit_tail (env:environment) exp =
               if stack_ofs = 0 then begin
                 let call = Iop (Itailcall_ind { label_after; }) in
                 let spacetime_reg =
-                  self#about_to_emit_call env call [| r1.(0) |]
+                  self#about_to_emit_call env call [| r1.(0) |] dbg
                 in
                 self#insert_moves env rarg loc_arg;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1073,7 +1079,7 @@ method emit_tail (env:environment) exp =
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 let spacetime_reg =
-                  self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
+                  self#about_to_emit_call env (Iop new_op) [| r1.(0) |] dbg
                 in
                 self#insert_move_args env rarg loc_arg stack_ofs;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1088,7 +1094,7 @@ method emit_tail (env:environment) exp =
               if stack_ofs = 0 then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let spacetime_reg =
-                  self#about_to_emit_call env call [| |]
+                  self#about_to_emit_call env call [| |] dbg
                 in
                 self#insert_moves env r1 loc_arg;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1097,7 +1103,7 @@ method emit_tail (env:environment) exp =
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
-                  self#about_to_emit_call env call [| |]
+                  self#about_to_emit_call env call [| |] dbg
                 in
                 self#insert_moves env r1 loc_arg';
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1106,7 +1112,7 @@ method emit_tail (env:environment) exp =
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 let spacetime_reg =
-                  self#about_to_emit_call env (Iop new_op) [| |]
+                  self#about_to_emit_call env (Iop new_op) [| |] dbg
                 in
                 self#insert_move_args env r1 loc_arg stack_ofs;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1121,7 +1127,7 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some _ -> self#emit_tail env e2
       end
-  | Cifthenelse(econd, eif, eelse) ->
+  | Cifthenelse(econd, _ifso_dbg, eif, _ifnot_dbg, eelse, _dbg) ->
       let (cond, earg) = self#select_condition econd in
       begin match self#emit_expr env earg with
         None -> ()
@@ -1135,28 +1141,30 @@ method emit_tail (env:environment) exp =
       begin match self#emit_expr env esel with
         None -> ()
       | Some rsel ->
-          self#insert env
-            (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
-            rsel [||]
+          let cases =
+            Array.map (fun (case, _dbg) -> self#emit_tail_sequence env case)
+              ecases
+          in
+          self#insert env (Iswitch (index, cases)) rsel [||]
       end
   | Ccatch(_, [], e1) ->
       self#emit_tail env e1
   | Ccatch(rec_flag, handlers, e1) ->
       let handlers =
-        List.map (fun (nfail, ids, e2) ->
+        List.map (fun (nfail, ids, e2, dbg) ->
             let rs =
               List.map
                 (fun (id, typ) ->
                   let r = self#regs_for typ in name_regs id r; r)
                 ids in
-            (nfail, ids, rs, e2))
+            (nfail, ids, rs, e2, dbg))
           handlers in
       let env =
-        List.fold_left (fun env (nfail, _ids, rs, _e2) ->
+        List.fold_left (fun env (nfail, _ids, rs, _e2, _dbg) ->
             env_add_static_exception nfail rs env)
           env handlers in
       let s_body = self#emit_tail_sequence env e1 in
-      let aux (nfail, ids, rs, e2) =
+      let aux (nfail, ids, rs, e2, _dbg) =
         assert(List.length ids = List.length rs);
         let new_env =
           List.fold_left
@@ -1166,7 +1174,7 @@ method emit_tail (env:environment) exp =
       in
       self#insert env (Icatch(rec_flag, List.map aux handlers, s_body))
         [||] [||]
-  | Ctrywith(e1, v, e2) ->
+  | Ctrywith(e1, v, e2, _dbg) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_val in
       let s2 = self#emit_tail_sequence (env_add v rv env) e2 in

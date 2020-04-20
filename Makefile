@@ -41,10 +41,9 @@ else
 LN = ln -sf
 endif
 
-CAMLRUN ?= boot/ocamlrun
 include stdlib/StdlibModules
 
-CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
+CAMLC=$(BOOT_OCAMLC) -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
@@ -187,6 +186,8 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
+  asmcomp/debug/compute_ranges_intf.cmo \
+  asmcomp/debug/compute_ranges.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
@@ -337,7 +338,7 @@ coldstart:
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) \
-	  COMPILER="../boot/ocamlc -use-prims ../runtime/primitives" all
+	  CAMLC='$$(BOOT_OCAMLC) -use-prims ../runtime/primitives' all
 	cd stdlib; cp $(LIBFILES) ../boot
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
 
@@ -829,7 +830,7 @@ natruntop:
 
 # Native dynlink
 
-otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
+otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/native/dynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
 
 # The lexer
@@ -952,8 +953,8 @@ clean::
 	$(MAKE) -C runtime clean
 	rm -f stdlib/libcamlrun.$(A)
 
-otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
-  str systhreads unix win32graph win32unix
+otherlibs_all := bigarray dynlink raw_spacetime_lib \
+  str systhreads unix win32unix
 subdirs := debugger lex ocamldoc ocamltest runtime stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all)) \
 
@@ -1305,7 +1306,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	boot/*.cm* boot/libcamlrun.$(A)
+	boot/*.cm* boot/libcamlrun.$(A) boot/ocamlc.opt
 	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc

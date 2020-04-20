@@ -125,9 +125,6 @@ The `configure` script accepts the following options:
         Deprecated since 4.03.0, as `ocamlbuild` is now distributed separately
         from the compiler distribution.
 
-`-no-graph`::
-        Do not compile the Graphics library.
-
 `-partialld <linker and options>`:: (default: determined automatically)
         The linker and options to use for producing an object file (rather than
         an executable) from several other object files.
@@ -183,9 +180,13 @@ On a 64-bit POWER architecture host running Linux, OCaml only operates in a
 
     ./configure -cc "acc -fast" -libs "-lucb"
 
-* For AIX 4.3 with the IBM compiler `xlc`:
+* For AIX 7.x with the IBM compiler `xlc`:
 
-    ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
+    ./configure CC=xlc
++
+By default, build is 32-bit. For 64-bit build, please set environment variable `OBJECT_MODE=64`
+  for _both_ `configure` and `make world` phases. Note, if this variable is set for only one phase,
+  your build will break (`ocamlrun` segfaults).
 +
 If something goes wrong during the automatic configuration, or if the generated
 files cause errors later on, then look at the template files:
