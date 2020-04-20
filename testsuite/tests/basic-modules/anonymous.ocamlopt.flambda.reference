@@ -12,4 +12,10 @@
       (apply (field 1 (global CamlinternalMod!)) [0: [0]] B
         (module-defn(B) anonymous.ml(33):703-773
           (let (x = [0: "foo" "bar"]) (makeblock 0))))
-      (let (f = (function param 0a)) (makeblock 0 A B f)))))
+      (let (f = (function param 0a) s = (makemutable 0 ""))
+        (seq
+          (ignore
+            (let (*match* = (setfield_ptr 0 s "Hello World!")) (makeblock 0)))
+          (let
+            (drop = (function param 0a) *match* = (apply drop (field 0 s)))
+            (makeblock 0 A B f s drop)))))))
