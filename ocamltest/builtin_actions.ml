@@ -145,6 +145,12 @@ let arch64 = make
     "64-bit architecture"
     "non-64-bit architecture")
 
+let arch_power = make
+  "arch_power"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "power")
+    "Target is POWER architecture"
+    "Target is not POWER architecture")
+
 let has_symlink = make
   "has_symlink"
   (Actions_helpers.pass_or_skip (Sys.has_symlink () )
@@ -208,4 +214,5 @@ let _ =
     run;
     script;
     check_program_output;
+    arch_power;
   ]

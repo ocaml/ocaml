@@ -43,7 +43,7 @@ val get_error : ('a, 'e) result -> 'e
     otherwise. *)
 
 val bind : ('a, 'e) result -> ('a -> ('b, 'e) result) -> ('b, 'e) result
-(** [bind r f] is [Ok (f v)] if [r] is [Ok v] and [r] if [r] is [Error _]. *)
+(** [bind r f] is [f v] if [r] is [Ok v] and [r] if [r] is [Error _]. *)
 
 val join : (('a, 'e) result, 'e) result -> ('a, 'e) result
 (** [join rr] is [r] if [rr] is [Ok r] and [rr] if [rr] is [Error _]. *)

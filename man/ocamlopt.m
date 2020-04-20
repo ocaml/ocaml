@@ -484,31 +484,6 @@ option.
 This option can also be used to produce a compiled shared/dynamic
 library (.so extension).
 .TP
-.B \-p
-Generate extra code to write profile information when the program is
-executed.  The profile information can then be examined with the
-analysis program
-.BR gprof (1).
-The
-.B \-p
-option must be given both at
-compile-time and at link-time.  Linking object files not compiled with
-.B \-p
-is possible, but results in less precise profiling.
-
-See the
-.BR gprof (1)
-man page for more information about the profiles.
-
-Full support for
-.BR gprof (1)
-is only available for certain platforms
-(currently: Intel x86/Linux and Alpha/Digital Unix).
-On other platforms, the
-.B \-p
-option will result in a less precise
-profile (no call graph information, only a time profile).
-.TP
 .B \-pack
 Build an object file (.cmx and .o files) and its associated compiled
 interface (.cmi) that combines the .cmx object

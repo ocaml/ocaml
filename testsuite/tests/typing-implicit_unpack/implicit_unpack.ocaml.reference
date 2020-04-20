@@ -1,6 +1,6 @@
-val sort : (module Set.S with type elt = 'a) -> 'a list -> 'a list = <fun>
-val make_set : ('a -> 'a -> int) -> (module Set.S with type elt = 'a) = <fun>
-val sort_cmp : ('a -> 'a -> int) -> 'a list -> 'a list = <fun>
+val sort : (module Set.S with type elt = 's) -> 's list -> 's list = <fun>
+val make_set : ('s -> 's -> int) -> (module Set.S with type elt = 's) = <fun>
+val sort_cmp : ('s -> 's -> int) -> 's list -> 's list = <fun>
 module type S = sig type t val x : t end
 val f : (module S with type t = int) -> int = <fun>
 Line 1, characters 6-37:
@@ -71,7 +71,7 @@ module rec Typ :
   end
 val int : int Typ.typ = Typ.Int <abstr>
 val str : string Typ.typ = Typ.String <abstr>
-val pair : 'a Typ.typ -> 'b Typ.typ -> ('a * 'b) Typ.typ = <fun>
+val pair : 's1 Typ.typ -> 's2 Typ.typ -> ('s1 * 's2) Typ.typ = <fun>
 val to_string : 'a Typ.typ -> 'a -> string = <fun>
 module type MapT =
   sig
@@ -123,7 +123,7 @@ module type MapT =
   end
 type ('k, 'd, 'm) map =
     (module MapT with type data = 'd and type key = 'k and type map = 'm)
-val add : ('a, 'b, 'c) map -> 'a -> 'b -> 'c -> 'c = <fun>
+val add : ('k, 'd, 'm) map -> 'k -> 'd -> 'm -> 'm = <fun>
 module SSMap :
   sig
     type key = String.t

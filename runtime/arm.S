@@ -99,18 +99,6 @@ alloc_limit     .req    r11
 #define CFI_OFFSET(r,n)
 #endif
 
-/* Support for profiling with gprof */
-
-#if defined(PROFILING) && (defined(SYS_linux_eabihf) \
-        || defined(SYS_linux_eabi) \
-        || defined(SYS_netbsd))
-#define PROFILE \
-        push    {lr}; CFI_ADJUST(4); \
-        bl      __gnu_mcount_nc; CFI_ADJUST(-4)
-#else
-#define PROFILE
-#endif
-
 /* Allocation functions and GC interface */
 
         .globl  caml_system__code_begin
@@ -120,7 +108,6 @@ caml_system__code_begin:
         .globl  caml_call_gc
 caml_call_gc:
         CFI_STARTPROC
-        PROFILE
     /* Record return address */
         ldr     r12, =caml_last_return_address
         str     lr, [r12]
@@ -171,7 +158,6 @@ caml_call_gc:
         .globl  caml_alloc1
 caml_alloc1:
         CFI_STARTPROC
-        PROFILE
 .Lcaml_alloc1:
         sub     alloc_ptr, alloc_ptr, 8
         cmp     alloc_ptr, alloc_limit
@@ -194,7 +180,6 @@ caml_alloc1:
         .globl  caml_alloc2
 caml_alloc2:
         CFI_STARTPROC
-        PROFILE
 .Lcaml_alloc2:
         sub     alloc_ptr, alloc_ptr, 12
         cmp     alloc_ptr, alloc_limit
@@ -218,7 +203,6 @@ caml_alloc2:
         .type caml_alloc3, %function
 caml_alloc3:
         CFI_STARTPROC
-        PROFILE
 .Lcaml_alloc3:
         sub     alloc_ptr, alloc_ptr, 16
         cmp     alloc_ptr, alloc_limit
@@ -241,7 +225,6 @@ caml_alloc3:
         .globl  caml_allocN
 caml_allocN:
         CFI_STARTPROC
-        PROFILE
 .Lcaml_allocN:
         sub     alloc_ptr, alloc_ptr, r7
         cmp     alloc_ptr, alloc_limit
@@ -268,7 +251,6 @@ caml_allocN:
         .globl  caml_c_call
 caml_c_call:
         CFI_STARTPROC
-        PROFILE
     /* Record lowest stack address and return address */
         ldr     r5, =caml_last_return_address
         ldr     r6, =caml_bottom_of_stack
@@ -300,7 +282,6 @@ caml_c_call:
         .globl  caml_start_program
 caml_start_program:
         CFI_STARTPROC
-        PROFILE
         ldr     r12, =caml_program
 
 /* Code shared with caml_callback* */
@@ -401,7 +382,6 @@ caml_start_program:
         .globl  caml_raise_exn
 caml_raise_exn:
         CFI_STARTPROC
-        PROFILE
     /* Test if backtrace is active */
         ldr     r1, =caml_backtrace_active
         ldr     r1, [r1]
@@ -429,7 +409,6 @@ caml_raise_exn:
         .globl  caml_raise_exception
 caml_raise_exception:
         CFI_STARTPROC
-        PROFILE
     /* Reload trap ptr, alloc ptr and alloc limit */
         ldr     trap_ptr, =caml_exception_pointer
         ldr     alloc_ptr, =caml_young_ptr
@@ -465,7 +444,6 @@ caml_raise_exception:
         .globl  caml_callback_exn
 caml_callback_exn:
         CFI_STARTPROC
-        PROFILE
     /* Initial shuffling of arguments (r0 = closure, r1 = first arg) */
         mov     r12, r0
         mov     r0, r1          /* r0 = first arg */
@@ -480,7 +458,6 @@ caml_callback_exn:
         .globl  caml_callback2_exn
 caml_callback2_exn:
         CFI_STARTPROC
-        PROFILE
     /* Initial shuffling of arguments (r0 = closure, r1 = arg1, r2 = arg2) */
         mov     r12, r0
         mov     r0, r1          /* r0 = first arg */
@@ -496,7 +473,6 @@ caml_callback2_exn:
         .globl  caml_callback3_exn
 caml_callback3_exn:
         CFI_STARTPROC
-        PROFILE
     /* Initial shuffling of arguments */
     /* (r0 = closure, r1 = arg1, r2 = arg2, r3 = arg3) */
         mov     r12, r0
@@ -514,7 +490,6 @@ caml_callback3_exn:
         .globl  caml_ml_array_bound_error
 caml_ml_array_bound_error:
         CFI_STARTPROC
-        PROFILE
     /* Load address of [caml_array_bound_error] in r7 */
         ldr     r7, =caml_array_bound_error
     /* Call that function */

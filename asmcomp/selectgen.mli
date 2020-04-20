@@ -168,6 +168,7 @@ class virtual selector_generic : object
      : environment
     -> Mach.instruction_desc
     -> Reg.t array
+    -> Debuginfo.t
     -> Reg.t array option
   method initial_env : unit -> environment
   method insert_prologue

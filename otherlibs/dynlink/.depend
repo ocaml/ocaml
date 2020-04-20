@@ -1,0 +1,40 @@
+byte/dynlink.cmo : \
+    dynlink_types.cmi \
+    byte/dynlink_compilerlibs.cmi \
+    dynlink_common.cmi \
+    byte/dynlink.cmi
+dynlink.cmi :
+dynlink_common.cmo : \
+    dynlink_types.cmi \
+    dynlink_platform_intf.cmi \
+    byte/dynlink_compilerlibs.cmi \
+    dynlink_common.cmi
+dynlink_common.cmi : \
+    dynlink_platform_intf.cmi
+dynlink_platform_intf.cmo : \
+    dynlink_types.cmi \
+    dynlink_platform_intf.cmi
+dynlink_platform_intf.cmi : \
+    dynlink_types.cmi
+dynlink_types.cmo : \
+    dynlink_types.cmi
+dynlink_types.cmi :
+extract_crc.cmo : \
+    byte/dynlink_compilerlibs.cmi
+dynlink_common.cmx : \
+    dynlink_types.cmx \
+    dynlink_platform_intf.cmx \
+    native/dynlink_compilerlibs.cmx \
+    dynlink_common.cmi
+dynlink_platform_intf.cmx : \
+    dynlink_types.cmx \
+    dynlink_platform_intf.cmi
+dynlink_types.cmx : \
+    dynlink_types.cmi
+extract_crc.cmx : \
+    native/dynlink_compilerlibs.cmx
+native/dynlink.cmx : \
+    dynlink_types.cmx \
+    native/dynlink_compilerlibs.cmx \
+    dynlink_common.cmx \
+    native/dynlink.cmi

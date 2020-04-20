@@ -382,7 +382,7 @@ static void caml_thread_reinitialize(void)
 
 CAMLprim value caml_thread_initialize(value unit)   /* ML */
 {
-  /* Protect against repeated initialization (PR#1325) */
+  /* Protect against repeated initialization (PR#3532) */
   if (curr_thread != NULL) return Val_unit;
   /* OS-specific initialization */
   st_initialize();

@@ -109,16 +109,17 @@ method! effects_of e =
   | e -> super#effects_of e
 
 method select_addressing chunk = function
-  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n], _)
+  | Cop((Caddv | Cadda), [Cconst_symbol (s, _); Cconst_int (n, _)], _)
     when use_direct_addressing s ->
       (Ibased(s, n), Ctuple [])
-  | Cop((Caddv | Cadda), [arg; Cconst_int n], _)
+  | Cop((Caddv | Cadda), [arg; Cconst_int (n, _)], _)
     when is_offset chunk n ->
       (Iindexed n, arg)
-  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n], _)], dbg)
+  | Cop((Caddv | Cadda as op),
+      [arg1; Cop(Caddi, [arg2; Cconst_int (n, _)], _)], dbg)
     when is_offset chunk n ->
       (Iindexed n, Cop(op, [arg1; arg2], dbg))
-  | Cconst_symbol s
+  | Cconst_symbol (s, _)
     when use_direct_addressing s ->
       (Ibased(s, 0), Ctuple [])
   | arg ->
@@ -130,20 +131,20 @@ method! select_operation op args dbg =
   | Caddi | Caddv | Cadda ->
       begin match args with
       (* Add immediate *)
-      | [arg; Cconst_int n] when self#is_immediate n ->
+      | [arg; Cconst_int (n, _)] when self#is_immediate n ->
           ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
            [arg])
-      | [Cconst_int n; arg] when self#is_immediate n ->
+      | [Cconst_int (n, _); arg] when self#is_immediate n ->
           ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
            [arg])
       (* Shift-add *)
-      | [arg1; Cop(Clsl, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
+      | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg1; arg2])
-      | [arg1; Cop(Casr, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
+      | [arg1; Cop(Casr, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, -n)), [arg1; arg2])
-      | [Cop(Clsl, [arg1; Cconst_int n], _); arg2] when n > 0 && n < 64 ->
+      | [Cop(Clsl, [arg1; Cconst_int (n, _)], _); arg2] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg2; arg1])
-      | [Cop(Casr, [arg1; Cconst_int n], _); arg2] when n > 0 && n < 64 ->
+      | [Cop(Casr, [arg1; Cconst_int (n, _)], _); arg2] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, -n)), [arg2; arg1])
       (* Multiply-add *)
       | [arg1; Cop(Cmuli, args2, dbg)] | [Cop(Cmuli, args2, dbg); arg1] ->
@@ -162,13 +163,13 @@ method! select_operation op args dbg =
   | Csubi ->
       begin match args with
       (* Sub immediate *)
-      | [arg; Cconst_int n] when self#is_immediate n ->
+      | [arg; Cconst_int (n, _)] when self#is_immediate n ->
           ((if n >= 0 then Iintop_imm(Isub, n) else Iintop_imm(Iadd, -n)),
            [arg])
       (* Shift-sub *)
-      | [arg1; Cop(Clsl, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
+      | [arg1; Cop(Clsl, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, n)), [arg1; arg2])
-      | [arg1; Cop(Casr, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
+      | [arg1; Cop(Casr, [arg2; Cconst_int (n, _)], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, -n)), [arg1; arg2])
       (* Multiply-sub *)
       | [arg1; Cop(Cmuli, args2, dbg)] ->
@@ -186,7 +187,7 @@ method! select_operation op args dbg =
   (* Checkbounds *)
   | Ccheckbound ->
       begin match args with
-      | [Cop(Clsr, [arg1; Cconst_int n], _); arg2] when n > 0 && n < 64 ->
+      | [Cop(Clsr, [arg1; Cconst_int (n, _)], _); arg2] when n > 0 && n < 64 ->
           (Ispecific(Ishiftcheckbound { shift = n; label_after_error = None; }),
             [arg1; arg2])
       | _ ->
@@ -242,9 +243,9 @@ method! select_operation op args dbg =
       super#select_operation op args dbg
 
 method select_logical op = function
-  | [arg; Cconst_int n] when is_logical_immediate n ->
+  | [arg; Cconst_int (n, _)] when is_logical_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int n; arg] when is_logical_immediate n ->
+  | [Cconst_int (n, _); arg] when is_logical_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)

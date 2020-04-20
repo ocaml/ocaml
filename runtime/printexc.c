@@ -154,7 +154,9 @@ int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
 void caml_fatal_uncaught_exception(value exn)
 {
-  const value* handle_uncaught_exception =
+  const value *handle_uncaught_exception;
+
+  handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");
   if (handle_uncaught_exception)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */

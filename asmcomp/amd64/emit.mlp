@@ -496,23 +496,6 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  if system = S_gnu || system = S_linux then begin
-    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-       and rbx, rbp, r12-r15 like all C functions.  This includes
-       all the registers used for argument passing, so we don't
-       need to preserve other regs.  We do need to initialize rbp
-       like mcount expects it, though. *)
-    I.push r10;
-    if not fp then I.mov rsp rbp;
-    (* No Spacetime instrumentation needed: [mcount] cannot call anything
-       OCaml-related. *)
-    emit_call "mcount";
-    I.pop r10
-  end
-
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -531,7 +514,6 @@ let emit_instr fallthrough i =
       cfi_adjust_cfa_offset 8;
       I.mov rsp rbp;
     end;
-    if !Clflags.gprofile then emit_profile();
     if frame_required() then begin
       let n = frame_size() - 8 - (if fp then 8 else 0) in
       if n <> 0

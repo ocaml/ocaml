@@ -28,7 +28,7 @@ let modified = ref false
 
 let modules =
   ref [ "Arg"; "BigArray"; "Buffer"; "Condition"; "Dbm"; "Digest"; "Dynlink";
-        "Event"; "Filename"; "Format"; "Gc"; "Genlex"; "Graphics";
+        "Event"; "Filename"; "Format"; "Gc"; "Genlex";
         "Lexing"; "Marshal"; "Mutex"; "Parsing"; "Pervasives"; "Queue";
         "Stack"; "Str"; "Stream"; "Sys";
         "Thread"; "ThreadUnix"; "Weak" ]

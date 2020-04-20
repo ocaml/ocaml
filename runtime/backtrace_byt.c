@@ -242,7 +242,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     return;
 
   if (Caml_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-  /* testing the code region is needed: PR#1554 */
+  /* testing the code region is needed: PR#8026 */
   if (find_debug_info(pc) != NULL)
     Caml_state->backtrace_buffer[Caml_state->backtrace_pos++] = pc;
 

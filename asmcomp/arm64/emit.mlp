@@ -599,17 +599,6 @@ let load_domain_field f r =
   `	and {emit_reg r}, {emit_reg reg_alloc_ptr}, #{emit_nativeint dom_mask}\n`;
   `	ldr {emit_reg r}, [{emit_reg r}, #{emit_int domain_field}]`
 
-(* Emission of the profiling prelude *)
-
-let emit_profile() = ()   (* TODO *)
-(*
-  match Config.system with
-    "linux_eabi" | "linux_eabihf" | "netbsd" ->
-      `	push	\{lr}\n`;
-      `	{emit_call "__gnu_mcount_nc"}\n`
-  | _ -> ()
-*)
-
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -617,7 +606,6 @@ let emit_instr i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      if !Clflags.gprofile then emit_profile();
       let n = frame_size() in
       if n > 0 then
         emit_stack_adjustment (-n);
@@ -647,7 +635,7 @@ let emit_instr i =
         if f = 0L then
           `	fmov	{emit_reg i.res.(0)}, xzr\n`
         else if is_immediate_float f then
-          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" f}\n`
+          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "%.7f" (Int64.float_of_bits f)}\n`
         else begin
           let lbl = float_literal f in
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;

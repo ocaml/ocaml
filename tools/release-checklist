@@ -43,7 +43,7 @@ export ARCHIVE_PATH="$OCAML_RELEASE_ARCHIVE_PATH"
 export WEB_HOST="$OCAML_RELEASE_WEB_HOST"
 export WEB_PATH="$OCAML_RELEASE_WEB_PATH"
 
-export DIST=$ARCHIVE_PATH/ocaml/ocaml-\$MAJOR.\$MINOR
+export DIST="\$ARCHIVE_PATH/ocaml/ocaml-\$MAJOR.\$MINOR"
 EOF
 source /tmp/env-$USER.sh
 echo $VERSION
@@ -381,20 +381,34 @@ Happy hacking,
 ```
 Dear OCaml users,
 
-The release of OCaml $BRANCH.$BUGFIX is approaching. We have created
+The release of OCaml 4.08.0 is approaching. We have created
 a beta version to help you adapt your software to the new features
 ahead of the release.
 
-The source code is available at this address:
+The source code is available at these addresses:
 
-  https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
+ https://github.com/ocaml/ocaml/archive/4.08.0+beta1.tar.gz
+ https://caml.inria.fr/pub/distrib/ocaml-4.08/ocaml-4.08.0+beta1.tar.gz
 
-and the compiler is also available as a set of OPAM switches.
+The compiler can also be installed as an OPAM switch with one of the
+following commands.
+
+opam switch create ocaml-variants.4.08.0+beta1 --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
+
+or
+
+opam switch create ocaml-variants.4.08.0+beta1+<VARIANT> --repositories=default,beta=git+https://github.com/ocaml/ocaml-beta-repository.git
+
+ where you replace <VARIANT> with one of these:
+   afl
+   default_unsafe_string
+   flambda
+   fp
+   fp+flambda
 
 We want to know about all bugs. Please report them here:
-  http://caml.inria.fr/mantis/bug_report_page.php
+ https://github.com/ocaml/ocaml/issues
 
 Happy hacking,
 
--- Damien Doligez for the OCaml team.
-```
+-- Damien Doligez for the OCaml team.```

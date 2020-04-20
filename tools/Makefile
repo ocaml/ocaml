@@ -26,12 +26,11 @@ endef
 $(foreach i,BINDIR LIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
 endif
 
-CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
 # the shell.
-override installed_tools := ocamldep ocamlprof ocamlcp ocamloptp \
+override installed_tools := ocamldep ocamlprof ocamlcp \
                    ocamlmktop ocamlmklib ocamlobjinfo
 
 install_files :=
@@ -73,7 +72,7 @@ $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
-CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
+CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
@@ -125,7 +124,6 @@ ocamlcp_cmos = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                clflags.cmo main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
-$(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 
 opt:: profiling.cmx
 
@@ -431,7 +429,7 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
+CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend

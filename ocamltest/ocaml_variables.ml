@@ -149,6 +149,9 @@ let ocamlyacc_flags = make ("ocamlyacc_flags",
 let ocaml_exit_status = make ("ocaml_exit_status",
   "Expected exit status of ocaml")
 
+let ocaml_filetype_flag = make ("ocaml_filetype_flag",
+  "Filetype of the testfile (-impl, -intf, etc.)")
+
 let ocamlc_byte_exit_status = make ("ocamlc_byte_exit_status",
   "Expected exit status of ocac.byte")
 
@@ -255,6 +258,7 @@ let _ = List.iter register_variable
     ocamlopt_flags;
     ocamlopt_default_flags;
     ocaml_exit_status;
+    ocaml_filetype_flag;
     ocamlc_byte_exit_status;
     ocamlopt_byte_exit_status;
     ocamlnat_exit_status;

@@ -2,6 +2,8 @@
 * hasunix
 include unix
 files = "utimes.txt"
+** bytecode
+** native
 *)
 
 (* We do not check setting the "last access time" because it is hard to do so on

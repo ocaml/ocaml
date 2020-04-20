@@ -30,7 +30,6 @@ COMPILER_LIBS_INTF = Asthelper.tex Astmapper.tex Asttypes.tex \
   $(COMPILER_LIBS_PLUGIN_HOOKS)
 
 OTHERLIB_INTF = Unix.tex UnixLabels.tex Str.tex \
-  Graphics.tex GraphicsX11.tex \
   Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
   Dynlink.tex Bigarray.tex
 

@@ -243,12 +243,11 @@ Any user-visible change should have a `Changes` entry:
 
 - using the label "`*`" if it breaks existing programs, "`-`" otherwise
 
-- with the issue number `PR#{N}` if from mantis, `GPR#{N}` if from github
-  (several numbers separated by commas can be used)
+- with all relevant issue and PR numbers `#{N}`, in ascending numerical order
+  (separated by commas if necessary)
 
-- maintaining the order: each section lists Mantis PRs first in ascending
-  numerical order, followed by Github PRs in ascending numerical order,
-  followed by changes that are not related to a PR.
+- maintaining the order: the entries in each section should be sorted by
+  issue/PR number (the first of each entry, if more than one is available)
 
 - with a concise readable description of the change (possibly taken
   from a commit message, but it should make sense to end-users

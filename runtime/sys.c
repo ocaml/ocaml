@@ -208,7 +208,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   p = caml_stat_strdup_to_os(String_val(path));
   flags |= caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
-  /* open on a named FIFO can block (PR#1533) */
+  /* open on a named FIFO can block (PR#8005) */
   caml_enter_blocking_section();
   fd = open_os(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/

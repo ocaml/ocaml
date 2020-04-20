@@ -262,6 +262,7 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
         backend_flags env compiler#target;
         compile_flags;
         output;
+        (Environments.safe_lookup Ocaml_variables.ocaml_filetype_flag env);
         module_names;
         last_flags env
       ] in

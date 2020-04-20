@@ -1376,7 +1376,7 @@ let transl_toplevel_item item =
         (transl_extension_constructor item.str_env None ext)
   | Tstr_module {mb_id=id; mb_presence=Mp_present; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
-         with "open" (PR#1672) *)
+         with "open" (PR#8133) *)
       set_toplevel_unique_name id;
       let lam = transl_module Tcoerce_none (Some(Pident id)) modl in
       toploop_setvalue id lam

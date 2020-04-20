@@ -1,4 +1,4 @@
-#3 "otherlibs/dynlink/natdynlink.ml"
+#3 "otherlibs/dynlink/native/dynlink.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -20,6 +20,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+open! Dynlink_compilerlibs
+
 module DC = Dynlink_common
 module DT = Dynlink_types
 
@@ -33,7 +35,7 @@ type global_map = {
 module Native = struct
   type handle
 
-  external ndl_open : string -> bool -> handle * Cmx_format.dynheader
+  external ndl_open : string -> bool -> handle * Cmxs_format.dynheader
     = "caml_natdynlink_open"
   external ndl_run : handle -> string -> unit = "caml_natdynlink_run"
   external ndl_getmap : unit -> global_map list = "caml_natdynlink_getmap"
@@ -41,7 +43,7 @@ module Native = struct
   external ndl_loadsym : string -> Obj.t = "caml_natdynlink_loadsym"
 
   module Unit_header = struct
-    type t = Cmx_format.dynunit
+    type t = Cmxs_format.dynunit
 
     let name (t : t) = t.dynu_name
     let crc (t : t) = Some t.dynu_crc
@@ -59,9 +61,6 @@ module Native = struct
   let adapt_filename f = Filename.chop_extension f ^ ".cmxs"
 
   let num_globals_inited () = ndl_globals_inited ()
-
-  (* Copied from config.ml -- this file cannot depend on that. *)
-  let cmxs_magic_number = "Caml1999D025"
 
   let fold_initial_units ~init ~f =
     let rank = ref 0 in
@@ -91,7 +90,7 @@ module Native = struct
       try ndl_open filename (not priv)
       with exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
     in
-    if header.dynu_magic <> cmxs_magic_number then begin
+    if header.dynu_magic <> Config.cmxs_magic_number then begin
       raise (DT.Error (Not_a_bytecode_file filename))
     end;
     handle, header.dynu_units

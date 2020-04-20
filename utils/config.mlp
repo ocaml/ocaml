@@ -52,7 +52,6 @@ let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
 let ar = "%%ARCMD%%"
-let cc_profile = "%%CC_PROFILE%%"
 let mkdll, mkexe, mkmaindll =
   (* @@DRA Cygwin - but only if shared libraries are enabled, which we
      should be able to detect? *)
@@ -72,7 +71,6 @@ let mkdll, mkexe, mkmaindll =
   else
     "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
 
-let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
 let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
@@ -102,7 +100,6 @@ and cmxa_magic_number =
 and ast_impl_magic_number = "Caml1999M025"
 and ast_intf_magic_number = "Caml1999N025"
 and cmxs_magic_number = "Caml1999D025"
-    (* cmxs_magic_number is duplicated in otherlibs/dynlink/natdynlink.ml *)
 and cmt_magic_number = "Caml1999T025"
 
 let interface_suffix = ref ".mli"
@@ -176,7 +173,6 @@ let configuration_variables =
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
-  p "cc_profile" cc_profile;
   p "architecture" architecture;
   p "model" model;
   p_int "int_size" Sys.int_size;
@@ -196,7 +192,6 @@ let configuration_variables =
   p_bool "stats" stats;
   p "host" host;
   p "target" target;
-  p_bool "profiling" profiling;
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
   p_bool "safe_string" safe_string;

@@ -32,25 +32,25 @@ type addressing_expr =
 
 let rec select_addr exp =
   match exp with
-    Cconst_symbol s ->
+    Cconst_symbol (s, _) ->
       (Asymbol s, 0)
-  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m], _) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int (m, _)], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Csubi, [arg; Cconst_int m], _) ->
+  | Cop(Csubi, [arg; Cconst_int (m, _)], _) ->
       let (a, n) = select_addr arg in (a, n - m)
-  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg], _) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int (m, _); arg], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)], _) ->
+  | Cop(Clsl, [arg; Cconst_int ((1|2|3 as shift), _)], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, 1 lsl shift), n lsl shift)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [arg; Cconst_int(2|4|8 as mult)], _) ->
+  | Cop(Cmuli, [arg; Cconst_int ((2|4|8 as mult), _)], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [Cconst_int(2|4|8 as mult); arg], _) ->
+  | Cop(Cmuli, [Cconst_int ((2|4|8 as mult), _); arg], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
@@ -192,15 +192,15 @@ method select_addressing _chunk exp =
 
 method! select_store is_assign addr exp =
   match exp with
-    Cconst_int n ->
+    Cconst_int (n, _) ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n | Cblockheader (n, _)) ->
+  | (Cconst_natint (n, _) | Cblockheader (n, _)) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_pointer n ->
+  | Cconst_pointer (n, _) ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | Cconst_natpointer n ->
+  | Cconst_natpointer (n, _) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_symbol s ->
+  | Cconst_symbol (s, _) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
@@ -229,7 +229,7 @@ method! select_operation op args dbg =
   (* Recognize store instructions *)
   | Cstore ((Word_int | Word_val) as chunk, _) ->
       begin match args with
-        [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int n], _)]
+        [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int (n, _)], _)]
         when loc = loc' ->
           let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
@@ -287,15 +287,16 @@ method! insert_op_debug env op dbg rs rd =
 
 method select_push exp =
   match exp with
-    Cconst_int n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
-  | Cconst_natint n -> (Ispecific(Ipush_int n), Ctuple [])
-  | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
-  | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
-  | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload {memory_chunk = (Word_int | Word_val) as chunk}, [loc], _) ->
+    Cconst_int (n, _) -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
+  | Cconst_natint (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
+  | Cconst_pointer (n, _) ->
+      (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
+  | Cconst_natpointer (n, _) -> (Ispecific(Ipush_int n), Ctuple [])
+  | Cconst_symbol (s, _) -> (Ispecific(Ipush_symbol s), Ctuple [])
+  | Cop(Cload ({memory_chunk = (Word_int | Word_val) as chunk}, _), [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
-  | Cop(Cload {memory_chunk = Double_u}, [loc], _) ->
+  | Cop(Cload ({memory_chunk = Double_u}, _), [loc], _) ->
       let (addr, arg) = self#select_addressing Double_u loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)

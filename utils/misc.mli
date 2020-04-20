@@ -144,15 +144,13 @@ module Stdlib : sig
   module Option : sig
     type 'a t = 'a option
 
-    val is_none : 'a t -> bool
-    val is_some : 'a t -> bool
-
-    val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-
-    val iter : ('a -> unit) -> 'a t -> unit
-    val map : ('a -> 'b) -> 'a t -> 'b t
-    val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
+
+    val print
+       : (Format.formatter -> 'a -> unit)
+      -> Format.formatter
+      -> 'a t
+      -> unit
   end
 
   module Array : sig
@@ -167,6 +165,8 @@ module Stdlib : sig
     module Set : Set.S with type elt = string
     module Map : Map.S with type key = string
     module Tbl : Hashtbl.S with type key = string
+
+    val print : Format.formatter -> t -> unit
 
     val for_all : (char -> bool) -> t -> bool
   end
@@ -217,6 +217,14 @@ val output_to_file_via_temporary:
            which is passed to [fn] (name + output channel).  When [fn] returns,
            the channel is closed and the temporary file is renamed to
            [filename]. *)
+
+(** Open the given [filename] for writing (in binary mode), pass the
+    [out_channel] to the given function, then close the channel. If the function
+    raises an exception then [filename] will be removed. *)
+val protect_writing_to_file
+   : filename:string
+  -> f:(out_channel -> 'a)
+  -> 'a
 
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]

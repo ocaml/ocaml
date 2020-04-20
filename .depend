@@ -847,6 +847,7 @@ typing/persistent_env.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/consistbl.cmi \
     typing/cmi_format.cmi
 typing/predef.cmo : \
     typing/types.cmi \
@@ -2323,7 +2324,6 @@ asmcomp/CSEgen.cmi : \
     asmcomp/mach.cmi
 asmcomp/afl_instrument.cmo : \
     bytecomp/lambda.cmi \
-    middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/backend_var.cmi \
@@ -2331,13 +2331,13 @@ asmcomp/afl_instrument.cmo : \
     asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmx : \
     bytecomp/lambda.cmx \
-    middle_end/debuginfo.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmi : \
+    middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/arch.cmo : \
     utils/config.cmi \
@@ -2798,6 +2798,7 @@ asmcomp/cmmgen.cmo : \
     middle_end/debuginfo.cmi \
     utils/config.cmi \
     asmcomp/compilenv.cmi \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmi \
     asmcomp/cmm.cmi \
@@ -2824,6 +2825,7 @@ asmcomp/cmmgen.cmx : \
     middle_end/debuginfo.cmx \
     utils/config.cmx \
     asmcomp/compilenv.cmx \
+    asmcomp/cmxs_format.cmi \
     asmcomp/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
     asmcomp/cmm.cmx \
@@ -2857,6 +2859,8 @@ asmcomp/cmx_format.cmi : \
     utils/misc.cmi \
     asmcomp/export_info.cmi \
     asmcomp/clambda.cmi
+asmcomp/cmxs_format.cmi : \
+    utils/misc.cmi
 asmcomp/coloring.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -3486,6 +3490,7 @@ asmcomp/schedgen.cmo : \
     asmcomp/mach.cmi \
     asmcomp/linearize.cmi \
     asmcomp/cmm.cmi \
+    utils/clflags.cmi \
     asmcomp/arch.cmo \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmx : \
@@ -3494,6 +3499,7 @@ asmcomp/schedgen.cmx : \
     asmcomp/mach.cmx \
     asmcomp/linearize.cmx \
     asmcomp/cmm.cmx \
+    utils/clflags.cmx \
     asmcomp/arch.cmx \
     asmcomp/schedgen.cmi
 asmcomp/schedgen.cmi : \
@@ -5454,6 +5460,34 @@ asmcomp/debug/available_regs.cmx : \
     asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : \
     asmcomp/mach.cmi
+asmcomp/debug/compute_ranges.cmo : \
+    asmcomp/printlinear.cmi \
+    utils/numbers.cmi \
+    utils/misc.cmi \
+    asmcomp/linearize.cmi \
+    middle_end/int_replace_polymorphic_compare.cmi \
+    asmcomp/debug/compute_ranges_intf.cmo \
+    asmcomp/cmm.cmi \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmx : \
+    asmcomp/printlinear.cmx \
+    utils/numbers.cmx \
+    utils/misc.cmx \
+    asmcomp/linearize.cmx \
+    middle_end/int_replace_polymorphic_compare.cmx \
+    asmcomp/debug/compute_ranges_intf.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmi : \
+    asmcomp/debug/compute_ranges_intf.cmo
+asmcomp/debug/compute_ranges_intf.cmo : \
+    utils/numbers.cmi \
+    asmcomp/linearize.cmi \
+    utils/identifiable.cmi
+asmcomp/debug/compute_ranges_intf.cmx : \
+    utils/numbers.cmx \
+    asmcomp/linearize.cmx \
+    utils/identifiable.cmx
 asmcomp/debug/reg_availability_set.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/backend_var.cmi \
@@ -6011,6 +6045,7 @@ toplevel/topdirs.cmo : \
     bytecomp/symtable.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
+    typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     bytecomp/opcodes.cmi \
@@ -6023,7 +6058,6 @@ toplevel/topdirs.cmo : \
     typing/env.cmi \
     bytecomp/dll.cmi \
     typing/ctype.cmi \
-    utils/consistbl.cmi \
     utils/config.cmi \
     bytecomp/cmo_format.cmi \
     utils/clflags.cmi \
@@ -6040,6 +6074,7 @@ toplevel/topdirs.cmx : \
     bytecomp/symtable.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
+    typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     bytecomp/opcodes.cmx \
@@ -6052,7 +6087,6 @@ toplevel/topdirs.cmx : \
     typing/env.cmx \
     bytecomp/dll.cmx \
     typing/ctype.cmx \
-    utils/consistbl.cmx \
     utils/config.cmx \
     bytecomp/cmo_format.cmi \
     utils/clflags.cmx \

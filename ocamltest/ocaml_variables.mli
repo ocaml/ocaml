@@ -89,6 +89,8 @@ val ocamlyacc_flags : Variables.t
 
 val ocaml_exit_status : Variables.t
 
+val ocaml_filetype_flag : Variables.t
+
 val ocamlc_byte_exit_status : Variables.t
 
 val ocamlopt_byte_exit_status : Variables.t
