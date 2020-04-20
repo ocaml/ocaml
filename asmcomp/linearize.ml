@@ -56,6 +56,7 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : Mach.spacetime_shape option;
+    fun_tailrec_entry_point_label : label;
   }
 
 (* Invert a test *)
@@ -314,21 +315,73 @@ let rec linear i n =
       copy_instr (Lraise k) i (discard_dead_code n)
 
 let add_prologue first_insn =
-  let insn = first_insn in
-  { desc = Lprologue;
-    next = insn;
-    arg = [| |];
-    res = [| |];
-    dbg = insn.dbg;
-    live = insn.live;
-  }
+  (* The prologue needs to come after any [Iname_for_debugger] operations that
+     refer to parameters.  (Such operations always come in a contiguous
+     block, cf. [Selectgen].) *)
+  let rec skip_naming_ops (insn : instruction) : label * instruction =
+    match insn.desc with
+    | Lop (Iname_for_debugger _) ->
+      let tailrec_entry_point_label, next = skip_naming_ops insn.next in
+      tailrec_entry_point_label, { insn with next; }
+    | _ ->
+      let tailrec_entry_point_label = Cmm.new_label () in
+      let tailrec_entry_point =
+        { desc = Llabel tailrec_entry_point_label;
+          next = insn;
+          arg = [| |];
+          res = [| |];
+          dbg = insn.dbg;
+          live = insn.live;
+        }
+      in
+      (* We expect [Lprologue] to expand to at least one instruction---as such,
+         if no prologue is required, we avoid adding the instruction here.
+         The reason is subtle: an empty expansion of [Lprologue] can cause
+         two labels, one either side of the [Lprologue], to point at the same
+         location.  This means that we lose the property (cf. [Coalesce_labels])
+         that we can check if two labels point at the same location by
+         comparing them for equality.  This causes trouble when the function
+         whose prologue is in question lands at the top of the object file
+         and we are emitting DWARF debugging information:
+           foo_code_begin:
+           foo:
+           .L1:
+           ; empty prologue
+           .L2:
+           ...
+         If we were to emit a location list entry from L1...L2, not realising
+         that they point at the same location, then the beginning and ending
+         points of the range would be both equal to each other and (relative to
+         "foo_code_begin") equal to zero.  This appears to confuse objdump,
+         which seemingly misinterprets the entry as an end-of-list entry
+         (which is encoded with two zero words), then complaining about a
+         "hole in location list" (as it ignores any remaining list entries
+         after the misinterpreted entry). *)
+      if Proc.prologue_required () then
+        let prologue =
+          { desc = Lprologue;
+            next = tailrec_entry_point;
+            arg = [| |];
+            res = [| |];
+            dbg = tailrec_entry_point.dbg;
+            live = Reg.Set.empty;  (* will not be used *)
+          }
+        in
+        tailrec_entry_point_label, prologue
+      else
+        tailrec_entry_point_label, tailrec_entry_point
+  in
+  skip_naming_ops first_insn
 
 let fundecl f =
-  let fun_body = add_prologue (linear f.Mach.fun_body end_instr) in
+  let fun_tailrec_entry_point_label, fun_body =
+    add_prologue (linear f.Mach.fun_body end_instr)
+  in
   { fun_name = f.Mach.fun_name;
     fun_args = Reg.set_of_array f.Mach.fun_args;
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
+    fun_tailrec_entry_point_label;
   }

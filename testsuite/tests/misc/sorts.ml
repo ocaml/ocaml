@@ -4164,9 +4164,6 @@ let ainsertion_1 cmp a =
   done;
 ;;
 
-(************************************************************************)
-(* merge sort on lists via arrays *)
-
 let array_of_list l len =
   match l with
   | [] -> [| |]

@@ -82,11 +82,14 @@ let stack_offset = ref 0
 
 (* Layout of the stack frame *)
 
+<<<<<<< HEAD
 let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
 
 let frame_required () =
   fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
+=======
+>>>>>>> 36d299b4aaf7f2d317fbfa148d7f94e720c80730
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
@@ -509,6 +512,7 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
+    assert (Proc.prologue_required ());
     if fp then begin
       I.push rbp;
       cfi_adjust_cfa_offset 8;
@@ -521,8 +525,7 @@ let emit_instr fallthrough i =
         I.sub (int n) rsp;
         cfi_adjust_cfa_offset n;
       end;
-    end;
-    def_label !tailrec_entry_point
+    end
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -1026,7 +1029,7 @@ let emit_block_header_for_closure () =
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := 0;
   call_gc_sites := [];
   bound_error_sites := [];

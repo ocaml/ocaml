@@ -439,6 +439,7 @@ let emit_instr i =
     match i.desc with
     | Lend -> 0
     | Lprologue ->
+      assert (Proc.prologue_required ());
       let n = frame_size() in
       let num_instrs =
         if n > 0 then begin
@@ -928,7 +929,7 @@ let rec emit_all ninstr fallthrough i =
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   float_literals := [];
   gotrel_literals := [];
   symbol_literals := [];

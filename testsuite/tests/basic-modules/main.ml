@@ -1,5 +1,5 @@
 (* TEST
-  modules = "offset.ml pr6726.ml pr7427.ml"
+  modules = "offset.ml pr6726.ml pr7427.ml pr4008.ml"
 *)
 
 (* PR#6435 *)
@@ -16,6 +16,7 @@ module M = F (Offset)
 
 let () = M.test (Offset.M.Set.singleton "42")
 let v = Pr6726.Test.v
+let v = Pr4008.v
 
 (* PR#7427 *)
 
