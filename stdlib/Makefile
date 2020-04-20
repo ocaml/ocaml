@@ -25,14 +25,6 @@ CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
           -g -warn-error A -bin-annot -nostdlib \
           -safe-string -strict-formats
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
-else
-OPTCOMPFLAGS=
-endif
-ifeq "$(FUNCTION_SECTIONS)" "true"
-OPTCOMPFLAGS += -function-sections
-endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(BOOT_OCAMLC) -depend

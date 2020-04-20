@@ -390,6 +390,11 @@ OCaml 4.10 maintenance branch
   them to crash.
   (Jérémie Dimino, review by Nicolás Ojeda Bär)
 
+### Bug fixes:
+
+- #9165: Add missing -function-sections and -O3 flags in Makefiles.
+  (Greta Yorsh, review by David Allsopp)
+
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 
