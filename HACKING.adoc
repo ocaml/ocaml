@@ -332,6 +332,11 @@ What this means is that whenever you change the interface of some compilation
 unit, and want merlin to be aware of the new interface, you will need to run
 `make clean && dune build @libs`.
 
+Finally, there will be times were the compiler simply cannot be built with an
+older version of itself. In which case, you'll either have to live without
+merlin, or first develop your patch on an older branch of the compiler before
+rebasing it (this can, however, introduce a substantial amount of extra work).
+
 === Continuous integration
 
 ==== Github's CI: Travis and AppVeyor
