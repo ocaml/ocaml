@@ -1641,14 +1641,15 @@ let try_expand_safe env ty =
 (* Fully expand the head of a type. *)
 let rec try_expand_rec try_once env visited ty =
   let ty' = try_once env ty in
-  if List.memq ty' visited then
+  if List.memq ty' visited  (* check for 3rd visit *)
+  && List.length (List.filter ((==) ty') visited) >= 2 then
     raise (Cyclic_type (Location.in_file !Location.input_name,
-                        env, List.rev (ty' :: visited)))
-  else try try_expand_rec try_once env (ty' :: visited) ty'
+                        env, List.rev (ty' :: visited)));
+  try try_expand_rec try_once env (ty' :: visited) ty'
   with Cannot_expand -> ty'
 
 let try_expand_head try_once env ty =
-  try_expand_rec try_once env [] ty
+  try_expand_rec try_once env [ty] ty
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =

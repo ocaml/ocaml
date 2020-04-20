@@ -9,7 +9,7 @@ module type T = sig
 end
 [%%expect{|
 Line 1:
-Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a =>
+Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a => 'a =>
 |}]
 
 module M = struct
@@ -18,7 +18,8 @@ module M = struct
 end
 [%%expect{|
 Line 1:
-Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a =>
+Error: Cycle detected in type:
+          (< gamma : 'a gamma as 'b > as 'a) gamma => 'b => 'b => 'b =>
 |}]
 
 (* needs -rectypes *)
@@ -29,7 +30,8 @@ module M = struct
 end
 [%%expect{|
 Line 1:
-Error: Cycle detected in type: 'a list t as 'a => 'a =>
+Error: Cycle detected in type:
+          (('a t as 'b) list as 'a) t => 'b => 'b => 'b =>
 |}]
 
 module M = struct
@@ -54,7 +56,7 @@ module M = struct
 end
 [%%expect{|
 Line 1:
-Error: Cycle detected in type: 'a u t => 'a u t =>
+Error: Cycle detected in type: 'a u t => 'a u t => 'a u t =>
 |}]
 
 module M = struct
@@ -64,7 +66,7 @@ module M = struct
 end
 [%%expect{|
 Line 1:
-Error: Cycle detected in type: 'a list t as 'a => 'a =>
+Error: Cycle detected in type: 'a list t as 'a => 'a => 'a =>
 |}, Principal{|
 module M :
   sig
@@ -108,11 +110,12 @@ end
 [%%expect{|
 Line 1:
 Error: Cycle detected in type:
-          (< delta : < beta : 'a alpha_of_gamma as 'b >;
-             gamma : < alpha : 'a beta_of_delta as 'c > >
-           as 'a)
-          gamma alpha =>
-         'c => 'a delta beta => 'b => 'a gamma alpha =>
+          (< delta : < beta : 'a >;
+             gamma : < alpha : 'b beta_of_delta as 'c > >
+           as 'b)
+          alpha_of_gamma as 'a =>
+         'b gamma alpha => 'c => 'b delta beta => 'a => 'b gamma alpha =>
+         'c => 'b delta beta => 'a =>
 |}]
 
 module type T = sig
@@ -125,8 +128,8 @@ end
 [%%expect{|
 Line 1:
 Error: Cycle detected in type:
-          (< gamma : < alpha : 'a alpha_of_gamma as 'b > > as 'a) gamma alpha =>
-         'b => 'a gamma alpha =>
+          (< gamma : < alpha : 'a > > as 'b) alpha_of_gamma as 'a =>
+         'b gamma alpha => 'a => 'b gamma alpha => 'a =>
 |}]
 
 module type T = sig
@@ -138,7 +141,7 @@ end
 [%%expect{|
 Line 1:
 Error: Cycle detected in type:
-          < gamma : < alpha : 'a > > alpha as 'a => 'a =>
+          < gamma : < alpha : 'a > > alpha as 'a => 'a => 'a =>
 |}]
 
 module type T = sig
@@ -147,7 +150,7 @@ module type T = sig
 end
 [%%expect{|
 Line 1:
-Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a =>
+Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a => 'a =>
 |}]
 
 type 'a gamma = 'b constraint 'a = < gamma : 'b >
@@ -155,7 +158,8 @@ let o : < gamma : 'a gamma > as 'a = object method gamma = 1 end
 [%%expect{|
 type 'a gamma = 'b constraint 'a = < gamma : 'b >
 Line 1:
-Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a =>
+Error: Cycle detected in type:
+          (< gamma : 'a gamma as 'b > as 'a) gamma => 'b => 'b => 'b =>
 |}]
 
 module M = struct
