@@ -66,9 +66,10 @@ Working version
 - #9280: Micro-optimise allocations on amd64 to save a register.
   (Stephen Dolan, review by Xavier Leroy)
 
-- #9316, #9443: Use typing information from Clambda for mutable Cmm variables.
+- #9316, #9443, #9463: Use typing information from Clambda
+  for mutable Cmm variables.
   (Stephen Dolan, review by Vincent Laviron, Guillaume Bury, Xavier Leroy,
-  and Gabriel Scherer)
+  and Gabriel Scherer; temporary bug report by Richard Jones)
 
 - #9426: build the Mingw ports with higher levels of GCC optimization
   (Xavier Leroy, review by Sébastien Hinderer)
