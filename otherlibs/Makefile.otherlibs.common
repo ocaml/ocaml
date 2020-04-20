@@ -31,14 +31,6 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 # Compilation options
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
           -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
-ifeq "$(FLAMBDA)" "true"
-OPTCOMPFLAGS=-O3
-else
-OPTCOMPFLAGS=
-endif
-ifeq "$(FUNCTION_SECTIONS)" "true"
-OPTCOMPFLAGS += -function-sections
-endif
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
 # Variables that must be defined by individual libraries:
