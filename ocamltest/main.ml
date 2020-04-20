@@ -155,7 +155,10 @@ let test_file test_filename =
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
   let clean_test_build_directory () =
-    ignore (Sys.command ("rm -rf " ^ test_build_directory_prefix)) in
+    ignore
+      (Sys.command
+         (Filename.quote_command "rm" ["-rf"; test_build_directory_prefix]))
+  in
   clean_test_build_directory ();
   Sys.make_directory test_build_directory_prefix;
   let summary = Sys.with_chdir test_build_directory_prefix
