@@ -5,8 +5,6 @@
 # will not necessarily be ran by GNU make
 # The same holds for $< and $@
 
-.NOTPARALLEL:
-
 SOURCES = A.ml B.ml C.ml D.ml
 OBJECTS = lib.cmo $(SOURCES:%.ml=Lib%.cmo)
 NOBJECTS = $(OBJECTS:%.cmo=%.cmx)
