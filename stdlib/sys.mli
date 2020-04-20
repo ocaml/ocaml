@@ -20,7 +20,8 @@
   an error.
 *)
 
-external argv : string array = "%sys_argv"
+(*external argv : string array = "%sys_argv"*)
+val argv : string array
 (** The command line arguments given to the process.
    The first element is the command name used to invoke the program.
    The following elements are the command-line arguments
