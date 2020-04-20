@@ -343,6 +343,9 @@ Working version
 - #9274, avoid reading cmi file while printing types
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #9307, #9345: reproducible env summaries for reproducible compilation
+  (Florian Angeletti, review by Leo White)
+
 - #9309, #9318: Fix exhaustivity checking with empty types
   (Florian Angeletti, Stefan Muenzel and Thomas Refis, review by Gabriel Scherer
   and Thomas Refis)
