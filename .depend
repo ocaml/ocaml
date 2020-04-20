@@ -768,8 +768,8 @@ typing/parmatch.cmo : \
     utils/warnings.cmi \
     typing/untypeast.cmi \
     typing/types.cmi \
-    typing/typedtreeIter.cmi \
     typing/typedtree.cmi \
+    typing/tast_iterator.cmi \
     typing/subst.cmi \
     typing/printpat.cmi \
     typing/predef.cmi \
@@ -790,8 +790,8 @@ typing/parmatch.cmx : \
     utils/warnings.cmx \
     typing/untypeast.cmx \
     typing/types.cmx \
-    typing/typedtreeIter.cmx \
     typing/typedtree.cmx \
+    typing/tast_iterator.cmx \
     typing/subst.cmx \
     typing/printpat.cmx \
     typing/predef.cmx \
@@ -1051,6 +1051,20 @@ typing/subst.cmi : \
     typing/types.cmi \
     typing/path.cmi \
     typing/ident.cmi
+typing/tast_iterator.cmo : \
+    typing/typedtree.cmi \
+    typing/env.cmi \
+    parsing/asttypes.cmi \
+    typing/tast_iterator.cmi
+typing/tast_iterator.cmx : \
+    typing/typedtree.cmx \
+    typing/env.cmx \
+    parsing/asttypes.cmi \
+    typing/tast_iterator.cmi
+typing/tast_iterator.cmi : \
+    typing/typedtree.cmi \
+    typing/env.cmi \
+    parsing/asttypes.cmi
 typing/tast_mapper.cmo : \
     typing/typedtree.cmi \
     typing/env.cmi \
@@ -1408,19 +1422,6 @@ typing/typedtree.cmi : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    parsing/asttypes.cmi
-typing/typedtreeIter.cmo : \
-    typing/typedtree.cmi \
-    utils/misc.cmi \
-    parsing/asttypes.cmi \
-    typing/typedtreeIter.cmi
-typing/typedtreeIter.cmx : \
-    typing/typedtree.cmx \
-    utils/misc.cmx \
-    parsing/asttypes.cmi \
-    typing/typedtreeIter.cmi
-typing/typedtreeIter.cmi : \
-    typing/typedtree.cmi \
     parsing/asttypes.cmi
 typing/typemod.cmo : \
     utils/warnings.cmi \

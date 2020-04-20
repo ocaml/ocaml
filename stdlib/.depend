@@ -137,12 +137,14 @@ camlinternalLazy.cmx : \
     camlinternalLazy.cmi
 camlinternalLazy.cmi :
 camlinternalMod.cmo : \
+    stdlib__sys.cmi \
     stdlib__obj.cmi \
     camlinternalOO.cmi \
     camlinternalLazy.cmi \
     stdlib__array.cmi \
     camlinternalMod.cmi
 camlinternalMod.cmx : \
+    stdlib__sys.cmx \
     stdlib__obj.cmx \
     camlinternalOO.cmx \
     camlinternalLazy.cmx \

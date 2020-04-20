@@ -482,6 +482,10 @@ module K1 = struct
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
 
 end
@@ -570,6 +574,10 @@ module K2 = struct
           let hash (_seed: int) x = H2.hash x
         end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
 
 end
@@ -670,5 +678,9 @@ module Kn = struct
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
 end

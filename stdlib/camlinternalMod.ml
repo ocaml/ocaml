@@ -52,8 +52,14 @@ let rec init_mod loc shape =
 let rec update_mod shape o n =
   match shape with
   | Function ->
-      assert (Obj.tag n = Obj.closure_tag || Obj.tag n = Obj.infix_tag);
-      overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
+      (* The optimisation below is invalid on bytecode since
+         the RESTART instruction checks the length of closures.
+         See PR#4008 *)
+      if Sys.backend_type = Sys.Native
+      && Obj.tag n = Obj.closure_tag
+      && Obj.size n <= Obj.size o
+      then begin overwrite o n end
+      else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
       if Obj.tag n = Obj.lazy_tag then
         Obj.set_field o 0 (Obj.field n 0)

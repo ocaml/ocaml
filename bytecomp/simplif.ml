@@ -282,7 +282,7 @@ let simplify_exits lam =
             xs ys Ident.Map.empty
         in
         List.fold_right2
-          (fun (y, kind) l r -> Llet (Alias, kind, y, l, r))
+          (fun (y, kind) l r -> Llet (Strict, kind, y, l, r))
           ys ls (Lambda.rename env handler)
       with
       | Not_found -> Lstaticraise (i,ls)

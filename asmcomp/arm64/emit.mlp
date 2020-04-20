@@ -606,14 +606,14 @@ let emit_instr i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
+      assert (Proc.prologue_required ());
       let n = frame_size() in
       if n > 0 then
         emit_stack_adjustment (-n);
       if !contains_calls then begin
         cfi_offset ~reg:30 (* return address *) ~offset:(-8);
         `	str	x30, [sp, #{emit_int (n-8)}]\n`
-      end;
-      `{emit_label !tailrec_entry_point}:\n`;
+      end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -1009,7 +1009,7 @@ let preproc_fun fun_body fun_name =
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   float_literals := [];
   stack_offset := 0;
   call_gc_sites := [];
@@ -1134,7 +1134,8 @@ let end_assembly () =
   `	.quad	0\n`;  (* PR#6329 *)
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
-  `	.long	0\n`;
+  `	.quad	0\n`;
+  `	.align	3\n`;  (* #7887 *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;

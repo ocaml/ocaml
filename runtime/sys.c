@@ -396,6 +396,27 @@ CAMLprim value caml_sys_get_argv(value unit)
   CAMLreturn(res);
 }
 
+CAMLprim value caml_sys_argv(value unit)
+{
+  CAMLparam0 ();   /* unit is unused */
+  CAMLlocal1 (argv);
+  argv =
+    caml_alloc_array((void *)caml_copy_string_of_os,
+                     (char const **)caml_params->main_argv);
+  CAMLreturn(argv);
+}
+
+CAMLprim value caml_sys_modify_argv(value new_argv)
+{
+  caml_failwith ("caml_sys_modify_argv: not implemented");
+  return Val_unit;
+}
+
+CAMLprim value caml_sys_executable_name(value unit)
+{
+  return caml_copy_string_of_os(caml_params->exe_name);
+}
+
 void caml_sys_init(char_os * exe_name, char_os **argv)
 {
   caml_failwith ("caml_sys_init: not implemented");

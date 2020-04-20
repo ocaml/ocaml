@@ -9,6 +9,10 @@ Working version
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
 
+- #7887: ensure frame table is 8-aligned on ARM64 and PPC64
+  (Xavier Leroy, report by Mark Hayden, review by Mark Shinwell
+   and Gabriel Scherer)
+
 - #8507: Shorten symbol names of anonymous functions in Flambda mode
   (the directory portions are now hidden)
   (Mark Shinwell, review by Nicolás Ojeda Bär)
@@ -83,13 +87,21 @@ Working version
 - #2291: Add [Compute_ranges] pass
   (Mark Shinwell, review by Vincent Laviron)
 
+- #2292: Add [Proc.frame_required] and [Proc.prologue_required].
+  Move tail recursion label creation to [Linearize].  Correctly position
+  [Lprologue] relative to [Iname_for_debugger] operations.
+  (Mark Shinwell, review by Vincent Laviron)
+
 - #2308: More debugging information on [Cmm] terms
   (Mark Shinwell, review by Stephen Dolan)
 
+- #7878, #8542: Replaced TypedtreeIter with tast_iterator
+  (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Runtime system:
 
-- #1725: Deprecate Obj.set_tag
-  (Stephen Dolan, review by Gabriel Scherer and Damien Doligez)
+- #1725, #2279: Deprecate Obj.set_tag and Obj.truncate
+  (Stephen Dolan, review by Gabriel Scherer, Damien Doligez and Xavier Leroy)
 
 * #2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
@@ -352,6 +364,11 @@ OCaml 4.08.0
 - #1525: Make function set_max_indent respect documentation
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
 
+- GPR#2202: Correct Hashtbl.MakeSeeded.{add_seq,replace_seq,of_seq} to use
+  functor hash function instead of default hash function. Hashtbl.Make.of_seq
+  shouldn't create randomized hash tables.
+  (David Allsopp, review by Alain Frisch)
+
 ### Other libraries:
 
 - #2222: Set default status in waitpid when pid is zero. Otherwise,
@@ -519,7 +536,7 @@ OCaml 4.08.0
 - #1917: comballoc: ensure object allocation order is preserved
   (Stephen Dolan)
 
-- #6242, #2143: optimize some local functions
+- #6242, #2143, #8558, #8559: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
 - #2082: New options [-insn-sched] and [-no-insn-sched] to control

@@ -54,7 +54,7 @@
    ident path primitive types btype oprint subst predef datarepr
    cmi_format persistent_env env
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
-   typedtreeIter tast_mapper cmt_format untypeast includemod
+   tast_iterator tast_mapper cmt_format untypeast includemod
    typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
    typedecl_unboxed
@@ -88,21 +88,21 @@
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon)
  (modules_without_implementation
-   cmx_format x86_ast backend_intf inlining_decision_intf
+   cmxs_format cmx_format x86_ast backend_intf inlining_decision_intf
    simplify_boxed_integer_ops_intf)
  (modules
    ;; ASMCOMP
    arch backend_var cmm printcmm reg reg_with_debug_info reg_availability_set
    mach proc clambda printclambda export_info export_info_for_pack compilenv
    closure traverse_for_exported_symbols build_export_info closure_offsets
-   flambda_to_clambda import_approx un_anf afl_instrument strmatch cmmgen
-   interval printmach selectgen spacetime_profiling selection comballoc CSEgen
-   CSE liveness spill split interf coloring linscan reloadgen reload deadcode
-   printlinear linearize available_regs schedgen scheduling
+   flambda_to_clambda import_approx un_anf afl_instrument strmatch cmmgen_state
+   cmmgen interval printmach selectgen spacetime_profiling selection comballoc
+   CSEgen CSE liveness spill split interf coloring linscan reloadgen reload
+   deadcode printlinear linearize available_regs schedgen scheduling
    branch_relaxation_intf branch_relaxation emitaux emit asmgen asmlink
    asmlibrarian asmpackager opterrors optcompile
    ; manual update: mli only files
-   cmx_format
+   cmxs_format cmx_format
 
    ; arch specific files: we always include them even though depending on the
    ; target architecture they might not be used.

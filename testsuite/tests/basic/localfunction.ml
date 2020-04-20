@@ -21,3 +21,12 @@ let () =
   Printf.printf "%i\n%!" !r;
   assert(x1 -. x0 = x2 -. x1)
      (* check that we did not allocated anything between x1 and x2 *)
+
+
+let () =
+  (* #8558 *)
+  let f () = () in
+  let r = ref 0 in
+  let g () = f (incr r) in
+  g ();
+  assert (!r = 1)

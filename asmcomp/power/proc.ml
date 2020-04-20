@@ -341,6 +341,26 @@ let op_is_pure = function
 let num_stack_slots = [| 0; 0 |]
 let contains_calls = ref false
 
+(* See [reserved_stack_space] in emit.mlp. *)
+let reserved_stack_space_required () =
+  match abi with
+  | ELF32 -> false
+  | ELF64v1 | ELF64v2 -> true
+
+let frame_required () =
+  let is_elf32 =
+    match abi with
+    | ELF32 -> true
+    | ELF64v1 | ELF64v2 -> false
+  in
+  reserved_stack_space_required ()
+    || num_stack_slots.(0) > 0
+    || num_stack_slots.(1) > 0
+    || (!contains_calls && is_elf32)
+
+let prologue_required () =
+  frame_required ()
+
 (* Calling the assembler *)
 
 let assemble_file infile outfile =

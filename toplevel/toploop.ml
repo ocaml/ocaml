@@ -565,26 +565,16 @@ let loop ppf =
     | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
-(* Execute a script.  If [name] is "", read the script from stdin. *)
+external caml_sys_modify_argv : string array -> unit =
+  "caml_sys_modify_argv"
 
-(* The script must see a different value for the "constant" Sys.argv.
-   So, rewrite the module to claim it was always that way *)
-module type SYS = module type of Sys
-
-let hack_argv new_argv =
-  let new_argv = Obj.repr new_argv in
-  let old_argv = Obj.repr Sys.argv in
-  let sys_mod = Obj.repr (module Sys : SYS) in
-  for i = 0 to Obj.size sys_mod - 1 do
-    if Obj.field sys_mod i == old_argv then
-      Obj.set_field sys_mod i new_argv
-  done;
+let override_sys_argv new_argv =
+  caml_sys_modify_argv new_argv;
   Arg.current := 0
 
-let override_sys_argv = hack_argv
+(* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
-(*   override_sys_argv args; *)
   override_sys_argv args;
   Compmisc.init_path ~dir:(Filename.dirname name) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)

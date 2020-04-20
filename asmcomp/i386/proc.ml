@@ -241,6 +241,17 @@ let op_is_pure = function
 let num_stack_slots = [| 0; 0 |]
 let contains_calls = ref false
 
+let frame_required () =
+  let frame_size_at_top_of_function =
+    (* cf. [frame_size] in emit.mlp. *)
+    Misc.align (4*num_stack_slots.(0) + 8*num_stack_slots.(1) + 4)
+      stack_alignment
+  in
+  frame_size_at_top_of_function > 4
+
+let prologue_required () =
+  frame_required ()
+
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
