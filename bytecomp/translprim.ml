@@ -104,8 +104,8 @@ let get_used_primitives () =
 let gen_array_kind =
   if Config.flat_float_array then Pgenarray else Paddrarray
 
-(*let prim_sys_argv =
-  Primitive.simple ~name:"caml_sys_argv" ~arity:1 ~alloc:true*)
+let prim_sys_argv =
+  Primitive.simple ~name:"caml_sys_argv" ~arity:1 ~alloc:true
 
 let primitives_table =
   create_hashtable 57 [
@@ -344,7 +344,7 @@ let primitives_table =
     "%bswap_native", Primitive ((Pbbswap(Pnativeint)), 1);
     "%int_as_pointer", Primitive (Pint_as_pointer, 1);
     "%opaque", Primitive (Popaque, 1);
-    (*"%sys_argv", External prim_sys_argv;*)
+    "%sys_argv", External prim_sys_argv;
     "%send", Send;
     "%sendself", Send_self;
     "%sendcache", Send_cache;
@@ -670,8 +670,8 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
-  (*| External prim, args when prim = prim_sys_argv ->
-      Lprim(Pccall prim, Lconst (Const_pointer 0) :: args, loc)*)
+  | External prim, args when prim = prim_sys_argv ->
+      Lprim(Pccall prim, Lconst (Const_pointer 0) :: args, loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->
