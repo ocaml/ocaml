@@ -1126,6 +1126,7 @@ let config_variables _log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
   Environments.add_bindings
   [
+    Ocaml_variables.arch, Ocamltest_config.arch;
     Ocaml_variables.ocamlrun, Ocaml_files.ocamlrun ocamlsrcdir;
     Ocaml_variables.ocamlc_byte, Ocaml_files.ocamlc ocamlsrcdir;
     Ocaml_variables.ocamlopt_byte, Ocaml_files.ocamlopt ocamlsrcdir;

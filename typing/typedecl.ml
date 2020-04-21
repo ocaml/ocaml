@@ -660,7 +660,7 @@ let check_constraints env sdecl (_, decl) =
    need to check that the equation refers to a type of the same kind
    with the same constructors and labels.
 *)
-let check_coherence env loc id decl =
+let check_coherence env loc dpath decl =
   match decl with
     { type_kind = (Type_variant _ | Type_record _| Type_open);
       type_manifest = Some ty } ->
@@ -678,9 +678,9 @@ let check_coherence env loc id decl =
                   ~mark:true
                   (Path.last path)
                   decl'
-                  id
+                  dpath
                   (Subst.type_declaration
-                     (Subst.add_type id path Subst.identity) decl)
+                     (Subst.add_type_path dpath path Subst.identity) decl)
             in
             if err <> None then
               raise(Error(loc, Definition_mismatch (ty, err)))
@@ -692,7 +692,7 @@ let check_coherence env loc id decl =
   | _ -> ()
 
 let check_abbrev env sdecl (id, decl) =
-  check_coherence env sdecl.ptype_loc id decl
+  check_coherence env sdecl.ptype_loc (Path.Pident id) decl
 
 (* Check that recursion is well-founded *)
 
@@ -1705,7 +1705,10 @@ let check_recmod_typedecl env loc recmod_ids path decl =
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
-  check_recursion env loc path decl to_check
+  check_recursion env loc path decl to_check;
+  (* additionally check coherece, as one might build an incoherent signature,
+     and use it to build an incoherent module, cf. #7851 *)
+  check_coherence env loc path decl
 
 
 (**** Error report ****)

@@ -29,7 +29,7 @@ export WORKTREE=~/o/4.08
 export MAJOR=4
 export MINOR=08
 export BUGFIX=0
-export PLUSEXT=+beta2
+export PLUSEXT=+beta3
 
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
@@ -314,17 +314,7 @@ organize the webpage for the new release. See
 
 ## 12: update Mantis
 
-Update Mantis by adding $MAJOR.$MINOR.$BUGFIX as a version number for reports.
-
-Provided you have a sufficient Mantis privilege level, this is done from
-
-  https://caml.inria.fr/mantis/manage_proj_edit_page.php?project_id=1
-
-after login, by scrolling down to "Versions".
-
-(If you don't have the necessary Mantis rights, you need to ask
-someone else to do this.)
-
+(this section intentionally left blank)
 
 ## 13: announce the release on caml-list and caml-announce
 
@@ -412,4 +402,5 @@ We want to know about all bugs. Please report them here:
 
 Happy hacking,
 
--- Damien Doligez for the OCaml team.```
+-- Damien Doligez for the OCaml team.
+```

@@ -205,6 +205,8 @@ let set namespace x = map.(Namespace.id namespace) <- x
 let protected = ref S.empty
 let add_protected id = protected := S.add (Ident.name id) !protected
 let reset_protected () = protected := S.empty
+let with_hidden id f =
+  protect_refs [ R(protected,S.add (Ident.name id) !protected)] f
 
 let pervasives_name namespace name =
   if not !enabled then Out_name.create name else
@@ -1525,13 +1527,16 @@ let protect_rec_items items =
       | _ -> [] in
   List.iter Naming_context.add_protected (get_ids Trec_first items)
 
+let stop_type_group env =
+  Naming_context.reset_protected ();
+  set_printing_env env
+
 let still_in_type_group env' in_type_group item =
   match in_type_group, recursive_sigitem item with
-    true, Some (_,Trec_next,_) -> true
+  | true, Some (_,Trec_next,_) -> true
   | _, Some (_, (Trec_not | Trec_first),_) ->
-      Naming_context.reset_protected ();
-      set_printing_env env'; true
-  | _ -> Naming_context.reset_protected (); set_printing_env env'; false
+      stop_type_group env' ; true
+  | _ -> stop_type_group env'; false
 
 let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_ident p ->
@@ -1555,7 +1560,7 @@ and tree_of_signature sg =
   wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
 
 and tree_of_signature_rec env' in_type_group = function
-    [] -> []
+    [] -> stop_type_group env'; []
   | item :: rem as items ->
       let in_type_group = still_in_type_group env' in_type_group item in
       let (sg, rem) = filter_rem_sig item rem in
@@ -1625,7 +1630,7 @@ let print_items showval env x =
   reset_naming_context ();
   Conflicts.reset ();
   let rec print showval in_type_group env = function
-  | [] -> []
+  | [] -> stop_type_group env; []
   | item :: rem as items ->
       let in_type_group = still_in_type_group env in_type_group item in
       let (sg, rem) = filter_rem_sig item rem in
@@ -2043,4 +2048,7 @@ let tree_of_modtype = tree_of_modtype ~ellipsis:false
 let type_expansion ty ppf ty' =
   type_expansion ppf (trees_of_type_expansion (ty,ty'))
 let tree_of_type_declaration id td rs =
-  wrap_env (hide [id]) (fun () -> tree_of_type_declaration id td rs) ()
+  Naming_context.with_hidden id ( (* for disambiguation *)
+    wrap_env (hide [id]) (* for short-path *)
+      (fun () -> tree_of_type_declaration id td rs)
+  )

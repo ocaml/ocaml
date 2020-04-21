@@ -19,6 +19,8 @@
 
 val all_modules : Variables.t
 
+val arch : Variables.t
+
 val binary_modules : Variables.t
 
 val bytecc_libs : Variables.t

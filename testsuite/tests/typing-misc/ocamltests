@@ -16,6 +16,8 @@ pr7103.ml
 pr7228.ml
 pr7668_bad.ml
 pr7937.ml
+pr8548.ml
+pr8548_split.ml
 gpr2277.ml
 printing.ml
 records.ml

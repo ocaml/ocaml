@@ -54,11 +54,27 @@ val extension_constructor:
         t -> extension_constructor -> extension_constructor
 val class_declaration: t -> class_declaration -> class_declaration
 val cltype_declaration: t -> class_type_declaration -> class_type_declaration
-val modtype: t -> module_type -> module_type
-val signature: t -> signature -> signature
-val signature_item: t -> signature_item -> signature_item
-val modtype_declaration: t -> modtype_declaration -> modtype_declaration
-val module_declaration: t -> module_declaration -> module_declaration
+
+(*
+   When applied to a signature item, a substitution not only modifies the types
+   present in its declaration, but also refreshes the identifier of the item.
+   Effectively this creates new declarations, and so one should decide what the
+   scope of this new declaration should be.
+
+   This is decided by the [scoping] argument passed to the following functions.
+*)
+
+type scoping =
+  | Keep
+  | Make_local
+  | Rescope of int
+
+val modtype: scoping -> t -> module_type -> module_type
+val signature: scoping -> t -> signature -> signature
+val signature_item: scoping -> t -> signature_item -> signature_item
+val modtype_declaration:
+  scoping -> t -> modtype_declaration -> modtype_declaration
+val module_declaration: scoping -> t -> module_declaration -> module_declaration
 
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)

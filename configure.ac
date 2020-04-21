@@ -555,6 +555,11 @@ AS_CASE([$host],
 
 internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
+# Enable SSE2 on x86 mingw to avoid using 80-bit registers.
+AS_CASE([$host],
+  [i686-*-mingw32],
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
+
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
 # Problem: flags are added to CC rather than CPPFLAGS

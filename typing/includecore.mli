@@ -44,7 +44,7 @@ val type_declarations:
   ?equality:bool ->
   loc:Location.t ->
   Env.t -> mark:bool -> string ->
-  type_declaration -> Ident.t -> type_declaration -> type_mismatch option
+  type_declaration -> Path.t -> type_declaration -> type_mismatch option
 
 val extension_constructors:
   loc:Location.t -> Env.t -> mark:bool -> Ident.t ->

@@ -130,6 +130,8 @@ HEADER_PATH =
 HEADER_TARGET_PATH =
 endif
 
+TARGETHEADERPROGRAM = target_$(HEADERPROGRAM)
+
 CAMLHEADERS =\
   camlheader target_camlheader camlheader_ur \
   camlheaderd target_camlheaderd \
@@ -174,7 +176,7 @@ camlheader_ur: camlheader
 	cp camlheader $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-tmptargetcamlheader%exe: $(HEADERPROGRAM)%$(O)
+tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
 	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
 	strip $@
 

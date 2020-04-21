@@ -87,7 +87,7 @@ let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
   let decl2 = Subst.type_declaration subst decl2 in
   match
     Includecore.type_declarations ~loc env ~mark
-      (Ident.name id) decl1 id decl2
+      (Ident.name id) decl1 (Path.Pident id) decl2
   with
   | None -> ()
   | Some err ->
@@ -250,13 +250,15 @@ let rec modtypes ~loc env ~mark cxt subst mty1 mty2 =
     try_modtypes ~loc env ~mark cxt subst mty1 mty2
   with
     Dont_match ->
-      raise(Error[cxt, env, Module_types(mty1, Subst.modtype subst mty2)])
+      raise(Error[cxt, env,
+                  Module_types(mty1, Subst.modtype Make_local subst mty2)])
   | Error reasons as err ->
       match mty1, mty2 with
         Mty_alias _, _
       | _, Mty_alias _ -> raise err
       | _ ->
-          raise(Error((cxt, env, Module_types(mty1, Subst.modtype subst mty2))
+          raise(Error((cxt, env,
+                       Module_types(mty1, Subst.modtype Make_local subst mty2))
                       :: reasons))
 
 and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
@@ -288,7 +290,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
       try_modtypes ~loc env ~mark cxt subst
         (expand_module_path env cxt p1) mty2
   | (_, Mty_ident _) ->
-      try_modtypes2 ~loc env ~mark cxt mty1 (Subst.modtype subst mty2)
+      try_modtypes2 ~loc env ~mark cxt mty1 (Subst.modtype Keep subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
       signatures ~loc env ~mark cxt subst sig1 sig2
   | (Mty_functor(param1, None, res1), Mty_functor(_param2, None, res2)) ->
@@ -299,7 +301,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
     end
   | (Mty_functor(param1, Some arg1, res1),
      Mty_functor(param2, Some arg2, res2)) ->
-      let arg2' = Subst.modtype subst arg2 in
+      let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
         modtypes ~loc env ~mark:(negate_mark mark)
           (Arg param1::cxt) Subst.identity arg2' arg1
@@ -501,7 +503,7 @@ and modtype_infos ~loc env ~mark cxt subst id info1 info2 =
     loc
     info1.mtd_attributes info2.mtd_attributes
     (Ident.name id);
-  let info2 = Subst.modtype_declaration subst info2 in
+  let info2 = Subst.modtype_declaration Keep subst info2 in
   let cxt' = Modtype id :: cxt in
   try
     match (info1.mtd_type, info2.mtd_type) with
