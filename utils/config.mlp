@@ -35,7 +35,9 @@ let c_has_debug_prefix_map = %%CC_HAS_DEBUG_PREFIX_MAP%%
 let as_has_debug_prefix_map = %%AS_HAS_DEBUG_PREFIX_MAP%%
 let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
-let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"
+(* #7678: ocamlopt uses these only to compile .c files, and the behaviour for
+          the two drivers should be identical. *)
+let ocamlopt_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlopt_cppflags = "%%OCAMLOPT_CPPFLAGS%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
 (* bytecomp_c_compiler and native_c_compiler have been supported for a

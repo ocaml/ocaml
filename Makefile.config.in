@@ -193,8 +193,10 @@ NATDYNLINK=@natdynlink@
 NATDYNLINKOPTS=@natdynlinkopts@
 SYSLIB=@syslib@
 MKLIB=@mklib@
-OCAMLOPT_CFLAGS=@ocamlopt_cflags@
-OCAMLOPT_CPPFLAGS=@ocamlopt_cppflags@
+# #7678: ocamlopt uses these only to compile .c files, and the behaviour for the
+#        two drivers should be identical.
+OCAMLOPT_CFLAGS=@ocamlc_cflags@
+OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
 NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@

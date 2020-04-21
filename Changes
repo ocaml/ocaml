@@ -212,6 +212,11 @@ Working version
   building shared libraries like `-output-obj`.
   (Florian Angeletti, review by Nicolás Ojeda Bär)
 
+* #7678, #8631: ocamlc -c and ocamlopt -c pass same switches to the C
+  compiler when compiling .c files (in particular, this means ocamlopt
+  passes -fPIC on systems requiring it for shared library support).
+  (David Allsopp, report by Daniel Bünzli, review by Sébastien Hinderer)
+
 - #9074: reworded error message for non-regular structural types
   (Florian Angeletti, review by Jacques Garrigue and Leo White,
    report by Chas Emerick)
