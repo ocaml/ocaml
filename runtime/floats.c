@@ -961,33 +961,6 @@ CAMLprim value caml_signbit_float(value f)
   return caml_signbit(Double_val(f));
 }
 
-#ifdef LACKS_SANE_NAN
-
-CAMLprim value caml_neq_float(value vf, value vg)
-{
-  double f = Double_val(vf);
-  double g = Double_val(vg);
-  return Val_bool(isnan(f) || isnan(g) || f != g);
-}
-
-#define DEFINE_NAN_CMP(op) (value vf, value vg) \
-{ \
-  double f = Double_val(vf); \
-  double g = Double_val(vg); \
-  return Val_bool(!isnan(f) && !isnan(g) && f op g); \
-}
-
-intnat caml_float_compare_unboxed(double f, double g)
-{
-  /* Insane => nan == everything && nan < everything && nan > everything */
-  if (isnan(f) && isnan(g)) return 0;
-  if (!isnan(g) && f < g) return -1;
-  if (f != g) return 1;
-  return 0;
-}
-
-#else
-
 CAMLprim value caml_neq_float(value f, value g)
 {
   return Val_bool(Double_val(f) != Double_val(g));
@@ -1010,8 +983,6 @@ intnat caml_float_compare_unboxed(double f, double g)
     (intnat)(f > g) - (intnat)(f < g) + (intnat)(f == f) - (intnat)(g == g);
   return res;
 }
-
-#endif
 
 CAMLprim value caml_eq_float DEFINE_NAN_CMP(==)
 CAMLprim value caml_le_float DEFINE_NAN_CMP(<=)

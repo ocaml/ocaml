@@ -150,6 +150,9 @@ Working version
 * #2293: Constify "caml_named_value"
   (Stephen Dolan, review by Xavier Leroy)
 
+- #8607: Remove obsolete macros for pre-2002 MSVC support
+  (Stephen Dolan, review by Nicolás Ojeda Bär and David Allsopp)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
@@ -188,6 +191,9 @@ Working version
 
 ### Bug fixes:
 
+- #7156, #8594: make top level use custom printers if they are available
+  (Andrew Litteken, report by Martin Jambon, review by Nicolás Ojeda Bär,
+   Thomas Refis, Armaël Guéneau, Gabriel Scherer, David Allsopp)
 - #3249: ocamlmklib should reject .cmxa files
   (Xavier Leroy)
 - #7937, #2287: fix uncaught Unify exception when looking for type
@@ -196,6 +202,14 @@ Working version
 
 - GPR#2296: Fix parsing of hexadecimal floats with underscores in the exponent.
   (Hugo Heuzard and Xavier Leroy, review by Gabriel Scherer)
+
+- #8610, #8613: toplevel printing, consistent deduplicated name for types
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer,
+   reported by Xavier Clerc)
+
+- #8635, #8636: Fix a bad side-effect of the -allow-approx option of
+  ocamldep. It used to turn some errors into successes
+  (Jérémie Dimino)
 
 OCaml 4.08.0
 ------------
@@ -625,6 +639,10 @@ OCaml 4.08.0
 - #8568: Fix a memory leak in mmapped bigarrays
   (Damien Doligez, review by Xavier Leroy and Jérémie Dimino)
 
+- #8627: Require SSE2 for 32-bit mingw port to generate correct code
+  for caml_round with GCC 7.4.
+  (David Allsopp, review by Xavier Leroy)
+
 ### Tools
 
 - #2182: Split Emacs caml-mode as an independent project.
@@ -890,8 +908,9 @@ OCaml 4.08.0
   `Location.report_error` is removed, use `Location.print_report` instead
   (Armaël Guéneau, review by Thomas Refis)
 
-- #7835, #1980: separate scope from stamp in idents
-  (Thomas Refis, review by Leo White)
+- #7835, #1980, #8548, #8586: separate scope from stamp in idents and explicitly
+  rescope idents when substituting signatures.
+  (Thomas Refis, review by Jacques Garrigue and Leo White)
 
 - #1996: expose Pprintast.longident to help compiler-libs users print
   Longident.t values.
@@ -1063,6 +1082,10 @@ OCaml 4.08.0
 
 - #2231: Env: always freshen persistent signatures before using them
   (Thomas Refis and Leo White, review by Gabriel Radanne)
+
+- #7851, #8570: Module type of allows to transform a malformed module type
+  into a vicious signature, breaking soundness
+  (Jacques Garrigue, review by Leo White)
 
 - #7923, #2259: fix regression in FlexDLL bootstrapped build caused by
   refactoring the root Makefile for Dune in #2093)

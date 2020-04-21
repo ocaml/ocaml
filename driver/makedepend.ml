@@ -28,7 +28,6 @@ let mli_synonyms = ref [".mli"]
 let shared = ref false
 let native_only = ref false
 let bytecode_only = ref false
-let error_occurred = ref false
 let raw_dependencies = ref false
 let sort_files = ref false
 let all_dependencies = ref false
@@ -39,6 +38,17 @@ let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
+
+module Error_occurred : sig
+  val set : unit -> unit
+  val get : unit -> bool
+end = struct
+  (* Once set to [true], [error_occurred] should never be set to
+     [false]. *)
+  let error_occurred = ref false
+  let get () = !error_occurred
+  let set () = error_occurred := true
+end
 
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
@@ -60,7 +70,7 @@ let readdir dir =
         Sys.readdir dir
       with Sys_error msg ->
         Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-        error_occurred := true;
+        Error_occurred.set ();
         [||]
     in
     dirs := String.Map.add dir contents !dirs;
@@ -76,14 +86,14 @@ let add_to_load_path dir =
     add_to_list load_path (dir, contents)
   with Sys_error msg ->
     Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
-    error_occurred := true
+    Error_occurred.set ()
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
     add_to_list synonyms suffix
   else begin
     Format.fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
-    error_occurred := true
+    Error_occurred.set ()
   end
 
 (* Find file 'name' (capitalized) in search path *)
@@ -233,9 +243,12 @@ let print_raw_dependencies source_file deps =
 
 (* Process one file *)
 
-let report_err exn =
-  error_occurred := true;
+let print_exception exn =
   Location.report_exception Format.err_formatter exn
+
+let report_err exn =
+  Error_occurred.set ();
+  print_exception exn
 
 let tool_name = "ocamldep"
 
@@ -271,7 +284,6 @@ let rec lexical_approximation lexbuf =
   with Lexer.Error _ -> lexical_approximation lexbuf
 
 let read_and_approximate inputfile =
-  error_occurred := false;
   Depend.free_structure_names := String.Set.empty;
   let ic = open_in_bin inputfile in
   try
@@ -309,10 +321,12 @@ let read_parse_and_extract parse_function extract_function def ast_kind
       raise x
     end
   with x -> begin
-    report_err x;
-    if not !allow_approximation
-    then (String.Set.empty, def)
-    else (read_and_approximate source_file, def)
+    print_exception x;
+    if not !allow_approximation then begin
+      Error_occurred.set ();
+      (String.Set.empty, def)
+    end else
+      (read_and_approximate source_file, def)
   end
 
 let print_ml_dependencies source_file extracted_deps pp_deps =
@@ -488,7 +502,7 @@ let sort_files_by_dependencies files =
       ) !deps;
       Format.fprintf Format.err_formatter "@]@.";
       Printf.printf "%s " file) sorted_deps;
-    error_occurred := true
+    Error_occurred.set ()
   end;
   Printf.printf "\n%!";
   ()
@@ -623,7 +637,7 @@ let main () =
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);
-  exit (if !error_occurred then 2 else 0)
+  exit (if Error_occurred.get () then 2 else 0)
 
 let main_from_option () =
   if Sys.argv.(1) <> "-depend" then begin

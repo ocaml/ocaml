@@ -535,26 +535,6 @@ wchar_t * caml_executable_name(void)
 
 /* snprintf emulation */
 
-#ifdef LACKS_VSCPRINTF
-/* No _vscprintf until Visual Studio .NET 2002 and sadly no version number
-   in the CRT headers until Visual Studio 2005 so forced to predicate this
-   on the compiler version instead */
-int _vscprintf(const char * format, va_list args)
-{
-  int n;
-  int sz = 5;
-  char* buf = (char*)malloc(sz);
-  n = _vsnprintf(buf, sz, format, args);
-  while (n < 0 || n > sz) {
-    sz += 512;
-    buf = (char*)realloc(buf, sz);
-    n = _vsnprintf(buf, sz, format, args);
-  }
-  free(buf);
-  return n;
-}
-#endif
-
 #if defined(_WIN32) && !defined(_UCRT)
 int caml_snprintf(char * buf, size_t size, const char * format, ...)
 {

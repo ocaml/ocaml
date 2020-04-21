@@ -249,7 +249,7 @@ and compare_records ~loc env params1 params2 n
           Some (Field_type ld1.ld_id)
       end
 
-let type_declarations ?(equality = false) ~loc env ~mark name decl1 id decl2 =
+let type_declarations ?(equality = false) ~loc env ~mark name decl1 path decl2 =
   Builtin_attributes.check_alerts_inclusion
     ~def:decl1.type_loc
     ~use:decl2.type_loc
@@ -268,7 +268,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name decl1 id decl2 =
         then None else Some Manifest
     | (None, Some ty2) ->
         let ty1 =
-          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
+          Btype.newgenty (Tconstr(path, decl2.type_params, ref Mnil))
         in
         if Ctype.equal env true decl1.type_params decl2.type_params then
           if Ctype.equal env false [ty1] [ty2] then None
@@ -301,7 +301,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name decl1 id decl2 =
             then Env.Positive else Env.Privatize
           in
           mark cstrs1 usage name decl1;
-          if equality then mark cstrs2 Env.Positive (Ident.name id) decl2
+          if equality then mark cstrs2 Env.Positive (Path.name path) decl2
         end;
         compare_variants ~loc env decl1.type_params
           decl2.type_params 1 cstrs1 cstrs2

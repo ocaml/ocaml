@@ -619,6 +619,7 @@ typing/includecore.cmx : \
 typing/includecore.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi
