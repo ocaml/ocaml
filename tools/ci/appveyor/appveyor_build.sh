@@ -27,10 +27,11 @@ else
 fi
 
 function run {
+    if [[ $1 = "--show" ]] ; then SHOW_CMD='true'; shift; else SHOW_CMD=''; fi
     NAME=$1
     shift
     echo "-=-=- $NAME -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
-    "$@"
+    if [[ -n $SHOW_CMD ]]; then (set -x; "$@"); else "$@"; fi
     CODE=$?
     if [[ $CODE -ne 0 ]] ; then
         echo "-=-=- $NAME failed! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
@@ -127,12 +128,29 @@ case "$1" in
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \
            $MAKE -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
+      cd "$FULL_BUILD_PREFIX-$PORT"
+      # Ensure that .gitignore is up-to-date - this will fail if any untracked
+      # or altered files exist. We revert the change from the bootstrap (that
+      # would have failed the build earlier if necessary)
+      git checkout -- boot/ocamlc boot/ocamllex
+      # Remove the FlexDLL sources placed earlier in the process
+      rm -rf "flexdll-$FLEXDLL_VERSION"
+      run --show "Check tree is tracked" test -z "$(git status --porcelain)"
+      # check that the `distclean` target definitely cleans the tree
+      run "$MAKE distclean" $MAKE distclean
+      # Check the working tree is clean
+      run --show "Check tree is tracked" test -z "$(git status --porcelain)"
+      # Check that there are no ignored files
+      run --show "Check tree is clean" \
+        test -z "$(git ls-files --others -i --exclude-standard)"
     fi
     ;;
   *)
     cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
     if [[ $PORT = 'msvc64' ]] ; then
+      # Ensure that make distclean can be run from an empty tree
+      run "$MAKE distclean" $MAKE distclean
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
       $MAKE MSVC_DETECT=0 CHAINS=msvc64 support
