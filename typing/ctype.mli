@@ -154,9 +154,9 @@ val filter_row_fields:
 
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
-val generalize_expansive: Env.t -> type_expr -> unit
-        (* Generalize the covariant part of a type, making
-           contravariant branches non-generalizable *)
+val lower_contravariant: Env.t -> type_expr -> unit
+        (* Lower level of type variables inside contravariant branches;
+           to be used before generalize for expansive expressions *)
 val generalize_structure: type_expr -> unit
         (* Same, but variables are only lowered to !current_level *)
 val generalize_spine: type_expr -> unit

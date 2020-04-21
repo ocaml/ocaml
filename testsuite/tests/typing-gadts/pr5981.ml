@@ -12,7 +12,7 @@ module F(S : sig type 'a t end) = struct
     | A, B -> "f A B"
 end;;
 [%%expect{|
-Line 7, characters 47-84:
+Lines 7-8, characters 47-21:
 7 | ...............................................match l, r with
 8 |     | A, B -> "f A B"
 Warning 8: this pattern-matching is not exhaustive.
@@ -39,7 +39,7 @@ module F(S : sig type 'a t end) = struct
     | A, B -> "f A B"
 end;;
 [%%expect{|
-Line 10, characters 15-52:
+Lines 10-11, characters 15-21:
 10 | ...............match l, r with
 11 |     | A, B -> "f A B"
 Warning 8: this pattern-matching is not exhaustive.

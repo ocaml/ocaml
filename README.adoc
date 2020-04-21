@@ -1,9 +1,13 @@
 |=====
-| Branch `trunk` | Branch  `4.07`  | Branch `4.06` | Branch `4.05` | Branch `4.04`
+| Branch `trunk` | Branch  `4.08`  | Branch  `4.07`  | Branch `4.06` | Branch `4.05`
 
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.08["TravisCI Build Status (4.08 branch)",
+     link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.08&svg=true["AppVeyor Build Status (4.08 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.07["TravisCI Build Status (4.07 branch)",
      link="https://travis-ci.org/ocaml/ocaml"]
@@ -17,11 +21,6 @@
      link="https://travis-ci.org/ocaml/ocaml"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.05&svg=true["AppVeyor Build Status (4.05 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.04["TravisCI Build Status (4.04 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.04&svg=true["AppVeyor Build Status (4.04 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-
 |=====
 
 = README =
@@ -46,35 +45,29 @@ generated programs deliver excellent performance, while retaining the
 moderate memory requirements of the bytecode compiler. The native-code
 compiler currently runs on the following platforms:
 
-Tier 1 (actively used and maintained by the core OCaml team):
+|====
+|                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-AMD64 (Opteron)::    Linux, OS X, MS Windows
-IA32 (Pentium)::     Linux, FreeBSD, MS Windows
-PowerPC::            Linux, OS X
-ARM::                Linux
-
-Tier 2 (maintained when possible, with help from users):
-
-AMD64::              FreeBSD, OpenBSD, NetBSD
-IA32 (Pentium)::     NetBSD, OpenBSD, Solaris 9
-PowerPC::            NetBSD
-ARM::                NetBSD
+| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
+| x86 32 bits    | Linux, Windows                  |  FreeBSD, NetBSD, OpenBSD
+| ARM 64 bits    | Linux                           |  FreeBSD
+| ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
+| Power 64 bits  | Linux                           |
+| Power 32 bits  |                                 |  Linux
+| IBM Z (s390x)  | Linux                           |
+|====
 
 Other operating systems for the processors above have not been tested, but
 the compiler may work under other operating systems with little work.
 
-Before the introduction of objects, OCaml was known as Caml Special Light.
-OCaml is almost upwards compatible with Caml Special Light, except for a few
-additional reserved keywords that have forced some renaming of standard
-library functions.
 
 == Copyright
 
 All files marked "Copyright INRIA" in this distribution are copyright 1996,
 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
-2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Institut National de
-Recherche en Informatique et en Automatique (INRIA) and distributed under
-the conditions stated in file LICENSE.
+2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
+Institut National de Recherche en Informatique et en Automatique (INRIA)
+and distributed under the conditions stated in file LICENSE.
 
 == Installation
 
@@ -84,7 +77,7 @@ Windows, see link:README.win32.adoc[].
 
 == Documentation
 
-The OCaml manual is distributed in HTML, PDF, Postscript, DVI, and Emacs
+The OCaml manual is distributed in HTML, PDF, and Emacs
 Info files.  It is available at
 
 http://caml.inria.fr/pub/docs/manual-ocaml/
@@ -121,14 +114,12 @@ long history and welcomes questions.
 
 == Bug Reports and User Feedback
 
-Please report bugs using the Web interface to the bug-tracking system at
-http://caml.inria.fr/bin/caml-bugs
+Please report bugs using the issue tracker at
+https://github.com/ocaml/ocaml/issues
 
 To be effective, bug reports should include a complete program (preferably
 small) that exhibits the unexpected behavior, and the configuration you are
 using (machine type, etc).
-
-You can also contact the implementors directly at mailto:caml@inria.fr[].
 
 For information on contributing to OCaml, see link:HACKING.adoc[] and
 link:CONTRIBUTING.md[].

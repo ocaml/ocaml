@@ -37,7 +37,7 @@ let f x =
   | _::_ -> (x :> [`A | `C] Element.t)
 ;;
 [%%expect{|
-Line 4, characters 2-54:
+Lines 4-5, characters 2-38:
 4 | ..match [] with
 5 |   | _::_ -> (x :> [`A | `C] Element.t)
 Warning 8: this pattern-matching is not exhaustive.

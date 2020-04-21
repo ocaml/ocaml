@@ -15,7 +15,7 @@ module Y = struct
     | A : 'a * 'b * ('b -> unit) -> t
 end;; (* should fail *)
 [%%expect{|
-Line 2, characters 2-54:
+Lines 2-3, characters 2-37:
 2 | ..type t = X.t =
 3 |     | A : 'a * 'b * ('b -> unit) -> t
 Error: This variant or record definition does not match that of type X.t

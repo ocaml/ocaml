@@ -109,7 +109,8 @@ make tests
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
-git add VERSION Changes
+# Update ocaml-variants.opam file to depend on the new version of ocaml.
+git add VERSION Changes ocaml-variants.opam
 git commit -m "last commit before tagging $VERSION"
 # update VERSION with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2

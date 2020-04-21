@@ -27,8 +27,12 @@
 (copy_files# driver/*.ml{,i})
 (copy_files# asmcomp/*.ml{,i})
 (copy_files# asmcomp/debug/*.ml{,i})
+(copy_files# file_formats/*.ml{,i})
+(copy_files# lambda/*.ml{,i})
 (copy_files# middle_end/*.ml{,i})
-(copy_files# middle_end/base_types/*.ml{,i})
+(copy_files# middle_end/closure/*.ml{,i})
+(copy_files# middle_end/flambda/*.ml{,i})
+(copy_files# middle_end/flambda/base_types/*.ml{,i})
 
 (library
  (name ocamlcommon)
@@ -41,7 +45,7 @@
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
-   targetint load_path
+   targetint load_path int_replace_polymorphic_compare
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -61,17 +65,20 @@
    ; manual update: mli only files
    annot outcometree
 
-   ;; COMP
-   lambda printlambda semantics_of_primitives switch matching translobj
-   translattribute translprim translcore translclass translmod simplif
-   runtimedef meta opcodes bytesections dll symtable pparse main_args compenv
-   compmisc makedepend compile_common clambda_primitives
-   printclambda_primitives
+   ;; lambda/
+   debuginfo lambda matching printlambda runtimedef simplif switch
+   translattribute translclass translcore translmod translobj translprim
+
+   ;; bytecomp/
+   meta opcodes bytesections dll symtable
+
+   ;; some of COMP
+   pparse main_args compenv compmisc makedepend compile_common
    ; manual update: mli only files
    cmo_format
    ; manual update: this is required.
    instruct
-   ))
+ ))
 
 (library
  (name ocamlbytecomp)
@@ -79,58 +86,79 @@
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon)
  (modules
-   bytegen printinstr emitcode bytelink bytelibrarian bytepackager errors
-   compile))
+    ;; bytecomp/
+    bytegen bytelibrarian bytelink bytepackager emitcode printinstr
+
+    ;; driver/
+    errors compile
+ ))
+
+(library
+ (name ocamlmiddleend)
+ (wrapped false)
+ (flags (:standard -principal -nostdlib))
+ (libraries stdlib ocamlcommon)
+ (modules_without_implementation
+   cmx_format cmxs_format backend_intf inlining_decision_intf
+   simplify_boxed_integer_ops_intf)
+ (modules
+   ;; file_formats/
+   cmx_format cmxs_format
+
+   ;; middle_end/
+   backend_intf backend_var backend_var clambda clambda_primitives
+   compilation_unit compilenv convert_primitives internal_variable_names
+   linkage_name printclambda printclambda_primitives semantics_of_primitives
+   symbol variable
+
+   ;; middle_end/closure/
+   closure
+
+   ;; middle_end/flambda/base_types/
+   closure_element closure_id closure_origin export_id id_types mutable_variable
+   set_of_closures_id set_of_closures_origin static_exception tag
+   var_within_closure
+
+   ;; middle_end/flambda/
+   alias_analysis allocated_const augment_specialised_args build_export_info
+   closure_conversion closure_conversion_aux closure_offsets effect_analysis
+   export_info export_info_for_pack extract_projections find_recursive_functions
+   flambda flambda_invariants flambda_iterators flambda_middle_end
+   flambda_to_clambda flambda_utils freshening import_approx inconstant_idents
+   initialize_symbol_to_let_symbol inline_and_simplify inline_and_simplify_aux
+   inlining_cost inlining_decision inlining_decision_intf inlining_stats
+   inlining_stats_types inlining_transforms invariant_params lift_code
+   lift_constants lift_let_to_initialize_symbol parameter pass_wrapper
+   projection ref_to_variables remove_free_vars_equal_to_args
+   remove_unused_arguments remove_unused_closure_vars
+   remove_unused_program_constructs share_constants simple_value_approx
+   simplify_boxed_integer_ops simplify_boxed_integer_ops_intf simplify_common
+   simplify_primitives traverse_for_exported_symbols un_anf unbox_closures
+   unbox_free_vars_of_closures unbox_specialised_args
+ )
+)
 
 (library
  (name ocamloptcomp)
  (wrapped false)
  (flags (:standard -principal -nostdlib))
- (libraries stdlib ocamlcommon)
- (modules_without_implementation
-   cmxs_format cmx_format x86_ast backend_intf inlining_decision_intf
-   simplify_boxed_integer_ops_intf)
+ (libraries stdlib ocamlcommon ocamlmiddleend)
+ (modules_without_implementation x86_ast)
  (modules
-   ;; ASMCOMP
-   arch backend_var cmm printcmm reg reg_with_debug_info reg_availability_set
-   mach proc clambda printclambda export_info export_info_for_pack compilenv
-   closure traverse_for_exported_symbols build_export_info closure_offsets
-   flambda_to_clambda import_approx un_anf afl_instrument strmatch cmmgen_state
-   cmmgen interval printmach selectgen spacetime_profiling selection comballoc
-   CSEgen CSE liveness spill split interf coloring linscan reloadgen reload
-   deadcode printlinear linearize available_regs schedgen scheduling
-   branch_relaxation_intf branch_relaxation emitaux emit asmgen asmlink
-   asmlibrarian asmpackager opterrors optcompile
-   ; manual update: mli only files
-   cmxs_format cmx_format
+   ;; asmcomp/
+   afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
+   branch_relaxation_intf cmm cmmgen cmmgen_state coloring comballoc CSE CSEgen
+   deadcode emit emitaux interf interval linearize linscan liveness mach
+   printcmm printlinear printmach proc reg reload reloadgen schedgen scheduling
+   selectgen selection spacetime_profiling spill split strmatch x86_ast
+   x86_dsl x86_gas x86_masm x86_proc
 
-   ; arch specific files: we always include them even though depending on the
-   ; target architecture they might not be used.
-   x86_ast
-   x86_proc
-   x86_dsl
-   x86_gas
-   x86_masm
+   ;; asmcomp/debug/
+   reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
+   compute_ranges
 
-   ;; MIDDLE_END
-   int_replace_polymorphic_compare debuginfo tag linkage_name compilation_unit
-   internal_variable_names variable mutable_variable id_types set_of_closures_id
-   set_of_closures_origin closure_element closure_id closure_origin
-   var_within_closure static_exception export_id symbol pass_wrapper
-   allocated_const parameter projection flambda flambda_iterators flambda_utils
-   inlining_cost effect_analysis freshening simple_value_approx lift_code
-   closure_conversion_aux closure_conversion initialize_symbol_to_let_symbol
-   lift_let_to_initialize_symbol find_recursive_functions invariant_params
-   inconstant_idents alias_analysis lift_constants share_constants
-   simplify_common remove_unused_arguments remove_unused_closure_vars
-   remove_unused_program_constructs simplify_boxed_integer_ops
-   simplify_primitives inlining_stats_types inlining_stats
-   inline_and_simplify_aux remove_free_vars_equal_to_args extract_projections
-   augment_specialised_args unbox_free_vars_of_closures unbox_specialised_args
-   unbox_closures inlining_transforms inlining_decision inline_and_simplify
-   ref_to_variables flambda_invariants middle_end convert_primitives
-   ; manual update: mli only files
-   backend_intf inlining_decision_intf simplify_boxed_integer_ops_intf
+   ;; driver/
+   optcompile opterrors
  )
 )
 
@@ -156,7 +184,7 @@
  (name optmain)
  (modes byte)
  (flags (:standard -principal -nostdlib))
- (libraries ocamloptcomp ocamlcommon runtime stdlib)
+ (libraries ocamloptcomp ocamlmiddleend ocamlcommon runtime stdlib)
  (modules optmain))
 
 (rule
@@ -166,12 +194,14 @@
 ;;; aliases ;;;
 ;;;;;;;;;;;;;;;
 
+; mshinwell: The debugger and ocamldoc are currently disabled as Dynlink is
+; not built correctly.
 (alias
  (name world)
  (deps ocamlc.byte
        ocamlopt.byte
-       debugger/ocamldebug.byte
-       ocamldoc/ocamldoc.byte
+;       debugger/ocamldebug.byte
+;       ocamldoc/ocamldoc.byte
        ocamltest/ocamltest.byte
        toplevel/ocaml.byte
        toplevel/expunge.exe

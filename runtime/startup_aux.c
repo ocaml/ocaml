@@ -59,7 +59,7 @@ static void init_startup_params()
   params.verb_gc = 0x3F;
 #endif
 #ifndef NATIVE_CODE
-  cds_file = caml_secure_getenv(_T("CAML_DEBUG_FILE"));
+  cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
   if (cds_file != NULL) {
     params.cds_file = caml_stat_strdup_os(cds_file);
   }
@@ -69,55 +69,55 @@ static void init_startup_params()
 
 static void scanmult (char_os *opt, uintnat *var)
 {
-  char_os mult = _T(' ');
+  char_os mult = ' ';
   unsigned int val = 1;
-  sscanf_os (opt, _T("=%u%c"), &val, &mult);
-  sscanf_os (opt, _T("=0x%x%c"), &val, &mult);
+  sscanf_os (opt, T("=%u%c"), &val, &mult);
+  sscanf_os (opt, T("=0x%x%c"), &val, &mult);
   switch (mult) {
-  case _T('k'):   *var = (uintnat) val * 1024; break;
-  case _T('M'):   *var = (uintnat) val * (1024 * 1024); break;
-  case _T('G'):   *var = (uintnat) val * (1024 * 1024 * 1024); break;
+  case 'k':   *var = (uintnat) val * 1024; break;
+  case 'M':   *var = (uintnat) val * (1024 * 1024); break;
+  case 'G':   *var = (uintnat) val * (1024 * 1024 * 1024); break;
   default:    *var = (uintnat) val; break;
   }
 }
 
 void caml_parse_ocamlrunparam(void)
 {
-  char_os *opt = caml_secure_getenv (_T("OCAMLRUNPARAM"));
+  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
 
   init_startup_params();
 
-  if (opt == NULL) opt = caml_secure_getenv (_T("CAMLRUNPARAM"));
+  if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
 
   if (opt != NULL){
-    while (*opt != _T('\0')){
+    while (*opt != '\0'){
       switch (*opt++){
-      //case _T('a'): scanmult (opt, &p); caml_set_allocation_policy (p); break;
-      case _T('b'): scanmult (opt, &params.backtrace_enabled_init); break;
-      case _T('c'): scanmult (opt, &params.cleanup_on_exit); break;
-      case _T('e'): scanmult (opt, &params.eventlog_enabled); break;
-      case _T('f'): scanmult (opt, &params.init_fiber_wsz); break;
-      case _T('h'): scanmult (opt, &params.init_heap_wsz); break;
-      //case _T('H'): scanmult (opt, &caml_use_huge_pages); break;
-      case _T('i'): scanmult (opt, &params.init_heap_chunk_sz); break;
-      case _T('l'): scanmult (opt, &params.init_max_stack_wsz); break;
-      case _T('M'): scanmult (opt, &params.init_custom_major_ratio); break;
-      case _T('m'): scanmult (opt, &params.init_custom_minor_ratio); break;
-      case _T('n'): scanmult (opt, &params.init_custom_minor_max_bsz); break;
-      case _T('o'): scanmult (opt, &params.init_percent_free); break;
-      case _T('O'): scanmult (opt, &params.init_max_percent_free); break;
-      case _T('p'): scanmult (opt, &params.parser_trace); break;
-      case _T('R'): break; /*  see stdlib/hashtbl.mli */
-      case _T('s'): scanmult (opt, &params.init_minor_heap_wsz); break;
-      case _T('S'): scanmult (opt, &params.print_stats); break;
-      case _T('t'): scanmult (opt, &params.trace_level); break;
-      case _T('v'): scanmult (opt, &params.verb_gc); break;
-      case _T('V'): scanmult (opt, &params.verify_heap); break;
-      //case _T('w'): scanmult (opt, &caml_init_major_window); break;
-      case _T('W'): scanmult (opt, &caml_runtime_warnings); break;
+      //case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case 'b': scanmult (opt, &params.backtrace_enabled_init); break;
+      case 'c': scanmult (opt, &params.cleanup_on_exit); break;
+      case 'e': scanmult (opt, &params.eventlog_enabled); break;
+      case 'f': scanmult (opt, &params.init_fiber_wsz); break;
+      case 'h': scanmult (opt, &params.init_heap_wsz); break;
+      //case 'H': scanmult (opt, &caml_use_huge_pages); break;
+      case 'i': scanmult (opt, &params.init_heap_chunk_sz); break;
+      case 'l': scanmult (opt, &params.init_max_stack_wsz); break;
+      case 'M': scanmult (opt, &params.init_custom_major_ratio); break;
+      case 'm': scanmult (opt, &params.init_custom_minor_ratio); break;
+      case 'n': scanmult (opt, &params.init_custom_minor_max_bsz); break;
+      case 'o': scanmult (opt, &params.init_percent_free); break;
+      case 'O': scanmult (opt, &params.init_max_percent_free); break;
+      case 'p': scanmult (opt, &params.parser_trace); break;
+      case 'R': break; /*  see stdlib/hashtbl.mli */
+      case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
+      case 'S': scanmult (opt, &params.print_stats); break;
+      case 't': scanmult (opt, &params.trace_level); break;
+      case 'v': scanmult (opt, &params.verb_gc); break;
+      case 'V': scanmult (opt, &params.verify_heap); break;
+      //case 'w': scanmult (opt, &caml_init_major_window); break;
+      case 'W': scanmult (opt, &caml_runtime_warnings); break;
       }
       --opt; /* to handle patterns like ",b=1" */
-      while (*opt != _T('\0')){
+      while (*opt != '\0'){
         if (*opt++ == ',') break;
       }
     }
@@ -206,31 +206,31 @@ int caml_parse_command_line(char_os **argv)
 {
   int i, j;
 
-  for(i = 1; argv[i] != NULL && argv[i][0] == _T('-'); i++) {
+  for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
     switch(argv[i][1]) {
-    case _T('t'):
+    case 't':
       params.trace_level++; /* ignored unless DEBUG mode */
       break;
-    case _T('v'):
-      if (!strcmp_os (argv[i], _T("-version"))){
+    case 'v':
+      if (!strcmp_os (argv[i], T("-version"))){
         printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
         exit (0);
-      }else if (!strcmp_os (argv[i], _T("-vnum"))){
+      }else if (!strcmp_os (argv[i], T("-vnum"))){
         printf (OCAML_VERSION_STRING "\n");
         exit (0);
       }else{
         params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
       }
       break;
-    case _T('p'):
+    case 'p':
       for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
         printf("%s\n", caml_names_of_builtin_cprim[j]);
       exit(0);
       break;
-    case _T('b'):
+    case 'b':
       params.backtrace_enabled_init = 1;
       break;
-    case _T('I'):
+    case 'I':
       if (argv[i + 1] != NULL) {
         caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
         i++;

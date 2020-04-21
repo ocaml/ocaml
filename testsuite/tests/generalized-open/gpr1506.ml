@@ -115,7 +115,7 @@ module A = struct
   end
 end
 [%%expect{|
-Line 3, characters 4-56:
+Lines 3-6, characters 4-7:
 3 | ....open struct
 4 |       type t = T
 5 |       let x = T
@@ -135,7 +135,7 @@ module A = struct
   let g = y
 end
 [%%expect{|
-Line 3, characters 4-40:
+Lines 3-5, characters 4-7:
 3 | ....open struct
 4 |       type t = T
 5 |     end

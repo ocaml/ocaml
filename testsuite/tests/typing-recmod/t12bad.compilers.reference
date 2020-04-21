@@ -1,4 +1,4 @@
-File "t12bad.ml", line 11, characters 4-101:
+File "t12bad.ml", lines 11-15, characters 4-7:
 11 | ....sig
 12 |       class ['a] c : 'a -> object
 13 |         method map : ('a -> 'b) -> 'b M.c

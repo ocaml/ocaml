@@ -21,6 +21,9 @@ Working version
   (Greg V, review by Sébastien Hinderer, Stephen Dolan, Damien Doligez
    and Xavier Leroy)
 
+- GPR#8547: Optimize matches that are an affine function of the input.
+  (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 * #2276: Remove support for compiler plugins and hooks (also adds
@@ -28,13 +31,32 @@ Working version
   (Mark Shinwell, Xavier Clerc, review by Nicolás Ojeda Bär,
   Florian Angeletti, David Allsopp and Xavier Leroy)
 
+- #2301: Hint on type error on int literal
+  (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
+  Gabriel Scherer and Armaël Guéneau)
+
+- #2307: Hint on type error on int's operators
+  (Jules Aguillon, with help from Armaël Guéneau,
+   review by Gabriel Scherer and Florian Angeletti)
+
 - #2314: Remove support for gprof profiling.
   (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
 
 - #3819, #8546 more explanations and tests for illegal permutation
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #8541: Correctly print multi-lines locations
+  (Louis Roché, review by Gabriel Scherer)
+
+- #8579: Better error message for private constructors
+  of an extensible variant type
+  (Guillaume Bury, review by many fine eyes)
+
 ### Compiler distribution build system:
+
+- #2267: merge generation of header programs, also fixing parallel build on
+  Cygwin.
+  (David Allsopp, review by Sébastien Hinderer)
 
 - #8514: Use boot/ocamlc.opt for building, if available.
   (Stephen Dolan, review by Gabriel Scherer)
@@ -50,6 +72,10 @@ Working version
 - #1973: fix compilation of catches with multiple handlers
   (Vincent Laviron)
 
+- #2190: fix pretty printing (using Pprintast) of "lazy ..." patterns and
+  "fun (type t) -> ..." expressions.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 - #2228, #8545: refactoring the handling of .cmi files
   by moving the logic from Env to a new module Persistent_env
   (Gabriel Scherer, review by Jérémie Dimino and Thomas Refis)
@@ -57,8 +83,9 @@ Working version
 - #2229: Env: remove prefix_idents cache
   (Thomas Refis, review by Frédéric Bour and Gabriel Scherer)
 
-- #2237: Reorder linearisation of Trywith to avoid a call instruction
-  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell)
+- #2237, #8582: Reorder linearisation of Trywith to avoid a call instruction
+  (Vincent Laviron and Greta Yorsh, additional review by Mark Shinwell;
+  fix in #8582 by Mark Shinwell, Xavier Leroy and Anil Madhavapeddy)
 
 - #2265: Add bytecomp/opcodes.mli
   (Mark Shinwell, review by Nicolas Ojeda Bar)
@@ -72,6 +99,9 @@ Working version
 
 - #2280: Don't make more Clambda constants after starting Cmmgen
   (Mark Shinwell, review by Vincent Laviron)
+
+- #2281: Move some middle-end files around
+  (Mark Shinwell)
 
 - #2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
   [Misc.Stdlib.List]
@@ -98,10 +128,18 @@ Working version
 - #7878, #8542: Replaced TypedtreeIter with tast_iterator
   (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #8598: Replace "not is_nonexpansive" by "maybe_expansive".
+  (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
+   Gabriel Scherer and Xavier Leroy)
+
 ### Runtime system:
 
 - #1725, #2279: Deprecate Obj.set_tag and Obj.truncate
   (Stephen Dolan, review by Gabriel Scherer, Damien Doligez and Xavier Leroy)
+
+- #2075, #7729: rename _T macro used to support Unicode in the (Windows) runtime
+  in order to avoid compiler warning
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and David Allsopp)
 
 * #2240: Constify "identifier" in struct custom_operations
   (Cedric Cellier, review by Xavier Leroy)
@@ -117,6 +155,10 @@ Working version
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
   in printf %F
   (Pierre Roux, review by Gabriel Scherer)
+
+- #6148, #8596: optimize some buffer operations
+  (Damien Doligez, reports by John Whitington and Alain Frisch,
+   review by Jeremy Yallop and Gabriel Scherer)
 
 ### Other libraries:
 
@@ -136,17 +178,10 @@ Working version
   (Jérémie Dimino, review by Nicolas Ojeda Bar, Xavier Leroy and
    Sébastien Hinderer)
 
-### Compiler user-interface and warnings:
-
-- #2301: Hint on type error on int literal
-  (Jules Aguillon, review by Nicolás Ojeda Bär , Florian Angeletti,
-  Gabriel Scherer and Armaël Guéneau)
-
-- #2307: Hint on type error on int's operators
-  (Jules Aguillon, with help from Armaël Guéneau,
-   review by Gabriel Scherer and Florian Angeletti)
-
 ### Manual and documentation:
+
+- #7584, #8538: Document .cmt* files in the "overview" of ocaml{c,opt}
+  (Oxana Kostikova, rewiew by Florian Angeletti)
 
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
@@ -158,6 +193,9 @@ Working version
 - #7937, #2287: fix uncaught Unify exception when looking for type
   declaration
   (Florian Angeletti, review by Jacques Garrigue)
+
+- GPR#2296: Fix parsing of hexadecimal floats with underscores in the exponent.
+  (Hugo Heuzard and Xavier Leroy, review by Gabriel Scherer)
 
 OCaml 4.08.0
 ------------
@@ -548,7 +586,7 @@ OCaml 4.08.0
 
 ### Runtime system:
 
-- #7198, #7750, #1738: add a function (caml_custom_alloc_mem)
+- #7198, #7750, #1738: add a function (caml_alloc_custom_mem)
   and three GC parameters to give the user better control of the
   out-of-heap memory retained by custom values; use the function to
   allocate bigarrays and I/O channels.
@@ -577,6 +615,15 @@ OCaml 4.08.0
 - #2079: Avoid page table lookup in Pervasives.compare with
   no-naked-pointers
   (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
+
+- #7829, #8585: Fix pointer comparisons in freelist.c (for 32-bit platforms)
+  (David Allsopp and Damien Doligez)
+
+- #8567, #8569: on ARM64, use 32-bit loads to access caml_backtrace_active
+  (Xavier Leroy, review by Mark Shinwell and Greta Yorsh)
+
+- #8568: Fix a memory leak in mmapped bigarrays
+  (Damien Doligez, review by Xavier Leroy and Jérémie Dimino)
 
 ### Tools
 
@@ -613,6 +660,11 @@ OCaml 4.08.0
 - #2189: change ocamldep Makefile-output to print each dependency
   on a new line, for more readable diffs of versioned dependencies.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
+- #2221: ocamldep will now correctly allow a .ml file in an include directory
+  that appears first in the search order to shadow a .mli appearing in a later
+  include directory.
+  (Nicolás Ojeda Bär, review by Florian Angeletti)
 
 - #2223: ocamltest: fix the "bsd" and "not-bsd" built-in actions to
   recognize all BSD variants
@@ -753,6 +805,9 @@ OCaml 4.08.0
 
 * #8533: Remove some unused configure tests
   (Stephen Dolan, review by David Allsopp and Sébastien Hinderer)
+
+- GPR#2207,#8604: Add opam files to allow pinning
+  (Leo White, Greta Yorsh, review by Gabriel Radanne)
 
 ### Internal/compiler-libs changes:
 
@@ -1016,6 +1071,10 @@ OCaml 4.08.0
 - #7929, #2261: Subst.signature: call cleanup_types exactly once
   (Thomas Refis, review by Gabriel Scherer and Jacques Garrigue,
   report by Daniel Bünzli and Jon Ludlam)
+
+- #8550, #8552: Soundness issue with class generalization
+  (Jacques Garrigue, review by Leo White and Thomas Refis,
+  report by Jeremy Yallop)
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------

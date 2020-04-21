@@ -513,6 +513,9 @@ external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
   src:bytes -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
     unit = "caml_blit_bytes" [@@noalloc]
+external unsafe_blit_string :
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
+  = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> pos:int -> len:int -> char -> unit = "caml_fill_bytes" [@@noalloc]
 val unsafe_to_string : bytes -> string

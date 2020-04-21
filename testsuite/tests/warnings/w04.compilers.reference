@@ -1,4 +1,4 @@
-File "w04.ml", line 21, characters 10-40:
+File "w04.ml", lines 21-23, characters 10-8:
 21 | ..........match x with
 22 | | A -> 0
 23 | | _ -> 1

@@ -16,7 +16,7 @@ let test_match_exhaustiveness () =
 ;;
 
 [%%expect{|
-Line 8, characters 4-83:
+Lines 8-11, characters 4-16:
  8 | ....match None with
  9 |     | exception e -> ()
 10 |     | Some false -> ()
@@ -35,7 +35,7 @@ let test_match_exhaustiveness_nest1 () =
 ;;
 
 [%%expect{|
-Line 2, characters 4-73:
+Lines 2-4, characters 4-30:
 2 | ....match None with
 3 |     | Some false -> ()
 4 |     | None | exception _ -> ()
@@ -53,7 +53,7 @@ let test_match_exhaustiveness_nest2 () =
 ;;
 
 [%%expect{|
-Line 2, characters 4-73:
+Lines 2-4, characters 4-16:
 2 | ....match None with
 3 |     | Some false | exception _ -> ()
 4 |     | None -> ()
@@ -72,7 +72,7 @@ let test_match_exhaustiveness_full () =
 ;;
 
 [%%expect{|
-Line 2, characters 4-111:
+Lines 2-5, characters 4-30:
 2 | ....match None with
 3 |     | exception e -> ()
 4 |     | Some false | exception _ -> ()

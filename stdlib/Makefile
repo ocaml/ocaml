@@ -121,9 +121,13 @@ installopt-default:
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-HEADERPROGRAM = header.c
+HEADERPROGRAM = header
+HEADER_PATH = $(BINDIR)/
+HEADER_TARGET_PATH = $(TARGET_BINDIR)/
 else # Windows
-HEADERPROGRAM = headernt.c
+HEADERPROGRAM = headernt
+HEADER_PATH =
+HEADER_TARGET_PATH =
 endif
 
 CAMLHEADERS =\
@@ -131,73 +135,61 @@ CAMLHEADERS =\
   camlheaderd target_camlheaderd \
   camlheaderi target_camlheaderi
 
+# The % in pattern rules must always match something, hence the slightly strange
+# patterns and $(subst ...) since `camlheader%:` wouldn't match `camlheader`
 ifeq "$(HASHBANGSCRIPTS)" "true"
-$(CAMLHEADERS): $(ROOTDIR)/Makefile.config
-	for suff in '' d i; do \
-	  echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
-	  echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
-	done && \
-	echo '#!' | tr -d '\012' > camlheader_ur;
+camlhead%: $(ROOTDIR)/Makefile.config Makefile
+	echo '#!$(BINDIR)/ocamlrun$(subst er,,$*)' > $@
+
+target_%: $(ROOTDIR)/Makefile.config Makefile
+	echo '#!$(TARGET_BINDIR)/ocamlrun$(subst camlheader,,$*)' > $@
+
+camlheader_ur: Makefile
+	echo '#!' | tr -d '\012' > $@
+
 else # Hashbang scripts not supported
 
-$(CAMLHEADERS): $(HEADERPROGRAM) $(ROOTDIR)/Makefile.config
+$(CAMLHEADERS): $(HEADERPROGRAM).c $(ROOTDIR)/Makefile.config Makefile
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-$(CAMLHEADERS):
-	for suff in '' d i; do \
-	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(OC_LDFLAGS) \
-	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
-	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(OC_LDFLAGS) \
-	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
-	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) target_camlheader$$suff; \
-	done && \
-	cp camlheader camlheader_ur
+# $@.exe is deleted to ensure no Cygwin .exe mangling takes place
+camlhead%: tmphead%.exe
+	rm -f $@.exe
+	mv $< $@
 
-else # Windows
+# Again, pattern weirdness here means that the dot is always present so that
+# tmpheader.exe matches.
+tmpheader%exe: $(HEADERPROGRAM)%$(O)
+	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
+# FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
+ifneq "$(UNIX_OR_WIN32)" "win32"
+	strip $@
+endif
 
-# TODO: see whether there is a way to further merge the rules below
-# with those above
-
-camlheader: headernt.c
+$(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	rm -f camlheader.exe
-	mv tmpheader.exe camlheader
-
-target_camlheader: camlheader
-	cp camlheader target_camlheader
+	      -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"' \
+	      $(OUTPUTOBJ)$@ $^
 
 camlheader_ur: camlheader
-	cp camlheader camlheader_ur
+	cp camlheader $@
 
-camlheaderd: headernt.c
+ifeq "$(UNIX_OR_WIN32)" "unix"
+tmptargetcamlheader%exe: $(HEADERPROGRAM)%$(O)
+	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
+	strip $@
+
+$(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headerntd.$(O) $<
-	$(MKEXE) -o tmpheaderd.exe headerntd.$(O) $(EXTRALIBS)
-	mv tmpheaderd.exe camlheaderd
+	      -DRUNTIME_NAME='"$(HEADER_TARGET_PATH)ocamlrun$(subst .,,$*)"' \
+	      $(OUTPUTOBJ)$@ $^
 
-target_camlheaderd: camlheaderd
-	cp camlheaderd target_camlheaderd
-
-camlheaderi: headernt.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
-	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
-	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
-	mv tmpheaderi.exe camlheaderi
-
-target_camlheaderi: camlheaderi
-	cp camlheaderi target_camlheaderi
-
-# TODO: do not call flexlink to build tmpheader.exe (we don't need
-# the export table)
-
-endif # ifeq "$(UNIX_OR_WIN32)" "unix"
+target_%: tmptarget%.exe
+	rm -f $@.exe
+	mv $< $@
+else
+target_%: %
+	cp $< $@
+endif
 
 endif # ifeq "$(HASHBANGSCRIPTS)" "true"
 
@@ -255,7 +247,6 @@ $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A) *.odoc
-	rm -f *~
 	rm -f camlheader*
 
 include .depend

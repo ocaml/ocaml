@@ -75,6 +75,7 @@ type error =
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
+  | Private_constructor of constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
@@ -1803,15 +1804,17 @@ let rec final_subexpression sexp =
 
 let rec is_nonexpansive exp =
   match exp.exp_desc with
-    Texp_ident(_,_,_) -> true
-  | Texp_constant _ -> true
+  | Texp_ident _
+  | Texp_constant _
+  | Texp_unreachable
+  | Texp_function _
+  | Texp_array [] -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
-  | Texp_function _ -> true
   | Texp_apply(e, (_,None)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd el)
-  | Texp_match(e, cases, [], _) ->
+  | Texp_match(e, cases, _, _) ->
      (* Not sure this is necessary, if [e] is nonexpansive then we shouldn't
          care if there are exception patterns. But the previous version enforced
          that there be none, so... *)
@@ -1845,12 +1848,10 @@ let rec is_nonexpansive exp =
         fields
       && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
-  | Texp_array [] -> true
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
-  | Texp_new (_, _, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
-      true
+  | Texp_new (_, _, cl_decl) -> Ctype.class_type_arity cl_decl.cty_type > 0
   (* Note: nonexpansive only means no _observable_ side effects *)
   | Texp_lazy e -> is_nonexpansive e
   | Texp_object ({cstr_fields=fields; cstr_type = { csig_vars=vars}}, _) ->
@@ -1887,11 +1888,24 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Some e]) ->
      is_nonexpansive e
-  | _ -> false
+  | Texp_array (_ :: _)
+  | Texp_apply _
+  | Texp_try _
+  | Texp_setfield _
+  | Texp_while _
+  | Texp_for _
+  | Texp_send _
+  | Texp_instvar _
+  | Texp_setinstvar _
+  | Texp_override _
+  | Texp_letexception _
+  | Texp_letop _
+  | Texp_extension_constructor _ ->
+    false
 
 and is_nonexpansive_mod mexp =
   match mexp.mod_desc with
-  | Tmod_ident _ -> true
+  | Tmod_ident _
   | Tmod_functor _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
   | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
@@ -1928,8 +1942,10 @@ and is_nonexpansive_mod mexp =
   | Tmod_apply _ -> false
 
 and is_nonexpansive_opt = function
-    None -> true
+  | None -> true
   | Some e -> is_nonexpansive e
+
+let maybe_expansive e = not (is_nonexpansive e)
 
 let check_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in
@@ -2019,8 +2035,8 @@ let list_labels env ty =
 
 (* Check that all univars are safe in a type *)
 let check_univars env expans kind exp ty_expected vars =
-  if expans && not (is_nonexpansive exp) then
-    generalize_expansive env exp.exp_type;
+  if expans && maybe_expansive exp then
+    lower_contravariant env exp.exp_type;
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
   let vars = List.map (expand_head env) vars in
@@ -2518,7 +2534,7 @@ and type_expect_
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      if not (is_nonexpansive arg) then generalize_expansive env arg.exp_type;
+      if maybe_expansive arg then lower_contravariant env arg.exp_type;
       generalize arg.exp_type;
       let rec split_cases valc effc conts = function
         | [] -> List.rev valc, List.rev effc, List.rev conts
@@ -3891,13 +3907,13 @@ and type_label_exp create env loc ty_expected
     try
       check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
       arg
-    with exn when not (is_nonexpansive arg) -> try
+    with exn when maybe_expansive arg -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
       may Btype.backtrack snap;
       begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      generalize_expansive env arg.exp_type;
+      lower_contravariant env arg.exp_type;
       unify_exp env arg ty_arg;
       check_univars env false "field value" arg label.lbl_arg vars;
       arg
@@ -4273,7 +4289,12 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
-    raise(Error(loc, env, Private_type ty_res));
+    begin match constr.cstr_tag with
+    | Cstr_extension _ ->
+        raise(Error(loc, env, Private_constructor (constr, ty_res)))
+    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
+        raise (Error(loc, env, Private_type ty_res));
+    end;
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
   { texp with
     exp_desc = Texp_construct(lid, constr, args) }
@@ -4775,8 +4796,8 @@ and type_let
   end_def();
   List.iter2
     (fun pat exp ->
-       if not (is_nonexpansive exp) then
-         generalize_expansive env pat.pat_type)
+       if maybe_expansive exp then
+         lower_contravariant env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
   (* We also generalize expressions that are not bound to a variable.
@@ -4879,7 +4900,7 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if not (is_nonexpansive exp) then generalize_expansive env exp.exp_type;
+  if maybe_expansive exp then lower_contravariant env exp.exp_type;
   generalize exp.exp_type;
   match sexp.pexp_desc with
     Pexp_ident lid ->
@@ -4911,95 +4932,92 @@ let type_clash_of_trace trace =
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
-let report_literal_type_constraint ppf expected_type const =
-  let hint str_val =
-    let hint_suffix c =
-      fprintf ppf "@\n@[Hint: Did you mean `%s%c'?@]" str_val c
-    in
-    if Path.same expected_type Predef.path_int32 then
-      hint_suffix 'l'
-    else if Path.same expected_type Predef.path_int64 then
-      hint_suffix 'L'
-    else if Path.same expected_type Predef.path_nativeint then
-      hint_suffix 'n'
-    else if Path.same expected_type Predef.path_float then
-      hint_suffix '.'
-    else
-      ()
+let report_literal_type_constraint expected_type const =
+  let const_str = match const with
+    | Const_int n -> Some (Int.to_string n)
+    | Const_int32 n -> Some (Int32.to_string n)
+    | Const_int64 n -> Some (Int64.to_string n)
+    | Const_nativeint n -> Some (Nativeint.to_string n)
+    | _ -> None
   in
-  match const with
-  | Const_int n -> hint (Int.to_string n)
-  | Const_int32 n -> hint (Int32.to_string n)
-  | Const_int64 n -> hint (Int64.to_string n)
-  | Const_nativeint n -> hint (Nativeint.to_string n)
-  | _ -> ()
+  let suffix =
+    if Path.same expected_type Predef.path_int32 then
+      Some 'l'
+    else if Path.same expected_type Predef.path_int64 then
+      Some 'L'
+    else if Path.same expected_type Predef.path_nativeint then
+      Some 'n'
+    else if Path.same expected_type Predef.path_float then
+      Some '.'
+    else None
+  in
+  match const_str, suffix with
+  | Some c, Some s -> [ Location.msg "@[Hint: Did you mean `%s%c'?@]" c s ]
+  | _, _ -> []
 
-let report_literal_type_constraint ppf const = function
+let report_literal_type_constraint const = function
   | Some Unification_trace.
     { expected = { t = { desc = Tconstr (typ, [], _) } } } ->
-      report_literal_type_constraint ppf typ const
-  | Some _ | None -> ()
+      report_literal_type_constraint typ const
+  | Some _ | None -> []
 
-let report_expr_type_clash_hints ppf exp diff =
+let report_expr_type_clash_hints exp diff =
   match exp with
-  | Some (Texp_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | Some (Texp_constant const) -> report_literal_type_constraint const diff
+  | _ -> []
 
-let report_pattern_type_clash_hints ppf pat diff =
+let report_pattern_type_clash_hints pat diff =
   match pat with
-  | Some (Tpat_constant const) -> report_literal_type_constraint ppf const diff
-  | _ -> ()
+  | Some (Tpat_constant const) -> report_literal_type_constraint const diff
+  | _ -> []
 
 (* Hint when using int operators (eg. `+`)
    on other kind of integer and floats *)
-let report_numeric_operator_clash_hints actual_type operator =
+let report_numeric_operator_clash_hints ~loc actual_type operator =
   let stdlib = Path.Pident (Ident.create_persistent "Stdlib") in
   let stdlib_qualified mod_ val_ = Path.Pdot (Path.Pdot (stdlib, mod_), val_) in
-  let hint expected_op =
-    Some (fun ppf ->
-      fprintf ppf "@[Hint:@ Did you mean to use `%a'?@]"
-        Printtyp.path expected_op
-    )
-  in
-  let hint ~add ~sub ~mul ~div ~mod_ () =
-    let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
-    if is_op "+" then hint add
-    else if is_op "-" then hint sub
-    else if is_op "*" then hint mul
-    else if is_op "/" then hint div
-    else if is_op "mod" then hint mod_
+  let is_op op = Path.same operator (Path.Pdot (stdlib, op)) in
+  let expecting_qualified name =
+    let qualified = stdlib_qualified name in
+    if is_op "+" then Some (qualified "add")
+    else if is_op "-" then Some (qualified "sub")
+    else if is_op "*" then Some (qualified "mul")
+    else if is_op "/" then Some (qualified "div")
+    else if is_op "mod" then Some (qualified "rem")
     else None
   in
-  let hint_qualified name =
-    let qualified = stdlib_qualified name in
-    hint ~add:(qualified "add") ~sub:(qualified "sub") ~mul:(qualified "mul")
-      ~div:(qualified "div") ~mod_:(qualified "rem") ()
-  in
-  let hint_std () =
+  let expecting_float () =
     let qualified id = Path.Pdot (stdlib, id) in
-    hint ~add:(qualified "+.") ~sub:(qualified "-.") ~mul:(qualified "*.")
-      ~div:(qualified "/.") ~mod_:(stdlib_qualified "Float" "rem") ()
+    if is_op "+" then Some (qualified "+.")
+    else if is_op "-" then Some (qualified "-.")
+    else if is_op "*" then Some (qualified "*.")
+    else if is_op "/" then Some (qualified "/.")
+    else if is_op "mod" then Some (stdlib_qualified "Float" "rem")
+    else None
   in
-  let expecting = Path.same actual_type in
-  if expecting Predef.path_int32 then
-    hint_qualified "Int32"
-  else if expecting Predef.path_int64 then
-    hint_qualified "Int64"
-  else if expecting Predef.path_nativeint then
-    hint_qualified "Nativeint"
-  else if expecting Predef.path_float then
-    hint_std ()
-  else None
+  let expecting_op =
+    if Path.same actual_type Predef.path_int32 then
+      expecting_qualified "Int32"
+    else if Path.same actual_type Predef.path_int64 then
+      expecting_qualified "Int64"
+    else if Path.same actual_type Predef.path_nativeint then
+      expecting_qualified "Nativeint"
+    else if Path.same actual_type Predef.path_float then
+      expecting_float ()
+    else None
+  in
+  match expecting_op with
+  | Some op ->
+      [ Location.msg ~loc "@[Hint:@ Did you mean to use `%a'?@]"
+          Printtyp.path op ]
+  | None -> []
 
 (* Returns a list of `Location.msg` *)
 let report_application_clash_hints diff expl =
   match expl, diff with
   | Some (Application { exp_desc = Texp_ident (p, _, _); exp_loc = loc; _ }),
     Some Unification_trace.{ got = { t = { desc = Tconstr (typ, [], _) } } } ->
-      begin match report_numeric_operator_clash_hints typ p with
-        | Some txt -> [ { txt; loc } ]
-        | None -> []
-      end
+      report_numeric_operator_clash_hints ~loc typ p
   | _ -> []
 
 let report_type_expected_explanation expl ppf =
@@ -5054,14 +5072,14 @@ let report_error ~loc env = function
            fprintf ppf "but is mixed here with fields of type")
   | Pattern_type_clash (trace, pat) ->
       let diff = type_clash_of_trace trace in
-      Location.error_of_printer ~loc (fun ppf () ->
+      let sub = report_pattern_type_clash_hints pat diff in
+      Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           (function ppf ->
             fprintf ppf "This pattern matches values of type")
           (function ppf ->
             fprintf ppf "but a pattern was expected which matches values of \
                          type");
-        report_pattern_type_clash_hints ppf pat diff
       ) ()
   | Or_pattern_type_clash (id, trace) ->
       report_unification_error ~loc env trace
@@ -5083,7 +5101,11 @@ let report_error ~loc env = function
       ) ()
   | Expr_type_clash (trace, explanation, exp) ->
       let diff = type_clash_of_trace trace in
-      let sub = report_application_clash_hints diff explanation in
+      let sub = List.concat [
+          report_application_clash_hints diff explanation;
+          report_expr_type_clash_hints exp diff;
+        ]
+      in
       Location.error_of_printer ~loc ~sub (fun ppf () ->
         Printtyp.report_unification_error ppf env trace
           ~type_expected_explanation:
@@ -5092,7 +5114,6 @@ let report_error ~loc env = function
              fprintf ppf "This expression has type")
           (function ppf ->
              fprintf ppf "but an expression was expected of type");
-        report_expr_type_clash_hints ppf exp diff
       ) ()
   | Apply_non_function typ ->
       reset_and_mark_loops typ;
@@ -5263,6 +5284,10 @@ let report_error ~loc env = function
   | Private_label (lid, ty) ->
       Location.errorf ~loc "Cannot assign field %a of the private type %a"
         longident lid type_expr ty
+  | Private_constructor (constr, ty) ->
+      Location.errorf ~loc
+        "Cannot use private constructor %s to create values of type %a"
+        constr.cstr_name type_expr ty
   | Not_a_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->

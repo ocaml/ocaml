@@ -31,7 +31,7 @@ end and d () = object
   inherit ['a] c ()
 end;;
 [%%expect{|
-Line 3, characters 4-45:
+Lines 3-5, characters 4-3:
 3 | ....and d () = object
 4 |   inherit ['a] c ()
 5 | end..
@@ -88,7 +88,7 @@ class x () = object
   method virtual f : int
 end;;
 [%%expect{|
-Line 1, characters 0-48:
+Lines 1-3, characters 0-3:
 1 | class x () = object
 2 |   method virtual f : int
 3 | end..
@@ -116,7 +116,7 @@ class ['a] c () = object
   method f x = (x : bool c)
 end;;
 [%%expect{|
-Line 1, characters 0-78:
+Lines 1-4, characters 0-3:
 1 | class ['a] c () = object
 2 |   constraint 'a = int
 3 |   method f x = (x : bool c)
@@ -162,7 +162,7 @@ class ['a] c () = object
   method f = (x : 'a)
 end;;
 [%%expect{|
-Line 1, characters 0-50:
+Lines 1-3, characters 0-3:
 1 | class ['a] c () = object
 2 |   method f = (x : 'a)
 3 | end..
@@ -618,7 +618,7 @@ class virtual ['a] matrix (sz, init : int * 'a) = object
   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
 end;;
 [%%expect{|
-Line 1, characters 0-153:
+Lines 1-4, characters 0-3:
 1 | class virtual ['a] matrix (sz, init : int * 'a) = object
 2 |   val m = Array.make_matrix sz sz init
 3 |   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
@@ -667,7 +667,7 @@ end : sig
   val f : #c -> #c
 end);;
 [%%expect{|
-Line 1, characters 12-43:
+Lines 1-3, characters 12-3:
 1 | ............struct
 2 |   let f (x : #c) = x
 3 | end......

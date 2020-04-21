@@ -100,6 +100,17 @@ phase can be run directly, as in:
 The produced file has the executable bit set, and it manages to launch
 the bytecode interpreter by itself.
 
+The compiler is able to emit some information on its internal stages.
+It can output ".cmt" files for the implementation of the compilation unit
+and ".cmti" for signatures if the option "-bin-annot" is passed to it (see the
+description of "-bin-annot" below).
+Each such file contains a typed abstract syntax tree (AST), that is produced
+during the type checking procedure. This tree contains all available information
+about the location and the specific type of each term in the source file.
+The AST is partial if type checking was unsuccessful.
+
+These ".cmt" and ".cmti" files are typically useful for code inspection tools.
+
 \section{Options}\label{s:comp-options}
 
 The following command-line options are recognized by "ocamlc".
@@ -361,7 +372,7 @@ This section describes and explains in detail some warnings:
   after the addition of new fields to a record type.
 
 \begin{verbatim}
-type 'a point = {x='a ;y='a}
+type 'a point = {x : 'a; y : 'a}
 let dx { x } = x (* implicit field elision: trigger warning 9 *)
 let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
 \end{verbatim}

@@ -10,7 +10,7 @@ end = struct
   let f = function A | B -> 0
 end;;
 [%%expect{|
-Line 4, characters 6-63:
+Lines 4-7, characters 6-3:
 4 | ......struct
 5 |   type t = A | B
 6 |   let f = function A | B -> 0

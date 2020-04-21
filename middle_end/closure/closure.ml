@@ -36,6 +36,8 @@ module Storer =
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
+(* The current backend *)
+
 let no_phantom_lets () =
   Misc.fatal_error "Closure does not support phantom let generation"
 
@@ -276,7 +278,8 @@ let make_const_int64 n = make_const_ref (Uconst_int64 n)
 (* The [fpc] parameter is true if constant propagation of
    floating-point computations is allowed *)
 
-let simplif_arith_prim_pure fpc p (args, approxs) dbg =
+let simplif_arith_prim_pure ~backend fpc p (args, approxs) dbg =
+  let module B = (val backend : Backend_intf.S) in
   let open Clambda_primitives in
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
@@ -308,11 +311,11 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandint -> make_const_int (n1 land n2)
       | Porint -> make_const_int (n1 lor n2)
       | Pxorint -> make_const_int (n1 lxor n2)
-      | Plslint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plslint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_int (n1 lsl n2)
-      | Plsrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plsrint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_int (n1 lsr n2)
-      | Pasrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Pasrint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_int (n1 asr n2)
       | Pintcomp c -> make_integer_comparison c n1 n2
       | _ -> default
@@ -366,11 +369,11 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n1)));
      Value_const(Uconst_int n2)] ->
       begin match p with
-      | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_natint (Nativeint.shift_left n1 n2)
-      | Plsrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Plsrbint Pnativeint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_natint (Nativeint.shift_right_logical n1 n2)
-      | Pasrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+      | Pasrbint Pnativeint when 0 <= n2 && n2 < 8 * B.size_int ->
           make_const_natint (Nativeint.shift_right n1 n2)
       | _ -> default
       end
@@ -462,7 +465,7 @@ let field_approx n = function
       Value_const (List.nth l n)
   | _ -> Value_unknown
 
-let simplif_prim_pure fpc p (args, approxs) dbg =
+let simplif_prim_pure ~backend fpc p (args, approxs) dbg =
   let open Clambda_primitives in
   match p, args, approxs with
   (* Block construction *)
@@ -502,11 +505,11 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       end
   (* Catch-all *)
   | _ ->
-      simplif_arith_prim_pure fpc p (args, approxs) dbg
+      simplif_arith_prim_pure ~backend fpc p (args, approxs) dbg
 
-let simplif_prim fpc p (args, approxs as args_approxs) dbg =
+let simplif_prim ~backend fpc p (args, approxs as args_approxs) dbg =
   if List.for_all is_pure args
-  then simplif_prim_pure fpc p args_approxs dbg
+  then simplif_prim_pure ~backend fpc p args_approxs dbg
   else
     (* XXX : always return the same approxs as simplif_prim_pure? *)
     let approx =
@@ -547,18 +550,18 @@ let subst_debuginfo loc dbg =
   else
     dbg
 
-let rec substitute loc fpc sb rn ulam =
+let rec substitute loc ((backend, fpc) as st) sb rn ulam =
   match ulam with
     Uvar v ->
       begin try V.Map.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Udirect_apply(lbl, List.map (substitute loc fpc sb rn) args, dbg)
+      Udirect_apply(lbl, List.map (substitute loc st sb rn) args, dbg)
   | Ugeneric_apply(fn, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Ugeneric_apply(substitute loc fpc sb rn fn,
-                     List.map (substitute loc fpc sb rn) args, dbg)
+      Ugeneric_apply(substitute loc st sb rn fn,
+                     List.map (substitute loc st sb rn) args, dbg)
   | Uclosure(defs, env) ->
       (* Question: should we rename function labels as well?  Otherwise,
          there is a risk that function labels are not globally unique.
@@ -568,12 +571,12 @@ let rec substitute loc fpc sb rn ulam =
          - When we substitute offsets for idents bound by let rec
            in [close], case [Lletrec], we discard the original
            let rec body and use only the substituted term. *)
-      Uclosure(defs, List.map (substitute loc fpc sb rn) env)
-  | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb rn u, ofs)
+      Uclosure(defs, List.map (substitute loc st sb rn) env)
+  | Uoffset(u, ofs) -> Uoffset(substitute loc st sb rn u, ofs)
   | Ulet(str, kind, id, u1, u2) ->
       let id' = VP.rename id in
-      Ulet(str, kind, id', substitute loc fpc sb rn u1,
-           substitute loc fpc
+      Ulet(str, kind, id', substitute loc st sb rn u1,
+           substitute loc st
              (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
   | Uphantom_let _ -> no_phantom_lets ()
   | Uletrec(bindings, body) ->
@@ -588,17 +591,17 @@ let rec substitute loc fpc sb rn ulam =
       in
       Uletrec(
         List.map
-           (fun (_id, id', rhs) -> (id', substitute loc fpc sb' rn rhs))
+           (fun (_id, id', rhs) -> (id', substitute loc st sb' rn rhs))
            bindings1,
-        substitute loc fpc sb' rn body)
+        substitute loc st sb' rn body)
   | Uprim(p, args, dbg) ->
-      let sargs = List.map (substitute loc fpc sb rn) args in
+      let sargs = List.map (substitute loc st sb rn) args in
       let dbg = subst_debuginfo loc dbg in
       let (res, _) =
-        simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
+        simplif_prim ~backend fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
   | Uswitch(arg, sw, dbg) ->
-      let sarg = substitute loc fpc sb rn arg in
+      let sarg = substitute loc st sb rn arg in
       let action =
         (* Unfortunately, we cannot easily deal with the
            case of a constructed block (makeblock) bound to a local
@@ -614,22 +617,22 @@ let rec substitute loc fpc sb rn ulam =
         | _ -> None
       in
       begin match action with
-      | Some u -> substitute loc fpc sb rn u
+      | Some u -> substitute loc st sb rn u
       | None ->
           Uswitch(sarg,
                   { sw with
                     us_actions_consts =
-                      Array.map (substitute loc fpc sb rn) sw.us_actions_consts;
+                      Array.map (substitute loc st sb rn) sw.us_actions_consts;
                     us_actions_blocks =
-                      Array.map (substitute loc fpc sb rn) sw.us_actions_blocks;
+                      Array.map (substitute loc st sb rn) sw.us_actions_blocks;
                   },
                   dbg)
       end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch
-        (substitute loc fpc sb rn arg,
-         List.map (fun (s,act) -> s,substitute loc fpc sb rn act) sw,
-         Misc.may_map (substitute loc fpc sb rn) d)
+        (substitute loc st sb rn arg,
+         List.map (fun (s,act) -> s,substitute loc st sb rn act) sw,
+         Misc.may_map (substitute loc st sb rn) d)
   | Ustaticfail (nfail, args) ->
       let nfail =
         match rn with
@@ -640,7 +643,7 @@ let rec substitute loc fpc sb rn ulam =
             fatal_errorf "Closure.split_list: invalid nfail (%d)" nfail
           end
         | None -> nfail in
-      Ustaticfail (nfail, List.map (substitute loc fpc sb rn) args)
+      Ustaticfail (nfail, List.map (substitute loc st sb rn) args)
   | Ucatch(nfail, ids, u1, u2) ->
       let nfail, rn =
         match rn with
@@ -656,34 +659,34 @@ let rec substitute loc fpc sb rn ulam =
           )
           ids ids' sb
       in
-      Ucatch(nfail, ids', substitute loc fpc sb rn u1,
-                          substitute loc fpc sb' rn u2)
+      Ucatch(nfail, ids', substitute loc st sb rn u1,
+                          substitute loc st sb' rn u2)
   | Utrywith(u1, id, u2) ->
       let id' = VP.rename id in
-      Utrywith(substitute loc fpc sb rn u1, id',
-               substitute loc fpc
+      Utrywith(substitute loc st sb rn u1, id',
+               substitute loc st
                  (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
-      begin match substitute loc fpc sb rn u1 with
+      begin match substitute loc st sb rn u1 with
         Uconst (Uconst_ptr n) ->
           if n <> 0 then
-            substitute loc fpc sb rn u2
+            substitute loc st sb rn u2
           else
-            substitute loc fpc sb rn u3
+            substitute loc st sb rn u3
       | Uprim(P.Pmakeblock _, _, _) ->
-          substitute loc fpc sb rn u2
+          substitute loc st sb rn u2
       | su1 ->
-          Uifthenelse(su1, substitute loc fpc sb rn u2,
-                           substitute loc fpc sb rn u3)
+          Uifthenelse(su1, substitute loc st sb rn u2,
+                           substitute loc st sb rn u3)
       end
   | Usequence(u1, u2) ->
-      Usequence(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
+      Usequence(substitute loc st sb rn u1, substitute loc st sb rn u2)
   | Uwhile(u1, u2) ->
-      Uwhile(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
+      Uwhile(substitute loc st sb rn u1, substitute loc st sb rn u2)
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = VP.rename id in
-      Ufor(id', substitute loc fpc sb rn u1, substitute loc fpc sb rn u2, dir,
-           substitute loc fpc
+      Ufor(id', substitute loc st sb rn u1, substitute loc st sb rn u2, dir,
+           substitute loc st
            (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u3)
   | Uassign(id, u) ->
       let id' =
@@ -691,11 +694,11 @@ let rec substitute loc fpc sb rn ulam =
           match V.Map.find id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
-      Uassign(id', substitute loc fpc sb rn u)
+      Uassign(id', substitute loc st sb rn u)
   | Usend(k, u1, u2, ul, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Usend(k, substitute loc fpc sb rn u1, substitute loc fpc sb rn u2,
-            List.map (substitute loc fpc sb rn) ul, dbg)
+      Usend(k, substitute loc st sb rn u1, substitute loc st sb rn u2,
+            List.map (substitute loc st sb rn) ul, dbg)
   | Uunreachable ->
       Uunreachable
 
@@ -751,7 +754,7 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 (* Generate a direct application *)
 
-let direct_apply fundesc ufunct uargs ~loc ~attribute =
+let direct_apply ~backend fundesc ufunct uargs ~loc ~attribute =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let app =
@@ -762,7 +765,8 @@ let direct_apply fundesc ufunct uargs ~loc ~attribute =
           "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
-        bind_params loc fundesc.fun_float_const_prop params app_args body
+        bind_params loc (backend, fundesc.fun_float_const_prop) params app_args
+          body
   in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
@@ -823,7 +827,13 @@ let excessive_function_nesting_depth = 5
 
 exception NotClosed
 
-let close_approx_var fenv cenv id =
+type env = {
+  backend : (module Backend_intf.S);
+  cenv : ulambda V.Map.t;
+  fenv : value_approximation V.Map.t;
+}
+
+let close_approx_var { fenv; cenv } id =
   let approx = try V.Map.find id fenv with Not_found -> Value_unknown in
   match approx with
     Value_const c -> make_const c
@@ -831,12 +841,14 @@ let close_approx_var fenv cenv id =
       let subst = try V.Map.find id cenv with Not_found -> Uvar id in
       (subst, approx)
 
-let close_var fenv cenv id =
-  let (ulam, _app) = close_approx_var fenv cenv id in ulam
+let close_var env id =
+  let (ulam, _app) = close_approx_var env id in ulam
 
-let rec close fenv cenv = function
-    Lvar id ->
-      close_approx_var fenv cenv id
+let rec close ({ backend; fenv; cenv } as env) lam =
+  let module B = (val backend : Backend_intf.S) in
+  match lam with
+  | Lvar id ->
+      close_approx_var env id
   | Lconst cst ->
       let str ?(shared = true) cst =
         let name =
@@ -870,24 +882,24 @@ let rec close fenv cenv = function
       in
       make_const (transl cst)
   | Lfunction _ as funct ->
-      close_one_function fenv cenv (Ident.create_local "fun") funct
+      close_one_function env (Ident.create_local "fun") funct
 
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
         ap_inlined = attribute} ->
       let nargs = List.length args in
-      begin match (close fenv cenv funct, close_list fenv cenv args) with
+      begin match (close env funct, close_list env args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(P.Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~attribute fundesc ufunct uargs in
+            direct_apply ~backend ~loc ~attribute fundesc ufunct uargs in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~attribute fundesc ufunct uargs in
+            direct_apply ~backend ~loc ~attribute fundesc ufunct uargs in
           (app, strengthen_approx app approx_res)
 
       | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
@@ -910,7 +922,7 @@ let rec close fenv cenv = function
         in
         let funct_var = V.create_local "funct" in
         let fenv = V.Map.add funct_var fapprox fenv in
-        let (new_fun, approx) = close fenv cenv
+        let (new_fun, approx) = close { backend; fenv; cenv }
           (Lfunction{
                kind = Curried;
                return = Pgenval;
@@ -940,7 +952,7 @@ let rec close fenv cenv = function
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Over-application";
           let body =
-            Ugeneric_apply(direct_apply ~loc ~attribute
+            Ugeneric_apply(direct_apply ~backend ~loc ~attribute
                               fundesc ufunct first_args,
                            rem_args, dbg)
           in
@@ -957,22 +969,24 @@ let rec close fenv cenv = function
           (Ugeneric_apply(ufunct, uargs, dbg), Value_unknown)
       end
   | Lsend(kind, met, obj, args, loc) ->
-      let (umet, _) = close fenv cenv met in
-      let (uobj, _) = close fenv cenv obj in
+      let (umet, _) = close env met in
+      let (uobj, _) = close env obj in
       let dbg = Debuginfo.from_location loc in
-      (Usend(kind, umet, uobj, close_list fenv cenv args, dbg),
+      (Usend(kind, umet, uobj, close_list env args, dbg),
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
-      let (ulam, alam) = close_named fenv cenv id lam in
+      let (ulam, alam) = close_named env id lam in
       begin match (str, alam) with
         (Variable, _) ->
-          let (ubody, abody) = close fenv cenv body in
+          let (ubody, abody) = close env body in
           (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure ulam ->
-          close (V.Map.add id alam fenv) cenv body
+          close { backend; fenv = (V.Map.add id alam fenv); cenv } body
       | (_, _) ->
-          let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
+          let (ubody, abody) =
+            close { backend; fenv = (V.Map.add id alam fenv); cenv } body
+          in
           (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
@@ -981,20 +995,21 @@ let rec close fenv cenv = function
            defs
       then begin
         (* Simple case: only function definitions *)
-        let (clos, infos) = close_functions fenv cenv defs in
+        let (clos, infos) = close_functions env defs in
         let clos_ident = V.create_local "clos" in
         let fenv_body =
           List.fold_right
             (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)
             infos fenv in
-        let (ubody, approx) = close fenv_body cenv body in
+        let (ubody, approx) = close { backend; fenv = fenv_body; cenv } body in
         let sb =
           List.fold_right
             (fun (id, pos, _approx) sb ->
               V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos V.Map.empty in
         (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
-              substitute Location.none !Clflags.float_const_prop sb None ubody),
+              substitute Location.none (backend, !Clflags.float_const_prop) sb
+                None ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
@@ -1002,37 +1017,37 @@ let rec close fenv cenv = function
           [] -> ([], fenv)
         | (id, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
-            let (ulam, approx) = close_named fenv cenv id lam in
+            let (ulam, approx) = close_named env id lam in
             ((VP.create id, ulam) :: udefs, V.Map.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
-        let (ubody, approx) = close fenv_body cenv body in
+        let (ubody, approx) = close { backend; fenv = fenv_body; cenv } body in
         (Uletrec(udefs, ubody), approx)
       end
   (* Compile-time constants *)
   | Lprim(Pctconst c, [arg], _loc) ->
       let cst, approx =
         match c with
-        | Big_endian -> make_const_bool Arch.big_endian
-        | Word_size -> make_const_int (8*Arch.size_int)
-        | Int_size -> make_const_int (8*Arch.size_int - 1)
-        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
+        | Big_endian -> make_const_bool B.big_endian
+        | Word_size -> make_const_int (8*B.size_int)
+        | Int_size -> make_const_int (8*B.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*B.size_int) - 10)) - 1 )
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
         | Backend_type ->
             make_const_ptr 0 (* tag 0 is the same as Native here *)
       in
-      let arg, _approx = close fenv cenv arg in
+      let arg, _approx = close env arg in
       let id = Ident.create_local "dummy" in
       Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_ptr 0 in
-      Usequence(fst (close fenv cenv arg), expr), approx
+      Usequence(fst (close env arg), expr), approx
   | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
-      close fenv cenv arg
+      close env arg
   | Lprim(Pdirapply,[funct;arg], loc)
   | Lprim(Prevapply,[arg;funct], loc) ->
-      close fenv cenv (Lapply{ap_should_be_tailcall=false;
+      close env       (Lapply{ap_should_be_tailcall=false;
                               ap_loc=loc;
                               ap_func=funct;
                               ap_args=[arg];
@@ -1043,54 +1058,54 @@ let rec close fenv cenv = function
       check_constant_result (getglobal dbg id)
                             (Compilenv.global_approx id)
   | Lprim(Pfield (n, ptr, mut), [lam], loc) ->
-      let (ulam, approx) = close fenv cenv lam in
+      let (ulam, approx) = close env lam in
       let dbg = Debuginfo.from_location loc in
       check_constant_result (Uprim(P.Pfield (n, ptr, mut), [ulam], dbg))
                             (field_approx n approx)
   | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
-      let (ulam, approx) = close fenv cenv lam in
+      let (ulam, approx) = close env lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
       let dbg = Debuginfo.from_location loc in
       (Uprim(P.Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
        Value_unknown)
   | Lprim(Praise k, [arg], loc) ->
-      let (ulam, _approx) = close fenv cenv arg in
+      let (ulam, _approx) = close env arg in
       let dbg = Debuginfo.from_location loc in
       (Uprim(P.Praise k, [ulam], dbg),
        Value_unknown)
   | Lprim(Pperform, [arg], loc) ->
-      let (arg, _approx) = close fenv cenv arg in
+      let (arg, _approx) = close env arg in
       let dbg = Debuginfo.from_location loc in
       let alloc_cont = Uprim(P.Pmakeblock(Obj.cont_tag, Mutable, None),
                              [Uconst (Uconst_int 0)],
                              dbg) in
       (Udirect_apply ("caml_perform", [arg; alloc_cont], dbg), Value_unknown)
   | Lprim(Presume, args, loc) ->
-      let args = close_list fenv cenv args in
+      let args = close_list env args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_resume", args, dbg), Value_unknown)
   | Lprim(Prunstack, args, loc) ->
-      let args = close_list fenv cenv args in
+      let args = close_list env args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_runstack", args, dbg), Value_unknown)
   | Lprim(Preperform, args, loc) ->
-      let args = close_list fenv cenv args in
+      let args = close_list env args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_reperform", args, dbg), Value_unknown)
   | Lprim (Pmakearray _, [], _loc) -> make_const_ref (Uconst_block (0, []))
   | Lprim(p, args, loc) ->
       let p = Convert_primitives.convert p in
       let dbg = Debuginfo.from_location loc in
-      simplif_prim !Clflags.float_const_prop
-                   p (close_list_approx fenv cenv args) dbg
+      simplif_prim ~backend !Clflags.float_const_prop
+                   p (close_list_approx env args) dbg
   | Lswitch(arg, sw, dbg) ->
       let fn fail =
-        let (uarg, _) = close fenv cenv arg in
+        let (uarg, _) = close env arg in
         let const_index, const_actions, fconst =
-          close_switch fenv cenv sw.sw_consts sw.sw_numconsts fail
+          close_switch env sw.sw_consts sw.sw_numconsts fail
         and block_index, block_actions, fblock =
-          close_switch fenv cenv sw.sw_blocks sw.sw_numblocks fail in
+          close_switch env sw.sw_blocks sw.sw_numblocks fail in
         let ulam =
           Uswitch
             (uarg,
@@ -1112,88 +1127,88 @@ let rec close fenv cenv = function
           then
             let i = next_raise_count () in
             let ubody,_ = fn (Some (Lstaticraise (i,[])))
-            and uhandler,_ = close fenv cenv lamfail in
+            and uhandler,_ = close env lamfail in
             Ucatch (i,[],ubody,uhandler),Value_unknown
           else fn fail
       end
   | Lstringswitch(arg,sw,d,_) ->
-      let uarg,_ = close fenv cenv arg in
+      let uarg,_ = close env arg in
       let usw =
         List.map
           (fun (s,act) ->
-            let uact,_ = close fenv cenv act in
+            let uact,_ = close env act in
             s,uact)
           sw in
       let ud =
         Misc.may_map
           (fun d ->
-            let ud,_ = close fenv cenv d in
+            let ud,_ = close env d in
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
-      (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
+      (Ustaticfail (i, close_list env args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
-      let (ubody, _) = close fenv cenv body in
-      let (uhandler, _) = close fenv cenv handler in
+      let (ubody, _) = close env body in
+      let (uhandler, _) = close env handler in
       let vars = List.map (fun (var, k) -> VP.create var, k) vars in
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
-      let (ubody, _) = close fenv cenv body in
-      let (uhandler, _) = close fenv cenv handler in
+      let (ubody, _) = close env body in
+      let (uhandler, _) = close env handler in
       (Utrywith(ubody, VP.create id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
-      begin match close fenv cenv arg with
+      begin match close env arg with
         (uarg, Value_const (Uconst_ptr n)) ->
           sequence_constant_expr uarg
-            (close fenv cenv (if n = 0 then ifnot else ifso))
+            (close env (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
-          let (uifso, _) = close fenv cenv ifso in
-          let (uifnot, _) = close fenv cenv ifnot in
+          let (uifso, _) = close env ifso in
+          let (uifnot, _) = close env ifnot in
           (Uifthenelse(uarg, uifso, uifnot), Value_unknown)
       end
   | Lsequence(lam1, lam2) ->
-      let (ulam1, _) = close fenv cenv lam1 in
-      let (ulam2, approx) = close fenv cenv lam2 in
+      let (ulam1, _) = close env lam1 in
+      let (ulam2, approx) = close env lam2 in
       (Usequence(ulam1, ulam2), approx)
   | Lwhile(cond, body) ->
-      let (ucond, _) = close fenv cenv cond in
-      let (ubody, _) = close fenv cenv body in
+      let (ucond, _) = close env cond in
+      let (ubody, _) = close env body in
       (Uwhile(ucond, ubody), Value_unknown)
   | Lfor(id, lo, hi, dir, body) ->
-      let (ulo, _) = close fenv cenv lo in
-      let (uhi, _) = close fenv cenv hi in
-      let (ubody, _) = close fenv cenv body in
+      let (ulo, _) = close env lo in
+      let (uhi, _) = close env hi in
+      let (ubody, _) = close env body in
       (Ufor(VP.create id, ulo, uhi, dir, ubody), Value_unknown)
   | Lassign(id, lam) ->
-      let (ulam, _) = close fenv cenv lam in
+      let (ulam, _) = close env lam in
       (Uassign(id, ulam), Value_unknown)
   | Levent(lam, _) ->
-      close fenv cenv lam
+      close env lam
   | Lifused _ ->
       assert false
 
-and close_list fenv cenv = function
+and close_list env = function
     [] -> []
   | lam :: rem ->
-      let (ulam, _) = close fenv cenv lam in
-      ulam :: close_list fenv cenv rem
+      let (ulam, _) = close env lam in
+      ulam :: close_list env rem
 
-and close_list_approx fenv cenv = function
+and close_list_approx env = function
     [] -> ([], [])
   | lam :: rem ->
-      let (ulam, approx) = close fenv cenv lam in
-      let (ulams, approxs) = close_list_approx fenv cenv rem in
+      let (ulam, approx) = close env lam in
+      let (ulams, approxs) = close_list_approx env rem in
       (ulam :: ulams, approx :: approxs)
 
-and close_named fenv cenv id = function
+and close_named env id = function
     Lfunction _ as funct ->
-      close_one_function fenv cenv id funct
+      close_one_function env id funct
   | lam ->
-      close fenv cenv lam
+      close env lam
 
 (* Build a shared closure for a set of mutually recursive functions *)
 
-and close_functions fenv cenv fun_defs =
+and close_functions { backend; fenv; cenv } fun_defs =
   let fun_defs =
     List.flatten
       (List.map
@@ -1264,7 +1279,9 @@ and close_functions fenv cenv fun_defs =
         (fun (id, _params, _return, _body, _fundesc, _dbg) pos env ->
           V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
-    let (ubody, approx) = close fenv_rec cenv_body body in
+    let (ubody, approx) =
+      close { backend; fenv = fenv_rec; cenv = cenv_body } body
+    in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params =
       if !useless_env
@@ -1335,18 +1352,18 @@ and close_functions fenv cenv fun_defs =
      with offsets and approximations. *)
   let (clos, infos) = List.split clos_info_list in
   let fv = if !useless_env then [] else fv in
-  (Uclosure(clos, List.map (close_var fenv cenv) fv), infos)
+  (Uclosure(clos, List.map (close_var { backend; fenv; cenv }) fv), infos)
 
 (* Same, for one non-recursive function *)
 
-and close_one_function fenv cenv id funct =
-  match close_functions fenv cenv [id, funct] with
+and close_one_function env id funct =
+  match close_functions env [id, funct] with
   | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
   | _ -> fatal_error "Closure.close_one_function"
 
 (* Close a switch *)
 
-and close_switch fenv cenv cases num_keys default =
+and close_switch env cases num_keys default =
   let ncases = List.length cases in
   let index = Array.make num_keys 0
   and store = Storer.mk_store () in
@@ -1373,10 +1390,10 @@ and close_switch fenv cenv cases num_keys default =
     Array.map
       (function
         | Single lam|Shared (Lstaticraise (_,[]) as lam) ->
-            let ulam,_ = close fenv cenv lam in
+            let ulam,_ = close env lam in
             ulam
         | Shared lam ->
-            let ulam,_ = close fenv cenv lam in
+            let ulam,_ = close env lam in
             let i = next_raise_count () in
 (*
             let string_of_lambda e =
@@ -1460,12 +1477,14 @@ let reset () =
 
 (* The entry point *)
 
-let intro size lam =
+let intro ~backend ~size lam =
   reset ();
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
-  let (ulam, _approx) = close V.Map.empty V.Map.empty lam in
+  let (ulam, _approx) =
+    close { backend; fenv = V.Map.empty; cenv = V.Map.empty } lam
+  in
   let opaque =
     !Clflags.opaque
     || Env.is_imported_opaque (Compilenv.current_unit_name ())

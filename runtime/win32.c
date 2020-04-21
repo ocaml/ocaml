@@ -451,7 +451,7 @@ void caml_signal_thread(void * lpParam)
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
   h = (HANDLE) (uintptr_t)
-    wcstol(caml_secure_getenv(_T("CAMLSIGPIPE")), &endptr, 16);
+    wcstol(caml_secure_getenv(T("CAMLSIGPIPE")), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;

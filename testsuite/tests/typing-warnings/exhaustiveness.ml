@@ -8,7 +8,7 @@ let f = function
     None, None -> 1
   | Some _, Some _ -> 2;;
 [%%expect {|
-Line 1, characters 8-60:
+Lines 1-3, characters 8-23:
 1 | ........function
 2 |     None, None -> 1
 3 |   | Some _, Some _ -> 2..
@@ -38,7 +38,7 @@ let f : type a b c d e f g.
    (*| _ -> _ *)
 ;;
 [%%expect {|
-Line 4, characters 1-82:
+Lines 4-5, characters 1-38:
 4 | .function A, A, A, A, A, A, A, _, U, U -> 1
 5 |    | _, _, _, _, _, _, _, G, _, _ -> 1
 Warning 8: this pattern-matching is not exhaustive.
@@ -358,7 +358,7 @@ let f = function
   | Some x when x <= 0 -> ()
 ;;
 [%%expect {|
-Line 1, characters 8-88:
+Lines 1-4, characters 8-28:
 1 | ........function
 2 |   | None -> ()
 3 |   | Some x when x > 0 -> ()

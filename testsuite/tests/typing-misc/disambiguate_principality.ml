@@ -494,7 +494,7 @@ let t = function
     x := B
 ;;
 [%%expect{|
-Line 1, characters 8-70:
+Lines 1-3, characters 8-10:
 1 | ........function
 2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
@@ -507,7 +507,7 @@ Line 3, characters 9-10:
 3 |     x := B
              ^
 Warning 18: this type-based constructor disambiguation is not principal.
-Line 1, characters 8-70:
+Lines 1-3, characters 8-10:
 1 | ........function
 2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
