@@ -34,7 +34,7 @@ DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 
 DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
-  utils parsing typing bytecomp toplevel)
+  utils parsing typing bytecomp toplevel driver file_formats lambda)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
@@ -48,16 +48,23 @@ parsing_modules := $(addprefix parsing/,\
 
 typing_modules := $(addprefix typing/,\
   ident path types btype primitive typedtree subst predef datarepr \
-  cmi_format persistent_env env oprint ctype printtyp mtype envaux)
+  persistent_env env oprint ctype printtyp mtype envaux)
+
+file_formats_modules := $(addprefix file_formats/,\
+  cmi_format)
+
+lambda_modules := $(addprefix lambda/,\
+  runtimedef)
 
 bytecomp_modules := $(addprefix bytecomp/,\
-  runtimedef bytesections dll meta symtable opcodes)
+  bytesections dll meta symtable opcodes)
 
 other_compiler_modules := toplevel/genprintval
 
 compiler_modules := $(addprefix $(ROOTDIR)/,\
-  $(utils_modules) $(parsing_modules) $(typing_modules) \
-  $(bytecomp_modules) $(other_compiler_modules))
+  $(utils_modules) $(parsing_modules) $(file_formats_modules) \
+  $(lambda_modules) \
+  $(typing_modules) $(bytecomp_modules) $(other_compiler_modules))
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters lexer \

@@ -12,7 +12,7 @@ module M = struct
   end
 end;;
 [%%expect{|
-Line 5, characters 8-52:
+Lines 5-8, characters 8-5:
 5 | ........struct
 6 |     type t = B
 7 |     let f B = ()
@@ -67,7 +67,7 @@ module K = struct
 end;;
 
 [%%expect{|
-Line 4, characters 4-70:
+Lines 4-7, characters 4-7:
 4 | ....struct
 5 |       module type s
 6 |       module A(X:s) =struct end
@@ -99,7 +99,7 @@ module L = struct
     end
 end;;
       [%%expect {|
-Line 4, characters 4-77:
+Lines 4-7, characters 4-7:
 4 | ....struct
 5 |       module T = struct type t end
 6 |       type t = A of T.t
@@ -187,7 +187,7 @@ end;;
 
 
 [%%expect{|
-Line 4, characters 2-105:
+Lines 4-7, characters 2-5:
 4 | ..struct
 5 |     class a = object method c = let module X = struct type t end in () end
 6 |     class b = a
@@ -219,7 +219,7 @@ module R = struct
 end;;
 
 [%%expect{|
-Line 4, characters 2-65:
+Lines 4-7, characters 2-5:
 4 | ..struct
 5 |     class type a = object end
 6 |     class type b = a
@@ -266,7 +266,7 @@ end = struct
 end;;
 
 [%%expect{|
-Line 8, characters 6-141:
+Lines 8-15, characters 6-3:
  8 | ......struct
  9 |   type t
 10 |   class type a = object method m:t end
@@ -343,7 +343,7 @@ type t = A
 type t = B
 type t = C
 type t = D
-Line 5, characters 44-72:
+Lines 5-7, characters 44-3:
 5 | ............................................struct
 6 |   let f A B C = D
 7 | end..

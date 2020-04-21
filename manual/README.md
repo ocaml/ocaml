@@ -94,7 +94,7 @@ Consequently, these options are described together in the file
 and `top.etex`. If you need to update this list of options, the top comment
 of `unified-options.etex` contains the relevant information.
 
-- Part IV, The OCaml library: 'libref'
+- Part IV, The OCaml library: 'library'
  This parts contains an brief presentation of all libraries bundled with the
  compilers and the api documentation generated for these libraries.
     - The core library: `core.etex`

@@ -46,8 +46,10 @@ include stdlib/StdlibModules
 CAMLC=$(BOOT_OCAMLC) -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
-        -I middle_end/base_types -I asmcomp -I asmcomp/debug \
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I file_formats \
+        -I lambda -I middle_end -I middle_end/closure \
+        -I middle_end/flambda -I middle_end/flambda/base_types \
+        -I asmcomp -I asmcomp/debug \
         -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-66 \
@@ -76,9 +78,9 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
-  utils/targetint.cmo utils/domainstate.cmo \
-  utils/build_path_prefix_map.cmo \
-  utils/targetint.cmo
+  utils/targetint.cmo \
+  utils/domainstate.cmo \
+  utils/int_replace_polymorphic_compare.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
@@ -93,14 +95,13 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo typing/cmi_format.cmo \
-  typing/persistent_env.cmo \
-  typing/env.cmo \
+  typing/datarepr.cmo file_formats/cmi_format.cmo \
+  typing/persistent_env.cmo typing/env.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
   typing/tast_iterator.cmo typing/tast_mapper.cmo \
-  typing/cmt_format.cmo typing/untypeast.cmo \
+  file_formats/cmt_format.cmo typing/untypeast.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/printpat.cmo \
   typing/parmatch.cmo typing/stypes.cmo \
   typing/typedecl_properties.cmo typing/typedecl_variance.cmo \
@@ -109,12 +110,15 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/rec_check.cmo typing/typecore.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 
-COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/translobj.cmo bytecomp/translattribute.cmo \
-  bytecomp/translprim.cmo bytecomp/translcore.cmo \
-  bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
+LAMBDA=lambda/debuginfo.cmo \
+  lambda/lambda.cmo lambda/printlambda.cmo \
+  lambda/switch.cmo lambda/matching.cmo \
+  lambda/translobj.cmo lambda/translattribute.cmo \
+  lambda/translprim.cmo lambda/translcore.cmo \
+  lambda/translclass.cmo lambda/translmod.cmo \
+  lambda/simplif.cmo lambda/runtimedef.cmo
+
+COMP=\
   bytecomp/meta.cmo bytecomp/opcodes.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo \
   bytecomp/symtable.cmo \
@@ -123,8 +127,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   driver/makedepend.cmo \
   driver/compile_common.cmo
 
-
-COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
+COMMON=$(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
 
 BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/emitcode.cmo \
@@ -152,22 +155,10 @@ endif
 ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
-  asmcomp/backend_var.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
   asmcomp/debug/reg_availability_set.cmo \
   asmcomp/mach.cmo asmcomp/proc.cmo \
-  asmcomp/clambda.cmo asmcomp/printclambda.cmo \
-  asmcomp/export_info.cmo \
-  asmcomp/export_info_for_pack.cmo \
-  asmcomp/compilenv.cmo \
-  asmcomp/closure.cmo \
-	asmcomp/traverse_for_exported_symbols.cmo \
-  asmcomp/build_export_info.cmo \
-  asmcomp/closure_offsets.cmo \
-  asmcomp/flambda_to_clambda.cmo \
-  asmcomp/import_approx.cmo \
-  asmcomp/un_anf.cmo \
   asmcomp/afl_instrument.cmo \
   asmcomp/strmatch.cmo \
   asmcomp/cmmgen_state.cmo \
@@ -195,72 +186,96 @@ ASMCOMP=\
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
 
+# Files under middle_end/ are not to reference files under asmcomp/.
+# This ensures that the middle end can be linked (e.g. for objinfo) even when
+# the native code compiler is not present for some particular target.
+
+MIDDLE_END_CLOSURE=\
+  middle_end/closure/closure.cmo
+
+# Owing to dependencies through [Compilenv], which would be
+# difficult to remove, some of the lower parts of Flambda (anything that is
+# saved in a .cmx file) have to be included in the [MIDDLE_END] stanza, below.
+MIDDLE_END_FLAMBDA=\
+  middle_end/flambda/import_approx.cmo \
+  middle_end/flambda/lift_code.cmo \
+  middle_end/flambda/closure_conversion_aux.cmo \
+  middle_end/flambda/closure_conversion.cmo \
+  middle_end/flambda/initialize_symbol_to_let_symbol.cmo \
+  middle_end/flambda/lift_let_to_initialize_symbol.cmo \
+  middle_end/flambda/find_recursive_functions.cmo \
+  middle_end/flambda/invariant_params.cmo \
+  middle_end/flambda/inconstant_idents.cmo \
+  middle_end/flambda/alias_analysis.cmo \
+  middle_end/flambda/lift_constants.cmo \
+  middle_end/flambda/share_constants.cmo \
+  middle_end/flambda/simplify_common.cmo \
+  middle_end/flambda/remove_unused_arguments.cmo \
+  middle_end/flambda/remove_unused_closure_vars.cmo \
+  middle_end/flambda/remove_unused_program_constructs.cmo \
+  middle_end/flambda/simplify_boxed_integer_ops.cmo \
+  middle_end/flambda/simplify_primitives.cmo \
+  middle_end/flambda/inlining_stats_types.cmo \
+  middle_end/flambda/inlining_stats.cmo \
+  middle_end/flambda/inline_and_simplify_aux.cmo \
+  middle_end/flambda/remove_free_vars_equal_to_args.cmo \
+  middle_end/flambda/extract_projections.cmo \
+  middle_end/flambda/augment_specialised_args.cmo \
+  middle_end/flambda/unbox_free_vars_of_closures.cmo \
+  middle_end/flambda/unbox_specialised_args.cmo \
+  middle_end/flambda/unbox_closures.cmo \
+  middle_end/flambda/inlining_transforms.cmo \
+  middle_end/flambda/inlining_decision.cmo \
+  middle_end/flambda/inline_and_simplify.cmo \
+  middle_end/flambda/ref_to_variables.cmo \
+  middle_end/flambda/flambda_invariants.cmo \
+  middle_end/flambda/traverse_for_exported_symbols.cmo \
+  middle_end/flambda/build_export_info.cmo \
+  middle_end/flambda/closure_offsets.cmo \
+  middle_end/flambda/un_anf.cmo \
+  middle_end/flambda/flambda_to_clambda.cmo \
+  middle_end/flambda/flambda_middle_end.cmo
+
 MIDDLE_END=\
-  middle_end/int_replace_polymorphic_compare.cmo \
-  middle_end/debuginfo.cmo \
-  asmcomp/clambda_primitives.cmo \
-  asmcomp/semantics_of_primitives.cmo \
-  asmcomp/convert_primitives.cmo \
-  asmcomp/printclambda_primitives.cmo \
-  middle_end/base_types/tag.cmo \
-  middle_end/base_types/linkage_name.cmo \
-  middle_end/base_types/compilation_unit.cmo \
   middle_end/internal_variable_names.cmo \
-  middle_end/base_types/variable.cmo \
-  middle_end/base_types/mutable_variable.cmo \
-  middle_end/base_types/id_types.cmo \
-  middle_end/base_types/set_of_closures_id.cmo \
-  middle_end/base_types/set_of_closures_origin.cmo \
-  middle_end/base_types/closure_element.cmo \
-  middle_end/base_types/closure_id.cmo \
-  middle_end/base_types/closure_origin.cmo \
-  middle_end/base_types/var_within_closure.cmo \
-  middle_end/base_types/static_exception.cmo \
-  middle_end/base_types/export_id.cmo \
-  middle_end/base_types/symbol.cmo \
-  middle_end/pass_wrapper.cmo \
-  middle_end/allocated_const.cmo \
-  middle_end/parameter.cmo \
-  middle_end/projection.cmo \
-  middle_end/flambda.cmo \
-  middle_end/flambda_iterators.cmo \
-  middle_end/flambda_utils.cmo \
-  middle_end/inlining_cost.cmo \
-  middle_end/effect_analysis.cmo \
-  middle_end/freshening.cmo \
-  middle_end/simple_value_approx.cmo \
-  middle_end/lift_code.cmo \
-  middle_end/closure_conversion_aux.cmo \
-  middle_end/closure_conversion.cmo \
-  middle_end/initialize_symbol_to_let_symbol.cmo \
-  middle_end/lift_let_to_initialize_symbol.cmo \
-  middle_end/find_recursive_functions.cmo \
-  middle_end/invariant_params.cmo \
-  middle_end/inconstant_idents.cmo \
-  middle_end/alias_analysis.cmo \
-  middle_end/lift_constants.cmo \
-  middle_end/share_constants.cmo \
-  middle_end/simplify_common.cmo \
-  middle_end/remove_unused_arguments.cmo \
-  middle_end/remove_unused_closure_vars.cmo \
-  middle_end/remove_unused_program_constructs.cmo \
-  middle_end/simplify_boxed_integer_ops.cmo \
-  middle_end/simplify_primitives.cmo \
-  middle_end/inlining_stats_types.cmo \
-  middle_end/inlining_stats.cmo \
-  middle_end/inline_and_simplify_aux.cmo \
-  middle_end/remove_free_vars_equal_to_args.cmo \
-  middle_end/extract_projections.cmo \
-  middle_end/augment_specialised_args.cmo \
-  middle_end/unbox_free_vars_of_closures.cmo \
-  middle_end/unbox_specialised_args.cmo \
-  middle_end/unbox_closures.cmo \
-  middle_end/inlining_transforms.cmo \
-  middle_end/inlining_decision.cmo \
-  middle_end/inline_and_simplify.cmo \
-  middle_end/ref_to_variables.cmo \
-  middle_end/flambda_invariants.cmo \
-  middle_end/middle_end.cmo
+  middle_end/linkage_name.cmo \
+  middle_end/compilation_unit.cmo \
+  middle_end/variable.cmo \
+  middle_end/flambda/base_types/closure_element.cmo \
+  middle_end/flambda/base_types/closure_id.cmo \
+  middle_end/symbol.cmo \
+  middle_end/backend_var.cmo \
+  middle_end/clambda_primitives.cmo \
+  middle_end/printclambda_primitives.cmo \
+  middle_end/clambda.cmo \
+  middle_end/printclambda.cmo \
+  middle_end/semantics_of_primitives.cmo \
+  middle_end/convert_primitives.cmo \
+  middle_end/flambda/base_types/id_types.cmo \
+  middle_end/flambda/base_types/export_id.cmo \
+  middle_end/flambda/base_types/tag.cmo \
+  middle_end/flambda/base_types/mutable_variable.cmo \
+  middle_end/flambda/base_types/set_of_closures_id.cmo \
+  middle_end/flambda/base_types/set_of_closures_origin.cmo \
+  middle_end/flambda/base_types/closure_origin.cmo \
+  middle_end/flambda/base_types/var_within_closure.cmo \
+  middle_end/flambda/base_types/static_exception.cmo \
+  middle_end/flambda/pass_wrapper.cmo \
+  middle_end/flambda/allocated_const.cmo \
+  middle_end/flambda/parameter.cmo \
+  middle_end/flambda/projection.cmo \
+  middle_end/flambda/flambda.cmo \
+  middle_end/flambda/flambda_iterators.cmo \
+  middle_end/flambda/flambda_utils.cmo \
+  middle_end/flambda/freshening.cmo \
+  middle_end/flambda/effect_analysis.cmo \
+  middle_end/flambda/inlining_cost.cmo \
+  middle_end/flambda/simple_value_approx.cmo \
+  middle_end/flambda/export_info.cmo \
+  middle_end/flambda/export_info_for_pack.cmo \
+  middle_end/compilenv.cmo \
+  $(MIDDLE_END_CLOSURE) \
+  $(MIDDLE_END_FLAMBDA)
 
 OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
 
@@ -569,6 +584,8 @@ endif
 	   parsing/*.cmi \
 	   typing/*.cmi \
 	   bytecomp/*.cmi \
+	   file_formats/*.cmi \
+	   lambda/*.cmi \
 	   driver/*.cmi \
 	   toplevel/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
@@ -577,6 +594,8 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	   utils/*.cmt utils/*.cmti utils/*.mli \
 	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
 	   typing/*.cmt typing/*.cmti typing/*.mli \
+	   file_formats/*.cmt file_formats/*.cmti file_formats/*.mli \
+	   lambda/*.cmt lambda/*.cmti lambda/*.mli \
 	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
 	   driver/*.cmt driver/*.cmti driver/*.mli \
 	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
@@ -642,7 +661,13 @@ endif
 	    middle_end/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmi \
+	    middle_end/closure/*.cmi \
+	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    middle_end/flambda/*.cmi \
+	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    middle_end/flambda/base_types/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmi \
@@ -653,8 +678,17 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	    middle_end/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmt middle_end/base_types/*.cmti \
-	    middle_end/base_types/*.mli \
+	    middle_end/closure/*.cmt middle_end/closure/*.cmti \
+	    middle_end/closure/*.mli \
+	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    middle_end/flambda/*.cmt middle_end/flambda/*.cmti \
+	    middle_end/flambda/*.mli \
+	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    middle_end/flambda/base_types/*.cmt \
+            middle_end/flambda/base_types/*.cmti \
+	    middle_end/flambda/base_types/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmt asmcomp/*.cmti \
@@ -698,8 +732,13 @@ installoptopt:
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+	   file_formats/*.cmx \
+	   lambda/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
-	   middle_end/base_types/*.cmx "$(INSTALL_COMPLIBDIR)"
+           middle_end/closure/*.cmx \
+           middle_end/flambda/*.cmx \
+           middle_end/flambda/base_types/*.cmx \
+          "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
@@ -728,7 +767,10 @@ install-compiler-sources:
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
-	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
+           file_formats/*.ml \
+           lambda/*.ml \
+	   toplevel/*.ml middle_end/*.ml middle_end/closure/*.ml \
+     middle_end/flambda/*.ml middle_end/flambda/base_types/*.ml \
 	   asmcomp/*.ml \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
@@ -885,14 +927,14 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
 runtime/primitives:
 	$(MAKE) -C runtime primitives
 
-bytecomp/runtimedef.ml: bytecomp/generate_runtimedef.sh runtime/caml/fail.h \
+lambda/runtimedef.ml: lambda/generate_runtimedef.sh runtime/caml/fail.h \
     runtime/primitives
 	$^ > $@
 
 partialclean::
-	rm -f bytecomp/runtimedef.ml
+	rm -f lambda/runtimedef.ml
 
-beforedepend:: bytecomp/runtimedef.ml
+beforedepend:: lambda/runtimedef.ml
 
 # Choose the right machine-dependent files
 
@@ -1137,10 +1179,7 @@ lintapidiff:
 	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
-# The middle end (whose .cma library is currently only used for linking
-# the "ocamlobjinfo" program, since we cannot depend on the whole native code
-# compiler for "make world" and the list of dependencies for
-# asmcomp/export_info.cmo is long).
+# The middle end.
 
 compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END)
 	$(CAMLC) -a -o $@ $^
@@ -1154,9 +1193,7 @@ partialclean::
 # Tools
 
 .PHONY: ocamltools
-ocamltools: ocamlc ocamllex asmcomp/cmx_format.cmi \
-            asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
-            asmcomp/export_info.cmo
+ocamltools: ocamlc ocamllex compilerlibs/ocamlmiddleend.cma
 	$(MAKE) -C tools all
 
 .PHONY: ocamltoolsopt
@@ -1164,9 +1201,7 @@ ocamltoolsopt: ocamlopt
 	$(MAKE) -C tools opt
 
 .PHONY: ocamltoolsopt.opt
-ocamltoolsopt.opt: ocamlc.opt ocamllex.opt asmcomp/cmx_format.cmi \
-                   asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
-                   asmcomp/export_info.cmx
+ocamltoolsopt.opt: ocamlc.opt ocamllex.opt compilerlibs/ocamlmiddleend.cmxa
 	$(MAKE) -C tools opt.opt
 
 partialclean::
@@ -1289,19 +1324,22 @@ partialclean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types asmcomp/debug driver toplevel tools; do \
+	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
+           lambda middle_end/closure middle_end/flambda \
+           middle_end/flambda/base_types asmcomp/debug \
+           driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
-	    $$d/*.$(O) $$d/*.$(SO) $$d/*~; \
+	    $$d/*.$(O) $$d/*.$(SO); \
 	done
-	rm -f *~
 
 .PHONY: depend
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types asmcomp/debug driver toplevel; \
-	 do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
-	 done) > .depend
+         lambda file_formats middle_end/closure middle_end/flambda \
+         middle_end/flambda/base_types asmcomp/debug \
+         driver toplevel; \
+         do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
+         done) > .depend
 
 .PHONY: distclean
 distclean: clean

@@ -231,6 +231,19 @@ MAX_TESTSUITE_DIR_RETRIES=@max_testsuite_dir_retries@
 FLAT_FLOAT_ARRAY=@flat_float_array@
 AWK=@AWK@
 
+
+### Native command to build ocamlrun.exe
+
+ifeq "$(TOOLCHAIN)" "msvc"
+  MERGEMANIFESTEXE=test ! -f $(1).manifest \
+          || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
+          && rm -f $(1).manifest
+  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
+    /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
+else
+  MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+endif # ifeq "$(TOOLCHAIN)" "msvc"
+
 # The following variables were defined only in the config/Makefile.* files.
 # They were not defined by the configure script used on Unix systems,
 # so we also make sure to provide them only under Windows
@@ -253,18 +266,4 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   #   (see ocamlmklibconfig.ml in tools/Makefile)
   FLEXLINK_FLAGS=@flexlink_flags@
   FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
-
-  ### Native command to build ocamlrun.exe
-
-  ifeq "$(TOOLCHAIN)" "mingw"
-    MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
-  endif # ifeq "$(TOOLCHAIN)" "mingw"
-
-  ifeq "$(TOOLCHAIN)" "msvc"
-    MERGEMANIFESTEXE=test ! -f $(1).manifest \
-	           || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
-	           && rm -f $(1).manifest
-    MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
-      /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
-  endif # ifeq "$(TOOLCHAIN)" "msvc"
 endif # ifeq "$(UNIX_OR_WIN32)" "win32"

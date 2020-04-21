@@ -12,7 +12,7 @@ let fbool (type t) (x : t) (tag : t ty) =
 ;;
 [%%expect{|
 type 'a ty = Int : int ty | Bool : bool ty
-Line 6, characters 2-30:
+Lines 6-7, characters 2-13:
 6 | ..match tag with
 7 |   | Bool -> x
 Warning 8: this pattern-matching is not exhaustive.
@@ -28,7 +28,7 @@ let fint (type t) (x : t) (tag : t ty) =
   | Int -> x > 0
 ;;
 [%%expect{|
-Line 2, characters 2-33:
+Lines 2-3, characters 2-16:
 2 | ..match tag with
 3 |   | Int -> x > 0
 Warning 8: this pattern-matching is not exhaustive.

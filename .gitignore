@@ -82,6 +82,8 @@ _build
 /emacs/ocamltags
 /emacs/*.elc
 
+/lambda/runtimedef.ml
+
 /lex/parser.ml
 /lex/parser.mli
 /lex/lexer.ml

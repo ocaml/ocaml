@@ -47,7 +47,7 @@ match px with
 | {pv=true::_} -> "bool"
 ;;
 [%%expect {|
-Line 1, characters 0-77:
+Lines 1-4, characters 0-24:
 1 | match px with
 2 | | {pv=[]} -> "OK"
 3 | | {pv=5::_} -> "int"
@@ -64,7 +64,7 @@ match px with
 | {pv=5::_} -> "int"
 ;;
 [%%expect {|
-Line 1, characters 0-77:
+Lines 1-4, characters 0-20:
 1 | match px with
 2 | | {pv=[]} -> "OK"
 3 | | {pv=true::_} -> "bool"
@@ -555,7 +555,7 @@ class id4 () = object
 end
 ;;
 [%%expect {|
-Line 4, characters 12-79:
+Lines 4-7, characters 12-17:
 4 | ............x =
 5 |     match r with
 6 |       None -> r <- Some x; x
@@ -1223,7 +1223,7 @@ let f5 x =
 let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 [%%expect {|
-Line 2, characters 2-88:
+Lines 2-3, characters 2-47:
 2 | ..(x : <m:'a. (<p:int;..> as 'a) -> int>
 3 |     :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
@@ -1722,4 +1722,16 @@ module M :
       val h : 'a -> 'a
       val i : 'a -> 'a
     end
+|}]
+
+(* #8550 *)
+class ['a] r = let r : 'a = ref [] in object method get = r end;;
+[%%expect{|
+Line 1, characters 0-63:
+1 | class ['a] r = let r : 'a = ref [] in object method get = r end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type of this class,
+       class ['a] r :
+         object constraint 'a = '_weak2 list ref method get : 'a end,
+       contains type variables that cannot be generalized
 |}]

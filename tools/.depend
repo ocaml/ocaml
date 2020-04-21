@@ -54,7 +54,7 @@ cmt2annot.cmo : \
     ../typing/ident.cmi \
     ../typing/envaux.cmi \
     ../typing/env.cmi \
-    ../typing/cmt_format.cmi \
+    ../file_formats/cmt_format.cmi \
     ../parsing/asttypes.cmi \
     ../typing/annot.cmi
 cmt2annot.cmx : \
@@ -71,7 +71,7 @@ cmt2annot.cmx : \
     ../typing/ident.cmx \
     ../typing/envaux.cmx \
     ../typing/env.cmx \
-    ../typing/cmt_format.cmx \
+    ../file_formats/cmt_format.cmx \
     ../parsing/asttypes.cmi \
     ../typing/annot.cmi
 cvt_emit.cmo :
@@ -81,11 +81,11 @@ dumpobj.cmo : \
     opnames.cmo \
     ../bytecomp/opcodes.cmi \
     ../parsing/location.cmi \
-    ../bytecomp/lambda.cmi \
+    ../lambda/lambda.cmi \
     ../bytecomp/instruct.cmi \
     ../typing/ident.cmi \
     ../utils/config.cmi \
-    ../bytecomp/cmo_format.cmi \
+    ../file_formats/cmo_format.cmi \
     ../bytecomp/bytesections.cmi \
     ../parsing/asttypes.cmi
 dumpobj.cmx : \
@@ -93,11 +93,11 @@ dumpobj.cmx : \
     opnames.cmx \
     ../bytecomp/opcodes.cmx \
     ../parsing/location.cmx \
-    ../bytecomp/lambda.cmx \
+    ../lambda/lambda.cmx \
     ../bytecomp/instruct.cmx \
     ../typing/ident.cmx \
     ../utils/config.cmx \
-    ../bytecomp/cmo_format.cmi \
+    ../file_formats/cmo_format.cmi \
     ../bytecomp/bytesections.cmx \
     ../parsing/asttypes.cmi
 eqparsetree.cmo : \
@@ -132,35 +132,35 @@ make_opcodes.cmo :
 make_opcodes.cmx :
 objinfo.cmo : \
     ../bytecomp/symtable.cmi \
-    ../middle_end/base_types/symbol.cmi \
-    ../asmcomp/printclambda.cmi \
+    ../middle_end/symbol.cmi \
+    ../middle_end/printclambda.cmi \
     ../utils/misc.cmi \
-    ../middle_end/base_types/linkage_name.cmi \
+    ../middle_end/linkage_name.cmi \
     ../typing/ident.cmi \
-    ../asmcomp/export_info.cmi \
+    ../middle_end/flambda/export_info.cmi \
     ../utils/config.cmi \
-    ../middle_end/base_types/compilation_unit.cmi \
-    ../asmcomp/cmxs_format.cmi \
-    ../asmcomp/cmx_format.cmi \
-    ../typing/cmt_format.cmi \
-    ../bytecomp/cmo_format.cmi \
-    ../typing/cmi_format.cmi \
+    ../middle_end/compilation_unit.cmi \
+    ../file_formats/cmxs_format.cmi \
+    ../file_formats/cmx_format.cmi \
+    ../file_formats/cmt_format.cmi \
+    ../file_formats/cmo_format.cmi \
+    ../file_formats/cmi_format.cmi \
     ../bytecomp/bytesections.cmi
 objinfo.cmx : \
     ../bytecomp/symtable.cmx \
-    ../middle_end/base_types/symbol.cmx \
-    ../asmcomp/printclambda.cmx \
+    ../middle_end/symbol.cmx \
+    ../middle_end/printclambda.cmx \
     ../utils/misc.cmx \
-    ../middle_end/base_types/linkage_name.cmx \
+    ../middle_end/linkage_name.cmx \
     ../typing/ident.cmx \
-    ../asmcomp/export_info.cmx \
+    ../middle_end/flambda/export_info.cmx \
     ../utils/config.cmx \
-    ../middle_end/base_types/compilation_unit.cmx \
-    ../asmcomp/cmxs_format.cmi \
-    ../asmcomp/cmx_format.cmi \
-    ../typing/cmt_format.cmx \
-    ../bytecomp/cmo_format.cmi \
-    ../typing/cmi_format.cmx \
+    ../middle_end/compilation_unit.cmx \
+    ../file_formats/cmxs_format.cmi \
+    ../file_formats/cmx_format.cmi \
+    ../file_formats/cmt_format.cmx \
+    ../file_formats/cmo_format.cmi \
+    ../file_formats/cmi_format.cmx \
     ../bytecomp/bytesections.cmx
 ocaml299to3.cmo :
 ocaml299to3.cmx :
@@ -205,11 +205,11 @@ opnames.cmx :
 primreq.cmo : \
     ../utils/misc.cmi \
     ../utils/config.cmi \
-    ../bytecomp/cmo_format.cmi
+    ../file_formats/cmo_format.cmi
 primreq.cmx : \
     ../utils/misc.cmx \
     ../utils/config.cmx \
-    ../bytecomp/cmo_format.cmi
+    ../file_formats/cmo_format.cmi
 profiling.cmo : \
     profiling.cmi
 profiling.cmx : \
@@ -218,13 +218,13 @@ profiling.cmi :
 read_cmt.cmo : \
     ../parsing/location.cmi \
     ../driver/compmisc.cmi \
-    ../typing/cmt_format.cmi \
+    ../file_formats/cmt_format.cmi \
     cmt2annot.cmo \
     ../utils/clflags.cmi
 read_cmt.cmx : \
     ../parsing/location.cmx \
     ../driver/compmisc.cmx \
-    ../typing/cmt_format.cmx \
+    ../file_formats/cmt_format.cmx \
     cmt2annot.cmx \
     ../utils/clflags.cmx
 scrapelabels.cmo :

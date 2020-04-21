@@ -359,7 +359,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_minor_collection();
 #ifdef _WIN32
   /* Start a thread to handle signals */
-  if (caml_secure_getenv(_T("CAMLSIGPIPE")))
+  if (caml_secure_getenv(T("CAMLSIGPIPE")))
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */

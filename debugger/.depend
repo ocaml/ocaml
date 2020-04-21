@@ -286,6 +286,7 @@ main.cmo : \
     question.cmi \
     program_management.cmi \
     primitives.cmi \
+    ../typing/persistent_env.cmi \
     parameters.cmi \
     ../utils/misc.cmi \
     loadprinter.cmi \
@@ -293,11 +294,10 @@ main.cmo : \
     input_handling.cmi \
     frames.cmi \
     exec.cmi \
-    ../typing/env.cmi \
     debugger_config.cmi \
     ../utils/config.cmi \
     command_line.cmi \
-    ../typing/cmi_format.cmi \
+    ../file_formats/cmi_format.cmi \
     ../utils/clflags.cmi \
     checkpoints.cmi
 main.cmx : \
@@ -308,6 +308,7 @@ main.cmx : \
     question.cmx \
     program_management.cmx \
     primitives.cmx \
+    ../typing/persistent_env.cmx \
     parameters.cmx \
     ../utils/misc.cmx \
     loadprinter.cmx \
@@ -315,11 +316,10 @@ main.cmx : \
     input_handling.cmx \
     frames.cmx \
     exec.cmx \
-    ../typing/env.cmx \
     debugger_config.cmx \
     ../utils/config.cmx \
     command_line.cmx \
-    ../typing/cmi_format.cmx \
+    ../file_formats/cmi_format.cmx \
     ../utils/clflags.cmx \
     checkpoints.cmx
 parameters.cmo : \

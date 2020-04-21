@@ -42,7 +42,7 @@ File "morematch.ml", line 456, characters 2-7:
 456 | | _,_,Y -> 5
         ^^^^^
 Warning 11: this match case is unused.
-File "morematch.ml", line 1050, characters 8-65:
+File "morematch.ml", lines 1050-1053, characters 8-10:
 1050 | ........function
 1051 |   | A (`A|`C) -> 0
 1052 |   | B (`B,`D) -> 1

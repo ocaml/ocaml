@@ -1,0 +1,21 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(rule
+ (targets runtimedef.ml)
+ (mode    fallback)
+ (deps    (:fail (file ../runtime/caml/fail.h))
+          (:prim (file ../runtime/primitives)))
+ (action  (with-stdout-to %{targets}
+            (run ./generate_runtimedef.sh %{fail} %{prim}))))

@@ -277,7 +277,7 @@ CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
   return res;
 }
 
-static int caml_float_of_hex(const char * s, double * res)
+static int caml_float_of_hex(const char * s, const char * end, double * res)
 {
   int64_t m = 0;                /* the mantissa - top 60 bits at most */
   int n_bits = 0;               /* total number of bits read */
@@ -289,11 +289,9 @@ static int caml_float_of_hex(const char * s, double * res)
   char * p;                     /* for converting the exponent */
   double f;
 
-  while (*s != 0) {
+  while (s < end) {
     char c = *s++;
     switch (c) {
-    case '_':
-      break;
     case '.':
       if (dec_point >= 0) return -1; /* multiple decimal points */
       dec_point = n_bits;
@@ -302,7 +300,7 @@ static int caml_float_of_hex(const char * s, double * res)
       long e;
       if (*s == 0) return -1;   /* nothing after exponent mark */
       e = strtol(s, &p, 10);
-      if (*p != 0) return -1;   /* ill-formed exponent */
+      if (p != end) return -1;  /* ill-formed exponent */
       /* Handle exponents larger than int by returning 0/infinity directly.
          Mind that INT_MIN/INT_MAX are included in the test so as to capture
          the overflow case of strtol on Win64 -- long and int have the same
@@ -377,17 +375,7 @@ CAMLprim value caml_float_of_string(value vs)
   int sign;
   double d;
 
-  /* Check for hexadecimal FP constant */
-  src = String_val(vs);
-  sign = 1;
-  if (*src == '-') { sign = -1; src++; }
-  else if (*src == '+') { src++; };
-  if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
-    if (caml_float_of_hex(src + 2, &d) == -1)
-      caml_failwith("float_of_string");
-    return caml_copy_double(sign < 0 ? -d : d);
-  }
-  /* Remove '_' characters before calling strtod () */
+  /* Remove '_' characters before conversion */
   len = caml_string_length(vs);
   buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
   src = String_val(vs);
@@ -398,15 +386,26 @@ CAMLprim value caml_float_of_string(value vs)
   }
   *dst = 0;
   if (dst == buf) goto error;
+  /* Check for hexadecimal FP constant */
+  src = buf;
+  sign = 1;
+  if (*src == '-') { sign = -1; src++; }
+  else if (*src == '+') { src++; };
+  if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
+    /* Convert using our hexadecimal FP parser */
+    if (caml_float_of_hex(src + 2, dst, &d) == -1) goto error;
+    if (sign < 0) d = -d;
+  } else {
+    /* Convert using strtod */
 #if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
-  d = strtod_l((const char *) buf, &end, caml_locale);
+    d = strtod_l((const char *) buf, &end, caml_locale);
 #else
-  USE_LOCALE;
-  /* Convert using strtod */
-  d = strtod((const char *) buf, &end);
-  RESTORE_LOCALE;
+    USE_LOCALE;
+    d = strtod((const char *) buf, &end);
+    RESTORE_LOCALE;
 #endif /* HAS_STRTOD_L */
-  if (end != dst) goto error;
+    if (end != dst) goto error;
+  }
   if (buf != parse_buffer) caml_stat_free(buf);
   return caml_copy_double(d);
  error:

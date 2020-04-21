@@ -247,6 +247,7 @@ static void caml_thread_leave_blocking_section(void)
   caml_thread_restore_runtime_state();
 }
 
+#if 0
 static int caml_thread_try_leave_blocking_section(void)
 {
   /* Disable immediate processing of signals (PR#3659).
@@ -255,6 +256,7 @@ static int caml_thread_try_leave_blocking_section(void)
      polling. */
   return 0;
 }
+#endif
 
 /* Create and setup a new thread info block.
    This block has no associated thread descriptor and

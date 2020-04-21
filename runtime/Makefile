@@ -82,11 +82,9 @@ NATIVE_STATIC_LIBRARIES += libasmruni.$(A)
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-ifeq "$(SUPPORTS_BYTECODE_SHARED_LIBRARIES)" "true"
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 BYTECODE_STATIC_LIBRARIES += libcamlrun_pic.$(A)
 BYTECODE_SHARED_LIBRARIES += libcamlrun_shared.$(SO)
-endif
-ifeq "$(SUPPORTS_NATIVE_SHARED_LIBRARIES)" "true"
 NATIVE_STATIC_LIBRARIES += libasmrun_pic.$(A)
 NATIVE_SHARED_LIBRARIES += libasmrun_shared.$(SO)
 endif
@@ -111,7 +109,7 @@ libasmrund_OBJECTS := $(NATIVE_C_SOURCES:.c=_nd.$(O)) $(ASM_OBJECTS)
 
 libasmruni_OBJECTS := $(NATIVE_C_SOURCES:.c=_ni.$(O)) $(ASM_OBJECTS)
 
-libasmrunpic_OBJECTS := $(NATIVE_C_SOURCESS:.c=_npic.$(O)) \
+libasmrunpic_OBJECTS := $(NATIVE_C_SOURCES:.c=_npic.$(O)) \
   $(ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
 
 # General (non target-specific) assembler and compiler flags
@@ -216,7 +214,6 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -r *~
 
 # Generated non-object files
 

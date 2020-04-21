@@ -13,7 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Lexer definitions for the Tests Specification Language *)
+(* Lexer definitions for the Tests Specification Language and for
+   response files *)
 
 {
 open Tsl_parser
@@ -114,3 +115,14 @@ and comment = parse
     {
       comment lexbuf
     }
+
+(* Parse one line of a response file (for scripts and hooks) *)
+and modifier = parse
+  | '-' (identchar* as variable)
+    { variable, `Remove }
+  | (identchar* as variable) "=\"" (_* as str) '"'
+    { variable, `Add str }
+  | (identchar* as variable) "+=\"" (_* as str) '"'
+    { variable, `Append str }
+  | _
+    { failwith "syntax error in script response file" }

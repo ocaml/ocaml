@@ -86,10 +86,12 @@ builtin_variables.cmi : \
     variables.cmi
 environments.cmo : \
     variables.cmi \
+    tsl_lexer.cmi \
     ocamltest_stdlib.cmi \
     environments.cmi
 environments.cmx : \
     variables.cmx \
+    tsl_lexer.cmx \
     ocamltest_stdlib.cmx \
     environments.cmi
 environments.cmi : \

@@ -140,6 +140,12 @@ let int_const dbg n =
   else Cconst_natint
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n, dbg)
 
+let natint_const_untagged dbg n =
+  if n > Nativeint.of_int max_int
+  || n < Nativeint.of_int min_int
+  then Cconst_natint (n,dbg)
+  else Cconst_int (Nativeint.to_int n, dbg)
+
 let cint_const n =
   Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
@@ -1632,32 +1638,64 @@ let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 (* Build an actual switch (ie jump table) *)
 
 let make_switch arg cases actions dbg =
-  let is_const = function
+  let extract_uconstant =
+    function
     (* Constant integers loaded from a table should end in 1,
        so that Cload never produces untagged integers *)
-    | Cconst_int (n, _)
-    | Cconst_pointer (n, _) -> (n land 1) = 1
-    | Cconst_natint (n, _)
-    | Cconst_natpointer (n, _) -> (Nativeint.(to_int (logand n one) = 1))
-    | Cconst_symbol _ -> true
-    | _ -> false in
-  if Array.for_all (fun (expr, _dbg) -> is_const expr) actions then
-    let to_data_item (expr, _dbg) =
-      match expr with
-      | Cconst_int (n, _)
-      | Cconst_pointer (n, _) -> Cint (Nativeint.of_int n)
-      | Cconst_natint (n, _)
-      | Cconst_natpointer (n, _) -> Cint n
-      | Cconst_symbol (s, _) -> Csymbol_address s
-      | _ -> assert false in
-    let const_actions = Array.map to_data_item actions in
+    | Cconst_int     (n, _), _dbg
+    | Cconst_pointer (n, _), _dbg when (n land 1) = 1 ->
+        Some (Cint (Nativeint.of_int n))
+    | Cconst_natint     (n, _), _dbg
+    | Cconst_natpointer (n, _), _dbg
+      when Nativeint.(to_int (logand n one) = 1) ->
+        Some (Cint n)
+    | Cconst_symbol (s,_), _dbg ->
+        Some (Csymbol_address s)
+    | _ -> None
+  in
+  let extract_affine ~cases ~const_actions =
+    let length = Array.length cases in
+    if length >= 2
+    then begin
+      match const_actions.(cases.(0)), const_actions.(cases.(1)) with
+      | Cint v0, Cint v1 ->
+          let slope = Nativeint.sub v1 v0 in
+          let check i = function
+            | Cint v -> v = Nativeint.(add (mul (of_int i) slope) v0)
+            | _ -> false
+          in
+          if Misc.Stdlib.Array.for_alli
+              (fun i idx -> check i const_actions.(idx)) cases
+          then Some (v0, slope)
+          else None
+      | _, _ ->
+          None
+    end
+    else None
+  in
+  let make_table_lookup ~cases ~const_actions arg dbg =
     let table = Compilenv.new_const_symbol () in
     Cmmgen_state.add_constant table (Const_table (Local,
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
     addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
-  else
-    Cswitch (arg,cases,actions,dbg)
+  in
+  let make_affine_computation ~offset ~slope arg dbg =
+    (* In case the resulting integers are an affine function of the index, we
+       don't emit a table, and just compute the result directly *)
+    add_int
+      (mul_int arg (natint_const_untagged dbg slope) dbg)
+      (natint_const_untagged dbg offset)
+      dbg
+  in
+  match Misc.Stdlib.Array.all_somes (Array.map extract_uconstant actions) with
+  | None ->
+      Cswitch (arg,cases,actions,dbg)
+  | Some const_actions ->
+      match extract_affine ~cases ~const_actions with
+      | Some (offset, slope) ->
+          make_affine_computation ~offset ~slope arg dbg
+      | None -> make_table_lookup ~cases ~const_actions arg dbg
 
 module SArgBlocks =
 struct

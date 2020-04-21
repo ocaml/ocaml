@@ -111,7 +111,7 @@ end = struct
   type t = A of string [@@ocaml.unboxed]
 end;;
 [%%expect{|
-Line 3, characters 6-57:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of string [@@ocaml.unboxed]
 5 | end..
@@ -134,7 +134,7 @@ end = struct
   type t = A of string
 end;;
 [%%expect{|
-Line 3, characters 6-39:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of string
 5 | end..
@@ -157,7 +157,7 @@ end = struct
   type t = { f : string } [@@ocaml.unboxed]
 end;;
 [%%expect{|
-Line 3, characters 6-60:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = { f : string } [@@ocaml.unboxed]
 5 | end..
@@ -180,7 +180,7 @@ end = struct
   type t = { f : string }
 end;;
 [%%expect{|
-Line 3, characters 6-42:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = { f : string }
 5 | end..
@@ -203,7 +203,7 @@ end = struct
   type t = A of { f : string } [@@ocaml.unboxed]
 end;;
 [%%expect{|
-Line 3, characters 6-65:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of { f : string } [@@ocaml.unboxed]
 5 | end..
@@ -226,7 +226,7 @@ end = struct
   type t = A of { f : string }
 end;;
 [%%expect{|
-Line 3, characters 6-47:
+Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of { f : string }
 5 | end..
@@ -292,7 +292,7 @@ end = struct
   type u = { f1 : t; f2 : t }
 end;;
 [%%expect{|
-Line 4, characters 6-86:
+Lines 4-7, characters 6-3:
 4 | ......struct
 5 |   type t = A of float [@@ocaml.unboxed]
 6 |   type u = { f1 : t; f2 : t }

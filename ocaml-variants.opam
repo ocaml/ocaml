@@ -1,0 +1,29 @@
+opam-version: "2.0"
+version: "4.09.0+trunk"
+synopsis: "OCaml development version"
+depends: [
+  "ocaml" {= "4.09.0" & post}
+  "base-unix" {post}
+  "base-bigarray" {post}
+  "base-threads" {post}
+]
+conflict-class: "ocaml-core-compiler"
+flags: compiler
+setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
+build: [
+  ["./configure" "--prefix=%{prefix}%"]
+  [make "-j%{jobs}%" "world"]
+  [make "-j%{jobs}%" "world.opt"]
+]
+install: [make "install"]
+maintainer: "caml-list@inria.fr"
+homepage: "https://github.com/ocaml/ocaml/"
+bug-reports: "https://github.com/ocaml/ocaml/issues"
+authors: [
+  "Xavier Leroy"
+  "Damien Doligez"
+  "Alain Frisch"
+  "Jacques Garrigue"
+  "Didier Rémy"
+  "Jérôme Vouillon"
+]

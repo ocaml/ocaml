@@ -98,6 +98,7 @@ let systhreads =
 let compilerlibs_subdirs =
 [
   "utils"; "parsing"; "toplevel"; "typing"; "bytecomp"; "compilerlibs";
+  "file_formats"; "lambda";
 ]
 
 let add_compiler_subdir subdir =

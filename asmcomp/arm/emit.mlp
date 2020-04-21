@@ -354,8 +354,11 @@ let emit_literals() =
   end;
   if !offset_literals <> [] then begin
     (* Additions using the pc register read a value 4 or 8 bytes greater than
-       the instruction's address, depending on the thumb setting *)
-    let offset = if !thumb then 4 else 8 in
+       the instruction's address, depending on the Thumb setting.  However in
+       Thumb mode we must follow interworking conventions and ensure that the
+       bottom bit of the pc value is set when reloaded from the trap frame.
+       Hence "3" not "4". *)
+    let offset = if !thumb then 3 else 8 in
     `	.align	2\n`;
     List.iter
       (fun { lbl; dst; src; } ->
