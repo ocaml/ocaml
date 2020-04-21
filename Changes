@@ -80,6 +80,9 @@ Working version
   (Xavier Leroy and Basile Clément, review by Gabriel Scherer and
   Stephen Dolan)
 
+- #9282: Make Cconst_symbol have typ_int to fix no-naked-pointers mode.
+  (Stephen Dolan, review by Mark Shinwell, Xavier Leroy and Vincent Laviron)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.

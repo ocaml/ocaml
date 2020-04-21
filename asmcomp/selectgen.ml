@@ -663,7 +663,14 @@ method emit_expr (env:environment) exp =
       let r = self#regs_for typ_float in
       Some(self#insert_op env (Iconst_float (Int64.bits_of_float n)) [||] r)
   | Cconst_symbol (n, _dbg) ->
-      let r = self#regs_for typ_val in
+      (* Cconst_symbol _ evaluates to a statically-allocated address, so its
+         value fits in a typ_int register and is never changed by the GC.
+
+         Some Cconst_symbols point to statically-allocated blocks, some of
+         which may point to heap values. However, any such blocks will be
+         registered in the compilation unit's global roots structure, so
+         adding this register to the frame table would be redundant *)
+      let r = self#regs_for typ_int in
       Some(self#insert_op env (Iconst_symbol n) [||] r)
   | Cconst_pointer (n, _dbg) ->
       let r = self#regs_for typ_int in
