@@ -43,8 +43,6 @@ CAMLnoreturn_end;
 extern double caml_sys_time_unboxed(value);
 CAMLextern value caml_sys_get_argv(value unit);
 
-extern char_os * caml_exe_name;
-
 #ifdef __cplusplus
 }
 #endif

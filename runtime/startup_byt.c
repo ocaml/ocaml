@@ -323,7 +323,6 @@ CAMLexport void caml_main(char_os **argv)
       break;
     }
   }
-  caml_init_argv(exe_name, argv + pos);
 
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
@@ -352,9 +351,12 @@ CAMLexport void caml_main(char_os **argv)
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
   caml_modify_root(caml_global_data, caml_input_val(chan));
-  caml_minor_collection(); /* ensure all globals are in major heap */
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
+  /* Initialize system libraries */
+  caml_sys_init(exe_name, argv + pos);
+  /* ensure all globals are in major heap */
+  caml_minor_collection();
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (caml_secure_getenv(_T("CAMLSIGPIPE")))
@@ -410,7 +412,7 @@ CAMLexport value caml_startup_code_exn(
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   Caml_state->external_raise = NULL;
-  caml_init_argv(exe_name, argv);
+  caml_sys_init(exe_name, argv);
   if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   Caml_state->external_raise = NULL;
   /* Initialize the interpreter */

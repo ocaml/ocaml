@@ -382,33 +382,27 @@ CAMLprim value caml_sys_getenv(value var)
   return val;
 }
 
+static caml_root main_argv;
+
 CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
-  CAMLlocal3 (exe_name, argv, res);
+  CAMLlocal2 (exe_name, res);
   exe_name = caml_copy_string_of_os(caml_params->exe_name);
-  argv =
-    caml_alloc_array((void *)caml_copy_string_of_os,
-                     (char const **)caml_params->main_argv);
   res = caml_alloc_small(2, 0);
-  Field(res, 0) = exe_name;
-  Field(res, 1) = argv;
+  caml_initialize_field(res, 0, exe_name);
+  caml_initialize_field(res, 1, caml_read_root(main_argv));
   CAMLreturn(res);
 }
 
 CAMLprim value caml_sys_argv(value unit)
 {
-  CAMLparam0 ();   /* unit is unused */
-  CAMLlocal1 (argv);
-  argv =
-    caml_alloc_array((void *)caml_copy_string_of_os,
-                     (char const **)caml_params->main_argv);
-  CAMLreturn(argv);
+  return caml_read_root(main_argv);
 }
 
 CAMLprim value caml_sys_modify_argv(value new_argv)
 {
-  caml_failwith ("caml_sys_modify_argv: not implemented");
+  caml_modify_root(main_argv, new_argv);
   return Val_unit;
 }
 
@@ -419,8 +413,7 @@ CAMLprim value caml_sys_executable_name(value unit)
 
 void caml_sys_init(char_os * exe_name, char_os **argv)
 {
-  caml_failwith ("caml_sys_init: not implemented");
-#if 0
+  value v;
 #ifdef _WIN32
   /* Initialises the caml_win32_* globals on Windows with the version of
      Windows which is running */
@@ -429,9 +422,10 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
   caml_setup_win32_terminal();
 #endif
 #endif
-  caml_exe_name = exe_name;
-  caml_main_argv = argv;
-#endif
+  caml_init_exe_name(exe_name);
+  v = caml_alloc_array((void *)caml_copy_string_of_os,
+                               (char const **) argv);
+  main_argv = caml_create_root(v);
 }
 
 #ifdef _WIN32
