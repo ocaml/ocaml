@@ -82,14 +82,8 @@ let stack_offset = ref 0
 
 (* Layout of the stack frame *)
 
-<<<<<<< HEAD
 let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
 
-let frame_required () =
-  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
-
-=======
->>>>>>> 36d299b4aaf7f2d317fbfa148d7f94e720c80730
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
