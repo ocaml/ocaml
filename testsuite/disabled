@@ -11,6 +11,10 @@ tests/typing-objects/'Tests.ml' with 1 (expect)
 tests/lib-dynlink-bytecode/'main.ml' with 1.1.1.1.1.1.1.1.1.1 (check-program-output)
 tests/lib-dynlink-native/'main.ml' with 1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.2.1.1.1.1.1.1.1.1.1.1.1 (check-program-output)
 
+# TODO: dynlink isn't 100% working in multicore
+# (this test below fails on Linux with travis but we can not recreate locally)
+tests/lib-dynlink-private/'test.ml' with 1.2.1.2.8.19.1 (run)
+
 # Obj.truncate is incompatible with multicore (ocaml/ocaml#1725)
 tests/weak-ephe-final/'weaktest.ml' with 1 (native)
 tests/weak-ephe-final/'weaktest.ml' with 2 (bytecode)
