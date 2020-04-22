@@ -212,13 +212,12 @@ let scan_file obj_name (tolink, objfiles) = match read_file obj_name with
                reqd)
           infos.lib_units tolink
       and objfiles =
-        if Config.ccomp_type = "msvc"
-        && infos.lib_units = []
+        if infos.lib_units = []
         && not (Sys.file_exists (object_file_name obj_name)) then
-          (* MSVC doesn't support empty .lib files, so there shouldn't be one
-             if the .cmxa contains no units. The file_exists check is added to
-             be ultra-defensive for the case where a user has manually added
-             things to the .lib file *)
+          (* MSVC doesn't support empty .lib files, and macOS struggles to make
+             them (#6550), so there shouldn't be one if the .cmxa contains no
+             units. The file_exists check is added to be ultra-defensive for the
+             case where a user has manually added things to the .a/.lib file *)
           objfiles
         else
           obj_name :: objfiles
