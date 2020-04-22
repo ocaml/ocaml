@@ -17,9 +17,10 @@
     All functions in this module are for system use only, not for the
     casual user. *)
 
-exception Undefined
-
 type 'a t = 'a lazy_t
+
+exception Undefined
+exception RacyLazy
 
 val force_lazy_block : 'a lazy_t -> 'a
 

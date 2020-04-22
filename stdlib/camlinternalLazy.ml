@@ -18,6 +18,7 @@
 type 'a t = 'a lazy_t
 
 exception Undefined
+exception RacyLazy
 
 (* [update_tag blk old new] updates the tag [blk] from [old] to [new] using a
  * CAS loop (in order to handle concurrent conflicts with the GC marking).
@@ -28,14 +29,27 @@ external update_tag : Obj.t -> int -> int -> bool = "caml_obj_update_tag"
 
 external make_forward : Obj.t -> Obj.t -> unit = "caml_obj_make_forward"
 
+external domain_self : unit -> int = "caml_ml_domain_id"
+
 (* Assume [blk] is a block with tag lazy *)
 let force_lazy_block (blk : 'arg lazy_t) =
   let b = Obj.repr blk in
   if not (update_tag b Obj.lazy_tag Obj.forcing_tag) then
-    (* blk has tag Obj.forcing_tag *)
-    raise Undefined
+    (* blk has tag either
+        + Obj.forcing_tag -- currently being forced by this domain or
+                             another concurrent domain (or)
+        + Obj.forward_tag -- was being forced by another domain which has since
+                             completed the evaluation and updated the lazy. *)
+    let forcing_domain_id : int = Obj.obj (Obj.field b 0) in
+    let my_domain_id = domain_self () in
+    (* XXX KC: Need a fence here to prevent the tag read from being reordered
+     * before reading the first field of [b] *)
+    if Obj.tag b = Obj.forcing_tag && forcing_domain_id = my_domain_id then
+      raise Undefined
+    else raise RacyLazy
   else begin
     let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
+    Obj.set_field b 0 (Obj.repr (domain_self ()));
     try
       let result = closure () in
       make_forward b (Obj.repr result);
@@ -51,10 +65,21 @@ let force_lazy_block (blk : 'arg lazy_t) =
 let force_val_lazy_block (blk : 'arg lazy_t) =
   let b = Obj.repr blk in
   if not (update_tag b Obj.lazy_tag Obj.forcing_tag) then
-    (* blk has tag Obj.forcing_tag *)
-    raise Undefined
+    (* blk has tag either
+        + Obj.forcing_tag -- currently being forced by this domain or
+                             another concurrent domain (or)
+        + Obj.forward_tag -- was being forced by another domain which has since
+                             completed the evaluation and updated the lazy. *)
+    let forcing_domain_id : int = Obj.obj (Obj.field b 0) in
+    let my_domain_id = (domain_self () :> int) in
+    (* XXX KC: Need a fence here to prevent the tag read from being reordered
+     * before reading the first field of [b] *)
+    if Obj.tag b = Obj.forcing_tag && forcing_domain_id = my_domain_id then
+      raise Undefined
+    else raise RacyLazy
   else begin
     let closure = (Obj.obj (Obj.field b 0) : unit -> 'arg) in
+    Obj.set_field b 0 (Obj.repr (domain_self ()));
     let result = closure () in
     make_forward b (Obj.repr result);
     result
