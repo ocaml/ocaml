@@ -42,10 +42,10 @@ let go (type a) (typ : a M.typ) (msg : a M.t) =
     (match M.use_bar msg with _ -> ())
 ;;
 [%%expect {|
-Line _, characters 2-68:
-  ..match typ with
-    | Bar s ->
-      (match M.use_bar msg with _ -> ())
+Lines 2-4, characters 2-38:
+2 | ..match typ with
+3 |   | Bar s ->
+4 |     (match M.use_bar msg with _ -> ())
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Foo _
