@@ -153,11 +153,7 @@ static value alloc_shared(mlsize_t wosize, tag_t tag)
   return Val_hp(mem);
 }
 
-static inline int is_in_interval (value v, char* low_closed, char* high_open)
-{
-  return low_closed <= (char*)v && (char*)v < high_open;
-}
-
+#if 0
 static inline void log_gc_value(const char* prefix, value v)
 {
   if (Is_block(v)) {
@@ -168,6 +164,7 @@ static inline void log_gc_value(const char* prefix, value v)
     caml_gc_log("%s not block 0x%lx", prefix, v);
   }
 }
+#endif
 
 #define Color_hd(v) ((color_t)(((v) >> 8) & 3))
 
@@ -382,6 +379,7 @@ static void oldify_one (void* st_v, value v, value *p)
   }
 }
 
+#if 0
 /* Test if the ephemeron is alive */
 /* Care needed with this test. It will only make sense if
    all minor heaps have been promoted
@@ -405,6 +403,7 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re)
 
   return 1;
 }
+#endif
 
 /* Finish the work that was put off by [oldify_one].
    Note that [oldify_one] itself is called by oldify_mopup, so we
@@ -577,7 +576,8 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
         ref_end = foreign_major_ref->ptr;
       }
 
-      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %ul, refs_per_domain: %ul, ref_base: %ul, ref_ptr: %ul, ref_start: %ul, ref_end: %ul", participating_idx, foreign_domain->state->id, major_ref_size, refs_per_domain, foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
+      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %"ARCH_INTNAT_PRINTF_FORMAT"d, refs_per_domain: %"ARCH_INTNAT_PRINTF_FORMAT"d, ref_base: %p, ref_ptr: %p, ref_start: %p, ref_end: %p",
+        participating_idx, foreign_domain->state->id, major_ref_size, refs_per_domain, foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
 
       for( r = ref_start ; r < foreign_major_ref->ptr && r < ref_end ; r++ )
       {
@@ -636,7 +636,8 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
 
 #ifdef DEBUG
   caml_global_barrier();
-  caml_gc_log("ref_base: %lu, ref_ptr: %lu", self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
+  caml_gc_log("ref_base: %p, ref_ptr: %p",
+    self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
@@ -660,8 +661,8 @@ void caml_empty_minor_heap_promote (struct domain* domain, int participating_cou
   /* we reset these pointers before allowing any mutators to be
      released to avoid races where another domain signals an interrupt
      and we clobber it */
-  atomic_store_rel(&domain_state->young_limit, domain_state->young_start);
-  atomic_store_rel(&domain_state->young_ptr, domain_state->young_end);
+  atomic_store_rel((atomic_uintnat*)&domain_state->young_limit, (uintnat)domain_state->young_start);
+  atomic_store_rel((atomic_uintnat*)&domain_state->young_ptr, (uintnat)domain_state->young_end);
 
   if( not_alone ) {
     atomic_fetch_add_explicit(&domains_finished_minor_gc, 1, memory_order_release);

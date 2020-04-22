@@ -83,7 +83,7 @@
 #else
 #error "No 32-bit integer type available"
 #endif
-#endif /* ARCH_INT32_TYPE */
+#endif
 
 #ifdef __MINGW32__
   #define ARCH_INT64_TYPE long long

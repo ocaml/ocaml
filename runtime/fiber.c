@@ -284,10 +284,10 @@ int caml_try_realloc_stack(asize_t required_space)
   /* Update stack pointers in Caml_state->c_stack */
   {
     struct c_stack_link* link;
-    struct stack_info* cb = NULL;
     for (link = Caml_state->c_stack; link; link = link->prev) {
 #ifdef DEBUG
-    /* Verify that all callback frames on this C stack belong to the
+      struct stack_info* cb = NULL;
+      /* Verify that all callback frames on this C stack belong to the
        same fiber */
       if (link->stack == NULL) {
         /* only possible for the first link, if it has not done any C calls yet */
@@ -362,7 +362,6 @@ CAMLprim value caml_clone_continuation (value cont)
 
 CAMLprim value caml_continuation_use (value cont)
 {
-  struct stack_info* stk;
   caml_gc_log("cont: is_block(%d) tag_val(%ul) is_minor(%d)", Is_block(cont), Tag_val(cont), Is_minor(cont));
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
 
