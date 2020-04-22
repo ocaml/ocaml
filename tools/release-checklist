@@ -141,10 +141,10 @@ This needs to be more tested, tread with care.
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
 # Rename the "Working version" header in Changes
-# to "OCaml $VERSION"
+# to "OCaml $BRANCH"
 make -B configure
-git commit -a -m "last commit before branching $VERSION"
-git branch $VERSION
+git commit -a -m "last commit before branching $BRANCH"
+git branch $BRANCH
 
 # update VERSION with the new future branch,
 #   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
