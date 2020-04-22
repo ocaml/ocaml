@@ -92,6 +92,9 @@ Working version
 - #9193: Make tuple matching optimisation apply to Lswitch and Lstringswitch.
   (Stephen Dolan, review by Thomas Refis and Gabriel Scherer)
 
+- #9392: Visit registers at most once in Coloring.iter_preferred.
+  (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
+
 ### Standard library:
 
 - #9077: Add Seq.cons and Seq.append

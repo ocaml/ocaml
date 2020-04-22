@@ -45,7 +45,7 @@ type t =
     mutable prefer: (t * int) list;
     mutable degree: int;
     mutable spill_cost: int;
-    mutable visited: bool }
+    mutable visited: int }
 
 and location =
     Unknown
@@ -62,16 +62,32 @@ type reg = t
 let dummy =
   { raw_name = Raw_name.Anon; stamp = 0; typ = Int; loc = Unknown;
     spill = false; interf = []; prefer = []; degree = 0; spill_cost = 0;
-    visited = false; part = None;
+    visited = 0; part = None;
   }
 
 let currstamp = ref 0
 let reg_list = ref([] : t list)
+let hw_reg_list = ref ([] : t list)
+
+let visit_generation = ref 1
+
+(* Any visited value not equal to !visit_generation counts as "unvisited" *)
+let unvisited = 0
+
+let mark_visited r =
+  r.visited <- !visit_generation
+
+let is_visited r =
+  r.visited = !visit_generation
+
+let clear_visited_marks () =
+  incr visit_generation
+
 
 let create ty =
   let r = { raw_name = Raw_name.Anon; stamp = !currstamp; typ = ty;
             loc = Unknown; spill = false; interf = []; prefer = []; degree = 0;
-            spill_cost = 0; visited = false; part = None; } in
+            spill_cost = 0; visited = unvisited; part = None; } in
   reg_list := r :: !reg_list;
   incr currstamp;
   r
@@ -96,7 +112,8 @@ let clone r =
 let at_location ty loc =
   let r = { raw_name = Raw_name.R; stamp = !currstamp; typ = ty; loc;
             spill = false; interf = []; prefer = []; degree = 0;
-            spill_cost = 0; visited = false; part = None; } in
+            spill_cost = 0; visited = unvisited; part = None; } in
+  hw_reg_list := r :: !hw_reg_list;
   incr currstamp;
   r
 
@@ -126,9 +143,15 @@ let reset() =
      all hard pseudo-registers that have been allocated by Proc, so
      remember it and use it as the base stamp for allocating
      soft pseudo-registers *)
-  if !first_virtual_reg_stamp = -1 then first_virtual_reg_stamp := !currstamp;
+  if !first_virtual_reg_stamp = -1 then begin
+    first_virtual_reg_stamp := !currstamp;
+    assert (!reg_list = []) (* Only hard regs created before now *)
+  end;
   currstamp := !first_virtual_reg_stamp;
-  reg_list := []
+  reg_list := [];
+  visit_generation := 1;
+  !hw_reg_list |> List.iter (fun r ->
+    r.visited <- unvisited)
 
 let all_registers() = !reg_list
 let num_registers() = !currstamp
