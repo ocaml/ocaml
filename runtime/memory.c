@@ -124,7 +124,7 @@
    generated.
 */
 
-static void write_barrier(value obj, intnat field, value old_val, value new_val) __attribute__((always_inline));
+__attribute__((always_inline)) inline static void write_barrier(value obj, intnat field, value old_val, value new_val) ;
 
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */

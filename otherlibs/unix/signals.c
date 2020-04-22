@@ -69,7 +69,9 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
   caml_enter_blocking_section();
+  retcode = sigprocmask(how, &set, &oldset);
   caml_leave_blocking_section();
+  if (retcode == -1) uerror("sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
 

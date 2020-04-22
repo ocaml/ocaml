@@ -14,13 +14,17 @@
 #define Pu64 "%" ARCH_INT64_PRINTF_FORMAT "u"
 #define Punat "%" ARCH_INTNAT_PRINTF_FORMAT "u"
 
+/* Using these vs int64_t/uint64_t needed to prevent warnings on OS X/clang */
+#define Pi64_t ARCH_INT64_TYPE
+#define Pu64_t ARCH_UINT64_TYPE
+
 typedef enum { BEGIN, END, BEGIN_FLOW, END_FLOW, GLOBAL_SYNC, COUNTER } evtype;
 
 struct event {
   const char* name;
-  int64_t timestamp;
+  Pi64_t timestamp;
   evtype ty;
-  uint64_t value; /* for COUNTER */
+  Pu64_t value; /* for COUNTER */
 };
 
 /* events are stored thread-locally in event_buffers,
@@ -38,7 +42,7 @@ static caml_plat_mutex lock = CAML_PLAT_MUTEX_INITIALIZER;
 static struct evbuf_list_node evbuf_head =
   { &evbuf_head, &evbuf_head };
 static FILE* output;
-static int64_t startup_timestamp;
+static Pi64_t startup_timestamp;
 
 #define EVENT_BUF_SIZE 32768
 struct event_buffer {
@@ -93,7 +97,7 @@ void caml_setup_eventlog()
 {
   char filename[64];
   if (!caml_params->eventlog_enabled) return;
-  sprintf(filename, "eventlog."Pi64".json", (int64_t)getpid());
+  sprintf(filename, "eventlog."Pu64".json", (Pu64_t)getpid());
   caml_plat_lock(&lock);
   if (pthread_key_create(&evbuf_pkey, &thread_teardown_evbuf) == 0 &&
       (output = fopen(filename, "w"))) {
@@ -186,7 +190,7 @@ static void teardown_eventlog()
           "\"tid\": %d, "
           "\"s\": \"g\"}\n"
           "]\n}\n",
-          (caml_time_counter() - startup_timestamp) / 1000,
+          ((Pi64_t)caml_time_counter() - startup_timestamp) / 1000,
           Caml_state->unique_id,
           Caml_state->unique_id);
   fclose(output);

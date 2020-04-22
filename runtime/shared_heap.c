@@ -312,7 +312,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
 
   while (p + wh <= end) {
     p[0] = 0; /* zero header indicates free object */
-    p[1] = p - wh;
+    p[1] = (value)(p - wh);
     p += wh;
   }
 
@@ -610,9 +610,9 @@ void verify_push(void* st_v, value v, value* p)
   if (!Is_block(v)) return;
 
   if( Is_minor(v) ) {
-    caml_gc_log("minor in heap: 0x%lx, hd_val: %d, p: 0x%lx", v, Hd_val(v), p);
+    caml_gc_log("minor in heap: %p, hd_val: %lx, p: %p", (value*)v, Hd_val(v), p);
     struct domain* domain = caml_owner_of_young_block(v);
-    caml_gc_log("owner: %d, young_start: 0x%lx, young_end: 0x%lx, young_ptr: 0x%lx, young_limit: 0x%lx", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, domain->state->young_limit);
+    caml_gc_log("owner: %d, young_start: %p, young_end: %p, young_ptr: %p, young_limit: %p", domain->state->id, domain->state->young_start, domain->state->young_end, domain->state->young_ptr, (void *)domain->state->young_limit);
   }
 
   if (st->sp == st->stack_len) {

@@ -253,8 +253,6 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
-static const value * unix_error_exn = NULL;
-
 value unix_error_of_code (int errcode)
 {
   int errconstr;

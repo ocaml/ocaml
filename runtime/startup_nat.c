@@ -53,7 +53,7 @@ struct segment { char * begin; char * end; };
 
 static void init_segments(void)
 {
-  extern struct segment caml_data_segments[], caml_code_segments[];
+  extern struct segment caml_code_segments[];
   int i;
   struct code_fragment * cf;
 
