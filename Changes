@@ -383,6 +383,9 @@ Working version
   (Florian Angeletti, report by Thomas Leonard, review by Gabriel Radanne
    and Gabriel Scherer)
 
+- #9415: Treat `open struct` as `include struct` in toplevel
+  (Leo White, review by Thomas Refis)
+
 - #9420: Fix memory leak when `caml_output_value_to_block` raises an exception
   (Xavier Leroy, review by Guillaume Munch-Maccagnoni)
 
