@@ -549,11 +549,10 @@ end = struct
               filter_rec ({ l with right = p :: ps } :: rem)
           | Tpat_var _ -> filter_rec ({ l with right = omega :: ps } :: rem)
           | _ -> (
-              let rem = filter_rec rem in
-              try
-                let to_left, right = matcher p ps in
-                { left = to_left :: l.left; right } :: rem
-              with NoMatch -> rem
+              match matcher p ps with
+              | exception NoMatch -> filter_rec rem
+              | to_left, right ->
+                  { left = to_left :: l.left; right } :: filter_rec rem
             )
         )
       | [] -> []
@@ -589,8 +588,6 @@ end = struct
 
   let union pss qss = get_mins Row.le (pss @ qss)
 end
-
-exception OrPat
 
 let rec flatten_pat_line size p k =
   match p.pat_desc with
@@ -641,7 +638,7 @@ module Default_environment : sig
 
   val cons : matrix -> int -> t -> t
 
-  val specialize : (pattern -> pattern list -> pattern list) -> t -> t
+  val specialize : int -> (pattern -> pattern list -> pattern list) -> t -> t
 
   val pop_column : t -> t
 
@@ -667,46 +664,105 @@ end = struct
     | [] -> default
     | _ -> (matrix, raise_num) :: default
 
-  let specialize_matrix matcher pss =
+  let specialize_matrix arity matcher pss =
     let rec filter_rec = function
       | (p :: ps) :: rem -> (
           match p.pat_desc with
           | Tpat_alias (p, _, _) -> filter_rec ((p :: ps) :: rem)
           | Tpat_var _ -> filter_rec ((omega :: ps) :: rem)
+          | Tpat_or (p1, p2, _) -> filter_rec_or p1 p2 ps rem
           | _ -> (
-              let rem = filter_rec rem in
-              try matcher p ps :: rem with
-              | NoMatch -> rem
-              | OrPat -> (
-                  match p.pat_desc with
-                  | Tpat_or (p1, p2, _) ->
-                      filter_rec [ p1 :: ps; p2 :: ps ] @ rem
-                  | _ -> assert false
-                )
+              match matcher p ps with
+              | exception NoMatch -> filter_rec rem
+              | specialized ->
+                  assert (List.length specialized = List.length ps + arity);
+                  specialized :: filter_rec rem
             )
         )
       | [] -> []
       | _ ->
           pretty_matrix Format.err_formatter pss;
           fatal_error "Matching.Default_environment.specialize_matrix"
+
+    (* Filter just one row, without a `rem` accumulator
+       of further rows to process.
+       The following equality holds:
+         filter_rec ((p :: ps) :: rem)
+         = filter_one p ps @ filter_rec rem
+    *)
+    and filter_one p ps =
+      filter_rec [ p :: ps ]
+
+    and filter_rec_or p1 p2 ps rem =
+      match arity with
+      | 0 -> (
+          (* if K has arity 0, specializing ((K|K)::rem) returns just (rem):
+             if either sides works (filters into a non-empty list),
+             no need to keep the other. *)
+          match filter_one p1 ps with
+          | [] -> filter_rec ((p2 :: ps) :: rem)
+          | matches -> matches @ filter_rec rem
+        )
+      | 1 -> (
+          (* if K has arity 1, ((K p | K q) :: rem) can be expressed
+             as ((p | q) :: rem): even if both sides of an or-pattern
+             match, we can compress the output in a single row,
+             instead of duplicating the row.
+
+             In particular, filtering a single row (the filter_one calls)
+             returns a result that respects the following properties:
+             - "row count": the result is either an empty list or a single row
+             - "row shape": if there is a row in the result, it contains one
+               pattern consed to the tail [ps] of our input row; in particular
+               the row is not empty. *)
+          match (filter_one p1 ps, filter_one p2 ps) with
+          | [], row
+          | row, [] ->
+              row @ filter_rec rem
+          | [ (arg1 :: _) ], [ (arg2 :: _) ] ->
+              (* By the row shape property,
+                 the wildcard patterns can only be ps. *)
+              (* The output below is a single row,
+                  respecting the row count property. *)
+              ({ arg1 with
+                 pat_desc = Tpat_or (arg1, arg2, None);
+                 pat_loc = Location.none
+               }
+              :: ps
+              )
+              :: filter_rec rem
+          | (_ :: _ :: _), _
+          | _, (_ :: _ :: _) ->
+              (* Cannot happen from the row count property. *)
+              assert false
+          | [ [] ], _
+          | _, [ [] ] ->
+              (* Cannot happen from the row shape property. *)
+              assert false
+        )
+      | _ ->
+          (* we cannot preserve the or-pattern as in the arity-1 case,
+             because we cannot express
+                (K (p1, .., pn) | K (q1, .. qn))
+             as (p1 .. pn | q1 .. qn) *)
+          filter_rec ((p1 :: ps) :: (p2 :: ps) :: rem)
     in
     filter_rec pss
 
-  let specialize matcher env =
+  let specialize arity matcher env =
     let rec make_rec = function
       | [] -> []
       | ([ [] ], i) :: _ -> [ ([ [] ], i) ]
       | (pss, i) :: rem -> (
-          let rem = make_rec rem in
-          match specialize_matrix matcher pss with
-          | [] -> rem
+          match specialize_matrix arity matcher pss with
+          | [] -> make_rec rem
           | [] :: _ -> [ ([ [] ], i) ]
-          | pss -> (pss, i) :: rem
+          | pss -> (pss, i) :: make_rec rem
         )
     in
     make_rec env
 
-  let pop_column def = specialize (fun _p rem -> rem) def
+  let pop_column def = specialize 0 (fun _p rem -> rem) def
 
   let pop_compat p def =
     let compat_matcher q rem =
@@ -715,7 +771,7 @@ end = struct
       else
         raise NoMatch
     in
-    specialize compat_matcher def
+    specialize 0 compat_matcher def
 
   let pop = function
     | [] -> None
@@ -1569,8 +1625,7 @@ let divide_line make_ctx make get_args discr ctx
 
    - matcher functions are arguments to Default_environment.specialize (for
    default handlers)
-   They may raise NoMatch or OrPat and perform the full
-   matching (selection + arguments).
+   They may raise NoMatch and perform the full matching (selection + arguments).
 
    - get_args and get_key are for the compiled matrices, note that
    selection and getting arguments are separated.
@@ -1579,11 +1634,8 @@ let divide_line make_ctx make get_args discr ctx
    new  ``pattern_matching'' records.
 *)
 
-let rec matcher_const cst p rem =
+let matcher_const cst p rem =
   match p.pat_desc with
-  | Tpat_or (p1, p2, _) -> (
-      try matcher_const cst p1 rem with NoMatch -> matcher_const cst p2 rem
-    )
   | Tpat_constant c1 when const_compare c1 cst = 0 -> rem
   | Tpat_any -> rem
   | _ -> raise NoMatch
@@ -1601,7 +1653,7 @@ let make_constant_matching p def ctx = function
   | [] -> fatal_error "Matching.make_constant_matching"
   | _ :: argl ->
       let def =
-        Default_environment.specialize
+        Default_environment.specialize 0
           (matcher_const (get_key_constant "make" p))
           def
       and ctx = Context.specialize p ctx in
@@ -1643,64 +1695,12 @@ let get_args_constr p rem =
        This comparison is performed by Types.may_equal_constr.
 *)
 
-let matcher_constr cstr =
-  match cstr.cstr_arity with
-  | 0 ->
-      let rec matcher_rec q rem =
-        match q.pat_desc with
-        | Tpat_or (p1, p2, _) -> (
-            try matcher_rec p1 rem with NoMatch -> matcher_rec p2 rem
-          )
-        | Tpat_construct (_, cstr', []) when Types.may_equal_constr cstr cstr'
-          ->
-            rem
-        | Tpat_any -> rem
-        | _ -> raise NoMatch
-      in
-      matcher_rec
-  | 1 ->
-      let rec matcher_rec q rem =
-        match q.pat_desc with
-        | Tpat_or (p1, p2, _) -> (
-            (* if both sides of the or-pattern match the head constructor,
-            (K p1 | K p2) :: rem
-          return (p1 | p2) :: rem *)
-            let r1 = try Some (matcher_rec p1 rem) with NoMatch -> None
-            and r2 = try Some (matcher_rec p2 rem) with NoMatch -> None in
-            match (r1, r2) with
-            | None, None -> raise NoMatch
-            | Some r1, None -> r1
-            | None, Some r2 -> r2
-            | Some (a1 :: _), Some (a2 :: _) ->
-                { a1 with
-                  pat_loc = Location.none;
-                  pat_desc = Tpat_or (a1, a2, None)
-                }
-                :: rem
-            | _, _ -> assert false
-          )
-        | Tpat_construct (_, cstr', [ arg ])
-          when Types.may_equal_constr cstr cstr' ->
-            arg :: rem
-        | Tpat_any -> omega :: rem
-        | _ -> raise NoMatch
-      in
-      matcher_rec
-  | _ -> (
-      fun q rem ->
-        match q.pat_desc with
-        | Tpat_or (_, _, _) ->
-            (* we cannot preserve the or-pattern as in the arity-1 case,
-               because we cannot express
-                 (K (p1, .., pn) | K (q1, .. qn))
-               as (p1 .. pn | q1 .. qn) *)
-            raise OrPat
-        | Tpat_construct (_, cstr', args)
-          when Types.may_equal_constr cstr cstr' ->
-            args @ rem
-        | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
-        | _ -> raise NoMatch
-    )
+let matcher_constr cstr q rem =
+  match q.pat_desc with
+  | Tpat_construct (_, cstr', args) when Types.may_equal_constr cstr cstr' ->
+      args @ rem
+  | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
+  | _ -> raise NoMatch
 
 let make_constr_matching p def ctx = function
   | [] -> fatal_error "Matching.make_constr_matching"
@@ -1721,7 +1721,9 @@ let make_constr_matching p def ctx = function
       { pm =
           { cases = [];
             args = newargs;
-            default = Default_environment.specialize (matcher_constr cstr) def
+            default =
+              Default_environment.specialize cstr.cstr_arity
+                (matcher_constr cstr) def
           };
         ctx = Context.specialize p ctx;
         discr = normalize_pat p
@@ -1732,12 +1734,8 @@ let divide_constructor ctx pm =
 
 (* Matching against a variant *)
 
-let rec matcher_variant_const lab p rem =
+let matcher_variant_const lab p rem =
   match p.pat_desc with
-  | Tpat_or (p1, p2, _) -> (
-      try matcher_variant_const lab p1 rem
-      with NoMatch -> matcher_variant_const lab p2 rem
-    )
   | Tpat_variant (lab1, _, _) when lab1 = lab -> rem
   | Tpat_any -> rem
   | _ -> raise NoMatch
@@ -1745,7 +1743,8 @@ let rec matcher_variant_const lab p rem =
 let make_variant_matching_constant p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_constant"
   | _ :: argl ->
-      let def = Default_environment.specialize (matcher_variant_const lab) def
+      let def =
+        Default_environment.specialize 0 (matcher_variant_const lab) def
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = argl; default = def };
         ctx;
@@ -1754,7 +1753,6 @@ let make_variant_matching_constant p lab def ctx = function
 
 let matcher_variant_nonconst lab p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_variant (lab1, Some arg, _) when lab1 = lab -> arg :: rem
   | Tpat_any -> omega :: rem
   | _ -> raise NoMatch
@@ -1763,7 +1761,7 @@ let make_variant_matching_nonconst p lab def ctx = function
   | [] -> fatal_error "Matching.make_variant_matching_nonconst"
   | (arg, _mut) :: argl ->
       let def =
-        Default_environment.specialize (matcher_variant_nonconst lab) def
+        Default_environment.specialize 1 (matcher_variant_nonconst lab) def
       and ctx = Context.specialize p ctx in
       { pm =
           { cases = [];
@@ -1820,7 +1818,7 @@ let make_var_matching def = function
   | _ :: argl ->
       { cases = [];
         args = argl;
-        default = Default_environment.specialize get_args_var def
+        default = Default_environment.specialize 0 get_args_var def
       }
 
 let divide_var ctx pm =
@@ -1836,7 +1834,6 @@ let get_arg_lazy p rem =
 
 let matcher_lazy p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_any
   | Tpat_var _ ->
       omega :: rem
@@ -1981,7 +1978,7 @@ let make_lazy_matching def = function
   | (arg, _mut) :: argl ->
       { cases = [];
         args = (inline_lazy_force arg Location.none, Strict) :: argl;
-        default = Default_environment.specialize matcher_lazy def
+        default = Default_environment.specialize 1 matcher_lazy def
       }
 
 let divide_lazy p ctx pm =
@@ -1997,7 +1994,6 @@ let get_args_tuple arity p rem =
 
 let matcher_tuple arity p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_any
   | Tpat_var _ ->
       omegas arity @ rem
@@ -2015,7 +2011,8 @@ let make_tuple_matching loc arity def = function
       in
       { cases = [];
         args = make_args 0;
-        default = Default_environment.specialize (matcher_tuple arity) def
+        default =
+          Default_environment.specialize arity (matcher_tuple arity) def
       }
 
 let divide_tuple arity p ctx pm =
@@ -2039,7 +2036,6 @@ let get_args_record num_fields p rem =
 
 let matcher_record num_fields p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_any
   | Tpat_var _ ->
       record_matching_line num_fields [] @ rem
@@ -2075,7 +2071,9 @@ let make_record_matching loc all_labels def = function
           (access, str) :: make_args (pos + 1)
       in
       let nfields = Array.length all_labels in
-      let def = Default_environment.specialize (matcher_record nfields) def in
+      let def =
+        Default_environment.specialize nfields (matcher_record nfields) def
+      in
       { cases = []; args = make_args 0; default = def }
 
 let divide_record all_labels p ctx pm =
@@ -2097,7 +2095,6 @@ let get_args_array p rem =
 
 let matcher_array len p rem =
   match p.pat_desc with
-  | Tpat_or (_, _, _) -> raise OrPat
   | Tpat_array args when List.length args = len -> args @ rem
   | Tpat_any -> Parmatch.omegas len @ rem
   | _ -> raise NoMatch
@@ -2117,7 +2114,7 @@ let make_array_matching kind p def ctx = function
             StrictOpt )
           :: make_args (pos + 1)
       in
-      let def = Default_environment.specialize (matcher_array len) def
+      let def = Default_environment.specialize len (matcher_array len) def
       and ctx = Context.specialize p ctx in
       { pm = { cases = []; args = make_args 0; default = def };
         ctx;
