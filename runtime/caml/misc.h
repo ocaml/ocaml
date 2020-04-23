@@ -401,7 +401,8 @@ extern void caml_set_fields (intnat v, uintnat, uintnat);
 
 /* snprintf emulation for Win32 */
 
-#if defined(_WIN32) && !defined(_UCRT)
+#ifdef _WIN32
+#ifndef _UCRT
 extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
@@ -502,6 +503,14 @@ extern void caml_instr_atexit (void);
 #define caml_instr_atexit() /**/
 
 #endif /* CAML_INSTR */
+
+extern int caml_snwprintf(wchar_t * buf,
+                          size_t size,
+                          const wchar_t * format, ...);
+#define snprintf_os caml_snwprintf
+#else
+#define snprintf_os snprintf
+#endif
 
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */

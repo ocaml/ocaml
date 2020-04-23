@@ -683,32 +683,40 @@ wchar_t * caml_executable_name(void)
 
 /* snprintf emulation */
 
-#if defined(_WIN32) && !defined(_UCRT)
-int caml_snprintf(char * buf, size_t size, const char * format, ...)
-{
-  int len;
-  va_list args;
-
-  if (size > 0) {
-    va_start(args, format);
-    len = _vsnprintf(buf, size, format, args);
-    va_end(args);
-    if (len >= 0 && len < size) {
-      /* [len] characters were stored in [buf],
-         a null-terminator was appended. */
-      return len;
-    }
-    /* [size] characters were stored in [buf], without null termination.
-       Put a null terminator, truncating the output. */
-    buf[size - 1] = 0;
-  }
-  /* Compute the actual length of output, excluding null terminator */
-  va_start(args, format);
-  len = _vscprintf(format, args);
-  va_end(args);
-  return len;
+#define CAML_SNPRINTF(_vsnprintf, _vscprintf) \
+{ \
+  int len; \
+  va_list args; \
+\
+  if (size > 0) { \
+    va_start(args, format); \
+    len = _vsnprintf(buf, size, format, args); \
+    va_end(args); \
+    if (len >= 0 && len < size) { \
+      /* [len] characters were stored in [buf], \
+         a null-terminator was appended. */ \
+      return len; \
+    } \
+    /* [size] characters were stored in [buf], without null termination. \
+       Put a null terminator, truncating the output. */ \
+    buf[size - 1] = 0; \
+  } \
+  /* Compute the actual length of output, excluding null terminator */ \
+  va_start(args, format); \
+  len = _vscprintf(format, args); \
+  va_end(args); \
+  return len; \
 }
+
+#ifndef _UCRT
+int caml_snprintf(char * buf, size_t size, const char * format, ...)
+CAML_SNPRINTF(_vsnprintf, _vscprintf)
 #endif
+
+int caml_snwprintf(wchar_t * buf, size_t size, const wchar_t * format, ...)
+CAML_SNPRINTF(_vsnwprintf, _vscwprintf)
+
+#undef CAML_SNPRINTF
 
 wchar_t *caml_secure_getenv (wchar_t const *var)
 {
