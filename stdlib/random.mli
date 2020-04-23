@@ -39,8 +39,10 @@ val bits : unit -> int
 
 val int : int -> int
 (** [Random.int bound] returns a random integer between 0 (inclusive)
-     and [bound] (exclusive).  [bound] must be greater than 0 and less
-     than 2{^30}. *)
+    and [bound] (exclusive).  [bound] must be greater than 0 and less
+    than {!Stdlib.max_int}
+
+    @before 4.13.0 [bound] had to be less than 2{^30}. *)
 
 val int32 : Int32.t -> Int32.t
 (** [Random.int32 bound] returns a random integer between 0 (inclusive)

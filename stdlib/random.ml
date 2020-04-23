@@ -88,10 +88,21 @@ module State = struct
     let v = r mod n in
     if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
 
+  let rec int63aux s n =
+    let b1 = bits s in
+    let b2 = bits s lsl 30 in
+    let b3 = (bits s land 3) lsl 60 in
+    let r = b1 lor b2 lor b3 in
+    let v = r mod n in
+    if r - v > max_int - n + 1 then int63aux s n else v
+
   let int s bound =
-    if bound > 0x3FFFFFFF || bound <= 0
-    then invalid_arg "Random.int"
-    else intaux s bound
+    if bound <= 0 then
+      invalid_arg "Random.int"
+    else if bound > 0x3FFFFFFF then
+      int63aux s bound
+    else
+      intaux s bound
 
 
   let rec int32aux s n =
