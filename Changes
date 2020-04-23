@@ -411,6 +411,9 @@ OCaml 4.11
 - #9367: Make bytecode and native-code backtraces agree.
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #9375, #9477: add forgotten substitution when compiling anonymous modules
+  (Thomas Refis, review by Frédéric Bour, report by Andreas Hauptmann)
+
 * #9388: Prohibit signature local types with constraints
   (Leo White, review by Jacques Garrigue)
 

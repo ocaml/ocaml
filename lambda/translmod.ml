@@ -1010,8 +1010,10 @@ let transl_store_structure glob map prims aliases str =
                 (transl_module Tcoerce_none None modl)
                 loc mb_attributes
             in
-            Lsequence(Lprim(Pignore, [lam], mb_name.loc),
-                      transl_store rootpath subst cont rem)
+            Lsequence(
+              Lprim(Pignore,[Lambda.subst no_env_update subst lam],mb_name.loc),
+              transl_store rootpath subst cont rem
+            )
         | Tstr_module{mb_id=Some id;mb_loc=loc;mb_presence=Mp_present;
                       mb_expr={mod_desc = Tmod_structure str} as mexp;
                       mb_attributes} ->
