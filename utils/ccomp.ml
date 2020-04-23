@@ -27,7 +27,7 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
-(* Build @responsefile to work around Windows limitations on
+(* Build @responsefile to work around OS limitations on
    command-line length *)
 let build_diversion lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
@@ -40,7 +40,8 @@ let quote_files lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let quoted = List.map Filename.quote lst in
   let s = String.concat " " quoted in
-  if String.length s >= 4096 && Sys.os_type = "Win32"
+  if String.length s >= 65536
+  || (String.length s >= 4096 && Sys.os_type = "Win32")
   then build_diversion quoted
   else s
 
