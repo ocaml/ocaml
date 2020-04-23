@@ -29,6 +29,11 @@ Working version
   (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
   and Leo White)
 
+* #9483: Remove accidental #inclusion of <stdio.h> in caml/misc.h
+  The only release with the inclusion of stdio.h has been 10.0
+  (Christopher Zimmermann, review by Xavier Leroy and David Allsopp)
+
+
 
 ### Runtime system:
 
