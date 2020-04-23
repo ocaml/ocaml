@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-dist: xenial
+dist: bionic
 language: c
 git:
   submodules: false
@@ -25,12 +25,7 @@ matrix:
     addons:
       apt:
         packages:
-        - gcc:i386
-        - cpp:i386
-        - binutils:i386
-        - binutils-dev:i386
-        - libx11-dev:i386
-        - libc6-dev:i386
+        - gcc-multilib
   - env: CI_KIND=build XARCH=x64
     addons:
       apt:
