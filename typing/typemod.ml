@@ -2100,16 +2100,23 @@ and type_open_decl_aux ?used_slot ?toplevel funct_body names env od =
       Env.enter_signature ~scope (extract_sig_open env md.mod_loc md.mod_type)
         env
     in
-    List.iter (Signature_names.check_sig_item ~info:`From_open names loc) sg;
+    let info, visibility =
+      match toplevel with
+      | Some false | None -> Some `From_open, Hidden
+      | Some true -> None, Exported
+    in
+    List.iter (Signature_names.check_sig_item ?info names loc) sg;
     let sg =
       List.map (function
-        | Sig_value(id, vd, _) -> Sig_value(id, vd, Hidden)
-        | Sig_type(id, td, rs, _) -> Sig_type(id, td, rs, Hidden)
-        | Sig_typext(id, ec, et, _) -> Sig_typext(id, ec, et, Hidden)
-        | Sig_module(id, mp, md, rs, _) -> Sig_module(id, mp, md, rs, Hidden)
-        | Sig_modtype(id, mtd, _) -> Sig_modtype(id, mtd, Hidden)
-        | Sig_class(id, cd, rs, _) -> Sig_class(id, cd, rs, Hidden)
-        | Sig_class_type(id, ctd, rs, _) -> Sig_class_type(id, ctd, rs, Hidden)
+        | Sig_value(id, vd, _) -> Sig_value(id, vd, visibility)
+        | Sig_type(id, td, rs, _) -> Sig_type(id, td, rs, visibility)
+        | Sig_typext(id, ec, et, _) -> Sig_typext(id, ec, et, visibility)
+        | Sig_module(id, mp, md, rs, _) ->
+            Sig_module(id, mp, md, rs, visibility)
+        | Sig_modtype(id, mtd, _) -> Sig_modtype(id, mtd, visibility)
+        | Sig_class(id, cd, rs, _) -> Sig_class(id, cd, rs, visibility)
+        | Sig_class_type(id, ctd, rs, _) ->
+            Sig_class_type(id, ctd, rs, visibility)
       ) sg
     in
     let open_descr = {
