@@ -39,10 +39,19 @@ val bits : unit -> int
 
 val int : int -> int
 (** [Random.int bound] returns a random integer between 0 (inclusive)
-    and [bound] (exclusive).  [bound] must be greater than 0 and less
-    than {!Stdlib.max_int}
+     and [bound] (exclusive).  [bound] must be greater than 0 and less
+     than 2{^30}. *)
 
-    @before 4.13.0 [bound] had to be less than 2{^30}. *)
+val int63 : int -> int
+(** [Random.int63 bound] returns a random integer between 0 (inclusive)
+     and [bound] (exclusive). [bound] may be any positive integer.
+
+     If [bound] is less than 2{^30}, [Random.int63 bound] is equal to
+     {!Random.int}[ bound]. If [bound] is greater than 2{^30} (on 64-bit systems
+     or non-standard environments, such as JavaScript), [Random.int63] returns
+     a value, where {!Random.int} raises {!Invalid_argument}.
+
+    @since 4.13.0 *)
 
 val int32 : Int32.t -> Int32.t
 (** [Random.int32 bound] returns a random integer between 0 (inclusive)
@@ -91,6 +100,7 @@ module State : sig
 
   val bits : t -> int
   val int : t -> int -> int
+  val int63 : t -> int -> int
   val int32 : t -> Int32.t -> Int32.t
   val nativeint : t -> Nativeint.t -> Nativeint.t
   val int64 : t -> Int64.t -> Int64.t

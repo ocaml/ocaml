@@ -88,17 +88,31 @@ module State = struct
     let v = r mod n in
     if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
 
+  let int s bound =
+    if bound > 0x3FFFFFFF || bound <= 0
+    then invalid_arg "Random.int"
+    else intaux s bound
+
   let rec int63aux s n =
+    let max_int_32 = (1 lsl 30) + 0x3FFFFFFF in (* 0x7FFFFFFF *)
     let b1 = bits s in
-    let b2 = bits s lsl 30 in
-    let b3 = (bits s land 3) lsl 60 in
-    let r = b1 lor b2 lor b3 in
+    let b2 = bits s in
+    let (b, max_int) =
+      if n <= max_int_32 then
+        (* 32 random bits on both 64-bit OCaml and JavaScript *)
+        ((((b2 land 0x30000000) lsl 2) lor b1) land max_int_32, max_int_32)
+      else
+        let b3 = bits s in
+        (* 63 random bits on 64-bit OCaml; unreachable on JavaScript *)
+        (((((b3 land 0x38000000) lsl 3) lor b2) lsl 30) lor b1, max_int)
+    in
+    let r = b lsr 1 in (* Random non-negative int *)
     let v = r mod n in
     if r - v > max_int - n + 1 then int63aux s n else v
 
-  let int s bound =
+  let int63 s bound =
     if bound <= 0 then
-      invalid_arg "Random.int"
+      invalid_arg "Random.int63"
     else if bound > 0x3FFFFFFF then
       int63aux s bound
     else
@@ -176,6 +190,7 @@ let default = {
 
 let bits () = State.bits default
 let int bound = State.int default bound
+let int63 bound = State.int63 default bound
 let int32 bound = State.int32 default bound
 let nativeint bound = State.nativeint default bound
 let int64 bound = State.int64 default bound
