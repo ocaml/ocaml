@@ -160,6 +160,9 @@ Working version
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
 
+- #8656: Fix a bug in [caml_modify_generational_global_root]
+  (Jacques-Henri Jourdan, review by ???)
+
 ### Standard library:
 
 - #2262: take precision (.<n>) and flags ('+' and ' ') into account
@@ -170,7 +173,14 @@ Working version
   (Damien Doligez, reports by John Whitington and Alain Frisch,
    review by Jeremy Yallop and Gabriel Scherer)
 
+- #8657: Optimization in [Array.make] when initializing with unboxed
+   or young values.
+   (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
+
 ### Other libraries:
+
+- #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
+  (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
 
 - #7903, #2306: Make Thread.delay interruptible by signals again
   (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)

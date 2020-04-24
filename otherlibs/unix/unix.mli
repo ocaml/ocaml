@@ -398,15 +398,11 @@ val lseek : file_descr -> int -> seek_command -> int
     offset (from the beginning of the file). *)
 
 val truncate : string -> int -> unit
-(** Truncates the named file to the given size.
-
-  On Windows: not implemented. *)
+(** Truncates the named file to the given size. *)
 
 val ftruncate : file_descr -> int -> unit
 (** Truncates the file corresponding to the given descriptor
-   to the given size.
-
-  On Windows: not implemented. *)
+   to the given size. *)
 
 
 (** {1 File status} *)

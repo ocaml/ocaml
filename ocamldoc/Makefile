@@ -271,7 +271,7 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLOPT_CMD) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
 
 .mll.ml:
-	$(OCAMLLEX) $<
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 .mly.ml:
 	$(OCAMLYACC) --strict -v $<
@@ -507,10 +507,10 @@ clean:
 depend:
 	$(OCAMLYACC) odoc_text_parser.mly
 	$(OCAMLYACC) odoc_parser.mly
-	$(OCAMLLEX) odoc_text_lexer.mll
-	$(OCAMLLEX) odoc_lexer.mll
-	$(OCAMLLEX) odoc_ocamlhtml.mll
-	$(OCAMLLEX) odoc_see_lexer.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_text_lexer.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_lexer.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_ocamlhtml.mll
+	$(OCAMLLEX) $(OCAMLLEX_FLAGS) odoc_see_lexer.mll
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
 

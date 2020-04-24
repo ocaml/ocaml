@@ -103,7 +103,7 @@ depend: beforedepend
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 lexer.ml: lexer.mll
-	$(CAMLLEX) lexer.mll
+	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 clean::
 	rm -f lexer.ml
 beforedepend:: lexer.ml

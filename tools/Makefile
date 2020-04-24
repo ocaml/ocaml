@@ -262,9 +262,6 @@ cvt_emit: $(CVT_EMIT)
 clean::
 	if test -f cvt_emit; then mv -f cvt_emit cvt_emit.bak; else :; fi
 
-cvt_emit.ml: cvt_emit.mll
-	$(CAMLLEX) cvt_emit.mll
-
 clean::
 	rm -f cvt_emit.ml
 
@@ -298,9 +295,6 @@ DUMPOBJ= \
           opnames.cmo dumpobj.cmo
 
 $(call byte_and_opt,dumpobj,$(DUMPOBJ),)
-
-make_opcodes.ml: make_opcodes.mll
-	$(CAMLLEX) make_opcodes.mll
 
 make_opcodes: make_opcodes.ml
 	$(CAMLC) make_opcodes.ml -o $@
@@ -411,7 +405,8 @@ clean::
 
 # Common stuff
 
-.SUFFIXES:
+%.ml: %.mll
+	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 %.cmo: %.ml
 	$(CAMLC) -c $(COMPFLAGS) - $<
