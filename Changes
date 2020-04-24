@@ -65,7 +65,6 @@ OCaml 4.11
   (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
   and Leo White)
 
-
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
@@ -109,6 +108,10 @@ OCaml 4.11
 
 - #9426: build the Mingw ports with higher levels of GCC optimization
   (Xavier Leroy, review by Sébastien Hinderer)
+  
+* #9483: Remove accidental inclusion of <stdio.h> in <caml/misc.h>
+  The only release with the inclusion of stdio.h has been 4.10.0
+  (Christopher Zimmermann, review by Xavier Leroy and David Allsopp)
 
 - #9353: Reimplement `output_value` and the `Marshal.to_*` functions
   using a hash table to detect sharing, instead of temporary in-place
