@@ -4,7 +4,7 @@ include dynlink
 
 files = "abstract.mli abstract.ml static.ml client.ml main.ml"
 
-set sub = "${test_source_directory}/sub"
+set src_sub = "${test_source_directory}/sub"
 
 libraries = ""
 
@@ -13,9 +13,9 @@ libraries = ""
 *** script
 script = "mkdir sub"
 **** script
-script = "cp ${sub}/abstract.mli ${sub}/abstract.ml sub"
+script = "cp ${src_sub}/abstract.mli ${src_sub}/abstract.ml sub"
 ***** cd
-cwd = "${sub}"
+cwd = "sub"
 ****** ocamlc.byte
 module = "abstract.mli"
 ******* ocamlc.byte
@@ -46,9 +46,9 @@ exit_status = "2"
 **** script
 script = "mkdir sub"
 ***** script
-script = "cp ${sub}/abstract.mli ${sub}/abstract.ml sub"
+script = "cp ${src_sub}/abstract.mli ${src_sub}/abstract.ml sub"
 ****** cd
-cwd = "${sub}"
+cwd = "sub"
 ******* ocamlopt.byte
 module = "abstract.mli"
 ******** ocamlopt.byte
@@ -71,12 +71,12 @@ flags = "-shared"
 module = ""
 all_modules = "client.ml"
 ************* ocamlopt.byte
-module = "main_native.ml"
+module = "main.ml"
 ************** ocamlopt.byte
 program = "${test_build_directory}/main_native"
 libraries = "dynlink"
 module = ""
-all_modules = "abstract.cmx static.cmx main_native.cmx"
+all_modules = "abstract.cmx static.cmx main.cmx"
 *************** run
 exit_status = "2"
 **************** check-program-output
@@ -85,10 +85,16 @@ exit_status = "2"
 (* PR#4229 *)
 
 let () =
+  let suffix =
+    match Sys.backend_type with
+    | Native -> "cmxs"
+    | Bytecode -> "cmo"
+    | Other _ -> assert false
+  in
   try
     (* Dynlink.init (); *)  (* this function has been removed from the API *)
-    Dynlink.loadfile "client.cmo"; (* utilise abstract.cmo *)
-    Dynlink.loadfile "sub/abstract.cmo";
-    Dynlink.loadfile "client.cmo" (* utilise sub/abstract.cmo *)
+    Dynlink.loadfile ("client."^suffix); (* utilise abstract.suffix *)
+    Dynlink.loadfile ("sub/abstract."^suffix);
+    Dynlink.loadfile ("client."^suffix) (* utilise sub/abstract.suffix *)
   with
   | Dynlink.Error (Dynlink.Module_already_loaded "Abstract") -> exit 2

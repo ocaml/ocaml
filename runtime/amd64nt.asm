@@ -150,6 +150,7 @@ caml_alloc1:
         jb      L100
         ret
 L100:
+        add     r15, 16
         mov     rax, [rsp + 0]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
@@ -167,6 +168,7 @@ caml_alloc2:
         jb      L101
         ret
 L101:
+        add     r15, 24
         mov     rax, [rsp + 0]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
@@ -184,6 +186,7 @@ caml_alloc3:
         jb      L102
         ret
 L102:
+        add     r15, 32
         mov     rax, [rsp + 0]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
@@ -201,6 +204,7 @@ caml_allocN:
         jb      L103
         ret
 L103:
+        add     r15, rax
         push    rax                       ; save desired size
         mov     rax, [rsp + 8]
         mov     caml_last_return_address, rax
@@ -209,6 +213,26 @@ L103:
         call    L105
         pop     rax                      ; recover desired size
         jmp     caml_allocN
+
+; Reset the allocation pointer and invoke the GC
+
+        PUBLIC  caml_call_gc1
+        ALIGN   16
+caml_call_gc1:
+        add     r15, 16
+        jmp     caml_call_gc
+
+        PUBLIC  caml_call_gc2
+        ALIGN   16
+caml_call_gc2:
+        add     r15, 24
+        jmp     caml_call_gc
+
+        PUBLIC  caml_call_gc3
+        ALIGN 16
+caml_call_gc3:
+        add     r15, 32
+        jmp     caml_call_gc
 
 ; Call a C function from OCaml
 

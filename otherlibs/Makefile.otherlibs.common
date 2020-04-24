@@ -37,18 +37,18 @@ OPTCOMPFLAGS=
 endif
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
-# Variables to be defined by individual libraries:
-#LIBNAME=
-#CLIBNAME=
-#CMIFILES=
-#CAMLOBJS=
-#COBJS=
-#EXTRACFLAGS=
-#EXTRACAMLFLAGS=
-#LINKOPTS=
-#LDOPTS=
-#HEADERS=
+# Variables that must be defined by individual libraries:
+# LIBNAME
+# CAMLOBJS
 
+# Variables that can be defined by individual libraries,
+# but have sensible default values:
+COBJS ?=
+EXTRACFLAGS ?=
+EXTRACAMLFLAGS ?=
+LINKOPTS ?=
+LDOPTS ?=
+HEADERS ?=
 CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
 CLIBNAME ?= $(LIBNAME)

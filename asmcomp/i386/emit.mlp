@@ -600,11 +600,11 @@ let emit_instr fallthrough i =
         def_label lbl_redo;
         I.mov (sym32 "caml_young_ptr") eax;
         I.sub (int n) eax;
-        I.mov eax (sym32 "caml_young_ptr");
         I.cmp (sym32 "caml_young_limit") eax;
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live false Debuginfo.none in
         I.jb (label lbl_call_gc);
+        I.mov eax (sym32 "caml_young_ptr");
         I.lea (mem32 NONE 4 RAX) (reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;

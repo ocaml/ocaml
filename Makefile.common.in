@@ -24,6 +24,7 @@ INSTALL_PROG ?= $(INSTALL) -m u=rwx,g=rwx,o=rx
 # as some parts of the makefiles change BINDIR, etc.
 # and expect INSTALL_BINDIR, etc. to stay in synch
 # (see `shellquote` in tools/Makefile)
+DESTDIR ?=
 INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR = $(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR = $(DESTDIR)$(STUBLIBDIR)

@@ -21,7 +21,7 @@ commandline = "-depend -as-map lib.ml lib.mli"
 commandline = "-depend -map lib.ml -open Lib ${links}"
 ****** check-ocamlc.byte-output
 compiler_reference = "${test_source_directory}/depend.mk.reference"
-******* libunix
+******* hasunix
 ******** script
 script = "cp ${test_source_directory}/Makefile.build Makefile"
 ********* script
@@ -40,7 +40,7 @@ compiler_output = "${test_build_directory}/depend.mk2"
 commandline = "-depend -map lib.mli -open Lib ${links}"
 **** check-ocamlc.byte-output
 compiler_reference = "${test_source_directory}/depend.mk2.reference"
-***** libunix
+***** hasunix
 ****** script
 script = "rm -f ${links}"
 ******* script

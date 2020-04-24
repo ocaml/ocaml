@@ -409,7 +409,7 @@ opt-core: runtimeopt
 	$(MAKE) libraryopt
 
 .PHONY: opt
-opt:
+opt: checknative
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
@@ -417,7 +417,7 @@ opt:
 
 # Native-code versions of the tools
 .PHONY: opt.opt
-opt.opt:
+opt.opt: checknative
 	$(MAKE) checkstack
 	$(MAKE) runtime
 	$(MAKE) core
@@ -491,7 +491,8 @@ world: coldstart
 
 # Compile also native code compiler and libraries, fast
 .PHONY: world.opt
-world.opt: coldstart
+world.opt: checknative
+	$(MAKE) coldstart
 	$(MAKE) opt.opt
 
 # FlexDLL sources missing error messages
@@ -1156,6 +1157,16 @@ ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
 
 partialclean::
 	$(MAKE) -C debugger clean
+
+# Check that the native-code compiler is supported
+.PHONY: checknative
+checknative:
+ifeq "$(ARCH)" "none"
+checknative:
+	$(error The native-code compiler is not supported on this platform)
+else
+	@
+endif
 
 # Check that the stack limit is reasonable (Unix-only)
 .PHONY: checkstack
