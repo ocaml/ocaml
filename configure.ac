@@ -555,10 +555,10 @@ AS_CASE([$host],
         [AC_MSG_ERROR(m4_normalize([This version of Mingw GCC is too old.
           Please use GCC version 5 or above.]))],
       [gcc-*],
-        [internal_cflags="-Wno-unused $gcc_warnings"
+        [internal_cflags="-Wno-unused $gcc_warnings \
+-fexcess-precision=standard"
         # TODO: see whether the code can be fixed to avoid -Wno-unused
-        common_cflags="-O2 -fno-strict-aliasing -fwrapv \
--fexcess-precision=standard -mms-bitfields"
+        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
         internal_cppflags='-DUNICODE -D_UNICODE'
         internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
         internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
@@ -587,12 +587,12 @@ AS_CASE([$host],
       internal_cflags="$gcc_warnings"],
     [gcc-4-*],
       [common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
--fno-builtin-memcmp -fexcess-precision=standard";
-      internal_cflags="$gcc_warnings"],
+-fno-builtin-memcmp";
+      internal_cflags="$gcc_warnings -fexcess-precision=standard"],
     [gcc-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv \
--fexcess-precision=standard";
-      internal_cflags="$gcc_warnings -fno-common"],
+      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+      internal_cflags="$gcc_warnings -fno-common \
+-fexcess-precision=standard"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
