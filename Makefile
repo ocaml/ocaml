@@ -879,7 +879,7 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/native/dynlink.ml
 # The lexer
 
 parsing/lexer.ml: parsing/lexer.mll
-	$(CAMLLEX) $<
+	$(CAMLLEX) $(OCAMLLEX_FLAGS) $<
 
 partialclean::
 	rm -f parsing/lexer.ml

@@ -298,9 +298,12 @@ CAMLprim value caml_make_vect(value len, value init)
        very many ref table entries */
       if (Is_block(init) && Is_minor(init))
         caml_minor_collection();
-      /* TODO: Spacetime */
+
+      CAMLassert(!(Is_block(init) && Is_minor(init)));
       res = caml_alloc(size, 0);
-      for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
+      /* We now know that [init] is not in the minor heap, so there is
+         no need to call [caml_initialize]. */
+      for (i = 0; i < size; i++) Field(res, i) = init;
     }
   }
   CAMLreturn (res);
