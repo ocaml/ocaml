@@ -228,10 +228,10 @@ Lines 23-32, characters 2-5:
 31 |     in
 32 |     t
 Error: Cycle detected in type:
-          (< delta : < beta : 'a >; gamma : < alpha : 'b alpha_of_gamma > >
+          (< delta : < beta : 'b beta_of_delta >; gamma : < alpha : 'a > >
            as 'b)
-          beta_of_delta as 'a =>
-         'b delta beta => 'a => 'b delta beta => 'a =>
+          alpha_of_gamma as 'a =>
+         'b gamma alpha => 'a => 'b gamma alpha => 'a =>
 |}, Principal{|
 module M :
   sig

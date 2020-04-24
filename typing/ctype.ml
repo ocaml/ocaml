@@ -1679,9 +1679,9 @@ let rec force_expand_rec env visited ty =
     Hashtbl.add visited ty.id ();
     let ty =
       try match ty.desc with
-      | Tconstr (_, _tyl, _) ->
+      | Tconstr (_, tyl, _) ->
           let ty = try_expand_head try_expand_safe env ty in
-          (* List.iter (force_expand_rec env visited) tyl; *)
+          List.iter (force_expand_rec env visited) tyl;
           ty
       | _ -> ty
       with Cannot_expand -> ty
