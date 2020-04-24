@@ -1204,6 +1204,7 @@ and transl_signature env sg =
             let (tdesc, newenv) =
               Typedecl.transl_value_decl env item.psig_loc sdesc
             in
+            Ctype.force_expand_all env tdesc.val_val.val_type;
             Signature_names.check_value names tdesc.val_loc tdesc.val_id;
             mksig (Tsig_value tdesc) env loc,
             [Sig_value(tdesc.val_id, tdesc.val_val, Exported)],

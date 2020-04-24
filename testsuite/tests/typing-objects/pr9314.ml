@@ -8,7 +8,9 @@ module type T = sig
   val create : < gamma : 'a gamma > as 'a
 end
 [%%expect{|
-Line 1:
+Line 3, characters 2-41:
+3 |   val create : < gamma : 'a gamma > as 'a
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a => 'a =>
 |}]
 
@@ -79,8 +81,8 @@ Error: Cycle detected in type: 'a list t as 'a => 'a => 'a =>
 module M :
   sig
     type 'a t = 'b constraint 'a = 'b list
-    val f1 : ('a list t list as 'a) -> ('b list t list as 'b) list -> bool
-    val f2 : ('a list t list as 'a) -> ('b list t list as 'b) list -> bool
+    val f1 : ('a list t list as 'a) -> ('b list t list as 'b) -> bool
+    val f2 : ('a list t list as 'a) -> ('b list t list as 'b) -> bool
   end
 |}]
 
@@ -92,11 +94,9 @@ let f2 (x : <a : <a : 'a> as 'b > as 'a) (y : 'b) = (y = x)
 val f1 : (< a : 'a > as 'a) -> 'a -> bool = <fun>
 val f2 : (< a : 'a > as 'a) -> 'a -> bool = <fun>
 |}, Principal{|
-val f1 :
-  (< a : < a : 'a > > as 'a) -> < a : < a : < a : 'b > > as 'b > -> bool =
+val f1 : (< a : < a : 'a > > as 'a) -> (< a : < a : 'b > > as 'b) -> bool =
   <fun>
-val f2 :
-  (< a : < a : 'a > > as 'a) -> < a : < a : < a : 'b > > as 'b > -> bool =
+val f2 : (< a : < a : 'a > > as 'a) -> (< a : < a : 'b > > as 'b) -> bool =
   <fun>
 |}]
 
@@ -116,14 +116,18 @@ module type T = sig
     as 'a
 end
 [%%expect{|
-Line 1:
+Lines 9-12, characters 2-9:
+ 9 | ..val create :
+10 |     < delta : < beta : 'a alpha_of_gamma >;
+11 |       gamma : < alpha : 'a beta_of_delta > >
+12 |     as 'a
 Error: Cycle detected in type:
-          (< delta : < beta : 'a >;
-             gamma : < alpha : 'b beta_of_delta as 'c > >
+          (< delta : < beta : 'b alpha_of_gamma as 'c >;
+             gamma : < alpha : 'a > >
            as 'b)
-          alpha_of_gamma as 'a =>
-         'b gamma alpha => 'c => 'b delta beta => 'a => 'b gamma alpha =>
-         'c => 'b delta beta => 'a =>
+          beta_of_delta as 'a =>
+         'b delta beta => 'c => 'b gamma alpha => 'a => 'b delta beta =>
+         'c => 'b gamma alpha => 'a =>
 |}]
 
 module type T = sig
@@ -134,7 +138,9 @@ module type T = sig
   val create : < gamma : < alpha : 'a alpha_of_gamma > > as 'a
 end
 [%%expect{|
-Line 1:
+Line 6, characters 2-62:
+6 |   val create : < gamma : < alpha : 'a alpha_of_gamma > > as 'a
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type:
           (< gamma : < alpha : 'a > > as 'b) alpha_of_gamma as 'a =>
          'b gamma alpha => 'a => 'b gamma alpha => 'a =>
@@ -147,7 +153,9 @@ module type T = sig
   val create : < gamma : < alpha : 'a alpha > > as 'a
 end
 [%%expect{|
-Line 1:
+Line 5, characters 2-53:
+5 |   val create : < gamma : < alpha : 'a alpha > > as 'a
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type:
           < gamma : < alpha : 'a > > alpha as 'a => 'a => 'a =>
 |}]
@@ -157,7 +165,9 @@ module type T = sig
   val create : < gamma : 'a gamma > as 'a
 end
 [%%expect{|
-Line 1:
+Line 3, characters 2-41:
+3 |   val create : < gamma : 'a gamma > as 'a
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type: < gamma : 'a > gamma as 'a => 'a => 'a =>
 |}]
 
@@ -206,12 +216,60 @@ module M = struct
     t
 end
 [%%expect{|
-Line 15, characters 22-66:
-15 |         { alphabeta : ('just_alpha, 'contains_beta beta) alphabeta }
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Constraints are not satisfied in this type.
-       Type
-       ('just_alpha, < beta : 'c > beta) alphabeta
-       should be an instance of
-       ('a, 'b) alphabeta
+Lines 23-32, characters 2-5:
+23 | ..let create
+24 |       (input : ('a delta, 'a alpha_of_gamma) Alphabeta.t)
+25 |       : 'a t
+26 |       =
+27 |     let t =
+28 |       { other = 0
+29 |           ; alphabeta = input.alphabeta
+30 |       }
+31 |     in
+32 |     t
+Error: Cycle detected in type:
+          (< delta : < beta : 'a >; gamma : < alpha : 'b alpha_of_gamma > >
+           as 'b)
+          beta_of_delta as 'a =>
+         'b delta beta => 'a => 'b delta beta => 'a =>
+|}, Principal{|
+module M :
+  sig
+    type 'a alpha = 'b constraint 'a = < alpha : 'b >
+    type 'a beta = 'b constraint 'a = < beta : 'b >
+    type 'a gamma = 'b constraint 'a = < delta : 'c; gamma : 'b >
+    type 'a delta = 'b constraint 'a = < delta : 'b; gamma : 'c >
+    type 'a alpha_of_gamma = 'a gamma alpha
+      constraint 'a = < delta : 'b; gamma : < alpha : 'c > >
+    type 'a beta_of_delta = 'a delta beta
+      constraint 'a = < delta : < beta : 'b >; gamma : 'c >
+    type ('a, 'b) alphabeta
+    module Alphabeta :
+      sig
+        type ('a, 'just_alpha) t = {
+          alphabeta : ('just_alpha, 'a beta) alphabeta;
+        } constraint 'a = < beta : 'b >
+      end
+    type 'a t = {
+      other : int;
+      alphabeta : ('a alpha_of_gamma, 'a beta_of_delta) alphabeta;
+    } constraint 'a = < delta : < beta : 'b >; gamma : < alpha : 'c > >
+    val create :
+      (< delta : < beta : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                          beta_of_delta >;
+         gamma : < alpha : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                           alpha_of_gamma > >
+       delta,
+       < delta : < beta : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                          beta_of_delta >;
+         gamma : < alpha : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                           alpha_of_gamma > >
+       alpha_of_gamma)
+      Alphabeta.t ->
+      < delta : < beta : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                         beta_of_delta >;
+        gamma : < alpha : < delta : < beta : 'a >; gamma : < alpha : 'b > >
+                          alpha_of_gamma > >
+      t
+  end
 |}]
