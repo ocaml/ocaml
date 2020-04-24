@@ -51,12 +51,16 @@ let rec init_mod loc shape =
 let rec update_mod shape o n =
   match shape with
   | Function ->
-      (* The optimisation below is invalid on bytecode since
-         the RESTART instruction checks the length of closures.
-         See PR#4008 *)
-      if Sys.backend_type = Sys.Native
-      && Obj.tag n = Obj.closure_tag
-      && Obj.size n <= Obj.size o
+      (* In bytecode, the RESTART instruction checks the size of closures.
+         Hence, the optimized case [overwrite o n] is valid only if [o] and
+         [n] have the same size.  (See PR#4008.)
+         In native code, the size of closures does not matter, so overwriting
+         is possible so long as the size of [n] is no greater than that of [o].
+      *)
+      if Obj.tag n = Obj.closure_tag
+      && (Obj.size n = Obj.size o
+          || (Sys.backend_type = Sys.Native
+              && Obj.size n <= Obj.size o))
       then begin overwrite o n end
       else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->

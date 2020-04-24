@@ -124,6 +124,11 @@ OCaml 4.11
 - #9282: Make Cconst_symbol have typ_int to fix no-naked-pointers mode.
   (Stephen Dolan, review by Mark Shinwell, Xavier Leroy and Vincent Laviron)
 
+- #9497: Harmonise behaviour between bytecode and native code for
+  recursive module initialisation in one particular case (fixes #9494).
+  (Mark Shinwell, David Allsopp, Vincent Laviron, Xavier Leroy,
+  Geoff Reedy, original bug report by Arlen Cox)
+
 ### Code generation and optimizations:
 
 - #8637, #8805, #9247, #9296: Record debug info for each allocation.
