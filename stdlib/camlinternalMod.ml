@@ -54,9 +54,10 @@ let rec update_mod shape o n =
       (* The optimisation below is invalid on bytecode since
          the RESTART instruction checks the length of closures.
          See PR#4008 *)
-      if Sys.backend_type = Sys.Native
-      && Obj.tag n = Obj.closure_tag
-      && Obj.size n <= Obj.size o
+      if Obj.tag n = Obj.closure_tag
+      && (Obj.size n = Obj.size o
+          || (Sys.backend_type = Sys.Native
+              && Obj.size n <= Obj.size o))
       then begin overwrite o n end
       else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
