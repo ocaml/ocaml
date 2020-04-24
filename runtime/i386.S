@@ -113,9 +113,9 @@ FUNCTION(caml_alloc1)
         CFI_STARTPROC
         movl    G(caml_young_ptr), %eax
         subl    $8, %eax
-        movl    %eax, G(caml_young_ptr)
         cmpl    G(caml_young_limit), %eax
         jb      LBL(100)
+        movl    %eax, G(caml_young_ptr)
         ret
 LBL(100):
         movl    0(%esp), %eax
@@ -132,9 +132,9 @@ FUNCTION(caml_alloc2)
         CFI_STARTPROC
         movl    G(caml_young_ptr), %eax
         subl    $12, %eax
-        movl    %eax, G(caml_young_ptr)
         cmpl    G(caml_young_limit), %eax
         jb      LBL(101)
+        movl    %eax, G(caml_young_ptr)
         ret
 LBL(101):
         movl    0(%esp), %eax
@@ -151,9 +151,9 @@ FUNCTION(caml_alloc3)
         CFI_STARTPROC
         movl    G(caml_young_ptr), %eax
         subl    $16, %eax
-        movl    %eax, G(caml_young_ptr)
         cmpl    G(caml_young_limit), %eax
         jb      LBL(102)
+        movl    %eax, G(caml_young_ptr)
         ret
 LBL(102):
         movl    0(%esp), %eax
@@ -178,7 +178,6 @@ LBL(103):
         subl    G(caml_young_ptr), %eax /* eax = - size */
         negl    %eax                    /* eax = size */
         pushl   %eax; CFI_ADJUST(4)     /* save desired size */
-        subl    %eax, G(caml_young_ptr) /* must update young_ptr */
         movl    4(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax

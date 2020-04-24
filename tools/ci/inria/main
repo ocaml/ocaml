@@ -121,7 +121,7 @@ esac
 build=''
 host=''
 conffile=Makefile.config
-make=make
+make="make --warn-undefined-variables"
 instdir="$HOME/ocaml-tmp-install"
 confoptions="${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
@@ -131,7 +131,9 @@ dorebase=false
 jobs=''
 
 case "${OCAML_ARCH}" in
-  bsd) make=gmake ;;
+  bsd)
+    make="gmake --warn-undefined-variables"
+  ;;
   macos) ;;
   linux)
     check_make_alldepend=true

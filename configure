@@ -735,7 +735,8 @@ mklib
 RANLIBCMD
 RANLIB
 AR
-hashbangscripts
+shebangscripts
+long_shebang
 iflexdir
 ocamlopt_cppflags
 ocamlopt_cflags
@@ -2774,6 +2775,7 @@ VERSION=4.10.0+multicore+dev0
 
 
 
+
  # TODO: rename this variable
 
 
@@ -2943,7 +2945,6 @@ case $host in #(
     S=asm
     SO=dll
     outputexe=-Fe
-    mkexedebugflag=''
     syslib='$(1).lib' ;; #(
   *) :
     ccomptype=cc
@@ -12271,16 +12272,29 @@ $as_echo "$ac_cv_sys_interpreter" >&6; }
 interpval=$ac_cv_sys_interpreter
 
 
+long_shebang=false
 if test "x$interpval" = "xyes"; then :
   case $host in #(
   *-cygwin|*-*-mingw32|*-pc-windows) :
-    hashbangscripts=false ;; #(
+    shebangscripts=false ;; #(
   *) :
-    hashbangscripts=true
+    shebangscripts=true
+       prev_exec_prefix="$exec_prefix"
+       if test "x$exec_prefix" = "xNONE"; then :
+  exec_prefix="$prefix"
+fi
+       eval "expanded_bindir=\"$bindir\""
+       exec_prefix="$prev_exec_prefix"
+       # Assume maximum shebang is 128 chars; less #!, /ocamlrun, an optional
+       # 1 char suffix and the \0 leaving 115 characters
+       if test "${#expanded_bindir}" -gt 115; then :
+  long_shebang=true
+fi
+
      ;;
 esac
 else
-  hashbangscripts=false
+  shebangscripts=false
 
 fi
 
@@ -12541,7 +12555,7 @@ esac
   flexdir='$(ROOTDIR)/flexdll'
 fi
       iflexdir="-I\"$flexdir\""
-      mkexedebugflag="-link -g"
+      mkexedebugflag=''
 fi ;; #(
   *,x86_64-*-linux*) :
     $as_echo "#define HAS_ARCH_CODE32 1" >>confdefs.h

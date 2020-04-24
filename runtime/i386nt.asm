@@ -74,9 +74,9 @@ L105:   push    ebp
 _caml_alloc1:
         mov     eax, _caml_young_ptr
         sub     eax, 8
-        mov     _caml_young_ptr, eax
         cmp     eax, _caml_young_limit
         jb      L100
+        mov     _caml_young_ptr, eax
         ret
 L100:   mov     eax, [esp]
         mov     _caml_last_return_address, eax
@@ -89,9 +89,9 @@ L100:   mov     eax, [esp]
 _caml_alloc2:
         mov     eax, _caml_young_ptr
         sub     eax, 12
-        mov     _caml_young_ptr, eax
         cmp     eax, _caml_young_limit
         jb      L101
+        mov     _caml_young_ptr, eax
         ret
 L101:   mov     eax, [esp]
         mov     _caml_last_return_address, eax
@@ -104,9 +104,9 @@ L101:   mov     eax, [esp]
 _caml_alloc3:
         mov     eax, _caml_young_ptr
         sub     eax, 16
-        mov     _caml_young_ptr, eax
         cmp     eax, _caml_young_limit
         jb      L102
+        mov     _caml_young_ptr, eax
         ret
 L102:   mov     eax, [esp]
         mov     _caml_last_return_address, eax
@@ -126,7 +126,6 @@ _caml_allocN:
 L103:   sub     eax, _caml_young_ptr         ; eax = - size
         neg     eax                     ; eax = size
         push    eax                     ; save desired size
-        sub     _caml_young_ptr, eax         ; must update young_ptr
         mov     eax, [esp+4]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+8]
