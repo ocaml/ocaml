@@ -13567,6 +13567,8 @@ if test x"$enable_shared" != "xno"; then :
     natdynlink=true ;; #(
   aarch64-*-freebsd*) :
     natdynlink=true ;; #(
+  riscv*-*-linux*) :
+    natdynlink=true ;; #(
   *) :
      ;;
 esac
@@ -13707,7 +13709,9 @@ fi; system=elf ;; #(
   aarch64-*-freebsd*) :
     arch=arm64; system=freebsd ;; #(
   x86_64-*-cygwin*) :
-    arch=amd64; system=cygwin
+    arch=amd64; system=cygwin ;; #(
+  riscv64-*-linux*) :
+    arch=riscv; model=riscv64; system=linux
  ;; #(
   *) :
      ;;
@@ -13941,7 +13945,7 @@ esac ;; #(
   *,dragonfly) :
     default_as="${toolpref}as"
     default_aspp="${toolpref}cc -c" ;; #(
-  amd64,*|arm,*|arm64,*|i386,*) :
+  amd64,*|arm,*|arm64,*|i386,*|riscv,*) :
     case $ocaml_cv_cc_vendor in #(
   clang-*) :
     default_as="${toolpref}clang -c -Wno-trigraphs"

@@ -66,6 +66,7 @@ compiler currently runs on the following platforms:
 | ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
 | Power 64 bits  | Linux                           |
 | Power 32 bits  |                                 |  Linux
+| RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
 |====
 
