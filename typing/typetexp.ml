@@ -651,7 +651,7 @@ let globalize_used_variables env fixed =
 
 let transl_type env mode styp =
   try transl_type env mode styp with
-    Ctype.Cyclic_type (_loc, env, tyl) ->
+    Ctype.Cyclic_type (loc, env, tyl) when loc = Location.none ->
       raise (Ctype.Cyclic_type (styp.ptyp_loc, env, tyl))
 
 let transl_simple_type env fixed styp =
@@ -822,6 +822,9 @@ let () =
       | Error_forward err ->
         Some err
       | Ctype.Cyclic_type (loc, env, tyl) ->
+        let loc =
+          if loc = Location.none then Location.in_file !Location.input_name
+          else loc in
         Some (Location.error_of_printer ~loc (report_cycle env) tyl)
       | _ ->
         None

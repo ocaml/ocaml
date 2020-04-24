@@ -17,7 +17,9 @@ module M = struct
   let o : < gamma : 'a gamma > as 'a = object method gamma = 1 end
 end
 [%%expect{|
-Line 1:
+Line 3, characters 2-66:
+3 |   let o : < gamma : 'a gamma > as 'a = object method gamma = 1 end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type:
           (< gamma : 'a gamma as 'b > as 'a) gamma => 'b => 'b => 'b =>
 |}]
@@ -29,7 +31,9 @@ module M = struct
   let f2 (x : 'a t list) (y : 'a) = (y = x)
 end
 [%%expect{|
-Line 1:
+Line 3, characters 2-43:
+3 |   let f1 (x : 'a t list) (y : 'a) = (x = y)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type:
           (('a t as 'b) list as 'a) t => 'b => 'b => 'b =>
 |}]
@@ -55,7 +59,9 @@ module M = struct
   let f2 (x : 'a t u) (y : 'a) = (y = x)
 end
 [%%expect{|
-Line 1:
+Line 4, characters 2-40:
+4 |   let f1 (x : 'a t u) (y : 'a) = (x = y)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type: 'a u t => 'a u t => 'a u t =>
 |}]
 
@@ -65,7 +71,9 @@ module M = struct
   let f2 (x : ('c list as 'a) t list as 'c) (y : 'a) = (y = x)
 end
 [%%expect{|
-Line 1:
+Line 3, characters 2-62:
+3 |   let f1 (x : ('c list as 'a) t list as 'c) (y : 'a) = (x = y)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type: 'a list t as 'a => 'a => 'a =>
 |}, Principal{|
 module M :
@@ -157,7 +165,9 @@ type 'a gamma = 'b constraint 'a = < gamma : 'b >
 let o : < gamma : 'a gamma > as 'a = object method gamma = 1 end
 [%%expect{|
 type 'a gamma = 'b constraint 'a = < gamma : 'b >
-Line 1:
+Line 2, characters 0-64:
+2 | let o : < gamma : 'a gamma > as 'a = object method gamma = 1 end
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cycle detected in type:
           (< gamma : 'a gamma as 'b > as 'a) gamma => 'b => 'b => 'b =>
 |}]

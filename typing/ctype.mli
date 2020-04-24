@@ -241,6 +241,9 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
 
+val force_expand_all: Env.t -> type_expr -> unit
+val force_expand_iterators: Env.t -> Btype.type_iterators
+
 val full_expand: Env.t -> type_expr -> type_expr
 val extract_concrete_typedecl:
         Env.t -> type_expr -> Path.t * Path.t * type_declaration

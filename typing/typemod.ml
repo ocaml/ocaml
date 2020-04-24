@@ -1197,10 +1197,7 @@ and transl_modtype_aux env smty =
 
 and transl_signature env sg =
   let names = Signature_names.create () in
-  let rec transl_sig env sg =
-    match sg with
-      [] -> [], [], env
-    | item :: srem ->
+  let transl_sig_item env item =
         let loc = item.psig_loc in
         match item.psig_desc with
         | Psig_value sdesc ->
@@ -1208,10 +1205,9 @@ and transl_signature env sg =
               Typedecl.transl_value_decl env item.psig_loc sdesc
             in
             Signature_names.check_value names tdesc.val_loc tdesc.val_id;
-            let (trem,rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_value tdesc) env loc :: trem,
-            Sig_value(tdesc.val_id, tdesc.val_val, Exported) :: rem,
-              final_env
+            mksig (Tsig_value tdesc) env loc,
+            [Sig_value(tdesc.val_id, tdesc.val_val, Exported)],
+            newenv
         | Psig_type (rec_flag, sdecls) ->
             let (decls, newenv) =
               Typedecl.transl_type_decl env rec_flag sdecls
@@ -1219,15 +1215,12 @@ and transl_signature env sg =
             List.iter (fun td ->
               Signature_names.check_type names td.typ_loc td.typ_id
             ) decls;
-            let (trem, rem, final_env) = transl_sig newenv srem in
             let sg =
               map_rec_type_with_row_types ~rec_flag
                 (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs, Exported))
-                decls rem
+                decls []
             in
-            mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
-            sg,
-            final_env
+            mksig (Tsig_type (rec_flag, decls)) env loc, sg, newenv
         | Psig_typesubst sdecls ->
             let (decls, newenv) =
               Typedecl.transl_type_decl env Nonrecursive sdecls
@@ -1251,12 +1244,7 @@ and transl_signature env sg =
               in
               Signature_names.check_type ?info names td.typ_loc td.typ_id
             ) decls;
-            let (trem, rem, final_env) = transl_sig newenv srem in
-            let sg = rem
-            in
-            mksig (Tsig_typesubst decls) env loc :: trem,
-            sg,
-            final_env
+            mksig (Tsig_typesubst decls) env loc, [], newenv
         | Psig_typext styext ->
             let (tyext, newenv) =
               Typedecl.transl_type_extension false env item.psig_loc styext
@@ -1265,24 +1253,22 @@ and transl_signature env sg =
             List.iter (fun ext ->
               Signature_names.check_typext names ext.ext_loc ext.ext_id
             ) constructors;
-            let (trem, rem, final_env) = transl_sig newenv srem in
-              mksig (Tsig_typext tyext) env loc :: trem,
+              mksig (Tsig_typext tyext) env loc,
               map_ext (fun es ext ->
                 Sig_typext(ext.ext_id, ext.ext_type, es, Exported)
-              ) constructors rem,
-              final_env
+              ) constructors [],
+              newenv
         | Psig_exception sext ->
             let (ext, newenv) = Typedecl.transl_type_exception env sext in
             let constructor = ext.tyexn_constructor in
             Signature_names.check_typext names constructor.ext_loc
               constructor.ext_id;
-            let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_exception ext) env loc :: trem,
-            Sig_typext(constructor.ext_id,
-                       constructor.ext_type,
-                       Text_exception,
-                       Exported) :: rem,
-            final_env
+            mksig (Tsig_exception ext) env loc,
+            [Sig_typext(constructor.ext_id,
+                        constructor.ext_type,
+                        Text_exception,
+                        Exported)],
+            newenv
         | Psig_module pmd ->
             let scope = Ctype.create_scope () in
             let tmty =
@@ -1311,16 +1297,15 @@ and transl_signature env sg =
                 Signature_names.check_module names pmd.pmd_name.loc id;
                 Some id, newenv
             in
-            let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name;
                                 md_presence=pres; md_type=tmty;
                                 md_loc=pmd.pmd_loc;
                                 md_attributes=pmd.pmd_attributes})
-              env loc :: trem,
+              env loc,
             (match id with
-             | None -> rem
-             | Some id -> Sig_module(id, pres, md, Trec_not, Exported) :: rem),
-            final_env
+             | None -> []
+             | Some id -> [Sig_module(id, pres, md, Trec_not, Exported)]),
+            newenv
         | Psig_modsubst pms ->
             let scope = Ctype.create_scope () in
             let path, md =
@@ -1350,14 +1335,13 @@ and transl_signature env sg =
               `Substituted_away (Subst.add_module id path Subst.identity)
             in
             Signature_names.check_module ~info names pms.pms_name.loc id;
-            let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modsubst {ms_id=id; ms_name=pms.pms_name;
                                   ms_manifest=path; ms_txt=pms.pms_manifest;
                                   ms_loc=pms.pms_loc;
                                   ms_attributes=pms.pms_attributes})
-              env loc :: trem,
-            rem,
-            final_env
+              env loc,
+            [],
+            newenv
         | Psig_recmodule sdecls ->
             let (tdecls, newenv) =
               transl_recmodule_modtypes env sdecls in
@@ -1371,8 +1355,7 @@ and transl_signature env sg =
             List.iter (fun (id, md, _) ->
               Signature_names.check_module names md.md_loc id
             ) decls;
-            let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_recmodule (List.map fst tdecls)) env loc :: trem,
+            mksig (Tsig_recmodule (List.map fst tdecls)) env loc,
             map_rec (fun rs (id, md, uid) ->
                 let d = {Types.md_type = md.md_type.mty_type;
                          md_attributes = md.md_attributes;
@@ -1380,19 +1363,14 @@ and transl_signature env sg =
                          md_uid = uid;
                         } in
                 Sig_module(id, Mp_present, d, rs, Exported))
-              decls rem,
-            final_env
+              decls [],
+            newenv
         | Psig_modtype pmtd ->
             let newenv, mtd, sg = transl_modtype_decl names env pmtd in
-            let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_modtype mtd) env loc :: trem,
-            sg :: rem,
-            final_env
+            mksig (Tsig_modtype mtd) env loc, [sg], newenv
         | Psig_open sod ->
             let (od, newenv) = type_open_descr env sod in
-            let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open od) env loc :: trem,
-            rem, final_env
+            mksig (Tsig_open od) env loc, [], newenv
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
             let tmty =
@@ -1411,10 +1389,7 @@ and transl_signature env sg =
                 incl_loc = sincl.pincl_loc;
               }
             in
-            let (trem, rem, final_env) = transl_sig newenv srem  in
-            mksig (Tsig_include incl) env loc :: trem,
-            sg @ rem,
-            final_env
+            mksig (Tsig_include incl) env loc, sg, newenv
         | Psig_class cl ->
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             List.iter (fun cls ->
@@ -1425,7 +1400,6 @@ and transl_signature env sg =
               Signature_names.check_class_type names loc cls.cls_ty_id;
               Signature_names.check_type names loc cls.cls_typesharp_id;
             ) classes;
-            let (trem, rem, final_env) = transl_sig newenv srem in
             let sg =
               map_rec (fun rs cls ->
                 let open Typeclass in
@@ -1433,16 +1407,15 @@ and transl_signature env sg =
                  Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs, Exported);
                  Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs, Exported);
                  Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs, Exported)]
-              ) classes [rem]
+              ) classes []
               |> List.flatten
             in
             let typedtree =
               mksig (Tsig_class
                        (List.map (fun decr ->
                           decr.Typeclass.cls_info) classes)) env loc
-              :: trem
             in
-            typedtree, sg, final_env
+            typedtree, sg, newenv
         | Psig_class_type cl ->
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             List.iter (fun decl ->
@@ -1452,7 +1425,6 @@ and transl_signature env sg =
               Signature_names.check_type names loc decl.clsty_obj_id;
               Signature_names.check_type names loc decl.clsty_typesharp_id;
             ) classes;
-            let (trem,rem, final_env) = transl_sig newenv srem in
             let sg =
               map_rec (fun rs decl ->
                 let open Typeclass in
@@ -1462,7 +1434,7 @@ and transl_signature env sg =
                  Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs,
                           Exported)
                 ]
-              ) classes [rem]
+              ) classes []
               |> List.flatten
             in
             let typedtree =
@@ -1470,15 +1442,25 @@ and transl_signature env sg =
                 (Tsig_class_type
                    (List.map (fun decl -> decl.Typeclass.clsty_info) classes))
                 env loc
-              :: trem
             in
-            typedtree, sg, final_env
+            typedtree, sg, newenv
         | Psig_attribute x ->
             Builtin_attributes.warning_attribute x;
-            let (trem,rem, final_env) = transl_sig env srem in
-            mksig (Tsig_attribute x) env loc :: trem, rem, final_env
+            mksig (Tsig_attribute x) env loc, [], env
         | Psig_extension (ext, _attrs) ->
             raise (Error_forward (Builtin_attributes.error_of_extension ext))
+  in
+  let rec transl_sig env sg =
+    match sg with
+      [] -> [], [], env
+    | item :: srem ->
+        let (item, sg, newenv) =
+          try transl_sig_item env item with
+            Ctype.Cyclic_type (loc0, env, tyl) when loc0 = Location.none ->
+              raise (Ctype.Cyclic_type (item.psig_loc, env, tyl))
+        in
+        let (trem, rem, final_env) = transl_sig newenv srem in
+        (item :: trem, sg @ rem, final_env)
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
   Builtin_attributes.warning_scope []
@@ -2162,8 +2144,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),
-        List.map (fun (id, { Asttypes.loc; _ }, _typ)->
+        List.map (fun (id, { Asttypes.loc; _ }, typ)->
           Signature_names.check_value names loc id;
+          Ctype.force_expand_all env typ;
           Sig_value(id, Env.find_value (Pident id) newenv, Exported)
         ) (let_bound_idents_full defs),
         newenv
@@ -2431,7 +2414,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | [] -> ([], [], env)
     | pstr :: srem ->
         let previous_saved_types = Cmt_format.get_saved_types () in
-        let desc, sg, new_env = type_str_item env srem pstr in
+        let desc, sg, new_env =
+          try type_str_item env srem pstr with
+            Ctype.Cyclic_type (loc0, env, tyl) when loc0 = Location.none ->
+              raise (Ctype.Cyclic_type (pstr.pstr_loc, env, tyl))
+        in
         let str = { str_desc = desc; str_loc = pstr.pstr_loc; str_env = env } in
         Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
                                     :: previous_saved_types);

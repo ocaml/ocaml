@@ -1632,19 +1632,29 @@ let try_expand_once env ty =
   | _ -> raise Cannot_expand
 
 (* This one only raises Cannot_expand *)
+(* old version:
 let try_expand_safe env ty =
   let snap = Btype.snapshot () in
   try try_expand_once env ty
   with Unify _ ->
-    Btype.backtrack snap; raise Cannot_expand
+    Btype.backtrack snap; raise Cannot_expand *)
+
+let try_expand_safe env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr _ ->
+      let snap = Btype.snapshot () in
+      begin try repr (expand_abbrev env ty) with
+        Unify _ -> Btype.backtrack snap; raise Cannot_expand
+      end
+  | _ -> raise Cannot_expand
 
 (* Fully expand the head of a type. *)
 let rec try_expand_rec try_once env visited ty =
   let ty' = try_once env ty in
   if List.memq ty' visited  (* check for 3rd visit *)
   && List.length (List.filter ((==) ty') visited) >= 2 then
-    raise (Cyclic_type (Location.in_file !Location.input_name,
-                        env, List.rev (ty' :: visited)));
+    raise (Cyclic_type (Location.none, env, List.rev (ty' :: visited)));
   try try_expand_rec try_once env (ty' :: visited) ty'
   with Cannot_expand -> ty'
 
@@ -1661,6 +1671,32 @@ let expand_head env ty =
 
 let _ = forward_try_expand_once := try_expand_safe
 
+(* Force expansion, without changing the representative *)
+let rec force_expand_rec env visited ty =
+  let ty = repr ty in
+  try Hashtbl.find visited ty.id
+  with Not_found ->
+    Hashtbl.add visited ty.id ();
+    let ty =
+      try match ty.desc with
+      | Tconstr (_, _tyl, _) ->
+          let ty = try_expand_head try_expand_safe env ty in
+          (* List.iter (force_expand_rec env visited) tyl; *)
+          ty
+      | _ -> ty
+      with Cannot_expand -> ty
+    in
+    iter_type_expr (force_expand_rec env visited) ty
+
+let force_expand_all env ty =
+  force_expand_rec env (Hashtbl.create 7) ty
+
+let force_expand_iterators env =
+  { Btype.type_iterators with
+    it_type_expr = (fun _ -> force_expand_all env);
+    it_module_type = (fun _ _ -> ());
+    it_module_declaration = (fun _ _ -> ());
+    it_modtype_declaration = (fun _ _ -> ()); }
 
 (* Expand until we find a non-abstract type declaration,
    use try_expand_safe to avoid raising "Unify _" when
