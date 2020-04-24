@@ -47,6 +47,23 @@ type class_type_info = {
   clsty_info : Typedtree.class_type_declaration;
 }
 
+type 'a full_class = {
+  id : Ident.t;
+  id_loc : tag loc;
+  clty: class_declaration;
+  ty_id: Ident.t;
+  cltydef: class_type_declaration;
+  obj_id: Ident.t;
+  obj_abbr: type_declaration;
+  cl_id: Ident.t;
+  cl_abbr: type_declaration;
+  arity: int;
+  pub_meths: string list;
+  coe: Warnings.loc list;
+  expr: 'a;
+  req: 'a Typedtree.class_infos;
+}
+
 type error =
     Unconsistent_constraint of Ctype.Unification_trace.t
   | Field_type_mismatch of string * string * Ctype.Unification_trace.t
@@ -1620,23 +1637,24 @@ let final_decl env define_class
       in
       raise(Error(cl.pci_loc, env, Unbound_type_var(printer, reason)))
   end;
-
-  (id, cl.pci_name, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, coe, expr,
-   { ci_loc = cl.pci_loc;
-     ci_virt = cl.pci_virt;
-     ci_params = ci_params;
-(* TODO : check that we have the correct use of identifiers *)
-     ci_id_name = cl.pci_name;
-     ci_id_class = id;
-     ci_id_class_type = ty_id;
-     ci_id_object = obj_id;
-     ci_id_typehash = cl_id;
-     ci_expr = expr;
-     ci_decl = clty;
-     ci_type_decl = cltydef;
-     ci_attributes = cl.pci_attributes;
- })
+  { id; clty; ty_id; cltydef; obj_id; obj_abbr; cl_id; cl_abbr; arity;
+    pub_meths; coe; expr;
+    id_loc = cl.pci_name;
+    req = { ci_loc = cl.pci_loc;
+            ci_virt = cl.pci_virt;
+            ci_params = ci_params;
+        (* TODO : check that we have the correct use of identifiers *)
+            ci_id_name = cl.pci_name;
+            ci_id_class = id;
+            ci_id_class_type = ty_id;
+            ci_id_object = obj_id;
+            ci_id_typehash = cl_id;
+            ci_expr = expr;
+            ci_decl = clty;
+            ci_type_decl = cltydef;
+            ci_attributes = cl.pci_attributes;
+        }
+  }
 (*   (cl.pci_variance, cl.pci_loc)) *)
 
 let class_infos define_class kind
@@ -1655,20 +1673,14 @@ let class_infos define_class kind
          (res, env)
     )
 
-let extract_type_decls
-    (_id, _id_loc, clty, _ty_id, cltydef, obj_id, obj_abbr, _cl_id, cl_abbr,
-     _arity, _pub_meths, _coe, _expr, required) decls =
-  (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) :: decls
+let extract_type_decls { clty; cltydef; obj_id; obj_abbr; cl_abbr; req} decls =
+  (obj_id, obj_abbr, cl_abbr, clty, cltydef, req) :: decls
 
-let merge_type_decls
-    (id, id_loc, _clty, ty_id, _cltydef, obj_id, _obj_abbr, cl_id, _cl_abbr,
-     arity, pub_meths, coe, expr, req) (obj_abbr, cl_abbr, clty, cltydef) =
-  (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, coe, expr, req)
+let merge_type_decls decl (obj_abbr, cl_abbr, clty, cltydef) =
+  {decl with obj_abbr; cl_abbr; clty; cltydef}
 
-let final_env define_class env
-    (id, _id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     _arity, _pub_meths, _coe, _expr, _req) =
+let final_env define_class env { id; clty; ty_id; cltydef; obj_id; obj_abbr;
+    cl_id; cl_abbr } =
   (* Add definitions after cleaning them *)
   Env.add_type ~check:true obj_id
     (Subst.type_declaration Subst.identity obj_abbr) (
@@ -1680,10 +1692,9 @@ let final_env define_class env
   else env)))
 
 (* Check that #c is coercible to c if there is a self-coercion *)
-let check_coercions env
-    (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coercion_locs, _expr, req) =
-  begin match coercion_locs with [] -> ()
+let check_coercions env { id; id_loc; clty; ty_id; cltydef; obj_id; obj_abbr;
+    cl_id; cl_abbr; arity; pub_meths; coe; req } =
+  begin match coe with [] -> ()
   | loc :: _ ->
       let cl_ty, obj_ty =
         match cl_abbr.type_manifest, obj_abbr.type_manifest with
