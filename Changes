@@ -240,6 +240,10 @@ OCaml 4.11
   Use KEEP_TEST_DIR_ON_SUCCESS=1 to keep all artifacts.
   (Gabriel Scherer, review by Sébastien Hinderer)
 
+- #9482, #9492: use diversions (@file) to work around OS limitations
+  on length of Sys.command argument.
+  (Xavier Leroy, report by Jérémie Dimino, review by David Allsopp)
+
 ### Manual and documentation:
 
 - #9141: beginning of the ocamltest reference manual
