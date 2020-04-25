@@ -458,6 +458,11 @@ OCaml 4.10 maintenance branch
 - #9165: Add missing -function-sections and -O3 flags in Makefiles.
   (Greta Yorsh, review by David Allsopp)
 
+- #9495: fix a bug where bytecode binaries compiled with `-output-complete-exe`
+  would not execute `at_exit` hooks at program termination (in particular,
+  output channels would not be flushed).
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 
