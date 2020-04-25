@@ -1182,6 +1182,9 @@ OCaml 4.09.0 (19 September 2019)
 
 ### Compiler distribution build system:
 
+- #9486 : compiling for Haiku operating system
+  (Sylvain Kerjean)
+
 - #2267: merge generation of header programs, also fixing parallel build on
   Cygwin.
   (David Allsopp, review by Sébastien Hinderer)
