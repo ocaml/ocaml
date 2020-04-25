@@ -505,19 +505,22 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_call_gc1))
 CFI_STARTPROC
-        movq    $16, %rax
+        addq    $16, %r15
+        movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 
 FUNCTION(G(caml_call_gc2))
 CFI_STARTPROC
-        movq    $24, %rax
+        addq    $24, %r15
+        movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 
 FUNCTION(G(caml_call_gc3))
 CFI_STARTPROC
-        movq    $32, %rax
+        addq    $32, %r15
+        movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 
