@@ -991,10 +991,34 @@ let pat_of_constr ex_pat cstr =
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
-let rec orify_many = function
-| [] -> assert false
-| [x] -> x
-| x :: xs -> orify x (orify_many xs)
+let rec orify_many pats =
+  (* The list of patters may be large, because we typically
+     enumerate an exhaustive list of exhaustiveness counter-examples,
+     which can blow up in number when heavily using or-patterns.
+
+     To get more predictable performance in this case we avoid generating
+     a linear sequence of deeply nested or-patterns (p1|(p2|(p3|p4))),
+     preferring instead a more balanced tree ((p1|p2)|(p3|p4)). This helps
+     our consumers, typically [Typcore.partial_pred] which does non-trivial
+     work on each nesting of or-patterns.
+
+     In the long term it would be better to avoid using orify_many at all
+     at the toplevel, return a list or lazy sequence of patterns directly,
+     and adapt the consumer to handle those.
+  *)
+  (* turns [p1;p2;p3;p4;p5;p6] into [(p1|p2);(p3|p4);(p5|p6)] *)
+  let rec orify_consecutive acc = function
+    | [] -> List.rev acc
+    | p :: [] -> List.rev (p :: acc)
+    | p1 :: p2 :: pss ->
+        orify_consecutive (orify p1 p2 :: acc) pss
+  in
+  (* each call to orify_consecutive halves the list;
+     repeat until we get only one pattern *)
+  match pats with
+  | [] -> assert false
+  | [p] -> p
+  | _ -> orify_many (orify_consecutive [] pats)
 
 (* build an or-pattern from a constructor list *)
 let pat_of_constrs ex_pat cstrs =
