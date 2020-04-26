@@ -1424,13 +1424,13 @@ let rec do_match pss qs = match qs with
 
 type 'a exhaust_result =
   | No_matching_value
-  | Witnesses of 'a list
+  | Witnesses of 'a Seq.t
 
 let rappend r1 r2 =
   match r1, r2 with
   | No_matching_value, _ -> r2
   | _, No_matching_value -> r1
-  | Witnesses l1, Witnesses l2 -> Witnesses (l1 @ l2)
+  | Witnesses l1, Witnesses l2 -> Witnesses (Seq.append l1 l2)
 
 let rec try_many  f = function
   | [] -> No_matching_value
@@ -1467,7 +1467,7 @@ let print_pat pat =
   This function should be called for exhaustiveness check only.
 *)
 let rec exhaust (ext:Path.t option) pss n = match pss with
-| []    ->  Witnesses [omegas n]
+| []    ->  Witnesses (Seq.return (omegas n))
 | []::_ ->  No_matching_value
 | pss   ->
     let pss = simplify_first_col pss in
@@ -1493,7 +1493,7 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
           begin match exhaust ext default (n-1) with
           | Witnesses r ->
               let q0 = Pattern_head.to_omega_pattern q0 in
-              Witnesses (List.map (fun row -> q0::row) r)
+              Witnesses (Seq.map (fun row -> q0::row) r)
           | r -> r
         end
       | { default; constrs } ->
@@ -1509,7 +1509,7 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
               with
               | Witnesses r ->
                   let p = Pattern_head.to_omega_pattern p in
-                  Witnesses (List.map (set_args p) r)
+                  Witnesses (Seq.map (set_args p) r)
               | r       -> r in
           let before = try_many try_non_omega constrs in
           if
@@ -1523,10 +1523,8 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
             | Witnesses r ->
                 try
                   let p = build_other ext constrs in
-                  let dug = List.map (fun tail -> p :: tail) r in
-                  match before with
-                  | No_matching_value -> Witnesses dug
-                  | Witnesses x -> Witnesses (x @ dug)
+                  let dug = Seq.map (fun tail -> p :: tail) r in
+                  rappend before (Witnesses dug)
                 with
         (* cannot occur, since constructors don't make a full signature *)
                 | Empty -> fatal_error "Parmatch.exhaust"
@@ -1535,17 +1533,17 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
 let exhaust ext pss n =
   let ret = exhaust ext pss n in
   match ret with
-    No_matching_value -> No_matching_value
+  | No_matching_value -> No_matching_value
   | Witnesses lst ->
       let singletons =
-        List.map
+        Seq.map
           (function
               [x] -> x
             | _ -> assert false)
           lst
       in
-      Witnesses [orify_many singletons]
-
+      Witnesses (fun () ->
+        Seq.Cons (orify_many (List.of_seq singletons), Seq.empty))
 (*
    Another exhaustiveness check, enforcing variant typing.
    Note that it does not check exact exhaustiveness, but whether a
@@ -2127,7 +2125,14 @@ let do_check_partial ~pred loc casel pss = match pss with
 | ps::_  ->
     begin match exhaust None pss (List.length ps) with
     | No_matching_value -> Total
-    | Witnesses [u] ->
+    | Witnesses seq ->
+        let u =
+          match seq () with
+          | Seq.Nil -> fatal_error "Parmatch.check_partial"
+          | Seq.Cons (u, us) ->
+              if us () <> Seq.Nil then fatal_error "Parmatch.check_partial";
+              u
+        in
         let v =
           let (pattern,constrs,labels) = Conv.conv u in
           let u' = pred constrs labels pattern in
@@ -2164,8 +2169,6 @@ let do_check_partial ~pred loc casel pss = match pss with
             end;
             Partial
         end
-    | _ ->
-        fatal_error "Parmatch.check_partial"
     end
 
 (*****************)
