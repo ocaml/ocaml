@@ -86,6 +86,12 @@ Working version
 - #9604: refactoring of the ocamltest codebase.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Sébastien Hinderer)
 
+- #9498, #9511: make the pattern-matching analyzer more robust to
+  or-pattern explosion, by stopping after the first counter-example to
+  exhaustivity
+  (Gabriel Scherer, review by Luc Maranget, Thomas Refis and Florian Angeletti,
+   report by Alex Fedoseev through Hongbo Zhang)
+
 ### Build system:
 
 - #9332, #9518, #9529: Cease storing C dependencies in the codebase. C
