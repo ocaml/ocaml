@@ -1424,7 +1424,7 @@ let rec do_match pss qs = match qs with
 
 type 'a exhaust_result =
   | No_matching_value
-  | Witnesses of 'a Seq.t
+  | Witnesses of 'a
 
 let rappend r1 r2 =
   match r1, r2 with
@@ -1542,8 +1542,10 @@ let exhaust ext pss n =
             | _ -> assert false)
           lst
       in
-      Witnesses (fun () ->
-        Seq.Cons (orify_many (List.of_seq singletons), Seq.empty))
+      (* We return a (unit -> pattern) witness
+         to delay computation, as [do_check_fragile]
+         does not need the actual witness. *)
+      Witnesses (fun () -> orify_many (List.of_seq singletons))
 (*
    Another exhaustiveness check, enforcing variant typing.
    Note that it does not check exact exhaustiveness, but whether a
@@ -2125,14 +2127,8 @@ let do_check_partial ~pred loc casel pss = match pss with
 | ps::_  ->
     begin match exhaust None pss (List.length ps) with
     | No_matching_value -> Total
-    | Witnesses seq ->
-        let u =
-          match seq () with
-          | Seq.Nil -> fatal_error "Parmatch.check_partial"
-          | Seq.Cons (u, us) ->
-              if us () <> Seq.Nil then fatal_error "Parmatch.check_partial";
-              u
-        in
+    | Witnesses delayed_witness ->
+        let u = delayed_witness () in
         let v =
           let (pattern,constrs,labels) = Conv.conv u in
           let u' = pred constrs labels pattern in
