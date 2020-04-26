@@ -23,6 +23,10 @@ tests/weak-ephe-final/'weaktest.ml' with 2 (bytecode)
 #  https://github.com/ocaml/ocaml/pull/676
 ephe-c-api
 
+# TODO: port stat-mem-prof
+#  https://github.com/ocaml/ocaml/pull/8634
+statmemprof
+
 # ocamldebug is broken (#34)
 tool-debugger
 

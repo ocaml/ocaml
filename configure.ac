@@ -103,7 +103,6 @@ AC_SUBST([oc_cflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([bytecclibs])
-AC_SUBST([dllibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
@@ -208,11 +207,8 @@ AC_ARG_ENABLE([debugger],
   [],
   [enable_debugger=auto])
 
-AC_ARG_WITH([dllibs],
-  [AS_HELP_STRING([--with-dllibs=LIBS],
-    [use LIBS (in addition to dl) to load dynamic libs @<:@default=""@:>@])],
-  [otherdllibs=$withval],
-  [otherdllibs=""])
+AC_ARG_VAR([DLLIBS],
+  [which libraries to use (in addition to -ldl) to load dynamic libs])
 
 # Disable instrumented-runtime with multicore
 AC_ARG_ENABLE([instrumented-runtime],
@@ -309,16 +305,24 @@ AC_ARG_WITH([target-bindir],
   [AS_HELP_STRING([--with-target-bindir],
     [location of binary programs on target system])])
 
-AC_ARG_WITH([reserved-header-bits],
-  [AS_HELP_STRING([--with-reserved-header-bits=BITS],
-    [reserve BITS bits in block headers for profiling info])])
+AC_ARG_ENABLE([reserved-header-bits],
+  [AS_HELP_STRING([--enable-reserved-header-bits=BITS],
+  [reserve BITS (between 0 and 31) bits in block headers for profiling info])],
+  [AS_CASE([$enable_reserved_header_bits],
+    [0],
+      [with_profinfo=false
+      profinfo_width=0],
+    [[[1-9]]|1[[0-9]]|2[[0-1]]],
+      [with_profinfo=true
+      profinfo_width="$enable_reserved_header_bits"],
+    [AC_MSG_ERROR([invalid argument to --enable-reserved-header-bits])])])
 
 AC_ARG_VAR([WINDOWS_UNICODE_MODE],
   [how to handle Unicode under Windows: ansi, compatible])
 
 # There are two configure-time string safety options,
 # --(enable|disable)-force-safe-string and
-# --with-default-string=safe|unsafe that
+# DEFAULT_STRING=safe|unsafe that
 # interact with a compile-time (un)safe-string option.
 #
 # If --enable-force-safe-string is set at configure time, then the compiler
@@ -330,23 +334,21 @@ AC_ARG_VAR([WINDOWS_UNICODE_MODE],
 # If --disable-force-safe-string is set at configure-time, the compiler
 # will use the compile-time (un)safe-string option to decide whether
 # string and bytes are compatible on a per-file basis. The
-# configure-time options --with-default-string=safe|unsafe decides which
+# configuration variable DEFAULT_STRING=safe|unsafe decides which
 # setting will be chosen by default, if no compile-time option is
 # explicitly passed.
 #
 # The configure-time behavior of OCaml 4.05 and older was equivalent
-# to --disable-force-safe-string --with-default-string=unsafe. OCaml 4.06
-# and later uses --disable-force-safe-string --with-default-string=safe. We
+# to --disable-force-safe-string DEFAULT_STRING=unsafe. OCaml 4.06
+# and later use --disable-force-safe-string DEFAULT_STRING=safe. We
 # expect --enable-force-safe-string to become the default in the future.
 
 AC_ARG_ENABLE([force-safe-string],
   [AS_HELP_STRING([--enable-force-safe-string],
     [force strings to be safe])])
 
-AC_ARG_WITH([default-string],
-  [AS_HELP_STRING([--with-default-string=mode],
-    [whether strings should be safe or unsafe by default
-      @<:@default=safe@:>@])])
+AC_ARG_VAR([DEFAULT_STRING],
+  [whether strings should be safe (default) or unsafe])
 
 AC_ARG_ENABLE([flat-float-array],
   [AS_HELP_STRING([--disable-flat-float-array],
@@ -1271,11 +1273,11 @@ AS_CASE([$host],
 AS_IF([$shared_libraries_supported],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows],
-      [supports_shared_libraries=$shared_libraries_supported; dllibs=""],
+      [supports_shared_libraries=$shared_libraries_supported; DLLIBS=""],
     [AC_CHECK_FUNC([dlopen],
-      [supports_shared_libraries=true dllibs=""],
+      [supports_shared_libraries=true DLLIBS=""],
       [AC_CHECK_LIB([dl], [dlopen],
-        [supports_shared_libraries=true dllibs="-ldl $otherdllibs"],
+        [supports_shared_libraries=true DLLIBS="-ldl $DLLIBS"],
         [supports_shared_libraries=false])])])],
   [supports_shared_libraries=false])
 
@@ -1596,7 +1598,7 @@ AS_IF([test x"$enable_force_safe_string" = "xyes"],
   force_safe_string=true],
   [force_safe_string=false])
 
-AS_IF([test x"$with_default_string" = "xunsafe"],
+AS_IF([test x"$DEFAULT_STRING" = "xunsafe"],
   [default_safe_string=false],
   [default_safe_string=true])
 
@@ -1615,8 +1617,8 @@ AS_CASE([$host],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $dllibs $pthread_link $instrumented_runtime_libs"
-  nativecclibs="$cclibs $dllibs $pthread_link"])
+  [bytecclibs="$cclibs $DLLIBS $pthread_link $instrumented_runtime_libs"
+  nativecclibs="$cclibs $DLLIBS $pthread_link"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])
