@@ -34,6 +34,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #9498, #9499: make the fragile-pattern check more robust
+  to or-pattern explosion
+  (Gabriel Scherer, review by ???, report by Alex Fedoseev through Hongbo Zhang)
+
 
 ### Build system:
 
