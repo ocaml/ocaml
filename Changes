@@ -20,6 +20,9 @@ Working version
   [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
   (Mark Shinwell, review by Pierre Chambart)
 
+- #8692: Remove Misc.may_map and similar
+  (Leo White, review by Gabriel Scherer and Thomas Refis)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
@@ -913,7 +916,14 @@ OCaml 4.08.0
   (Leo White, Greta Yorsh, review by Gabriel Radanne)
 
 - #8616: configure: use variables rather than arguments for a few options
-  (Sébastien Hinderer, review by David Allsopp and Gabriel Scherer)
+  (Sébastien Hinderer, review by David Allsopp, Gabriel Scherer and
+  Damien Doligez)
+
+- #8632: Correctly propagate flags for --with-pic in configure.
+  (David Allsopp, review by Sébastien Hinderer and Damien Doligez)
+
+- #8673: restore SpaceTime and libunwind support in configure script
+  (Sébastien Hinderer, review by Damien Doligez)
 
 ### Internal/compiler-libs changes:
 
@@ -1038,9 +1048,6 @@ OCaml 4.08.0
 
 - #2065: Add [Proc.destroyed_at_reloadretaddr].
   (Mark Shinwell, review by Damien Doligez)
-
-- #2060: "Phantom let" support for the Clambda language.
-  (Mark Shinwell, review by Vincent Laviron)
 
 - #2070: "Phantom let" support for the Cmm language.
   (Mark Shinwell, review by Vincent Laviron)
@@ -6433,7 +6440,7 @@ Native-code compiler:
   float comparisons.
 
 Standard library:
-- Format: new function ikfprintf analoguous to ifprintf with a continuation
+- Format: new function ikfprintf analogous to ifprintf with a continuation
   argument.
 * #4210, #4245: stricter range checking in string->integer conversion
   functions (int_of_string, Int32.of_string, Int64.of_string,

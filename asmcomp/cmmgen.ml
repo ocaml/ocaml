@@ -2234,7 +2234,7 @@ let rec transl env e =
       let dbg = Debuginfo.none in
       bind "switch" (transl env arg)
         (fun arg ->
-          strmatch_compile dbg arg (Misc.may_map (transl env) d)
+          strmatch_compile dbg arg (Option.map (transl env) d)
             (List.map (fun (s,act) -> s,transl env act) sw))
   | Ustaticfail (nfail, args) ->
       Cexit (nfail, List.map (transl env) args)

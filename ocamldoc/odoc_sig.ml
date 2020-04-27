@@ -15,7 +15,6 @@
 
 (** Analysis of interface files. *)
 
-open Misc
 open Asttypes
 open Types
 
@@ -395,7 +394,7 @@ module Analyser =
             {
               vc_name = constructor_name ;
               vc_args;
-              vc_ret =  may_map (Odoc_env.subst_type env) ret_type;
+              vc_ret =  Option.map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
             }
           in
@@ -843,7 +842,7 @@ module Analyser =
                 {
                   xt_name = Name.concat current_module_name name ;
                   xt_args;
-                  xt_ret = may_map (Odoc_env.subst_type new_env) types_ext.ext_ret_type ;
+                  xt_ret = Option.map (Odoc_env.subst_type new_env) types_ext.ext_ret_type ;
                   xt_type_extension = new_te;
                   xt_alias = None ;
                   xt_loc = { loc_impl = None ; loc_inter = Some types_ext.Types.ext_loc} ;
@@ -888,7 +887,7 @@ module Analyser =
                 ex_name = Name.concat current_module_name name.txt ;
                 ex_info = comment_opt ;
                 ex_args;
-                ex_ret = may_map (Odoc_env.subst_type env) types_ext.ext_ret_type ;
+                ex_ret = Option.map (Odoc_env.subst_type env) types_ext.ext_ret_type ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
                 ex_code =
@@ -1567,7 +1566,7 @@ module Analyser =
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type =
-                    Misc.may_map (Odoc_env.subst_module_type env)
+                    Option.map (Odoc_env.subst_module_type env)
                       param_module_type;
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;
@@ -1661,7 +1660,7 @@ module Analyser =
                let param =
                  {
                    mp_name = Name.from_ident ident ;
-                   mp_type = Misc.may_map
+                   mp_type = Option.map
                     (Odoc_env.subst_module_type env) param_module_type ;
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;

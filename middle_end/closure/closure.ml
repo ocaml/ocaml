@@ -189,7 +189,7 @@ let lambda_smaller lam threshold =
             size := !size+2 ;
             lambda_size lam)
           sw ;
-        Misc.may lambda_size d
+        Option.iter lambda_size d
     | Ustaticfail (_,args) -> lambda_list_size args
     | Ucatch(_, _, body, handler) ->
         incr size; lambda_size body; lambda_size handler
@@ -632,7 +632,7 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
       Ustringswitch
         (substitute loc st sb rn arg,
          List.map (fun (s,act) -> s,substitute loc st sb rn act) sw,
-         Misc.may_map (substitute loc st sb rn) d)
+         Option.map (substitute loc st sb rn) d)
   | Ustaticfail (nfail, args) ->
       let nfail =
         match rn with
@@ -1140,7 +1140,7 @@ let rec close ({ backend; fenv; cenv } as env) lam =
             s,uact)
           sw in
       let ud =
-        Misc.may_map
+        Option.map
           (fun d ->
             let ud,_ = close env d in
             ud) d in
@@ -1457,7 +1457,7 @@ let collect_exported_structured_constants a =
     | Ustringswitch (u,sw,d) ->
         ulam u ;
         List.iter (fun (_,act) -> ulam act) sw ;
-        Misc.may ulam d
+        Option.iter ulam d
     | Ustaticfail (_, ul) -> List.iter ulam ul
     | Ucatch (_, _, u1, u2)
     | Utrywith (u1, _, u2)

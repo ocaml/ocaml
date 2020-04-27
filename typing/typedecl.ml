@@ -737,16 +737,16 @@ let check_well_founded env loc path to_check ty =
     in
     match ty.desc with
     | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
-        if to_check p then may raise arg_exn
+        if to_check p then Option.iter raise arg_exn
         else Btype.iter_type_expr (check ty0 TypeSet.empty) ty;
         begin try
           let ty' = Ctype.try_expand_once_opt env ty in
           let ty0 = if TypeSet.is_empty parents then ty else ty0 in
           check ty0 (TypeSet.add ty parents) ty'
         with
-          Ctype.Cannot_expand -> may raise arg_exn
+          Ctype.Cannot_expand -> Option.iter raise arg_exn
         end
-    | _ -> may raise arg_exn
+    | _ -> Option.iter raise arg_exn
   in
   let snap = Btype.snapshot () in
   try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
@@ -816,7 +816,7 @@ let check_recursion env loc path decl to_check =
           Btype.iter_type_expr (check_regular cpath args prev_exp) ty
     end in
 
-  Misc.may
+  Option.iter
     (fun body ->
       let (args, body) =
         Ctype.instance_parameterized_type
@@ -1283,7 +1283,7 @@ let transl_type_extension extend env loc styext =
   List.iter
     (fun ext ->
        Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-       may Ctype.generalize ext.ext_type.ext_ret_type)
+       Option.iter Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
   (* Check that all type variables are closed *)
   List.iter
@@ -1338,7 +1338,7 @@ let transl_exception env sext =
   Ctype.end_def();
   (* Generalize types *)
   Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-  may Ctype.generalize ext.ext_type.ext_ret_type;
+  Option.iter Ctype.generalize ext.ext_type.ext_ret_type;
   (* Check that all type variables are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
     Some ty ->
@@ -1404,7 +1404,7 @@ let transl_effect env seff =
   Ctype.end_def();
   (* Generalize types *)
   Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_args;
-  may Ctype.generalize ext.ext_ret_type;
+  Option.iter Ctype.generalize ext.ext_ret_type;
   (* Check that all type variable are closed *)
   begin match Ctype.closed_extension_constructor ext with
     Some ty ->

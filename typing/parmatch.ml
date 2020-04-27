@@ -432,7 +432,7 @@ let rec normalize_pat q = match q.pat_desc with
         (Tpat_construct (lid, c,omega_list args))
         q.pat_type q.pat_env
   | Tpat_variant (l, arg, row) ->
-      make_pat (Tpat_variant (l, may_map (fun _ -> omega) arg, row))
+      make_pat (Tpat_variant (l, Option.map (fun _ -> omega) arg, row))
         q.pat_type q.pat_env
   | Tpat_array (args) ->
       make_pat (Tpat_array (omega_list args))  q.pat_type q.pat_env
@@ -1902,7 +1902,7 @@ module Conv = struct
           in
           mkpat (Ppat_construct(lid, arg))
       | Tpat_variant(label,p_opt,_row_desc) ->
-          let arg = Misc.may_map loop p_opt in
+          let arg = Option.map loop p_opt in
           mkpat (Ppat_variant(label, arg))
       | Tpat_record (subpatterns, _closed_flag) ->
           let fields =

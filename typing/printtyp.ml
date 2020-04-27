@@ -1123,7 +1123,7 @@ let rec tree_of_type_decl id decl =
       List.iter
         (fun c ->
            mark_loops_constructor_arguments c.cd_args;
-           may mark_loops c.cd_res)
+           Option.iter mark_loops c.cd_res)
         cstrs
   | Type_record(l, _rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -1235,7 +1235,7 @@ let tree_of_extension_constructor id ext es =
   List.iter mark_loops ty_params;
   List.iter check_name_of_type (List.map proxy ty_params);
   mark_loops_constructor_arguments ext.ext_args;
-  may mark_loops ext.ext_ret_type;
+  Option.iter mark_loops ext.ext_ret_type;
   let type_param =
     function
     | Otyp_var (_, id) -> id
@@ -1552,7 +1552,7 @@ let rec tree_of_modtype ?(ellipsis=false) = function
                      (tree_of_modtype ~ellipsis) ty_res
       in
       Omty_functor (Ident.name param,
-                    may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
+                    Option.map (tree_of_modtype ~ellipsis:false) ty_arg, res)
   | Mty_alias p ->
       Omty_alias (tree_of_path Module p)
 

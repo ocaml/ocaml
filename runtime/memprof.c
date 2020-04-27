@@ -27,6 +27,7 @@
 #include "caml/backtrace_prim.h"
 #include "caml/weak.h"
 #include "caml/stack.h"
+#include "caml/misc.h"
 
 static uint32_t mt_state[624];
 static uint32_t mt_index;
@@ -34,22 +35,21 @@ static uint32_t mt_index;
 /* [lambda] is the mean number of samples for each allocated word (including
    block headers). */
 static double lambda = 0;
- /* Inverse of [lamdba]. Meaningless if lamdba = 0 */
-static double lambda_inverse = 0;
+ /* Precomputed value of [1/log(1-lambda)], for fast sampling of
+    geometric distribution.
+    Dummy if [lambda = 0]. */
+static double one_log1m_lambda;
 
 int caml_memprof_suspended = 0;
 static intnat callstack_size = 0;
 static value memprof_callback = Val_unit;
 
-/* Position of the next sample in the minor heap. Equals
-   [caml_young_alloc_start] if no sampling is planned in the current
-   minor heap.
+/* Pointer to the word following the next sample in the minor
+   heap. Equals [caml_young_alloc_start] if no sampling is planned in
+   the current minor heap.
    Invariant: [caml_memprof_young_trigger <= caml_young_ptr].
  */
 value* caml_memprof_young_trigger;
-/* The continuous position of the next minor sample within the next
-   sampled word. Always in [0, 1[. */
-static double next_sample_frac_part;
 
 /* Whether memprof has been initialized.  */
 static int init = 0;
@@ -87,95 +87,42 @@ static double mt_generate_uniform(void)
           1.16415321826934814453125e-10; /* 2^-33 */
 }
 
-/* C99's [lgammaf] function is not available in some compilers
-   (including MSVC). Here is our own approximate implementation of the
-   log-factorial function.
-
-   Requirement: [n] is a non-negative integer.
-
-   We use Ramanujan's formula. For n < 10^8, the absolute error is
-   less than 10^-6, which is way better than what we need.
- */
-static double lfact(double n)
+/* Simulate a geometric variable of parameter [lambda].
+   The result is clipped in [1..Max_long]
+   Requires [lambda > 0]. */
+static uintnat mt_generate_geom()
 {
-  static double tab[10] = {
-    0.0000000000, 0.0000000000, 0.6931471806, 1.7917594692, 3.1780538303,
-    4.7874917428, 6.5792512120, 8.5251613611, 10.6046029027, 12.8018274801 };
-  if(n < 10)
-    return tab[(int)n];
-  return n*(log(n) - 1) + (1./6)*log(((8*n + 4)*n + 1)*n + 1./34)
-       + 0.5723649429; /* log(pi)/2 */
+  /* We use the float versions of exp/log, since these functions are
+     significantly faster, and we really don't need much precision
+     here. The entropy contained in [next_mt_generate_geom] is anyway
+     bounded by the entropy provided by [mt_generate_uniform], which
+     is 32bits. */
+  double res = 1 + logf(mt_generate_uniform()) * one_log1m_lambda;
+  if(res > Max_long) return Max_long;
+  return (uintnat)res;
 }
 
-#define MAX_MT_GENERATE_POISSON (1<<29)
-static double next_mt_generate_poisson;
-/* Simulate a Poisson distribution of parameter [lambda*len].  The
-   result is clipped to the interval [0..MAX_MT_GENERATE_POISSON] */
-static int32_t mt_generate_poisson(double len)
+static uintnat next_mt_generate_binom;
+/* Simulate a binomial variable of parameters [len] and [lambda].
+   This sampling algorithm has running time linear with [len *
+   lambda].  We could use more a involved algorithm, but this should
+   be good enough since, in the average use case, [lambda] <= 0.01 and
+   therefore the generation of the binomial variable is amortized by
+   the initialialization of the corresponding block.
+
+   If needed, we could use algorithm BTRS from the paper:
+     Hormann, Wolfgang. "The generation of binomial random variates."
+     Journal of statistical computation and simulation 46.1-2 (1993), pp101-110.
+
+   Requires [lambda > 0] and [len < Max_long].
+ */
+static uintnat mt_generate_binom(uintnat len)
 {
-  double cur_lambda = lambda * len;
-  CAMLassert(cur_lambda >= 0 && cur_lambda < 1e20);
-
-  if(cur_lambda < 20) {
-    /* First algorithm when [cur_lambda] is small: we proceed by
-       repeated simulations of exponential distributions. */
-
-    next_mt_generate_poisson -= cur_lambda;
-    if(next_mt_generate_poisson > 0) {
-      /* Fast path if [cur_lambda] is small: we reuse the same
-         exponential sample accross several calls to
-         [mt_generate_poisson]. */
-      return 0;
-    } else {
-      /* We use the float versions of exp/log, since these functions
-         are significantly faster, and we really don't need much
-         precision here. The entropy contained in
-         [next_mt_generate_poisson] is anyway bounded by the entropy
-         provided by [mt_generate_uniform], which is 32bits. */
-      double p = expf(-next_mt_generate_poisson);
-      int32_t k = 0;
-      do {
-        k++;
-        p *= mt_generate_uniform();
-      } while(p > 1);
-
-      /* [p] is now uniformly distributed in [0, 1] and independent
-         from other variables (including [k]). We can therefore reuse
-         [p] for reinitializing [next_mt_generate_poisson]. */
-      next_mt_generate_poisson = -logf(p);
-
-      return k;
-    }
-
-  } else {
-    /* Second algorithm when [cur_lambda] is large. Taken from: */
-    /* The Computer Generation of Poisson Random Variables
-       A. C. Atkinson Journal of the Royal Statistical Society.
-       Series C (Applied Statistics) Vol. 28, No. 1 (1979), pp. 29-35
-       "Method PA" */
-
-    double c, beta_inverse, k, log_cur_lambda;
-    log_cur_lambda = log(cur_lambda);
-    c = 0.767 - 3.36/cur_lambda;
-    beta_inverse = sqrt(0.30396355092701332623 * cur_lambda);
-                        /* ^ = 3./(PI*PI) */
-    k = log(c*beta_inverse) - cur_lambda;
-    while(1) {
-      double u, n, v, y;
-      u = mt_generate_uniform();
-      y = log(1./u-1);
-      n = floor(cur_lambda - y*beta_inverse + 0.5);
-      if(n < 0.)
-        continue;
-      v = mt_generate_uniform();
-      /* When [cur_lambda] is large, we expect [n*log_cur_lambda] and
-         [lfact(n)] to be close, while both being relatively
-         large. Hence, here, we may actually need the double precision
-         in the computation of log and lfact. */
-      if(y + log(v*u*u) < k + n*log_cur_lambda - lfact(n))
-        return n > MAX_MT_GENERATE_POISSON ? MAX_MT_GENERATE_POISSON : n;
-    }
-  }
+  uintnat res;
+  for(res = 0; next_mt_generate_binom < len; res++)
+    next_mt_generate_binom += mt_generate_geom();
+  next_mt_generate_binom -= len;
+  return res;
 }
 
 /**** Interface with the OCaml code. ****/
@@ -186,8 +133,8 @@ CAMLprim value caml_memprof_set(value v)
   double l = Double_val(Field(v, 0));
   intnat sz = Long_val(Field(v, 1));
 
-  if(sz < 0 || !(l >= 0.) || l > 1.)
-    caml_failwith("caml_memprof_set");
+  if(sz < 0 || !(l >= 0.) || l > 1.) /* Checks that [l] is not NAN. */
+    caml_invalid_argument("caml_memprof_set");
 
   if(!init) {
     int i;
@@ -199,14 +146,18 @@ CAMLprim value caml_memprof_set(value v)
       mt_state[i] = 0x6c078965 * (mt_state[i-1] ^ (mt_state[i-1] >> 30)) + i;
 
     caml_register_generational_global_root(&memprof_callback);
-
-    next_mt_generate_poisson = -logf(mt_generate_uniform());
   }
 
   lambda = l;
-  lambda_inverse = 1/l;
+  if(l > 0) {
+    one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
+    next_mt_generate_binom = mt_generate_geom();
+  }
+
   caml_memprof_renew_minor_sample();
+
   callstack_size = sz;
+
   caml_modify_generational_global_root(&memprof_callback, Field(v, 2));
 
   CAMLreturn(Val_unit);
@@ -219,7 +170,7 @@ enum ml_alloc_kind {
   Serialized = Val_long(2)
 };
 
-static value do_callback(tag_t tag, intnat wosize, int32_t occurrences,
+static value do_callback(tag_t tag, uintnat wosize, uintnat occurrences,
                          value callstack, enum ml_alloc_kind cb_kind) {
   CAMLparam1(callstack);
   CAMLlocal1(sample_info);
@@ -240,18 +191,18 @@ static value do_callback(tag_t tag, intnat wosize, int32_t occurrences,
 static value capture_callstack_major()
 {
   value res;
-  intnat wosize = caml_current_callstack_size(callstack_size);
+  uintnat wosize = caml_current_callstack_size(callstack_size);
   /* We do not use [caml_alloc] to make sure the GC will not get called. */
   if(wosize == 0) return Atom (0);
-  res = caml_alloc_shr_no_track(wosize, 0);
-  caml_current_callstack_write(res);
+  res = caml_alloc_shr_no_track_noexc(wosize, 0);
+  if(res != 0) caml_current_callstack_write(res);
   return res;
 }
 
 static value capture_callstack_minor()
 {
   value res;
-  intnat wosize = caml_current_callstack_size(callstack_size);
+  uintnat wosize = caml_current_callstack_size(callstack_size);
   CAMLassert(caml_memprof_suspended); /* => no samples in the call stack. */
   res = caml_alloc(wosize, 0);
   caml_current_callstack_write(res);
@@ -261,7 +212,7 @@ static value capture_callstack_minor()
 struct caml_memprof_postponed_block {
   value block;
   value callstack;
-  int32_t occurrences;
+  uintnat occurrences;
   struct caml_memprof_postponed_block* next;
 } *caml_memprof_postponed_head = NULL;
 
@@ -272,17 +223,22 @@ struct caml_memprof_postponed_block {
    call is performed when possible. */
 void caml_memprof_track_alloc_shr(value block)
 {
-  int32_t occurrences;
+  uintnat occurrences;
   CAMLassert(Is_in_heap(block));
   /* This test also makes sure memprof is initialized. */
   if(lambda == 0 || caml_memprof_suspended)
     return;
-  occurrences = mt_generate_poisson(Whsize_val(block));
+  occurrences = mt_generate_binom(Whsize_val(block));
   if(occurrences > 0) {
+    value callstack;
     struct caml_memprof_postponed_block* pb =
       caml_stat_alloc_noexc(sizeof(struct caml_memprof_postponed_block));
-    value callstack = capture_callstack_major();
     if(pb == NULL) return;
+    callstack = capture_callstack_major();
+    if(callstack == 0) {
+      caml_stat_free(pb);
+      return;
+    }
     pb->block = block;
     caml_register_generational_global_root(&pb->block);
     pb->callstack = callstack;
@@ -358,34 +314,21 @@ static void shift_sample(uintnat n)
 
 /* Renew the next sample in the minor heap. This needs to be called
    after each minor sampling and after each minor collection. In
-   practice, because we disable sampling during callbacks, this is
-   called at each sampling (including major ones). These extra calls
-   do not change the statistical properties of the sampling because of
-   the memorylessness of the exponential distribution. */
+   practice, this is called at each sampling in the minor heap and at
+   each minor collection. Extra calls do not change the statistical
+   properties of the sampling because of the memorylessness of the
+   geometric distribution. */
 void caml_memprof_renew_minor_sample(void)
 {
-  double exp;
-  uintnat max, exp_int;
 
   if(lambda == 0) /* No trigger in the current minor heap. */
     caml_memprof_young_trigger = caml_young_alloc_start;
   else {
-    exp = - lambda_inverse * logf(mt_generate_uniform());
-    max = caml_young_ptr - caml_young_alloc_start;
-    if(exp >= (double)max) /* No trigger in the current minor heap. */
+    uintnat geom = mt_generate_geom();
+    if(caml_young_ptr - caml_young_alloc_start < geom)
+      /* No trigger in the current minor heap. */
       caml_memprof_young_trigger = caml_young_alloc_start;
-    else {
-      exp_int = (uintnat)exp;
-      /* This assertion can be false only if [max] is not exactly
-        representable as a double, which cannot happen if the size of the
-        minor heap does not reach 2^52. */
-      CAMLassert(exp_int < max);
-
-      caml_memprof_young_trigger = caml_young_ptr - exp_int;
-
-      next_sample_frac_part = exp - exp_int;
-      CAMLassert(0 <= next_sample_frac_part && next_sample_frac_part < 1);
-    }
+    caml_memprof_young_trigger = caml_young_ptr - (geom - 1);
   }
 
   caml_update_young_limit();
@@ -399,8 +342,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
   CAMLparam0();
   CAMLlocal2(ephe, callstack);
   uintnat whsize = Whsize_wosize(wosize);
-  double rest;
-  int32_t occurrences;
+  uintnat occurrences;
 
   if(caml_memprof_suspended) {
     caml_memprof_renew_minor_sample();
@@ -408,7 +350,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
   }
 
   /* If [lambda == 0], then [caml_memprof_young_trigger] should be
-     equal to [caml_young_alloc_start].  But this function is only
+     equal to [caml_young_alloc_start]. But this function is only
      called with [caml_young_alloc_start <= caml_young_ptr <
      caml_memprof_young_trigger], which is contradictory. */
   CAMLassert(lambda > 0);
@@ -420,11 +362,8 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
      call the callback and use as a sample the block which will be
      allocated right after the callback. */
 
-  /* [rest] is the size of the part of the allocated block which is
-     after the sampling point. */
-  rest = (caml_memprof_young_trigger - caml_young_ptr) - next_sample_frac_part;
-  CAMLassert(rest >= 0);
-  occurrences = mt_generate_poisson(rest) + 1;
+  occurrences =
+    mt_generate_binom(caml_memprof_young_trigger - 1 - caml_young_ptr) + 1;
 
   /* Restore the minor heap in a valid state and suspend sampling for
      calling the callback.
@@ -461,7 +400,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize)
   /* Write the ephemeron if not [None]. */
   if(Is_block(ephe)) {
     /* Subtlety: we are actually writing the ephemeron with an invalid
-       (unitialized) block. This is correct for two reasons:
+       (uninitialized) block. This is correct for two reasons:
           - The logic of [caml_ephemeron_set_key] never inspects the content of
             the block. In only checks that the block is young.
           - The allocation and initialization happens right after returning

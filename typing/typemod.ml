@@ -313,7 +313,7 @@ let iterator_with_env env =
     );
     Btype.it_module_type = (fun self -> function
     | Mty_functor (param, mty_arg, mty_body) ->
-      may (self.Btype.it_module_type self) mty_arg;
+      Option.iter (self.Btype.it_module_type self) mty_arg;
       let env_before = !env in
       env := lazy (Env.add_module ~arg:true param Mp_present
                      (Btype.default_mty mty_arg) (Lazy.force env_before));
@@ -604,11 +604,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             in
             fun s path -> Subst.add_type_path path replacement s
          | None ->
-            let body =
-              match tdecl.typ_type.type_manifest with
-              | None -> assert false
-              | Some x -> x
-            in
+            let body = Option.get tdecl.typ_type.type_manifest in
             let params = tdecl.typ_type.type_params in
             if params_are_constrained params
             then raise(Error(loc, initial_env,
@@ -616,7 +612,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
-       (* This signature will not be used direcly, it will always be freshened
+       (* This signature will not be used directly, it will always be freshened
           by the caller. So what we do with the scope doesn't really matter. But
           making it local makes it unlikely that we will ever use the result of
           this function unfreshened without issue. *)
@@ -690,7 +686,7 @@ let rec approx_modtype env smty =
   | Pmty_signature ssg ->
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
-      let arg = may_map (approx_modtype env) sarg in
+      let arg = Option.map (approx_modtype env) sarg in
       let rarg = Mtype.scrape_for_functor_arg env (Btype.default_mty arg) in
       let scope = Ctype.create_scope () in
       let (id, newenv) =
@@ -816,7 +812,7 @@ and approx_sig env ssg =
 
 and approx_modtype_info env sinfo =
   {
-   mtd_type = may_map (approx_modtype env) sinfo.pmtd_type;
+   mtd_type = Option.map (approx_modtype env) sinfo.pmtd_type;
    mtd_attributes = sinfo.pmtd_attributes;
    mtd_loc = sinfo.pmtd_loc;
   }
@@ -1117,8 +1113,8 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_signature sg) (Mty_signature sg.sig_type) env loc
         smty.pmty_attributes
   | Pmty_functor(param, sarg, sres) ->
-      let arg = Misc.may_map (transl_modtype_functor_arg env) sarg in
-      let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
+      let arg = Option.map (transl_modtype_functor_arg env) sarg in
+      let ty_arg = Option.map (fun m -> m.mty_type) arg in
       let scope = Ctype.create_scope () in
       let (id, newenv) =
         Env.enter_module ~scope ~arg:true
@@ -1441,10 +1437,10 @@ and transl_modtype_decl names env pmtd =
 
 and transl_modtype_decl_aux names env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
-  let tmty = Misc.may_map (transl_modtype env) pmtd_type in
+  let tmty = Option.map (transl_modtype env) pmtd_type in
   let decl =
     {
-     Types.mtd_type=may_map (fun t -> t.mty_type) tmty;
+     Types.mtd_type=Option.map (fun t -> t.mty_type) tmty;
      mtd_attributes=pmtd_attributes;
      mtd_loc=pmtd_loc;
     }
@@ -1824,8 +1820,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       wrap_constraint env false md (Mty_signature sg')
         Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
-      let mty = may_map (transl_modtype_functor_arg env) smty in
-      let ty_arg = Misc.may_map (fun m -> m.mty_type) mty in
+      let mty = Option.map (transl_modtype_functor_arg env) smty in
+      let ty_arg = Option.map (fun m -> m.mty_type) mty in
       let scope = Ctype.create_scope () in
       let (id, newenv), funct_body =
         match ty_arg with

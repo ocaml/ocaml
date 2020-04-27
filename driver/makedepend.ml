@@ -578,7 +578,7 @@ let main () =
      "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
      "-allow-approx", Arg.Set allow_approximation,
-        " Fallback to a lexer-based approximation on unparseable files";
+        " Fallback to a lexer-based approximation on unparsable files";
      "-as-map", Arg.Set Clflags.transparent_modules,
       " Omit delayed dependencies for module aliases (-no-alias-deps -w -49)";
       (* "compiler uses -no-alias-deps, and no module is coerced"; *)

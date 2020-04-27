@@ -227,12 +227,14 @@ AC_ARG_ENABLE([systhreads],
     [disable the Win32/POSIX threads library])])
 
 AC_ARG_WITH([libunwind],
-  [AS_HELP_STRING([--with-libunwind],
-    [location of the libunwind package])])
+  [AS_HELP_STRING([--without-libunwind],
+    [disable libunwind support for Spacetime profiling])])
 
-AC_ARG_WITH([libunwind-include-dir],
-  [AS_HELP_STRING([--with-libunwind-include-dir],
-    [location of header files for libunwind])])
+AC_ARG_VAR([LIBUNWIND_INCLUDE_DIR],
+  [location of header files for libunwind])
+
+AC_ARG_VAR([LIBUNWIND_LIB_DIR],
+  [location of library files for libunwind])
 
 AC_ARG_ENABLE([graph-lib], [],
   [AC_MSG_ERROR([The graphics library is no longer distributed with OCaml \
@@ -994,6 +996,13 @@ AS_CASE(["$arch,$system"],
       [clang-*], [default_aspp="${toolpref}clang -c -Wno-trigraphs"],
       [default_aspp="${toolpref}gcc -c"])])
 
+AS_IF([test "$with_pic"],
+  [fpic=true
+  AC_DEFINE([CAML_WITH_FPIC])
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  default_aspp="$default_aspp $sharedlib_cflags"],
+  [fpic=false])
+
 AS_IF([test -z "$AS"], [AS="$default_as"])
 
 AS_IF([test -z "$ASPP"], [ASPP="$default_aspp"])
@@ -1537,11 +1546,52 @@ AS_IF([test x"$enable_spacetime" != "xyes" ],
     AC_MSG_CHECKING([whether to use libunwind])
     AS_IF([test x"$with_libunwind" = "xno"],
       [AC_MSG_RESULT([disabled])],
-      [AC_CHECK_HEADER([libunwind.h],
-        [AC_DEFINE([HAS_LIBUNWIND])
-        AC_MSG_RESULT([yes])],
-        [AC_MSG_RESULT([no])])
-      ])
+      [AS_IF([test x"$with_libunwind" = "x"],
+        [libunwind_requested=false
+        AC_MSG_RESULT([if available])],
+        [libunwind_requested=true
+        AC_MSG_RESULT([requested])
+        AS_IF([test x"$with_libunwind" != "xyes"],
+          [AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" = "x"],
+            [LIBUNWIND_INCLUDE_DIR="$with_libunwind/include"])
+          AS_IF([test x"$LIBUNWIND_LIB_DIR" = "x"],
+            [LIBUNWIND_LIB_DIR="$with_libunwind/lib"])
+          ])
+        ])
+      AS_IF([test "$system" = "macosx"],
+        [AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" != x -o \
+                     x"$LIBUNWIND_LIB_DIR" != x],
+          [AC_MSG_WARN(m4_normalize([
+            On MacOSX, specifying paths for libunwind headers or libraries
+            is strongly discouraged.  It is recommended to rely on the
+            defaults provided by the configure script
+          ]))])])
+
+      AS_IF([test x"$LIBUNWIND_INCLUDE_DIR" != x],
+        [libunwind_include_flags="-I$LIBUNWIND_INCLUDE_DIR"],
+        [libunwind_include_flags=""])
+
+      AS_CASE(["$system"],
+        ["macosx"], [libunwind_link_flags="-framework System"],
+        [libunwind_link_flags="-lunwind -lunwind-x86_64"])
+
+      AS_IF([test x"$LIBUNWIND_LIB_DIR" != x],
+        [libunwind_link_flags="-L$LIBUNWIND_LIB_DIR $libunwind_link_flags"])
+
+      OCAML_CHECK_LIBUNWIND
+
+      AS_IF([$libunwind_requested && ! $libunwind_available],
+        [AC_MSG_ERROR([libunwind was requested but can not be found])])
+
+        # We need unwinding information at runtime, but since we use
+        # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
+        # the OS X linker will chuck away the DWARF-like (.eh_frame)
+        # information.  (Older versions of OS X don't provide this.)
+
+        AS_IF([$libunwind_available && test x"$system" = "xmacosx"],
+          [extra_flags="-Wl,-keep_dwarf_unwind"
+          mkexe="$mkexe $extra_flags"
+          mksharedlib="$mksharedlib $extra_flags"])])
     ],
     [AS_IF([test x"$enable_spacetime" = "xyes"],
       [AC_MSG_RESULT([requested but not supported])
@@ -1550,19 +1600,8 @@ AS_IF([test x"$enable_spacetime" != "xyes" ],
     ])
   ])
 
-
-
 AC_DEFINE_UNQUOTED([PROFINFO_WIDTH], [$profinfo_width])
 AS_IF([$profinfo], [AC_DEFINE([WITH_PROFINFO])])
-
-## PIC
-
-AS_IF([test "$with_pic"],
-  [fpic=true
-  AC_DEFINE([CAML_WITH_FPIC])
-  common_cflags="$common_cflags $sharedlib_cflags"
-  aspp="$aspp $sharedlib_cflags"],
-  [fpic=false])
 
 AS_IF([test x"$enable_installing_bytecode_programs" = "xno"],
   [install_bytecode_programs=false],

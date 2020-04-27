@@ -1615,11 +1615,11 @@ let final_decl env define_class
 
   List.iter Ctype.generalize clty.cty_params;
   generalize_class_type true clty.cty_type;
-  Misc.may  Ctype.generalize clty.cty_new;
+  Option.iter  Ctype.generalize clty.cty_new;
   List.iter Ctype.generalize obj_abbr.type_params;
-  Misc.may  Ctype.generalize obj_abbr.type_manifest;
+  Option.iter  Ctype.generalize obj_abbr.type_manifest;
   List.iter Ctype.generalize cl_abbr.type_params;
-  Misc.may  Ctype.generalize cl_abbr.type_manifest;
+  Option.iter  Ctype.generalize cl_abbr.type_manifest;
 
   if not (closed_class clty) then
     raise(Error(cl.pci_loc, env, Non_generalizable_class (id, clty)));

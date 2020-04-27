@@ -98,8 +98,6 @@ let string_is_prefix sub str =
   let sublen = String.length sub in
   String.length str >= sublen && String.sub str 0 sublen = sub
 
-let map_opt f = function None -> None | Some e -> Some (f e)
-
 let rec lident_of_path = function
   | Path.Pident id -> Longident.Lident (Ident.name id)
   | Path.Pdot (p, s) -> Longident.Ldot (lident_of_path p, s)
@@ -243,7 +241,7 @@ let type_declaration sub decl =
         decl.typ_cstrs)
     ~kind:(sub.type_kind sub decl.typ_kind)
     ~priv:decl.typ_private
-    ?manifest:(map_opt (sub.typ sub) decl.typ_manifest)
+    ?manifest:(Option.map (sub.typ sub) decl.typ_manifest)
     (map_loc sub decl.typ_name)
 
 let type_kind sub tk = match tk with
@@ -263,7 +261,7 @@ let constructor_declaration sub cd =
   let attrs = sub.attributes sub cd.cd_attributes in
   Type.constructor ~loc ~attrs
     ~args:(constructor_arguments sub cd.cd_args)
-    ?res:(map_opt (sub.typ sub) cd.cd_res)
+    ?res:(Option.map (sub.typ sub) cd.cd_res)
     (map_loc sub cd.cd_name)
 
 let label_declaration sub ld =
@@ -295,7 +293,7 @@ let extension_constructor sub ext =
     (match ext.ext_kind with
       | Text_decl (args, ret) ->
           Pext_decl (constructor_arguments sub args,
-                     map_opt (sub.typ sub) ret)
+                     Option.map (sub.typ sub) ret)
       | Text_rebind (_p, lid) -> Pext_rebind (map_loc sub lid)
     )
 
@@ -361,7 +359,7 @@ let pattern sub pat =
                   )
           ))
     | Tpat_variant (label, pato, _) ->
-        Ppat_variant (label, map_opt (sub.pat sub) pato)
+        Ppat_variant (label, Option.map (sub.pat sub) pato)
     | Tpat_record (list, closed) ->
         Ppat_record (List.map (fun (lid, _, pat) ->
             map_loc sub lid, sub.pat sub pat) list, closed)
@@ -379,11 +377,11 @@ let exp_extra sub (extra, loc, attrs) sexp =
     match extra with
       Texp_coerce (cty1, cty2) ->
         Pexp_coerce (sexp,
-                     map_opt (sub.typ sub) cty1,
+                     Option.map (sub.typ sub) cty1,
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
+    | Texp_poly cto -> Pexp_poly (sexp, Option.map (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)
   in
   Exp.mk ~loc ~attrs desc
@@ -393,7 +391,7 @@ let cases sub l = List.map (sub.case sub) l
 let case sub {c_lhs; c_guard; c_rhs} =
   {
    pc_lhs = sub.pat sub c_lhs;
-   pc_guard = map_opt (sub.expr sub) c_guard;
+   pc_guard = Option.map (sub.expr sub) c_guard;
    pc_rhs = sub.expr sub c_rhs;
   }
 
@@ -476,14 +474,14 @@ let expression sub exp =
                 (Exp.tuple ~loc (List.map (sub.expr sub) args))
           ))
     | Texp_variant (label, expo) ->
-        Pexp_variant (label, map_opt (sub.expr sub) expo)
+        Pexp_variant (label, Option.map (sub.expr sub) expo)
     | Texp_record { fields; extended_expression; _ } ->
         let list = Array.fold_left (fun l -> function
             | _, Kept _ -> l
             | _, Overridden (lid, exp) -> (lid, sub.expr sub exp) :: l)
             [] fields
         in
-        Pexp_record (list, map_opt (sub.expr sub) extended_expression)
+        Pexp_record (list, Option.map (sub.expr sub) extended_expression)
     | Texp_field (exp, lid, _label) ->
         Pexp_field (sub.expr sub exp, map_loc sub lid)
     | Texp_setfield (exp1, lid, _label, exp2) ->
@@ -494,7 +492,7 @@ let expression sub exp =
     | Texp_ifthenelse (exp1, exp2, expo) ->
         Pexp_ifthenelse (sub.expr sub exp1,
           sub.expr sub exp2,
-          map_opt (sub.expr sub) expo)
+          Option.map (sub.expr sub) expo)
     | Texp_sequence (exp1, exp2) ->
         Pexp_sequence (sub.expr sub exp1, sub.expr sub exp2)
     | Texp_while (exp1, exp2) ->
@@ -565,7 +563,7 @@ let module_type_declaration sub mtd =
   let loc = sub.location sub mtd.mtd_loc in
   let attrs = sub.attributes sub mtd.mtd_attributes in
   Mtd.mk ~loc ~attrs
-    ?typ:(map_opt (sub.module_type sub) mtd.mtd_type)
+    ?typ:(Option.map (sub.module_type sub) mtd.mtd_type)
     (map_loc sub mtd.mtd_name)
 
 let signature sub sg =
@@ -652,7 +650,7 @@ let module_type sub mty =
     | Tmty_alias (_path, lid) -> Pmty_alias (map_loc sub lid)
     | Tmty_signature sg -> Pmty_signature (sub.signature sub sg)
     | Tmty_functor (_id, name, mtype1, mtype2) ->
-        Pmty_functor (name, map_opt (sub.module_type sub) mtype1,
+        Pmty_functor (name, Option.map (sub.module_type sub) mtype1,
           sub.module_type sub mtype2)
     | Tmty_with (mtype, list) ->
         Pmty_with (sub.module_type sub mtype,
@@ -684,7 +682,7 @@ let module_expr sub mexpr =
             Tmod_ident (_p, lid) -> Pmod_ident (map_loc sub lid)
           | Tmod_structure st -> Pmod_structure (sub.structure sub st)
           | Tmod_functor (_id, name, mtype, mexpr) ->
-              Pmod_functor (name, Misc.may_map (sub.module_type sub) mtype,
+              Pmod_functor (name, Option.map (sub.module_type sub) mtype,
                 sub.module_expr sub mexpr)
           | Tmod_apply (mexp1, mexp2, _) ->
               Pmod_apply (sub.module_expr sub mexp1, sub.module_expr sub mexp2)
@@ -841,7 +839,7 @@ let class_field sub cf =
   let desc = match cf.cf_desc with
       Tcf_inherit (ovf, cl, super, _vals, _meths) ->
         Pcf_inherit (ovf, sub.class_expr sub cl,
-                     map_opt (fun v -> mkloc v loc) super)
+                     Option.map (fun v -> mkloc v loc) super)
     | Tcf_constraint (cty, cty') ->
         Pcf_constraint (sub.typ sub cty, sub.typ sub cty')
     | Tcf_val (lab, mut, _, Tcfk_virtual cty, _) ->
