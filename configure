@@ -14218,6 +14218,9 @@ case $host in #(
   *-*-mingw32|*-pc-windows) :
     cclibs="$cclibs -lws2_32"
     sockets=true ;; #(
+  *-*-haiku) :
+    cclibs="$cclibs -lnetwork"
+    sockets=true ;; #(
   *) :
 
     ac_fn_c_check_func "$LINENO" "socket" "ac_cv_func_socket"

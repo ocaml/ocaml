@@ -1156,6 +1156,9 @@ AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [cclibs="$cclibs -lws2_32"
     sockets=true],
+  [*-*-haiku],
+    [cclibs="$cclibs -lnetwork"
+    sockets=true],
   [
     AC_CHECK_FUNC([socket])
     AC_CHECK_FUNC([socketpair])

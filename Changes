@@ -300,6 +300,9 @@ OCaml 4.11
   (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
   Doligez)
 
+- #9486: Fix configuration for the Haiku operating system
+  (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
  - #463: a new Misc.Magic_number module for user-friendly parsing
