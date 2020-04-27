@@ -137,12 +137,10 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
 CAMLprim value caml_static_release_bytecode(value bc)
 {
   code_t prog;
-  asize_t len;
   int found, index;
   struct code_fragment *cf;
 
   prog = Bc_val(bc)->prog;
-  len = Bc_val(bc)->len;
 
   caml_remove_debug_info(prog);
 
