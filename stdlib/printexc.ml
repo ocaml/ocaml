@@ -108,6 +108,7 @@ type backtrace_slot =
       start_char  : int;
       end_char    : int;
       is_inline   : bool;
+      defname     : string;
     }
   | Unknown_location of {
       is_raise : bool
@@ -116,7 +117,7 @@ type backtrace_slot =
 (* to avoid warning *)
 let _ = [Known_location { is_raise = false; filename = "";
                           line_number = 0; start_char = 0; end_char = 0;
-                          is_inline = false };
+                          is_inline = false; defname = "" };
          Unknown_location { is_raise = false }]
 
 external convert_raw_backtrace_slot:
@@ -143,8 +144,8 @@ let format_backtrace_slot pos slot =
       else
         Some (sprintf "%s unknown location" (info false))
   | Known_location l ->
-      Some (sprintf "%s file \"%s\"%s, line %d, characters %d-%d"
-              (info l.is_raise) l.filename
+      Some (sprintf "%s %s in file \"%s\"%s, line %d, characters %d-%d"
+              (info l.is_raise) l.defname l.filename
               (if l.is_inline then " (inlined)" else "")
               l.line_number l.start_char l.end_char)
 
@@ -208,6 +209,11 @@ let backtrace_slot_location = function
       end_char    = l.end_char;
     }
 
+let backtrace_slot_defname = function
+  | Unknown_location _
+  | Known_location { defname = "" } -> None
+  | Known_location l -> Some l.defname
+
 let backtrace_slots raw_backtrace =
   (* The documentation of this function guarantees that Some is
      returned only if a part of the trace is usable. This gives us
@@ -234,6 +240,7 @@ module Slot = struct
   let is_raise = backtrace_slot_is_raise
   let is_inline = backtrace_slot_is_inline
   let location = backtrace_slot_location
+  let name = backtrace_slot_defname
 end
 
 external raw_backtrace_length :

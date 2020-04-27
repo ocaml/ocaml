@@ -94,4 +94,4 @@ val of_primitive : Lambda.primitive -> t
 
 val of_primitive_arg : Lambda.primitive -> t
 
-val anon_fn_with_loc : Location.t -> t
+val anon_fn_with_loc : Lambda.scoped_location -> t

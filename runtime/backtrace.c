@@ -93,8 +93,8 @@ static void print_location(struct caml_loc_info * li, int index)
   if (! li->loc_valid) {
     fprintf(stderr, "%s unknown location%s\n", info, inlined);
   } else {
-    fprintf (stderr, "%s file \"%s\"%s, line %d, characters %d-%d\n",
-             info, li->loc_filename, inlined, li->loc_lnum,
+    fprintf (stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
+             info, li->loc_defname, li->loc_filename, inlined, li->loc_lnum,
              li->loc_startchr, li->loc_endchr);
   }
 }
@@ -188,20 +188,22 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 static value caml_convert_debuginfo(debuginfo dbg)
 {
   CAMLparam0();
-  CAMLlocal2(p, fname);
+  CAMLlocal3(p, fname, dname);
   struct caml_loc_info li;
 
   caml_debuginfo_location(dbg, &li);
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
-    p = caml_alloc_small(6, 0);
+    dname = caml_copy_string(li.loc_defname);
+    p = caml_alloc_small(7, 0);
     Field(p, 0) = Val_bool(li.loc_is_raise);
     Field(p, 1) = fname;
     Field(p, 2) = Val_int(li.loc_lnum);
     Field(p, 3) = Val_int(li.loc_startchr);
     Field(p, 4) = Val_int(li.loc_endchr);
     Field(p, 5) = Val_bool(li.loc_is_inlined);
+    Field(p, 6) = dname;
   } else {
     p = caml_alloc_small(1, 1);
     Field(p, 0) = Val_bool(li.loc_is_raise);

@@ -231,10 +231,18 @@ debuginfo caml_debuginfo_next(debuginfo dbg)
     return (debuginfo*)(infoptr + 2);
 }
 
+/* Multiple names may share the same filename,
+   so it is referenced as an offset instead of stored inline */
+struct name_info {
+  int32_t filename_offs;
+  char name[1];
+};
+
 /* Extract location information for the given frame descriptor */
 void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
 {
   uint32_t info1, info2;
+  struct name_info * name_info;
 
   /* If no debugging information available, print nothing.
      When everything is compiled with -g, this corresponds to
@@ -248,6 +256,7 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   /* Recover debugging info */
   info1 = ((uint32_t *)dbg)[0];
   info2 = ((uint32_t *)dbg)[1];
+  name_info = (struct name_info*)((char *) dbg + (info1 & 0x3FFFFFC));
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb ffffffffffffffffffffffff k n
                          44       36         26                        2 1 0
@@ -263,7 +272,9 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   li->loc_valid = 1;
   li->loc_is_raise = (info1 & 2) == 2;
   li->loc_is_inlined = caml_debuginfo_next(dbg) != NULL;
-  li->loc_filename = (char *) dbg + (info1 & 0x3FFFFFC);
+  li->loc_defname = name_info->name;
+  li->loc_filename =
+    (char *)name_info + name_info->filename_offs;
   li->loc_lnum = info2 >> 12;
   li->loc_startchr = (info2 >> 4) & 0xFF;
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);

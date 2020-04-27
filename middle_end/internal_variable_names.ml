@@ -298,7 +298,8 @@ let unbox_free_vars_of_closures = "unbox_free_vars_of_closures"
 let unit = "unit"
 let zero = "zero"
 
-let anon_fn_with_loc (loc: Location.t) =
+let anon_fn_with_loc (sloc: Lambda.scoped_location) =
+  let loc = Debuginfo.Scoped_location.to_location sloc in
   let (file, line, startchar) = Location.get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
   let pp_chars ppf =

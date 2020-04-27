@@ -83,6 +83,7 @@ COMPILERLIBS_SOURCES=\
   utils/terminfo.ml \
   utils/warnings.ml \
   utils/load_path.ml \
+  utils/int_replace_polymorphic_compare.ml \
   parsing/location.ml \
   parsing/longident.ml \
   parsing/docstrings.ml \
@@ -103,6 +104,7 @@ COMPILERLIBS_SOURCES=\
   file_formats/cmi_format.ml \
   typing/persistent_env.ml \
   typing/env.ml \
+  lambda/debuginfo.ml \
   lambda/lambda.ml \
   lambda/runtimedef.ml \
   bytecomp/instruct.ml \

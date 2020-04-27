@@ -17,6 +17,85 @@ open! Int_replace_polymorphic_compare
 open Lexing
 open Location
 
+module Scoped_location = struct
+  type scope_item =
+    | Sc_anonymous_function
+    | Sc_value_definition of string
+    | Sc_module_definition of string
+    | Sc_class_definition of string
+    | Sc_method_definition of string
+
+  type scopes = scope_item list
+
+  let add_parens_if_symbolic = function
+    | "" -> ""
+    | s ->
+       match s.[0] with
+       | 'a'..'z' | 'A'..'Z' | '_' | '0'..'9' -> s
+       | _ -> "(" ^ s ^ ")"
+
+  let string_of_scope_item = function
+    | Sc_anonymous_function ->
+       "(fun)"
+    | Sc_value_definition name
+    | Sc_module_definition name
+    | Sc_class_definition name
+    | Sc_method_definition name ->
+       add_parens_if_symbolic name
+
+  let string_of_scopes scopes =
+    let dot acc =
+      match acc with
+      | [] -> []
+      | acc -> "." :: acc in
+    let rec to_strings acc = function
+      | [] -> acc
+        (* Collapse nested anonymous function scopes *)
+      | Sc_anonymous_function :: ((Sc_anonymous_function :: _) as rest) ->
+        to_strings acc rest
+        (* Use class#meth syntax for classes *)
+      | (Sc_method_definition _ as meth) ::
+        (Sc_class_definition _ as cls) :: rest ->
+        to_strings (string_of_scope_item cls :: "#" ::
+                      string_of_scope_item meth :: dot acc) rest
+      | s :: rest ->
+        to_strings (string_of_scope_item s :: dot acc) rest in
+    match scopes with
+    | [] -> "<unknown>"
+    | scopes -> String.concat "" (to_strings [] scopes)
+
+  let enter_anonymous_function ~scopes =
+    Sc_anonymous_function :: scopes
+  let enter_value_definition ~scopes id =
+    Sc_value_definition (Ident.name id) :: scopes
+  let enter_module_definition ~scopes id =
+    Sc_module_definition (Ident.name id) :: scopes
+  let enter_class_definition ~scopes id =
+    Sc_class_definition (Ident.name id) :: scopes
+  let enter_method_definition ~scopes (m : Asttypes.label) =
+    Sc_method_definition m :: scopes
+
+  type t =
+    | Loc_unknown
+    | Loc_known of
+        { loc : Location.t;
+          scopes : scopes; }
+
+  let of_location ~scopes loc =
+    if Location.is_none loc then
+      Loc_unknown
+    else
+      Loc_known { loc; scopes }
+
+  let to_location = function
+    | Loc_unknown -> Location.none
+    | Loc_known { loc; _ } -> loc
+
+  let string_of_scoped_location = function
+    | Loc_unknown -> "??"
+    | Loc_known { loc = _; scopes } -> string_of_scopes scopes
+end
+
 type item = {
   dinfo_file: string;
   dinfo_line: int;
@@ -25,6 +104,7 @@ type item = {
   dinfo_start_bol: int;
   dinfo_end_bol: int;
   dinfo_end_line: int;
+  dinfo_scopes: Scoped_location.scopes;
 }
 
 type t = item list
@@ -53,7 +133,7 @@ let to_string dbg =
     in
     "{" ^ String.concat ";" items ^ "}"
 
-let item_from_location loc =
+let item_from_location ~scopes loc =
   let valid_endpos =
     String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname in
   { dinfo_file = loc.loc_start.pos_fname;
@@ -70,10 +150,14 @@ let item_from_location loc =
     dinfo_end_line =
       if valid_endpos then loc.loc_end.pos_lnum
       else loc.loc_start.pos_lnum;
+    dinfo_scopes = scopes
   }
 
-let from_location loc =
-  if loc == Location.none then [] else [item_from_location loc]
+let from_location = function
+  | Scoped_location.Loc_unknown -> []
+  | Scoped_location.Loc_known {scopes; loc} ->
+    assert (not (Location.is_none loc));
+    [item_from_location ~scopes loc]
 
 let to_location = function
   | [] -> Location.none
@@ -92,11 +176,7 @@ let to_location = function
       } in
     { loc_ghost = false; loc_start; loc_end; }
 
-let inline loc t =
-  if loc == Location.none then t
-  else (item_from_location loc) :: t
-
-let concat dbg1 dbg2 =
+let inline dbg1 dbg2 =
   dbg1 @ dbg2
 
 (* CR-someday afrisch: FWIW, the current compare function does not seem very

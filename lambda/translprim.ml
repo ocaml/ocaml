@@ -22,6 +22,7 @@ open Types
 open Typedtree
 open Typeopt
 open Lambda
+open Debuginfo.Scoped_location
 
 type error =
   | Unknown_builtin_primitive of string
@@ -592,6 +593,7 @@ let comparison_primitive comparison comparison_kind =
   | Compare, Compare_int64s -> Pcompare_bints Pint64
 
 let lambda_of_loc kind loc =
+  let loc = to_location loc in
   let loc_start = loc.Location.loc_start in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
   let file =
@@ -672,7 +674,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
                            loc),
                      Lprim(Praise Raise_reraise, [raise_arg], loc)))
   | Lazy_force, [arg] ->
-      Matching.inline_lazy_force arg Location.none
+      Matching.inline_lazy_force arg Loc_unknown
   | Loc kind, [] ->
       lambda_of_loc kind loc
   | Loc kind, [arg] ->
@@ -687,7 +689,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | (Raise _ | Raise_with_backtrace
     | Lazy_force | Loc _ | Primitive _ | Comparison _
     | Send | Send_self | Send_cache), _ ->
-      raise(Error(loc, Wrong_arity_builtin_primitive prim_name))
+      raise(Error(to_location loc, Wrong_arity_builtin_primitive prim_name))
 
 let check_primitive_arity loc p =
   let prim = lookup_primitive loc p in
@@ -708,7 +710,7 @@ let check_primitive_arity loc p =
 (* Eta-expand a primitive *)
 
 let transl_primitive loc p env ty path =
-  let prim = lookup_primitive_and_mark_used loc p env path in
+  let prim = lookup_primitive_and_mark_used (to_location loc) p env path in
   let has_constant_constructor = false in
   let prim =
     match specialize_primitive env ty ~has_constant_constructor prim with
@@ -729,8 +731,8 @@ let transl_primitive loc p env ty path =
                  params;
                  return = Pgenval;
                  attr = default_stub_attribute;
-                 loc = loc;
-                 body = body; }
+                 loc;
+                 body; }
 
 let lambda_primitive_needs_event_after = function
   | Prevapply | Pdirapply (* PR#6920 *)
@@ -774,7 +776,8 @@ let primitive_needs_event_after = function
   | Raise _ | Raise_with_backtrace | Loc _ -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
-  let prim = lookup_primitive_and_mark_used loc p env (Some path) in
+  let prim =
+    lookup_primitive_and_mark_used (to_location loc) p env (Some path) in
   let has_constant_constructor =
     match arg_exps with
     | [_; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]

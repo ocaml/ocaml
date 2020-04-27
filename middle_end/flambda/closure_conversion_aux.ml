@@ -91,7 +91,7 @@ module Function_decls = struct
       body : Lambda.lambda;
       free_idents_of_body : Ident.Set.t;
       attr : Lambda.function_attribute;
-      loc : Location.t;
+      loc : Lambda.scoped_location
     }
 
     let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body

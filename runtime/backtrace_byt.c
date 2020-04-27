@@ -54,7 +54,8 @@ enum {
   EV_POS = 0,
   EV_MODULE = 1,
   EV_LOC = 2,
-  EV_KIND = 3
+  EV_KIND = 3,
+  EV_DEFNAME = 4
 };
 
 /* Location of fields in the Location.t record. */
@@ -77,6 +78,7 @@ enum {
 struct ev_info {
   code_t ev_pc;
   char *ev_filename;
+  char *ev_defname;
   int ev_lnum;
   int ev_startchr;
   int ev_endchr;
@@ -174,6 +176,16 @@ static struct ev_info *process_debug_events(code_t code_start,
         events[j].ev_filename = caml_stat_strdup_noexc(fname);
         if(events[j].ev_filename == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
+      }
+
+      if (Is_block(Field(ev, EV_DEFNAME)) &&
+          Tag_val(Field(ev, EV_DEFNAME)) == String_tag) {
+        const char *dname = String_val(Field(ev, EV_DEFNAME));
+        events[j].ev_defname = caml_stat_strdup_noexc(dname);
+        if (events[j].ev_defname == NULL)
+          caml_fatal_error ("caml_add_debug_info: out of memory");
+      } else {
+        events[j].ev_defname = "<old bytecode>";
       }
 
       events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
@@ -461,6 +473,7 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_valid = 1;
   li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
+  li->loc_defname = event->ev_defname;
   li->loc_lnum = event->ev_lnum;
   li->loc_startchr = event->ev_startchr;
   li->loc_endchr = event->ev_endchr;
