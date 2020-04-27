@@ -20,6 +20,25 @@ open Asttypes
 open Types
 open Typedtree
 
+module Seq = struct
+  include Seq
+
+  let pop seq =
+    match seq () with
+    | Nil -> None
+    | Cons (x, xs) -> Some (x, xs)
+
+  let rec take n seq =
+    if n = 0 then empty
+    else
+      fun () -> match seq () with
+        | Nil -> Nil
+        | Cons (x, xs) -> Cons (x, take (n - 1) xs)
+
+  let delayed (thunk : (unit -> 'a Seq.t)) :'a Seq.t =
+    fun () -> thunk () ()
+end
+
 (*************************************)
 (* Utilities for building patterns   *)
 (*************************************)
@@ -1445,22 +1464,6 @@ let rec do_match pss qs = match qs with
         (build_specialized_submatrix ~extend_row:(@) q0 pss)
         (qargs @ qs)
 
-
-type 'a exhaust_result =
-  | No_matching_value
-  | Witnesses of 'a
-
-let rappend r1 r2 =
-  match r1, r2 with
-  | No_matching_value, _ -> r2
-  | _, No_matching_value -> r1
-  | Witnesses l1, Witnesses l2 -> Witnesses (Seq.append l1 l2)
-
-let rec try_many  f = function
-  | [] -> No_matching_value
-  | (p,pss)::rest ->
-      rappend (f (p, pss)) (try_many f rest)
-
 (*
 let print_pat pat =
   let rec string_of_pat pat =
@@ -1491,14 +1494,14 @@ let print_pat pat =
   This function should be called for exhaustiveness check only.
 *)
 let rec exhaust (ext:Path.t option) pss n = match pss with
-| []    ->  Witnesses (Seq.return (omegas n))
-| []::_ ->  No_matching_value
+| []    ->  Seq.return (omegas n)
+| []::_ ->  Seq.empty
 | pss   ->
     let pss = simplify_first_col pss in
     if not (all_coherent (first_column pss)) then
       (* We're considering an ill-typed branch, we won't actually be able to
          produce a well typed value taking that branch. *)
-      No_matching_value
+      Seq.empty
     else begin
       (* Assuming the first column is ill-typed but considered coherent, we
          might end up producing an ill-typed witness of non-exhaustivity
@@ -1514,59 +1517,45 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
       match build_specialized_submatrices ~extend_row:(@) q0 pss with
       | { default; constrs = [] } ->
           (* first column of pss is made of variables only *)
-          begin match exhaust ext default (n-1) with
-          | Witnesses r ->
-              let q0 = Pattern_head.to_omega_pattern q0 in
-              Witnesses (Seq.map (fun row -> q0::row) r)
-          | r -> r
-        end
+          let sub_witnesses = exhaust ext default (n-1) in
+          let q0 = Pattern_head.to_omega_pattern q0 in
+          Seq.map (fun row -> q0::row) sub_witnesses
       | { default; constrs } ->
           let try_non_omega (p,pss) =
             if is_absent_pat p then
-              No_matching_value
+              Seq.empty
             else
-              match
+              let sub_witnesses =
                 exhaust
                   ext pss
                   (List.length (simple_match_args p Pattern_head.omega [])
                    + n - 1)
-              with
-              | Witnesses r ->
-                  let p = Pattern_head.to_omega_pattern p in
-                  Witnesses (Seq.map (set_args p) r)
-              | r       -> r in
-          let before = try_many try_non_omega constrs in
-          if
-            full_match false constrs && not (should_extend ext constrs)
-          then
-            before
-          else
-            let r =  exhaust ext default (n-1) in
-            match r with
-            | No_matching_value -> before
-            | Witnesses r ->
-                try
-                  let p = build_other ext constrs in
-                  let dug = Seq.map (fun tail -> p :: tail) r in
-                  rappend before (Witnesses dug)
-                with
-        (* cannot occur, since constructors don't make a full signature *)
-                | Empty -> fatal_error "Parmatch.exhaust"
-  end
+              in
+              let p = Pattern_head.to_omega_pattern p in
+              Seq.map (set_args p) sub_witnesses
+          in
+          let constrs_witnesses = Seq.flat_map try_non_omega (List.to_seq constrs) in
+          let default_witnesses_delayed () =
+            if full_match false constrs && not (should_extend ext constrs)
+            then Seq.empty
+            else
+              let sub_witnesses = exhaust ext default (n-1) in
+              match build_other ext constrs with
+              | exception Empty ->
+                  (* cannot occur, since constructors don't make a full signature *)
+                  fatal_error "Parmatch.exhaust"
+              | p ->
+                  Seq.map (fun tail -> p :: tail) sub_witnesses
+          in
+          Seq.append constrs_witnesses (Seq.delayed default_witnesses_delayed)
+    end
 
 let exhaust ext pss n =
-  let ret = exhaust ext pss n in
-  match ret with
-  | No_matching_value -> No_matching_value
-  | Witnesses lst ->
-      let singletons =
-        Seq.map
-          (function
-              [x] -> x
-            | _ -> assert false)
-          lst
-      in
-      Witnesses singletons
+  exhaust ext pss n
+  |> Seq.map (function
+     | [x] -> x
+     | _ -> assert false)
+
 (*
    Another exhaustiveness check, enforcing variant typing.
    Note that it does not check exact exhaustiveness, but whether a
@@ -2146,25 +2135,16 @@ let do_check_partial ~pred loc casel pss = match pss with
     end ;
     Partial
 | ps::_  ->
-    begin match exhaust None pss (List.length ps) with
-    | No_matching_value -> Total
-    | Witnesses us ->
+    let counter_examples = exhaust None pss (List.length ps) in
+    begin match Seq.pop counter_examples with
+    | None -> Total
+    | Some (u, us) ->
+        let us = Seq.cons u us in
         let check_witness u =
           let (pattern,constrs,labels) = Conv.conv u in
           pred constrs labels pattern
         in
         let vs = Seq.filter_map check_witness us in
-        let module Seq = struct
-          include Seq
-
-          let rec take n seq =
-            if n = 0 then empty
-            else
-              fun () -> match seq () with
-                | Nil -> Nil
-                | Cons (x, xs) -> Cons (x, take (n - 1) xs)
-        end
-        in
         let vs_cut = List.of_seq (Seq.take 42 vs) in
         begin match vs_cut with
           [] -> Total
@@ -2256,12 +2236,13 @@ let do_check_fragile loc casel pss =
     | ps::_ ->
         List.iter
           (fun ext ->
-            match exhaust (Some ext) pss (List.length ps) with
-            | No_matching_value ->
+            let witnesses = exhaust (Some ext) pss (List.length ps) in
+            match Seq.pop witnesses with
+            | None ->
                 Location.prerr_warning
                   loc
                   (Warnings.Fragile_match (Path.name ext))
-            | Witnesses _ -> ())
+            | Some _ -> ())
           exts
 
 (********************************)
