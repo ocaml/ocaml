@@ -14,7 +14,7 @@ Lines 1-3, characters 8-23:
 3 |   | Some _, Some _ -> 2..
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-((Some _, None)|(None, Some _))
+(Some _, None)
 val f : 'a option * 'b option -> int = <fun>
 |}]
 
@@ -149,7 +149,7 @@ Line 1, characters 8-47:
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-({left=Box 0; right=Box 0}|{left=Box 1; right=Box _})
+{left=Box 0; right=Box 0}
 val f : int box pair -> unit = <fun>
 |}]
 

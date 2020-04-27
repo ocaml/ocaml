@@ -37,6 +37,11 @@ module Seq = struct
 
   let delayed (thunk : (unit -> 'a Seq.t)) :'a Seq.t =
     fun () -> thunk () ()
+
+  let () =
+    ignore pop;
+    ignore take;
+    ignore delayed;
 end
 
 (*************************************)
@@ -2145,20 +2150,19 @@ let do_check_partial ~pred loc casel pss = match pss with
           pred constrs labels pattern
         in
         let vs = Seq.filter_map check_witness us in
-        let vs_cut = List.of_seq (Seq.take 42 vs) in
-        begin match vs_cut with
-          [] -> Total
-        | _nonempty ->
+        begin match Seq.pop vs with
+        | None -> Total
+        | Some (v, _rest) ->
             if Warnings.is_active (Warnings.Partial_match "") then begin
               let errmsg =
                 try
                   let buf = Buffer.create 16 in
                   let fmt = Format.formatter_of_buffer buf in
-                  Printpat.top_pretty fmt (orify_many vs_cut);
-                  if do_match (initial_only_guarded casel) vs_cut then
+                  Printpat.top_pretty fmt v;
+                  if do_match (initial_only_guarded casel) [v] then
                     Buffer.add_string buf
                       "\n(However, some guarded clause may match this value.)";
-                  if List.exists contains_extension vs_cut then
+                  if contains_extension v then
                     Buffer.add_string buf
                       "\nMatching over values of extensible variant types \
                          (the *extension* above)\n\
