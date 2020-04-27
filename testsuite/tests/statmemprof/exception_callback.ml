@@ -20,4 +20,5 @@ let _ =
     callstack_size = 10;
     callback = fun _ -> assert false
   };
-  Array.make 200 0
+  ignore (Sys.opaque_identity (Array.make 200 0));
+  stop ()

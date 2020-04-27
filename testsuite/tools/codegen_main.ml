@@ -25,7 +25,7 @@ let compile_file filename =
   Emit.begin_assembly();
   let ic = open_in filename in
   let lb = Lexing.from_channel ic in
-  lb.Lexing.lex_curr_p <- { lb.Lexing.lex_curr_p with pos_fname = filename };
+  lb.Lexing.lex_curr_p <- Lexing.{ lb.lex_curr_p with pos_fname = filename };
   try
     while true do
       Asmgen.compile_phrase ~ppf_dump:Format.std_formatter

@@ -12,73 +12,87 @@
 #*                                                                        *
 #**************************************************************************
 
-BASEDIR = ..
+TOPDIR = ../..
 
-ROOTDIR = ../..
+COMPILERLIBSDIR = $(TOPDIR)/compilerlibs
 
-include $(ROOTDIR)/Makefile.config
+RUNTIME_VARIANT ?=
+ASPPFLAGS ?=
+
+include $(TOPDIR)/Makefile.tools
+
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
-expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
-          -I $(OTOPDIR)/driver -I $(OTOPDIR)/typing -I $(OTOPDIR)/toplevel
-expect_LIBRARIES := $(addprefix $(ROOTDIR)/compilerlibs/,\
+expect_DIRS = parsing utils driver typing toplevel
+expect_OCAMLFLAGS = $(addprefix -I $(TOPDIR)/,$(expect_DIRS))
+expect_LIBS := $(addprefix $(COMPILERLIBSDIR)/,\
   ocamlcommon ocamlbytecomp ocamltoplevel)
 
-codegen_INCLUDES=\
-  -I $(OTOPDIR)/parsing \
-  -I $(OTOPDIR)/utils \
-  -I $(OTOPDIR)/typing \
-  -I $(OTOPDIR)/middle_end \
-  -I $(OTOPDIR)/bytecomp \
-  -I $(OTOPDIR)/lambda \
-  -I $(OTOPDIR)/asmcomp
+codegen_PROG = codegen$(EXE)
+codegen_DIRS = parsing utils typing middle_end bytecomp lambda asmcomp
+codegen_OCAMLFLAGS = $(addprefix -I $(TOPDIR)/, $(codegen_DIRS)) -w +40 -g
 
-codegen_OTHEROBJECTS=\
-  $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
-  $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
+codegen_LIBS = $(addprefix $(COMPILERLIBSDIR)/,\
+  ocamlcommon ocamloptcomp)
 
-codegen_OBJECTS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo codegen_main.cmo
+codegen_OBJECTS = $(addsuffix .cmo,\
+  parsecmmaux parsecmm lexcmm codegen_main)
 
-codegen_ADD_COMPFLAGS=$(codegen_INCLUDES) -w -40 -g
-
-targets := $(expect_PROG)
+tools := $(expect_PROG)
 
 ifneq "$(ARCH)" "none"
-targets += codegen
+tools += $(codegen_PROG)
 ifneq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # The asmgen tests are not ported to MSVC64 yet
 # so do not compile any arch-specific module
-targets += asmgen_$(ARCH).$(O)
+tools += asmgen_$(ARCH).$(O)
 endif
 endif
 
-all: $(targets)
+all: $(tools)
 
-$(expect_PROG): $(expect_LIBRARIES:=.cma) $(expect_MAIN).cmo
-	@$(OCAMLC) -linkall -o $@ $^
+$(expect_PROG): $(expect_LIBS:=.cma) $(expect_MAIN).cmo
+	$(OCAMLC) -linkall -o $@ $^
 
-include $(BASEDIR)/makefiles/Makefile.common
+$(expect_PROG): COMPFLAGS = $(expect_OCAMLFLAGS)
 
-.PHONY: clean
-clean: defaultclean
-	rm -f $(expect_PROG)
-	rm -f codegen parsecmm.ml parsecmm.mli lexcmm.ml
-
-expect_test.cmo: COMPFLAGS=$(expect_COMPFLAGS)
-
-$(codegen_OBJECTS): ADD_COMPFLAGS = $(codegen_ADD_COMPFLAGS)
+$(codegen_PROG): COMPFLAGS = $(codegen_OCAMLFLAGS)
 
 codegen_main.cmo: parsecmm.cmo
 
-codegen: $(codegen_OBJECTS)
-	@$(OCAMLC) $(LINKFLAGS) -o $@ $(codegen_OTHEROBJECTS) $^
+$(codegen_PROG): $(codegen_OBJECTS)
+	$(OCAMLC) -o $@ $(codegen_LIBS:=.cma) $^
 
 parsecmm.mli parsecmm.ml: parsecmm.mly
-	@$(OCAMLYACC) -q parsecmm.mly
+	$(OCAMLYACC) -q parsecmm.mly
 
 lexcmm.ml: lexcmm.mll
-	@$(OCAMLLEX) -q lexcmm.mll
+	$(OCAMLLEX) -q lexcmm.mll
+
+parsecmmaux.cmo: parsecmmaux.cmi
+
+lexcmm.cmo: lexcmm.cmi
+
+parsecmm.cmo: parsecmm.cmi
 
 asmgen_i386.obj: asmgen_i386nt.asm
 	@set -o pipefail ; \
 	$(ASM) $@ $^ | tail -n +2
+
+%.cmi: %.mli
+	$(OCAMLC) -c $<
+
+%.cmo: %.ml
+	$(OCAMLC) -c $<
+
+%.cmx: %.ml
+	$(OCAMLOPT) -c $<
+
+%.$(O): %.S
+	$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $<
+
+.PHONY: clean
+clean:
+	rm -f *.cm* *.$(O)
+	rm -f $(tools)
+	rm -f parsecmm.ml parsecmm.mli lexcmm.ml

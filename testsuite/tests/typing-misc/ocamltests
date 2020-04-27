@@ -23,6 +23,7 @@ printing.ml
 records.ml
 scope_escape.ml
 unique_names_in_unification.ml
+variance.ml
 variant.ml
 wellfounded.ml
 empty_variant.ml

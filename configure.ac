@@ -15,6 +15,8 @@
 
 # Process this file with autoconf to produce a configure script.
 
+# Require Autoconf 2.69 for repeatability in CI
+AC_PREREQ([2.69])
 AC_INIT([OCaml],
         m4_esyscmd([head -n1 VERSION | tr -d '\r\n']),
         [caml-list@inria.fr],

@@ -242,25 +242,33 @@ expr:
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
-      { Cop(Cload {memory_chunk=Word_val; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_addr],
+      { let open Asttypes in
+        Cop(Cload {memory_chunk=Word_val; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload {memory_chunk=Word_val; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_addr],
+      { let open Asttypes in
+        Cop(Cload {memory_chunk=Word_val; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_addr],
           Debuginfo.none) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload {memory_chunk=Word_int; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_int],
+      { let open Asttypes in
+        Cop(Cload {memory_chunk=Word_int; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_int],
           Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
-      { Cop(Cload {memory_chunk=Double_u; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_float],
+      { let open Asttypes in
+        Cop(Cload {memory_chunk=Double_u; mutability=Mutable; is_atomic=false}, [access_array $3 $4 Arch.size_float],
+
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
-      { Cop(Cstore (Word_val, Assignment),
+      { let open Lambda in
+        Cop(Cstore (Word_val, Assignment),
             [access_array $3 $4 Arch.size_addr; $5], Debuginfo.none) }
   | LPAREN INTASET expr expr expr RPAREN
-      { Cop(Cstore (Word_int, Assignment),
+      { let open Lambda in
+        Cop(Cstore (Word_int, Assignment),
             [access_array $3 $4 Arch.size_int; $5], Debuginfo.none) }
   | LPAREN FLOATASET expr expr expr RPAREN
-      { Cop(Cstore (Double_u, Assignment),
+      { let open Lambda in
+        Cop(Cstore (Double_u, Assignment),
             [access_array $3 $4 Arch.size_float; $5], Debuginfo.none) }
 ;
 exprlist:
@@ -293,14 +301,14 @@ chunk:
   | VAL                         { Word_val }
 ;
 unaryop:
-    LOAD chunk                  { Cload {memory_chunk=$2; mutability=Mutable; is_atomic=false} }
+    LOAD chunk                  { Cload {memory_chunk=$2; mutability=Asttypes.Mutable; is_atomic=false} }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise $1 }
   | ABSF                        { Cabsf }
 ;
 binaryop:
-    STORE chunk                 { Cstore ($2, Assignment) }
+    STORE chunk                 { Cstore ($2, Lambda.Assignment) }
   | ADDI                        { Caddi }
   | SUBI                        { Csubi }
   | STAR                        { Cmuli }

@@ -899,6 +899,7 @@ let fundecls_size fundecls =
 
 type rhs_kind =
   | RHS_block of int
+  | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
   | RHS_nonrec
 ;;
@@ -940,6 +941,11 @@ let rec expr_size env = function
       expr_size env closure
   | Usequence(_exp, exp') ->
       expr_size env exp'
+  | Uoffset (exp, offset) ->
+      (match expr_size env exp with
+      | RHS_block blocksize -> RHS_infix { blocksize; offset }
+      | RHS_nonrec -> RHS_nonrec
+      | _ -> assert false)
   | _ -> RHS_nonrec
 
 (* Record application and currying functions *)
@@ -3212,27 +3218,32 @@ and transl_letrec env bindings cont =
     List.map (fun (id, exp) -> (id, exp, expr_size V.empty exp))
       bindings
   in
-  let op_alloc prim sz =
-    Cop(Cextcall(prim, typ_val, true, None), [int_const dbg sz], dbg) in
+  let op_alloc prim args =
+    Cop(Cextcall(prim, typ_val, true, None), args, dbg) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, _exp, RHS_block sz) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy" sz,
+        Clet(id, op_alloc "caml_alloc_dummy" [int_const dbg sz],
           init_blocks rem)
+    | (id, _exp, RHS_infix { blocksize; offset}) :: rem ->
+        Clet(id, op_alloc "caml_alloc_dummy_infix"
+             [int_const dbg blocksize; int_const dbg offset],
+             init_blocks rem)
     | (id, _exp, RHS_floatblock sz) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy_float" sz,
+        Clet(id, op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
           init_blocks rem)
     | (id, _exp, RHS_nonrec) :: rem ->
         Clet (id, Cconst_int (0, dbg), init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
-    | (_id, _exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+    | (_id, _exp,
+       (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
         fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
         Clet(id, transl env exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
-    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+    | (id, exp, (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
         let op =
           Cop(Cextcall("caml_update_dummy", typ_void, false, None),
               [Cvar (VP.var id); transl env exp], dbg) in

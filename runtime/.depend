@@ -216,6 +216,13 @@ memory_b.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
   caml/alloc.h caml/shared_heap.h caml/roots.h caml/fiber.h \
   caml/platform.h caml/eventlog.h
+memprof_b.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+  caml/alloc.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/signals.h \
+  caml/backtrace_prim.h caml/backtrace.h caml/exec.h caml/weak.h \
+  caml/stack.h
 meta_b.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
@@ -581,6 +588,13 @@ memory_bd.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
   caml/alloc.h caml/shared_heap.h caml/roots.h caml/fiber.h \
   caml/platform.h caml/eventlog.h
+memprof_bd.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+  caml/alloc.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/signals.h \
+  caml/backtrace_prim.h caml/backtrace.h caml/exec.h caml/weak.h \
+  caml/stack.h
 meta_bd.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
@@ -940,6 +954,13 @@ memory_bi.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
   caml/alloc.h caml/shared_heap.h caml/roots.h caml/fiber.h \
   caml/platform.h caml/eventlog.h
+memprof_bi.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+  caml/alloc.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/signals.h \
+  caml/backtrace_prim.h caml/backtrace.h caml/exec.h caml/weak.h \
+  caml/stack.h
 meta_bi.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
@@ -1299,6 +1320,13 @@ memory_bpic.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
   caml/alloc.h caml/shared_heap.h caml/roots.h caml/fiber.h \
   caml/platform.h caml/eventlog.h
+memprof_bpic.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+  caml/alloc.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/signals.h \
+  caml/backtrace_prim.h caml/backtrace.h caml/exec.h caml/weak.h \
+  caml/stack.h
 meta_bpic.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
@@ -1647,6 +1675,12 @@ memory_n.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
   caml/shared_heap.h caml/roots.h caml/fiber.h caml/platform.h \
   caml/eventlog.h
+memprof_n.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/fail.h caml/alloc.h caml/callback.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/signals.h caml/backtrace_prim.h caml/backtrace.h \
+  caml/exec.h caml/weak.h caml/stack.h
 meta_n.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/fail.h caml/fix_code.h caml/interp.h \
@@ -1993,6 +2027,12 @@ memory_nd.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
   caml/shared_heap.h caml/roots.h caml/fiber.h caml/platform.h \
   caml/eventlog.h
+memprof_nd.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/fail.h caml/alloc.h caml/callback.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/signals.h caml/backtrace_prim.h caml/backtrace.h \
+  caml/exec.h caml/weak.h caml/stack.h
 meta_nd.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/fail.h caml/fix_code.h caml/interp.h \
@@ -2333,6 +2373,12 @@ memory_ni.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
   caml/shared_heap.h caml/roots.h caml/fiber.h caml/platform.h \
   caml/eventlog.h
+memprof_ni.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/fail.h caml/alloc.h caml/callback.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/signals.h caml/backtrace_prim.h caml/backtrace.h \
+  caml/exec.h caml/weak.h caml/stack.h
 meta_ni.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/fail.h caml/fix_code.h caml/interp.h \
@@ -2673,6 +2719,12 @@ memory_npic.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
   caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
   caml/shared_heap.h caml/roots.h caml/fiber.h caml/platform.h \
   caml/eventlog.h
+memprof_npic.$(O): memprof.c caml/memprof.h caml/config.h caml/m.h caml/s.h \
+  caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+  caml/domain_state.tbl caml/fail.h caml/alloc.h caml/callback.h \
+  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+  caml/domain.h caml/signals.h caml/backtrace_prim.h caml/backtrace.h \
+  caml/exec.h caml/weak.h caml/stack.h
 meta_npic.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
   caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
   caml/domain_state.tbl caml/fail.h caml/fix_code.h caml/interp.h \

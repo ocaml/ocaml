@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -13,15 +13,12 @@
 #*                                                                        *
 #**************************************************************************
 
-version=$(autoconf --version | sed -ne 's/^autoconf .* \([0-9][^ ]*\)$/\1/p')
-if [ "$version" != '2.69' ] ; then
-  echo "autoconf 2.69 is required" >&2
-  exit 1
-else
-  autoconf -W all,error
-  # Some distros have this 2013 patch to autoconf, some don't...
-  sed -i -e '/^runstatedir/d' \
-         -e '/-runstatedir /,+8d' \
-         -e '/--runstatedir=DIR/d' \
-         -e 's/ runstatedir//' configure
-fi
+autoconf -W all,error
+# Some distros have the 2013 --runstatedir patch to autoconf (see
+# http://git.savannah.gnu.org/cgit/autoconf.git/commit/?id=a197431414088a417b407b9b20583b2e8f7363bd
+# in the GNU autoconf repo), and some don't, so ensure its effects are
+# removed for CI consistency...
+sed -i -e '/^runstatedir/d' \
+       -e '/-runstatedir /,+8d' \
+       -e '/--runstatedir=DIR/d' \
+       -e 's/ runstatedir//' configure

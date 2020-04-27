@@ -19,6 +19,7 @@
 #ifdef CAML_INTERNALS
 
 #include "mlvalues.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {

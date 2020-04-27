@@ -20,12 +20,6 @@ include $(ROOTDIR)/Makefile.common
 
 # Lists of source files
 
-PRIMS := $(addsuffix .c, \
-  alloc array compare extern floats gc_ctrl hash intern interp ints io \
-  lexing md5 meta obj parsing signals str sys callback weak finalise \
-  domain platform eventlog fiber memory startup_aux \
-  dynlink backtrace_byt backtrace spacetime_byt afl bigarray)
-
 BYTECODE_C_SOURCES := $(addsuffix .c, \
   interp misc fix_code startup_aux startup_byt major_gc \
   minor_gc memory alloc roots globroots fail_byt signals \
@@ -240,9 +234,11 @@ ld.conf: $(ROOTDIR)/Makefile.config
 # see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
-
-primitives : $(PRIMS)
-	./gen_primitives.sh >$@
+# To speed up builds, we avoid changing "primitives" when files
+# containing primitives change but the primitives table does not
+primitives: $(shell ./gen_primitives.sh > primitives.new; \
+                    cmp -s primitives primitives.new || echo primitives.new)
+	cp $^ $@
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \
