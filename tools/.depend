@@ -1,15 +1,3 @@
-addlabels.cmo : \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi \
-    ../parsing/longident.cmi \
-    ../parsing/location.cmi \
-    ../parsing/asttypes.cmi
-addlabels.cmx : \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx \
-    ../parsing/longident.cmx \
-    ../parsing/location.cmx \
-    ../parsing/asttypes.cmi
 caml_tex.cmo : \
     ../toplevel/toploop.cmi \
     ../parsing/syntaxerr.cmi \
