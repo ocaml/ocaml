@@ -9,3 +9,4 @@ static_float_array_flambda.ml
 static_float_array_flambda_opaque.ml
 unrolling_flambda2.ml
 unrolling_flambda.ml
+func_sections.ml

@@ -43,12 +43,30 @@
 #define CFI_OFFSET(r,n)
 #endif
 
-#define FUNCTION(name) \
-        .globl name; \
-        .align 2; \
-        name:
+#if defined(FUNCTION_SECTIONS)
+#define TEXT_SECTION(name) .section .text.##name,"ax",%progbits
+#else
+#define TEXT_SECTION(name)
+#endif
 
-/* Support for profiling with gprof */
+
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION(caml_hot__code_begin)
+        .globl  caml_hot__code_begin
+caml_hot__code_begin:
+
+        TEXT_SECTION(caml_hot__code_end)
+        .globl  caml_hot__code_end
+caml_hot__code_end:
+#endif
+
+#define FUNCTION(name) \
+        TEXT_SECTION(caml.##name); \
+        .align 2; \
+        .globl name; \
+        .type name, %function; \
+name:
+
 
 /******************************************************************************/
 /* Access to the current domain state block. */

@@ -240,7 +240,10 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
   let globals_map = make_globals_map units_list ~crc_interfaces in
   compile_phrase (Cmmgen.globals_map globals_map);
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
-  compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
+  if !Clflags.function_sections then
+    compile_phrase(Cmmgen.code_segment_table("_hot" :: "_startup" :: name_list))
+  else
+    compile_phrase(Cmmgen.code_segment_table("_startup" :: name_list));
   let all_names = "_startup" :: "_system" :: name_list in
   compile_phrase (Cmmgen.frame_table all_names);
   if Config.spacetime then begin

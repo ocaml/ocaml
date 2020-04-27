@@ -498,6 +498,26 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+(* Output .text section directive, or named .text.caml.<name> if enabled and
+   supported on the target system. *)
+
+let emit_named_text_section func_name =
+  if !Clflags.function_sections then
+    begin match system with
+    | S_macosx
+    (* Names of section segments in macosx are restricted to 16 characters,
+       but function names are often longer, especially anonymous functions. *)
+    | S_win64 | S_mingw64 | S_cygwin
+    (* Win systems provide named text sections, but configure on these
+       systems does not support function sections. *)
+      ->  assert false
+    | _ -> D.section
+             [ ".text.caml."^(emit_symbol func_name) ]
+             (Some "ax")
+             ["@progbits"]
+    end
+  else D.text ()
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -924,7 +944,7 @@ let emit_instr fallthrough i =
         D.long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
                          ConstLabel lbl))
       done;
-      D.text ()
+      emit_named_text_section !function_name
   | Lentertrap ->
       ()
   | Ladjust_trap_depth { delta_traps; } ->
@@ -1039,7 +1059,7 @@ let fundecl fundecl =
   bound_error_sites := [];
   bound_error_call := 0;
   all_functions := fundecl :: !all_functions;
-  D.text ();
+  emit_named_text_section !function_name;
   D.align 16;
   add_def_symbol fundecl.fun_name;
   emit_block_header_for_closure ();
@@ -1169,7 +1189,7 @@ let begin_assembly() =
   D.data ();
   emit_global_label "data_begin";
 
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_begin"));
   emit_global_label "code_begin";
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
@@ -1219,7 +1239,7 @@ let end_assembly() =
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  D.text ();
+  emit_named_text_section (Compilenv.make_symbol (Some "code_end"));
   if system = S_macosx then I.nop ();
   (* suppress "ld warning: atom sorting error" *)
 
