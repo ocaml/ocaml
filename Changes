@@ -40,9 +40,6 @@ Working version
 
 ### Runtime system:
 
-- #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
-  (Jeremy Yallop, report by Marcello Seri)
-
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
@@ -73,6 +70,9 @@ Working version
   commands for execution by Sys.command.
   (Xavier Leroy, review by David Allsopp and Damien Doligez)
 
+- #8716: Optimize [Array.fill] and [Hashtbl.clear] with a new runtime primitive
+  (Alain Frisch, review by David Allsopp, Stephen Dolan and Damien Doligez)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
@@ -88,6 +88,11 @@ Working version
   change.
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
+
+### Compiler user-interface and warnings:
+
+- #8702, #8777: improved error messages for fixed row polymorphic variants
+  (Florian Angeletti, report by Leo White, review by Thomas Refis)
 
 ### Bug fixes:
 
@@ -270,6 +275,9 @@ OCaml 4.09.0
 
 - #8656: Fix a bug in [caml_modify_generational_global_root]
   (Jacques-Henri Jourdan, review by Gabriel Scherer)
+
+- #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
+  (Jeremy Yallop, report by Marcello Seri)
 
 ### Standard library:
 

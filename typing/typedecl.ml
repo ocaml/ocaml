@@ -167,7 +167,7 @@ let set_fixed_row env loc p decl =
     match tm.desc with
       Tvariant row ->
         let row = Btype.row_repr row in
-        tm.desc <- Tvariant {row with row_fixed = true};
+        tm.desc <- Tvariant {row with row_fixed = Some Fixed_private};
         if Btype.static_row row then Btype.newgenty Tnil
         else row.row_more
     | Tobject (ty, _) ->

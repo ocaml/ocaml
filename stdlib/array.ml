@@ -30,6 +30,8 @@ external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
 external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+external unsafe_fill :
+  'a array -> int -> int -> 'a -> unit = "caml_array_fill"
 external create_float: int -> float array = "caml_make_float_vect"
 let make_float = create_float
 
@@ -81,7 +83,7 @@ let sub a ofs len =
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.fill"
-  else for i = ofs to ofs + len - 1 do unsafe_set a i v done
+  else unsafe_fill a ofs len v
 
 let blit a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
