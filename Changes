@@ -60,6 +60,13 @@ Working version
    OCaml callback when called from C.
    (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
 
+### Tools:
+
+* #6792, #8654 ocamldebug now supports program using Dynlink. This
+   breaks compatibility with emacs modes.
+   (Whitequark and Jacques-Henri Jourdan, review by Gabriel Scherer
+    and Xavier Clerc)
+
 ### Standard library:
 
 - #8657: Optimization in [Array.make] when initializing with unboxed

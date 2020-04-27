@@ -338,3 +338,19 @@ void caml_instr_atexit (void)
   }
 }
 #endif /* CAML_INSTR */
+
+int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf)
+{
+  struct code_fragment *cfi;
+  int i;
+
+  for (i = 0; i < caml_code_fragments_table.size; i++) {
+    cfi = (struct code_fragment *) caml_code_fragments_table.contents[i];
+    if ((char*) pc >= cfi->code_start && (char*) pc < cfi->code_end) {
+      if (index != NULL) *index = i;
+      if (cf != NULL) *cf = cfi;
+      return 1;
+    }
+  }
+  return 0;
+}

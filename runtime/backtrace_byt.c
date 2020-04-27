@@ -42,6 +42,7 @@
 #include "caml/backtrace.h"
 #include "caml/fail.h"
 #include "caml/backtrace_prim.h"
+#include "caml/debugger.h"
 
 /* The table of debug information fragments */
 struct ext_table caml_debug_info;
@@ -177,6 +178,9 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
 {
   CAMLparam1(events_heap);
   struct debug_info *debug_info;
+
+  if (events_heap != Val_unit)
+    caml_debugger(DEBUG_INFO_ADDED, events_heap);
 
   /* build the OCaml-side debug_info value */
   debug_info = caml_stat_alloc(sizeof(struct debug_info));
