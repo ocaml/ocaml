@@ -1229,8 +1229,11 @@ let rec tree_of_type_decl id decl =
     let vari =
       List.map2
         (fun ty v ->
-          if abstr || not (is_Tvar (repr ty)) then Variance.get_upper v
-          else (true,true))
+          if abstr || not (is_Tvar (repr ty)) then
+            let inj = decl.type_kind = Type_abstract
+                && decl.type_manifest = None && Variance.mem Inj v
+            and (co, cn) = Variance.get_upper v in (co, cn, inj)
+          else (true,true,false))
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -1503,10 +1506,10 @@ let tree_of_class_param param variance =
   (match tree_of_typexp true param with
     Otyp_var (_, s) -> s
   | _ -> "?"),
-  if is_Tvar (repr param) then (true, true) else variance
+  if is_Tvar (repr param) then (true, true, false) else variance
 
 let class_variance =
-  List.map Variance.(fun v -> mem May_pos v, mem May_neg v)
+  List.map Variance.(fun v -> mem May_pos v, mem May_neg v, mem Inj v)
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in

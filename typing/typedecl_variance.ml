@@ -350,10 +350,14 @@ let property : (prop, req) Typedecl_properties.property =
     check;
   }
 
-let transl_variance : Asttypes.variance -> _ = function
-  | Covariant -> (true, false, false)
-  | Contravariant -> (false, true, false)
-  | Invariant -> (false, false, false)
+let transl_variance (v, i) =
+  let co, cn =
+    match v with
+    | Covariant -> (true, false)
+    | Contravariant -> (false, true)
+    | NoVariance -> (false, false)
+  in
+  (co, cn, match i with Injective -> true | NoInjectivity -> false)
 
 let variance_of_params ptype_params =
   List.map transl_variance (List.map snd ptype_params)

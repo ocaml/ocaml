@@ -429,7 +429,7 @@ and value_description =
 and type_declaration =
     {
      ptype_name: string loc;
-     ptype_params: (core_type * variance) list;
+     ptype_params: (core_type * (variance * injectivity)) list;
            (* ('a1,...'an) t; None represents  _*)
      ptype_cstrs: (core_type * core_type * Location.t) list;
            (* ... constraint T1=T1'  ... constraint Tn=Tn' *)
@@ -497,7 +497,7 @@ and constructor_arguments =
 and type_extension =
     {
      ptyext_path: Longident.t loc;
-     ptyext_params: (core_type * variance) list;
+     ptyext_params: (core_type * (variance * injectivity)) list;
      ptyext_constructors: extension_constructor list;
      ptyext_private: private_flag;
      ptyext_loc: Location.t;
@@ -598,7 +598,7 @@ and class_type_field_desc =
 and 'a class_infos =
     {
      pci_virt: virtual_flag;
-     pci_params: (core_type * variance) list;
+     pci_params: (core_type * (variance * injectivity)) list;
      pci_name: string loc;
      pci_expr: 'a;
      pci_loc: Location.t;
