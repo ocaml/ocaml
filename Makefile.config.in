@@ -254,7 +254,6 @@ endif # ifeq "$(TOOLCHAIN)" "msvc"
 # in the future their definition may be moved to a more private part of
 # the compiler's build system
 ifeq "$(UNIX_OR_WIN32)" "win32"
-  DISTRIB=$(prefix)
   OTOPDIR=$(WINTOPDIR)
   CTOPDIR=$(WINTOPDIR)
   CYGPATH=cygpath -m

@@ -1,22 +1,27 @@
 (* TEST
    flags = "-g"
    * bytecode
-     reference = "${test_source_directory}/arrays_in_major.byte.reference"
+     reference = "${test_source_directory}/arrays_in_minor.byte.reference"
    * native
-     reference = "${test_source_directory}/arrays_in_major.opt.reference"
+     reference = "${test_source_directory}/arrays_in_minor.opt.reference"
      compare_programs = "false"
 *)
 
 open Gc.Memprof
 
-let root = ref []
+type 'a list2 =  (* A list type where [Cons] has tag 1 *)
+  | Nil
+  | Dummy of int
+  | Cons of 'a * 'a list2
+
+let root = ref Nil
 let[@inline never] allocate_arrays lo hi cnt keep =
-  assert (lo >= 300);  (* Will be allocated in major heap. *)
+  assert (0 < lo && hi <= 250);  (* Fits in minor heap. *)
   for j = 0 to cnt-1 do
     for i = lo to hi do
-      root := Array.make i 0 :: !root
+      root := Cons (Array.make i 0, !root)
     done;
-    if not keep then root := []
+    if not keep then root := Nil
   done
 
 let check_nosample () =
@@ -28,7 +33,7 @@ let check_nosample () =
         Printf.printf "Callback called with sampling_rate = 0\n";
         assert(false)
   };
-  allocate_arrays 300 3000 1 false
+  allocate_arrays 1 250 100 false
 
 let () = check_nosample ()
 
@@ -43,12 +48,12 @@ let check_ephe_full_major () =
       ephes := res :: !ephes;
       Some res
   };
-  allocate_arrays 300 3000 1 true;
+  allocate_arrays 1 250 100 true;
   stop ();
   List.iter (fun e -> assert (Ephemeron.K1.check_key e)) !ephes;
   Gc.full_major ();
   List.iter (fun e -> assert (Ephemeron.K1.check_key e)) !ephes;
-  root := [];
+  root := Nil;
   Gc.full_major ();
   List.iter (fun e -> assert (not (Ephemeron.K1.check_key e))) !ephes
 
@@ -63,11 +68,12 @@ let check_no_nested () =
       callback = fun _ ->
         assert (not !in_callback);
         in_callback := true;
-        allocate_arrays 300 300 100 false;
+        allocate_arrays 1 100 10 false;
+        ignore (Array.to_list (Array.make 1000 0));
         in_callback := false;
         None
   };
-  allocate_arrays 300 300 100 false;
+  allocate_arrays 1 250 5 false;
   stop ()
 
 let () = check_no_nested ()
@@ -79,9 +85,9 @@ let check_distrib lo hi cnt rate =
       sampling_rate = rate;
       callstack_size = 10;
       callback = fun info ->
-        (* We also allocate the list constructor in the minor heap. *)
-        if info.kind = Major then begin
-          assert (info.tag = 0);
+        assert (info.kind = Minor);
+        (* Exclude noise such as spurious closures and the root list. *)
+        if info.tag = 0 then begin
           assert (info.size >= lo && info.size <= hi);
           assert (info.n_samples > 0);
           smp := !smp + info.n_samples
@@ -104,12 +110,12 @@ let check_distrib lo hi cnt rate =
   assert (abs_float (mean -. float !smp) <= stddev *. 5.7)
 
 let () =
-  check_distrib 300 3000 1 0.00001;
-  check_distrib 300 3000 1 0.0001;
-  check_distrib 300 3000 1 0.01;
-  check_distrib 300 3000 1 1.;
-  check_distrib 300 300 100000 0.1;
-  check_distrib 300000 300000 30 0.1
+  check_distrib 1 250 1000 0.00001;
+  check_distrib 1 250 1000 0.0001;
+  check_distrib 1 250 1000 0.01;
+  check_distrib 1 250 1000 1.;
+  check_distrib 1 1   10000000 0.01;
+  check_distrib 250 250 100000 0.1
 
 (* FIXME : in bytecode mode, the function [caml_get_current_callstack_impl],
    which is supposed to capture the current call stack, does not have access
@@ -130,10 +136,10 @@ let[@inline never] check_callstack () =
       sampling_rate = 1.;
       callstack_size = 10;
       callback = fun info ->
-        if info.kind = Major then callstack := Some info.callstack;
+        if info.tag = 0 then callstack := Some info.callstack;
         None
     };
-  allocate_arrays 300 300 100 false;
+  allocate_arrays 250 250 100 false;
   stop ();
   match !callstack with
   | None -> assert false
