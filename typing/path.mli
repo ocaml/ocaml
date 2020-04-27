@@ -27,6 +27,25 @@ val exists_free: Ident.t list -> t -> bool
 val scope: t -> int
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 
+(** Substitute identifiers i_1 for i_1', ... i_n for i_n' from the list of the
+    form [[(i_1, i_1'); ...; (i_n; i_n')]].
+
+    The returned value will be physically equal to the input if no
+    substitutions are made.
+*)
+val subst : (Ident.t * Ident.t) list -> t -> t
+
+(** Substitute identifiers i_1 for i_1', ... i_n for i_n' from the list of the
+    form [[(i_1', i_1); ...; (i_n'; i_n)]].
+
+    The returned value will be physically equal to the input if no
+    substitutions are made.
+*)
+val unsubst : (Ident.t * Ident.t) list -> t -> t
+
+(** Non-allocating equivalent to [scope (subst id_pairs t)]. *)
+val scope_subst : (Ident.t * Ident.t) list -> t -> int
+
 val name: ?paren:(string -> bool) -> t -> string
     (* [paren] tells whether a path suffix needs parentheses *)
 val head: t -> Ident.t

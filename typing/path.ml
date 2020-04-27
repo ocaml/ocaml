@@ -58,6 +58,47 @@ let rec scope = function
   | Pdot(p, _s) -> scope p
   | Papply(p1, p2) -> max (scope p1) (scope p2)
 
+let rec subst_aux find = function
+    Pident id -> Pident (find id)
+  | Pdot(p, s) -> Pdot (p, s)
+  | Papply(p1, p2) ->
+      let p1, found1 =
+        try subst_aux find p1, true
+        with Not_found -> p1, false
+      in
+      let p2, found2 =
+        try subst_aux find p2, true
+        with Not_found -> p2, false
+      in
+      if found1 || found2 then Papply(p1, p2)
+      else raise Not_found
+
+let subst id_pairs p =
+  if id_pairs = [] then p else
+  try
+    subst_aux (fun id ->
+        snd (List.find (fun x -> Ident.same id (fst x)) id_pairs))
+      p
+  with Not_found -> p
+
+let unsubst id_pairs p =
+  if id_pairs = [] then p else
+  try
+    subst_aux (fun id ->
+        fst (List.find (fun x -> Ident.same id (snd x)) id_pairs))
+      p
+  with Not_found -> p
+
+(* Non-allocating equivalent to [scope (subst id_pairs t)]. *)
+let rec scope_subst id_pairs = function
+    Pident id ->
+      begin match List.find_opt (fun x -> Ident.same id (fst x)) id_pairs with
+      | Some (_, id') -> Ident.scope id'
+      | None -> Ident.scope id
+      end
+  | Pdot(p, _s) -> scope_subst id_pairs p
+  | Papply(p1, p2) -> max (scope_subst id_pairs p1) (scope_subst id_pairs p2)
+
 let kfalse _ = false
 
 let rec name ?(paren=kfalse) = function
