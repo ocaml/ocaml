@@ -1047,23 +1047,3 @@ CAMLprim value caml_classify_float(value vd)
 {
   return caml_classify_float_unboxed(Double_val(vd));
 }
-
-/* The [caml_init_ieee_float] function should initialize floating-point hardware
-   so that it behaves as much as possible like the IEEE standard.
-   In particular, return special numbers like Infinity and NaN instead
-   of signalling exceptions.  Currently, everyone is in IEEE mode
-   at program startup, except FreeBSD prior to 4.0R. */
-
-#ifdef __FreeBSD__
-#include <osreldate.h>
-#if (__FreeBSD_version < 400017)
-#include <floatingpoint.h>
-#endif
-#endif
-
-void caml_init_ieee_floats(void)
-{
-#if defined(__FreeBSD__) && (__FreeBSD_version < 400017)
-  fpsetmask(0);
-#endif
-}
