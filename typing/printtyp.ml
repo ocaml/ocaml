@@ -1509,7 +1509,7 @@ let tree_of_class_param param variance =
   if is_Tvar (repr param) then (true, true, false) else variance
 
 let class_variance =
-  List.map Variance.(fun v -> mem May_pos v, mem May_neg v, mem Inj v)
+  List.map Variance.(fun v -> mem May_pos v, mem May_neg v, false)
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in

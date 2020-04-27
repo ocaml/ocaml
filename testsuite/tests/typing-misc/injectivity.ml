@@ -90,6 +90,32 @@ let int_vec_vec = Vec (Vec Int)
 let d = Dyn (int_vec_vec, v)
 
 let Some v' = undyn int_vec_vec d
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+module Vec :
+  sig
+    type +!'a t
+    val make : int -> (int -> 'a) -> 'a t
+    val get : 'a t -> int -> 'a
+  end
+type _ ty =
+    Int : int ty
+  | Fun : 'a ty * 'b ty -> ('a -> 'b) ty
+  | Vec : 'a ty -> 'a Vec.t ty
+type dyn = Dyn : 'a ty * 'a -> dyn
+val eq_ty : 'a ty -> 'b ty -> ('a, 'b) eq option = <fun>
+val undyn : 'a ty -> dyn -> 'a option = <fun>
+val v : int Vec.t Vec.t = <abstr>
+val int_vec_vec : int Vec.t Vec.t ty = Vec (Vec Int)
+val d : dyn = Dyn (Vec (Vec Int), <poly>)
+Line 47, characters 4-11:
+47 | let Some v' = undyn int_vec_vec d
+         ^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+None
+val v' : int Vec.t Vec.t = <abstr>
+|}]
 
 
 (* Not directly related: injectivity and constraints *)
