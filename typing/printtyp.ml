@@ -472,14 +472,14 @@ and raw_type_desc ppf = function
         raw_type_list tl
   | Tvariant row ->
       fprintf ppf
-        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%B;@ %s%B;@ @[<1>%s%t@]}@]"
+        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%B;@ %s%a;@ @[<1>%s%t@]}@]"
         "row_fields="
         (raw_list (fun ppf (l, f) ->
           fprintf ppf "@[%s,@ %a@]" l raw_field f))
         row.row_fields
         "row_more=" raw_type row.row_more
         "row_closed=" row.row_closed
-        "row_fixed=" row.row_fixed
+        "row_fixed=" raw_row_fixed row.row_fixed
         "row_name="
         (fun ppf ->
           match row.row_name with None -> fprintf ppf "None"
@@ -488,6 +488,12 @@ and raw_type_desc ppf = function
   | Tpackage (p, _, tl) ->
       fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
         raw_type_list tl
+and raw_row_fixed ppf = function
+| None -> fprintf ppf "None"
+| Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
+| Some Types.Rigid -> fprintf ppf "Some Rigid"
+| Some Types.Univar t -> fprintf ppf "Some(Univar(%a))" raw_type t
+| Some Types.Reified p -> fprintf ppf "Some(Reified(%a))" path p
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -1796,11 +1802,11 @@ let may_prepare_expansion compact (t, t') =
       mark_loops t; (t, t)
   | _ -> prepare_expansion (t, t')
 
-let print_tags ppf fields =
-  match fields with [] -> ()
-  | (t, _) :: fields ->
-      fprintf ppf "`%s" t;
-      List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
+let print_tag ppf = fprintf ppf "`%s"
+
+let print_tags =
+  let comma ppf () = Format.fprintf ppf ",@ " in
+  Format.pp_print_list ~pp_sep:comma print_tag
 
 let is_unit env ty =
   match (Ctype.expand_head env ty).desc with
@@ -1836,6 +1842,24 @@ let print_pos ppf = function
   | Trace.First -> fprintf ppf "first"
   | Trace.Second -> fprintf ppf "second"
 
+let explain_fixed_row_case ppf = function
+  | Trace.Cannot_be_closed -> Format.fprintf ppf "it cannot be closed"
+  | Trace.Cannot_add_tags tags ->
+      Format.fprintf ppf "it may not allow the tag(s) %a"
+        print_tags tags
+
+let explain_fixed_row pos expl = match expl with
+  | Types.Fixed_private ->
+      dprintf "The %a variant type is private" print_pos pos
+  | Types.Univar x ->
+      dprintf "The %a variant type is bound to the universal type variable %a"
+        print_pos pos type_expr x
+  | Types.Reified p ->
+      let p = tree_of_path Type p in
+      dprintf "The %a variant type is bound to %a" print_pos pos
+        !Oprint.out_ident p
+  | Types.Rigid -> ignore
+
 let explain_variant = function
   | Trace.No_intersection ->
       Some(dprintf "@,These two variant types have no intersection")
@@ -1843,10 +1867,19 @@ let explain_variant = function
       dprintf
         "@,@[The %a variant type does not allow tag(s)@ @[<hov>%a@]@]"
         print_pos pos
-        print_tags fields
+        print_tags (List.map fst fields)
     )
   | Trace.Incompatible_types_for s ->
       Some(dprintf "@,Types for tag `%s are incompatible" s)
+  | Trace.Fixed_row (pos, k, (Univar _ | Reified _ | Fixed_private as e)) ->
+      Some (
+        dprintf "@,@[%t,@ %a@]" (explain_fixed_row pos e)
+          explain_fixed_row_case k
+      )
+  | Trace.Fixed_row (_,_, Rigid) ->
+      (* this case never happens *)
+      None
+
 
 let explain_escape intro prev ctx e =
   let pre = match ctx with
