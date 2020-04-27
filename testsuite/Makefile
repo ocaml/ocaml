@@ -39,6 +39,7 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
   else # Non-cygwin Unix
     find := find
   endif
+  FLEXLINK_ENV =
 else # Windows
   find := /usr/bin/find
   FLEXDLL_SUBMODULE_PRESENT := $(wildcard ../flexdll/Makefile)
@@ -65,8 +66,6 @@ endif
 default:
 	@echo "Available targets:"
 	@echo "  all             launch all tests"
-	@echo "  legacy          launch legacy tests"
-	@echo "  new             launch new (ocamltest based) tests"
 	@echo "  all-foo         launch all tests beginning with foo"
 	@echo "  all-enabled     launch all enabled tests"
 	@echo "  parallel        launch all tests using GNU parallel"
@@ -86,26 +85,6 @@ default:
 
 .PHONY: all
 all:
-	@rm -f $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) legacy-without-report
-	@$(MAKE) $(NO_PRINT) new-without-report
-	@$(MAKE) $(NO_PRINT) report
-
-.PHONY: legacy
-legacy:
-	@rm -f $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) legacy-without-report
-	@$(MAKE) $(NO_PRINT) report
-
-.PHONY: legacy-without-report
-legacy-without-report: lib tools
-	@for dir in tests/*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir LEGACY=y; \
-	done 2>&1 | tee -a $(TESTLOG)
-	@$(MAKE) $(NO_PRINT) retries
-
-.PHONY: new
-new:
 	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
@@ -219,21 +198,17 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@if [ ! -f $(DIR)/Makefile -a ! -f $(DIR)/ocamltests ]; then \
+	@if [ -f $(DIR)/ocamltests ]; then \
+	  echo "Running tests from '$$DIR' ..."; \
+	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
+	    OCAMLTESTFLAGS=""; \
+	else \
 	  for dir in $(DIR)/*; do \
 	    if [ -d $$dir ]; then \
 	      $(MAKE) exec-one DIR=$$dir; \
 	    fi; \
 	  done; \
-	elif [ -f $(DIR)/Makefile ]; then \
-	  echo "Running tests from '$$DIR' ..."; \
-	  cd $(DIR) && \
-	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
-	elif [ -f $(DIR)/ocamltests ] && [ -z $(LEGACY) ] ; then \
-	  echo "Running tests from '$$DIR' ..."; \
-	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
-	    OCAMLTESTFLAGS=""; \
 	fi
 
 .PHONY: exec-ocamltest
@@ -279,7 +254,7 @@ promote:
 
 .PHONY: lib
 lib:
-	@cd lib && $(MAKE) -s BASEDIR=$(BASEDIR)
+	@$(MAKE) -s -C lib
 
 .PHONY: tools
 tools:
@@ -287,7 +262,7 @@ tools:
 
 .PHONY: clean
 clean:
-	@cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean
+	@$(MAKE) -C lib clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
 	@rm -f disabled-dirs
 	@for file in `$(FIND) interactive tests -name Makefile`; do \

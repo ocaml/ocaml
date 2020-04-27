@@ -121,7 +121,7 @@ esac
 build=''
 host=''
 conffile=Makefile.config
-make="make --warn-undefined-variables"
+make=make
 instdir="$HOME/ocaml-tmp-install"
 confoptions="${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
@@ -132,7 +132,7 @@ jobs=''
 
 case "${OCAML_ARCH}" in
   bsd)
-    make="gmake --warn-undefined-variables"
+    make=gmake
   ;;
   macos) ;;
   linux)
@@ -218,11 +218,7 @@ done
 # Tell gcc to use only ASCII in its diagnostic outputs.
 export LC_ALL=C
 
-$make -s distclean || :
-
-# `make distclean` does not clean the files from previous versions that
-# are not produced by the current version, so use `git clean` in addition.
-git clean -f -d -x
+git clean -q -f -d -x
 
 if $flambda; then
   confoptions="$confoptions --enable-flambda --enable-flambda-invariants"
@@ -231,10 +227,10 @@ fi
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
 if $make_native; then
-  $make $jobs world.opt
-  if $check_make_alldepend; then $make alldepend; fi
+  $make $jobs --warn-undefined-variables world.opt
+  if $check_make_alldepend; then $make --warn-undefined-variables alldepend; fi
 else
-  $make $jobs world
+  $make $jobs --warn-undefined-variables world
 fi
 if $dorebase; then
     # temporary solution to the cygwin fork problem
@@ -242,11 +238,11 @@ if $dorebase; then
     rebase -b 0x7cd20000 otherlibs/unix/dllunix.so
     rebase -b 0x7cdc0000 otherlibs/systhreads/dllthreads.so
 fi
-$make install
+$make --warn-undefined-variables install
 
 rm -rf "$instdir"
 cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
-then PARALLEL="$jobs $PARALLEL" $make parallel
-else $make all
+then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
+else $make --warn-undefined-variables all
 fi

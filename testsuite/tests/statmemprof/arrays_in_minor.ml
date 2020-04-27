@@ -43,7 +43,8 @@ let check_ephe_full_major () =
   start {
     sampling_rate = 0.01;
     callstack_size = 10;
-    callback = fun _ ->
+    callback = fun s ->
+      assert (s.tag = 0 || s.tag = 1);
       let res = Ephemeron.K1.create () in
       ephes := res :: !ephes;
       Some res

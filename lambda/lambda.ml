@@ -894,5 +894,10 @@ let merge_inline_attributes attr1 attr2 =
     if attr1 = attr2 then Some attr1
     else None
 
+let function_is_curried func =
+  match func.kind with
+  | Curried -> true
+  | Tupled -> false
+
 let reset () =
   raise_count := 0

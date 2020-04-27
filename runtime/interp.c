@@ -70,6 +70,8 @@ sp is a local copy of the global variable caml_extern_sp. */
 
 /* GC interface */
 
+#undef Alloc_small_origin
+#define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
   { sp -= 2; sp[0] = accu; sp[1] = env; domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \

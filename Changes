@@ -23,11 +23,27 @@ Working version
 - #8692: Remove Misc.may_map and similar
   (Leo White, review by Gabriel Scherer and Thomas Refis)
 
+- #8677: Use unsigned comparisons in amd64 and i386 emitter of Lcondbranch3.
+  (Greta Yorsh, review by Xavier Leroy)
+
+### Code generation and optimizations:
+
+- #8672: Optimise Switch code generation on booleans.
+  (Stephen Dolan, review by Pierre Chambart)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
    review by Xavier Leroy and Gabriel Scherer)
+
+* #8711: The major GC hooks are no longer allowed to interact with the
+   OCaml heap.
+   (Jacques-Henri Jourdan, review by Damien Doligez)
+
+- #8691: Allocation functions are now guaranteed not to trigger any
+   OCaml callback when called from C.
+   (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
 
 ### Standard library:
 
@@ -54,10 +70,20 @@ Working version
   revise generation of config/util.ml to better quote special characters
   (Xavier Leroy, review by David Allsopp)
 
+- #8690, #8696: avoid rebuilding the world when files containing primitives
+  change.
+  (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
+   Thomas Refis)
+
 ### Bug fixes:
 
 - #8622: Don't generate #! headers over 127 characters.
   (David Allsopp, review by Xavier Leroy and Stephen Dolan)
+
+- #8715: minor bugfixes in CamlinternalFormat; removes the unused
+  and misleading function CamlinternalFormat.string_of_formatting_gen
+  (Gabriel Scherer and Florian Angeletti,
+   review by Florian Angeletti and Gabriel Radanne)
 
 OCaml 4.09.0
 ------------
@@ -83,6 +109,10 @@ OCaml 4.09.0
 - #8547: Optimize matches that are an affine function of the input.
   (Stefan Muenzel, review by Alain Frisch, Gabriel Scherer)
 
+- #8681, #8699, #8712: Fix code generation with nested let rec of functions.
+  (Stephen Dolan, Leo White, Gabriel Scherer and Pierre Chambart,
+   review by Gabriel Scherer, reports by Alexey Solovyev and Jonathan French)
+
 ### Compiler user-interface and warnings:
 
 * #2276: Remove support for compiler plugins and hooks (also adds
@@ -103,6 +133,9 @@ OCaml 4.09.0
 
 - #3819, #8546 more explanations and tests for illegal permutation
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #8537: fix the -runtime-variant option for bytecode
+  (Damien Doligez, review by David Allsopp)
 
 - #8541: Correctly print multi-lines locations
   (Louis Roché, review by Gabriel Scherer)

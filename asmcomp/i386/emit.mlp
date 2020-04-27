@@ -833,7 +833,7 @@ let emit_instr fallthrough i =
       end;
       begin match lbl2 with
         None -> ()
-      | Some lbl -> I.jg (label lbl)
+      | Some lbl -> I.ja (label lbl)
       end
   | Lswitch jumptbl ->
       let lbl = new_label() in

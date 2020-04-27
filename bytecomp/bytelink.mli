@@ -34,6 +34,7 @@ type error =
   | File_exists of filepath
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname
+  | Camlheader of string * filepath
 
 exception Error of error
 
