@@ -179,119 +179,6 @@ let mk_expected ?explanation ty = { ty; explanation; }
 let case lhs rhs =
   {c_lhs = lhs; c_cont = None; c_guard = None; c_rhs = rhs}
 
-(* Upper approximation of free identifiers on the parse tree *)
-
-let iter_expression f e =
-
-  let rec expr e =
-    f e;
-    match e.pexp_desc with
-    | Pexp_extension _ (* we don't iterate under extension point *)
-    | Pexp_ident _
-    | Pexp_new _
-    | Pexp_constant _ -> ()
-    | Pexp_function pel -> List.iter case pel
-    | Pexp_fun (_, eo, _, e) -> Option.iter expr eo; expr e
-    | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
-    | Pexp_let (_, pel, e) ->  expr e; List.iter binding pel
-    | Pexp_match (e, pel)
-    | Pexp_try (e, pel) -> expr e; List.iter case pel
-    | Pexp_array el
-    | Pexp_tuple el -> List.iter expr el
-    | Pexp_construct (_, eo)
-    | Pexp_variant (_, eo) -> Option.iter expr eo
-    | Pexp_record (iel, eo) ->
-        Option.iter expr eo; List.iter (fun (_, e) -> expr e) iel
-    | Pexp_open (_, e)
-    | Pexp_newtype (_, e)
-    | Pexp_poly (e, _)
-    | Pexp_lazy e
-    | Pexp_assert e
-    | Pexp_setinstvar (_, e)
-    | Pexp_send (e, _)
-    | Pexp_constraint (e, _)
-    | Pexp_coerce (e, _, _)
-    | Pexp_letexception (_, e)
-    | Pexp_field (e, _) -> expr e
-    | Pexp_while (e1, e2)
-    | Pexp_sequence (e1, e2)
-    | Pexp_setfield (e1, _, e2) -> expr e1; expr e2
-    | Pexp_ifthenelse (e1, e2, eo) -> expr e1; expr e2; Option.iter expr eo
-    | Pexp_for (_, e1, e2, _, e3) -> expr e1; expr e2; expr e3
-    | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
-    | Pexp_letmodule (_, me, e) -> expr e; module_expr me
-    | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
-    | Pexp_letop { let_; ands; body; _ } ->
-        binding_op let_; List.iter binding_op ands; expr body
-    | Pexp_pack me -> module_expr me
-    | Pexp_unreachable -> ()
-
-  and case {pc_lhs = _; pc_guard; pc_rhs} =
-    Option.iter expr pc_guard;
-    expr pc_rhs
-
-  and binding_op { pbop_exp; _ } =
-    expr pbop_exp
-
-  and binding x =
-    expr x.pvb_expr
-
-  and module_expr me =
-    match me.pmod_desc with
-    | Pmod_extension _
-    | Pmod_ident _ -> ()
-    | Pmod_structure str -> List.iter structure_item str
-    | Pmod_constraint (me, _)
-    | Pmod_functor (_, _, me) -> module_expr me
-    | Pmod_apply (me1, me2) -> module_expr me1; module_expr me2
-    | Pmod_unpack e -> expr e
-
-
-  and structure_item str =
-    match str.pstr_desc with
-    | Pstr_eval (e, _) -> expr e
-    | Pstr_value (_, pel) -> List.iter binding pel
-    | Pstr_primitive _
-    | Pstr_type _
-    | Pstr_typext _
-    | Pstr_exception _
-    | Pstr_effect _
-    | Pstr_modtype _
-    | Pstr_open _
-    | Pstr_class_type _
-    | Pstr_attribute _
-    | Pstr_extension _ -> ()
-    | Pstr_include {pincl_mod = me}
-    | Pstr_module {pmb_expr = me} -> module_expr me
-    | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
-    | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
-
-  and class_expr ce =
-    match ce.pcl_desc with
-    | Pcl_constr _ -> ()
-    | Pcl_structure { pcstr_fields = fs } -> List.iter class_field fs
-    | Pcl_fun (_, eo, _,  ce) -> Option.iter expr eo; class_expr ce
-    | Pcl_apply (ce, lel) ->
-        class_expr ce; List.iter (fun (_, e) -> expr e) lel
-    | Pcl_let (_, pel, ce) ->
-        List.iter binding pel; class_expr ce
-    | Pcl_open (_, ce)
-    | Pcl_constraint (ce, _) -> class_expr ce
-    | Pcl_extension _ -> ()
-
-  and class_field cf =
-    match cf.pcf_desc with
-    | Pcf_inherit (_, ce, _) -> class_expr ce
-    | Pcf_val (_, _, Cfk_virtual _)
-    | Pcf_method (_, _, Cfk_virtual _ ) | Pcf_constraint _ -> ()
-    | Pcf_val (_, _, Cfk_concrete (_, e))
-    | Pcf_method (_, _, Cfk_concrete (_, e)) -> expr e
-    | Pcf_initializer e -> expr e
-    | Pcf_attribute _ | Pcf_extension _ -> ()
-
-  in
-  expr e
-
 
 (* Typing of constants *)
 
@@ -1088,26 +975,6 @@ type half_typed_case =
     pat_vars: pattern_variable list;
     unpacks: module_variable list;
     contains_gadt: bool; }
-
-let all_idents_cases half_typed_cases =
-  let idents = Hashtbl.create 8 in
-  let f = function
-    | {pexp_desc=Pexp_ident { txt = Longident.Lident id; _ }; _} ->
-        Hashtbl.replace idents id ()
-    | {pexp_desc=Pexp_letop{ let_; ands; _ }; _ } ->
-        Hashtbl.replace idents let_.pbop_op.txt ();
-        List.iter
-          (fun { pbop_op; _ } -> Hashtbl.replace idents pbop_op.txt ())
-          ands
-    | _ -> ()
-  in
-  List.iter
-    (fun { untyped_case = cp; _ } ->
-      Option.iter (iter_expression f) cp.pc_guard;
-      iter_expression f cp.pc_rhs
-    )
-    half_typed_cases;
-  Hashtbl.fold (fun x () rest -> x :: rest) idents []
 
 let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_constant _
@@ -2254,17 +2121,6 @@ let check_absent_variant env =
       unify_pat env {pat with pat_type = newty (Tvariant row')}
                     (correct_levels pat.pat_type)
       | _ -> ())
-
-(* Duplicate types of values in the environment *)
-(* XXX Should we do something about global type variables too? *)
-
-let duplicate_ident_types half_typed_cases env =
-  let caselist =
-    List.filter (fun { typed_pat; _ } ->
-      contains_gadt typed_pat
-    ) half_typed_cases
-  in
-  Env.make_copy_of_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
 
@@ -4403,10 +4259,10 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res
   let does_contain_gadt =
     List.exists (fun { contains_gadt; _ } -> contains_gadt) half_typed_cases
   in
-  let ty_res, duplicated_ident_types =
+  let ty_res, do_copy_types =
     if does_contain_gadt && not !Clflags.principal then
-      correct_levels ty_res, duplicate_ident_types half_typed_cases env
-    else ty_res, duplicate_ident_types [] env
+      correct_levels ty_res, Env.make_copy_of_types env
+    else ty_res, (fun env -> env)
   in
   (* Unify all cases (delayed to keep it order-free) *)
   let ty_arg' = newvar () in
@@ -4448,7 +4304,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res
              contains_gadt; _ }, cont)  ->
         let ext_env =
           if contains_gadt then
-            Env.do_copy_types duplicated_ident_types ext_env
+            do_copy_types ext_env
           else
             ext_env
         in

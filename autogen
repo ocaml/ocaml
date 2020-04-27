@@ -13,6 +13,9 @@
 #*                                                                        *
 #**************************************************************************
 
+# Remove the autom4te.cache directory to make sure we start in a clean state
+rm -rf autom4te.cache
+
 autoconf --force --warnings=all,error
 # Some distros have the 2013 --runstatedir patch to autoconf (see
 # http://git.savannah.gnu.org/cgit/autoconf.git/commit/?id=a197431414088a417b407b9b20583b2e8f7363bd

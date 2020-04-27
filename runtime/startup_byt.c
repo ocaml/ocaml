@@ -299,27 +299,32 @@ CAMLexport void caml_main(char_os **argv)
 
   if (fd < 0) {
     pos = caml_parse_command_line(argv);
-    if (argv[pos] == 0)
-      caml_fatal_error("no bytecode file specified");
+    if (argv[pos] == 0) {
+      fprintf(stderr, "no bytecode file specified");
+      exit(127);
+    }
     exe_name = argv[pos];
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      caml_fatal_error("cannot find file '%s'",
+      fprintf(stderr, "cannot find file '%s'",
                        caml_stat_strdup_of_os(argv[pos]));
+      exit(127);
       break;
     case BAD_BYTECODE:
-      caml_fatal_error(
+      fprintf(stderr,
         "the file '%s' is not a bytecode executable file",
         caml_stat_strdup_of_os(exe_name));
+      exit(127);
       break;
     case WRONG_MAGIC:
-      caml_fatal_error(
+      fprintf(stderr,
         "the file '%s' has not the right magic number: "\
         "expected %s, got %s",
         caml_stat_strdup_of_os(exe_name),
         EXEC_MAGIC,
         magicstr);
+      exit(127);
       break;
     }
   }

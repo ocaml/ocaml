@@ -125,10 +125,10 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 # than \UXXXXXXXX). The \u is then translated to \x in order to accommodate
 # pre-Visual Studio 2013 compilers where \x is a non-standard alias for \u.
 OCAML_STDLIB_DIR = $(shell echo $(LIBDIR)| iconv -t JAVA | sed -e 's/\\u/\\x/g')
-OC_CPPFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
+STDLIB_CPP_FLAG = -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
 else # Unix
 OCAML_STDLIB_DIR = $(LIBDIR)
-OC_CPPFLAGS += -DOCAML_STDLIB_DIR='"$(OCAML_STDLIB_DIR)"'
+STDLIB_CPP_FLAG = -DOCAML_STDLIB_DIR='"$(OCAML_STDLIB_DIR)"'
 endif
 
 OC_CPPFLAGS += $(IFLEXDIR)
@@ -341,6 +341,11 @@ object_types := % %_b %_bd %_bi %_bpic %_n %_nd %_ni %_np %_npic
 
 $(foreach object_type, $(object_types), \
   $(eval $(call COMPILE_C_FILE,$(object_type))))
+
+dynlink_%.$(O): OC_CPPFLAGS += $(STDLIB_CPP_FLAG)
+
+$(foreach object_type,$(subst %,,$(object_types)), \
+  $(eval dynlink$(object_type).$(O): $(ROOTDIR)/Makefile.config))
 
 # Compilation of assembly files
 

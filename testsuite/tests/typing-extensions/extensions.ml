@@ -296,7 +296,7 @@ Error: Signature mismatch:
          type ('a, 'b) bar += A of float
        is not included in
          type ('a, 'b) bar += A of int
-       The types for field A are not equal.
+       The types for constructor A are not equal.
 |}]
 
 module M : sig
@@ -318,7 +318,7 @@ Error: Signature mismatch:
          type ('a, 'b) bar += A of 'b
        is not included in
          type ('a, 'b) bar += A of 'a
-       The types for field A are not equal.
+       The types for constructor A are not equal.
 |}]
 
 module M : sig
@@ -340,7 +340,7 @@ Error: Signature mismatch:
          type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
        is not included in
          type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
-       The types for field A are not equal.
+       The types for constructor A are not equal.
 |}]
 
 (* Extensions can be rebound *)

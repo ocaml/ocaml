@@ -144,7 +144,7 @@ Error: Signature mismatch:
          type t = string
        is not included in
          type t [@@immediate]
-       the first is not an immediate type.
+       The first is not an immediate type.
 |}];;
 
 (* Same as above but with explicit signature *)
@@ -160,7 +160,7 @@ Error: Signature mismatch:
          type t = string
        is not included in
          type t [@@immediate]
-       the first is not an immediate type.
+       The first is not an immediate type.
 |}];;
 
 (* Can't use a non-immediate type even if mutually recursive *)

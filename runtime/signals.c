@@ -161,7 +161,7 @@ static void caml_execute_signal(int signal_number)
 #if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   /* Handled action may have no associated handler, which we interpret
      as meaning the signal should be handled by a call to exit.  This is
-     is used to allow spacetime profiles to be completed on interrupt */
+     used to allow spacetime profiles to be completed on interrupt */
   if (caml_signal_handlers == 0) {
     res = caml_sys_exit(Val_int(2));
   } else {

@@ -27,6 +27,8 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include "camlatomic.h"
 
@@ -195,6 +197,15 @@ void caml_alloc_point_here(void);
 #endif
 
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
+
+/* This hook is called when a fatal error occurs in the OCaml
+   runtime. It is given arguments to be passed to the [vprintf]-like
+   functions in order to synthetize the error message.
+   If it returns, the runtime calls [abort()].
+
+   If it is [NULL], the error message is printed on stderr and then
+   [abort()] is called. */
+extern void (*caml_fatal_error_hook) (char *msg, va_list args);
 
 CAMLextern void caml_fatal_error (char *, ...)
 #ifdef __GNUC__

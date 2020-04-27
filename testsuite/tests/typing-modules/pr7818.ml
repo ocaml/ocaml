@@ -315,5 +315,5 @@ Line 15, characters 16-64:
 15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t
-       The types for field E are not equal.
+       The types for constructor E are not equal.
 |}]

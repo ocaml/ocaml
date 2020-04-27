@@ -325,17 +325,14 @@ module Search =
         l
 
     and search module_list v =
-      List.fold_left
-        (fun acc -> fun m ->
-          List.fold_left
-            (fun acc2 -> fun ele ->
-              if List.mem ele acc2 then acc2 else acc2 @ [ele]
-            )
-            acc
-            (search_module m v)
-        )
-        []
-        module_list
+      let results_with_duplicates =
+        List.fold_left
+          (fun rev_acc m ->
+            List.rev_append (search_module m v) rev_acc)
+          [] module_list
+        |> List.rev
+      in
+      Odoc_misc.remove_duplicates Stdlib.compare results_with_duplicates
   end
 
 module P_name =

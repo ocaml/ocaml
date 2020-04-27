@@ -119,15 +119,21 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
+void (*caml_fatal_error_hook) (char *msg, va_list args) = NULL;
+
 CAMLexport void caml_fatal_error (char *msg, ...)
 {
   va_list ap;
   va_start(ap, msg);
-  fprintf (stderr, "Fatal error: ");
-  vfprintf (stderr, msg, ap);
+  if(caml_fatal_error_hook != NULL) {
+    caml_fatal_error_hook(msg, ap);
+  } else {
+    fprintf (stderr, "Fatal error: ");
+    vfprintf (stderr, msg, ap);
+    fprintf (stderr, "\n");
+  }
   va_end(ap);
-  fprintf (stderr, "\n");
-  exit(2);
+  abort();
 }
 
 CAMLexport void caml_fatal_error_arg (const char *fmt, const char *arg)
