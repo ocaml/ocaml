@@ -17,142 +17,34 @@
 
 ######### General configuration
 
-PREFIX=C:/ocamlms64
+prefix=C:/ocamlms64
+exec_prefix=${prefix}
 
 ### Where to install the binaries.
-BINDIR=$(PREFIX)/bin
+BINDIR=${exec_prefix}/bin
 
 ### Where to install the standard library
-LIBDIR=$(PREFIX)/lib/ocaml
+LIBDIR=${exec_prefix}/lib/ocaml
 
 ### Where to install the stub DLLs
-STUBLIBDIR=$(LIBDIR)/stublibs
-
-### Where to install the info files
-DISTRIB=$(PREFIX)
+STUBLIBDIR=${exec_prefix}/lib/ocaml/stublibs
 
 ### Where to install the man pages
-MANDIR=$(PREFIX)/man
+MANDIR=${prefix}/man
 
 ########## Toolchain and OS dependencies
 
-TOOLCHAIN=msvc
-
-# It doesn't make much sense to set "TARGET" and "HOST" for msvc but it's needed
-# for the myocamlbuild config.
-# The only case these will be used currently is to check whether we're
-# cross-compiling or not so setting them to the same value is what matters.
-HOST=msvc64
-TARGET=$(HOST)
-
-CCOMPTYPE=msvc
-O=obj
-A=lib
-S=asm
-SO=s.obj
-EXE=.exe
-OUTPUTEXE=-Fe
-EXT_DLL=.dll
-EXT_OBJ=.$(O)
-OUTPUTOBJ=-Fo
-EXT_LIB=.$(A)
-EXT_ASM=.$(S)
 PROGRAMS_MAN_SECTION=1
 LIBRARIES_MAN_SECTION=3
 HASHBANGSCRIPTS=false
-PTHREAD_LINK=
-PTHREAD_CAML_LINK=
-X11_INCLUDES=
-X11_LINK=
-RPATH=
-SUPPORTS_SHARED_LIBRARIES=true
-SHAREDLIB_CFLAGS=
-ASM=ml64 -nologo -Cp -c -Fo
-ASPP=
-DYNLINKOPTS=
-SYSTHREAD_SUPPORT=true
-CMXS=cmxs
-NATDYNLINK=true
-NATDYNLINKOPTS=
-RUNTIMED=false
-ASM_CFI_SUPPORTED=false
-WITH_FRAME_POINTERS=false
-UNIX_OR_WIN32=win32
-UNIXLIB=win32unix
-FLAMBDA=false
-WITH_FLAMBDA_INVARIANTS=false
-WITH_PROFINFO=false
-WITH_SPACETIME=false
-ENABLE_CALL_COUNTS=false
-LIBUNWIND_AVAILABLE=false
-LIBUNWIND_LINK_FLAGS=
-PROFINFO_WIDTH=0
-FORCE_SAFE_STRING=false
-DEFAULT_SAFE_STRING=true
-WINDOWS_UNICODE=1
-AFL_INSTRUMENT=false
-AWK=gawk
-CC_HAS_DEBUG_PREFIX_MAP=false
-AS_HAS_DEBUG_PREFIX_MAP=false
-
-########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
 CC=cl
-OC_CFLAGS=-nologo -O2 -Gy- -MD
-OC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE -DUNICODE -D_UNICODE \
-  -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
-OCAMLC_CFLAGS=-nologo -O2 -Gy- -MD
-OCAMLC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
-
+CC_HAS_DEBUG_PREFIX_MAP=false
+AS_HAS_DEBUG_PREFIX_MAP=false
 OC_LDFLAGS=/ENTRY:wmainCRTStartup
-
-### Libraries needed
-#EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
-EXTRALIBS=
-BYTECCLIBS=advapi32.lib ws2_32.lib version.lib
-NATIVECCLIBS=advapi32.lib ws2_32.lib version.lib
-
 ### How to invoke the C preprocessor
-CPP=$(CC) -nologo -EP
-
-### Flexlink
-FLEXLINK_CMD=flexlink
-FLEXDLL_CHAIN=msvc64
-# FLEXLINK_FLAGS must be safe to insert in an OCaml string
-#   (see ocamlmklibconfig.ml in tools/Makefile)
-FLEXLINK_FLAGS=-x64 -merge-manifest -stack 33554432
-FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
-FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
-ifeq ($(FLEXDIR),)
-IFLEXDIR=-I"../flexdll"
-else
-IFLEXDIR=-I"$(FLEXDIR)"
-endif
-# MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
-#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
-# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
-MKDLL=$(FLEXLINK)
-MKEXE=$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")
-MKEXEDEBUGFLAG=
-MKMAINDLL=$(FLEXLINK) -maindll
-
-### Native command to build ocamlrun.exe without flexlink
-MERGEMANIFESTEXE=test ! -f $(1).manifest \
-	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
-	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
-  /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
-
-### Native command to build an ANSI executable
-MKEXE_ANSI=$(FLEXLINK) -exe
-
-### How to build a static library
-MKLIB=link -lib -nologo -machine:AMD64 /out:$(1) $(2)
-MKSHAREDLIBRPATH=
-
-### Canonicalize the name of a system library
-SYSLIB=$(1).lib
+CPP=cl -nologo -EP
 
 ### The ranlib command
 RANLIB=echo
@@ -161,7 +53,17 @@ RANLIBCMD=
 ### The ar command
 ARCMD=
 
-############# Configuration for the native-code compiler
+O=obj
+EXT_OBJ=.obj
+OUTPUTOBJ=-Fo
+A=lib
+EXT_LIB=.lib
+S=asm
+EXT_ASM=.asm
+SO=dll
+EXT_DLL=.dll
+SHAREDLIB_CFLAGS=
+RPATH=
 
 ### Name of architecture for the native-code compiler
 ARCH=amd64
@@ -172,15 +74,78 @@ MODEL=default
 
 ### Name of operating system family for the native-code compiler.
 SYSTEM=win64
-
-OCAMLOPT_CFLAGS=-nologo -O2 -Gy- -MD
-OCAMLOPT_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
-
-### Build partially-linked object file
-PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'
+ASM=ml64 -nologo -Cp -c -Fo
+ASPP=
 
 ### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
 INSTALL_BYTECODE_PROGRAMS=true
+
+############# Configuration for the contributed libraries
+
+OTHERLIBRARIES=win32unix str dynlink bigarray raw_spacetime_lib systhreads
+PTHREAD_LINK=
+PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
+UNIX_OR_WIN32=win32
+UNIXLIB=win32unix
+
+########## Configuration for the bytecode compiler
+OC_CFLAGS=-nologo -O2 -Gy- -MD
+OC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
+OCAMLC_CFLAGS=-nologo -O2 -Gy- -MD
+
+OCAMLC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
+### Libraries needed
+BYTECCLIBS=advapi32.lib ws2_32.lib version.lib
+EXE=.exe
+OUTPUTEXE=-Fe
+SUPPORTS_SHARED_LIBRARIES=true
+MKSHAREDLIBRPATH=
+DYNLINKOPTS=
+NATDYNLINK=true
+NATDYNLINKOPTS=
+
+### Canonicalize the name of a system library
+SYSLIB=$(1).lib
+
+### How to build a static library
+MKLIB=link -lib -nologo -machine:AMD64 /out:$(1) $(2)
+
+############# Configuration for the native-code compiler
+
+OCAMLOPT_CFLAGS=-nologo -O2 -Gy- -MD
+OCAMLOPT_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
+NATIVECCLIBS=advapi32.lib ws2_32.lib version.lib
+SYSTHREAD_SUPPORT=true
+
+### Build partially-linked object file
+PACKLD=link -lib -nologo -machine:AMD64 -out:
+
+### Flexlink
+FLEXLINK_CMD=flexlink
+# FLEXLINK_FLAGS must be safe to insert in an OCaml string
+#   (see ocamlmklibconfig.ml in tools/Makefile)
+FLEXLINK_FLAGS=-x64 -merge-manifest -stack 33554432
+FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
+FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
+ifeq ($(FLEXDIR),)
+IFLEXDIR=-I"../flexdll"
+else
+IFLEXDIR=-I"$(FLEXDIR)"
+endif
+#EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
+EXTRALIBS=
+CCOMPTYPE=msvc
+TOOLCHAIN=msvc
+CMXS=cmxs
+
+# MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
+#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
+# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
+MKEXE=$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")
+MKDLL=$(FLEXLINK)
+MKMAINDLL=$(FLEXLINK) -maindll
+MKEXEDEBUGFLAG=
+RUNTIMED=true
 
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
@@ -188,17 +153,47 @@ WITH_DEBUGGER=ocamldebugger
 ### Clear this to disable compiling ocamldoc
 WITH_OCAMLDOC=ocamldoc
 
-############# Configuration for the contributed libraries
+ASM_CFI_SUPPORTED=false
+WITH_FRAME_POINTERS=false
+WITH_SPACETIME=false
+ENABLE_CALL_COUNTS=true
+WITH_PROFINFO=false
+PROFINFO_WIDTH=0
+LIBUNWIND_AVAILABLE=false
+LIBUNWIND_LINK_FLAGS=
+# It doesn't make much sense to set "TARGET" and "HOST" for msvc but it's needed
+# for the myocamlbuild config.
+# The only case these will be used currently is to check whether we're
+# cross-compiling or not so setting them to the same value is what matters.
+TARGET=$(HOST)
+HOST=msvc64
 
-OTHERLIBRARIES=win32unix systhreads str dynlink bigarray
-
-############# for the testsuite makefiles
-OTOPDIR=$(WINTOPDIR)
-CTOPDIR=$(WINTOPDIR)
-CYGPATH=cygpath -m
-DIFF=/usr/bin/diff -q --strip-trailing-cr
-FIND=/usr/bin/find
-SORT=/usr/bin/sort
-SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+FLAMBDA=false
+WITH_FLAMBDA_INVARIANTS=false
+FORCE_SAFE_STRING=false
+DEFAULT_SAFE_STRING=true
+WINDOWS_UNICODE=1
+AFL_INSTRUMENT=false
 MAX_TESTSUITE_DIR_RETRIES=1
 FLAT_FLOAT_ARRAY=true
+AWK=gawk
+
+### Native command to build ocamlrun.exe without flexlink
+    MERGEMANIFESTEXE=test ! -f $(1).manifest \
+	           || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
+	           && rm -f $(1).manifest
+    MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
+      /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
+
+############# for the testsuite makefiles
+  OTOPDIR=$(WINTOPDIR)
+  CTOPDIR=$(WINTOPDIR)
+  CYGPATH=cygpath -m
+  DIFF=/usr/bin/diff -q --strip-trailing-cr
+  FIND=/usr/bin/find
+  SORT=/usr/bin/sort
+  SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+
+### Native command to build an ANSI executable
+  MKEXE_ANSI=$(FLEXLINK) -exe
+  FLEXDLL_CHAIN=msvc64
