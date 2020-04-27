@@ -1566,10 +1566,7 @@ let exhaust ext pss n =
             | _ -> assert false)
           lst
       in
-      (* We return a (unit -> pattern) witness
-         to delay computation, as [do_check_fragile]
-         does not need the actual witness. *)
-      Witnesses (fun () -> orify_many (List.of_seq singletons))
+      Witnesses singletons
 (*
    Another exhaustiveness check, enforcing variant typing.
    Note that it does not check exact exhaustiveness, but whether a
@@ -2151,31 +2148,37 @@ let do_check_partial ~pred loc casel pss = match pss with
 | ps::_  ->
     begin match exhaust None pss (List.length ps) with
     | No_matching_value -> Total
-    | Witnesses delayed_witness ->
-        let u = delayed_witness () in
-        let v =
+    | Witnesses us ->
+        let check_witness u =
           let (pattern,constrs,labels) = Conv.conv u in
-          let u' = pred constrs labels pattern in
-          (* pretty_pat u;
-          begin match u' with
-            None -> prerr_endline ": impossible"
-          | Some _ -> prerr_endline ": possible"
-          end; *)
-          u'
+          pred constrs labels pattern
         in
-        begin match v with
-          None -> Total
-        | Some v ->
+        let vs = Seq.filter_map check_witness us in
+        let module Seq = struct
+          include Seq
+
+          let rec take n seq =
+            if n = 0 then empty
+            else
+              fun () -> match seq () with
+                | Nil -> Nil
+                | Cons (x, xs) -> Cons (x, take (n - 1) xs)
+        end
+        in
+        let vs_cut = List.of_seq (Seq.take 42 vs) in
+        begin match vs_cut with
+          [] -> Total
+        | _nonempty ->
             if Warnings.is_active (Warnings.Partial_match "") then begin
               let errmsg =
                 try
                   let buf = Buffer.create 16 in
                   let fmt = Format.formatter_of_buffer buf in
-                  Printpat.top_pretty fmt v;
-                  if do_match (initial_only_guarded casel) [v] then
+                  Printpat.top_pretty fmt (orify_many vs_cut);
+                  if do_match (initial_only_guarded casel) vs_cut then
                     Buffer.add_string buf
                       "\n(However, some guarded clause may match this value.)";
-                  if contains_extension v then
+                  if List.exists contains_extension vs_cut then
                     Buffer.add_string buf
                       "\nMatching over values of extensible variant types \
                          (the *extension* above)\n\
