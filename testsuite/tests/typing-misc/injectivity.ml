@@ -2,15 +2,20 @@
    * expect
 *)
 
+(* Define an injective abstract type, and use it in a GADT
+   and a constrained type *)
 module M : sig type +!'a t end = struct type 'a t = 'a list end
 [%%expect{|
 module M : sig type +!'a t end
 |}]
 type _ t = M : 'a -> 'a M.t t (* OK *)
+type 'a u = 'b constraint 'a = 'b M.t
 [%%expect{|
 type _ t = M : 'a -> 'a M.t t
+type 'a u = 'b constraint 'a = 'b M.t
 |}]
 
+(* Without the injectivity annotation, the cannot be defined *)
 module N : sig type +'a t end = struct type 'a t = 'a list end
 [%%expect{|
 module N : sig type +'a t end
@@ -23,7 +28,16 @@ Line 1, characters 0-29:
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
 |}]
+type 'a u = 'b constraint 'a = 'b N.t
+[%%expect{|
+Line 1, characters 0-37:
+1 | type 'a u = 'b constraint 'a = 'b N.t
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+|}]
 
+(* Of course, the internal type should be injective in this parameter *)
 module M : sig type +!'a t end = struct type 'a t = int end (* KO *)
 [%%expect{|
 Line 1, characters 33-59:
@@ -40,6 +54,20 @@ Error: Signature mismatch:
          type +!'a t
        Their variances do not agree.
 |}]
+
+(* Annotations in type abbreviations allow to check injectivity *)
+type !'a t = 'a list
+type !'a u = int
+[%%expect{|
+type 'a t = 'a list
+Line 2, characters 0-16:
+2 | type !'a u = int
+    ^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is unrestricted.
+|}]
+
 
 (* Motivating examples with GADTs *)
 
