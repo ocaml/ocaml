@@ -24,7 +24,7 @@
 	  domain platform eventlog fiber memory startup_aux \
 	  dynlink backtrace_byt backtrace spacetime_byt afl bigarray
   do
-      sed -n -e "s/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" "$prim.c"
+      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' "$prim.c"
   done
   sed -n -e 's/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\
 caml_int64_\1_native/p' ints.c

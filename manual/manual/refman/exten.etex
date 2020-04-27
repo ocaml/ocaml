@@ -551,7 +551,7 @@ module SVG = struct let draw () = () [@@ellipsis] end
 let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
 
 module PDF = struct let draw () = () [@@ellipsis] end
-let _ = Hashtbl.add devices "PDF" (module PDF: DEVICE)
+let _ = Hashtbl.add devices "PDF" (module PDF : DEVICE)
 \end{caml_example*}
 
 We can then select one implementation based on command-line

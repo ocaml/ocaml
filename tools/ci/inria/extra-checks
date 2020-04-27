@@ -179,8 +179,7 @@ $make -s distclean || :
 set_config_var OC_CFLAGS "-O1 \
 -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer \
 -Wall -Werror \
--fsanitize=thread \
--fsanitize-blacklist=$(pwd)/tools/ci/inria/tsan-suppr.txt"
+-fsanitize=thread"
 
 # Build the system
 make $jobs world.opt

@@ -869,6 +869,11 @@ let emit_instr i =
         end
     | Lentertrap ->
         0
+    | Ladjust_trap_depth { delta_traps } ->
+        (* each trap occupies 8 bytes on the stack *)
+        let delta = 8 * delta_traps in
+        cfi_adjust_cfa_offset delta;
+        stack_offset := !stack_offset + delta; 0
     | Lpushtrap { lbl_handler; } ->
         let s = emit_load_handler_address lbl_handler in
         stack_offset := !stack_offset + 8;

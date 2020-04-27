@@ -72,8 +72,9 @@ let rec apply_coercion loc strict restr arg =
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
       name_lambda strict arg (fun id ->
-        let get_field pos = Lprim(Pfield (pos, Pointer, Mutable),
-                                  [Lvar id], loc)
+        let get_field pos =
+          if pos < 0 then lambda_unit
+          else Lprim(Pfield (pos, Pointer, Mutable), [Lvar id], loc)
         in
         let lam =
           Lprim(Pmakeblock(0, Immutable, None),

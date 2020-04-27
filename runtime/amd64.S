@@ -65,6 +65,13 @@
 
 #endif
 
+#if defined(SYS_linux) || defined(SYS_gnu)
+#define ENDFUNCTION(name) \
+        .size name, . - name
+#else
+#define ENDFUNCTION(name)
+#endif
+
 #ifdef ASM_CFI_SUPPORTED
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
@@ -460,6 +467,7 @@ CFI_STARTPROC
         add     $16, %rsp /* pop argument, retaddr */
         jmp     GCALL(caml_raise_exn)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_realloc_stack))
 
 /* Arguments: %rax = base; %rdx = offset. */
 FUNCTION(G(caml_call_read_barrier))
@@ -482,6 +490,7 @@ CFI_STARTPROC
         popq    %rax
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_read_barrier))
 
 /* runs on C stack with C calling convention.
    optimisation: use ocaml calling convention and SAVE_ALL_REGS?
@@ -496,12 +505,14 @@ CFI_STARTPROC
 1:      movq    C_ARG_3, 0(C_ARG_1,C_ARG_2,8)
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_modify_field_asm))
 
 FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
         movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_gc))
 
 FUNCTION(G(caml_call_gc1))
 CFI_STARTPROC
@@ -509,6 +520,7 @@ CFI_STARTPROC
         movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_gc1))
 
 FUNCTION(G(caml_call_gc2))
 CFI_STARTPROC
@@ -516,6 +528,7 @@ CFI_STARTPROC
         movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_gc2))
 
 FUNCTION(G(caml_call_gc3))
 CFI_STARTPROC
@@ -523,6 +536,7 @@ CFI_STARTPROC
         movq    $0, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_gc3))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
@@ -535,6 +549,7 @@ LBL(100):
         movq    $16, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_alloc1))
 
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
@@ -547,6 +562,7 @@ LBL(101):
         movq    $24, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_alloc2))
 
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
@@ -559,6 +575,7 @@ LBL(102):
         movq    $32, %rax
         jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
@@ -581,6 +598,7 @@ LBL(call_gc_and_retry_alloc):
         RESTORE_ALL_REGS
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_allocN))
 
 FUNCTION(G(caml_call_poll))
 CFI_STARTPROC
@@ -596,6 +614,7 @@ LBL(caml_call_poll):
         RESTORE_ALL_REGS
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_call_poll))
 
 /******************************************************************************/
 /* Call a C function from OCaml */
@@ -621,6 +640,7 @@ LBL(caml_c_call):
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_c_call))
 
 FUNCTION(G(caml_c_call_stack_args))
 CFI_STARTPROC
@@ -657,6 +677,7 @@ LBL(106):
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_c_call_stack_args))
 
 /******************************************************************************/
 /* Start the OCaml program */
@@ -730,6 +751,7 @@ LBL(109):
         movq    %rsp, %r10 /* exn handler already popped here */
         jmp     1b
 CFI_ENDPROC
+ENDFUNCTION(G(caml_start_program))
 
 /******************************************************************************/
 /* Exceptions */
@@ -760,6 +782,7 @@ LBL(117):
         RESTORE_EXN_HANDLER_OCAML
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_raise_exn))
 
 FUNCTION(G(caml_reraise_exn))
 CFI_STARTPROC
@@ -768,6 +791,7 @@ CFI_STARTPROC
         RESTORE_EXN_HANDLER_OCAML
         ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_reraise_exn))
 
 /* Raise an exception from C */
 
@@ -785,6 +809,7 @@ CFI_STARTPROC
         popq    %r10
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_raise_exception))
 
 /******************************************************************************/
 /* Callback from C to OCaml */
@@ -803,6 +828,7 @@ CFI_STARTPROC
         movq    $0, %rsi           /* dummy */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_callback_asm))
 
 FUNCTION(G(caml_callback2_asm))
 CFI_STARTPROC
@@ -817,6 +843,7 @@ CFI_STARTPROC
         movq    $0, %rsi           /* dummy */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_callback2_asm))
 
 FUNCTION(G(caml_callback3_asm))
 CFI_STARTPROC
@@ -831,6 +858,7 @@ CFI_STARTPROC
         LEA_VAR(caml_apply3, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_callback3_asm))
 
 /******************************************************************************/
 /* Fibers */
@@ -864,6 +892,7 @@ LBL(112):
         LEA_VAR(caml_exn_Unhandled, %rax)
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_perform))
 
 FUNCTION(G(caml_reperform))
 CFI_STARTPROC
@@ -876,6 +905,7 @@ CFI_STARTPROC
         leaq    1(%rsi), %rdi                    /* %rdi (cont_tail) := Val_ptr(old stack) */
         jmp     LBL(do_perform)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_reperform))
 
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
@@ -893,6 +923,7 @@ CFI_STARTPROC
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_resume))
 
 /* Run a function on a new stack,
    then invoke either the value or exception handler */
@@ -953,12 +984,14 @@ LBL(fiber_exn_handler):
         movq    Handler_exception(%rsp), %rbx
         jmp     1b
 CFI_ENDPROC
+ENDFUNCTION(G(caml_runstack))
 
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
         LEA_VAR(caml_array_bound_error, %rax)
         jmp     LBL(caml_c_call)
 CFI_ENDPROC
+ENDFUNCTION(G(caml_ml_array_bound_error))
 
 FUNCTION(G(caml_assert_stack_invariants))
 CFI_STARTPROC
@@ -972,6 +1005,7 @@ CFI_STARTPROC
         int3
 1:      ret
 CFI_ENDPROC
+ENDFUNCTION(G(caml_assert_stack_invariants))
 
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):

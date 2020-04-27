@@ -1792,15 +1792,18 @@ let force_delayed_checks () =
   reset_delayed_checks ();
   Btype.backtrack snap
 
-let rec final_subexpression sexp =
-  match sexp.pexp_desc with
-    Pexp_let (_, _, e)
-  | Pexp_sequence (_, e)
-  | Pexp_try (e, _)
-  | Pexp_ifthenelse (_, e, _)
-  | Pexp_match (_, {pc_rhs=e} :: _)
+let rec final_subexpression exp =
+  match exp.exp_desc with
+    Texp_let (_, _, e)
+  | Texp_sequence (_, e)
+  | Texp_try (e, _, _)
+  | Texp_ifthenelse (_, e, _)
+  | Texp_match (_, {c_rhs=e} :: _, _, _)
+  | Texp_letmodule (_, _, _, _, e)
+  | Texp_letexception (_, e)
+  | Texp_open (_, e)
     -> final_subexpression e
-  | _ -> sexp
+  | _ -> exp
 
 (* Generalization criterion for expressions *)
 
@@ -4304,13 +4307,14 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement ?explanation env sexp =
-  let loc = (final_subexpression sexp).pexp_loc in
   begin_def();
   let exp = type_exp env sexp in
   end_def();
   let ty = expand_head env exp.exp_type and tv = newvar() in
   if is_Tvar ty && ty.level > tv.level then
-    Location.prerr_warning loc Warnings.Nonreturning_statement;
+    Location.prerr_warning
+      (final_subexpression exp).exp_loc
+      Warnings.Nonreturning_statement;
   if !Clflags.strict_sequence then
     let expected_ty = instance Predef.type_unit in
     with_explanation explanation (fun () ->

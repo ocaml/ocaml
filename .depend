@@ -1680,6 +1680,7 @@ bytecomp/bytepackager.cmo : \
     typing/typemod.cmi \
     lambda/translmod.cmi \
     typing/subst.cmi \
+    lambda/simplif.cmi \
     lambda/printlambda.cmi \
     typing/path.cmi \
     utils/misc.cmi \
@@ -1699,6 +1700,7 @@ bytecomp/bytepackager.cmx : \
     typing/typemod.cmx \
     lambda/translmod.cmx \
     typing/subst.cmx \
+    lambda/simplif.cmx \
     lambda/printlambda.cmx \
     typing/path.cmx \
     utils/misc.cmx \
@@ -2058,6 +2060,7 @@ asmcomp/asmlink.cmi : \
 asmcomp/asmpackager.cmo : \
     typing/typemod.cmi \
     lambda/translmod.cmi \
+    lambda/simplif.cmi \
     utils/profile.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -2081,6 +2084,7 @@ asmcomp/asmpackager.cmo : \
 asmcomp/asmpackager.cmx : \
     typing/typemod.cmx \
     lambda/translmod.cmx \
+    lambda/simplif.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
     parsing/location.cmx \

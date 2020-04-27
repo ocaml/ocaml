@@ -163,6 +163,7 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | _       -> false)
 
 let runtime_variant = ref "";;      (* -runtime-variant *)
+let with_runtime = ref true;;         (* -with-runtime *)
 
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref true               (* -keep-locs *)

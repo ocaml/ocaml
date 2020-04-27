@@ -927,6 +927,11 @@ let emit_instr fallthrough i =
       D.text ()
   | Lentertrap ->
       ()
+  | Ladjust_trap_depth { delta_traps; } ->
+      (* each trap occupies 16 bytes on the stack *)
+      let delta = 16 * delta_traps in
+      cfi_adjust_cfa_offset delta;
+      stack_offset := !stack_offset + delta
   | Lpushtrap { lbl_handler; } ->
       let load_label_addr s arg =
         if !Clflags.pic_code then
@@ -1114,6 +1119,7 @@ let emit_item = function
 
 let data l =
   D.data ();
+  D.align 8;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)

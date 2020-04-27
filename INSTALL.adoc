@@ -128,7 +128,7 @@ After installation, do *not* strip the `ocamldebug` executables.
    code and OCaml bytecode) and stripping erases the bytecode!  Other
    executables such as `ocamlrun` can safely be stripped.
 
-== If something goes wwong
+== If something goes wrong
 
 Read the "common problems" and "machine-specific hints" section at the end of
 this file.

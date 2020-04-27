@@ -111,7 +111,7 @@ let add_ccobjs origin l =
 let runtime_lib () =
   let libname = "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
   try
-    if !Clflags.nopervasives then []
+    if !Clflags.nopervasives || not !Clflags.with_runtime then []
     else [ Load_path.find libname ]
   with Not_found ->
     raise(Error(File_not_found libname))
