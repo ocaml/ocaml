@@ -529,12 +529,12 @@ val make_switch :
 
 (** [transl_int_switch loc arg low high cases default] *)
 val transl_int_switch :
-  Location.t -> expression -> int -> int ->
+  Debuginfo.t -> expression -> int -> int ->
   (int * expression) list -> expression -> expression
 
 (** [transl_switch_clambda loc arg index cases] *)
 val transl_switch_clambda :
-  Location.t -> expression -> int array -> expression array -> expression
+  Debuginfo.t -> expression -> int array -> expression array -> expression
 
 (** [strmatch_compile dbg arg default cases] *)
 val strmatch_compile :

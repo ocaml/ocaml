@@ -19,19 +19,25 @@
 open Asttypes
 open Typedtree
 open Lambda
+open Debuginfo.Scoped_location
 
 val pure_module : module_expr -> let_kind
 
-val transl_exp: expression -> lambda
-val transl_apply: ?should_be_tailcall:bool
+val transl_exp: scopes:scopes -> expression -> lambda
+val transl_apply: scopes:scopes
+                  -> ?should_be_tailcall:bool
                   -> ?inlined:inline_attribute
                   -> ?specialised:specialise_attribute
                   -> lambda -> (arg_label * expression option) list
-                  -> Location.t -> lambda
-val transl_let: rec_flag -> value_binding list -> lambda -> lambda
+                  -> scoped_location -> lambda
+val transl_let: scopes:scopes -> ?in_structure:bool -> rec_flag
+                -> value_binding list -> lambda -> lambda
 
-val transl_extension_constructor: Env.t -> Path.t option ->
+val transl_extension_constructor: scopes:scopes ->
+  Env.t -> Path.t option ->
   extension_constructor -> lambda
+
+val transl_scoped_exp : scopes:scopes -> expression -> lambda
 
 type error =
     Free_super_var
@@ -45,6 +51,8 @@ val report_error: formatter -> error -> unit
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 val transl_module :
-      (module_coercion -> Path.t option -> module_expr -> lambda) ref
+      (scopes:scopes -> module_coercion -> Path.t option ->
+       module_expr -> lambda) ref
 val transl_object :
-      (Ident.t -> string list -> class_expr -> lambda) ref
+      (scopes:scopes -> Ident.t -> string list ->
+       class_expr -> lambda) ref

@@ -562,7 +562,6 @@ let rec transl env e =
 
   (* Control structures *)
   | Uswitch(arg, s, dbg) ->
-      let loc = Debuginfo.to_location dbg in
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
@@ -573,17 +572,17 @@ let rec transl env e =
           dbg
       else if Array.length s.us_index_consts = 0 then
         bind "switch" (transl env arg) (fun arg ->
-          transl_switch loc env (get_tag arg dbg)
+          transl_switch dbg env (get_tag arg dbg)
             s.us_index_blocks s.us_actions_blocks)
       else
         bind "switch" (transl env arg) (fun arg ->
           Cifthenelse(
           Cop(Cand, [arg; Cconst_int (1, dbg)], dbg),
           dbg,
-          transl_switch loc env
+          transl_switch dbg env
             (untag_int arg dbg) s.us_index_consts s.us_actions_consts,
           dbg,
-          transl_switch loc env
+          transl_switch dbg env
             (get_tag arg dbg) s.us_index_blocks s.us_actions_blocks,
           dbg))
   | Ustringswitch(arg,sw,d) ->
@@ -1307,12 +1306,12 @@ and transl_sequor env (approx : then_else)
     then_
 
 (* This assumes that [arg] can be safely discarded if it is not used. *)
-and transl_switch loc env arg index cases = match Array.length cases with
+and transl_switch dbg env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
 | 1 -> transl env cases.(0)
 | _ ->
     let cases = Array.map (transl env) cases in
-    transl_switch_clambda loc arg index cases
+    transl_switch_clambda dbg arg index cases
 
 and transl_letrec env bindings cont =
   let dbg = Debuginfo.none in

@@ -407,7 +407,7 @@ module Env = struct
     { t with inlined_debuginfo = dbg }
 
   let add_inlined_debuginfo t ~dbg =
-    Debuginfo.concat t.inlined_debuginfo dbg
+    Debuginfo.inline t.inlined_debuginfo dbg
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =
