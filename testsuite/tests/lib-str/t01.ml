@@ -1,6 +1,8 @@
 (* TEST
-   * hasstr
-   include str
+* hasstr
+include str
+** bytecode
+** native
 *)
 
 open Printf

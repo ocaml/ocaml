@@ -3072,7 +3072,7 @@ Error: Types marked with the immediate attribute must be
        non-pointer types like int or bool
 |}];;
 (*
-   Implicit unpack allows to omit the signature in (val ...) expressions.
+   Implicit unpack allows the signature in (val ...) expressions to be omitted.
 
    It also adds (module M : S) and (module M) patterns, relying on
    implicit (val ...) for the implementation. Such patterns can only

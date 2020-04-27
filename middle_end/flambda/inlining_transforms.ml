@@ -118,7 +118,7 @@ let inline_by_copying_function_body ~env ~r
     && ((not default_inline) || (not default_specialise)) then
       (* When the function inlined function is a stub, the annotation
          is reported to the function applications inside the stub.
-         This allows to report the annotation to the application the
+         This allows reporting the annotation to the application the
          original programmer really intended: the stub is not visible
          in the source. *)
       set_inline_attribute_on_all_apply body

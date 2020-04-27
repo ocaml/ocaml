@@ -334,8 +334,7 @@ static void expand_pattern(wchar_t * arg);
 
 static void out_of_memory(void)
 {
-  fprintf(stderr, "Out of memory while expanding command line\n");
-  exit(2);
+  caml_fatal_error("out of memory while expanding command line");
 }
 
 static void store_argument(wchar_t * arg)

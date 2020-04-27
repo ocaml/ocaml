@@ -10,6 +10,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #8828: Added abstractions for variants, records, constructors, fields and
+  extension constructor types mismatch.
+  (Mekhrubon Turaev, review by Florian Angeletti, Leo White and Gabriel Scherer)
+
 - #7927, #8527: Replace long tuples into records in typeclass.ml
   (Ulugbek Abdullaev, review by David Allsopp and Gabriel Scherer)
 
@@ -29,6 +33,10 @@ Working version
 - #8766: Parmatch: introduce a type for simplified pattern heads
   (Gabriel Scherer and Thomas Refis, review by Stephen Dolan and
    Florian Angeletti)
+
+- #8774: New implementation of Env.make_copy_of_types
+  (Alain Frisch, review by Thomas Refis, Leo White and Jacques Garrigue)
+
 
 ### Code generation and optimizations:
 
@@ -60,6 +68,10 @@ Working version
    OCaml callback when called from C.
    (Jacques-Henri Jourdan, review by Stephen Dolan and Gabriel Scherer)
 
+- #8630: Use abort() instead of exit(2) in caml_fatal_error, and add
+  the new hook caml_fatal_error_hook.
+  (Jacques-Henri Jourdan, review by Xavier Leroy)
+
 ### Tools:
 
 * #6792, #8654 ocamldebug now supports program using Dynlink. This
@@ -88,6 +100,10 @@ Working version
 - #8716: Optimize [Array.fill] and [Hashtbl.clear] with a new runtime primitive
   (Alain Frisch, review by David Allsopp, Stephen Dolan and Damien Doligez)
 
+- #8530: List.sort: avoid duplicate work by chop
+  (Guillaume Munch-Maccagnoni, review by David Allsopp, Damien Doligez and
+   Gabriel Scherer)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
@@ -104,6 +120,9 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer, Sébastien Hinderer and
    Thomas Refis)
 
+- #8843, #8841: fix use of off_t on 32-bit systems.
+  (Stephen Dolan, report by Richard Jones, review by Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - #8702, #8777: improved error messages for fixed row polymorphic variants
@@ -119,9 +138,9 @@ Working version
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
 
-- #8751: fix bug that could result in misaligned data section when compiling to
-  native-code on amd64.  (observed with the mingw64 compiler)
-  (Nicolás Ojeda Bär, review by David Allsopp)
+- #8848: Fix x86 stack probe CFI information in caml_c_call and
+  caml_call_gc
+  (Tom Kelly, review by Xavier Leroy)
 
 OCaml 4.09.0
 ------------
@@ -131,10 +150,6 @@ OCaml 4.09.0
 - #2278: Remove native code generation support for 32-bit Intel macOS,
   iOS and other Darwin targets.
   (Mark Shinwell, review by Nicolas Ojeda Bar and Xavier Leroy)
-
-- #7887: ensure frame table is 8-aligned on ARM64 and PPC64
-  (Xavier Leroy, report by Mark Hayden, review by Mark Shinwell
-   and Gabriel Scherer)
 
 - #8507: Shorten symbol names of anonymous functions in Flambda mode
   (the directory portions are now hidden)
@@ -370,14 +385,41 @@ OCaml 4.09.0
 - #8701, #8725: Variance of constrained parameters causes principality issues
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
-- #8769, #8770: Fix assertion failure with -pack
-  (Leo White, review by Gabriel Scherer, report by Fabian @copy)
+- #8779, more cautious variance computation to avoid missing cmis
+  (Florian Angeletti, report by Antonio Nuno Monteiro, review by Leo White)
 
 - #8800: Fix soundness bug in extension constructor inclusion
   (Leo White, review by Jacques Garrigue)
 
-OCaml 4.08.0
-------------
+- #8810: Env.lookup_module: don't allow creating loops
+  (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
+OCaml 4.08 maintenance branch:
+------------------------------
+
+### Bug fixes:
+
+- #7887: ensure frame table is 8-aligned on ARM64 and PPC64
+  (Xavier Leroy, report by Mark Hayden, review by Mark Shinwell
+   and Gabriel Scherer)
+
+- #8751: fix bug that could result in misaligned data section when compiling to
+  native-code on amd64.  (observed with the mingw64 compiler)
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #8769, #8770: Fix assertion failure with -pack
+  (Leo White, review by Gabriel Scherer, report by Fabian @copy)
+
+- #8816, #8818: fix loading of packed modules with Dynlink (regression in
+  #2176).
+  (Leo White, report by Andre Maroneze, review by Gabriel Scherer)
+
+- #8830: configure script: fix tool prefix detection and Debian's armhf
+  detection
+  (Stéphane Glondu, review by David Allsopp)
+
+OCaml 4.08.0 (13 June 2019)
+---------------------------
 
 ### Language features:
 

@@ -147,11 +147,11 @@ contains some complex, atypical pieces of C code which can uncover bugs in
 optimizing compilers.  Alternatively, try another C compiler (e.g. `gcc` instead
 of the vendor-supplied `cc`).
 
-You can also build a debug version of the runtime system. Go to the `runtime/`
-directory and do `make ocamlrund`.  Then, copy `ocamlrund` to
-`../boot/ocamlrun`, and try again.  This version of the runtime system contains
-lots of assertions and sanity checks that could help you pinpoint the problem.
-
+You can also use the debug version of the runtime system which is
+normally built and installed by default. Run the bytecode program
+that causes troubles with `ocamlrund` rather than with `ocamlrun`.
+This version of the runtime system contains lots of assertions
+and sanity checks that could help you pinpoint the problem.
 
 == Common problems
 

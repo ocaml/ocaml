@@ -27,7 +27,7 @@ Line 1, characters 16-53:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M1.t
-       The types for field E are not equal.
+       The types for constructor E are not equal.
 |}]
 
 let bool_of_int x =
@@ -75,5 +75,5 @@ Line 1, characters 16-53:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M1.t
-       The types for field E are not equal.
+       The types for constructor E are not equal.
 |}]

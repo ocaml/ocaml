@@ -80,9 +80,6 @@ rm -rf ${INSTDIR}
 
 make world.opt -j5
 make alldepend
-  # note: you have to run 'alldepend' after 'world',
-  # not just after 'core' as before, because
-  # ocamldoc/stdlib_non_prefixed depends on 'world'
 
 # check that .depend files have no absolute path in them
 find . -name .depend | xargs grep ' /'
@@ -109,14 +106,15 @@ make tests
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
-# Update ocaml-variants.opam file to depend on the new version of ocaml.
 ./autogen
-git add VERSION Changes ocaml-variants.opam configure
-git commit -m "last commit before tagging $VERSION"
+git commit -a -m "last commit before tagging $VERSION"
+
 # update VERSION with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
 # Update the copyright year in the manual.
+rm -r autom4te.cache
+./autogen
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
@@ -127,6 +125,7 @@ git tag -m "release $VERSION" $VERSION
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 # Revert ocaml-variants.opam to its "trunk" version.
+rm -r autom4te.cache
 ./autogen
 git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
 git push
@@ -141,9 +140,9 @@ open https://github.com/ocaml/ocaml/releases
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
 
-## 6: create OPAM switches
+## 6: create OPAM packages
 
-Create OPAM switches for the new version, copying the particular
+Create ocaml-variants packages for the new version, copying the particular
 switch configuration choices from the previous version.
 
 Do not forget to add/update the checksum field for the tarballs in the
@@ -281,10 +280,6 @@ organize the webpage for the new release. See
   <https://github.com/ocaml/ocaml.org/issues/819>
 
 
-## 12: update Mantis
-
-(this section intentionally left blank)
-
 ## 13: announce the release on caml-list and caml-announce
 
 See the email announce templates at the end of this file.
@@ -324,7 +319,7 @@ created a release candidate that you can test.
 The source code is available at these addresses:
 
  https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
- https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/$VERSION.tar.gz
+ https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$VERSION.tar.gz
 
 The compiler can also be installed as an OPAM switch with one of the
 following commands.
@@ -337,7 +332,8 @@ opam switch create ocaml-variants.$VERSION+<VARIANT> --repositories=default,beta
 
  where you replace <VARIANT> with one of these:
    afl
-   default_unsafe_string
+   default-unsafe-string
+   force-safe-string
    flambda
    fp
    fp+flambda
@@ -377,7 +373,8 @@ opam switch create ocaml-variants.$VERSION+<VARIANT> --repositories=default,beta
 
  where you replace <VARIANT> with one of these:
    afl
-   default_unsafe_string
+   default-unsafe-string
+   force-safe-string
    flambda
    fp
    fp+flambda

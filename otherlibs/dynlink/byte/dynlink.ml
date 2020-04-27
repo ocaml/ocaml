@@ -39,7 +39,11 @@ module Bytecode = struct
         @ Symtable.required_globals t.cu_reloc
       in
       let required =
-        List.filter (fun id -> not (Ident.is_predef id)) required
+        List.filter
+          (fun id ->
+             not (Ident.is_predef id)
+             && not (String.contains (Ident.name id) '.'))
+          required
       in
       List.map
         (fun ident -> Ident.name ident, None)
