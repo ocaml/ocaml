@@ -109,10 +109,10 @@ sp is a local copy of the global variable caml_extern_sp. */
 
 #ifdef THREADED_CODE
 #define Restart_curr_instr \
-  goto *(jumptable[caml_saved_code[pc - 1 - caml_start_code]])
+  goto *((void*)(jumptbl_base + caml_debugger_saved_instruction(pc - 1)))
 #else
 #define Restart_curr_instr \
-  curr_instr = caml_saved_code[pc - 1 - caml_start_code]; \
+  curr_instr = caml_debugger_saved_instruction(pc - 1); \
   goto dispatch_instr
 #endif
 
@@ -929,17 +929,19 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(RAISE_NOTRACE):
       if (domain_state->trap_sp_off >= domain_state->trap_barrier_off)
-        caml_debugger(TRAP_BARRIER);
+        caml_debugger(TRAP_BARRIER, Val_unit);
       goto raise_notrace;
 
     Instruct(RERAISE):
-      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) caml_debugger(TRAP_BARRIER);
+      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off)
+        caml_debugger(TRAP_BARRIER, Val_unit);
       if (domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
       goto raise_notrace;
 
     Instruct(RAISE):
     raise_exception:
-      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) caml_debugger(TRAP_BARRIER);
+      if (domain_state->trap_sp_off >= domain_state->trap_barrier_off)
+        caml_debugger(TRAP_BARRIER, Val_unit);
       if (domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
     raise_notrace:
       if (domain_state->trap_sp_off > 0) {
@@ -1241,14 +1243,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(EVENT):
       if (--caml_event_count == 0) {
         Setup_for_debugger;
-        caml_debugger(EVENT_COUNT);
+        caml_debugger(EVENT_COUNT, Val_unit);
         Restore_after_debugger;
       }
       Restart_curr_instr;
 
     Instruct(BREAK):
       Setup_for_debugger;
-      caml_debugger(BREAKPOINT);
+      caml_debugger(BREAKPOINT, Val_unit);
       Restore_after_debugger;
       Restart_curr_instr;
 

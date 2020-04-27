@@ -432,6 +432,18 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #  endif
 #endif
 
+/* A table of all code fragments (main program and dynlinked modules) */
+struct code_fragment {
+  char *code_start;
+  char *code_end;
+  unsigned char digest[16];
+  char digest_computed;
+};
+
+extern struct ext_table caml_code_fragments_table;
+
+int caml_find_code_fragment(char *pc, int *index, struct code_fragment **cf);
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

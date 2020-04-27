@@ -363,7 +363,7 @@ CAMLexport void caml_main(char_os **argv)
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
-  caml_debugger(PROGRAM_START);
+  caml_debugger(PROGRAM_START, Val_unit);
   res = caml_interprete(caml_start_code, caml_code_size);
   caml_maybe_print_stats(Val_unit);
   if (Is_exception_result(res)) {
@@ -371,7 +371,7 @@ CAMLexport void caml_main(char_os **argv)
     if (caml_debugger_in_use) {
       Caml_state->current_stack->sp = &exn; /* The debugger needs the
                                                exception value.*/
-      caml_debugger(UNCAUGHT_EXC);
+      caml_debugger(UNCAUGHT_EXC, Val_unit);
     }
     caml_fatal_uncaught_exception(exn);
   }
@@ -424,12 +424,6 @@ CAMLexport value caml_startup_code_exn(
   caml_code_size = code_size;
   caml_init_code_fragments();
   caml_init_debug_info();
-  if (caml_debugger_in_use) {
-    uintnat len, i;
-    len = code_size / sizeof(opcode_t);
-    caml_saved_code = (unsigned char *) caml_stat_alloc(len);
-    for (i = 0; i < len; i++) caml_saved_code[i] = caml_start_code[i];
-  }
 #ifdef THREADED_CODE
   caml_thread_code(caml_start_code, code_size);
 #endif
@@ -441,7 +435,7 @@ CAMLexport value caml_startup_code_exn(
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
-  caml_debugger(PROGRAM_START);
+  caml_debugger(PROGRAM_START, Val_unit);
   return caml_interprete(caml_start_code, caml_code_size);
 }
 
@@ -462,7 +456,7 @@ CAMLexport void caml_startup_code(
     if (caml_debugger_in_use) {
       Caml_state->current_stack->sp = &exn; /* The debugger needs the
                                                exception value.*/
-      caml_debugger(UNCAUGHT_EXC);
+      caml_debugger(UNCAUGHT_EXC, Val_unit);
     }
     caml_fatal_uncaught_exception(exn);
   }

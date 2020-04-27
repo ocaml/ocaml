@@ -26,6 +26,7 @@
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
 #include "caml/fail.h"
+#include "caml/debugger.h"
 
 void caml_init_backtrace(void)
 {
