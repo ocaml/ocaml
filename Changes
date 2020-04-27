@@ -245,6 +245,9 @@ Working version
   (Nicolás Ojeda Bär, review by Alain Frisch, Gabriel Scherer and Damien
   Doligez)
 
+- #9486: Fix configuration for the Haiku operating system
+  (Sylvain Kerjean, review by David Allsopp and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
  - #463: a new Misc.Magic_number module for user-friendly parsing
@@ -1181,9 +1184,6 @@ OCaml 4.09.0 (19 September 2019)
   (Leo White, review by Thomas Refis)
 
 ### Compiler distribution build system:
-
-- #9486 : compiling for Haiku operating system
-  (Sylvain Kerjean)
 
 - #2267: merge generation of header programs, also fixing parallel build on
   Cygwin.
