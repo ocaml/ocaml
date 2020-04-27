@@ -528,6 +528,7 @@ module BR = Branch_relaxation.Make (struct
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
     | Lentertrap -> 0
+    | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 4
     | Lpoptrap -> 1
     | Lraise k ->
@@ -941,6 +942,11 @@ let emit_instr i =
 *)
     | Lentertrap ->
         ()
+    | Ladjust_trap_depth { delta_traps } ->
+        (* each trap occupies 16 bytes on the stack *)
+        let delta = 16 * delta_traps in
+        cfi_adjust_cfa_offset delta;
+        stack_offset := !stack_offset + delta
     | Lpushtrap { lbl_handler; } ->
         `	adr	{emit_reg reg_tmp1}, {emit_label lbl_handler}\n`;
         stack_offset := !stack_offset + 16;

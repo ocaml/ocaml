@@ -454,6 +454,16 @@ let mk_runtime_variant f =
   "<str>  Use the <str> variant of the run-time system"
 ;;
 
+let mk_with_runtime f =
+  "-with-runtime", Arg.Unit f,
+  "Include the runtime system in the generated program (default)"
+;;
+
+let mk_without_runtime f =
+  "-without-runtime", Arg.Unit f,
+  "Do not include the runtime system in the generated program."
+;;
+
 let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
 ;;
@@ -930,6 +940,8 @@ module type Compiler_options = sig
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _with_runtime : unit -> unit
+  val _without_runtime : unit -> unit
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _thread : unit -> unit
@@ -1144,6 +1156,8 @@ struct
     mk_rectypes F._rectypes;
     mk_no_rectypes F._no_rectypes;
     mk_runtime_variant F._runtime_variant;
+    mk_with_runtime F._with_runtime;
+    mk_without_runtime F._without_runtime;
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
@@ -1332,6 +1346,8 @@ struct
     mk_remove_unused_arguments F._remove_unused_arguments;
     mk_rounds F._rounds;
     mk_runtime_variant F._runtime_variant;
+    mk_with_runtime F._with_runtime;
+    mk_without_runtime F._without_runtime;
     mk_S F._S;
     mk_safe_string F._safe_string;
     mk_shared F._shared;

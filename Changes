@@ -31,7 +31,17 @@ Working version
 - #8672: Optimise Switch code generation on booleans.
   (Stephen Dolan, review by Pierre Chambart)
 
+- #2322: Add pseudo-instruction `Ladjust_trap_depth` to replace
+  dummy Lpushtrap generated in linearize
+  (Greta Yorsh and Vincent Laviron, review by Xavier Leroy)
+
+- #8707: Simplif: more regular treatment of Tupled and Curried functions
+  (Gabriel Scherer, review by Leo White and Alain Frisch)
+
 ### Runtime system:
+
+- #8787, #8788: avoid integer overflow in caml_output_value_to_bytes
+  (Jeremy Yallop, report by Marcello Seri)
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
   (Stephen Dolan, Xavier Leroy and David Allsopp,
@@ -59,6 +69,10 @@ Working version
    (Jacques-Henri Jourdan, review by Stephen Dolan, Gabriel Scherer and
     Damien Doligez)
 
+- #7672, #1492: Add `Filename.quote_command` to produce properly-quoted
+  commands for execution by Sys.command.
+  (Xavier Leroy, review by David Allsopp and Damien Doligez)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
@@ -84,6 +98,10 @@ Working version
   and misleading function CamlinternalFormat.string_of_formatting_gen
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
+
+- #8751: fix bug that could result in misaligned data section when compiling to
+  native-code on amd64.  (observed with the mingw64 compiler)
+  (Nicolás Ojeda Bär, review by David Allsopp)
 
 OCaml 4.09.0
 ------------
@@ -127,6 +145,11 @@ OCaml 4.09.0
 - #2307: Hint on type error on int's operators
   (Jules Aguillon, with help from Armaël Guéneau,
    review by Gabriel Scherer and Florian Angeletti)
+
+- #2309: New options -with-runtime and -without-runtime in ocamlopt/ocamlc
+  that control the inclusion of the runtime system in the generated program.
+  (Lucas Pluvinage, review by Daniel Bünzli, Damien Doligez, David Allsopp
+   and Florian Angeletti)
 
 - #2314: Remove support for gprof profiling.
   (Mark Shinwell, review by Xavier Clerc and Stephen Dolan)
@@ -290,6 +313,9 @@ OCaml 4.09.0
 
 ### Manual and documentation:
 
+- #8757: Rename Pervasives to Stdlib in core library documentation.
+  (Ian Zimmerman, review by David Allsopp)
+
 - #7584, #8538: Document .cmt* files in the "overview" of ocaml{c,opt}
   (Oxana Kostikova, rewiew by Florian Angeletti)
 
@@ -317,6 +343,15 @@ OCaml 4.09.0
 - #8635, #8636: Fix a bad side-effect of the -allow-approx option of
   ocamldep. It used to turn some errors into successes
   (Jérémie Dimino)
+
+- #8701, #8725: Variance of constrained parameters causes principality issues
+  (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
+
+- #8769, #8770: Fix assertion failure with -pack
+  (Leo White, review by Gabriel Scherer, report by Fabian @copy)
+
+- #8800: Fix soundness bug in extension constructor inclusion
+  (Leo White, review by Jacques Garrigue)
 
 OCaml 4.08.0
 ------------
@@ -847,7 +882,7 @@ OCaml 4.08.0
   fixes an imenu crash.
   (Wilfred Hughes, review by Christophe Troestler)
 
-- #1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
+- #1711: the new 'open' flag in OCAMLPARAM takes a comma-separated list of
   modules to open as if they had been passed via the command line -open flag.
   (Nicolás Ojeda Bär, review by Mark Shinwell)
 

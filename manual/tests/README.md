@@ -5,4 +5,5 @@ the rest of the compiler sources:
   compiler sources are still accurate.
 
 - `check-stdlib-modules` checks that all stdlib modules are linked from the
-  main entry of the stdlib in the manual: `manual/manual/library/stdlib.etex`
+  main entry of the stdlib in the manual:
+  `manual/manual/library/stdlib-blurb.etex`

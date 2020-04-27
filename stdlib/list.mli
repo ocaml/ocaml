@@ -26,7 +26,7 @@
    longer than about 10000 elements.
 *)
 
-type 'a t = 'a list = [] | (::) of 'a * 'a list
+type 'a t = 'a list = [] | (::) of 'a * 'a list (**)
 (** An alias for the type of lists. *)
 
 val length : 'a list -> int

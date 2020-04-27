@@ -1735,3 +1735,22 @@ Error: The type of this class,
          object constraint 'a = '_weak2 list ref method get : 'a end,
        contains type variables that cannot be generalized
 |}]
+
+(* #8701 *)
+type 'a t = 'a constraint 'a = 'b list;;
+type 'a s = 'a list;;
+let id x = x;;
+[%%expect{|
+type 'a t = 'a constraint 'a = 'b list
+type 'a s = 'a list
+val id : 'a -> 'a = <fun>
+|}]
+
+let x : [ `Foo of _ s | `Foo of 'a t ] = id (`Foo []);;
+[%%expect{|
+val x : [ `Foo of 'a s ] = `Foo []
+|}]
+let x : [ `Foo of 'a t | `Foo of _ s ] = id (`Foo []);;
+[%%expect{|
+val x : [ `Foo of 'a list t ] = `Foo []
+|}]

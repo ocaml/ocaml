@@ -186,3 +186,35 @@ val quote : string -> string
     with programs that follow the standard Windows quoting
     conventions.
  *)
+
+val quote_command :
+       string -> ?stdin:string -> ?stdout:string -> ?stderr:string
+              -> string list -> string
+(** [quote_command cmd args] returns a quoted command line, suitable
+    for use as an argument to {!Sys.command}, {!Unix.system}, and the
+    {!Unix.open_process} functions.
+
+    The string [cmd] is the command to call.  The list [args] is
+    the list of arguments to pass to this command.  It can be empty.
+
+    The optional arguments [?stdin] and [?stdout] and [?stderr] are
+    file names used to redirect the standard input, the standard
+    output, or the standard error of the command.
+    If [~stdin:f] is given, a redirection [< f] is performed and the
+    standard input of the command reads from file [f].
+    If [~stdout:f] is given, a redirection [> f] is performed and the
+    standard output of the command is written to file [f].
+    If [~stderr:f] is given, a redirection [2> f] is performed and the
+    standard error of the command is written to file [f].
+    If both [~stdout:f] and [~stderr:f] are given, with the exact
+    same file name [f], a [2>&1] redirection is performed so that the
+    standard output and the standard error of the command are interleaved
+    and redirected to the same file [f].
+
+    Under Unix and Cygwin, the command, the arguments, and the redirections
+    if any are quoted using {!Filename.quote}, then concatenated.
+    Under Win32, additional quoting is performed as required by the
+    [cmd.exe] shell that is called by {!Sys.command}.
+
+    Raise [Failure] if the command cannot be escaped on the current platform.
+*)
