@@ -1,0 +1,10 @@
+#!/bin/sh
+
+exec > "${output}" 2>&1
+
+# first, run the program to make sure it doesn't crash
+${program}
+
+# now check the assembly file produced during compilation
+asm=${test_build_directory}/func_sections.s
+grep ".section .text.caml.camlFunc_sections__" "$asm" | wc -l | tr -d ' ' | sed '/^$/d'

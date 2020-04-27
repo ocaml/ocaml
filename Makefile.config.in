@@ -232,6 +232,7 @@ WINDOWS_UNICODE=@windows_unicode@
 AFL_INSTRUMENT=@afl@
 MAX_TESTSUITE_DIR_RETRIES=@max_testsuite_dir_retries@
 FLAT_FLOAT_ARRAY=@flat_float_array@
+FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
 
 

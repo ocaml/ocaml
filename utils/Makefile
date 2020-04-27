@@ -111,6 +111,7 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	    $(call SUBST,WITH_SPACETIME) \
 	    $(call SUBST,ENABLE_CALL_COUNTS) \
 	    $(call SUBST,FLAT_FLOAT_ARRAY) \
+	    $(call SUBST,FUNCTION_SECTIONS) \
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $< > $@

@@ -56,6 +56,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _config = Misc.show_config_and_exit
   let _config_var = Misc.show_config_variable_and_exit
   let _for_pack s = for_package := Some s
+  let _function_sections () =
+    assert (Config.function_sections);
+    first_ccopts := "-ffunction-sections" :: !first_ccopts;
+    function_sections := true
   let _g = set debug
   let _i () =
     print_types := true;
