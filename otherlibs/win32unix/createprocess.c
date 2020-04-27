@@ -53,7 +53,7 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
     err = GetLastError(); goto ret3;
   }
   /* If we do not have a console window, then we must create one
-     before running the process (keep it hidden for apparence).
+     before running the process (keep it hidden for appearance).
      If we are starting a GUI application, the newly created
      console should not matter. */
   if (win_has_console())

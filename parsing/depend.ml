@@ -133,7 +133,7 @@ let add_constructor_arguments bv = function
 
 let add_constructor_decl bv pcd =
   add_constructor_arguments bv pcd.pcd_args;
-  Misc.may (add_type bv) pcd.pcd_res
+  Option.iter (add_type bv) pcd.pcd_res
 
 let add_type_declaration bv td =
   List.iter
@@ -153,7 +153,7 @@ let add_extension_constructor bv ext =
   match ext.pext_kind with
     Pext_decl(args, rty) ->
       add_constructor_arguments bv args;
-      Misc.may (add_type bv) rty
+      Option.iter (add_type bv) rty
   | Pext_rebind lid -> add bv lid
 
 let add_effect_constructor bv eff =
@@ -291,7 +291,7 @@ and add_modtype bv mty =
   | Pmty_alias l -> add_module_path bv l
   | Pmty_signature s -> add_signature bv s
   | Pmty_functor(id, mty1, mty2) ->
-      Misc.may (add_modtype bv) mty1;
+      Option.iter (add_modtype bv) mty1;
       add_modtype (String.Map.add id.txt bound bv) mty2
   | Pmty_with(mty, cstrl) ->
       add_modtype bv mty;
@@ -407,7 +407,7 @@ and add_module_expr bv modl =
     Pmod_ident l -> add_module_path bv l
   | Pmod_structure s -> ignore (add_structure bv s)
   | Pmod_functor(id, mty, modl) ->
-      Misc.may (add_modtype bv) mty;
+      Option.iter (add_modtype bv) mty;
       add_module_expr (String.Map.add id.txt bound bv) modl
   | Pmod_apply(mod1, mod2) ->
       add_module_expr bv mod1; add_module_expr bv mod2

@@ -1269,7 +1269,7 @@ let map_kind f = function
           (fun c ->
              {c with
               cd_args = map_type_expr_cstr_args f c.cd_args;
-              cd_res = may_map f c.cd_res
+              cd_res = Option.map f c.cd_res
              })
           cl)
   | Type_record (fl, rr) ->
@@ -1283,7 +1283,7 @@ let map_kind f = function
 let instance_declaration decl =
   For_copy.with_scope (fun scope ->
     {decl with type_params = List.map (copy scope) decl.type_params;
-     type_manifest = may_map (copy scope) decl.type_manifest;
+     type_manifest = Option.map (copy scope) decl.type_manifest;
      type_kind = map_kind (copy scope) decl.type_kind;
     }
   )
@@ -4632,7 +4632,7 @@ let nondep_extension_constructor env ids ext =
           ext.ext_type_path, type_params
     in
     let args = map_type_expr_cstr_args (nondep_type_rec env ids) ext.ext_args in
-    let ret_type = may_map (nondep_type_rec env ids) ext.ext_ret_type in
+    let ret_type = Option.map (nondep_type_rec env ids) ext.ext_ret_type in
       clear_hash ();
       { ext_type_path = type_path;
         ext_type_params = type_params;

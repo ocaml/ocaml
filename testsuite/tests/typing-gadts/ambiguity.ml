@@ -104,7 +104,7 @@ Error: This expression has type b = a but an expression was expected of type
    representative for an ambivalent type escaping its scope.
    The commit that was implemented poses problems of its own: we are now
    unifying the type of the patterns in the environment of each pattern, instead
-   of the outter one. The code discussed in PR#7617 passes because each branch
+   of the outer one. The code discussed in PR#7617 passes because each branch
    contains the same equation, but consider the following cases: *)
 
 let f (type a b) (x : (a, b) eq) =

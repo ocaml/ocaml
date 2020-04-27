@@ -733,7 +733,7 @@ class man =
             (fun (p, desc_opt) ->
               bs b ".sp\n";
               bs b ("\""^p.mp_name^"\"\n");
-              Misc.may (self#man_of_module_type b m_name) p.mp_type;
+              Option.iter (self#man_of_module_type b m_name) p.mp_type;
               bs b "\n";
               (
                match desc_opt with

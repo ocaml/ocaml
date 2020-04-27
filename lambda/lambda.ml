@@ -795,14 +795,14 @@ let shallow_map f = function
                  sw_consts = List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
                  sw_numblocks = sw.sw_numblocks;
                  sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
-                 sw_failaction = Misc.may_map f sw.sw_failaction;
+                 sw_failaction = Option.map f sw.sw_failaction;
                },
                loc)
   | Lstringswitch (e, sw, default, loc) ->
       Lstringswitch (
         f e,
         List.map (fun (s, e) -> (s, f e)) sw,
-        Misc.may_map f default,
+        Option.map f default,
         loc)
   | Lstaticraise (i, args) ->
       Lstaticraise (i, List.map f args)

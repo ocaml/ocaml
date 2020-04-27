@@ -182,11 +182,6 @@ module Stdlib = struct
   module Option = struct
     type 'a t = 'a option
 
-    let value_default f ~default a =
-      match a with
-      | None -> default
-      | Some a -> f a
-
     let print print_contents ppf t =
       match t with
       | None -> Format.pp_print_string ppf "None"
@@ -241,9 +236,6 @@ module Stdlib = struct
 
   external compare : 'a -> 'a -> int = "%compare"
 end
-
-let may = Option.iter
-let may_map = Option.map
 
 (* File functions *)
 

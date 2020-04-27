@@ -56,13 +56,13 @@ let rec eliminate_ref id = function
          sw_blocks =
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
          sw_failaction =
-            Misc.may_map (eliminate_ref id) sw.sw_failaction; },
+            Option.map (eliminate_ref id) sw.sw_failaction; },
         loc)
   | Lstringswitch(e, sw, default, loc) ->
       Lstringswitch
         (eliminate_ref id e,
          List.map (fun (s, e) -> (s, eliminate_ref id e)) sw,
-         Misc.may_map (eliminate_ref id) default, loc)
+         Option.map (eliminate_ref id) default, loc)
   | Lstaticraise (i,args) ->
       Lstaticraise (i,List.map (eliminate_ref id) args)
   | Lstaticcatch(e1, i, e2) ->
@@ -254,7 +254,7 @@ let simplify_exits lam =
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
-      and new_fail = Misc.may_map simplif sw.sw_failaction in
+      and new_fail = Option.map simplif sw.sw_failaction in
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
@@ -263,7 +263,7 @@ let simplify_exits lam =
   | Lstringswitch(l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
-         Misc.may_map simplif d,loc)
+         Option.map simplif d,loc)
   | Lstaticraise (i,[]) as l ->
       begin try
         let _,handler =  Hashtbl.find subst i in
@@ -536,7 +536,7 @@ let simplify_lets lam =
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
-      and new_fail = Misc.may_map simplif sw.sw_failaction in
+      and new_fail = Option.map simplif sw.sw_failaction in
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
@@ -545,7 +545,7 @@ let simplify_lets lam =
   | Lstringswitch (l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
-         Misc.may_map simplif d,loc)
+         Option.map simplif d,loc)
   | Lstaticraise (i,ls) ->
       Lstaticraise (i, List.map simplif ls)
   | Lstaticcatch(l1, (i,args), l2) ->
@@ -615,13 +615,13 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false lam;
       list_emit_tail_infos_fun snd is_tail sw.sw_consts;
       list_emit_tail_infos_fun snd is_tail sw.sw_blocks;
-      Misc.may  (emit_tail_infos is_tail) sw.sw_failaction
+      Option.iter  (emit_tail_infos is_tail) sw.sw_failaction
   | Lstringswitch (lam, sw, d, _) ->
       emit_tail_infos false lam;
       List.iter
         (fun (_,lam) ->  emit_tail_infos is_tail lam)
         sw ;
-      Misc.may (emit_tail_infos is_tail) d
+      Option.iter (emit_tail_infos is_tail) d
   | Lstaticraise (_, l) ->
       list_emit_tail_infos false l
   | Lstaticcatch (body, _, handler) ->

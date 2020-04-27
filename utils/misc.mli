@@ -76,8 +76,6 @@ val list_remove: 'a -> 'a list -> 'a list
            element equal to [x] removed. *)
 val split_last: 'a list -> 'a list * 'a
         (* Return the last element and the other elements of the given list. *)
-val may: ('a -> unit) -> 'a option -> unit
-val may_map: ('a -> 'b) -> 'a option -> 'b option
 
 type ref_and_value = R : 'a ref * 'a -> ref_and_value
 
@@ -143,8 +141,6 @@ module Stdlib : sig
 
   module Option : sig
     type 'a t = 'a option
-
-    val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
 
     val print
        : (Format.formatter -> 'a -> unit)

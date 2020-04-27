@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 (** Analysis of implementation files. *)
-open Misc
 open Asttypes
 open Types
 open Typedtree
@@ -1308,7 +1307,7 @@ module Analyser =
                               xt_name = complete_name;
                               xt_args;
                               xt_ret =
-                                may_map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) ret_type;
+                                Option.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) ret_type;
                               xt_type_extension = new_te;
                               xt_alias = None;
                               xt_loc = { loc_impl = Some tt_ext.ext_loc ; loc_inter = None } ;
@@ -1367,7 +1366,7 @@ module Analyser =
                   ex_info = comment_opt ;
                   ex_args;
                   ex_ret =
-                    Misc.may_map
+                    Option.map
                       (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type)
                       tt_ret_type;
                   ex_alias = None ;
@@ -1732,7 +1731,7 @@ module Analyser =
            let param =
              {
                mp_name = mp_name ;
-               mp_type = Misc.may_map
+               mp_type = Option.map
                 (fun m -> Odoc_env.subst_module_type env m.mty_type) mtyp ;
                mp_type_code = mp_type_code ;
                mp_kind = mp_kind ;

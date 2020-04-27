@@ -73,8 +73,6 @@ type mapper =
 let id x = x
 let tuple2 f1 f2 (x, y) = (f1 x, f2 y)
 let tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
-let opt f = function None -> None | Some x -> Some (f x)
-
 
 let structure sub {str_items; str_type; str_final_env} =
   {
@@ -90,7 +88,7 @@ let class_infos sub f x =
   }
 
 let module_type_declaration sub x =
-  let mtd_type = opt (sub.module_type sub) x.mtd_type in
+  let mtd_type = Option.map (sub.module_type sub) x.mtd_type in
   {x with mtd_type}
 
 let module_declaration sub x =
@@ -153,7 +151,7 @@ let constructor_args sub = function
 
 let constructor_decl sub cd =
   let cd_args = constructor_args sub cd.cd_args in
-  let cd_res = opt (sub.typ sub) cd.cd_res in
+  let cd_res = Option.map (sub.typ sub) cd.cd_res in
   {cd with cd_args; cd_res}
 
 let type_kind sub = function
@@ -169,7 +167,7 @@ let type_declaration sub x =
       x.typ_cstrs
   in
   let typ_kind = sub.type_kind sub x.typ_kind in
-  let typ_manifest = opt (sub.typ sub) x.typ_manifest in
+  let typ_manifest = Option.map (sub.typ sub) x.typ_manifest in
   let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
   {x with typ_cstrs; typ_kind; typ_manifest; typ_params}
 
@@ -193,7 +191,7 @@ let extension_constructor sub x =
   let ext_kind =
     match x.ext_kind with
       Text_decl(ctl, cto) ->
-        Text_decl(constructor_args sub ctl, opt (sub.typ sub) cto)
+        Text_decl(constructor_args sub ctl, Option.map (sub.typ sub) cto)
     | Text_rebind _ as d -> d
   in
   {x with ext_kind}
@@ -215,7 +213,8 @@ let pat sub x =
     | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
     | Tpat_construct (loc, cd, l) ->
         Tpat_construct (loc, cd, List.map (sub.pat sub) l)
-    | Tpat_variant (l, po, rd) -> Tpat_variant (l, opt (sub.pat sub) po, rd)
+    | Tpat_variant (l, po, rd) ->
+        Tpat_variant (l, Option.map (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 id id (sub.pat sub)) l, closed)
     | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
@@ -232,9 +231,9 @@ let expr sub x =
     | Texp_constraint cty ->
         Texp_constraint (sub.typ sub cty)
     | Texp_coerce (cty1, cty2) ->
-        Texp_coerce (opt (sub.typ sub) cty1, sub.typ sub cty2)
+        Texp_coerce (Option.map (sub.typ sub) cty1, sub.typ sub cty2)
     | Texp_newtype _ as d -> d
-    | Texp_poly cto -> Texp_poly (opt (sub.typ sub) cto)
+    | Texp_poly cto -> Texp_poly (Option.map (sub.typ sub) cto)
   in
   let exp_extra = List.map (tuple3 extra id id) x.exp_extra in
   let exp_env = sub.env sub x.exp_env in
@@ -251,7 +250,7 @@ let expr sub x =
     | Texp_apply (exp, list) ->
         Texp_apply (
           sub.expr sub exp,
-          List.map (tuple2 id (opt (sub.expr sub))) list
+          List.map (tuple2 id (Option.map (sub.expr sub))) list
         )
     | Texp_match (exp, cases, eff_cases, p) ->
         Texp_match (
@@ -271,7 +270,7 @@ let expr sub x =
     | Texp_construct (lid, cd, args) ->
         Texp_construct (lid, cd, List.map (sub.expr sub) args)
     | Texp_variant (l, expo) ->
-        Texp_variant (l, opt (sub.expr sub) expo)
+        Texp_variant (l, Option.map (sub.expr sub) expo)
     | Texp_record { fields; representation; extended_expression } ->
         let fields = Array.map (function
             | label, Kept (t, mut) -> label, Kept (t, mut)
@@ -281,7 +280,7 @@ let expr sub x =
         in
         Texp_record {
           fields; representation;
-          extended_expression = opt (sub.expr sub) extended_expression;
+          extended_expression = Option.map (sub.expr sub) extended_expression;
         }
     | Texp_field (exp, lid, ld) ->
         Texp_field (sub.expr sub exp, lid, ld)
@@ -298,7 +297,7 @@ let expr sub x =
         Texp_ifthenelse (
           sub.expr sub exp1,
           sub.expr sub exp2,
-          opt (sub.expr sub) expo
+          Option.map (sub.expr sub) expo
         )
     | Texp_sequence (exp1, exp2) ->
         Texp_sequence (
@@ -324,7 +323,7 @@ let expr sub x =
           (
             sub.expr sub exp,
             meth,
-            opt (sub.expr sub) expo
+            Option.map (sub.expr sub) expo
           )
     | Texp_new _
     | Texp_instvar _ as d -> d
@@ -443,7 +442,7 @@ let module_type sub x =
         Tmty_functor (
           id,
           s,
-          opt (sub.module_type sub) mtype1,
+          Option.map (sub.module_type sub) mtype1,
           sub.module_type sub mtype2
         )
     | Tmty_with (mtype, list) ->
@@ -494,7 +493,7 @@ let module_expr sub x =
         Tmod_functor (
           id,
           s,
-          opt (sub.module_type sub) mtype,
+          Option.map (sub.module_type sub) mtype,
           sub.module_expr sub mexpr
         )
     | Tmod_apply (mexp1, mexp2, c) ->
@@ -533,7 +532,7 @@ let class_expr sub x =
     | Tcl_constraint (cl, clty, vals, meths, concrs) ->
         Tcl_constraint (
           sub.class_expr sub cl,
-          opt (sub.class_type sub) clty,
+          Option.map (sub.class_type sub) clty,
           vals,
           meths,
           concrs
@@ -551,7 +550,7 @@ let class_expr sub x =
     | Tcl_apply (cl, args) ->
         Tcl_apply (
           sub.class_expr sub cl,
-          List.map (tuple2 id (opt (sub.expr sub))) args
+          List.map (tuple2 id (Option.map (sub.expr sub))) args
         )
     | Tcl_let (rec_flag, value_bindings, ivars, cl) ->
         let (rec_flag, value_bindings) =
@@ -696,7 +695,7 @@ let cases sub l =
 let case sub {c_lhs; c_cont; c_guard; c_rhs} =
   {
     c_lhs = sub.pat sub c_lhs;
-    c_guard = opt (sub.expr sub) c_guard;
+    c_guard = Option.map (sub.expr sub) c_guard;
     c_rhs = sub.expr sub c_rhs;
     c_cont
   }

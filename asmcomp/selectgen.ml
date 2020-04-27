@@ -80,6 +80,18 @@ let oper_result_type = function
 (* Infer the size in bytes of the result of an expression whose evaluation
    may be deferred (cf. [emit_parts]). *)
 
+let size_component = function
+  | Val | Addr -> Arch.size_addr
+  | Int -> Arch.size_int
+  | Float -> Arch.size_float
+
+let size_machtype mty =
+  let size = ref 0 in
+  for i = 0 to Array.length mty - 1 do
+    size := !size + size_component mty.(i)
+  done;
+  !size
+
 let size_expr (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _ -> Arch.size_int

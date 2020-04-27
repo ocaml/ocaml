@@ -34,14 +34,17 @@ let check_distrib len cnt rate =
   stop ();
 
   (* The probability distribution of the number of samples follows a
-     poisson distribution with mean tot_alloc*rate. Given that we
-     expect this quantity to be large (i.e., > 100), this distribution
-     is approximately equal to a normal distribution. We compute a
-     1e-8 confidence interval for !smp using quantiles of the normal
-     distribution, and check that we are in this confidence interval. *)
+     binomial distribution of parameters tot_alloc and rate. Given
+     that tot_alloc*rate and tot_alloc*(1-rate) are large (i.e., >
+     100), this distribution is approximately equal to a normal
+     distribution. We compute a 1e-8 confidence interval for !smp
+     using quantiles of the normal distribution, and check that we are
+     in this confidence interval. *)
   let tot_alloc = cnt*len*3 in
+  assert (float tot_alloc *. rate > 100. &&
+          float tot_alloc *. (1. -. rate) > 100.);
   let mean = float tot_alloc *. rate in
-  let stddev = sqrt mean in
+  let stddev = sqrt (float tot_alloc *. rate *. (1. -. rate)) in
   (* This assertion has probability to fail close to 1e-8. *)
   assert (abs_float (mean -. float !smp) <= stddev *. 5.7)
 
@@ -52,7 +55,7 @@ let () =
   check_distrib 1000000 10 0.001;
   check_distrib 1000000 10 0.01;
   check_distrib 100000 10 0.1;
-  check_distrib 100000 10 1.
+  check_distrib 100000 10 0.9
 
 let[@inline never] check_callstack () =
   Printf.printf "check_callstack\n%!";

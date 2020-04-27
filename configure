@@ -673,6 +673,8 @@ ac_ct_LD
 LD
 DEFAULT_STRING
 WINDOWS_UNICODE_MODE
+LIBUNWIND_LIB_DIR
+LIBUNWIND_INCLUDE_DIR
 DLLIBS
 PARTIALLD
 target_os
@@ -825,7 +827,6 @@ enable_instrumented_runtime
 enable_vmthreads
 enable_systhreads
 with_libunwind
-with_libunwind_include_dir
 enable_graph_lib
 enable_str_lib
 enable_unix_lib
@@ -863,6 +864,8 @@ AS
 ASPP
 PARTIALLD
 DLLIBS
+LIBUNWIND_INCLUDE_DIR
+LIBUNWIND_LIB_DIR
 WINDOWS_UNICODE_MODE
 DEFAULT_STRING
 CC
@@ -1528,9 +1531,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-libunwind        location of the libunwind package
-  --with-libunwind-include-dir
-                          location of header files for libunwind
+  --without-libunwind     disable libunwind support for Spacetime profiling
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -1548,6 +1549,10 @@ Some influential environment variables:
   PARTIALLD   how to build partial (relocatable) object files
   DLLIBS      which libraries to use (in addition to -ldl) to load dynamic
               libs
+  LIBUNWIND_INCLUDE_DIR
+              location of header files for libunwind
+  LIBUNWIND_LIB_DIR
+              location of library files for libunwind
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
@@ -3007,10 +3012,7 @@ fi
 
 
 
-# Check whether --with-libunwind-include-dir was given.
-if test "${with_libunwind_include_dir+set}" = set; then :
-  withval=$with_libunwind_include_dir;
-fi
+
 
 
 # Check whether --enable-graph-lib was given.
@@ -13762,6 +13764,16 @@ esac ;; #(
      ;;
 esac
 
+if test "$with_pic"; then :
+  fpic=true
+  $as_echo "#define CAML_WITH_FPIC 1" >>confdefs.h
+
+  internal_cflags="$internal_cflags $sharedlib_cflags"
+  default_aspp="$default_aspp $sharedlib_cflags"
+else
+  fpic=false
+fi
+
 if test -z "$AS"; then :
   AS="$default_as"
 fi
@@ -16396,19 +16408,83 @@ $as_echo_n "checking whether to use libunwind... " >&6; }
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
 $as_echo "disabled" >&6; }
 else
+  if test x"$with_libunwind" = "x"; then :
+  libunwind_requested=false
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: if available" >&5
+$as_echo "if available" >&6; }
+else
+  libunwind_requested=true
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: requested" >&5
+$as_echo "requested" >&6; }
+        if test x"$with_libunwind" != "xyes"; then :
+  if test x"$LIBUNWIND_INCLUDE_DIR" = "x"; then :
+  LIBUNWIND_INCLUDE_DIR="$with_libunwind/include"
+fi
+          if test x"$LIBUNWIND_LIB_DIR" = "x"; then :
+  LIBUNWIND_LIB_DIR="$with_libunwind/lib"
+fi
+
+fi
+
+fi
+      if test "$system" = "macosx"; then :
+  if test x"$LIBUNWIND_INCLUDE_DIR" != x -o \
+                     x"$LIBUNWIND_LIB_DIR" != x; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On MacOSX, specifying paths for libunwind headers or libraries is strongly discouraged. It is recommended to rely on the defaults provided by the configure script" >&5
+$as_echo "$as_me: WARNING: On MacOSX, specifying paths for libunwind headers or libraries is strongly discouraged. It is recommended to rely on the defaults provided by the configure script" >&2;}
+fi
+fi
+
+      if test x"$LIBUNWIND_INCLUDE_DIR" != x; then :
+  libunwind_include_flags="-I$LIBUNWIND_INCLUDE_DIR"
+else
+  libunwind_include_flags=""
+fi
+
+      case "$system" in #(
+  "macosx") :
+    libunwind_link_flags="-framework System" ;; #(
+  *) :
+    libunwind_link_flags="-lunwind -lunwind-x86_64" ;;
+esac
+
+      if test x"$LIBUNWIND_LIB_DIR" != x; then :
+  libunwind_link_flags="-L$LIBUNWIND_LIB_DIR $libunwind_link_flags"
+fi
+
+
+  SAVED_CFLAGS="$CFLAGS"
+  SAVED_LDFLAGS="$LDFLAGS"
+  CFLAGS="$CFLAGS $libunwind_include_flags"
+  LDFLAGS="$LDFLAGS $libunwind_link_flags"
   ac_fn_c_check_header_mongrel "$LINENO" "libunwind.h" "ac_cv_header_libunwind_h" "$ac_includes_default"
 if test "x$ac_cv_header_libunwind_h" = xyes; then :
   $as_echo "#define HAS_LIBUNWIND 1" >>confdefs.h
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+    libunwind_available=true
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+  libunwind_available=false
 fi
 
 
+  LDFLAGS="$SAVED_LDFLAGS"
+  CFLAGS="$SAVED_CFLAGS"
 
+
+      if $libunwind_requested && ! $libunwind_available; then :
+  as_fn_error $? "libunwind was requested but can not be found" "$LINENO" 5
+fi
+
+        # We need unwinding information at runtime, but since we use
+        # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
+        # the OS X linker will chuck away the DWARF-like (.eh_frame)
+        # information.  (Older versions of OS X don't provide this.)
+
+        if $libunwind_available && test x"$system" = "xmacosx"; then :
+  extra_flags="-Wl,-keep_dwarf_unwind"
+          mkexe="$mkexe $extra_flags"
+          mksharedlib="$mksharedlib $extra_flags"
+fi
 fi
 
 else
@@ -16425,8 +16501,6 @@ fi
 
 fi
 
-
-
 cat >>confdefs.h <<_ACEOF
 #define PROFINFO_WIDTH $profinfo_width
 _ACEOF
@@ -16434,18 +16508,6 @@ _ACEOF
 if $profinfo; then :
   $as_echo "#define WITH_PROFINFO 1" >>confdefs.h
 
-fi
-
-## PIC
-
-if test "$with_pic"; then :
-  fpic=true
-  $as_echo "#define CAML_WITH_FPIC 1" >>confdefs.h
-
-  common_cflags="$common_cflags $sharedlib_cflags"
-  aspp="$aspp $sharedlib_cflags"
-else
-  fpic=false
 fi
 
 if test x"$enable_installing_bytecode_programs" = "xno"; then :

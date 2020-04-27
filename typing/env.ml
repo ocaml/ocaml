@@ -1777,7 +1777,7 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
           fcomp_param = param;
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
-          fcomp_arg = may_map (Subst.modtype scoping sub) ty_arg;
+          fcomp_arg = Option.map (Subst.modtype scoping sub) ty_arg;
           fcomp_res = Subst.modtype scoping sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 })
@@ -1813,7 +1813,7 @@ and check_value_name name loc =
 
 and store_value ?check id addr decl env =
   check_value_name (Ident.name id) decl.val_loc;
-  may (fun f -> check_usage decl.val_loc id f value_declarations) check;
+  Option.iter (fun f -> check_usage decl.val_loc id f value_declarations) check;
   { env with
     values = IdTbl.add id (decl, addr) env.values;
     summary = Env_value(env.summary, id, decl) }

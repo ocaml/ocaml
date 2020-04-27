@@ -677,12 +677,16 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         in
         let args, args' =
           if List.for_all (fun (_,opt) -> opt) args then [], args
-          else args, [] in
+          else args, []
+        in
         let lam =
-          if args = [] then lam else lapply lam (List.rev_map fst args) in
-        let handle = protect "func" lam
-        and l = List.map (fun (arg, opt) -> may_map (protect "arg") arg, opt) l
-        and id_arg = Ident.create_local "param" in
+          if args = [] then lam else lapply lam (List.rev_map fst args)
+        in
+        let handle = protect "func" lam in
+        let l =
+          List.map (fun (arg, opt) -> Option.map (protect "arg") arg, opt) l
+        in
+        let id_arg = Ident.create_local "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; return;
@@ -712,7 +716,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         lapply lam (List.rev_map fst args)
   in
   (build_apply lam [] (List.map (fun (l, x) ->
-                                   may_map transl_exp x, Btype.is_optional l)
+                                   Option.map transl_exp x, Btype.is_optional l)
                                 sargs)
      : Lambda.lambda)
 

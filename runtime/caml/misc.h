@@ -252,6 +252,9 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
+/* From floats.c */
+extern double caml_log1p(double);
+
 /* Windows Unicode support */
 
 #ifdef _WIN32
