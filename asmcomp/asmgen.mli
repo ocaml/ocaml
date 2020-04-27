@@ -13,20 +13,27 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* From lambda to assembly code *)
+(** From Lambda to assembly code *)
 
-val compile_implementation_flambda :
-    ?toplevel:(string -> bool) ->
-    string ->
-    required_globals:Ident.Set.t ->
-    backend:(module Backend_intf.S) ->
-    ppf_dump:Format.formatter -> Flambda.program -> unit
+(** The type of converters from Lambda to Clambda. *)
+type middle_end =
+     backend:(module Backend_intf.S)
+  -> filename:string
+  -> prefixname:string
+  -> ppf_dump:Format.formatter
+  -> Lambda.program
+  -> Clambda.with_constants
 
-val compile_implementation_clambda :
-    ?toplevel:(string -> bool) ->
-    string ->
-    backend:(module Backend_intf.S) ->
-    ppf_dump:Format.formatter -> Lambda.program -> unit
+(** Compile an implementation from Lambda using the given middle end. *)
+val compile_implementation
+   : ?toplevel:(string -> bool)
+  -> backend:(module Backend_intf.S)
+  -> filename:string
+  -> prefixname:string
+  -> middle_end:middle_end
+  -> ppf_dump:Format.formatter
+  -> Lambda.program
+  -> unit
 
 val compile_phrase :
     ppf_dump:Format.formatter -> Cmm.phrase -> unit
@@ -37,6 +44,5 @@ val report_error: Format.formatter -> error -> unit
 
 
 val compile_unit:
-  string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit

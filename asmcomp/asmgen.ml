@@ -39,41 +39,6 @@ let pass_dump_linear_if ppf flag message phrase =
   if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let flambda_raw_clambda_dump_if ppf
-      ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
-        structured_constants; exported = _; } as input) =
-  if !dump_rawclambda then
-    begin
-      Format.fprintf ppf "@.clambda (before Un_anf):@.";
-      Printclambda.clambda ppf ulambda;
-      Symbol.Map.iter (fun sym cst ->
-          Format.fprintf ppf "%a:@ %a@."
-            Symbol.print sym
-            Printclambda.structured_constant cst)
-        structured_constants
-    end;
-  if !dump_cmm then Format.fprintf ppf "@.cmm:@.";
-  input
-
-type clambda_and_constants =
-  Clambda.ulambda *
-  Clambda.preallocated_block list *
-  Clambda.preallocated_constant list
-
-let raw_clambda_dump_if ppf
-      ((ulambda, _, structured_constants):clambda_and_constants) =
-  if !dump_rawclambda || !dump_clambda then
-    begin
-      Format.fprintf ppf "@.clambda:@.";
-      Printclambda.clambda ppf ulambda;
-      List.iter (fun {Clambda.symbol; definition} ->
-          Format.fprintf ppf "%s:@ %a@."
-            symbol
-            Printclambda.structured_constant definition)
-        structured_constants
-    end;
-  if !dump_cmm then Format.fprintf ppf "@.cmm:@."
-
 let rec regalloc ~ppf_dump round fd =
   if round > 50 then
     fatal_error(fd.Mach.fun_name ^
@@ -102,7 +67,6 @@ let (++) x f = f x
 
 let compile_fundecl ~ppf_dump fd_cmm =
   Proc.init ();
-  Cmmgen.reset ();
   Reg.reset();
   fd_cmm
   ++ Profile.record ~accumulate:true "selection" Selection.fundecl
@@ -146,8 +110,7 @@ let compile_genfuns ~ppf_dump f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit _output_prefix asm_filename keep_asm
-      obj_filename gen =
+let compile_unit asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   Misc.try_finally
@@ -168,109 +131,49 @@ let compile_unit _output_prefix asm_filename keep_asm
        if create_asm && not keep_asm then remove_file asm_filename
     )
 
-let set_export_info (ulambda, prealloc, structured_constants, export) =
-  Compilenv.set_export_info export;
-  (ulambda, prealloc, structured_constants)
-
 let end_gen_implementation ?toplevel ~ppf_dump
-    (clambda:clambda_and_constants) =
+    (clambda : Clambda.with_constants) =
   Emit.begin_assembly ();
   clambda
-  ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump)
+  ++ Profile.record "cmm" Cmmgen.compunit
   ++ Profile.record "compile_phrases" (List.iter (compile_phrase ~ppf_dump))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ~ppf_dump f);
-
   (* We add explicit references to external primitive symbols.  This
      is to ensure that the object files that define these symbols,
      when part of a C library, won't be discarded by the linker.
      This is important if a module that uses such a symbol is later
      dynlinked. *)
-
   compile_phrase ~ppf_dump
     (Cmmgen.reference_symbols
-       (List.filter (fun s -> s <> "" && s.[0] <> '%')
-          (List.map Primitive.native_name !Translmod.primitive_declarations))
-    );
+       (List.filter_map (fun prim ->
+           if not (Primitive.native_name_is_external prim) then None
+           else Some (Primitive.native_name prim))
+          !Translmod.primitive_declarations));
   Emit.end_assembly ()
 
-let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
-    (program:Flambda.program) =
-  let export = Build_export_info.build_transient ~backend program in
-  let (clambda, preallocated, constants) =
-    Profile.record_call "backend" (fun () ->
-      (program, export)
-      ++ Flambda_to_clambda.convert
-      ++ flambda_raw_clambda_dump_if ppf_dump
-      ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
-                structured_constants; exported; } ->
-             (* "init_code" following the name used in
-                [Cmmgen.compunit_and_constants]. *)
-           Un_anf.apply ~ppf_dump expr ~what:"init_code", preallocated_blocks,
-           structured_constants, exported)
-      ++ set_export_info)
-  in
-  let constants =
-    List.map (fun (symbol, definition) ->
-        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
-          exported = true;
-          definition;
-          provenance = None;
-        })
-      (Symbol.Map.bindings constants)
-  in
-  end_gen_implementation ?toplevel ~ppf_dump
-    (clambda, preallocated, constants)
+type middle_end =
+     backend:(module Backend_intf.S)
+  -> filename:string
+  -> prefixname:string
+  -> ppf_dump:Format.formatter
+  -> Lambda.program
+  -> Clambda.with_constants
 
-let lambda_gen_implementation ?toplevel ~backend ~ppf_dump
-    (lambda:Lambda.program) =
-  let clambda =
-    Closure.intro ~backend ~size:lambda.main_module_block_size lambda.code
-  in
-  let provenance : Clambda.usymbol_provenance =
-    { original_idents = [];
-      module_path =
-        Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()));
-    }
-  in
-  let preallocated_block =
-    Clambda.{
-      symbol = Compilenv.make_symbol None;
-      exported = true;
-      tag = 0;
-      fields = List.init lambda.main_module_block_size (fun _ -> None);
-      provenance = Some provenance;
-    }
-  in
-  let clambda_and_constants =
-    clambda, [preallocated_block], Compilenv.structured_constants ()
-  in
-  Compilenv.clear_structured_constants ();
-  raw_clambda_dump_if ppf_dump clambda_and_constants;
-  end_gen_implementation ?toplevel ~ppf_dump clambda_and_constants
-
-let compile_implementation_gen ?toplevel prefixname
-    ~required_globals ~ppf_dump gen_implementation program =
+let compile_implementation ?toplevel ~backend ~filename ~prefixname ~middle_end
+      ~ppf_dump (program : Lambda.program) =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit prefixname asmfile !keep_asm_file
-      (prefixname ^ ext_obj) (fun () ->
-        Ident.Set.iter Compilenv.require_global required_globals;
-        gen_implementation ?toplevel ~ppf_dump program)
-
-let compile_implementation_clambda ?toplevel prefixname
-    ~backend ~ppf_dump (program:Lambda.program) =
-  compile_implementation_gen ?toplevel prefixname
-    ~required_globals:program.Lambda.required_globals
-    ~ppf_dump (lambda_gen_implementation ~backend) program
-
-let compile_implementation_flambda ?toplevel prefixname
-    ~required_globals ~backend ~ppf_dump (program:Flambda.program) =
-  compile_implementation_gen ?toplevel prefixname
-    ~required_globals ~ppf_dump (flambda_gen_implementation ~backend) program
+  compile_unit asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () ->
+      Ident.Set.iter Compilenv.require_global program.required_globals;
+      let clambda_with_constants =
+        middle_end ~backend ~filename ~prefixname ~ppf_dump program
+      in
+      end_gen_implementation ?toplevel ~ppf_dump clambda_with_constants)
 
 (* Error report *)
 

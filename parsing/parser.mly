@@ -226,6 +226,15 @@ let expecting loc nonterm =
 let not_expecting loc nonterm =
     raise Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
 
+let dotop ~left ~right ~assign ~ext ~multi =
+  let assign = if assign then "<-" else "" in
+  let mid = if multi then ";.." else "" in
+  String.concat "" ["."; ext; left; mid; right; assign]
+let paren = "(",")"
+let brace = "{", "}"
+let bracket = "[", "]"
+let lident x =  Lident x
+let ldot x y = Ldot(x,y)
 let dotop_fun ~loc dotop =
   (* We could use ghexp here, but sticking to mkexp for parser.mly
      compatibility. TODO improve parser.mly *)
@@ -245,6 +254,10 @@ let array_set_fun ~loc =
 let string_set_fun ~loc =
   ghexp ~loc (Pexp_ident(array_function ~loc "String" "set"))
 
+let multi_indices ~loc = function
+  | [a] -> false, a
+  | l -> true, mkexp ~loc (Pexp_array l)
+
 let index_get ~loc get_fun array index =
   let args = [Nolabel, array; Nolabel, index] in
    mkexp ~loc (Pexp_apply(get_fun, args))
@@ -255,11 +268,20 @@ let index_set ~loc set_fun array index value =
 
 let array_get ~loc = index_get ~loc (array_get_fun ~loc)
 let string_get ~loc = index_get ~loc (string_get_fun ~loc)
-let dotop_get ~loc dotop = index_get ~loc (dotop_fun ~loc dotop)
+let dotop_get ~loc path (left,right) ext array index =
+  let multi, index = multi_indices ~loc index in
+  index_get ~loc
+    (dotop_fun ~loc (path @@ dotop ~left ~right ~ext ~multi ~assign:false))
+    array index
 
 let array_set ~loc = index_set ~loc (array_set_fun ~loc)
 let string_set ~loc = index_set ~loc (string_set_fun ~loc)
-let dotop_set ~loc dotop = index_set ~loc (dotop_fun ~loc dotop)
+let dotop_set ~loc path (left,right) ext array index value=
+  let multi, index = multi_indices ~loc index in
+  index_set ~loc
+    (dotop_fun ~loc (path @@ dotop ~left ~right ~ext ~multi ~assign:true))
+    array index value
+
 
 let bigarray_function ~loc str name =
   ghloc ~loc (Ldot(Ldot(Lident "Bigarray", str), name))
@@ -2093,18 +2115,21 @@ expr:
       { string_set ~loc:$sloc $1 $4 $7 }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set ~loc:$sloc $1 $4 $7 }
-  | simple_expr DOTOP LBRACKET expr RBRACKET LESSMINUS expr
-      { dotop_set ~loc:$sloc (Lident ("." ^ $2 ^ "[]<-")) $1 $4 $7 }
-  | simple_expr DOTOP LPAREN expr RPAREN LESSMINUS expr
-      { dotop_set ~loc:$sloc (Lident ("." ^ $2 ^ "()<-")) $1 $4 $7 }
-  | simple_expr DOTOP LBRACE expr RBRACE LESSMINUS expr
-      { dotop_set ~loc:$sloc (Lident ("." ^ $2 ^ "{}<-")) $1 $4 $7 }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr RBRACKET LESSMINUS expr
-      { dotop_set ~loc:$sloc (Ldot($3,"." ^ $4 ^ "[]<-")) $1 $6 $9 }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr RPAREN LESSMINUS expr
-      { dotop_set ~loc:$sloc (Ldot($3, "." ^ $4 ^ "()<-")) $1 $6 $9 }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr RBRACE LESSMINUS expr
-      { dotop_set ~loc:$sloc (Ldot($3, "." ^ $4 ^ "{}<-")) $1 $6 $9 }
+  | simple_expr DOTOP LBRACKET expr_semi_list RBRACKET LESSMINUS expr
+      { dotop_set ~loc:$sloc lident bracket $2 $1 $4 $7 }
+  | simple_expr DOTOP LPAREN expr_semi_list RPAREN LESSMINUS expr
+      { dotop_set ~loc:$sloc lident paren $2 $1 $4 $7 }
+  | simple_expr DOTOP LBRACE expr_semi_list RBRACE LESSMINUS expr
+      { dotop_set ~loc:$sloc lident brace $2 $1 $4 $7 }
+  | simple_expr DOT mod_longident DOTOP LBRACKET expr_semi_list RBRACKET
+      LESSMINUS expr
+      { dotop_set ~loc:$sloc (ldot $3) bracket $4 $1 $6 $9 }
+  | simple_expr DOT mod_longident DOTOP LPAREN expr_semi_list RPAREN
+      LESSMINUS expr
+      { dotop_set ~loc:$sloc (ldot $3) paren $4 $1 $6 $9  }
+  | simple_expr DOT mod_longident DOTOP LBRACE expr_semi_list RBRACE
+      LESSMINUS expr
+      { dotop_set ~loc:$sloc (ldot $3) brace $4 $1 $6 $9 }
   | expr attribute
       { Exp.attr $1 $2 }
   | UNDERSCORE
@@ -2182,32 +2207,32 @@ simple_expr:
       { string_get ~loc:$sloc $1 $4 }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" $loc($3) "]" $loc($5) }
-  | simple_expr DOTOP LBRACKET expr RBRACKET
-      { dotop_get ~loc:$sloc (Lident ("." ^ $2 ^ "[]")) $1 $4 }
-  | simple_expr DOTOP LBRACKET expr error
+  | simple_expr DOTOP LBRACKET expr_semi_list RBRACKET
+      { dotop_get ~loc:$sloc lident bracket $2 $1 $4 }
+  | simple_expr DOTOP LBRACKET expr_semi_list error
       { unclosed "[" $loc($3) "]" $loc($5) }
-  | simple_expr DOTOP LPAREN expr RPAREN
-      { dotop_get ~loc:$sloc (Lident ("." ^ $2 ^ "()")) $1 $4  }
-  | simple_expr DOTOP LPAREN expr error
+  | simple_expr DOTOP LPAREN expr_semi_list RPAREN
+      { dotop_get ~loc:$sloc lident paren $2 $1 $4  }
+  | simple_expr DOTOP LPAREN expr_semi_list error
       { unclosed "(" $loc($3) ")" $loc($5) }
-  | simple_expr DOTOP LBRACE expr RBRACE
-      { dotop_get ~loc:$sloc (Lident ("." ^ $2 ^ "{}")) $1 $4 }
+  | simple_expr DOTOP LBRACE expr_semi_list RBRACE
+      { dotop_get ~loc:$sloc lident brace $2 $1 $4 }
   | simple_expr DOTOP LBRACE expr error
       { unclosed "{" $loc($3) "}" $loc($5) }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr RBRACKET
-      { dotop_get ~loc:$sloc (Ldot($3, "." ^ $4 ^ "[]")) $1 $6  }
+  | simple_expr DOT mod_longident DOTOP LBRACKET expr_semi_list RBRACKET
+      { dotop_get ~loc:$sloc (ldot $3) bracket $4 $1 $6  }
   | simple_expr DOT
-    mod_longident DOTOP LBRACKET expr error
+    mod_longident DOTOP LBRACKET expr_semi_list error
       { unclosed "[" $loc($5) "]" $loc($7) }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr RPAREN
-      { dotop_get ~loc:$sloc (Ldot($3, "." ^ $4 ^ "()")) $1 $6 }
+  | simple_expr DOT mod_longident DOTOP LPAREN expr_semi_list RPAREN
+      { dotop_get ~loc:$sloc (ldot $3) paren $4 $1 $6 }
   | simple_expr DOT
-    mod_longident DOTOP LPAREN expr error
+    mod_longident DOTOP LPAREN expr_semi_list error
       { unclosed "(" $loc($5) ")" $loc($7) }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr RBRACE
-      { dotop_get ~loc:$sloc (Ldot($3, "." ^ $4 ^ "{}")) $1 $6  }
+  | simple_expr DOT mod_longident DOTOP LBRACE expr_semi_list RBRACE
+      { dotop_get ~loc:$sloc (ldot $3) brace $4 $1 $6  }
   | simple_expr DOT
-    mod_longident DOTOP LBRACE expr error
+    mod_longident DOTOP LBRACE expr_semi_list error
       { unclosed "{" $loc($5) "}" $loc($7) }
   | simple_expr DOT LBRACE expr RBRACE
       { bigarray_get ~loc:$sloc $1 $4 }
@@ -3394,12 +3419,12 @@ operator:
     PREFIXOP                                    { $1 }
   | LETOP                                       { $1 }
   | ANDOP                                       { $1 }
-  | DOTOP LPAREN RPAREN                         { "."^ $1 ^"()" }
-  | DOTOP LPAREN RPAREN LESSMINUS               { "."^ $1 ^ "()<-" }
-  | DOTOP LBRACKET RBRACKET                     { "."^ $1 ^"[]" }
-  | DOTOP LBRACKET RBRACKET LESSMINUS           { "."^ $1 ^ "[]<-" }
-  | DOTOP LBRACE RBRACE                         { "."^ $1 ^"{}" }
-  | DOTOP LBRACE RBRACE LESSMINUS               { "."^ $1 ^ "{}<-" }
+  | DOTOP LPAREN index_mod RPAREN               { "."^ $1 ^"(" ^ $3 ^ ")" }
+  | DOTOP LPAREN index_mod RPAREN LESSMINUS     { "."^ $1 ^ "(" ^ $3 ^ ")<-" }
+  | DOTOP LBRACKET index_mod RBRACKET           { "."^ $1 ^"[" ^ $3 ^ "]" }
+  | DOTOP LBRACKET index_mod RBRACKET LESSMINUS { "."^ $1 ^ "[" ^ $3 ^ "]<-" }
+  | DOTOP LBRACE index_mod RBRACE               { "."^ $1 ^"{" ^ $3 ^ "}" }
+  | DOTOP LBRACE index_mod RBRACE LESSMINUS     { "."^ $1 ^ "{" ^ $3 ^ "}<-" }
   | HASHOP                                      { $1 }
   | BANG                                        { "!" }
   | infix_operator                              { $1 }
@@ -3425,6 +3450,10 @@ operator:
   | AMPERSAND      {"&"}
   | AMPERAMPER    {"&&"}
   | COLONEQUAL    {":="}
+;
+index_mod:
+| { "" }
+| SEMI DOTDOT { ";.." }
 ;
 constr_ident:
     UIDENT                                      { $1 }

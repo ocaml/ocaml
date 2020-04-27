@@ -2312,6 +2312,55 @@ dict.Dict.%{"one"};;
 let open Dict in dict.%{"two"};;
 \end{caml_example}
 
+\subsection{Multi-index notation}
+\begin{syntax}
+expr:
+          ...
+        | expr '.' [module-path '.'] dot-ext '(' expr {{';' expr }} ')' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '[' expr {{';' expr }} ']' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '{' expr {{';' expr }} '}' [ '<-' expr ]
+;
+operator-name:
+          ...
+        | '.' dot-ext ('(;..)' || '[;..]' || '{;..}') ['<-']
+;
+\end{syntax}
+
+Multi-index are also supported through a second variant of indexing operators
+
+\begin{caml_example*}{verbatim}
+let (.%[;..]) = Bigarray.Genarray.get
+let (.%{;..}) = Bigarray.Genarray.get
+let (.%(;..)) = Bigarray.Genarray.get
+\end{caml_example*}
+
+which is called when an index literals contain a semicolon separated list
+of expressions with two and more elements:
+
+\begin{caml_example*}{verbatim}
+let sum x y = x.%[1;2;3] + y.%[1;2]
+(* is equivalent to *)
+let sum x y = (.%[;..]) x [|1;2;3|] + (.%[;..]) y [|1;2|]
+\end{caml_example*}
+
+In particular this multi-index notation makes it possible to uniformly handle
+indexing Genarray and other implementations of multidimensional arrays.
+
+\begin{caml_example*}{verbatim}
+module A = Bigarray.Genarray
+let (.%{;..}) = A.get
+let (.%{;..}<- ) = A.set
+let (.%{ }) a k = A.get a [|k|]
+let (.%{ }<-) a k x = A.set a [|k|] x
+let syntax_compare vec mat t3 t4 =
+          vec.%{0} = A.get vec [|0|]
+   &&   mat.%{0;0} = A.get mat [|0;0|]
+   &&   t3.%{0;0;0} = A.get t3 [|0;0;0|]
+   && t4.%{0;0;0;0} = t4.{0,0,0,0}
+\end{caml_example*}
+
+
+
 \section{Empty variant types\label{s:empty-variants} }
 (Introduced in 4.07.0)
 

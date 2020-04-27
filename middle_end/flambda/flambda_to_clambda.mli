@@ -35,4 +35,7 @@ type result = {
     For direct calls, the hidden closure parameter is added.  Switch
     tables are also built.
 *)
-val convert : Flambda.program * Export_info.transient -> result
+val convert
+   : ppf_dump:Format.formatter
+  -> Flambda.program * Export_info.transient
+  -> result

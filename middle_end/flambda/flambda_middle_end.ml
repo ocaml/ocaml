@@ -6,7 +6,7 @@
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2014--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -14,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+[@@@ocaml.warning "+a-4-30-40-41-42-66"]
 open! Int_replace_polymorphic_compare
 
 let _dump_function_sizes flam ~backend =
@@ -31,11 +31,8 @@ let _dump_function_sizes flam ~backend =
           | None -> assert false)
         set_of_closures.function_decls.funs)
 
-let middle_end ~ppf_dump ~prefixname ~backend
-    ~size
-    ~filename
-    ~module_ident
-    ~module_initializer =
+let lambda_to_flambda ~ppf_dump ~prefixname ~backend ~size ~filename
+      ~module_ident ~module_initializer =
   Profile.record_call "flambda" (fun () ->
     let previous_warning_reporter = !Location.warning_reporter in
     let module WarningSet =
@@ -198,3 +195,54 @@ let middle_end ~ppf_dump ~prefixname ~backend
            (* dump_function_sizes flam ~backend; *)
            flam))
       )
+
+let flambda_raw_clambda_dump_if ppf
+      ({ Flambda_to_clambda. expr = ulambda; preallocated_blocks = _;
+        structured_constants; exported = _; } as input) =
+  if !Clflags.dump_rawclambda then
+    begin
+      Format.fprintf ppf "@.clambda (before Un_anf):@.";
+      Printclambda.clambda ppf ulambda;
+      Symbol.Map.iter (fun sym cst ->
+          Format.fprintf ppf "%a:@ %a@."
+            Symbol.print sym
+            Printclambda.structured_constant cst)
+        structured_constants
+    end;
+  if !Clflags.dump_cmm then Format.fprintf ppf "@.cmm:@.";
+  input
+
+let lambda_to_clambda ~backend ~filename ~prefixname ~ppf_dump
+      (program : Lambda.program) =
+  let program =
+    lambda_to_flambda ~ppf_dump ~prefixname ~backend
+      ~size:program.main_module_block_size
+      ~filename
+      ~module_ident:program.module_ident
+      ~module_initializer:program.code
+  in
+  let export = Build_export_info.build_transient ~backend program in
+  let clambda, preallocated_blocks, constants =
+    Profile.record_call "backend" (fun () ->
+      (program, export)
+      |> Flambda_to_clambda.convert ~ppf_dump
+      |> flambda_raw_clambda_dump_if ppf_dump
+      |> (fun { Flambda_to_clambda. expr; preallocated_blocks;
+                structured_constants; exported; } ->
+           Compilenv.set_export_info exported;
+           let clambda =
+             Un_anf.apply ~what:(Compilenv.current_unit_symbol ())
+               ~ppf_dump expr
+           in
+           clambda, preallocated_blocks, structured_constants))
+  in
+  let constants =
+    List.map (fun (symbol, definition) ->
+        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
+          exported = true;
+          definition;
+          provenance = None;
+        })
+      (Symbol.Map.bindings constants)
+  in
+  clambda, preallocated_blocks, constants

@@ -17,7 +17,7 @@
 (** Expand ANF-like constructs so that pattern matches in [Cmmgen] will
     work correctly. *)
 val apply
-  : ppf_dump:Format.formatter
+   : what:Symbol.t
+  -> ppf_dump:Format.formatter
   -> Clambda.ulambda
-  -> what:string
   -> Clambda.ulambda
