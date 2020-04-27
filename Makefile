@@ -191,7 +191,8 @@ ASMCOMP=\
 # the native code compiler is not present for some particular target.
 
 MIDDLE_END_CLOSURE=\
-  middle_end/closure/closure.cmo
+  middle_end/closure/closure.cmo \
+  middle_end/closure/closure_middle_end.cmo
 
 # Owing to dependencies through [Compilenv], which would be
 # difficult to remove, some of the lower parts of Flambda (anything that is

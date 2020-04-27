@@ -3,6 +3,60 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+### Language features
+
+- #7557, #1726: multi-indices for extended indexing operators
+  (Florian Angeletti, review by Gabriel Radanne)
+
+### Internal/compiler-libs changes:
+
+- #7927, #8527: Replace long tuples into records in typeclass.ml
+  (Ulugbek Abdullaev, review by David Allsopp and Gabriel Scherer)
+
+- #1901: Fix lexing of character literals in comments
+  (Pieter Goetschalckx, review by Damien Doligez)
+
+- #2288: Move middle end code from [Asmgen] to [Clambda_middle_end] and
+  [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
+  (Mark Shinwell, review by Pierre Chambart)
+
+### Runtime system:
+
+- #8619: Ensure Gc.minor_words remains accurate after a GC.
+  (Stephen Dolan, Xavier Leroy and David Allsopp,
+   review by Xavier Leroy and Gabriel Scherer)
+
+### Standard library:
+
+- #8657: Optimization in [Array.make] when initializing with unboxed
+   or young values.
+   (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
+
+- #8634: Statistical memory profiling provided by the Gc.Memprof
+   module.
+   Incomplete version: it only samples objects allocated in the major
+   heap.
+   (Jacques-Henri Jourdan, review by Stephen Dolan)
+
+### Other libraries:
+
+- #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
+  (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
+
+### Build system:
+
+- #8650: ensure that "make" variables are defined before use;
+  revise generation of config/util.ml to better quote special characters
+  (Xavier Leroy, review by David Allsopp)
+
+### Bug fixes:
+
+- #8622: Don't generate #! headers over 127 characters.
+  (David Allsopp, review by Xavier Leroy and Stephen Dolan)
+
+OCaml 4.09.0
+------------
+
 ### Code generation and optimizations:
 
 - #2278: Remove native code generation support for 32-bit Intel macOS,
@@ -101,7 +155,7 @@ Working version
   (Mark Shinwell, review by Vincent Laviron)
 
 - #2281: Move some middle-end files around
-  (Mark Shinwell)
+  (Mark Shinwell, review by Pierre Chambart and Vincent Laviron)
 
 - #2283: Add [is_prefix] and [find_and_chop_longest_common_prefix] to
   [Misc.Stdlib.List]
@@ -125,18 +179,12 @@ Working version
 - #2308: More debugging information on [Cmm] terms
   (Mark Shinwell, review by Stephen Dolan)
 
-- #7927, #8527: Replace long tuples into records in typeclass.ml
-  (Ulugbek Abdullaev, review by David Allsopp and Gabriel Scherer)
-
 - #7878, #8542: Replaced TypedtreeIter with tast_iterator
   (Isaac "Izzy" Avram, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 - #8598: Replace "not is_nonexpansive" by "maybe_expansive".
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)
-
-- #1901: Fix lexing of character literals in comments
-  (Pieter Goetschalckx, review by Damien Doligez)
 
 ### Runtime system:
 
@@ -159,12 +207,8 @@ Working version
 - #8607: Remove obsolete macros for pre-2002 MSVC support
   (Stephen Dolan, review by Nicolás Ojeda Bär and David Allsopp)
 
-- #8619: Ensure Gc.minor_words remains accurate after a GC.
-  (Stephen Dolan, Xavier Leroy and David Allsopp,
-   review by Xavier Leroy and Gabriel Scherer)
-
 - #8656: Fix a bug in [caml_modify_generational_global_root]
-  (Jacques-Henri Jourdan, review by ???)
+  (Jacques-Henri Jourdan, review by Gabriel Scherer)
 
 ### Standard library:
 
@@ -176,20 +220,7 @@ Working version
   (Damien Doligez, reports by John Whitington and Alain Frisch,
    review by Jeremy Yallop and Gabriel Scherer)
 
-- #8657: Optimization in [Array.make] when initializing with unboxed
-   or young values.
-   (Jacques-Henri Jourdan, review by Gabriel Scherer and Stephen Dolan)
-
-- #8634: Statistical memory profiling provided by the Gc.Memprof
-   module.
-   Incomplete version: it only samples objects allocated in the major
-   heap.
-   (Jacques-Henri Jourdan, review by Stephen Dolan)
-
 ### Other libraries:
-
-- #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
-  (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
 
 - #7903, #2306: Make Thread.delay interruptible by signals again
   (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
@@ -215,12 +246,6 @@ Working version
 - #8515: manual, precise constraints on reexported types
   (Florian Angeletti, review by Gabriel Scherer)
 
-### Build system:
-
-- #8650: ensure that "make" variables are defined before use;
-  revise generation of config/util.ml to better quote special characters
-  (Xavier Leroy, review by David Allsopp)
-
 ### Bug fixes:
 
 - #7156, #8594: make top level use custom printers if they are available
@@ -238,9 +263,6 @@ Working version
 - #8610, #8613: toplevel printing, consistent deduplicated name for types
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer,
    reported by Xavier Clerc)
-
-- #8622: Don't generate #! headers over 127 characters.
-  (David Allsopp, review by Xavier Leroy and Stephen Dolan)
 
 - #8635, #8636: Fix a bad side-effect of the -allow-approx option of
   ocamldep. It used to turn some errors into successes

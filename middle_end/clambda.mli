@@ -151,3 +151,6 @@ type preallocated_constant = {
   definition : ustructured_constant;
   provenance : usymbol_provenance option;
 }
+
+type with_constants =
+  ulambda * preallocated_block list * preallocated_constant list

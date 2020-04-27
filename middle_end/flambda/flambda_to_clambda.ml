@@ -31,6 +31,9 @@ type t = {
     Set_of_closures_id.t for_one_or_more_units;
   imported_units :
     Simple_value_approx.function_declarations for_one_or_more_units;
+  ppf_dump : Format.formatter;
+  mutable constants_for_instrumentation :
+    Clambda.ustructured_constant Symbol.Map.t;
 }
 
 let get_fun_offset t closure_id =
@@ -70,7 +73,7 @@ let is_function_constant t closure_id =
 (* Instrumentation of closure and field accesses to try to catch compiler
    bugs. *)
 
-let check_closure ulam named : Clambda.ulambda =
+let check_closure t ulam named : Clambda.ulambda =
   if not !Clflags.clambda_checks then ulam
   else
     let desc =
@@ -78,14 +81,19 @@ let check_closure ulam named : Clambda.ulambda =
         ~arity:2 ~alloc:false
     in
     let str = Format.asprintf "%a" Flambda.print_named named in
-    let str_const =
-      Compilenv.new_structured_constant (Uconst_string str) ~shared:true
+    let sym = Compilenv.new_const_symbol () in
+    let sym' =
+      Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
+        (Linkage_name.create sym)
     in
+    t.constants_for_instrumentation <-
+      Symbol.Map.add sym' (Clambda.Uconst_string str)
+        t.constants_for_instrumentation;
     Uprim (Pccall desc,
-           [ulam; Clambda.Uconst (Uconst_ref (str_const, None))],
+           [ulam; Clambda.Uconst (Uconst_ref (sym, None))],
            Debuginfo.none)
 
-let check_field ulam pos named_opt : Clambda.ulambda =
+let check_field t ulam pos named_opt : Clambda.ulambda =
   if not !Clflags.clambda_checks then ulam
   else
     let desc =
@@ -97,11 +105,16 @@ let check_field ulam pos named_opt : Clambda.ulambda =
       | None -> "<none>"
       | Some named -> Format.asprintf "%a" Flambda.print_named named
     in
-    let str_const =
-      Compilenv.new_structured_constant (Uconst_string str) ~shared:true
+    let sym = Compilenv.new_const_symbol () in
+    let sym' =
+      Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
+        (Linkage_name.create sym)
     in
+    t.constants_for_instrumentation <-
+      Symbol.Map.add sym' (Clambda.Uconst_string str)
+        t.constants_for_instrumentation;
     Uprim (Pccall desc, [ulam; Clambda.Uconst (Uconst_int pos);
-        Clambda.Uconst (Uconst_ref (str_const, None))],
+        Clambda.Uconst (Uconst_ref (sym, None))],
       Debuginfo.none)
 
 module Env : sig
@@ -258,7 +271,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     to_clambda_direct_apply t func args direct_func dbg env
   | Apply { func; args; kind = Indirect; dbg = dbg } ->
     let callee = subst_var env func in
-    Ugeneric_apply (check_closure callee (Flambda.Expr (Var func)),
+    Ugeneric_apply (check_closure t callee (Flambda.Expr (Var func)),
       subst_vars env args, dbg)
   | Switch (arg, sw) ->
     let aux () : Clambda.ulambda =
@@ -369,15 +382,15 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
        a [Uoffset] construction in the event that the offset is zero, otherwise
        we might break pattern matches in Cmmgen (in particular for the
        compilation of "let rec"). *)
-    check_closure (
+    check_closure t (
       build_uoffset
-        (check_closure (subst_var env set_of_closures)
+        (check_closure t (subst_var env set_of_closures)
            (Flambda.Expr (Var set_of_closures)))
         (get_fun_offset t closure_id))
       named
   | Move_within_set_of_closures { closure; start_from; move_to } ->
-    check_closure (build_uoffset
-      (check_closure (subst_var env closure)
+    check_closure t (build_uoffset
+      (check_closure t (subst_var env closure)
          (Flambda.Expr (Var closure)))
       ((get_fun_offset t move_to) - (get_fun_offset t start_from)))
       named
@@ -387,14 +400,15 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
     Uprim (Pfield (pos, Pointer, Mutable),
-      [check_field (check_closure ulam (Expr (Var closure))) pos (Some named)],
+      [check_field t (check_closure t ulam (Expr (Var closure)))
+         pos (Some named)],
       Debuginfo.none)
   | Prim (Pfield (index, ptr, mut), [block], dbg) ->
     Uprim (Pfield (index, ptr, mut),
-           [check_field (subst_var env block) index None], dbg)
+           [check_field t (subst_var env block) index None], dbg)
   | Prim (Psetfield (index, maybe_ptr, init), [block; new_value], dbg) ->
     Uprim (Psetfield (index, maybe_ptr, init), [
-        check_field (subst_var env block) index None;
+        check_field t (subst_var env block) index None;
         subst_var env new_value;
       ], dbg)
   | Prim (Popaque, args, dbg) ->
@@ -572,11 +586,15 @@ and to_clambda_closed_set_of_closures t env symbol
           env, id :: params)
         function_decl.params (env, [])
     in
+    let body =
+      Un_anf.apply ~ppf_dump:t.ppf_dump ~what:symbol
+        (to_clambda t env_body function_decl.body)
+    in
     { label = Compilenv.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var, Lambda.Pgenval) params;
       return = Lambda.Pgenval;
-      body = to_clambda t env_body function_decl.body;
+      body;
       dbg = function_decl.dbg;
       env = None;
     }
@@ -701,7 +719,7 @@ type result = {
   exported : Export_info.t;
 }
 
-let convert (program, exported_transient) : result =
+let convert ~ppf_dump (program, exported_transient) : result =
   let current_unit =
     let closures =
       Closure_id.Map.keys (Flambda_utils.make_closure_map program)
@@ -736,9 +754,19 @@ let convert (program, exported_transient) : result =
       closures;
     }
   in
-  let t = { current_unit; imported_units; } in
+  let t =
+    { current_unit;
+      imported_units;
+      constants_for_instrumentation = Symbol.Map.empty;
+      ppf_dump;
+    }
+  in
   let expr, structured_constants, preallocated_blocks =
     to_clambda_program t Env.empty Symbol.Map.empty program
+  in
+  let structured_constants =
+    Symbol.Map.disjoint_union structured_constants
+      t.constants_for_instrumentation
   in
   let exported =
     Export_info.t_of_transient exported_transient

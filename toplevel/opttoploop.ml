@@ -248,19 +248,24 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
-  let fn = Filename.chop_extension dll in
-  if not Config.flambda then
-    Asmgen.compile_implementation_clambda
-      ~toplevel:need_symbol fn ~backend ~ppf_dump:ppf
-      { Lambda.code=slam ; main_module_block_size=size;
-        module_ident; required_globals }
-  else
-    Asmgen.compile_implementation_flambda
-      ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
-      (Flambda_middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
-         ~module_ident ~module_initializer:slam ~filename:"toplevel");
-  Asmlink.call_linker_shared [fn ^ ext_obj] dll;
-  Sys.remove (fn ^ ext_obj);
+  let filename = Filename.chop_extension dll in
+  let program =
+    { Lambda.
+      code = slam;
+      main_module_block_size = size;
+      module_ident;
+      required_globals;
+    }
+  in
+  let middle_end =
+    if Config.flambda then Flambda_middle_end.lambda_to_clambda
+    else Closure_middle_end.lambda_to_clambda
+  in
+  Asmgen.compile_implementation ~toplevel:need_symbol
+    ~backend ~filename ~prefixname:""
+    ~middle_end ~ppf_dump:ppf program;
+  Asmlink.call_linker_shared [filename ^ ext_obj] dll;
+  Sys.remove (filename ^ ext_obj);
 
   let dll =
     if Filename.is_implicit dll

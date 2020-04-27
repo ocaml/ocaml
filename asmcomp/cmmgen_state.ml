@@ -39,11 +39,6 @@ let empty = {
 
 let state = empty
 
-let reset () =
-  state.constants <- S.Map.empty;
-  state.data_items <- [];
-  Queue.clear state.functions
-
 let add_constant sym cst =
   state.constants <- S.Map.add sym cst state.constants
 
@@ -53,9 +48,15 @@ let add_data_items items =
 let add_function func =
   Queue.add func state.functions
 
-let constants () = state.constants
+let get_and_clear_constants () =
+  let constants = state.constants in
+  state.constants <- S.Map.empty;
+  constants
 
-let data_items () = List.concat (List.rev state.data_items)
+let get_and_clear_data_items () =
+  let data_items = List.concat (List.rev state.data_items) in
+  state.data_items <- [];
+  data_items
 
 let next_function () =
   match Queue.take state.functions with
