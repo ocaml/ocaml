@@ -22,9 +22,16 @@ module TypeMap = Btype.TypeMap
 
 type surface_variance = bool * bool * bool
 
+type variance_error =
+| Variance_not_satisfied of int
+| No_variable
+| Variance_not_reflected
+| Variance_not_deducible
+
 type error =
-| Bad_variance of int * surface_variance * surface_variance
+| Bad_variance of variance_error * surface_variance * surface_variance
 | Varying_anonymous
+
 
 exception Error of Location.t * error
 
@@ -148,7 +155,10 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         let var = get_variance ty tvl in
         let (co,cn) = get_upper var and ij = mem Inj var in
         if Btype.is_Tvar ty && (co && not c || cn && not n || not ij && i)
-        then raise (Error(loc, Bad_variance (!pos, (co,cn,ij), (c,n,i)))))
+        then raise (Error(loc, Bad_variance
+                                (Variance_not_satisfied !pos,
+                                                        (co,cn,ij),
+                                                        (c,n,i)))))
       params required;
     (* Check propagation from constrained parameters *)
     let args = Btype.newgenty (Ttuple params) in
@@ -181,7 +191,9 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then
         if List.memq ty fvl then
-          let code = if not i2 then -2 else if c2 || n2 then -1 else -3 in
+          let code = if not i2 then No_variable
+                     else if c2 || n2 then Variance_not_reflected
+                     else Variance_not_deducible in
           raise (Error (loc, Bad_variance (code, (c1,n1,false), (c2,n2,false))))
         else
           Btype.iter_type_expr check ty

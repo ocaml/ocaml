@@ -23,29 +23,35 @@ exception Dont_match
 type position = Ctype.Unification_trace.position = First | Second
 
 type label_mismatch =
-  | Type of Ident.t
-  | Mutability of Ident.t
+  | Type
+  | Mutability of position
 
 type record_mismatch =
-  | Label_mismatch of label_mismatch
+  | Label_mismatch of label_declaration * label_declaration * label_mismatch
   | Label_names of int * Ident.t * Ident.t
   | Label_missing of position * Ident.t
   | Unboxed_float_representation of position
 
 type constructor_mismatch =
-  | Type of Ident.t
-  | Arity of Ident.t
+  | Type
+  | Arity
   | Inline_record of record_mismatch
+  | Kind of position
   | Explicit_return_type of position
 
 type variant_mismatch =
-  | Constructor_mismatch of constructor_mismatch
+  | Constructor_mismatch of constructor_declaration
+                            * constructor_declaration
+                            * constructor_mismatch
   | Constructor_names of int * Ident.t * Ident.t
   | Constructor_missing of position * Ident.t
 
 type extension_constructor_mismatch =
   | Constructor_privacy
-  | Constructor_mismatch of constructor_mismatch
+  | Constructor_mismatch of Ident.t
+                            * extension_constructor
+                            * extension_constructor
+                            * constructor_mismatch
 
 type type_mismatch =
   | Arity

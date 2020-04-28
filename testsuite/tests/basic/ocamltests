@@ -19,6 +19,7 @@ min_int.ml
 opt_variants.ml
 patmatch.ml
 patmatch_incoherence.ml
+patmatch_split_no_or.ml
 pr7253.ml
 pr7533.ml
 pr7657.ml

@@ -10,6 +10,11 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #8844: Printing faulty constructors, inline records fields and their types
+  during type mismatches. Also slightly changed other type mismatches error
+  output.
+  (Mekhrubon Turaev, review by Florian Angeletti, Leo White)
+
 - #8828: Added abstractions for variants, records, constructors, fields and
   extension constructor types mismatch.
   (Mekhrubon Turaev, review by Florian Angeletti, Leo White and Gabriel Scherer)
@@ -36,6 +41,9 @@ Working version
 
 - #8774: New implementation of Env.make_copy_of_types
   (Alain Frisch, review by Thomas Refis, Leo White and Jacques Garrigue)
+
+- #7924: Use a variant instead of an int in Bad_variance exception
+  (Rian Douglas, review by Gabriel Scherer)
 
 
 ### Code generation and optimizations:
@@ -136,6 +144,10 @@ Working version
 - #8702, #8777: improved error messages for fixed row polymorphic variants
   (Florian Angeletti, report by Leo White, review by Thomas Refis)
 
+- #8874: add tests for typechecking error messages and pack them into
+  pretty-printing boxes.
+  (Oxana Kostikova, review by Gabriel Scherer)
+
 ### Bug fixes:
 
 - #8622: Don't generate #! headers over 127 characters.
@@ -145,6 +157,12 @@ Working version
   and misleading function CamlinternalFormat.string_of_formatting_gen
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
+
+- #8862, #8871: subst: preserve scopes
+  (Thomas Refis, report by Leo White)
+
+- #8875: fix missing newlines in the output from MSVC invocation.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 OCaml 4.09.0
 ------------

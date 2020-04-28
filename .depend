@@ -594,6 +594,7 @@ typing/includeclass.cmi : \
 typing/includecore.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/printtyp.cmi \
     typing/path.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -605,6 +606,7 @@ typing/includecore.cmo : \
 typing/includecore.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/printtyp.cmx \
     typing/path.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -2253,14 +2255,18 @@ asmcomp/comballoc.cmi : \
 asmcomp/deadcode.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
+    utils/numbers.cmi \
     asmcomp/mach.cmi \
     utils/config.cmi \
+    asmcomp/cmm.cmi \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
+    utils/numbers.cmx \
     asmcomp/mach.cmx \
     utils/config.cmx \
+    asmcomp/cmm.cmx \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmi : \
     asmcomp/mach.cmi

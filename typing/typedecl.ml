@@ -1895,27 +1895,29 @@ let report_error ppf = function
         | 3 when not teen -> "rd"
         | _ -> "th"
       in
-      (* FIXME: this test below is horrible, use a proper variant *)
-      if n = -1 then
+      (match n with
+      | Variance_not_reflected ->
         fprintf ppf "@[%s@ %s@ It"
           "In this definition, a type variable has a variance that"
           "is not reflected by its occurrence in type parameters."
-      else if n = -2 then
+      | No_variable ->
         fprintf ppf "@[%s@ %s@]"
           "In this definition, a type variable cannot be deduced"
           "from the type parameters."
-      else if n = -3 then
+      | Variance_not_deducible ->
         fprintf ppf "@[%s@ %s@ It"
           "In this definition, a type variable has a variance that"
           "cannot be deduced from the type parameters."
-      else
+      | Variance_not_satisfied n ->
         fprintf ppf "@[%s@ %s@ The %d%s type parameter"
           "In this definition, expected parameter"
           "variances are not satisfied."
-          n (suffix n);
-      if n <> -2 then
+          n (suffix n));
+      (match n with
+      | No_variable -> ()
+      | _ ->
         fprintf ppf " was expected to be %s,@ but it is %s.@]"
-          (variance v2) (variance v1)
+          (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
