@@ -96,7 +96,11 @@ Line 1, characters 0-32:
 1 | type wrong_type = d = X of float
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The types for constructor X are not equal.
+       Constructors do not match:
+         X of int
+       is not compatible with:
+         X of float
+       The types are not equal.
 |}]
 
 type unboxed = d = X of float [@@unboxed]
@@ -137,5 +141,9 @@ Error: Signature mismatch:
          type t = Foo : int -> t
        is not included in
          type t = Foo of int
+       Constructors do not match:
+         Foo : int -> t
+       is not compatible with:
+         Foo of int
        The first has explicit return type and the second doesn't.
 |}]

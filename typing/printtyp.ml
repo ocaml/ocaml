@@ -1262,6 +1262,14 @@ and tree_of_constructor cd =
 and tree_of_label l =
   (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
 
+let constructor ppf c =
+  reset_except_context ();
+  !Oprint.out_constr ppf (tree_of_constructor c)
+
+let label ppf l =
+  reset_except_context ();
+  !Oprint.out_label ppf (tree_of_label l)
+
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
 
@@ -1273,6 +1281,17 @@ let constructor_arguments ppf a =
   !Oprint.out_type ppf (Otyp_tuple tys)
 
 (* Print an extension declaration *)
+
+let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
+  match ext_ret_type with
+  | None -> (tree_of_constructor_arguments ext_args, None)
+  | Some res ->
+    let nm = !names in
+    names := [];
+    let ret = tree_of_typexp false res in
+    let args = tree_of_constructor_arguments ext_args in
+    names := nm;
+    (args, Some ret)
 
 let tree_of_extension_constructor id ext es =
   reset_except_context ();
@@ -1293,15 +1312,9 @@ let tree_of_extension_constructor id ext es =
   in
   let name = Ident.name id in
   let args, ret =
-    match ext.ext_ret_type with
-    | None -> (tree_of_constructor_arguments ext.ext_args, None)
-    | Some res ->
-        let nm = !names in
-        names := [];
-        let ret = tree_of_typexp false res in
-        let args = tree_of_constructor_arguments ext.ext_args in
-        names := nm;
-        (args, Some ret)
+    extension_constructor_args_and_ret_type_subtree
+      ext.ext_args
+      ext.ext_ret_type
   in
   let ext =
     { oext_name = name;
@@ -1322,6 +1335,17 @@ let tree_of_extension_constructor id ext es =
 
 let extension_constructor id ppf ext =
   !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
+
+let extension_only_constructor id ppf ext =
+  reset_except_context ();
+  let name = Ident.name id in
+  let args, ret =
+    extension_constructor_args_and_ret_type_subtree
+      ext.ext_args
+      ext.ext_ret_type
+  in
+  Format.fprintf ppf "@[<hv>%a@]"
+    !Oprint.out_constr (name, args, ret)
 
 (* Print a value declaration *)
 

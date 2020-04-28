@@ -391,6 +391,8 @@ and print_out_label ppf (name, mut, arg) =
   fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
     print_out_type arg
 
+let out_label = ref print_out_label
+
 let out_type = ref print_out_type
 
 (* Class types *)
@@ -708,6 +710,7 @@ and print_out_type_extension ppf te =
     (print_list print_out_constr (fun ppf -> fprintf ppf "@ | "))
     te.otyext_constructors
 
+let out_constr = ref print_out_constr
 let _ = out_module_type := print_out_module_type
 let _ = out_signature := print_out_signature
 let _ = out_sig_item := print_out_sig_item
