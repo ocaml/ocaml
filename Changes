@@ -54,6 +54,9 @@ Working version
   each function in a separate named text section on supported targets.
   (Greta Yorsh, review by Pierre Chambart)
 
+- #2321: Eliminate dead ICatch handlers
+  (Greta Yorsh, review by Pierre Chambart and Vincent Laviron)
+
 ### Runtime system:
 
 - #8619: Ensure Gc.minor_words remains accurate after a GC.
@@ -109,6 +112,11 @@ Working version
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
   (Florent Monnier and Nicolás Ojeda Bär, review by David Allsopp)
 
+### Compiler user-interface and warnings:
+
+    #8833: Hint for (type) redefinitions in toplevel session
+    (Florian Angeletti, review by Gabriel Scherer)
+
 ### Build system:
 
 - #8650: ensure that "make" variables are defined before use;
@@ -137,10 +145,6 @@ Working version
   and misleading function CamlinternalFormat.string_of_formatting_gen
   (Gabriel Scherer and Florian Angeletti,
    review by Florian Angeletti and Gabriel Radanne)
-
-- #8848: Fix x86 stack probe CFI information in caml_c_call and
-  caml_call_gc
-  (Tom Kelly, review by Xavier Leroy)
 
 OCaml 4.09.0
 ------------
@@ -393,6 +397,13 @@ OCaml 4.09.0
 
 - #8810: Env.lookup_module: don't allow creating loops
   (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
+- #8848: Fix x86 stack probe CFI information in caml_c_call and
+  caml_call_gc
+  (Tom Kelly, review by Xavier Leroy)
+
+- #8864, #8865: Fix native compilation of left shift by (word_size - 1)
+  (Vincent Laviron, report by Murilo Giacometti Rocha, review by Xavier Leroy)
 
 OCaml 4.08 maintenance branch:
 ------------------------------
