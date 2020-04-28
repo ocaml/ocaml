@@ -70,7 +70,6 @@ _build
 /boot/camlheader
 /boot/ocamlc.opt
 
-/bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
 

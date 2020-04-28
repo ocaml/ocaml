@@ -9,12 +9,14 @@ utils/build_path_prefix_map.cmx : \
     utils/build_path_prefix_map.cmi
 utils/build_path_prefix_map.cmi :
 utils/ccomp.cmo : \
+    utils/profile.cmi \
     utils/misc.cmi \
     utils/load_path.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     utils/ccomp.cmi
 utils/ccomp.cmx : \
+    utils/profile.cmx \
     utils/misc.cmx \
     utils/load_path.cmx \
     utils/config.cmx \
@@ -1520,7 +1522,6 @@ typing/typetexp.cmo : \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
-    typing/includemod.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/clflags.cmi \
@@ -1541,7 +1542,6 @@ typing/typetexp.cmx : \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
-    typing/includemod.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/clflags.cmx \
@@ -1557,7 +1557,6 @@ typing/typetexp.cmi : \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
-    typing/includemod.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     parsing/asttypes.cmi
@@ -6055,7 +6054,6 @@ toplevel/opttopstart.cmx : \
     toplevel/opttopmain.cmx
 toplevel/topdirs.cmo : \
     utils/warnings.cmi \
-    typing/typetexp.cmi \
     typing/types.cmi \
     toplevel/trace.cmi \
     toplevel/toploop.cmi \
@@ -6084,7 +6082,6 @@ toplevel/topdirs.cmo : \
     toplevel/topdirs.cmi
 toplevel/topdirs.cmx : \
     utils/warnings.cmx \
-    typing/typetexp.cmx \
     typing/types.cmx \
     toplevel/trace.cmx \
     toplevel/toploop.cmx \

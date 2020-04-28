@@ -181,33 +181,35 @@ let remove_Wl cclibs =
     else cclib)
 
 let call_linker mode output_name files extra =
-  let cmd =
-    if mode = Partial then
-      let l_prefix =
-        match Config.ccomp_type with
-        | "msvc" -> "/libpath:"
-        | _ -> "-L"
-      in
-      Printf.sprintf "%s%s %s %s %s"
-        Config.native_pack_linker
-        (Filename.quote output_name)
-        (quote_prefixed l_prefix (Load_path.get_paths ()))
-        (quote_files (remove_Wl files))
-        extra
-    else
-      Printf.sprintf "%s -o %s %s %s %s %s %s"
-        (match !Clflags.c_compiler, mode with
-        | Some cc, _ -> cc
-        | None, Exe -> Config.mkexe
-        | None, Dll -> Config.mkdll
-        | None, MainDll -> Config.mkmaindll
-        | None, Partial -> assert false
-        )
-        (Filename.quote output_name)
-        ""  (*(Clflags.std_include_flag "-I")*)
-        (quote_prefixed "-L" (Load_path.get_paths ()))
-        (String.concat " " (List.rev !Clflags.all_ccopts))
-        (quote_files files)
-        extra
-  in
-  command cmd = 0
+  Profile.record_call "c-linker" (fun () ->
+    let cmd =
+      if mode = Partial then
+        let l_prefix =
+          match Config.ccomp_type with
+          | "msvc" -> "/libpath:"
+          | _ -> "-L"
+        in
+        Printf.sprintf "%s%s %s %s %s"
+          Config.native_pack_linker
+          (Filename.quote output_name)
+          (quote_prefixed l_prefix (Load_path.get_paths ()))
+          (quote_files (remove_Wl files))
+          extra
+      else
+        Printf.sprintf "%s -o %s %s %s %s %s %s"
+          (match !Clflags.c_compiler, mode with
+          | Some cc, _ -> cc
+          | None, Exe -> Config.mkexe
+          | None, Dll -> Config.mkdll
+          | None, MainDll -> Config.mkmaindll
+          | None, Partial -> assert false
+          )
+          (Filename.quote output_name)
+          ""  (*(Clflags.std_include_flag "-I")*)
+          (quote_prefixed "-L" (Load_path.get_paths ()))
+          (String.concat " " (List.rev !Clflags.all_ccopts))
+          (quote_files files)
+          extra
+    in
+    command cmd = 0
+  )
