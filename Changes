@@ -6,6 +6,9 @@ Working version
 
 ### Runtime system:
 
+- #9508: Remove support for FreeBSD prior to 4.0R, that required explicit
+  floating-point initialization to behave like IEEE standard
+  (Hannes Mehnert, review by David Allsopp)
 
 ### Code generation and optimizations:
 

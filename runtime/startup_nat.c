@@ -91,7 +91,6 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (caml_domain_state*);
-extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 #ifdef _WIN32
 extern void caml_win32_overflow_detection (void);
@@ -128,7 +127,6 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_spacetime_initialize();
 #endif
   caml_init_frame_descriptors();
-  caml_init_ieee_floats();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
