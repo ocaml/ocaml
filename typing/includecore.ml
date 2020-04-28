@@ -177,7 +177,7 @@ type type_mismatch =
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_mismatch
   | Unboxed_representation of position
-  | Immediate
+  | Immediate of Type_immediacy.Violation.t
 
 let report_label_mismatch first second ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -267,8 +267,14 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s."
          (choose ord first second) decl
          "uses unboxed representation"
-  | Immediate -> pr "%s is not an immediate type."
-                   (StringLabels.capitalize_ascii first)
+  | Immediate violation ->
+      let first = StringLabels.capitalize_ascii first in
+      match violation with
+      | Type_immediacy.Violation.Not_always_immediate ->
+          pr "%s is not an immediate type." first
+      | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
+          pr "%s is not a type that is always immediate on 64 bit platforms."
+            first
 
 let report_type_mismatch first second decl ppf err =
   if err = Manifest then () else
@@ -444,11 +450,14 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   (* If attempt to assign a non-immediate type (e.g. string) to a type that
    * must be immediate, then we error *)
   let err =
-    if abstr &&
-       not decl1.type_immediate &&
-       decl2.type_immediate then
-      Some Immediate
-    else None
+    if not abstr then
+      None
+    else
+      match
+        Type_immediacy.coerce decl1.type_immediate ~as_:decl2.type_immediate
+      with
+      | Ok () -> None
+      | Error violation -> Some (Immediate violation)
   in
   if err <> None then err else
   let need_variance =

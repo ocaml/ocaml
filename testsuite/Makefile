@@ -216,7 +216,7 @@ exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
 	@file=$(DIR)/ocamltests; \
-	(IFS=$$(printf "\r\n"); while read testfile; do \
+	(IFS=$$(printf "\r\n"); while read testfile || [ -n "$$testfile" ]; do \
 	   TERM=dumb $(OCAMLTESTENV) \
 	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
 	   echo " ... testing '$$testfile' => unexpected error"; \

@@ -262,6 +262,13 @@ let immediate =
        | _ -> false
     )
 
+let immediate64 =
+  List.exists
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.immediate64"|"immediate64" -> true
+       | _ -> false
+    )
+
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
    attributes cannot be input by the user, they are added by the
    compiler when applying the default setting. This is done to record

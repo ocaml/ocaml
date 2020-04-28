@@ -113,7 +113,7 @@ let enter_type rec_flag env sdecl id =
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = false;
+      type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
     }
   in
@@ -129,8 +129,10 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-let get_unboxed_type_representation =
-  Typedecl_unboxed.get_unboxed_type_representation
+let get_unboxed_type_representation env ty =
+  match Typedecl_unboxed.get_unboxed_type_representation env ty with
+  | Typedecl_unboxed.This x -> Some x
+  | _ -> None
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
@@ -512,7 +514,7 @@ let transl_declaration env sdecl id =
         type_expansion_scope = Btype.lowest_level;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
-        type_immediate = false;
+        type_immediate = Unknown;
         type_unboxed = unboxed_status;
       } in
 
@@ -1629,7 +1631,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = false;
+      type_immediate = Unknown;
       type_unboxed;
     }
   in
@@ -1681,7 +1683,7 @@ let abstract_type_decl arity =
       type_expansion_scope = Btype.lowest_level;
       type_loc = Location.none;
       type_attributes = [];
-      type_immediate = false;
+      type_immediate = Unknown;
       type_unboxed = unboxed_false_default_false;
      } in
   Ctype.end_def();
@@ -1861,8 +1863,8 @@ let report_error ppf = function
   | Rebind_wrong_type (lid, env, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
-          fprintf ppf "The constructor %a@ has type"
-            Printtyp.longident lid)
+           fprintf ppf "The constructor %a@ has type"
+             Printtyp.longident lid)
         (function ppf ->
            fprintf ppf "but was expected to be of type")
   | Rebind_mismatch (lid, p, p') ->
@@ -1895,28 +1897,28 @@ let report_error ppf = function
         | _ -> "th"
       in
       (match n with
-      | Variance_not_reflected ->
-        fprintf ppf "@[%s@ %s@ It"
-          "In this definition, a type variable has a variance that"
-          "is not reflected by its occurrence in type parameters."
-      | No_variable ->
-        fprintf ppf "@[%s@ %s@]"
-          "In this definition, a type variable cannot be deduced"
-          "from the type parameters."
-      | Variance_not_deducible ->
-        fprintf ppf "@[%s@ %s@ It"
-          "In this definition, a type variable has a variance that"
-          "cannot be deduced from the type parameters."
-      | Variance_not_satisfied n ->
-        fprintf ppf "@[%s@ %s@ The %d%s type parameter"
-          "In this definition, expected parameter"
-          "variances are not satisfied."
-          n (suffix n));
+       | Variance_not_reflected ->
+           fprintf ppf "@[%s@ %s@ It"
+             "In this definition, a type variable has a variance that"
+             "is not reflected by its occurrence in type parameters."
+       | No_variable ->
+           fprintf ppf "@[%s@ %s@]"
+             "In this definition, a type variable cannot be deduced"
+             "from the type parameters."
+       | Variance_not_deducible ->
+           fprintf ppf "@[%s@ %s@ It"
+             "In this definition, a type variable has a variance that"
+             "cannot be deduced from the type parameters."
+       | Variance_not_satisfied n ->
+           fprintf ppf "@[%s@ %s@ The %d%s type parameter"
+             "In this definition, expected parameter"
+             "variances are not satisfied."
+             n (suffix n));
       (match n with
-      | No_variable -> ()
-      | _ ->
-        fprintf ppf " was expected to be %s,@ but it is %s.@]"
-          (variance v2) (variance v1))
+       | No_variable -> ()
+       | _ ->
+           fprintf ppf " was expected to be %s,@ but it is %s.@]"
+             (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
@@ -1931,20 +1933,25 @@ let report_error ppf = function
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
       fprintf ppf "@[Don't know how to unbox this type.@ \
-                    Only float, int32, int64 and nativeint can be unboxed.@]"
+                   Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
       fprintf ppf "@[Don't know how to untag this type.@ \
                    Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
         "@[The attribute '%s' should be attached to@ \
-           a direct argument or result of the primitive,@ \
-           it should not occur deeply into its type.@]"
+         a direct argument or result of the primitive,@ \
+         it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
-  | Immediacy Typedecl_immediacy.Bad_immediate_attribute ->
-      fprintf ppf "@[%s@ %s@]"
-        "Types marked with the immediate attribute must be"
-        "non-pointer types like int or bool"
+  | Immediacy (Typedecl_immediacy.Bad_immediacy_attribute violation) ->
+      fprintf ppf "@[%a@]" Format.pp_print_text
+        (match violation with
+         | Type_immediacy.Violation.Not_always_immediate ->
+             "Types marked with the immediate attribute must be \
+              non-pointer types like int or bool."
+         | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
+             "Types marked with the immediate64 attribute must be \
+              produced using the Stdlib.Sys.Immediate64.Make functor.")
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
   | Wrong_unboxed_type_float ->

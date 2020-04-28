@@ -109,8 +109,8 @@ end;;
 Line 2, characters 2-31:
 2 |   type t = string [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
 |}];;
 
 (* Not guaranteed that t is immediate, so this is an invalid declaration *)
@@ -122,8 +122,8 @@ end;;
 Line 3, characters 2-26:
 3 |   type s = t [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
 |}];;
 
 (* Can't ascribe to an immediate type signature with a non-immediate type *)
@@ -172,6 +172,6 @@ end;;
 Line 2, characters 2-26:
 2 |   type t = s [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
 |}];;

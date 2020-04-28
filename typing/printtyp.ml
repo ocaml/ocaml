@@ -1242,14 +1242,11 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest Otyp_open,
         decl.type_private
   in
-  let immediate =
-    Builtin_attributes.immediate decl.type_attributes
-  in
     { otype_name = name;
       otype_params = args;
       otype_type = ty;
       otype_private = priv;
-      otype_immediate = immediate;
+      otype_immediate = Type_immediacy.of_attributes decl.type_attributes;
       otype_unboxed = decl.type_unboxed.unboxed;
       otype_cstrs = constraints }
 
@@ -1571,7 +1568,7 @@ let dummy =
     type_is_newtype = false; type_expansion_scope = Btype.lowest_level;
     type_loc = Location.none;
     type_attributes = [];
-    type_immediate = false;
+    type_immediate = Unknown;
     type_unboxed = unboxed_false_default_false;
   }
 
