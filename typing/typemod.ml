@@ -2371,7 +2371,7 @@ let type_package env m p nl =
         -> (mp, env)  (* PR#6982 *)
     | _ ->
       let (id, new_env) =
-        Env.enter_module ~scope ~arg:true "%M" Mp_present modl.mod_type env
+        Env.enter_module ~scope "%M" Mp_present modl.mod_type env
       in
       (Pident id, new_env)
   in

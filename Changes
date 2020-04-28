@@ -45,6 +45,8 @@ Working version
 - #7924: Use a variant instead of an int in Bad_variance exception
   (Rian Douglas, review by Gabriel Scherer)
 
+- #8890: in -dtimings output, show time spent in C linker clearly
+  (Valentin Gatien-Baron)
 
 ### Code generation and optimizations:
 
@@ -122,8 +124,16 @@ Working version
 
 ### Compiler user-interface and warnings:
 
-    #8833: Hint for (type) redefinitions in toplevel session
-    (Florian Angeletti, review by Gabriel Scherer)
+- #8833: Hint for (type) redefinitions in toplevel session
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #2127: Refactor lookup functions
+  Included observable changes:
+    - makes the location of usage warnings and alerts for constructors more
+      precise
+    - don't warn about a constructor never being used to build values when it
+      has been defined as private
+  (Leo White, review by Thomas Refis)
 
 ### Build system:
 
