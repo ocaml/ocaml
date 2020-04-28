@@ -1201,6 +1201,7 @@ typing/typedecl.cmo : \
     typing/typedecl_variance.cmi \
     typing/typedecl_unboxed.cmi \
     typing/typedecl_immediacy.cmi \
+    typing/type_immediacy.cmi \
     typing/subst.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
@@ -1233,6 +1234,7 @@ typing/typedecl.cmx : \
     typing/typedecl_variance.cmx \
     typing/typedecl_unboxed.cmx \
     typing/typedecl_immediacy.cmx \
+    typing/type_immediacy.cmx \
     typing/subst.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
