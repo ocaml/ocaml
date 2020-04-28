@@ -330,7 +330,7 @@ val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
-    being closed.  Runtime warnings are enabled by default.
+    being closed.  Runtime warnings are disabled by default.
 
     @since 4.03.0 *)
 
