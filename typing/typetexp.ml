@@ -28,8 +28,7 @@ exception Already_bound
 
 type error =
     Unbound_type_variable of string
-  | Unbound_type_constructor of Longident.t
-  | Unbound_type_constructor_2 of Path.t
+  | Undefined_type_constructor of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
@@ -45,26 +44,8 @@ type error =
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of Longident.t
   | Method_mismatch of string * type_expr * type_expr
-  | Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
-  | Unbound_module of Longident.t
-  | Unbound_class of Longident.t
-  | Unbound_modtype of Longident.t
-  | Unbound_cltype of Longident.t
-  | Ill_typed_functor_application
-      of Longident.t * Longident.t * Includemod.error list option
-  | Illegal_reference_to_recursive_module
-  | Wrong_use_of_module of Longident.t * [ `Structure_used_as_functor
-                                         | `Abstract_used_as_functor
-                                         | `Functor_used_as_structure
-                                         | `Abstract_used_as_structure
-                                         | `Generative_used_as_applicative
-                                         ]
-  | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
-  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -73,149 +54,6 @@ exception Error_forward of Location.error
 module TyVarMap = Misc.Stdlib.String.Map
 
 type variable_context = int * type_expr TyVarMap.t
-
-(* To update locations from Typemod.check_well_founded_module. *)
-
-let typemod_update_location = ref (fun _ -> assert false)
-
-(* Narrowing unbound identifier errors. *)
-
-let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
-  fun env loc lid make_error ->
-  let check_module mlid =
-    try ignore (Env.lookup_module ~load:true mlid env) with
-    | Not_found ->
-        narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid)
-    | Env.Recmodule ->
-        raise (Error (loc, env, Illegal_reference_to_recursive_module))
-  in
-  let error e = raise (Error (loc, env, e)) in
-  begin match lid with
-  | Longident.Lident _ -> ()
-  | Longident.Ldot (mlid, _) ->
-      check_module mlid;
-      let md = Env.find_module (Env.lookup_module ~load:true mlid env) env in
-      begin match Env.scrape_alias env md.md_type with
-      | Mty_functor _ ->
-         error (Wrong_use_of_module (mlid, `Functor_used_as_structure))
-      | Mty_ident _ ->
-         error (Wrong_use_of_module (mlid, `Abstract_used_as_structure))
-      | Mty_alias p -> error (Cannot_scrape_alias(mlid, p))
-      | Mty_signature _ -> ()
-      end
-  | Longident.Lapply (flid, mlid) ->
-      check_module flid;
-      let fmd = Env.find_module (Env.lookup_module ~load:true flid env) env in
-      let mty_param =
-        match Env.scrape_alias env fmd.md_type with
-        | Mty_signature _ ->
-           error (Wrong_use_of_module (flid, `Structure_used_as_functor))
-        | Mty_ident _ ->
-           error (Wrong_use_of_module (flid, `Abstract_used_as_functor))
-        | Mty_alias p -> error (Cannot_scrape_alias(flid, p))
-        | Mty_functor (_, None, _) ->
-           error (Wrong_use_of_module (flid, `Generative_used_as_applicative))
-        | Mty_functor (_, Some mty_param, _) -> mty_param
-      in
-      check_module mlid;
-      let mpath = Env.lookup_module ~load:true mlid env in
-      let mmd = Env.find_module mpath env in
-      begin match Env.scrape_alias env mmd.md_type with
-      | Mty_alias p -> error (Cannot_scrape_alias(mlid, p))
-      | mty_arg ->
-         let details =
-           try Includemod.check_modtype_inclusion
-                 ~loc env mty_arg mpath mty_param;
-               None (* should be impossible *)
-           with Includemod.Error e -> Some e
-         in
-         error (Ill_typed_functor_application (flid, mlid, details))
-      end
-  end;
-  error (make_error lid)
-
-let find_component (lookup : ?loc:_ -> ?mark:_ -> _) make_error env loc lid =
-  try
-    match lid with
-    | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup ~loc (Longident.Lident s) Env.initial_safe_string
-    | _ ->
-        lookup ~loc lid env
-  with Not_found ->
-    narrow_unbound_lid_error env loc lid make_error
-  | Env.Recmodule ->
-    raise (Error (loc, env, Illegal_reference_to_recursive_module))
-  | err ->
-    raise (!typemod_update_location loc err)
-
-let find_type env loc lid =
-  let path =
-    find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
-      env loc lid
-  in
-  let decl = Env.find_type path env in
-  Builtin_attributes.check_alerts loc decl.type_attributes (Path.name path);
-  (path, decl)
-
-let find_constructor =
-  find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
-let find_all_constructors =
-  find_component Env.lookup_all_constructors
-    (fun lid -> Unbound_constructor lid)
-let find_label =
-  find_component Env.lookup_label (fun lid -> Unbound_label lid)
-let find_all_labels =
-  find_component Env.lookup_all_labels (fun lid -> Unbound_label lid)
-
-let find_class env loc lid =
-  let (path, decl) as r =
-    find_component Env.lookup_class (fun lid -> Unbound_class lid) env loc lid
-  in
-  Builtin_attributes.check_alerts loc decl.cty_attributes (Path.name path);
-  r
-
-let find_value env loc lid =
-  Env.check_value_name (Longident.last lid) loc;
-  let (path, decl) as r =
-    find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
-  in
-  Builtin_attributes.check_alerts loc decl.val_attributes (Path.name path);
-  r
-
-let lookup_module ?(load=false) env loc lid =
-  find_component
-    (fun ?loc ?mark lid env -> (Env.lookup_module ~load ?loc ?mark lid env))
-    (fun lid -> Unbound_module lid) env loc lid
-
-let find_module env loc lid =
-  let path = lookup_module ~load:true env loc lid in
-  let decl = Env.find_module path env in
-  (* No need to check for alerts here, this is done in Env. *)
-  (path, decl)
-
-let find_modtype env loc lid =
-  let (path, decl) as r =
-    find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
-      env loc lid
-  in
-  Builtin_attributes.check_alerts loc decl.mtd_attributes (Path.name path);
-  r
-
-let find_class_type env loc lid =
-  let (path, decl) as r =
-    find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
-      env loc lid
-  in
-  Builtin_attributes.check_alerts loc decl.clty_attributes (Path.name path);
-  r
-
-let unbound_constructor_error env lid =
-  narrow_unbound_lid_error env lid.loc lid.txt
-    (fun lid -> Unbound_constructor lid)
-
-let unbound_label_error env lid =
-  narrow_unbound_lid_error env lid.loc lid.txt
-    (fun lid -> Unbound_label lid)
 
 (* Support for first-class modules. *)
 
@@ -375,7 +213,7 @@ and transl_type_aux env policy styp =
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
-      let (path, decl) = find_type env lid.loc lid.txt in
+      let (path, decl) = Env.lookup_type ~loc:lid.loc lid.txt env in
       let stl =
         match stl with
         | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
@@ -415,8 +253,7 @@ and transl_type_aux env policy styp =
   | Ptyp_class(lid, stl) ->
       let (path, decl, _is_variant) =
         try
-          let path = Env.lookup_type lid.txt env in
-          let decl = Env.find_type path env in
+          let path, decl = Env.find_type_by_name lid.txt env in
           let rec check decl =
             match decl.type_manifest with
               None -> raise Not_found
@@ -437,11 +274,10 @@ and transl_type_aux env policy styp =
             | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
-          let path = Env.lookup_type lid2 env in
-          let decl = Env.find_type path env in
+          let path, decl = Env.find_type_by_name lid2 env in
           (path, decl, false)
         with Not_found ->
-          ignore (find_class env lid.loc lid.txt); assert false
+          ignore (Env.lookup_class ~loc:lid.loc lid.txt env); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
@@ -598,7 +434,7 @@ and transl_type_aux env policy styp =
                 let row = Btype.row_repr row in
                 row.row_fields
             | {desc=Tvar _}, Some(p, _) ->
-                raise(Error(sty.ptyp_loc, env, Unbound_type_constructor_2 p))
+                raise(Error(sty.ptyp_loc, env, Undefined_type_constructor p))
             | _ ->
                 raise(Error(sty.ptyp_loc, env, Not_a_variant ty))
             in
@@ -742,7 +578,7 @@ and transl_fields env policy o fields =
             OTinherit cty
             end
         | {desc=Tvar _}, Some p ->
-            raise (Error (sty.ptyp_loc, env, Unbound_type_constructor_2 p))
+            raise (Error (sty.ptyp_loc, env, Undefined_type_constructor p))
         | _ -> raise (Error (sty.ptyp_loc, env, Not_an_object t))
       end in
     { of_desc; of_loc; of_attributes; }
@@ -867,38 +703,6 @@ let transl_type_scheme env styp =
 open Format
 open Printtyp
 
-let spellcheck ppf fold env lid =
-  let choices ~path name =
-    let env = fold (fun x xs -> x::xs) path env [] in
-    Misc.spellcheck env name in
-  match lid with
-    | Longident.Lapply _ -> ()
-    | Longident.Lident s ->
-       Misc.did_you_mean ppf (fun () -> choices ~path:None s)
-    | Longident.Ldot (r, s) ->
-       Misc.did_you_mean ppf (fun () -> choices ~path:(Some r) s)
-
-let fold_descr fold get_name f = fold (fun descr acc -> f (get_name descr) acc)
-let fold_simple fold4 f = fold4 (fun name _path _descr acc -> f name acc)
-
-let fold_values f =
-  (* We only use "real" values while spellchecking (as opposed to "ghost"
-     values inserted in the environment to trigger the "missing rec" hint).
-     This is needed in order to avoid dummy suggestions like:
-     "unbound value x, did you mean x?" *)
-  Env.fold_values
-    (fun name _path descr acc ->
-       match descr.val_kind with
-       | Val_unbound _ -> acc
-       | _ -> f name acc)
-let fold_types = fold_simple Env.fold_types
-let fold_modules = fold_simple Env.fold_modules
-let fold_constructors = fold_descr Env.fold_constructors (fun d -> d.cstr_name)
-let fold_labels = fold_descr Env.fold_labels (fun d -> d.lbl_name)
-let fold_classes = fold_simple Env.fold_classes
-let fold_modtypes = fold_simple Env.fold_modtypes
-let fold_cltypes = fold_simple Env.fold_cltypes
-
 let report_error env ppf = function
   | Unbound_type_variable name ->
       let add_name name _ l = if name = "_" then l else ("'" ^ name) :: l in
@@ -906,10 +710,7 @@ let report_error env ppf = function
     fprintf ppf "The type variable %s is unbound in this type declaration.@ %a"
       name
       did_you_mean (fun () -> Misc.spellcheck names name )
-  | Unbound_type_constructor lid ->
-    fprintf ppf "Unbound type constructor %a" longident lid;
-    spellcheck ppf fold_types env lid;
-  | Unbound_type_constructor_2 p ->
+  | Undefined_type_constructor p ->
     fprintf ppf "The type constructor@ %a@ is not yet completely defined"
       path p
   | Type_arity_mismatch(lid, expected, provided) ->
@@ -990,58 +791,6 @@ let report_error env ppf = function
         Printtyp.reset_and_mark_loops_list [ty; ty'];
         fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
           l Printtyp.type_expr ty Printtyp.type_expr ty')
-  | Unbound_value lid ->
-      fprintf ppf "Unbound value %a" longident lid;
-      spellcheck ppf fold_values env lid;
-  | Unbound_module lid ->
-      fprintf ppf "Unbound module %a" longident lid;
-      spellcheck ppf fold_modules env lid;
-  | Unbound_constructor lid ->
-      fprintf ppf "Unbound constructor %a" longident lid;
-      spellcheck ppf fold_constructors env lid;
-  | Unbound_label lid ->
-      fprintf ppf "Unbound record field %a" longident lid;
-      spellcheck ppf fold_labels env lid;
-  | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" longident lid;
-      spellcheck ppf fold_classes env lid;
-  | Unbound_modtype lid ->
-      fprintf ppf "Unbound module type %a" longident lid;
-      spellcheck ppf fold_modtypes env lid;
-  | Unbound_cltype lid ->
-      fprintf ppf "Unbound class type %a" longident lid;
-      spellcheck ppf fold_cltypes env lid;
-  | Ill_typed_functor_application (flid, mlid, details) ->
-     (match details with
-     | None ->
-        fprintf ppf "@[Ill-typed functor application %a(%a)@]"
-          longident flid longident mlid
-     | Some inclusion_error ->
-        fprintf ppf "@[The type of %a does not match %a's parameter@\n%a@]"
-          longident mlid longident flid Includemod.report_error inclusion_error)
-  | Illegal_reference_to_recursive_module ->
-     fprintf ppf "Illegal recursive module reference"
-  | Wrong_use_of_module (lid, details) ->
-     (match details with
-     | `Structure_used_as_functor ->
-        fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
-          longident lid
-     | `Abstract_used_as_functor ->
-        fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
-          longident lid
-     | `Functor_used_as_structure ->
-        fprintf ppf "@[The module %a is a functor, \
-                       it cannot have any components@]" longident lid
-     | `Abstract_used_as_structure ->
-        fprintf ppf "@[The module %a is abstract, \
-                       it cannot have any components@]" longident lid
-     | `Generative_used_as_applicative ->
-        fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
-                       applied@ in@ type@ expressions@]" longident lid)
-  | Cannot_scrape_alias(lid, p) ->
-      fprintf ppf
-        "The module %a is an alias for module %a, which is missing"
-        longident lid path p
   | Opened_object nm ->
       fprintf ppf
         "Illegal open object type%a"
@@ -1052,16 +801,6 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not an object type@]"
         Printtyp.type_expr ty
-  | Unbound_value_missing_rec (lid, loc) ->
-      fprintf ppf
-        "Unbound value %a" longident lid;
-      spellcheck ppf fold_values env lid;
-      let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
-      fprintf ppf
-        "@.@[%s@ %s %i@]"
-        "Hint: If this is a recursive definition,"
-        "you should add the 'rec' keyword on line"
-        line
 
 let () =
   Location.register_error_of_exn
